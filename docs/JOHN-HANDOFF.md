@@ -40,420 +40,131 @@ och produkttext; HUVUDAGENT5 äger teknisk namn-/importkontroll.
 
 <a id="dragan-talstatus"></a>
 
-## Lipsync 3: rörelseprov, modellcache och produktionsverifiering — 18 oktober 2026
+## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
 
-Det isolerade rörelseprovet fungerar med Dragan, verkligt ljud, exakt
-källbundet ansikte och lagren bakgrund → dealer → bord. Jakob godkände
-”Ljud och munrörelser ser bra ut” för **enbart** granskningsfilen med SHA-256
-`769c5d901775e05ca88773ee3e47174410367ae9c8d0fdb935b4cbcc6080c8f4`
-(711 053 byte, H.264/AAC, 1280×720): ”Ulf Lundell är bra.” under självutdelning.
-Senare cache- och spelarprov har egna tekniska kvitton, inget ärvt
-kvalitetsgodkännande. De verifierar inte serverkort, insats eller saldo.
+Dragan talar med källbundet ansikte under självutdelning i det isolerade
+rörelseprovet. Jakob godkände **enbart filmen med hash nedan**. T6 verifierade
+senare två vilorepliker i produktion, kall modell följd av varm återanvändning.
+T6 prövade ingen DEAL, insats eller saldoändring och fick inget nytt visuellt
+godkännande. Provresurserna är avvecklade och talflaggan är åter av.
 
-### Leverans och drift
+[Runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md) beskriver tekniken;
+[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är enda produktmodellen.
+[Historiskt detaljkvitto före förkortning](https://github.com/Jakeminator123/scoutgaming/blob/0ff9467d3230c30219126ee9b2c87b2724220529/docs/JOHN-HANDOFF.md#dragan-talstatus) och
+[privat backup](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/final-documentation/lipsync3-detaljkvitto-0ff9467d-2026-10-18.md) bevarar hela föregående avsnitt:
+äldre prov, amendmenthistorik och exakta kvitton. De är historiskt underlag, inga extra aktiva guider.
 
-| Leverans | Verifierad revision / avgränsning |
+### Leverans och exakta bindningar
+
+Modellcache och varm antagning är levererade i PR255–257. T6 körde PR262:s
+`4cee9bc20254f6eaceb9b34271cae8c98b41a56b`; www och Render verifierades på
+revisionen 21:23:13 UTC och återställningen efter provet använde samma kod.
+Migration **015 applicerades 21:24:12 UTC**: tre CHECK-gränser 15→40 USD,
+oförändrad budget-/reservationshistorik och inget nytt beviljat belopp.
+**Denna leverans gör 015 obligatorisk** för readiness, Studio och båda
+importörerna. 94 fokuserade prov samt verklig isolerad PostgreSQL passerade;
+detaljkvittot skiljer dessa kontroller från den daterade appdriften.
+
+| Underlag | Exakt identitet |
 | --- | --- |
-| [PR255](https://github.com/Jakeminator123/scoutgaming/pull/255), exklusiv modellcache | Mergad `967693a42a7524a25018aaa9adbb44a0c844c2e1`. Publicerad privat workerimage och isolerat GPU-prov enligt nedan. |
-| [PR256](https://github.com/Jakeminator123/scoutgaming/pull/256), varm serverantagning | Mergad `dd96b5d58f1411e10b5c88ed090771a8c00bd9c1`. Moving-specifik kapacitetskontroll; generiska jobb och recovery behåller drainkravet. |
-| [PR257](https://github.com/Jakeminator123/scoutgaming/pull/257), två planerade repliker | Mergad `b6544ec38f129ba61a203e952f00b04e76d74503`. Dåvarande tekniskt journalutrymme 13,2 USD och runtime-dygnsgräns 8,4 USD; senare kapacitet i PR262 nedan. Ingen historiknollställning. |
-| [PR258](https://github.com/Jakeminator123/scoutgaming/pull/258), naturligt ljudslut | Mergad `58bdbc95fd3ac86cb5ee9bb656de1e91ca212675`; main-CI 39155063602 success 18:46:24 UTC. Granskat kodunderlag och verklig replay nedan. |
-| [PR259](https://github.com/Jakeminator123/scoutgaming/pull/259), förberedelsefel | Mergad `c82dbe4e3138f74187c481421e3c6d13775339a6`. Tillåtna felkoder och fas/korrelations-ID bevaras utan råfel eller hemligheter; UI skiljer förberedelse från GPU-kö. 73 fokuserade tester och 48 commitkontroller passerade. PR-CI 39157061322 success. |
-| [PR261](https://github.com/Jakeminator123/scoutgaming/pull/261), kall kapacitetskontroll | Mergad `799e090817636bfe16476c53b18399cc39a87383`. PR-CI 39160233262 success 19:53:49 UTC; oberoende granskning utan blockerare. |
-| [PR262](https://github.com/Jakeminator123/scoutgaming/pull/262), separat teknisk budgetkapacitet | Mergad `4cee9bc20254f6eaceb9b34271cae8c98b41a56b` från granskat `6183b42c9c0ba77f4653570006268feaaa142d87`. PR-CI 39165716445 success; tidigare bootstrapfynd stängt av mergegranskningen. |
+| Enda visuellt godkända filmen, ”Ulf Lundell är bra.” under självutdelning | SHA-256 `769c5d901775e05ca88773ee3e47174410367ae9c8d0fdb935b4cbcc6080c8f4`, 711 053 byte, H.264/AAC, 1280×720 |
+| 50 oförändrade Dragan-källor | source-set-SHA `e49f1e9e9e141d1725c7ea1ec104fddff5d9055db33c4181f2c7a2e9a797ef0d` |
+| Rörelsekälla, 66 rutor vid 24 fps | `d9c7fefb-141c-4809-aecf-3904392f22f5`, SHA `061e82f2d4be69d3a73a2e6842692eb2d23c7b7e11fcd9d246fbb0c85e9f72c0` |
+| Vilokälla, ruta 0 | `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f`, SHA `2b8d6ea7829bde6212f6145038569747a389c5e20166b3ea08fc26efda81c9e3` |
+| Fullbank, 2 479 poolrutor / 594 432 000 byte | SHA `5dcf0f323f707ad6fa58f740a560a1aa62a73b1a6ebeaa916b6b026f6a47f14c` |
+| Workerrelease | `5908716a81532d29e8b2e9aece3a8639258a7f56dad2ee3b6d98fcc343d0c08c` |
+| Publicerad image | `ghcr.io/jakeminator123/moving-gpu-worker@sha256:eb5a6b4707eaba54839cc562b554ff7a8af37f5897e739a5533f2357f867135a` |
 
-Denna leverans gör migration 015 obligatorisk för readiness, Studio samt
-runtime-media- och speech-ledger-importörerna. Appdriften före slutleveransen
-verifierades 18 oktober 21:23:13 UTC på PR262:s main
-`4cee9bc20254f6eaceb9b34271cae8c98b41a56b`: Vercel
-`dpl_GWMvkVQs8hqbcKH2FgSJDsLMBtP4` READY/production på
-`www.scoutgaming.tech` och Render `dep-dbajd83m8hqs73bg33f0` LIVE,
-health HTTP 200. T6 och dess återställning körde samma apprevision enligt
-nedan. Detta är daterade driftkvitton före slutleveransen; dess egen commit
-eller driftsättning påstås inte vara verifierad här. Publicerad workerimage,
-appdeploy och verifierade produktionsjobb är skilda kvitton.
+En ändrad ljud-/videohash är en annan tagning; godkännandet ärvs inte.
+Lagren är bakgrund → dealer → bord, med serverägda kort och spel-UI ovanpå.
 
-Workerrelease
-`5908716a81532d29e8b2e9aece3a8639258a7f56dad2ee3b6d98fcc343d0c08c`
-publicerades 18:01:16 UTC som
-`ghcr.io/jakeminator123/moving-gpu-worker@sha256:eb5a6b4707eaba54839cc562b554ff7a8af37f5897e739a5533f2357f867135a`.
-Publiceringskörning 39151186231 passerade. Den ersätter den tidigare
-opublicerade mellanreleasen i denna aktuella status.
+### Senaste produktionsprov och avveckling
 
-### Uppmätt GPU, återanvändning och avbrott
+T6 `728d0e03-1f46-4ab5-936b-01a99e1dbe1e` gav två naturligt avslutade
+svar på Dragan-testbordet. Båda har `mediaCompleted=true` och
+`captureComplete=true`, med exakt text-, PCM-, bank-, käll- och releasebindning.
 
-Det separata A/B/C/D-provet körde samma installerade serverless-handler,
-entrypoint och modellcache på **en NVIDIA GeForce RTX 4090**, 24 564 MiB,
-driver 580.126.20, Torch 2.8.0+cu128 och Python 3.12.3. Containerns större
-host-RAM-/CPU-värden bevisar inte Podens tilldelning. Befintliga PCM-filer
-användes; inga nya TTS-synteser behövdes för jämförelsen.
-
-GPU-kvittot visar toppar på 6,68 GiB allokerat och 10,32 GiB reserverat
-CUDA-minne samt 15,24 GiB motor-RSS. RunPods skapandekvitto anger 100 GB
-RAM och 9 vCPU. Reserverat CUDA-minne innefattar allokerat; topparna är
-observationer, inte verifierade minimikrav.
-
-| Prov | Observerad handler-/jobbtid | Resultat |
-| --- | --- | --- |
-| A: kall, ”Ulf Lundell är bra.” | 71,245 s | Cachemiss, 54 talrutor, komplett. |
-| B: varm, ”Jakob är kung.” | 6,954 s | Samma motor, cacheträff, 50 talrutor, komplett. |
-| C: avbrott efter första paketet | 8,125 s | Cacheträff före avbrott; motor och cachepostens aktiva ägarskap avvecklade före avbrottskvittot. Ofullständigt resultat. |
-| D: omladdning efter C | 57,940 s | Cachemiss och ny motor, 50 talrutor, komplett. |
-
-Färsk uppvärmning var 52,1–55,6 fps; ordinarie 30-fps-grind användes.
-71,245 → 6,954 s är två uppmätta jobb med olika repliker, inte ett
-kontrollerat hastighetsförhållande för samma text eller produktionslatens.
-Provet använde lokal callbacktransport och prövade inte autentiserad
-Render-antagning. Cacheträff förutsätter samma verifierade identitet och
-fullständig avslutning: samtliga kompositionsfutures och sista callback måste
-vara klara. Fel, avbrott, bank-/modellbyte eller okänd processstatus får inte
-lämna återanvändbar motor, PCM eller ansiktsrutor från föregående jobb.
-
-PR258 rättar den verkligt återgivna ordningen där ljudets `ended=true` och
-`paused=true` blir synliga före DOM-händelsen `ended`. Båda slutvägarna
-använder nu samma slutkontroller; manuell paus, ofullständig kroppssekvens,
-saknad slutruta och förlorad ägare avbryter fortfarande. 42 fokuserade
-spelare-/rutelagerprov passerade; tre browserprov saknade browserfixture och
-hoppades över. Huvudagentens faktiska B-replay med spelarhash
-`c1c932af2c97c386bfe9d73d1b68e3b09742ec6a5b72d1fed99a23b722dfc5af`
-gav `completed=true`, 50 mottagna ansiktsrutor och sista kroppsruta 65.
-**63 unika kroppsrutor observerades av 66 planerade**; det bevisar inte att
-alla 66 visades. Kvitto-SHA
-`40138ffa770e713dcde0e0c64f804bab8e3c8579f746fabfb3a101882f85419f`
-(64 067 byte). Det äldre godkända rörelseprovets separata logg innehöll alla
-66 unika kroppsrutor; den observationen överförs inte till detta B-prov.
-
-### Exakta källor och bevarande
-
-De 50 befintliga Dragan-källklippen som återanvänds från Kevins material
-behåller sina registrerade originalbytes; vi använder den gemensamma
-spelaren och lagersammansättningen. Detta verifierar inte Kevins privata
-miljö. Källmängdens SHA-256 är
-`e49f1e9e9e141d1725c7ea1ec104fddff5d9055db33c4181f2c7a2e9a797ef0d`.
-Fullbankens 2 479 poolrutor är 594 432 000 byte, SHA
-`5dcf0f323f707ad6fa58f740a560a1aa62a73b1a6ebeaa916b6b026f6a47f14c`;
-bankkvittot är 1 045 byte, SHA
-`74c3c460e6589898dc2341fd44f06934eb91542374697f3d93f863fe9ef9b477`.
-Källfilm `d9c7fefb-141c-4809-aecf-3904392f22f5` har 66 rutor vid 24 fps,
-SHA `061e82f2d4be69d3a73a2e6842692eb2d23c7b7e11fcd9d246fbb0c85e9f72c0`.
-Vila är ruta 0 i `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f`, SHA
-`2b8d6ea7829bde6212f6145038569747a389c5e20166b3ea08fc26efda81c9e3`.
-Ulf-PCM har SHA `767ad6ff0e0c65786f25d5ae0d60595671f0351858a35f47039d838a98a8aa32`
-(73 560 byte); Jakob-PCM har SHA
-`903c2ceb331fbc6ae0162ded81a53818a2cf8e55450902666866f4842c1712c9`
-(64 644 byte). Båda är 24 kHz mono. Manifesten binder även exakta lager,
-text, ljud, källrutor, bank och release.
-
-Fem privata Blob-manifest är fullåterlästa. Produktionspaketen T3, T4 och T6
-redovisas separat nedan. De två första paketen har återlästa manifest under
-`croupier/media/dealers/dragan/staging/lipsync-review/`:
-
-| Manifestets suffix | Slutfört kvitto |
-| --- | --- |
-| `d63657f1-cc18-5707-9551-86d380f39404/ed5b5c1cd9799bf46e83ec513cb09282637bda9d2acedf40f952ea8bbd1b6b10.json` | 16:55:28 UTC; manifest 68 291 byte. 53 nya objekt och manifest, totalt 222 641 075 byte, fullåterlästa med rätt SHA. Fem äldre objekt är referenser, inte ny fullhashning. |
-| `2ef8e43a-b151-4244-af8f-2a9975b94684/2ef8e43ab1516244ef8f2a9975b94684fa98c156da317f9c85a8296d2cad91cf.json` | 18:23:41 UTC; manifest 10 688 byte, 23 verifierade objekt. A/B/D:s kompletta ansiktspaket och ljud, C:s uttryckligen partiella resultat, sanerade kvitton samt lyckad och avbruten replay. |
-
-Filnamnens 64 hextecken är manifestens exakta SHA-256. De separata
-planhasharna är `26ec9bc513455a67c4ca35049c83dc2c17712693e97aef2021e5d79c2b0bf23b`
-respektive `30b57cf58486119902b7311d8dd2c31d6b78fc9cf080ad176a7d0279608eba4a`.
-Omkodade jämförelser i första paketet är derivat, inte originalkällbytes.
-Nya inspelningar utan SHA-bundet capture-/transkodningskvitto bevaras som
-ogranskade samlokaliserade filer; deras namn bevisar ingen härledning.
-Det äldre visuella godkännandet överförs inte till nya filer.
-
-Emils `lappsynk-export-fe1b55e.zip` är bevarad oförändrad: 145 846 625 byte,
-SHA `949443c1084ab3f515792fe66c5e2d381e985f9bdc743e792e5fbca36a9240a3`.
-Det är referensmaterial, inte aktiv fullbank, Git-innehåll eller Admin-klipp.
-19 textfiler gav inga träffar i sekretesskontrollen; binära tensorers innehåll
-är inte fullständigt sekretessgranskat. Inga Neon-rader eller `/admin/clips`-
-poster skapades av bevarandet. Råa requestfiler, cookies och loggar hålls
-privata lokalt. Moving-resultat sparas ännu inte automatiskt i svarsbiblioteket.
-
-### Journal, produktionsprov och kvarvarande ansvar
-
-Varm antagning kräver färskt, serverägt bevis för exakt release och högst en
-egen frisk, ledig worker, inga köade/aktiva jobb, samt samma SQL-lease före
-POST. `workersMin=0`, `workersMax=1`, `idleTimeout≤60` och exklusiv endpoint
-gäller; GET och POST är inte atomiska. RunPods `ready` är separat cache-
-kapacitet, inte ett modellbevis. Tomgången ryms tillsammans med jobbets
-540 s TTL inom reservationens 720 s. 87 kapacitets-/sessions-/journalprov
-och isolerad PostgreSQL (4 retained, 26 SQL, 59 integration) passerade;
-den miljöberoende fristående wrappern hoppades över, SQL-funktionen kördes
-uttryckligen i fixturen. Budgetändringen hade 30 fokuserade gröna prov och
-samma isolerade SQL-kedja, inklusive historikbevarande och tredje-avvisning.
-
-Rootens amendment `4f1893d5-a6d1-459d-9269-703c7f8629a3` återlästes
-18:32:11 UTC: varaktigt totalt utrymme **13,2 USD**, oförändrad historik
-**nio reservationer/10,8 USD**, dagens reserverat **6 USD** och sparad
-dygnspolicy **20 USD**. Inga öppna moving-sessioner eller levande leases
-fanns då. Dåvarande runtime begränsade till 8,4 USD/dygn och 1,2 USD per ny reservation.
-Kodtaket höjer inte ensamt den sparade journalen. Detta är teknisk
-journalföring av två uttryckligen planerade repliker, inte ett nytt mänskligt
-kostnadstak. Jakob har återkallat det tidigare mänskliga provtaket.
-
-Samma avstämning fann **56 äldre generiska `submission_uncertain`-poster**,
-utan moving-bindning, aktuell aktivitet eller levande lease. De är olöst
-historisk observationsskuld; inga poster har rensats, återbetalats eller
-förklarats lösta. De ska hållas skilda från det aktuella moving-provets
-sessioner och från faktisk providerdebitering.
-
-Första trial04-försöket på PR258 avbröts före någon varaktig moving-reservation:
-första chatten gav `chat_failed` efter 11 669 ms och inget ljud/WS-resultat.
-Det bevisar inte ett GPU-köfel; den gamla UI-etiketten visades redan under
-förberedelsen. Exakt ursprungsfel saknades i svaret som fångades. Ett senare
-skrivskyddat röst-GET från lokal Windows fick HTTP 200 för rätt Dragge-ID,
-vilket inte verifierar Render-tjänstens nätväg. PR259 tillför därför
-avgränsade felkoder och fasloggning före nästa försök. Försöket
-`67c6de23-a002-424e-a909-078c92a67b87` stängdes 18:56:32 UTC utan cleanup-fel:
-profilen åter i preparation, talflaggan 0, endpoint/template borta,
-0 aktiva workers och fortsatt nio avslutade reservationer/10,8 USD.
-
-Nästa försök `4ade638b-842b-44f9-9293-5de8fdd4ef25` körde PR259 och
-fångade exakt `generated_speech_moving_capacity_unverified` i det strömmade
-chattsvaret, efter 9 867 ms. Inga ljud-/ansiktspaket eller reservationer
-skapades. Cleanup var stängd utan fel 19:32:04.843 UTC, med återställd
-preparation-profil, flagga 0, borttagen endpoint/mall och LIVE-återställning
-`dep-dbaht1jrjlhs73ak14ig` på `c82dbe4e3138f74187c481421e3c6d13775339a6`.
-
-En separat kapacitetsdiagnos `eabbaf86-e1dc-4fbc-848f-86931bd5cba5` gjorde
-två GET-observationer 19:37:56/19:38:17 UTC, utan GPU-jobb eller ändring av
-Render/Studio. Båda reproducerade validatorns avvisning av health
-`initializing=1`, trots exakt en aktuell EXITED-post, noll aktiva pods,
-`running=0` och tom jobbkö. Det isolerar ett konkret kallstartsfall; det är
-inte en allmän regel att initialisering är kostnadsfri. Testresurserna togs
-bort och cleanup verifierades stängd. De två kapacitetskvittona ligger under
-samma privata provbas. Detta ersätter inte en direkt providerobservation
-från det tidigare misslyckade produktionsanropet.
-
-PR261 tillåter det reproducerade fallet som kall antagning. Varm
-initialisering, gamla eller okända workerposter, fler initialiserande slots,
-ohälsa, throttling och kö/arbete avvisas fortfarande. Det innebär inte
-färdigladdad modell. 69 fokuserade tester passerade utan skips; huvudagentens
-isolerade PostgreSQL-körning gav 4 retained-, 26 SQL- och 59
-integrationskontroller med den utökade kapacitetsfixturen uttryckligen körd.
-Testwrappern gav 15 pass och ett miljöberoende skip för det separata,
-redan uttryckligen körda SQL-provet. Klockdomänen mellan Node och databas,
-generell drain, image och kostnadsgränser ändrades inte.
-
-### Teknisk kapacitet och beviljad budget
-
-PR262 skiljer kapacitet från beviljade belopp: 40 USD tekniskt totalt,
-20 USD runtime-dygn och fortsatt 1,2 USD per reservation. Det fasta
-Dragan-budget-ID:t får separat 13,2 USD som initialt belopp endast när
-journalen är tom. Ett befintligt ID behåller sitt varaktiga tak även om
-runtime eller startvärdet höjs; ytterligare utrymme kräver en finansierad,
-revisionskontrollerad amendment. Ingen gammal reservation nollställs.
-
-Migration **015 applicerades och återlästes i produktion 21:24:12.086 UTC**,
-efter verifierad PR262 på både www och croupier-v2. Endast tre CHECK-gränser
-ändrades 15 → 40 USD. De två berörda moving-tabellernas rader, budget- och
-reservationshistorik samt tidigare ledgerposter var oförändrade; andra
-speltabeller låstes inte och påstås inte ha varit oförändrade. Det dåvarande
-beviljade totalutrymmet förblev **13,2 USD**: migrationen beviljar ingen budget.
-Kvitto: `production-trial-04/migration015-plans/b7ccaf22-1ca1-4ce0-ada6-8862d2a6472a/applied-receipt.json`,
-SHA-256 `ac5471208ec7559451d3101d6788932210697e3043870cda9219069861328b6a`.
-Efter 015 får äldre kod som avvisar dess ledger inte driftsättas.
-
-Slutpatchens åtta kod-/testfiler gör 015 obligatorisk för readiness, Studio
-samt både runtime-media- och speech-ledger-importören. **94 fokuserade prov
-passerade utan skips**. Isolerad PostgreSQL verifierade 4 retained-, 26 SQL-
-och 59 integrationskontroller; wrappern gav 16 pass och ett miljöberoende
-skip, medan SQL-funktionen kördes uttryckligen. Kvitto:
-`final-documentation/require015-verification.json`; SQL-logg-SHA
-`90d81f1d858cf7a84e9b1df62497e85043f4fa157cc7e51ee812fa2e4af85e03`.
-Kontrollerna gäller ändringen i denna leverans. Det daterade appdriftkvittot
-ovan föregår leveransen.
-
-PR262:s tidigare bryggprov: 48 fokuserade bootstrap-/sessions-/journaltester och 48 commitkontroller
-passerade. Den verkliga PostgreSQL-fixturen körde den aktuella konfigurationen
-på både 014 och 015: elva reservationer inom 13,2 USD följdes av avslag,
-även vid ändrat startvärde, utan nya journalrader. Den separata körningen
-`motion-readiness/budget-policy-bootstrap-sql.log` har SHA-256
-`1ae37e34b648506a6832e7f72fa82666b06562eaf3875b6867fb35c647617542`;
-26 SQL- och 59 integrationskontroller passerade. Den tidigare uppgraderings-
-körningen verifierade oförändrade datarader och CHECK-gränser; dess kvitto
-`budget-policy-sql.log` bevaras. En redundant fristående SQL-wrapper hoppades
-över medan samma SQL-funktion kördes uttryckligen. Studio-testets 14 prov
-passerade med bryggans avsedda optional-lista.
-
-### Två enskilda produktionssvar — T3 och T4
-
-Båda proven spelade ”Ulf Lundell är bra.” i den befintliga produktionsspelaren
-med samma förseglade cacheimage och källbank. De är **vilotal**, inte utdelning
-eller insats. Ett mottaget ansiktspaket eller release-callback bevisar inte att
-varje bild visades. Tabellen skiljer mottagna medier från inspelningens täckning.
-
-| Prov och körning | Medier och inspelning | Kallt jobb och begränsning |
-| --- | --- | --- |
-| T3 `32c15e27-a1e9-472f-a290-9ee11bc04084`, PR261 `799e090817636bfe16476c53b18399cc39a87383` | Komplett PCM/H.264, 51/51 mottagna ansiktsrutor, 38 release-callbacks; 66 874 byte PCM och 86 287 byte H.264 i fem paket. `mediaCompleted=true`, `captureComplete=false`, inga JPEG. | Provider COMPLETED/complete, cachemiss; kö 91,094 s, execution 86,651 s, klick→slut 192,456 s. Inspelningshjälparen felklassade avslutad HTTP-läsning efter komplett deskriptor. Ingen andra replik skickades. |
-| T4 `3001c02f-ee64-4b7a-9681-aad822af40a3`, PR262 `4cee9bc20254f6eaceb9b34271cae8c98b41a56b` | `mediaCompleted=true` och `captureComplete=true`; 57/57 mottagna ansiktsrutor, 44 release-callbacks; 78 020 byte PCM, 89 485 byte H.264 i fem paket samt 62 passiva JPEG-prov. | NVIDIA A40, provider COMPLETED/complete, cachemiss; kö 129,065 s, execution 98,747 s, klick→slut 242,115 s (väggklocka). Rootens verktygsövergång förbrukade andra permitens tidsfönster. Ingen andra replik skickades. |
-
-T3:s oförändrade råexport behåller `capture.runFailed=true`; den senare
-strikta medieverifieringen ändrar inte detta historiska inspelningsfel.
-T4 verifierade samma HTTP-övergång mot exakt deskriptor, kompletta medier
-och naturligt browser-slut: en verifierad avbruten HTTP-läsning, inga
-väntande sådana avbrott eller rapporterade capture-fel. Dess PCM-SHA är
-`2fa6867322302f8f7f851245ed819ac185a82ffd777a9c09b4c465ca1925b10a`;
-uppspelningskvittots SHA är
-`1d22cbbf0136d206a80afc44f5a0e38d3d5e1851b2c29a72f761157064c8aeee`.
-JPEG-bilderna är glesa visuella observationer, inte en komplett bildsekvens;
-PCM är mottaget providerljud, inte inspelat systemljud. Inget nytt visuellt
-godkännande eller varmt produktionsåteranvändningsbevis följer av dessa prov.
-
-T4:s worker mätte bankhämtning 17,216 s, motorförberedelse 53,143 s,
-uppvärmning 40,9 fps och faktisk rendering 37,3 fps för 57 rutor.
-`renderMs=1529` skiljer sig från `renderWallMs=8399,834` och kvittensväntan
-7 893,319 ms; dessa överlappande mått ska inte summeras som separata faser.
-Det är ett kallt A40-prov, ingen p95- eller minnes-/latensgaranti.
-
-| Avveckling | Verifierat slutläge |
-| --- | --- |
-| T3, 20:12:46 UTC | Preparation-profil, flagga 0, endpoint/mall borta, inga aktiva workers/leases. Render `dep-dbaig3rrjlhs73am1igg` LIVE på samma apprevision. 10 avslutade reservationer/12 USD; då 7,2 USD för dagen och 13,2 USD beviljat totalt. |
-| T4, 21:35:10.932 UTC | `closed=true`, inga cleanup-fel; preparation-profil, fyra egna Render-nycklar återställda med flagga 0, endpoint `nw2pept58q2o94` och mall `aoo6wzla54` borta, 0 aktiva workers och inga öppna sessioner/leases. Render `dep-dbajmjm1egvs73avkig0` LIVE på PR262. Historik 11 avslutade reservationer/13,2 USD; separat amendment hade före provet beviljat 14,4 USD. Providerkostnader var ännu inte slutavstämda och reserver behölls. |
-
-T3:s tredje privata Blob-manifest (`historical-single-reply`) är fullåterläst:
-sex mediefiler, sanerat kvitto och manifest, totalt åtta objekt. Manifestet är
-5 231 byte, SHA-256
-`d62843eb604bf00f78e638522098e8d07dc00d09d173bd7569c0a7443c70c257`;
-plan-SHA `b77bcb9e796de7fb457afbf52c27ddb5ec4c3e0845fd1d794aa2834f80733896`.
-
-T4:s fjärde privata Blob-paket slutfördes **21:43:55.023 UTC**: 69 objekt
-fullåterlästa med rätt storlek och SHA, utan overwrite eller Neon-/Admin-skrivning.
-Manifestet är 2 848 byte, SHA-256
-`42972d70315c48feb1a6f1a4c7f7ee5b63878ed77f1a6740f6e389d468855148`,
-under `42972d70-315c-48fe-a1a6-f1a4c7f7ee5b/` i Blob-prefixen nedan.
-Lokalt slutförandekvitto ligger i
-`artifact-preservation/t4-single-reply/plans/3001c02f-ee64-4b7a-9681-aad822af40a3/`,
-SHA-256 `001c0dc636111c9af1342691f854b90b6d3b9488f99b6929fefa91f14fca2a72`.
-Varken T3 eller T4 registrerar nya Admin-klipp eller ett komplett tvåsvarsresultat.
-Råexporter, cookies och hemligheter ingår inte i Blob-paketen. Originalkvitton finns under respektive
-`production-trial-04/runs/<körning>/`; bevarandet ligger under
-`artifact-preservation/` och den privata Blob-prefixen
-`croupier/media/dealers/dragan/staging/lipsync-review/`.
-
-**Avbrutet inspelningsprov T5:** `9e888383-6b6c-4271-9d44-ca4ceb803e1e`.
-Ett betrott chatklick skickade begäran `d478249e-c778-438b-853c-f18e4219c24e`.
-Inspelningshjälparens cursor hade inte lästs under cirka fyra minuters
-Admin-/deployväntan; `capture_events_truncated` upptäcktes efter klicket.
-Inget komplett medieresultat eller andra svar räknas. Detta är ett fel i
-provstyrningen, inte belägg för ett nytt fel i läppsynken.
-
-Cleanup var verifierad stängd **21:48:22.159 UTC**: profil preparation,
-fyra Render-nycklar återställda och flagga 0, endpoint `js61kp4eoxzjzi`
-och mall `ybymqj9q2j` borta, inga aktiva workers eller öppna reservationer.
-Återställningen `dep-dbajs7eq1p3s73bv5tc0` var LIVE på PR262.
-Journalen behåller 12 avslutade reservationer/14,4 USD; det separat
-beviljade totalutrymmet var 15,6 USD. Inga historikposter nollställdes.
-
-Den privata inspelningsfixen kräver nu en färsk förkontroll före klick och
-dränerar samma cursor utan återställning. 42 offlineprov passerade och
-oberoende granskning fann inga blockerande fel. Ny fångst initieras först
-efter profilaktivering; ofullständig fångst stoppar före ett nytt chattanrop.
-Detta offlinekvitto är inte ett nytt produktionsresultat.
-### Verifierat tvåsvarsprov T6 och slutläge
-
-T6 `728d0e03-1f46-4ab5-936b-01a99e1dbe1e` slutförde två efterföljande
-repliker på `www.scoutgaming.tech`, Dragan-testbordet och PR262:s apprevision.
-Det var **vilotal utan DEAL, insats eller saldoändring**. Båda svaren har
-`mediaCompleted=true`, `captureComplete=true` och naturligt browser-slut,
-bundna till exakt text, ljud, källbank, källmängd och den publicerade releasen.
-Detta ersätter inte rörelsefilmens separata visuella godkännande.
-
-| Replik | Samma NVIDIA A40-worker | Mottagna rutor / release-callbacks | Providerkö / execution | Klick→slut, monotont |
+| Replik | Samma A40-worker `nc0qem1vw69ad2` | Mottagna rutor / release-callbacks | Providerkö / execution | Klick→slut, monotont |
 | --- | --- | --- | --- | --- |
-| ”Ulf Lundell är bra.” | Kall modell, cachemiss | 57/57 / 44 | 64,805 s / 85,954 s | 164,088 s |
-| ”Jakob är kung.” | Varm modell, cacheträff | 51/51 / 38 | 0,147 s / 25,773 s | 37,176 s |
+| ”Ulf Lundell är bra.” | Cachemiss | 57/57 / 44 | 64,805 s / 85,954 s | 164,088 s |
+| ”Jakob är kung.” | Cacheträff | 51/51 / 38 | 0,147 s / 25,773 s | 37,176 s |
 
-Båda körde worker `nc0qem1vw69ad2`. Motorförberedelsen mättes till
-52,761 respektive 2,180 s; färsk uppvärmning till 42,0/41,3 fps och faktisk
-rendering till 38,2/34,8 fps. Replikerna har olika text och ljud: detta är
-ett återanvändningsbevis, ingen jämförande hastighetsgaranti eller p95-mätning.
-Alla ansiktsrutor mottogs; release-callbacks och glesa skärmbilder bevisar
-inte att varje ruta visades eller att den nya filen visuellt godkänts.
+Motorförberedelsen tog 52,761 respektive 2,180 s. Olika repliker och enstaka
+prov ger ingen p95-/hastighetsgaranti. Mottagna rutor, callbacks och glesa
+JPEG-bilder bevisar inte att varje ruta visades eller ny visuell acceptans.
+Mottagen PCM är inte inspelat systemljud. Det isolerade RTX4090-provet
+verifierade även avbrott och ny motor efter avbrott; kvitton finns i paket 2.
 
-Det samlade kvittot är `production-trial-04/runs/728d0e03-1f46-4ab5-936b-01a99e1dbe1e/two-reply-result.json`,
-SHA-256 `302451f9a5f17d17a6d1239861f858c0956c1394b2287def252bf483987ba07a`.
-Ulf-PCM är 78 020 byte, SHA
-`629a22012d1e6bdbda50623aa66a4898d60e9e7bc5510ad6c53c136e88f8bb24`;
-Jakob-PCM är 66 874 byte, SHA
-`2a7957ee4655e5e991840b6fb50b7fd5fd9acf9bb69e8ed20bffd79badc23067`.
-Ljudet är mottagen PCM, inte inspelat systemljud.
+Cleanup stängdes **21:59:46.560 UTC**, sju godkända steg utan fel: profil
+preparation, fyra egna Render-nycklar återställda med flagga 0, endpoint/mall
+borta och inga aktiva workers, öppna reservationer eller levande leases.
+Render `dep-dbak20ijnfac73816bsg` var LIVE på PR262. Journalen behåller
+**14 avslutade reservationer/16,8 USD**, varav 12 USD för dagen; separat
+beviljat totalutrymme är 16,8 USD. Ingen historik nollställdes.
+[T6:s resultat](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/production-trial-04/runs/728d0e03-1f46-4ab5-936b-01a99e1dbe1e/two-reply-result.json)
+och [cleanup](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/production-trial-04/runs/728d0e03-1f46-4ab5-936b-01a99e1dbe1e/cleanup-receipt.json)
+är de lokala kvittona; deras fullständiga hashar finns i detaljkvittot.
 
-Cleanup var stängd **21:59:46.560 UTC**, sju steg godkända och inga fel:
-profil preparation, fyra egna Render-nycklar återställda med talflagga 0,
-endpoint `rz295h5xl2vuhv` och mall `z39jmv6pfy` borta, inga aktiva workers,
-öppna reservationer eller levande leases. Återställningsdeploy
-`dep-dbak20ijnfac73816bsg` var LIVE på samma `4cee9bc2`-revision.
-Cleanup-kvittots SHA är
-`097ff09ccbc1efcdc30c829531dcc94b7a9fb83483fed0c8a8535d7ea4696104`.
-Journalen behåller **14 avslutade reservationer/16,8 USD**, dagens reserverat
-12 USD och separat beviljat totalt utrymme 16,8 USD. Ingen historik nollställdes.
+### Bevarande och lagring
 
-T6:s femte privata Blob-manifest slutfördes **22:04:20.559 UTC**: 94 unika
-objekt, 28 001 366 byte, fullåterlästa mot storlek och SHA. Paketet innehåller
-två PCM-filer, tio H.264-paket, två sanerade kvitton, 79 unika JPEG-bilder
-med 82 tidsreferenser i samma bildserie samt manifestet. 92 objekt laddades
-upp och två befintliga objekt fullåterlästes; inga bytes skrevs över.
-Manifestet är 3 275 byte, SHA
-`ca28ce8ca81ec4c3f655ab7638be47ca8fc044c57192555edec86220f2929ba2`,
-under `ca28ce8c-a81e-44c3-a655-ab7638be47ca/` i den privata Blob-prefixen ovan.
-Slutkvittot i `artifact-preservation/production-trial04/plans/728d0e03-1f46-4ab5-936b-01a99e1dbe1e/`
-har SHA `db7a78528b2a5fcd465de6a73e0a038cb04998786719e51e9f829d8b977d3073`.
-Inga Neon-/Admin-klipp skapades. Paketet är ogranskat visuellt; skärmbilderna
-är glesa observationer, inte en komplett synkroniserad granskningsvideo.
+Fem privata Blob-manifest är fullåterlästa. Länkarna öppnar deras verifierade
+lokala kopior; objekten ligger under `croupier/media/dealers/dragan/staging/lipsync-review/`.
 
-### Kostnadsavstämning och fortsatt varm drift
+| Manifest | Bevarat underlag |
+| --- | --- |
+| [1. Källor och rörelseprov](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/artifact-preservation/preservation-manifest.json) | Referens-ZIP, käll-/bankreferenser, ljud och granskningsmedia; derivat skiljs från original. |
+| [2. Varm cache och avbrott](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/artifact-preservation/warm-cache/plans/warm-cache-1526eeb3-a526-48a7-8e43-d3665ca09d59/manifest.json) | Kompletta A/B/D-resultat, uttryckligen partiellt C-resultat och sanerade kvitton. |
+| [3. Historiskt T3-svar](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/artifact-preservation/historical-single-reply/plans/32c15e27-a1e9-472f-a290-9ee11bc04084/manifest.json) | Kompletta medier men ofullständig capture; inget tvåsvarsbevis. |
+| [4. T4-svar](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/artifact-preservation/t4-single-reply/plans/3001c02f-ee64-4b7a-9681-aad822af40a3/manifest.json) | Ett komplett fångat svar och 62 passiva JPEG-prov. |
+| [5. T6:s två svar](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/artifact-preservation/production-trial04/plans/728d0e03-1f46-4ab5-936b-01a99e1dbe1e/manifest.json) | 94 unika objekt / 28 001 366 byte: två PCM, tio H.264, två sanerade kvitton, 79 unika JPEG med 82 tidsreferenser och manifest. Fullåterläst 22:04:20.559 UTC. |
 
-Avläsningen **18 oktober 22:00:19.322 UTC** gav **0,8236155684862752 USD** i
-rapporterad RunPod-kostnad för lästa 20 endpoints och kontots pods, tidsfönster
-16 oktober 00:00 till 18 oktober 22:00:18.918 UTC. Det är inte T6:s slutkostnad:
-T3–T6:s endpointlistor var tomma och `finalCostConfirmed=false`.
-**35,003335 USD** i providerreserver behölls; inget frigavs automatiskt.
-ElevenLabs/TTS och nätverksvolymer ingår inte i denna fakturaavstämning.
-Kvitto `production-trial-04/provider-budget-1792360819748.json`, SHA
-`15361bfcd5e75934572e92ac24cfc2ab06dfb6ec290b5b2ee40f4902fad0b915`,
-länkar till det lästa fakturaunderlaget. Reservationer är inte fakturor;
-tomma eller fördröjda billing-rader bevisar ingen slutlig nollkostnad.
+Emils `lappsynk-export-fe1b55e.zip` är bevarad oförändrad, 145 846 625 byte,
+SHA `949443c1084ab3f515792fe66c5e2d381e985f9bdc743e792e5fbca36a9240a3`.
+Bevarandet importerade inga API-, SQL- eller env-mallar. Kevins 50
+registrerade källklipp behåller originalbytes; det verifierar inte hans privata miljö.
+Inga källor flyttas automatiskt. För registrerat spelmaterial är Neon registret
+och Blob mediekällan. Bevarandet skapade inga Neon-/Admin-klipp; ZIP, bank
+eller råa ansiktspaket hör inte hemma i `/admin/clips` som spelbara klipp.
+Inspelade repliker följer `recorded-speech`/`preserve-recorded-audio` med
+originalnamn och exakt ljud-/videobindning. Moving-resultat sparas ännu inte
+automatiskt i svarsbiblioteket. Manifesten är ingen ny visuell acceptans.
+
+### Kostnad, varm drift och kvarvarande ansvar
+
+Avläsningen **22:00:19.322 UTC** visade **0,8236155684862752 USD** rapporterad
+RunPod-kostnad för lästa 20 endpoints och kontots pods under 16 oktober
+00:00–18 oktober 22:00:18.918 UTC. T3–T6:s slutdebitering är obekräftad;
+tomma billing-listor betyder inte nollkostnad. **35,003335 USD** i
+providerreserver behölls, inget frigavs automatiskt. TTS/ElevenLabs och
+nätverksvolymer ingår inte. [Kostnadskvittot](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/production-trial-04/provider-budget-1792360819748.json)
+länkar till fakturaunderlaget. Reservationer är inte fakturor. Jakobs tidigare
+mänskliga provtak är återkallat; tekniska journal-/kostnadskontroller består.
 
 **24 timmars varm drift är inte aktiverad eller verifierad.** Nuvarande
-antagning kräver `workersMin=0`, `workersMax=1` och högst 60 s tomgång;
-`workersMin=1` avvisas. Provets guard var 720 s. Modellcachen har ingen egen
-TTL eller jobbgräns, men finns bara medan processen lever och avvecklas vid
-identitetsbyte, fel eller avbrott. Nästa steg för längre varm drift bör vara
-ett separat, uttryckligt avgränsat varmtest med kostnadsmätning och bevarade
-antagnings-, avbrotts- och städskydd. T6:s cacheträff lovar inte dygnsdrift.
-Riktig mikrofon-/bild-E2E från PR251 och automatisk beständig lagring av
-moving-resultat är separata återstående produktspår.
+antagning kräver min 0/max 1 worker och högst 60 s tomgång; min 1 avvisas.
+T6 hade en 720 s provguard. Cachen saknar egen TTL/jobbegränsning men försvinner
+med processen eller vid identitetsbyte, fel och avbrott. Ett längre varmtest
+behöver eget avgränsat drift-/kostnadsfönster med antagnings-, avbrotts- och städskydd.
 
-### Arbetskopior och underlag
+Kvar: kortare svarstid, tal under produktionsutdelning, automatisk beständig lagring av moving-resultat, riktig mikrofon-/bild-E2E
+och slutlig kostnadsavstämning. 56 äldre generiska `submission_uncertain` är
+separat olöst observationsskuld; de har inte rensats eller frikänts.
 
-Privat provbas är
-`C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900`.
-`motion-readiness/warm-worker-publication.json`, warm-cache-provets
-`gpu-result/cycle-receipt.json`, `player-replay/B-warm-jakob/replay-receipt.json`,
-`artifact-preservation/` och `production-trial-04/` innehåller kvittona.
-Det äldre godkännandet ligger i `motion-readiness/visual-acceptance.json`.
+### Arbetskopior och ägarskap
 
-Primärcheckouten `C:/Users/jakem/Projects/croupier` var 21:41:47 UTC på
-annan arbetsbranch, `codex/scout-visual-product-model`, revision
-`7a6fc8a70b7c3b810829c2736ad98bd26fcf9bb1`, med samma sex ändrade eller
-oregistrerade poster nedan. Lipsync arbetar separat i
-`lipsync3-server-diagnostics/croupier` och `lipsync3-bank-http/croupier`
-under `.codex/worktrees`. W1:s Studio-beroenden länkar till W2; ingen av
-arbetskopiorna får raderas medan denna junction används. Huvudagentens
-avslutande lokala inventering identifierade inga egna provprocesser knutna till provbasen,
-W1 eller W2 och inga lyssnare på 8765/8766; Admins talcheckbox var av.
-Arbetskopiorna och deras beroenden lämnas kvar. Ändrade
-`.codex/config.toml`, `.cursorignore` och oregistrerade
-`.agents/skills/source-command-ping/`, `.cursor/settings.json`, `a.zip`,
-`web/` tillhör inte Lipsync-leveransen och är orörda. Grönt i editorn kan
-betyda nytillagt/oregistrerat i Git, inte osparat. `a.zip` är agentmaterial,
-inte Emils export. Ägarskap och integrations-/klonarbetet måste samordnas
-med HUVUDAGENT5/merge-agenten; ingen mass-staging eller städning är gjord.
-Neon är produktregistret och Blob mediekällan, inte dessa privata arbetsfiler.
-Tidigare avvecklade Impactwin `game-engine`/`preview-v2` ska inte återställas;
-produktionens `croupier-v2`/main består. Vercel Preview delar fortfarande
-produktionsbackend och får inte antas vara isolerat.
+Primärcheckouten var 21:41:47 UTC på `codex/scout-visual-product-model`,
+`7a6fc8a70b7c3b810829c2736ad98bd26fcf9bb1`. Dess sex dirty/oregistrerade poster
+`.codex/config.toml`, `.cursorignore`, `.agents/skills/source-command-ping/`,
+`.cursor/settings.json`, `a.zip` och `web/` är andra ägares och orörda.
+`a.zip` är agentmaterial, inte Emils export. Ingen mass-staging eller städning.
+Lipsyncs två arbetskopior är `C:/Users/jakem/.codex/worktrees/lipsync3-server-diagnostics/croupier`
+och `C:/Users/jakem/.codex/worktrees/lipsync3-bank-http/croupier`. Studio-beroenden
+länkar mellan dem; lämna dem kvar tills junctionens konsumenter är avvecklade.
+Huvudagentens slutkontroll identifierade inga egna provprocesser i dessa träd
+eller provbasen, inga lyssnare på 8765/8766, och Admins talcheckbox var av.
+Impactwins avvecklade `game-engine`/`preview-v2` ska inte återställas;
+produktionens `croupier-v2`/main består. Vercel Preview delar produktionsbackend
+och får inte antas vara isolerat. Övrigt ägarskap samordnas med HUVUDAGENT5.
 
 ## Historiskt Lipsync 2-kvitto
 

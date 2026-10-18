@@ -21,10 +21,13 @@ och de publika JSON-originalens exakta text, under miljö och arbetsyta.
 Katalogrevisionen är SHA-256 över det validerade, kanoniska innehållet.
 `speech_reply_records` lagrar svarsbibliotekets metadata per miljö, arbetsyta,
 dealer och UUID; kategoriändringar kontrollerar sparad revision.
-Privat Blob lagrar mediebytes. Hash, storlek, åtkomst och exakta identiteter
+Privat Blob lagrar registrerade spelmediers bytes. Hash, storlek, åtkomst och exakta identiteter
 kontrolleras fortfarande; saknad eller felaktig Neon-katalog ger fel utan
 lokal filreserv eller tyst tomt register. Astrid använder samma lagringsväg
 som de övriga registrerade dealerna.
+
+Dekorativa lobbyfilmer under `apps/studio/client/lobby/public/videos/` är
+UI-resurser i Git och ingår inte i spelregistret.
 
 `media/layout.json`, `media/blob-index.json`, `media/catalog/presentation.json`
 och `media/catalog/legacy.json` är endast källor för uttryckligt authoring- och

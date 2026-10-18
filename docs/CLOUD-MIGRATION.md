@@ -7,7 +7,7 @@ Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska form
 
 ## Teknisk register-/runtimeflytt: avslutad i produktion
 
-Neon som produktregister och Blob som mediekälla är implementerat, mergat
+Neon som produktregister och Blob som källa för registrerade spelmedia är implementerat, mergat
 och driftsatt. Migrationsbaseline från 16 oktober bevaras som historiskt
 kvitto nedan. Den beslutade strukturflytten är också slutverifierad,
 inklusive den reproducerade lokala klippmappningsregressionen i PR237.
