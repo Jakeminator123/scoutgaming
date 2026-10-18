@@ -1,6 +1,6 @@
 # Aktuell handoff — Scoutgaming
 
-## Produkttext och visuellt UX-förslag — 18 oktober 2026
+## UX/UI: arbetslogg och kommande körordning — 18 oktober 2026
 
 [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är förkortad och uppdaterad
 enligt Jakobs nya riktning. Dubblerad målmodell och menyföreskrifter är borttagna
@@ -9,7 +9,8 @@ från förslaget; dess två arbetssteg länkar nu direkt till Admin. Det teknisk
 klippkontraktets beskrivning utger sig inte längre för att styra produktbegreppen;
 dess maskinläsbara regler och ID:n är oförändrade.
 
-Ett interaktivt förslag visas i denna Codex-chat med schematiska exempeldata.
+Dokumentändringarna är pushade i [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260),
+öppen som utkast. Ett interaktivt förslag visas i UI/UX-chatten med schematiska exempeldata.
 Ingen ny sceneditor, behörighetspolicy, datamigrering eller speländring har
 implementerats. Källinventeringen och livebilderna finns kvar privat i
 `random/admin-ux-20261018/`; uppgifterna där är historiska granskningsbelägg.
@@ -21,10 +22,67 @@ saknas i checkouten, före något testfall. Leveransens övriga kontroller anges
 i PR-kvittot. GitGuardian incident-/platstäckning kunde inte läsas;
 remote mains GitHub Actions var gröna men GitGuardian-suiten väntande.
 
-Nästa produktsteg är att bygga den valda editorn i Admin och ansluta dess
-rumsvisa sparning, därefter återanvända den i Partner och förenkla spelarvalen.
-Kontrollera äldre länkar mot verkligt bolag/rum/ID innan de ersätts; den här
-leveransen bekräftar inget konkret fel i Kevins register eller några skrivcallbacks.
+### Fortsättning: klippkarta och två arbetslägen
+
+Jakob vill behålla klippkartan och harmonisera sidorna med små förändringar.
+UI/UX och HUVUDAGENT5 samordnar detta: UI/UX äger produkttext, navigation,
+klippkartans förslag och denna arbetslogg. HUVUDAGENT5 äger teknisk kontroll,
+namnkopplingar och lagringsbeskrivning i [BLOB-NEON](storage/BLOB-NEON.md).
+Agenternas arbete ger inte tillstånd att ändra varandras filer eller media.
+
+- **Skapande:** dealer, spel, klippkarta, scen, tal och publicering.
+  **Verksamhet:** bolag, kunder/team, drift och ekonomi. Förslaget använder
+  samma typsnitt och komponenter: grön accent i Skapande, blågrå i Verksamhet,
+  alltid med synligt lägesnamn.
+  Roller avgör åtkomst; arbetsläget organiserar bara tillgängliga uppgifter.
+- **Klippkartan:** behåll kort, panorering/zoom, spelval och klippförhandsvisning.
+  Fördjupning öppnas bredvid kartan. Scen, kort och marker får en samlad panel;
+  den visar vilket bord och vilken mall ändringen gäller, samt berörda rum.
+  Klippbiblioteket fungerar också utan valt bolag eller rum.
+- **Överenskommen biblioteksvy:** Blackjack → dealer → funktion → variant/tagning.
+  Plats, pose, språk och urvalspolicy är separata dimensioner. Bakgrunder och
+  bord är egna lager. Kevins originalnamn visas i klippdetaljen och bevaras med
+  källsökväg/commit; begripliga etiketter läggs ovanpå befintliga ID/hashar.
+  Exakta alias och källspecifika posesuffix hör till BLOB-NEON.
+- **Fysiska mappar:** behåll `apps/studio/` för editorerna,
+  `packages/presentation/{contracts,runtime}/` för delade kontrakt/projektioner
+  och `services/game/` för spelmotorn. Blob har separata dealer-, bakgrunds-
+  och bordsobjekt enligt lagringsguiden; Neon håller metadata. Biblioteksvyn
+  och exporten kan följa människans träd utan fysisk medieflytt.
+- **Placering:** färdiglagda kort följer sparad bordsprofil; filmade kortspår
+  följer dealerbildens projektion. Insatscirklar har redan **Följ korten** och
+  **Placera cirklar själv**, separat för mobil/desktop. När Följ korten är valt
+  ska cirklarnas koordinater vara låsta; kortpunkter ändras i särskilt placeringsläge.
+- **Nytt förslag:** **Flytta scenen tillsammans** kopplar dealer och bord vid
+  flytt/zoom. Det är inte en redan verifierad Blackjack-funktion. Att låta
+  slutpositioner följa enbart dealern kan lossa dem från bordet. Handkontakt,
+  beskärning och överlämning till slutposition måste kontrolleras separat.
+  Separata positioner för varje sidospelsmarkör är ännu inte bekräftat stöd.
+
+HUVUDAGENT5:s granskning i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`
+redovisar 99 passerade tester och formatmetadata för 1 485 unika filer.
+Det är tillskrivet kod-/filunderlag, inte ett nytt prov i ett publicerat rum.
+UI/UX har själv läst [placeringseditorn](../apps/studio/components/blackjack-table-geometry-editor.tsx)
+och [projektionen](../packages/presentation/runtime/game-overlay-layout.mjs)
+för ovanstående placeringsgränser. HUVUDAGENT5 bekräftade ansvarsfördelningen,
+hierarkin och dessa gränser direkt i samordningen den 18 oktober.
+
+### Föreslagen körordning
+
+1. Använd den överenskomna hierarkin och HUVUDAGENT5:s namn-/importreferens;
+   källspecifika alias får inte bli generella regler. Gör den exakta
+   etikett-/fackmappningen innan implementation. Den delen återstår.
+2. Visa ett mer komplett klippkarta-förslag med verkliga arbetsmoment och
+   panel för scen, kort och marker. Den första lagerdemon anger bara principen.
+3. För varje befintlig sida: fastställ uppgift, sparmål, rättighet och nästa steg;
+   samla överlappande vyer och rätta länkar med bolag/rum/dealer bevarade.
+4. Implementera avgränsat i Admin med befintliga kontrakt och verifiera sparning,
+   revisionskonflikter och publicering; återanvänd därefter editorn i Partner
+   och förenkla spelarens tillåtna val. Detta är kommande arbete.
+
+Denna logg samlar status och körordning. Produktregler finns bara i TERMINOLOGI;
+teknik och namnkopplingar länkas till sina befintliga referenser. Inga konstaterade
+registerfel eller fungerande skrivcallbacks följer av den här UX-granskningen.
 
 <a id="dragan-talstatus"></a>
 

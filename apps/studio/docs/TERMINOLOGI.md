@@ -30,6 +30,8 @@ och påverkar bara den spelarens presentation, aldrig kort, spelregler eller sal
 Rumsändringar sparas som utkast och granskas före publicering. Delade **mallar**
 redigeras separat med berörda rum synliga. Meny, rubrik och länk använder samma namn.
 Tekniska ID:n finns under Detaljer; namnbyte är ingen datamigrering.
-Föreslagen adminmeny: Översikt, Bolag & rum, Bibliotek, Drift & ekonomi, System.
-Öppna Studio från rummet; klipp och tal finns under respektive dealer i Bibliotek.
+Admin får arbetslägena **Skapande** (dealers, klipp, scener) och **Verksamhet**
+(bolag, kunder, drift, ekonomi), med gemensamt designspråk och tydliga lägesnamn.
+Behåll klippkartan med spelval. Öppna rumseditorn från rummet; klipp och tal
+hör till dealerns bibliotek. Arbetsläge ändrar inte behörighet eller lagringsägare.
 [Användarguiden](README.md) beskriver arbetssteg, ingen separat produktmodell.
