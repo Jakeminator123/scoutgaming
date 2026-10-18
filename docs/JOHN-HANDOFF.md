@@ -396,6 +396,21 @@ andra agenters worktrees och claims är inte del av rutinmässig städning.
 
 ## Övrigt kvarvarande produktarbete
 
+**HUVUDAGENT4, 18 oktober:** behåll produktionens `croupier_game` på Neon-main
+som källa för Jakobs aktuella bolag, rum och dealers. SQL/Browser visar Dragan test
+och Nordic bet; preview-v2 har äldre demodata. Andra Blob-lagret tillhör Impactwin.
+[Miljövariabler](ENVIRONMENT-VARIABLES.md#aktuellt-miljöval-för-admin--verifierat-18-oktober-2026)
+är den samlade avläsningen. Preview är ännu ingen verifierad skrivtestmiljö.
+Bolags-/rumsvyn lästes utan skrivningar; detta godkänner inte hela Admins UX.
+Lipsync 3 äger pågående talfelsökning och frågan om videogränsen 256/32 MiB.
+
+Moving-workerns befintliga CPU/image-kontroll återanvänds av obligatorisk CI
+vid relevanta PR-ändringar och på main/manuell körning. Ingen dubbel fristående
+PR-körning, GPU-start eller imagepublicering läggs till. Lokalt passerar CI-urvalets
+nio tester, inklusive faktisk merge-diff och fel/saknade/avbrutna jobbutfall.
+GitHub-CI och eventuell merge verifieras på PR:n; detta är inget driftkvitto.
+
+
 <a id="2-öppna-kontroller-och-kända-fel"></a>
 
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar)

@@ -6,7 +6,37 @@ PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
-## Läsande jämförelse, 17 oktober 2026
+## Aktuellt miljöval för Admin — verifierat 18 oktober 2026
+
+Behåll Scoutgamings aktuella produkt på Neon-projektet
+`croupier-production` (`wandering-hill-60561912`), branch `main`
+(`br-flat-fog-b161a6r8`), databas `croupier_game`, scope `production/croupier`.
+Läsande SQL visar aktiva **Dragan test** och **Nordic bet**; Demo och Swedish Games
+är avstängda. Publicerad Admin visar samma aktiva bolag och Dragans rum, paketversion 4.
+Det är den aktuella produkten, inte ett namnval mellan utvecklarnas miljöer.
+
+| Resurs | Färsk kontroll och betydelse |
+| --- | --- |
+| Neon `preview-v2` / `br-rapid-wave-b1b6978c` | Separat gren från 16 oktober. Samma databasnamn men äldre data: endast Demo och Swedish Games aktiva, Dragan/Nordic saknas. Kopian bär fortfarande `production/croupier`; branchens namn gör den inte till en färdig isolerad QA-miljö. Inget verifierat Kevin-ägarskap. |
+| Vercel Production, projekt `scoutgaming` | Backend `croupier-v2.onrender.com`, native Admin på, uttrycklig GAME-databasanslutning och scope samt Blob-token finns. Sensitive värden är inte utlämnade av connectorn och deras fullständiga likhet är inte nyverifierad. |
+| Vercel Preview, samma projekt | Backend och publika adresser pekar på produktion. Preview saknar ingresshemlighet, native-Admin-flaggor, GAME-databasanslutning och Blob-token. En äldre READY-deployment bevisar varken aktuell kod eller fungerande Admin. Ingen verifierad skrivtestmiljö. |
+| Blob `croupier-media-private` / `store_AqwvebTbBHarOjvG` | Endast kopplat till Scoutgaming, metadata för Production/Preview. Kopplingen innehåller `CROUPIER_MEDIA_STORE_ID`; den skapar inte i sig en fungerande Preview-token. |
+| Blob `impactwin-media-preview` / `store_K1uXiAFLGqRdspnB` | Endast kopplat till det separata projektet Impactwin (Preview/Development). Ingen belagd krock med Scoutgaming. |
+| Render | `croupier-v2` är produktionsbackend. Äldre `croupier-vercel-preview-qa` står i maintenance. Separata `game-engine` finns också; dess existens är inte en koppling från Scoutgamings Preview. |
+
+Koden i `apps/studio/lib/studio-native-runtime.mjs` använder den uttryckliga
+`CROUPIER_GAME_DATABASE_URL`. Marketplace-variablerna `CROUPIER_NEON_*`
+väljer inte automatiskt produktregistret. Två grenar eller två Blob-lager är
+därför inte i sig en konflikt. Den konkreta bristen är Preview-konfigurationen;
+byt inte produktionskälla eller kopiera produktionshemligheter dit som snabbfix.
+
+Admin-layout kan utvecklas med isolerade fixtures. Verifiera den ändrade
+funktionen där och läs aktuell produktion för produktkontext. Molnbaserade
+skrivtester kräver först ett sammanhängande QA-val för databas, scope, media,
+backend, origin och autentisering enligt befintlig QA-rutin. Ingen resurs,
+anslutning, hemlighet eller produktdata ändrades i denna inventering.
+
+## Historisk läsande jämförelse, 17 oktober 2026
 
 **Uppföljning 18:33 UTC:** faktisk POST `/chat` från www verifierades i
 Renders requestlogg på `croupier-v2`. Vercel Production har
