@@ -13,7 +13,7 @@ const scope={environment:'test',workspaceId:'runtime-import'};
 const prepared=await prepareRuntimeMediaImport({scope,sourceRoot:root});
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const target={database:'croupier_isolated_test',role:'studio_qa',address:'127.0.0.1',port:55432};
-const schema={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014']
+const schema={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015']
   .map(version=>({version,checksum:hash(version),structureChecksum:hash('structure-'+version)}))};
 const schemaCheck=async()=>structuredClone(schema);
 const key=value=>JSON.stringify([value.environment,value.workspaceId]);
@@ -162,6 +162,7 @@ test('runtime import rejects required gaps unknown versions and invalid proofs',
     value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='014');},
+    value=>{value.applied=value.applied.filter(row=>row.version!=='015');},
     value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.at(-1).checksum='invalid';},
@@ -174,20 +175,18 @@ test('runtime import rejects required gaps unknown versions and invalid proofs',
   }
 });
 
-test('015 bridge permits import before migration and verifies installed optional ledger rows on every write',async()=>{
-  for(const installed of [false,true]) {
-    const state=structuredClone(schema),pool=memoryPool();
-    if(installed)state.applied.push({version:'015',checksum:hash('015'),structureChecksum:hash('structure-015')});
-    else state.optionalPending=[{version:'015'}];
-    pool.ledger=state.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum}));
-    const schemaCheck=async()=>structuredClone(state);
-    const review=await planRuntimeMediaImport({pool,prepared,schemaCheck});
-    assert.equal((await apply(pool,review,{schemaCheck})).changed,true);
-    const next=await planRuntimeMediaImport({pool,prepared,schemaCheck}),before=pool.snapshot();
-    if(installed)pool.ledger.at(-1).structure_checksum='f'.repeat(64);
-    else pool.ledger.push({version:'015',checksum:hash('015'),structure_checksum:hash('structure-015')});
-    await assert.rejects(apply(pool,next,{schemaCheck}),{code:'studio_runtime_import_schema_unverified'});
-    assert.deepEqual(pool.snapshot(),before,'changed ledger cannot silently alter an approved import plan');
+test('015 is required before runtime import and its installed ledger proof is rechecked on every write',async()=>{
+  const missing=structuredClone(schema),blocked=memoryPool();
+  missing.applied=missing.applied.filter(row=>row.version!=='015');missing.optionalPending=[{version:'015'}];
+  await assert.rejects(planRuntimeMediaImport({pool:blocked,prepared,schemaCheck:async()=>missing}),{code:'studio_runtime_import_schema_unverified'});
+  assert.equal(blocked.calls.length,0,'missing015 blocks before a write connection is opened');
+  for(const mutate of [pool=>{pool.ledger.pop();},pool=>{pool.ledger.at(-1).checksum='f'.repeat(64);},
+    pool=>{pool.ledger.at(-1).structure_checksum='f'.repeat(64);}]) {
+    const pool=memoryPool(),review=await plan(pool);
+    assert.equal((await apply(pool,review)).changed,true);
+    const next=await plan(pool),before=pool.snapshot();mutate(pool);
+    await assert.rejects(apply(pool,next),{code:'studio_runtime_import_schema_unverified'});
+    assert.deepEqual(pool.snapshot(),before,'changed015 ledger cannot alter an approved import plan');
   }
 });
 

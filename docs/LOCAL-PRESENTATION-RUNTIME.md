@@ -21,10 +21,13 @@ och de publika JSON-originalens exakta text, under miljö och arbetsyta.
 Katalogrevisionen är SHA-256 över det validerade, kanoniska innehållet.
 `speech_reply_records` lagrar svarsbibliotekets metadata per miljö, arbetsyta,
 dealer och UUID; kategoriändringar kontrollerar sparad revision.
-Privat Blob lagrar mediebytes. Hash, storlek, åtkomst och exakta identiteter
+Privat Blob lagrar registrerade spelmediers bytes. Hash, storlek, åtkomst och exakta identiteter
 kontrolleras fortfarande; saknad eller felaktig Neon-katalog ger fel utan
 lokal filreserv eller tyst tomt register. Astrid använder samma lagringsväg
 som de övriga registrerade dealerna.
+
+Dekorativa lobbyfilmer under `apps/studio/client/lobby/public/videos/` är
+UI-resurser i Git och ingår inte i spelregistret.
 
 `media/layout.json`, `media/blob-index.json`, `media/catalog/presentation.json`
 och `media/catalog/legacy.json` är endast källor för uttryckligt authoring- och
@@ -77,7 +80,7 @@ Det finns flera olika former av varm/kall lagring och beräkning:
 | Blob/Neon | Beständiga källbytes och register; ingen lokal runtime-reserv. |
 | RunPod-container/image | Skalning till noll kan ge kö och imagehämtning före jobbstart. En EXITED-worker eller cachepost är inte en aktiv GPU. |
 | Bankarkiv | Hashad temporär `/tmp/croupier-moving-banks`; träffar återverifieras. Försvinner när containerns lagring försvinner. |
-| Bankextraktion/modell | Cacheleveransen verifierar bank och modeller för varje jobb men återanvänder en exklusiv motor efter fullständig normal avslutning i samma SDK-worker. Färsk 30-fps-mätning görs även vid träff. Äldre publicerad image startar motor för varje jobb; se handoffens exakta release-/deploystatus. |
+| Bankextraktion/modell | Cacheleveransen verifierar bank och modeller för varje jobb men återanvänder en exklusiv motor efter fullständig normal avslutning i samma SDK-worker. Färsk 30-fps-mätning görs även vid träff. Den publicerade cacheimagen har verifierats med kallt/varmt jobb, avbrott och omladdning på RTX4090; exakt release, appdrift och produktionsprov redovisas separat i handoffen. |
 | Spelarens buffert | Hela komprimerade repliken och verifierat `done` krävs före ljudstart; högst 4 MiB komprimerat och 48 avkodade ansiktsrutor. Detta är uppspelningsskydd, inte modellcache. |
 
 Serverns antagning av en varm worker är separat från modellcachen. Den nya
@@ -100,6 +103,35 @@ förlänger inte betalningsfönstret. En färdig uppgift betyder inte att GPU:n
 redan är avstängd. Osäker submission hålls reserverad utan automatisk omkörning.
 Kod/testbevis och aktuell driftsättning ska avläsas separat i handoffen.
 
+24 timmars varm drift är inte aktiverad eller verifierad. Både provider- och
+kapacitetskontrollen avvisar `workersMin=1`; aktuellt prov använde en 720 s
+guard. Modellcachen har ingen egen TTL eller jobbgräns men kan försvinna med
+containern, och identitetsbyte, fel eller avbrott avvecklar den. Ett längre
+varmtest behöver ett separat, avgränsat drift-/kostnadsfönster med bevarade
+antagnings-, avbrotts- och städskydd; det ingår inte i tvåreplikskvittot.
+
+### Budgetens tre nivåer
+
+`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 40 USD och runtime-dygn
+20 USD. Det separata initiala beloppet 13,2 USD används bara för ett tomt
+Dragan-budget-ID. Därefter gäller det lägsta av runtimekapaciteten och
+journalens varaktiga beviljade tak. En explicit finansierad amendment måste
+matcha tidigare tak, reserverat belopp, antal reservationer och färsk
+provideravstämning för att höja det. Varken migration 015, ett nytt kodtak
+eller ändrat initialvärde höjer ett befintligt beslut. Reservationen är
+fortsatt 1,2 USD per försök och historiken bevaras även efter avslut.
+015 är verifierat applicerad i produktion 18 oktober 21:24:12 UTC: enbart
+tre CHECK-gränser ändrades, inte befintligt beviljat belopp. Denna leverans
+gör 015 obligatorisk i readiness, Studio och båda importörerna. Handoffens
+daterade appdriftkvitto avser PR262 före denna slutleverans; den beskriver
+även det exakta migrationskvittot och verifieringen av denna ändring.
+
+Faktisk leverantörsdebitering, kvarhållna providerreserver och SQL-journalens
+reservationer är skilda redovisningar. Summera inte journalen som faktura.
+Tomma eller fördröjda billing-rader bevisar ingen slutlig nollkostnad.
+Aktuella belopp och verifierade prov finns i handoffen; beloppen ovan
+beskriver tekniska kontroller, inte ett nytt mänskligt kostnadstak.
+
 Workern kör ett uttalande åt gången, 24 fps, 220 ms inledande och 530 ms
 avslutande ljudutfyllnad, med 12-rutorspaket och kvittens. Både worker och
 spelserver kräver minst 30 uppmätta uppvärmningsrutor/s. Uppvärmningen använder
@@ -114,11 +146,23 @@ Emils export är en versionsbunden referensleverans, inte produktens register.
 Den egna workern har pinnade modell-/kod-/pakethashar, verifierad bank, isolerad
 process, autentiserad jobbkoppling, avbrott och tester. Tekniken ska bedömas på
 dessa kontroller och uppmätt kvalitet, inte på att ursprunget är en ZIP eller
-Python. Kvarvarande modellomladdning per jobb och avsaknad av varaktig lagring
-för moving-resultat är konkreta produktluckor. En framtida varm motor måste
-ha exklusiv lease bunden till release, dealer, källmängd, bank och kvitto;
-bankbyte, fel eller avbrott ska avveckla den. Ingen dold återanvändning av PCM
-eller ansiktsrutor mellan repliker tillåts.
+Python. Den levererade modellcachen har exklusiv lease bunden till release,
+dealer, källmängd, bank och kvitto. Generationsbundet IPC och avslut av alla
+kompositionsfutures förhindrar att föregående jobb arbetar vidare efter
+återlämning. Bankbyte, fel, avbrott eller osäker slutkvittens avvecklar motorn.
+Ingen återanvändning av PCM eller ansiktsrutor mellan repliker tillåts.
+Isolerat prov gav 71,245 s kallt och 6,954 s varmt för olika repliker; det är
+inte en mätning av produktionslatens eller samma texts hastighetsförhållande.
+Automatisk varaktig lagring av moving-resultat är fortsatt en produktlucka.
+
+Prioritering efter optimeringsunderlaget den 18 oktober: behåll samma workerimage
+under jämförbara produktionsprov. Separata Docker-lager för pinnade modellfiler
+kan förbättra bygg- och distributionscache; det är inte samma sak som en redan
+laddad modell i GPU-processen. Gör en sådan ändring som egen förseglad release
+med före/efter-mätning. Mät nätverk och kö innan region, GPU, precision eller
+samtidighet ändras. Önskade p95- och samtalsmål är ännu inga verifierade SLA;
+varken två repliker eller de uppmätta minnestopparna etablerar statistisk
+latensgaranti eller minsta möjliga maskinkonfiguration.
 
 Behåll originalfilmer i befintlig privat Blob och deras identiteter i Neon.
 Git innehåller kod, kontrakt och läsbara kvitton, inte alla genererade filmer.
@@ -127,6 +171,32 @@ sanerade proveniensmanifest hör till staging/granskning och är inte nya
 original eller godkända talrepliker. `/admin/clips` registrerar riktiga MP4/WebM
 med explicit funktion; ZIP, bankarkiv och råa mun-/maskpaket ska inte läggas där.
 Att en film finns i klippbiblioteket aktiverar eller publicerar den inte.
+De 50 befintliga Dragan-källorna behåller sina exakta bytes och använder samma
+runtime. De två första privata, hashbundna Blob-manifesten bevarar referens-ZIP,
+bankrefs, ljud, ansiktspaket och granskningsmedia. Ett tredje bevarar det historiska
+enskilda produktionssvarets medieström (T3). Ett fjärde, fullåterläst manifest
+bevarar T4:s komplett fångade medier och 62 passiva JPEG-prov. Det femte,
+fullåterlästa manifestet bevarar T6:s två kompletta mediesvar, sanerade kvitton
+och 79 unika JPEG-bilder med 82 tidsreferenser. Bevarandet omfattar 94 unika
+objekt och skapade inga Neon-/Admin-klipp.
+Exakta sökvägar och bindningar finns
+i [handoffen](JOHN-HANDOFF.md#dragan-talstatus). Ett samlokaliserat filnamn
+bevisar inte härledning; det krävs SHA-bundet capture-/transkodningskvitto.
+Omkodade jämförelser är inte originalbytes. Visuellt godkännande gäller bara
+den exakta godkända filhashen, aldrig efterföljande cache-/replayresultat.
+T4:s `captureComplete=true` gäller den verifierade medieströmmen; glesa
+skärmbilder bevisar inte varje visad ruta eller läppsynkens kvalitet. Mottaget
+PCM ska inte beskrivas som inspelat systemljud. T3 och T4 saknar andra submit.
+T6 verifierade däremot två efterföljande vilorepliker i produktion, 57/57 och
+51/51 mottagna rutor med fullständig capture, samma A40-worker och cachemiss
+följd av cacheträff. Detta prövade inte produktions-DEAL, insats eller saldo,
+och överför inget visuellt godkännande från den äldre rörelsefilmen.
+
+Spelaren hanterar naturligt ljudslut från både ljudklockan och DOM-händelsen
+med samma slutkontroller; manuell paus utan `ended` avbryter. En plan med
+66 kroppsrutor och observerad slutruta 65 är inte bevis för 66 visade rutor:
+faktiska bildcallbacks måste redovisas separat. Den nya B-replayen observerade
+63 unika kroppsrutor och slutfördes tekniskt; äldre godkänt prov observerade 66.
 
 ## Astrid som legacyreferens och gemensam molnkälla, 16 oktober 2026
 

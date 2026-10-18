@@ -215,7 +215,7 @@ export async function applyLegacySpeechLedgerSnapshot({ pool, prepared, expected
   // Optional features may extend the ledger; required cost/import schema remains exact.
   // The complete ledger, including optional rows, is checked again under the migration lock.
   if (!plan?.schemaPresent || plan.toApply?.length!==0 || new Set(applied).size!==applied.length
-    || applied.filter(version=>!optional.has(version)).join(',')!=='001,002,003,004,005,006,007,008,011,012,013,014'
+    || applied.filter(version=>!optional.has(version)).join(',')!=='001,002,003,004,005,006,007,008,011,012,013,014,015'
     || plan.applied.some(row=>!sha.test(row.checksum) || !sha.test(row.structureChecksum)) || !same(plan.target,target)) fail('studio_speech_import_schema_unverified',409);
   let client, began = false;
   const query = async (tag,sql,values=[]) => client.query(`/* speech-import:${tag} */ ${sql}`,values);
