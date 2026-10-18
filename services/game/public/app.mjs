@@ -511,7 +511,7 @@ async function api(path, payload) {
   const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   if(r.status===401) { player=null; throw new Error('Sign in required'); }
   const out = await r.json().catch(() => ({}));
-  if (!r.ok || out.error) throw new Error(out.error ?? `api ${r.status}`);
+  if (!r.ok || out.error) throw Object.assign(new Error(out.error ?? `api ${r.status}`), { status: r.status });
   return out;
 }
 async function loadPlayer() {
@@ -546,6 +546,12 @@ async function tableCommand(op, extra = {}) {
   for (let attempt=0; attempt<2; attempt++) {
     try { out = await api('/api/table', payload); break; }
     catch (e) {
+      if (op === 'start' && payload.movingSpeech && e.status === 409 && e.message === 'moving_deal_speech_unavailable') {
+        setMovingSpeechAvailable(false);
+        // A previous network failure may have hidden a committed start. Only
+        // an unambiguous first response can unlock the unchanged betting draft.
+        e.dealSpeechUnavailable = attempt === 0;
+      }
       if (attempt || !/fetch|network|load failed/i.test(e.message)) {
         if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
         throw e;
@@ -563,8 +569,7 @@ async function tableCommand(op, extra = {}) {
     }
   }
   tableVersion = out.version;
-  movingSpeechAvailable=out.movingSpeechAvailable===true;
-  if(nextDealControls)nextDealControls.hidden=!movingSpeechAvailable;
+  setMovingSpeechAvailable(out.movingSpeechAvailable===true);
   updatePoseState({ roundRevision: String(tableVersion),
     ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');
   if (op === 'state') localPresentation?.state({ action: false });
@@ -581,7 +586,17 @@ async function ensureLogin(purpose) {
   if(!session.authenticated && !session.guest && !await requestLogin(purpose))return false;
   await prepareTable();return !!player;
 }
-function tableError(e) { busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets(); }
+function tableError(e) {
+  if (e.dealSpeechUnavailable === true && !round) {
+    busy = false;
+    localPresentation?.state({ action: false });
+    setBanner('Tal under utdelning är avstängt. Ingen insats drogs. Tryck DEAL igen för att spela utan tal.');
+    setChatStatus('Det planerade svaret avbröts. Texten finns kvar.');
+    renderBets();
+    return;
+  }
+  busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets();
+}
 async function prepareTable() {
   const session=await gameApi.session();
   $('#sign-out').hidden=Boolean(studioPreview)||!session.authenticated;
@@ -1674,6 +1689,14 @@ async function playRecorded(id, signal) {
 function refreshNextDealChat(){
   if(!nextDealControls)return;
   nextDealControls.querySelector('button').hidden=!nextDealChat&&!activeDealSpeech;
+}
+function setMovingSpeechAvailable(available){
+  movingSpeechAvailable=available===true;
+  if(nextDealControls)nextDealControls.hidden=!movingSpeechAvailable;
+  if(!movingSpeechAvailable){
+    const toggle=$('#chat-next-deal');if(toggle)toggle.checked=false;
+    cancelNextDealChat();
+  }
 }
 function cancelNextDealChat(){
   nextDealChat=null;

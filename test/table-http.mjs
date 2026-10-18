@@ -104,6 +104,18 @@ try {
   db = new DatabaseSync(join(dir,'data/croupier.db'));
   db.exec('PRAGMA busy_timeout=5000'); // Wait for the isolated server's brief SQLite writes.
   assert.equal(state.balance,1000); assert.equal(state.shoe.remaining,415);
+  const beforeUnavailableSpeech = snapshot();
+  const unavailableSpeech = await post('/api/table',request('start',{dealer:'dragan',bets,
+    movingSpeech:{sessionRevision:'session-before-disable',context:{operatorSlug:'dragan-test',roomId:'test-room',packageRevision:4,dealerId:'dragan'}}}),409);
+  assert.equal(unavailableSpeech.error,'moving_deal_speech_unavailable');
+  assert.deepEqual(snapshot(),beforeUnavailableSpeech,'disabled speech cannot debit, deal or advance the table');
+  for(const invalid of [request('state',{movingSpeech:{sessionRevision:'valid-session'}}),
+    request('start',{dealer:'dragan',bets,movingSpeech:{sessionRevision:''}})]){
+    const refused=await post('/api/table',invalid,409);
+    assert.equal(refused.error,'invalid_moving_deal_context');
+    assert.deepEqual(snapshot(),beforeUnavailableSpeech);
+  }
+  checks.push('Disabled dealing speech is rejected before any table or wallet mutation; invalid contexts remain blocked');
   fixture([['8','♠'],['6','♦'],['8','♥'],['10','♣'],['3','♦'],['2','♣'],['9','♦'],['K','♥'],['5','♠']]);
   const startRequest = await send('start',{bets});
   assert.equal(state.balance,995); assert.equal(state.shoe.remaining,411);
