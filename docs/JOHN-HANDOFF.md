@@ -110,14 +110,27 @@ uttryckligen av fixturen. Ingen produktionsdatabas användes. Underlag:
 i den privata provbasen nedan. Oberoende kodgranskning fann inga blockerare;
 produktionsprov med serverless och varm återanvändning återstår.
 
-För nästa två planerade produktionsrepliker är den separata kodändringen
-mergad i [PR257](https://github.com/Jakeminator123/scoutgaming/pull/257) som
-`b6544ec38f129ba61a203e952f00b04e76d74503`: tekniskt totalutrymme 10,8 → 13,2 USD och
-runtime-dygnsgräns 6 → 8,4 USD. Detta är reservationer, inte fakturerad kostnad
-eller ett nytt mänskligt kostnadstak. Budget-ID, 1,2 USD per reservation och
-den redan sparade dygnspolicyn 20 USD behålls. Kodändringen ensam höjer inte
-journalen: en separat färsk, uttrycklig amendment krävs före aktivering.
-Ingen sådan molnändring ingår i denna kodleverans.
+Den tidigare tvåreplikskapaciteten levererades i
+[PR257](https://github.com/Jakeminator123/scoutgaming/pull/257), merge
+`b6544ec38f129ba61a203e952f00b04e76d74503` (13,2 USD totalt, 8,4 USD runtime-dygn).
+Den nya separata budgetändringen skiljer teknisk kapacitet från beviljad journal:
+kodens totalmax är 40 USD och runtime-dygnsgränsen 20 USD, samma som den befintliga
+dygnspolicyn. Budget-ID och reservationen 1,2 USD behålls. Ett befintligt ID får
+fortfarande bara använda sin lägre, varaktigt beviljade budget. Migration 015
+höjer enbart tre CHECK-gränser 15 → 40 USD, bevarar 013/014:s historiska bevis och
+ändrar inga budgetbeslut, reservationer eller avgifter. Första leveransen markerar
+015 som `deploymentOptional`: först måste alla berörda appar driftsättas med stöd
+för versionen, därefter appliceras och återläses 015. En följdleverans gör 015
+obligatorisk och uppdaterar importerns lista över obligatoriska versioner; readiness
+ska då stoppa saknad 015. En uttrycklig amendment till 14,4 USD görs separat efter
+appliceringen. 60 fokuserade tester passerade utan skips. Huvudagentens nya isolerade
+PostgreSQL-prov passerade: 4 retained, 26 legacy och 59 integration. Det omfattar
+014 → 015 med oförändrade datarader, återlästa CHECK-gränser, historiska ledgerbevis
+och avslag utan durable amendment. Wrappern gav 15 pass/1 redundant fristående
+SQL-skip; SQL-funktionen kördes uttryckligen. Kvitto: `budget-policy-sql.log` i
+provbasens `motion-readiness`. Oberoende bryggreview fann inga blockerare.
+Produktionsmigration och följdleveransens obligatoriska readiness återstår.
+Ingen molnändring eller ny budgetauktorisation ingår i denna kodleverans.
 
 Huvudagenten återläste driften separat: Render `croupier-v2` var LIVE på
 PR257:s SHA ovan vid 18:26:46 UTC, deployment `dep-dbagqdnlk1mc73crs4og`

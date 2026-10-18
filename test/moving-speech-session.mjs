@@ -106,8 +106,10 @@ test('aborted admission performs no provider submit and a later attempt can acqu
   const next=await f.admit();await next.cancel();assert.equal(f.state.released,false);
 });
 
-test('configuration rejects spend increases and deadlines beyond the fixed moving window',()=>{
-  for(const configuration of [{totalBudgetMicroUsd:15000001},{totalBudgetMicroUsd:15000000,reserveMicroUsd:5000001},{lifetimeMs:480001},{startupMs:450001},
+test('configuration bounds technical capacity and retains per-job, daily and moving-window limits',()=>{
+  assert.doesNotThrow(()=>fixture({configuration:{totalBudgetMicroUsd:40000000,currentDailyBudgetMicroUsd:20000000}}));
+  for(const configuration of [{totalBudgetMicroUsd:40000001},{totalBudgetMicroUsd:40000000,reserveMicroUsd:5000001},
+    {currentDailyBudgetMicroUsd:20000001},{lifetimeMs:480001},{startupMs:450001},
     {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
 });
 

@@ -3,6 +3,50 @@ import { randomBytes,randomUUID } from 'node:crypto';
 import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS } from '../../services/game/postgres-speech-journal.mjs';
 import { MOVING_TRIAL_BUDGET } from '../../services/game/moving-speech-budget.mjs';
 import { movingCapacityFixture } from './moving-capacity.mjs';
+import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
+
+// Called only after the integration harness verifies an empty localhost fixture.
+// Exercise the actual immutable 014 DDL before 015, then roll back everything so
+// the normal migration runner independently verifies all ledger fingerprints.
+export async function runMovingBudgetMigrationSqlChecks({pool}) {
+  const migrations=await loadStudioMigrations(),client=await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for(const migration of migrations.filter(row=>row.version<'015'))await client.query(migration.sql);
+    const checks=()=>client.query(`SELECT c.relname AS table_name,co.conname AS name,co.convalidated AS validated,
+      pg_get_constraintdef(co.oid,true) AS definition FROM pg_constraint co JOIN pg_class c ON c.oid=co.conrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='croupier_studio'
+      AND co.conname IN ('moving_speech_bindings_budget_limit_micro_usd_check',
+        'moving_speech_budget_amendments_previous_limit_micro_usd_check','moving_speech_budget_amendments_budget_limit_micro_usd_check')
+      ORDER BY c.relname,co.conname`).then(result=>result.rows);
+    const oldChecks=await checks();assert.equal(oldChecks.length,3);
+    assert.ok(oldChecks.every(row=>row.validated&&row.definition.endsWith('<= 15000000)')));
+    await client.query(`INSERT INTO croupier_studio.moving_speech_budget_amendments
+      (environment_id,workspace_id,budget_id,amendment_id,previous_limit_micro_usd,budget_limit_micro_usd,reserved_before_micro_usd,amendment,created_at_ms)
+      VALUES('isolated-capacity','qa','existing-grant',$1,10800000,13200000,10800000,'{}',1)`,[randomUUID()]);
+    const snapshot=async()=>{
+      const data={};
+      for(const table of migrations.flatMap(row=>row.tables)) {
+        // Identifiers come only from the reviewed fixed migration manifest.
+        data[table]=(await client.query(`SELECT to_jsonb(t) AS row FROM croupier_studio.${table} t ORDER BY to_jsonb(t)::text`)).rows;
+      }
+      return data;
+    };
+    const before=await snapshot();
+    await client.query(migrations.find(row=>row.version==='015').sql);
+    assert.deepEqual(await snapshot(),before,'015 changes no grant, reservation, policy, data or ledger row');
+    assert.deepEqual(await checks(),oldChecks.map(row=>({...row,definition:row.definition.replace('15000000','40000000')})));
+    const insert=async(previous,limit)=>client.query(`INSERT INTO croupier_studio.moving_speech_budget_amendments
+      (environment_id,workspace_id,budget_id,amendment_id,previous_limit_micro_usd,budget_limit_micro_usd,reserved_before_micro_usd,amendment,created_at_ms)
+      VALUES('isolated-capacity','qa',$1,$2,$3,$4,$3,'{}',1)`,[randomUUID(),randomUUID(),previous,limit]);
+    await insert(15600000,16800000);await insert(38800000,40000000);
+    for(const [previous,limit] of [[38800000,40000001],[40000001,40000002]]) {
+      await client.query('SAVEPOINT invalid_capacity');
+      await assert.rejects(insert(previous,limit),error=>error.code==='23514');
+      await client.query('ROLLBACK TO SAVEPOINT invalid_capacity');
+    }
+  } finally {try{await client.query('ROLLBACK');}finally{client.release();}}
+}
 
 // Called only by the localhost PostgreSQL fixture after its target assertion.
 export async function runMovingBudgetSqlChecks({pool,input,journal}) {
@@ -114,7 +158,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   const priorCharges=await reservationHistory();
   const twoReplies={...thirdTrial,amendmentId:randomUUID(),authorizationId:'fixture-two-production-replies',observedAtMs:Date.now(),
     expectedLimitMicroUsd:10800000,expectedReservedMicroUsd:10800000,expectedReservationCount:9,
-    newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,windowReserveMicroUsd:2400000};
+    newLimitMicroUsd:13200000,windowReserveMicroUsd:2400000};
   // Raising either runtime limit alone must not change the durable total ceiling.
   await assert.rejects(second.reserveMovingSession({...request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd),currentBudgetMicroUsd:MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd}),fail('generated_speech_total_budget_exhausted'));
   await second.authorizeMovingBudgetAmendment({...args,amendment:twoReplies});
@@ -132,8 +176,23 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   assert.deepEqual((await reservationHistory()).filter(row=>oldIds.has(row.session_id)),priorCharges);
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   assert.deepEqual(await history(),afterTwoReplies,'a rejected extra reply creates no partial binding');
+  const chargesBeforeCapacity=await reservationHistory();
+  const fundedCapacity={...twoReplies,amendmentId:randomUUID(),authorizationId:'fixture-funded-capacity',observedAtMs:Date.now(),
+    expectedLimitMicroUsd:13200000,expectedReservedMicroUsd:13200000,expectedReservationCount:11,newLimitMicroUsd:15600000};
+  await second.authorizeMovingBudgetAmendment({...args,amendment:fundedCapacity});
+  assert.deepEqual(await history(),afterTwoReplies,'schema capacity and amendment preserve every historical binding');
+  assert.deepEqual(await reservationHistory(),chargesBeforeCapacity,'technical capacity does not refund any prior charge');
+  for(let reply=1;reply<=2;reply++) {
+    const saved=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+    assert.equal(saved.totalBudgetMicroUsd,15600000);
+    assert.equal(saved.totalReservedMicroUsd,13200000+reply*1200000);
+    await finish(saved);
+  }
+  const afterCapacity=await history();assert.equal(afterCapacity.length,13);
+  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  assert.deepEqual(await history(),afterCapacity,'40 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
-  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies]);
+  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies,fundedCapacity]);
   await journal.releaseLease({lease});
   await runMovingCapacitySqlChecks({pool,input,journal});
 }

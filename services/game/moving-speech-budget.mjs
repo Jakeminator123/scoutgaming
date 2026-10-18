@@ -1,11 +1,11 @@
-// Moving speech remains a separately authorized Dragan trial. A runtime value
-// cannot raise the journal ceiling without an explicit durable amendment.
-// Journal capacity matches migration 014; provider accounting also covers prior windows.
-export const MOVING_BUDGET_MAX_MICRO_USD = 15000000;
+// Technical capacity, not a new authorization. For an existing budget ID the
+// journal uses the lower durable limit until an explicit, funded amendment.
+// Migration 015 changes only schema capacity; it grants no budget or refund.
+export const MOVING_BUDGET_MAX_MICRO_USD = 40000000;
 export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 40000000;
 export const MOVING_TRIAL_BUDGET = Object.freeze({
-  budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: 13200000,
-  reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 8400000,
+  budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
+  reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 20000000,
 });
 const id = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;

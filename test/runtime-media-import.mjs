@@ -174,6 +174,23 @@ test('runtime import rejects required gaps unknown versions and invalid proofs',
   }
 });
 
+test('015 bridge permits import before migration and verifies installed optional ledger rows on every write',async()=>{
+  for(const installed of [false,true]) {
+    const state=structuredClone(schema),pool=memoryPool();
+    if(installed)state.applied.push({version:'015',checksum:hash('015'),structureChecksum:hash('structure-015')});
+    else state.optionalPending=[{version:'015'}];
+    pool.ledger=state.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum}));
+    const schemaCheck=async()=>structuredClone(state);
+    const review=await planRuntimeMediaImport({pool,prepared,schemaCheck});
+    assert.equal((await apply(pool,review,{schemaCheck})).changed,true);
+    const next=await planRuntimeMediaImport({pool,prepared,schemaCheck}),before=pool.snapshot();
+    if(installed)pool.ledger.at(-1).structure_checksum='f'.repeat(64);
+    else pool.ledger.push({version:'015',checksum:hash('015'),structure_checksum:hash('structure-015')});
+    await assert.rejects(apply(pool,next,{schemaCheck}),{code:'studio_runtime_import_schema_unverified'});
+    assert.deepEqual(pool.snapshot(),before,'changed ledger cannot silently alter an approved import plan');
+  }
+});
+
 test('concurrent reviewed insert has one winner; stale replacement never overwrites a newer catalogue',async()=>{
   const pool=memoryPool(),review=await plan(pool);
   const results=await Promise.allSettled([apply(pool,review),apply(pool,review)]);

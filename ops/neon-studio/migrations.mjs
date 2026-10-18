@@ -37,6 +37,10 @@ const sources = Object.freeze([
   // Applied and verified in production; budget amendments now require 014 at startup.
   { version:'014', file:'014-moving-speech-budget-amendments.sql',
     tables:['moving_speech_budget_amendments'], indexes:[], fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
+  // Bridge deploy first: every app must recognize 015 before it is applied.
+  // Mark required only after verified application; this creates no budget grant.
+  { version:'015', file:'015-moving-budget-capacity.sql', deploymentOptional:true, tables:[], indexes:[],
+    fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -55,6 +59,14 @@ const budgetAlter = 'ALTER TABLE croupier_studio.gpu_budget_policies DROP CONSTR
 const movingBudgetConstraint = 'moving_speech_bindings_budget_limit_micro_usd_check';
 const movingBudgetDefinition = ceiling => `CHECK (budget_limit_micro_usd >= 1 AND budget_limit_micro_usd <= ${ceiling})`;
 const movingBudgetAlter = 'ALTER TABLE croupier_studio.moving_speech_bindings DROP CONSTRAINT moving_speech_bindings_budget_limit_micro_usd_check, ADD CONSTRAINT moving_speech_bindings_budget_limit_micro_usd_check CHECK (budget_limit_micro_usd BETWEEN 1 AND 15000000)';
+const movingCapacityChecks = Object.freeze([
+  ['moving_speech_bindings','budget_limit_micro_usd'],
+  ['moving_speech_budget_amendments','previous_limit_micro_usd'],
+  ['moving_speech_budget_amendments','budget_limit_micro_usd'],
+].map(([table,column]) => Object.freeze({table,column,name:`${table}_${column}_check`})));
+const movingCapacityDefinition = (column,ceiling) => `CHECK (${column} >= 1 AND ${column} <= ${ceiling})`;
+const movingCapacityAlters = movingCapacityChecks.map(({table,column,name}) =>
+  `ALTER TABLE croupier_studio.${table} DROP CONSTRAINT ${name}, ADD CONSTRAINT ${name} CHECK (${column} BETWEEN 1 AND 40000000)`);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
 
 function statements(sql) {
@@ -76,6 +88,11 @@ function statements(sql) {
 }
 
 function validateSql(source, sql) {
+  if (source.version === '015') {
+    const parts = statements(sql);
+    if (parts.length !== movingCapacityAlters.length || parts.some((part,index) => part.replace(/\s+/g,' ') !== movingCapacityAlters[index])) refuse('studio_migration_invalid_source',422);
+    return;
+  }
   if (source.version === '011') {
     const parts = statements(sql);
     if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== budgetAlter) refuse('studio_migration_invalid_source', 422);
@@ -210,14 +227,26 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== budgetDefinition(20000000)) refuse('studio_migration_structure_mismatch');
     historical = { ...objects, constraints: objects.constraints.map(row => row === matches[0] ? { ...row, definition: budgetDefinition(10000000) } : row) };
   }
-  // Ledgered 014 may project only this exact limit back for 013's old proof.
-  let movingHistorical = objects;
-  if (installed.some(row => row.version === '014')) {
-    const matches = objects.constraints.filter(row => row.table_name === 'moving_speech_bindings' && row.name === movingBudgetConstraint);
-    if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
-    movingHistorical = { ...objects, constraints:objects.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
+  // Ledgered 015 projects only its three exact CHECKs back for 014's proof.
+  // Historical ledger rows and source checksums are never rewritten.
+  let movingPrevious = objects;
+  if (installed.some(row => row.version === '015')) {
+    const replacements = new Map();
+    for (const {table,column,name} of movingCapacityChecks) {
+      const matches = objects.constraints.filter(row => row.table_name === table && row.name === name);
+      if (matches.length !== 1 || matches[0].definition !== movingCapacityDefinition(column,40000000)) refuse('studio_migration_structure_mismatch');
+      replacements.set(matches[0],{...matches[0],definition:movingCapacityDefinition(column,15000000)});
+    }
+    movingPrevious = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
   }
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  // Ledgered 014 may project only this exact limit back for 013's old proof.
+  let movingHistorical = movingPrevious;
+  if (installed.some(row => row.version === '014')) {
+    const matches = movingPrevious.constraints.filter(row => row.table_name === 'moving_speech_bindings' && row.name === movingBudgetConstraint);
+    if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
+    movingHistorical = { ...movingPrevious, constraints:movingPrevious.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
+  }
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
   return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply: migrations.slice(rows.length) };
 }
 
