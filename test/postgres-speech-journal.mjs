@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
+import { movingCapacityFixture } from './fixtures/moving-capacity.mjs';
 import { speechMemoryPool as memoryPool } from './fixtures/speech-memory-pool.mjs';
 import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS, speechRequestKey } from '../services/game/postgres-speech-journal.mjs';
 
@@ -176,6 +177,46 @@ test('two writers cannot reserve two open GPU sessions; untracked worker and res
   assert.equal(result.filter(r => r.status === 'fulfilled').length, 1);
   assert.equal(result.find(r => r.status === 'rejected').reason.code, 'generated_speech_session_busy');
   assert.equal(pool.state.sessions.size, 1); assert.equal(pool.state.reservations.size, 1);
+});
+
+test('moving capacity proof cannot weaken generic GPU reservation or terminal drain', async () => {
+  const f=await fixture(),lease=await streamLease(f.journal);
+  await initPolicy(f.journal);
+  const movingCapacity=movingCapacityFixture({endpointId:'endpoint-fixture',now:f.getTime()});
+  const warm={workers:1,busy:0,available:1};
+  const initialLease=structuredClone([...f.pool.state.leases.values()]);
+  await assert.rejects(reserve(f.journal,lease,sessionId,{workerState:warm,movingCapacity}),rejection('generated_speech_worker_not_drained',409));
+  assert.equal(f.pool.state.sessions.size,0);
+  assert.equal(f.pool.state.reservations.size,0);
+  assert.deepEqual([...f.pool.state.leases.values()],initialLease);
+  await running(f.journal,lease);
+  await f.journal.recordProviderStatus({sessionId,lease,jobId:`job-${sessionId}`,status:'COMPLETED'});
+  const reservations=structuredClone([...f.pool.state.reservations.values()]);
+  await assert.rejects(f.journal.confirmWorkerDrained({sessionId,lease,movingCapacity,proof:{...proof(sessionId),...warm}}),rejection('generated_speech_worker_not_drained',409));
+  assert.equal((await f.journal.listRecoverableSessions()).length,1);
+  await f.journal.confirmWorkerDrained({sessionId,lease,movingCapacity,proof:proof(sessionId)});
+  assert.deepEqual([...f.pool.state.reservations.values()],reservations,'draining never refunds the reservation');
+  assert.deepEqual([...f.pool.state.leases.values()],initialLease,'proof does not renew or replace a lease');
+});
+
+test('moving capacity cannot bypass recovery-only, stale fence or expired-missing drain', async () => {
+  const f=await fixture(),lease=await f.journal.acquireLease({resource:'stream-session',holderId:'old',ttlMs:1000});
+  await initPolicy(f.journal);await running(f.journal,lease);
+  f.setTime(f.getTime()+1001);
+  const recovery=await f.journal.acquireLease({resource:'stream-session',holderId:'recovery',recoveryOnly:true,ttlMs:GPU_RESERVATION_WINDOW_MS});
+  assert.equal(recovery.fence,lease.fence+1);
+  let movingCapacity=movingCapacityFixture({endpointId:'endpoint-fixture',now:f.getTime()});
+  const before=structuredClone([...f.pool.state.reservations.values()]);
+  await assert.rejects(reserve(f.journal,recovery,sessionId2,{movingCapacity}),rejection('generated_speech_recovery_only',409));
+  await assert.rejects(reserve(f.journal,lease,sessionId2,{movingCapacity}),rejection('generated_speech_stale_fence',409));
+  f.setTime(f.getTime()+GPU_RESERVATION_WINDOW_MS-1001);
+  movingCapacity=movingCapacityFixture({endpointId:'endpoint-fixture',now:f.getTime()});
+  const args={sessionId,lease:recovery,jobId:`job-${sessionId}`,providerStatus:'not_found',movingCapacity};
+  await assert.rejects(f.journal.retireExpiredMissingSession({...args,proof:{...proof(sessionId),workers:1,available:1}}),rejection('generated_speech_worker_not_drained',409));
+  assert.equal((await f.journal.listRecoverableSessions()).length,1);
+  assert.equal((await f.journal.retireExpiredMissingSession({...args,proof:proof(sessionId)})).terminalReason,'expired_missing_status');
+  assert.deepEqual([...f.pool.state.reservations.values()],before);
+  assert.equal((await f.journal.listRecoverableSessions()).length,0);
 });
 
 test('unknown paid submission is spent; recovery-only lease never admits another paid work or guessed attach', async () => {

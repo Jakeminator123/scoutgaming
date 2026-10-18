@@ -2,6 +2,7 @@ import { MOVING_BUDGET_MAX_MICRO_USD, validMovingBudgetAmendment, freshMovingBud
 import { createHash } from 'node:crypto';
 import { StudioStorageError, validateStudioEnvironmentId, validateStudioScope, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 import { verifyMovingSpeechBinding } from './moving-speech-binding.mjs';
+import { verifyMovingCapacity } from './moving-speech-capacity.mjs';
 import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from '../../packages/presentation/contracts/speech-journal-constants.mjs';
 
 export { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS };
@@ -213,9 +214,9 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     return {key:saved.request_key,days,reservedMicroUsd:reserve,expiresAt:created+policy.reservationWindowMs};
   };
 
-  async function reserveGpu(client, time, { sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState }) {
+  async function reserveGpu(client, time, { sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState }, assertCapacity=drained) {
     check(sessionId, sessionIdPattern); check(endpointId, endpointPattern);
-    microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD); drained(workerState);
+    microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD); assertCapacity(workerState);
     await getLease(client, lease, time, { paid: true });
     if (lease.resource !== 'stream-session') fail('invalid_generated_speech_lease', 422);
     if (await row(client, 'get_session', 'SELECT * FROM croupier_studio.gpu_sessions WHERE environment_id = $1 AND session_id = $2', [environment, sessionId])) fail('generated_speech_session_already_attempted', 409);
@@ -483,7 +484,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     // Moving admission requires migration 013; amendments require 014.
     // One atomic admission: spent request, exact media, GPU/day and total budget.
     async reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences, projectRevision,
-      budgetId, totalBudgetMicroUsd, ...gpu } = {}) {
+      budgetId, totalBudgetMicroUsd, movingCapacity, ...gpu } = {}) {
       scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
       const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash); check(budgetId, identifier);
       microUsd(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD); microUsd(gpu.reserveMicroUsd, 5000000);
@@ -496,7 +497,12 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         const budget = await movingBudget(client, scope, budgetId);
         const ceiling = Math.min(totalBudgetMicroUsd, budget.ceiling === null ? totalBudgetMicroUsd : integer(budget.ceiling));
         if (integer(budget.used) + gpu.reserveMicroUsd > ceiling) fail('generated_speech_total_budget_exhausted', 429);
-        const saved = await reserveGpu(client, time, gpu);
+        // Only this moving-specific entrypoint may admit a verified idle GPU.
+        // Generic sessions, retirement and recovery still require real drain.
+        const saved = await reserveGpu(client, time, gpu, movingCapacity === undefined ? drained : () => {
+          try { verifyMovingCapacity(movingCapacity,{endpointId:gpu.endpointId,now:time}); }
+          catch { fail('generated_speech_moving_capacity_unverified',409); }
+        });
         await row(client, 'insert_request', `INSERT INTO croupier_studio.speech_requests (environment_id, request_key, owner_hash, request_id, fingerprint, capability, state, lease_resource, holder_id, lease_fence, created_at_ms, updated_at_ms)
           VALUES ($1,$2,$3,$4,$5,'stream','reserved',$6,$7,$8,$9,$9) RETURNING *`, [environment,key,ownerHash,requestId,fingerprint,gpu.lease.resource,gpu.lease.holderId,gpu.lease.fence,time]);
         await row(client, 'insert_moving', `INSERT INTO croupier_studio.moving_speech_bindings

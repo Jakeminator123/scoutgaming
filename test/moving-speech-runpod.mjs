@@ -9,9 +9,18 @@ test('fresh endpoint gates pin owned digest, zero minimum, maximum one and actua
   const client=create(async(url,opts)=>{assert.ok(url.endsWith('includeWorkers=true') || url==='https://rest.runpod.io/v1/templates/template123');assert.equal(opts.redirect,'error');return Response.json(url.includes('/templates/')?endpoint.template:data);});
   assert.equal((await client.release()).workers.endpointVersion,0);
   data.workers=[{imageName:image,slsVersion:0}];assert.equal((await client.release()).workers.workers[0].isStale,false);
-  for(const change of [{workersMin:1},{workersMax:2},{idleTimeout:undefined},{idleTimeout:null},{idleTimeout:-1},{idleTimeout:6},{executionTimeoutMs:600000},{template:{imageName:'other'}},{workers:[{image:image,slsVersion:1}]}]){
+  for(const change of [{workersMin:1},{workersMax:2},{idleTimeout:undefined},{idleTimeout:null},{idleTimeout:-1},{idleTimeout:61},{executionTimeoutMs:600000},{template:{imageName:'other'}},{workers:[{image:image,slsVersion:1}]}]){
     data={...structuredClone(endpoint),...change};await assert.rejects(client.release());
   }
+});
+
+test('release records the bounded paid idle tail and exact live pod without calling it drained',async()=>{
+  const data={...structuredClone(endpoint),idleTimeout:60,
+    workers:[{id:'live-owned',imageName:image,slsVersion:0,desiredStatus:'RUNNING'}]};
+  const client=create(async url=>Response.json(url.includes('/templates/')?endpoint.template:data));
+  const saved=await client.release();
+  assert.equal(saved.capacity.idleTimeout,60);assert.equal(saved.capacity.workersMin,0);
+  assert.equal(saved.capacity.activePods[0].id,'live-owned');assert.equal(saved.capacity.activePods[0].state,'active');
 });
 test('lost paid submission is not retried; job policy remains bounded',async()=>{
   let calls=0,sent;

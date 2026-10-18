@@ -86,7 +86,7 @@ export function createMovingSpeechRunPod({endpointId, apiKey, expectedImage, fet
     async release({signal}={}) {
       const value = await call(`https://rest.runpod.io/v1/endpoints/${endpointId}?includeTemplate=true&includeWorkers=true`,{signal});
       if (value.id !== endpointId || value.workersMin !== 0 || value.workersMax !== 1
-        || !Number.isInteger(value.idleTimeout) || value.idleTimeout < 0 || value.idleTimeout > 5
+        || !Number.isInteger(value.idleTimeout) || value.idleTimeout < 0 || value.idleTimeout*1000 > MOVING_SPEECH_LIMITS.providerIdleMs
         || !Number.isInteger(value.executionTimeoutMs) || value.executionTimeoutMs < 1000 || value.executionTimeoutMs > 180000
         || value.gpuCount !== 1 || Object.hasOwn(value,'workers') && !Array.isArray(value.workers)) fail('moving_runpod_limits_changed');
       if (!Number.isSafeInteger(value.version) || value.version < 0) fail('moving_runpod_workers_unknown');
@@ -120,6 +120,8 @@ export function createMovingSpeechRunPod({endpointId, apiKey, expectedImage, fet
           || ['id','imageName'].some(key=>Object.hasOwn(embedded,key) && embedded[key] !== template[key])) fail('moving_runpod_template_unverified');
       }
       const receipt = {expectedImage,observedAtMs:now(),endpoint:{id:value.id,image:template.imageName},
+        capacity:{workersMin:value.workersMin,workersMax:value.workersMax,idleTimeout:value.idleTimeout,templateId:template.id,
+          activePods:records.map((record,index)=>({...summary.workers[index],id:record.id})).filter(record=>occupiesGpu(record.state))},
         templateCorroboration:{source:'full-template',templateId:template.id,observedAtMs:now()},
         workers:{endpointVersion:value.version,workersMax:value.workersMax,counts:summary.counts,workers:summary.workers},
         ...(workersCorroboration ? {workersCorroboration} : {})};
