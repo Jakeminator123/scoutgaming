@@ -2,19 +2,54 @@
 
 <a id="dragan-talstatus"></a>
 
-## Lipsync 3: miljöidentitet, avveckling och nästa avgränsade prov — 18 oktober 2026
+## Lipsync 3: prov två, återställning och ett avgränsat nästa prov — 18 oktober 2026
 
-Jakob har uttryckligen begärt ett nytt prov: ”nu testar vi!”. Koden tillåter
-en enda ytterligare journalreservation på 1,2 USD: totalgränsen för samma
-`dragan-test-20261017` höjs från 8,4 till 9,6 USD. Dygnstaket 6 USD,
-reservationsbeloppet 1,2 USD och globaltaket 40 USD är oförändrade.
-De sju tidigare reservationerna bevaras. Kodändringen ändrar inte den varaktiga
-databasgränsen: separat explicit budgetamendment med färskt kostnadsunderlag
-måste tillämpas före antagning. Detta är inte tillstånd till upprepade prov.
-Ingen databas, miljöinställning eller providerresurs ändrades i kodleveransen.
-41 lokala budget-, sessions- och minnesjournaltester passerade. SQL-fixturen
-har utökats för nästa amendment, bevarad historik och stopp efter en ny
-reservation; den har syntaxkontrollerats men inte körts mot PostgreSQL lokalt.
+Det andra produktionsprovet kördes 14:29–14:37 UTC på www.scoutgaming.tech
+med ”Ulf Lundell är bra.” och Dragan test, publicerat paket 4. Samma bank med
+50 exakta källklipp användes. Ingen insats eller utdelning gjordes. RunPod-kön
+tog 340 759 ms; mottaget PCM var 78 020 byte (1,6254 sekunder) med matchande
+hash. Två paket med 12 bildrutor anlände med 1,796211 sekunders mellanrum.
+DOM-kvittot visar startad uppspelning och sedan `moving_speech_frame_unavailable`
+efter cirka 0,83 sekunder: 24 mottagna, 23 frisläppta av totalt 57 bildrutor.
+`bank_length_mismatch` återkom inte. Helt ljud eller visuell läppsynk är inte
+godkänt. Privat skärminspelning har tidsluckor och saknar ljud; separat sparat
+PCM bevisar mottaget ljud, inte vad spelaren hann spela upp.
+
+Efter provet återställdes profilen till preparation och talflaggan till 0;
+den tillfälliga endpointkopplingen togs bort. Egen endpoint/mall raderades,
+inga egna workers kvarstod och sessionen frisläpptes enligt stop-kvittot.
+Ansvarig agent verifierade återställningen live 14:39:14 UTC på Render,
+deployment `dep-dbadjlrbc2fs73b02jgg`. Provets första kostnadsavläsning var
+0 USD på endpointen, vilket inte bevisar slutkostnad; providerreserverna behålls.
+
+Jakob har därefter uttryckligen sagt ”JA! Resultat.. fortsätt!”. En lokal
+buffertfix och regression förbereder högst ett nytt prov efter integration.
+Denna budgetändring förbereder en enda ytterligare reservation på 1,2 USD:
+totalgränsen för samma `dragan-test-20261017` höjs från 9,6 till 10,8 USD.
+Alla åtta tidigare reservationer bevaras. Dygnstaket 6 USD, reservationsbeloppet
+1,2 USD och globaltaket 40 USD är oförändrade; dagens 4,8 USD lämnar utrymme
+för en reservation. Kodändringen ändrar inte den varaktiga databasgränsen:
+separat explicit budgetamendment med färskt kostnadsunderlag krävs före antagning.
+Detta är inte tillstånd till upprepade prov. Ingen databas, miljöinställning
+eller providerresurs ändras i denna kodförberedelse. 41 lokala budget-, sessions-
+och minnesjournaltester passerade utan fel. SQL-fixturen har utökats för att
+bevara åtta reservationer och stoppa efter en ny; syntaxkontroll passerade,
+men fixturen kördes inte mot PostgreSQL lokalt.
+
+Buffertagentens lokala resultat: 39 tester passerade. Därefter passerade alla tre isolerade webbläsarprov med Chrome, H.264/WebCodecs och PCM. Spelaren inväntar hela repliken och ett verifierat `done` före
+ljudstart. Komprimerade bilddata begränsas till 4 MiB och högst 48 avkodade
+bildrutor behålls samtidigt. Den befintliga tidsgränsen 45 sekunder är
+oförändrad. Det ger längre väntan före ljudet men undviker att ljudet startar
+medan långsamma bildpaket fortfarande produceras. Integration, driftsättning
+och ett eventuellt nytt produktionsprov återstår; testresultatet godkänner
+inte visuell läppsynk.
+
+Ansvarig agents skrivskyddade språkkontroll: produktionens ElevenLabs-anrop
+GET voice svarade 200 för Dragge, kategori `cloned`, med `labels.language=sv`.
+Profilen anger `sv` och `eleven_multilingual_v2`; språk skickas inte som en
+tvingande parameter för denna modell. Uttalet är fortfarande inte godkänt.
+Jakobs bild med meddelandet om avstängt tal vid DEAL visar PR247:s avsedda
+återhämtning. Den är inte bevis för ett WebSocket-fel.
 
 Efter Jakobs uttryckliga val dokumenterar ansvarig agents driftkvitto
 avvecklingen av Render `game-engine` (`srv-db97dhg473hc73b1vni0`): DELETE

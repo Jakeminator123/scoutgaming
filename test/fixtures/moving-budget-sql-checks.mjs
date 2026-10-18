@@ -23,10 +23,12 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
     await journal.confirmWorkerDrained({sessionId:saved.sessionId,lease,proof:{workerId:saved.workerId,...empty}});
     await journal.completeRequest({key:saved.key,lease});
   }
-  const previous=await journal.reserveMovingSession(request(4800000,4800000));
+  // Keep distinct historical reservations, including eight before trial three.
+  for(let index=0;index<3;index++) await finish(await journal.reserveMovingSession(request(1200000,4800000)));
+  const previous=await journal.reserveMovingSession(request(1200000,4800000));
   const amendment={amendmentId:randomUUID(),budgetId,actor:'isolated-qa',authorizationId:'fixture-total-15',
     evidenceSha256:'a'.repeat(64),observedAtMs:Date.now(),expectedLimitMicroUsd:4800000,expectedReservedMicroUsd:4800000,
-    expectedReservationCount:1,newLimitMicroUsd:6000000,globalLimitMicroUsd:15000000,
+    expectedReservationCount:4,newLimitMicroUsd:6000000,globalLimitMicroUsd:15000000,
     providerSpentMicroUsd:499028,otherReservedMicroUsd:11736667,windowReserveMicroUsd:2333334};
   const args={scope,amendment,workerState:empty,confirmation:'apply-explicit-moving-budget-amendment'};
   await assert.rejects(journal.authorizeMovingBudgetAmendment(args),fail('generated_speech_session_busy'));
@@ -36,7 +38,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   await assert.rejects(journal.reserveMovingSession(request(1200000,6000000)),fail('generated_speech_total_budget_exhausted'));
   for(const [overrides,code] of [
     [{observedAtMs:Date.now()-300001},'generated_speech_budget_evidence_stale'],
-    [{expectedReservationCount:2},'generated_speech_budget_amendment_conflict'],
+    [{expectedReservationCount:5},'generated_speech_budget_amendment_conflict'],
     [{expectedReservedMicroUsd:4700000},'generated_speech_budget_amendment_conflict'],
     [{newLimitMicroUsd:16000000},'invalid_generated_speech_budget_amendment'],
     [{windowReserveMicroUsd:3000000},'invalid_generated_speech_budget_amendment'],
@@ -66,7 +68,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   const historical=await history();
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const next={...amendment,amendmentId:randomUUID(),authorizationId:'fixture-total-40',observedAtMs:Date.now(),
-    expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:2,
+    expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:5,
     newLimitMicroUsd:7200000,globalLimitMicroUsd:40000000,otherReservedMicroUsd:14070001};
   await second.authorizeMovingBudgetAmendment({...args,amendment:next});
   assert.deepEqual(await history(),historical,'raising global authorization does not refund or rewrite reservations');
@@ -76,7 +78,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const beforeProductionTrial=await history();
   const productionTrial={...next,amendmentId:randomUUID(),observedAtMs:Date.now(),
-    expectedLimitMicroUsd:7200000,expectedReservedMicroUsd:7200000,expectedReservationCount:3,
+    expectedLimitMicroUsd:7200000,expectedReservedMicroUsd:7200000,expectedReservationCount:6,
     newLimitMicroUsd:8400000,otherReservedMicroUsd:16403334};
   await second.authorizeMovingBudgetAmendment({...args,amendment:productionTrial});
   assert.deepEqual(await history(),beforeProductionTrial,'another trial preserves every prior reservation');
@@ -86,15 +88,26 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const beforeSecondTrial=await history();
   const secondTrial={...productionTrial,amendmentId:randomUUID(),authorizationId:'fixture-trial-two',observedAtMs:Date.now(),
-    expectedLimitMicroUsd:8400000,expectedReservedMicroUsd:8400000,expectedReservationCount:4,
-    newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,providerSpentMicroUsd:525826,otherReservedMicroUsd:18736668};
+    expectedLimitMicroUsd:8400000,expectedReservedMicroUsd:8400000,expectedReservationCount:7,
+    newLimitMicroUsd:9600000,providerSpentMicroUsd:525826,otherReservedMicroUsd:18736668};
   await second.authorizeMovingBudgetAmendment({...args,amendment:secondTrial});
   assert.deepEqual(await history(),beforeSecondTrial,'second production trial retains all consumed reservations');
   const secondAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
   assert.equal(secondAdmitted.totalBudgetMicroUsd,9600000);assert.equal(secondAdmitted.totalReservedMicroUsd,9600000);
   await finish(secondAdmitted);
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  const beforeThirdTrial=await history();
+  assert.equal(beforeThirdTrial.length,8);
+  const thirdTrial={...secondTrial,amendmentId:randomUUID(),authorizationId:'fixture-trial-three',observedAtMs:Date.now(),
+    expectedLimitMicroUsd:9600000,expectedReservedMicroUsd:9600000,expectedReservationCount:8,
+    newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,otherReservedMicroUsd:21070001};
+  await second.authorizeMovingBudgetAmendment({...args,amendment:thirdTrial});
+  assert.deepEqual(await history(),beforeThirdTrial,'third production trial preserves all eight released reservations');
+  const thirdAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  assert.equal(thirdAdmitted.totalBudgetMicroUsd,10800000);assert.equal(thirdAdmitted.totalReservedMicroUsd,10800000);
+  await finish(thirdAdmitted);
+  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
-  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial]);
+  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial]);
   await journal.releaseLease({lease});
 }
