@@ -16,15 +16,21 @@ full produktionsantagning/spelrunda. Det tidigare tysta, nedskalade utdraget
 ### Naturligt ljudslut i spelaren
 
 Det nya isolerade B-provet med ”Jakob är kung.” tog emot 50 ansiktsrutor
-och visade alla 66 kroppsrutor, men avslutades med
+och nådde sista ruta 65 i 66-rutorsplanen, men avslutades med
 `moving_speech_audio_paused`. En deterministisk regression återskapade
 felet: webbläsarens `ended=true` och `paused=true` kan bli synliga för
 bildklockan innan den köade `ended`-händelsen körs. Spelaren låter nu båda
 vägarna använda samma avslutskontroller. Manuell paus utan naturligt slut,
 ofullständig kroppssekvens, saknad slutruta och förlorad ägare avbryter
 fortfarande. En senare `ended`-händelse avslutar inte samma replik igen.
+[PR258](https://github.com/Jakeminator123/scoutgaming/pull/258) innehåller rättningen.
 42 fokuserade spelare-/rutelagertester passerade; tre browserprov hoppades
-över utan angiven browserfixture. Verklig replay av rättningen återstår.
+över utan angiven browserfixture. Huvudagentens verkliga replay av samma
+B-resultat med exakt spelarhash gav därefter `completed=true`, `state=end`,
+50 mottagna ansiktsrutor och observerad sista kroppsruta 65 i 66-rutorsplanen.
+Callbackloggen innehåller 63 unika kroppsrutor; det är inte bevis för att
+samtliga 66 visades. Kvitto: 64 067 byte, SHA-256
+`40138ffa770e713dcde0e0c64f804bab8e3c8579f746fabfb3a101882f85419f`.
 Detta är inget nytt kvalitetsgodkännande och ändrar inte den äldre godkända
 filmen, workerreleasen eller providerinställningar.
 
