@@ -20,11 +20,13 @@ frontend, game och Gateway/Director åt. Senare PR238:s workerdiagnostik och
 PR240:s budgetkontroll är levererade på apprevision
 `209d62f436786f9dae69c7ee6f1b256253ab6805`, med grön main-CI, verifierad
 produktion och publicerad privat workerimage. De är separata från strukturens
-acceptans. Det senaste Dragan-provet slutade med `bank_length_mismatch`,
-utan ljud/video. Testresurserna är avvecklade och talet avstängt; exakt
-HTTP-/framingorsak är ännu obevisad. [Aktuellt stopp- och budgetkvitto](JOHN-HANDOFF.md#dragan-talstatus)
-anger sex bevarade reservationer om 7,20 USD och villkoren före ett senare prov.
-Tal/läppsynk och produktluckorna nedan är fortfarande öppna.
+acceptans. Den äldre bankhämtningens chunked-brist rättades i PR242; senare
+prov nådde GPU/TTS. PR250:s buffertfix slutförde ett tekniskt vilotalprov med
+54/54 rutor. Det är inte slutgodkänd läppsynk under utdelning. Aktuellt
+rörelseprov, prestanda, bevaring, kostnadsmandat och avveckling finns endast i
+[talhandoffen](JOHN-HANDOFF.md#dragan-talstatus). Modellomladdning per jobb och
+varaktigt bevarande av moving-resultat är separata öppna produktfrågor;
+de återöppnar inte den genomförda Neon-/Blob-migreringen.
 
 ## Ytor och datalagring — produktion och nya QA
 

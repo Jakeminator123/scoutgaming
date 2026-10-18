@@ -1,5 +1,15 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Rörligt tal, källbevaring och verifiering — 18 oktober 2026
+
+Lipsync-spåret skiljer nu uttryckligen vilotal, tal över exakt utdelningsfilm
+och full produktionsantagning. Cache-/prestandakrav, Emils ZIP, Blob/Neon och
+begränsningen för moving-svarens lagring dokumenteras i den befintliga
+[runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md#rörligt-tal-verifieringsgränser-cache-och-källor--18-oktober-2026).
+Aktuellt prov/leverans ligger endast i [handoffen](../JOHN-HANDOFF.md#dragan-talstatus);
+privata videor och körkvitton är underlag, inte parallella produktregister.
+Mätinstrumenteringen ändrar inte modell, cachebeteende eller bildprotokoll.
+
 ## Mikrofonens originalspråk och delad bildkontext — 18 oktober 2026
 
 Spelbordets mikrofon använder OpenAI `whisper-1` via `/audio/transcriptions`

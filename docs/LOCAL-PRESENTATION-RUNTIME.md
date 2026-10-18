@@ -40,8 +40,7 @@ svar importerade och återlästa. Katalogen innehåller 760 layoutposter,
 542 indexposter, 51 bankklipp och 18 JSON-original; 514 Blob-objekt är
 fullständigt hashverifierade. Samtliga 79 medieposter och tre dokument är
 oförändrade. Detta återger huvudagentens kontroll, inte ett nytt prov.
-Produktens runtime kör ännu bridgeversion `3165ab6`; runtimebyte och
-efterföljande driftacceptans väntar. Följ endast
+Uppgifterna ovan är det daterade migrationskvittot, inte dagens deployversion. Följ
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [JOHN-HANDOFF](JOHN-HANDOFF.md)
 för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
 tidigare implementationen och ersätts av detta kontrakt.
@@ -52,6 +51,62 @@ skriver bara adressen och `--product` är ett uttryckligt alias. Endast
 `--skip-build` hör till den fixturen. `--cloud-storage`, `--astrid-camera`
 och `--check` avvisas; de startar inte längre en ansluten lokal produkt.
 Sparade lokala arbetsfiler bevaras som källor eller återhämtningsdata.
+
+## Rörligt tal: verifieringsgränser, cache och källor — 18 oktober 2026
+
+Rörligt tal betyder att ansiktet genereras för **samma källfilm och bildruta som
+kroppen visar**. Dragan-bankens karta binder varje klipp-ID och SHA-256 till
+dess exakta poolrutor, ansiktsrektangel, latentdata och mask. Talplanen binder
+dessutom text, PCM, profil, bank och workerrelease. Bakgrund och bord läggs på
+efter dealerlagrets komposition; scenens skalning och grönbakgrundsnyckling får
+inte ändra dessa källidentiteter. Ändrade originalbytes kräver ny verifierad
+bankbindning. Ändrad scenplacering behöver inte i sig en ny bank.
+
+Vanlig chatt använder vila. Tal under nästa utdelning använder serverns nya
+utdelningssekvens. En kort replik kan vara slut innan dealerns eget kort delas;
+ett lyckat viloprov eller första munrörelse bevisar därför inte självutdelning.
+Minsta rörelseprov ska använda ett utpekat utdelningsklipp, verkligt genererade
+ansiktsdata, rätt ljud och den gemensamma spelaren. Ett isolerat sådant prov
+verifierar inte automatiskt produktionsserverns antagning, kort eller saldo.
+Aktuella resultat och deras gränser finns i [handoffen](JOHN-HANDOFF.md#dragan-talstatus).
+
+Det finns flera olika former av varm/kall lagring och beräkning:
+
+| Del | Faktiskt beteende |
+| --- | --- |
+| Blob/Neon | Beständiga källbytes och register; ingen lokal runtime-reserv. |
+| RunPod-container/image | Skalning till noll kan ge kö och imagehämtning före jobbstart. En EXITED-worker eller cachepost är inte en aktiv GPU. |
+| Bankarkiv | Hashad temporär `/tmp/croupier-moving-banks`; träffar återverifieras. Försvinner när containerns lagring försvinner. |
+| Bankextraktion/modell | Den nuvarande workern extraherar och verifierar banken, skapar en ny motorprocess, laddar modell/avatar och värmer upp **för varje jobb**. En varm container innebär inte en varm talmodell. |
+| Spelarens buffert | Hela komprimerade repliken och verifierat `done` krävs före ljudstart; högst 4 MiB komprimerat och 48 avkodade ansiktsrutor. Detta är uppspelningsskydd, inte modellcache. |
+
+Workern kör ett uttalande åt gången, 24 fps, 220 ms inledande och 530 ms
+avslutande ljudutfyllnad, med 12-rutorspaket och kvittens. Både worker och
+spelserver kräver minst 30 uppmätta uppvärmningsrutor/s. Uppvärmningen använder
+syntetisk tystnad och är ingen garanti för nätverk, faktiskt klipp eller
+webbläsarens bildtakt. Mät kö/image, bank, modelluppstart, första färdiga paket,
+hela replikens produktion, överföring, verklig ljudstart och bildtapp var för sig.
+Fullbankens 2479 stycken 1080×1920 YUV420-kroppsrutor motsvarar cirka 7,18 GiB
+host-RAM, utöver modeller, masker och buffertar. GPU-minne och host-RAM är olika
+krav. En GPU-modell eller ett pris ensamt är inget prestandakvitto.
+
+Emils export är en versionsbunden referensleverans, inte produktens register.
+Den egna workern har pinnade modell-/kod-/pakethashar, verifierad bank, isolerad
+process, autentiserad jobbkoppling, avbrott och tester. Tekniken ska bedömas på
+dessa kontroller och uppmätt kvalitet, inte på att ursprunget är en ZIP eller
+Python. Kvarvarande modellomladdning per jobb och avsaknad av varaktig lagring
+för moving-resultat är konkreta produktluckor. En framtida varm motor måste
+ha exklusiv lease bunden till release, dealer, källmängd, bank och kvitto;
+bankbyte, fel eller avbrott ska avveckla den. Ingen dold återanvändning av PCM
+eller ansiktsrutor mellan repliker tillåts.
+
+Behåll originalfilmer i befintlig privat Blob och deras identiteter i Neon.
+Git innehåller kod, kontrakt och läsbara kvitton, inte alla genererade filmer.
+Emils ZIP bevaras separat som referens. Härledda renderingar, ljud och
+sanerade proveniensmanifest hör till staging/granskning och är inte nya
+original eller godkända talrepliker. `/admin/clips` registrerar riktiga MP4/WebM
+med explicit funktion; ZIP, bankarkiv och råa mun-/maskpaket ska inte läggas där.
+Att en film finns i klippbiblioteket aktiverar eller publicerar den inte.
 
 ## Astrid som legacyreferens och gemensam molnkälla, 16 oktober 2026
 
@@ -1735,7 +1790,7 @@ kontroller cachas inte. Profil- och ägarkontroller görs även vid cacheträff.
 Referenscachen rymmer fyra innehållsbundna bilder. Detta ersätter inte GPU-
 kallstart, och ingen förbättrad live-latens är slutgodkänd från adaptertester.
 
-Färdiga streamade dealersvar sparas efter sista mediebildrutan som privat WAV,
+**Fullfile/äldre generated-speech-stream:** färdiga streamade dealersvar sparas efter sista mediebildrutan som privat WAV,
 MP4 och exakt text/profilhash. Vid leveransen 12 oktober låg separat metadata i
 `croupier/reply-library/<miljo-arbetsyta-hash>/<dealer>/<uuid>.json`; ljud/video
 ligger i dealerfamiljens `runtime/conversation-replies`, avskilt från bank,
@@ -1752,6 +1807,19 @@ tio kontrollerade kategorier, revideringssäkra ändringar och privat media-prox
 Miljö/arbetsyta/dealer omvalideras vid läsning. Media behåller exakta hashvärden;
 `reviewStatus=pending` innebär att sparning inte är godkänd läppsynk. Ingen
 automatisk återanvändning eller import av gamla klipp aktiveras här.
+
+**Moving-vägen, kontrollerad 18 oktober:** `moving-speech-runtime.mjs` anropar
+inte svarsbibliotekets `save`. Dess PCM och ansiktspaket är flyktiga och rensas
+vid cleanup. Tidigare prov finns bara i privata provkataloger tills en separat
+verifierad bevaring har gjorts. H.264-paketen är Annex-B 256×512 med mun och
+mask, inte en färdig MP4 av dealern eller scenen. De får inte skickas som video
+till det befintliga WAV+MP4-kontraktet. Ett fullständigt bevarande behöver exakt
+PCM, samtliga validerade paket/taggar, plan, käll-/bank-/profilhashar och separat
+uppspelningsstatus. Slutlig MP4 kräver komposition mot de exakta källrutorna.
+Ofullständiga/avbrutna resultat får aldrig markeras färdiga eller godkända.
+Privat Blob kan bevara sådana källartefakter utan ny databas; sökbar generisk
+proveniens i Neon saknar ännu ett typat kontrakt. Lägg inte fria extra fält i
+`speech_reply_records` eller nya dokumenttyper i befintligt dokumentregister.
 
 ## Dealerbibliotek och molnkatalog, 11 oktober 2026
 
