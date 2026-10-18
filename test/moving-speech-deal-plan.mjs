@@ -69,6 +69,75 @@ test('muted or refused next-deal chat returns fallback and releases busy state w
     assert.equal(input.value,'Hej');
   }
 });
+
+async function dealClientFixture(error='moving_deal_speech_unavailable',status=409){
+  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
+  const source=app.slice(app.indexOf('async function api('),app.indexOf('async function prepareTable('))
+    +app.slice(app.indexOf('function refreshNextDealChat('),app.indexOf('function finishMovingDealStep('));
+  const calls=[],states=[],toggle={checked:true},input={value:'Ulf Lundell är bra.'},cancel={hidden:false},buttons=[{disabled:false}];
+  const context={player:{id:'player'},tableVersion:11,balance:1000,bets:[{main:5}],round:null,busy:true,
+    movingSpeechAvailable:true,nextDealChat:{message:input.value},activeDealSpeech:null,
+    nextDealControls:{hidden:false,querySelector:()=>cancel},$:s=>s==='#chat-next-deal'?toggle:input,
+    document:{querySelectorAll:()=>buttons},probeClient:null,localPresentation:{state:s=>states.push(s)},
+    updatePoseState(){},DEALER:{key:'dragan'},entrySelection:{},clientSessionRevision:'session-1',
+    chatPresentationContext:()=>({roomId:'room-1'}),crypto:{randomUUID:()=>`request-${calls.length+1}`},
+    layeredPresentationEnabled:false,observedTableView:null,nativeObservation:{command(){}},
+    setBanner:value=>{context.banner=value;},setChatStatus:value=>{context.chatStatus=value;},renderBets(){},
+    apiFetch:async(_path,options)=>{
+      const payload=JSON.parse(options.body);calls.push(payload);
+      const rejected=payload.movingSpeech!==undefined;
+      return {ok:!rejected,status:rejected?status:200,json:async()=>rejected?{error}:{version:12,movingSpeechAvailable:false}};
+    }};
+  runInNewContext(source,context);
+  return {context,calls,states,toggle,input,buttons};
+}
+
+test('disabled dealing speech preserves drafts and unlocks only after explicit pre-deal refusal, without retry',async()=>{
+  const {context:c,calls,states,toggle,input}=await dealClientFixture();
+  const bets=c.bets;let rejected;
+  await assert.rejects(c.tableCommand('start',{bets}),error=>{rejected=error;return error.message==='moving_deal_speech_unavailable';});
+  assert.equal(calls.length,1,'a refused start must never be retried automatically');
+  c.tableError(rejected);
+  assert.equal(c.busy,false);assert.equal(c.movingSpeechAvailable,false);assert.equal(c.nextDealControls.hidden,true);
+  assert.equal(toggle.checked,false);assert.equal(c.nextDealChat,null);assert.equal(input.value,'Ulf Lundell är bra.');
+  assert.equal(c.tableVersion,11);assert.equal(c.balance,1000);assert.equal(c.bets,bets);assert.equal(c.round,null);
+  assert.equal(states.at(-1).action,false);assert.match(c.banner,/Ingen insats drogs/);assert.doesNotMatch(c.banner,/Reload/);
+  await c.tableCommand('start',{bets}); // A separate, explicit player action.
+  assert.equal(calls.length,2);assert.equal(Object.hasOwn(calls[1],'movingSpeech'),false);
+  assert.equal(c.tableVersion,12);
+});
+
+test('unknown failures, invalid deal contexts and non-409 errors still require authoritative recovery',async()=>{
+  for(const [code,status] of [['invalid_moving_deal_context',409],['moving_deal_speech_unavailable',500],['unknown_failure',400]]){
+    const {context:c,calls,buttons}=await dealClientFixture(code,status);let rejected;
+    await assert.rejects(c.tableCommand('start',{bets:c.bets}),error=>{rejected=error;return true;});
+    c.tableError(rejected);
+    assert.equal(calls.length,1);assert.equal(c.busy,true);assert.equal(buttons[0].disabled,true);
+    assert.equal(c.tableVersion,11);assert.equal(c.balance,1000);assert.match(c.banner,/Reload to resume/);
+  }
+});
+
+test('a state refresh revokes stale queued speech and its checkbox when the server disables it',async()=>{
+  const {context:c,calls,toggle,input}=await dealClientFixture();
+  await c.tableCommand('state');
+  assert.equal(calls.length,1);assert.equal(c.nextDealChat,null);assert.equal(c.nextDealControls.hidden,true);
+  assert.equal(toggle.checked,false);assert.equal(input.value,'Ulf Lundell är bra.');
+});
+
+test('a network-ambiguous start followed by disabled speech stays locked until authoritative recovery',async()=>{
+  const {context:c,calls}=await dealClientFixture();
+  const originalFetch=c.apiFetch;let lost;
+  c.apiFetch=async(path,options)=>{
+    if(!lost){lost=JSON.parse(options.body);throw Error('Failed to fetch');}
+    return originalFetch(path,options);
+  };
+  let rejected;
+  await assert.rejects(c.tableCommand('start',{bets:c.bets}),error=>{rejected=error;return true;});
+  assert.equal(calls.length,1);assert.deepEqual(calls[0],lost,'network retry keeps the exact idempotency key and payload');
+  c.tableError(rejected);
+  assert.equal(c.busy,true);assert.match(c.banner,/Reload to resume/);assert.doesNotMatch(c.banner,/Ingen insats drogs/);
+  assert.equal(c.tableVersion,11);assert.equal(c.balance,1000);assert.equal(c.movingSpeechAvailable,false);
+});
 test('stale command, missing published exact source, audio-bearing action and unbound take fail closed',()=>{
   for(const mutate of [i=>i.version++,i=>i.frozenContext.records.splice(0),
     i=>i.frozenContext.records.forEach(v=>v.classification.recordedSpeech={status:'pending'}),

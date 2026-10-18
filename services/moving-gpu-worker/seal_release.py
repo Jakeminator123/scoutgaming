@@ -5,7 +5,7 @@ from pathlib import Path
 from contracts import canonical, digest
 
 ROOT = Path(__file__).resolve().parent
-FILES = ("bank_download.py", "frame_contract.py", "contracts.py", "session.py", "engine.py", "entrypoint.py", "fetch_models.py",
+FILES = ("bank_download.py", "diagnostics.py", "frame_contract.py", "contracts.py", "session.py", "engine.py", "engine_cache.py", "entrypoint.py", "fetch_models.py",
          "vendor/motor.py", "vendor/rorlig.py", "source.json", "requirements.lock",
          "wheels.lock", "models.lock.json", "Dockerfile", "build-contract.json",
          "serverless.py", "requirements-serverless.lock", "serverless-wheels.lock",

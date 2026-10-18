@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createMovingSpeechRuntime } from '../services/game/moving-speech-runtime.mjs';
+import { createMovingSpeechRuntime, movingSpeechFailureReceipt, movingSpeechPreparationFailureReceipt } from '../services/game/moving-speech-runtime.mjs';
 import { createMovingSpeechSourceSet } from '../services/game/moving-speech-bank.mjs';
 import { validateMovingSpeechStream } from '../packages/presentation/runtime/moving-speech-player.mjs';
 import {DRAGAN_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
@@ -18,7 +18,7 @@ const record = (extension, type, bytes) => ({ provider: 'vercel-blob',
 async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await pause(5); } assert.fail('runtime fixture did not settle'); }
 
 async function setup(t, options = {}) {
-  const original = Buffer.from('synthetic-original'), pcm = Buffer.alloc(36000, 1), trace = [], sockets = [];
+  const original = Buffer.from('synthetic-original'), pcm = Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [], preparationFailures = [];
   const dealClips=options.deal?DRAGAN_KEVIN_PROFILE.takes.map((take,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,
     sha256:take.sha256,bytes:100+i,fps:24,frameCount:take.frames,width:1080,height:1920})):[];
   const sourceSet = createMovingSpeechSourceSet({ dealerId: 'dragan', clips: [...dealClips,{ videoId, sha256: digest(original), bytes: original.length,
@@ -42,6 +42,8 @@ async function setup(t, options = {}) {
   const base = `http://127.0.0.1:${server.address().port}`, address = base.replace('http:', 'ws:') + '/moving-speech-stream';
   runtime = createMovingSpeechRuntime({ server, origin, bank, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4), now: () => state.now,
     connectionMs: options.connectionMs ?? 15000, onCleanupError:()=>trace.push('cleanup-recovery'),
+    onStreamFailure:receipt=>{failures.push(receipt);return options.onStreamFailure?.(receipt);},
+    onPreparationFailure:receipt=>{preparationFailures.push(receipt);return options.onPreparationFailure?.(receipt);},
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
     readEvidence: async () => { state.reads++; const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
     readPresentation:async()=>{const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
@@ -49,14 +51,15 @@ async function setup(t, options = {}) {
     bankRead: options.bankRead ?? (async () => assert.fail('runtime fixture must never download bank bytes')),
     dealerRuntime: { async prepareMoving(input) {
       assert.equal(input.dealerId,'dragan'); assert.deepEqual(input.sourceSet,sourceSet);
+      await options.onPrepare?.(input,state);
       trace.push('voice-prepared'); return { profileRevision: h, compositing: null,
-        async assertFresh() { if (state.profileChanged) throw Error('profile_changed'); },
+        async assertFresh() { if (state.profileChanged) throw Error('generated_speech_profile_changed'); },
         async *source({ beforeCostly, signal }) { trace.push('tts'); await beforeCostly(); signal.throwIfAborted();
           await options.onTts?.(state); yield pcm; },
       };
     } },
     sessions: { async admit(args) {
-      trace.push('admit'); admitted = args; await args.beforeCostly();
+      trace.push('admit'); admitted = args; await options.onAdmit?.(args,state); await args.beforeCostly();
       const binding = { ...args.binding, schemaVersion: 1, sessionId, attemptId: 'attempt-1', nonce: '2'.repeat(64) };
       return { sessionId, binding, async submit() { trace.push('submit'); await args.beforeCostly(); },
         async ready() { trace.push('ready'); await options.onReady?.(state); }, handleUpgrade() { return false; },
@@ -93,9 +96,65 @@ async function setup(t, options = {}) {
     });
     return { socket, messages, opened, close, send: value => socket.send(JSON.stringify(value)) };
   };
-  return { runtime, state, input, trace, original, pcm, registry, base, address, sourceSet, connect,
+  return { runtime, state, input, trace, failures, preparationFailures, original, pcm, registry, base, address, sourceSet, connect,
     prepare: overrides => runtime.prepare({ ...input, ...overrides }), get admitted() { return admitted; } };
 }
+
+test('preparation receipts allowlist codes and redact exceptions, phases and invalid identifiers', () => {
+  const secret='https://private.example/?ticket=secret';
+  const base={phase:'admission',requestId:'request-1',streamId:sessionId};
+  const expected=code=>({event:'moving_speech_preparation_failed',code,...base});
+  const error=Object.assign(Error(secret),{code:'generated_speech_moving_capacity_unverified',stack:secret,cause:{token:secret}});
+  assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error}),expected(error.code));
+  assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error:Error('generated_speech_voice_unavailable')}),expected('generated_speech_voice_unavailable'));
+  assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error:new DOMException(secret,'AbortError')}),expected('moving_speech_cancelled'));
+  for(const error of [Error(secret),{code:'generated_speech_voice_unavailable '+secret,message:secret},
+    {get code(){throw Error(secret);}},secret,null]){
+    assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error}),expected('moving_speech_unavailable'));
+  }
+  for(const invalid of [secret,'x'.repeat(129),sessionId+'\n',{},undefined]){
+    assert.deepEqual(movingSpeechPreparationFailureReceipt({error,phase:invalid,requestId:invalid,streamId:invalid}),
+      {event:'moving_speech_preparation_failed',code:error.code,phase:'unknown',requestId:null,streamId:null});
+  }
+});
+
+test('voice and admission failures log once before TTS/submit and preserve the original error',async t=>{
+  for(const [code,hook,phase] of [
+    ['generated_speech_voice_unavailable','onPrepare','profile-voice'],
+    ['generated_speech_profile_not_enabled','onPrepare','profile-voice'],
+    ['generated_speech_moving_reference_unavailable','onPrepare','profile-voice'],
+    ['generated_speech_moving_capacity_unverified','onAdmit','admission'],
+    ['generated_speech_total_budget_exhausted','onAdmit','admission'],
+    ['generated_speech_recovery_required','onAdmit','admission'],
+  ]){
+    const error=Object.assign(Error('private upstream detail'),{code}),seen=[];
+    const f=await setup(t,{[hook]:async input=>{seen.push(input.signal);throw error;}});
+    await assert.rejects(f.prepare(),actual=>actual===error);
+    assert.deepEqual(f.preparationFailures,[{event:'moving_speech_preparation_failed',code,phase,streamId:null,requestId:f.input.requestId}]);
+    assert.equal(seen[0].aborted,true);
+    assert.equal(f.trace.includes('submit'),false);assert.equal(f.trace.includes('tts'),false);
+    assert.equal(f.state.dispatched,0);assert.equal(f.state.cancelled,0);
+  }
+});
+
+test('unknown preparation errors are generic in diagnostics, without replacing the exception',async t=>{
+  const error=Object.assign(Error('private utterance'),{code:'provider-private-token',url:'https://private.example'});
+  const f=await setup(t,{onAdmit:()=>{throw error;}});
+  await assert.rejects(f.prepare(),actual=>actual===error);
+  assert.deepEqual(f.preparationFailures,[{event:'moving_speech_preparation_failed',code:'moving_speech_unavailable',phase:'admission',streamId:null,requestId:f.input.requestId}]);
+  assert.equal(f.admitted.signal.aborted,true);assert.equal(f.trace.includes('submit'),false);
+});
+
+test('throwing, rejecting or pending preparation loggers cannot prevent cancellation or replace the first failure',async t=>{
+  for(const onPreparationFailure of [()=>{throw Error('logger unavailable');},()=>Promise.reject(Error('logger unavailable')),()=>new Promise(()=>{})]){
+    const error=Error('moving_worker_read_timeout');
+    const f=await setup(t,{onReady:()=>{throw error;},onPreparationFailure,cancelFails:true});
+    await assert.rejects(f.prepare(),actual=>actual===error);
+    assert.equal(f.state.cancelled,1);assert.equal(f.admitted.signal.aborted,true);
+    assert.equal(f.trace.includes('cleanup-recovery'),true);assert.equal(f.trace.includes('tts'),false);
+    assert.deepEqual(f.preparationFailures,[{event:'moving_speech_preparation_failed',code:error.message,phase:'worker-ready',streamId:sessionId,requestId:f.input.requestId}]);
+  }
+});
 
 test('bank-ready admission precedes TTS; exact descriptor and plan survive real HTTP/WS credit flow and graceful done', async t => {
   const f = await setup(t), d = await f.prepare();
@@ -116,6 +175,77 @@ test('bank-ready admission precedes TTS; exact descriptor and plan survive real 
   assert.equal((await client.close).code, 1000);
   assert.deepEqual(client.messages.at(-1), { t: 'done', id: ready.plan.start.id, frames: 36 });
   assert.equal(f.state.chunks, 3); assert.equal(f.state.cancelled, 1);
+  assert.deepEqual(f.failures, []);
+});
+
+test('server interruption receipts allow only known reasons and valid correlation fields', () => {
+  const secret = 'https://user:secret@fixture.example/?token=secret&ticket=secret\nspoken private text';
+  const base = {phase:'dispatch',streamId:sessionId,requestId:'request-1'};
+  const expected = code => ({event:'moving_speech_stream_interrupted',code,...base});
+  assert.deepEqual(movingSpeechFailureReceipt({...base,error:Object.assign(Error(secret),
+    {code:'moving_worker_read_timeout',stack:secret,cause:{token:secret},ticket:secret})}),expected('moving_worker_read_timeout'));
+  assert.deepEqual(movingSpeechFailureReceipt({...base,error:Error('moving_worker_incomplete_result')}),expected('moving_worker_incomplete_result'));
+  assert.deepEqual(movingSpeechFailureReceipt({...base,error:new DOMException(secret,'AbortError')}),expected('moving_speech_cancelled'));
+  let reads = 0;
+  assert.deepEqual(movingSpeechFailureReceipt({...base,error:{get code(){return reads++ ? secret : 'moving_worker_read_timeout';}}}),expected('moving_worker_read_timeout'));
+  for (const error of [Error(secret),{code:'moving_worker_read_timeout '+secret,message:secret},secret,null,
+    {get code(){throw Error(secret);}}]) {
+    assert.deepEqual(movingSpeechFailureReceipt({...base,error}),expected('moving_speech_unavailable'));
+  }
+  for (const invalid of [secret,'x'.repeat(129),sessionId+'\n',{},undefined]) {
+    assert.deepEqual(movingSpeechFailureReceipt({error:Error(secret),phase:invalid,streamId:invalid,requestId:invalid}),
+      {event:'moving_speech_stream_interrupted',code:'moving_speech_unavailable',phase:'unknown',streamId:null,requestId:null});
+  }
+});
+
+test('partial stream failure logs the server cause once and preserves generic client error and cleanup', async t => {
+  for (const known of [true,false]) {
+    const f = await setup(t,{afterChunk:()=>{throw known ? Error('moving_worker_incomplete_result')
+      : Object.assign(Error('private spoken text'),{code:'provider-secret',token:'secret',url:'https://private.example'});}});
+    const d = await f.prepare(), client = f.connect(d); await client.opened;
+    await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:12}); await client.close;
+    assert.equal(f.state.chunks,1); assert.equal(f.state.cancelled,1);
+    assert.deepEqual(f.failures,[{event:'moving_speech_stream_interrupted',code:known?'moving_worker_incomplete_result':'moving_speech_unavailable',
+      phase:'dispatch',streamId:d.id,requestId:f.input.requestId}]);
+    assert.equal(client.messages.filter(m=>m.t==='lapp').length,1);
+    assert.equal(client.messages.some(m=>m.t==='done'),false);
+    assert.deepEqual(client.messages.at(-1),{t:'error',code:'moving_speech_unavailable'});
+  }
+});
+
+test('invalid credit keeps its first reason through cancellation and failed cleanup', async t => {
+  const f = await setup(t,{cancelFails:true}), d = await f.prepare(), client = f.connect(d); await client.opened;
+  await until(()=>client.messages.length===3);
+  client.send({t:'credit',id:client.messages[0].plan.start.id,frames:49}); await client.close;
+  await until(()=>f.trace.includes('cleanup-recovery'));
+  assert.deepEqual(f.failures,[{event:'moving_speech_stream_interrupted',code:'moving_speech_invalid_credit',
+    phase:'client-message',streamId:d.id,requestId:f.input.requestId}]);
+  assert.equal(f.state.cancelled,1); assert.equal(f.state.chunks,0);
+});
+
+test('dispatch retains its original failure when transport cleanup closes the browser before rethrowing', async t => {
+  const f = await setup(t,{afterChunk:async()=>{
+    await f.runtime.cancelOwner(f.input.owner);
+    throw Error('moving_worker_read_timeout');
+  }}), d = await f.prepare(), client = f.connect(d); await client.opened;
+  await until(()=>client.messages.length===3);
+  client.send({t:'credit',id:client.messages[0].plan.start.id,frames:12}); await client.close;
+  await until(()=>f.failures.length===1);
+  assert.deepEqual(f.failures,[{event:'moving_speech_stream_interrupted',code:'moving_worker_read_timeout',
+    phase:'dispatch',streamId:d.id,requestId:f.input.requestId}]);
+  assert.equal(f.state.cancelled,1); assert.equal(f.state.chunks,1);
+});
+
+test('throwing or rejecting diagnostic sinks cannot prevent the existing stream error and cancellation', async t => {
+  for (const onStreamFailure of [()=>{throw Error('logger unavailable');},()=>Promise.reject(Error('logger unavailable'))]) {
+    const f = await setup(t,{afterChunk:()=>{throw Error('moving_worker_read_timeout');},onStreamFailure});
+    const d = await f.prepare(), client = f.connect(d); await client.opened;
+    await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:12}); await client.close;
+    assert.equal(f.state.cancelled,1); assert.equal(f.failures.length,1);
+    assert.deepEqual(client.messages.at(-1),{t:'error',code:'moving_speech_unavailable'});
+  }
 });
 test('fresh opening binds exact box3 sequence once; short speech retains reservation until played ACK',async t=>{
   const f=await setup(t,{deal:true}),d=await f.prepare();
@@ -252,6 +382,8 @@ test('profile/publication change while waiting for credit prevents the next patc
     const f = await setup(t), d = await f.prepare(), client = f.connect(d); await client.opened; await until(() => client.messages.length === 3);
     change(f.state); client.send({ t: 'credit', id: client.messages[0].plan.start.id, frames: 12 }); await client.close;
     assert.equal(f.state.chunks, 0); assert.equal(f.state.cancelled, 1); assert.equal(client.messages.some(m => m.t === 'done'), false);
+    assert.deepEqual(f.failures,[{event:'moving_speech_stream_interrupted',code:f.state.profileChanged?'generated_speech_profile_changed':'moving_speech_context_changed',
+      phase:'chunk-current',streamId:d.id,requestId:f.input.requestId}]);
   }
 });
 

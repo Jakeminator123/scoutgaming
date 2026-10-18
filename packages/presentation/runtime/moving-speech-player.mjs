@@ -5,6 +5,9 @@ import { chatFailureCode } from '../../../packages/presentation/contracts/chat-r
 
 const HASH = /^[a-f0-9]{64}$/, ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+// Keep the frame layer's 48-frame ceiling. Slow providers must finish producing
+// the reply before audio starts; their encoded reply has a separate hard cap.
+const MAX_DECODED_FRAMES = 48, MAX_STAGED_BYTES = 4 * 1024 * 1024;
 const fail = code => { throw Error(code); };
 const integer = n => Number.isSafeInteger(n) && n >= 0;
 const abortError = () => new DOMException('Speech cancelled', 'AbortError');
@@ -163,6 +166,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   let socket, layer, restCanvas, bodyFrames, ready, speech, pendingBinary, frameHandle, audioURL, queued = 0, queuedBytes = 0;
   let received = 0, receivedParts = 0, credited = 0, released = 0, pcmReady = false, workerDone = false, audioEnded = false;
   let starting = false, started = false, firstFrame = false, completed = false, terminal = false, tail = Promise.resolve();
+  const staged = [];
+  let stagedBytes = 0, decoding;
   let resolveDone, rejectDone, failureCode;
   const noteFailure = error => { failureCode ??= chatFailureCode(error?.name === 'AbortError' ? 'chat_cancelled' : error?.message); };
   const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
@@ -185,14 +190,45 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   const finish = () => { if (audioEnded && workerDone && !terminal) {
     if(ready.sequence)send({t:'played',id:ready.plan.start.id});
     completed = terminal = true; resolveDone(); } };
+  const finishAudioPlayback = () => {
+    if (terminal) return;
+    try {
+      check(); audioEnded = true; if (frameHandle !== undefined) caf(frameHandle);
+      if(ready.sequence){
+        if(released<ready.sequence.frames.length-2)fail('moving_speech_sequence_incomplete');
+        if(released===ready.sequence.frames.length-2){
+          const k=ready.sequence.frames.length-1,source=bodyFrames.get(k);
+          if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame(ready.sequence,k);
+        }
+        onSequenceEnd(ready.sequence);
+      }
+      if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
+    } catch (error) { stop(error); }
+  };
+  const decodeAhead = () => {
+    if (decoding) return decoding;
+    decoding = (async () => {
+      while (!terminal && staged.length && layer.bufferedFrames + staged[0].meta.rutor.length <= MAX_DECODED_FRAMES) {
+        check(); const chunk = staged.shift();
+        try {
+          if (!await layer.push(chunk.meta, chunk.bytes)) fail('moving_speech_rejected_chunk');
+          check();
+        } finally { stagedBytes -= chunk.bytes.byteLength; chunk.bytes.fill(0); }
+      }
+    })().finally(() => { decoding = null; });
+    return decoding;
+  };
   const tick = () => {
     if (terminal || audioEnded) return;
     try {
       check();
+      // Native ended/paused state can precede the queued DOM ended event.
+      if (audio.ended) { finishAudioPlayback(); return; }
       if (audio.paused) fail('moving_speech_audio_paused');
       const k = Math.floor((audio.currentTime + (ready.sequence?0:.22)) * 24 + 1e-7);
       if (k < released || (k<ready.plan.timeline.length&&!layer.hasFrame(k))) fail('moving_speech_frame_unavailable');
-      layer.releaseBefore(Math.min(k,ready.plan.timeline.length)); credit(k - released); released = k;
+      layer.releaseBefore(Math.min(k,ready.plan.timeline.length)); released = k;
+      void decodeAhead().catch(stop);
       const row=ready.sequence?.frames[k]??{take:'vila',frame:0,sourceSha256:ready.rest.sha256};
       const source=ready.sequence?.frames[k]?bodyFrames.get(k):restCanvas;
       if (renderFrame(source, { binding: ready.plan.binding, planSha256: ready.plan.planSha256,
@@ -205,9 +241,11 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     } catch (error) { stop(error); }
   };
   const maybeStart = async () => {
-    if (starting || started || !pcmReady || received < Math.min(24, ready.plan.timeline.length)) return;
+    if (starting || started || !pcmReady || !workerDone) return;
+    starting = true;
+    await decodeAhead(); check();
     for (let k = ready.sequence?0:5; k < Math.min(24, ready.plan.timeline.length); k++) if (!layer.hasFrame(k)) fail('moving_speech_frame_unavailable');
-    starting = true; check(); await abortable(beforeStart(), controller.signal); check();
+    check(); await abortable(beforeStart(), controller.signal); check();
     if(ready.sequence&&renderFrame(bodyFrames.get(0))!==true)fail('moving_speech_render_failed');
     await abortable(audio.play(), controller.signal); check();
     if (audio.paused) fail('moving_speech_audio_paused');
@@ -224,9 +262,13 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         if (bytes.byteLength !== ready.audio.byteLength || await digest(bytes) !== ready.plan.binding.audioSha256) fail('moving_speech_pcm_hash_mismatch');
         check(); audioURL = createURL(wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined)); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
       } else {
-        if (!await layer.push(pending, bytes)) fail('moving_speech_rejected_chunk');
-        check(); received += pending.rutor.length; receivedParts++;
-        await maybeStart();
+        if (!bytes.byteLength) fail('invalid_moving_speech_bytes');
+        if (stagedBytes + bytes.byteLength > MAX_STAGED_BYTES) fail('moving_speech_queue_full');
+        staged.push({ meta: pending, bytes }); stagedBytes += bytes.byteLength;
+        received += pending.rutor.length; receivedParts++;
+        // Replenish only the chunk just retained, not the whole plan. Outstanding
+        // network credit stays at most 24 without depending on audio playback.
+        credit(pending.rutor.length);
       }
       return;
     }
@@ -258,13 +300,17 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     else if (message.t === 'lapp' && pcmReady && !workerDone) {
       if (message.id !== ready.plan.start.id || message.fran !== received || message.del !== receivedParts
         || !Array.isArray(message.rutor) || !message.rutor.length || message.rutor.length > 12
-          || received + message.rutor.length > credited || message.rutor.some(tag => tag!==null&&(!Array.isArray(tag.rect)
+          || received + message.rutor.length > credited || received + message.rutor.length > ready.plan.timeline.length
+          || message.rutor.some((tag, i) => tag!==null&&(!tag || tag.tagning !== ready.plan.timeline[received+i].take
+          || tag.ruta !== ready.plan.timeline[received+i].frame || !Array.isArray(tag.rect)
           || tag.rect.length !== 4 || tag.rect.some(n => !Number.isFinite(n) || n < 0) || tag.rect[2] <= 0 || tag.rect[3] <= 0
           || tag.rect[0] + tag.rect[2] > ready.rest.width || tag.rect[1] + tag.rect[3] > ready.rest.height))) fail('invalid_moving_speech_chunk');
-      pendingBinary = message;
+      // Retain only bounded protocol fields, not arbitrary JSON extensions.
+      pendingBinary = { t: message.t, id: message.id, del: message.del, fran: message.fran,
+        rutor: message.rutor.map(tag => tag === null ? null : { tagning: tag.tagning, ruta: tag.ruta, rect: [...tag.rect] }) };
     } else if (message.t === 'done' && keys(message, ['t', 'id', 'frames']) && !workerDone
       && message.id === ready.plan.start.id && message.frames === ready.plan.timeline.length && received === message.frames) {
-      workerDone = true; finish();
+      workerDone = true; await maybeStart(); finish();
     } else fail('invalid_moving_speech_message');
   };
   try {
@@ -275,24 +321,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     await abortable(beforeStart(), controller.signal); check();
     await abortable(prepareRendering(effectiveDealerCompositing(speech.compositing ?? undefined)), controller.signal); check();
     if (speech.expiresAt <= Date.now()) fail('moving_speech_ticket_expired');
-    audio.onended = () => {
-      if (terminal) return;
-      try {
-        check(); audioEnded = true; if (frameHandle !== undefined) caf(frameHandle);
-        if(ready.sequence){
-          if(released<ready.sequence.frames.length-2)fail('moving_speech_sequence_incomplete');
-          if(released===ready.sequence.frames.length-2){
-            const k=ready.sequence.frames.length-1,source=bodyFrames.get(k);
-            if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame(ready.sequence,k);
-          }
-          onSequenceEnd(ready.sequence);
-        }
-        // The worker has 530 ms of trailing padding. Drain those bounded frames
-        // without moving the body or replaying any audio; close on worker done.
-        credit(ready.plan.timeline.length - credited);
-        if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
-      } catch (error) { stop(error); }
-    };
+    audio.onended = finishAudioPlayback;
     audio.onerror = () => stop(Error('moving_speech_audio_failed'));
     socket = connect(speech.url, ['moving-v1', `ticket.${speech.ticket}`]); socket.binaryType = 'arraybuffer';
     socket.onmessage = event => {
@@ -318,6 +347,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
       socket.close();
     }
     setMovingSpeechLayer?.(null); layer?.close(); bodyFrames?.close();
+    for (const chunk of staged) chunk.bytes.fill(0);
+    staged.length = 0;
     // Clear the last mouth patch with the explicitly verified bank rest only.
     if (restCanvas) { try { assertCurrent(); renderFrame(restCanvas); } catch { /* A new pose now owns the compositor. */ }
       restCanvas.width = restCanvas.height = 0; }

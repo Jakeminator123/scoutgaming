@@ -46,7 +46,7 @@ async function until(check, state) {
     await delay(5);
   }
 }
-function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount=0 } = {}) {
+function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount=0, beforeDecode = async () => {} } = {}) {
   const speech = descriptor(), m = messages(speech, samples), sent = [], receipts = [], observations = [], decoded = [], rafs = new Map();
   if(bodyCount){
     const videoId='98765432-1234-1234-1234-123456789abc',take='clip-'+videoId;
@@ -60,8 +60,8 @@ function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount
     m.ready.plan=JSON.parse(JSON.stringify(m.plan));
     m.chunk=(from=0,n=12)=>({t:'lapp',id:m.plan.start.id,del:from/12,fran:from,rutor:m.plan.timeline.slice(from,from+n).map(r=>({tagning:r.take,ruta:r.frame,rect:[10,20,40,60]}))});
   }
-  let socket, activeLayer, n = 0, current = true, ended = false, result;
-  const audio = { currentTime: 0, paused: true, muted: false, plays: 0,
+  let socket, activeLayer, n = 0, current = true, ended = false, result, peakDecoded = 0;
+  const audio = { currentTime: 0, paused: true, ended: false, muted: false, plays: 0,
     async play() { this.plays++; this.paused = false; }, pause() { this.paused = true; }, removeAttribute() {}, load() {} };
   const doc = { createElement(tag) {
     if (tag === 'audio') return audio;
@@ -78,18 +78,22 @@ function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount
       socket = { readyState: 1, send: text => sent.push(JSON.parse(text)), close() { this.readyState = 3; } }; return socket;
     }, loadRest: async rest => { assert.equal(rest.sourceFrame, 7); return doc.createElement('canvas'); },
     createSourceFrames:()=>({async prefetch(){},get:()=>doc.createElement('canvas'),close(){}}),
-    makeLayer: args => createMovingSpeechFrameLayer({ ...args, decode: async bytes => Array.from({ length: bytes[0] }, () => {
+    makeLayer: args => createMovingSpeechFrameLayer({ ...args, decode: async bytes => { await beforeDecode(decoded.length); const frames = Array.from({ length: bytes[0] }, () => {
       const frame = { displayWidth: 256, displayHeight: 512, closed: 0, close() { this.closed++; } }; decoded.push(frame); return frame;
-    }) }), createURL: () => 'blob:verified-pcm', revokeURL: () => {},
+    }); peakDecoded = Math.max(peakDecoded, decoded.filter(frame => !frame.closed).length); return frames;
+    } }), createURL: () => 'blob:verified-pcm', revokeURL: () => {},
     requestAnimationFrame: fn => { rafs.set(++n, fn); return n; }, cancelAnimationFrame: key => rafs.delete(key), ...dependencies,
   });
   promise.then(value => { ended = true; result = value; }, error => { ended = true; result = error; });
   const send = data => socket.onmessage({ data: data instanceof Uint8Array ? data.slice().buffer : JSON.stringify(data) });
   return { speech, m, audio, sent, receipts, observations, decoded, promise, get socket() { return socket; }, get layer() { return activeLayer; },
-    get ended() { return ended; }, get result() { return result; }, send, stale() { current = false; },
+    get ended() { return ended; }, get result() { return result; }, get peakDecoded() { return peakDecoded; }, send, stale() { current = false; },
     async ready() { await until(() => socket, 'socket connection'); send(m.ready); await until(() => activeLayer, 'verified rest layer'); },
     async pcm() { send({ t: 'pcm', id, byteLength: m.pcm.byteLength }); send(m.pcm); await until(() => sent.length, 'PCM credit'); },
     async chunk(from = 0, n = 12, mutate) { const meta = m.chunk(from, n); mutate?.(meta); send(meta); send(Uint8Array.of(n)); await turn(); await turn(); },
+    async allChunks(from = 0) { for (let k = from; k < m.plan.timeline.length; k += 12) await this.chunk(k, Math.min(12, m.plan.timeline.length - k)); },
+    done() { send({ t: 'done', id: m.plan.start.id, frames: m.plan.timeline.length }); },
+    async start() { await this.allChunks(); this.done(); await until(() => audio.plays === 1 || ended, 'buffered playback'); if (ended) throw result; },
     async tick(time) { audio.currentTime = time; const [key, callback] = rafs.entries().next().value ?? []; rafs.delete(key); callback?.(); await turn(); },
   };
 }
@@ -110,7 +114,7 @@ test('tickets use only secure same-origin sockets, with explicit localhost suppo
   assert.throws(() => movingSpeechSocketURL('https://elsewhere.example/moving-speech-stream', 'https://www.scoutgaming.tech'));
 });
 
-test('verified rest, PCM and first24 decoded frames gate audio; credits follow audio clock and completion removes mouth', async t => {
+test('verified rest, PCM and complete encoded reply gate audio; bounded decode window and completion remove mouth', async t => {
   const status = { dataset: {} }, diagnostic = createChatPlaybackDiagnostic(() => status), receipts = [];
   diagnostic.begin(requestId);
   const readReceipt = () => JSON.parse(status.dataset.playbackReceipt);
@@ -119,13 +123,16 @@ test('verified rest, PCM and first24 decoded frames gate audio; credits follow a
   await f.ready(); assert.equal(f.audio.plays, 0); assert.equal(readReceipt().state, 'pending');
   await f.pcm(); assert.deepEqual(f.sent, [{ t: 'credit', id: f.m.plan.start.id, frames: 24 }]);
   await f.chunk(0); assert.equal(f.audio.plays, 0);
-  await f.chunk(12); await until(() => receipts.length > 0, 'audio playback receipt');
+  await f.chunk(12); assert.equal(f.audio.plays, 0); assert.equal(f.decoded.length, 0);
+  await f.allChunks(24); assert.equal(f.audio.plays, 0);
+  f.done(); await until(() => receipts.length > 0, 'audio playback receipt');
   assert.equal(f.audio.plays, 1);
   assert.equal(receipts[0].state, 'start'); assert.equal(readReceipt().state, 'playing');
   assert.equal(readReceipt().completed, false); assert.equal(f.observations.at(-1).frame, 0);
-  assert.equal(f.observations.at(-1).sourceSha256, h); assert.equal(f.layer.bufferedFrames, 19);
-  await f.tick(.5); await f.chunk(24); await f.tick(.8); await f.chunk(36);
-  f.send({ t: 'done', id: f.m.plan.start.id, frames: 48 }); await turn();
+  assert.equal(f.observations.at(-1).sourceSha256, h); assert.equal(f.layer.bufferedFrames, 43);
+  const credits = f.sent.filter(x => x.t === 'credit');
+  await f.tick(.5); await f.tick(.8);
+  assert.deepEqual(f.sent.filter(x => x.t === 'credit'), credits);
   assert.equal(f.ended, false); f.audio.onended(); await f.promise;
   assert.equal(f.audio.paused, true); assert.equal(f.layer, null); assert.equal(f.observations.at(-1), undefined);
   assert.equal(receipts.at(-1).state, 'end'); assert.ok(f.decoded.every(frame => frame.closed === 1));
@@ -136,29 +143,93 @@ test('verified rest, PCM and first24 decoded frames gate audio; credits follow a
   assert.ok(f.sent.filter(x => x.t === 'credit').every(x => x.frames <= 24));
 });
 
-test('trailing worker padding drains after audio ended without replaying audio or holding its mouth frame', async () => {
-  const f = fixture(); await f.ready(); await f.pcm(); await f.chunk(0); await f.chunk(12); await f.tick(.5); await f.chunk(24);
-  f.audio.currentTime = 1.25; f.audio.onended(); await f.chunk(36);
-  assert.equal(f.ended, false); assert.equal(f.observations.at(-1), undefined); assert.equal(f.audio.plays, 1);
-  f.send({ t: 'done', id: f.m.plan.start.id, frames: 48 }); await f.promise;
+test('trailing worker padding is already local when audio ends without replay or holding its mouth frame', async () => {
+  const f = fixture(); await f.ready(); await f.pcm(); await f.start(); await f.tick(.5);
+  f.audio.currentTime = 1.25; f.audio.onended(); await f.promise;
+  assert.equal(f.observations.at(-1), undefined); assert.equal(f.audio.plays, 1);
+});
+
+test('57-frame reply produced below playback speed waits past frame24, then plays every exact body frame', { timeout: 12000 }, async () => {
+  const seen = [], f = fixture({ samples: 39010, bodyCount: 57,
+    overrides: { onSequenceFrame: (_, frame) => seen.push(frame) } });
+  await f.ready(); await f.pcm(); await f.chunk(0); await f.chunk(12);
+  // The production failure started here and exhausted its 24 frames. Each next
+  // 12-frame batch takes 1.8 s, much longer than its 0.5 s of playback.
+  for (const from of [24, 36, 48]) {
+    await delay(1800);
+    assert.equal(f.audio.plays, 0); assert.equal(f.audio.paused, true);
+    assert.equal(f.decoded.length, 0);
+    const credit = f.sent.filter(x => x.t === 'credit').reduce((sum, x) => sum + x.frames, 0);
+    assert.ok(credit - from >= Math.min(12, 57 - from)); assert.ok(credit - from <= 24);
+    await f.chunk(from, Math.min(12, 57 - from));
+  }
+  assert.equal(f.audio.plays, 0); f.done(); await until(() => f.audio.plays === 1, 'complete reply playback');
+  for (let k = 1; k < 57; k++) { await f.tick((k + .001) / 24); assert.equal(f.ended, false); }
+  f.audio.onended(); await f.promise;
+  assert.deepEqual(seen, Array.from({ length: 57 }, (_, k) => k));
+  assert.equal(f.audio.plays, 1); assert.equal(f.sent.at(-1).t, 'played');
+  assert.equal(f.receipts.at(-1).state, 'end'); assert.equal(f.peakDecoded, 48);
+  assert.ok(f.decoded.every(frame => frame.closed === 1));
+});
+
+test('maximum 600-frame plan makes bounded credit progress before audio and keeps at most48 decoded frames', async () => {
+  const f = fixture({ samples: 582000 }); await f.ready(); await f.pcm();
+  for (let from = 0; from < 600; from += 12) {
+    const credit = f.sent.filter(x => x.t === 'credit').reduce((sum, x) => sum + x.frames, 0);
+    assert.ok(credit - from >= 12 && credit - from <= 24);
+    await f.chunk(from); assert.equal(f.audio.plays, 0);
+  }
+  f.done(); await until(() => f.audio.plays === 1, 'maximum plan playback');
+  for (let k = 6; k < 588; k++) { await f.tick((k + .001) / 24 - .22); if (f.ended) throw f.result; }
+  f.audio.onended(); await f.promise;
+  assert.equal(f.peakDecoded, 48); assert.equal(f.decoded.length, 600);
+  assert.ok(f.decoded.every(frame => frame.closed === 1));
+});
+
+test('encoded reply accepts exactly4MiB and rejects one extra byte before any audio or decode', async () => {
+  for (const exceed of [false, true]) {
+    const f = fixture({ samples: exceed ? 30000 : 6000 }); await f.ready(); await f.pcm();
+    const bytes = new Uint8Array(2 * 1024 * 1024); bytes[0] = 12;
+    for (const from of [0, 12]) { f.send(f.m.chunk(from)); f.send(bytes); await turn(); await turn(); }
+    assert.equal(f.audio.plays, 0); assert.equal(f.decoded.length, 0);
+    if (exceed) {
+      await f.chunk(24); await assert.rejects(f.promise, /queue_full/);
+      assert.equal(f.audio.plays, 0); assert.equal(f.decoded.length, 0); assert.equal(f.socket.readyState, 3);
+    } else {
+      f.done(); await until(() => f.audio.plays === 1, 'boundary reply playback'); f.audio.onended(); await f.promise;
+    }
+  }
+});
+
+test('abort while the reply is only staged releases the session without playing or decoding', async () => {
+  const controller = new AbortController(), f = fixture({ overrides: { signal: controller.signal } });
+  await f.ready(); await f.pcm(); await f.chunk(0); await f.chunk(12); controller.abort();
+  await assert.rejects(f.promise, { name: 'AbortError' });
+  assert.equal(f.audio.plays, 0); assert.equal(f.decoded.length, 0); assert.equal(f.layer, null);
+  assert.equal(f.audio.paused, true); assert.equal(f.socket.readyState, 3);
 });
 
 test('pose changes and missing exact next frames silence the audio and close the session', async () => {
   for (const reason of ['pose', 'underrun']) {
-    const f = fixture(); await f.ready(); await f.pcm(); await f.chunk(0); await f.chunk(12);
-    if (reason === 'pose') f.stale(); await f.tick(reason === 'pose' ? .1 : 1);
+    let resume;
+    const f = fixture({ samples: 39010, beforeDecode: count => count === 48 ? new Promise(resolve => { resume = resolve; }) : undefined });
+    await f.ready(); await f.pcm(); await f.start();
+    if (reason === 'pose') f.stale();
+    else { await f.tick(.5); await until(() => resume, 'stalled local decoder'); }
+    await f.tick(reason === 'pose' ? .1 : 1.8);
     await assert.rejects(f.promise, reason === 'pose' ? /stale_pose/ : /frame_unavailable/);
     assert.equal(f.audio.paused, true); assert.equal(f.audio.muted, true); assert.equal(f.socket.readyState, 3);
     assert.equal(f.receipts.at(-1).state, 'interrupted'); assert.equal(f.sent.at(-1).t, 'abort');
     assert.equal(f.receipts.at(-1).failureCode, reason === 'pose' ? 'chat_failed' : 'moving_speech_frame_unavailable');
     assert.equal(f.receipts.at(-1).started, true); assert.equal(f.receipts.at(-1).firstFrame, true);
-    assert.deepEqual(f.receipts.at(-1).frameCounts, { received: 24, released: 5, total: 48 });
+    assert.deepEqual(f.receipts.at(-1).frameCounts, { received: 57, released: reason === 'pose' ? 5 : 17, total: 57 });
+    resume?.(); await turn(); await turn();
+    assert.ok(f.decoded.every(frame => frame.closed === 1));
   }
 });
 test('lost ownership socket after worker done silences the remaining long body immediately',async()=>{
-  const f=fixture({samples:18000,bodyCount:183});await f.ready();await f.pcm();await f.chunk(0);await f.chunk(12);
-  await until(()=>f.audio.plays===1,'audio playback');await f.tick(.5);await f.chunk(24);
-  f.send({t:'done',id:f.m.plan.start.id,frames:36});await turn();await turn();f.socket.onclose();
+  const f=fixture({samples:18000,bodyCount:183});await f.ready();await f.pcm();await f.start();
+  await f.tick(.5);f.socket.onclose();
   await assert.rejects(f.promise,/socket_closed/);assert.equal(f.audio.muted,true);assert.equal(f.audio.paused,true);
   assert.equal(f.sent.some(x=>x.t==='played'),false);
   assert.equal(f.receipts.at(-1).failureCode,'moving_speech_socket_closed');
@@ -196,7 +267,9 @@ test('out-of-order, over-credit, missing-patch and metadata-without-binary messa
   ]) {
     const f = fixture(); await f.ready(); await f.pcm(); send(f); await assert.rejects(f.promise, /moving_speech/); assert.equal(f.audio.plays, 0);
   }
-  const f = fixture(); await f.ready(); await f.pcm(); await f.chunk(0); await f.chunk(12); f.send(f.m.chunk(24));
+  const f = fixture(); await f.ready(); await f.pcm();
+  const beyondCredit = f.m.chunk(0); beyondCredit.rutor.push(...f.m.chunk(0).rutor, ...f.m.chunk(0).rutor);
+  f.send(beyondCredit);
   await assert.rejects(f.promise, /invalid_moving_speech_chunk/); assert.equal(f.audio.paused, true);
 });
 
@@ -229,20 +302,14 @@ test('committed body uses PCM clock from frame0, preserves220ms lead, and finish
     const f=fixture({samples,bodyCount,overrides:{onSequenceFrame:(s,k)=>seen.push([k,s.frames[k].frame]),onSequenceEnd:s=>ends.push(s.version)},
       dependencies:{createURL:value=>{blob=value;return 'blob:pcm';},createSourceFrames:()=>({async prefetch(){},
         get:()=>({videoWidth:320,videoHeight:240}),close(){closed=true;}})}});
-    await f.ready();await f.pcm();await f.chunk(0);await f.chunk(12);await until(()=>f.audio.plays===1,'body clock');
+    await f.ready();await f.pcm();await f.start();
     assert.equal(f.observations.find(Boolean).speechFrame,0);assert.equal(f.observations.find(Boolean).audioTimeSeconds,-.22);
     const length=Math.max(bodyCount,f.m.plan.timeline.length);assert.equal(blob.size,44+length*2000);
-    let next=24;
     for(let k=1;k<length;k++){
-      const available=f.sent.filter(v=>v.t==='credit').reduce((n,v)=>n+v.frames,0);
-      while(next<f.m.plan.timeline.length&&available-next>=Math.min(12,f.m.plan.timeline.length-next)){
-        const count=Math.min(12,f.m.plan.timeline.length-next);await f.chunk(next,count);next+=count;
-      }
       await f.tick((k+.001)/24);
       if(f.ended)throw f.result;
     }
-    assert.equal(next,f.m.plan.timeline.length);
-    f.send({t:'done',id:f.m.plan.start.id,frames:next});await turn();f.audio.onended();await f.promise;
+    f.audio.onended();await f.promise;
     assert.deepEqual([...new Map(seen.map(row=>[row[0],row])).values()],Array.from({length:bodyCount},(_,k)=>[k,k]));
     assert.ok(ends.length);assert.equal(closed,true);assert.equal(f.audio.plays,1);
     assert.equal(f.sent.at(-1).t,'played');assert.ok(f.sent.filter(x=>x.t==='credit').every(x=>x.frames<=24));
@@ -250,11 +317,49 @@ test('committed body uses PCM clock from frame0, preserves220ms lead, and finish
   }
 });
 
+test('native ended state before the queued ended event finishes the 50-frame reply and 66-frame body once',async()=>{
+  const seen=[];let sequenceEnds=0;
+  const f=fixture({samples:32322,bodyCount:66,overrides:{onSequenceFrame:(_,k)=>seen.push(k),onSequenceEnd:()=>sequenceEnds++}});
+  await f.ready();await f.pcm();await f.start();
+  for(let k=1;k<66;k++)await f.tick((k+.001)/24);
+  assert.equal(f.m.plan.timeline.length,50);
+  const queuedEnded=f.audio.onended;
+  // Native media state can update before its queued DOM ended callback runs.
+  f.audio.ended=true;f.audio.paused=true;await f.tick(66/24);
+  await f.promise;queuedEnded();
+  assert.deepEqual(seen,Array.from({length:66},(_,k)=>k));assert.equal(sequenceEnds,1);
+  assert.equal(f.sent.filter(x=>x.t==='played').length,1);assert.equal(f.sent.some(x=>x.t==='abort'),false);
+  assert.equal(f.receipts.at(-1).state,'end');assert.equal(f.receipts.at(-1).failureCode,undefined);
+  assert.equal(f.layer,null);assert.ok(f.decoded.every(frame=>frame.closed===1));
+});
+
+test('manual pause without native ended state still interrupts playback',async()=>{
+  const f=fixture({samples:32322,bodyCount:66});await f.ready();await f.pcm();await f.start();
+  f.audio.pause();assert.equal(f.audio.ended,false);await f.tick(.5);
+  await assert.rejects(f.promise,/moving_speech_audio_paused/);
+  assert.equal(f.sent.some(x=>x.t==='played'),false);assert.equal(f.sent.at(-1).t,'abort');
+  assert.equal(f.receipts.at(-1).state,'interrupted');assert.equal(f.audio.muted,true);
+});
+
+test('native ended state retains incomplete-body, missing final source and ownership checks',async()=>{
+  for(const reason of ['incomplete','missing-final-source','stale']){
+    const dependencies=reason==='missing-final-source'?{createSourceFrames:()=>({async prefetch(){},get(k){
+      if(k===65)throw Error('moving_source_frame_unavailable');return {videoWidth:320,videoHeight:240};},close(){}})}:{};
+    const f=fixture({samples:32322,bodyCount:66,dependencies});await f.ready();await f.pcm();await f.start();
+    if(reason!=='incomplete')for(let k=1;k<=64;k++)await f.tick((k+.001)/24);
+    if(reason==='stale')f.stale();
+    f.audio.ended=true;f.audio.paused=true;await f.tick(66/24);
+    await assert.rejects(f.promise,reason==='incomplete'?/moving_speech_sequence_incomplete/:reason==='missing-final-source'?/moving_source_frame_unavailable/:/stale_pose/);
+    assert.equal(f.sent.some(x=>x.t==='played'),false);assert.equal(f.sent.at(-1).t,'abort');
+    assert.equal(f.receipts.at(-1).state,'interrupted');assert.equal(f.audio.muted,true);
+  }
+});
+
 test('changed body plan or missing exact source frame stops before unbound audio/body is shown',async()=>{
   const changed=fixture({bodyCount:48});changed.m.ready.sequence.frames[0].frame=1;
   await until(()=>changed.socket,'socket');changed.send(changed.m.ready);await assert.rejects(changed.promise,/sequence/);assert.equal(changed.audio.plays,0);
   const f=fixture({bodyCount:48,dependencies:{createSourceFrames:()=>({async prefetch(){},get(){throw Error('moving_source_frame_unavailable');},close(){}})}});
-  await f.ready();await f.pcm();await f.chunk(0);await f.chunk(12);await assert.rejects(f.promise,/moving_source_frame_unavailable/);
+  await f.ready();await f.pcm();await f.allChunks();f.done();await assert.rejects(f.promise,/moving_source_frame_unavailable/);
   assert.equal(f.audio.plays,0);
   assert.equal(f.audio.muted,true);assert.equal(f.audio.paused,true);assert.equal(f.sent.at(-1).t,'abort');
 });

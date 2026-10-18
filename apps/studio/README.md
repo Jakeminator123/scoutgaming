@@ -316,8 +316,9 @@ anslutningsprov, inte en garanti för svarstiden i spelet.
 ## Läsande Partner-ström
 
 `/activity` kan observera den befintliga `/api/v1/events` med en signerad
-serveranslutning. Ange följande i den lokala, Git-ignorerade `lab/.env.local`
-och starta om labbservern:
+serveranslutning. Vid direkt Next-start anges följande i den Git-ignorerade
+`apps/studio/.env.local` eller Next-processens miljö. Starta om den lokala
+Next-servern om den redan kör:
 
 - `BETTALOTTO_PARTNER_KEY_ID`: den publika Partner-nyckeln (`ck_live_…`), inte
   backoffices rad-UUID. Strömmen behöver `events` eller `play`.
@@ -326,11 +327,18 @@ och starta om labbservern:
 - `BETTALOTTO_PARTNER_BASE_URL`: valfritt; standard är `https://bettalotto.se`.
   En uttryckligen konfigurerad loopback-adress stöds för isolerade tester.
 
-Detta är en ny, valfri anslutning. Den använder Next-serverns miljö, som läser
-`lab/.env.local`; observatören läser inte automatiskt reporotens `.env`.
-Befintlig läsning av Director-/OpenClaw-inställningar från rotens `.env` är
-oförändrad. Flytta eller döp inte om de befintliga tjänsternas uppgifter för
-att aktivera Partner-loggen.
+Detta är en valfri anslutning. Observatören läser processmiljön; vid direkt
+Next-start är appens rot `apps/studio`. Den läser inte automatiskt
+äldre `lab/.env.local` eller reporotens `.env`.
+
+Verktyg som uttryckligen använder `loadPrivateConnection` har en annan,
+avsiktligt kompatibel filordning: rotens `.env`, äldre `lab/.env.local`/
+`.env.generated-speech.local`, motsvarande filer i `apps/studio` och sist
+processmiljön. Cloud-storage-filen ingår bara med uttrycklig opt-in, och
+ett explicit `envFiles` ersätter standardlistan. Detta väljer inte Nexts
+env-plats. Director-adaptrarnas egna filval är oförändrade; se
+[miljöguiden](../../docs/ENVIRONMENT-VARIABLES.md). Flytta eller kopiera inga
+verkliga tjänsteuppgifter för att rätta denna dokumentation.
 
 `events` är en separat läsbehörighet i Kevins uppdaterade API. `play` ger även
 behörighet till bordskommandon. Live-ping den 21 september 2026 bekräftade

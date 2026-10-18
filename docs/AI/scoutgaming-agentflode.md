@@ -14,6 +14,33 @@ i samma checkout. Inga nya underagenter, medieflyttar eller runtimeändringar
 följer automatiskt av denna planering. Andra agenters provresultat tillskrivs
 sin källa och räknas inte som nya körningar.
 
+## Rörligt tal, källbevaring och verifiering — 18 oktober 2026
+
+Lipsync-spåret skiljer nu uttryckligen vilotal, tal över exakt utdelningsfilm
+och full produktionsantagning. Cache-/prestandakrav, Emils ZIP, Blob/Neon och
+begränsningen för moving-svarens lagring dokumenteras i den befintliga
+[runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md#rörligt-tal-verifieringsgränser-cache-och-källor--18-oktober-2026).
+Aktuellt prov/leverans ligger endast i [handoffen](../JOHN-HANDOFF.md#dragan-talstatus);
+privata videor och körkvitton är underlag, inte parallella produktregister.
+Mätinstrumenteringen ändrar inte modell, cachebeteende eller bildprotokoll.
+
+## Mikrofonens originalspråk och delad bildkontext — 18 oktober 2026
+
+Spelbordets mikrofon använder OpenAI `whisper-1` via `/audio/transcriptions`
+med automatisk språkidentifiering. Den transkriberade texten behåller talets
+språk och skickas till Director; `outputLanguage=original` beskriver detta
+kontrakt, inte ett påstått detekterat språk. Den äldre språkheadern accepteras
+fortfarande men tvingar inte leverantören till svenska eller engelska.
+Samtycke och status beskriver transkribering; ingen mikrofon aktiveras av kodändringen.
+
+Validerade kamerabilder går som `image_url`-delar för alla registrerade dealers.
+Bildbyte ligger aldrig i textdelen av Director-anropet. Astrids befintliga
+engelska svarspolicy och separata historik bevaras; talets språk och dealerns
+svarsspråk är olika kontrakt. Detta ändrar inte serverkort, ekonomi, samtycke,
+profil-/rundkontroller eller lagring. Lokala stubtester provar språktext och
+bildtransport utan leverantörsanrop. Driftstatus och kvarstående prov finns i
+[handoffen](../JOHN-HANDOFF.md).
+
 ## Riktad kommunikation och löpande städning — 18 oktober 2026
 
 Agent-talk visar riktade samtal för deltagarna, gemensamma claims för alla.
@@ -596,6 +623,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-18 | Efterfix inför renklonprov: chattens beslutade visning/uppspelning/avbrott provas genom importerad klientlogik i stället för källutskärning. QA-källhashregistren följer den extraherade modulen med negativa offlineprov. Befintliga status- och env-guider rättas till levererat läge och rätt läsare; ingen privat konfiguration eller aktiv Lipsync-handoff flyttas. |
 | 2026-10-18 | Moving-workerns befintliga CPU/image-workflow kopplas till obligatorisk CI för relevanta PR-filer; main/manuell körning behåller full kontroll. Ingen dubbel PR-build eller GPU-start. Aktuellt Admin-/Preview-miljöval samlas i ENVIRONMENT-VARIABLES efter läsande SQL, molnmetadata och Admin-vy. |
 | 2026-10-17 | OpenClaws spårade källrot är services/openclaw med interna lab-nivån kvar. Director/Gateway behåller separata Dockercontext, samma volymer och runtimekontrakt. Lokala envfiler och data stannar vid gamla open-claw/lab; källroot och state/env är uttryckligen åtskilda. Kvitto och extern leverans anges i JOHN-HANDOFF. |
 | 2026-10-17 | Studios spårade källrot är apps/studio. Källimports, cwd-/SQL-rötter, Next-traces, CI, Docker och Vercels Studio-root följer samma flytt; /studio och publika kompatibilitetsadresser består. Gamla privata original och dependencyjunctions ligger kvar med bevarade ignoreskydd. Lokala verifieringskvitton och återstående leverans redovisas i JOHN-HANDOFF. |

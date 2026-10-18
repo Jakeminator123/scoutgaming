@@ -14,6 +14,7 @@ import { createSpeechPoseGate } from '../../../packages/presentation/runtime/spe
 import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from '../../../packages/presentation/runtime/generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
+import { displayChatDecision, cancelChatDecision, playChatDecision as playProductChatDecision } from './chat-decision-player.mjs';
 import { createNativeSpeechBridge } from '../../../packages/presentation/runtime/lab-speech-bridge.mjs';
 import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6GameAvailability, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
@@ -185,27 +186,9 @@ speechPoseGate = createSpeechPoseGate({
     ...poseIdentity(), dealerPose: 'unknown', actionOwner: 'none', speechOwner: 'none', idlePresented: null,
     visible: !document.hidden, muted: voice.muted,
   },
-  onDisplay: async (decision, job) => {
-    const pending = pendingChatReplies.get(job.jobId);
-    if (!pending || decision.kind === 'silence') return;
-    await pending.beforeDisplay?.();
-    if (pending.controller.signal.aborted) return;
-    const text = decision.exactText;
-    if (pending.previewRow?.isConnected && pending.previewText === text) pending.previewRow.classList.remove('pending');
-    else chatLog('vera', text);
-    nativeObservation.emit('chat', { role: 'assistant', text, line: decision.lineId ?? null,
-      source: pending.probe ? 'probe' : 'openclaw-chat', synthetic: Boolean(pending.synthetic), speechKind: decision.kind }, pending.correlation);
-    if (!pending.synthetic && !pending.probe) chatHistory.push({ role: 'assistant', text });
-  },
+  onDisplay: (decision, job) => displayChatDecision(chatDecisionRuntime(), decision, job),
   onSpeech: async (decision, { signal, job }) => playChatDecision(decision, signal, job.jobId),
-  onCancel: (job, reason) => {
-    chatPlaybackDiagnostic.finish(job.jobId, 'cancelled');
-    const pending = pendingChatReplies.get(job.jobId);
-    if (pending?.previewRow?.classList.contains('pending')) pending.previewRow.remove();
-    pending?.controller?.abort(reason);
-    nativeObservation.emit('chat', { role: 'assistant', state: 'cancelled', reason,
-      requestId: job.jobId, source: 'openclaw-chat' });
-  },
+  onCancel: (job, reason) => cancelChatDecision(chatDecisionRuntime(), job, reason),
   onTrace: entry => nativeObservation.emit('status', { state: 'chat-pose', ...entry }),
 });
 if (localPresentationEnabled) {
@@ -511,7 +494,7 @@ async function api(path, payload) {
   const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   if(r.status===401) { player=null; throw new Error('Sign in required'); }
   const out = await r.json().catch(() => ({}));
-  if (!r.ok || out.error) throw new Error(out.error ?? `api ${r.status}`);
+  if (!r.ok || out.error) throw Object.assign(new Error(out.error ?? `api ${r.status}`), { status: r.status });
   return out;
 }
 async function loadPlayer() {
@@ -546,6 +529,12 @@ async function tableCommand(op, extra = {}) {
   for (let attempt=0; attempt<2; attempt++) {
     try { out = await api('/api/table', payload); break; }
     catch (e) {
+      if (op === 'start' && payload.movingSpeech && e.status === 409 && e.message === 'moving_deal_speech_unavailable') {
+        setMovingSpeechAvailable(false);
+        // A previous network failure may have hidden a committed start. Only
+        // an unambiguous first response can unlock the unchanged betting draft.
+        e.dealSpeechUnavailable = attempt === 0;
+      }
       if (attempt || !/fetch|network|load failed/i.test(e.message)) {
         if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
         throw e;
@@ -563,8 +552,7 @@ async function tableCommand(op, extra = {}) {
     }
   }
   tableVersion = out.version;
-  movingSpeechAvailable=out.movingSpeechAvailable===true;
-  if(nextDealControls)nextDealControls.hidden=!movingSpeechAvailable;
+  setMovingSpeechAvailable(out.movingSpeechAvailable===true);
   updatePoseState({ roundRevision: String(tableVersion),
     ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');
   if (op === 'state') localPresentation?.state({ action: false });
@@ -581,7 +569,17 @@ async function ensureLogin(purpose) {
   if(!session.authenticated && !session.guest && !await requestLogin(purpose))return false;
   await prepareTable();return !!player;
 }
-function tableError(e) { busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets(); }
+function tableError(e) {
+  if (e.dealSpeechUnavailable === true && !round) {
+    busy = false;
+    localPresentation?.state({ action: false });
+    setBanner('Tal under utdelning är avstängt. Ingen insats drogs. Tryck DEAL igen för att spela utan tal.');
+    setChatStatus('Det planerade svaret avbröts. Texten finns kvar.');
+    renderBets();
+    return;
+  }
+  busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets();
+}
 async function prepareTable() {
   const session=await gameApi.session();
   $('#sign-out').hidden=Boolean(studioPreview)||!session.authenticated;
@@ -1675,6 +1673,14 @@ function refreshNextDealChat(){
   if(!nextDealControls)return;
   nextDealControls.querySelector('button').hidden=!nextDealChat&&!activeDealSpeech;
 }
+function setMovingSpeechAvailable(available){
+  movingSpeechAvailable=available===true;
+  if(nextDealControls)nextDealControls.hidden=!movingSpeechAvailable;
+  if(!movingSpeechAvailable){
+    const toggle=$('#chat-next-deal');if(toggle)toggle.checked=false;
+    cancelNextDealChat();
+  }
+}
 function cancelNextDealChat(){
   nextDealChat=null;
   if(activeDealSpeech?.jobId)speechPoseGate?.cancel(activeDealSpeech.jobId,'explicit-interrupt');
@@ -1707,100 +1713,27 @@ function movingDealEnd(owned){
 }
 
 async function playChatDecision(decision, signal, jobId) {
-  if(studioPreview)throw Error('Genererat tal är avstängt i provspel.');
-  if (decision.kind === 'silence') return;
-  const dealSpeech=pendingChatReplies.get(jobId)?.dealSpeech;
-  localPresentation?.state({ speech: true, ready: false });
-  updatePoseState({ dealerPose: dealSpeech?'deal-speech':decision.kind === 'generatedText' && !decision.speechPackage && !decision.speechStream ? 'standard-idle' : 'speech',
-    speechOwner: `chat-${jobId}`, idlePresented: null }, 'chat-speech-started');
-  try {
-    if (decision.kind === 'generatedText') {
-      speaking = true;
-      try {
-        if (decision.visualMode === 'generated-lipsync-stream-preview' || decision.speechStream) {
-          if (decision.visualMode !== 'generated-lipsync-stream-preview' || !decision.speechStream || decision.speechPackage
-            || decision.requestId !== jobId) throw new Error('invalid_speech_stream_decision');
-          const checkStreamPose = () => {
-            const state = speechPoseGate.state, job = speechPoseGate.get(jobId), identity = poseIdentity();
-            if (signal?.aborted || !job || job.status !== 'speaking' || job.dealerId !== identity.dealerId
-              || job.sessionRevision !== identity.sessionRevision || job.roundRevision !== identity.roundRevision
-              || state.speechOwner !== `chat-${jobId}` || state.actionOwner !== (dealSpeech?`deal-chat-${jobId}`:'none') || state.dealerPose !== (dealSpeech?'deal-speech':'speech')
-              || (dealSpeech&&(activeDealSpeech!==dealSpeech||decision.speechStream.presentationVersion!==tableVersion))
-              || !state.visible || state.muted) throw new Error('stale_speech_stream_pose');
-          };
-          const beforeStreamStart = async () => {
-            checkStreamPose(); await pendingChatReplies.get(jobId)?.beforeStart?.(); checkStreamPose();
-          };
-          setChatStatus('Förbereder röst och läppsynk…');
-          await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
-            requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart, assertCurrent: checkStreamPose,
-            prepareRendering: (compositing,framing) => layerComposition?.prepareClip(compositing ?? undefined,framing),
-            renderFrame: (video, presented) => layerComposition?.renderFrame(video, presented) ?? false,
-            setMovingSpeechLayer: layer => layerComposition?.setMovingSpeechLayer(layer),
-            ...(dealSpeech?{
-              onSequenceReady:sequence=>{checkStreamPose();if(sequence.version!==dealSpeech.version)throw Error('moving_deal_version');dealSpeech.sequence=sequence;localCards?.sync(round);},
-              onSequenceFrame:(sequence,k)=>movingDealFrame(dealSpeech,sequence,k),
-              onSequenceEnd:()=>movingDealEnd(dealSpeech),
-            }:{}),
-            streamObserver: pendingChatReplies.get(jobId)?.nativeP6Observer,
-            onStart: text => {
-              const pending = pendingChatReplies.get(jobId);
-              if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
-              setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000);
-            },
-            onFirstFrame: () => {
-              const pending = pendingChatReplies.get(jobId);
-              if (chatStatus && pending) chatStatus.dataset.firstFrameMs = String(Math.round(performance.now() - pending.requestedAt));
-            },
-            onReceipt: receipt => {
-              const pending = pendingChatReplies.get(jobId); if (pending) pending.playbackReceipt = receipt;
-              pending?.nativeP6Receipt?.(receipt);
-              chatPlaybackDiagnostic.stream(jobId, receipt);
-              nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync-stream',
-                synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });
-            },
-          });
-        } else
-        if (decision.visualMode === 'generated-lipsync-preview' && decision.speechPackage) {
-          setChatStatus('Förbereder röst och läppsynk…');
-          await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
-            beforeStart: pendingChatReplies.get(jobId)?.beforeStart,
-            prepareRendering: compositing => layerComposition?.prepareClip(compositing ?? undefined),
-            renderFrame: video => layerComposition?.renderFrame(video) ?? false,
-            onStart: text => {
-              const pending = pendingChatReplies.get(jobId);
-              if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));
-              setChatStatus(`${DEALER.name} svarar`); showCaption(text, 27000);
-            },
-            onReceipt: receipt => {
-              const pending=pendingChatReplies.get(jobId);if(pending)pending.playbackReceipt=receipt;
-              nativeObservation.emit('playback', { event: 'speech', source: pending?.probe ? 'probe' : 'generated-lipsync', synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });
-            },
-          });
-        } else {
-          // Registered dealers never silently inherit the browser's voice.
-          // A preparation profile is not an exact generated audio/video package.
-          const pending = pendingChatReplies.get(jobId);
-          if (pending) pending.voiceUnavailable = true;
-          chatPlaybackDiagnostic.finish(jobId, 'text-only');
-          nativeObservation.emit('playback', { event: 'speech', state: 'fallback',
-            reason: 'dealer-generated-media-unavailable', renderer: 'text-only', source: 'generated-lipsync', requestId: jobId });
-        }
-      }
-      finally { speaking = false; }
-      return;
-    }
-    if (localPresentationEnabled) {
-      showCaption(decision.exactText, 5000);
-      chatPlaybackDiagnostic.finish(jobId, 'text-only');
-      nativeObservation.emit('playback', { event: 'speech', state: 'fallback', reason: 'recorded-chat-exact-text-unverified', renderer: 'text-only' });
-      return;
-    }
-  } finally {
-    $('#caption').classList.remove('show');
-    updatePoseState({ dealerPose: 'unknown', speechOwner: 'none', idlePresented: null }, 'chat-speech-completed');
-    localPresentation?.state({ speech: false, ready: false });
-  }
+  return playProductChatDecision(chatDecisionRuntime(), decision, signal, jobId);
+}
+
+// Read mutable client state when a callback runs, including after awaits.
+function chatDecisionRuntime() {
+  return {
+    get studioPreview() { return studioPreview; }, get dealer() { return DEALER; },
+    get pendingChatReplies() { return pendingChatReplies; }, get chatHistory() { return chatHistory; },
+    get chatPlaybackDiagnostic() { return chatPlaybackDiagnostic; },
+    get localPresentation() { return localPresentation; },
+    get localPresentationEnabled() { return localPresentationEnabled; },
+    get layerComposition() { return layerComposition; }, get poseGate() { return speechPoseGate; },
+    get activeDealSpeech() { return activeDealSpeech; }, get tableVersion() { return tableVersion; },
+    get localCards() { return localCards; }, get round() { return round; },
+    get chatStatus() { return chatStatus; }, get nativeObservation() { return nativeObservation; },
+    get scene() { return $('#scene'); },
+    get speaking() { return speaking; }, set speaking(value) { speaking = value; },
+    updatePoseState, poseIdentity, movingDealFrame, movingDealEnd,
+    setChatStatus, showCaption, playGeneratedSpeech, chatLog,
+    hideCaption: () => $('#caption').classList.remove('show'), now: () => performance.now(),
+  };
 }
 
 $('#chat-send').onclick = () => void sendChat();

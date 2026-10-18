@@ -524,7 +524,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.equal(config.transcription.enabled, lissabon);
     assert.equal(config.transcription.provider, 'openai');
     assert.equal(config.transcription.model, 'whisper-1');
-    assert.equal(config.transcription.outputLanguage, 'en');
+    assert.equal(config.transcription.outputLanguage, 'original');
     assert.equal(config.transcription.acceptsAutoLanguage, true);
     assert.equal(config.vision.enabled, lissabon);
     assert.equal(config.reason, lissabon ? null : 'feature_disabled');
@@ -571,7 +571,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   });
 
   for (const [model, visionAllowed] of [['gpt-5.6-terra', true], ['gpt-5.4-mini', false]])
-  await t.test(`changing to ${model} preserves English translation and enforces the image allowlist`, async () => {
+  await t.test(`changing to ${model} preserves original-language transcription and enforces the image allowlist`, async () => {
     const a = await guest();
     const store = createProjectStore(join(directory, 'studio'));
     const original = await store.load();

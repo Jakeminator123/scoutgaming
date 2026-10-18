@@ -6,6 +6,7 @@ import { setTimeout as pause } from 'node:timers/promises';
 import { createSpeechJournalLease } from '../../packages/presentation/server/speech-journal-lease.mjs';
 import { createMovingSpeechConnection, verifyMovingWorkerRelease } from './moving-speech-transport.mjs';
 import { verifyMovingSpeechBinding } from './moving-speech-binding.mjs';
+import { verifyMovingCapacity } from './moving-speech-capacity.mjs';
 
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const jobPattern = /^[A-Za-z0-9_-]{1,128}$/;
@@ -32,7 +33,7 @@ function bounded(work, signal, ms, code) {
  * No policy bootstrap, provider call, timer or acquisition at construction.
  */
 export function createMovingSpeechSession({ journal, scope, origin, endpointId, release, provider,
-  budgetId, totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
+  budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
   workerState, lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
   startupMs = Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs), idleMs = 15000,
   cleanupMs = 15000, pollMs = 500, connectionFactory = createMovingSpeechConnection } = {}) {
@@ -40,6 +41,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
     || !provider || ['submit', 'cancel', 'status'].some(name => typeof provider[name] !== 'function')
     || typeof release !== 'function' || typeof workerState !== 'function'
     || !positive(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD) || !positive(reserveMicroUsd, Math.min(totalBudgetMicroUsd,5000000))
+    || !positive(initialBudgetMicroUsd, totalBudgetMicroUsd)
     || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
     || !positive(startupMs, Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs))
     || !positive(idleMs, 15000) || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);
@@ -86,18 +88,25 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       const binding = verifyMovingSpeechBinding({ ...sourceBinding, schemaVersion: 1,
         sessionId: randomBytes(16).toString('hex'), attemptId: randomUUID(), nonce: randomBytes(32).toString('hex') });
       const operation = {}; active = operation;
-      let session, connection, submission, acceptedJob, observedJob, finalized, readiness;
+      let session, connection, submission, acceptedJob, observedJob, finalized, readiness, admittedCapacity;
       const life = new AbortController();
       const requestSignal = AbortSignal.any([life.signal, ...(signal ? [signal] : [])]);
       const admittedAtMs = Date.now(), expiresAtMs = admittedAtMs + lifetimeMs;
       // Even a lost submit reply plus the provider TTL must fit the original
       // reservation's UTC coverage. A delayed caller cannot buy a later window.
       const assertSubmissionWindow = () => {
-        if (Date.now() + idleMs + MOVING_SPEECH_LIMITS.jobTtlMs > admittedAtMs + GPU_RESERVATION_WINDOW_MS)
+        if (Date.now() + idleMs + MOVING_SPEECH_LIMITS.jobTtlMs + MOVING_SPEECH_LIMITS.providerIdleMs > admittedAtMs + GPU_RESERVATION_WINDOW_MS)
           fail('generated_speech_moving_submission_expired');
       };
       const timer = setTimeout(() => life.abort(), lifetimeMs); timer.unref?.();
       const currentLease = () => ownership.get();
+      async function observeCapacity(receipt, signal) {
+        const state=await workerState({signal});
+        if (!receipt.capacity) return {state}; // Legacy callers must still prove zero workers.
+        const proof={schemaVersion:1,observedAtMs:Date.now(),release:receipt,health:state?.raw};
+        const verified=verifyMovingCapacity(proof,{endpointId});
+        return {state,proof,verified};
+      }
       async function guard(phase, guardSignal) {
         await beforeCostly({ phase, signal: guardSignal });
         if (guardSignal.aborted) fail('generated_speech_cancelled');
@@ -152,12 +161,17 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       }
       try {
         await bounded(s => beforeCostly({ phase: 'admit', signal: s }), requestSignal, idleMs, 'generated_speech_moving_admission_timeout');
+        // Acquire the shared journal fence before observing provider capacity.
+        // Different server processes cannot reserve this endpoint concurrently.
+        const lease=await currentLease();
         const receipt = await bounded(s => release({ signal: s }), requestSignal, idleMs, 'generated_speech_moving_release_timeout');
         if (verifyMovingWorkerRelease(receipt).endpointId !== endpointId) fail('generated_speech_moving_endpoint_mismatch');
-        const drained = await bounded(s => workerState({ signal: s }), requestSignal, idleMs, 'generated_speech_moving_drain_unknown');
+        const capacity = await bounded(s => observeCapacity(receipt,s), requestSignal, idleMs, 'generated_speech_moving_drain_unknown');
+        admittedCapacity=capacity.verified;
         session = await journal.reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences,
-          projectRevision, budgetId, totalBudgetMicroUsd, sessionId: binding.sessionId, endpointId,
-          lease: await currentLease(), reserveMicroUsd, currentBudgetMicroUsd: currentDailyBudgetMicroUsd, workerState: drained });
+          projectRevision, budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd, sessionId: binding.sessionId, endpointId,
+          lease, reserveMicroUsd, currentBudgetMicroUsd: currentDailyBudgetMicroUsd, workerState: capacity.state,
+          ...(capacity.proof ? {movingCapacity:capacity.proof}:{}) });
         connection = await connectionFactory({ origin, release: receipt, attestationBinding: binding,
           signal: requestSignal, lifetimeMs, startupMs, idleMs, finalize, chunkAcknowledgements: true,
           authorize: async ({ phase, signal: authSignal }) => {
@@ -189,7 +203,19 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
               // Exactly one POST. A lost reply/COMMIT remains spent and pinned.
               let result;
               try {
-                result = await bounded(s => { assertSubmissionWindow(); return provider.submit({ input: { schemaVersion: 1,
+                result = await bounded(async s => {
+                  if (admittedCapacity) {
+                    const fresh=await observeCapacity(await release({signal:s}),s);
+                    if (!fresh.verified || fresh.verified.image !== admittedCapacity.image
+                      || fresh.verified.endpointVersion !== admittedCapacity.endpointVersion) fail('generated_speech_moving_capacity_changed');
+                    // The journal is already submission_started. Its normal
+                    // prepare/output guard accepts only reserved/running jobs;
+                    // renew the same fence and recheck current product access.
+                    await beforeCostly({phase:'submit',signal:s});
+                    s.throwIfAborted();
+                    await currentLease();
+                  }
+                  assertSubmissionWindow(); return provider.submit({ input: { schemaVersion: 1,
                   callbackUrl: connection.callbackUrl, ttlSeconds: MOVING_SPEECH_LIMITS.executionMs / 1000, binding,
                   ...(download ? { bankDownload: download } : {}) }, signal: s }); }, requestSignal, idleMs,
                 'generated_speech_moving_submission_unknown');

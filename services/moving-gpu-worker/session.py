@@ -1,6 +1,7 @@
 """One bound utterance over the existing moving-worker callback protocol."""
 import asyncio
 import json
+import diagnostics as diag
 from frame_contract import resolve_plan
 from contracts import attest_ack, fail, validate_start, validate_pcm, MAX_PCM_BYTES
 
@@ -21,7 +22,7 @@ def control(value):
 
 
 async def serve(socket, engine, attestation, mapping, idle_seconds=15,
-                start_seconds=START_WAIT_SECONDS):
+                start_seconds=START_WAIT_SECONDS, keep_alive_on_complete=False):
     """Engine is owned by this attempt and is killed before abort acknowledgement."""
     async def send(message):
         await asyncio.wait_for(socket.send(json.dumps(message, separators=(",", ":"))), idle_seconds)
@@ -31,15 +32,24 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
 
     stopped = False
     async def stop():
-        nonlocal stopped
+        nonlocal stopped, render_started
         if not stopped:
             stopped = True
-            await engine.close()
+            if render_started is not None:
+                diag.record(renderWallMs=diag.elapsed(render_started))
+                render_started = None
+            with diag.phase("engineStopMs"):
+                await engine.close()
 
     pcm = bytearray()
-    output = incoming = None
+    output = incoming = final_send = None
+    render_started = None
+    first_chunk = True
+    completed = False
     try:
         measurement = await engine.prepare()
+        diag.record(warmupFps=measurement.get("rutor_per_s") if isinstance(measurement, dict) else None,
+                    warmupFirstChunkMs=measurement.get("forsta_bit_ms") if isinstance(measurement, dict) else None)
         if (not isinstance(measurement, dict)
                 or type(measurement.get("rutor_per_s")) not in (int, float)
                 or not 30 <= measurement["rutor_per_s"] <= 10000):
@@ -49,12 +59,15 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
                     "rutor_per_s": measurement["rutor_per_s"],
                     "forsta_bit_ms": measurement.get("forsta_bit_ms"),
                     "attestation": attestation})
-        attest_ack(control(await receive()), attestation)
-        start = control(await receive(start_seconds))
+        with diag.phase("bindWaitMs"):
+            attest_ack(control(await receive()), attestation)
+        with diag.phase("startWaitMs"):
+            start = control(await receive(start_seconds))
         frames = validate_start(start, mapping)
         plan = resolve_plan(mapping, start["karta"], frames)
         while True:
-            item = await receive()
+            with diag.phase("pcmReceiveMs"):
+                item = await receive()
             if isinstance(item, bytes):
                 if len(item) % 2 or not item or len(item) > 32768 or len(pcm) + len(item) > MAX_PCM_BYTES:
                     fail("invalid_pcm")
@@ -71,6 +84,7 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
         generated = validate_pcm(pcm, frames, start["fran_ruta"])
         if generated != frames:
             fail("frame_plan_length_mismatch")
+        render_started = diag.clock()
         await engine.begin(start, bytes(pcm))
         pcm[:] = b"\0" * len(pcm)
         next_frame = start["fran_ruta"]
@@ -94,8 +108,32 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
             if meta.get("t") == "done":
                 if data is not None or next_frame != frames:
                     fail("incomplete_worker_output")
-                await stop()
-                await send({**meta, "id": start["id"]})
+                diag.render_measurement(meta)
+                if not keep_alive_on_complete:
+                    await stop()
+                # The final send may yield while recv already accepts a cancel
+                # or peer close. Neither may be discarded as successful reuse.
+                final_send = asyncio.create_task(send({**meta, "id": start["id"]}))
+                async def final_input():
+                    final_send.cancel()
+                    await asyncio.gather(final_send, return_exceptions=True)
+                    message = control(incoming.result())  # Also propagates recv failure.
+                    if message != {"t": "avbryt", "id": start["id"]}:
+                        fail("unexpected_input_during_render")
+                    await stop()
+                    await send({"t": "done", "id": start["id"], "aborted": True})
+                    return "cancelled"
+                await asyncio.wait((final_send, incoming), return_when=asyncio.FIRST_COMPLETED)
+                if incoming.done():
+                    return await final_input()
+                final_send.result()  # A failed or timed-out send cannot finish a lease.
+                # Settle recv before declaring completion. If recv wins this
+                # cancellation race, inspect its result rather than swallowing it.
+                incoming.cancel()
+                await asyncio.gather(incoming, return_exceptions=True)
+                if not incoming.cancelled():
+                    return await final_input()
+                completed = True
                 return "complete"
             if (meta.get("t") != "lapp" or not isinstance(data, bytes)
                     or type(meta.get("del")) is not int or meta["del"] != next_chunk
@@ -111,11 +149,19 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
                         or (row.get("tagning"), row.get("ruta")) != plan[index][:2]):
                     fail("worker_frame_identity_mismatch")
             next_frame = meta["till"]
-            await send({**meta, "id": start["id"]})
-            await asyncio.wait_for(socket.send(data), idle_seconds)
+            if first_chunk:
+                first_chunk = False
+                diag.record(receivedFirstChunkMs=diag.elapsed(render_started))
+            with diag.phase("chunkSendMs"):
+                await send({**meta, "id": start["id"]})
+                await asyncio.wait_for(socket.send(data), idle_seconds)
+            diag.add("sentFrames", len(meta["rutor"]))
+            diag.add("sentChunks", 1)
+            diag.add("encodedBytes", len(data))
             # One delivered chunk in flight. The game acknowledges only after
             # its bounded consumer accepts both metadata and exact binary bytes.
-            message = control(await asyncio.wait_for(incoming, idle_seconds))
+            with diag.phase("chunkAckWaitMs"):
+                message = control(await asyncio.wait_for(incoming, idle_seconds))
             if message == {"t": "avbryt", "id": start["id"]}:
                 await stop()
                 await send({"t": "done", "id": start["id"], "aborted": True})
@@ -126,9 +172,13 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
             next_chunk += 1
             incoming = asyncio.create_task(socket.recv())
     finally:
+        if render_started is not None:
+            diag.record(renderWallMs=diag.elapsed(render_started))
+            render_started = None
         pcm[:] = b"\0" * len(pcm)
-        await stop()
-        for task in (incoming, output):
+        if not (completed and keep_alive_on_complete):
+            await stop()
+        for task in (incoming, output, final_send):
             if task is not None:
                 task.cancel()
-        await asyncio.gather(*(t for t in (incoming, output) if t is not None), return_exceptions=True)
+        await asyncio.gather(*(t for t in (incoming, output, final_send) if t is not None), return_exceptions=True)

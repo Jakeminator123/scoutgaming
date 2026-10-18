@@ -12,7 +12,7 @@ const fields=[
   'services/game/server.mjs','ops/cloud/config.mjs','ops/cloud/container-entry.mjs','ops/cloud/Dockerfile','services/game/native-ai-qa-private.mjs','services/game/generated-speech-runtime.mjs','services/game/generated-speech-stream.mjs',
   'services/game/generated-speech-session.mjs','services/game/speech-journal-runtime.mjs','packages/presentation/server/generated-speech-provider.mjs',
   'services/game/generated-speech-chat.mjs','services/game/operator-speech-qa.mjs','tools/activate-native-ai-qa.mjs',
-  'services/game/public/app.mjs','services/game/public/native-p6-game-playback.mjs','services/game/public/speech-queue.mjs',
+  'services/game/public/app.mjs','services/game/public/chat-decision-player.mjs','services/game/public/native-p6-game-playback.mjs','services/game/public/speech-queue.mjs',
   'packages/presentation/runtime/speech-pose-gate.mjs','packages/presentation/runtime/generated-speech-player.mjs','packages/presentation/runtime/speech-stream-client.mjs'];
 export const AI_QA_SOURCE_PATHS=Object.freeze(fields);
 export function validateAiQaManifest(m,env,now=Date.now()){

@@ -2,9 +2,12 @@
 import asyncio
 import os
 import threading
+import diagnostics as diag
 from entrypoint import run
+from engine_cache import EngineCache
 
 _ADMISSION = threading.Lock()
+_CACHE = EngineCache()
 
 # Fixed internal codes only. Never stringify an exception: it may contain the
 # callback capability, a bank URL, credentials, or an untrusted HTTP response.
@@ -38,26 +41,37 @@ async def handler(job):
         return {"status":"failed","code":"invalid_provider_envelope"}
     if not _ADMISSION.acquire(blocking=False):
         return {"status":"failed","code":"worker_busy"}
-    try:
-        # RunPod supplies the job id. No RUNPOD_API_KEY is read by this adapter.
-        result = await run({"id":job["id"],"input":job["input"]},
-                           os.environ.get("MOVING_BANK_STORE","/banks"),
-                           os.environ.get("MOVING_CALLBACK_ORIGIN",""))
-        return {"status":result}
-    except asyncio.CancelledError:
-        # run() closes the owned subprocess before cancellation reaches the SDK.
-        raise
-    except BaseException as error:
-        return {"status":"failed","code":_failure_code(error)}
-    finally:
-        _ADMISSION.release()
+    with diag.collect() as diagnostics:
+        try:
+            # RunPod supplies the job id. No RUNPOD_API_KEY is read by this adapter.
+            result = {"status": await run({"id":job["id"],"input":job["input"]},
+                               os.environ.get("MOVING_BANK_STORE","/banks"),
+                                os.environ.get("MOVING_CALLBACK_ORIGIN",""), _CACHE)}
+            diag.record(outcome=result["status"])
+        except asyncio.CancelledError:
+            # run() closes the owned subprocess before cancellation reaches the SDK.
+            diag.record(outcome="cancelled")
+            raise
+        except BaseException as error:
+            diag.record(outcome="failed")
+            result = {"status":"failed","code":_failure_code(error)}
+        finally:
+            # Admission is released before best-effort telemetry, including cancel.
+            _ADMISSION.release()
+            diag.resources()
+            snapshot = diagnostics.snapshot()
+            diag.emit(snapshot)
+        return {**result, "diagnostics": snapshot}
 
 
 def start(sdk=None):
     os.environ["RUNPOD_LOG_LEVEL"] = "ERROR"
     if sdk is None:
         import runpod as sdk
-    sdk.serverless.start({"handler":handler,"concurrency_modifier":lambda current:1})
+    try:
+        sdk.serverless.start({"handler":handler,"concurrency_modifier":lambda current:1})
+    finally:
+        _CACHE.close_sync()
 
 
 if __name__ == "__main__":

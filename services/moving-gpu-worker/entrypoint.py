@@ -14,6 +14,7 @@ from pathlib import Path
 import signal
 import sys
 import tempfile
+import diagnostics as diag
 from contracts import validate_job, verify_bank, verify_release
 from engine import ProcessEngine
 from bank_download import fetch_bank_download
@@ -23,34 +24,74 @@ from session import serve
 ROOT = Path(__file__).resolve().parent
 
 
-async def run(job, bank_store, allowed_origin):
-    release_sha = verify_release(ROOT)
-    attestation = validate_job(job["input"], release_sha, allowed_origin, job["id"])
-    binding = job["input"]["binding"]
-    async with asyncio.timeout(job["input"]["ttlSeconds"]):
-        if "bankDownload" in job["input"]:
-            bank_store = await fetch_bank_download(job["input"]["bankDownload"],
-                                                   job["input"]["callbackUrl"], binding)
-        with tempfile.TemporaryDirectory(prefix="moving-worker-") as temporary:
-            destination = Path(temporary) / "avatars"
+async def run(job, bank_store, allowed_origin, cache=None):
+    temporary = engine = None
+    try:
+        with diag.phase("releaseVerifyMs"):
+            release_sha = verify_release(ROOT)
+        diag.record(releaseSha256=release_sha)
+        attestation = validate_job(job["input"], release_sha, allowed_origin, job["id"])
+        binding = job["input"]["binding"]
+        async with asyncio.timeout(job["input"]["ttlSeconds"]):
+            if cache is not None:
+                await cache.check(binding)
+            else:
+                diag.record(modelCache="not_requested")
+            if "bankDownload" in job["input"]:
+                bank_store = await fetch_bank_download(job["input"]["bankDownload"],
+                                                       job["input"]["callbackUrl"], binding)
+            else:
+                diag.record(bankArchiveCache="not_requested", bankReceiptCache="not_requested")
+            # Fresh hash/extraction checks still run on every job, including hits.
+            # A cache miss transfers ownership; a hit discards only this scratch copy.
+            temporary = tempfile.TemporaryDirectory(prefix="moving-worker-")
+            destination = Path(temporary.name) / "avatars"
             bank_store = Path(bank_store)
-            mapping = verify_bank(
-                bank_store / (binding["avatarSha256"] + ".tar"),
-                bank_store / (binding["bankReceiptSha256"] + ".json"),
-                destination, binding)
-            verify_models("/workspace/MuseTalk/models")
-            engine = ProcessEngine(destination, binding["workerAvatar"])
-            try:
+            # Hash validation and extraction intentionally remain one operation.
+            with diag.phase("bankExtractVerifyMs"):
+                mapping = verify_bank(
+                    bank_store / (binding["avatarSha256"] + ".tar"),
+                    bank_store / (binding["bankReceiptSha256"] + ".json"),
+                    destination, binding)
+            with diag.phase("modelsVerifyMs"):
+                verify_models("/workspace/MuseTalk/models")
+            if cache is not None:
+                engine = await cache.acquire(binding, temporary,
+                    lambda: ProcessEngine(destination, binding["workerAvatar"]))
+                if engine.retained_temporary:
+                    temporary = None
+            else:
+                with diag.phase("engineSpawnMs"):
+                    engine = ProcessEngine(destination, binding["workerAvatar"])
+            with diag.phase("enginePrepareMs"):
                 await engine.prepare()
-                import websockets
-                # allowlisted TLS origin; proxy discovery is disabled. Never log
-                # callbackUrl: its token is a one-use transport capability.
-                async with websockets.connect(job["input"]["callbackUrl"], proxy=None,
-                        open_timeout=15, close_timeout=2, max_size=65536,
-                        max_queue=4, write_limit=65536, compression=None) as socket:
-                    return await serve(socket, engine, attestation, mapping)
-            finally:
+            import websockets
+            # allowlisted TLS origin; proxy discovery is disabled. Never log
+            # callbackUrl: its token is a one-use transport capability.
+            async with contextlib.AsyncExitStack() as connection:
+                with diag.phase("callbackConnectMs"):
+                    socket = await connection.enter_async_context(websockets.connect(
+                        job["input"]["callbackUrl"], proxy=None, open_timeout=15, close_timeout=2,
+                        max_size=65536, max_queue=4, write_limit=65536, compression=None))
+                outcome = await serve(socket, engine, attestation, mapping,
+                                      keep_alive_on_complete=cache is not None)
+            # Callback closure and session task cleanup must succeed before idle.
+            if cache is not None and outcome == "complete":
+                if temporary is not None:
+                    temporary.cleanup()
+                    temporary = None
+                await engine.finish()
+            return outcome
+    except BaseException:
+        if cache is not None:
+            await cache.close()
+        raise
+    finally:
+        if cache is None and engine is not None:
+            with diag.phase("engineStopMs"):
                 await engine.close()
+        if temporary is not None:
+            temporary.cleanup()
 
 
 def handler(job):
@@ -58,18 +99,24 @@ def handler(job):
     # A worker result never releases the server's reservation by itself.
     if not isinstance(job, dict) or set(job) != {"id", "input"}:
         return {"status": "failed", "code": "invalid_provider_envelope"}
-    try:
-        with contextlib.redirect_stdout(sys.stderr):
-            outcome = asyncio.run(run(job, os.environ.get("MOVING_BANK_STORE", "/banks"),
-                                      os.environ.get("MOVING_CALLBACK_ORIGIN", "")))
-        return {"status": outcome}
-    except BaseException as error:
-        # Deliberately omit arbitrary exception strings and provider payloads.
-        known = {"release_mismatch", "bank_bytes_changed", "bank_binding_mismatch",
-                 "session_not_bound", "worker_below_realtime_limit",
-                 "frame_plan_length_mismatch", "pcm_exceeds_plan"}
-        code = str(error) if type(error) is ValueError and str(error) in known else "moving_worker_failed"
-        return {"status": "failed", "code": code}
+    with diag.collect() as diagnostics:
+        try:
+            with contextlib.redirect_stdout(sys.stderr):
+                outcome = asyncio.run(run(job, os.environ.get("MOVING_BANK_STORE", "/banks"),
+                                          os.environ.get("MOVING_CALLBACK_ORIGIN", "")))
+            result = {"status": outcome}
+        except BaseException as error:
+            # Deliberately omit arbitrary exception strings and provider payloads.
+            known = {"release_mismatch", "bank_bytes_changed", "bank_binding_mismatch",
+                     "session_not_bound", "worker_below_realtime_limit",
+                     "frame_plan_length_mismatch", "pcm_exceeds_plan"}
+            code = error.args[0] if type(error) is ValueError and len(error.args) == 1 and type(error.args[0]) is str and error.args[0] in known else "moving_worker_failed"
+            result = {"status": "failed", "code": code}
+        diag.record(outcome=result["status"])
+        diag.resources()
+        result["diagnostics"] = diagnostics.snapshot()
+        diag.emit(result["diagnostics"])
+        return result
 
 
 def main():
