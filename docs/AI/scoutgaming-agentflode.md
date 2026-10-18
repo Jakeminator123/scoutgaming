@@ -15,6 +15,10 @@ mountkontroll, state, modellval och behörigheter behålls. Det isolerade
 containerprovet använder faktisk image/bootstrap/starter och syntetisk CLI
 utan nät. [Handoff](../JOHN-HANDOFF.md) skiljer lokala tester, CI och drift;
 [Render-guiden](openclaw/RENDER-START-SV.md) beskriver första övergången.
+Efter konkret exit127 i Render skiljer guiden dess kommandosträng utan
+omslutande citattecken från Docker-provets argv; faktisk driftverifiering
+är kvitterad av mergagent: korrigerad övergång samt normal omstart
+på samma d55ce412, med ordnad SIGTERM och autentiserat config.get200.
 
 ## Portabel GitGuardian-start — 17 oktober 2026
 

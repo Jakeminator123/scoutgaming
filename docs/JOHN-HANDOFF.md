@@ -1,5 +1,41 @@
 # Aktuell handoff — Scoutgaming
 
+## Gateway verifierad; sista game-leveransen — 18 oktober 2026
+
+Mergagentens fullständiga kvitto gäller main d55ce412714e9e0c85103358f381098ce3d35077:
+main-CI39085777226 SUCCESS, faktiskt containerprov99.765s, SQL16tester och
+produktionsledger001–014 ready01:23:14Z. Vercel dpl_34PApGPPsSH4vGbCbgjgt4CeCy7T
+READY med17/17 kontroller; game dep-dba1v4jm8hqs73b04q1g LIVE med version,
+health, lobby och privata gränser verifierade01:26:54Z.
+
+Gateway-övergången utan omslutande quotes gav dep-dba23t6q1p3s73a16skg LIVE
+01:41:27Z trots en tidigare portscan-varning. Docker Command återställdes
+till tomt och lästes tillbaka. Normal deploy av samma SHA,
+dep-dba28hnavr4c73fsf3fg, blev LIVE01:45:00Z: SIGTERM/shutdown01:44:05Z,
+ny Gateway ready01:44:52Z utan EPERM, lease- eller closefel. Mergagentens
+signerade config.get200 och Director-kontroll01:45:22Z visar connected/applied,
+2026.9.5 och alla fem modellval/fallbacks oförändrade. Disk och autoDeploy
+är oförändrade. Director kvarstår på67bac46d med verifierat identisk buildclosure.
+Ingen modell- eller GPU-körning ingick.
+
+Game-flytten är normalt integrerad med denna accepterade main och levereras
+nu separat. Dess verifierade app/service/package-kod är oförändrad sedan
+slutbygget; därefter har endast Gateway-kvitton och runbook rättats. PR-CI,
+main-CI och faktisk game-drift återstår. H3 skickar lipsynk2 ett enda
+startbesked direkt efter den kedjan, för färsk kostnads-/runtimekontroll och
+ett kontrollerat prov inom15USD totalt med automatisk avveckling.
+
+## Gateway-övergångens kommando, 18 oktober 2026
+
+Main-CI39085777226 på d55ce412 är grönt. Första Render-övergången
+dep-dba1vveq1p3s73a0phe0 misslyckades med exit127 eftersom de omslutande
+enkla citattecknen bevarades i Docker Command. Runbook följer nu Renders
+faktiska officiella kodexempel utan dessa citattecken. Docker-fixturen
+verifierar shellprogrammets argv, inte Renders strängtolkning. Mergagent
+återställde fältet och äger återhämtning samt en källstödd korrigerad retry
+på samma granskade revision. Inga state-/lease-/authdata ändras; slutligt
+Gateway-driftkvitto krävs fortfarande före game-leverans och GPU-start.
+
 ## C3 — slutlig lokal integration, 18 oktober 2026
 
 Game-flyttens byggverifierade kod08e24133 och kvitto dccb86c8 är normalt
