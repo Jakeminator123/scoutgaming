@@ -474,6 +474,10 @@ SQL-pakethämtningen gav först `Hash Sum mismatch` från Ubuntu via HTTP,
 före databasstart. Samma prov passerade med en uppgiftsspecifik `APT_CONFIG`
 för Ubuntus HTTPS-källor, med bibehållen signatur-/hashkontroll. Inga
 systempaket, systemkällor eller externa databaser ändrades.
+Leveransverktygets push verifierades på GitHub men upstreamsteget behövde
+klonens main-begränsade fetchspec utökad med den egna featurebranchen.
+`git remote set-branches --add origin <featurebranch>` följt av fetch och
+ordinarie leveranskommando räckte; ingen gammal arbetskopia behövdes.
 
 **Kvarvarande särskilda förutsättningar:** inga gamla lokala projektfiler
 behövdes för de prövade flödena. Director-adaptrarnas äldre relativa

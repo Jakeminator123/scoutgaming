@@ -139,6 +139,11 @@ Bygg Studio först; `--offline --skip-build --no-open` får sedan använda
 just det nybyggda resultatet. Sessionslås och temporära processer/data ska
 kontrolleras efter stopp. Guards och byggspår ersätter inte en OS-sandbox.
 
+En `--single-branch`-klon hämtar normalt endast main. Före första
+featureleveransen: `git remote set-branches --add origin <featurebranch>`
+och `git fetch origin <featurebranch>`, så leveransverktyget kan sätta
+upstream. En redan verifierad push ska inte göras om med force.
+
 | Separat behov | Orsak och minsta åtgärd |
 | --- | --- |
 | Director-konfiguration/historik | Appadaptrarna bevarar relativ `open-claw/lab` för privata inställningar och data. Isolerade prov väljer egen datarot och `envFiles: []`; verklig historik bevaras separat. Director-paketets startprov behöver inte äldre filer. |
