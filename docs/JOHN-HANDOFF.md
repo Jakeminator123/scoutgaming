@@ -16,12 +16,16 @@ full produktionsantagning/spelrunda. Det tidigare tysta, nedskalade utdraget
 ### Arbetsplats och leverans
 
 Egen arbetskopia: `C:/Users/jakem/.codex/worktrees/lipsync3-server-diagnostics/croupier`,
-branch `codex/lipsync3-motion-readiness`, startad från main `b623a3fc`.
-Pågående ändring ger sanerad workerdiagnostik och uppdaterar kanoniska guider;
+branch `codex/lipsync3-motion-readiness`, med main `2e9b5338` integrerad.
+[PR253](https://github.com/Jakeminator123/scoutgaming/pull/253) ger sanerad workerdiagnostik och uppdaterar kanoniska guider;
 den ändrar inte renderrecept, callbackprotokoll eller modellcache.
 Ny förseglad diagnostikrelease:
 `dba5492ef8c16c5b874a350b44412c131d006d157ad83448a7b0b01484df7777`.
 Den är ännu inte en publicerad eller driftsatt image.
+
+Separat cachearbete sker i den rena, återanvända arbetskopian
+`C:/Users/jakem/.codex/worktrees/lipsync3-bank-http/croupier`, branch
+`codex/lipsync3-warm-engine`. Beroenden och befintliga junctions ändras inte.
 
 Primärcheckouten `C:/Users/jakem/Projects/croupier` låg vid kontrollen på
 äldre main `12f5e6a7`, med andras ändrade `.codex/config.toml`,
@@ -59,9 +63,14 @@ Render-antagning, serverkort, insats eller saldo. Ett vanligt kort chattsvar
 i öppningssekvensen kan vara slut före dealerns kort; självutdelningsprovet
 valde därför detta exakta klipp uttryckligen.
 
-Pod `chorewqxdanti3` raderades och frånvaro återlästes 16:27:14 UTC.
-Priset var 0,89 USD/timme; den första läsningen av kostnadsrader var tom och
-är inte slutlig debitering. Äldre Astrid-endpoint `zsudl8tmzcmiv1` kör annan
+Pod `chorewqxdanti3` raderades och frånvaro återlästes 16:27:14 samt 16:56 UTC.
+Priset var 0,89 USD/timme. Vid avstämningen 16:56 UTC fanns ännu ingen
+kostnadsrad för podden; slutkostnaden är okänd. 378,133 sekunders lokal
+livstid motsvarar cirka 0,0935 USD compute vid detta pris, utan verifierad
+avrundning eller lagringskostnad. Trial03-endpointen `wim5211q6r5el9` hade
+en faktisk billing-rad om 0,0382514056 USD och 112 873 debiterade ms;
+det är en avläst kostnadsrad, inte slutlig fakturagaranti. Sanerat kvitto:
+`motion-readiness/billing-closed-pod-1792342577297.json`. Äldre Astrid-endpoint `zsudl8tmzcmiv1` kör annan
 image; dess kvarvarande worker var EXITED på RTX4090 vid 16:19-kontrollen.
 Inga andra pods/endpoints ändrades. Jakob har uttryckligen återkallat det
 tidigare konservativa provtaket; gamla reservationer är historik, inte
@@ -88,9 +97,26 @@ kvittot finns redan privat i Blob; 50 exakta Neon-källor och Blob-storlekar
 kontrollerades 16:13 UTC. HEAD är inte ny helhashning. De två använda
 källfilmerna samt bord/bakgrund fullhashades för replay.
 
-Kuraterad extern bevaring av ZIP, egna unika resultat och sanerade kvitton
-förbereds; ännu finns inget nytt verifierat uppladdningskvitto. Lokala original
-bevaras tills extern återläsning lyckats. Moving-runtime sparar ännu inte
+Kuraterad extern bevaring slutfördes **18 oktober 16:55:28 UTC**: 53 nya
+objekt och ett sanerat manifest, totalt **222 641 075 byte**, laddades upp
+privat utan overwrite. Alla 54 objekt återlästes i sin helhet och matchade
+storlek och SHA-256. Fem befintliga medieobjekt återanvänds som referenser;
+denna uppladdning är inte en ny fullhashning av dessa fem.
+
+Återställningsmanifestets privata Blob-sökväg är
+`croupier/media/dealers/dragan/staging/lipsync-review/d63657f1-cc18-5707-9551-86d380f39404/ed5b5c1cd9799bf46e83ec513cb09282637bda9d2acedf40f952ea8bbd1b6b10.json`
+(68 291 byte; SHA-256 är filnamnet). Det innehåller roller, källbindningar,
+hashar och det enda exakta visuella godkännandet. Omkodade jämförelser är
+märkta som derivat, inte som bankens originalbytes. Emils ZIP är bevarad
+oförändrad; 19 textfiler granskades för hemlighetsmönster utan träffar,
+men binära tensorers innehåll är inte fullständigt sekretessgranskat.
+Planhash `26ec9bc513455a67c4ca35049c83dc2c17712693e97aef2021e5d79c2b0bf23b`
+och fullständigt uppladdningskvitto finns under provbasens
+`artifact-preservation/`. Inga Neon-rader eller Admin-klipp skrevs:
+registrerade källor ligger redan i Neon, medan granskningspaketet är
+bevarat underlag. Lokala original finns tills separat ägarkontrollerad städning.
+
+Moving-runtime sparar ännu inte
 sina resultat automatiskt i svarsbiblioteket. Råa 256×512 mun-/maskpaket är
 inte kompletta MP4-klipp och ska inte registreras som sådana i /admin/clips.
 Se de korrigerade kontrakten i [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md)
