@@ -1218,9 +1218,13 @@ const server = createServer(async (req, res) => {
         if (req.url === '/api/roulette/table' && activeSession?.partnerKeyId) throw Object.assign(Error('roulette_native_account_required'),{statusCode:403});
         const incoming=JSON.parse(body||'{}');let commandSession=activeSession;
         if(req.url==='/api/table'&&incoming.movingSpeech!==undefined){
-          if(incoming.op!=='start'||!movingSpeechService?.supports(incoming.dealer)||typeof incoming.movingSpeech?.sessionRevision!=='string'
+          if(incoming.op!=='start'||typeof incoming.movingSpeech?.sessionRevision!=='string'
             ||!CHAT_REVISION.test(incoming.movingSpeech.sessionRevision))
             throw Object.assign(Error('invalid_moving_deal_context'),{statusCode:409});
+          // An open browser can retain the speech option after it is disabled.
+          // Reject before the table command can debit or deal; never retry it.
+          if(!movingSpeechService)throw Object.assign(Error('moving_deal_speech_unavailable'),{statusCode:409});
+          if(!movingSpeechService.supports(incoming.dealer))throw Object.assign(Error('invalid_moving_deal_context'),{statusCode:409});
           const access=await authorizeChatDealer({dealerId:incoming.dealer,presentationContext:incoming.movingSpeech.context});
           if(!access.presentationContext)throw Object.assign(Error('moving_deal_room_required'),{statusCode:409});
           commandSession={...activeSession,movingSpeech:{context:access.presentationContext,sessionRevision:incoming.movingSpeech.sessionRevision,
