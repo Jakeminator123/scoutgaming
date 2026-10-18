@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: uttryckligt totaltak40 och en ny reservation — 18 oktober 2026
+
+Jakob har uttryckligen höjt det samlade testtaket till40USD. Den första
+ändringsbegäran stoppades före DB-transaktion: valideringen blandade ihop
+providerredovisningens totaltak med migration014:s journalgräns15USD.
+Dessa gränser skiljs nu åt; journalens schema och15USD-gräns är oförändrade.
+Runtime tillåter7,2USD, men befintligt budget-ID och journalens6USD spärrar
+fortfarande nästa prov tills en separat append-only ändring godkänts med
+färsk kostnads- och workerbevisning. Ingen reservation återbetalas/nollställs.
+Nästa prov reserverar1,20USD i journalen, högst en GPU i12minuter plus
+2minuters avvecklingsreserv. Globalt40 innebär inte att40USD startas.
+
+PR238:s workerimage är publicerad privat och containerverifierad52/52:
+`sha256:3ede7d24fd7885f2a8ffcd1ad4798d2d1caa8799f926c610b576d196cc92db6c`,
+release `3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad`.
+App4c782b3be4f49dc5743f27e3af3dfcb52e407939 är driftsverifierad; denna
+budgetändrings CI/merge/deploy återstår. Förberedd ny endpoint har0/0 workers,
+Renderflagga0 och Dragan-profil av. Tal och läppsynk är ännu inte godkända.
+Regression täcker40USD-bevis, bevarad journalgräns, blockering före amendment,
+exakt en ny reservation efter amendment och oförändrad historik i SQL-fixturen.
+
 ## Dragan: GPU startade; säkra workerfelkoder — 18 oktober 2026
 
 Ett kontrollerat prov kördes på verifierad game-main
