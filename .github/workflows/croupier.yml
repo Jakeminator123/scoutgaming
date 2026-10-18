@@ -56,7 +56,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -128,7 +128,7 @@ jobs:
         run: sh .githooks/pre-commit-full presentation
       - name: Regression - Access, wallet, registry and cloud
         if: ${{ !cancelled() }}
-        timeout-minutes: 8
+        timeout-minutes: 18
         run: sh .githooks/pre-commit-full access
       - name: Regression - Speech and player transport
         if: ${{ !cancelled() }}

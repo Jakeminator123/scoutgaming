@@ -40,7 +40,7 @@ export function prepareGatewayOwner({ filesystem = fs, system = process } = {}) 
   system.env.LOGNAME = 'node';
 }
 
-const PHASES = new Set(['mount-owner', 'starter-import', 'runtime-start', 'environment', 'config-read',
+const PHASES = new Set(['mount-owner', 'init-exec', 'starter-import', 'runtime-start', 'environment', 'config-read',
   'config-plan', 'config-write', 'config-validate', 'runtime-bundle', 'helper-start', 'gateway-spawn']);
 const ERROR_CODES = new Set(['EACCES', 'EPERM', 'ENOENT', 'ENOTDIR', 'ELOOP', 'EROFS', 'ENOSPC',
   'EEXIST', 'EMFILE', 'ENFILE', 'EIO', 'ERR_MODULE_NOT_FOUND', 'ERR_DLOPEN_FAILED',
@@ -52,6 +52,23 @@ export function gatewayStartupFailure(error, phase) {
   return `Gateway startup failed; phase=${safePhase} code=${code}.`;
 }
 
+// Replace the root bootstrap only AFTER the irreversible uid/gid drop. Tini
+// and every child then share uid 1000, so forwarding needs no CAP_KILL, while
+// PID 1 still reaps orphaned descendants. The pinned Linux image supplies both.
+export function runGatewayInit({ owner = prepareGatewayOwner, system = process,
+  execute = (...args) => process.execve(...args), logger = console } = {}) {
+  let phase = 'mount-owner';
+  try {
+    owner();
+    phase = 'init-exec';
+    execute('/usr/bin/tini', ['/usr/bin/tini', '-s', '--', system.execPath,
+      '/opt/croupier-gateway/gateway-bootstrap.mjs', '--runtime'], system.env);
+    return true; // Only reached by an injected test executor; execve replaces us.
+  } catch (error) {
+    logger.error(gatewayStartupFailure(error, phase));
+    return false;
+  }
+}
 export async function runGatewayBootstrap({ owner = prepareGatewayOwner,
   loadStarter = () => import('./start-gateway.mjs'), logger = console } = {}) {
   let phase = 'mount-owner';
@@ -72,5 +89,6 @@ export async function runGatewayBootstrap({ owner = prepareGatewayOwner,
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  if (!await runGatewayBootstrap()) process.exitCode = 1;
+  const ok = process.argv[2] === '--runtime' ? await runGatewayBootstrap() : runGatewayInit();
+  if (!ok) process.exitCode = 1;
 }

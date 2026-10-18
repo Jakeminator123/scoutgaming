@@ -120,6 +120,7 @@ export function createSearchServer({ token, dashboardHandoff, ...options }) {
     finally { active--; }
   });
   server.requestTimeout = 30000; server.headersTimeout = 5000;
-  server.on('close', service.close);
+  // SIGTERM and the Gateway exit can both close this server. Release SQLite once.
+  server.once('close', service.close);
   return server;
 }
