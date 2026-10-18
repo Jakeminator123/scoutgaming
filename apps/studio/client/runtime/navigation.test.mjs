@@ -220,7 +220,7 @@ async function mountClipMap(h){
   return {settle,selection:()=>({operator:select('Spelbolag').props.value,game:select('Spel').props.value,room:select('Rum').props.value,dealer:select('Dealer').props.value}),
     async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
     async editDraft(){
-      button('Gemensam sammansättningsmall').props.onClick();await settle();
+      button('Scen & lager').props.onClick();await settle();
       const inspector=one(nodes(node=>node.type==='aside'&&node.props['aria-label']==='Klipp och inställningar'),'clip inspector');
       assert.equal(inspector.props.hidden,false,'composition editor must open in the detail panel');
       const panel=one(all(inspector,node=>node.type==='StudioCompositionPanel'),'composition editor'),draft=structuredClone(panel.props.project);

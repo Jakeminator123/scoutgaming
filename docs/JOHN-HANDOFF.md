@@ -20,6 +20,8 @@ isolerat webbprov av platsval, klippkoppling, sparbekräftelse, återläsning,
 bas/beteende, inspelat tal och bevarat talutkast vid panelbyte. Scenpanelen
 öppnas; inga verkliga spel-, media-, publicerings- eller OpenClaw-prov ingår.
 Den befintliga byggningen varnar fortfarande om CSS `composes` i äldre teman.
+Full CI hittade navigationstestets gamla knappnamn. Testet använder nu
+Scen & lager och behåller kontrollen av utkast, kontext, Back/Forward och omladdning.
 Oanvända UI-konstanter, kategorifilter och ersatt knapp-CSS har tagits bort.
 
 Fria kort-/markerankare, PNG-idle, generell chattregeleditor och exakt var
