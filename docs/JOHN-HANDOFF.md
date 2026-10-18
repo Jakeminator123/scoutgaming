@@ -73,6 +73,24 @@ uttryckligen av fixturen. Ingen produktionsdatabas användes. Underlag:
 i den privata provbasen nedan. Oberoende kodgranskning fann inga blockerare;
 verkligt serverless-/varmcacheprov återstår.
 
+För nästa två planerade produktionsrepliker finns en separat kodändring på
+`codex/lipsync3-two-reply-trial`: tekniskt totalutrymme 10,8 → 13,2 USD och
+runtime-dygnsgräns 6 → 8,4 USD. Detta är reservationer, inte fakturerad kostnad
+eller ett nytt mänskligt kostnadstak. Budget-ID, 1,2 USD per reservation och
+den redan sparade dygnspolicyn 20 USD behålls. Kodändringen ensam höjer inte
+journalen: en separat färsk, uttrycklig amendment krävs före aktivering.
+Ingen sådan molnändring ingår i denna kodleverans.
+
+30 fokuserade budget-/journaltester och ny isolerad PostgreSQL-körning
+(4 retained, 26 SQL, 59 integration; samma fristående wrapper-skip som ovan)
+passerade. SQL-provet bevarar nio gamla reservationer och avgifter, kräver
+amendment, tillåter två nya och avvisar ett tredje försök utan delskrivning.
+Kvitto: `motion-readiness/two-reply-sql.log`. Aktivering kräver dessutom nya
+merge/deploy/image-kvitton och färsk provideravstämning. Tidigare 5 s-tomgångs-
+prov styrker inte varm kapacitet: REST och health visade osynkrona värden vid
+nedskalning. Före andra repliken ska båda vyerna överensstämma under 60 s-
+tomgången; annars stoppas försöket utan att kapaciteten antas vara kall.
+
 ### Vad som faktiskt verifierades
 
 18 oktober 16:20–16:27 UTC kördes en enda isolerad RunPod med exakt redan
