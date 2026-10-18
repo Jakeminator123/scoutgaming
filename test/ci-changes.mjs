@@ -22,6 +22,23 @@ test('only ordinary prose qualifies; runtime, config, mixed changes and file typ
   assert.equal(documentationOnly([change('docs/removed.md', {status:'D',after:'000000'})]), true);
 });
 
+test('local and CI prose selection share reviewed guides while runtime Markdown stays strict', async () => {
+  const { verificationMode, focusedTests } = await import('../tools/precommit-checks.mjs');
+  for (const path of ['agent-talk/README.md', 'apps/studio/AGENTS.md', 'apps/studio/docs/new-guide.md',
+    'packages/presentation/docs/INTEGRATION.md', 'ops/cloud/CONTAINER-CONTEXT.md']) {
+    assert.equal(documentationOnly([change(path)]), true, path);
+    assert.equal(migrationReadinessRequired([change(path)]), false, path);
+    assert.equal(verificationMode([change(path)], { env: {} }), 'documentation', path);
+  }
+  for (const path of ['packages/presentation/docs/runtime.md', 'services/game/public/docs/partner-api.md',
+    'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md']) {
+    assert.equal(documentationOnly([change(path)]), false, path);
+    assert.equal(verificationMode([change(path)], { env: {} }), 'focused', path);
+  }
+  assert.ok(focusedTests([change('tools/documentation-paths.mjs')]).includes('test/ci-changes.mjs'));
+  assert.ok(focusedTests([change('tools/documentation-paths.mjs')]).includes('test/precommit-checks.mjs'));
+});
+
 test('NUL parser preserves unusual names and fails on truncated/rename records', () => {
   const record = `:100644 100644 ${'a'.repeat(40)} ${'b'.repeat(40)} M\0docs/åäö\ntext.md\0`;
   assert.equal(parseDiff(record)[0].path, 'docs/åäö\ntext.md');

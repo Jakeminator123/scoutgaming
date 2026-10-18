@@ -21,7 +21,8 @@ test('documentation and indexing-only changes use quick checks', () => {
 
 test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
   const guides = [
-    'apps/web/README.md',
+    'apps/web/README.md', 'agent-talk/README.md', 'apps/studio/AGENTS.md',
+    'apps/studio/docs/new-guide.md',
     'packages/presentation/README.md', 'apps/studio/client/README.md',
     'packages/presentation/docs/INTEGRATION.md',
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
@@ -175,6 +176,7 @@ test('the hook inspects its own commit index while child checks remain isolated'
     await mkdir(join(root, 'tools'));
     const script = join(root, 'tools', 'precommit-checks.mjs');
     await writeFile(script, await readFile(new URL('../tools/precommit-checks.mjs', import.meta.url)));
+    await writeFile(join(root, 'tools', 'documentation-paths.mjs'), await readFile(new URL('../tools/documentation-paths.mjs', import.meta.url)));
     const plan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env, encoding: 'utf8' });
     assert.equal(plan.status, 0, plan.stderr);
     assert.equal(JSON.parse(plan.stdout).mode, 'focused');

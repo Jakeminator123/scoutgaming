@@ -14,5 +14,4 @@ Källroten är apps/studio (tidigare lab). Studio serverar produktens /admin,
 /partner och /lobby; /studio är teknisk basePath. Följ [repots AGENTS](../../AGENTS.md),
 [aktuellt handoff](../../docs/JOHN-HANDOFF.md) och de kanoniska guiderna, inklusive
 [terminologin](docs/TERMINOLOGI.md). Neon är produktregistret och Blob äger
-mediebytes; starta inget parallellt lokalt produktregister. Spelmotorns nuvarande
-web-källrot och dess kommande flytt är ett separat arbete.
+mediebytes; starta inget parallellt lokalt produktregister. Spelmotorn ligger i `services/game`; delade kontrakt ligger i `packages/`.
