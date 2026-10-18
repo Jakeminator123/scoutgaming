@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMovingSpeechRunPod} from '../services/game/moving-speech-runpod.mjs';
+import {verifyMovingCapacity} from '../services/game/moving-speech-capacity.mjs';
 const image='ghcr.io/jakeminator123/moving-gpu-worker@sha256:'+'a'.repeat(64);
 const endpoint={id:'owned123',workersMin:0,workersMax:1,idleTimeout:5,executionTimeoutMs:180000,gpuCount:1,version:0,workers:[],templateId:'template123',template:{id:'template123',imageName:image}};
 const create=(fetchImpl)=>createMovingSpeechRunPod({endpointId:'owned123',apiKey:'test-credential',expectedImage:image,fetchImpl});
@@ -45,9 +46,28 @@ const health=(workers={},jobs={})=>({workers:{idle:0,running:0,initializing:0,re
   jobs:{completed:0,failed:0,inProgress:0,inQueue:0,retried:0,...jobs}});
 const drained=state=>state.workers===0&&state.busy===0&&state.available===0;
 
+test('real provider adapter corroborates the observed cold EXITED plus initializing=1 shape before admission',async()=>{
+  for(const stale of [false,true]) {
+    const calls=[],data={...endpoint,idleTimeout:60,version:1};delete data.workers;
+    const client=create(async(url,opts)=>{
+      calls.push(url);assert.equal(opts.method,'GET');assert.equal(opts.body,undefined);
+      if(url.includes('/endpoints/'))return Response.json(data);
+      if(url.includes('/templates/'))return Response.json(endpoint.template);
+      if(url.includes('/pods?'))return Response.json([{id:'cached123',endpointId:'owned123',templateId:'template123',
+        imageName:image,slsVersion:stale?0:1,desiredStatus:'EXITED'}]);
+      assert.equal(url,'https://api.runpod.ai/v2/owned123/health');return Response.json(health({initializing:1}));
+    });
+    const release=await client.release(),state=await client.workerState();
+    const proof={schemaVersion:1,release,health:state.raw,observedAtMs:Date.now()};
+    if(stale)assert.throws(()=>verifyMovingCapacity(proof,{endpointId:'owned123'}),/capacity_unverified/);
+    else {const verified=verifyMovingCapacity(proof,{endpointId:'owned123'});assert.equal(verified.mode,'cold');assert.equal(verified.workerId,null);}
+    assert.equal(calls.length,4,'one set of GET observations, no job submission or retry');
+  }
+});
+
 test('health classifies scaled-down slots as free capacity and running or unhealthy as occupied',async()=>{
   let data;const client=create(async()=>Response.json(data));
-  // Cached/pulling/throttled slots are unbilled and must not block a reservation.
+  // Keep generic health classification separate from moving admission and billing.
   data=health({idle:1,initializing:1,throttled:1});
   assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,unhealthy:0,cached:{idle:1,ready:0},
     scaledDown:{idle:1,initializing:1,throttled:1},raw:data});

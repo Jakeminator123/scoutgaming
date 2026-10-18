@@ -45,3 +45,32 @@ test('Flashboot ready counters neither require nor prove a running GPU',()=>{
   const result=verifyMovingCapacity(cached,options);
   assert.equal(result.mode,'cold');assert.equal(result.workerId,null);
 });
+
+function initializingColdProof() {
+  const proof=movingCapacityFixture({warm:false,now});
+  proof.health.workers.initializing=1;
+  proof.release.workers.workers=[{state:'scaled-down',image:proof.release.expectedImage,
+    version:proof.release.workers.endpointVersion,isStale:false}];
+  return proof;
+}
+test('one current EXITED slot corroborates cold initialization without claiming a warm model',()=>{
+  const value=verifyMovingCapacity(initializingColdProof(),options);
+  assert.equal(value.mode,'cold');assert.equal(value.workerId,null);assert.equal(value.idleTailMs,60000);
+});
+test('initialization needs exactly one current stopped slot and cannot hide activity or uncertainty',()=>{
+  for(const change of [
+    p=>p.health.workers.initializing=2, p=>p.health.workers.initializing='1',
+    p=>p.health.workers.running=1, p=>p.health.workers.unhealthy=1, p=>p.health.workers.throttled=1,
+    p=>p.health.jobs.inQueue=1, p=>p.health.jobs.inProgress=1,
+    p=>p.release.workers.workers=[], p=>p.release.workers.workers.push({...p.release.workers.workers[0]}),
+    p=>p.release.workers.workers[0].state='unknown', p=>p.release.workers.workers[0].state='active',
+    p=>p.release.workers.workers[0].state='terminated', p=>p.release.workers.workers[0].isStale=true,
+    p=>p.release.workers.workers[0].image='foreign-image', p=>p.release.workers.workers[0].version=99,
+    p=>delete p.release.workers.workers[0].isStale,
+    p=>p.release.capacity.activePods.push({id:'unexpected',state:'active',image:p.release.expectedImage,version:3}),
+  ]) {
+    const proof=initializingColdProof();change(proof);assert.throws(()=>verifyMovingCapacity(proof,options),/capacity_unverified/);
+  }
+  const warm=movingCapacityFixture({now});warm.health.workers.initializing=1;
+  assert.throws(()=>verifyMovingCapacity(warm,options),/capacity_unverified/);
+});

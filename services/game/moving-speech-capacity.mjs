@@ -23,6 +23,12 @@ export function verifyMovingCapacity(proof, {endpointId, now=Date.now()}={}) {
   let verified;
   try { verified=verifyMovingWorkerRelease(release,now); } catch { fail(); }
   const limits=release.capacity, workers=health?.workers, jobs=health?.jobs;
+  // Observed cold endpoint: health may report one initializing slot while REST
+  // corroborates exactly one EXITED record for this image/version. This permits
+  // journal-fenced admission, not a warm-model or billing assertion.
+  const coldCachedInitialization=workers?.initializing === 1 && workers.running === 0 && verified.activeWorkers === 0
+    && release.workers.workers.length === 1 && release.workers.workers.every(worker=>worker.state === 'scaled-down'
+      && worker.image === verified.image && worker.version === verified.endpointVersion && worker.isStale === false);
   if (verified.endpointId !== endpointId || !limits || limits.workersMin !== 0 || limits.workersMax !== 1
     || !ID.test(limits.templateId ?? '') || !Number.isInteger(limits.idleTimeout)
     || release.templateCorroboration?.source !== 'full-template'
@@ -30,7 +36,7 @@ export function verifyMovingCapacity(proof, {endpointId, now=Date.now()}={}) {
     || limits.idleTimeout < 0 || limits.idleTimeout*1000 > MOVING_SPEECH_LIMITS.providerIdleMs
     || !workers || !jobs || WORKERS.some(key=>!counter(workers[key])) || JOBS.some(key=>!counter(jobs[key]))
     || jobs.inProgress !== 0 || jobs.inQueue !== 0 || workers.unhealthy !== 0
-    || workers.initializing !== 0 || workers.throttled !== 0 || workers.running > 1
+    || (workers.initializing !== 0 && !coldCachedInitialization) || workers.throttled !== 0 || workers.running > 1
     || verified.activeWorkers !== workers.running
     || release.workers.workers.some(worker=>worker.state === undefined || worker.state === 'unknown')
     || !Array.isArray(limits.activePods) || limits.activePods.length !== workers.running) fail();

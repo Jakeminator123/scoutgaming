@@ -82,6 +82,21 @@ ledig worker med färska release-/hälsodata och samma journal-lease; den
 Endpointens min/max är 0/1, tomgång högst 60 s inom samma 720 s reservation.
 Den kräver en exklusiv endpoint eftersom provider-GET och POST inte är atomiska.
 
+Ett separat läsande följdprov 18 oktober 19:37–19:38 UTC reproducerade
+`generated_speech_moving_capacity_unverified`: REST visade exakt en avstängd
+`EXITED`-post med aktuell image/version, medan health visade `running=0`,
+`initializing=1` och inga jobb. Den smala rättningen tillåter denna kombination
+som kall antagning. Varm initialisering, gamla eller okända workerposter,
+fler initialiserande slots, ohälsa, throttling och kö/arbete avvisas fortfarande.
+Det är inget besked om fakturering eller färdigladdad modell. 69 fokuserade
+tester passerade utan skips. Huvudagentens isolerade PostgreSQL-körning gav
+4 retained-, 26 SQL- och 59 integrationskontroller; den utökade kapacitets-
+fixturen kördes uttryckligen. Testwrappern gav 15 pass och ett miljöberoende
+skip för det separata, redan uttryckligen körda SQL-provet. Oberoende
+kodgranskning fann inga blockerare. Ändringen är ännu inte produktionsverifierad.
+Klockdomänen mellan Node och databas, generell drain, image och kostnadsgränser
+ändras inte.
+
 87 fokuserade kapacitets-/sessions-/journaltester passerade utan skips.
 RunPods separata `ready`-räknare krävs inte för en körande worker;
 regressionen täcker `running=1, ready=0` och enbart Flashboot-cache.
