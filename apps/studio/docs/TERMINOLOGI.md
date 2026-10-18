@@ -34,4 +34,10 @@ Admin får arbetslägena **Skapande** (dealers, klipp, scener) och **Verksamhet*
 (bolag, kunder, drift, ekonomi), med gemensamt designspråk och tydliga lägesnamn.
 Behåll klippkartan med spelval. Öppna rumseditorn från rummet; klipp och tal
 hör till dealerns bibliotek. Arbetsläge ändrar inte behörighet eller lagringsägare.
+
+Klipp ordnas som **kategori → situation → standardklipp + varianter**.
+**Vila (idle)** har en basloop och separata beteendeklipp. **Redo** skiljer
+till/från skon; **Dela till spelare** skiljer box 1–7. Varje situation har
+eget standardklipp. Tekniska poseversioner är inte beteendevarianter.
+Talade repliker behåller situation, språk och exakt text/ljud/bild tillsammans.
 [Användarguiden](README.md) beskriver arbetssteg, ingen separat produktmodell.
