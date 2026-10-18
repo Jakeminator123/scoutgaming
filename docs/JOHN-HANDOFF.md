@@ -14,7 +14,16 @@ Befintlig mountrotkontroll, icke-rekursiv chown och irreversibel uid/gid/drop
 behålls. Starterns befintliga signalhandler når därmed sitt Gateway-barn.
 Image/version/digest, state, auth och modellval ändras inte.
 
-Lokalt: 8 bootstrap-tester godkända, 0 fel; Linux-containerprovet är explicit
+Första Linux-CI på PR235 körde containern men stopp gav exit 1 efter cirka
+82 sekunder, inte gruppens 180-sekunderstimeout. Mergagent reproducerade
+att helperns HTTP-close från både signal och barnexit stängde SQLite två
+gånger. Samma regression fallerar lokalt före rättning och passerar när
+SQLite-frigöringen registreras med once. Containerdiagnostiken visar nu
+avslutad processstatus, begränsad stdout/stderr och syntetisk signalreceipt
+före assertionen; inga assertioner tas bort. Riktat efter rättning: 28 pass,
+0 fel, 1 Linux-skip. Ny Linux-CI och verklig drift återstår.
+
+Lokalt första head: 8 bootstrap-tester godkända, 0 fel; Linux-containerprovet är explicit
 skippat på Windows. CI måste köra den riktiga pinnade imagen, faktisk
 bootstrap/starter och en syntetisk CLI på egen volym utan nätverk: uid/gid
 1000, PID 1, SIGTERM, borttagen syntetisk lease och exit 0. Provet täcker

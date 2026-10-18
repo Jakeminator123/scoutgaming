@@ -61,6 +61,7 @@ test('pinned Gateway container drops privilege and releases child lease on SIGTE
   });
   await docker(['info', '--format', '{{.OSType}}']);
   await docker(['build', '--network=none', '-t', image, '-f', path.join(context, 'deploy/Dockerfile.gateway'), context], 720_000);
+  t.diagnostic('image process config: ' + await docker(['image', 'inspect', '--format', '{{json .Config.Entrypoint}} {{json .Config.Cmd}} {{json .Config.StopSignal}}', image]));
   await docker(['volume', 'create', volume]);
   const mount = `type=volume,src=${volume},dst=/data/openclaw`;
   async function helper(script) {
@@ -93,7 +94,11 @@ test('pinned Gateway container drops privilege and releases child lease on SIGTE
     }
     assert.ok(ready, `${label} readiness timeout`);
     await docker(['stop', '--time', '15', name]);
-    assert.equal(await docker(['inspect', '--format', '{{.State.ExitCode}}', name]), '0', `${label} graceful exit`);
+    const stopped = await docker(['inspect', '--format', '{{json .State}}', name]);
+    const output = await execute('docker', ['logs', '--tail', '35', name], { timeout: 30_000, maxBuffer: 32_768 });
+    t.diagnostic(`${label} stopped state: ${stopped}; synthetic container stdout/stderr: ${output.stdout.slice(-4000)} ${output.stderr.slice(-4000)}`);
+    t.diagnostic(`${label} synthetic receipt: ` + await helper("const fs=require('fs'); const p='/data/openclaw/signal-receipt.json'; console.log(JSON.stringify({lease:fs.existsSync('/data/openclaw/synthetic-owner-lease'),receipt:fs.existsSync(p)?JSON.parse(fs.readFileSync(p)):null}))"));
+    assert.equal(JSON.parse(stopped).ExitCode, 0, `${label} graceful exit`);
     const receipt = JSON.parse(await helper("const fs=require('fs'); if(fs.existsSync('/data/openclaw/synthetic-owner-lease'))process.exit(2); process.stdout.write(fs.readFileSync('/data/openclaw/signal-receipt.json')); fs.unlinkSync('/data/openclaw/signal-receipt.json')"));
     assert.deepEqual(receipt, { signal: 'SIGTERM', parent: 1, uid: 1000, gid: 1000, euid: 1000, egid: 1000 });
     t.diagnostic(`${label}: real bootstrap/starter, uid/gid 1000, PID 1, SIGTERM received, synthetic lease removed, exit 0`);
