@@ -17,12 +17,12 @@ Det är den aktuella produkten, inte ett namnval mellan utvecklarnas miljöer.
 
 | Resurs | Färsk kontroll och betydelse |
 | --- | --- |
-| Neon `preview-v2` / `br-rapid-wave-b1b6978c` | Separat gren från 16 oktober. Samma databasnamn men äldre data: endast Demo och Swedish Games aktiva, Dragan/Nordic saknas. Kopian bär fortfarande `production/croupier`; branchens namn gör den inte till en färdig isolerad QA-miljö. Inget verifierat Kevin-ägarskap. |
+| Neon `preview-v2` / `br-rapid-wave-b1b6978c` | Raderad 18 oktober 2026, verifierat 14:02:22 UTC efter Jakobs uttryckliga val, tillsammans med endpoint `ep-lucky-bird-b1fyapdh`. Produktionsprojektets `main` behölls. Det äldre projektet `croupier-preview-neon` med arkiverad `main` behölls också; det är en annan resurs. |
 | Vercel Production, projekt `scoutgaming` | Backend `croupier-v2.onrender.com`, native Admin på, uttrycklig GAME-databasanslutning och scope samt Blob-token finns. Sensitive värden är inte utlämnade av connectorn och deras fullständiga likhet är inte nyverifierad. |
 | Vercel Preview, samma projekt | Backend och publika adresser pekar på produktion. Preview saknar ingresshemlighet, native-Admin-flaggor, GAME-databasanslutning och Blob-token. En äldre READY-deployment bevisar varken aktuell kod eller fungerande Admin. Ingen verifierad skrivtestmiljö. |
 | Blob `croupier-media-private` / `store_AqwvebTbBHarOjvG` | Endast kopplat till Scoutgaming, metadata för Production/Preview. Kopplingen innehåller `CROUPIER_MEDIA_STORE_ID`; den skapar inte i sig en fungerande Preview-token. |
 | Blob `impactwin-media-preview` / `store_K1uXiAFLGqRdspnB` | Endast kopplat till det separata projektet Impactwin (Preview/Development). Ingen belagd krock med Scoutgaming. |
-| Render | `croupier-v2` är produktionsbackend. Äldre `croupier-vercel-preview-qa` står i maintenance. Separata `game-engine` finns också; dess existens är inte en koppling från Scoutgamings Preview. |
+| Render | `croupier-v2` är produktionsbackend och behölls. Separata `game-engine` (`srv-db97dhg473hc73b1vni0`) raderades 18 oktober 2026 efter Jakobs uttryckliga val; DELETE och efterföljande GET 404 verifierades 14:01:17 UTC. Äldre `croupier-vercel-preview-qa` har tidigare dokumenterats i maintenance. |
 
 Koden i `apps/studio/lib/studio-native-runtime.mjs` använder den uttryckliga
 `CROUPIER_GAME_DATABASE_URL`. Marketplace-variablerna `CROUPIER_NEON_*`
