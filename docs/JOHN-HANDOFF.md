@@ -27,9 +27,13 @@ Separat cachearbete sker i den rena, återanvända arbetskopian
 `C:/Users/jakem/.codex/worktrees/lipsync3-bank-http/croupier`, branch
 `codex/lipsync3-warm-engine`. Beroenden och befintliga junctions ändras inte.
 
-Cachekoden är lokalt färdig och oberoende granskad: **89 CPU-tester passerade**
-utan skips eller GPU. Release
-`f7c371c1b6f7837621c71610cb977c5f7a56ba92d852a5d12a99b39ee5af0121`
+Cachekoden ligger i PR255. Efter mergegranskningens avbrottsfynd rättades
+slutgrinden: ett mottaget avbrott eller recv-fel under sista `done`-sändningen
+får aldrig ge återanvändbar modell. 54 fokuserade CPU-tester passerade utan
+skips; hela källsviten körde 90 tester med en överhoppad renderklass eftersom
+den låsta renderarmiljön inte finns på Windows-värden. CI/imageprovet måste
+köra den klassen separat. Ingen GPU ingick. Ny release
+`5908716a81532d29e8b2e9aece3a8639258a7f56dad2ee3b6d98fcc343d0c08c`
 förseglar 24 filer, inklusive nya `engine_cache.py` och vendorpatchen som
 inväntar samtliga kompositionsfutures före återanvändning. Ursprungliga
 importhashar bevaras i `source.json`. Exklusiv lease, generationsbundet IPC,

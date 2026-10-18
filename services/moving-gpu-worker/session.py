@@ -42,7 +42,7 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
                 await engine.close()
 
     pcm = bytearray()
-    output = incoming = None
+    output = incoming = final_send = None
     render_started = None
     first_chunk = True
     completed = False
@@ -111,7 +111,28 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
                 diag.render_measurement(meta)
                 if not keep_alive_on_complete:
                     await stop()
-                await send({**meta, "id": start["id"]})
+                # The final send may yield while recv already accepts a cancel
+                # or peer close. Neither may be discarded as successful reuse.
+                final_send = asyncio.create_task(send({**meta, "id": start["id"]}))
+                async def final_input():
+                    final_send.cancel()
+                    await asyncio.gather(final_send, return_exceptions=True)
+                    message = control(incoming.result())  # Also propagates recv failure.
+                    if message != {"t": "avbryt", "id": start["id"]}:
+                        fail("unexpected_input_during_render")
+                    await stop()
+                    await send({"t": "done", "id": start["id"], "aborted": True})
+                    return "cancelled"
+                await asyncio.wait((final_send, incoming), return_when=asyncio.FIRST_COMPLETED)
+                if incoming.done():
+                    return await final_input()
+                final_send.result()  # A failed or timed-out send cannot finish a lease.
+                # Settle recv before declaring completion. If recv wins this
+                # cancellation race, inspect its result rather than swallowing it.
+                incoming.cancel()
+                await asyncio.gather(incoming, return_exceptions=True)
+                if not incoming.cancelled():
+                    return await final_input()
                 completed = True
                 return "complete"
             if (meta.get("t") != "lapp" or not isinstance(data, bytes)
@@ -157,7 +178,7 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
         pcm[:] = b"\0" * len(pcm)
         if not (completed and keep_alive_on_complete):
             await stop()
-        for task in (incoming, output):
+        for task in (incoming, output, final_send):
             if task is not None:
                 task.cancel()
-        await asyncio.gather(*(t for t in (incoming, output) if t is not None), return_exceptions=True)
+        await asyncio.gather(*(t for t in (incoming, output, final_send) if t is not None), return_exceptions=True)

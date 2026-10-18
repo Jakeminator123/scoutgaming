@@ -49,6 +49,41 @@ class WaitingStartSocket(Socket):
             if start_wait: self.finished.set()
 
 
+class FinalGateSocket(Socket):
+    def __init__(self, engine, immediate_input=None):
+        super().__init__(messages())
+        self.engine=engine
+        self.final_started=asyncio.Event()
+        self.final_released=asyncio.Event()
+        self.final_finished=asyncio.Event()
+        self.input_seen=asyncio.Event()
+        self.immediate_input=immediate_input
+        self.closed_before_abort=None
+    async def recv(self):
+        value=await super().recv()
+        if isinstance(value,Exception):
+            self.input_seen.set()
+            raise value
+        if isinstance(value,str) and json.loads(value).get("t")=="avbryt":
+            self.input_seen.set()
+        return value
+    async def send(self,value):
+        message=json.loads(value) if isinstance(value,str) else None
+        if message and message.get("t")=="done":
+            if message.get("aborted"):
+                self.closed_before_abort=self.engine.closed
+            else:
+                self.final_started.set()
+                try:
+                    if self.immediate_input is not None:
+                        self.messages.put_nowait(self.immediate_input)
+                    else:
+                        await self.final_released.wait()
+                finally:
+                    self.final_finished.set()
+        await super().send(value)
+
+
 class Engine:
     def __init__(self,speed=45.9,stall=False):
         self.speed=speed
@@ -79,6 +114,103 @@ def messages(start=None):
             bytes(24000),bytes(24000),{"t":"end","id":START["id"]}]
 
 class Sessions(unittest.IsolatedAsyncioTestCase):
+    async def test_cancel_of_job_during_final_send_stops_engine_and_both_socket_tasks(self):
+        engine=Engine()
+        socket=FinalGateSocket(engine)
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True))
+        await asyncio.wait_for(socket.final_started.wait(),1)
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError): await task
+        self.assertTrue(engine.closed)
+        self.assertTrue(socket.final_finished.is_set())
+        self.assertEqual(len(socket.messages._getters),0)
+
+    async def test_final_recv_result_winning_cancellation_is_checked_before_reuse(self):
+        class WonReceive(Socket):
+            def __init__(self):
+                super().__init__(messages())
+                self.done_sent=False
+            async def send(self,value):
+                if isinstance(value,str) and json.loads(value).get("t")=="done":
+                    self.done_sent=True
+                await super().send(value)
+            async def recv(self):
+                try:
+                    return await super().recv()
+                except asyncio.CancelledError:
+                    if self.done_sent:
+                        return json.dumps({"t":"avbryt","id":START["id"]})
+                    raise
+        engine=Engine()
+        socket=WonReceive()
+        self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True),"cancelled")
+        self.assertTrue(engine.closed)
+        self.assertTrue(socket.sent[-1]["aborted"])
+        self.assertEqual(len(socket.messages._getters),0)
+
+    async def test_final_send_timeout_cannot_leave_a_reusable_engine(self):
+        engine=Engine()
+        socket=FinalGateSocket(engine)
+        with self.assertRaises(TimeoutError):
+            await serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.02,keep_alive_on_complete=True)
+        self.assertTrue(engine.closed)
+        self.assertTrue(socket.final_finished.is_set())
+        self.assertEqual(len(socket.messages._getters),0)
+
+    async def test_cancel_during_blocked_final_send_wins_without_releasing_send(self):
+        engine=Engine()
+        socket=FinalGateSocket(engine)
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True))
+        try:
+            await asyncio.wait_for(socket.final_started.wait(),1)
+            socket.messages.put_nowait(json.dumps({"t":"avbryt","id":START["id"]}))
+            await asyncio.wait_for(socket.input_seen.wait(),1)
+            self.assertEqual(await asyncio.wait_for(task,1),"cancelled")
+            self.assertFalse(socket.final_released.is_set())
+            self.assertTrue(socket.final_finished.is_set())
+            self.assertTrue(engine.closed)
+            self.assertTrue(socket.closed_before_abort)
+            self.assertEqual([item for item in socket.sent if isinstance(item,dict) and item.get("t")=="done"],
+                             [{"t":"done","id":START["id"],"aborted":True}])
+            self.assertEqual(len(socket.messages._getters),0)
+        finally:
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
+
+    async def test_peer_close_during_blocked_final_send_is_not_successful_reuse(self):
+        engine=Engine()
+        socket=FinalGateSocket(engine)
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True))
+        try:
+            await asyncio.wait_for(socket.final_started.wait(),1)
+            socket.messages.put_nowait(ConnectionError("peer closed during done"))
+            with self.assertRaisesRegex(ConnectionError,"peer closed during done"):
+                await asyncio.wait_for(task,1)
+            self.assertTrue(socket.final_finished.is_set())
+            self.assertTrue(engine.closed)
+            self.assertFalse(any(isinstance(item,dict) and item.get("t")=="done" for item in socket.sent))
+            self.assertEqual(len(socket.messages._getters),0)
+        finally:
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
+
+    async def test_input_accepted_in_same_turn_as_successful_final_send_still_wins(self):
+        for value,expected in [(json.dumps({"t":"avbryt","id":START["id"]}),"cancelled"),
+                               (ConnectionError("peer closed at done"),ConnectionError),
+                               (json.dumps({"t":"avbryt","id":"foreign"}),ValueError)]:
+            with self.subTest(expected=expected):
+                engine=Engine()
+                socket=FinalGateSocket(engine,immediate_input=value)
+                if isinstance(expected,str):
+                    self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True),expected)
+                    self.assertTrue(socket.closed_before_abort)
+                else:
+                    with self.assertRaises(expected):
+                        await serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True)
+                self.assertTrue(engine.closed)
+                self.assertTrue(socket.final_finished.is_set())
+                self.assertEqual(len(socket.messages._getters),0)
+
     async def test_reusable_completion_does_not_close_but_cleans_pending_socket_read(self):
         socket,engine=Socket(messages()),Engine()
         self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True),"complete")
