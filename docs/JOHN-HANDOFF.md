@@ -129,6 +129,9 @@ PostgreSQL-prov passerade: 4 retained, 26 legacy och 59 integration. Det omfatta
 och avslag utan durable amendment. Wrappern gav 15 pass/1 redundant fristående
 SQL-skip; SQL-funktionen kördes uttryckligen. Kvitto: `budget-policy-sql.log` i
 provbasens `motion-readiness`. Oberoende bryggreview fann inga blockerare.
+PR262:s Studio-test för bundlade migrationer förväntar nu uttryckligen valfri 015;
+dess tidigare tomma lista orsakade CI-felet. Testfilens 14 tester passerade lokalt;
+produktionskod och migrationer är oförändrade av denna testrättning.
 Produktionsmigration och följdleveransens obligatoriska readiness återstår.
 Ingen molnändring eller ny budgetauktorisation ingår i denna kodleverans.
 
