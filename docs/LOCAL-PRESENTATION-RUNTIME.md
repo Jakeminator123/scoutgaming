@@ -77,7 +77,7 @@ Det finns flera olika former av varm/kall lagring och beräkning:
 | Blob/Neon | Beständiga källbytes och register; ingen lokal runtime-reserv. |
 | RunPod-container/image | Skalning till noll kan ge kö och imagehämtning före jobbstart. En EXITED-worker eller cachepost är inte en aktiv GPU. |
 | Bankarkiv | Hashad temporär `/tmp/croupier-moving-banks`; träffar återverifieras. Försvinner när containerns lagring försvinner. |
-| Bankextraktion/modell | Den nuvarande workern extraherar och verifierar banken, skapar en ny motorprocess, laddar modell/avatar och värmer upp **för varje jobb**. En varm container innebär inte en varm talmodell. |
+| Bankextraktion/modell | Cacheleveransen verifierar bank och modeller för varje jobb men återanvänder en exklusiv motor efter fullständig normal avslutning i samma SDK-worker. Färsk 30-fps-mätning görs även vid träff. Äldre publicerad image startar motor för varje jobb; se handoffens exakta release-/deploystatus. |
 | Spelarens buffert | Hela komprimerade repliken och verifierat `done` krävs före ljudstart; högst 4 MiB komprimerat och 48 avkodade ansiktsrutor. Detta är uppspelningsskydd, inte modellcache. |
 
 Serverns antagning av en varm worker är separat från modellcachen. Den nya

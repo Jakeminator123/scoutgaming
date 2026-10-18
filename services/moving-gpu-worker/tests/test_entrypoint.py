@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import diagnostics as diag
 import entrypoint
+from engine_cache import EngineCache
 from test_contracts import H, job
 
 
@@ -28,6 +29,96 @@ class RunDiagnostics(unittest.IsolatedAsyncioTestCase):
         stack.enter_context(patch.dict(sys.modules,{"websockets":SimpleNamespace(connect=connect or Mock(return_value=Connection()))}))
         serve=stack.enter_context(patch.object(entrypoint,"serve",AsyncMock(return_value="complete")))
         return engine,models,factory,serve,socket
+
+    async def test_cache_hit_still_verifies_bank_and_models_and_finishes_after_socket_exit(self):
+        with contextlib.ExitStack() as stack:
+            engine,models,factory,serve,socket=self.setup_run(stack)
+            engine.closed=False
+            engine.finish=AsyncMock()
+            cache=EngineCache()
+            paths=[]
+            def verify(*args):
+                paths.append(args[2])
+                return {}
+            bank=stack.enter_context(patch.object(entrypoint,"verify_bank",side_effect=verify))
+            async def finish():
+                self.assertEqual(socket.__aexit__.await_count,engine.finish.await_count)
+                if len(paths)>1:
+                    self.assertFalse(paths[-1].parent.exists())
+            engine.finish.side_effect=finish
+            try:
+                for index in range(2):
+                    with diag.collect() as collector:
+                        self.assertEqual(await entrypoint.run({"id":f"job-{index}","input":job()},"/unused","https://engine.example",cache),"complete")
+                        self.assertEqual(collector.snapshot()["modelCache"],"miss" if index==0 else "hit")
+                self.assertEqual(bank.call_count,2)
+                self.assertEqual(models.call_count,2)
+                self.assertEqual(factory.call_count,1)
+                self.assertTrue(paths[0].parent.exists())
+                self.assertFalse(paths[1].parent.exists())
+                self.assertIsNone(cache.active)
+                engine.close.assert_not_awaited()
+            finally:
+                await cache.close()
+            self.assertFalse(paths[0].parent.exists())
+
+    async def test_failed_fresh_verification_evicts_previous_successful_model(self):
+        with contextlib.ExitStack() as stack:
+            engine,models,factory,serve,socket=self.setup_run(stack)
+            engine.closed=False
+            engine.finish=AsyncMock()
+            cache=EngineCache()
+            await entrypoint.run({"id":"one","input":job()},"/unused","https://engine.example",cache)
+            path=Path(cache.temporary.name)
+            stack.enter_context(patch.object(entrypoint,"verify_models",side_effect=ValueError("model_bytes_changed")))
+            with self.assertRaisesRegex(ValueError,"model_bytes_changed"):
+                await entrypoint.run({"id":"two","input":job()},"/unused","https://engine.example",cache)
+            engine.close.assert_awaited_once()
+            self.assertFalse(path.exists())
+            self.assertIsNone(cache.engine)
+
+    async def test_failed_bank_or_release_check_also_evicts_idle_model(self):
+        for name,code in (("verify_bank","bank_bytes_changed"),("verify_release","release_file_changed")):
+            with self.subTest(name=name),contextlib.ExitStack() as stack:
+                engine,models,factory,serve,socket=self.setup_run(stack)
+                engine.closed=False
+                engine.finish=AsyncMock()
+                cache=EngineCache()
+                await entrypoint.run({"id":"one","input":job()},"/unused","https://engine.example",cache)
+                path=Path(cache.temporary.name)
+                stack.enter_context(patch.object(entrypoint,name,side_effect=ValueError(code)))
+                with self.assertRaisesRegex(ValueError,code):
+                    await entrypoint.run({"id":"two","input":job()},"/unused","https://engine.example",cache)
+                engine.close.assert_awaited_once()
+                self.assertFalse(path.exists())
+                self.assertIsNone(cache.engine)
+
+    async def test_cancelled_or_timed_out_cached_job_is_never_returned_idle(self):
+        for failure in (asyncio.CancelledError(),TimeoutError()):
+            with self.subTest(kind=type(failure).__name__),contextlib.ExitStack() as stack:
+                engine,models,factory,serve,socket=self.setup_run(stack)
+                engine.closed=False
+                engine.finish=AsyncMock()
+                cache=EngineCache()
+                serve.side_effect=failure
+                with self.assertRaises(type(failure)):
+                    await entrypoint.run({"id":"one","input":job()},"/unused","https://engine.example",cache)
+                engine.finish.assert_not_awaited()
+                engine.close.assert_awaited_once()
+                self.assertIsNone(cache.engine)
+
+    async def test_callback_cleanup_failure_evicts_instead_of_finish(self):
+        with contextlib.ExitStack() as stack:
+            engine,models,factory,serve,socket=self.setup_run(stack)
+            engine.closed=False
+            engine.finish=AsyncMock()
+            socket.__aexit__.side_effect=OSError("close failure")
+            cache=EngineCache()
+            with self.assertRaises(OSError):
+                await entrypoint.run({"id":"one","input":job()},"/unused","https://engine.example",cache)
+            engine.finish.assert_not_awaited()
+            engine.close.assert_awaited_once()
+            self.assertIsNone(cache.engine)
 
     async def test_valid_run_records_only_completed_stages_and_keeps_close_order(self):
         with contextlib.ExitStack() as stack, diag.collect() as collector:
