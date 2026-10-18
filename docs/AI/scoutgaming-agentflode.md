@@ -1,5 +1,11 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Förbrukad statisk export — 18 oktober 2026
+
+Det oanropade äldre v2-exportverktyget har pensionerats efter verifierat
+saknade förutsättningar redan på basrevisionen. Media och aktiv spelarkod
+behålls; gamla manuella kommandon redovisas i verktygsguiden och handoffen.
+
 ## App- och tjänströtter — 18 oktober 2026
 
 Game-koden ligger i services/game. AGENTS beskriver Studios appadaptrar och

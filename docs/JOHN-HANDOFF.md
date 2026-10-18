@@ -1,5 +1,14 @@
 # Aktuell handoff — Scoutgaming
 
+## Avvecklad historisk jämförelseexport — 18 oktober 2026
+
+Granskningen hittade `tools/media/build-dealer-v2-release.mjs`, som endast
+refererades av verktygs-README och inte anropades från CI eller aktiva verktyg.
+Dess separata statiska spelare krävde CSS och installDealerVersionSwitcher
+som redan saknas i bas d55ce412. CLI:t är därför borttaget; gamla manuella
+exportkommandon pensioneras. Aktiva dealerVersionPath, mediafiler och
+produktkod är oförändrade. Verktygsguiden beskriver även rätt Studio-källrot.
+
 ## Gateway verifierad; sista game-leveransen — 18 oktober 2026
 
 Mergagentens fullständiga kvitto gäller main d55ce412714e9e0c85103358f381098ce3d35077:

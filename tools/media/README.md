@@ -5,9 +5,9 @@ spelaren. Mappen är ingen produkt, spelmotor eller OpenClaw-tjänst. Den äldre
 indexerade dealerbanken är avvecklad; att ett byggrecept finns kvar betyder
 inte att dess indata finns kvar eller att det är rätt väg för nya klipp.
 
-`/admin` är den nya backofficeytan; `lab/` är fortfarande källmappen för
-Studio. Den lokala bankens omskanning i
-`lab/lib/video-registry.mjs` svarar 410 och hänvisar till klippbiblioteket.
+`/admin` är backofficeytan och `apps/studio/` är Studios källmapp.
+Den lokala bankens omskanning i `apps/studio/lib/video-registry.mjs`
+svarar 410 och hänvisar till klippbiblioteket.
 
 | Verktyg | Uppgift och begränsning |
 | --- | --- |
@@ -18,9 +18,13 @@ Studio. Den lokala bankens omskanning i
 | `build-contact-review.mjs` | Äldre Astrid-recept för uppmätt kortkontakt. Skriver filer och manifest i sitt befintliga performance-mål; granska målet innan körning. |
 | `person-mask.swift`, `track-dealer-hands.swift`, `inspect-contact-capture.swift`, `prepare-contact-mattes.swift` | Manuella macOS/Vision-mätningar och maskrecept för låst kamera. `person-mask` är den tillhörande binären. Resultat och fångstspecifika standardvärden är underlag för granskning. |
 | `capture-dealer-face.py` | Manuell ansiktsmätning med OpenCV/MediaPipe. Kräver en lokal modell (`--model`); den inbyggda sökvägen är från en tidigare Mac-miljö. Återinför inte ett avvecklat rigg-/3D-spår. |
-| `build-dealer-v2-release.mjs` | Äldre statisk jämförelseexport från en fångad spelarversion. `/v2` är numera en omdirigering, inte en separat aktiv spelare. Exporten är ingen produktionsdeploy. |
 | `test-*.mjs` | Prov för bland annat talpar, idle, kortkontakt och komposition. Filnamn med en gammal teknik innebär inte att provet saknar en nuvarande spelarkonsument. |
 | `mouth-crops.json`, `speak-normalize.txt`, `irs/` | Bevarade mätvärden/recept och ljudreferens. Ingen generell instruktion att generera eller godkänna nya takes. |
+
+Det gamla kommandot `build-dealer-v2-release.mjs` är pensionerat. Det byggde
+en separat statisk jämförelsespelare vars switcher-API och CSS redan saknas.
+Sparade kommandon för denna export ska inte köras. Aktuell spelare,
+mediematerial och den aktiva `dealerVersionPath`-adaptern behålls.
 
 ## Före användning
 
