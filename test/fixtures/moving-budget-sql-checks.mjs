@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomBytes,randomUUID } from 'node:crypto';
-import { createSpeechJournal } from '../../services/game/postgres-speech-journal.mjs';
+import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS } from '../../services/game/postgres-speech-journal.mjs';
 import { MOVING_TRIAL_BUDGET } from '../../services/game/moving-speech-budget.mjs';
+import { movingCapacityFixture } from './moving-capacity.mjs';
 
 // Called only by the localhost PostgreSQL fixture after its target assertion.
 export async function runMovingBudgetSqlChecks({pool,input,journal}) {
@@ -110,4 +111,95 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
   assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial]);
   await journal.releaseLease({lease});
+  await runMovingCapacitySqlChecks({pool,input,journal});
+}
+
+async function runMovingCapacitySqlChecks({pool,input,journal}) {
+  const scope=input.scope,empty={workers:0,busy:0,available:0},warm={workers:1,busy:0,available:1};
+  const fail=code=>error=>error?.code===code;
+  const budgetId=`capacity-${randomUUID()}`,endpointId='fixtureendpoint';
+  const lease=await journal.acquireLease({resource:'stream-session',holderId:'capacity-qa',ttlMs:GPU_RESERVATION_WINDOW_MS});
+  const second=await createSpeechJournal({pool,environmentId:scope.environment});
+  const proof=(isWarm=true,now=Date.now())=>movingCapacityFixture({warm:isWarm,endpointId,now});
+  const request=(movingCapacity=proof(),extra={})=>{
+    const sessionId=randomBytes(16).toString('hex');
+    return {...input,endpointId,lease,sessionId,requestId:`capacity-${randomUUID()}`,budgetId,
+      binding:{...input.binding,sessionId},reserveMicroUsd:100000,totalBudgetMicroUsd:1000000,
+      currentBudgetMicroUsd:20000000,workerState:movingCapacity.health.workers.running?warm:empty,movingCapacity,...extra};
+  };
+  const counts=()=>pool.query(`SELECT
+    (SELECT count(*) FROM croupier_studio.gpu_sessions WHERE environment_id=$1)::int AS sessions,
+    (SELECT count(*) FROM croupier_studio.gpu_reservations WHERE environment_id=$1)::int AS reservations,
+    (SELECT count(*) FROM croupier_studio.speech_requests WHERE environment_id=$1)::int AS requests,
+    (SELECT count(*) FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1)::int AS bindings`,[scope.environment]).then(r=>r.rows[0]);
+  const history=()=>pool.query('SELECT * FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1 ORDER BY session_id',[scope.environment]).then(r=>r.rows);
+  const leaseRow=()=>pool.query("SELECT holder_id,fence,expires_at_ms,recovery_only FROM croupier_studio.speech_execution_leases WHERE environment_id=$1 AND resource='stream-session'",[scope.environment]).then(r=>r.rows[0]);
+  const priorHistory=await history(),priorLease=await leaseRow();
+  async function finish(saved) {
+    const jobId=`job-${saved.sessionId}`;
+    await journal.markRequestSubmissionStarted({key:saved.key,lease});
+    await journal.markSubmissionStarted({sessionId:saved.sessionId,lease});
+    await journal.attachJob({sessionId:saved.sessionId,lease,jobId});
+    await journal.recordProviderStatus({sessionId:saved.sessionId,lease,jobId,status:'COMPLETED'});
+    await journal.confirmWorkerDrained({sessionId:saved.sessionId,lease,proof:{workerId:saved.workerId,...empty}});
+    await journal.completeRequest({key:saved.key,lease});
+  }
+  for(const mutate of [
+    value=>{value.health.jobs.inQueue=1;},
+    value=>{value.health.jobs.inProgress=1;},
+    value=>{value.observedAtMs=Date.now()-15001;},
+    value=>{value.release.endpoint.id='foreign-endpoint';},
+    value=>{value.release.capacity.activePods[0].image='foreign-image';},
+    value=>{value.release.workers.workers[0].state='unknown';},
+    value=>{delete value.health.jobs.inQueue;},
+  ]) {
+    const capacity=proof();mutate(capacity);const before=await counts();
+    await assert.rejects(journal.reserveMovingSession(request(capacity)),fail('generated_speech_moving_capacity_unverified'));
+    assert.deepEqual(await counts(),before,'invalid capacity leaves no partial request, binding or charge');
+    assert.deepEqual(await leaseRow(),priorLease,'capacity checks cannot renew or replace the execution fence');
+  }
+  await assert.rejects(second.reserveMovingSession(request(proof(),{lease:{...lease,fence:lease.fence+1}})),fail('generated_speech_stale_fence'));
+  await assert.rejects(journal.reserveSession({...request(),workerState:warm}),fail('generated_speech_worker_not_drained'));
+  assert.deepEqual(await history(),priorHistory);
+  for(const isWarm of [false,true]) {
+    const saved=await journal.reserveMovingSession(request(proof(isWarm)));
+    assert.equal(saved.totalReservedMicroUsd,isWarm?200000:100000);
+    assert.equal(saved.totalBudgetMicroUsd,1000000);
+    assert.equal(saved.fence,lease.fence);
+    await finish(saved);
+  }
+  // Same valid fence and ample remaining budget: the SQL session lock, not the
+  // spending ceiling or application singleton, must exclude the second writer.
+  const attempts=await Promise.allSettled([journal.reserveMovingSession(request()),second.reserveMovingSession(request())]);
+  assert.equal(attempts.filter(value=>value.status==='fulfilled').length,1);
+  assert.equal(attempts.find(value=>value.status==='rejected').reason.code,'generated_speech_session_busy');
+  const saved=attempts.find(value=>value.status==='fulfilled').value;
+  assert.equal((await journal.listRecoverableSessions()).length,1);
+  assert.equal(saved.totalReservedMicroUsd,300000);
+  assert.deepEqual(await leaseRow(),priorLease);
+  const spentHistory=await history();
+  assert.deepEqual(spentHistory.filter(row=>row.budget_id!==budgetId),priorHistory,'other budget histories remain byte-for-byte unchanged');
+  assert.equal(spentHistory.filter(row=>row.budget_id===budgetId).length,3);
+  const jobId=`job-${saved.sessionId}`;
+  await journal.markRequestSubmissionStarted({key:saved.key,lease});
+  await journal.markSubmissionStarted({sessionId:saved.sessionId,lease});
+  await journal.attachJob({sessionId:saved.sessionId,lease,jobId});
+  // Advance only the journal clock; all rows, locks and constraints are real SQL.
+  const recoveryNow=Date.now()+GPU_RESERVATION_WINDOW_MS+1000;
+  const recovering=await createSpeechJournal({pool,environmentId:scope.environment,now:()=>recoveryNow});
+  await assert.rejects(recovering.acquireLease({resource:'stream-session',holderId:'paid-after-expiry'}),fail('generated_speech_recovery_required'));
+  const recovery=await recovering.acquireLease({resource:'stream-session',holderId:'capacity-recovery',recoveryOnly:true});
+  assert.equal(recovery.fence,lease.fence+1);
+  const capacity=proof(true,recoveryNow);
+  await assert.rejects(recovering.reserveMovingSession(request(capacity,{lease:recovery})),fail('generated_speech_recovery_only'));
+  const retirement={sessionId:saved.sessionId,lease:recovery,jobId,providerStatus:'not_found',movingCapacity:capacity,
+    proof:{workerId:saved.workerId,...warm}};
+  await assert.rejects(recovering.retireExpiredMissingSession(retirement),fail('generated_speech_worker_not_drained'));
+  await assert.rejects(recovering.confirmWorkerDrained(retirement),fail('generated_speech_worker_not_drained'));
+  const beforeDrain=await counts();
+  await recovering.retireExpiredMissingSession({...retirement,proof:{workerId:saved.workerId,...empty}});
+  assert.equal((await recovering.listRecoverableSessions()).length,0);
+  assert.deepEqual(await counts(),beforeDrain,'recovery releases capacity without deleting or refunding cost rows');
+  assert.deepEqual(await history(),spentHistory);
+  await recovering.releaseLease({lease:recovery});
 }

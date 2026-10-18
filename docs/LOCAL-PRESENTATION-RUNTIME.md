@@ -80,6 +80,22 @@ Det finns flera olika former av varm/kall lagring och beräkning:
 | Bankextraktion/modell | Den nuvarande workern extraherar och verifierar banken, skapar en ny motorprocess, laddar modell/avatar och värmer upp **för varje jobb**. En varm container innebär inte en varm talmodell. |
 | Spelarens buffert | Hela komprimerade repliken och verifierat `done` krävs före ljudstart; högst 4 MiB komprimerat och 48 avkodade ansiktsrutor. Detta är uppspelningsskydd, inte modellcache. |
 
+Serverns antagning av en varm worker är separat från modellcachen. Den nya
+moving-vägen kan återanvända exakt en egen ledig worker när samma beständiga
+lease fortfarande gäller. Beviset måste komma från serverns färska RunPod-
+läsning (högst 15 s): exakt image-digest/template/version, ingen kö eller
+pågående uppgift, inga okända/ohälsosamma workers och högst en aktiv GPU.
+Kontrollen upprepas under journalens SQL-lås och precis före provider-POST.
+Generiska taljobb och återhämtning behåller sitt krav på verklig drain.
+
+Endpointen ska vara exklusiv för denna journal: en extern API-användare kan
+annars starta arbete mellan GET och POST. `workersMin=0`, `workersMax=1` och
+högst 60 s `idleTimeout` gäller. Den möjliga betalda tomgången ingår tillsammans
+med 540 s jobb-TTL i den ursprungliga reservationens 720 s; leaseförnyelse
+förlänger inte betalningsfönstret. En färdig uppgift betyder inte att GPU:n
+redan är avstängd. Osäker submission hålls reserverad utan automatisk omkörning.
+Kod/testbevis och aktuell driftsättning ska avläsas separat i handoffen.
+
 Workern kör ett uttalande åt gången, 24 fps, 220 ms inledande och 530 ms
 avslutande ljudutfyllnad, med 12-rutorspaket och kvittens. Både worker och
 spelserver kräver minst 30 uppmätta uppvärmningsrutor/s. Uppvärmningen använder

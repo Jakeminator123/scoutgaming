@@ -35,6 +35,26 @@ nytillagt/oregistrerat i Git; det betyder inte i sig osparat. `a.zip` innehålle
 agentkonfiguration/verktyg och är inte Emils export. HUVUDAGENT5 äger det
 separata klon-/synkspåret; merge-agenten hanterar granskad integration.
 
+### Serverantagning för varm worker
+
+Efter PR253 återanvänds `lipsync3-server-diagnostics/croupier` på branch
+`codex/lipsync3-warm-admission` för serverändringen. Den är ännu inte mergad
+eller driftsatt. Den nya moving-kontrollen tillåter högst en bevisat egen,
+ledig worker med färska release-/hälsodata och samma journal-lease; den
+ändrar inte generiska jobb, återhämtning, insats, saldo eller spelförlopp.
+Endpointens min/max är 0/1, tomgång högst 60 s inom samma 720 s reservation.
+Den kräver en exklusiv endpoint eftersom provider-GET och POST inte är atomiska.
+
+65 fokuserade kapacitets-/sessions-/journaltester passerade utan skips.
+Isolerad WSL/PostgreSQL-fixtur passerade med 4 retained-kontrakt, 26 SQL-
+och 59 integrationskontroller, inklusive ny kall/varm antagning, samtidiga
+SQL-skrivare, oförändrade kostnadsrader och recovery-fence. Den fristående
+miljöberoende testwrappern rapporterar ett skip; samma SQL-funktion kördes
+uttryckligen av fixturen. Ingen produktionsdatabas användes. Underlag:
+`motion-readiness/warm-admission-tests.log` och `warm-admission-sql.log`
+i den privata provbasen nedan. Oberoende kodgranskning fann inga blockerare;
+verkligt serverless-/varmcacheprov återstår.
+
 ### Vad som faktiskt verifierades
 
 18 oktober 16:20–16:27 UTC kördes en enda isolerad RunPod med exakt redan

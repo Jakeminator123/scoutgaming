@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMovingSpeechSession } from '../services/game/moving-speech-session.mjs';
-import { createMovingSpeechRunPod } from '../services/game/moving-speech-runpod.mjs';
+import { createMovingSpeechRunPod, summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
+import { movingCapacityFixture } from './fixtures/moving-capacity.mjs';
 
 const sha = digit => digit.repeat(64);
 const image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${sha('a')}`;
@@ -176,9 +177,9 @@ test('cancellation during cold start immediately revokes bank access and retains
 });
 
 
-test('a delayed submit cannot move provider TTL outside the original twelve-minute budget coverage',async t=>{
+test('a delayed submit cannot move provider TTL plus paid idle tail outside the original twelve-minute budget coverage',async t=>{
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
-  const f=fixture(),attempt=await f.admit();t.mock.timers.tick(165001);
+  const f=fixture(),attempt=await f.admit();t.mock.timers.tick(105001);
   await assert.rejects(attempt.submit(),/submission_expired/);
   assert.equal(f.events.includes('provider-submit'),false);assert.equal(f.events.includes('submit-start'),false);
   assert.equal(f.state.cost,250000);assert.equal(f.state.released,false);
@@ -187,8 +188,48 @@ test('a delayed submit cannot move provider TTL outside the original twelve-minu
 
 test('a slow submission journal write cannot bypass the final budget-window check before POST',async t=>{
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
-  const f=fixture({onMarkSubmission:()=>t.mock.timers.tick(165001)}),attempt=await f.admit();
+  const f=fixture({onMarkSubmission:()=>t.mock.timers.tick(105001)}),attempt=await f.admit();
   await assert.rejects(attempt.submit(),/submission_unknown/);
   assert.equal(f.events.includes('provider-submit'),false);assert.equal(f.state.state,'submission_uncertain');
   assert.equal(f.state.cost,250000);assert.equal(f.state.released,false);
+});
+
+test('journal lease precedes capacity reads and a completed job permits the next owned warm job',async()=>{
+  let observations=0;
+  const f=fixture({configuration:{release:async()=>{
+    assert.ok(f.events.includes('lease'));observations++;return movingCapacityFixture().release;
+  },workerState:async()=>summarizeMovingWorkerHealth(movingCapacityFixture().health)}});
+  for(const requestId of ['warm-one','warm-two']){
+    const attempt=await f.admit({requestId});
+    assert.equal(f.state.input.movingCapacity.release.capacity.activePods[0].id,'owned-pod');
+    // The real worker count remains one. It is never relabelled as drained.
+    assert.equal(f.state.input.workerState.workers,1);
+    await attempt.dispatch({cancel(){}},{onChunk:async()=>{}});
+    assert.equal((await attempt.closed).released,true);
+  }
+  assert.equal(f.events.filter(x=>x==='provider-submit').length,2);
+  assert.equal(f.state.cost,500000);assert.ok(observations>=4);
+});
+
+test('changed capacity immediately before POST keeps the reservation pinned and never submits',async()=>{
+  for(const changed of ['queue','version','missing-proof']){
+    let marked=false;
+    const current=()=>{
+      const value=movingCapacityFixture();
+      if(marked&&changed==='queue')value.health.jobs.inQueue=1;
+      if(marked&&changed==='version'){
+        value.release.workers.endpointVersion++;
+        value.release.workers.workers[0].version++;
+      }
+      if(marked&&changed==='missing-proof')delete value.release.capacity;
+      return value;
+    };
+    const f=fixture({onMarkSubmission:()=>{marked=true;},configuration:{
+      release:async()=>current().release,workerState:async()=>summarizeMovingWorkerHealth(current().health)}});
+    const attempt=await f.admit();
+    await assert.rejects(attempt.submit(),/submission_unknown/);
+    assert.equal(f.events.includes('provider-submit'),false,changed);
+    assert.equal(f.state.state,'submission_uncertain');assert.equal(f.state.released,false);
+    assert.equal(f.state.cost,250000);
+  }
 });
