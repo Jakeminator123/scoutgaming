@@ -78,8 +78,14 @@ Alternativt kan servern tillföra `bankDownload` i jobbinput:
 Descriptorhasharna måste matcha jobbets binding. Endast HTTPS med samma
 hostname och effektiva port som callback tillåts; inga redirects,
 komprimerade svar eller proxyupptäckt. Servern binder kortlivade capabilities
-till jobb/session och strömmar exakt `Content-Length`, avslutat svar och
-status 200. Workern hämtar kvitto först, sedan arkiv, med 15 sekunders
+till jobb/session och svarar med status 200 och exakt `Content-Length`.
+En HTTP-mellanhand kan överföra svaret med `Transfer-Encoding: chunked`;
+workern avkodar då delarna innan storlek och SHA-256 kontrolleras mot jobbets
+descriptor. Både fast längd och chunked kräver exakt samma verifierade byte.
+Motstridiga längdhuvuden, andra kodningar, avbrutna eller för stora svar
+avvisas. Chunkrader och trailers är begränsade; trailers kan inte ändra
+längd, kodning eller den förväntade hashen. Se [HTTP/1.1 RFC 9112 §7.1](https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1).
+Workern hämtar kvitto först, sedan arkiv, med 15 sekunders
 I/O-gräns och totalt 60 sekunder inom jobbets vanliga TTL. Maxgränser är
 1 GiB arkiv och 128 KiB kvitto; inga allmänna Blobnycklar skickas.
 

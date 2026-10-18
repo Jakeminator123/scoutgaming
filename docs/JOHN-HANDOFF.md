@@ -2,11 +2,44 @@
 
 <a id="dragan-talstatus"></a>
 
+## Lipsync 3: lokal bankhämtning verifierad — 18 oktober 2026
+
+Ett nytt lokalt HTTPS-prov reproducerade `bank_length_mismatch` i workern
+med ett korrekt chunked-svar redan vid bankkvittot. De tidigare testerna
+avvisade bara det felaktiga fallet med både Transfer-Encoding och
+Content-Length. Molnprovets exakta svarshuvuden saknas fortfarande;
+detta bevisar en lokal protokollbrist, inte dess exakta orsak i produktion.
+
+Workern avkodar nu chunked före kontroll av jobbets exakta storlek och
+SHA-256. Samma TLS/origin, inga redirects eller komprimerade svar, tidsgränser,
+avbrott och atomisk cache gäller. Blandade längdhuvuden, trasiga/avbrutna
+chunkar, för stor kropp, fel hash och framing i trailers avvisas. Chunkrader
+och trailers har egna storleksgränser. Inga dependencies eller modeller ändras.
+
+Lokal verifiering i befintlig WSL/Python3.12.3: 54/54 workerprov passerade,
+inklusive riktig MuseTalk-/vendor-kod på CPU med fyra beräkningstrådar,
+utan skips eller GPU-start. De tio hämtningstesterna täcker även giltiga
+chunkar, metadata, felaktig inramning samt timeout/avbrott vid rad, kropp
+och trailers. Ordinarie releasekontroll ingår i workersviten.
+
+Den fulla befintliga Dragan-banken överfördes också via tillfällig lokal
+HTTPS/chunked: kvitto1045byte och arkiv594432000byte. Hämtning14,720s,
+efterföljande ordinarie bankverifiering2,686s: 50klipp och2479poolrutor
+med oförändrade ägar-/käll-/filhashar godkända. Originalen lästes enbart;
+testservern och den temporära kopian/extraktionen är avvecklade.
+Privat kvitto: `C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/local-bank-http-receipt.json`.
+
+Förseglad workerrelease: `c8ba8f3c81315d172e292fa5316fca66d289f219ab7c3672b97201a3a5ed653f`.
+Ingen image är byggd/publicerad för ändringen och inga moln-/profil-/budget-
+inställningar eller medier har ändrats. PR/container-CI, eventuellt senare
+ny pinnad image och kontrollerat molnprov återstår. Synlig/hörbar läppsynk
+och aktuell profil-/videomatch är fortfarande separata kvarvarande kontroller.
+
 ## Dragan: avslutat diagnosprov, bank_length_mismatch — 18 oktober 2026 10:10 UTC
 
-Detta är aktuellt slutläge och ersätter äldre väntande steg nedan. Ingen GPU
-eller fortsättningsbevakning lämnas igång. Jakob önskade en bra överlämningspunkt.
-Ingen rättning av HTTP-hämtningen har gjorts; denna leverans ändrar bara handoffen.
+Detta var slutläget efter molnprovet, före den lokala HTTP-rättningen ovan.
+Ingen GPU eller fortsättningsbevakning lämnades igång. Jakob önskade en bra
+överlämningspunkt. Den dåvarande leveransen ändrade bara handoffen.
 
 **Verifierat:** PR240 är mergad och appen körde
 `209d62f436786f9dae69c7ee6f1b256253ab6805`. Diagnostikimagen från PR238

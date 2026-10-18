@@ -15,6 +15,9 @@ MAX_RECEIPT_BYTES = 128 * 1024
 DOWNLOAD_SECONDS = 60
 IO_SECONDS = 15
 CACHE_ROOT = Path(tempfile.gettempdir()) / "croupier-moving-banks"
+FRAMING_HEADERS = {"content-length", "transfer-encoding", "content-encoding"}
+MAX_CHUNK_LINE_BYTES = 8192
+MAX_TRAILER_BYTES = 32768
 
 
 def validate_bank_download(descriptor, callback_url, binding):
@@ -65,6 +68,64 @@ def _cache_directory(root):
         raise ValueError("invalid_bank_cache")
 
 
+def _header(line):
+    name, separator, value = line.partition(":")
+    name = name.lower()
+    if (not separator or not re.fullmatch(r"[a-z0-9!#$%&'*+.^_`|~-]+", name)
+            or any((ord(c) < 32 and c != "\t") or ord(c) == 127 for c in value)):
+        raise ValueError("bank_http_rejected")
+    return name, value.strip(" \t")
+
+
+async def _chunk_line(reader):
+    try:
+        line = await asyncio.wait_for(reader.readuntil(b"\r\n"), IO_SECONDS)
+    except asyncio.LimitOverrunError:
+        raise ValueError("bank_http_rejected") from None
+    if len(line) > MAX_CHUNK_LINE_BYTES:
+        raise ValueError("bank_http_rejected")
+    return line
+
+
+async def _chunked_body(reader, expected_bytes):
+    """Decode HTTP framing; only decoded bytes count toward the signed size/hash."""
+    received = 0
+    try:
+        while True:
+            line = await _chunk_line(reader)
+            size_text, separator, extension = line[:-2].partition(b";")
+            if (not re.fullmatch(rb"[0-9a-fA-F]+", size_text.rstrip(b" \t"))
+                    or (separator and (not extension.strip(b" \t")
+                                       or any((c < 32 and c != 9) or c == 127 for c in extension)))):
+                raise ValueError("bank_http_rejected")
+            size = int(size_text, 16)
+            if size == 0:
+                trailer_bytes = 0
+                while True:
+                    line = await _chunk_line(reader)
+                    trailer_bytes += len(line)
+                    if trailer_bytes > MAX_TRAILER_BYTES:
+                        raise ValueError("bank_http_rejected")
+                    if line == b"\r\n":
+                        return
+                    name, _ = _header(line[:-2].decode("iso-8859-1"))
+                    # Discard optional metadata; it cannot redefine framing or identity.
+                    if name in FRAMING_HEADERS:
+                        raise ValueError("bank_http_rejected")
+            if size > expected_bytes - received:
+                raise ValueError("bank_length_mismatch")
+            remaining = size
+            while remaining:
+                data = await asyncio.wait_for(reader.readexactly(min(65536, remaining)), IO_SECONDS)
+                remaining -= len(data)
+                received += len(data)
+                yield data
+            if await asyncio.wait_for(reader.readexactly(2), IO_SECONDS) != b"\r\n":
+                raise ValueError("bank_http_rejected")
+    except asyncio.IncompleteReadError:
+        raise ValueError("bank_bytes_changed") from None
+
+
 async def _download(item, target, tls):
     url = urlsplit(item["url"])
     part = target.with_name("." + target.name + "." + uuid4().hex + ".part")
@@ -84,26 +145,36 @@ async def _download(item, target, tls):
             raise ValueError("bank_http_rejected")
         headers = {}
         for line in lines[1:-2]:
-            name, separator, value = line.partition(":")
-            name = name.lower()
-            if not separator or not re.fullmatch(r"[a-z0-9!#$%&'*+.^_`|~-]+", name) or (name in headers and name in {"content-length", "transfer-encoding", "content-encoding"}):
+            name, value = _header(line)
+            if name in headers and name in FRAMING_HEADERS:
                 raise ValueError("bank_http_rejected")
-            headers[name] = value.strip()
-        if ("transfer-encoding" in headers or "content-encoding" in headers
-                or headers.get("content-length") != str(item["bytes"])):
+            headers[name] = value
+        chunked = headers.get("transfer-encoding", "").lower() == "chunked"
+        if "content-encoding" in headers:
+            raise ValueError("bank_length_mismatch")
+        if "transfer-encoding" in headers:
+            if not chunked or "content-length" in headers or not lines[0].startswith("HTTP/1.1 "):
+                raise ValueError("bank_length_mismatch")
+        elif headers.get("content-length") != str(item["bytes"]):
             raise ValueError("bank_length_mismatch")
         count, sha256 = 0, hashlib.sha256()
         with part.open("xb") as output:
             os.chmod(part, 0o600)
-            while True:
-                data = await asyncio.wait_for(reader.read(min(65536, item["bytes"] - count + 1)), IO_SECONDS)
-                if not data:
-                    break
-                count += len(data)
-                if count > item["bytes"]:
-                    raise ValueError("bank_length_mismatch")
-                sha256.update(data)
-                output.write(data)
+            if chunked:
+                async for data in _chunked_body(reader, item["bytes"]):
+                    count += len(data)
+                    sha256.update(data)
+                    output.write(data)
+            else:
+                while True:
+                    data = await asyncio.wait_for(reader.read(min(65536, item["bytes"] - count + 1)), IO_SECONDS)
+                    if not data:
+                        break
+                    count += len(data)
+                    if count > item["bytes"]:
+                        raise ValueError("bank_length_mismatch")
+                    sha256.update(data)
+                    output.write(data)
         if count != item["bytes"] or sha256.hexdigest() != item["sha256"]:
             raise ValueError("bank_bytes_changed")
         # Link is atomic and never overwrites an existing cache entry.

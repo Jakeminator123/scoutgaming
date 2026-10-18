@@ -3,7 +3,7 @@
   "files": {
     ".gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
     "Dockerfile": "5a0084f3f1929d506f6a06feb0b7a4b4759d50fbf651cc4c799667cf8d883d5f",
-    "bank_download.py": "91e706a0013697ad162cc81581c9ee55f10f9c2aeee52cdaf2548ff3338bfff9",
+    "bank_download.py": "ccbbb6b3019364561c230f29538dc37168c9161b54fa73ea7fc3693aa4a134cd",
     "build-contract.json": "7c8dbe200251483541df300cc82c0fa90553c028bbc768174532d54a94ad81b9",
     "build.py": "c1b8e72e8649b560fc2aa7e23e7fafb58b8420acaf1391ef94fcc9b6623e89a2",
     "contracts.py": "df2cbc2ac683e021ec2afa8fbb26949c41c43015237009ac2bfbb4822da45a70",
@@ -24,5 +24,5 @@
     "vendor/rorlig.py": "b8e3fcd808e413ebf3bfea2743e7d0137c0f65732231cb2f03f3b4fa5c2f4e66",
     "wheels.lock": "f1de7ffbf266182d319a51a588227fd72def4e733f1c7b8efae2590625443c54"
   },
-  "releaseSha256": "3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad"
+  "releaseSha256": "c8ba8f3c81315d172e292fa5316fca66d289f219ab7c3672b97201a3a5ed653f"
 }
