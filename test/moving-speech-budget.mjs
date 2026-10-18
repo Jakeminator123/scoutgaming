@@ -13,11 +13,26 @@ test('one additional reservation fits the existing ID and cumulative human cap',
  assert.equal(freshMovingBudgetAmendment(input,1300001),false);
  assert.equal(freshMovingBudgetAmendment(input,999999),false);
 });
-test('insufficient global coverage, a cap increase past 15 USD or a refund cannot authorize',()=>{
- for(const patch of [{globalLimitMicroUsd:15000001},{newLimitMicroUsd:16000000},{newLimitMicroUsd:4800000},
+test('insufficient coverage, journal capacity above 15 USD, global cap above 40 USD or a refund cannot authorize',()=>{
+ for(const patch of [{globalLimitMicroUsd:40000001},{newLimitMicroUsd:16000000},{newLimitMicroUsd:4800000},
   {newLimitMicroUsd:4700000},{expectedReservedMicroUsd:4800001},{windowReserveMicroUsd:1199999},
   {otherReservedMicroUsd:14000000},{providerSpentMicroUsd:-1},{expectedReservationCount:0},
   {globalLimitMicroUsd:'15000000'},{authorizationId:''},{evidenceSha256:'unverified'},{unexpected:true}]){
    assert.equal(validMovingBudgetAmendment({...input,...patch}),false,JSON.stringify(patch));
  }
+});
+
+// Explicit global authorization includes historical provider windows, while the
+// existing journal receives only one additional fixed reservation.
+test('40 USD accounting permits the next 1.20 USD reservation without widening journal capacity',()=>{
+ const next={...input,authorizationId:'jakob-dragan-runpod-total-40-20261018',
+  expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:5,
+  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,otherReservedMicroUsd:14070001};
+ assert.equal(validMovingBudgetAmendment(next),true);
+ assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
+ assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
+ for(const patch of [{newLimitMicroUsd:15000001},{globalLimitMicroUsd:40000001},
+  {providerSpentMicroUsd:40000001},{otherReservedMicroUsd:40000001},{otherReservedMicroUsd:38000000},
+  {windowReserveMicroUsd:1199999},{globalLimitMicroUsd:'40000000'}])
+  assert.equal(validMovingBudgetAmendment({...next,...patch}),false,JSON.stringify(patch));
 });
