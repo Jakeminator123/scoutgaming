@@ -61,9 +61,19 @@ export function migrationReadinessRequired(changes) {
   );
 }
 
+export function movingWorkerRequired(changes) {
+  // Include deletions/renames (the diff uses --no-renames) and the gate itself.
+  // Uncertain input stays strict; ordinary unrelated PRs avoid an image build.
+  return !changes.length || changes.some(({path}) =>
+    !path || path.includes('\\') || path.split('/').some(part => ['', '.', '..'].includes(part))
+    || path.startsWith('services/moving-gpu-worker/')
+    || ['.github/workflows/moving-gpu-build.yml', '.github/workflows/croupier.yml',
+      'tools/ci-changes.mjs'].includes(path));
+}
+
 export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   // Main and manual runs always verify the complete product after integration.
-  const complete = {scope: 'full', migration: true};
+  const complete = {scope: 'full', migration: true, moving: true};
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return complete;
   if (!/^refs\/pull\/\d+\/merge$/.test(env.GITHUB_REF || '') || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) return complete;
   const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
@@ -72,7 +82,7 @@ export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   // Checkout's PR merge commit includes current main. Comparing its first
   // parent avoids misclassifying an old branch or looking only at its last push.
   const changes = parseDiff(git(['diff', '--raw', '--no-abbrev', '--no-renames', '--no-ext-diff', '--no-textconv', '-z', 'HEAD^1', 'HEAD', '--']));
-  return {scope: documentationOnly(changes) ? 'documentation' : 'full', migration: migrationReadinessRequired(changes)};
+  return {scope: documentationOnly(changes) ? 'documentation' : 'full', migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes)};
 }
 
 export function ciScope(options) {
@@ -80,9 +90,9 @@ export function ciScope(options) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const {scope, migration} = ciSelection();
-  console.log(`CI scope: ${scope}; production migration readiness: ${migration}`);
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `scope=${scope}\nmigration=${migration}\n`);
+  const {scope, migration, moving} = ciSelection();
+  console.log(`CI scope: ${scope}; production migration readiness: ${migration}; Moving image check: ${moving}`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `scope=${scope}\nmigration=${migration}\nmoving=${moving}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `### Verification scope: ${scope}\n\n${scope === 'documentation'
       ? 'Prose-only PR: environment registry, delivery policy and documentation checks. No runtime acceptance is claimed.'

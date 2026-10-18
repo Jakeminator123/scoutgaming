@@ -570,6 +570,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-18 | Moving-workerns befintliga CPU/image-workflow kopplas till obligatorisk CI för relevanta PR-filer; main/manuell körning behåller full kontroll. Ingen dubbel PR-build eller GPU-start. Aktuellt Admin-/Preview-miljöval samlas i ENVIRONMENT-VARIABLES efter läsande SQL, molnmetadata och Admin-vy. |
 | 2026-10-17 | OpenClaws spårade källrot är services/openclaw med interna lab-nivån kvar. Director/Gateway behåller separata Dockercontext, samma volymer och runtimekontrakt. Lokala envfiler och data stannar vid gamla open-claw/lab; källroot och state/env är uttryckligen åtskilda. Kvitto och extern leverans anges i JOHN-HANDOFF. |
 | 2026-10-17 | Studios spårade källrot är apps/studio. Källimports, cwd-/SQL-rötter, Next-traces, CI, Docker och Vercels Studio-root följer samma flytt; /studio och publika kompatibilitetsadresser består. Gamla privata original och dependencyjunctions ligger kvar med bevarade ignoreskydd. Lokala verifieringskvitton och återstående leverans redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Speechens fem spårade källfiler finns i apps/speech. CI, Vercels speech-root och befintliga transportfixtures följer flytten; Node22, npm-lås, tjänstnamn och publika socketadresser består. Separat lokal verifiering redovisas i JOHN-HANDOFF. |
