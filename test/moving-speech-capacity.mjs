@@ -17,7 +17,7 @@ test('work, unhealthy/unknown capacity, foreign release, stale observations and 
     p=>p.health.jobs.inQueue=1, p=>p.health.jobs.inProgress=1,
     p=>p.health.workers.unhealthy=1, p=>p.health.workers.initializing=1,
     p=>p.health.workers.throttled=1, p=>p.health.workers.running=2,
-    p=>p.health.workers.running=0, p=>p.health.workers.ready=0,
+    p=>p.health.workers.running=0, p=>p.health.workers.ready=-1,
     p=>p.health.jobs.inProgress='0', p=>delete p.health.jobs.retried,
     p=>p.observedAtMs=now-15001, p=>p.observedAtMs=now+1,
     p=>p.release.observedAtMs=now-15001,
@@ -32,4 +32,16 @@ test('work, unhealthy/unknown capacity, foreign release, stale observations and 
     p=>p.release.templateCorroboration.observedAtMs=now-15001,
   ];
   for(const change of changes){const proof=movingCapacityFixture({now});change(proof);assert.throws(()=>verifyMovingCapacity(proof,options),/capacity_unverified/);}
+});
+
+test('Flashboot ready counters neither require nor prove a running GPU',()=>{
+  for(const ready of [0,1]) {
+    const warm=movingCapacityFixture({now});warm.health.workers.ready=ready;
+    assert.equal(verifyMovingCapacity(warm,options).mode,'warm');
+  }
+  const cached=movingCapacityFixture({warm:false,now});
+  cached.health.workers.idle=1;cached.health.workers.ready=1;
+  cached.release.workers.workers=[{id:'cached-pod',state:'scaled-down',image:cached.release.expectedImage,version:3,isStale:false}];
+  const result=verifyMovingCapacity(cached,options);
+  assert.equal(result.mode,'cold');assert.equal(result.workerId,null);
 });

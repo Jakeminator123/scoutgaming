@@ -45,13 +45,16 @@ ledig worker med färska release-/hälsodata och samma journal-lease; den
 Endpointens min/max är 0/1, tomgång högst 60 s inom samma 720 s reservation.
 Den kräver en exklusiv endpoint eftersom provider-GET och POST inte är atomiska.
 
-65 fokuserade kapacitets-/sessions-/journaltester passerade utan skips.
+87 fokuserade kapacitets-/sessions-/journaltester passerade utan skips.
+RunPods separata `ready`-räknare krävs inte för en körande worker;
+regressionen täcker `running=1, ready=0` och enbart Flashboot-cache.
+Detta är kapacitetsbevis, inte bevis på redan laddad modell.
 Isolerad WSL/PostgreSQL-fixtur passerade med 4 retained-kontrakt, 26 SQL-
 och 59 integrationskontroller, inklusive ny kall/varm antagning, samtidiga
 SQL-skrivare, oförändrade kostnadsrader och recovery-fence. Den fristående
 miljöberoende testwrappern rapporterar ett skip; samma SQL-funktion kördes
 uttryckligen av fixturen. Ingen produktionsdatabas användes. Underlag:
-`motion-readiness/warm-admission-tests.log` och `warm-admission-sql.log`
+`motion-readiness/warm-capacity-ready-tests.log` och `warm-admission-sql.log`
 i den privata provbasen nedan. Oberoende kodgranskning fann inga blockerare;
 verkligt serverless-/varmcacheprov återstår.
 

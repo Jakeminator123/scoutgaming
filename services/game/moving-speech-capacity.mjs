@@ -13,7 +13,9 @@ const counter = value => Number.isSafeInteger(value) && value >= 0;
  * endpoint can receive ONE journal-fenced job; it does not claim the GPU is
  * stopped or free of cost. Recovery and legacy session drain remain separate.
  * RunPod GET/POST is not atomic: an external API submitter cannot be excluded
- * by these observations. This endpoint must be exclusive to this journal. */
+ * by these observations. This endpoint must be exclusive to this journal.
+ * `ready` is independent Flashboot/cache capacity, not a lower bound for
+ * running workers. A warm-capacity receipt does not prove a hot model. */
 export function verifyMovingCapacity(proof, {endpointId, now=Date.now()}={}) {
   const {release, health, observedAtMs} = proof ?? {};
   if (proof?.schemaVersion !== 1 || !fresh(observedAtMs,now) || !fresh(release?.observedAtMs,now)
@@ -29,7 +31,7 @@ export function verifyMovingCapacity(proof, {endpointId, now=Date.now()}={}) {
     || !workers || !jobs || WORKERS.some(key=>!counter(workers[key])) || JOBS.some(key=>!counter(jobs[key]))
     || jobs.inProgress !== 0 || jobs.inQueue !== 0 || workers.unhealthy !== 0
     || workers.initializing !== 0 || workers.throttled !== 0 || workers.running > 1
-    || verified.activeWorkers !== workers.running || workers.ready < workers.running
+    || verified.activeWorkers !== workers.running
     || release.workers.workers.some(worker=>worker.state === undefined || worker.state === 'unknown')
     || !Array.isArray(limits.activePods) || limits.activePods.length !== workers.running) fail();
   for (const pod of limits.activePods) {
