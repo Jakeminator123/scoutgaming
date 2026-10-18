@@ -22,21 +22,33 @@ test('insufficient coverage, journal capacity above 15 USD, global cap above 40 
  }
 });
 
-// Explicit global authorization includes historical provider windows, while the
-// existing journal receives only one additional fixed reservation.
-test('third production trial permits exactly one more 1.20 USD reservation within unchanged daily and global caps',()=>{
+// Freeze the historical trial-three amendment independently of current capacity.
+test('historical third production trial permitted one additional 1.20 USD reservation',()=>{
  const next={...input,authorizationId:'fixture-trial-three',
   expectedLimitMicroUsd:9600000,expectedReservedMicroUsd:9600000,expectedReservationCount:8,
-  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,
+  newLimitMicroUsd:10800000,globalLimitMicroUsd:40000000,
   providerSpentMicroUsd:525826,otherReservedMicroUsd:21070001};
  assert.equal(validMovingBudgetAmendment(next),true);
  assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
  assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
- assert.equal(MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,6000000);
  assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,40000000);
  assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
  for(const patch of [{newLimitMicroUsd:12000000},{newLimitMicroUsd:15000001},{globalLimitMicroUsd:40000001},
   {providerSpentMicroUsd:40000001},{otherReservedMicroUsd:40000001},{otherReservedMicroUsd:38000000},
   {windowReserveMicroUsd:1199999},{globalLimitMicroUsd:'40000000'}])
   assert.equal(validMovingBudgetAmendment({...next,...patch}),false,JSON.stringify(patch));
+});
+
+test('two planned replies fit the existing journal and require coverage for both unchanged reservations',()=>{
+ const twoReplies={...input,authorizationId:'fixture-two-production-replies',
+  expectedLimitMicroUsd:10800000,expectedReservedMicroUsd:10800000,expectedReservationCount:9,
+  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,
+  providerSpentMicroUsd:600000,otherReservedMicroUsd:24000000,windowReserveMicroUsd:2400000};
+ assert.equal(validMovingBudgetAmendment(twoReplies),true);
+ assert.equal(twoReplies.newLimitMicroUsd,13200000);
+ assert.equal(twoReplies.newLimitMicroUsd-twoReplies.expectedReservedMicroUsd,2*MOVING_TRIAL_BUDGET.reserveMicroUsd);
+ assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
+ assert.equal(MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,6000000+2*MOVING_TRIAL_BUDGET.reserveMicroUsd);
+ assert.equal(validMovingBudgetAmendment({...twoReplies,windowReserveMicroUsd:2333334}),false,'old one-trial reserve cannot cover two replies');
+ assert.equal(validMovingBudgetAmendment({...twoReplies,newLimitMicroUsd:14400000}),false,'a third reply has no coverage in this amendment');
 });

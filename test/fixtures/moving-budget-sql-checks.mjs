@@ -101,15 +101,39 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   assert.equal(beforeThirdTrial.length,8);
   const thirdTrial={...secondTrial,amendmentId:randomUUID(),authorizationId:'fixture-trial-three',observedAtMs:Date.now(),
     expectedLimitMicroUsd:9600000,expectedReservedMicroUsd:9600000,expectedReservationCount:8,
-    newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,otherReservedMicroUsd:21070001};
+    newLimitMicroUsd:10800000,otherReservedMicroUsd:21070001};
   await second.authorizeMovingBudgetAmendment({...args,amendment:thirdTrial});
   assert.deepEqual(await history(),beforeThirdTrial,'third production trial preserves all eight released reservations');
   const thirdAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
   assert.equal(thirdAdmitted.totalBudgetMicroUsd,10800000);assert.equal(thirdAdmitted.totalReservedMicroUsd,10800000);
   await finish(thirdAdmitted);
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  const beforeTwoReplies=await history();
+  assert.equal(beforeTwoReplies.length,9);
+  const reservationHistory=()=>pool.query('SELECT r.* FROM croupier_studio.gpu_reservations r JOIN croupier_studio.moving_speech_bindings b USING(environment_id,session_id) WHERE b.environment_id=$1 AND b.budget_id=$2 ORDER BY r.session_id,r.day',[scope.environment,budgetId]).then(r=>r.rows);
+  const priorCharges=await reservationHistory();
+  const twoReplies={...thirdTrial,amendmentId:randomUUID(),authorizationId:'fixture-two-production-replies',observedAtMs:Date.now(),
+    expectedLimitMicroUsd:10800000,expectedReservedMicroUsd:10800000,expectedReservationCount:9,
+    newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,windowReserveMicroUsd:2400000};
+  // Raising either runtime limit alone must not change the durable total ceiling.
+  await assert.rejects(second.reserveMovingSession({...request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd),currentBudgetMicroUsd:MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd}),fail('generated_speech_total_budget_exhausted'));
+  await second.authorizeMovingBudgetAmendment({...args,amendment:twoReplies});
+  assert.deepEqual(await history(),beforeTwoReplies,'two-reply amendment preserves all nine historical bindings');
+  assert.deepEqual(await reservationHistory(),priorCharges,'two-reply amendment does not reset or refund historical charges');
+  for(let reply=1;reply<=2;reply++) {
+    const saved=await second.reserveMovingSession(request(MOVING_TRIAL_BUDGET.reserveMicroUsd,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+    assert.equal(saved.totalBudgetMicroUsd,13200000);
+    assert.equal(saved.totalReservedMicroUsd,10800000+reply*1200000);
+    await finish(saved);
+  }
+  const afterTwoReplies=await history(),oldIds=new Set(beforeTwoReplies.map(row=>row.session_id));
+  assert.equal(afterTwoReplies.length,11);
+  assert.deepEqual(afterTwoReplies.filter(row=>oldIds.has(row.session_id)),beforeTwoReplies);
+  assert.deepEqual((await reservationHistory()).filter(row=>oldIds.has(row.session_id)),priorCharges);
+  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  assert.deepEqual(await history(),afterTwoReplies,'a rejected extra reply creates no partial binding');
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
-  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial]);
+  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies]);
   await journal.releaseLease({lease});
   await runMovingCapacitySqlChecks({pool,input,journal});
 }
