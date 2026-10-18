@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { createRegisteredMovingSpeech, assertMovingSpeechSource } from './moving-speech-bank.mjs';
 import { createMovingBankDownloads } from './moving-speech-bank-artifacts.mjs';
 import {createMovingDealReservations,prepareMovingDealPlan,presentationFingerprint} from './moving-speech-deal-plan.mjs';
+import {SPEECH_PREPARATION_FAILURE_CODES} from '../../packages/presentation/contracts/chat-response.mjs';
 const {WebSocketServer,WebSocket}=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url))('ws');
 
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -29,20 +30,33 @@ const STREAM_FAILURE_CODES = new Set([
 ]);
 const STREAM_PHASES = new Set(['current', 'ready', 'audio', 'dispatch', 'credit', 'chunk-current', 'chunk-send', 'done', 'played', 'client-message']);
 
-/** Server-only receipt. Never copy exception details or arbitrary correlation fields. */
-export function movingSpeechFailureReceipt({error, phase, streamId, requestId}) {
+const PREPARATION_FAILURE_CODES = new Set([...SPEECH_PREPARATION_FAILURE_CODES,...STREAM_FAILURE_CODES]);
+const PREPARATION_PHASES = new Set(['guard','profile-voice','publication','deal-plan','source','admission','submit','worker-ready','current','voice','plan']);
+
+function safeFailureCode(error, codes) {
   let code = 'moving_speech_unavailable';
   try {
     const candidate = error?.code;
-    if (STREAM_FAILURE_CODES.has(candidate)) code = candidate;
+    if (codes.has(candidate)) code = candidate;
     else {
       const message = error?.message;
-      if (STREAM_FAILURE_CODES.has(message)) code = message;
+      if (codes.has(message)) code = message;
       else if (error?.name === 'AbortError') code = 'moving_speech_cancelled';
     }
   } catch {}
-  return {event:'moving_speech_stream_interrupted', code,
+  return code;
+}
+
+/** Server-only receipt. Never copy exception details or arbitrary correlation fields. */
+export function movingSpeechFailureReceipt({error, phase, streamId, requestId}) {
+  return {event:'moving_speech_stream_interrupted', code:safeFailureCode(error,STREAM_FAILURE_CODES),
     phase:STREAM_PHASES.has(phase) ? phase : 'unknown',
+    streamId:typeof streamId === 'string' && streamId.length === 32 && /^[a-f0-9]{32}$/.test(streamId) ? streamId : null,
+    requestId:typeof requestId === 'string' && ID.test(requestId) && requestId.trim() === requestId ? requestId : null};
+}
+export function movingSpeechPreparationFailureReceipt({error, phase, streamId, requestId}) {
+  return {event:'moving_speech_preparation_failed',code:safeFailureCode(error,PREPARATION_FAILURE_CODES),
+    phase:PREPARATION_PHASES.has(phase) ? phase : 'unknown',
     streamId:typeof streamId === 'string' && streamId.length === 32 && /^[a-f0-9]{32}$/.test(streamId) ? streamId : null,
     requestId:typeof requestId === 'string' && ID.test(requestId) && requestId.trim() === requestId ? requestId : null};
 }
@@ -57,6 +71,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   sessions, dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
   bankOptions, readPresentation, publicVideo, now = Date.now, connectionMs = 15000,
   onStreamFailure = receipt => console.warn(JSON.stringify(receipt)),
+  onPreparationFailure = receipt => console.warn(JSON.stringify(receipt)),
   onCleanupError = () => console.warn(JSON.stringify({event:'moving_speech_cleanup_requires_recovery'}))} = {}) {
   if (!server || typeof ticketSecret !== 'string' || ticketSecret.length < 32
     || !/^[a-f0-9]{64}$/.test(releaseSha256 ?? '') || typeof sessions?.admit !== 'function'
@@ -239,11 +254,15 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         || input.text !== input.text.trim() || input.text.length > 500 || /[\u0000-\u001f\u007f-\u009f]/.test(input.text)) fail('moving_speech_input');
       const controller=new AbortController(),signal=AbortSignal.any([controller.signal,...(input.signal ? [input.signal]:[])]);
       const record={...input,controller,signal,state:'preparing'}; pending.add(record);
+      let phase='guard';
       try {
         await input.beforeCostly(); signal.throwIfAborted();
+        phase='profile-voice';
         record.voice=await dealerRuntime.prepareMoving({...input,signal,sourceSet:bank.sourceSet});
+        phase='publication';
         record.evidence=await readEvidence(input.context,bank.sourceSet.rest.videoId);
         if(input.presentationVersion!==undefined){
+          phase='deal-plan';
           if(typeof readPresentation!=='function'||typeof publicVideo!=='function')fail('moving_deal_unavailable');
           record.reservation=deals.claim(input.playerId,input.dealerId,input.presentationVersion,
             {ownerHash:digest(input.owner),context:input.context,sessionRevision:input.sessionRevision});
@@ -254,6 +273,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
             frames:record.deal.frames.map(row=>({take:'clip-'+row.videoId,frame:row.frame,
               sourceSha256:bank.sourceSet.clips.find(c=>c.videoId===row.videoId).sha256}))};
         }
+        phase='source';
         const expected=bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
         assertMovingSpeechSource((await readRegistry()).videos.find(v=>v.id===expected.videoId),input.dealerId,expected);
         const registered=createRegisteredMovingSpeech({readRegistry,verifyBank:async()=>{
@@ -263,6 +283,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           return {dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256};
         }});
+        phase='admission';
         record.session=await sessions.admit({ownerHash:digest(input.owner),userId:digest(input.owner),requestId:input.requestId,
           fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256,record.deal?.fingerprint??null])),
           binding:{releaseSha256,dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,profileRevision:record.voice.profileRevision,
@@ -272,17 +293,21 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           bankDownload:async({sessionSignal,ttlMs})=>{record.download=downloads.issue({
             signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record)});return record.download.descriptor;}});
         record.id=record.session.sessionId;record.binding=record.session.binding; records.set(record.id,record);
-        await record.session.submit(); await record.session.ready(); await current(record);
+        phase='submit'; await record.session.submit();
+        phase='worker-ready'; await record.session.ready();
+        phase='current'; await current(record);
+        phase='voice';
         const chunks=[];let size=0;
         for await (const chunk of record.voice.source({text:input.text,signal,beforeCostly:()=>current(record)})) {
           size+=chunk.byteLength;if(size>1200000)fail('moving_speech_audio_limit');chunks.push(Buffer.from(chunk));
         }
         record.pcm=Buffer.concat(chunks);chunks.forEach(chunk=>chunk.fill(0));
         const frames=Array.from({length:Math.floor((size/2+18000)/1000)},(_,k)=>record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
+        phase='plan';
         record.input=await registered.prepare({sourceSet:bank.sourceSet,avatarSha256:bank.archive.sha256,frozenContext:record.evidence.frozenContext,
           binding:{sessionId:record.id,talkId:input.requestId,revision:1,profileRevision:record.voice.profileRevision,textSha256:digest(input.text),audioSha256:digest(record.pcm)},
           frames,audio:{pcm:record.pcm,format:'s16le',sampleRate:24000,channels:1},signal});
-        await current(record);
+        phase='current'; await current(record);
         record.expiresAt=now()+connectionMs;
         const body=Buffer.from(JSON.stringify({sessionId:record.id,exp:record.expiresAt,attemptId:record.binding.attemptId,nonce:record.binding.nonce})).toString('base64url');
         record.descriptor=Object.freeze({schemaVersion:1,kind:'moving-speech-stream',id:record.id,requestId:input.requestId,dealerId:input.dealerId,
@@ -291,7 +316,14 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           ...(record.sequence?{presentationVersion:record.deal.version,sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
         record.state='prepared';record.timer=setTimeout(()=>void cancel(record),connectionMs);record.timer.unref?.();
         return record.descriptor;
-      } catch(error) {await cancel(record);throw error;}
+      } catch(error) {
+        // Observability must neither delay cleanup nor replace the first failure.
+        try {
+          const receipt=movingSpeechPreparationFailureReceipt({error,phase,streamId:record.id,requestId:record.requestId});
+          Promise.resolve(onPreparationFailure(receipt)).catch(()=>{});
+        } catch {}
+        await cancel(record);throw error;
+      }
       finally {pending.delete(record);}
     },
     async handleHttp(req,res) {

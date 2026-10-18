@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createMovingSpeechRuntime, movingSpeechFailureReceipt } from '../services/game/moving-speech-runtime.mjs';
+import { createMovingSpeechRuntime, movingSpeechFailureReceipt, movingSpeechPreparationFailureReceipt } from '../services/game/moving-speech-runtime.mjs';
 import { createMovingSpeechSourceSet } from '../services/game/moving-speech-bank.mjs';
 import { validateMovingSpeechStream } from '../packages/presentation/runtime/moving-speech-player.mjs';
 import {DRAGAN_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
@@ -18,7 +18,7 @@ const record = (extension, type, bytes) => ({ provider: 'vercel-blob',
 async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await pause(5); } assert.fail('runtime fixture did not settle'); }
 
 async function setup(t, options = {}) {
-  const original = Buffer.from('synthetic-original'), pcm = Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [];
+  const original = Buffer.from('synthetic-original'), pcm = Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [], preparationFailures = [];
   const dealClips=options.deal?DRAGAN_KEVIN_PROFILE.takes.map((take,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,
     sha256:take.sha256,bytes:100+i,fps:24,frameCount:take.frames,width:1080,height:1920})):[];
   const sourceSet = createMovingSpeechSourceSet({ dealerId: 'dragan', clips: [...dealClips,{ videoId, sha256: digest(original), bytes: original.length,
@@ -43,6 +43,7 @@ async function setup(t, options = {}) {
   runtime = createMovingSpeechRuntime({ server, origin, bank, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4), now: () => state.now,
     connectionMs: options.connectionMs ?? 15000, onCleanupError:()=>trace.push('cleanup-recovery'),
     onStreamFailure:receipt=>{failures.push(receipt);return options.onStreamFailure?.(receipt);},
+    onPreparationFailure:receipt=>{preparationFailures.push(receipt);return options.onPreparationFailure?.(receipt);},
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
     readEvidence: async () => { state.reads++; const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
     readPresentation:async()=>{const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
@@ -50,6 +51,7 @@ async function setup(t, options = {}) {
     bankRead: options.bankRead ?? (async () => assert.fail('runtime fixture must never download bank bytes')),
     dealerRuntime: { async prepareMoving(input) {
       assert.equal(input.dealerId,'dragan'); assert.deepEqual(input.sourceSet,sourceSet);
+      await options.onPrepare?.(input,state);
       trace.push('voice-prepared'); return { profileRevision: h, compositing: null,
         async assertFresh() { if (state.profileChanged) throw Error('generated_speech_profile_changed'); },
         async *source({ beforeCostly, signal }) { trace.push('tts'); await beforeCostly(); signal.throwIfAborted();
@@ -57,7 +59,7 @@ async function setup(t, options = {}) {
       };
     } },
     sessions: { async admit(args) {
-      trace.push('admit'); admitted = args; await args.beforeCostly();
+      trace.push('admit'); admitted = args; await options.onAdmit?.(args,state); await args.beforeCostly();
       const binding = { ...args.binding, schemaVersion: 1, sessionId, attemptId: 'attempt-1', nonce: '2'.repeat(64) };
       return { sessionId, binding, async submit() { trace.push('submit'); await args.beforeCostly(); },
         async ready() { trace.push('ready'); await options.onReady?.(state); }, handleUpgrade() { return false; },
@@ -94,9 +96,65 @@ async function setup(t, options = {}) {
     });
     return { socket, messages, opened, close, send: value => socket.send(JSON.stringify(value)) };
   };
-  return { runtime, state, input, trace, failures, original, pcm, registry, base, address, sourceSet, connect,
+  return { runtime, state, input, trace, failures, preparationFailures, original, pcm, registry, base, address, sourceSet, connect,
     prepare: overrides => runtime.prepare({ ...input, ...overrides }), get admitted() { return admitted; } };
 }
+
+test('preparation receipts allowlist codes and redact exceptions, phases and invalid identifiers', () => {
+  const secret='https://private.example/?ticket=secret';
+  const base={phase:'admission',requestId:'request-1',streamId:sessionId};
+  const expected=code=>({event:'moving_speech_preparation_failed',code,...base});
+  const error=Object.assign(Error(secret),{code:'generated_speech_moving_capacity_unverified',stack:secret,cause:{token:secret}});
+  assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error}),expected(error.code));
+  assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error:Error('generated_speech_voice_unavailable')}),expected('generated_speech_voice_unavailable'));
+  assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error:new DOMException(secret,'AbortError')}),expected('moving_speech_cancelled'));
+  for(const error of [Error(secret),{code:'generated_speech_voice_unavailable '+secret,message:secret},
+    {get code(){throw Error(secret);}},secret,null]){
+    assert.deepEqual(movingSpeechPreparationFailureReceipt({...base,error}),expected('moving_speech_unavailable'));
+  }
+  for(const invalid of [secret,'x'.repeat(129),sessionId+'\n',{},undefined]){
+    assert.deepEqual(movingSpeechPreparationFailureReceipt({error,phase:invalid,requestId:invalid,streamId:invalid}),
+      {event:'moving_speech_preparation_failed',code:error.code,phase:'unknown',requestId:null,streamId:null});
+  }
+});
+
+test('voice and admission failures log once before TTS/submit and preserve the original error',async t=>{
+  for(const [code,hook,phase] of [
+    ['generated_speech_voice_unavailable','onPrepare','profile-voice'],
+    ['generated_speech_profile_not_enabled','onPrepare','profile-voice'],
+    ['generated_speech_moving_reference_unavailable','onPrepare','profile-voice'],
+    ['generated_speech_moving_capacity_unverified','onAdmit','admission'],
+    ['generated_speech_total_budget_exhausted','onAdmit','admission'],
+    ['generated_speech_recovery_required','onAdmit','admission'],
+  ]){
+    const error=Object.assign(Error('private upstream detail'),{code}),seen=[];
+    const f=await setup(t,{[hook]:async input=>{seen.push(input.signal);throw error;}});
+    await assert.rejects(f.prepare(),actual=>actual===error);
+    assert.deepEqual(f.preparationFailures,[{event:'moving_speech_preparation_failed',code,phase,streamId:null,requestId:f.input.requestId}]);
+    assert.equal(seen[0].aborted,true);
+    assert.equal(f.trace.includes('submit'),false);assert.equal(f.trace.includes('tts'),false);
+    assert.equal(f.state.dispatched,0);assert.equal(f.state.cancelled,0);
+  }
+});
+
+test('unknown preparation errors are generic in diagnostics, without replacing the exception',async t=>{
+  const error=Object.assign(Error('private utterance'),{code:'provider-private-token',url:'https://private.example'});
+  const f=await setup(t,{onAdmit:()=>{throw error;}});
+  await assert.rejects(f.prepare(),actual=>actual===error);
+  assert.deepEqual(f.preparationFailures,[{event:'moving_speech_preparation_failed',code:'moving_speech_unavailable',phase:'admission',streamId:null,requestId:f.input.requestId}]);
+  assert.equal(f.admitted.signal.aborted,true);assert.equal(f.trace.includes('submit'),false);
+});
+
+test('throwing, rejecting or pending preparation loggers cannot prevent cancellation or replace the first failure',async t=>{
+  for(const onPreparationFailure of [()=>{throw Error('logger unavailable');},()=>Promise.reject(Error('logger unavailable')),()=>new Promise(()=>{})]){
+    const error=Error('moving_worker_read_timeout');
+    const f=await setup(t,{onReady:()=>{throw error;},onPreparationFailure,cancelFails:true});
+    await assert.rejects(f.prepare(),actual=>actual===error);
+    assert.equal(f.state.cancelled,1);assert.equal(f.admitted.signal.aborted,true);
+    assert.equal(f.trace.includes('cleanup-recovery'),true);assert.equal(f.trace.includes('tts'),false);
+    assert.deepEqual(f.preparationFailures,[{event:'moving_speech_preparation_failed',code:error.message,phase:'worker-ready',streamId:sessionId,requestId:f.input.requestId}]);
+  }
+});
 
 test('bank-ready admission precedes TTS; exact descriptor and plan survive real HTTP/WS credit flow and graceful done', async t => {
   const f = await setup(t), d = await f.prepare();
