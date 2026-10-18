@@ -266,9 +266,7 @@ test('normal chat advertises stream support while native lab bridge keeps finali
   const normal = source.slice(source.indexOf('async function sendChat('), source.indexOf('const labSpeechBridge'));
   const bridge = source.slice(source.indexOf('const labSpeechBridge'), source.indexOf('if (localPresentationEnabled', source.indexOf('const labSpeechBridge')));
   assert.match(normal, /acceptsSpeechStream: true/); assert.doesNotMatch(bridge, /acceptsSpeechStream: true/);
-  assert.match(source, /generated-lipsync-stream-preview/); assert.match(source, /beforeStart: beforeStreamStart/);
   assert.match(normal, /chatPlaybackDiagnostic\.begin\(requestId\)/);
-  assert.match(source, /chatPlaybackDiagnostic\.stream\(jobId, receipt\)/);
 });
 
 test('registered stream requires v2 exact profile/image binding and cannot borrow legacy Astrid descriptor',async()=>{

@@ -418,30 +418,37 @@ separata arbeten; hela casinoprodukten är inte slutverifierad.
 
 ## HUVUDAGENT4: avgränsad rutinstädning — 18 oktober 2026
 
-Överlämning från HUVUDAGENT3 mottagen; strukturplanen förblir avslutad.
-Agent-talk filtrerar riktade pingar och kvittenser från andras statusvyer;
-claims och start/slut är gemensamma. Status utan id ger bara översikt,
-medan status --all uttryckligen visar hela aktiva kön. Detta är inte sekretess.
-Kvittens, köarkivering och egen done behålls; gamla claims frigörs aldrig automatiskt.
+[PR243](https://github.com/Jakeminator123/scoutgaming/pull/243) och
+[PR246](https://github.com/Jakeminator123/scoutgaming/pull/246) är mergade
+efter full grön PR-CI. Strukturplanen förblir avslutad. Agent-talk visar
+riktade samtal för berörda agenter, behåller kvittens/köarkiv och kräver
+egen done. Delade filer är inte privata och andras claims frigörs inte automatiskt.
 
-Lokal kontroll och CI använder ett gemensamt dokumenturval så granskade
-guider inte får olika kontrollnivå av misstag. Okänd kod, runtime-Markdown,
-konfiguration, filtypsbyten och main/manual behåller sina kontroller.
-Studio-guidens generella tvåspelningskrav och gamla flyttstatus är rättade.
-Sidindelningstestet förbereder arkivposter direkt i stället för 41 CLI-starter;
-överflöde, samtidighet, fel och återhämtning provas fortfarande via verklig CLI.
-Handoffrutinen ersätter inaktuell status inom eget scope och länkar befintliga kvitton.
+Lokal kontroll och CI delar dokumenturval; flyttad klientkod har rätt
+migrationsurval. Moving-workerns befintliga CPU/image-workflow ingår i
+obligatorisk CI när relevant. Inget generellt tvåuppspelningskrav finns kvar.
 
-**Lokalt verifierat:** 38/38 riktade prov i agent-talk, CI-urval, precommit
-och leveranspolicy; 515 JavaScript-/TypeScript-kandidater, 0 föräldralösa tester.
-Det separata Python-inventariet är inte en verifiering av Python-täckningen.
-CI-/driftstatus följer den nya PR:n; inget produktionsprov gjordes i detta pass.
-GitGuardian på bas-main 6e781b9d: två öppna incidenter, partiell platsmetadata,
-historisk skanning too_large; inga incidenter ändrade.
+Efterfixen flyttar chattens visning, avbrott och beslutade uppspelning till
+en importerbar klientmodul. Beteendeprov ersätter regex/VM-utskärning och
+källtextassertioner; liveägarskap, dealer/session/revision, exakt media,
+textfallback och avbrott behålls. Testnamnet är `test/chat-decision-player.mjs`.
+Den extraherade modulen ingår också i serverns och browserns QA-källhashregister;
+avvikande bytes eller saknad pin stoppar innan kö eller strömning öppnas.
+Studios guide skiljer direkt Next-env från anslutningshjälparens avsiktliga
+bakåtkompatibilitet. Inga privata env-/data-/mediefiler flyttas.
 
-Övrig testskuld står kvar i CLOUD-MIGRATION. Lipsync 3 äger worker/tal och
-sin separata PR242; dess kod, handoff och verifieringspåståenden ändras inte här.
-Primärcheckoutens privata/ospårade filer och andra arbetskopior är bevarade.
+**Lokalt verifierat:** 71 passerade beteende-/regressionsprov; två valfria
+Playwright-prov överhoppades eftersom browsermodulen saknas i arbetskopian.
+Två nya QA-regressionsprov reproducerade hashregisterluckan före rättning;
+efteråt passerade 158/158 prov i QA-/chattpaketet, helt utan betalda anrop.
+515 JavaScript-/TypeScript-kandidater har inga föräldralösa tester, och
+miljövariabelregistret stämmer. Obligatorisk CI följs på efterfixens PR.
+Detta är inget nytt produktions- eller läppsynkprov. Lipsync 3:s handoff ovan består.
+
+**Kvar:** renklonagenten genomför ett separat bygge/startprov efter färsk
+bevarandelista från Lipsync 3. Exakt SHA, körda/överhoppade prov och privata
+QA-verktygs särskilda förutsättningar ska redovisas. Primärcheckoutens
+inställningar, råmedia, data och andra arbetskopior bevaras tills dess.
 
 ## Strukturens slutkvitto
 
@@ -526,20 +533,14 @@ andra agenters worktrees och claims är inte del av rutinmässig städning.
 
 ## Övrigt kvarvarande produktarbete
 
-**HUVUDAGENT4, 18 oktober:** behåll produktionens `croupier_game` på Neon-main
-som källa för Jakobs aktuella bolag, rum och dealers. SQL/Browser visar Dragan test
-och Nordic bet; preview-v2 har äldre demodata. Andra Blob-lagret tillhör Impactwin.
-[Miljövariabler](ENVIRONMENT-VARIABLES.md#aktuellt-miljöval-för-admin--verifierat-18-oktober-2026)
-är den samlade avläsningen. Preview är ännu ingen verifierad skrivtestmiljö.
-Bolags-/rumsvyn lästes utan skrivningar; detta godkänner inte hela Admins UX.
-Lipsync 3 äger pågående talfelsökning och frågan om videogränsen 256/32 MiB.
-
-Moving-workerns befintliga CPU/image-kontroll återanvänds av obligatorisk CI
-vid relevanta PR-ändringar och på main/manuell körning. Ingen dubbel fristående
-PR-körning, GPU-start eller imagepublicering läggs till. Lokalt passerar CI-urvalets
-nio tester, inklusive faktisk merge-diff och fel/saknade/avbrutna jobbutfall.
-GitHub-CI och eventuell merge verifieras på PR:n; detta är inget driftkvitto.
-
+**HUVUDAGENT4, 18 oktober:** produktionens `croupier_game` på Neon-main
+är källan för aktuella bolag, rum och dealers. Den tidigare läsningen visade
+Dragan test och Nordic bet. Preview-grenen `preview-v2` raderades senare
+enligt det daterade kvittot i [miljöguiden](ENVIRONMENT-VARIABLES.md#aktuellt-miljöval-för-admin--verifierat-18-oktober-2026).
+Det andra Blob-lagret hör till Impactwin. Preview är ännu ingen verifierad
+skrivtestmiljö; ingen ny molnavläsning eller full Admin-UX-acceptans påstås här.
+Lipsync 3 äger tal-/workerarbetet och dess aktuella verifieringsstatus ovan.
+Moving-kontrollen är levererad i PR246; renklonprovet återstår enligt H4-avsnittet.
 
 <a id="2-öppna-kontroller-och-kända-fel"></a>
 

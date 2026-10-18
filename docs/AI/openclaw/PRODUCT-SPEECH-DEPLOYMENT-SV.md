@@ -214,7 +214,7 @@ tolka inte checklistan eller en grön Render-status som färdig end-to-end-QA.
 ## Lokala tester
 
 ```powershell
-node --test test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs
+node --test test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs
 node --test services/openclaw/lab/test/product-speech.test.mjs services/openclaw/lab/deploy/gateway-config.test.mjs services/openclaw/lab/deploy/runtime-bundle.test.mjs services/openclaw/lab/deploy/start-gateway.test.mjs services/openclaw/lab/deploy/local-connection.test.mjs
 ```
 

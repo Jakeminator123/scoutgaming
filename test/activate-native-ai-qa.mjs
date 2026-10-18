@@ -5,7 +5,7 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaNextWindowCounts,sha256,inspectAiQaRecords,createAiQaBudget} from '../services/game/native-ai-qa-budget.mjs';
-import {createBoundedAiQaRouter} from '../services/game/native-ai-qa-runtime.mjs';
+import {createBoundedAiQaRouter,AI_QA_SOURCE_PATHS,validateAiQaManifest} from '../services/game/native-ai-qa-runtime.mjs';
 
 const productSchema=await readFile(new URL('../ops/neon-game/product-schema.sql',import.meta.url),'utf8');
 const canonicalPlayerLink=/CREATE TABLE croupier_game\.([a-z_]+) \(craig_user_id TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL REFERENCES croupier_game\.players\(id\)\)/.exec(productSchema)?.[1];
@@ -540,4 +540,21 @@ test('additional provider preflight refuses other status errors, unknown identit
       calls.push(options.method);return url.endsWith('/health')?Response.json(drainedProviderHealth):reply();
     }}));assert.deepEqual(calls,['GET','GET']);
   });
+});
+
+test('QA activation requires a valid pin for the extracted chat decision source',()=>{
+  const env={RENDER_GIT_COMMIT:'a'.repeat(40),CROUPIER_P6_SDK_RUN_ID:'fixture-run',CROUPIER_P6_SDK_DEPLOYMENT_ID:'dep-fixture'};
+  const manifest={purpose:'bounded-native-ai-qa-activation-v1',campaignId:AI_QA_ORIGINAL.campaignId,
+    expectedSha:env.RENDER_GIT_COMMIT,runId:env.CROUPIER_P6_SDK_RUN_ID,deploymentId:env.CROUPIER_P6_SDK_DEPLOYMENT_ID,
+    limits:AI_QA_LIMITS,privateSnapshotSha256:'b'.repeat(64),originalAnchorSha256:AI_QA_ORIGINAL.anchorSha256,
+    actualCostUsd:null,createdAtMs:100,expiresAtMs:200,ownLinkedPlayerSha256:'c'.repeat(64),
+    sources:Object.fromEntries(AI_QA_SOURCE_PATHS.map(path=>[path,'d'.repeat(64)])),
+    privateWorkerSha256:'e'.repeat(64),sdkVersion:'7.12.1',
+    sdkRoot:'/var/data/native-studio-qa/abc92154cb15/p6-sdk/cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2/node_modules/openai'};
+  assert.equal(validateAiQaManifest(manifest,env,100),manifest);
+  for(const pin of [undefined,'invalid-hash']){
+    const sources={...manifest.sources,'services/game/public/chat-decision-player.mjs':pin};
+    if(pin===undefined)delete sources['services/game/public/chat-decision-player.mjs'];
+    assert.throws(()=>validateAiQaManifest({...manifest,sources},env,100),{code:'ai_qa_source_and_installed_sdk_required'});
+  }
 });
