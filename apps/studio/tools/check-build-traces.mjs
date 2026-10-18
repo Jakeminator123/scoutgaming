@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 export function privateBuildSource(path) {
   const normalized=path.replaceAll('\\','/');
   return /(?:^|\/)\.env[^/]*(?:\/|$)/.test(normalized)
-    || /(?:^|\/)(?:lab\/data|apps\/studio\/data|web\/data|(?:open-claw|services\/openclaw)\/lab\/(?:data|runtime)|agent-talk|random|\.croupier-inbox|\.codex|\.git)(?:\/|$)/.test(normalized)
+    || /(?:^|\/)(?:lab\/data|apps\/studio\/data|(?:web|services\/game)\/data|(?:open-claw|services\/openclaw)\/lab\/(?:data|runtime)|agent-talk|random|\.croupier-inbox|\.codex|\.git)(?:\/|$)/.test(normalized)
     || /\.(?:db|sqlite|sqlite3)(?:-(?:wal|shm|journal))?$/.test(normalized);
 }
 export function dealerAuthoringBuildSource(path) {

@@ -34,6 +34,11 @@ Dess lokala fler-tjänstbootstrap använder avsiktligt game-ägda
 `partner-api.mjs#installPartnerApi`; den kopplingen gör inte partner-API:t
 till ett neutralt bibliotek.
 
+Taladaptrarna återanvänder också den befintliga gemensamma gatewaykoden under
+`services/astrid-gpu-worker/gateway/` för providerkällor, workerbindning och
+strömtransport. Det är ett uttryckligt beroende; flytten skapar inget nytt
+bibliotek eller någon ny tjänst.
+
 Publika `/admin`, `/partner`, `/lobby`, `/play/blackjack`, `/play/roulette`
 och `/studio`-kontrakt ändras inte av källflytten. Befintliga kompatibilitets-
 URL:er, protokollvärdet `owner:web`, medie-ID:n och proveniens med `web/public/`
