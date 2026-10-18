@@ -43,6 +43,19 @@ hittade inga kvarvarande blockerare efter nätverksfallet rättats. Detta löser
 Talflaggan är fortsatt 0. Driftsättning av denna återhämtningsändring ska
 verifieras separat mot faktisk Render-version.
 
+Serverns `moving-speech-runtime` har kompletterats med ett begränsat
+`moving_speech_stream_interrupted`-kvitto: allowlistad orsak, körfas och
+validerade stream/request-ID:n. Okända fel får `moving_speech_unavailable`.
+Första orsaken bevaras genom följdfel och annullering; rå exception, taltext,
+token, ticket och URL kopieras inte. Fel i loggaren hindrar inte cleanup.
+Klientprotokoll, tidsgränser, behörigheter och providerinställningar är oförändrade.
+Efter integrering av PR247/main `be8b83ef` passerade 94 tester för runtime,
+transport, session och spelare, med 0 fel och 2 överhoppade Playwright-prov.
+Runtime omfattar 28 godkända tester, inklusive partiell leverans, redaktion,
+korrelation, första orsak och kastande/avvisande loggare. Detta är lokalt
+verifierad diagnostik; driftsättning, nytt talprov och den tidigare
+produktionsorsaken är inte verifierade. Inga nya providerjobb ingick.
+
 ## Lipsync 3: produktionsprovet avbröts; återställningen klar — 18 oktober 2026
 
 PR242 (bankens HTTP-hämtning) och PR245 (en ytterligare journalreservation)
@@ -89,9 +102,10 @@ Ingen taltext, token eller godtycklig exception kopieras till kvittot. 68 fokuse
 tester passerade; två valfria riktiga webbläsar-codecprov kördes inte. Ändringen
 diagnostiserar nästa avbrott men löser inte en ännu okänd produktionsorsak.
 Kvittot ersätts fortfarande vid nästa fråga eller sidladdning och måste fångas
-direkt efter ett kommande prov. Serverns interna stream-fel är fortsatt generiskt.
+direkt efter ett kommande prov. Klientens stream-fel är fortsatt generiskt;
+det nya serverkvittot beskrivs ovan.
 
-Diagnostiken är levererad i PR244; aktuella drift- och miljökvitton finns överst.
+Klientdiagnostiken är levererad i PR244; aktuella drift- och miljökvitton finns överst.
 Nästa steg är att fånga den exakta orsaken och avstämma kostnad före nästa
 betalda prov. Kontrollera därefter hela meningen och först sedan
 tal under auktoritativ utdelning. Lipsync-spåret äger även uppföljningen av

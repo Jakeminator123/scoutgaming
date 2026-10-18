@@ -9,6 +9,43 @@ const {WebSocketServer,WebSocket}=createRequire(new URL('../astrid-gpu-worker/ga
 const digest = value => createHash('sha256').update(value).digest('hex');
 const fail = code => {throw Object.assign(Error(code),{code,statusCode:503});};
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const STREAM_FAILURE_CODES = new Set([
+  'moving_speech_cancelled', 'moving_speech_not_authorized', 'moving_speech_transport_consumed',
+  'invalid_moving_speech_transport', 'moving_speech_client_backpressure', 'moving_speech_client_closed',
+  'moving_speech_invalid_credit', 'moving_speech_credit_timeout', 'moving_speech_consumer_timeout',
+  'moving_speech_playback_timeout', 'moving_speech_context_changed', 'moving_deal_changed',
+  'generated_speech_profile_changed', 'generated_speech_reference_changed', 'generated_speech_moving_reference_unavailable',
+  'generated_speech_cancelled', 'generated_speech_moving_release_timeout', 'generated_speech_moving_endpoint_mismatch',
+  'generated_speech_moving_job_not_accepted',
+  'moving_worker_release_changed', 'moving_worker_release_unverified', 'moving_worker_release_mismatch',
+  'moving_worker_binding_requires_owned_release', 'moving_worker_attestation_mismatch', 'moving_worker_incompatible',
+  'moving_worker_plan_padding_mismatch', 'moving_worker_wrong_reply', 'moving_worker_reported_error',
+  'moving_worker_empty_result', 'moving_worker_incomplete_result', 'moving_worker_invalid_chunk',
+  'moving_worker_wrong_frame', 'moving_worker_expected_binary', 'moving_worker_expected_metadata', 'moving_worker_invalid_json',
+  'moving_worker_lifetime_exceeded', 'moving_worker_closed', 'moving_worker_socket_error', 'moving_worker_disconnected',
+  'moving_worker_metadata_too_large', 'moving_worker_backpressure', 'moving_worker_concurrent_read',
+  'moving_worker_startup_timeout', 'moving_worker_read_timeout', 'moving_worker_not_connected',
+  'moving_worker_send_failed', 'moving_worker_write_timeout',
+]);
+const STREAM_PHASES = new Set(['current', 'ready', 'audio', 'dispatch', 'credit', 'chunk-current', 'chunk-send', 'done', 'played', 'client-message']);
+
+/** Server-only receipt. Never copy exception details or arbitrary correlation fields. */
+export function movingSpeechFailureReceipt({error, phase, streamId, requestId}) {
+  let code = 'moving_speech_unavailable';
+  try {
+    const candidate = error?.code;
+    if (STREAM_FAILURE_CODES.has(candidate)) code = candidate;
+    else {
+      const message = error?.message;
+      if (STREAM_FAILURE_CODES.has(message)) code = message;
+      else if (error?.name === 'AbortError') code = 'moving_speech_cancelled';
+    }
+  } catch {}
+  return {event:'moving_speech_stream_interrupted', code,
+    phase:STREAM_PHASES.has(phase) ? phase : 'unknown',
+    streamId:typeof streamId === 'string' && streamId.length === 32 && /^[a-f0-9]{32}$/.test(streamId) ? streamId : null,
+    requestId:typeof requestId === 'string' && ID.test(requestId) && requestId.trim() === requestId ? requestId : null};
+}
 const same = (a,b) => typeof a === 'string' && typeof b === 'string'
   && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const publicPlan = plan => JSON.parse(JSON.stringify(plan));
@@ -19,6 +56,7 @@ const publicPlan = plan => JSON.parse(JSON.stringify(plan));
 export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, bank, releaseSha256,
   sessions, dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
   bankOptions, readPresentation, publicVideo, now = Date.now, connectionMs = 15000,
+  onStreamFailure = receipt => console.warn(JSON.stringify(receipt)),
   onCleanupError = () => console.warn(JSON.stringify({event:'moving_speech_cleanup_requires_recovery'}))} = {}) {
   if (!server || typeof ticketSecret !== 'string' || ticketSecret.length < 32
     || !/^[a-f0-9]{64}$/.test(releaseSha256 ?? '') || typeof sessions?.admit !== 'function'
@@ -78,6 +116,15 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   async function stream(record,ws) {
     record.ws = ws; clearTimeout(record.timer);
     let credit = 0, sent = 0, wake = null, done = false, played=false, sentDone=false;
+    let phase = 'current', reported = false;
+    const report = (error, failurePhase = phase) => {
+      if (reported) return;
+      reported = true;
+      try {
+        const receipt = movingSpeechFailureReceipt({error,phase:failurePhase,streamId:record.id,requestId:record.requestId});
+        Promise.resolve(onStreamFailure(receipt)).catch(()=>{});
+      } catch {}
+    };
     const stop = () => {wake?.(); if (!done) void cancel(record);};
     ws.on('close',stop); ws.on('error',stop);
     ws.on('message',(data,binary)=>{
@@ -92,7 +139,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           || value.frames < 1 || value.frames > 48 || credit + value.frames > 48
           || sent + credit + value.frames > record.input.plan.timeline.length + 48) fail('moving_speech_invalid_credit');
         credit += value.frames; wake?.();
-      } catch {void cancel(record);}
+      } catch (error) {report(error,'client-message');void cancel(record);}
     });
     const waitCredit = async frames => {
       while (credit < frames) {
@@ -111,19 +158,27 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       await current(record);
       const source = bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
       const {videoId,sha256,fps,frameCount,width,height,bytes} = source;
+      phase = 'ready';
       await send(ws,JSON.stringify({t:'ready',protocol:1,id:record.id,attemptId:record.binding.attemptId,nonce:record.binding.nonce,
         plan:publicPlan(record.input.plan),rest:{videoId,sha256,fps,frameCount,width,height,bytes,sourceFrame:bank.sourceSet.rest.frame,url:`/api/moving-speech/${record.id}/rest`},
         ...(record.sequence?{sequence:record.sequence}:{}),
         audio:{format:'s16le',sampleRate:24000,channels:1,byteLength:record.pcm.length}}));
+      phase = 'audio';
       await send(ws,JSON.stringify({t:'pcm',id:record.id,byteLength:record.pcm.length}));
       await send(ws,record.pcm,true);
+      phase = 'dispatch';
       await record.session.dispatch(record.input,{onChunk:async (meta,bytes)=>{
-        await waitCredit(meta.rutor.length); await current(record);
+        phase = 'credit'; await waitCredit(meta.rutor.length);
+        phase = 'chunk-current'; await current(record);
+        phase = 'chunk-send';
         await send(ws,JSON.stringify(meta)); await send(ws,bytes,true);
+        phase = 'dispatch';
       }});
+      phase = 'done';
       await send(ws,JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}));
       sentDone=true;
       if(record.sequence){
+        phase = 'played';
         const deadline=now()+45000;
         while(!played){
           if(now()>deadline)fail('moving_speech_playback_timeout');
@@ -133,7 +188,10 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       }
       done = true; record.delivered=true; ws.close(1000,'Complete');
       const drain=setTimeout(()=>ws.terminate(),2000);drain.unref?.();ws.once('close',()=>clearTimeout(drain));
-    } catch {if (ws.readyState === WebSocket.OPEN) await send(ws,JSON.stringify({t:'error',code:'moving_speech_unavailable'})).catch(()=>{});}
+    } catch (error) {
+      report(error);
+      if (ws.readyState === WebSocket.OPEN) await send(ws,JSON.stringify({t:'error',code:'moving_speech_unavailable'})).catch(()=>{});
+    }
     finally {await cancel(record);}
   }
   async function upgrade(req,socket,head) {
