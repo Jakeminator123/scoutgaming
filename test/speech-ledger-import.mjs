@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../services/game/postgres-operat
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -129,12 +129,21 @@ test('speech import requires013 and exact replay keeps its ledger protected',asy
   assert.deepEqual(pool.state,unchanged);
 });
 
+test('speech import requires015 even when a caller labels it optional',async()=>{
+  const missing=structuredClone(installed);missing.applied=missing.applied.filter(row=>row.version!=='015');
+  missing.optionalPending=[{version:'015'}];
+  const pool=memoryPool(),before=structuredClone(pool.state);
+  await assert.rejects(applyLegacySpeechLedgerSnapshot({...args(pool),schemaCheck:async()=>missing}),{code:'studio_speech_import_schema_unverified'});
+  assert.equal(pool.counts.connects,0);assert.deepEqual(pool.state,before);
+});
+
 test('speech import rejects required gaps unknown versions and invalid proofs',async()=>{
   const last=installed.applied.at(-1);
   for(const mutate of [
     value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='014');},
+    value=>{value.applied=value.applied.filter(row=>row.version!=='015');},
     value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.at(-1).checksum='invalid';},

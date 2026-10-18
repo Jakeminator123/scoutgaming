@@ -37,9 +37,9 @@ const sources = Object.freeze([
   // Applied and verified in production; budget amendments now require 014 at startup.
   { version:'014', file:'014-moving-speech-budget-amendments.sql',
     tables:['moving_speech_budget_amendments'], indexes:[], fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
-  // Bridge deploy first: every app must recognize 015 before it is applied.
-  // Mark required only after verified application; this creates no budget grant.
-  { version:'015', file:'015-moving-budget-capacity.sql', deploymentOptional:true, tables:[], indexes:[],
+  // Applied and verified in production; capacity proof is now required at startup.
+  // This changes technical capacity only, not any existing budget grant.
+  { version:'015', file:'015-moving-budget-capacity.sql', tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
 ]);
 /** Accept only a verified planner result with every required version installed.

@@ -56,18 +56,18 @@ test('an empty pending ledger is ready and the JSON omits the connection string'
   assertNoSecret(result);
 });
 
-test('an explicit future optional 015 planner fixture never blocks readiness',async()=>{
-  // Synthetic planner output only; 015 is not registered as a product migration.
-  const required=['001','002','003','004','005','006','007','008','011','012','013','014'];
+test('an explicit future optional 016 planner fixture never blocks readiness',async()=>{
+  // Synthetic planner output only; 016 is not registered as a product migration.
+  const required=['001','002','003','004','005','006','007','008','011','012','013','014','015'];
   for(const installed of [false,true]){
-    const applied=[...required,...(installed?['015']:[])];
+    const applied=[...required,...(installed?['016']:[])];
     const result=await checkMigrationReadiness({plan:async()=>({
       target:{database:'croupier',role:'app',address:secret},
       applied:applied.map(version=>({version,checksum:secret})),pending:[],
-      optionalPending:installed?[]:[{version:'015',file:'015-future-optional-fixture.sql',checksum:secret}],
+      optionalPending:installed?[]:[{version:'016',file:'016-future-optional-fixture.sql',checksum:secret}],
     })});
     assert.equal(result.ready,true);assert.equal(result.exitCode,0);assert.deepEqual(result.applied,applied);
-    assert.deepEqual(result.pending,[]);assert.deepEqual(result.optionalPending,installed?[]:['015']);assertNoSecret(result);
+    assert.deepEqual(result.pending,[]);assert.deepEqual(result.optionalPending,installed?[]:['016']);assertNoSecret(result);
   }
 });
 
