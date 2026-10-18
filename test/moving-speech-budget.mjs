@@ -25,7 +25,7 @@ test('insufficient coverage, journal capacity above 15 USD, global cap above 40 
 // Explicit global authorization includes historical provider windows, while the
 // existing journal receives only one additional fixed reservation.
 test('40 USD accounting permits the next 1.20 USD reservation without widening journal capacity',()=>{
- const next={...input,authorizationId:'jakob-dragan-runpod-total-40-20261018',
+ const next={...input,authorizationId:'fixture-total-40',
   expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:5,
   newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,otherReservedMicroUsd:14070001};
  assert.equal(validMovingBudgetAmendment(next),true);
