@@ -18,6 +18,11 @@ Provdatabaser/processer är isolerade och avvecklade. Ingen GPU eller mediaändr
 PR/CI/merge och efterkontroll återstår vid detta kodkvitto. Befintlig produktions-
 verifiering är fortfarande historiskt giltig men täckte inte den lokala läsvägen.
 Separat tal-/läppsynkacceptans ägs av lipsync2; samordnat deployhåll under provet.
+CI39111598116 på första PR237-headet stoppade på ett okopplat nytt test.
+Runtimeprovet är nu registrerat i befintlig gameplay/generations-api-grupp,
+utan undantag eller skip. De efterföljande saknade testberoendena i samma
+CI-körning följde av att installationsstegen hoppades över efter auditfelet.
+Runtimekoden är oförändrad av denna registreringsrättning.
 ## Aktiva källhänvisningar efter rotflytten — 18 oktober 2026
 
 PR-granskningens P2 om kvarvarande web-länkar är rättad i aktiva spel-,
