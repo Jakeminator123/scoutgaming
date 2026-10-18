@@ -20,11 +20,13 @@ frontend, game och Gateway/Director åt. Senare PR238:s workerdiagnostik och
 PR240:s budgetkontroll är levererade på apprevision
 `209d62f436786f9dae69c7ee6f1b256253ab6805`, med grön main-CI, verifierad
 produktion och publicerad privat workerimage. De är separata från strukturens
-acceptans. Det senaste Dragan-provet slutade med `bank_length_mismatch`,
-utan ljud/video. Testresurserna är avvecklade och talet avstängt; exakt
-HTTP-/framingorsak är ännu obevisad. [Aktuellt stopp- och budgetkvitto](JOHN-HANDOFF.md#dragan-talstatus)
-anger sex bevarade reservationer om 7,20 USD och villkoren före ett senare prov.
-Tal/läppsynk och produktluckorna nedan är fortfarande öppna.
+acceptans. Den äldre bankhämtningens chunked-brist rättades i PR242; senare
+prov nådde GPU/TTS. PR250:s buffertfix slutförde ett tekniskt vilotalprov med
+54/54 rutor. Det är inte slutgodkänd läppsynk under utdelning. Aktuellt
+rörelseprov, prestanda, bevaring, kostnadsmandat och avveckling finns endast i
+[talhandoffen](JOHN-HANDOFF.md#dragan-talstatus). Modellomladdning per jobb och
+varaktigt bevarande av moving-resultat är separata öppna produktfrågor;
+de återöppnar inte den genomförda Neon-/Blob-migreringen.
 
 ## Ytor och datalagring — produktion och nya QA
 
@@ -129,7 +131,7 @@ som kosmetik. De äldre observationerna här har inte omverifierats i detta pass
 | Konto och integration | Partnerreset, riktig 2FA, scoped API-nycklar/rotation, wallet-/webhookprov och säker onboarding/brandimport. Livebord, dealer-/limitbyten, schemaläggning, spelaransvar och rapport/statistik/revshare hör till senare produktleveranser. Marker/chips (L4) är inte klara. |
 | Riktig invite/reset | Resendtransport till sandbox är verifierad; verklig mottagaraktivering, inkorg och resetkedja saknar komplett kvitto. John-adressen studsade och var spärrad hos provider; bekräfta adress och providerstatus före nytt utskick. Jakob äger de tidigare verkliga utskicken. |
 | OpenClaw/Adminrobot | N1-engångslänk, ny profil, negativa roller, session efter sajtutloggning och driftsatt modellkonfiguration kräver avgränsade funktionsprov. Fem roller bevisar inte fem servrar eller inaktiv trafik. Mät före pensionering. |
-| Nytt tal/läppsynk | Senaste provet den 18 oktober använde PR238:s publicerade diagnostikimage och slutade med `bank_length_mismatch`, utan ljud/video. Exakt HTTP-/framingorsak och faktiskt tal-/synkprov återstår. Testresurserna är avvecklade och talet avstängt. Godkänt totaltak är 40 USD; journalens 7,20 USD är fullt reserverat. [Aktuell handoff](JOHN-HANDOFF.md#dragan-talstatus) beskriver stoppkvittot och kraven före nästa prov. `lipsync-test` är referensfilmer, inte en verifierad produktkedja. |
+| Nytt tal/läppsynk | PR242 rättade banköverföringen. Jakob godkände den exakta inspelningen med ljud och munrörelser under självutdelning i det isolerade GPU-/spelarprovet 18 oktober. Det godkänner inte produktionsantagning eller andra tagningar. Modelluppstart, varm återanvändning och nästa produktionsprov återstår; senast avläst talflagga är av och egna provresurser avvecklade. Källor/resultat är bevarade privat i Blob med hashkvitto. Jakob har återkallat det tidigare mänskliga provtaket; serverns beständiga journalgränser och reservationer kvarstår och får inte förväxlas med faktisk kostnad. Exakta versioner, godkännanden och drift-/kostnadsgränser finns i [aktuell handoff](JOHN-HANDOFF.md#dragan-talstatus). |
 | Riktad test- och instruktionstädning | PR243 och PR246 är mergade: gemensamt dokumenturval, rätt klient-/migrationsurval, riktad agentstatus och Moving-workerns CPU/image-kontroll i obligatorisk CI. Efterfixen ersätter chattestets källutskärning med importerad logik och beteendeprov samt förtydligar Next-/verktygs-env och daterad dokumentstatus. Kvar för avslut: separat renklonprov efter Lipsync 3:s bevarandelista; se [handoff](JOHN-HANDOFF.md#huvudagent4-avgränsad-rutinstädning--18-oktober-2026). Begränsad browser-importupptäckt och äldre timeout-/lagringsuppgifter är separata underhållsobservationer, inte belagda orsaker till workerfelet. Auth, ägare, session, revision, mediahashar, avbrott och serverägda spelregler består. |
 | Radering och äldre mediereferenser | B18: permanent klippradering med beroendespärr/journal; B19: nya talklipp från grundbild. De planerade 009/010-numren är historiska förslag, inte tillstånd att ändra dagens ledger. Gamla bankindexreferenser, saknade `speech-media`-filer och äldre `runtime/hands`-byggare behöver separat konsument-/källbedömning. |
 | Plattform | A22b/`packages/platform` väntar på Jakobs beslut i [ärende #52](https://github.com/Jakeminator123/scoutgaming/issues/52). Ingen katalogflytt eller full frikoppling är beställd genom detta statuspass. |

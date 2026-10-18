@@ -5,6 +5,7 @@ import sys
 import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from session import serve
+import diagnostics as diag
 from test_contracts import binding, TAKE, H
 
 ATTESTATION={**binding(),"jobId":"actual-job-id"}
@@ -78,6 +79,30 @@ def messages(start=None):
             bytes(24000),bytes(24000),{"t":"end","id":START["id"]}]
 
 class Sessions(unittest.IsolatedAsyncioTestCase):
+    async def test_diagnostics_count_actual_delivery_and_ack_without_protocol_extensions(self):
+        socket,engine=Socket(messages()),Engine()
+        with diag.collect() as collector:
+            self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING),"complete")
+            snapshot=collector.snapshot()
+        self.assertEqual((snapshot["sentFrames"],snapshot["sentChunks"],snapshot["encodedBytes"]),(42,4,16))
+        self.assertEqual(snapshot["warmupFps"],45.9)
+        for key in ("bindWaitMs","startWaitMs","pcmReceiveMs","renderWallMs","receivedFirstChunkMs","chunkAckWaitMs","chunkSendMs","engineStopMs"):
+            self.assertGreaterEqual(snapshot[key],0,key)
+        self.assertNotIn("diagnostics",json.dumps([m for m in socket.sent if isinstance(m,dict)]))
+        self.assertTrue(engine.closed)
+
+    async def test_failed_ack_records_elapsed_failure_and_preserves_cleanup(self):
+        socket,engine=Socket(messages(),auto_ack=False),Engine()
+        with diag.collect() as collector:
+            with self.assertRaises(TimeoutError):
+                await serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.02)
+            snapshot=collector.snapshot()
+        self.assertEqual(snapshot["firstFailedPhase"],"chunkAckWaitMs")
+        self.assertEqual(snapshot["sentFrames"],12)
+        self.assertEqual(snapshot["sentChunks"],1)
+        self.assertGreaterEqual(snapshot["chunkAckWaitMs"],15)
+        self.assertTrue(engine.closed)
+
     async def test_success_requires_bank_binding_and_announces_exact_padding(self):
         socket,engine=Socket(messages()),Engine()
         self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING),"complete")

@@ -9,6 +9,7 @@ import stat
 import tempfile
 from urllib.parse import urlsplit
 from uuid import uuid4
+import diagnostics as diag
 
 MAX_ARCHIVE_BYTES = 1024 ** 3
 MAX_RECEIPT_BYTES = 128 * 1024
@@ -207,6 +208,11 @@ async def fetch_bank_download(descriptor, callback_url, binding, *, cache_root=C
         for kind, suffix in (("receipt", ".json"), ("archive", ".tar")):
             item = descriptor[kind]
             target = root / (item["sha256"] + suffix)
-            if not _cached(target, item):
-                await _download(item, target, tls)
+            label = "bankReceipt" if kind == "receipt" else "bankArchive"
+            with diag.phase(label + "CacheVerifyMs"):
+                cached = _cached(target, item)
+            diag.record(**{label + "Cache": "hit" if cached else "miss"})
+            if not cached:
+                with diag.phase(label + "FetchMs"):
+                    await _download(item, target, tls)
     return root
