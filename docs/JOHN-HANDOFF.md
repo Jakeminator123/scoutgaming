@@ -13,6 +13,21 @@ gäller granskningsfilen med SHA-256
 full produktionsantagning/spelrunda. Det tidigare tysta, nedskalade utdraget
 är inte detta prov och ska inte användas för kvalitetsbedömningen.
 
+### Naturligt ljudslut i spelaren
+
+Det nya isolerade B-provet med ”Jakob är kung.” tog emot 50 ansiktsrutor
+och visade alla 66 kroppsrutor, men avslutades med
+`moving_speech_audio_paused`. En deterministisk regression återskapade
+felet: webbläsarens `ended=true` och `paused=true` kan bli synliga för
+bildklockan innan den köade `ended`-händelsen körs. Spelaren låter nu båda
+vägarna använda samma avslutskontroller. Manuell paus utan naturligt slut,
+ofullständig kroppssekvens, saknad slutruta och förlorad ägare avbryter
+fortfarande. En senare `ended`-händelse avslutar inte samma replik igen.
+42 fokuserade spelare-/rutelagertester passerade; tre browserprov hoppades
+över utan angiven browserfixture. Verklig replay av rättningen återstår.
+Detta är inget nytt kvalitetsgodkännande och ändrar inte den äldre godkända
+filmen, workerreleasen eller providerinställningar.
+
 ### Arbetsplats och leverans
 
 Egen arbetskopia: `C:/Users/jakem/.codex/worktrees/lipsync3-server-diagnostics/croupier`,

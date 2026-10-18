@@ -61,7 +61,7 @@ function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount
     m.chunk=(from=0,n=12)=>({t:'lapp',id:m.plan.start.id,del:from/12,fran:from,rutor:m.plan.timeline.slice(from,from+n).map(r=>({tagning:r.take,ruta:r.frame,rect:[10,20,40,60]}))});
   }
   let socket, activeLayer, n = 0, current = true, ended = false, result, peakDecoded = 0;
-  const audio = { currentTime: 0, paused: true, muted: false, plays: 0,
+  const audio = { currentTime: 0, paused: true, ended: false, muted: false, plays: 0,
     async play() { this.plays++; this.paused = false; }, pause() { this.paused = true; }, removeAttribute() {}, load() {} };
   const doc = { createElement(tag) {
     if (tag === 'audio') return audio;
@@ -314,6 +314,44 @@ test('committed body uses PCM clock from frame0, preserves220ms lead, and finish
     assert.ok(ends.length);assert.equal(closed,true);assert.equal(f.audio.plays,1);
     assert.equal(f.sent.at(-1).t,'played');assert.ok(f.sent.filter(x=>x.t==='credit').every(x=>x.frames<=24));
     assert.ok(f.observations.filter(Boolean).slice(bodyCount).every(f=>f.take==='vila'&&f.frame===0));
+  }
+});
+
+test('native ended state before the queued ended event finishes the 50-frame reply and 66-frame body once',async()=>{
+  const seen=[];let sequenceEnds=0;
+  const f=fixture({samples:32322,bodyCount:66,overrides:{onSequenceFrame:(_,k)=>seen.push(k),onSequenceEnd:()=>sequenceEnds++}});
+  await f.ready();await f.pcm();await f.start();
+  for(let k=1;k<66;k++)await f.tick((k+.001)/24);
+  assert.equal(f.m.plan.timeline.length,50);
+  const queuedEnded=f.audio.onended;
+  // Native media state can update before its queued DOM ended callback runs.
+  f.audio.ended=true;f.audio.paused=true;await f.tick(66/24);
+  await f.promise;queuedEnded();
+  assert.deepEqual(seen,Array.from({length:66},(_,k)=>k));assert.equal(sequenceEnds,1);
+  assert.equal(f.sent.filter(x=>x.t==='played').length,1);assert.equal(f.sent.some(x=>x.t==='abort'),false);
+  assert.equal(f.receipts.at(-1).state,'end');assert.equal(f.receipts.at(-1).failureCode,undefined);
+  assert.equal(f.layer,null);assert.ok(f.decoded.every(frame=>frame.closed===1));
+});
+
+test('manual pause without native ended state still interrupts playback',async()=>{
+  const f=fixture({samples:32322,bodyCount:66});await f.ready();await f.pcm();await f.start();
+  f.audio.pause();assert.equal(f.audio.ended,false);await f.tick(.5);
+  await assert.rejects(f.promise,/moving_speech_audio_paused/);
+  assert.equal(f.sent.some(x=>x.t==='played'),false);assert.equal(f.sent.at(-1).t,'abort');
+  assert.equal(f.receipts.at(-1).state,'interrupted');assert.equal(f.audio.muted,true);
+});
+
+test('native ended state retains incomplete-body, missing final source and ownership checks',async()=>{
+  for(const reason of ['incomplete','missing-final-source','stale']){
+    const dependencies=reason==='missing-final-source'?{createSourceFrames:()=>({async prefetch(){},get(k){
+      if(k===65)throw Error('moving_source_frame_unavailable');return {videoWidth:320,videoHeight:240};},close(){}})}:{};
+    const f=fixture({samples:32322,bodyCount:66,dependencies});await f.ready();await f.pcm();await f.start();
+    if(reason!=='incomplete')for(let k=1;k<=64;k++)await f.tick((k+.001)/24);
+    if(reason==='stale')f.stale();
+    f.audio.ended=true;f.audio.paused=true;await f.tick(66/24);
+    await assert.rejects(f.promise,reason==='incomplete'?/moving_speech_sequence_incomplete/:reason==='missing-final-source'?/moving_source_frame_unavailable/:/stale_pose/);
+    assert.equal(f.sent.some(x=>x.t==='played'),false);assert.equal(f.sent.at(-1).t,'abort');
+    assert.equal(f.receipts.at(-1).state,'interrupted');assert.equal(f.audio.muted,true);
   }
 });
 

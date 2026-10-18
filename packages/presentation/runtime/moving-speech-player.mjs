@@ -190,6 +190,21 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   const finish = () => { if (audioEnded && workerDone && !terminal) {
     if(ready.sequence)send({t:'played',id:ready.plan.start.id});
     completed = terminal = true; resolveDone(); } };
+  const finishAudioPlayback = () => {
+    if (terminal) return;
+    try {
+      check(); audioEnded = true; if (frameHandle !== undefined) caf(frameHandle);
+      if(ready.sequence){
+        if(released<ready.sequence.frames.length-2)fail('moving_speech_sequence_incomplete');
+        if(released===ready.sequence.frames.length-2){
+          const k=ready.sequence.frames.length-1,source=bodyFrames.get(k);
+          if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame(ready.sequence,k);
+        }
+        onSequenceEnd(ready.sequence);
+      }
+      if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
+    } catch (error) { stop(error); }
+  };
   const decodeAhead = () => {
     if (decoding) return decoding;
     decoding = (async () => {
@@ -207,6 +222,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     if (terminal || audioEnded) return;
     try {
       check();
+      // Native ended/paused state can precede the queued DOM ended event.
+      if (audio.ended) { finishAudioPlayback(); return; }
       if (audio.paused) fail('moving_speech_audio_paused');
       const k = Math.floor((audio.currentTime + (ready.sequence?0:.22)) * 24 + 1e-7);
       if (k < released || (k<ready.plan.timeline.length&&!layer.hasFrame(k))) fail('moving_speech_frame_unavailable');
@@ -304,21 +321,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     await abortable(beforeStart(), controller.signal); check();
     await abortable(prepareRendering(effectiveDealerCompositing(speech.compositing ?? undefined)), controller.signal); check();
     if (speech.expiresAt <= Date.now()) fail('moving_speech_ticket_expired');
-    audio.onended = () => {
-      if (terminal) return;
-      try {
-        check(); audioEnded = true; if (frameHandle !== undefined) caf(frameHandle);
-        if(ready.sequence){
-          if(released<ready.sequence.frames.length-2)fail('moving_speech_sequence_incomplete');
-          if(released===ready.sequence.frames.length-2){
-            const k=ready.sequence.frames.length-1,source=bodyFrames.get(k);
-            if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame(ready.sequence,k);
-          }
-          onSequenceEnd(ready.sequence);
-        }
-        if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
-      } catch (error) { stop(error); }
-    };
+    audio.onended = finishAudioPlayback;
     audio.onerror = () => stop(Error('moving_speech_audio_failed'));
     socket = connect(speech.url, ['moving-v1', `ticket.${speech.ticket}`]); socket.binaryType = 'arraybuffer';
     socket.onmessage = event => {
