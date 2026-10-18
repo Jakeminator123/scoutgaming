@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { prepareMovingSpeechPcmInput } from '../services/game/moving-speech-pcm.mjs';
+import { MOVING_SPEECH_MAX_PCM_BYTES, MOVING_SPEECH_MAX_FRAMES, movingSpeechPcmFrameCount } from '../services/game/moving-speech-timing.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 function fixture(dealerId = 'paow', workerAvatar = dealerId) {
@@ -47,13 +48,30 @@ test('caller and transport mutations cannot change the immutable PCM or plan', (
   assert.equal(input.plan.timeline[0].frame, 0);
 });
 
-test('wrong PCM identity, unsupported format, empty/odd/oversized audio fail before any transfer', () => {
+test('wrong PCM identity, unsupported format and empty/odd audio fail before any transfer', () => {
   const wrong = fixture(); wrong.audio.pcm[0] ^= 1;
   assert.throws(() => prepareMovingSpeechPcmInput(wrong), /hash_mismatch/);
   for (const patch of [{ sampleRate: 22050 }, { channels: 2 }, { format: 'wav' },
-    { pcm: Buffer.alloc(0) }, { pcm: Buffer.alloc(3) }, { pcm: Buffer.alloc(1200002) }]) {
+    { pcm: Buffer.alloc(0) }, { pcm: Buffer.alloc(3) }]) {
     const f = fixture(); Object.assign(f.audio, patch);
     assert.throws(() => prepareMovingSpeechPcmInput(f), /invalid_moving_speech_pcm/);
+  }
+});
+
+test('PCM limit includes both worker margins and rejects the first sample requiring frame 601', () => {
+  const f = fixture();
+  f.audio.pcm = Buffer.alloc(MOVING_SPEECH_MAX_PCM_BYTES);
+  f.binding.audioSha256 = hash(f.audio.pcm);
+  f.frames = Array.from({ length: MOVING_SPEECH_MAX_FRAMES }, () => ({ take: 'vila', frame: 0 }));
+  const input = prepareMovingSpeechPcmInput(f);
+  assert.equal(input.durationMs, 24291.625);
+  assert.equal(input.plan.timeline.length, 600);
+  assert.equal(movingSpeechPcmFrameCount(f.audio.pcm.length), 600);
+  assert.deepEqual(input.playbackPcm(), f.audio.pcm);
+  for (const byteLength of [MOVING_SPEECH_MAX_PCM_BYTES + 2, 24.3 * 24000 * 2, 25 * 24000 * 2]) {
+    f.audio.pcm = Buffer.alloc(byteLength); f.binding.audioSha256 = hash(f.audio.pcm);
+    assert.throws(() => prepareMovingSpeechPcmInput(f), /moving_speech_audio_limit/);
+    assert.throws(() => movingSpeechPcmFrameCount(byteLength), /moving_speech_audio_limit/);
   }
 });
 

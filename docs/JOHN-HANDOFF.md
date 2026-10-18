@@ -41,6 +41,18 @@ partiell platstäckning och historisk skanning `too_large`; inte åtgärdade hä
 
 <a id="dragan-talstatus"></a>
 
+## POST-PISYNK4 — text- och längdgränser, 19 oktober 2026
+
+Genererade OpenClaw-svar normaliseras till en rad innan förhandsvisning,
+TTS och hashning; inspelade repliker behåller exakt text och medieidentitet.
+PCM-insamling och bildplan delar nu workerens 220/530 ms marginaler och
+600-rutorsgräns. För lång replik avbryts före render-dispatch med begripligt fel;
+TTS och GPU-förberedelse kan redan ha skett. Ingen image eller kalibrering ändras.
+Fokuserade offlineprov: 60 text-/adaptertester samt 47 PCM-/plan-/runtimetester
+passerade. Full utdelning och mikrofon/OpenClaw i isolerad drift återstår;
+denna kodleverans startar inga GPU-resurser och gör ingen ny visuell acceptans.
+UI/UX äger Admin och HUVUDAGENT5 driftstyrningen; gemensamma filer samordnas.
+
 ## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
 
 Dragan talar med källbundet ansikte under självutdelning i det isolerade

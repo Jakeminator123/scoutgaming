@@ -73,6 +73,14 @@ ansiktsdata, rätt ljud och den gemensamma spelaren. Ett isolerat sådant prov
 verifierar inte automatiskt produktionsserverns antagning, kort eller saldo.
 Aktuella resultat och deras gränser finns i [handoffen](JOHN-HANDOFF.md#dragan-talstatus).
 
+Genererad OpenClaw-text får en gemensam radbrytningsnormalisering före
+förhandsvisning, TTS och hashning; inspelade repliker behåller originaltexten.
+`services/game/moving-speech-timing.mjs` räknar PCM-gränsen från workerens
+24 kHz/24 fps, 220 ms förmarginal, 530 ms eftermarginal och högst 600 rutor.
+Sista giltiga ljud är 582 999 samples (24,291625 s), med oförändrad avrundning.
+Nästa sample avbryter insamlingen före render-dispatch; redan gjord TTS eller
+GPU-förberedelse är inte kostnadsfri och ingen tidigare bildacceptans utökas.
+
 Det finns flera olika former av varm/kall lagring och beräkning:
 
 | Del | Faktiskt beteende |

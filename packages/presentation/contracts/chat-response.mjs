@@ -52,6 +52,7 @@ export async function readChatResponse(response, onProgress = () => {}, onPrevie
 }
 
 export function chatFailureMessage(reason = '') {
+  if (reason === 'moving_speech_audio_limit') return 'Repliken är för lång. Prova en kortare text.';
   if (reason === 'generated_speech_daily_budget_exhausted') return 'Dagens budget för läppsynk är nådd. Nya röstsvar blir tillgängliga nästa dag.';
   if (reason === 'hidden') return 'Uppspelningen avbröts när du bytte flik.';
   if (reason === 'muted') return 'Slå på ljudet för att höra dealerns svar.';
@@ -65,6 +66,7 @@ export function chatFailureMessage(reason = '') {
 // Shared with the server preparation receipt. Enumerate application-owned
 // codes only: never admit arbitrary provider messages by prefix or regex.
 export const SPEECH_PREPARATION_FAILURE_CODES = Object.freeze([
+  'moving_speech_audio_limit',
   'chat_cancelled', 'stale_chat_session', 'stale_chat_memory', 'stale_round_revision',
   ...['dealer_invalid', 'dealer_unavailable', 'profiles_not_configured',
     'profile_invalid', 'profile_not_enabled', 'profile_changed',
