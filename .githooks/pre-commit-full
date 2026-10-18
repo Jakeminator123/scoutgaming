@@ -23,6 +23,8 @@ run_node_tests() {
   shift 2
   seconds=180
   if [ "$selected" = studio ]; then seconds=240; fi
+  # Includes the pinned-image Docker build and real process regression (900s test).
+  if [ "$selected/$name" = access/openclaw ]; then seconds=960; fi
   run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"
 }
 # Exact equivalent of the frontend package's non-incremental typecheck.

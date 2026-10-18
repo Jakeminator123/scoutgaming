@@ -5,7 +5,7 @@ RUN mkdir -p /data/openclaw /opt/croupier-gateway && chown node:node /data/openc
 COPY --chown=node:node deploy/gateway-config.mjs deploy/start-gateway.mjs deploy/runtime-bundle.mjs deploy/companion-search-server.mjs deploy/dashboard-handoff.mjs /opt/croupier-gateway/
 COPY --chown=node:node deploy/runtime-bundle/ /opt/croupier-gateway/runtime-bundle/
 COPY --chown=root:root --chmod=0444 deploy/gateway-bootstrap.mjs /opt/croupier-gateway/gateway-bootstrap.mjs
-RUN chown root:root /opt/croupier-gateway && chmod 0755 /opt/croupier-gateway
+RUN chown root:root /opt/croupier-gateway && chmod 0755 /opt/croupier-gateway && test -x /usr/bin/tini
 ENV OPENCLAW_STATE_DIR=/data/openclaw \
     OPENCLAW_CONFIG_PATH=/data/openclaw/openclaw.json \
     OPENCLAW_GATEWAY_PORT=18789
@@ -13,8 +13,8 @@ ENV OPENCLAW_STATE_DIR=/data/openclaw \
 # then drops to node before loading configuration, helper or Gateway code.
 USER root
 EXPOSE 18789 18790
-# Run bootstrap as PID 1 so its existing handlers receive container stop signals.
+# Bootstrap starts as PID 1, drops uid/gid, then execs the pinned tini as node.
 # A root tini parent cannot signal the child after its irreversible uid drop
-# on runtimes without CAP_KILL. Ownership repair and privilege drop stay intact.
+# on runtimes without CAP_KILL. Unprivileged tini retains signal forwarding/reaping.
 ENTRYPOINT []
 CMD ["node", "/opt/croupier-gateway/gateway-bootstrap.mjs"]

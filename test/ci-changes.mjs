@@ -87,7 +87,7 @@ test('CI uses one Studio discovery registry and retains blocking product checks'
   const steps = yaml.split('      - name: ');
   for (const step of steps.filter(step => /^Regression - /.test(step))) {
     assert.match(step, /if: \$\{\{ !cancelled\(\) \}\}/);
-    assert.match(step, /timeout-minutes: 8/);
+    assert.match(step, step.startsWith('Regression - Access,') ? /timeout-minutes: 18/ : /timeout-minutes: 8/);
     assert.doesNotMatch(step, /continue-on-error: true/);
   }
   const isolated = steps.find(step => /^Existing isolated Studio SQL/.test(step));

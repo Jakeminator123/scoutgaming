@@ -31,7 +31,7 @@ Gateway-modellens effektiva konfiguration ligger på beständig disk; ändrad
 `OPENCLAW_MODEL_ID` i env är inte ensam bevis på modellbyte. Nycklar och
 diskdata följer inte med en Git-push eller en Vercel-deploy.
 
-## Första övergången från root-tini till bootstrap som PID 1
+## Första övergången från root-tini till tini med uid 1000
 
 Gäller bara övergången från den äldre imagen som loggade tini EPERM vid
 stopp. OpenClaw 2026.9.5 behåller då sin owner-lease i högst fem minuter
@@ -46,10 +46,10 @@ efter senaste förnyelse. Ingen lease får raderas eller kringgås.
    verkligen stoppas före den nya starten. Vid oklar tidsordning: avbryt
    vidare steg och granska bounded status/loggar; rör inte state eller lås.
 3. Väntan gör inget med disk/auth. Därefter ersätter exec skalet med samma
-   bootstrap som vanlig CMD. Kontrollera live-revision, Director→Gateway
+   bootstrap som vanlig CMD. Efter uid/gid-drop execar bootstrap befintlig tini som uid 1000/PID 1, som startar runtime-bootstrap. Kontrollera live-revision, Director→Gateway
    config.get, anslutning och oförändrade effektiva modellval utan modellkörning.
 4. Återställ Docker Command till det sparade tomma värdet och verifiera
-   fältet. Driftsätt samma exakta fixrevisionen normalt. Kräv lyckat stopp och
+   fältet. Driftsätt samma exakta fixrevision normalt. Kräv lyckat stopp och
    omstart utan owner-lease-fel samt nytt autentiserat driftkvitto. Först då
    är rättningen och övergången färdiga. Behåll autoDeploy av.
 

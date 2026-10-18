@@ -9,11 +9,13 @@ irreversibel uid-sänkning (EPERM). Gateway återhämtade sig efter sin befintli
 femminuterslease och kör den äldre revisionen 538e5f1f. Flyttens Gateway-drift
 är därför ännu inte klar och lipsynk2 har inte fått startsignal.
 
-Dockerfilen nollställer nu ärvd ENTRYPOINT så oförändrad bootstrap är PID 1.
-Befintlig mountrotkontroll, icke-rekursiv chown och irreversibel uid/gid/drop
-behålls. Starterns befintliga signalhandler når därmed sitt Gateway-barn.
+Dockerfilen nollställer ärvd ENTRYPOINT så bootstrap först är PID 1.
+Efter oförändrad mountrotkontroll, icke-rekursiv chown och irreversibel
+uid/gid/drop ersätter execve bootstrap med imagens befintliga /usr/bin/tini,
+nu som uid/gid 1000. Tini startar samma bootstrap i runtime-läge, som
+kontrollerar den sänkta identiteten igen och laddar befintlig starter.
+Därmed behålls både signalvidarebefordran och reaping av adopterade barn.
 Image/version/digest, state, auth och modellval ändras inte.
-
 Första Linux-CI på PR235 körde containern men stopp gav exit 1 efter cirka
 82 sekunder, inte gruppens 180-sekunderstimeout. Mergagent reproducerade
 att helperns HTTP-close från både signal och barnexit stängde SQLite två
@@ -21,13 +23,13 @@ gånger. Samma regression fallerar lokalt före rättning och passerar när
 SQLite-frigöringen registreras med once. Containerdiagnostiken visar nu
 avslutad processstatus, begränsad stdout/stderr och syntetisk signalreceipt
 före assertionen; inga assertioner tas bort. Riktat efter rättning: 28 pass,
-0 fel, 1 Linux-skip. Ny Linux-CI och verklig drift återstår.
+0 fel, 1 Linux-skip. På e70d8955 blev verklig Linux-CI39084068649 grön: container80.404s, båda startvägar exit0 och syntetisk lease borta, SQL9.150s/014ready00:53:18Z enligt mergagent. Detta head föregår tini-handoff/orphanprovet; deras nya CI och drift återstår.
 
 Lokalt första head: 8 bootstrap-tester godkända, 0 fel; Linux-containerprovet är explicit
 skippat på Windows. CI måste köra den riktiga pinnade imagen, faktisk
 bootstrap/starter och en syntetisk CLI på egen volym utan nätverk: uid/gid
-1000, PID 1, SIGTERM, borttagen syntetisk lease och exit 0. Provet täcker
-vanlig CMD samt sh/sleep/exec-vägen för engångsövergången. Det verifierar
+1000 i init/runtime/Gateway, tini som PID 1, verifierat adopterat och reapat barn, SIGTERM, borttagen syntetisk lease och exit 0. Provet täcker
+vanlig CMD samt sh/sleep/exec-vägen för engångsövergången. Testet rapporterar även faktisk Node-version och execve-stöd. Containerprovet har900s, endast access/openclaw-gruppen960s, Access-steget18min och hela regressionsjobbet45min; övriga gruppgränser är oförändrade. Lokalt36/36 bootstrap/config/SQLite/CI-gate-prov efter tini-handoff. Det verifierar
 inte riktiga OpenClaws lease-release eller produktion; dessa kräver driftkvitto.
 
 Första driftsättningen samordnas av mergagent enligt

@@ -17,24 +17,46 @@ const bootstrap = '/opt/croupier-gateway/gateway-bootstrap.mjs';
 const cli = `
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
 if (process.argv[2] === 'config') process.exit(0);
 assert.equal(process.argv[2], 'gateway');
-assert.equal(process.ppid, 1, 'bootstrap must replace any root init/shell');
+assert.equal(typeof process.execve, 'function');
+assert.equal(fs.readFileSync('/proc/1/comm', 'utf8').trim(), 'tini');
+const status = pid => fs.readFileSync('/proc/' + pid + '/status', 'utf8').split(String.fromCharCode(10));
+for (const pid of [1, process.ppid]) {
+  for (const key of ['Uid:', 'Gid:']) {
+    const ids = status(pid).find(line => line.startsWith(key)).slice(4).trim().split(/[ \t]+/).map(Number);
+    assert.deepEqual(ids, [1000, 1000, 1000, 1000]);
+  }
+}
+assert.equal(Number(status(process.ppid).find(line => line.startsWith('PPid:')).slice(5).trim()), 1);
+assert.ok(fs.readFileSync('/proc/' + process.ppid + '/cmdline', 'utf8').includes('--runtime'));
 const identity = { uid: process.getuid(), gid: process.getgid(), euid: process.geteuid(), egid: process.getegid() };
 assert.deepEqual(identity, { uid: 1000, gid: 1000, euid: 1000, egid: 1000 });
 assert.ok(process.getgroups().every(gid => gid === 1000));
 assert.throws(() => process.setuid(0), { code: 'EPERM' });
+// A short-lived intermediate exits before its child. PID 1 must adopt and reap
+// that child; Node without an init leaves its zombie in /proc.
+fs.rmSync('/data/openclaw/orphan-adopted', { force: true });
+const orphanProgram = 'const fs=require("node:fs");setInterval(()=>{const ppid=Number(fs.readFileSync("/proc/self/status","utf8").split(String.fromCharCode(10)).find(l=>l.startsWith("PPid:")).slice(5));if(ppid===1){fs.writeFileSync("/data/openclaw/orphan-adopted","1");process.exit(0)}},25);setTimeout(()=>process.exit(2),4000);';
+const parentProgram = 'const{spawn}=require("node:child_process");const fs=require("node:fs");const child=spawn(process.execPath,["-e",' + JSON.stringify(orphanProgram) + '],{stdio:"ignore"});fs.writeFileSync("/data/openclaw/orphan-pid",String(child.pid));child.unref();';
+assert.equal(spawnSync(process.execPath, ['-e', parentProgram], { stdio: 'inherit' }).status, 0);
+const orphanPid = Number(fs.readFileSync('/data/openclaw/orphan-pid', 'utf8'));
+const deadline = Date.now() + 5000;
+while (fs.existsSync('/proc/' + orphanPid) && Date.now() < deadline) await delay(25);
+assert.equal(fs.existsSync('/proc/' + orphanPid), false, 'adopted child must be reaped');
+assert.equal(fs.readFileSync('/data/openclaw/orphan-adopted', 'utf8'), '1');
 const lease = '/data/openclaw/synthetic-owner-lease';
 fs.writeFileSync(lease, 'synthetic', { flag: 'wx' });
 process.on('SIGTERM', () => {
   fs.unlinkSync(lease);
-  fs.writeFileSync('/data/openclaw/signal-receipt.json', JSON.stringify({ signal: 'SIGTERM', parent: process.ppid, ...identity }));
+  fs.writeFileSync('/data/openclaw/signal-receipt.json', JSON.stringify({ signal: 'SIGTERM', init: 'tini', orphanReaped: true, ...identity }));
   process.exit(0);
 });
-console.log('SYNTHETIC_GATEWAY_READY');
+console.log('SYNTHETIC_GATEWAY_READY node=' + process.version + ' execve=true init=tini uid=1000 orphanReaped=true');
 setInterval(() => {}, 1000);
 `;
-
 // Docker is required on Linux CI, never silently skipped there. Windows has no
 // production-compatible container runtime; its explicit skip is not evidence.
 test('pinned Gateway container drops privilege and releases child lease on SIGTERM', {
@@ -100,7 +122,7 @@ test('pinned Gateway container drops privilege and releases child lease on SIGTE
     t.diagnostic(`${label} synthetic receipt: ` + await helper("const fs=require('fs'); const p='/data/openclaw/signal-receipt.json'; console.log(JSON.stringify({lease:fs.existsSync('/data/openclaw/synthetic-owner-lease'),receipt:fs.existsSync(p)?JSON.parse(fs.readFileSync(p)):null}))"));
     assert.equal(JSON.parse(stopped).ExitCode, 0, `${label} graceful exit`);
     const receipt = JSON.parse(await helper("const fs=require('fs'); if(fs.existsSync('/data/openclaw/synthetic-owner-lease'))process.exit(2); process.stdout.write(fs.readFileSync('/data/openclaw/signal-receipt.json')); fs.unlinkSync('/data/openclaw/signal-receipt.json')"));
-    assert.deepEqual(receipt, { signal: 'SIGTERM', parent: 1, uid: 1000, gid: 1000, euid: 1000, egid: 1000 });
-    t.diagnostic(`${label}: real bootstrap/starter, uid/gid 1000, PID 1, SIGTERM received, synthetic lease removed, exit 0`);
+    assert.deepEqual(receipt, { signal: 'SIGTERM', init: 'tini', orphanReaped: true, uid: 1000, gid: 1000, euid: 1000, egid: 1000 });
+    t.diagnostic(`${label}: real bootstrap/starter, uid/gid 1000, PID 1 tini, orphan reaped, SIGTERM received, synthetic lease removed, exit 0`);
   }
 });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { prepareGatewayOwner, gatewayStartupFailure, runGatewayBootstrap } from './gateway-bootstrap.mjs';
+import { prepareGatewayOwner, gatewayStartupFailure, runGatewayInit, runGatewayBootstrap } from './gateway-bootstrap.mjs';
 
 function fixture({ uid=0, gid=0, owner=0, group=1000, directory=true, groups=[0], env={}, failure }={}) {
   const calls=[];let closed=false;
@@ -107,4 +107,26 @@ test('Docker runs a root-owned bootstrap and imports the existing starter only a
   assert.ok(source.indexOf('owner();')<source.indexOf('await loadStarter();'));
   assert.doesNotMatch(source,/chmod|recursive|readFile|process\.env\./);
   assert.match(source,/O_NOFOLLOW/);
+});
+
+test('init handoff follows irreversible identity drop and execs the pinned unprivileged reaper', () => {
+  const f = fixture(); let executed = false;
+  assert.equal(runGatewayInit({ owner: () => prepareGatewayOwner(f),
+    system: { execPath: '/usr/local/bin/node', env: f.system.env },
+    execute(file, args, env) {
+      executed = true;
+      assert.equal(f.system.getuid(), 1000); assert.equal(f.system.getgid(), 1000);
+      assert.equal(file, '/usr/bin/tini');
+      assert.deepEqual(args, ['/usr/bin/tini', '-s', '--', '/usr/local/bin/node',
+        '/opt/croupier-gateway/gateway-bootstrap.mjs', '--runtime']);
+      assert.equal(env.HOME, '/home/node');
+    }, logger: { error: () => assert.fail('unexpected failure') } }), true);
+  assert.equal(executed, true);
+  const errors = [];
+  assert.equal(runGatewayInit({ owner: () => { throw Error('PRIVATE'); },
+    execute: () => assert.fail('must not exec after owner failure'), logger: { error: v => errors.push(v) } }), false);
+  assert.equal(runGatewayInit({ owner: () => {}, execute: () => { throw Object.assign(Error('PRIVATE'), { code: 'ENOENT' }); },
+    logger: { error: v => errors.push(v) } }), false);
+  assert.deepEqual(errors, ['Gateway startup failed; phase=mount-owner code=UNAVAILABLE.',
+    'Gateway startup failed; phase=init-exec code=ENOENT.']);
 });
