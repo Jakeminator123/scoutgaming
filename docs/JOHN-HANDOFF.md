@@ -8,7 +8,10 @@ bevarar båda leveransernas kvitton. Game/Studio-koden ändras inte av denna
 integration; det tidigare slutbyggets80 rena traces och SQL014-kvitto gäller
 fortfarande dessa oförändrade källor. PR235:s CI39084698347 är grönt enligt
 mergagent, inklusive verkligt containerprov90.428s och produktionsledger
-ready01:03:55Z. GPT-slutbesked samt Gateway-drift återstår före game-PR.
+ready01:03:55Z. GPT Pro slutgranskning är GO på exakt25939126 och PR235
+är mergad som d55ce412714e9e0c85103358f381098ce3d35077. Main är normalt
+integrerad här utan ändrat kodträd; game-PR väntar endast på mergagentens
+fullständiga Gateway-driftkvitto. Ingen GPU-start har skickats.
 
 ## C3 — game integrerad med Studio och budget, 18 oktober 2026
 
