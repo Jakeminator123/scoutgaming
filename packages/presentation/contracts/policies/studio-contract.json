@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "croupier.lab.v1",
-  "description": "Canonical vocabulary and current lab capabilities. Lab examples use the Partner presentation contract in web/partner-presentation.mjs; this is not the complete engine/player signal model or Kevin's native playback integration.",
+  "description": "Technical media/event contract and clip terminology. Product terms and UX direction are defined only in apps/studio/docs/TERMINOLOGI.md. This is not a product inventory or the complete engine/player signal model.",
   "dealers": [
     "astrid",
     "vera",

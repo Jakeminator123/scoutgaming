@@ -1,5 +1,19 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## UX/UI och HUVUDAGENT5 — 18 oktober 2026
+
+På Jakobs uttryckliga uppdrag samordnar UI/UX och HUVUDAGENT5 klippkartans
+namn, Blackjack-struktur och gränsen mellan scenlayout och filmkalibrering.
+UI/UX äger produkttext, navigation, förslag och UX-avsnittet i
+[handoffen](../JOHN-HANDOFF.md#uxui-arbetslogg-och-kommande-körordning--18-oktober-2026).
+HUVUDAGENT5 äger teknisk verifiering och namn-/importreferensen i
+[BLOB-NEON](../storage/BLOB-NEON.md). Produktmodellen styrs fortsatt enbart av
+[TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md).
+De delar inte filägarskap: meddela berörd agent före överlapp eller Git-operation
+i samma checkout. Inga nya underagenter, medieflyttar eller runtimeändringar
+följer automatiskt av denna planering. Andra agenters provresultat tillskrivs
+sin källa och räknas inte som nya körningar.
+
 ## Rörligt tal, källbevaring och verifiering — 18 oktober 2026
 
 Lipsync-spåret skiljer nu uttryckligen vilotal, tal över exakt utdelningsfilm

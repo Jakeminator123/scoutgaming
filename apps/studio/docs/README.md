@@ -1,6 +1,8 @@
 # Scoutgaming: användarguide
 
-Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
+Produktmodell, ord och ny UX-inriktning har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
+Den här guiden beskriver befintliga arbetssteg. Målbildens gemensamma sceneditor
+och enhetliga låsningar per lager är ännu inte levererade.
 
 **Öppna produkten:** `node apps/studio/start.mjs` öppnar den publicerade lobbyn.
 Från Codex används `node apps/studio/start.mjs --no-open`, som bara skriver adressen.
@@ -203,7 +205,7 @@ Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
 Spelrum & publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
-/lobby: välj bolag → spel → rum/bakgrund → tillåten dealer och bord → spela
+/lobby: välj bolag → spel → rum → tillåten bakgrund, dealer och bord → spela
 ```
 
 **Byt basklipp** är synligt för egna dealers under Grundloop. Även ett uppladdat idle-klipp som används som variation kan väljas. Det ersätter det valda basklippet och behåller övriga basklipp, deras andelar och andra variationer. Den tidigare videon finns kvar bland uppladdade klipp. AI-talets referensbild ändras separat under Tal & automatik. Spara inställningar och publicera paketet igen för att använda bytet i spelet.
@@ -355,7 +357,7 @@ aktivt spelrum. Ett äldre paket utan sådant rum behöver kompletteras via Publ
 Marker och kort saknar ännu publicerade designval. De gamla lokala designproven
 visas bara i den märkta interna fixturen och försvinner vid omladdning.
 
-Begrepp och en kort flödeskarta finns i
+Begrepp och målbild finns i
 [den gemensamma produktmodellen](TERMINOLOGI.md#ägarskap-och-spelarens-val).
 Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
@@ -539,9 +541,9 @@ använd dess `/admin`-adress när du sparar ett nytt bokmärke.
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/admin/guide)
 (i en offline-fixtur på `/guide` under den Studio-adress startaren skriver ut).
-Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
-[studio-contract.json](../../../packages/presentation/contracts/policies/studio-contract.json). Uppdatera dessa,
-inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
+Innehållet finns i [guide.json](guide.json); tekniska klipp- och eventbegrepp hämtas från
+[studio-contract.json](../../../packages/presentation/contracts/policies/studio-contract.json).
+Produktbegrepp och målbild styrs enbart av [TERMINOLOGI.md](TERMINOLOGI.md).
 
 Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../../../packages/presentation/contracts/schemas/video.schema.json).

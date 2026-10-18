@@ -1,6 +1,6 @@
 {
   "title": "Scoutgaming: tre nivåer, en gemensam produkt",
-  "intro": "Administration på /admin är nivå 1 och /lobby är den nya spellobbyn. Fortsätt nytt UI-arbete där; äldre /control-editorer och /play-spelstarter fungerar under övergången. Studio hanterar dealerklipp och gemensamma sammansättningar. Publicering tilldelar sparade presentationer till bolagspaket. Partnerportalen är nivå 2 och begränsar rumsvisa designval till paketet och rättigheterna. Spelmotorn äger kort, saldo och utfall.",
+  "intro": "Guiden beskriver dagens arbetssteg i Admin. Den gemensamma sceneditorn och enhetliga låsningar per lager är ett UX-förslag, ännu inte levererat. Befintliga verktyg för klipp, sammansättningar och rum används tills de ersätts.",
   "steps": [
     {
       "view": "lab",
@@ -10,19 +10,19 @@
     },
     {
       "view": "videos",
-      "href": "/control/compositions",
+      "href": "/admin/compositions",
       "title": "2. Sätt ihop presentationen",
       "body": "Välj eller skapa en sammansättning med ett namn; tekniskt ID skapas automatiskt. Välj dealer, bord och bakgrund, Mobil eller Desktop och Storlek och placering för varje lager. Dealerfliken länkar till dealerns klippredigering; bord och bakgrunder laddas upp vid respektive lager. Klippval och villkor hanteras i dealerns klippfack. Bordsfärger och bolagets tillåtna justeringar finns under Avancerat. Förhandsvisa klipp är ett provval. Fullbildsklipp har inbakat bord och bakgrund; ett frilagt klipp behövs för separata lager. Spara och välj Provspela för att öppna blackjack i samma flik. Provet använder sparade biblioteksval i en tidsbegränsad adminsession, utan bolagspublicering eller riktiga spelarkonton. Startdealern behöver en grundloop; andra ofullständiga dealers visas med orsak. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda. Till Sammansättning tar dig tillbaka."
     },
     {
       "view": "tree",
-      "href": "/control/rooms",
+      "href": "/admin/publication",
       "title": "3. Publicera och skapa spelrum",
       "body": "Välj bolag och vilka sparade presentationer bolaget ska få. Kryssrutorna utgår från bolagets publicerade paket. Återanvänd befintligt spelrum; Skapa spelrum används när en ny ingång behövs och sparar rum och paket tillsammans. Lager redigeras i Sammansättning; klippval och villkor finns i Dealers & klipp. Nivå 2 granskar och gör små designjusteringar inom tilldelade rättigheter."
     }
   ],
   "boundaries": [
-    "Produktmodellens källa är lab/docs/TERMINOLOGI.md: spelbolag → spel → rum/bakgrund, med kompatibla tillåtna dealers och bord. Ett rum har eget ID och ett spel; en delad bakgrundsfil slår inte ihop rumsidentiteter eller behörigheter. Scenen har tre lager: bakgrund → dealer → bord, följt av spelets kort och gränssnitt.",
+    "Produktens begrepp och inriktning har en enda källa: apps/studio/docs/TERMINOLOGI.md. Den här guiden och det tekniska klippkontraktet beskriver befintliga arbetssteg och begränsningar.",
     "En dealer är en registrerad person. En namngiven klippkategori grupperar filmer för samma dealer och väljer inte uppspelning. En gemensam sammansättningsmall kan användas av flera bolag och rum; vald rumskontext gör inte mallredigeringen rumsspecifik. Rummets tillåtna utseendeval redigeras separat i partnerns Spelrum med granskning och publicering.",
     "Arkivering av ett bolag kopplar loss dess rum med historiken bevarad. Återställning av bolaget öppnar eller återpublicerar inga rum. Ett separat återställt rum är väntande och måste öppnas uttryckligen när beroendena är giltiga.",
     "En presentation samlar dealer, bord, bakgrund, placering och tillåtna alternativ. Publicering fryser dessa i ett versionsbundet bolagspaket. Nivå 2 väljer inom paketets rättigheter och spelrummens kompatibilitet. Spelmotorn äger kort, regler, saldo och resultat.",
@@ -93,5 +93,5 @@
     }
   ],
   "storage": "Vercel visar alla tre nivåer och kör Studio/admin-API. Neon sparar revisionsstyrd produktpolicy, metadata och journaler; game-Neon äger spelarkonton och saldo. Privat Blob innehåller medier. Render driver spelmotorn och live-transporten; dess tidigare produktdisk är avvecklad. Director/Gateway har egna kvarvarande diskar och behöver separat backup. Anslutna N2-paketval sparas på servern. Endast den märkta demonstrationens lokala designprov försvinner vid omladdning eller operatörsbyte. Äldre zondata finns kvar i sin separata lagring. Sparad deal/replikpolicy läses inför nästa beslut; grundloopen kräver omladdning mellan händer. HTTP 409 kräver uttrycklig konflikthantering. Hemligheter stannar på serversidan.",
-  "authority": "Aktuell kod och verifierad drift avgör vad som fungerar. Full aktuell karta finns i docs/LOCAL-PRESENTATION-RUNTIME.md och öppna krav i docs/CLOUD-MIGRATION.md. Ordlistan, sex tekniska eventtyper och 16 händelsekategorier finns i lab/policies/studio-contract.json. Namnbyten ändrar inte tekniska ID:n. lab/ är aktiv källkod och /studio dess tekniska basePath. Gamla Lab/Lissabon-adresser är kompatibilitet; runtimeflaggan lissabon-stream-lane används fortfarande för chattkontext, kamera och lokala profiler. GitLab/Emil/Kevin är källproveniens, inte separata aktiva plattformar. OpenClaw-konfiguration börjar i docs/AI/openclaw/README.md."
+  "authority": "Produktbegrepp och UX-inriktning styrs av apps/studio/docs/TERMINOLOGI.md. Aktuell kod och verifierad drift avgör vad som fungerar; docs/JOHN-HANDOFF.md anger leveransstatus. Tekniska format beskrivs i docs/LOCAL-PRESENTATION-RUNTIME.md och klipp-/eventbegrepp i packages/presentation/contracts/policies/studio-contract.json. apps/studio är källkod och /studio teknisk basePath. Äldre källproveniens skapar ingen separat produkt."
 }
