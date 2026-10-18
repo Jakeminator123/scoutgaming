@@ -3,7 +3,9 @@
 export const CHAT_STAGES = Object.freeze({
   text: 'Dealern tänker…', voice: 'Skapar rösten…',
   'video-submit': 'Skickar rösten till läppsynk…',
-  'video-queue': 'Väntar på video-GPU…', 'video-render': 'Skapar läppsynk…',
+  // Keep the existing transport key for already-open clients. Preparation
+  // includes voice/reference checks before a GPU reservation or queue exists.
+  'video-queue': 'Förbereder röst och läppsynk…', 'video-render': 'Skapar läppsynk…',
   media: 'Förbereder uppspelning…', ready: 'Svar klart · väntar på ledigt bord',
 });
 
@@ -60,9 +62,32 @@ export function chatFailureMessage(reason = '') {
   return 'Svaret kunde inte slutföras. Försök igen.';
 }
 
+// Shared with the server preparation receipt. Enumerate application-owned
+// codes only: never admit arbitrary provider messages by prefix or regex.
+export const SPEECH_PREPARATION_FAILURE_CODES = Object.freeze([
+  'chat_cancelled', 'stale_chat_session', 'stale_chat_memory', 'stale_round_revision',
+  ...['dealer_invalid', 'dealer_unavailable', 'profiles_not_configured',
+    'profile_invalid', 'profile_not_enabled', 'profile_changed',
+    'reference_kind', 'reference_mismatch', 'reference_out_of_range', 'reference_changed',
+    'voice_not_configured', 'voice_unavailable',
+    'moving_not_configured', 'moving_sources_invalid', 'moving_reference_unavailable',
+    'moving_schema_required', 'moving_project_changed', 'moving_media_unavailable',
+    'moving_capacity_unverified', 'moving_budget_scope_mismatch',
+    'moving_admission_timeout', 'moving_release_timeout', 'moving_drain_unknown', 'moving_endpoint_mismatch',
+    'total_budget_exhausted', 'daily_budget_exhausted', 'budget_policy_missing',
+    'lease_busy', 'stale_fence', 'recovery_required', 'recovery_only',
+    'journal_unavailable', 'journal_invalid', 'worker_not_drained',
+  ].map(code => `generated_speech_${code}`),
+  ...['unavailable', 'response_invalid', 'limits_changed', 'workers_unknown',
+    'active_workers_exceeded', 'worker_state_unknown', 'template_unverified',
+  ].map(code => `moving_runpod_${code}`),
+  'moving_worker_release_changed', 'moving_worker_release_unverified', 'moving_worker_release_mismatch',
+]);
+
 // Expose only stable application codes for DOM diagnostics, never an upstream
 // exception, URL, utterance, ticket or arbitrary server response.
 const diagnosticCodes = new Set([
+  ...SPEECH_PREPARATION_FAILURE_CODES,
   'chat_failed', 'chat_cancelled', 'stale_chat_session', 'stale_chat_memory',
   'stale_round_revision', 'hidden', 'muted', 'speech_autoplay_blocked',
   ...['frame_unavailable', 'socket_closed', 'socket_failed', 'render_failed',

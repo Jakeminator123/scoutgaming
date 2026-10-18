@@ -5,7 +5,7 @@ import { createServer, request as httpRequest } from 'node:http';
 import { setTimeout as pause } from 'node:timers/promises';
 import { createChatResponseStream } from '../services/game/chat-response-stream.mjs';
 import { completeChatWithSpeech } from '../services/game/generated-speech-chat.mjs';
-import { readChatResponse, chatFailureMessage, chatFailureCode } from '../packages/presentation/contracts/chat-response.mjs';
+import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } from '../packages/presentation/contracts/chat-response.mjs';
 
 function stream(frames, fragment = 7) {
   const bytes = new TextEncoder().encode(frames.map(frame => JSON.stringify(frame) + '\n').join(''));
@@ -54,6 +54,35 @@ test('DOM failure diagnostics keep application codes and redact arbitrary upstre
   }
   for (const error of [undefined, 'https://provider.test/?key=private', 'generated_speech_private_token_value',
     'moving_speech_private_token_value', 'Authorization: Bearer private', 'The spoken private reply']) assert.equal(chatFailureCode(error), 'chat_failed');
+});
+
+test('pre-admission application failures remain diagnosable without exposing upstream values', async () => {
+  for (const code of ['generated_speech_voice_unavailable', 'generated_speech_voice_not_configured',
+    'generated_speech_profile_invalid', 'generated_speech_profile_not_enabled',
+    'generated_speech_reference_mismatch', 'generated_speech_moving_reference_unavailable',
+    'generated_speech_moving_capacity_unverified', 'generated_speech_total_budget_exhausted',
+    'generated_speech_recovery_required', 'generated_speech_lease_busy', 'moving_runpod_limits_changed']) {
+    await assert.rejects(readChatResponse(stream([{type:'error',error:code}])), error => {
+      assert.equal(chatFailureCode(error.message),code); return true;
+    });
+    assert.equal(chatFailureCode(code+' https://private.example/?token=secret'),'chat_failed');
+  }
+});
+
+test('preparation progress never claims GPU admission and retains the legacy transport stage', async () => {
+  const frames=[], failure=Error('generated_speech_voice_unavailable');
+  await assert.rejects(completeChatWithSpeech({request:{requestId:'preparation-1'},status:{dealerId:'dragan'},
+    owner:'owner',playerId:'fixture',readOwner:async()=>'owner',readStatus:async()=>{},
+    decide:async()=>({kind:'generatedText',exactText:'Hej.'}),
+    streamService:{prepare:async()=>{throw failure;}},
+    onProgress:stage=>frames.push({type:'progress',stage,elapsedMs:0}),
+  }),error=>error===failure);
+  frames.push({type:'error',error:failure.message});
+  const progress=[];
+  await assert.rejects(readChatResponse(stream(frames),frame=>progress.push(frame.stage)),/voice_unavailable/);
+  assert.deepEqual(progress,['text','video-queue']);
+  assert.match(CHAT_STAGES['video-queue'],/Förbereder/);
+  assert.doesNotMatch(CHAT_STAGES['video-queue'],/GPU|kö/i);
 });
 
 function responseFixture() {
