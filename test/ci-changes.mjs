@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ciScope, ciSelection, documentationOnly, parseDiff, migrationReadinessRequired } from '../tools/ci-changes.mjs';
+import { ciScope, ciSelection, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired } from '../tools/ci-changes.mjs';
 
 const change = (path, extra = {}) => ({ path, before: '100644', after: '100644', status: 'M', ...extra });
 test('only ordinary prose qualifies; runtime, config, mixed changes and file types run full CI', () => {
@@ -20,6 +20,20 @@ test('only ordinary prose qualifies; runtime, config, mixed changes and file typ
   }
   assert.equal(documentationOnly([]), false);
   assert.equal(documentationOnly([change('docs/removed.md', {status:'D',after:'000000'})]), true);
+});
+
+test('Moving image verification follows worker and gate changes, including deletion and uncertain paths', () => {
+  for (const path of ['services/moving-gpu-worker/serverless.py', 'services/moving-gpu-worker/Dockerfile',
+    'services/moving-gpu-worker/tests/test_bank_http.py', '.github/workflows/moving-gpu-build.yml',
+    '.github/workflows/croupier.yml', 'tools/ci-changes.mjs', '../unknown']) {
+    for (const extra of [{}, {status:'D',after:'000000'}]) {
+      assert.equal(movingWorkerRequired([change(path, extra)]), true, path);
+    }
+  }
+  for (const path of ['docs/JOHN-HANDOFF.md', 'apps/studio/components/editor.tsx', 'test/rooms.mjs']) {
+    assert.equal(movingWorkerRequired([change(path)]), false, path);
+  }
+  assert.equal(movingWorkerRequired([]), true);
 });
 
 test('local and CI prose selection share reviewed guides while runtime Markdown stays strict', async () => {
@@ -58,7 +72,7 @@ test('client-only PRs avoid production reads; server, migration and uncertain ch
   assert.equal(migrationReadinessRequired([]), true);
   assert.equal(migrationReadinessRequired([change('apps/studio/components/link.mjs', {after:'120000'})]), true);
   for (const event of ['push', 'workflow_dispatch']) {
-    assert.deepEqual(ciSelection({env:{GITHUB_EVENT_NAME:event}}), {scope:'full',migration:true});
+    assert.deepEqual(ciSelection({env:{GITHUB_EVENT_NAME:event}}), {scope:'full',migration:true,moving:true});
   }
 });
 
@@ -144,7 +158,11 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     git('checkout','-qb','ui'); mkdirSync(join(root,'apps', 'studio','components'),{recursive:true});
     put('apps/studio/components/editor.tsx','export const label = "Editor";\n'); commit('client-only edit');
     git('checkout','main'); git('merge','--no-ff','ui','-m','test UI merge');
-    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false});
+    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false,moving:false});
+    git('checkout','-qb','moving'); mkdirSync(join(root,'services','moving-gpu-worker'),{recursive:true});
+    put('services/moving-gpu-worker/serverless.py','fixture = True\n'); commit('worker edit');
+    git('checkout','main'); git('merge','--no-ff','moving','-m','test worker merge');
+    assert.equal(ciSelection({cwd:root,env:prEnv()}).moving,true);
     git('checkout','-qb','code'); put('app.mjs','export const version = 3;\n'); commit('code');
     put('docs/guide.md','last push is just prose\n'); commit('docs followup');
     git('checkout','main'); git('merge','--no-ff','code','-m','test mixed merge');
@@ -165,8 +183,8 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   const run = needs => spawnSync(process.execPath,['--input-type=module','-e',script],{
     encoding:'utf8',env:{...process.env,CI_NEEDS:JSON.stringify(needs)},
   }).status;
-  const full = { changes:{result:'success',outputs:{scope:'full'}}, documentation:{result:'skipped'},
-    'dealer-regression':{result:'success'},'lipsync-worker':{result:'success'} };
+  const full = { changes:{result:'success',outputs:{scope:'full',moving:'false'}}, documentation:{result:'skipped'},
+    'dealer-regression':{result:'success'},'lipsync-worker':{result:'success'}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
   const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.documentation.result='success';
   for (const job of ['dealer-regression','lipsync-worker']) docs[job].result='skipped';
@@ -178,5 +196,14 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   for (const result of ['failure','cancelled','skipped']) {
     const broken=structuredClone(docs); broken.changes.result=result; assert.notEqual(run(broken),0);
   }
+  const moving = structuredClone(full); moving.changes.outputs.moving='true'; moving['moving-worker'].result='success';
+  assert.equal(run(moving),0);
+  for (const result of ['failure','cancelled','skipped',undefined]) {
+    const broken=structuredClone(moving); broken['moving-worker'].result=result; assert.notEqual(run(broken),0);
+  }
+  for (const value of ['',undefined,'unknown']) {
+    const broken=structuredClone(full); broken.changes.outputs.moving=value; assert.notEqual(run(broken),0);
+  }
+  const unreported=structuredClone(full); delete unreported['moving-worker']; assert.notEqual(run(unreported),0);
   assert.notEqual(run({}),0);
 });

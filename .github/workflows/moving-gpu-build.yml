@@ -1,10 +1,7 @@
 name: Moving GPU image build check
 
 on:
-  pull_request:
-    paths:
-      - 'services/moving-gpu-worker/**'
-      - '.github/workflows/moving-gpu-build.yml'
+  workflow_call:
   workflow_dispatch:
 
 permissions:

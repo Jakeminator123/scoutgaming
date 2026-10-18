@@ -21,6 +21,7 @@ jobs:
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
       migration: ${{ steps.scope.outputs.migration }}
+      moving: ${{ steps.scope.outputs.moving }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -192,9 +193,14 @@ jobs:
       - run: python -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
       - run: bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh
 
+  moving-worker:
+    needs: changes
+    if: needs.changes.outputs.moving == 'true'
+    uses: ./.github/workflows/moving-gpu-build.yml
+
   ci:
     name: CI
-    needs: [changes, documentation, dealer-regression, lipsync-worker]
+    needs: [changes, documentation, dealer-regression, lipsync-worker, moving-worker]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -209,7 +215,10 @@ jobs:
           const scope = jobs.changes?.outputs?.scope;
           const required = scope === 'documentation' ? ['documentation']
             : scope === 'full' ? ['dealer-regression', 'lipsync-worker'] : [];
-          if (jobs.changes?.result !== 'success' || required.length === 0
+          const moving = jobs.changes?.outputs?.moving;
+          if (!['true', 'false'].includes(moving)
+            || jobs['moving-worker']?.result !== (moving === 'true' ? 'success' : 'skipped')
+            || jobs.changes?.result !== 'success' || required.length === 0
             || required.some(name => jobs[name]?.result !== 'success')) {
             console.error('CI failed: a required check failed, was cancelled, skipped, or was not reported.');
             process.exit(1);
