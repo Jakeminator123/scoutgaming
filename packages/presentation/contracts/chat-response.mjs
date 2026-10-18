@@ -65,6 +65,13 @@ export function chatFailureMessage(reason = '') {
 const diagnosticCodes = new Set([
   'chat_failed', 'chat_cancelled', 'stale_chat_session', 'stale_chat_memory',
   'stale_round_revision', 'hidden', 'muted', 'speech_autoplay_blocked',
+  ...['frame_unavailable', 'socket_closed', 'socket_failed', 'render_failed',
+    'audio_failed', 'audio_paused', 'timeout', 'queue_full', 'unavailable',
+    'rest_unavailable', 'rest_size', 'rest_hash_mismatch', 'decoder_unavailable',
+    'pcm_hash_mismatch', 'rejected_chunk', 'unpaired_binary', 'missing_binary',
+    'ticket_expired', 'sequence_incomplete', 'geometry_changed',
+  ].map(code => `moving_speech_${code}`),
+  ...['message', 'chunk', 'ready', 'source', 'sequence'].map(code => `invalid_moving_speech_${code}`),
   ...['busy', 'cancelled', 'failed', 'daily_budget_exhausted', 'not_configured',
     'request_already_attempted', 'request_conflict', 'timeout',
     ...['busy', 'cancelled', 'invalid_directory', 'ledger_invalid', 'not_configured',

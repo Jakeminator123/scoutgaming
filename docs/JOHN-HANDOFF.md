@@ -2,22 +2,65 @@
 
 <a id="dragan-talstatus"></a>
 
-## Lipsync 3: ett ytterligare avgränsat produktionsprov — 18 oktober 2026
+## Lipsync 3: produktionsprovet avbröts; återställningen klar — 18 oktober 2026
 
-Jakob har uttryckligen bett om nästa RunPod-prov på scoutgaming.tech.
-Runtimegränsen för samma budget-ID `dragan-test-20261017` blir 8,4 USD,
-vilket ger plats för exakt en ytterligare reservation på 1,2 USD efter sex
-historiska reservationer. Befintligt globalt providertak är fortsatt 40 USD;
-den separata journalgränsen höjs bara genom ordinarie append-only-amendment
-efter färsk kostnads-, sessions- och workeravläsning. Ingen historik återställs
-eller reservation återbetalas genom denna kodändring. Talflaggan är ännu av.
+PR242 (bankens HTTP-hämtning) och PR245 (en ytterligare journalreservation)
+är mergade. Provet körde main `746905d59bd6a5bc66ae3d52e0defd858a1b1e10`
+på croupier-v2 och den nya privata workerimagen nedan. Fryst rumspaket4
+för Dragan test jämfördes med paket3: samma presentationsdata, 36 publicerade
+videor och samtliga 50 bankkällor med exakta ID/hashar. Paketbytet kräver
+ingen ny bank. Rösten var Dragge, `7f95xPL4S3ySZ4OS1pw8`, på Dragan-profilen.
 
-Denna leverans förbereder provet med den redan publicerade bankfix-imagen
-från PR242. Bankens källvideo-ID/hash, frysta rumspaket och aktuell profil ska
-stämma före antagning. Ett prov får högst en GPU, en ny reservation och en
-tidsbegränsad extern stoppguard. Minimikravet 30 fps ändras inte. Molnresultat
-och avstängningskvitto återstår. SQL-fixturen verifierar att tidigare poster
-bevaras och att ett andra jobb efter den nya reservationen nekas.
+Ett enda chattprov skickades cirka12:35UTC: ”Ulf Lundell är bra.”.
+Det var viloposition, utan spelinsats eller utdelning. Worker-ready och
+bankkontroll passerades före TTS enligt runtimeordningen. Jakob hörde
+”Ulf Lund…” från produktionsprovet; ingen lokal film spelades samtidigt.
+Webbläsaren visade därefter ”Svaret kunde inte slutföras.”,12:40:38UTC.
+Fullständig ljud-/bildleverans, faktisk bildhastighet och visuell läppsynk
+är INTE verifierade. Exakt avbrottsorsak saknas: befintlig klient skrev över
+uppspelningskvittot med generiskt fel och serverns stream-catch dolde orsaken.
+`bank_length_mismatch` har inte observerats på nytt. Saknade bildrutor,
+ändrad pose eller anslutningsfel får inte kallas bekräftad orsak.
+
+RunPod-jobb `a8e69c9e-9d7e-43ee-824b-79f8dba8803f-e1`: CANCELLED,
+kö221553ms, execution97628ms. Session `6c5195983a12654f22c45467c982485c`
+avslutades/frisläpptes12:40:38.537UTC. Egen endpoint `1d4pnh0hvs8s2d` och
+template `sppmr9xejw` är borttagna; stoppguarden avslutad och inga egna
+workers kvar. Talflaggan är0, endpointinställningen borttagen och Dragans
+profil åter i preparation. Inga andra miljövariabler ändrades vid återställning.
+Renderåterställning `dep-dbabtbijnfac73f4nomg` blev live12:43:24UTC efter
+Jakobs uttryckliga godkännande. OpenClaw-tjänsterna och den äldre separata
+Astrid-endpointen ändrades inte.
+
+Budget `dragan-test-20261017`: sju reservationer, totalt8,4USD, alla avslutade.
+Historiken är bevarad och utrymmet för detta extra prov är förbrukat.
+Det globala providertaket40USD är oförändrat; ny antagning kräver separat
+budgetavstämning. Senaste kända faktiska kostnad före provet0,5051714402USD;
+behållna tidigare providerreserver16,403334USD och provreserv2,3333333333USD.
+Providerkostnaden för senaste provet är ännu inte slutavstämd; rapporterat0USD
+vid stoppkontrollen är inte bevis på ett kostnadsfritt prov. Journalreservationer
+och providerreserver ska inte summeras som separata fakturerade kostnader.
+
+Den aktuella klientändringen behåller enbart tillåtna felkoder, start-/bildstatus
+och begränsade rutantal i det flyktiga DOM-kvittot även efter yttre felhantering.
+Serverns befintliga generiska stream-fel skiljs från felaktiga protokollmeddelanden.
+Ingen taltext, token eller godtycklig exception kopieras till kvittot. 68 fokuserade
+tester passerade; två valfria riktiga webbläsar-codecprov kördes inte. Ändringen
+diagnostiserar nästa avbrott men löser inte en ännu okänd produktionsorsak.
+Kvittot ersätts fortfarande vid nästa fråga eller sidladdning och måste fångas
+direkt efter ett kommande prov. Serverns interna stream-fel är fortsatt generiskt.
+
+Nästa steg: leverera denna diagnostik, fånga den exakta orsaken och avstäm kostnad
+före nästa betalda prov. Kontrollera därefter hela meningen och först sedan
+tal under auktoritativ utdelning. Lipsync-spåret äger även uppföljningen av
+256MiB servergräns mot32MiB klientgräns; viloklippet i detta prov var1,95MB,
+så den skillnaden förklarar inte just detta avbrott. Alla kvarvarande problem
+ska hållas isär från historiska `astrid-*`/`lissabon-*` filnamn.
+
+Privata provkvitton/skärmbilder ligger i basen nedan under `production-trial-01/`:
+`stop-verification.json`, `status-1792327247142.json`, `browser-result.txt`,
+`speech-result.png` och `registry-refresh.json`. Ingen full produktionsinspelning
+finns; fulla lokala filmer, ljud och körjournaler anges nedan.
 
 ## Lipsync 3: lokal bankhämtning verifierad — 18 oktober 2026
 
@@ -51,8 +94,8 @@ croupier_game/neondb, OpenClaw-tokenparen matchar och rätt privata Blob-store
 ENV-OCH-DB-exporten; destinationen är alltså inte färskbevisad. Preview och
 Production använder båda croupier-v2 och utgör inte isolerade provmiljöer.
 Ingen konfiguration ändrades. Underagenten läste live-deploy av `efdad149`
-på både Vercel och Render. Den nya workerimagen nedan är fortfarande inte
-aktiverad i RunPod. Nästa driftprov kräver färsk kumulativ budget/journal,
+på både Vercel och Render. Detta var före produktionsprovet ovan. Ett nytt
+driftprov kräver färsk kumulativ budget/journal,
 en avgränsad endpoint med stoppguard och kontroll av bankhämtning, minst 30 fps,
 ljud/rutbindning samt fel/avbrott innan tal öppnas i det särskilda testrummet.
 
@@ -87,8 +130,9 @@ Förseglad workerrelease: `c8ba8f3c81315d172e292fa5316fca66d289f219ab7c3672b9720
 GitHub Actions `39120838837` har byggt och publicerat den privata imagen
 `ghcr.io/jakeminator123/moving-gpu-worker@sha256:178c3459460980e979f679837d6a0c52cc34202fb64fb3da86fcc6403bffc127`.
 Publiceringskvittot bekräftar samma commit/release, CPU-bygge och isolerade
-importer/tester. Imagen har ännu inte aktiverats i RunPod. Ingen ny endpoint,
-moln-GPU, talaktivering eller budgetändring ingick i detta steg.
+importer/tester. Imagen användes senare i det avvecklade produktionsprovet ovan.
+Ingen ny endpoint, moln-GPU, talaktivering eller budgetändring ingick i själva
+det lokala bank-/publiceringssteget.
 
 Nytt lokalt offlineprov med aktuell motor/frame-contract på RTX3060 gav
 ”Jakob är kung.” över 66 exakta källrutor. 50 talrutor tog 4,560s (11,0fps),
