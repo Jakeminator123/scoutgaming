@@ -14,7 +14,7 @@
     "pathNormalizationVerified": true,
     "installedPackagesSha256": "8b480ffc73df332c27e29c0725519566873c4e6ccccf1cfb365c194577ed51bb"
   },
-  "changesToImportedEngine": "vendor/motor.py has bounded frame-contract patches: integer 24kHz PCM/padding duration; exact plan resolution with rest frame zero; explicit 90-frame measurement plan. Original hashes above remain the import receipt. vendor/rorlig.py is unchanged. Old vendor network/session helpers are never called.",
+  "changesToImportedEngine": "vendor/motor.py has bounded frame-contract patches: integer 24kHz PCM/padding duration; exact plan resolution with rest frame zero; explicit 90-frame measurement plan; drain all composition futures, including un-emitted lookbehind, before successful return for model reuse. Original hashes above remain the import receipt. vendor/rorlig.py is unchanged. Old vendor network/session helpers are never called.",
   "license": {
     "musetalk": "MIT, Tencent Music Entertainment Group; LICENSE retained in pinned checkout",
     "movingEngine": "No standalone license supplied with this private source snapshot. Preserve project-owner provenance; do not infer an external distribution grant.",
@@ -30,7 +30,8 @@
     "vendor/motor.py": [
       "Delegate Avatar.resolve to strict shared resolve_plan; no implicit extension or truncation",
       "Count audio chunks from exact PCM samples and reject short feature output",
-      "Plan warm-up explicitly, with rest only when the source take is shorter"
+      "Plan warm-up explicitly, with rest only when the source take is shorter",
+      "Wait for every submitted composition future before successful utterance return; propagate un-emitted lookbehind failures instead of reusing an unfinished model"
     ],
     "frameContract": "frame_contract.py; rendering math, models, blending and encoding remain unchanged",
     "verification": "CPU helper and vendor/MuseTalk feature-chunk tests; patched GPU/live/visual behavior still requires verification"

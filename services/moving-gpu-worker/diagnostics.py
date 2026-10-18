@@ -19,7 +19,7 @@ _CURRENT = contextvars.ContextVar("moving_worker_diagnostics", default=None)
 PHASES = (
     "releaseVerifyMs", "bankReceiptCacheVerifyMs", "bankArchiveCacheVerifyMs",
     "bankReceiptFetchMs", "bankArchiveFetchMs", "bankExtractVerifyMs", "modelsVerifyMs",
-    "engineSpawnMs", "enginePrepareMs", "pythonImportsMs", "modelAvatarWarmupMs",
+    "engineSpawnMs", "enginePrepareMs", "pythonImportsMs", "modelAvatarWarmupMs", "warmupCheckMs",
     "callbackConnectMs", "bindWaitMs", "startWaitMs", "pcmReceiveMs",
     "renderWallMs", "chunkSendMs", "chunkAckWaitMs", "engineStopMs",
 )
@@ -40,10 +40,11 @@ GPU_NAMES = frozenset({"NVIDIA A40", "NVIDIA RTX A6000", "NVIDIA RTX 6000 Ada Ge
     "NVIDIA A100-PCIE-40GB", "NVIDIA A100-PCIE-80GB", "NVIDIA L4", "NVIDIA L40", "NVIDIA L40S",
     "NVIDIA H100 PCIe", "NVIDIA H100 80GB HBM3", "NVIDIA H100 NVL", "NVIDIA H200", "NVIDIA B200"})
 ENUMS = {"bankReceiptCache": {"hit", "miss", "not_requested"},
+         "modelCache": {"hit", "miss", "not_requested"},
          "bankArchiveCache": {"hit", "miss", "not_requested"},
          "outcome": {"complete", "cancelled", "failed"}, "firstFailedPhase": set(PHASES),
          "gpuName": GPU_NAMES | {"other"}}
-CHILD_FIELDS = frozenset({"pythonImportsMs", "modelAvatarWarmupMs", "warmupFps", "warmupFirstChunkMs",
+CHILD_FIELDS = frozenset({"pythonImportsMs", "modelAvatarWarmupMs", "warmupCheckMs", "warmupFps", "warmupFirstChunkMs",
     "renderFps", "renderMs", "renderFirstChunkMs", "audioFeaturesMs", "composeWaitMs", "encodeMs",
     "renderFrames", "enginePeakRssBytes", "gpuName", "gpuTotalBytes", "gpuPeakAllocatedBytes",
     "gpuPeakReservedBytes", "gpuCapabilityMajor", "gpuCapabilityMinor", "firstFailedPhase"})
