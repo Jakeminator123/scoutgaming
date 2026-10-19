@@ -104,6 +104,8 @@ Publicerade rum behåller samma PartnerAppearanceLoader, API och callbacks.
 Delad mall ligger kvar separat med påverkanstext. På mobil används den
 kompakta befintliga rumsväljaren; breda vyer får listan intill detaljytan.
 
+Reviewuppföljning: klick på redan valt rum är no-op före navigation/dirty-reset. Nytt prov täcker aktivt dirtykort, direkt väljare, gammalt bokmärke och fortsatt beforeunload/annat-rum-skydd. 20 rumsprov passerar.
+
 Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips. Efter integration med main passerar hela Admin-gruppen (338 prov i 13 grupper),
 inklusive nytt kortprov för bolagsgräns, avvisat osparat byte, pågående
 operation och exakt accepterad kontext. Admin/lobby-typer och klientbygge

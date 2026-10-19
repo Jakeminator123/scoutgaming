@@ -207,3 +207,25 @@ test('room cards list only the active owner and preserve dirty/busy guards befor
   assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{operator:'a',table:'bj',composition:'one',game:'blackjack'});
   assert.equal(editor().props.roomId,'bj');assert.equal(cards()[0].props['aria-pressed'],true);
 });
+
+test('selecting the active room is inert and preserves dirty guards even without explicit room URL context',async()=>{
+  for(const search of ['?dealer=astrid&game=blackjack','?operator=a&table=roulette']){
+    const h=await registeredStudioHtml('/admin/rooms',search,{},true);
+    const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+    const cards=()=>walk(h.render(),node=>node.type==='button'&&node.props?.['aria-label']?.startsWith('Öppna rum '));
+    const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+    const activeRoom=editor().props.roomId;
+    editor().props.onDirtyChange(true);h.render();h.allowLeave(true);
+    cards().find(node=>node.props['aria-pressed']).props.onClick();
+    walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:activeRoom}});
+    assert.equal(h.confirms,0);assert.equal(h.notifications,0);assert.equal(h.search,search);
+    assert.equal(editor().props.roomId,activeRoom);
+    const unload={prevented:false,returnValue:undefined,preventDefault(){this.prevented=true;}};
+    h.listeners.get('beforeunload')(unload);
+    assert.equal(unload.prevented,true);assert.equal(unload.returnValue,'');
+    h.allowLeave(false);
+    cards().find(node=>!node.props['aria-pressed']).props.onClick();
+    assert.equal(h.confirms,1);assert.equal(h.notifications,0);assert.equal(h.search,search);
+    assert.equal(editor().props.roomId,activeRoom);
+  }
+});

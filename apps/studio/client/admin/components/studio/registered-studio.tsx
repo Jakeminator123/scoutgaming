@@ -44,6 +44,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const [showLifecycle,setShowLifecycle] = useState(false);
   function mayLeave() { return !roomBusy && !lifecycleBusy && (!roomDirty || confirm('Lämna rummets osparade val? Sparade utkast och publicerad version behålls.')); }
   function selectContext(next: Record<string,string>) {
+    if (selectedRoom && next.table === selectedRoom.id && next.operator === operator?.id) return;
     const params = new URLSearchParams(search);
     for (const key of ['operator','game','table','composition','lane','dealer']) params.delete(key);
     for (const [key,value] of Object.entries(next)) if(value)params.set(key,value);
