@@ -13,25 +13,14 @@ import { DealerDirectory } from './components/studio/dealer-directory';
 import { ResourceConnections } from './components/studio/resource-connections';
 import { ResourceDeletion } from './components/studio/resource-deletion';
 import {WorkspaceTool,WorkspaceToolsHome} from './components/studio/workspace-tools';
-import {ADMIN_WORKSPACE_TOOLS} from '../../../../packages/navigation/admin-workspace-routes.mjs';
+import {adminNavigationGroups,adminSystemGroups,adminPageLabels} from './lib/admin-navigation';
 
 // Native readers and mutations keep their existing session, scopes and revisions.
 const servicePaths = new Set(['/admin/drift','/admin/ekonomi','/admin/admin/accounts','/admin/admin/players','/admin/admin/payments','/admin/admin/api','/admin/admin/log','/admin/ai/models']);
 
-const pages: Record<string, string> = {
-  ...Object.fromEntries(Object.entries(ADMIN_WORKSPACE_TOOLS).map(([key,label])=>['/admin/'+key,label])),
-  '/admin': 'Översikt',
-  '/admin/structure': 'Kopplingar',
-  '/admin/deletion': 'Användning & beroenden',
-  '/admin/dealers': 'Dealerregister',
-  '/admin/tools': 'Verktyg',
-  '/admin/clips': 'Dealers & klipp',
-  '/admin/rooms': 'Spelbolag & rum',
-  '/admin/assets': 'Bord & bakgrunder',
-  '/admin/drift': 'Drift', '/admin/ekonomi': 'Ekonomi', '/admin/admin/accounts': 'Konton & åtkomst',
-  '/admin/admin/operators': 'Spelbolag', '/admin/admin/players': 'Konton & åtkomst', '/admin/admin/payments': 'Betalningar',
-  '/admin/admin/api': 'Integrationer', '/admin/admin/log': 'Bolagsjournal', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
-};
+const pages=adminPageLabels;
+const groupedPaths=new Set(['/admin',...adminNavigationGroups.flatMap(group=>group.links.map(link=>link.href)),...adminSystemGroups.flatMap(group=>group.links.map(link=>link.href))]);
+
 function App() {
   const path = usePathname();
   const search=useSearchParams().toString();
@@ -57,10 +46,13 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Dealers & klipp':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Klippkarta':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path === '/admin/admin/players' ? '/admin/admin/accounts' : path} onChange={event => navigate(previewHref(event.target.value))}>
-        {Object.entries(pages).filter(([key]) => key !== '/admin/admin/players').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        <option value="/admin">Översikt</option>
+        {adminNavigationGroups.map(group=><optgroup key={group.id} label={group.label}>{group.links.map(link=><option key={link.href} value={link.href}>{link.label}</option>)}</optgroup>)}
+        <optgroup label="System">{adminSystemGroups.flatMap(group=>group.links).map(link=><option key={link.href} value={link.href}>{link.label}</option>)}</optgroup>
+        <optgroup label="Fler verktyg">{Object.entries(pages).filter(([key])=>!groupedPaths.has(key)&&key!=='/admin/admin/players').map(([key,label])=><option key={key} value={key}>{label}</option>)}</optgroup>
       </select></label>
       <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} chatActive={path==='/admin/ai/chat'} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap active={studio&&new URLSearchParams(search).get('tool')!=='import'} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
       {dealersVisited&&<div hidden={path!=='/admin/dealers'||new URLSearchParams(search).get('tool')==='import'}><DealerDirectory active={path==='/admin/dealers'&&new URLSearchParams(search).get('tool')!=='import'} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}

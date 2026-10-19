@@ -1,31 +1,20 @@
-import { ArrowRight, Building2, Clapperboard, Layers3, Play } from 'lucide-react';
+import {ArrowRight,Building2,Clapperboard} from 'lucide-react';
 import Link from '../../../runtime/navigation';
-
-const destinations = [
-  { title:'Spelbolag & rum', description:'Välj rum och se bakgrund, dealer och bord. Granska rumsval före publicering.', href:'/admin/rooms', icon:Building2, secondary:{label:'Skapa rum',href:'/admin/publication'} },
-  { title:'Dealers & klipp', description:'Välj dealer, ordna klipp i kartan och förhandsvisa dina val. Spara utkastet när du är klar.', href:'/admin/clips', icon:Clapperboard, secondary:{label:'Dealerregister',href:'/admin/dealers'} },
-  { title:'Bolag & team', description:'Skapa bolag, bjud in medlemmar och hantera deras åtkomst.', href:'/admin/companies', icon:Building2, secondary:null },
-  { title:'Provspelning', description:'Provspela en dealer och följ vad som visas och hörs i spelaren.', href:'/admin/rehearsal', icon:Play, secondary:null },
-  { title:'System', description:'Hitta struktur, konton och tekniska inställningar.', href:'/admin/structure', icon:Layers3, secondary:{label:'Konton och åtkomst',href:'/admin/admin/accounts'} },
-] as const;
+import {adminNavigationGroups} from '../../lib/admin-navigation';
 
 export function AdminHome() {
-  return <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-6 lg:px-8" aria-labelledby="admin-home-title">
-    <header className="max-w-2xl">
-      <p className="text-sm font-medium text-sg-lime">Scoutgaming · Intern arbetsyta</p>
-      <h1 id="admin-home-title" className="mt-2 text-2xl font-semibold tracking-tight">Vad vill du göra?</h1>
-      <p className="mt-2 text-sm text-sg-muted">Välj ett område. Dina val för spelbolag och rum gör du inne i respektive arbetsyta.</p>
+  return <section className="admin-home" aria-labelledby="admin-home-title">
+    <header className="admin-home-heading">
+      <p className="sg-eyebrow">Scoutgaming · Admin</p>
+      <h1 id="admin-home-title">Vad vill du arbeta med?</h1>
+      <p>Skapa spelupplevelsen eller hantera verksamheten. Börja där din uppgift hör hemma.</p>
     </header>
-    <div className="grid max-w-5xl gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {destinations.map(({title,description,href,icon:Icon,secondary})=><article key={href} className="flex min-h-48 flex-col rounded-lg border border-sg-line bg-sg-panel p-5">
-        <Icon size={22} className="text-sg-lime" aria-hidden="true" />
-        <h2 className="mt-4 text-base font-semibold">{title}</h2>
-        <p className="mt-2 flex-1 text-sm leading-relaxed text-sg-muted">{description}</p>
-        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link href={href} className="inline-flex items-center gap-1.5 text-sm font-medium text-sg-lime hover:underline">Öppna {title.toLowerCase()} <ArrowRight size={15} aria-hidden="true" /></Link>
-          {secondary&&<Link href={secondary.href} className="text-xs text-sg-muted hover:text-sg-text hover:underline">{secondary.label}</Link>}
-        </div>
-      </article>)}
+    <div className="admin-home-areas">
+      {adminNavigationGroups.map(group=>{const Icon=group.id==='creation'?Clapperboard:Building2;return <section key={group.id} className="admin-home-area" aria-labelledby={'home-'+group.id}>
+        <header><span className="admin-home-area-icon"><Icon size={24} aria-hidden="true"/></span><div><h2 id={'home-'+group.id}>{group.label}</h2><p>{group.description}</p></div></header>
+        <div className="admin-home-links">{group.links.map(({label,href,description})=><Link href={href} key={href} className="admin-home-link"><div><h3>{label}</h3><p>{description}</p></div><ArrowRight size={18} aria-hidden="true"/></Link>)}</div>
+      </section>;})}
     </div>
+    <footer className="admin-home-footer"><p>Fler verktyg</p><nav aria-label="Fler Admin-verktyg"><Link href="/admin/tools">Alla verktyg <ArrowRight size={14} aria-hidden="true"/></Link><Link href="/admin/publication">Rum & publicering</Link><Link href="/admin/admin/accounts">Konton & åtkomst</Link></nav></footer>
   </section>;
 }
