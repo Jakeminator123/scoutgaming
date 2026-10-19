@@ -86,10 +86,13 @@ med Node24.21 och tillfällig PostgreSQL: fyra kontraktskontroller, 26 legacy-
 och 59 integrationskontroller passerar; 201 källhashar förblir oförändrade.
 Verklig SQL, omstart och HTTPS ingår; inga produktionsanslutningar används.
 39 närliggande partnerprov passerar också.
+Slut-CI hittade att kontraktsfilen som SQL-fixturen nu importerar saknades i
+kvittots källista. Den är tillagd en gång; sex riktade fixtur-/integritetsprov
+passerar. Unikhets- och importassertionerna samt produktkoden är oförändrade.
 Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
-HUVUDAGENT5 har drift-DTO i draft-PR268; HTTP/providerkoppling och drift-UI återstår.
+HUVUDAGENT5 har drift-API i draft-PR270; providerkoppling och drift-UI återstår. API:t skiljer sparat önskemål från faktiskt observerad drift.
 POST-PISYNK4:s text-/ljudlängdsfixar är mergade i PR266 (`3673a2c9`); fortsatta
 utdelnings-/OpenClaw-prov och deras isolering ägs där. Scenfilerna är separata.
 Demoer och arbetslogg finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
