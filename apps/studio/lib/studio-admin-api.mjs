@@ -139,7 +139,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       const presentationOptions = ['material-trash-check','material-trash'].includes(endpoint.action)
         ? {presentationDocuments:['project','administration'],presentationMutation:{kind:'material-trash',value:{}}}
         : ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
-        ? { presentationDocuments: ['project','administration'], presentationMutation: {kind:'resource-lifecycle',value:{}} }
+        ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : endpoint.action === 'presentation-room'
         ? { presentationDocuments: ['project', 'administration'], presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
         : administrationMutations.has(endpoint.action)

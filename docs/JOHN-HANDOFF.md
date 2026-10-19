@@ -22,7 +22,9 @@ ankarscener till Admin i stället för att visa fel koordinater.
 Sparning går via den delade mallens projekt, revision och bekräftelse av berörda
 rum. Frysta paket behåller geometri; roomOverrides får inga nya fält. Nytt
 valfritt anchors-avtal kräver runtime capability21 före skrivning/publicering,
-inklusive arkiverad geometri. Ingen SQL-migration. Deployment av läsaren krävs
+inklusive arkiverad geometri. Rum/bolagslivscykel läser även vald operatörs
+frysta paket före preflight och kontrollerar det igen inne i transaktionen;
+paketets ankare skyddas även när de tagits bort ur utkastet. Ingen SQL-migration. Deployment av läsaren krävs
 innan nya ankare kan sparas mot produktion. Filmspår, källrutor, tal och
 serverkort/saldo är orörda. Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
 
@@ -37,9 +39,15 @@ Första full-CI stoppade setup på ett oregistrerat ankartest. Testet är nu
 registrerat i presentation/card-view; orphan-kontrollen är grön (518 kandidater)
 och 40 riktade omprov passerar. Övriga då visade CI-fel var saknade beroenden
 efter överhoppad setup, enligt MERGE3:s loggläsning. Ny slut-CI återstår.
+Två P2 är rättade: återställning använder förälderns verkliga sparade bas över
+panelbyten, sparning och serverjämförelse; livscykelspärren ovan omfattar frysta
+paket. 120 backendtester passerar; underagentens körning verifierade 32
+UI/navigationtester och båda klienttypkontrollerna. Fem nya UI-prov och fem
+backendprov misslyckas med tidigare beteende.
+Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
-HUVUDAGENT5 bygger separat driftbackend; UI-driftväljaren inväntar DTO.
+HUVUDAGENT5 har drift-DTO i draft-PR268; HTTP/providerkoppling och drift-UI återstår.
 POST-PISYNK4:s text-/ljudlängdsfixar är mergade i PR266 (`3673a2c9`); fortsatta
 utdelnings-/OpenClaw-prov och deras isolering ägs där. Scenfilerna är separata.
 Demoer och arbetslogg finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.

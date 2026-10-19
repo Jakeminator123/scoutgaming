@@ -17,11 +17,10 @@ import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
 
-export function StudioCompositionPanel({localReferenceUrl,project,inventory,room,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;inventory:VideoInventory;room?:Room;dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
+export function StudioCompositionPanel({localReferenceUrl,project,savedProject,inventory,room,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;room?:Room;dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
   const [selectedLayout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[error,setError]=useState('');
   const [uploadBusy,setUploadBusy]=useState(false);
   const [moveTogether,setMoveTogether]=useState(false);
-  const savedProject=useRef(project);if(!projectDirty)savedProject.current=project;
   const [editingCompositionId,setEditingCompositionId]=useState('');
   const [backgroundPreview,setBackgroundPreview]=useState<{id:string;request:number}>({id:'',request:0});
   const operations=useRef(new Set<string>());
@@ -62,7 +61,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,inventory,room
     {game==='blackjack'&&tableAsset?<BlackjackScenePlacementEditor tableId={tableAsset.id} layout={layout} disabled={locked}
       scene={{settings,width:tableAsset.width,height:tableAsset.height}} renderPreview={preview}
       value={settings.blackjackTables?.find(row=>row.tableId===tableAsset.id)}
-      savedValue={savedProject.current.lanes?.find(row=>row.id===lane.id)?.composition?.blackjackTables?.find(row=>row.tableId===tableAsset.id)}
+      savedValue={savedProject?.lanes?.find(row=>row.id===lane.id)?.composition?.blackjackTables?.find(row=>row.tableId===tableAsset.id)}
       onChange={value=>{const next=structuredClone(settings),rows=(next.blackjackTables??[]).filter(row=>row.tableId!==tableAsset.id);
         if(value)rows.push(value);if(rows.length)next.blackjackTables=rows;else delete next.blackjackTables;
         try{change({...lane,composition:validateCompositionSettings(next),renderer:'layered'});}catch(cause){setError((cause as Error).message);}

@@ -53,7 +53,11 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
  }
  async function selected(operators,operatorId){
   const operator=await operators.getOperatorById(operatorId);if(!operator)fail('studio_operator_not_found',404);
-  const pack=await operators.getCurrentPackage(operatorId);return {operator,pack,lifecycle:lifecycleFor(pack,operatorId)};
+  const pack=await operators.getCurrentPackage(operatorId),presentation=readPackagePresentation(pack);
+  // Native preflight includes this frozen package, not only the mutable draft.
+  // Inside the existing transaction this is a coverage check, never HTTP.
+  if(presentation&&repository.withMutationContext)await repository.withMutationContext(async()=>{}, {kind:'presentation-package',value:presentation});
+  return {operator,pack,lifecycle:lifecycleFor(pack,operatorId)};
  }
  const endpoint=(method,action,handler)=>handlers.set(`${method} /studio/api/admin/${action}`,async context=>{trusted(context);return repository.transaction(()=>repository.withTransactionClient(async client=>handler(context,await store(client))));});
  endpoint('GET','resource-lifecycle',async(context,operators)=>{

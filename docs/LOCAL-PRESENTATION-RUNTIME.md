@@ -1747,13 +1747,17 @@ mobil eller 1920×1080 desktop med samma contain-projektion som bilden.
 
 Ankarbyte räknar om ramen och bevarar läge/storlek. Kort och manuella marker
 har separata ramar och kontrollskalor. `under-cards` har företräde men behåller
-den manuella markerramen. Återställning hämtar sparad grupp för valt bord/format.
+den manuella markerramen. Återställning hämtar sparad grupp för valt bord/format
+från föräldervyns sparade bas, även efter panelbyte och jämförelse med serverrevision.
 Gemensam scenflytt är en editoroperation som ändrar dealer/bord en gång vardera;
 följvalen avgör kortens och markernas rörelse. Ingen separat grupptransform lagras.
 
 Valen skrivs i den delade mallens projekt via befintlig revision, aldrig som
 `roomOverrides`. Aktiva/arkiverade projekt och frysta paket med `anchors` kräver
-runtime capability **21**, `blackjackAnchors: 'v1'`, före skrivning. Äldre
+runtime capability **21**, `blackjackAnchors: 'v1'`, före skrivning. Rum/bolagslivscykel
+inkluderar vald operatörs aktuella frysta paket i preflight före SQL och kontrollerar
+paketets faktiska fält igen under transaktionen. Borttagna ankare i projektutkastet
+sänker därför inte kravet för kvarvarande frysta ankare. Äldre
 paket behåller sin tidigare layout. Ingen SQL-migration eller ändring av kort,
 saldo, filmspår eller talplan ingår. Äldre bordseditor hänvisar ankarscener till
 Admin i stället för att visa punkterna i fel koordinatsystem.

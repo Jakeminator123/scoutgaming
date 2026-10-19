@@ -176,11 +176,40 @@ test('actual pending import files veto Back and Forward before Studio context ch
   }finally{draft.unmount();}
 });
 
-async function mountClipMap(h){
+function mountScenePlacement(){
+  const React=require('react'),components=new Proxy({},{get:(_,name)=>name==='__esModule'?false:String(name)});
+  function mount(relative,name){
+    const url=new URL(relative,import.meta.url),localRequire=createRequire(url),slots=[];let cursor=0;
+    const hooks={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},useRef(initial){return slots[cursor++]??={current:initial};}};
+    const module={exports:{}},code=transformSync(readFileSync(url,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+    runInNewContext(code,{module,exports:module.exports,structuredClone,require:specifier=>specifier==='react'?hooks:specifier.endsWith('.css')?{}
+      :specifier.includes('/components/')&&!specifier.endsWith('.mjs')?components:localRequire(specifier)});
+    return props=>{cursor=0;return module.exports[name](props);};
+  }
+  const panel=mount('../admin/components/studio/studio-composition-panel.tsx','StudioCompositionPanel');
+  const editor=mount('../../components/blackjack-scene-placement-editor.tsx','BlackjackScenePlacementEditor');
+  const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
+  const text=tree=>typeof tree==='string'||typeof tree==='number'?String(tree):!tree?'':React.Children.toArray(tree.props?.children).map(text).join('');
+  let panelTree,editorTree,editorProps,project;
+  return {render(props){project=props.project;panelTree=panel(props);editorProps=all(panelTree,node=>node.type==='BlackjackScenePlacementEditor')[0]?.props;editorTree=editorProps?editor(editorProps):null;},
+    project:()=>structuredClone(project),
+    edit:profile=>editorProps.onChange(profile),
+    click(label){const node=all(panelTree,node=>node.type==='button'&&text(node)===label)[0]??all(editorTree,node=>node.type==='button'&&text(node)===label)[0];assert.ok(node,'scene button '+label);assert.equal(Boolean(node.props.disabled),false,label+' is enabled');node.props.onClick();},
+    disabled:()=>editorProps.disabled};
+}
+
+async function mountClipMap(h,{scene=false}={}){
   const React=require('react'),componentUrl=new URL('../admin/components/studio/connected-clip-map.tsx',import.meta.url),componentRequire=createRequire(componentUrl);
   const {createSeedProject,defaultPresentationLane,addDealer}=componentRequire('../../../../../../packages/presentation/contracts/studio-model.mjs');
   const project=addDealer(createSeedProject(),'nora','Nora');
   project.lanes=['a','b'].map(id=>({...defaultPresentationLane('astrid'),id:'scene-'+id}));
+  if(scene){
+    const {defaultCompositionSettings,defaultBlackjackTableGeometry}=componentRequire('../../../../../../packages/presentation/contracts/composition-settings.mjs');
+    const {layerAssetPath}=componentRequire('../../../../../../packages/presentation/contracts/layer-asset-contract.mjs');
+    const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000002',role:'table',game:'blackjack',label:'Oak',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
+    project.layerAssets=[{...table,pathname:layerAssetPath(table)}];project.lanes[0].layers.table={enabled:true,default:table.id,allowed:[table.id]};
+    project.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[defaultBlackjackTableGeometry(table.id)]};
+  }
   const workspace={project,inventory:{videos:[]},catalog:{administration:{
     operators:['a','b'].map(id=>({id,slug:id,name:id,status:'active',archivedAt:null})),
     rooms:['a','b'].map(id=>({id:'room-'+id,operatorId:id,name:id,game:id==='a'?'blackjack':'roulette',compositionId:'scene-'+id,state:'draft',published:false,dealerIds:['astrid','nora']})),
@@ -201,10 +230,17 @@ async function mountClipMap(h){
     confirm:()=>assert.fail('ordinary pane navigation must not discard its draft'),
     require:name=>name==='react'?react:name==='@xyflow/react'?flow:name.endsWith('.css')?{}
       :name==='../../../runtime/navigation'?h.api:name==='../../../runtime/admin-routing.mjs'?routing
-      :name==='../../lib/connected-studio.mjs'?{...componentRequire(name),clipSlots:()=>[],createStudioClient:()=>({load:async()=>structuredClone(workspace)})}
+      :name==='../../lib/connected-studio.mjs'?{...componentRequire(name),clipSlots:()=>[],createStudioClient:()=>({load:async()=>structuredClone(workspace),save:async next=>{
+        if(next.revision!==workspace.project.revision)throw Object.assign(new Error('Revision conflict'),{statusCode:409});
+        workspace.project=structuredClone({...next,revision:'fixture.scene.saved'});return structuredClone(workspace.project);}})}
       :name==='lucide-react'||name.startsWith('./')?components:componentRequire(name)});
-  const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children;return element.type(element.props);};
   const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
+  let scenePanel=null,sceneMounts=0;
+  const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children,tree=element.type(element.props);
+    if(scene){const panel=all(tree,node=>node.type==='StudioCompositionPanel')[0];
+      if(!panel)scenePanel=null;
+      else{if(!scenePanel){scenePanel=mountScenePlacement();sceneMounts++;}scenePanel.render(panel.props);}
+    }return tree;};
   const nodes=predicate=>all(render(),predicate),settle=async()=>{for(let i=0;i<5;i++){render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
   const textWithoutControls=tree=>typeof tree==='string'||typeof tree==='number'?String(tree)
     :!tree||tree.type==='select'?'':React.Children.toArray(tree.props?.children).map(textWithoutControls).join('');
@@ -218,6 +254,14 @@ async function mountClipMap(h){
   const button=label=>one(nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label),'button labelled '+label);
   await settle();
   return {settle,selection:()=>({operator:select('Spelbolag').props.value,game:select('Spel').props.value,room:select('Rum').props.value,dealer:select('Dealer').props.value}),
+    scene:{mounts:()=>sceneMounts,isMounted:()=>Boolean(scenePanel),snapshot:()=>scenePanel.project(),
+      async open(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scen & lager')[0].props.onClick();await settle();},
+      async leave(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scenförhandsvisning')[0].props.onClick();await settle();},
+      async click(label){scenePanel.click(label);await settle();},
+      async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
+      remote(project){workspace.project=structuredClone(project);},
+      async compare(){button('Jämför senaste revision').props.onClick();await settle();},
+      async save(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Spara utkast')[0].props.onClick();await settle();button('Bekräfta sparande').props.onClick();await settle();}},
     async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
     async editDraft(){
       button('Scen & lager').props.onClick();await settle();
@@ -229,6 +273,59 @@ async function mountClipMap(h){
     hasDraft:()=>all(select('Dealer'),node=>node.type==='option').some(node=>node.props.children==='Nora draft'),
     unmount(){for(const cleanup of cleanups)cleanup?.();}};
 }
+
+const sceneGeometry=project=>project.lanes[0].composition.blackjackTables[0];
+function movedGeometry(source,offset){
+  const next=structuredClone(source);
+  for(const layout of ['mobile','desktop']){
+    const value=next[layout];value.dealer={x:.2+offset,y:.1+offset};value.cardWidth=.05+offset/10;
+    value.seats.forEach((seat,i)=>{seat.card={x:.1+i*.1,y:.2+offset};seat.bet={x:.15+i*.1,y:.4+offset};});
+    value.anchors={cards:{target:'dealer',rect:{x:offset,y:offset,width:1,height:1}},bets:{target:'scene',rect:{x:-offset,y:offset,width:1,height:1}}};
+    value.betMode='under-cards';
+  }
+  return next;
+}
+function geometryGroup(value,group){
+  return group==='cards'?{dealer:value.dealer,width:value.cardWidth,points:value.seats.map(seat=>seat.card),anchor:value.anchors?.cards}
+    :{points:value.seats.map(seat=>seat.bet),mode:value.betMode,anchor:value.anchors?.bets};
+}
+for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])test(`scene reset uses the saved ${layout} ${group} after unmount, retained drafts and a later save`,async()=>{
+  const pane=await mountClipMap(harness('/admin/clips?operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
+  try{
+    await scene.open();const saved=sceneGeometry(scene.snapshot());
+    await scene.click('Redigera gemensam mall');const draftB=movedGeometry(saved,.1);await scene.edit(draftB);
+    await scene.leave();assert.equal(scene.isMounted(),false,'switching away unmounts the real composition panel');
+    await scene.open();assert.equal(scene.mounts(),2);assert.deepEqual(sceneGeometry(scene.snapshot()),draftB,'parent retains draft B');
+    await scene.click('Redigera gemensam mall');await scene.click(layout==='mobile'?'Mobil':'Desktop');
+    const draftC=movedGeometry(saved,.2);await scene.edit(draftC);
+    const reset=group==='cards'?'Återställ sparade kort':'Återställ sparade marker',otherGroup=group==='cards'?'bets':'cards',otherLayout=layout==='mobile'?'desktop':'mobile';
+    await scene.click(reset);let actual=sceneGeometry(scene.snapshot());
+    assert.deepEqual(geometryGroup(actual[layout],group),geometryGroup(saved[layout],group),'reset returns saved A, never remount draft B');
+    assert.deepEqual(geometryGroup(actual[layout],otherGroup),geometryGroup(draftC[layout],otherGroup),'other group keeps draft C');
+    assert.deepEqual(actual[otherLayout],draftC[otherLayout],'other format keeps draft C');
+    await scene.edit(movedGeometry(saved,.25));await scene.save();const newlySaved=sceneGeometry(scene.snapshot());assert.equal(scene.snapshot().revision,'fixture.scene.saved');
+    const draftD=movedGeometry(saved,.3);await scene.edit(draftD);await scene.leave();await scene.open();assert.equal(scene.mounts(),3);
+    await scene.click('Redigera gemensam mall');await scene.click(layout==='mobile'?'Mobil':'Desktop');await scene.click(reset);
+    actual=sceneGeometry(scene.snapshot());
+    assert.deepEqual(geometryGroup(actual[layout],group),geometryGroup(newlySaved[layout],group),'successful save advances the reset baseline');
+    assert.deepEqual(geometryGroup(actual[layout],otherGroup),geometryGroup(draftD[layout],otherGroup));assert.deepEqual(actual[otherLayout],draftD[otherLayout]);
+  }finally{pane.unmount();}
+});
+
+test('scene reset uses the compared server baseline while preserving the rebased draft',async()=>{
+  const pane=await mountClipMap(harness('/admin/clips?operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
+  try{
+    await scene.open();const remote=scene.snapshot(),saved=sceneGeometry(remote);
+    await scene.click('Redigera gemensam mall');const draft=movedGeometry(saved,.1);await scene.edit(draft);
+    remote.revision='fixture.scene.remote';remote.lanes[0].composition.blackjackTables=[movedGeometry(saved,.2)];scene.remote(remote);
+    await scene.save();await scene.compare();
+    assert.equal(scene.snapshot().revision,remote.revision);assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'conflicting local points remain in the draft');
+    await scene.leave();await scene.open();await scene.click('Redigera gemensam mall');await scene.click('Desktop');await scene.click('Återställ sparade kort');
+    const actual=sceneGeometry(scene.snapshot());
+    assert.deepEqual(geometryGroup(actual.desktop,'cards'),geometryGroup(sceneGeometry(remote).desktop,'cards'));
+    assert.deepEqual(geometryGroup(actual.desktop,'bets'),geometryGroup(draft.desktop,'bets'));assert.deepEqual(actual.mobile,draft.mobile);
+  }finally{pane.unmount();}
+});
 
 test('mounted clip pane reactivation writes the retained full context before Back, Forward and reload',async()=>{
   const h=harness('/admin/clips?operator=b&table=room-b&game=roulette'),pane=await mountClipMap(h);

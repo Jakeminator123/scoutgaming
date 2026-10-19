@@ -32,7 +32,7 @@ function panelHarness(){
     return require(name);
   }});
   const project=createSeedProject(),lane=defaultPresentationLane('astrid');project.lanes=[lane];
-  const edits=[],props={project,inventory:{videos:[]},room:{id:'room-a',name:'Main',compositionId:lane.id,game:'blackjack'},dealerId:'astrid',
+  const edits=[],props={project,savedProject:structuredClone(project),inventory:{videos:[]},room:{id:'room-a',name:'Main',compositionId:lane.id,game:'blackjack'},dealerId:'astrid',
     uses:[{roomId:'room-a',roomName:'Main',operatorName:'North'},{roomId:'room-b',roomName:'VIP',operatorName:'South'}],roomChoicesPath:'/admin/rooms?view=registered&operator=north&table=room-a',
     blocked:false,projectDirty:false,onEdit:next=>{edits.push(next);props.project=next;},onRegistered(){},onSaved(){},onBusyChange(){}};
   return {props,edits,LayerAssetSelect,...components,render:()=>{cursor=0;return module.exports.StudioCompositionPanel(props);}};

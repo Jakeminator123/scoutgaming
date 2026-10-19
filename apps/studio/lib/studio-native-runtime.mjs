@@ -36,6 +36,8 @@ import { createOperatorPackageApi } from './operator-package-api.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
+import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
+import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -93,6 +95,31 @@ export async function readAssistantDatabaseInventory(pool) {
     tables:result.rows.slice(0,500).map(row=>({schema:row.table_schema,name:row.table_name})) };
 }
 
+export function createNativePresentationMutationTransaction({repository,boDb,pool,scope}) {
+  return async (work, options = {}) => {
+    const descriptors = options.presentationMutation === undefined ? [] : structuredClone(Array.isArray(options.presentationMutation) ? options.presentationMutation : [options.presentationMutation]);
+    const documents=[...(options.presentationDocuments??[])],operatorIds=options.presentationOperatorIds===undefined?undefined:structuredClone(options.presentationOperatorIds);
+    for (const kind of documents) {
+      if (!['project','administration'].includes(kind)) unavailable();
+      const saved = await repository.readDocument(kind);
+      if (!saved) unavailable();
+      descriptors.push({kind,value:saved.value});
+    }
+    // A lifecycle write can retain a frozen package after its draft geometry
+    // was removed. Read that exact tenant's current package before either SQL
+    // mutation lock; the handler rechecks its revision and features under lock.
+    if (operatorIds !== undefined) {
+      if (!Array.isArray(operatorIds) || operatorIds.length !== 1) unavailable();
+      const operators=await createOperatorStore({sql:pool,scope});
+      for (const operatorId of operatorIds) {
+        const presentation=readPackagePresentation(await operators.getCurrentPackage(operatorId));
+        if (presentation) descriptors.push({kind:'presentation-package',value:presentation});
+      }
+    }
+    return repository.withMutationContext(() => boDb.transaction(work), descriptors);
+  };
+}
+
 // Lazy initialization: importing/building does not connect, migrate, bootstrap
 // identities, read old disk state, or silently change the active writer.
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
@@ -116,17 +143,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     await store.db.assertInstalled({ source: await readFile(resolve(schemaRoot(), 'neon-game/product-schema.sql'), 'utf8') });
     await schemaCheck(pool);
     const repository = wrapNativePresentationRepository(repositoryFactory({ pool, scope: config.scope }), { env, fetchImpl });
-    const mutationTransaction = async (work, options = {}) => {
-      const descriptors = options.presentationMutation === undefined ? [] : structuredClone(Array.isArray(options.presentationMutation) ? options.presentationMutation : [options.presentationMutation]);
-      const documents = [...(options.presentationDocuments ?? [])];
-      for (const kind of documents) {
-        if (!['project','administration'].includes(kind)) unavailable();
-        const saved = await repository.readDocument(kind);
-        if (!saved) unavailable();
-        descriptors.push({kind,value:saved.value});
-      }
-      return repository.withMutationContext(() => store.boDb.transaction(work), descriptors);
-    };
+    const mutationTransaction = createNativePresentationMutationTransaction({repository,boDb:store.boDb,pool,scope:config.scope});
     const repositoryRoot = resolve(schemaRoot(), '..');
     const media = createStudioMediaRuntime({ repository, scope: config.scope, env, repositoryRoot });
     const dealerIdle = createRegisteredDealerIdle({registryLoader:media.videoRegistry});
