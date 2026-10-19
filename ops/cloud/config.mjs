@@ -12,6 +12,7 @@ import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { validatePrivateMedia } from '../../apps/studio/lib/cloud-media-store.mjs';
+import { movingDriftConfiguration } from '../../packages/presentation/contracts/moving-drift.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -220,7 +221,13 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (!/^[a-f0-9]{64}$/.test(releaseSha256 ?? '')) fail(prefix + 'RELEASE_SHA256');
     if (!credential(movingTicket, 32) || [workerSecret, ticketSecret, translationKey, cartesiaKey, runpodKey,
       env.RUNPOD_API_KEY, elevenLabsKey, blobToken, env.CROUPIER_VERCEL_INGRESS_SECRET].includes(movingTicket)) fail(prefix + 'TICKET_SECRET');
-    movingSpeech = Object.freeze({ bankRecord: JSON.stringify(bankRecord), endpointId, runpodKey, image, releaseSha256, ticketSecret: movingTicket, workerOrigin });
+    let drift;
+    try { drift = movingDriftConfiguration(env); }
+    catch { fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES'); }
+    if (!drift || drift.profiles.length !== 1 || drift.profiles[0].endpointId !== endpointId
+      || drift.profiles[0].releaseDigest !== releaseSha256) fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES');
+    movingSpeech = Object.freeze({ bankRecord: JSON.stringify(bankRecord), endpointId, runpodKey, image, releaseSha256,
+      ticketSecret: movingTicket, workerOrigin, driftProfiles: JSON.stringify(drift.profiles) });
   }
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
@@ -392,6 +399,8 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         } : {}),
         ...(config.movingSpeech ? {
           CROUPIER_MOVING_SPEECH_ENABLED: '1',
+          CROUPIER_STUDIO_MOVING_DRIFT_API: '1',
+          CROUPIER_STUDIO_MOVING_DRIFT_PROFILES: config.movingSpeech.driftProfiles,
           CROUPIER_MOVING_SPEECH_BANK_RECORD: config.movingSpeech.bankRecord,
           CROUPIER_MOVING_SPEECH_ENDPOINT_ID: config.movingSpeech.endpointId,
           CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY: config.movingSpeech.runpodKey,
