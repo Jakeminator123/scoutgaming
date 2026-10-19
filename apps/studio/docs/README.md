@@ -39,8 +39,8 @@ ljud, munrörelser och återgång till grundloopen innan mikrofonprovet.
 Ett eget spelprov görs i samma spelvy; saldo och kort hanteras av servern.
 
 När textprovet fungerar kan spelaren slå på mikrofonen och lämna det
-vanliga webbläsartillståndet. Kontrollera att det faktiskt talade språket
-bevaras genom transkription och svar samt att rätt röst/video spelas upp.
+vanliga webbläsartillståndet. Kontrollera att transkriptionen behåller talets
+språk, att svaret följer dealerns språkpolicy och att rätt röst/video spelas upp.
 
 **Stoppa drift** begär Av. Vänta på färsk faktisk Av och verifierat stopp;
 att bara önskemålet ändras räcker inte. Röstprofilens aktivering är ett
