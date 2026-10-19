@@ -29,6 +29,30 @@ verklig kostnadsreservation och exakt release-/bankattestering.
 Ingen GPU-/produktionsändring. [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan)
 och [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Rättad produktionsbehörighet — HUVUDAGENT6, 19 oktober 2026
+
+Normal autentiserad N1-GET till `/studio/api/admin/moving-drift` är verifierat
+rättad från 503 till 200. Produktionsrollen `croupier_game` saknade SELECT,
+INSERT och UPDATE på `croupier_studio.moving_drift_control`, ägd av `neondb_owner`.
+Endast de tre rättigheterna tilldelades på Jakobs uppdrag cirka 04:14 UTC;
+DELETE och PUBLIC-åtkomst förblir nekade. SQL016/ledger och molnvariabler är orörda.
+
+Samma browseranrop gav 200 04:14:48 UTC och 04:16:00 UTC på publicerad main
+`b3ff83d442e58c9f6956142003bc9ccaca64f0d3`, Vercel
+`dpl_F8Ppa6Y2B56B5Fyt8ikPzJ7rgEvT`. Standardraden är nu revision 0/önskat Av;
+`connected:false` och nekad admission är väntade före executoranslutning.
+Ingen GPU-/talaktivering eller ny koddeploy gjordes. Vercels anslutningshemlighet
+är fortsatt maskerad; före/efterprovet belägger den riktade rättningens effekt.
+
+PR275:s frysta head `3c1343fbdcdd051738996240057b44140ff407c8` ändrades inte.
+MERGE4 äger dess slutreview/merge; POST-LIPSYNC5 äger senare liveaktivering/prov.
+Detta kvitto löser 503-hindret men ersätter inte deras executor-/providerkontroller.
+[Exakt behörighetsändring och återgång](ENVIRONMENT-VARIABLES.md#runtime-rollens-tabellbehörigheter--verifierat-19-oktober-2026).
+Privata SQL-/browserkvitton och skärmbild finns utanför Git i HUVUDAGENT6:s
+visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
+Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
+`admin-drift-after.png`.
+
 ## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
 [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267) är granskad och
