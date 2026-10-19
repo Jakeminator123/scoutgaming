@@ -24,6 +24,10 @@ node tools/agent-talk.mjs done mitt-id "Klart: ändring, kontroll och eventuell 
   Läs igen vid överlapp eller ett nytt samordningsmeddelande. Upprepa inte
   oförändrad status enligt klockan. Ingen bakgrundspollning eller automatisk väckning. En pausad agent läser
   först när den arbetar igen. En gammal status är inte ett godkännande.
+- Codex-chattmeddelanden kan däremot väcka en modell. Skicka bara ändrade
+  beslut, hinder, ägarskap eller begärda leveranser. Högst ett nödvändigt
+  slutsvar per begäran; ingen kvittens på kvittens. Nödvändiga bekräftelser
+  av ägarskap och `ping`/`ack` behålls.
 - `status <id>` visar riktade pingar och svar för det id:t. Gemensam historik
   visar start/slut och filanspråk, inte andras svar. `status` utan id visar
   bara samordningsöversikten; `status --all` är uttrycklig felsökning av hela tavlan.
@@ -41,6 +45,9 @@ node tools/agent-talk.mjs done mitt-id "Klart: ändring, kontroll och eventuell 
   Långsiktig handoff hör till befintlig Git-dokumentation. Kvittera behandlade
   pingar och kör `done` en gång vid avslut; arkiverade meddelanden är historik,
   inte automatiskt nya uppdrag. Befintlig kö/historikbegränsning sköter resten.
+  Gränserna är ingen automatisk tokenbudget eller rensning av Codex-chattar
+  och provbevis. Projektets lokala snapshot-/observationsretention flyttar
+  äldre poster till `arkiv` enligt `tools/retention-policy.json`.
 - `status ditt-id` visar alltid hela köns kapacitet, även om inga pingar
   matchar ditt id, samt antalet arkiverade obesvarade pingar till dig.
   Läs dem med `archived ditt-id` (högst 40 per sida; valfri sida som sista

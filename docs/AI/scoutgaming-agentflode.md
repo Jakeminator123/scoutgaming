@@ -41,13 +41,20 @@ profil-/rundkontroller eller lagring. Lokala stubtester provar språktext och
 bildtransport utan leverantörsanrop. Driftstatus och kvarstående prov finns i
 [handoffen](../JOHN-HANDOFF.md).
 
-## Riktad kommunikation och löpande städning — 18 oktober 2026
+## Riktad kommunikation och löpande städning — 19 oktober 2026
 
 Agent-talk visar riktade samtal för deltagarna, gemensamma claims för alla.
 `status --all` är uttrycklig felsökning, inte normal start. Delade filer ger
 inte sekretess. Kvittera behandlade pingar och avsluta egna claims en gång;
 köarkivering och historikgräns behålls utan automatisk återstart av gamla uppdrag.
 Uppdatera relevant handoffavsnitt i stället för att lägga till samma kvitto igen.
+Codex-chattmeddelanden kan väcka en modell: skicka bara ändrade beslut, hinder,
+ägarskap eller begärd leverans. Högst ett nödvändigt slutsvar per begäran och
+ingen kvittens på kvittens; nödvändiga ägarbekräftelser och `ping`/`ack` behålls.
+Gränserna gäller aktiv kö/historik, inte en automatisk tokenbudget. Obesvarade
+överflödespingar arkiveras; lokal snapshot-/observationsretention flyttar äldre
+poster till `arkiv`. Claims, Codex-chattar, arkiv och provbevis raderas inte
+automatiskt. Detta inför ingen ny process eller uppmätt tokenbesparing.
 Lokal kontroll och CI delar nu dokumenturval; runtimefiler och okända sökvägar
 behåller ordinarie kontroll. Studio-guidens gamla tvåspelningskrav är borttaget.
 Sidindelningsprovet använder förberedda arkivposter; riktiga CLI-prov av

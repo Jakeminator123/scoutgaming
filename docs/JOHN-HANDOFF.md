@@ -72,6 +72,13 @@ ett tillagt CAS-race. Två negativa dealerprov fångar tidigare beteende i isole
 modulkopior. Underagenterna verifierade 113 partner-/readinesstester respektive
 68 context-/panel-/navigation-/routingtester samt båda klienttypkontrollerna.
 Studios separata typkontroll är också grön.
+Senast integrerad main är `73ca0c46` (PR269/271). Kollegans två runtimefiler,
+tre testfiler, mikrofonfixtur och kommunikationsregler är byteoförändrade mot
+denna main; båda agenternas handoff-/testregistreringar är bevarade.
+Efter integration passerar 69 UI/contextprov och 28 isolerade tal-/mikrofonprov.
+Två valfria browserprov kördes inte utan browserfixtur. Första försöket för två
+integrationstestmoduler saknade lokalt `ws`; låsta gatewayberoenden installerades
+och båda modulerna passerar (sex prov). Orphan-kontrollen: 520 kandidater, noll orphan.
 Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
@@ -84,16 +91,33 @@ platstäckning och historikskanning too_large; inte åtgärdade här.
 
 <a id="dragan-talstatus"></a>
 
-## POST-PISYNK4 — text- och längdgränser, 19 oktober 2026
+## POST-PISYNK4 — talflöde och isolering, 19 oktober 2026
 
 Genererade OpenClaw-svar normaliseras till en rad innan förhandsvisning,
 TTS och hashning; inspelade repliker behåller exakt text och medieidentitet.
 PCM-insamling och bildplan delar nu workerens 220/530 ms marginaler och
 600-rutorsgräns. För lång replik avbryts före render-dispatch med begripligt fel;
 TTS och GPU-förberedelse kan redan ha skett. Ingen image eller kalibrering ändras.
-Fokuserade offlineprov: 60 text-/adaptertester samt 47 PCM-/plan-/runtimetester
-passerade. Full utdelning och mikrofon/OpenClaw i isolerad drift återstår;
-denna kodleverans startar inga GPU-resurser och gör ingen ny visuell acceptans.
+Text-/längdgränserna är mergade i [PR266](https://github.com/Jakeminator123/scoutgaming/pull/266).
+Nästa etapp kopplar riktiga appmoduler i två isolerade integrationsprov:
+SQLite-blackjack-commit → beständigt spelkvitto → moving-runtime/WebSocket,
+och mikrofonkontroll/WAV → transkriptions-API → Director/NDJSON → vald
+Dragan-röstadapter → hashbundet PCM. Proven kontrollerar engångsdebitering,
+exakta utdelningsrutor, dolt kort, rum/browser/spelare samt avbrott vid nästa
+spelkommando eller spelarbyte under transkription. Svenska och engelska
+behåller texten genom förhandsvisning och TTS. Klientkvittot får tider för
+verifierat media, komplett svar, ljudstart och första renderade talruta.
+
+Enheter/DOM, modell, externa TTS-/GPU-anrop och mediebytes är syntetiska i
+integrationsproven. Full utdelning med registrerade originalbytes och faktisk
+mikrofon/OpenClaw/GPU i isolerad drift återstår, liksom inspelad synkgranskning.
+Klientens `play()` är inte mätt hörbar ljudstart. Ingen GPU-resurs eller
+produktionsinställning ändras av kodleveransen.
+Fokuserat: 3 utdelningsprov, 3 mikrofonbryggprov och 22 spelarprov passerar;
+2 valfria browserprov är överhoppade utan installerad fixturemodul.
+En oberoende läsande Codex-granskning hittade inga blockerande fynd.
+CI upptäckte att de två nya integrationerna saknades i fullsvitens register;
+de är nu registrerade i grupperna `moving-speech-deal` och `astrid-camera`.
 UI/UX äger Admin och HUVUDAGENT5 driftstyrningen; gemensamma filer samordnas.
 
 ## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
