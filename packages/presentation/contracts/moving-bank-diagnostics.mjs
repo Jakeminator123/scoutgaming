@@ -13,7 +13,15 @@ const codes=new Set([...SPEECH_PREPARATION_FAILURE_CODES,'rejected','aborted','d
 export function movingBankDiagnostic(stage,error){
  if(!stages.has(stage))return null;
  let code='rejected';
- try{if(codes.has(error?.code))code=error.code;else if(codes.has(error?.message))code=error.message;else if(error?.name==='AbortError')code='aborted';}catch{}
+ try{
+  const candidate=error?.code;
+  if(codes.has(candidate))code=candidate;
+  else{
+   const message=error?.message;
+   if(codes.has(message))code=message;
+   else if(error?.name==='AbortError')code='aborted';
+  }
+ }catch{}
  return stage+':'+code;
 }
 export function readMovingBankDiagnostic(value){

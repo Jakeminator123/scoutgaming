@@ -78,6 +78,7 @@ test('gateway streams exact bank bytes only after application capability authori
 test('gateway carries owned direct callback and signed moving client independently of legacy streaming flag',{timeout:5000},async()=>{
   const web=createServer(),channel=createMovingWorkerChannel({origin:transport,avatar:'dragan',verifiedAvatar:'dragan'});
   const wss=new WebSocketServer({noServer:true,handleProtocols:p=>p.has('moving-v1')?'moving-v1':false});let gateway,worker,client;const seen=[];
+  wss.on('headers',headers=>headers.push('X-Croupier-Moving-Bank-Diagnostic: read:rejected'));
   web.on('upgrade',(req,peer,head)=>{
     seen.push(req.url);
     if(channel.handleUpgrade(req,peer,head))return;
@@ -95,7 +96,11 @@ test('gateway carries owned direct callback and signed moving client independent
     const protocols=['moving-v1','ticket.fixture.signature'];
     assert.equal(await rejected(socket(port,'/moving-speech-stream',{origin,cookie:'player=owner'},protocols)),421);
     const signed={origin,cookie:'player=owner','x-croupier-vercel-secret':secret,'x-croupier-public-origin':origin,'x-forwarded-host':new URL(origin).host,'x-forwarded-proto':'https'};
-    client=socket(port,'/moving-speech-stream',signed,protocols);await once(client,'open');assert.equal(client.protocol,'moving-v1');
+    let upgradeHeaders;
+    client=socket(port,'/moving-speech-stream',signed,protocols);client.once('upgrade',response=>{upgradeHeaders=response.headers;});
+    await once(client,'open');assert.equal(client.protocol,'moving-v1');
+    assert.equal(upgradeHeaders['x-croupier-moving-bank-diagnostic'],undefined);
+    assert.equal(upgradeHeaders.upgrade.toLowerCase(),'websocket');assert.match(upgradeHeaders.connection,/upgrade/i);
     const echoed=once(client,'message');client.send(Buffer.from('patch'));assert.deepEqual((await echoed)[0],Buffer.from('patch'));
     const reached=seen.length;
     for(const extra of [{origin},{cookie:'player=owner'}])assert.equal(await rejected(socket(port,path,extra)),421);

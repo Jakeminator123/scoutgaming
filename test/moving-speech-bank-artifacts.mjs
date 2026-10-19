@@ -148,5 +148,10 @@ test('internal bank diagnostics retain only finite codes and stages',()=>{
  assert.equal(movingBankDiagnostic('read',new DOMException('private','AbortError')),'read:aborted');
  for(const message of ['private-token','https://private.example/token','stale_chat_session?token=private'])assert.equal(movingBankDiagnostic('authorization',Error(message)),'authorization:rejected');
  assert.equal(movingBankDiagnostic('read',{get code(){throw Error('private');}}),'read:rejected');
+ let codeReads=0,messageReads=0;
+ assert.equal(movingBankDiagnostic('authorization',{get code(){return ++codeReads===1?'drift_not_admitting':'private-token';},get message(){messageReads++;return 'private';}}),'authorization:drift_not_admitting');
+ assert.equal(codeReads,1);assert.equal(messageReads,0);
+ assert.equal(movingBankDiagnostic('authorization',{get message(){return ++messageReads===1?'stale_chat_session':'private-token';}}),'authorization:stale_chat_session');
+ assert.equal(messageReads,1);
  for(const value of [null,['authorization:rejected'],'authorization:private','private:rejected','authorization:rejected:private','read:rejected\r\nprivate'])assert.equal(readMovingBankDiagnostic(value),null);
 });

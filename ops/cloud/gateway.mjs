@@ -269,6 +269,7 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
       if (socket.destroyed) { peer.destroy(); return; }
       const lines = [`HTTP/${response.httpVersion} ${response.statusCode} ${response.statusMessage}`];
       for (let i = 0; i < response.rawHeaders.length; i += 2) {
+        if(response.rawHeaders[i].toLowerCase()===MOVING_BANK_DIAGNOSTIC_HEADER)continue;
         lines.push(`${response.rawHeaders[i]}: ${response.rawHeaders[i + 1]}`);
       }
       socket.write(`${lines.join('\r\n')}\r\n\r\n`);
