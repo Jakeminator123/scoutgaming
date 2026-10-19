@@ -1,25 +1,24 @@
 "use client"
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Network, LayoutDashboard, Activity, CircleDollarSign, Settings, Cpu, House, Clapperboard } from 'lucide-react';
-import {adminToolName} from '../../../runtime/admin-routing.mjs';
-const main = [
-  {label:'Översikt',href:'/admin',icon:House},
-  {label:'Spelbolag & rum',href:'/admin/rooms',icon:Network},
-  {label:'Dealers & klipp',href:'/admin/clips',icon:Clapperboard},
-  {label:'Bord & bakgrunder',href:'/admin/assets',icon:LayoutDashboard},
-  {label:'Drift',href:'/admin/drift',icon:Activity},
-  {label:'Ekonomi',href:'/admin/ekonomi',icon:CircleDollarSign},
-];
-const system = [['Verktyg','/admin/tools'],['Kopplingar','/admin/structure'],['Användning & beroenden','/admin/deletion'],['Agentmodeller','/admin/ai/models'],['Adminroboten','/admin/ai/chat'],['Konton & åtkomst','/admin/admin/accounts'],['Betalningar','/admin/admin/payments'],['Integrationer','/admin/admin/api'],['Bolagsjournal','/admin/admin/log']];
-const systemGroups = [{label:'Arbetsverktyg',items:system.slice(0,3)},{label:'AI och assistenter',items:system.slice(3,5)},{label:'Åtkomst och historik',items:system.slice(5)}];
+import {usePathname,useSearchParams} from 'next/navigation';
+import {Network,LayoutDashboard,Activity,CircleDollarSign,Settings,Cpu,House,Clapperboard,Users,Play,Building2,type LucideIcon} from 'lucide-react';
+import {adminToolName,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
+import {adminNavigationGroups,adminSystemGroups} from '../../lib/admin-navigation';
+
+const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Clapperboard,'/admin/dealers':Users,'/admin/assets':LayoutDashboard,'/admin/rehearsal':Play,'/admin/companies':Building2,'/admin/drift':Activity,'/admin/ekonomi':CircleDollarSign};
 export function StudioSidebar() {
-  const pathname=usePathname();
-  const path=pathname==='/admin/admin/players'?'/admin/admin/accounts':pathname;
-  const systemActive=system.some(([,href])=>href===path)||Boolean(adminToolName(path));
-  return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>WORKSPACE</small></Link>
-    <nav aria-label="Huvudmeny">{main.map(({label,href,icon:Icon})=><Link key={href} href={href} aria-label={label} title={label} aria-current={path===href||href==='/admin/clips'&&path==='/admin/dealers'?'page':undefined}><Icon size={17} aria-hidden="true"/><span>{label}</span></Link>)}
-      <details key={systemActive?'active-system':'system'} open={systemActive||undefined} className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17} aria-hidden="true"/><span>System</span></summary>{systemGroups.map(group=><div className="studio-system-group" key={group.label}><p>{group.label}</p>{group.items.map(([label,href])=><Link key={href} href={href} aria-current={path===href||href==='/admin/tools'&&adminToolName(path)?'page':undefined}>{label}</Link>)}</div>)}</details>
+  const pathname=usePathname(),search=useSearchParams().toString();
+  const path=isStudioAdminRoute(pathname,search)?'/admin/clips':pathname==='/admin/admin/players'?'/admin/admin/accounts':pathname;
+  const primary=adminNavigationGroups.some(group=>group.links.some(link=>link.href===path));
+  const systemActive=adminSystemGroups.some(group=>group.links.some(link=>link.href===path))||!primary&&Boolean(adminToolName(path));
+  return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>ADMIN</small></Link>
+    <nav aria-label="Huvudmeny">
+      <Link href="/admin" aria-label="Översikt" title="Översikt" aria-current={path==='/admin'?'page':undefined}><House size={17} aria-hidden="true"/><span>Översikt</span></Link>
+      {adminNavigationGroups.map(group=><div className="studio-nav-group" key={group.id} role="group" aria-labelledby={'nav-'+group.id}>
+        <p id={'nav-'+group.id} className="studio-nav-label">{group.label}</p>
+        {group.links.map(({label,href})=>{const Icon=icons[href];return <Link key={href} href={href} aria-label={label} title={label} aria-current={path===href?'page':undefined}><Icon size={17} aria-hidden="true"/><span>{label}</span></Link>;})}
+      </div>)}
+      <details key={systemActive?'active-system':'system'} open={systemActive||undefined} className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17} aria-hidden="true"/><span>System</span></summary>{adminSystemGroups.map(group=><div className="studio-system-group" key={group.label}><p>{group.label}</p>{group.links.map(({label,href})=><Link key={href} href={href} aria-current={path===href||href==='/admin/tools'&&systemActive&&adminToolName(path)?'page':undefined}>{label}</Link>)}</div>)}</details>
     </nav><div className="studio-sidebar-foot"><Cpu size={14} aria-hidden="true"/><span>Intern arbetsyta</span></div>
   </aside>;
 }

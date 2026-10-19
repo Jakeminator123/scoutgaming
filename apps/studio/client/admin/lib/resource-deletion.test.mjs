@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as adminNavigation from './admin-navigation.ts';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
@@ -148,7 +149,7 @@ test('dependency overview has an accessible active Admin link and unique resourc
   const componentUrl=new URL('../components/studio/studio-sidebar.tsx',import.meta.url),componentRequire=createRequire(componentUrl),module={exports:{}};
   let pathname='/admin/deletion';
   runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
-    require:name=>name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname}:componentRequire(name)});
+    require:name=>name.includes('admin-navigation')?adminNavigation:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams()}:componentRequire(name)});
   const dependencyLink=()=>{
     const navigation=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='nav'&&node.props['aria-label']==='Huvudmeny');
     assert.equal(navigation.length,1);

@@ -38,6 +38,41 @@ Kodändringen skriver inga molnvariabler
 eller produktionsdata. Runtime-/budgetaktivering samordnas separat med
 POST-PISYNK4 och granskning/merge med MERGE3.
 
+### Runtime-rollens tabellbehörigheter — verifierat 19 oktober 2026
+
+Installerad SQL016 och grön migrations-readiness bevisar inte runtime-rollens
+åtkomst. Drift-GET tar radlås och kan initialisera önskat Av; rollen behöver
+schema-USAGE samt SELECT, INSERT och UPDATE på kontrolltabellen.
+
+HUVUDAGENT6 verifierade `croupier-production` (`wandering-hill-60561912`),
+`main` (`br-flat-fog-b161a6r8`), databas/roll `croupier_game`. Tabellen ägdes av
+`neondb_owner`; runtime-rollen saknade samtliga tre tabellrättigheter.
+Ett läsprov gav `permission denied`. På Jakobs uppdrag tilldelades endast:
+
+```sql
+GRANT SELECT, INSERT, UPDATE
+ON TABLE croupier_studio.moving_drift_control TO croupier_game;
+```
+
+Ändringen gjordes som befintlig tabellägare 19 oktober cirka 04:14 UTC.
+DELETE för runtime-rollen och alla PUBLIC-grants förblir nekade. SQL016,
+migrationsledger, ägare, RLS, default privileges och molnvariabler ändrades inte.
+Återgång återkallar endast dessa tre tillkomna rättigheter; då nekas drift-API:t
+för rollen igen. Ändra inte en redan tillämpad migrations checksumma för detta.
+
+```sql
+REVOKE SELECT, INSERT, UPDATE
+ON TABLE croupier_studio.moving_drift_control FROM croupier_game;
+```
+
+Samma normala, autentiserade N1-GET på www gav 503 före ändringen och 200 efteråt
+04:14:48 UTC, återläst 04:16:00 UTC, på Vercel `dpl_F8Ppa6Y2B56B5Fyt8ikPzJ7rgEvT`,
+main `b3ff83d442e58c9f6956142003bc9ccaca64f0d3`. Det belägger behörighetsfelets
+påverkan på anropet utan att läsa tillbaka Vercels maskerade anslutningshemlighet.
+GET initialiserade standardraden: revision 0, önskat Av. `connected:false`,
+`allowedModes:[off]` och nekad admission kvarstår; inget tal/providerjobb startades.
+Executorintegration och separat aktivering/prov återstår.
+
 ## Aktuellt miljöval för Admin — verifierat 18 oktober 2026
 
 Behåll Scoutgamings aktuella produkt på Neon-projektet

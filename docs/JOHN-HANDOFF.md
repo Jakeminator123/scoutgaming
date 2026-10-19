@@ -50,6 +50,32 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Rättad produktionsbehörighet — HUVUDAGENT6, 19 oktober 2026
+
+Normal autentiserad N1-GET till `/studio/api/admin/moving-drift` är verifierat
+rättad från 503 till 200. Produktionsrollen `croupier_game` saknade SELECT,
+INSERT och UPDATE på `croupier_studio.moving_drift_control`, ägd av `neondb_owner`.
+Endast de tre rättigheterna tilldelades på Jakobs uppdrag cirka 04:14 UTC;
+DELETE och PUBLIC-åtkomst förblir nekade. SQL016/ledger och molnvariabler är orörda.
+
+Samma browseranrop gav 200 04:14:48 UTC och 04:16:00 UTC på publicerad main
+`b3ff83d442e58c9f6956142003bc9ccaca64f0d3`, Vercel
+`dpl_F8Ppa6Y2B56B5Fyt8ikPzJ7rgEvT`. Standardraden är nu revision 0/önskat Av;
+`connected:false` och nekad admission är väntade före executoranslutning.
+Ingen GPU-/talaktivering eller ny koddeploy gjordes. Vercels anslutningshemlighet
+är fortsatt maskerad; före/efterprovet belägger den riktade rättningens effekt.
+
+PR275:s granskade head `3c1343fbdcdd051738996240057b44140ff407c8` ändrades inte
+av denna rättning. MERGE4 bekräftade senare merge till main
+`087f4fd5f8b354371521d49c52d8ab210f9ee6b0`; publiceringen följs separat av MERGE4.
+POST-LIPSYNC5 äger senare liveaktivering/prov.
+Detta kvitto löser 503-hindret men ersätter inte deras executor-/providerkontroller.
+[Exakt behörighetsändring och återgång](ENVIRONMENT-VARIABLES.md#runtime-rollens-tabellbehörigheter--verifierat-19-oktober-2026).
+Privata SQL-/browserkvitton och skärmbild finns utanför Git i HUVUDAGENT6:s
+visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
+Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
+`admin-drift-after.png`.
+
 ## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
 Klippkartans scenreglage från [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
@@ -60,16 +86,15 @@ hans 92 UI-/transportprov och SQL-/HTTPS-underlag är tidigare evidens.
 Scen & lager skriver vald gemensam mall med projektrevision och berörda rum;
 rummets egna val använder fortsatt den rumsbundna editorn/writern.
 
-[PR277](https://github.com/Jakeminator123/scoutgaming/pull/277), senast
-7cefa6fd, granskas av MERGE4. Admin-startsida och desktop-/mobilmeny får
+[PR277](https://github.com/Jakeminator123/scoutgaming/pull/277) är mergad som 989e74e2 och publicerad på webb enligt MERGE4:s Vercel-kvitto. Admin-startsida och desktop-/mobilmeny får
 **Skapande** och **Verksamhet** enligt produktmodellen. En gemensam lista
 håller namn/länkar samstämmiga; System och tidigare arbetsytor finns kvar.
 61 navigations-/åtkomstprov, typer/klientbygge och isolerad CSS-bredd
 1280/960/390 px är verifierade. CI:s två gamla testladdare är rättade mot
 verklig navigation; hela Admin-gruppen passerar lokalt, 338 prov i 13 grupper
-utan skips. MERGE4 håller main-publicering under POST:s avtalade provfönster.
+utan skips. Publiceringskontrollen är tillskriven MERGE4.
 
-Nästa separata etapp finns på codex/admin-rooms-ui2, från main 087f4fd5:
+PR278 på codex/admin-rooms-ui2 är integrerad med main 989e74e2:
 /admin/rooms visar rumskort för exakt valt aktivt bolag, med spel, sparad
 rumsstatus och publiceringsstatus. Rumsdetaljen visar valt rum och en tydlig
 väg till befintlig publiceringsgranskning. Kortbyte använder samma
@@ -79,7 +104,7 @@ Publicerade rum behåller samma PartnerAppearanceLoader, API och callbacks.
 Delad mall ligger kvar separat med påverkanstext. På mobil används den
 kompakta befintliga rumsväljaren; breda vyer får listan intill detaljytan.
 
-Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips,
+Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips. Efter integration med main passerar hela Admin-gruppen (339 prov i 13 grupper),
 inklusive nytt kortprov för bolagsgräns, avvisat osparat byte, pågående
 operation och exakt accepterad kontext. Admin/lobby-typer och klientbygge
 passerar; befintliga CSS-composes-varningar kvarstår. Verkligt klientbygge

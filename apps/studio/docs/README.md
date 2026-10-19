@@ -80,7 +80,12 @@ Rumsval sparas bara för valt rum. Gemensam mall finns i en separat
 detaljsektion; dess redigerare visar vilka andra rum som kan påverkas.
 Gamla länkar med `view=registered` fungerar men behövs inte längre.
 
-**Hitta rätt i Admin:** **Dealers & klipp** öppnar klippkartan. Flikarna
+**Hitta rätt i Admin:** Startsidan och menyn delar arbetet i **Skapande** och
+**Verksamhet**. Under Skapande finns **Klippkarta**, **Dealerregister**,
+**Bord & bakgrunder** och **Provspelning**. Verksamhet samlar **Spelbolag & rum**,
+**Bolag & team**, **Drift** och **Ekonomi**. **System** samlar övriga verktyg
+och åtkomst. Samma grupper och namn finns i mobilens sidväljare.
+**Klippkarta** samlar situationer och klipp. Flikarna
 **Klippkarta**, **Dealerregister** och **Lägg till dealer eller filmer** håller
 relaterat arbete tillsammans. **Bord & bakgrunder** har ett gemensamt bibliotek;
 bord filtreras efter spel och bakgrunder kan återanvändas. **System** samlar
