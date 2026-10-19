@@ -45,6 +45,16 @@ med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
 `apps/studio/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
 är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
 
+**Drift → Driftläge** (`/admin/drift`) skiljer sparat önskemål från faktisk drift.
+Välj Av, Sparläge eller Varm och en tillgänglig GPU-profil; servern avgör vilka
+val som går att använda. Varmperioden kan vara 30 minuter, 2 timmar eller 24 timmar.
+**Använd läge** sparar önskemålet. **Stoppa drift** begär Av; först en färsk
+observation bekräftar att driften har stannat. Okänd status eller okänt pris
+visas som sådant. Vid ändrad revision behålls dina fält: uppdatera status och
+välj **Läs in sparat val** innan du gör om valet. En misslyckad skrivning
+skickas inte om automatiskt. Det första kontrollplanet tillåter bara önskat Av;
+Sparläge och Varm kräver ansluten och verifierad serverfunktion.
+
 **System** grupperar arbetsverktyg, AI-assistenter samt åtkomst och historik.
 **Bolagsjournal** ersätter den tidigare tomma Ändringslogg-sidan: välj ett aktivt
 registrerat bolag och öppna **Team & journal**, sedan **Visa journal**.
