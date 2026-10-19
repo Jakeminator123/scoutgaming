@@ -2,102 +2,48 @@
 
 ## UX/UI: klippkarta och scenplacering — 19 oktober 2026
 
-[PR264](https://github.com/Jakeminator123/scoutgaming/pull/264) är mergad som
-`19b4cc9b`: kategori → situation → standard/varianter, separat dealer och sju
-spelarplatser, basloop/beteenden och inspelat originaltal. Biblioteksroller läser
-sparade bindningar och osparat tal bevaras. [PR265](https://github.com/Jakeminator123/scoutgaming/pull/265)
-är mergad som `379aa907`: referensbyte behåller `motion-video` och kräver avstängd
-profil före sparning; 50 riktade tester passerade. Produktmodellen finns endast i
-[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
+[PR267](https://github.com/Jakeminator123/scoutgaming/pull/267) är granskad och
+mergad som `05facce2` från `ab939f15`. Vercel är READY på `05facce2` och senare
+`819a88ff`; Render `dep-dbanq3hsrm7s73alt270` och publik versionsroute är `05facce2`.
+Publik capability21 ger HTTP200 och `blackjackAnchors:v1` (1019 byte). [PR264](https://github.com/Jakeminator123/scoutgaming/pull/264)
+samlade klipp som kategori → situation → standard/varianter; [PR265](https://github.com/Jakeminator123/scoutgaming/pull/265)
+bevarar filmreferensens typ och kräver avstängd profil före referensbyte.
 
-Ny leverans i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267), avstämd med HUVUDAGENT5:
-`/admin/clips` → Scen & lager samlar förhandsvisning och separata dealer-/bordreglage.
-Kort och marker väljer Följ bord, Följ dealer eller Ligg still i scenen per
-borddesign och mobil/desktop. Ankarbyte bevarar läget. Flytta scenen tillsammans
-ändrar dealer/bord en gång vardera. Dragning, punkt-/gruppfält, Följ korten och
-återställning av sparad grupp använder samma projektionsmatematik som spelaren.
-Markernas manuella ram bevaras när de följer korten. Äldre editorn hänvisar
-ankarscener till Admin med aktuell sammansättning, startdealer, spel, operatör
-och uttryckligt rum (aldrig bordfilens ID). Länken använder förälderns sparskydd.
-Mottagaren behåller explicit mall/spel även när rumskontexten hör till en annan
-mall; panelen redigerar vald mall och rummets registrerade koppling ändras inte.
-Nytt rum utan uttryckligt mallval ärver inte föregående rums mall. Utelämnat
-spel vid byte av rum/bolag ärvs inte heller: det nya rummets spel gäller medan
-ett uttryckligt spelval behålls. 69 riktade context-/panel-/routing-/navigationprov
-passerar, inklusive monterat rumsbyte och Bakåt/Framåt utan ändrade rumsdata.
+`/admin/clips` → **Scen & lager** redigerar vald gemensam mall. Dealer och bord
+flyttas separat eller tillsammans; kort och marker följer bord, dealer eller
+ligger still i scenen. Ankarbyte bevarar placeringen; punkt/grupp kan dras,
+finjusteras och återställas till verklig sparad bas. Mobil/desktop och varje
+borddesign har egna värden. Explicit mall/spel behålls även vid annan
+rumskontext; byte till nytt rum ärver inte föregående mall/spel. Rummets
+registrerade koppling och `roomOverrides` ändras inte. Sparning använder
+projektrevision och bekräftelse av berörda rum. Frysta paket behåller geometri;
+alla berörda publicerings-/livscykelvägar kräver capability21 för ankare,
+även under låst transaktion. Ingen SQL-migration. Filmspår, källrutor, tal,
+serverkort och saldo är orörda. Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
 
-Sparning går via den delade mallens projekt, revision och bekräftelse av berörda
-rum. Frysta paket behåller geometri; roomOverrides får inga nya fält. Nytt
-valfritt anchors-avtal kräver runtime capability21 före skrivning/publicering,
-inklusive arkiverad geometri. Rum/bolagslivscykel läser även vald operatörs
-frysta paket före preflight och kontrollerar det igen inne i transaktionen;
-paketets ankare skyddas även när de tagits bort ur utkastet.
-Materialpapperskorgen förkontrollerar enbart de kvarvarande frysta presentationer
-som faktiskt ska publiceras om, och kontrollerar dem igen före första mutation.
-Oberörda operatörspaket och ankare i borttagna scener höjer inte kontraktskravet.
-Dealerarkivering kontrollerar också kvarvarande frysta presentationer från sin
-faktiska publiceringsplan före preflight och före första skrivning under låset.
-Partnerns publicering och äldre branding-writer förhandlar vald operatörs frysta
-presentation före SQL och kontrollerar den låsta payloaden igen. Läsning,
-utkast/granskning och andra operatörers paket får inget globalt runtimekrav.
-Ingen SQL-migration. Deployment av läsaren krävs innan nya ankare kan sparas
-mot produktion. Filmspår, källrutor, tal och
-serverkort/saldo är orörda. Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
+Verifierat lokalt: klientbygge, båda typkontrollerna, 69 UI/contextprov,
+124 backendprov plus fem dealer/CAS-prov och 113 partner/readinessprov.
+Isolerat browserprov med syntetiska medier/minnesdata täcker separat och
+gemensam flytt, följval, dragning, återställning samt sparning/återläsning
+för båda formaten. Riktig lokal PostgreSQL, omstart och HTTPS klarar fyra
+kontrakts-, 26 legacy- och 59 integrationskontroller med 201 stabila källhashar.
+Den därefter kompletterade källistan klarar sex integritetsprov. Två valfria
+browserprov kördes inte utan sin fixtur. Slut-CI39187800963 och GitGuardian för
+`ab939f15` är gröna enligt MERGE3; detta ersätter äldre CI-kvitton. Eget liveprov
+på `/admin/clips` verifierar separata lager, kortretarget utan hopp, följande kort,
+scenfasta manuella marker och gemensam flytt exakt en gång via synliga fält/SVG.
+Provets lokala ändringar är kastade och sparknappen är åter inaktiv. Ingen
+produktionssparning, publiceringsändring eller GPU-/talaktivering gjordes.
 
-Verifierat: 248 fokuserade tester, klientbygge och båda typkontrollerna.
-Befintliga CSS-composes-varningar kvarstår. Isolerat webbprov med syntetiska
-klipp och minnesdata verifierade separat dealer/bord, gemensam scenflytt,
-stillastående marker, dragning av kortpunkt, återställning, följval, berörda
-rum-bekräftelse, sparning och återläsning. Två sparningar gav skilda mobil- och
-desktopvärden. Fixturen är stoppad; inga verkliga spel-/media-/GPU- eller
-produktionsprov ingår. Browsermoduler och filmad bindningsinvalidering är testade.
-Första full-CI stoppade setup på ett oregistrerat ankartest. Testet är nu
-registrerat i presentation/card-view; orphan-kontrollen är grön (518 kandidater)
-och 40 riktade omprov passerar. Övriga då visade CI-fel var saknade beroenden
-efter överhoppad setup, enligt MERGE3:s loggläsning. CI39181331116 är grön
-för `ae2adb1b` enligt MERGE3; CI39183342087 är grön för `840f5719`
-enligt MERGE3. Slut-CI/GPT för mottagar-/publiceringsrättningarna återstår.
-Två P2 är rättade: återställning använder förälderns verkliga sparade bas över
-panelbyten, sparning och serverjämförelse; livscykelspärren ovan omfattar frysta
-paket, även genom materialpapperskorgen. 126 backendtester passerar; underagentens körning verifierade 32
-UI/navigationtester och båda klienttypkontrollerna. Fem nya UI-prov och fem
-backendprov misslyckas med tidigare beteende. Ytterligare tre negativa
-materialpapperskorgsprov fångar den tidigare oskyddade publiceringsvägen.
-Navigationsrättningen är verifierad med 47 preview-/Admin-tester och Studios
-typkontroll. Tre nya prov täcker scenkontext, verkligt rum, sparfel/konflikt och
-serveringångens vidarebefordran av rum/spel.
-Fortsatt review rättar mottagaren samt dealer-/partnerpublicering av kvarvarande
-ankare. 124 backendtester och därefter fem riktade dealerprov passerar, inklusive
-ett tillagt CAS-race. Två negativa dealerprov fångar tidigare beteende i isolerade
-modulkopior. Underagenterna verifierade 113 partner-/readinesstester respektive
-68 context-/panel-/navigation-/routingtester samt båda klienttypkontrollerna.
-Studios separata typkontroll är också grön.
-Senast integrerad main är `73ca0c46` (PR269/271). Kollegans två runtimefiler,
-tre testfiler, mikrofonfixtur och kommunikationsregler är byteoförändrade mot
-denna main; båda agenternas handoff-/testregistreringar är bevarade.
-Efter integration passerar 69 UI/contextprov och 28 isolerade tal-/mikrofonprov.
-Två valfria browserprov kördes inte utan browserfixtur. Första försöket för två
-integrationstestmoduler saknade lokalt `ws`; låsta gatewayberoenden installerades
-och båda modulerna passerar (sex prov). Orphan-kontrollen: 520 kandidater, noll orphan.
-Partnerns isolerade SQL-fixtur har nu explicit syntetisk readinesstransport för
-native publiceringspreflighten. Produktionsspärren och 409/403-/auditrollback-
-assertionerna är oförändrade. Hela `tools/studio-isolated-qa.mjs` är körd i WSL
-med Node24.21 och tillfällig PostgreSQL: fyra kontraktskontroller, 26 legacy-
-och 59 integrationskontroller passerar; 201 källhashar förblir oförändrade.
-Verklig SQL, omstart och HTTPS ingår; inga produktionsanslutningar används.
-39 närliggande partnerprov passerar också.
-Slut-CI hittade att kontraktsfilen som SQL-fixturen nu importerar saknades i
-kvittots källista. Den är tillagd en gång; sex riktade fixtur-/integritetsprov
-passerar. Unikhets- och importassertionerna samt produktkoden är oförändrade.
-Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
-
-PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
-HUVUDAGENT5 har drift-API i draft-PR270; providerkoppling och drift-UI återstår. API:t skiljer sparat önskemål från faktiskt observerad drift.
-POST-PISYNK4:s text-/ljudlängdsfixar är mergade i PR266 (`3673a2c9`); fortsatta
-utdelnings-/OpenClaw-prov och deras isolering ägs där. Scenfilerna är separata.
-Demoer och arbetslogg finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
-GitGuardian: två befintliga öppna incidenter (38318914,38318915), partiell
-platstäckning och historikskanning too_large; inte åtgärdade här.
+Kvar: bredare visuell omarbetning av Admin och större förhandsvisning i scenpanelen, PNG-idle, generell chattregeleditor
+och var åttonde utdelning per box. HUVUDAGENT5 äger drift-API i draft-PR270;
+UI/UX äger driftväljaren, och providerkoppling/observerad drift återstår.
+POST-PISYNK4 äger tal under utdelning och OpenClaw-proven; inget nytt
+uppspelningskvitto finns. Privata demoer och arbetslogg behålls i
+`C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`. Egna QA-servrar/processer och
+tempstatusfiler är undanplockade; aktiva testberoenden behålls. Två befintliga
+GitGuardian-incidenter (38318914/38318915), partiell platstäckning och historisk
+skanning `too_large` är fortsatt separat oavklarad säkerhetsstatus.
 
 <a id="dragan-talstatus"></a>
 
