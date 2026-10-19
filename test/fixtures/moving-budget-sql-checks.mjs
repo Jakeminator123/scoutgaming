@@ -6,7 +6,7 @@ import { movingCapacityFixture } from './moving-capacity.mjs';
 import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 
 // Called only after the integration harness verifies an empty localhost fixture.
-// Exercise the actual immutable 014 DDL before 015, then roll back everything so
+// Exercise immutable014/015 before017, then roll back everything so
 // the normal migration runner independently verifies all ledger fingerprints.
 export async function runMovingBudgetMigrationSqlChecks({pool}) {
   const migrations=await loadStudioMigrations(),client=await pool.connect();
@@ -27,7 +27,7 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       VALUES('isolated-capacity','qa','existing-grant',$1,10800000,13200000,10800000,'{}',1)`,[randomUUID()]);
     const snapshot=async()=>{
       const data={};
-      for(const table of migrations.flatMap(row=>row.tables)) {
+      for(const table of migrations.filter(row=>row.version<'015').flatMap(row=>row.tables)) {
         // Identifiers come only from the reviewed fixed migration manifest.
         data[table]=(await client.query(`SELECT to_jsonb(t) AS row FROM croupier_studio.${table} t ORDER BY to_jsonb(t)::text`)).rows;
       }
@@ -47,6 +47,27 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       await assert.rejects(insert(previous,limit),error=>error.code==='23514');
       await client.query('ROLLBACK TO SAVEPOINT invalid_capacity');
     }
+    const before017=await snapshot();
+    await client.query(migrations.find(row=>row.version==='017').sql);
+    assert.deepEqual(await snapshot(),before017,'017 changes no grant, reservation, policy, data or ledger row');
+    assert.deepEqual(await checks(),oldChecks.map(row=>({...row,definition:row.definition.replace('15000000','45000000')})));
+    await runInitialBudgetSqlChecks(client,'017');
+    await insert(43800000,45000000);
+    for(const [previous,limit] of [[43800000,45000001],[45000001,45000002]]){
+      await client.query('SAVEPOINT invalid_capacity45');
+      await assert.rejects(insert(previous,limit),error=>error.code==='23514');
+      await client.query('ROLLBACK TO SAVEPOINT invalid_capacity45');
+    }
+    const priorBindings=await snapshot();
+    await client.query('SAVEPOINT binding_capacity45');
+    const exact=await client.query(`UPDATE croupier_studio.moving_speech_bindings SET budget_limit_micro_usd=45000000
+      WHERE environment_id='qa_initial_017' AND session_id=(SELECT session_id FROM croupier_studio.moving_speech_bindings
+      WHERE environment_id='qa_initial_017' ORDER BY session_id LIMIT 1) RETURNING session_id`);
+    assert.equal(exact.rowCount,1);
+    await assert.rejects(client.query(`UPDATE croupier_studio.moving_speech_bindings SET budget_limit_micro_usd=45000001
+      WHERE environment_id='qa_initial_017' AND session_id=$1`,[exact.rows[0].session_id]),error=>error.code==='23514');
+    await client.query('ROLLBACK TO SAVEPOINT binding_capacity45');
+    assert.deepEqual(await snapshot(),priorBindings,'SQL boundary checks leave all prior budget history unchanged');
   } finally {try{await client.query('ROLLBACK');}finally{client.release();}}
 }
 
@@ -80,7 +101,7 @@ async function runInitialBudgetSqlChecks(client,version) {
   };
   for(let attempt=1;attempt<=11;attempt++){
     const saved=await journal.reserveMovingSession(request());
-    assert.equal(saved.totalBudgetMicroUsd,13200000,`${version}: initial and durable grant must not inherit technical40`);
+    assert.equal(saved.totalBudgetMicroUsd,13200000,`${version}: initial and durable grant must not inherit technical capacity`);
     assert.equal(saved.totalReservedMicroUsd,attempt*1200000);
     const jobId=`initial-${saved.sessionId}`;
     await journal.markRequestSubmissionStarted({key:saved.key,lease});
@@ -240,7 +261,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   }
   const afterCapacity=await history();assert.equal(afterCapacity.length,13);
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
-  assert.deepEqual(await history(),afterCapacity,'40 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
+  assert.deepEqual(await history(),afterCapacity,'45 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
   assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies,fundedCapacity]);
   await journal.releaseLease({lease});

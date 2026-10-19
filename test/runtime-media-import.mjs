@@ -190,6 +190,24 @@ test('015 is required before runtime import and its installed ledger proof is re
   }
 });
 
+test('runtime import accepts missing or installed optional017 and still rechecks its ledger proof',async()=>{
+  for(const installed of [false,true]){
+    const state=structuredClone(schema),pool=memoryPool();
+    if(installed)state.applied.push({version:'017',checksum:hash('017'),structureChecksum:hash('structure-017')});
+    else state.optionalPending=[{version:'017'}];
+    pool.ledger=state.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum}));
+    const check=async()=>structuredClone(state);
+    const review=await planRuntimeMediaImport({pool,prepared,schemaCheck:check});
+    assert.equal((await apply(pool,review,{schemaCheck:check})).changed,true);
+    if(installed){
+      const next=await planRuntimeMediaImport({pool,prepared,schemaCheck:check}),before=pool.snapshot();
+      pool.ledger.find(row=>row.version==='017').structure_checksum='f'.repeat(64);
+      await assert.rejects(apply(pool,next,{schemaCheck:check}),{code:'studio_runtime_import_schema_unverified'});
+      assert.deepEqual(pool.snapshot(),before);
+    }
+  }
+});
+
 test('concurrent reviewed insert has one winner; stale replacement never overwrites a newer catalogue',async()=>{
   const pool=memoryPool(),review=await plan(pool);
   const results=await Promise.allSettled([apply(pool,review),apply(pool,review)]);

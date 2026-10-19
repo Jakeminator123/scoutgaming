@@ -129,6 +129,17 @@ En oberoende läsande Codex-granskning hittade inga blockerande fynd.
 CI upptäckte att de två nya integrationerna saknades i fullsvitens register;
 de är nu registrerade i grupperna `moving-speech-deal` och `astrid-camera`.
 UI/UX äger Admin och HUVUDAGENT5 driftstyrningen; gemensamma filer samordnas.
+Jakob har satt totaltaket till45USD, inte45USD extra. En separat valfri017
+breddar endast teknisk kapacitet; initial13,2, försöksreserv1,2 och dygn20USD
+är oförändrade.73 fokuserade tester och verklig isolerad PostgreSQL med
+omstart/HTTPS passerar, inklusive45/+1mikro och bevarad historik.
+Produktionens017, kompatibel driftsättning och separat finansierat belopp är
+ännu inte verifierade här. Dagens planerade fönster är2,4USD och ryms även
+inom befintligt40USD-tak. Ingen GPU-/visuell kvittens ingår i denna ändring.
+CI upptäckte tre kvarvarande förväntningar på föregående tekniska tak/manifest.
+De två sessionfallen och Studio-fixturen är uppdaterade till45USD/optional017;
+initialbelopp, dags-/försöks-/tidsgränser och produktkod är oförändrade.
+
 
 ## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
 
