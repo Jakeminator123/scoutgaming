@@ -88,6 +88,25 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Gateway-RPC: deterministiskt deadlineprov — HUVUDAGENT6
+
+MERGE4 rapporterade att PR288:s OpenClaw-prov nådde korrekt timeout men fick
+noll serveranslutningar i stället för testets förväntade en. En isolerad lokal
+WebSocket med 120 ms fördröjd handskakning reproducerar detta: klientens
+40 ms-deadline avslutar säkert innan någon serveranslutning registreras.
+Det är ett race i testantagandet, inte bevis för ett produktionsfel.
+
+Deadlineprovet använder nu befintlig WebSocketImpl-injektion för tyst
+handskakning respektive obesvarad config.get. Verklig klienttimer är kvar;
+exakta frames, en konstruktion och en stängning verifieras. config.patch
+ligger efter lyckad get och skickas därför aldrig vid timeout. De övriga
+riktiga WebSocket-proven för signering, scope/version och osäker mutation
+är bevarade. 13/13 prov och oberoende läsgranskning passerar utan blockerare.
+
+Endast testet och denna handoff ändras. Produktkod, tidsgränser, auth,
+OpenClawkonfiguration, moln, media, GPU och budget är orörda; PR288 hålls
+fryst. MERGE4 äger CI, slutgranskning och samlad publicering.
+
 ### Cacheinitialisering och pinnad session — HUVUDAGENT6
 
 Ett offlineprov visar att driftobservatören avvisade färsk providerdata med

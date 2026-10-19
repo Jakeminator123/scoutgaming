@@ -108,9 +108,34 @@ test('native conflict and scope errors retain only safe actionable codes', async
 });
 
 test('unresponsive peer reaches bounded deadline and fails before mutation without retry', async t => {
-  const f = await fixture(t, { request:() => {} });
-  await assert.rejects(withGatewayAdminRpc(f.settings, rpc => rpc.call('config.get'), { timeoutMs:40 }), { code:'openclaw_admin_unavailable' });
-  assert.equal(f.connections(), 1);
+  // Keep the real deadline, but do not require CI to establish TCP within 40ms.
+  // Native WebSocket tests above still cover the signed protocol and failures.
+  for (const stage of ['before challenge', 'waiting for config.get']) await t.test(stage, async () => {
+    const frames = []; let connections = 0, closed = 0, workStarted = false;
+    class UnresponsiveSocket extends EventTarget {
+      constructor() {
+        super(); connections++;
+        if (stage === 'waiting for config.get') queueMicrotask(() => this.message({
+          type:'event', event:'connect.challenge', payload:{ nonce:'synthetic-challenge', ts:Date.now() },
+        }));
+      }
+      message(frame) { this.dispatchEvent(new MessageEvent('message', { data:JSON.stringify(frame) })); }
+      send(raw) {
+        const frame = JSON.parse(raw); frames.push(frame);
+        if (frame.method === 'connect') queueMicrotask(() => this.message({ type:'res', id:frame.id, ok:true, payload:hello() }));
+      }
+      close() { closed++; }
+    }
+    const settings = { baseUrl:'http://127.0.0.1', gatewayKey:key, adminDeviceKey:encoded };
+    await assert.rejects(withGatewayAdminRpc(settings, async rpc => {
+      workStarted = true;
+      await rpc.call('config.get');
+      await rpc.call('config.patch', { baseHash:'fixture', raw:'{}' });
+    }, { WebSocketImpl:UnresponsiveSocket, timeoutMs:40 }), { code:'openclaw_admin_unavailable' });
+    assert.equal(workStarted, stage === 'waiting for config.get');
+    assert.deepEqual(frames.map(frame => frame.method), workStarted ? ['connect', 'config.get'] : []);
+    assert.equal(connections, 1); assert.equal(closed, 1);
+  });
 });
 
 test('missing server identity and invalid public plaintext endpoint cannot open a connection', async () => {
