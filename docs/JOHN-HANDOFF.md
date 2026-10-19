@@ -29,6 +29,15 @@ och `adminprov-2026-10-13`; permanent radering är ett separat beslut.
 `origin/kevin-staging` är inte mergad i main (190 commits utanför); Kevins
 bidrag i main är de registrerade källklippen från PR124/128.
 
+Molnläsning samma tid, inget ändrat: Vercel production
+`dpl_FkpqF9VDGiHu8hSzBUZLfEK8qhmY` och Render `dep-dbb001rrjlhs73d2u1eg` är båda
+LIVE/READY på main `1c8dc82f`; inga 5xx eller fel i loggarna. Render har
+`CROUPIER_MOVING_SPEECH_ENABLED=0` och alla `CROUPIER_MOVING_SPEECH_*`-namn
+satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo`
+(max 1, idle 60 s, CA-MTL-1). Vercel-pluginens anslutning ger 403 för teamet
+`scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
+i `docs/environment-variables.json` för både Studio och spelservern.
+
 ## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
 
 Den avslutade registerflyttens `prepareLegacyStudioSnapshot` hade endast
