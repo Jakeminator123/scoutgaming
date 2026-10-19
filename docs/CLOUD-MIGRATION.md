@@ -231,6 +231,14 @@ Obligatoriskt nytt schema ska finnas före merge. Undantaget
 migration och därefter en PR som gör versionen obligatorisk. Ändra aldrig
 checksumfrysta scheman/ledger för att få grön CI.
 
+Migration 018 (`018-gpu-daily-budget-40.sql`, 19 oktober 2026) höjer
+dygnstaket för GPU-reservationer 20 → 40 USD på Jakobs beslut och är
+`deploymentOptional`: koden fungerar vid min(sparad policy, konfigurerat tak)
+tills den är applicerad. Appliceras med `node tools/check-migration-readiness.mjs
+--apply` (`CROUPIER_MIGRATION_CONFIRM=apply-pending`); därefter höjs själva
+policyraden med `journal.amendBudgetPolicy` och dess bekräftelse. Status för
+produktion står i `docs/JOHN-HANDOFF.md`.
+
 GitGuardian: läsningen 18 oktober gav 2 öppna och 18 ignorerade incidenter.
 Platsmetadata är delvis ofullständig och historisk skanning har status too_large.
 Grön produkt-CI bevisar inte full säkerhetstäckning. Inga incidenter ändras här.

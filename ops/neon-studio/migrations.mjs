@@ -48,6 +48,11 @@ const sources = Object.freeze([
   // Existing grants still require their own separately funded amendment.
   { version:'017', file:'017-moving-budget-capacity.sql', tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
+  // Jakob's 19 October decision: daily GPU ceiling 20 → 40 USD. Deployment-
+  // optional because the runtime stays correct at min(persisted, configured);
+  // the persisted policy can only be raised after this version is applied.
+  { version:'018', file:'018-gpu-daily-budget-40.sql', deploymentOptional:true, tables:[], indexes:[],
+    fingerprintTables:['gpu_budget_policies'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -62,7 +67,7 @@ export function isStudioMigrationPlanReady(plan) {
 
 const budgetConstraint = 'gpu_budget_policies_daily_budget_micro_usd_check';
 const budgetDefinition = ceiling => `CHECK (daily_budget_micro_usd >= 1 AND daily_budget_micro_usd <= ${ceiling})`;
-const budgetAlter = 'ALTER TABLE croupier_studio.gpu_budget_policies DROP CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check, ADD CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check CHECK (daily_budget_micro_usd BETWEEN 1 AND 20000000)';
+const budgetAlter = ceiling => `ALTER TABLE croupier_studio.gpu_budget_policies DROP CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check, ADD CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check CHECK (daily_budget_micro_usd BETWEEN 1 AND ${ceiling})`;
 const movingBudgetConstraint = 'moving_speech_bindings_budget_limit_micro_usd_check';
 const movingBudgetDefinition = ceiling => `CHECK (budget_limit_micro_usd >= 1 AND budget_limit_micro_usd <= ${ceiling})`;
 const movingBudgetAlter = 'ALTER TABLE croupier_studio.moving_speech_bindings DROP CONSTRAINT moving_speech_bindings_budget_limit_micro_usd_check, ADD CONSTRAINT moving_speech_bindings_budget_limit_micro_usd_check CHECK (budget_limit_micro_usd BETWEEN 1 AND 15000000)';
@@ -100,9 +105,9 @@ function validateSql(source, sql) {
     if (parts.length !== expected.length || parts.some((part,index) => part.replace(/\s+/g,' ') !== expected[index])) refuse('studio_migration_invalid_source',422);
     return;
   }
-  if (source.version === '011') {
+  if (source.version === '011' || source.version === '018') {
     const parts = statements(sql);
-    if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== budgetAlter) refuse('studio_migration_invalid_source', 422);
+    if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== budgetAlter(source.version === '011' ? 20000000 : 40000000)) refuse('studio_migration_invalid_source', 422);
     return;
   }
   const tables = [], indexes = []; let createsSchema = 0, movingAlter = 0;
@@ -241,13 +246,16 @@ async function inspect(client, migrations, objects) {
   }
   verifyObjects(objects, installed);
   // Preserve 002's historical fingerprint byte for byte. Only ledgered 011 may
-  // project this exact constraint back to its historical 10 USD definition.
-  const evolved = installed.some(row => row.version === '011');
-  let historical = objects;
+  // project this exact constraint back to its historical 10 USD definition, and
+  // only ledgered 018 may project it back to 011's 20 USD definition.
+  const evolved = installed.some(row => row.version === '011'), raised = installed.some(row => row.version === '018');
+  let historical = objects, budgetPrevious = objects;
   if (evolved) {
     const matches = objects.constraints.filter(row => row.table_name === 'gpu_budget_policies' && row.name === budgetConstraint);
-    if (matches.length !== 1 || matches[0].definition !== budgetDefinition(20000000)) refuse('studio_migration_structure_mismatch');
-    historical = { ...objects, constraints: objects.constraints.map(row => row === matches[0] ? { ...row, definition: budgetDefinition(10000000) } : row) };
+    if (matches.length !== 1 || matches[0].definition !== budgetDefinition(raised ? 40000000 : 20000000)) refuse('studio_migration_structure_mismatch');
+    const project = ceiling => ({ ...objects, constraints: objects.constraints.map(row => row === matches[0] ? { ...row, definition: budgetDefinition(ceiling) } : row) });
+    historical = project(10000000);
+    if (raised) budgetPrevious = project(20000000);
   }
   // Ledgered 017 projects only its three exact CHECKs back for 015's proof.
   let movingCapacityPrevious = objects;
@@ -279,7 +287,7 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
     movingHistorical = { ...movingPrevious, constraints:movingPrevious.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
   }
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
   return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply };
 }
 
