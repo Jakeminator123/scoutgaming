@@ -51,13 +51,24 @@ export function createMovingDriftObserver({profile,provider,now=Date.now}={}) {
       // Such a pod is starting, so it may be explained by `initializing` or by
       // the cached `idle` slot it is warming from; it is never ready or hidden.
       const startingPods=pods.length-occupiedHealth;
-      requireEvidence(startingPods>=0&&startingPods<=workers.initializing+workers.idle&&(jobs.inProgress===0||pods.length>0));
+      // The mirror lag at shutdown, read live on 19 October 2026 (16:53:04–:24
+      // and 17:04:44–17:05:01 UTC): about sixty seconds after a job the pod
+      // record is already EXITED while health still counts running=1 for some
+      // twenty seconds. A single such unlisted healthy worker with no job in
+      // progress is reported as one busy job, so the executor keeps draining
+      // semantics instead of refusing every admission in that window. Two
+      // unlisted workers, an unhealthy/throttled count or a job in progress
+      // without a pod remain contradictions.
+      const unlistedRunning=pods.length===0&&workers.running===1&&workers.unhealthy===0&&workers.throttled===0
+        &&jobs.inProgress===0?1:0;
+      requireEvidence((startingPods>=0||unlistedRunning===1)
+        &&startingPods<=workers.initializing+workers.idle&&(jobs.inProgress===0||pods.length>0));
       // Initializing may include an unbilled cache slot (also recognized by the
       // admission capacity contract). Subtract only fresh matching EXITED rows;
       // never hide missing live pods, unhealthy capacity or unmatched counters.
       const currentCache=receipt.workers.workers.filter(worker=>worker.state==='scaled-down'
         &&worker.image===release.image&&worker.version===release.endpointVersion&&worker.isStale===false).length;
-      const initializingPods=Math.min(startingPods,workers.initializing);
+      const initializingPods=Math.max(0,Math.min(startingPods,workers.initializing));
       const cachedInitializing=workers.initializing-initializingPods;
       requireEvidence(cachedInitializing<=currentCache);
       const observedWorkers=pods.map((pod,index)=>{
@@ -67,7 +78,7 @@ export function createMovingDriftObserver({profile,provider,now=Date.now}={}) {
         return {id:pod.id,profileId,state:state==='unknown'||workers.unhealthy>0||workers.throttled>0?'unknown':
           startingPods>0?'initializing':'running',gpu:'',releaseDigest:null,bankHash:null,modelReady:false};
       });
-      return {observedAtMs,workers:observedWorkers,busyJobs:jobs.inProgress,queuedJobs:jobs.inQueue,
+      return {observedAtMs,workers:observedWorkers,busyJobs:jobs.inProgress+unlistedRunning,queuedJobs:jobs.inQueue,
         workersMin:0,workersMax:1};
     } catch {
       // Never turn provider errors, partial reads or contradictory receipts into
