@@ -146,8 +146,8 @@ test('Studio migration sources are fixed, ordered, bounded and independent of ru
 test('plan is strictly read-only and does not bootstrap absent schema/ledger', async () => {
   const pool = await fixture(), before = pool.snapshot(), plan = await planStudioMigrations({ pool });
   assert.deepEqual(plan.target, target); assert.equal(plan.schemaPresent, false); assert.equal(plan.applied.length, 0);
-  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007', '008', '011', '012', '013','014','015']); assert.deepEqual(plan.pending, plan.toApply);
-  assert.deepEqual(plan.optionalPending.map(row=>row.version), ['016','017']);
+  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007', '008', '011', '012', '013','014','015','017']); assert.deepEqual(plan.pending, plan.toApply);
+  assert.deepEqual(plan.optionalPending.map(row=>row.version), ['016']);
   assert.deepEqual(pool.snapshot(), before);
   assert.equal(pool.calls[0].sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   assert.equal(pool.calls.some(row => row.marker === 'lock' || row.marker.startsWith('ddl-') || row.marker === 'record'), false);
@@ -184,7 +184,7 @@ test('004 and 005 upgrade an exact 001/002/003 catalog while preserving all prio
     for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!newTables.includes(row.table_name));
   });
   const original=pool.snapshot().ledger;
-  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005','006','007','008', '011', '012', '013','014','015']);
+  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005','006','007','008', '011', '012', '013','014','015','017']);
   assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['004','005','006','007','008', '011', '012', '013', '014','015','016','017']);
   assert.deepEqual(pool.snapshot().ledger.slice(0,3),original);
 });
@@ -198,7 +198,7 @@ test('005 upgrades an exact 001/002/003/004 catalog while preserving all prior l
     for (const key of ['columns', 'constraints', 'indexes']) state[key] = state[key].filter(row => !newTables.includes(row.table_name));
   });
   const original = pool.snapshot().ledger;
-  assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005', '006', '007', '008', '011', '012', '013','014','015']);
+  assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005', '006', '007', '008', '011', '012', '013','014','015','017']);
   assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: target, confirm: true })).appliedNow, ['005', '006', '007', '008', '011', '012', '013', '014','015','016','017']);
   assert.deepEqual(pool.snapshot().ledger.slice(0, 4), original);
 });
@@ -276,7 +276,7 @@ test('006 adds only the scoped journal while retaining every preexisting ledger 
    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!gone.includes(row.table_name));
  });
  const original=pool.snapshot().ledger;
- assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['006','007','008', '011', '012', '013','014','015']);
+ assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['006','007','008', '011', '012', '013','014','015','017']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['006','007','008', '011', '012', '013', '014','015','016','017']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,5),original);
  pool.change(state=>state.ledger[5].checksum='f'.repeat(64));
@@ -292,8 +292,8 @@ test('007 adds draft revisions without changing existing ledger fingerprints and
    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!gone.includes(row.table_name));
  });
  const original=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
- assert.deepEqual(plan.toApply.map(row=>row.version),['007','008', '011', '012', '013','014','015']);
- assert.deepEqual(plan.pending.map(row=>row.version),['007','008', '011', '012', '013','014','015']);
+ assert.deepEqual(plan.toApply.map(row=>row.version),['007','008', '011', '012', '013','014','015','017']);
+ assert.deepEqual(plan.pending.map(row=>row.version),['007','008', '011', '012', '013','014','015','017']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['007','008', '011', '012', '013', '014','015','016','017']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,6),original);
  assert.deepEqual((await planStudioMigrations({pool})).pending,[]);
@@ -311,8 +311,8 @@ test('008 (Dealer Forge) is pinned: pending blocks readiness until applied, ledg
  });
  const original=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
  assert.deepEqual(plan.applied.map(row=>row.version),['001','002','003','004','005','006','007']);
- assert.deepEqual(plan.toApply.map(row=>row.version),['008', '011', '012', '013','014','015']); assert.deepEqual(plan.pending.map(row=>row.version),['008', '011', '012', '013','014','015']);
- assert.deepEqual(plan.optionalPending.map(row=>row.version),['016','017']);
+ assert.deepEqual(plan.toApply.map(row=>row.version),['008', '011', '012', '013','014','015','017']); assert.deepEqual(plan.pending.map(row=>row.version),['008', '011', '012', '013','014','015','017']);
+ assert.deepEqual(plan.optionalPending.map(row=>row.version),['016']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['008', '011', '012', '013', '014','015','016','017']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,7),original);
  const after=await planStudioMigrations({pool});
@@ -326,7 +326,7 @@ test('008 (Dealer Forge) is pinned: pending blocks readiness until applied, ledg
    const complete=pool.snapshot();
    pool.change(state=>{state.ledger=state.ledger.slice(0,8); priorBudget(state); remove012(state);});
    const original=pool.snapshot().ledger;
-   assert.deepEqual((await planStudioMigrations({pool})).pending.map(row=>row.version),['011', '012', '013','014','015']);
+   assert.deepEqual((await planStudioMigrations({pool})).pending.map(row=>row.version),['011', '012', '013','014','015','017']);
    await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
    assert.deepEqual(pool.snapshot().ledger.slice(0,8),original);
    assert.deepEqual(pool.snapshot().ledger,complete.ledger);
@@ -363,11 +363,11 @@ test('012 is required for runtime readiness; applying it preserves all earlier l
   const original=pool.snapshot().ledger;
   const before=await planStudioMigrations({pool});
   assert.equal(before.applied.at(-1).version,'011');
-  assert.deepEqual(before.pending.map(row=>row.version),['012','013','014','015']);
-  assert.deepEqual(before.optionalPending.map(row=>row.version),['016','017']);
+  assert.deepEqual(before.pending.map(row=>row.version),['012','013','014','015','017']);
+  assert.deepEqual(before.optionalPending.map(row=>row.version),['016']);
   const blocked=await checkMigrationReadiness({pool});
   assert.equal(blocked.ready,false);assert.equal(blocked.exitCode,1);
-  assert.deepEqual(blocked.pending,['012','013','014','015']);assert.deepEqual(blocked.optionalPending,['016','017']);
+  assert.deepEqual(blocked.pending,['012','013','014','015','017']);assert.deepEqual(blocked.optionalPending,['016']);
   const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
   assert.deepEqual(applied.appliedNow,['012', '013', '014','015','016','017']);assert.deepEqual(applied.optionalPending,[]);
   assert.deepEqual(pool.snapshot().ledger.slice(0,9),original);
@@ -391,9 +391,9 @@ test('012 rejects unledgered tables or changed source/structure fingerprints',as
 test('013 is required for readiness and adds only moving bindings without rewriting prior ledger',async()=>{
   const pool=await installed();pool.change(remove013);const before=pool.snapshot().ledger;
   const ready=await checkMigrationReadiness({pool});
-  assert.equal(ready.ready,false);assert.equal(ready.exitCode,1);assert.deepEqual(ready.pending,['013','014','015']);assert.deepEqual(ready.optionalPending,['016','017']);
-  const planned=await planStudioMigrations({pool});assert.deepEqual(planned.toApply.map(row=>row.version),['013','014','015']);
-  assert.equal(isStudioMigrationPlanReady(planned),false);assert.deepEqual(planned.optionalPending.map(row=>row.version),['016','017']);
+  assert.equal(ready.ready,false);assert.equal(ready.exitCode,1);assert.deepEqual(ready.pending,['013','014','015','017']);assert.deepEqual(ready.optionalPending,['016']);
+  const planned=await planStudioMigrations({pool});assert.deepEqual(planned.toApply.map(row=>row.version),['013','014','015','017']);
+  assert.equal(isStudioMigrationPlanReady(planned),false);assert.deepEqual(planned.optionalPending.map(row=>row.version),['016']);
   const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
   assert.deepEqual(applied.appliedNow,['013', '014','015','016','017']);assert.deepEqual(pool.snapshot().ledger.slice(0,10),before);
   const migration=(await loadStudioMigrations()).find(row=>row.version==='013');
@@ -429,12 +429,12 @@ test('runtime readiness rejects missing required013 even if a caller labels it o
 test('014 blocks missing schema, preserves 013 history and rejects unledgered or altered widening',async()=>{
   const pool=await installed(),complete=pool.snapshot();pool.change(remove014);
   const old=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
-  assert.equal(isStudioMigrationPlanReady(plan),false);assert.deepEqual(plan.toApply.map(row=>row.version),['014','015']);
+  assert.equal(isStudioMigrationPlanReady(plan),false);assert.deepEqual(plan.toApply.map(row=>row.version),['014','015','017']);
   const mislabeled=copy(plan);mislabeled.toApply=[];mislabeled.optionalPending=[{version:'014'}];
   assert.equal(isStudioMigrationPlanReady(mislabeled),false);
   const blocked=await checkMigrationReadiness({pool});
-  assert.equal(blocked.ready,false);assert.deepEqual(blocked.pending,['014','015']);
-  assert.deepEqual(plan.optionalPending.map(row=>row.version),['016','017']);
+  assert.equal(blocked.ready,false);assert.deepEqual(blocked.pending,['014','015','017']);
+  assert.deepEqual(plan.optionalPending.map(row=>row.version),['016']);
   const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
   assert.deepEqual(applied.appliedNow,['014','015','016','017']);assert.deepEqual(pool.snapshot().ledger.slice(0,11),old);
   assert.deepEqual(pool.snapshot().ledger,complete.ledger);
@@ -463,13 +463,13 @@ test('014 source allows only its reviewed limit evolution and creates no budget 
 test('015 is required for readiness and preserves historical proofs without accepting unledgered widening',async()=>{
   const pool=await installed(),complete=pool.snapshot();pool.change(remove015);
   const old=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
-  assert.deepEqual(plan.toApply.map(row=>row.version),['015']);assert.deepEqual(plan.optionalPending.map(row=>row.version),['016','017']);
+  assert.deepEqual(plan.toApply.map(row=>row.version),['015','017']);assert.deepEqual(plan.optionalPending.map(row=>row.version),['016']);
   assert.equal(isStudioMigrationPlanReady(plan),false);
   const mislabeled=copy(plan);mislabeled.toApply=[];mislabeled.pending=[];mislabeled.optionalPending=[{version:'015'}];
   assert.equal(isStudioMigrationPlanReady(mislabeled),false,'caller cannot relabel required015 as optional');
   const readiness=await checkMigrationReadiness({pool});
   assert.equal(readiness.ready,false);assert.equal(readiness.exitCode,1);
-  assert.deepEqual(readiness.pending,['015']);assert.deepEqual(readiness.optionalPending,['016','017']);
+  assert.deepEqual(readiness.pending,['015','017']);assert.deepEqual(readiness.optionalPending,['016']);
   const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
   assert.deepEqual(applied.appliedNow,['015','016','017']);assert.equal(isStudioMigrationPlanReady(applied),true);
   const ready=await checkMigrationReadiness({pool});assert.equal(ready.ready,true);assert.equal(ready.exitCode,0);
@@ -503,13 +503,15 @@ test('015 source changes only the three reviewed capacities and never grants or 
   }
 });
 
-test('017 stays optional until applied and preserves every013/014/015 proof at exactly45USD',async()=>{
+test('017 is required for readiness and preserves every013/014/015 proof at exactly45USD',async()=>{
   const pool=await installed(),complete=pool.snapshot();pool.change(remove017);
   const old=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
-  assert.equal(isStudioMigrationPlanReady(plan),true);assert.deepEqual(plan.toApply,[]);
-  assert.deepEqual(plan.optionalPending.map(row=>row.version),['017']);
+  assert.equal(isStudioMigrationPlanReady(plan),false);assert.deepEqual(plan.toApply.map(row=>row.version),['017']);
+  assert.deepEqual(plan.optionalPending,[]);
+  const mislabeled=copy(plan);mislabeled.toApply=[];mislabeled.pending=[];mislabeled.optionalPending=[{version:'017'}];
+  assert.equal(isStudioMigrationPlanReady(mislabeled),false,'caller cannot relabel required017 as optional');
   const before=await checkMigrationReadiness({pool});
-  assert.equal(before.ready,true);assert.deepEqual(before.optionalPending,['017']);
+  assert.equal(before.ready,false);assert.equal(before.exitCode,1);assert.deepEqual(before.pending,['017']);assert.deepEqual(before.optionalPending,[]);
   const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
   assert.deepEqual(applied.appliedNow,['017']);assert.equal(isStudioMigrationPlanReady(applied),true);
   assert.deepEqual(pool.snapshot().ledger.slice(0,old.length),old);
@@ -539,7 +541,8 @@ test('the ledger version planner permits actual optional016 before installed017,
 
 test('017 SQL only raises the three reviewed capacities to45USD without modifying historical data',async t=>{
   const migrations=await loadStudioMigrations(),evolution=migrations.find(row=>row.version==='017');
-  assert.equal(evolution.deploymentOptional,true);
+  assert.equal(evolution.deploymentOptional,undefined);
+  assert.equal(evolution.checksum,'116e00730d93dd0605e73f162f0e7d7487fb6b2fdd2e98be87b360cb2561532b');
   assert.equal(/\b(?:INSERT|UPDATE|DELETE|GRANT)\b/.test(evolution.sql),false);
   const directory=await mkdtemp(join(tmpdir(),'croupier-moving-45-source-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   for(const migration of migrations)await copyFile(new URL('../ops/neon-studio/'+migration.file,import.meta.url),join(directory,migration.file));
@@ -582,15 +585,13 @@ test('deferOptional can install017 before016 without changing existing source or
   assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,[]);
 });
 
-test('both optional migrations can be deferred while required readiness remains satisfied',async()=>{
-  const pool=await fixture();
-  const deferred=await applyStudioMigrations({pool,expectedTarget:target,confirm:true,deferOptional:['016','017']});
-  assert.equal(isStudioMigrationPlanReady(deferred),true);
-  assert.deepEqual(deferred.optionalPending.map(row=>row.version),['016','017']);
-  const before=pool.snapshot().ledger;
-  const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
-  assert.deepEqual(applied.appliedNow,['016','017']);assert.deepEqual(applied.optionalPending,[]);
-  assert.deepEqual(pool.snapshot().ledger.slice(0,before.length),before);
+test('required017 cannot be deferred alone or together with optional016',async()=>{
+  for(const deferOptional of [['017'],['016','017']]){
+    const pool=await fixture();
+    await assert.rejects(applyStudioMigrations({pool,expectedTarget:target,confirm:true,deferOptional}),
+      error=>refusal('studio_migration_invalid_defer_optional')(error)&&error.statusCode===422);
+    assert.equal(pool.connects,0);assert.deepEqual(pool.calls,[]);assert.deepEqual(pool.snapshot().ledger,[]);
+  }
 });
 
 test('invalid deferOptional arguments are rejected before any transaction or database connection',async()=>{

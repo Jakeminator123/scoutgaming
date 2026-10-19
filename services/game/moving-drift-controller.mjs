@@ -15,8 +15,8 @@ const initial=now=>({schemaVersion:1,revision:0,operationId:null,desired:{mode:'
  * store.transact serializes one environment-wide row and supplies authoritative DB
  * time. Its callback must commit atomically and must NOT perform external effects.
  * nextAction is a proposal for a future fenced executor, never an execution receipt.
- * Production wiring is deliberately absent until independent shutdown, reserved
- * idle cost and verified prepare/release adapters are available.
+ * An optional executor lease gates the min0/max1 on-demand runtime. Warm mode
+ * still requires independent shutdown and a separately reserved idle budget.
  */
 export function createMovingDriftController({store,profiles,capabilities={}}={}) {
   if(typeof store?.transact!=='function'||!Array.isArray(profiles)||!profiles.length) fail('drift_invalid_configuration',422);
@@ -35,6 +35,13 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
   const warmAvailable=connected&&caps.warm===true&&caps.independentDeadline===true;
   const publicCapabilities={connected,allowedModes:connected?['off','saving',...(warmAvailable?['warm']:[])]:['off'],
     reasonCode:!connected?'drift_runtime_unavailable':!warmAvailable?'drift_warm_unavailable':null};
+  const executionFresh=(state,now)=>state.execution?.catalogueFingerprint===catalogueFingerprint
+    &&integer(state.execution.fence)&&state.execution.fence>0&&id(state.execution.holderId)
+    &&integer(state.execution.leaseUntilMs)&&state.execution.leaseUntilMs>now&&integer(state.execution.observedAtMs)
+    &&state.execution.observedAtMs<=now&&now-state.execution.observedAtMs<=MAX_AGE
+    &&state.observation?.catalogueFingerprint===catalogueFingerprint&&integer(state.observation.observedAtMs)
+    &&state.observation.observedAtMs<=now&&now-state.observation.observedAtMs<=MAX_AGE;
+  const runtimeConnected=(state,now)=>connected&&(!caps.requireExecutor||executionFresh(state,now));
   function expire(state,now) {
     if(state.desired.mode==='warm'&&now>=state.desired.endsAtMs) {
       state.revision++;state.operationId=randomUUID();state.updatedAtMs=now;
@@ -52,12 +59,14 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
   });
   function view(state,now) {
     const obs=state.observation, selected=catalogue.get(state.desired.profileId);
+    const connected=runtimeConnected(state,now);
+    const capabilities=connected?publicCapabilities:{connected:false,allowedModes:['off'],reasonCode:'drift_runtime_unavailable'};
     const fresh=obs&&obs.observedAtMs<=now&&now-obs.observedAtMs<=MAX_AGE;
     const result={schemaVersion:1,revision:state.revision,operationId:state.operationId,serverNowMs:now,
       desired:clone(state.desired),observed:{status:'unknown',atMs:obs?.observedAtMs??null,reasonCode:'drift_observation_missing'},
       profiles:[...catalogue.values()].map(({id,label})=>({id,label})),selectedProfileId:state.desired.profileId,
       actual:{profileId:null,gpu:null,workerId:null},readiness:{modelReady:false,releaseMatches:false,bankMatches:false},
-      admission:{allowed:false,reasonCode:'drift_not_admitting'},capabilities:clone(publicCapabilities),cost:clone(state.cost),
+      admission:{allowed:false,reasonCode:'drift_not_admitting'},capabilities:clone(capabilities),cost:clone(state.cost),
       nextAction:{type:'inspect',revision:state.revision,operationId:state.operationId}};
     const action=(type,extra={})=>{result.nextAction={type,revision:state.revision,operationId:state.operationId,...extra};};
     const error=code=>{result.observed.status='error';result.observed.reasonCode=code;return result;};
@@ -71,11 +80,14 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
     if(occupied.some(w=>w.state==='unknown')) return error('drift_worker_unknown');
     const worker=occupied[0];
     if(worker) {
-      result.actual={profileId:worker.profileId,gpu:worker.gpu,workerId:worker.id};
+      result.actual={profileId:worker.profileId,gpu:worker.gpu||null,workerId:worker.id};
       const expected=catalogue.get(worker.profileId);
       result.readiness={modelReady:worker.modelReady===true&&worker.state==='running',
         releaseMatches:worker.releaseDigest===expected.releaseDigest,bankMatches:worker.bankHash===expected.bankHash};
-      if(!result.readiness.releaseMatches||!result.readiness.bankMatches) return error('drift_release_mismatch');
+      // Provider control-plane observations do not attest a loaded bank/model.
+      // Unknown runtime hashes are honest in Saving; a known mismatch is blocking.
+      if(worker.releaseDigest!==null&&!result.readiness.releaseMatches
+        ||worker.bankHash!==null&&!result.readiness.bankMatches) return error('drift_release_mismatch');
     }
     const configurationMatches=obs.applied?.revision===state.revision&&obs.applied?.operationId===state.operationId
       &&obs.applied?.profileId===state.desired.profileId&&obs.applied?.mode===state.desired.mode
@@ -85,7 +97,7 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       if(occupied.length) action(busy?'drain':'stop');
       return error(!connected?'drift_runtime_unavailable':'drift_warm_unavailable');
     }
-    if(!configurationMatches || state.desired.mode==='off') {
+    if(!configurationMatches || state.desired.mode==='off'||state.drainRequired===true) {
       result.observed={status:'stopping',atMs:obs.observedAtMs,reasonCode:null};
       if(busy) action('drain');
       else if(occupied.length) action('stop');
@@ -143,17 +155,26 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
         }
         if(cmd.expectedRevision!==state.revision) fail('drift_revision_conflict');
         if(cmd.mode!=='off'&&!catalogue.has(cmd.profileId)) fail('drift_unknown_profile',422);
-        if(cmd.mode!=='off'&&!connected) fail('drift_runtime_unavailable',503);
+        if(cmd.mode!=='off'&&!runtimeConnected(state,now)) fail('drift_runtime_unavailable',503);
+        if(cmd.mode!=='off'&&caps.requireExecutor&&cmd.profileId!==state.execution.profileId) fail('drift_profile_unavailable');
         if(cmd.mode==='warm'&&!warmAvailable) fail('drift_warm_unavailable');
         const cost=cmd.mode==='warm'?warmCost(cmd,now):emptyCost();
         state.revision++;state.operationId=randomUUID();state.updatedAtMs=now;state.cost=cost;
         state.desired={mode:cmd.mode,profileId:cmd.profileId??null,endsAtMs:cmd.mode==='warm'?now+cmd.durationSeconds*1000:null};
+        // Off is sticky until a fresh full drain. A quick Off -> Saving must
+        // not hide the revocation from the next executor tick.
+        if(caps.requireExecutor&&cmd.mode==='off') state.drainRequired=true;
         state.lastCommand={input:cmd};
         return view(state,now);
       });
     },
     // Internal executor input only. Never expose this method as a browser write.
     observe:async input=>transact((state,now)=>{
+      if(caps.requireExecutor) {
+        const e=state.execution,t=input?.execution;
+        if(!e||e.leaseUntilMs<=now||e.holderId!==t?.holderId||e.fence!==t?.fence
+          ||e.catalogueFingerprint!==catalogueFingerprint) fail('drift_executor_stale');
+      }
       if(input?.revision!==state.revision||input?.operationId!==state.operationId) fail('drift_revision_conflict');
       if(!integer(input.observedAtMs)||input.observedAtMs>now||now-input.observedAtMs>MAX_AGE
         ||!integer(input.busyJobs)||!integer(input.queuedJobs)||!Array.isArray(input.workers)||input.workers.length>8
@@ -166,7 +187,9 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       const workers=input.workers.map(w=>{
         if(!id(w?.id)||workerIds.has(w.id)||!catalogue.has(w.profileId)
           ||!['running','initializing','exited','terminated','unknown'].includes(w.state)
-          ||typeof w.gpu!=='string'||w.gpu.length>80||!hash(w.releaseDigest)||!hash(w.bankHash)||typeof w.modelReady!=='boolean') {
+          ||typeof w.gpu!=='string'||w.gpu.length>80
+          ||w.releaseDigest!==null&&!hash(w.releaseDigest)||w.bankHash!==null&&!hash(w.bankHash)||typeof w.modelReady!=='boolean'
+          ||w.modelReady&&(!hash(w.releaseDigest)||!hash(w.bankHash))) {
           fail('drift_invalid_observation',422);
         }
         workerIds.add(w.id);
@@ -188,7 +211,48 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       }
       state.observation={catalogueFingerprint,observedAtMs:input.observedAtMs,observedProfileIds:[...input.observedProfileIds],workers,busyJobs:input.busyJobs,queuedJobs:input.queuedJobs,applied,
         providerDeadlineMs:input.providerDeadlineMs??null,budgetCoveredUntilMs:input.budgetCoveredUntilMs??null};
+      if(caps.requireExecutor) {
+        state.execution.observedAtMs=now;
+        if(workers.every(w=>['exited','terminated'].includes(w.state))&&input.busyJobs===0&&input.queuedJobs===0) state.drainRequired=false;
+      }
       return view(state,now);
+    }),
+    // All callbacks are SQL-only. A lease never permits provider mutation and
+    // an expired owner cannot publish evidence from a delayed read.
+    claimExecution:async ({holderId,profileId,leaseMs=60000}={})=>transact((state,now)=>{
+      if(!id(holderId)||!catalogue.has(profileId)||!integer(leaseMs)||leaseMs<1000||leaseMs>60000) fail('drift_invalid_configuration',422);
+      const previous=state.execution;
+      if(previous?.leaseUntilMs>now&&previous.holderId!==holderId) fail('drift_executor_busy');
+      const same=previous?.leaseUntilMs>now&&previous.holderId===holderId
+        &&previous.catalogueFingerprint===catalogueFingerprint&&previous.profileId===profileId;
+      const fence=same?previous.fence:(previous?.fence??0)+1;
+      if(!integer(fence)) fail('drift_invalid_state',503);
+      state.execution={holderId,profileId,fence,leaseUntilMs:now+leaseMs,catalogueFingerprint,
+        observedAtMs:same?previous.observedAtMs:null};
+      return {holderId,profileId,fence,revision:state.revision,operationId:state.operationId,
+        desired:clone(state.desired),drainRequired:state.drainRequired===true,leaseUntilMs:now+leaseMs};
+    }),
+    invalidateExecution:async execution=>transact(state=>{
+      if(state.execution?.holderId===execution?.holderId&&state.execution?.fence===execution?.fence
+        &&state.revision===execution?.revision&&state.operationId===execution?.operationId) {
+        state.execution.observedAtMs=null;state.observation=null;
+      }
+      return null;
+    }),
+    guardAdmission:async ({phase,sessionId,endpointId,admission}={})=>transact((state,now)=>{
+      if(!['reserve','current','submit','dispatch'].includes(phase)||!id(sessionId)) fail('drift_not_admitting');
+      const profile=catalogue.get(state.desired.profileId);
+      if(!profile||state.desired.mode!=='saving'||state.drainRequired===true||!runtimeConnected(state,now)
+        ||admission?.revision!==state.revision||admission.operationId!==state.operationId
+        ||admission.profileId!==profile.id||admission.endpointId!==profile.endpointId||endpointId!==profile.endpointId
+        ||admission.catalogueFingerprint!==catalogueFingerprint
+        ||caps.requireExecutor&&admission.executionFence!==state.execution?.fence) fail('drift_not_admitting');
+      const status=view(state,now);
+      const applied=state.observation?.applied;
+      if(status.observed.status==='unknown'||status.observed.status==='error'
+        ||applied?.revision!==state.revision||applied?.operationId!==state.operationId
+        ||phase==='reserve'&&!status.admission.allowed) fail('drift_not_admitting');
+      return {revision:state.revision,operationId:state.operationId};
     }),
     // Additional admission gate, not a replacement for the existing journal,
     // release/capacity proofs, budget reservation or final beforeCostly recheck.
@@ -197,7 +261,8 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       const status=view(state,now);
       if(profileId!==state.desired.profileId||!status.admission.allowed) fail('drift_not_admitting');
       return {revision:state.revision,operationId:state.operationId,profileId,
-        endpointId:catalogue.get(profileId).endpointId,endsAtMs:state.desired.endsAtMs};
+        endpointId:catalogue.get(profileId).endpointId,endsAtMs:state.desired.endsAtMs,
+        catalogueFingerprint,executionFence:state.execution?.fence??null};
     })
   });
 }

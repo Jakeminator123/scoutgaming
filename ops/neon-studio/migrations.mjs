@@ -44,9 +44,9 @@ const sources = Object.freeze([
   // Optional Admin control plane: a missing table fails closed at the API.
   { version:'016', file:'016-moving-drift-control.sql', deploymentOptional:true,
     tables:['moving_drift_control'], indexes:[] },
-  // Additive capacity bridge: production SQL and a separate funded amendment
-  // must be verified before 017 becomes required or the higher grant is used.
-  { version:'017', file:'017-moving-budget-capacity.sql', deploymentOptional:true, tables:[], indexes:[],
+  // Applied and verified in production;45 USD technical capacity is required at startup.
+  // Existing grants still require their own separately funded amendment.
+  { version:'017', file:'017-moving-budget-capacity.sql', tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
 ]);
 /** Accept only a verified planner result with every required version installed.

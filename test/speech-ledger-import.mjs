@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../services/game/postgres-operat
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014','015','017'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -124,7 +124,7 @@ test('speech import requires013 and exact replay keeps its ledger protected',asy
   assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,false);
   assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,true);
   assert.equal(pool.state.markers.length,1);assert.equal(pool.state.reservations.length,2);
-  const unchanged=structuredClone(pool.state);ledger.applied.at(-1).checksum='f'.repeat(64);
+  const unchanged=structuredClone(pool.state);ledger.applied.find(row=>row.version==='013').checksum='f'.repeat(64);
   await assert.rejects(applyLegacySpeechLedgerSnapshot(input),{code:'studio_speech_import_schema_unverified'});
   assert.deepEqual(pool.state,unchanged);
 });
@@ -137,15 +137,15 @@ test('speech import requires015 even when a caller labels it optional',async()=>
   assert.equal(pool.counts.connects,0);assert.deepEqual(pool.state,before);
 });
 
-test('speech import accepts optional017 pending or installed without weakening its ledger proof',async()=>{
+test('speech import accepts optional016 pending or installed without weakening its ledger proof',async()=>{
   for(const present of [false,true]){
     const plan=structuredClone(installed);
-    if(present)plan.applied.push({version:'017',checksum:hash('017'),structureChecksum:hash('structure-017')});
-    else plan.optionalPending=[{version:'017'}];
+    if(present)plan.applied.splice(-1,0,{version:'016',checksum:hash('016'),structureChecksum:hash('structure-016')});
+    else plan.optionalPending=[{version:'016'}];
     const live=structuredClone(plan),pool=memoryPool(live),input={...args(pool),schemaCheck:async()=>structuredClone(plan)};
     assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,false);
     if(present){
-      const before=structuredClone(pool.state);live.applied.find(row=>row.version==='017').structureChecksum='f'.repeat(64);
+      const before=structuredClone(pool.state);live.applied.find(row=>row.version==='016').structureChecksum='f'.repeat(64);
       await assert.rejects(applyLegacySpeechLedgerSnapshot(input),{code:'studio_speech_import_schema_unverified'});
       assert.deepEqual(pool.state,before);
     }
@@ -161,6 +161,7 @@ test('speech import rejects required gaps unknown versions and invalid proofs',a
     value=>{value.applied=value.applied.filter(row=>row.version!=='015');},
     value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
+    value=>{value.applied.reverse();},
     value=>{value.applied.at(-1).checksum='invalid';},
     value=>{value.applied.at(-1).structureChecksum='invalid';},
     value=>{value.toApply=[{version:'013'}];},
@@ -314,3 +315,24 @@ export async function runSpeechLedgerImportSqlChecks({pool,restart}={}) {
     'final SQL receipt failure atomically rolls back cost and all operator rows; explicit later apply/replay succeeds',
     'post-import lease/consumption rejects import merge/reset']};
 }
+
+test('speech import requires017 and rechecks its locked ledger on replay',async()=>{
+  const missing=structuredClone(installed),blocked=memoryPool();
+  missing.applied=missing.applied.filter(row=>row.version!=='017');missing.optionalPending=[{version:'017'}];
+  await assert.rejects(applyLegacySpeechLedgerSnapshot({...args(blocked),schemaCheck:async()=>missing}),{code:'studio_speech_import_schema_unverified'});
+  assert.equal(blocked.counts.connects,0);
+  for(const key of ['missing','checksum','structureChecksum']){
+    const live=structuredClone(installed),pool=memoryPool(live),input=args(pool);
+    assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,false);
+    assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,true);
+    const before=structuredClone(pool.state),offset=pool.trace.length;
+    if(key==='missing')live.applied=live.applied.filter(row=>row.version!=='017');
+    else live.applied.find(row=>row.version==='017')[key]='f'.repeat(64);
+    await assert.rejects(applyLegacySpeechLedgerSnapshot(input),{code:'studio_speech_import_schema_unverified'});
+    assert.deepEqual(pool.state,before);
+    const trace=pool.trace.slice(offset),lock=trace.indexOf('migration_lock');
+    assert.ok(lock>=0&&lock<trace.indexOf('schema'));
+    assert.equal(trace.some(tag=>tag.startsWith('insert_')||tag==='record'),false);
+    assert.equal(trace.at(-1),'ROLLBACK');assert.equal(pool.counts.connects,pool.counts.releases);
+  }
+});

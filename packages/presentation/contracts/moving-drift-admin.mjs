@@ -16,6 +16,7 @@ export function publicMovingDriftStatus(value) {
 const errors=new Map([
   ['drift_invalid_command',[422,'Ogiltigt driftkommando.']],
   ['drift_unknown_profile',[422,'Driftprofilen finns inte.']],
+  ['drift_profile_unavailable',[409,'Driftprofilen är inte ansluten.']],
   ['drift_revision_conflict',[409,'Driftläget har ändrats. Läs om det före nästa ändring.']],
   ['drift_command_reused',[409,'Kommandots ID har redan använts för en annan ändring.']],
   ['drift_runtime_unavailable',[503,'Driftstyrningen är inte ansluten.']],

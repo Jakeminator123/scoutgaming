@@ -27,6 +27,8 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+  'services/game/moving-drift-executor.mjs','services/game/moving-drift-observer.mjs',
+  'test/fixtures/moving-drift-executor-sql-checks.mjs',
   'packages/presentation/contracts/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
   'apps/studio/test/moving-drift-admin.test.mjs',
   'packages/presentation/contracts/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
@@ -214,8 +216,10 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
         ['product-v1',createHash('sha256').update(productSql).digest('hex'),'{}',new Date().toISOString()]);
       const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
       const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
+      const {runMovingDriftExecutorSqlChecks}=await import('../test/fixtures/moving-drift-executor-sql-checks.mjs');
+      const execution=await runMovingDriftExecutorSqlChecks({pool});
       if (await sourceDigest() !== before) throw new Error('isolated_qa_sources_changed_rerun_required');
-      const integrationChecks = ['drift-historical014-015-017-rollback',...migration.checks,...drift.checks];
+      const integrationChecks = ['drift-historical014-015-017-rollback',...migration.checks,...drift.checks,...execution.checks];
       console.log(JSON.stringify({acceptance:'isolated-moving-drift-sql-restart',sourceDigest:before,checks:integrationChecks}));
       return {integrationChecks};
     }
@@ -252,7 +256,9 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const roulette = await runRoulettePostgresChecks({pool,restart}); pool = roulette.pool;
     const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
     const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
-    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks, ...drift.checks];
+    const {runMovingDriftExecutorSqlChecks}=await import('../test/fixtures/moving-drift-executor-sql-checks.mjs');
+    const execution=await runMovingDriftExecutorSqlChecks({pool});
+    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks, ...drift.checks,...execution.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();

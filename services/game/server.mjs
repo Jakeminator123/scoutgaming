@@ -1385,9 +1385,10 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
 }
 if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   if (!studioPolicyRuntime || !speechJournal || !dealerSpeechRuntime) throw Error('moving_speech_registry_required');
-  const [{loadMovingBankArtifacts,movingBankStorageOptions},{createMovingSpeechRunPod},{createMovingSpeechSession},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile},{createRequire}] = await Promise.all([
-    import('./moving-speech-bank-artifacts.mjs'),import('./moving-speech-runpod.mjs'),import('./moving-speech-session.mjs'),
-    import('./moving-speech-runtime.mjs'),import('./blob-media.mjs'),import('node:module')]);
+  const [{loadMovingBankArtifacts,movingBankStorageOptions},{createMovingSpeechRunPod},{createMovingDriftRuntime},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile},{createRequire},{movingDriftConfiguration}] = await Promise.all([
+    import('./moving-speech-bank-artifacts.mjs'),import('./moving-speech-runpod.mjs'),import('./moving-drift-executor.mjs'),
+    import('./moving-speech-runtime.mjs'),import('./blob-media.mjs'),import('node:module'),
+    import('../../packages/presentation/contracts/moving-drift.mjs')]);
   const bankOptions=movingBankStorageOptions(createRequire(new URL('./package.json',import.meta.url))('@vercel/blob'));
   const bank=await loadMovingBankArtifacts(JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORD ?? 'null'),bankOptions);
   if (bank.sourceSet.dealerId !== 'dragan') throw Error('moving_speech_test_dealer_required');
@@ -1397,9 +1398,11 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   await withVerifiedPrivateMediaFile(bank.receipt,async()=>true,bankOptions);
   const provider=createMovingSpeechRunPod({endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,
     apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});
-  const sessions=createMovingSpeechSession({journal:speechJournal,scope:studioPolicyRuntime.scope,
-    origin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,provider,
-    release:provider.release,workerState:provider.workerState,...MOVING_TRIAL_BUDGET});
+  const driftRuntime=await createMovingDriftRuntime({pool:storage.pool,scope:studioPolicyRuntime.scope,
+    configuration:movingDriftConfiguration(process.env),endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,
+    releaseDigest:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,bankHash:bank.archive.sha256,provider,
+    sessionOptions:{origin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,...MOVING_TRIAL_BUDGET}});
+  const sessions=driftRuntime.sessions;
   const recovery=await sessions.reconcile();
   if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',unresolved:recovery.unresolved.length}));
   const repository=studioPolicyRuntime.repository;
@@ -1409,6 +1412,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     publicVideo:(frozen,id)=>frozenDealerContext.publicVideo(frozen,id),
     ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,bankOptions,
     releaseSha256:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,sessions,dealerRuntime:dealerSpeechRuntime,
+    admissionCheck:driftRuntime.assertAvailable,
     resolveOwner:chatSessionOwner,readRegistry:studioMediaRuntime.videoRegistry,
     readEvidence:async (context,mediaId)=>{
       const [frozenContext,project,media]=await Promise.all([
@@ -1432,13 +1436,14 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     readRest:({record},request)=>getPrivateMedia({provider:'vercel-blob',pathname:record.pathname,sha256:record.sha256,
       size:record.size,contentType:record.contentType},request),
   });
+  driftRuntime.start(()=>movingSpeechService.cancelActive());
   const existing=speechStreamService;
   // Existing login/logout/profile/room cancellation continues to reach both
   // paths; all Astrid preparation and relay methods remain unchanged.
   speechStreamService={...existing,
     cancelOwner:value=>Promise.all([existing?.cancelOwner(value),movingSpeechService.cancelOwner(value)]),
     cancelPlayer:value=>Promise.all([existing?.cancelPlayer(value),movingSpeechService.cancelPlayer(value)]),
-    close:options=>Promise.all([existing?.close(options),movingSpeechService.close()])};
+    close:options=>Promise.all([existing?.close(options),driftRuntime.close(),movingSpeechService.close()])};
 }
 installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
   studioPreview?.close();

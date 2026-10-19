@@ -51,6 +51,23 @@ test('configuration is explicit, bounded and cannot enable runtime/provider capa
   assert.equal(f.state.revision,0);
 });
 
+test('configuration enforces the exact UTF-8 byte limit without a Node Buffer global',()=>{
+  for(const label of ['Bas','Å😀漢']) {
+    const configured=[{...profiles[0],label}],json=JSON.stringify(configured),bytes=Buffer.byteLength(json,'utf8');
+    for(const limit of [8191,8192,8193]) {
+      const raw=json+' '.repeat(limit-bytes);
+      assert.equal(Buffer.byteLength(raw,'utf8'),limit);
+      const previous=globalThis.Buffer;
+      try {
+        globalThis.Buffer=undefined;
+        const parse=()=>movingDriftAdminConfiguration({...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:raw});
+        if(limit<=8192) assert.deepEqual(parse().profiles,configured);
+        else assert.throws(parse,error=>error.code==='drift_invalid_configuration'&&error.statusCode===422);
+      } finally {globalThis.Buffer=previous;}
+    }
+  }
+});
+
 test('unconfigured or invalid optional control plane leaves other Admin actions available',async()=>{
   for(const env of [{},{...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:'bad'},
     {...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([{...profiles[0],bankHash:'bad'}])}]) {
@@ -168,4 +185,25 @@ test('availableModes and admission come from the controller, never from command 
   assert.equal(status.admission.allowed,false);assert.deepEqual(status.capabilities.allowedModes,['off','saving']);
   const warm=await f.api.handle(request({mode:'warm',expectedRevision:1,commandId:'warm-1',profileId:'base',durationSeconds:1800}));
   assert.equal(warm.status,409);assert.equal((await warm.json()).code,'drift_warm_unavailable');
+});
+test('Admin reports connected only from a fresh shared executor lease, and loses admission when it expires',async()=>{
+  const f=fixture();
+  const backend=createMovingDriftController({store:f.store,profiles,capabilities:{connected:true,requireExecutor:true}});
+  const initial=await backend.status();
+  const execution=await backend.claimExecution({holderId:'server-fixture',profileId:'base'});
+  const observe=status=>backend.observe({revision:status.revision,operationId:status.operationId,execution,
+    observedAtMs:status.serverNowMs,observedProfileIds:['base'],workers:[],queuedJobs:0,busyJobs:0,
+    applied:{revision:status.revision,operationId:status.operationId,mode:status.desired.mode,profileId:status.desired.profileId,workersMin:0,workersMax:1}});
+  await observe(initial);
+  let response=await f.api.handle(request()),body=await response.json();
+  assert.equal(body.capabilities.connected,true);assert.deepEqual(body.capabilities.allowedModes,['off','saving']);
+  response=await f.api.handle(request({expectedRevision:0,commandId:'saving',mode:'saving',profileId:'base'}));
+  assert.equal(response.status,200);const accepted=await response.json();
+  await observe(accepted);
+  response=await f.api.handle(request());body=await response.json();assert.equal(body.admission.allowed,true);
+  assert.equal(JSON.stringify(body).includes(profiles[0].endpointId),false);
+  f.advance(15001);
+  response=await f.api.handle(request());body=await response.json();
+  assert.equal(body.capabilities.connected,false);assert.equal(body.admission.allowed,false);
+  assert.equal(body.observed.status,'unknown');
 });

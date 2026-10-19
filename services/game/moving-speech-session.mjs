@@ -34,12 +34,13 @@ function bounded(work, signal, ms, code) {
  */
 export function createMovingSpeechSession({ journal, scope, origin, endpointId, release, provider,
   budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
-  workerState, lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
+  workerState, driftControl, lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
   startupMs = Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs), idleMs = 15000,
   cleanupMs = 15000, pollMs = 500, connectionFactory = createMovingSpeechConnection } = {}) {
   if (!journal || ['reserveMovingSession', 'assertMovingSession', 'listMovingSessions'].some(name => typeof journal[name] !== 'function')
     || !provider || ['submit', 'cancel', 'status'].some(name => typeof provider[name] !== 'function')
     || typeof release !== 'function' || typeof workerState !== 'function'
+    || driftControl !== undefined && (!driftControl || typeof driftControl.pin !== 'function')
     || !positive(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD) || !positive(reserveMicroUsd, Math.min(totalBudgetMicroUsd,5000000))
     || !positive(initialBudgetMicroUsd, totalBudgetMicroUsd)
     || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
@@ -81,14 +82,15 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       } finally { if (active === operation) active = null; }
     },
     async admit({ ownerHash, userId, requestId, fingerprint, binding: sourceBinding, mediaReferences,
-      projectRevision, beforeCostly, signal, bankDownload } = {}) {
+      projectRevision, beforeCostly, signal, bankDownload, driftAdmission: preparedAdmission } = {}) {
       if (active) fail('generated_speech_session_busy', 429);
       if (typeof beforeCostly !== 'function' || typeof userId !== 'string' || !userId || userId.length > 128
-        || (signal !== undefined && !(signal instanceof AbortSignal))) fail('invalid_generated_speech_moving_admission', 422);
+        || (signal !== undefined && !(signal instanceof AbortSignal))
+        || driftControl&&preparedAdmission===null) fail('invalid_generated_speech_moving_admission', 422);
       const binding = verifyMovingSpeechBinding({ ...sourceBinding, schemaVersion: 1,
         sessionId: randomBytes(16).toString('hex'), attemptId: randomUUID(), nonce: randomBytes(32).toString('hex') });
       const operation = {}; active = operation;
-      let session, connection, submission, acceptedJob, observedJob, finalized, readiness, admittedCapacity;
+      let session, connection, submission, acceptedJob, observedJob, finalized, readiness, admittedCapacity, driftAdmission;
       const life = new AbortController();
       const requestSignal = AbortSignal.any([life.signal, ...(signal ? [signal] : [])]);
       const admittedAtMs = Date.now(), expiresAtMs = admittedAtMs + lifetimeMs;
@@ -111,7 +113,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
         await beforeCostly({ phase, signal: guardSignal });
         if (guardSignal.aborted) fail('generated_speech_cancelled');
         const saved = await journal.assertMovingSession({ scope, sessionId: binding.sessionId,
-          binding, lease: await currentLease(), ...(acceptedJob ? { jobId: acceptedJob } : {}) });
+          binding, endpointId, driftAdmission, lease: await currentLease(), ...(acceptedJob ? { jobId: acceptedJob } : {}) });
         return saved;
       }
       async function finalize({ reason }) {
@@ -161,6 +163,15 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       }
       try {
         await bounded(s => beforeCostly({ phase: 'admit', signal: s }), requestSignal, idleMs, 'generated_speech_moving_admission_timeout');
+        // Pin once, before any provider or lease work. Never refresh a prepared
+        // attempt into a newer command after an Off/profile/revision change.
+        if(driftControl){
+          const admission=preparedAdmission===undefined
+            ?await bounded(s=>driftControl.pin({endpointId,signal:s}),requestSignal,idleMs,'generated_speech_moving_admission_timeout')
+            :preparedAdmission;
+          if(!admission||typeof admission!=='object'||Array.isArray(admission))fail('invalid_generated_speech_moving_admission',422);
+          driftAdmission=Object.isFrozen(admission)?admission:Object.freeze(structuredClone(admission));
+        }
         // Acquire the shared journal fence before observing provider capacity.
         // Different server processes cannot reserve this endpoint concurrently.
         const lease=await currentLease();
@@ -170,7 +181,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
         admittedCapacity=capacity.verified;
         session = await journal.reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences,
           projectRevision, budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd, sessionId: binding.sessionId, endpointId,
-          lease, reserveMicroUsd, currentBudgetMicroUsd: currentDailyBudgetMicroUsd, workerState: capacity.state,
+          lease, driftAdmission, reserveMicroUsd, currentBudgetMicroUsd: currentDailyBudgetMicroUsd, workerState: capacity.state,
           ...(capacity.proof ? {movingCapacity:capacity.proof}:{}) });
         connection = await connectionFactory({ origin, release: receipt, attestationBinding: binding,
           signal: requestSignal, lifetimeMs, startupMs, idleMs, finalize, chunkAcknowledgements: true,
@@ -187,6 +198,17 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       const api = {
         sessionId: binding.sessionId, attemptId: binding.attemptId, binding,
         callbackUrl: connection.callbackUrl, handleUpgrade: connection.handleUpgrade, closed: connection.closed,
+        // runtime.current calls this during voice/output freshness checks. Do
+        // not call beforeCostly here: that callback itself reenters runtime.
+        async assertCurrent({submissionPhase=false}={}) {
+          if(typeof submissionPhase!=='boolean')fail('invalid_generated_speech_journal_input',422);
+          requestSignal.throwIfAborted();
+          const lease=await currentLease();
+          requestSignal.throwIfAborted();
+          const saved=await journal.assertMovingSession({scope,sessionId:binding.sessionId,endpointId,lease,binding,
+            driftAdmission,submissionPhase,...(acceptedJob?{jobId:acceptedJob}:{})});
+          requestSignal.throwIfAborted();return saved;
+        },
         submit() {
           if (submission) return submission;
           submission = (async () => {
@@ -199,7 +221,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
               assertSubmissionWindow();
               const lease = await currentLease();
               await journal.markRequestSubmissionStarted({ key: session.key, lease });
-              await journal.markSubmissionStarted({ sessionId: binding.sessionId, lease });
+              await journal.markSubmissionStarted({ sessionId: binding.sessionId, endpointId, lease, driftAdmission });
               // Exactly one POST. A lost reply/COMMIT remains spent and pinned.
               let result;
               try {
@@ -208,14 +230,18 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
                     const fresh=await observeCapacity(await release({signal:s}),s);
                     if (!fresh.verified || fresh.verified.image !== admittedCapacity.image
                       || fresh.verified.endpointVersion !== admittedCapacity.endpointVersion) fail('generated_speech_moving_capacity_changed');
-                    // The journal is already submission_started. Its normal
-                    // prepare/output guard accepts only reserved/running jobs;
-                    // renew the same fence and recheck current product access.
-                    await beforeCostly({phase:'submit',signal:s});
-                    s.throwIfAborted();
-                    await currentLease();
                   }
-                  assertSubmissionWindow(); return provider.submit({ input: { schemaVersion: 1,
+                  // Recheck both legacy and capacity-proof paths after all slow
+                  // preparation. The dispatch guard permits submission_started
+                  // only here, under the same durable admission and lease.
+                  await beforeCostly({phase:'submit',signal:s});
+                  s.throwIfAborted();
+                  const dispatchLease=await currentLease();
+                  await journal.assertMovingSession({scope,sessionId:binding.sessionId,endpointId,lease:dispatchLease,
+                    binding,driftAdmission,submissionPhase:true});
+                  // No awaited operation may separate the final SQL guard from
+                  // starting the provider POST. Lost replies stay spent/pinned.
+                  s.throwIfAborted();assertSubmissionWindow(); return provider.submit({ input: { schemaVersion: 1,
                   callbackUrl: connection.callbackUrl, ttlSeconds: MOVING_SPEECH_LIMITS.executionMs / 1000, binding,
                   ...(download ? { bankDownload: download } : {}) }, signal: s }); }, requestSignal, idleMs,
                 'generated_speech_moving_submission_unknown');
