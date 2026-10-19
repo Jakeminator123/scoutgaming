@@ -749,6 +749,36 @@ test('deal interrupts idle; neither selection nor a stale idle frame opens the s
   controller.state({ action: false }); assert.equal(jobs.length, 3); assert.equal(fixture.proofs, 0);
   jobs[2].options.onReceipt({ state: 'presented' }); assert.equal(fixture.proofs, 1);
 });
+test('a power-save interruption retries the same base loop instead of blacklisting it, also after the tab was hidden', async t => {
+  // Production 2026-10-19 16:51, 18:21 and 18:30 UTC: Chrome rejected the
+  // video-only idle play() while the tab was hidden; the base loop was then
+  // blacklisted, the dealer had no idle and generated speech waited forever.
+  const fixture = await controllerFixture(t); const { controller, jobs, status } = fixture;
+  const powerSave = () => new DOMException('The play() request was interrupted because video-only background media was paused to save power. https://goo.gl/LdLk22', 'AbortError');
+  controller.start(); assert.equal(jobs.length, 1);
+  jobs[0].reject(powerSave()); await new Promise(resolve => setImmediate(resolve));
+  assert.match(status.textContent, /paused to save power/);
+  assert.equal(jobs.length, 1, 'the retry is delayed, never an immediate tight loop');
+  await new Promise(resolve => setTimeout(resolve, 800));
+  assert.equal(jobs.length, 2, 'the same base loop is filmed again');
+  assert.equal(jobs[1].take.media.src, jobs[0].take.media.src);
+  // Interrupted again, and the tab is hidden before the retry fires: nothing
+  // plays while hidden; becoming visible resumes the same loop.
+  jobs[1].reject(powerSave()); await new Promise(resolve => setImmediate(resolve));
+  fixture.setHidden(true); await new Promise(resolve => setTimeout(resolve, 800));
+  assert.equal(jobs.length, 2);
+  // A generated reply becomes ready while hidden: the gate needs a standard
+  // base frame, which the speech-ready selection makes deterministic.
+  controller.state({ ready: true }); assert.equal(jobs.length, 2);
+  fixture.setHidden(false); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(jobs.length, 3);
+  jobs[2].options.onReceipt({ state: 'start' }); jobs[2].options.onReceipt({ state: 'presented' });
+  assert.equal(fixture.proofs, 1, 'the resumed standard base frame opens the speech gate'); assert.equal(status.textContent, '');
+  // A genuinely broken clip still follows the ordinary failure path.
+  jobs[2].reject(new Error('idle unavailable')); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(status.textContent, 'Idle: idle unavailable');
+});
+
 test('an idle warning survives selection and start, then clears on the current presented frame', async t => {
   const { controller, jobs, status } = await controllerFixture(t);
   controller.start(); jobs[0].reject(new Error('Film ended without a presented frame'));

@@ -42,6 +42,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
   const hold = video => { if (composition) { composition.hold(video); return; } if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
   let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null, idleRetryTimer = null, idleRetries = 0, idleFailed = false;
+  // Chrome rejects play() for video-only media in a hidden tab with "paused to
+  // save power". That interrupts a healthy clip; it is not a broken file. On
+  // 19 October 2026 it blacklisted the only base loop, so the dealer had no
+  // idle and the speech gate stayed shut ("väntar på ledigt bord") until a
+  // reload. Retry the same clip shortly, and again when the tab is visible.
+  const transientPlayback = error => /paused to save power|play\(\) request was interrupted/i.test(error?.message ?? '');
+  let idleTransientRetries = 0;
+  const retryIdleSoon = () => { clearTimeout(idleRetryTimer); idleRetryTimer = setTimeout(() => { idleRetryTimer = null; if (closed || document.hidden) return; idleRun = 0; resumeIdle(); }, 700); };
   // The retry budget belongs to this configuration's exact idle, not a UI epoch.
   // Visibility/action changes must not turn a broken loop into endless retries.
   const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; active?.abort(); active = null; };
@@ -127,6 +135,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     void film(video, { kind: 'idle', details: { idleKind: 'standard', standardBase: true,
       reason: 'saved_exact_baseline', projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial || closed) return;
+        idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
         onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRetries = 0; idleRun = 0; resumeOwnIdle(); })
@@ -134,6 +143,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         if (requireReload(error)) return;
         onBusy();
         idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+        if (transientPlayback(error) && idleTransientRetries++ < 20) { idleRun = 0; retryIdleSoon(); return; }
         if (!['local_film_no_presented_frame', 'local_film_stalled'].includes(error.code)) return;
         if (idleRetries >= 1) { idleFailed = true; return; }
         // Retry the same frozen idle once. Neither a timer nor 'playing' opens
@@ -157,13 +167,17 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     if (!video) { status.textContent = 'Ingen lokal idlefilm · 2D-reserv'; return; }
     void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason, projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial || closed) return;
+        idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
         idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
-      .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error); idle.failed(clip.playId); resumeIdle(); });
+      .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+        if (transientPlayback(error) && idleTransientRetries++ < 20) { retryIdleSoon(); return; }
+        idle.failed(clip.playId); resumeIdle(); });
   }
   function state(patch) {
+    if (!document.hidden) idleTransientRetries = 0;
     if (Object.hasOwn(patch, 'action')) { if (patch.action && !action) pendingRule = null; action = patch.action; idleDuringAction = false; }
     if (Object.hasOwn(patch, 'speech')) speech = patch.speech;
     if (Object.hasOwn(patch, 'ready')) ready = patch.ready;
