@@ -13,8 +13,8 @@ test('one additional reservation fits the existing ID and cumulative human cap',
  assert.equal(freshMovingBudgetAmendment(input,1300001),false);
  assert.equal(freshMovingBudgetAmendment(input,999999),false);
 });
-test('insufficient coverage, technical or provider capacity above 40 USD or a refund cannot authorize',()=>{
- for(const patch of [{globalLimitMicroUsd:40000001},{newLimitMicroUsd:40000001},{newLimitMicroUsd:4800000},
+test('insufficient coverage, capacity above 45 USD or a refund cannot authorize',()=>{
+ for(const patch of [{globalLimitMicroUsd:45000001},{newLimitMicroUsd:45000001},{newLimitMicroUsd:4800000},
   {newLimitMicroUsd:4700000},{expectedReservedMicroUsd:4800001},{windowReserveMicroUsd:1199999},
   {otherReservedMicroUsd:14000000},{providerSpentMicroUsd:-1},{expectedReservationCount:0},
   {globalLimitMicroUsd:'15000000'},{authorizationId:''},{evidenceSha256:'unverified'},{unexpected:true}]){
@@ -31,10 +31,10 @@ test('historical third production trial permitted one additional 1.20 USD reserv
  assert.equal(validMovingBudgetAmendment(next),true);
  assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
  assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
- assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,40000000);
+ assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,45000000);
  assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
- for(const patch of [{newLimitMicroUsd:12000000},{newLimitMicroUsd:40000001},{globalLimitMicroUsd:40000001},
-  {providerSpentMicroUsd:40000001},{otherReservedMicroUsd:40000001},{otherReservedMicroUsd:38000000},
+ for(const patch of [{newLimitMicroUsd:12000000},{newLimitMicroUsd:40000001},{globalLimitMicroUsd:45000001},
+   {providerSpentMicroUsd:45000001},{otherReservedMicroUsd:45000001},{otherReservedMicroUsd:38000000},
   {windowReserveMicroUsd:1199999},{globalLimitMicroUsd:'40000000'}])
   assert.equal(validMovingBudgetAmendment({...next,...patch}),false,JSON.stringify(patch));
 });
@@ -53,7 +53,7 @@ test('historical two-reply amendment required coverage for both unchanged reserv
 });
 
 test('technical capacity permits funded amendments beyond 15 USD without granting them',()=>{
- assert.equal(MOVING_BUDGET_MAX_MICRO_USD,40000000);
+ assert.equal(MOVING_BUDGET_MAX_MICRO_USD,45000000);
  assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,MOVING_BUDGET_MAX_MICRO_USD);
   assert.equal(MOVING_TRIAL_BUDGET.initialBudgetMicroUsd,13200000);
  assert.equal(MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,20000000);
@@ -71,4 +71,18 @@ test('technical capacity permits funded amendments beyond 15 USD without grantin
  // The next intended 13.2 -> 14.4 amendment is distinct from the code ceiling.
  assert.equal(validMovingBudgetAmendment({...funded,expectedReservedMicroUsd:12000000,
   expectedReservationCount:10,newLimitMicroUsd:14400000}),true);
+});
+
+test('45 USD is the cumulative ceiling and the next micro-dollar cannot be authorized',()=>{
+ const ceiling={...input,authorizationId:'fixture-cumulative-45',
+  expectedLimitMicroUsd:43800000,expectedReservedMicroUsd:43800000,expectedReservationCount:40,
+  newLimitMicroUsd:45000000,globalLimitMicroUsd:45000000,
+  providerSpentMicroUsd:600000,otherReservedMicroUsd:24000000,windowReserveMicroUsd:1200000};
+ const saved=structuredClone(ceiling);
+ assert.equal(validMovingBudgetAmendment(ceiling),true);
+ for(const field of ['newLimitMicroUsd','globalLimitMicroUsd','providerSpentMicroUsd','otherReservedMicroUsd'])
+  assert.equal(validMovingBudgetAmendment({...ceiling,[field]:45000001}),false,field);
+ assert.equal(validMovingBudgetAmendment({...ceiling,providerSpentMicroUsd:19800001}),false,'all provider coverage shares the same45USD cap');
+ assert.deepEqual(ceiling,saved,'validation cannot rewrite historical amounts');
+ assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,45000000);
 });

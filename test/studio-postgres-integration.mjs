@@ -1,4 +1,4 @@
-import { runMovingBudgetSqlChecks,runMovingBudgetMigrationSqlChecks } from './fixtures/moving-budget-sql-checks.mjs';
+import { runMovingBudgetSqlChecks,runMovingBudgetMigrationSqlChecks,runMovingDriftMigrationAfterBudgetSqlChecks } from './fixtures/moving-budget-sql-checks.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash,randomBytes,randomUUID } from 'node:crypto';
@@ -29,9 +29,16 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     assert.equal(initial.toApply.length, migrations.filter(row=>!row.deploymentOptional).length, 'fixture must start without an existing Studio schema');
     assert.deepEqual(initial.optionalPending.map(row=>row.version), migrations.filter(row=>row.deploymentOptional).map(row=>row.version));
     await runMovingBudgetMigrationSqlChecks({pool});
-    assert.deepEqual(await planStudioMigrations({pool}),initial,'old014 to015 SQL probe rolls back its entire fixture');
+    assert.deepEqual(await planStudioMigrations({pool}),initial,'historical014 to015 to017 SQL probe rolls back its entire fixture');
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
-    await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
+    if (typeof restart === 'function') {
+      const sequential = await runMovingDriftMigrationAfterBudgetSqlChecks({pool,restart}); pool = sequential.pool;
+      checks.push(...sequential.checks);
+    } else {
+      // The explicit existing QA connection has no cluster lifecycle control.
+      // Retain its ordinary migration proof without claiming a restart check.
+      await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
+    }
     const applied = await planStudioMigrations({ pool });
     assert.equal(applied.toApply.length, 0); assert.equal(applied.optionalPending.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });

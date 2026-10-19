@@ -6,6 +6,20 @@ PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
+## Driftväljarens API
+
+<a id="driftvaljarens-api"></a>
+
+Servern registrerar drift-API:t enbart med `CROUPIER_STUDIO_MOVING_DRIFT_API=1`
+och `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES`: JSON-array med 1–8 exakta profiler,
+vardera med `id`, `label`, `endpointId`, `releaseDigest`, `bankHash`. Profil-ID,
+endpoint-ID och SHA-256 valideras av kontrollplanet; extra fält avvisas.
+Detta är intern serverkonfiguration, aldrig klientinmatning eller en ny mediekatalog.
+Lagringen använder native Admins befintliga databas och miljöscope samt optional
+SQL016. Saknad/felaktig konfiguration ger stängt API (503); övrig Admin påverkas inte.
+Flaggan aktiverar ingen provider: `connected:false`, bara önskat Av, ingen admission.
+Denna etapp ändrade inga molnvariabler eller produktionsdata.
+
 ## Aktuellt miljöval för Admin — verifierat 18 oktober 2026
 
 Behåll Scoutgamings aktuella produkt på Neon-projektet

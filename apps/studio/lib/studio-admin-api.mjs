@@ -3,6 +3,8 @@ import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-pol
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 
+import { publicMovingDriftError } from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
+
 const MAX_BODY = 64 * 1024;
 const administrationMutations = new Set(['voiceline-review','tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
@@ -74,6 +76,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
     return STUDIO_ADMIN_ENDPOINTS.filter(endpoint => ready(endpoint) && studioRoleMeetsMinimum(actor.role, endpoint.minimumRole)).map(endpoint => `${endpoint.method} ${endpoint.action}`);
   }
   async function handle(request) {
+    let action;
     try {
       const url = new URL(request.url);
       if (!hosts.has(url.host) || !origins.has(url.origin) || url.username || url.password) throw failure(403);
@@ -85,6 +88,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (!matches.length) throw failure(404);
       const endpoint = studioAdminEndpoint(request.method, canonicalPath);
       if (!endpoint) return json({ error: publicErrors.get(405) }, 405, { Allow: [...new Set(matches.map(item => item.method))].join(', ') });
+      action = endpoint.action;
       const session = await authorize(request);
       const actor = sessionActor(session);
       if (!studioRoleMeetsMinimum(actor.role, endpoint.minimumRole)) throw failure(403);
@@ -153,6 +157,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       for (const work of deferred) await work();
       return json(result, 200, readIdentity);
     } catch (error) {
+      if (action === 'moving-drift') {
+        const safe = publicMovingDriftError(error) ?? (error?.statusCode === 503 && !error?.code
+          ? publicMovingDriftError({code:'drift_api_unavailable',statusCode:503}) : null);
+        if (safe) return json(safe.body,safe.status);
+      }
       const status = publicErrors.has(error?.statusCode) ? error.statusCode : 500;
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);

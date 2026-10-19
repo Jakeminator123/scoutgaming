@@ -137,6 +137,21 @@ test('speech import requires015 even when a caller labels it optional',async()=>
   assert.equal(pool.counts.connects,0);assert.deepEqual(pool.state,before);
 });
 
+test('speech import accepts optional017 pending or installed without weakening its ledger proof',async()=>{
+  for(const present of [false,true]){
+    const plan=structuredClone(installed);
+    if(present)plan.applied.push({version:'017',checksum:hash('017'),structureChecksum:hash('structure-017')});
+    else plan.optionalPending=[{version:'017'}];
+    const live=structuredClone(plan),pool=memoryPool(live),input={...args(pool),schemaCheck:async()=>structuredClone(plan)};
+    assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,false);
+    if(present){
+      const before=structuredClone(pool.state);live.applied.find(row=>row.version==='017').structureChecksum='f'.repeat(64);
+      await assert.rejects(applyLegacySpeechLedgerSnapshot(input),{code:'studio_speech_import_schema_unverified'});
+      assert.deepEqual(pool.state,before);
+    }
+  }
+});
+
 test('speech import rejects required gaps unknown versions and invalid proofs',async()=>{
   const last=installed.applied.at(-1);
   for(const mutate of [

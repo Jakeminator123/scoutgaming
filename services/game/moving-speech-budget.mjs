@@ -1,8 +1,8 @@
 // Technical capacity, not a new authorization. For an existing budget ID the
 // journal uses the lower durable limit until an explicit, funded amendment.
-// Migration 015 changes only schema capacity; it grants no budget or refund.
-export const MOVING_BUDGET_MAX_MICRO_USD = 40000000;
-export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 40000000;
+// Migrations 015/017 change only schema capacity; they grant no budget or refund.
+export const MOVING_BUDGET_MAX_MICRO_USD = 45000000;
+export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 45000000;
 export const MOVING_TRIAL_BUDGET = Object.freeze({
   budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
   initialBudgetMicroUsd: 13200000,

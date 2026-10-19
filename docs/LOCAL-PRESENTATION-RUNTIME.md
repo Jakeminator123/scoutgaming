@@ -1,5 +1,61 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Driftväljare: kontrollplan
+
+<a id="driftvaljare-kontrollplan"></a>
+
+`packages/presentation/contracts/moving-drift.mjs` definierar kommandot:
+`expectedRevision`, `commandId`, `mode` (`off|saving|warm`), `profileId`
+enbart för saving/warm och `durationSeconds` enbart för warm (1800/7200/86400).
+Servern bestämmer sluttiden. Klienten får inte ange endpoint, pris, budget eller
+workerstatus. `services/game/moving-drift-controller.mjs` ger serverklocka,
+revision/operation, önskat läge, observerad status, vald/faktisk profil,
+exakt release-/bankberedskap, capability/skälkod och kostnadsunderlag.
+Saknad/gammal observation ger `unknown`; cached EXITED är ingen aktiv GPU.
+`nextAction` är en intern plan, aldrig en genomförandekvittens.
+Identiska kommandon jämförs fältvis så JSONB:s nyckelordning inte påverkar retry.
+Null-kvitto tillåts bara för revision0/ursprungligt Av (min0/max1), aldrig för
+senare aktivering. Observationens katalogfingeravtryck omfattar profil-ID,
+endpoint, release och bank; ändrat underlag kräver ny komplett observation.
+Visningsetiketter och profilernas ordning ändrar inte detta fingeravtryck.
+
+`postgres-moving-drift.mjs` serialiserar en rad per miljö för alla profiler/rum,
+använder databasklocka och kräver atomisk commit. SQL016 är valfri vid deployment;
+modulerna startar ingenting och läser inga credentials. `applyStudioMigrations`
+kan skjuta upp enbart kända deploymentOptional-versioner med `deferOptional`;
+016 och 017 kan därmed rullas ut separat. Installerad historik och fingeravtryck
+verifieras fortsatt. Utgången varm period
+övergår till Av vid nästa serveranrop/avstämning. Det bevisar återställning efter
+omstart, **inte avstängning medan servern ligger nere**.
+
+Admins befintliga catch-all registrerar GET/POST `/studio/api/admin/moving-drift`
+(eller `/api/admin` enligt `apiBase`). N1, färsk session, exakt origin/CSRF och
+konfigurerat environment/workspace kontrolleras före anrop. POST:s behörighetskontroll
+och driftlagring delar samma produkttransaktion/anslutning; POST-rollback återställer
+driftstate. GET autentiseras före en separat statustransaktion. Den kan initialisera
+önskat Av eller markera en utgången önskad period som Av; den verkställer inget
+GPU-stopp. Browserkontrakt/typer finns i `moving-drift-admin.mjs`/`.d.mts` under
+`packages/presentation/contracts/`; interna `nextAction`, endpoints och hashunderlag
+utelämnas. 200 bekräftar önskat läge, aldrig genomförd GPU-drift. Konflikter ger
+409 med säker kod; saknad optional016 ger 503 utan SQL-detaljer.
+
+API:t är avstängt utan server-opt-in/profilkonfiguration enligt
+[ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+Denna etapp anger alltid `connected:false`, tillåter bara önskat Av och öppnar
+ingen admission. Saving/warm är spärrade; ingen provider eller exekverare finns.
+Framtida faktisk drift kräver globalt synkroniserad admission med befintlig
+journal, färska bevis från samtliga endpoints och kontrollerad drain/stop.
+Varm aktivering kräver därutöver oberoende verkställd sluttid, faktisk reservation
+av hela perioden inklusive avstängning och attestering av exakt release/bank.
+Det injicerade budgetunderlaget är bundet till kommando/revision/profil; beräknad
+kostnad är inte en faktura eller reservation. DTO-kostnaden gäller accepterad period,
+inte timpris eller offert för ett nytt profil-/tidsval. Kapaciteten är avstängd som standard.
+Befintlig RunPod-adapter, worker och taljournal är oförändrade.
+
+Lokalt SQL-/omstartsprov: `node tools/studio-isolated-qa.mjs --moving-drift --download-postgres`
+i Linux/WSL med game-paketets låsta beroenden. Verktyget använder en tillfällig
+localhost-databas, kontrollerar oförändrade källfiler och stänger/rensar sin klusterprocess.
+
 Rena projekt-, media- och browserkontrakt ägs av `packages/presentation/contracts/`.
 Studio och spelserver använder samma validering och typer. Den explicita listan
 `packages/presentation/public-modules.mjs` bevarar äldre publika moduladresser
@@ -137,7 +193,7 @@ antagnings-, avbrotts- och städskydd; det ingår inte i tvåreplikskvittot.
 
 ### Budgetens tre nivåer
 
-`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 40 USD och runtime-dygn
+`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 45 USD och runtime-dygn
 20 USD. Det separata initiala beloppet 13,2 USD används bara för ett tomt
 Dragan-budget-ID. Därefter gäller det lägsta av runtimekapaciteten och
 journalens varaktiga beviljade tak. En explicit finansierad amendment måste
@@ -150,6 +206,13 @@ tre CHECK-gränser ändrades, inte befintligt beviljat belopp. Denna leverans
 gör 015 obligatorisk i readiness, Studio och båda importörerna. Handoffens
 daterade appdriftkvitto avser PR262 före denna slutleverans; den beskriver
 även det exakta migrationskvittot och verifieringen av denna ändring.
+
+Jakob har 19 oktober satt det sammanlagda taket till 45 USD; det är inte
+45 USD extra. Den nya migrationen 017 höjer enbart de tre CHECK-gränserna
+40→45 USD och lämnar tillämpad 015 samt historiska ledgerbevis orörda.
+017 är först `deploymentOptional`: produktionens SQL, readiness och separat
+finansierad amendment måste återläsas innan den högre budgeten används och
+017 görs obligatorisk. Initialbelopp, dygnstak och försöksreserv är oförändrade.
 
 Faktisk leverantörsdebitering, kvarhållna providerreserver och SQL-journalens
 reservationer är skilda redovisningar. Summera inte journalen som faktura.

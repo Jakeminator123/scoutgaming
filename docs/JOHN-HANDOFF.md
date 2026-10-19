@@ -1,5 +1,34 @@
 # Aktuell handoff — Scoutgaming
 
+## Driftväljare: kontrollplan och API — 19 oktober 2026
+
+HUVUDAGENT5 äger backend; UIUX äger separat Admin-koppling och POST-PISYNK4
+talflödet. Den samlade leveransen i PR270 på `codex/admin-drift-api` inkluderar
+PR268:s granskade kontrollplan. PR268 hålls öppen tills PR270 är mergad och kan
+stängas som ersatt. MERGE3 äger granskning, integrationsordning och merge.
+GET/POST `/studio/api/admin/moving-drift` återanvänder N1, färsk session,
+origin/CSRF och konfigurerat scope. POST:s behörighetskontroll och driftlagring
+delar SQL-transaktion/anslutning; POST-rollback återställer driftstate. GET
+autentiseras före sin statustransaktion, som kan initialisera önskat Av eller
+markera en utgången önskad period som Av. Browsern får önskat/observerat läge, revision,
+profiler och capabilities, aldrig interna exekveringsplaner eller endpoint/hashar.
+
+Main 819a88ff (PR267/269/271/272) är integrerad. Verifierat: 108 fokuserade prov
+samt full isolerad SQL/HTTPS/omstart med 29 legacy- och 71 integrationskontroller,
+plus fyra retained-kontraktsprov. Dessa omfattar fyra samtidiga API-kommandon på
+en anslutning, återkallad session, rollback, JSONB/COMMIT-svarsförlust och retry.
+Verklig 016-DDL körs efter ledgerad 017; tidigare budgetdata, ledger/checksums och
+kolumner bevaras även efter omstart. Historiska 014→015→017-rollbackprov är kvar.
+Optional016 saknad ger säker 503. Bara kända optionalversioner kan skjutas upp;
+required-readiness och installerade fingeravtryck gäller fortsatt. Ny CI återstår.
+API:t kräver uttrycklig server-opt-in/profilkonfiguration, är avstängt som standard
+och anger alltid `connected:false`; enbart önskat Av kan sparas. 200 bevisar
+inte faktisk avstängning. Ingen provider, HTTP-webbläsar-E2E eller GPU har provats.
+Faktisk drift kräver ännu exekverare, synkroniserad admission, oberoende sluttid,
+verklig kostnadsreservation och exakt release-/bankattestering.
+Ingen GPU-/produktionsändring. [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan)
+och [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+
 ## UX/UI: klippkarta och scenplacering — 19 oktober 2026
 
 [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267) är granskad och
@@ -75,6 +104,17 @@ En oberoende läsande Codex-granskning hittade inga blockerande fynd.
 CI upptäckte att de två nya integrationerna saknades i fullsvitens register;
 de är nu registrerade i grupperna `moving-speech-deal` och `astrid-camera`.
 UI/UX äger Admin och HUVUDAGENT5 driftstyrningen; gemensamma filer samordnas.
+Jakob har satt totaltaket till45USD, inte45USD extra. En separat valfri017
+breddar endast teknisk kapacitet; initial13,2, försöksreserv1,2 och dygn20USD
+är oförändrade.73 fokuserade tester och verklig isolerad PostgreSQL med
+omstart/HTTPS passerar, inklusive45/+1mikro och bevarad historik.
+Produktionens017, kompatibel driftsättning och separat finansierat belopp är
+ännu inte verifierade här. Dagens planerade fönster är2,4USD och ryms även
+inom befintligt40USD-tak. Ingen GPU-/visuell kvittens ingår i denna ändring.
+CI upptäckte tre kvarvarande förväntningar på föregående tekniska tak/manifest.
+De två sessionfallen och Studio-fixturen är uppdaterade till45USD/optional017;
+initialbelopp, dags-/försöks-/tidsgränser och produktkod är oförändrade.
+
 
 ## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
 
