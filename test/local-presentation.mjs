@@ -767,12 +767,13 @@ test('a power-save interruption retries the same base loop instead of blacklisti
   jobs[1].reject(powerSave()); await new Promise(resolve => setImmediate(resolve));
   fixture.setHidden(true); await new Promise(resolve => setTimeout(resolve, 800));
   assert.equal(jobs.length, 2);
+  // A generated reply becomes ready while hidden: the gate needs a standard
+  // base frame, which the speech-ready selection makes deterministic.
+  controller.state({ ready: true }); assert.equal(jobs.length, 2);
   fixture.setHidden(false); await new Promise(resolve => setImmediate(resolve));
-  // Visibility re-enters the ordinary idle selection (weighted base), so only
-  // the fact that a base loop plays again is asserted, not which base.
-  assert.equal(jobs.length, 3); assert.equal(jobs[2].options.muted, true);
+  assert.equal(jobs.length, 3);
   jobs[2].options.onReceipt({ state: 'start' }); jobs[2].options.onReceipt({ state: 'presented' });
-  assert.equal(fixture.proofs, 1); assert.equal(status.textContent, '');
+  assert.equal(fixture.proofs, 1, 'the resumed standard base frame opens the speech gate'); assert.equal(status.textContent, '');
   // A genuinely broken clip still follows the ordinary failure path.
   jobs[2].reject(new Error('idle unavailable')); await new Promise(resolve => setImmediate(resolve));
   assert.equal(status.textContent, 'Idle: idle unavailable');
