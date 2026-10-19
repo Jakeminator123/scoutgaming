@@ -13,10 +13,23 @@ import {readOperatorLifecycle,withOperatorLifecycle,OPERATOR_LIFECYCLE_KEY} from
 import {lifecycleSnapshotKey} from '../client/admin/lib/studio-resource-lifecycle.mjs';
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import {assertLifecyclePackages} from '../lib/dealer-lifecycle.mjs';
+import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
+import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
+import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
 const scope={environment:'lifecycle-fixture',workspaceId:'isolated'};
 const origin='https://lifecycle.example.invalid',clone=value=>structuredClone(value);
 const actor={user:'internal',role:'admin',scope},clock=()=>1791753600000;
-async function fixture({shared=false}={}){
+function withFrozenAnchors(value){
+ const presentation=clone(value),id='30000000-0000-4000-8000-000000000001',sha256='d'.repeat(64),contentType='image/png';
+ presentation.assets.push({schemaVersion:1,id,sha256,contentType,size:4096,width:720,height:1280,role:'table',label:'Table',pathname:layerAssetPath({id,sha256,contentType,role:'table'})});
+ Object.assign(presentation.lanes[0].layers.table,{enabled:true,allowed:[id],default:id});
+ const board=defaultBlackjackTableGeometry(id);
+ for(const layout of ['mobile','desktop'])board[layout].anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}},bets:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
+ presentation.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};return presentation;
+}
+async function fixture({shared=false,nativeVersion,frozenAnchors=false}={}){
  const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]}),project=cloud.project;
  const gameLane={schemaVersion:1,id:'room-lane-test',label:'Generated',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'};
  const base={...gameLane,id:'mobile-phone',label:'Default'};
@@ -26,14 +39,25 @@ async function fixture({shared=false}={}){
  await repository.initializeDocument('project',{value:project,actor:'fixture'});
  await repository.initializeDocument('administration',{value:administration,actor:'fixture'});
  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,now:clock,transaction:fn=>repository.withTransactionClient(fn)}))));
- await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['mobile-phone'],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({},cloud.presentation)}));
- const service=createResourceLifecycleApi({repository,scope,now:clock});
- const api=createStudioAdminApi({handlers:service.handlers,authorize:async()=>actor,allowedOrigins:[origin],publicHosts:[new URL(origin).host],mutationTransaction:work=>work()});
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['mobile-phone'],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({},frozenAnchors?withFrozenAnchors(cloud.presentation):cloud.presentation)}));
+ const gates={fetches:[],transactions:0,beforeMutation:null},nativeRepository=nativeVersion===undefined?repository:wrapNativePresentationRepository(repository,{
+  env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
+   assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.ok(!gates.active,'readiness HTTP precedes product mutation');
+   const version=Number(headers['X-Presentation-Capability-Version']);gates.fetches.push(version);
+   return version>nativeVersion?new Response(null,{status:406}):Response.json(presentationCapabilitiesForVersion(version));
+  }});
+ // The real native coordinator uses scoped OperatorStore reads. This fixture
+ // executes those reads on an isolated read-only connection, never its writer.
+ const readPool={async query(sql,values){const client=await pool.connect();try{await client.query('BEGIN READ ONLY');const result=await client.query(sql,values);await client.query('COMMIT');return result;}finally{client.release();}}};
+ const service=createResourceLifecycleApi({repository:nativeRepository,scope,now:clock});
+ const mutationTransaction=nativeVersion===undefined?work=>work():createNativePresentationMutationTransaction({repository:nativeRepository,pool:readPool,scope,
+  boDb:{async transaction(work){gates.transactions++;gates.active=true;try{if(gates.beforeMutation)await gates.beforeMutation();return await work();}finally{gates.active=false;}}}});
+ const api=createStudioAdminApi({handlers:service.handlers,authorize:async()=>actor,allowedOrigins:[origin],publicHosts:[new URL(origin).host],mutationTransaction});
  const post=async(action,body,headers={})=>{const response=await api.handle(new Request(origin+'/studio/api/admin/'+action,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',...headers},body:JSON.stringify(body)}));return {status:response.status,body:await response.json()};};
  const get=()=>service.handlers.get('GET /studio/api/admin/resource-lifecycle')({actor,scope});
  const pack=()=>stored(store=>store.getCurrentPackage('north'));
  const body=async(extra={})=>({operatorId:'north',roomId:room.id,archived:true,expectedAdministrationRevision:(await repository.readDocument('administration')).revision,expectedPackageRevision:(await pack()).revision,...extra});
- return {pool,repository,project,gameLane,room,stored,post,get,pack,body,service};
+ return {pool,repository,project,gameLane,room,stored,post,get,pack,body,service,gates};
 }
 test('archive detaches a room, keeps immutable media/package history and exposes explicit persistent readouts',async()=>{
  const f=await fixture(),before=await f.pack();
@@ -143,14 +167,55 @@ test('lifecycle metadata has bounded, integrity checked encoding and is never tr
  branding[OPERATOR_LIFECYCLE_KEY].sha256='0'.repeat(64);assert.throws(()=>readOperatorLifecycle(branding),{code:'studio_invalid_resource_lifecycle'});
  assert.deepEqual(publicPackageBranding(branding),{dealer:'astrid'});
 });
-test('every lifecycle route requests the v6 preflight before opening its mutation transaction',async()=>{
+test('every lifecycle route declares its selected operator for frozen-package preflight',async()=>{
  for(const action of ['operator-lifecycle','room-lifecycle','room-state']){
   const options=[];let invoked=0;
   const api=createStudioAdminApi({authorize:async()=>actor,allowedOrigins:[origin],publicHosts:[new URL(origin).host],
    handlers:new Map([['POST /studio/api/admin/'+action,()=>{invoked++;return {ok:true};}]]),
    mutationTransaction:async(work,requirement)=>{options.push(requirement);return work();}});
-  const response=await api.handle(new Request(origin+'/studio/api/admin/'+action,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:'{}'}));
+  const response=await api.handle(new Request(origin+'/studio/api/admin/'+action,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify({operatorId:'north'})}));
   assert.equal(response.status,200);assert.equal(invoked,1);
-  assert.deepEqual(options,[{presentationDocuments:['project','administration'],presentationMutation:{kind:'resource-lifecycle',value:{}}}]);
+  assert.deepEqual(options,[{presentationDocuments:['project','administration'],presentationOperatorIds:['north'],presentationMutation:{kind:'resource-lifecycle',value:{}}}]);
  }
+});
+
+for(const action of ['room-lifecycle','operator-lifecycle'])for(const nativeVersion of [19,20])test(`${action}: v${nativeVersion} cannot republish anchors held only in a frozen package`,async()=>{
+ const f=await fixture({nativeVersion,frozenAnchors:true}),body=await f.body();if(action==='operator-lifecycle')delete body.roomId;
+ assert.equal(f.project.lanes[0].composition?.blackjackTables,undefined,'the saved draft has no anchors');
+ const before=f.pool.snapshot(),offset=f.pool.trace.length,response=await f.post(action,body);
+ assert.equal(response.status,503);assert.equal(response.body.code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+ assert.deepEqual(f.gates.fetches,[21]);assert.equal(f.gates.transactions,0);assert.deepEqual(f.pool.snapshot(),before);
+ assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','operator-status','audit','audit-write'].includes(row.marker)));
+});
+
+for(const action of ['room-lifecycle','operator-lifecycle'])test(`${action}: v21 retains frozen anchors with ordinary ownership, revision and rollback rules`,async()=>{
+ const f=await fixture({nativeVersion:21,frozenAnchors:true}),original=readPackagePresentation(await f.pack()),body=await f.body();if(action==='operator-lifecycle')delete body.roomId;
+ const before=f.pool.snapshot();
+ assert.equal((await f.post(action,{...body,expectedPackageRevision:99})).status,409);assert.deepEqual(f.pool.snapshot(),before);
+ const foreign={...body,operatorId:'other',expectedPackageRevision:null};
+ if(action==='room-lifecycle'){assert.equal((await f.post(action,foreign)).status,409);assert.deepEqual(f.pool.snapshot(),before);}
+ f.pool.fail('publish-package');assert.equal((await f.post(action,body)).status,503);assert.deepEqual(f.pool.snapshot(),before,'all lifecycle writes roll back');
+ const archived=await f.post(action,body);assert.equal(archived.status,200);assert.equal(archived.body.packageRevision,2);
+ assert.deepEqual(readPackagePresentation(await f.pack()),original);
+ const restored=await f.post(action,{...body,archived:false,expectedPackageRevision:2,expectedAdministrationRevision:archived.body.administrationRevision});
+ assert.equal(restored.status,200);assert.equal(restored.body.packageRevision,3);assert.deepEqual(readPackagePresentation(await f.pack()),original);
+ const rows=(await f.get()).rooms;assert.equal(rows[0].state,action==='room-lifecycle'?'pending':'archived');
+ assert.ok(f.gates.fetches.includes(21));
+});
+
+test('lifecycle cannot acquire frozen anchors between preflight and its SQL transaction',async()=>{
+ const f=await fixture({nativeVersion:21}),body=await f.body();body.expectedPackageRevision=2;
+ f.gates.beforeMutation=async()=>{const pack=await f.pack();await f.stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:1,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding:withPackagePresentation(pack.branding,withFrozenAnchors(readPackagePresentation(pack)))}));};
+ const admin=await f.repository.readDocument('administration'),response=await f.post('room-lifecycle',body);
+ assert.equal(response.status,503);assert.equal(response.body.code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+ assert.deepEqual(f.gates.fetches,[19],'no second HTTP call while holding SQL');
+ assert.deepEqual(await f.repository.readDocument('administration'),admin);assert.equal((await f.pack()).revision,2);
+ assert.deepEqual((await f.pack()).tables,[f.room.id]);
+});
+
+test('lifecycle preflight reads only the selected operator package and preserves v19 for scenes without anchors',async()=>{
+ const f=await fixture({nativeVersion:19}),pack=await f.pack();
+ await f.stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:pack.lanes,games:pack.games,tables:[],branding:withPackagePresentation({},withFrozenAnchors(readPackagePresentation(pack)))}));
+ const response=await f.post('room-lifecycle',await f.body());assert.equal(response.status,200);assert.deepEqual(f.gates.fetches,[19]);
+ const foreign=await f.stored(store=>store.getCurrentPackage('other'));assert.equal(foreign.revision,1);
 });

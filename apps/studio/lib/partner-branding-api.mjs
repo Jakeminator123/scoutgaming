@@ -245,6 +245,17 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       packageRevision:pack.revision,draftRevision:draft.revision,branding:draft.branding,administrationRevision:document.revision})).digest('hex'),
       draftRevision:draft.revision,packageRevision:pack.revision,branding:publicEditableBranding(draft.branding),...changesFor(pack,draft,document)};
   }
+  function publicationMutation(pack) {
+    const presentation=readPackagePresentation(pack);
+    return presentation?{kind:'presentation-package',value:presentation}:undefined;
+  }
+  async function checkPublication(context,pack) {
+    // Native callers already negotiated this exact operator before SQL. Check
+    // the locked payload again; the mutation context forbids HTTP under lock.
+    const descriptor=publicationMutation(pack);
+    if(descriptor&&typeof context.withMutationContext==='function')
+      await context.withMutationContext(async()=>{},descriptor);
+  }
   async function command(input) {
     requireDraftStore(store);
     if(!['save-draft','review','publish','restore'].includes(input.action)
@@ -252,6 +263,9 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       ||!Number.isSafeInteger(input.expectedPackageRevision)||input.expectedPackageRevision<1)fail(400);
     input=structuredClone(input);
     if(typeof withWriteContext!=='function')fail(503);
+    // Partner changes retain N1's frozen presentation. Negotiate that package,
+    // never the latest project or a different operator's package, before SQL.
+    const presentationMutation=input.action==='publish'?publicationMutation(await load(input.operatorId)):undefined;
     return withWriteContext(async context=>{
       if(await context.reauthorize()!==true)fail(403);
       requireDraftStore(context.store);
@@ -273,10 +287,11 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         const branding=await validateDraft(pack,draft.branding,document),review=reviewOf(pack,draft,document);
         if(input.action==='review')return review;
         if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);
+        await checkPublication(context,{...pack,branding});
         await context.store.publishBrandingDraft({...input,branding});
       }
       return state(input.operatorId,context.store,document);
-    });
+    },{presentationMutation});
   }
   return Object.freeze({
     readState:({operatorId})=>state(operatorId),
@@ -298,13 +313,14 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         const document=presentation?await administrationSnapshot(context.readAdministration):null;
         if (locked.revision !== current.revision || document?.revision !== captured?.revision) fail(409);
         const nextBranding=await prepareBranding(locked,branding,document);
+        await checkPublication(context,{...locked,branding:nextBranding});
         let published;
         try {
           published=await context.store.publishPackage({actor,audit,operatorId,expectedRevision:locked.revision,
             lanes:[...locked.lanes],games:[...locked.games],tables:[...locked.tables],branding:nextBranding});
         } catch(error) { if(Number.isInteger(error?.statusCode)) throw error; fail(503); }
         return present(published,document);
-      });
+      },{presentationMutation:publicationMutation(current)});
     },
   });
 }

@@ -20,6 +20,7 @@ import { defaultPresentationLane } from '../packages/presentation/contracts/stud
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
 import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { withPackagePresentation, readPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
+import { PRESENTATION_CAPABILITY_VERSION_HEADER, presentationCapabilitiesForVersion } from '../packages/presentation/capability-contract.mjs';
 
 const origin = 'https://n2-branding-qa.example.invalid';
 const host = 'n2-branding-qa.example.invalid';
@@ -89,6 +90,16 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     rateLimit: async () => true, clientAddress: () => '192.0.2.2', journal: createOperatorJournal({ log: () => {} }),
     readAdministration: async () => ({ revision: 'qa-administration-1', value: structuredClone(fixture.administration) }),
     readProject: () => assert.fail('draft API must validate the frozen package, not a mutable project'),
+    // Only readiness transport is synthetic; SQL, auth, restart and publication
+    // still use this suite's real isolated databases and native request path.
+    env: { CROUPIER_BACKEND_ORIGIN: 'https://runtime-readiness.branding-qa.example.invalid' },
+    fetchImpl: async (url, options) => {
+      assert.equal(url, 'https://runtime-readiness.branding-qa.example.invalid/api/presentation/capabilities');
+      assert.equal(options.method, 'GET');
+      const version = Number(options.headers[PRESENTATION_CAPABILITY_VERSION_HEADER]);
+      assert.ok(Number.isSafeInteger(version) && version >= 3 && version <= 21);
+      return Response.json(presentationCapabilitiesForVersion(version));
+    },
   };
   const request = (path, { cookie, body } = {}) => new Request(`${origin}/studio/api/partner/${path}`, {
     method: body ? 'POST' : 'GET', headers: { host, origin, 'sec-fetch-site': 'same-origin', ...(cookie ? { cookie } : {}),

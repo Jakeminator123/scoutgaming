@@ -172,8 +172,10 @@ test('the wrong revision is 409 and a key outside the lane is 422', async () => 
 
 import {withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
+import { defaultCompositionSettings,defaultBlackjackTableGeometry } from '../../../packages/presentation/contracts/composition-settings.mjs';
 import { layerAssetPath } from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
+import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
 function makePresentation(layered=true) {
@@ -245,4 +247,46 @@ test('empty and unresolved package selections cannot be republished through bran
   for(const branding of [{},{name:'Changed'}])await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding}),error=>error.statusCode===409);
   assert.equal(writes,0);assert.equal(current.revision,1);assert.deepEqual(current.branding,{name:'Company'});
  }
+});
+
+function guardedLegacyFixture({version=21,anchors=true,acquireAnchors=false}={}){
+  let locked=false,writes=0;
+  const calls=[],presentation=makePresentation();
+  function addAnchors(value){
+    const geometry=defaultBlackjackTableGeometry(tableId);
+    geometry.desktop.anchors={bets:{target:'scene',rect:{x:.1,y:.1,width:.8,height:.8}}};
+    value.lanes[0].composition.blackjackTables=[geometry];
+  }
+  if(anchors)addAnchors(presentation);
+  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  const store={getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
+    assert.equal(locked,true);writes++;current={...structuredClone(input),revision:2};return current;
+  }};
+  const repository=wrapNativePresentationRepository({transaction:async work=>{
+    calls.push('BEGIN');locked=true;
+    if(acquireAnchors){const changed=structuredClone(presentation);addAnchors(changed);current.branding=withPackagePresentation({},changed);}
+    try{return await work();}finally{locked=false;}
+  }},{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
+    assert.equal(locked,false,'legacy publication must not fetch under SQL lock');
+    const requested=Number(headers['X-Presentation-Capability-Version']);calls.push(requested);
+    return Response.json(presentationCapabilitiesForVersion(Math.min(requested,version)));
+  }});
+  const readAdministration=async()=>({revision:'admin-1',value:{gameLane:'portrait-astrid',gameLanes:[{schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+    rooms:[{schemaVersion:2,id:'room-1',name:'Room',operatorId,gameLaneId:'portrait-astrid',presentationLaneId:'mobile-phone',state:'live'}]}});
+  const api=createApi({store,readProject:async()=>assert.fail('frozen payload only'),readAdministration,
+    withWriteContext:(work,options)=>repository.transaction(()=>work({store,readAdministration,reauthorize:async()=>true,
+      withMutationContext:repository.withMutationContext}),options)});
+  return {write:()=>api.write({operatorId,actor,expectedRevision:1,branding:{color:'#112233'}}),calls,get writes(){return writes;}};
+}
+for(const version of [19,20])test(`legacy partner write cannot copy frozen anchors to reader${version}`,async()=>{
+  const f=guardedLegacyFixture({version});
+  await assert.rejects(f.write,error=>error.statusCode===503);
+  assert.equal(f.writes,0);assert.deepEqual(f.calls,[21]);
+});
+test('legacy partner write preflights reader21 and checks the actual payload inside the mutation context',async()=>{
+  const f=guardedLegacyFixture();
+  assert.equal((await f.write()).packageRevision,2);assert.equal(f.writes,1);assert.deepEqual(f.calls,[21,'BEGIN']);
+  const changed=guardedLegacyFixture({version:19,anchors:false,acquireAnchors:true});
+  await assert.rejects(changed.write,error=>error.statusCode===503);
+  assert.equal(changed.writes,0);assert.deepEqual(changed.calls,[4,'BEGIN']);
 });

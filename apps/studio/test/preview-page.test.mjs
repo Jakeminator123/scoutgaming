@@ -138,7 +138,7 @@ test('unsaved composition invokes guarded save before the next-step navigation',
   let prevented=false;next.props.onClick({preventDefault(){prevented=true;}});await Promise.resolve();assert.equal(prevented,true);assert.equal(saves,1);
 });
 
-function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]},previewClient=createStudioPreview,initialGame,initialLaneId}={}) {
+function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]},previewClient=createStudioPreview,initialGame,initialLaneId,initialDealerId,initialOperatorId,initialRoomId}={}) {
   const project=initialProject??createSeedProject(),state=[],refs=[],effects=[],savedProjects=[];let stateIndex=0,refIndex=0,saves=0;
   const session={project,projectRef:{current:project},videos:inventory,setVideos:value=>{session.videos=value;},savedJson:JSON.stringify(project),dirty,saving:false,conflict,
     save:async()=>{saves++;savedProjects.push(structuredClone(session.projectRef.current));if(saveResult)session.dirty=false;return saveResult;},
@@ -154,10 +154,72 @@ function previewHarness({dirty=true,conflict=false,saveResult=true,project:initi
     '../lib/studio-preview-client.mjs':{createStudioPreview:previewClient},
     '../../../packages/presentation/contracts/studio-model.mjs':{...model,validateProject:value=>model.validateProject(structuredClone(value))},
   });
-  function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'},initialGame,initialLaneId});}
+  function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'},initialGame,initialLaneId,initialDealerId,initialOperatorId,initialRoomId});}
   function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const found=find(child,predicate);if(found)return found;}return null;}
   return {session,render,find,effects,savedProjects,saves:()=>saves};
 }
+
+function anchoredPreviewProject() {
+  const project=addDealer(createSeedProject(),'nora','Nora'),lane=structuredClone(project.lanes[0]);
+  const asset={schemaVersion:1,id:'10000000-0000-4000-8000-000000000001',role:'table',label:'Board',sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1672,height:941};
+  asset.pathname=layerAssetPath(asset);project.layerAssets=[asset];
+  lane.id='nora-evening';lane.dealers=['nora'];lane.layers.dealer={enabled:true,default:'nora',allowed:['nora']};
+  lane.layers.table={enabled:true,default:asset.id,allowed:[asset.id]};
+  const geometry=defaultBlackjackTableGeometry(asset.id);
+  geometry.mobile.anchors={cards:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
+  lane.composition={...defaultCompositionSettings(),blackjackTables:[geometry]};
+  project.lanes.push(lane);return project;
+}
+function anchorSceneLink(h,tree=h.render()) {
+  const editor=h.find(tree,node=>node.type?.name==='BlackjackTableGeometryEditor');assert.ok(editor);
+  const link=h.find(editor.type(editor.props),node=>node.type==='a');assert.ok(link);return link;
+}
+
+test('anchored geometry opens Admin with the current composition/dealer/game and only an explicit room context',()=>{
+  const h=previewHarness({project:anchoredPreviewProject(),dirty:false,initialLaneId:'nora-evening',initialDealerId:'astrid',initialOperatorId:'operator-1',initialRoomId:'room-7'});
+  let tree=h.render(),url=new URL(anchorSceneLink(h,tree).props.href,'https://site.invalid');
+  assert.equal(url.pathname,'/admin/clips');
+  assert.deepEqual(Object.fromEntries(url.searchParams),{composition:'nora-evening',game:'blackjack',dealer:'nora',operator:'operator-1',table:'room-7'});
+  h.find(tree,node=>node.type==='select'&&node.props.value==='nora').props.onChange({target:{value:'astrid'}});
+  url=new URL(anchorSceneLink(h).props.href,'https://site.invalid');assert.equal(url.searchParams.get('dealer'),'astrid');
+  const noRoom=previewHarness({project:anchoredPreviewProject(),dirty:false,initialLaneId:'nora-evening'});
+  url=new URL(anchorSceneLink(noRoom).props.href,'https://site.invalid');
+  assert.equal(url.searchParams.has('table'),false,'the uploaded table asset UUID is not a room');
+  assert.equal(url.searchParams.has('operator'),false);
+});
+
+test('anchored geometry uses the parent save guard before opening Admin and stays put on failure or conflict',async()=>{
+  const navigations=[];globalThis.window={location:{assign:href=>navigations.push(href)}};
+  try {
+    for(const options of [{saveResult:true},{saveResult:false},{conflict:true}]) {
+      navigations.length=0;
+      const h=previewHarness({project:anchoredPreviewProject(),initialLaneId:'nora-evening',...options});
+      const link=anchorSceneLink(h);let prevented=false;
+      link.props.onClick({preventDefault(){prevented=true;}});
+      assert.equal(prevented,true);assert.deepEqual(navigations,[]);
+      await new Promise(setImmediate);h.render();h.effects[1]();
+      assert.equal(h.saves(),options.conflict?0:1);
+      assert.deepEqual(navigations,options.saveResult?[link.props.href]:[]);
+      assert.equal(h.session.dirty,!options.saveResult);
+    }
+  }finally{delete globalThis.window;}
+});
+
+test('composition entry forwards room and game context through loading into the preview',async()=>{
+  const requested=[],data={project:createSeedProject(),videos:{videos:[]},status:{provider:'neon'}};
+  const {default:Page}=loadTs(new URL('../app/control/compositions/page.tsx',import.meta.url),{
+    '@/components/studio-types':{firstQueryValue:value=>Array.isArray(value)?value[0]:value},
+    '@/components/control-preview-page':{ControlPreviewPage:()=>null},
+    '../../control-studio-data':{loadControlStudio:async href=>{requested.push(href);return data;}},
+  });
+  const query={composition:'scene-2',dealer:'nora',operator:'operator-1',table:['room-7','ignored'],game:['roulette','ignored']};
+  const page=await Page({searchParams:Promise.resolve(query)});
+  assert.deepEqual(Object.fromEntries(new URL(requested[0],'https://site.invalid').searchParams),{composition:'scene-2',dealer:'nora',operator:'operator-1',table:'room-7',game:'roulette'});
+  assert.equal(page.props.initialLaneId,'scene-2');assert.equal(page.props.initialDealerId,'nora');assert.equal(page.props.initialOperatorId,'operator-1');
+  assert.equal(page.props.initialRoomId,'room-7');assert.equal(page.props.initialGame,'roulette');
+  const fallback=await Page({searchParams:Promise.resolve({lane:'scene-old',game:'invalid'})});
+  assert.equal(fallback.props.initialLaneId,'scene-old');assert.equal(fallback.props.initialGame,'blackjack');assert.equal(fallback.props.initialRoomId,undefined);
+});
 
 test('table editor saves only its selected composition and exact asset, with independent formats and removable draft geometry',()=>{
   const project=createSeedProject(),lane=project.lanes[0],asset={schemaVersion:1,id:'10000000-0000-4000-8000-000000000001',role:'table',label:'Board',sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1672,height:941};
@@ -178,7 +240,7 @@ test('geometry editor offers direct image placement and keyboard coordinates wit
   const {BlackjackTableGeometryEditor}=loadTs(new URL('../components/blackjack-table-geometry-editor.tsx',import.meta.url));
   const first='10000000-0000-4000-8000-000000000001',second='10000000-0000-4000-8000-000000000002';
   const value=defaultBlackjackTableGeometry(first);
-  const html=renderToStaticMarkup(React.createElement(BlackjackTableGeometryEditor,{tableId:first,url:'/board',contentType:'image/png',value,layout:'mobile',disabled:false,onChange(){}}));
+  const html=renderToStaticMarkup(React.createElement(BlackjackTableGeometryEditor,{tableId:first,url:'/board',contentType:'image/png',value,layout:'mobile',disabled:false,sceneEditorHref:'/admin/clips?composition=mobile-phone',onOpenScene(){},onChange(){}}));
   assert.match(html,/Kort och insatsplatser/);assert.match(html,/Placera Dealer · kort på bordet/);assert.match(html,/Vågrätt/);assert.match(html,/Lodrätt/);assert.doesNotMatch(html,/<textarea|JSON|Plats 4/);
   const {LayerAssetSelect}=loadTs(new URL('../components/layer-selectors.tsx',import.meta.url));
   const lane=defaultPresentationLane('astrid');lane.layers.table={enabled:true,default:first,allowed:[first,second]};

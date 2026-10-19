@@ -16,7 +16,10 @@ export function studioContext(catalog, project, selection = {}) {
     &&(!selection.game||row.game===selection.game));
   // Library work must not silently adopt another room or write its context into links.
   const room=rooms.find(row=>row.id===selection.roomId)??(library?undefined:rooms[0]);
-  const lane=project.lanes?.find(row=>row.id===room?.compositionId);
+  // A shared template can be opened from another room's context. The room's
+  // registered template stays unchanged; an unknown explicit choice stays invalid.
+  const compositionId=library&&selection.compositionId?selection.compositionId:room?.compositionId;
+  const lane=project.lanes?.find(row=>row.id===compositionId);
   const dealers=project.dealers.filter(row=>(selection.library===true||lane?.layers.dealer.allowed.includes(row.id))
     &&registry.dealers.some(item=>item.id===row.id&&!item.archived));
   const dealer=dealers.find(row=>row.id===selection.dealerId)

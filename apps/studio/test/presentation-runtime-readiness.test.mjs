@@ -16,6 +16,42 @@ const dealers = ['vera', 'astrid', 'amira', 'mei'];
 const project = () => ({ dealers: [...dealers, 'nora'].map(id => ({ id })), lanes: [] });
 const blocked = error => error instanceof StudioStorageError && error.code === CODE && error.statusCode === 503 && error.message === CODE;
 const invalidPackage=error=>error.message==='studio_invalid_presentation'&&error.statusCode===422;
+test('anchor presence gates active, archived and frozen geometry on v21 before any write',async()=>{
+  for(const layout of ['mobile','desktop'])for(const anchors of [undefined,null,{}, {cards:{target:'scene',rect:{x:0,y:0,width:1,height:1}}}]){
+    const lane={composition:{blackjackTables:[{[layout]:{anchors}}]}};
+    for(const descriptor of [{kind:'project',value:{lanes:[lane]}},{kind:'project',value:{dealerTrash:[{compositions:[lane]}]}}])for(const version of [20,21]){
+      const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value:descriptor.value}),{presentationMutation:descriptor});
+      if(version===20)await assert.rejects(work,blocked);else await work();
+      assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'21');assert.equal(begun,version===21?1:0);
+    }
+  }
+  const value=frozenPackage(value=>{
+    const id='30000000-0000-4000-8000-000000000001',sha256='d'.repeat(64),contentType='image/png';
+    value.assets.push({schemaVersion:1,id,sha256,contentType,size:4096,width:720,height:1280,role:'table',label:'Table',pathname:layerAssetPath({id,sha256,contentType,role:'table'})});
+    Object.assign(value.lanes[0].layers.table,{enabled:true,allowed:[id],default:id});
+    const board=defaultBlackjackTableGeometry(id);board.desktop.anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}}};
+    value.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};
+  });
+  let version=21;const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+  const work=()=>f.wrapped.saveDocument('presentation-package',{value});await work();version=20;await assert.rejects(work,blocked);assert.equal(f.writes.length,1);
+});
+test('a preflight without anchors cannot acquire them inside its transaction',async()=>{
+  const plain={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
+  const anchored={lanes:[{composition:{blackjackTables:[{desktop:{anchors:{}}}]}}]};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:anchored}),{fixture:true,presentationMutation:plain}),blocked);
+  assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+});
+test('lifecycle plus saved anchor data performs one v21 preflight and preserves its transaction permission',async()=>{
+  const value={lanes:[{composition:{blackjackTables:[{desktop:{anchors:{cards:{target:'scene',rect:{x:0,y:0,width:1,height:1}}}}}]}}]};
+  for(const kind of ['material-trash','resource-lifecycle','dealer-archive']){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(21))});
+    await f.wrapped.transaction(repo=>repo.withMutationContext(inner=>inner.saveDocument('project',{value}),{kind:'project',value}),{fixture:true,presentationMutation:[{kind,value:{}},{kind:'project',value}]});
+    assert.equal(f.writes.length,1);assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'21');
+  }
+});
 function frozenPackage(edit=()=>{}, {schemaVersion=3,dealerId='astrid'}={}) {
   const {presentation:value}=cloudPresentationFixture({lanes:[defaultPresentationLane(dealerId)]});
   if(schemaVersion===2){value.schemaVersion=2;delete value.playback;}

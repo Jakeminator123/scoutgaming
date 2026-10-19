@@ -6,7 +6,7 @@ import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages,checkDeal
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {withPackagePresentation,readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
 import {createStudioMediaApi} from '../lib/studio-media-api.mjs';
 import {checkPermanentMediaDeletion,createStudioMediaDeletion} from '../lib/studio-media-deletion.mjs';
@@ -19,6 +19,10 @@ import {seedSavedVideoProject} from './fixtures/video-dealer-project.mjs';
 import {savedVideoDealerOwnership} from '../../../packages/studio-registry/server/video-dealer-registration.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
+import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
 const scope={environment:'test',workspaceId:'lifecycle'},origin='https://studio.example.invalid';
 const config={scope,apiBase:'/api/admin',allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid',new URL(origin).host]};
 const id='00000000-0000-4000-8000-000000000001',oldId='00000000-0000-4000-8000-000000000002',sha='a'.repeat(64);
@@ -474,4 +478,93 @@ test('a server lifecycle write cannot acquire cascade authority inside an older 
  const wrapped=wrapNativePresentationRepository(f.repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async()=>{calls++;return Response.json(presentationCapabilitiesForVersion(5));}}),before=f.pool.snapshot();
  await wrapped.withMutationContext(async()=>{await assert.rejects(wrapped.saveDealerLifecycle(next,{expectedRevision:f.project.revision,actor:'Admin'}),{code:'studio_presentation_runtime_update_required'});},{kind:'project',value:{...f.project,dealerTrash:[]}});
  assert.deepEqual(f.pool.snapshot(),before);assert.equal(calls,1);
+});
+
+function dealerArchiveAnchors(input,laneId='retained-astrid'){
+ const presentation=structuredClone(input),table={schemaVersion:1,id:'10000000-0000-4000-8000-000000000001',role:'table',label:'Board',sha256:'b'.repeat(64),size:128,contentType:'image/png',width:1672,height:941};
+ table.pathname=layerAssetPath(table);presentation.assets.push(table);
+ const lane=presentation.lanes.find(row=>row.id===laneId),geometry=defaultBlackjackTableGeometry(table.id);
+ for(const layout of ['mobile','desktop'])geometry[layout].anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}},bets:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
+ lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition={...defaultCompositionSettings(),blackjackTables:[geometry]};return presentation;
+}
+async function frozenDealerArchiveFixture({version=21,anchors=true,anchorLane='retained-astrid'}={}){
+ const pool=combinedPool(scope),repository=createStudioRepository({pool,scope});
+ const removed={...defaultPresentationLane('paow'),id:'removed-paow'},retained={...defaultPresentationLane('astrid'),id:'retained-astrid'};
+ const cloud=cloudPresentationFixture({lanes:[removed,retained]}),project=await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
+ const rooms=[removed,retained].map((lane,index)=>({schemaVersion:2,id:`room-${index}`,name:lane.label,operatorId:'north',presentationLaneId:lane.id,gameLaneId:`adapter-${index}`,state:'live'}));
+ const gameLanes=[removed,retained].map((lane,index)=>({schemaVersion:1,id:`adapter-${index}`,label:lane.label,renderer:'portrait-video',dealer:lane.layers.dealer.default,mediaCollection:`${lane.layers.dealer.default}-presentation`}));
+ await repository.initializeDocument('administration',{value:{rooms,gameLanes,gameLane:gameLanes[0].id},actor:'fixture'});
+ for(const {revision,...row} of cloud.mediaRows)pool.setMedia(row,revision);
+ const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,transaction:fn=>repository.withTransactionClient(fn)}))));
+ const presentation=anchors?dealerArchiveAnchors(cloud.presentation,anchorLane):cloud.presentation;
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[removed.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},presentation)}));
+ const gates={fetches:[],active:false,beforeMutation:null};
+ const native=wrapNativePresentationRepository(repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
+  assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.equal(gates.active,false,'no readiness HTTP under product lock');
+  const requested=Number(headers['X-Presentation-Capability-Version']);gates.fetches.push(requested);
+  return requested>version?new Response(null,{status:406}):Response.json(presentationCapabilitiesForVersion(requested));
+ }});
+ const mutationTransaction=createNativePresentationMutationTransaction({repository:native,pool,scope,boDb:{async transaction(work){
+  gates.active=true;try{await gates.beforeMutation?.();return await work();}finally{gates.active=false;}
+ }}});
+ const {impact}=await checkDealerArchive({repository,body:{dealerId:'paow',expectedRevision:project.revision}});
+ const body={dealerId:'paow',archived:true,expectedRevision:project.revision,impactToken:impact.token};
+ const change=()=>changeDealerLifecycle({repository:native,mutationTransaction,stillAuthorized:async()=> 'Admin',body});
+ return {pool,repository,native,stored,cloud,project,body,gates,change};
+}
+
+test('dealer archive rejects v19/v20 before writes when only a retained frozen scene has anchors',async()=>{
+ for(const version of [19,20]){
+  const f=await frozenDealerArchiveFixture({version}),before=f.pool.snapshot(),offset=f.pool.trace.length;
+  assert.ok(!JSON.stringify(f.project.value).includes('anchors'));
+  await assert.rejects(f.change(),{code:'studio_presentation_runtime_update_required'});
+  assert.deepEqual(f.gates.fetches,[21]);assert.deepEqual(f.pool.snapshot(),before);
+  assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','classify-media','history','audit','audit-write'].includes(row.marker)));
+ }
+});
+
+test('v21 dealer archive preserves retained frozen anchors and rolls back publication, audit and media failures',async()=>{
+ const f=await frozenDealerArchiveFixture(),before=f.pool.snapshot(),original=await f.stored(store=>store.getCurrentPackage('north'));
+ for(const failure of ['publish-package','audit-write','classify-media']){
+  f.pool.fail(failure);await assert.rejects(f.change());assert.deepEqual(f.pool.snapshot(),before);
+ }
+ const archived=await f.change(),pack=await f.stored(store=>store.getCurrentPackage('north'));
+ assert.equal(archived.dealers.some(row=>row.id==='paow'),false);assert.deepEqual(pack.lanes,['retained-astrid']);assert.deepEqual(pack.tables,['room-1']);
+ assert.deepEqual(readPackagePresentation(pack).lanes,[readPackagePresentation(original).lanes[1]]);
+ assert.deepEqual((await f.repository.readDocument('administration')).value.rooms.map(row=>row.id),['room-1']);
+ assert.deepEqual(f.pool.snapshot().packages[0],before.packages[0]);assert.deepEqual(f.gates.fetches,[21,21,21,21]);
+});
+
+test('dealer archive cannot acquire anchors from a changed frozen plan after preflight and writes nothing',async()=>{
+ const f=await frozenDealerArchiveFixture({anchors:false});let afterConcurrent,offset;
+ f.gates.beforeMutation=async()=>{
+  await f.stored(async store=>{const pack=await store.getCurrentPackage('north');await store.publishPackage({...pack,actor:'fixture',expectedRevision:pack.revision,branding:withPackagePresentation(pack.branding,dealerArchiveAnchors(readPackagePresentation(pack)))});});
+  afterConcurrent=f.pool.snapshot();offset=f.pool.trace.length;
+ };
+ await assert.rejects(f.change(),{code:'studio_presentation_runtime_update_required'});
+ assert.deepEqual(f.pool.snapshot(),afterConcurrent);assert.equal(f.gates.fetches.length,1);assert.ok(f.gates.fetches[0]<21);
+ assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','classify-media','history','audit','audit-write'].includes(row.marker)));
+});
+
+test('v21 coverage never authorizes a stale dealer archive confirmation after a concurrent publication',async()=>{
+ const f=await frozenDealerArchiveFixture();let afterConcurrent,offset;
+ f.gates.beforeMutation=async()=>{
+  await f.stored(async store=>{const pack=await store.getCurrentPackage('north');await store.publishPackage({...pack,actor:'fixture',expectedRevision:pack.revision});});
+  afterConcurrent=f.pool.snapshot();offset=f.pool.trace.length;
+ };
+ await assert.rejects(f.change(),{code:'studio_conflict'});assert.deepEqual(f.gates.fetches,[21]);assert.deepEqual(f.pool.snapshot(),afterConcurrent);
+ assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','classify-media','history','audit','audit-write'].includes(row.marker)));
+});
+
+test('dealer archive does not require v21 for unrelated or removed frozen anchors',async()=>{
+ for(const anchorLane of ['unrelated','removed-paow']){
+  const f=await frozenDealerArchiveFixture({version:19,anchors:anchorLane==='removed-paow',anchorLane});
+  let unrelated;
+  if(anchorLane==='unrelated')unrelated=await f.stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:['retained-astrid'],games:['blackjack'],tables:[],branding:withPackagePresentation({},withoutPresentationLanes(dealerArchiveAnchors(f.cloud.presentation),['removed-paow']))}));
+  // The confirmation is current even when an unrelated tenant published later.
+  const {impact}=await checkDealerArchive({repository:f.repository,body:{dealerId:'paow',expectedRevision:f.project.revision}});f.body.impactToken=impact.token;
+  await f.change();assert.ok(f.gates.fetches.every(version=>version<21));
+  assert.equal(readPackagePresentation(await f.stored(store=>store.getCurrentPackage('north'))).lanes[0].composition?.blackjackTables,undefined);
+  if(unrelated)assert.deepEqual(await f.stored(store=>store.getCurrentPackage('other')),unrelated);
+ }
 });
