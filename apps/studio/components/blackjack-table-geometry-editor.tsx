@@ -19,6 +19,7 @@ export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layo
     if(part[0]==='dealer')next[layout].dealer=p;else next[layout].seats[seat][part[0] as 'card'|'bet']=p;
     onChange(next);
   }
+  if(geometry?.anchors)return <fieldset className={styles.editor}><legend>Kort och marker</legend><p>Denna placering har separata följval för kort och marker. Redigera den i Admins sceneditor.</p><a href="/admin/clips">Öppna klippkartan i Admin</a></fieldset>;
   return <fieldset className={styles.editor} disabled={disabled}><legend>Kort och insatsplatser · {layout==='mobile'?'mobil':'desktop'}</legend>
     <p>Placeringen hör bara till denna bordbild. Ett annat bord behöver egna platser.</p>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onChange(defaultBlackjackTableGeometry(tableId))}>Placera på detta bord</button></>:geometry&&point?<>

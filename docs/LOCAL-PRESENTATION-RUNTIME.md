@@ -1710,7 +1710,7 @@ normaliserade 0–1 i bordbildens hela rektangel, inklusive transparenta kanter.
 Kortbredden är 0,02–0,15 av samma bildbredd. Scen och spelplatser använder
 samma 860px-gräns. Serverns box-ID behålls också för återupptagna händer.
 
-Admin → Sammansättningar → Bord har ett gemensamt visuellt reglage för
+Admin → Klippkarta → Scen & lager har visuella reglage för
 placeringarna. Varje bordsdesign kalibreras separat; startpunkterna är inte
 visuellt godkända standardvärden. Befintliga sammansättningar utan fältet
 behåller tidigare placering. Val av ett annat, okalibrerat bord visas med
@@ -1723,13 +1723,37 @@ dess utkastgeometri, även ur dealerarkiv; återställning återkopplar den inte
 
 Nya skrivningar kräver runtime capability 16 innan beständig lagring.
 Ingen SQL-migration krävs. Vercel och Render ska ha den nya läsaren innan
-geometri sparas i produktion. Två visuella provspelningar och formatkontroll
-behövs utöver kontrakttesterna före acceptans av en konkret sammansättning.
+geometri sparas i produktion. Kontrollera en konkret sammansättnings placering
+och handkontakt i de format den använder; kodprov är inget visuellt godkännande.
+
+### Oberoende kort- och markerankare, 19 oktober 2026
+
+Varje format kan dessutom ha `anchors.cards` och/eller `anchors.bets`:
+`{target: 'table' | 'dealer' | 'scene', rect: {x,y,width,height}}`.
+Rektangeln är normaliserad i valt referensplan; saknad grupp använder hela
+bordbilden. Punkter förblir 0–1 inom respektive ram och `cardWidth` avser
+kortramens bredd. Offset är ändlig inom ±40 och storlek 0,0001–80.
+Dealerplanet är kompositionens stabila 1080×1920-plan; klippets beskärning,
+filmade hand och `sourcePlane` ändrar inte ankaret. Scenplanet är 1080×1920
+mobil eller 1920×1080 desktop med samma contain-projektion som bilden.
+
+Ankarbyte räknar om ramen och bevarar läge/storlek. Kort och manuella marker
+har separata ramar och kontrollskalor. `under-cards` har företräde men behåller
+den manuella markerramen. Återställning hämtar sparad grupp för valt bord/format.
+Gemensam scenflytt är en editoroperation som ändrar dealer/bord en gång vardera;
+följvalen avgör kortens och markernas rörelse. Ingen separat grupptransform lagras.
+
+Valen skrivs i den delade mallens projekt via befintlig revision, aldrig som
+`roomOverrides`. Aktiva/arkiverade projekt och frysta paket med `anchors` kräver
+runtime capability **21**, `blackjackAnchors: 'v1'`, före skrivning. Äldre
+paket behåller sin tidigare layout. Ingen SQL-migration eller ändring av kort,
+saldo, filmspår eller talplan ingår. Äldre bordseditor hänvisar ankarscener till
+Admin i stället för att visa punkterna i fel koordinatsystem.
 ### Dynamiska insatsplatser och spelarens kortvy
 
 Varje blackjackTables-format kan från runtime v19 ha betMode: 'under-cards'. Då är kortpunkten gemensam vågrät ankare; markerytans lodräta läge räknas från aktuell kortvy, poängbricka och kontrollstorlek. De sparade bet-punkterna bevaras för återgång till manuell placering. Saknat fält ger exakt tidigare manuella geometri. Mobilens kollisionskontroll räknar de verkliga, oskalade tryckytorna. Bordsbildens storlek ställs fortsatt med befintliga mobile/desktop.table; det finns inget extra storleksregister.
 
-Upplyfta/På bordet är en lokal, validerad spelarpreferens. Den ändrar varken spelbeslut, kortvärden, tillgångar eller publicering. Det filmade källspåret förblir oförändrat före släpp; övergången landar i vald kortvy. Byte mitt i ett kontaktspår revokerar spåret och behåller serverns statiska kort. Admin visar samma editor som kompatibilitetsytan och sparar fortfarande via mallens ordinarie revisionskontroll. Explicit material-/dealer-/rumslivscykel kräver nu v19 eftersom åtgärden kan skriva om ett paket med nya profilfält. Ingen SQL-migration.
+Upplyfta/På bordet är en lokal, validerad spelarpreferens. Den ändrar varken spelbeslut, kortvärden, tillgångar eller publicering. Det filmade källspåret förblir oförändrat före släpp; övergången landar i vald kortvy. Byte mitt i ett kontaktspår revokerar spåret och behåller serverns statiska kort. Admin visar sceneditorn ovan och sparar via mallens ordinarie revisionskontroll. Äldre bordseditor används för geometri utan ankare. Explicit material-/dealer-/rumslivscykel kräver minst v19; projekt med ankare kräver v21 eftersom åtgärden kan skriva om dessa profilfält. Ingen SQL-migration.
 
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 

@@ -19,6 +19,18 @@ import { validateGameLanes } from '../packages/presentation/contracts/game-lanes
 import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../packages/presentation/runtime/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
+test('independent anchors survive project save and frozen publication; later drafts cannot move published cards',()=>{
+  const settings=defaultCompositionSettings(),board=defaultBlackjackTableGeometry(asset('table',2).id);settings.blackjackTables=[board];
+  board.mobile.anchors={cards:{target:'dealer',rect:{x:-.3,y:.2,width:1.6,height:.8}}};
+  board.desktop.anchors={bets:{target:'scene',rect:{x:.1,y:.2,width:.5,height:.4}}};
+  const {project,pack,descriptor}=fixture('nora','Nora',settings);
+  validateProject(JSON.parse(JSON.stringify(project)));
+  assert.deepEqual(validateComposition(descriptor).settings,settings);
+  const frozen=structuredClone(readPackagePresentation(pack));
+  project.lanes[0].composition.blackjackTables[0].mobile.anchors.cards.rect.x=.9;
+  assert.deepEqual(readPackagePresentation(pack),frozen);
+  assert.equal(frozen.lanes[0].composition.blackjackTables[0].mobile.anchors.cards.rect.x,-.3);
+});
 
 test('saved scene zoom keeps all layer coordinates around the same centre at every viewport size',()=>{
   const settings=defaultCompositionSettings();settings.tableFront=true;

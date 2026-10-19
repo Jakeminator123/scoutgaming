@@ -31,7 +31,17 @@ export function validateCompositionSettings(value,{tableIds,assets}={}) {
       if(tableIds!==undefined&&!tableIds.includes(table.tableId))fail();
       if(assets!==undefined&&!assets.some(asset=>asset.id===table.tableId&&asset.role==='table'&&asset.game!=='roulette'))fail();
       for(const layout of ['mobile','desktop']){
-        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...(Object.hasOwn(geometry??{},'betMode')?['betMode']:[])]);
+        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...(Object.hasOwn(geometry??{},'betMode')?['betMode']:[]),...(Object.hasOwn(geometry??{},'anchors')?['anchors']:[])]);
+        if(Object.hasOwn(geometry,'anchors')){
+          const anchors=geometry.anchors;
+          if(!object(anchors)||!Object.keys(anchors).length||Object.keys(anchors).some(key=>!['cards','bets'].includes(key)))fail();
+          for(const anchor of Object.values(anchors)){
+            exact(anchor,['target','rect']);if(!['table','dealer','scene'].includes(anchor.target))fail();
+            exact(anchor.rect,['x','y','width','height']);
+            if(['x','y'].some(key=>!Number.isFinite(anchor.rect[key])||Math.abs(anchor.rect[key])>40)
+              ||['width','height'].some(key=>!Number.isFinite(anchor.rect[key])||anchor.rect[key]<.0001||anchor.rect[key]>80))fail();
+          }
+        }
         if(Object.hasOwn(geometry,'betMode')&&geometry.betMode!=='under-cards')fail();
         if(!Number.isFinite(geometry.cardWidth)||geometry.cardWidth<.02||geometry.cardWidth>.15)fail();
         point(geometry.dealer);

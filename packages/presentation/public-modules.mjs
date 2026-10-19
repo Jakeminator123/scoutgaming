@@ -9,6 +9,8 @@ const browserContracts = [
 ];
 // One canonical source per browser module; legacy URLs keep resolving its imports.
 export const presentationPublicModules = Object.freeze([
+  {source:'packages/presentation/runtime/composition-anchors.mjs',paths:['/composition-anchors.mjs','/packages/presentation/runtime/composition-anchors.mjs']},
+  {source:'packages/presentation/compositor/geometry.js',paths:['/packages/presentation/compositor/geometry.js']},
   {source: 'packages/presentation/contracts/operator-rooms-contract.mjs', paths: ['/operator-rooms-contract.mjs', '/packages/presentation/contracts/operator-rooms-contract.mjs']},
   {source: 'packages/presentation/contracts/operator-preview-contract.mjs', paths: ['/operator-preview-contract.mjs', '/packages/presentation/contracts/operator-preview-contract.mjs']},
   {source: 'packages/presentation/runtime/published-scene.mjs', paths: ['/published-scene.mjs', '/packages/presentation/runtime/published-scene.mjs']},

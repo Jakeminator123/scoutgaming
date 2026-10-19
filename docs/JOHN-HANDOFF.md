@@ -1,53 +1,46 @@
 # Aktuell handoff — Scoutgaming
 
-## UX/UI: första Admin-klippkartan — 19 oktober 2026
+## UX/UI: klippkarta och scenplacering — 19 oktober 2026
 
-Dokumentationsförslaget [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260)
-är mergat. [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är fortsatt den
-enda produktmodellen. UI-leveransen [PR264](https://github.com/Jakeminator123/scoutgaming/pull/264)
-är mergad som `19b4cc9b`; senare handoffavsnitt är bevarade.
+[PR264](https://github.com/Jakeminator123/scoutgaming/pull/264) är mergad som
+`19b4cc9b`: kategori → situation → standard/varianter, separat dealer och sju
+spelarplatser, basloop/beteenden och inspelat originaltal. Biblioteksroller läser
+sparade bindningar och osparat tal bevaras. [PR265](https://github.com/Jakeminator123/scoutgaming/pull/265)
+är mergad som `379aa907`: referensbyte behåller `motion-video` och kräver avstängd
+profil före sparning; 50 riktade tester passerade. Produktmodellen finns endast i
+[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
 
-`/admin/clips` visar kategori → situation → standardklipp och varianter.
-Sju spelarplatser hålls isär från dealerns öppna, dolda och vända kort.
-En plats visar inte längre grannplatsernas sparade standarder som varianter.
-Vila skiljer basloop från beteendeklipp; inspelat tal visar originalljud,
-exakt text och språk. Klipp, scenförhandsvisning och befintlig scenredigering
-har gemensam navigation. Osparat tal har en synlig väg tillbaka till formuläret.
-Befintliga exakta klipp-ID:n, skrivare och revisions-/publiceringsgränser används.
+Ny leverans på `codex/admin-scene-anchors`, avstämd med HUVUDAGENT5:
+`/admin/clips` → Scen & lager samlar förhandsvisning och separata dealer-/bordreglage.
+Kort och marker väljer Följ bord, Följ dealer eller Ligg still i scenen per
+borddesign och mobil/desktop. Ankarbyte bevarar läget. Flytta scenen tillsammans
+ändrar dealer/bord en gång vardera. Dragning, punkt-/gruppfält, Följ korten och
+återställning av sparad grupp använder samma projektionsmatematik som spelaren.
+Markernas manuella ram bevaras när de följer korten. Äldre editorn hänvisar
+ankarscener till Admin i stället för att visa fel koordinater.
 
-Verifierat: 81 fokuserade klipp-/policy-/navigationstester, frontendens typkontroller och byggning;
-isolerat webbprov av platsval, klippkoppling, sparbekräftelse, återläsning,
-bas/beteende, inspelat tal och bevarat talutkast vid panelbyte. Scenpanelen
-öppnas; inga verkliga spel-, media-, publicerings- eller OpenClaw-prov ingår.
-Den befintliga byggningen varnar fortfarande om CSS `composes` i äldre teman.
-Full CI hittade navigationstestets gamla knappnamn. Testet använder nu
-Scen & lager och behåller kontrollen av utkast, kontext, Back/Forward och omladdning.
-Granskningen hittade också att en preview-reserv kunde märkas Standardklipp.
-Bibliotekets rollberäkning läser nu den faktiska sparade standardkopplingen;
-reservvalet är fortfarande en variant. Riktade prov täcker även idle/familjer,
-tal och exakta spelar-/dealerplatser. Skrivare och runtime är oförändrade.
-Oanvända UI-konstanter, kategorifilter och ersatt knapp-CSS har tagits bort.
+Sparning går via den delade mallens projekt, revision och bekräftelse av berörda
+rum. Frysta paket behåller geometri; roomOverrides får inga nya fält. Nytt
+valfritt anchors-avtal kräver runtime capability21 före skrivning/publicering,
+inklusive arkiverad geometri. Ingen SQL-migration. Deployment av läsaren krävs
+innan nya ankare kan sparas mot produktion. Filmspår, källrutor, tal och
+serverkort/saldo är orörda. Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
 
-Separat rättning på `codex/admin-motion-reference`: ändrad referenstid,
-källvideo eller hash behåller talreferensens typ. En `motion-video` blir inte
-tyst `video-frame` och redigeringen låser inte upp aktiveringsrutan.
-Ny förhandsgranskning krävs fortfarande; ändrad rörelsereferens kräver att
-Begär AI-tal stängs av före sparning. Enbart röstbyte behåller oförändrad referens.
-36 UI-/taltester och 14 profiltester passerar, inklusive elva nya fall för exakt
-sparpayload, förhandsgranskningsspärr och avstängning. Klientbygget och båda
-typkontrollerna passerar med befintliga CSS-varningar. Inga provider-/GPU-anrop ingår.
+Verifierat: 248 fokuserade tester, klientbygge och båda typkontrollerna.
+Befintliga CSS-composes-varningar kvarstår. Isolerat webbprov med syntetiska
+klipp och minnesdata verifierade separat dealer/bord, gemensam scenflytt,
+stillastående marker, dragning av kortpunkt, återställning, följval, berörda
+rum-bekräftelse, sparning och återläsning. Två sparningar gav skilda mobil- och
+desktopvärden. Fixturen är stoppad; inga verkliga spel-/media-/GPU- eller
+produktionsprov ingår. Browsermoduler och filmad bindningsinvalidering är testade.
 
-Fria kort-/markerankare, PNG-idle, generell chattregeleditor och exakt var
-åttonde utdelning per box finns fortsatt bara i förslag/demo och kräver egna
-spar-/runtimekontrakt. HUVUDAGENT5 äger namn/importmappning och driftkontrakt;
-POST-PISYNK4 tar vidare tal under utdelning och OpenClaw från Lipsync 3.
-UI-rättningarna ändrar inte dessa kontrakt eller någon databas.
-Teknisk referens: [BLOB-NEON](storage/BLOB-NEON.md).
-
-Demoer finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`;
-arbetslogg och kvarstående körordning i `PROVISORISKT/UX-KLIPPKARTA.md`.
-GitGuardian på aktuell main: två öppna incidenter (38318914, 38318915),
-partiell platstäckning och historisk skanning `too_large`; inte åtgärdade här.
+PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
+HUVUDAGENT5 bygger separat driftbackend; UI-driftväljaren inväntar DTO.
+POST-PISYNK4:s text-/ljudlängdsfixar ligger i separat PR266 hos MERGE3; fortsatta
+utdelnings-/OpenClaw-prov och deras isolering ägs där. Scenfilerna är separata.
+Demoer och arbetslogg finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
+GitGuardian: två befintliga öppna incidenter (38318914,38318915), partiell
+platstäckning och historikskanning too_large; inte åtgärdade här.
 
 <a id="dragan-talstatus"></a>
 
