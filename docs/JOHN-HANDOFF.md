@@ -10,7 +10,7 @@ sparade bindningar och osparat tal bevaras. [PR265](https://github.com/Jakeminat
 profil före sparning; 50 riktade tester passerade. Produktmodellen finns endast i
 [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
 
-Ny leverans på `codex/admin-scene-anchors`, avstämd med HUVUDAGENT5:
+Ny leverans i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267), avstämd med HUVUDAGENT5:
 `/admin/clips` → Scen & lager samlar förhandsvisning och separata dealer-/bordreglage.
 Kort och marker väljer Följ bord, Följ dealer eller Ligg still i scenen per
 borddesign och mobil/desktop. Ankarbyte bevarar läget. Flytta scenen tillsammans
@@ -36,7 +36,7 @@ produktionsprov ingår. Browsermoduler och filmad bindningsinvalidering är test
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
 HUVUDAGENT5 bygger separat driftbackend; UI-driftväljaren inväntar DTO.
-POST-PISYNK4:s text-/ljudlängdsfixar ligger i separat PR266 hos MERGE3; fortsatta
+POST-PISYNK4:s text-/ljudlängdsfixar är mergade i PR266 (`3673a2c9`); fortsatta
 utdelnings-/OpenClaw-prov och deras isolering ägs där. Scenfilerna är separata.
 Demoer och arbetslogg finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
 GitGuardian: två befintliga öppna incidenter (38318914,38318915), partiell
