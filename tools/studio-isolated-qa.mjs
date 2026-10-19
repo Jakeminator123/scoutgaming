@@ -28,6 +28,7 @@ async function port() {
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
   'services/game/moving-drift-executor.mjs','services/game/moving-drift-observer.mjs',
+  'services/game/moving-drift-diagnostics.mjs',
   'test/fixtures/moving-drift-executor-sql-checks.mjs',
   'packages/presentation/contracts/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
   'apps/studio/test/moving-drift-admin.test.mjs',

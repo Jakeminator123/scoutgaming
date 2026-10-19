@@ -106,6 +106,12 @@ från failure. [Kanoniskt loggkontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvalja
 session-/runtime-/bankprov passerar med Node24.21.0 och fyra workers.
 De täcker orsaksprioritet, samma snapshot utan extraläsning, rollback/ACK,
 metadata/getter/proxyfiltrering, loggerfel och långsam lyckad läsning.
+CI upptäckte att det nya säkerhetstestet saknade fullsvitsregistrering. Det
+är nu inkopplat i befintlig database/moving-drift; orphan-grinden behålls.
+SQL-fixturens befintliga källista hashbinder också den importerade hjälparen.
+Kontrollen finner 526 JS/TS-testkandidater och 0 orphans; registrerad grupp
+passerar 66/66. Verktygsproven ger 17 PASS och fem POSIX-fall är explicit
+överhoppade på Windows. Ingen orphan-exception eller grind har ändrats.
 Oberoende slutgranskning fann inga blockerande fynd. POST:s överlämnade
 stoppcommit7def8fe9 är integrerad med egen sektion bevarad.
 
