@@ -99,6 +99,23 @@ test('speech requires exact line and situation matching preserves hidden-card di
   assert.equal(videoFitsEvent({ classification: { ...metadata, situation: 'dealer-hole' } }, { type: 'deal', to: 'dealer', faceDown: false }), false);
 });
 
+test('blackjack action clips may declare a VILA/REDO pose chain; speech, idle, roulette poses and half chains are rejected', () => {
+  const chained = validateVideoMetadata({ ...metadata, startPose: 'VILA', endPose: 'REDO' });
+  assert.equal(chained.startPose, 'VILA'); assert.equal(chained.endPose, 'REDO');
+  assert.equal(validateVideoMetadata(metadata).startPose, undefined);
+  validateVideoMetadata({ ...metadata, eventId: 'reveal.dealer', situation: 'dealer-hole', startPose: 'VILA', endPose: 'VILA' });
+  validateVideoMetadata({ ...metadata, eventId: 'transition.shoe', situation: 'to-shoe', startPose: 'VILA', endPose: 'REDO' });
+  assert.throws(() => validateVideoMetadata({ ...metadata, eventId: 'transition.shoe', situation: 'to-shoe', startPose: 'REDO', endPose: 'VILA' }), /Till skon/);
+  assert.throws(() => validateVideoMetadata({ ...metadata, startPose: 'VILA' }), /både start- och slutpose/);
+  assert.throws(() => validateVideoMetadata({ ...metadata, startPose: 'WHEEL', endPose: 'VILA' }), /Roulettens poser/);
+  assert.throws(() => validateVideoMetadata({ ...metadata, startPose: 'unverified', endPose: 'VILA' }), /Roulettens poser/);
+  assert.throws(() => validateVideoMetadata({ ...metadata, eventId: 'speak.goodluck', kind: 'speech', situation: 'goodluck', startPose: 'VILA', endPose: 'VILA' }), /bara utdelnings/);
+  assert.throws(() => validateVideoMetadata({ ...metadata, eventId: 'idle.ready', kind: 'idle', situation: '', startPose: 'VILA', endPose: 'VILA' }), /bara utdelnings/);
+  assert.throws(() => validateVideoMetadata({ ...metadata, eventId: 'settle.win', kind: 'reaction', situation: '', startPose: 'VILA', endPose: 'VILA' }), /bara utdelnings/);
+  // Existing seat matching is unaffected by the declared chain.
+  assert.equal(videoFitsEvent({ classification: chained }, { type: 'deal', to: 'box', box: 3 }), true);
+});
+
 test('new recorded speech metadata binds dealer and exact line while old speech remains unchanged',()=>{
   const legacy={...metadata,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',playback:'once'};
   const recordedSpeech={schemaVersion:1,dealerId:'astrid',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'Inspelad testreplik.',

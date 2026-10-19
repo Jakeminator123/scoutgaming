@@ -169,6 +169,7 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
       if(name==='../../lib/studio-layout.mjs')return {slotCaption,slotExplanation,isRenderedOutcome};
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
+      if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');
       return require(name);
     }});
   const slot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.eventId==='idle.ready');
@@ -201,6 +202,10 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   assert.match(renderCompact({}),/Valt för prov · ej kopplat till vald variant/);
   assert.doesNotMatch(renderCompact({}),/Kopplat i sparat utkast/);
   assert.match(renderCompact({selectedId:'bound'}),/Kopplat i sparat utkast/);
+  const dealClip=poses=>({...clips[1],classification:{dealerId:'astrid',eventId:'deal.player.left',situation:'box0',kind:'action',...poses}});
+  assert.match(render({...explicit,clips:[dealClip({startPose:'VILA',endPose:'REDO'})]}),/Poskedja <strong>VILA → REDO<\/strong>/);
+  assert.match(render({...explicit,clips:[dealClip({})]}),/Poskedja ej angiven/);
+  assert.doesNotMatch(unbound,/Poskedja/);
   const dirty=render({usage,usageChanged:true});assert.match(dirty,/Ändrat lokalt · ej sparat/);assert.doesNotMatch(dirty,/Kopplat i sparat utkast/);
   const recorded={...clips[1],classification:{recordedSpeech:{exactText:'Tack för spelet.',language:'sv'}}};
   const speech=render({clips:[recorded],library:clipLibraryGroups([recorded],['selected'])});

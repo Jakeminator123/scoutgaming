@@ -2,7 +2,21 @@ import { validateVideoMetadata } from '../../../../../packages/presentation/cont
 import { DEFAULT_DEALER_COMPOSITING } from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
 import { addDealer, validateProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { MAX_DEALERS, isActiveDealerId } from '../../../../../packages/presentation/contracts/dealer-identity.mjs';
+import { CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses } from '../../../../../packages/presentation/contracts/clip-naming.mjs';
 export { labUrl } from '../../../lib/lab-url.mjs';
+export { CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses };
+
+// Pose chains apply to deal, reveal and shoe transition videos only. The
+// transition slots have a fixed chain; other slots never carry one.
+export function slotAcceptsPoses(slot) {
+  return Boolean(slot) && !slot.pose && slot.kind === 'action' && /^(?:deal|reveal|transition)\./.test(slot.eventId ?? '');
+}
+export function importRowPoses(row, slot) {
+  if (!slotAcceptsPoses(slot) || importContentType(row.file.name).startsWith('audio/')) return null;
+  if (slot.eventId === 'transition.shoe') return slot.situation === 'to-shoe' ? { start: 'VILA', end: 'REDO' } : { start: 'REDO', end: 'VILA' };
+  const poses = row.poses;
+  return poses && ['VILA', 'REDO'].includes(poses.start) && ['VILA', 'REDO'].includes(poses.end) ? { start: poses.start, end: poses.end } : null;
+}
 
 // Format for display only; keep the original failure on its file for review.
 export function importErrorMessage(message) {
@@ -98,8 +112,10 @@ export function importClassification(row, dealerId, catalog) {
   const audio = importContentType(row.file.name).startsWith('audio/');
   if (!audio && row.background === 'alpha') throw Error('Assistentens kontroll och granskning av transparent material är inte färdig. Filen finns kvar för lokal granskning; den sparas inte i denna import.');
   if (!audio && row.background !== 'green-screen') throw Error('Bekräfta grön bakgrund för varje video.');
+  const poses = importRowPoses(row, slot);
   return validateVideoMetadata({ dealerId, eventId: slot.eventId, situation: slot.situation,
     kind: slot.kind, label: row.label.trim(), role: 'alternative', playback: 'once', notes: '',
+    ...(poses ? {startPose:poses.start, endPose:poses.end} : {}),
     ...(audio ? {mediaType:'audio'} : {compositing:{...DEFAULT_DEALER_COMPOSITING}}),
   }, {forWrite:true});
 }
@@ -119,7 +135,11 @@ export function applyImportProposals(rows, proposals, slots) {
     const proposal = byId.get(row.id);
     if (!proposal || row.state !== 'ready') return row;
     const slot = slots.find(item => item.id === proposal.slotId);
-    return {...row, slotId: compatibleImportSlot(row.file, slot) ? slot.id : '',
+    const accepted = compatibleImportSlot(row.file, slot);
+    const poses = accepted && proposal.poses && ['VILA','REDO'].includes(proposal.poses.start) && ['VILA','REDO'].includes(proposal.poses.end)
+      ? {start: proposal.poses.start, end: proposal.poses.end} : undefined;
+    const {poses: _previous, ...rest} = row;
+    return {...rest, slotId: accepted ? slot.id : '', ...(poses ? {poses} : {}),
       reason: proposal.reason, confidence: proposal.confidence, warnings: proposal.warnings ?? []};
   });
 }

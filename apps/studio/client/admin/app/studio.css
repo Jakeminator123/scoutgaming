@@ -151,7 +151,34 @@
 .dealer-import-row-title > svg { flex: 0 0 auto; color: #93a79b; }
 .dealer-import-row-title > small { white-space: nowrap; color: #9aa5a0; font-size: 10px; }
 .dealer-import-row-title > button { margin-left: auto; min-width: 36px; min-height: 36px; padding: 6px; }
-.dealer-import-row-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
+.dealer-import-row-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; align-items: end; }
+.dealer-import-row-fields > label { min-width: 0; }
+.dealer-import-row-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 12px 0 4px; }
+.dealer-import-row-chain > code { color: #8f9995; font: 11px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+.dealer-import-chain { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid #4d5a34; border-radius: 99px; background: #232b1a; color: #d3ee8f; font: 600 11px/1.5 ui-monospace, Consolas, monospace; letter-spacing: .02em; white-space: nowrap; }
+.dealer-import details.dealer-import-naming { margin: 4px 0 16px; padding: 0 14px; border: 1px solid #35383a; border-radius: 8px; background: #1b1e1f; }
+.dealer-import-naming[open] { padding-bottom: 14px; }
+.dealer-import-naming > summary { padding: 11px 0; font-weight: 600; color: #dfe4e1; }
+.dealer-import-naming-body { container-type: inline-size; min-width: 0; }
+.dealer-import .dealer-import-naming-body > p, .dealer-import .dealer-import-naming-group > p { margin: 6px 0 0; color: #a7afac; font-size: 12px; line-height: 1.55; }
+.dealer-import .dealer-import-naming h3 { margin: 14px 0 6px; color: #c7cbcc; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.dealer-import-naming code { color: #d9e8b8; font: 11.5px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+.dealer-import-naming-legend { display: grid; gap: 3px; margin: 0; font-size: 12px; }
+.dealer-import-naming-legend > div { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 10px; align-items: baseline; }
+.dealer-import-naming-legend dt { color: #a7afac; }
+.dealer-import-naming-legend dd { margin: 0; color: #dfe4e1; }
+.dealer-import-naming-list { max-height: 340px; margin-top: 12px; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid #2e3233; }
+.dealer-import-naming-list:focus-visible { outline: 2px solid #c5f331; outline-offset: 2px; }
+.dealer-import-naming-group { padding: 9px 0 10px; border-bottom: 1px solid #2e3233; }
+.dealer-import-naming-group dl { display: grid; gap: 5px; margin: 0; }
+.dealer-import-naming-group dl > div { display: grid; grid-template-columns: minmax(96px,.8fr) minmax(0,1.2fr) minmax(0,1.1fr); gap: 2px 12px; align-items: baseline; font-size: 12px; }
+.dealer-import-naming-group dt { color: #dfe4e1; overflow-wrap: anywhere; }
+.dealer-import-naming-group dd { margin: 0; min-width: 0; }
+.dealer-import-naming-group dd > span { color: #8f9995; font-size: 11px; }
+@container (max-width: 520px) {
+  .dealer-import-naming-group dl > div { grid-template-columns: minmax(0,1fr); gap: 1px; padding-bottom: 4px; }
+  .dealer-import-naming-legend > div { grid-template-columns: 80px minmax(0,1fr); }
+}
 .dealer-import details { margin: 12px 0; }
 .dealer-import summary { cursor: pointer; font-size: 12px; color: #c6ceca; padding: 7px 0; }
 .dealer-import details p { color: #aab4ae; margin-top: 8px; }
@@ -369,6 +396,9 @@
 .studio-clip-library button>svg{flex-shrink:0}.studio-clip-library button>span{min-width:0;overflow-wrap:anywhere}
 .studio-clip-library button[aria-pressed=true]{border-color:#d6ff3a;background:#252a1e}
 .studio-clip-library small{display:block;margin-top:3px;font-size:12px;color:#b8bec6}
+.studio-pose-chain{align-self:flex-start;display:inline-flex;align-items:baseline;gap:6px;padding:2px 9px;border:1px solid #4a5a2a;border-radius:99px;background:#1f2618;color:#b8bec6;font:12px/1.5 var(--font-sans)}
+.studio-pose-chain strong{color:#d6ff3a;font:600 12px/1.5 ui-monospace,Consolas,monospace;letter-spacing:.02em;white-space:nowrap}
+.studio-pose-chain.is-missing{border-color:#383e47;background:transparent;color:#8d949c}
 .studio-recorded-speech{padding:12px 0;margin:12px 0;border-block:1px solid #383e47;font-size:13px}
 .studio-recorded-speech p{margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}.studio-recorded-speech small{color:#b8bec6;font-size:12px}
 .studio-clip-workspace .studio-detail-panel{font-size:14px}

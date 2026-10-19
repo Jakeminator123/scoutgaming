@@ -119,6 +119,24 @@ test('images stay local references, audio only uses exact speech slots', () => {
   const audio = importClassification(row({file:{name:'goodluck.wav',size:100},slotId:catalog.slots[1].id,background:''}),'nora',catalog);
   assert.equal(audio.mediaType,'audio'); assert.equal(audio.compositing,undefined);
 });
+test('declared pose chains follow deal and reveal rows into the upload classification but never speech or foreign slots', () => {
+  const chained = importClassification(row({poses:{start:'VILA',end:'REDO'}}), 'nora', catalog);
+  assert.equal(chained.startPose,'VILA'); assert.equal(chained.endPose,'REDO');
+  assert.equal(importClassification(row(), 'nora', catalog).startPose, undefined);
+  const transition = {id:'transition.shoe/from-shoe',label:'Från skon',eventId:'transition.shoe',situation:'from-shoe',kind:'action',category:'transition'};
+  const fixed = importClassification(row({slotId:transition.id,poses:{start:'VILA',end:'VILA'}}), 'nora', {...catalog,slots:[...catalog.slots,transition]});
+  assert.equal(fixed.startPose,'REDO'); assert.equal(fixed.endPose,'VILA');
+  const speech = importClassification(row({slotId:'speak.goodluck/goodluck',poses:{start:'VILA',end:'VILA'}}), 'nora', catalog);
+  assert.equal(speech.startPose, undefined);
+  // A non-blackjack pose on the row is ignored rather than written.
+  assert.equal(importClassification(row({poses:{start:'WHEEL',end:'VILA'}}), 'nora', catalog).startPose, undefined);
+  const original=row();
+  const applied=applyImportProposals([original],[{fileId:original.id,slotId:original.slotId,reason:'name',confidence:'high',poses:{start:'REDO',end:'VILA'}}],catalog.slots);
+  assert.deepEqual(applied[0].poses,{start:'REDO',end:'VILA'});
+  const forged=applyImportProposals([original],[{fileId:original.id,slotId:original.slotId,reason:'name',confidence:'high',poses:{start:'WHEEL',end:'VILA'}}],catalog.slots);
+  assert.equal(forged[0].poses,undefined);
+});
+
 test('proposal cannot change saved rows, files, dealer or upload classification', () => {
   const original = row(); const saved=row({id:'saved',state:'saved'});
   const next=applyImportProposals([original,saved],[{fileId:original.id,slotId:'invented',reason:'model suggestion',classification:{dealerId:'other'}},{fileId:'saved',slotId:catalog.slots[1].id}],catalog.slots);
@@ -171,6 +189,17 @@ test('a later dealer link preserves pending files and requires an explicit deale
   h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'unsupported.mov',size:100,lastModified:1}]}});
   h.props.requestedDealerId='dragan';await h.settle();
   assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');assert.match(h.html(),/Din tidigare import är kvar/);assert.match(h.html(),/unsupported.mov/);
+});
+
+test('the naming guide lists every slot pattern and states a shared note once',async()=>{
+  const speech='Inspelad replik med inbakad mun.';
+  const naming=[{slotId:catalog.slots[0].id,pattern:'<dealer>_pos1[-i|-iv|-v]',example:'dragan_pos1-iv.mp4',note:'Spelarplats 1 = box0.'},
+    {slotId:'speak.goodluck/goodluck',pattern:'<dealer>_goodluck_<språk>_<nr>',example:'dragan_goodluck_sv_1.mp4',note:speech},
+    {slotId:'speak.other/greeting',pattern:'<dealer>_greeting_<språk>_<nr>',example:'dragan_greeting_sv_1.mp4',note:speech}];
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'},{response:()=>({...catalog,dealers:[{id:'dragan',label:'Dragan'}],limits:{...catalog.limits,maxFiles:30},provider:{configured:false},naming})});
+  const html=h.html();assert.match(html,/Så namnger du filerna · 3 fack/);
+  for(const row of naming)assert.ok(html.includes(row.example),row.example);
+  assert.equal(html.split(speech).length-1,1);assert.match(html,/VILA → REDO · första klippet/);
 });
 
 function addVideo(h,name='dragan-box1.mp4') {

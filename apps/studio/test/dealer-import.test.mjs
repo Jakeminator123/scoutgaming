@@ -35,6 +35,31 @@ test('filename rules preserve seat offsets, alternate suffixes, face-down deal a
   ]);
 });
 
+test('Kevin-style names, Emil transitions and recorded lines land in exact slots with pose, language and take metadata', () => {
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'dragan', 'Dragan'));
+  const names = ['Kevin pos3-iv.mp4', 'Kevin posdealer.mp4', 'Kevin hole-i.mp4', 'Kevin V2 · vänd dolt kort.mp4', 'in_vila_till_redo.mp4', 'ut_redo_till_vila.mp4', 'Dragan · sv · goodluck_1.mp4', 'dragan_settle_win.mp4', 'deal_pos1.mp4'];
+  const body = validateDealerImportInput({ dealerId: 'dragan', files: names.map((name, index) => file(name, `f${index}`, 'video/mp4')), context: '' }, catalog);
+  const proposals = filenameDealerImportRows(body, catalog);
+  assert.deepEqual(proposals.map(row => row.slotId), ['deal.player.centre/box2', 'deal.dealer/dealer-up', 'deal.dealer/dealer-hole', 'reveal.dealer/dealer-hole',
+    'transition.shoe/to-shoe', 'transition.shoe/from-shoe', 'speak.goodluck/goodluck', 'settle.win/', 'deal.player.left/box0']);
+  assert.deepEqual(proposals.map(row => row.confidence), ['high', 'medium', 'high', 'medium', 'high', 'high', 'high', 'high', 'medium']);
+  assert.deepEqual(proposals[0].poses, { start: 'VILA', end: 'VILA' }); assert.deepEqual(proposals[2].poses, { start: 'VILA', end: 'VILA' });
+  assert.equal(proposals[6].language, 'sv'); assert.equal(proposals[6].take, 1); assert.equal(proposals[6].poses, undefined);
+  const rows = finishDealerImportRows(proposals, body, catalog);
+  assert.equal(rows[0].classification.startPose, 'VILA'); assert.equal(rows[0].classification.endPose, 'VILA');
+  assert.equal(rows[1].classification.startPose, 'REDO'); assert.equal(rows[1].classification.endPose, 'REDO');
+  assert.match(rows[1].warnings.join(' '), /antagen ur fackets grundregel/);
+  assert.equal(rows[2].classification.startPose, 'VILA'); assert.equal(rows[2].classification.endPose, 'VILA');
+  assert.equal(rows[4].classification.startPose, 'VILA'); assert.equal(rows[4].classification.endPose, 'REDO');
+  assert.equal(rows[5].classification.startPose, 'REDO'); assert.equal(rows[5].classification.endPose, 'VILA');
+  assert.equal(rows[6].classification.startPose, undefined); assert.match(rows[6].classification.notes, /Språk i filnamnet: sv\. Tagning 1/);
+  assert.equal(rows[7].classification.kind, 'reaction'); assert.equal(rows[7].classification.startPose, undefined);
+  assert.deepEqual(rows[8].poses, { start: 'REDO', end: 'REDO' });
+  // A model that picks a different slot does not inherit the filename's chain.
+  const moved = finishDealerImportRows([{ ...proposals[0], slotId: 'deal.player.left/box0' }], { ...body, files: [body.files[0]] }, catalog);
+  assert.equal(moved[0].classification.startPose, undefined); assert.equal(moved[0].poses, undefined);
+});
+
 test('ambiguous, out-of-range and unfamiliar filenames remain unmapped', () => {
   const catalog = dealerImportCatalog(createSeedProject());
   const body = input(['mystery.webm', 'pos8.webm', 'pos1-pos2.webm', 'turnip.mp4', 'blackjacket.mp4'].map((name, index) => file(name, `f${index}`)));

@@ -390,8 +390,10 @@
       ]
     },
     "startPose": {
+      "description": "Roulette: VILA/WHEEL/unverified. Blackjack action clips: declared hand pose VILA or REDO at the first frame; advisory until a filmed profile verifies it.",
       "enum": [
         "VILA",
+        "REDO",
         "WHEEL",
         "unverified"
       ]
@@ -399,6 +401,7 @@
     "endPose": {
       "enum": [
         "VILA",
+        "REDO",
         "WHEEL",
         "unverified"
       ]
