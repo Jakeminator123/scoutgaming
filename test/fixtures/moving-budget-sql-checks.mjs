@@ -339,8 +339,23 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   const afterCapacity=await history();assert.equal(afterCapacity.length,13);
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
   assert.deepEqual(await history(),afterCapacity,'45 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
+  const beforeProvider50=await history(),chargesBeforeProvider50=await reservationHistory();
+  const provider50={...fundedCapacity,amendmentId:randomUUID(),authorizationId:'fixture-provider-accounting-50',observedAtMs:Date.now(),
+    expectedLimitMicroUsd:15600000,expectedReservedMicroUsd:15600000,expectedReservationCount:13,newLimitMicroUsd:16800000,
+    globalLimitMicroUsd:50000000,providerSpentMicroUsd:1000000,otherReservedMicroUsd:42203335,windowReserveMicroUsd:2400000};
+  await assert.rejects(second.authorizeMovingBudgetAmendment({...args,amendment:{...provider50,globalLimitMicroUsd:45000000}}),fail('invalid_generated_speech_budget_amendment'));
+  await second.authorizeMovingBudgetAmendment({...args,amendment:provider50});
+  assert.deepEqual(await history(),beforeProvider50,'provider coverage adds no binding and rewrites no historical grant');
+  assert.deepEqual(await reservationHistory(),chargesBeforeProvider50,'all prior charges remain reserved');
+  const providerAdmitted=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  assert.equal(providerAdmitted.totalBudgetMicroUsd,16800000);assert.equal(providerAdmitted.totalReservedMicroUsd,16800000);
+  await finish(providerAdmitted);
+  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  const previousIds=new Set(beforeProvider50.map(row=>row.session_id));
+  assert.deepEqual((await history()).filter(row=>previousIds.has(row.session_id)),beforeProvider50,'one new reservation leaves every previous binding intact');
+  assert.deepEqual((await reservationHistory()).filter(row=>previousIds.has(row.session_id)),chargesBeforeProvider50);
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
-  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies,fundedCapacity]);
+  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies,fundedCapacity,provider50]);
   await journal.releaseLease({lease});
   await runMovingCapacitySqlChecks({pool,input,journal});
 }
