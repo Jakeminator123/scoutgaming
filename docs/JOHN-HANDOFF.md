@@ -311,76 +311,140 @@ C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 ## Dragan: produktionsprov — POST-LIPSYNC5, 19 oktober 2026
 
-POST-LIPSYNC5 äger aktivering, finansiering, prov och stopp. HUVUDAGENT6
-äger backendrättningen, UI/UX2 Admin och MERGE4 granskning/publicering.
-PR287/288/289 är mergade och publicerade på
-`2c7f1c0e0a464e06e94d6e837b441f985d8ef417`. MERGE4 verifierade full
-main-CI 39218098988, inklusive workerbygge, gateway-deadlineprov och riktig
-SQL/schema-readiness. POST återläste själv samma web/game-SHA före provet.
-PR288:s riktiga SQL-kedja passerade också på oförändrad head i CI attempt 2.
+**En genererad uppspelning har nu gått igenom i den publicerade spelvyn.**
+Det fjärde provet skickade exakt en fråga 09:54:26.916 UTC:
+”Svara kort på svenska: säg Hej Jakob.” Spelchatten visade ”Hej Jakob.”
+GPU-resultatet och webbläsarens eget mediekvitto avslutades komplett.
+Mikrofon → transkription → OpenClaw-text är separat belagt nedan.
+Hela kedjan till hörbar röst och upplevd läppsynk, tal under utdelning
+och svarstid för vanlig drift är ännu inte godkända.
 
-Det tredje produktionsprovet 08:26:14.724 UTC använde ordinarie spelvy,
-OpenClaw och exakt en kort svensk textfråga. Färsk ansluten executor,
-verkligt Av och kallt Sparläge med admission.allowed=true verifierades.
-En oberoende stoppvakt på 12 minuter var bunden till den planhash den faktiskt
-läst. Exakt Draganprofil aktiverades med normal CAS/PUT200; röst, referens
-och övrigt projekt bevarades. Mikrofon/kamera var av. POST gjorde inga
-insatser, DEAL eller walletändringar.
+Provet körde publicerad web/game-kod
+`913ad8e679aed2d90865ec1328da414c18d14716` från PR290.
+MERGE4 verifierade PR-CI 39228212145 och main-CI 39229477481, inklusive
+riktig SQL/schema-readiness och workerbygge. POST återläste samma faktiska
+web/game-SHA. POST äger prov och stopp, HUVUDAGENT6 backend, UI/UX2 Admin
+och MERGE4 granskning/publicering.
 
-Jobb `6f99934f-3090-4b72-8453-7f71bae54f74-e1` använde egen endpoint
-`zjsdlni6cn8dvo`/template `5dkkc3wolw`, min0/max1 och samma image/bank.
-Gatewayloggen 08:26:34.969 UTC belägger åter **authorization /
-drift_not_admitting, HTTP403**. Första bankkvittot nekades efter 349,952 ms;
-arkivhämtning, modell, callback och rendering nåddes inte. Providerstatus
-COMPLETED innehöll failed/bank_http_rejected, kö 7752 ms/execution 463 ms.
-Browserns verkliga kvitto var completed=false/chat_failed efter 20619 ms.
-En avgränsad loggläsning 08:26:14–36 hittade inga
-moving_drift_readback_failed-rader. Det bevisar ingen annan felorsak.
-H6 undersöker nu den nekande SQL-transaktionen utan nytt betalt prov.
-PR287:s offlinefix bevisar ännu inte att hela produktionsfelet är löst.
-H6 reproducerade dessutom att en långsam men lyckad providerläsning kan
-ge stale observation utan readback-fellogg. Det är en offline-mekanism;
-provets historiska guardorsak måste fortfarande styrkas i samma SQL-state.
+Färsk ansluten executor, faktisk Av och kallt Sparläge med
+`admission.allowed=true` verifierades före normal CAS-aktivering av exakt
+Draganprofil. Den oberoende stoppvakten band den faktiskt lästa planfilens
+hash till PID och högst 12 minuter. Endpoint `zjsdlni6cn8dvo`, template
+`5dkkc3wolw`, min0/max1, image, bank, röst och referens bevarades.
+OpenClaw var valt; mikrofon och kamera var av. Inga insatser, DEAL eller
+walletändringar gjordes.
 
-Normal Av/CAS revision 7→8 kvitterades 08:27:23 UTC. Faktisk Av,
-blockerad antagning,0 workers, 0 öppna sessioner och ingen åtgärd verifierades
-före profilens normala rollback till preparation 08:28:42 UTC.
-Flagga 0-deploy `dep-dbat9fm1egvs73c29g4g` blev LIVE 08:29:45.744 UTC.
-Closeout 08:30:47.813 UTC återläste globalt 0 GPU, 0 öppna sessioner,
-preparation och flagga 0. Stoppvakten avarmerades med detta planspecifika
-kvitto och avslutades med exit 0; merge-/deployhållet släpptes.
-Efter flagga 0 påstås ingen ny ansluten driftobservation.
+| Faktisk evidens | Resultat |
+| --- | --- |
+| GPU-jobb | `a6978302-bd43-4f7d-bfa1-8e4bc279f6b4-e1`: COMPLETED och output complete |
+| Session/ström | `69289f94f054eda576f83dd367fbfdb3`, samma ID i journal och klientkvitto |
+| Bankhämtning | Receipt 1287,569 ms, arkiv 6592,18 ms; båda cache miss |
+| GPU-utmatning | 45 läppsynkbilder fördelade på fyra bildpaket |
+| Webbläsare | `generated-lipsync-stream`, ended, completed=true, started=true, firstFrame=true |
+| Klientens mottagning | 45/45 bilder mottagna; `released=33` är ett tidsstyrt bildindex för bufferten, ingen visuell täckningsgrad |
+| Tid | Kö 1101 ms, GPU-execution 89348 ms, klientens hela förlopp 104634 ms |
+| Visuell acceptans | `reviewStatus=pending`; fysisk hörsel- och synkgranskning återstår |
 
-Jakobs delegerade budgetbeslut används med ändligt 50 USD kumulativt
-providerskydd inklusive alla behållna reserver. Journalens 45 USD-kapacitet,
-1,20 USD per jobb och20 USD-dagstak är oförändrade. Efter publicering och
-färska kontroller gjordes en normal append-only CAS 20,40→21,60 USD 08:18:35.
-Alla 17 äldre reservationer/20,40 USD och deras historikhash bevarades.
-Efter detta enda jobb finns 18 historiska reservationer/21,60 USD och
-grant 21,60 USD; 0 öppna. Inga refunds, migrations- eller provisioneringsjobb.
-Skyddskalkyl 45,595875 USD inkluderar rapporterad provider 0,992540 USD,
-behållna reserver 42,203335 USD och provfönstret2,40 USD; den är ingen slutfaktura.
-Inför ett eventuellt senare fönster ska även detta 2,40 USD behållas:
-behållna reserver 44,603335 USD. Befintliga privata 17/20,40-förkontroller är nu
-stale/failclosed och får inte återanvändas som ny finansieringsbevisning.
+Klientens completed kräver ljudets media-playing-kvitto följt av normalt
+media-lifecycle-avslut. Första synliga bild markeras efter lyckad rendering;
+detta är starkare än enbart färdig svarstext men bevisar inte läppsynkens kvalitet.
+Separata avgränsade loggläsningar 09:54:26–09:56:20 hittade ingen
+guard-, readback-timing- eller bank-rejection-rad. Tidigare HTTP403-orsak
+är fortfarande obelagd. PR290 tillför diagnostik och tillskrivs ingen
+bevisad reparation av det historiska felet.
 
-De 42 privata kontrollproven passerade före körningen. En upptäckt lucka
-rättades så att vakten sparar planhash vid armering och receipt/aktivering
-jämför den oförändrad; verklig filladdning provas negativt efter planändring.
-Detta är kod-/grindprov. Synkat produktionsljud/bild, tal under utdelning
-och fysisk mikrofon är fortfarande **inte godkända**. Ingen blind omkörning.
+Normal Av/CAS 9→10 kvitterades 09:57:03.911 UTC. Faktisk Av, blockerad
+antagning, 0 workers, 0 öppna sessioner och ingen åtgärd verifierades
+09:57:49 UTC. Exakt preparation återställdes via normal PUT200 09:58:05.
+Flagga 0-deploy `dep-dbaujdrncjis73ag4h50` blev LIVE 09:59:13.394 UTC
+på samma kod. Stoppvakten bekräftade själv Av vid sin deadline 10:00:07
+utan fjärrwrite och avslutades med exit 0. Closeout 10:01:04.330 UTC
+återläste preparation, flagga 0, globalt 0 GPU och 0 öppna sessioner;
+merge-/deployhållet släpptes. Efter flagga 0 påstås ingen ny ansluten executor.
 
-Det tidigare provet 06:41 nekades vid arkivhämtning efter ett lyckat
-bankkvitto; 05:31 nekades redan bankkvittot utan exakt authkvitto.
-Deras privata kvitton bevaras och tillskrivs inte automatiskt samma
-historiska orsak. Senaste bevis: trial-31488611-provider.json,
-trial-31488611-browser.json, trial-31488611-bank-denial.json och
-closeout-1792398647813.json i den befintliga privata checklistans provmapp.
+Jakobs delegerade budgetbeslut användes med ändligt 50 USD kumulativt
+providerskydd inklusive alla behållna reserver. En granskad normal
+append-only CAS 21,60→22,80 USD kvitterades 09:49:43.772 UTC; alla
+18 äldre reservationer/21,60 USD och deras historikhash bevarades.
+Efter jobbet finns 19 reservationer/22,80 USD och grant 22,80 USD, 0 öppna.
+Journalens 45 USD-kapacitet, 1,20 USD per jobb och 20 USD-dagstak består.
+Skyddskalkyl 48,018985 USD omfattar rapporterad provider 1,015650 USD,
+behållna 44,603335 USD och detta fönster 2,40 USD. Den är ingen slutfaktura;
+providerredovisning kan släpa och externa TTS-/lagringskostnader ingår inte.
+Inga reserver frigjordes. Ett senare fönster måste även behålla detta
+2,40 USD. Nästa faktiskt öppnade fönster redovisas separat nedan.
+Ingen automatisk omkörning, återbetalning, migration eller provisionering.
 
-PR280 pensionerade den inventerade lokala filmvisaren och dess testkopplingar.
+43 privata kontrollprov passerade före körningen. H6:s oberoende
+läsgranskning fann inga blockerande fynd i de sju exakta helperhasharna,
+journal-CAS, historikbevarande och planbunden stopp-/aktiveringskedja.
+Dessa kod- och grindprov hålls skilda från den faktiska uppspelningen ovan.
+
+Senaste säkra slutläge är **10:43:05.830 UTC**, efter femte provfönstret.
+Jakob godkände uttryckligen ett mikrofonprov inom 50 USD totalt, åtta
+minuters Off-timer och två minuters stoppsvans. H6 läsgranskade sju nya
+helperhashar; 44 riktade kontroller passerade. Alla fyra äldre fönster
+behölls: 47,003335 USD. Ny reserv 1,70 USD täcker den kortare faktiska
+vakten vid högst 10 USD/timme; den gamla tolvminutersvakten nekas.
+Normal CAS 22,80→24,00 kvitterades med samtliga 19 bindningar/22,80 USD
+oförändrade. Ingen ny reservation eller GPU-körning uppstod i detta fönster.
+
+Flagga 1 blev LIVE 10:35:40.925 på samma kod. Färsk Av och kallt Sparläge
+med ansluten executor/admission verifierades före exakt profil-PUT200
+10:36:40.239. Mikrofonen skulle därefter startas av Jakob med **Record
+one message**. Den synliga röstloggen styrker en inspelning med kamera av,
+transkriptionen ”Yeah I got that.”, automatisk sändning till Dragan och
+avslutad rösttur; chatten visar ”Got it.” Loggen saknar tidsstämplar.
+
+En senare fråga, ”säg någtot”, stod i ”Svar klart · väntar på ledigt bord”.
+Dess klientkvitto 4b8a55a7-a069-45d6-a6e4-b2e65255af18 slutade cancelled,
+completed=false, failureCode=muted, elapsedMs=383527. Kvittot sparades
+10:41:51.645; frågan hade alltså startat **senast 10:35:28.118 UTC**,
+före profilaktiveringen. Chattordningen placerar även mikrofonturen före
+den frågan. Detta är inte ett genomfört prov av den nyaktiverade GPU-vägen.
+Pågående runda ensam bevisar inte orsaken till väntan: posegrinden kräver
+matchande identitet, synlighet, ljud och ett faktiskt presenterat ledigt
+läge utan annan ägare. Held-väntan saknar timeout; exakt saknat villkor
+är inte belagt. Ingen produktionsgrind har kringgåtts eller ändrats.
+
+Normal Off/CAS 11→12 kvitterades 10:40:29.789. Färsk Av/admissionfalse,
+0 workers, 0 öppna och ingen åtgärd verifierades före normal återställning
+till preparation 10:41:18.658. Vakten hade faktiskt armerats 10:33:28.536
+med deadline 10:41:28.394; den bekräftade själv Av 10:41:29.690 utan write.
+Flagga 0-deploy dep-dbav7ktg1s2s73dlpsq0 blev LIVE 10:42:25.713.
+Closeout 10:43:05.830 verifierade preparation, flagga 0, globalt 0 GPU,
+min0/max1, 0 workers/busy/sessioner, Off revision 12 och nextAction none.
+Projekt: studio-70eb9543-b220-44f1-a65e-51f7726bf025. M4-holdet släpptes.
+
+Slutjournalen är 19 reservationer/22,80 USD, grant 24,00 USD. Kalkylen
+49,718985 USD är rapporterad provider 1,015650 + behållet 47,003335 +
+fönster 1,70. Ingen slutdebitering eller extern TTS/lagring är verifierad;
+redovisning kan släpa och inga reserver frigjordes. Fönstret ska behållas
+även inför ett eventuellt nytt prov. Gamla planer/intents/kvitton får inte
+återanvändas; engångshjälparen vägrar redan ändrad grant.
+
+Det kvarhängande svaret avbröts med ordinarie ljudknapp och spelarens
+ljudval återställdes. Mikrofon och kamera är av. Jakob hade själv en
+pågående spelrunda; POST rörde inga kort, insatser eller walletdata.
+Fysisk hörsel/synk och mikrofon → GPU i samma aktiva fönster återstår.
+
+Privata bevis finns i den befintliga checklistans provmapp:
+`trial4-start.json`, `trial4-playback-detail.json`,
+`trial4-browser-result.json`, senaste `speech-observation-*.json` och
+`closeout-1792404064330.json`. Femte fönstret har
+`trial5-visible-voice-log.json`, `trial5-client-closeout.json`,
+`trial5-waiting-on-round.png` och `closeout-1792406585830.json`.
+Tidigare tre prov-/stoppkvitton bevaras;
+deras nekanden tillskrivs inte automatiskt samma historiska orsak.
+
+PR280 pensionerade den inventerade lokala filmvisaren och dess testkopplingar;
+13 förbrukade privata hjälpfiler har städats med inventerade beroenden.
 Originalmedia, 50 verifierade bankkällor, historik och acceptanskvitton bevaras.
-Fyra pending-repliker är en separat innehållsgranskning; namnbyte eller bred
-omuppladdning bevisar ingen synk.
+Fyra pending-repliker och publicerat bord med 0/13 godkända inspelade repliker
+är en separat innehållsgranskning. Namnbyte eller bred omuppladdning bevisar ingen synk.
+Nästa produktprov behöver knyta den fysiska mikrofonen till rätt hörbar
+röst/visuell synk i samma aktiva fönster och därefter tal under utdelning,
+med färsk drift, finansiering och mänsklig närvaro.
 [Användarflöde](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
 [tekniska grindar](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
 

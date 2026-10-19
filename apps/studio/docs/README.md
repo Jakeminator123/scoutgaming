@@ -42,9 +42,18 @@ Admin-provspel använder ett separat testsaldo och har chatt/genererat tal
 avstängda. Den ordinarie spelvyn använder den inloggade spelarprofilens saldo;
 rummets testnamn skapar ingen separat plånbok.
 
-När textprovet fungerar kan spelaren slå på mikrofonen och lämna det
-vanliga webbläsartillståndet. Kontrollera att transkriptionen behåller talets
-språk, att svaret följer dealerns språkpolicy och att rätt röst/video spelas upp.
+När textprovet fungerar och taldriften är redo: tryck mikrofonknappen,
+välj **Record one message** och lämna det vanliga webbläsartillståndet.
+Säg en kort fråga och var sedan tyst. Efter pausen skickas inspelningen
+för transkription och texten vidare till dealern; inspelningen stängs av
+automatiskt. Kameran kan vara av. Kontrollera transkriptionens språk,
+dealerns språkpolicy och att rätt hörbar röst/video följer samma fråga.
+En fråga som skickades före talaktiveringen blir inte ett nytt talprov.
+
+Om svaret visar **Svar klart · väntar på ledigt bord**, vänta på att det
+spelas klart innan nästa fråga. Behöver du avbryta det väntande svaret,
+slå av taluppspelningen. Slå på den igen inför nästa avsiktliga prov;
+mikrofonen förblir av tills du själv väljer att spela in.
 
 **Stoppa drift** begär Av. Vänta på färsk faktisk Av och verifierat stopp;
 att bara önskemålet ändras räcker inte. Röstprofilens aktivering är ett
