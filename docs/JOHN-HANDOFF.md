@@ -37,13 +37,15 @@ SQL017 är nu required efter POST-PISYNK4:s verifierade apply 19 oktober 02:32:5
 03:02:56 UTC med oförändrad ledger/budget och tom kontrolltabell. Det är
 tillskrivna kvitton, inga egna molnkörningar. 016 är fortsatt deployment-optional
 i manifestet; runtime kräver installerad tabell och separat aktivering.
-Verifierat: 209 fokuserade tester samt 29 legacy- och 77 integrationskontroller
+Verifierat på föregående `c5c85bda`: 209 fokuserade tester samt 29 legacy- och 77 integrationskontroller
 i verklig isolerad SQL/HTTPS/omstart, plus fyra mediekontraktsprov. Både Windows
 och sista Linux/WSL-provet använde Node 24.21.0. 214 namngivna källfiler var
 oförändrade genom det breda provet; detta är inte liveprovider- eller GPU-acceptans.
 De två importernas dubbla schema-listor ersattes med gemensam required-readiness;
 installerad ledger och rollback kontrolleras fortsatt. Egna fixturekluster och
 den tillfälliga Linux-Node-installationen rensades efter provet.
+Sluträttningen klarade 39 fokuserade och fem browserbindningsprov; integrationen
+med PR274/main `b3ff83d4` klarade 125 prov. Slut-CI och produktionsreadiness återstår.
 Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
