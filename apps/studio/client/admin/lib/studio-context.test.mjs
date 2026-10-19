@@ -46,6 +46,27 @@ test('missing composition has no automatic fallback dealer bank',()=>{
   assert.equal(context.dealer,undefined);assert.deepEqual(context.dealers,[]);
 });
 
+test('explicit shared composition remains separate from the registered room and owner',()=>{
+  const before=structuredClone(catalog);
+  for(const compositionId of ['one','two']){
+    const context=studioContext(catalog,project,{operatorId:'a',roomId:'bj',compositionId,dealerId:'astrid',game:'blackjack',library:true});
+    assert.equal(context.lane.id,compositionId);assert.equal(context.room.id,'bj');
+    assert.equal(context.room.compositionId,'one');assert.equal(context.operator.id,'a');
+    assert.equal(context.dealer.id,'astrid');assert.equal(context.game,'blackjack');
+  }
+  assert.deepEqual(catalog,before);
+});
+
+test('unknown explicit composition never falls back to the room template and a library scene needs no room',()=>{
+  const unknown=studioContext(catalog,project,{operatorId:'a',roomId:'bj',compositionId:'missing',library:true});
+  assert.equal(unknown.lane,undefined);assert.equal(unknown.room.id,'bj');assert.equal(unknown.operator.id,'a');
+  const library=studioContext(catalog,project,{compositionId:'two',dealerId:'paow-v2',library:true});
+  assert.equal(library.lane.id,'two');assert.equal(library.room,undefined);assert.equal(library.operator,undefined);
+  assert.equal(library.dealer.id,'paow-v2');
+  const roomOnly=studioContext(catalog,project,{operatorId:'a',roomId:'bj',compositionId:'two'});
+  assert.equal(roomOnly.lane.id,'one');assert.equal(roomOnly.dealer.id,'astrid');
+});
+
 async function registeredStudioHtml(path,search='',overrides={},interactive=false){
   let currentSearch=search,allowLeave=false,confirms=0,notifications=0;const listeners=new Map();
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');

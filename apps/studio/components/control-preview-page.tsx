@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
+import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
 import {validateProject,type StudioProject,type StudioLane} from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -37,7 +38,7 @@ export function initialCompositionLaneId(project:StudioProject,laneId?:string,de
     ??lanes[0]?.id??'';
 }
 
-export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId,initialGame='blackjack'}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string;initialGame?:'blackjack'|'roulette'}) {
+export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId,initialRoomId,initialGame='blackjack'}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string;initialRoomId?:string;initialGame?:'blackjack'|'roulette'}) {
   const session=useStudioProjectSession({initialProject,initialVideos,initialStatus});
   const {project,projectRef,videos,modelEdit:sessionEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
@@ -184,6 +185,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       {role==='table'&&game==='blackjack'&&lane.layers.table.default&&table&&!localMedia.table?<BlackjackTableGeometryEditor
         key={`${lane.id}:${lane.layers.table.default}:${layout}`} tableId={lane.layers.table.default} url={table.url} contentType={table.contentType} layout={layout}
         value={settings.blackjackTables?.find(row=>row.tableId===lane.layers.table.default)} disabled={previewBusy||saving||uploading||conflict||temporary}
+        sceneEditorHref={sceneEditorHref} onOpenScene={()=>void continueTo(sceneEditorHref)}
         onChange={value=>{if(previewBusy||saving||uploading||conflict||temporary)return;const next=structuredClone(lane),composition=structuredClone(settings);
           const rows=(composition.blackjackTables??[]).filter(row=>row.tableId!==lane.layers.table.default);
           if(value)rows.push(value);if(rows.length)composition.blackjackTables=rows;else delete composition.blackjackTables;
@@ -194,6 +196,9 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     </section>;
   }
   const publicationHref=labUrl('/control/rooms?'+new URLSearchParams({composition:lane.id,...(initialOperatorId?{operator:initialOperatorId}:{})}));
+  const sceneEditorHref=adminDocumentHref('/control/studio?'+new URLSearchParams({composition:lane.id,game,
+    ...(startDealer?{dealer:startDealer.id}:{}),...(initialOperatorId?{operator:initialOperatorId}:{}),
+    ...(initialRoomId?{table:initialRoomId}:{})}));
   const contentHref=studioHref('/control/clips',{dealerId:startDealer?.id,laneId:lane.id,operatorId:initialOperatorId});
   const uploadHref=studioHref('/control/videos',{dealerId:startDealer?.id,eventId:clip?.classification?.eventId??project.events[0]?.id,laneId:lane.id,operatorId:initialOperatorId});
   if (!lanes.length) return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar" intro="Samla dealer, bord och bakgrund till en sammansättning som kan användas i flera spelrum."

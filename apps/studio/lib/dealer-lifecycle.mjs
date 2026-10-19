@@ -103,6 +103,10 @@ export async function changeDealerLifecycle({repository,mutationTransaction,stil
   const cascade=body.archived||before.value.dealerTrash?.find(entry=>entry.dealer.id===body.dealerId)?.schemaVersion===2;
   const descriptors=[...(cascade?[{kind:'dealer-archive',value:next}]:[]),{kind:'project',value:next},
     ...(plan?[{kind:'administration',value:plan.administration}]:[]),
+    ...(plan?.packageChanges??[]).flatMap(change=>{
+      const presentation=readPackagePresentation(change);
+      return presentation?[{kind:'presentation-package',value:presentation}]:[];
+    }),
     ...records.filter(row=>row.classification.dealerId===body.dealerId&&!row.retainedBank).map(row=>({metadata:row.classification}))];
   return mutationTransaction(()=>repository.transaction(async()=>{
     const actor=await stillAuthorized();

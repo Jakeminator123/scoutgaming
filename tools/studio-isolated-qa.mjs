@@ -29,6 +29,7 @@ async function port() {
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
   'packages/operators/server/public-rooms.mjs',
   'packages/presentation/server/studio-policy-runtime.mjs',
+  'packages/presentation/capability-contract.mjs',
   'packages/shared/blackjack-shoe-rules.mjs',
   'packages/presentation/server/generated-speech-provider.mjs','packages/presentation/contracts/speech-package.mjs','packages/presentation/contracts/astrid-voice-profile.mjs','packages/presentation/server/generated-speech-service.mjs','packages/presentation/server/generated-speech-runtime.mjs','packages/presentation/server/speech-journal-lease.mjs',
       "services/game/storage/legacy-clip-inventory.mjs",

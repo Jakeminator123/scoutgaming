@@ -4,6 +4,7 @@ import {effectiveDealerCompositing} from '../../../packages/presentation/contrac
 import {validateBackgroundPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {createBackgroundPlayback} from '../../../packages/presentation/runtime/background-playback.mjs';
 import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
+import {compositionAnchorFrames,projectAnchorRects} from './composition-anchors.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {
@@ -75,7 +76,8 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     const asset=assets().get('table');
     if(board&&scene.show.table&&asset&&compositor.tableGeometry){
       return {...projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
-        {width:host.clientWidth,height:host.clientHeight},board,scene.layout),tableId:board.tableId,
+        {width:host.clientWidth,height:host.clientHeight},board,scene.layout),
+        ...projectAnchorRects(board[scene.layout],compositionAnchorFrames(current.settings,scene.layout,asset),{width:host.clientWidth,height:host.clientHeight}),tableId:board.tableId,
         sourcePlane:projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},framing??undefined)};
     }
     const missing=Boolean(current?.settings?.blackjackTables?.length);

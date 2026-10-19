@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,useMemo} from 'react';
+import type {ReactNode} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 import {sceneForComposition,type CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -18,7 +19,7 @@ type CanvasActor=HTMLCanvasElement&{src?:string};
 
 // Optional silent layer videos share playback controls. Only the dealer owns
 // the finite play count, preserving the exact clip chosen by Studio.
-export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:Array<CompositionMedia&{id:string}>;previewBackgroundRuleId?:string;previewBackgroundRequest?:number}) {
+export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,overlay}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:Array<CompositionMedia&{id:string}>;previewBackgroundRuleId?:string;previewBackgroundRequest?:number;overlay?:ReactNode}) {
   const t=(sv:string,en:string)=>language==='en'?en:sv;
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0),playAttempt=useRef(0);
@@ -152,7 +153,10 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   function pause(){playAttempt.current++;playbackActive.current=false;backgroundPlayer.current?.pause();Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus(t('Pausad.','Paused.'));}
   return <div style={{containerType:'inline-size'}}>
     <div style={{background:'#111827',display:'flex',justifyContent:'center',overflow:'hidden',borderRadius:12}}>
-      <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',height:'min(540px, 60vh, 56.25cqw)',width:layout==='mobile'?'calc(min(540px, 60vh, 56.25cqw) * 9 / 16)':'calc(min(540px, 60vh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}/>
+      <div style={{position:'relative',height:'min(540px, 60vh, 56.25cqw)',width:layout==='mobile'?'calc(min(540px, 60vh, 56.25cqw) * 9 / 16)':'calc(min(540px, 60vh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}>
+        <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',height:'100%',width:'100%'}}/>
+        {overlay}
+      </div>
     </div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
       <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>playing?pause():void play()}>{playing?t('Pausa','Pause'):t('Spela','Play')}</button>
