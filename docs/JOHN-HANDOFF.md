@@ -104,7 +104,7 @@ Publicerade rum behåller samma PartnerAppearanceLoader, API och callbacks.
 Delad mall ligger kvar separat med påverkanstext. På mobil används den
 kompakta befintliga rumsväljaren; breda vyer får listan intill detaljytan.
 
-Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips. Efter integration med main passerar hela Admin-gruppen (339 prov i 13 grupper),
+Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips. Efter integration med main passerar hela Admin-gruppen (338 prov i 13 grupper),
 inklusive nytt kortprov för bolagsgräns, avvisat osparat byte, pågående
 operation och exakt accepterad kontext. Admin/lobby-typer och klientbygge
 passerar; befintliga CSS-composes-varningar kvarstår. Verkligt klientbygge
