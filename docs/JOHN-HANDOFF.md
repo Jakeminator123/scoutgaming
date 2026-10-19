@@ -19,6 +19,9 @@ borddesign och mobil/desktop. Ankarbyte bevarar läget. Flytta scenen tillsamman
 Markernas manuella ram bevaras när de följer korten. Äldre editorn hänvisar
 ankarscener till Admin med aktuell sammansättning, startdealer, spel, operatör
 och uttryckligt rum (aldrig bordfilens ID). Länken använder förälderns sparskydd.
+Mottagaren behåller explicit mall/spel även när rumskontexten hör till en annan
+mall; panelen redigerar vald mall och rummets registrerade koppling ändras inte.
+Nytt rum utan uttryckligt mallval ärver inte föregående rums mall.
 
 Sparning går via den delade mallens projekt, revision och bekräftelse av berörda
 rum. Frysta paket behåller geometri; roomOverrides får inga nya fält. Nytt
@@ -29,6 +32,11 @@ paketets ankare skyddas även när de tagits bort ur utkastet.
 Materialpapperskorgen förkontrollerar enbart de kvarvarande frysta presentationer
 som faktiskt ska publiceras om, och kontrollerar dem igen före första mutation.
 Oberörda operatörspaket och ankare i borttagna scener höjer inte kontraktskravet.
+Dealerarkivering kontrollerar också kvarvarande frysta presentationer från sin
+faktiska publiceringsplan före preflight och före första skrivning under låset.
+Partnerns publicering och äldre branding-writer förhandlar vald operatörs frysta
+presentation före SQL och kontrollerar den låsta payloaden igen. Läsning,
+utkast/granskning och andra operatörers paket får inget globalt runtimekrav.
 Ingen SQL-migration. Deployment av läsaren krävs innan nya ankare kan sparas
 mot produktion. Filmspår, källrutor, tal och
 serverkort/saldo är orörda. Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
@@ -44,7 +52,8 @@ Första full-CI stoppade setup på ett oregistrerat ankartest. Testet är nu
 registrerat i presentation/card-view; orphan-kontrollen är grön (518 kandidater)
 och 40 riktade omprov passerar. Övriga då visade CI-fel var saknade beroenden
 efter överhoppad setup, enligt MERGE3:s loggläsning. CI39181331116 är grön
-för `ae2adb1b` enligt MERGE3; slut-CI för navigationsrättningen återstår.
+för `ae2adb1b` enligt MERGE3; CI39183342087 är grön för `840f5719`
+enligt MERGE3. Slut-CI/GPT för mottagar-/publiceringsrättningarna återstår.
 Två P2 är rättade: återställning använder förälderns verkliga sparade bas över
 panelbyten, sparning och serverjämförelse; livscykelspärren ovan omfattar frysta
 paket, även genom materialpapperskorgen. 126 backendtester passerar; underagentens körning verifierade 32
@@ -54,6 +63,12 @@ materialpapperskorgsprov fångar den tidigare oskyddade publiceringsvägen.
 Navigationsrättningen är verifierad med 47 preview-/Admin-tester och Studios
 typkontroll. Tre nya prov täcker scenkontext, verkligt rum, sparfel/konflikt och
 serveringångens vidarebefordran av rum/spel.
+Fortsatt review rättar mottagaren samt dealer-/partnerpublicering av kvarvarande
+ankare. 124 backendtester och därefter fem riktade dealerprov passerar, inklusive
+ett tillagt CAS-race. Två negativa dealerprov fångar tidigare beteende i isolerade
+modulkopior. Underagenterna verifierade 113 partner-/readinesstester respektive
+68 context-/panel-/navigation-/routingtester samt båda klienttypkontrollerna.
+Studios separata typkontroll är också grön.
 Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.

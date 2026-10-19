@@ -35,7 +35,14 @@ export function withAdminContext(href,currentSearch){
   if(url.pathname==='/admin/dealers')return href;
   if(!isInternalAdminPathname(url.pathname)||url.pathname==='/admin')return href;
   const context=new URLSearchParams(currentSearch);
-  for(const key of adminContextKeys)if(context.has(key)&&!url.searchParams.has(key))url.searchParams.set(key,context.get(key));
+  const explicitComposition=url.searchParams.has('composition')||url.searchParams.has('lane');
+  const changedRoomContext=['operator','table','game'].some(key=>url.searchParams.has(key)&&url.searchParams.get(key)!==context.get(key));
+  for(const key of adminContextKeys){
+    // An omitted template follows a newly selected room; an explicit template
+    // (including an old lane bookmark) must never inherit a competing ID.
+    if((key==='composition'||key==='lane')&&(explicitComposition||changedRoomContext))continue;
+    if(context.has(key)&&!url.searchParams.has(key))url.searchParams.set(key,context.get(key));
+  }
   return url.pathname+url.search+url.hash;
 }
 import {adminDocumentHref,adminToolName} from '../../../../packages/navigation/admin-workspace-routes.mjs';

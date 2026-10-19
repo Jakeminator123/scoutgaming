@@ -42,6 +42,19 @@ test('admin home is an internal navigation target even when Studio is busy',()=>
   assert.equal(isInternalAdminPathname('/control'),false);
 });
 
+test('explicit shared scene links win while a new room does not inherit the old template',()=>{
+  const context='?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack';
+  const target=href=>new URL(withAdminContext(href,context),'https://admin.fixture.invalid').searchParams;
+  const otherRoom=target('/admin/clips?operator=b&table=room-b&game=roulette');
+  assert.equal(otherRoom.has('composition'),false);assert.equal(otherRoom.has('lane'),false);
+  for(const field of ['composition','lane']){
+    const explicit=target('/admin/clips?'+field+'=scene-b&panel=layers');
+    assert.equal(explicit.get(field),'scene-b');assert.equal(explicit.has(field==='lane'?'composition':'lane'),false);
+    assert.equal(explicit.get('table'),'room-a');assert.equal(explicit.get('operator'),'a');
+  }
+  assert.equal(target('/admin/clips?dealer=nora').get('composition'),'scene-a');
+});
+
 test('old design links translate root queries and fragments without changing external or similar paths',()=>{
   for(const suffix of ['', '?dealer=astrid', '#clips']){
     assert.equal(adminHref('/control'+suffix),'/admin'+suffix);

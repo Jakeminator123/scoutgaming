@@ -67,6 +67,32 @@ test('changing composition returns the next shared template to preview mode whil
   assert.ok(text(tree).includes('Redigera gemensam mall'));assert.equal(h.props.project.lanes.length,2);
 });
 
+test('explicit shared template edits never follow or reassign a different room template',()=>{
+  const h=panelHarness(),originalRoom=structuredClone(h.props.room),original=structuredClone(h.props.project.lanes[0]);
+  const other={...structuredClone(original),id:'other-composition',label:'Other shared scene'};
+  h.props.project.lanes.push(other);h.props.compositionId=other.id;h.props.game='blackjack';
+  let tree=h.render();assert.equal(nodes(tree,node=>node.type==='h2')[0].props.children,other.label);
+  assert.equal(nodes(tree,node=>node.type==='a')[0].props.href,h.props.roomChoicesPath);
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  tree=h.render();const updated={...structuredClone(other),openclaw:{...other.openclaw,idle:'rules'}};
+  nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(updated);
+  assert.deepEqual(h.props.project.lanes[0],original);assert.equal(h.props.project.lanes[1].openclaw.idle,'rules');
+  assert.deepEqual(h.props.room,originalRoom);
+  h.props.compositionId='missing';tree=h.render();
+  assert.ok(text(tree).includes('Den valda sammansättningen finns inte.'));
+  assert.equal(nodes(tree,node=>node.type===h.LayerAssetSelect).length,0);
+});
+
+test('a selected library composition is editable without inventing a room context',()=>{
+  const h=panelHarness();h.props.compositionId=h.props.project.lanes[0].id;h.props.game='blackjack';
+  h.props.room=undefined;h.props.roomChoicesPath=null;
+  let tree=h.render();assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  tree=h.render();const lane=structuredClone(h.props.project.lanes[0]);lane.openclaw.idle='rules';
+  nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(lane);
+  assert.equal(h.edits.length,1);assert.equal(h.props.room,undefined);
+});
+
 test('roulette preview never borrows blackjack idle or a blackjack table and keeps video upload game-scoped',()=>{
   const h=panelHarness();h.props.room.game='roulette';
   h.props.project.lines=[{dealerId:'astrid',eventId:'idle.ready',baselineVariantId:'base',variants:[{id:'base',videoGenerationId:'blackjack-idle'}]}];

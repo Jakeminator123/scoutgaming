@@ -17,7 +17,7 @@ import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
 
-export function StudioCompositionPanel({localReferenceUrl,project,savedProject,inventory,room,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;room?:Room;dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
+export function StudioCompositionPanel({localReferenceUrl,project,savedProject,inventory,room,compositionId,game:requestedGame,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;room?:Room;compositionId?:string;game?:'blackjack'|'roulette';dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
   const [selectedLayout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[error,setError]=useState('');
   const [uploadBusy,setUploadBusy]=useState(false);
   const [moveTogether,setMoveTogether]=useState(false);
@@ -25,10 +25,10 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
   const [backgroundPreview,setBackgroundPreview]=useState<{id:string;request:number}>({id:'',request:0});
   const operations=useRef(new Set<string>());
   function uploading(role:string,value:boolean) {if(value)operations.current.add(role);else operations.current.delete(role);const active=operations.current.size>0;setUploadBusy(active);onBusyChange(active);}
-  const lane=project.lanes?.find(row=>row.id===room?.compositionId),assets=project.layerAssets??[];
+  const lane=project.lanes?.find(row=>row.id===(compositionId||room?.compositionId)),assets=project.layerAssets??[];
   const editing=Boolean(lane&&editingCompositionId===lane.id),locked=blocked||uploadBusy||!editing;
   const settings=lane?.composition??defaultCompositionSettings();
-  const game=room?.game==='roulette'?'roulette':'blackjack';
+  const game=requestedGame??(room?.game==='roulette'?'roulette':'blackjack');
   const layout=game==='roulette'?'desktop':selectedLayout;
   const baseline=project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready');
   const selected=game==='roulette'?rouletteReferencePreview(inventory,dealerId):inventory.videos.find(row=>row.id===baseline?.variants.find(item=>item.id===baseline.baselineVariantId)?.videoGenerationId&&row.available&&!row.classification?.archived&&row.classification?.game!=='roulette'&&row.integrity!=='unavailable');
@@ -40,7 +40,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
     try{change({...lane,composition:moveCompositionLayer(settings,layout,role,field,value,moveTogether),renderer:'layered'});}catch(cause){setError((cause as Error).message);}
   }
   const tableAsset=assets.find(row=>row.id===lane?.layers.table.default&&row.role==='table'&&layerAssetFitsGame(row,game));
-  if(!lane)return <section className="studio-detail-panel"><h2>Delad mall</h2><p>Välj ett registrerat rum med en sparad sammansättning.</p></section>;
+  if(!lane)return <section className="studio-detail-panel"><h2>Delad mall</h2><p role={compositionId?'alert':undefined}>{compositionId?'Den valda sammansättningen finns inte. Välj ett annat rum eller öppna en sparad sammansättning.':'Välj ett registrerat rum med en sparad sammansättning.'}</p></section>;
   const preview=(overlay?:ReactNode)=><CompositionPreview dealer={game==='roulette'&&localReferenceUrl?{url:localReferenceUrl,label:'Lokal VILA · inte sparad',contentType:'image/png'}:video?{url:video.previewUrl,label:video.label,contentType:video.contentType!}:null} background={media(lane.layers.background.default)} table={media(lane.layers.table.default)} overlay={overlay} settings={settings} layout={layout} show={{dealer:true,background:true,table:true}} compositing={game==='roulette'&&localReferenceUrl?{mode:'alpha'}:video?effectiveDealerCompositing(video.classification?.compositing):undefined} backgroundPlayback={lane.backgroundPlayback} backgroundAssets={assets.filter(row=>row.role==='background'&&lane.layers.background.allowed.includes(row.id)).map(row=>({id:row.id,url:'/studio/api/layer-assets/'+row.id,label:row.label,contentType:row.contentType}))} previewBackgroundRuleId={backgroundPreview.id} previewBackgroundRequest={backgroundPreview.request}/>;
   return <section className="studio-detail-panel" aria-label="Gemensam sammansättningsmall"><h2>{lane.label}</h2>
     <p>Standardlager, placering, tillåtna alternativ och automatik delas av alla rum som använder denna mall. Ändringarna sparas i det gemensamma projektutkastet; publicerade versioner behålls.</p>

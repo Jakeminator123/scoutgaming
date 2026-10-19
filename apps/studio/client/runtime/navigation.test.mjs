@@ -193,6 +193,7 @@ function mountScenePlacement(){
   let panelTree,editorTree,editorProps,project;
   return {render(props){project=props.project;panelTree=panel(props);editorProps=all(panelTree,node=>node.type==='BlackjackScenePlacementEditor')[0]?.props;editorTree=editorProps?editor(editorProps):null;},
     project:()=>structuredClone(project),
+    hasPlacement:()=>Boolean(editorProps),
     edit:profile=>editorProps.onChange(profile),
     click(label){const node=all(panelTree,node=>node.type==='button'&&text(node)===label)[0]??all(editorTree,node=>node.type==='button'&&text(node)===label)[0];assert.ok(node,'scene button '+label);assert.equal(Boolean(node.props.disabled),false,label+' is enabled');node.props.onClick();},
     disabled:()=>editorProps.disabled};
@@ -207,8 +208,11 @@ async function mountClipMap(h,{scene=false}={}){
     const {defaultCompositionSettings,defaultBlackjackTableGeometry}=componentRequire('../../../../../../packages/presentation/contracts/composition-settings.mjs');
     const {layerAssetPath}=componentRequire('../../../../../../packages/presentation/contracts/layer-asset-contract.mjs');
     const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000002',role:'table',game:'blackjack',label:'Oak',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
-    project.layerAssets=[{...table,pathname:layerAssetPath(table)}];project.lanes[0].layers.table={enabled:true,default:table.id,allowed:[table.id]};
-    project.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[defaultBlackjackTableGeometry(table.id)]};
+    project.layerAssets=[{...table,pathname:layerAssetPath(table)}];
+    for(const lane of project.lanes){
+      lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};
+      lane.composition={...defaultCompositionSettings(),blackjackTables:[defaultBlackjackTableGeometry(table.id)]};
+    }
   }
   const workspace={project,inventory:{videos:[]},catalog:{administration:{
     operators:['a','b'].map(id=>({id,slug:id,name:id,status:'active',archivedAt:null})),
@@ -254,14 +258,20 @@ async function mountClipMap(h,{scene=false}={}){
   const button=label=>one(nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label),'button labelled '+label);
   await settle();
   return {settle,selection:()=>({operator:select('Spelbolag').props.value,game:select('Spel').props.value,room:select('Rum').props.value,dealer:select('Dealer').props.value}),
+    registeredRooms:()=>structuredClone(workspace.catalog.administration.rooms),
+    composition:()=>nodes(node=>node.type==='StudioCompositionPanel')[0]?.props.compositionId,
     scene:{mounts:()=>sceneMounts,isMounted:()=>Boolean(scenePanel),snapshot:()=>scenePanel.project(),
+      hasPlacement:()=>scenePanel?.hasPlacement()??false,
       async open(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scen & lager')[0].props.onClick();await settle();},
       async leave(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scenförhandsvisning')[0].props.onClick();await settle();},
       async click(label){scenePanel.click(label);await settle();},
       async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
       remote(project){workspace.project=structuredClone(project);},
       async compare(){button('Jämför senaste revision').props.onClick();await settle();},
-      async save(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Spara utkast')[0].props.onClick();await settle();button('Bekräfta sparande').props.onClick();await settle();}},
+      async save(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Spara utkast')[0].props.onClick();await settle();
+        const review=one(nodes(node=>node.props?.role==='dialog'&&node.props?.['aria-labelledby']==='studio-save-review'),'save review');
+        const uses=all(review,node=>node.type==='li').map(textWithoutControls);
+        button('Bekräfta sparande').props.onClick();await settle();return uses;}},
     async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
     async editDraft(){
       button('Scen & lager').props.onClick();await settle();
@@ -289,6 +299,82 @@ function geometryGroup(value,group){
   return group==='cards'?{dealer:value.dealer,width:value.cardWidth,points:value.seats.map(seat=>seat.card),anchor:value.anchors?.cards}
     :{points:value.seats.map(seat=>seat.bet),mode:value.betMode,anchor:value.anchors?.bets};
 }
+
+for(const selected of ['a','b'])test(`the receiving scene editor keeps room A while editing explicit template ${selected.toUpperCase()}`,async()=>{
+  const h=harness(`/admin/clips?operator=a&table=room-a&composition=scene-${selected}&dealer=astrid&game=blackjack&panel=layers`);
+  const pane=await mountClipMap(h,{scene:true}),scene=pane.scene;
+  try{
+    const rooms=pane.registeredRooms(),before=scene.snapshot();
+    assert.equal(pane.composition(),'scene-'+selected);assert.equal(scene.hasPlacement(),true);
+    assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
+    assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-'+selected);
+    await scene.click('Redigera gemensam mall');
+    const chosen=before.lanes.find(row=>row.id==='scene-'+selected),profile=movedGeometry(chosen.composition.blackjackTables[0],.15);
+    await scene.edit(profile);
+    const after=scene.snapshot();
+    assert.deepEqual(after.lanes.find(row=>row.id==='scene-'+selected).composition.blackjackTables[0],profile);
+    assert.deepEqual(after.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
+    const reviewed=await scene.save();assert.deepEqual(reviewed,[selected==='a'?'a · a · blackjack':'b · b · roulette']);
+    assert.equal(scene.snapshot().revision,'fixture.scene.saved');
+    assert.deepEqual(pane.registeredRooms(),rooms,'editing and saving a template must not reassign its context room');
+    assert.equal(pane.registeredRooms().find(row=>row.id==='room-a').compositionId,'scene-a');
+    for(const [key,value] of Object.entries({operator:'a',table:'room-a',composition:'scene-'+selected,dealer:'astrid',game:'blackjack'}))assert.equal(new URLSearchParams(h.location.search).get(key),value);
+  }finally{pane.unmount();}
+});
+
+test('an already mounted receiver accepts a composition-only link and history without replacing room ownership',async()=>{
+  const h=harness('/admin/clips?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack&panel=layers');
+  const pane=await mountClipMap(h,{scene:true});
+  try{
+    const rooms=pane.registeredRooms();
+    assert.equal(h.api.navigate('/admin/clips?composition=scene-b&panel=layers'),true);await pane.settle();
+    assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),true);
+    assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
+    h.go(-1);await pane.settle();assert.equal(pane.composition(),'scene-a');
+    h.go(1);await pane.settle();assert.equal(pane.composition(),'scene-b');
+    assert.deepEqual(pane.registeredRooms(),rooms);
+  }finally{pane.unmount();}
+});
+
+test('an unknown explicit receiver composition stays invalid instead of editing the context room template',async()=>{
+  const h=harness('/admin/clips?operator=a&table=room-a&composition=missing&dealer=astrid&game=blackjack&panel=layers');
+  const pane=await mountClipMap(h,{scene:true});
+  try{
+    assert.equal(pane.composition(),'missing');assert.equal(pane.scene.hasPlacement(),false);
+    assert.equal(new URLSearchParams(h.location.search).get('composition'),'missing');
+    assert.equal(pane.selection().room,'room-a');assert.equal(pane.registeredRooms()[0].compositionId,'scene-a');
+  }finally{pane.unmount();}
+});
+
+for(const existing of [false,true])test(`explicit scene game survives a different registered room game${existing?' in a mounted pane':''}`,async()=>{
+  const target='/admin/clips?operator=b&table=room-b&composition=scene-a&dealer=astrid&game=blackjack&panel=layers';
+  const h=harness(existing?'/admin/clips?operator=b&table=room-b&game=roulette':target),pane=await mountClipMap(h,{scene:true});
+  try{
+    const rooms=pane.registeredRooms();
+    if(existing){assert.equal(h.api.navigate(target),true);await pane.settle();}
+    assert.deepEqual(pane.selection(),{operator:'b',room:'room-b',dealer:'astrid',game:'blackjack'});
+    assert.equal(pane.composition(),'scene-a');assert.equal(pane.scene.hasPlacement(),true);
+    assert.equal(new URLSearchParams(h.location.search).get('game'),'blackjack');
+    const before=pane.scene.snapshot();await pane.scene.click('Redigera gemensam mall');
+    await pane.scene.edit(movedGeometry(before.lanes[0].composition.blackjackTables[0],.12));
+    assert.deepEqual(pane.scene.snapshot().lanes[1],before.lanes[1]);
+    assert.deepEqual(pane.registeredRooms(),rooms);assert.equal(rooms.find(row=>row.id==='room-b').game,'roulette');
+  }finally{pane.unmount();}
+});
+
+test('a receiver can edit an explicit library scene without assigning a company or room',async()=>{
+  const h=harness('/admin/clips?composition=scene-b&dealer=astrid&game=blackjack&panel=layers');
+  const pane=await mountClipMap(h,{scene:true});
+  try{
+    const rooms=pane.registeredRooms(),original=pane.scene.snapshot();
+    assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),true);
+    assert.deepEqual(pane.selection(),{operator:'',room:'',dealer:'astrid',game:'blackjack'});
+    await pane.scene.click('Redigera gemensam mall');await pane.scene.edit(movedGeometry(original.lanes[1].composition.blackjackTables[0],.1));
+    assert.deepEqual(pane.scene.snapshot().lanes[0],original.lanes[0]);assert.deepEqual(pane.registeredRooms(),rooms);
+    assert.equal(new URLSearchParams(h.location.search).has('table'),false);
+  }finally{pane.unmount();}
+});
+
 for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])test(`scene reset uses the saved ${layout} ${group} after unmount, retained drafts and a later save`,async()=>{
   const pane=await mountClipMap(harness('/admin/clips?operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{
