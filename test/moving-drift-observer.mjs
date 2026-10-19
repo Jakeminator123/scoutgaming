@@ -60,9 +60,24 @@ test('health failures and incomplete health never produce an empty Off receipt',
   await assert.rejects(incomplete.observer.observe(),rejects);
 });
 
+test('a worker health still counts as running after its pod record exited stays busy, never Off and never capacity',async()=>{
+  // Live reads 2026-10-19 16:53:04–:24 and 17:04:44–17:05:01 UTC: the idle
+  // timeout removed the pod while health kept running=1 for about twenty
+  // seconds; a question sent in that window was refused at the guard.
+  const f=fixture();
+  f.proof.health.workers.running=1;
+  const result=await f.observer.observe();
+  assert.deepEqual(result.workers,[]);assert.equal(result.busyJobs,1);assert.equal(result.queuedJobs,0);
+  const queued=fixture();queued.proof.health.workers.running=1;queued.proof.health.jobs.inQueue=1;
+  assert.equal((await queued.observer.observe()).busyJobs,1);
+});
+
 test('pod and health contradictions refuse Off instead of dropping occupied evidence',async()=>{
   for(const change of [
-    ({proof})=>{proof.health.workers.running=1;},
+    ({proof})=>{proof.health.workers.running=2;},
+    ({proof})=>{proof.health.workers.running=1;proof.health.workers.unhealthy=1;},
+    ({proof})=>{proof.health.workers.running=1;proof.health.workers.throttled=1;},
+    ({proof})=>{proof.health.workers.running=1;proof.health.jobs.inProgress=1;},
     ({proof})=>{proof.health.workers.initializing=1;},
     ({proof})=>{proof.health.workers.unhealthy=1;},
     ({proof})=>{proof.health.jobs.inProgress=1;},
