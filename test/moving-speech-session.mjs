@@ -34,7 +34,7 @@ function fixture(overrides={}) {
     async completeRequest(){events.push('request-complete');state.request='completed';},
   });
   const provider={async submit(input){events.push('provider-submit');state.post=input;return overrides.submit?overrides.submit(input):{id:'accepted-job'};},
-    async cancel(){events.push('provider-cancel');},async status(){events.push('provider-status');return{status:overrides.status??'COMPLETED'};}};
+    async cancel(){events.push('provider-cancel');},async status(input){events.push('provider-status');return overrides.providerStatus?overrides.providerStatus(input):{status:overrides.status??'COMPLETED'};}};
   const create=createMovingSpeechSession({journal,provider,scope:{environment:'qa_moving',workspaceId:'fixture'},
     origin:'https://fixture.example',endpointId:'endpointfixture',release:async()=>receipt(),budgetId:'same-authorized-run',
     totalBudgetMicroUsd:5000000,reserveMicroUsd:250000,currentDailyBudgetMicroUsd:5000000,
@@ -44,7 +44,7 @@ function fixture(overrides={}) {
       let finish;const closed=new Promise(resolve=>{finish=resolve;});let finalization;
       const finalize=reason=>finalization??=(async()=>{const result=await options.finalize({reason});finish(result);return result;})();
       return{callbackUrl:'wss://fixture.example/private',handleUpgrade:()=>true,closed,
-        async ready(){events.push('worker-ready');if(overrides.readyFailure){await finalize('cancelled');throw Error('moving_worker_attestation_mismatch');}
+        async ready(){events.push('worker-ready');await overrides.onReady?.(options);if(overrides.readyFailure){await finalize('cancelled');throw Error('moving_worker_attestation_mismatch');}
           await options.authorize({phase:'send',signal:options.signal});return{jobId:state.jobId};},
         async dispatch(input,{onChunk}){events.push('dispatch');await options.authorize({phase:'output',signal:options.signal});await onChunk({},Buffer.from([1]),{signal:options.signal});await finalize('complete');return{frames:12};},
         cancel:()=>finalize('cancelled')};
@@ -396,4 +396,81 @@ test('SQL-only current admission requires an explicit boolean submissionPhase',a
     await assert.rejects(attempt.assertCurrent({submissionPhase}),{code:'invalid_generated_speech_journal_input',statusCode:422});
   }
   assert.equal(f.drift.pins,1);assert.equal(f.events.includes('provider-submit'),false);await attempt.cancel();
+});
+
+
+test('a terminal provider job before callback rejects preparation promptly without retrying or refunding',async t=>{
+  for(const status of ['FAILED','CANCELLED','TIMED_OUT','COMPLETED'])await t.test(status,async()=>{
+    const f=fixture({status,onReady:({signal})=>new Promise((resolve,reject)=>{
+      if(signal.aborted)reject(signal.reason);
+      else signal.addEventListener('abort',()=>reject(signal.reason),{once:true});
+    })});
+    const attempt=await f.admit();
+    try{
+      const outcome=await Promise.race([
+        attempt.ready().then(()=>({ready:true}),error=>({error})),
+        new Promise(resolve=>setTimeout(()=>resolve({pending:true}),150)),
+      ]);
+      assert.equal(outcome.error?.code,'moving_worker_closed');
+      assert.equal(f.events.filter(event=>event==='provider-submit').length,1);
+      assert.equal(f.state.cost,250000);
+      assert.equal((await attempt.closed).released,true);
+      assert.equal(f.state.terminal,status);
+      assert.ok(f.events.indexOf('terminal')<f.events.indexOf('drained'));
+    }finally{await attempt.cancel();}
+  });
+});
+
+test('a pending live job can attest normally and terminal monitoring stops after readiness',async()=>{
+  let releaseReady,observed,status='IN_PROGRESS';
+  const firstStatus=new Promise(resolve=>observed=resolve);
+  const f=fixture({onReady:()=>new Promise(resolve=>releaseReady=resolve),
+    providerStatus:async()=>{observed();return{status};}});
+  const attempt=await f.admit();
+  try{
+    const waiting=attempt.ready();waiting.catch(()=>{});
+    await Promise.race([firstStatus,new Promise((_,reject)=>setTimeout(()=>reject(Error('provider not monitored')),150))]);
+    assert.equal(f.state.released,false);assert.equal(f.state.cost,250000);
+    releaseReady();assert.equal((await waiting).jobId,'accepted-job');
+    const reads=f.events.filter(event=>event==='provider-status').length;
+    await new Promise(resolve=>setTimeout(resolve,10));
+    assert.equal(f.events.filter(event=>event==='provider-status').length,reads);
+    assert.equal(f.state.released,false);
+  }finally{status='COMPLETED';releaseReady?.();await attempt.cancel();}
+});
+
+
+test('unknown provider observations cannot hide the callback startup failure or refund ownership',async()=>{
+  const f=fixture({providerStatus:async()=>{throw Error('private provider diagnostic');},
+    onReady:()=>new Promise((_,reject)=>setTimeout(()=>reject(Object.assign(Error('moving_worker_startup_timeout'),{code:'moving_worker_startup_timeout'})),15))});
+  const attempt=await f.admit();
+  await assert.rejects(attempt.ready(),{code:'moving_worker_startup_timeout'});
+  assert.equal(f.state.released,false);assert.equal(f.state.cost,250000);
+  assert.equal((await attempt.closed).reason,'provider_status_unknown');
+  assert.equal(f.events.filter(event=>event==='provider-submit').length,1);
+});
+
+test('user abort during an in-flight status read preserves cancellation and ignores a late terminal reply',async()=>{
+  const abort=new AbortController();let observed,late,reads=0;
+  const statusStarted=new Promise(resolve=>observed=resolve);
+  const statusReply=new Promise(resolve=>late=resolve);
+  const f=fixture({onReady:({signal})=>new Promise((_,reject)=>{
+    signal.addEventListener('abort',()=>reject(Object.assign(Error('generated_speech_cancelled'),{code:'generated_speech_cancelled'})),{once:true});
+  }),providerStatus:async()=>{
+    if(++reads===1){observed();await statusReply;return{status:'COMPLETED'};}
+    return{status:'UNKNOWN'};
+  }});
+  const attempt=await f.admit({signal:abort.signal});
+  const waiting=attempt.ready();waiting.catch(()=>{});
+  try{
+    await Promise.race([statusStarted,new Promise((_,reject)=>setTimeout(()=>reject(Error('status read not started')),150))]);
+    abort.abort();
+    await assert.rejects(waiting,{code:'generated_speech_cancelled'});
+    assert.equal((await attempt.closed).released,false);
+    const stoppedReads=reads;
+    late();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(reads,stoppedReads);assert.equal(f.state.released,false);
+    assert.equal(f.state.cost,250000);assert.equal(f.events.includes('terminal'),false);
+    assert.equal(f.events.filter(event=>event==='provider-submit').length,1);
+  }finally{late();await attempt.cancel();}
 });
