@@ -90,3 +90,16 @@ test('submitting an unchanged form never creates another desired-state command',
   const api=transport(running()),h=await mount(api);assert.equal(button(h.render(),'Använd läge').props.disabled,true);
   form(h.render()).props.onSubmit({preventDefault(){}});await h.settle();assert.equal(api.calls.filter(call=>call.method==='POST').length,0);h.unmount();
 });
+test('a delayed GET response remains stale when it arrives',async()=>{
+  const api=transport(running());let release;api.request=(method,action,body,signal,expectedActor)=>{api.calls.push({method,action,body,signal,expectedActor});return new Promise(resolve=>{release=resolve;});};
+  const h=harness(api);h.render();h.effects();h.tick(20000);release({actor,payload:running()});await h.settle();
+  radio(h.render(),'off').props.onChange();const tree=h.render();assert.match(text(tree),/Faktisk drift: Okänd/);assert.doesNotMatch(text(tree),/Redo för tal|Verified fixture GPU/);assert.equal(button(tree,'Använd läge').props.disabled,true);
+  form(tree).props.onSubmit({preventDefault(){}});await h.settle();assert.equal(api.calls.filter(call=>call.method==='POST').length,0);h.unmount();
+});
+test('a delayed POST receipt keeps the saved request but cannot renew readiness',async()=>{
+  const api=transport(running());let release;api.post=()=>new Promise(resolve=>{release=resolve;});const h=await mount(api);
+  radio(h.render(),'saving').props.onChange();form(h.render()).props.onSubmit({preventDefault(){}});h.tick(20000,{poll:true});
+  const saved=running();saved.revision=5;release({actor,payload:saved});await h.settle();
+  const tree=h.render();assert.match(text(tree),/Sparat önskemål: Sparläge/);assert.match(text(tree),/Faktisk drift: Okänd/);assert.doesNotMatch(text(tree),/Redo för tal|Verified fixture GPU/);assert.equal(button(tree,'Stoppa drift').props.disabled,true);
+  h.tick(10000,{poll:true});await h.settle();assert.equal(api.calls.filter(call=>call.method==='POST').length,1);h.unmount();
+});

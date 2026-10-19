@@ -16,16 +16,17 @@ const failureMessage=(error:unknown)=>failureMessages[(error as {status?:number}
 
 export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTransport;expectedActor:StudioAdminActor}) {
   const [status,setStatus]=useState<MovingDriftAdminStatus|null>(null),[draft,setDraft]=useState<DriftDraft|null>(null);
-  const [clock,setClock]=useState(0),[receivedAt,setReceivedAt]=useState(0),[reading,setReading]=useState(false),[busy,setBusy]=useState(false);
+  const [clock,setClock]=useState(0),[sourceAt,setSourceAt]=useState(0),[reading,setReading]=useState(false),[busy,setBusy]=useState(false);
   const [error,setError]=useState(''),[notice,setNotice]=useState('');
   const alive=useRef(false),sequence=useRef(0),writing=useRef(false),active=useRef<AbortController|null>(null);
   const current=useRef<MovingDriftAdminStatus|null>(null),local=useRef<DriftDraft|null>(null),actor=useRef<StudioAdminActor|null>(null),readAt=useRef(0),authFailed=useRef(false);
   const canRead=client.available('GET','moving-drift'),canWrite=client.available('POST','moving-drift');
   function replaceDraft(next:DriftDraft|null) {local.current=next;setDraft(next);}
-  function accept(value:unknown,reset=false) {
+  function accept(value:unknown,requestedAt:number,reset=false) {
     const next=readMovingDriftStatus(value);
     if(current.current&&next.revision<current.current.revision)throw Object.assign(new Error('stale_response'),{status:503});
-    const now=performance.now();current.current=next;readAt.current=now;setStatus(next);setReceivedAt(now);setClock(now);
+    // Include the whole request and JSON parsing time in snapshot age.
+    const now=performance.now();current.current=next;readAt.current=requestedAt;setStatus(next);setSourceAt(requestedAt);setClock(now);
     if(reset||!local.current?.dirty)replaceDraft(driftDraft(next));
   }
   function clearStatus(cause:unknown) {
@@ -35,11 +36,11 @@ export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTr
   }
   async function refresh() {
     if(!alive.current||writing.current||!canRead||authFailed.current)return;
-    const ticket=++sequence.current;active.current?.abort();const controller=new AbortController();active.current=controller;setReading(true);
+    const ticket=++sequence.current;active.current?.abort();const controller=new AbortController();active.current=controller;const requestedAt=performance.now();setReading(true);
     try {
       const result=await client.request('GET','moving-drift',undefined,controller.signal,actor.current??undefined);
       if(!alive.current||ticket!==sequence.current||controller.signal.aborted)return;
-      accept(result.payload);actor.current=result.actor;setError('');
+      accept(result.payload,requestedAt);actor.current=result.actor;setError('');
     }catch(cause){if(alive.current&&ticket===sequence.current&&!controller.signal.aborted)clearStatus(cause);}
     finally{if(alive.current&&ticket===sequence.current)setReading(false);}
   }
@@ -67,17 +68,17 @@ export function MovingDriftControls({client,expectedActor}:{client:MovingDriftTr
     try{command=driftCommand(source,stop?{...driftDraft(source),mode:'off',dirty:true}:editing,crypto.randomUUID());}
     catch(cause){setError(failureMessage(cause));return;}
     writing.current=true;setBusy(true);setReading(false);setError('');setNotice('');
-    const ticket=++sequence.current;active.current?.abort();const controller=new AbortController();active.current=controller;
+    const ticket=++sequence.current;active.current?.abort();const controller=new AbortController();active.current=controller;const requestedAt=performance.now();
     try{
       const result=await client.request('POST','moving-drift',{...command},controller.signal,expectedActor);
       if(!alive.current||ticket!==sequence.current||controller.signal.aborted)return;
       if(result.actor.username!==expectedActor.username||result.actor.role!==expectedActor.role)throw Object.assign(new Error('actor_changed'),{status:403});
-      accept(result.payload,true);setNotice('Önskat läge sparat. Faktisk drift visas ovan.');
+      accept(result.payload,requestedAt,true);setNotice('Önskat läge sparat. Faktisk drift visas ovan.');
     }catch(cause){if(alive.current&&ticket===sequence.current&&!controller.signal.aborted)clearStatus(cause);}
     finally{if(ticket===sequence.current){writing.current=false;if(alive.current)setBusy(false);}}
   }
   function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();void apply();}
-  const view=status?driftView(status,Math.max(0,clock-receivedAt)):null;
+  const view=status?driftView(status,Math.max(0,clock-sourceAt)):null;
   const conflict=Boolean(status&&draft?.dirty&&draft.revision!==status.revision);
   const modeAllowed=Boolean(status&&draft&&status.capabilities.allowedModes.includes(draft.mode));
   const profileValid=Boolean(status&&draft&&(draft.mode==='off'||status.profiles.some(row=>row.id===draft.profileId)));

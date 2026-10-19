@@ -52,12 +52,14 @@ panelens verkliga bredd. `/admin/drift` får lägen, profilval och tidsval mot
 HUVUDAGENT5:s publika, revisionsstyrda DTO från mergad PR270. Sparat önskemål
 visas separat från färsk observerad drift; okänd GPU/kostnad uppfinns inte.
 Sessionbyte, dubbelklick, svarsförlust, gammal status och revisionskonflikt
-hanteras utan automatisk omsändning. Serverns capabilities styr vilka lägen
+hanteras utan automatisk omsändning. Färskheten räknar hela GET-/POST-tiden;
+20 sekunders fördröjning är rött/grönt-verifierad för båda svarsvägarna.
+Serverns capabilities styr vilka lägen
 som går att välja. UI:t öppnar inga egna provider- eller GPU-anslutningar.
 
-Verifierat för UI-etappen: 90 riktade UI-/transportprov, Studio-typkontroll,
+Verifierat för UI-etappen: 92 riktade UI-/transportprov, Studio-typkontroll,
 Admin/lobby-typkontroller och klientbygge. Befintliga CSS-composes-varningar
-kvarstår. Isolerat HTTP-webbprov använde riktiga Admin-API-/transportmoduler
+kvarstår. Isolerat HTTP-webbprov på c346e606 använde riktiga Admin-API-/transportmoduler
 med syntetisk controller och minnesdata: Sparläge → observerat Redo → Av
 → bekräftat Av, inga verkliga provideranrop. Scenförhandsvisningen mättes till
 431 px vid 1333 px faktisk webbläsarbredd; panelerna hade ingen egen horisontell
