@@ -17,7 +17,8 @@ borddesign och mobil/desktop. Ankarbyte bevarar läget. Flytta scenen tillsamman
 ändrar dealer/bord en gång vardera. Dragning, punkt-/gruppfält, Följ korten och
 återställning av sparad grupp använder samma projektionsmatematik som spelaren.
 Markernas manuella ram bevaras när de följer korten. Äldre editorn hänvisar
-ankarscener till Admin i stället för att visa fel koordinater.
+ankarscener till Admin med aktuell sammansättning, startdealer, spel, operatör
+och uttryckligt rum (aldrig bordfilens ID). Länken använder förälderns sparskydd.
 
 Sparning går via den delade mallens projekt, revision och bekräftelse av berörda
 rum. Frysta paket behåller geometri; roomOverrides får inga nya fält. Nytt
@@ -42,13 +43,17 @@ produktionsprov ingår. Browsermoduler och filmad bindningsinvalidering är test
 Första full-CI stoppade setup på ett oregistrerat ankartest. Testet är nu
 registrerat i presentation/card-view; orphan-kontrollen är grön (518 kandidater)
 och 40 riktade omprov passerar. Övriga då visade CI-fel var saknade beroenden
-efter överhoppad setup, enligt MERGE3:s loggläsning. Ny slut-CI återstår.
+efter överhoppad setup, enligt MERGE3:s loggläsning. CI39181331116 är grön
+för `ae2adb1b` enligt MERGE3; slut-CI för navigationsrättningen återstår.
 Två P2 är rättade: återställning använder förälderns verkliga sparade bas över
 panelbyten, sparning och serverjämförelse; livscykelspärren ovan omfattar frysta
 paket, även genom materialpapperskorgen. 126 backendtester passerar; underagentens körning verifierade 32
 UI/navigationtester och båda klienttypkontrollerna. Fem nya UI-prov och fem
 backendprov misslyckas med tidigare beteende. Ytterligare tre negativa
 materialpapperskorgsprov fångar den tidigare oskyddade publiceringsvägen.
+Navigationsrättningen är verifierad med 47 preview-/Admin-tester och Studios
+typkontroll. Tre nya prov täcker scenkontext, verkligt rum, sparfel/konflikt och
+serveringångens vidarebefordran av rum/spel.
 Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.

@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {defaultBlackjackTableGeometry,type BlackjackTableGeometry,type TablePoint} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import styles from './blackjack-table-geometry-editor.module.css';
 
-export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layout,disabled,onChange}:{tableId:string;url:string;contentType:string;value?:BlackjackTableGeometry;layout:'mobile'|'desktop';disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void}){
+export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layout,disabled,onChange,sceneEditorHref,onOpenScene}:{tableId:string;url:string;contentType:string;value?:BlackjackTableGeometry;layout:'mobile'|'desktop';disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void;sceneEditorHref:string;onOpenScene:()=>void}){
   const [target,setTarget]=useState('dealer');
   const count=layout==='mobile'?3:7;
   const followCards=value?.[layout].betMode==='under-cards';
@@ -19,7 +19,7 @@ export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layo
     if(part[0]==='dealer')next[layout].dealer=p;else next[layout].seats[seat][part[0] as 'card'|'bet']=p;
     onChange(next);
   }
-  if(geometry?.anchors)return <fieldset className={styles.editor}><legend>Kort och marker</legend><p>Denna placering har separata följval för kort och marker. Redigera den i Admins sceneditor.</p><a href="/admin/clips">Öppna klippkartan i Admin</a></fieldset>;
+  if(geometry?.anchors)return <fieldset className={styles.editor}><legend>Kort och marker</legend><p>Denna placering har separata följval för kort och marker. Redigera den i Admins sceneditor.</p><a href={sceneEditorHref} aria-disabled={disabled} onClick={event=>{event.preventDefault();if(!disabled)onOpenScene();}}>Öppna klippkartan i Admin</a></fieldset>;
   return <fieldset className={styles.editor} disabled={disabled}><legend>Kort och insatsplatser · {layout==='mobile'?'mobil':'desktop'}</legend>
     <p>Placeringen hör bara till denna bordbild. Ett annat bord behöver egna platser.</p>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onChange(defaultBlackjackTableGeometry(tableId))}>Placera på detta bord</button></>:geometry&&point?<>
