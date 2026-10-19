@@ -4,6 +4,7 @@ import {createMovingDriftObserver} from '../services/game/moving-drift-observer.
 import {createMovingDriftController} from '../services/game/moving-drift-controller.mjs';
 import {createMovingSpeechRunPod,summarizeMovingWorkerHealth} from '../services/game/moving-speech-runpod.mjs';
 import {movingCapacityFixture} from './fixtures/moving-capacity.mjs';
+import {verifyMovingCapacity} from '../services/game/moving-speech-capacity.mjs';
 
 const stamp=100000;
 const profile={id:'base',endpointId:'endpointfixture',releaseDigest:'d'.repeat(64),bankHash:'e'.repeat(64)};
@@ -166,5 +167,40 @@ test('all source timestamps are checked against completion and malformed or expi
     if(at===undefined)delete value.observedAtMs;else value.observedAtMs=at;
     const observer=createMovingDriftObserver({profile,provider:f.provider,now:()=>calls++===0?stamp:stamp+14000});
     await assert.rejects(observer.observe(),rejects);
+  }
+});
+
+
+test('observer accepts the exact current-image EXITED initialization already admitted by the capacity contract',async()=>{
+  const f=fixture();
+  f.proof.release.workers.workers=[{state:'scaled-down',image:f.proof.release.expectedImage,version:3,isStale:false}];
+  f.proof.health.workers.initializing=1;
+  assert.equal(verifyMovingCapacity(f.proof,{endpointId:profile.endpointId,now:stamp}).mode,'cold');
+  assert.deepEqual((await f.observer.observe()).workers,[]);
+});
+
+test('an initializing cache slot beside the exact running job does not relabel or hide the paid worker',async()=>{
+  const f=fixture({warm:true});
+  f.proof.release.workers.workers.push({state:'scaled-down',image:f.proof.release.expectedImage,version:3,isStale:false});
+  f.proof.health.workers.initializing=1;f.proof.health.jobs.inProgress=1;
+  const result=await f.observer.observe();
+  assert.equal(result.workers.length,1);assert.equal(result.workers[0].state,'running');
+  assert.equal(result.workers[0].id,'owned-pod');assert.equal(result.workers[0].modelReady,false);
+  assert.equal(result.busyJobs,1);
+});
+
+test('initialization cannot hide missing, stale or foreign cached evidence or unhealthy capacity',async()=>{
+  for(const change of [
+    f=>{f.proof.release.workers.workers.pop();},
+    f=>{f.proof.release.workers.workers[1].isStale=true;},
+    f=>{f.proof.release.workers.workers[1].image='other-image';},
+    f=>{f.proof.release.workers.workers[1].version=2;},
+    f=>{f.proof.health.workers.initializing=2;},
+    f=>{f.proof.health.workers.unhealthy=1;},
+  ]){
+    const f=fixture({warm:true});
+    f.proof.release.workers.workers.push({state:'scaled-down',image:f.proof.release.expectedImage,version:3,isStale:false});
+    f.proof.health.workers.initializing=1;change(f);
+    await assert.rejects(f.observer.observe(),rejects);
   }
 });

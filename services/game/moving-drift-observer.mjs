@@ -43,16 +43,22 @@ export function createMovingDriftObserver({profile,provider,now=Date.now}={}) {
       const pods=limits.activePods,occupied=receipt.workers.workers.filter(occupies);
       requireEvidence(Array.isArray(pods)&&pods.length===release.activeWorkers&&pods.length===occupied.length
         &&pods.length<=1&&new Set(pods.map(pod=>pod?.id)).size===pods.length);
-      const occupiedHealth=workers.running+workers.initializing+workers.unhealthy+workers.throttled;
-      // Cache/ready counts do not occupy a GPU. In contrast an unexplained
-      // initializing/unhealthy pod can never be collapsed into an empty Off read.
-      requireEvidence(occupiedHealth===pods.length&&(jobs.inProgress===0||pods.length>0));
+      const occupiedHealth=workers.running+workers.unhealthy+workers.throttled;
+      const initializingPods=pods.length-occupiedHealth;
+      // Initializing may include an unbilled cache slot (also recognized by the
+      // admission capacity contract). Subtract only fresh matching EXITED rows;
+      // never hide missing live pods, unhealthy capacity or unmatched counters.
+      const currentCache=receipt.workers.workers.filter(worker=>worker.state==='scaled-down'
+        &&worker.image===release.image&&worker.version===release.endpointVersion&&worker.isStale===false).length;
+      const cachedInitializing=workers.initializing-initializingPods;
+      requireEvidence(initializingPods>=0&&initializingPods<=workers.initializing
+        &&cachedInitializing<=currentCache&&(jobs.inProgress===0||pods.length>0));
       const observedWorkers=pods.map((pod,index)=>{
         const entry=occupied[index],state=pod?.state??'unknown',entryState=entry.state??'unknown';
         requireEvidence(pod&&id(pod.id)&&(entry.id===undefined||entry.id===pod.id)&&state===entryState&&occupies(pod)
           &&pod.image===release.image&&pod.version===release.endpointVersion&&pod.isStale===false);
         return {id:pod.id,profileId,state:state==='unknown'||workers.unhealthy>0||workers.throttled>0?'unknown':
-          workers.initializing>0?'initializing':'running',gpu:'',releaseDigest:null,bankHash:null,modelReady:false};
+          initializingPods>0?'initializing':'running',gpu:'',releaseDigest:null,bankHash:null,modelReady:false};
       });
       return {observedAtMs,workers:observedWorkers,busyJobs:jobs.inProgress,queuedJobs:jobs.inQueue,
         workersMin:0,workersMax:1};
