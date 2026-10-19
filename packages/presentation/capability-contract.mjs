@@ -29,18 +29,21 @@ const speechContract=Object.freeze({...geometryContract,schemaVersion:17,recorde
 const compressionContract=Object.freeze({...speechContract,schemaVersion:18,presentationCompression:'gzip-brotli-v1'});
 const tableBetContract=Object.freeze({...compressionContract,schemaVersion:19,blackjackBetMode:'under-cards-v1'});
 const speechSlotContract=Object.freeze({...tableBetContract,schemaVersion:20,speechSlots:'explicit-line-standard-v1'});
+const anchorsContract=Object.freeze({...speechSlotContract,schemaVersion:21,blackjackAnchors:'v1'});
+// v22 lets blackjack deal/reveal/transition clips declare a VILA/REDO hand pose
+// chain; older readers reject REDO and any pose field outside roulette.
 const contracts=Object.freeze({...baselineContracts,14:categoryContract,15:rouletteContract,16:geometryContract,17:speechContract,
-  18:compressionContract,19:tableBetContract,20:speechSlotContract,
-  21:Object.freeze({...speechSlotContract,schemaVersion:21,blackjackAnchors:'v1'})});
+  18:compressionContract,19:tableBetContract,20:speechSlotContract,21:anchorsContract,
+  22:Object.freeze({...anchorsContract,schemaVersion:22,clipPoses:'vila-redo-v1'})});
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v21. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v22. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -64,6 +67,7 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '19') return 19;
   if (header === '20') return 20;
   if (header === '21') return 21;
+  if (header === '22') return 22;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

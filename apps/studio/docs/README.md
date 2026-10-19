@@ -192,8 +192,10 @@ avdelare:
   dealerkort, `hole` dolt kort, `flip` vändning. Kevins suffix anger var
   händerna är när klippet börjar och slutar: utan suffix REDO → REDO (vid skon),
   `-i` börjar i VILA, `-v` slutar i VILA, `-iv` båda. Exempel: `dragan_pos3-iv.mp4`.
-  Poskedjan sparas som start-/slutpose på klippet och kan ändras per rad innan
-  du godkänner; den är en deklaration, inte ett bevis på att klippen kedjar.
+  Poskedjan sparas som start-/slutpose på klippet bara när namnet anger den
+  eller du väljer den i raden; utan suffix föreslås fackets vanliga kedja i
+  texten men inget skrivs. Den är en deklaration, inte ett bevis på att klippen
+  kedjar, och kräver att spelservern annonserar kapabilitet 22.
 - Repliker: `<replik>_<språk>_<nr>`, till exempel `dragan_goodluck_sv_1.mp4`.
   Språk och tagningsnummer följer med som notering; manus, ljud och granskning
   sätts separat under Tal-klipp & ljud.

@@ -1253,9 +1253,9 @@ Kevins suffix tolkas som en förflyttning av fackets grundkedja: utdelning och
 öppet dealerkort är REDO → REDO, dolt kort REDO → VILA, vändning VILA → VILA;
 `-i`/`in` sätter starten till VILA, `-v`/`-u`/`ut` slutet, `-iv`/`-iu` båda.
 Det motsvarar tagningarna i `kevin-dragan-f15b2af1.mjs` (`hole:i` = VILA → VILA).
-Utan suffix markeras kedjan som antagen (`explicitPose:false`, confidence
-`medium`) och importraden får en varning; med suffix eller för övergångar är
-förslaget `high`.
+Utan suffix nämns fackets vanliga kedja i förslagets text (confidence `medium`)
+men ingen pose skrivs; med suffix eller för övergångar är förslaget `high` och
+kedjan följer med som `poses` på raden.
 
 `video.schema.json` tillåter nu `startPose`/`endPose` = `REDO`. `validateClipPoses`
 i `video-intake.mjs` godtar paret endast för `kind:'action'` på `deal.*`,
@@ -1263,7 +1263,11 @@ i `video-intake.mjs` godtar paret endast för `kind:'action'` på `deal.*`,
 övergångarnas kedja (till skon VILA → REDO, från skon REDO → VILA). Roulettes
 `WHEEL`/`unverified` förblir roulettens. Klientens `importClassification`
 skriver paret från radens val eller filnamnet; övergångsfack får alltid sin
-fasta kedja. Deklarationen är authoringmetadata: spelarens filmade
+fasta kedja. Ett klipp med deklarerad kedja är den nya mediefunktionen
+`clipPoses` (`dealer-media-features.mjs`) och kräver spelserverns kapabilitet
+**v22 `clipPoses:'vila-redo-v1'`** före grant, Blob och SQL; posefält på
+roulettemärkta poster är fortsatt `rouletteMedia` (v12). Readiness-läsaren
+tillåter nu 2048 byte eftersom v22-svaret är 1046. Deklarationen är authoringmetadata: spelarens filmade
 utdelningssekvens använder fortfarande den verifierade profilens SHA-bundna
 tagningar (`filmed-deal-selection.mjs`) och läser inte dessa fält. En framtida
 generisk profil kan härledas ur dem först efter egen verifiering per klipp.

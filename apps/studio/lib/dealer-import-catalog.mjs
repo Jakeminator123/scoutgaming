@@ -92,20 +92,24 @@ export function dealerImportChatContext(catalog, selectedDealerId) {
 
 // Filename advice comes from the shared naming convention. Pose, language and
 // take are derived from the name only; they are proposals until a human saves.
+// Only an explicit chain (suffix or shoe transition) becomes a declaration; an
+// assumed chain is mentioned but never written on the operator's behalf.
 export function filenameClipAdvice(file, catalog) {
   const parsed = parseClipFilename(file.name, { type: file.type });
   const hints = parsed.slotIds.filter(id => catalog.slots.some(slot => slot.id === id));
   const slotId = hints.length === 1 ? hints[0] : null;
-  const poses = slotId && slotId === parsed.slotId && parsed.poses && /^(?:deal|reveal|transition)\./.test(slotId) ? parsed.poses : null;
-  return { slotId, hints, poses, explicitPose: Boolean(poses) && parsed.explicitPose, variant: poses ? parsed.variant : null,
-    language: slotId?.startsWith('speak.') ? parsed.language : null, take: slotId?.startsWith('speak.') ? parsed.take : null, canonical: slotId !== null && parsed.canonical };
+  const chained = slotId && slotId === parsed.slotId && parsed.poses && /^(?:deal|reveal|transition)\./.test(slotId) ? parsed.poses : null;
+  return { slotId, hints, poses: chained && parsed.explicitPose ? chained : null, assumed: chained && !parsed.explicitPose ? chained : null,
+    variant: chained ? parsed.variant : null, language: slotId?.startsWith('speak.') ? parsed.language : null,
+    take: slotId?.startsWith('speak.') ? parsed.take : null, canonical: slotId !== null && parsed.canonical };
 }
 
 export function filenameDealerImportRows(input, catalog) {
   return input.files.map(file => {
     const advice = filenameClipAdvice(file, catalog);
     const { slotId, hints } = advice;
-    const chain = advice.poses ? ` Poskedja ${advice.poses.start} → ${advice.poses.end}${advice.explicitPose ? ' enligt suffixet.' : ' antagen; ändra om klippet börjar eller slutar i vila.'}` : '';
+    const chain = advice.poses ? ` Poskedja ${advice.poses.start} → ${advice.poses.end} enligt namnet.`
+      : advice.assumed ? ` Namnet saknar poskedja; fackets vanliga kedja är ${advice.assumed.start} → ${advice.assumed.end}. Välj den i raden om den stämmer.` : '';
     return { fileId: file.id, slotId, confidence: slotId ? advice.canonical ? 'high' : 'medium' : 'low', reason: slotId
       ? `Filnamnet matchar ett exakt fack.${chain} Innehållet är inte verifierat.`
       : hints.length > 1 ? 'Filnamnet anger flera möjliga fack. Välj rätt fack själv.' : 'Filnamnet räcker inte för en säker placering. Välj ett fack eller förtydliga kontexten.',
@@ -162,7 +166,7 @@ export function finishDealerImportRows(rows, input, catalog) {
       classification = validateVideoMetadata({ dealerId: input.dealerId, eventId: slot.eventId, situation: slot.situation,
         kind: slot.kind, role: 'alternative', playback: 'once', label: file.name.slice(0, 120), notes, ...poses,
         ...(audio ? { mediaType: 'audio' } : { compositing: { ...DEFAULT_DEALER_COMPOSITING } }) }, { forWrite: true });
-      if (named && advice.poses && !advice.explicitPose) warnings.push('Poskedjan är antagen ur fackets grundregel, inte ur filnamnet. Lägg till -i, -v eller -iv i namnet eller ändra kedjan om klippet börjar eller slutar i vila.');
+      if (named && advice.assumed) warnings.push('Ingen poskedja sparas: filnamnet saknar -i, -v eller -iv. Välj kedjan i raden om du vet var händerna är när klippet börjar och slutar.');
       if (slot.kind === 'speech') warnings.push('Kontrollera exakt manus, ljud, läppsynk och cue-data. Replik-ID eller filnamn bevisar inte att talet stämmer.');
       if (!audio) warnings.push('Kontrollera grön bakgrund och mobilformat. Frilagda alfaklipp kan förhandsvisas men är spärrade för import tills assistentens kontroll och granskning är färdig. Ingen beskärning eller formatkonvertering utförs.');
     }
