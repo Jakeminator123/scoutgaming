@@ -69,6 +69,10 @@ omstart/HTTPS passerar, inklusive45/+1mikro och bevarad historik.
 Produktionens017, kompatibel driftsättning och separat finansierat belopp är
 ännu inte verifierade här. Dagens planerade fönster är2,4USD och ryms även
 inom befintligt40USD-tak. Ingen GPU-/visuell kvittens ingår i denna ändring.
+CI upptäckte tre kvarvarande förväntningar på föregående tekniska tak/manifest.
+De två sessionfallen och Studio-fixturen är uppdaterade till45USD/optional017;
+initialbelopp, dags-/försöks-/tidsgränser och produktkod är oförändrade.
+
 
 ## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
 
