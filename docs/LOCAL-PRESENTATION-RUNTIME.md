@@ -45,7 +45,9 @@ API:t är avstängt utan server-opt-in/profilkonfiguration enligt
 verifierad min0/max1-endpoint. Konstruktion gör inga provideranrop; serverns
 uttryckliga opt-in startar avstämningen. Samma katalog och databasscope används
 i Admin och spelserver. En SQL-lease med fence och färsk observation krävs för
-`connected:true`; processdöd/felande läsning stänger admission. Ingen PATCH,
+`connected:true`; processdöd/felande läsning stänger admission. Färskhet räknas
+från insamlingsstart eller äldsta verifierade källtidsstämpel, inte från när
+nätläsningen blir klar. Alla källsvar valideras fortfarande mot sluttiden. Ingen PATCH,
 ny endpoint, varm keepalive eller automatisk betald retry ingår.
 
 Den första admission-token följer hela prepare/session-försöket utan ompinning.

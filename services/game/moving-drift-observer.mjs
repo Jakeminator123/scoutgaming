@@ -22,15 +22,17 @@ export function createMovingDriftObserver({profile,provider,now=Date.now}={}) {
     try {
       const startedAt=now();requireEvidence(counter(startedAt));
       const [receipt,health]=await Promise.all([provider.release(),provider.workerState()]);
-      const observedAtMs=now();
-      requireEvidence(fresh(startedAt,observedAtMs));
-      const release=verifyMovingWorkerRelease(receipt,observedAtMs),limits=receipt.capacity;
-      requireEvidence(release.endpointId===endpointId&&fresh(release.observedAtMs,observedAtMs)
+      const finishedAt=now();
+      requireEvidence(fresh(startedAt,finishedAt));
+      const release=verifyMovingWorkerRelease(receipt,finishedAt),limits=receipt.capacity;
+      requireEvidence(release.endpointId===endpointId&&fresh(release.observedAtMs,finishedAt)
         &&limits?.workersMin===0&&limits.workersMax===1&&receipt.workers.workersMax===1
         &&Number.isInteger(limits.idleTimeout)&&limits.idleTimeout>=0&&limits.idleTimeout<=60
         &&id(limits.templateId)&&receipt.templateCorroboration?.source==='full-template'
         &&receipt.templateCorroboration.templateId===limits.templateId
-        &&fresh(receipt.templateCorroboration.observedAtMs,observedAtMs));
+        &&fresh(receipt.templateCorroboration.observedAtMs,finishedAt));
+      // Preserve the earliest evidence time; completing a slow GET must not renew it.
+      const observedAtMs=Math.min(startedAt,release.observedAtMs,receipt.templateCorroboration.observedAtMs);
       const raw=health?.raw,workers=raw?.workers,jobs=raw?.jobs;
       requireEvidence(workers&&jobs&&WORKERS.every(key=>counter(workers[key]))&&JOBS.every(key=>counter(jobs[key])));
       // The aggregate busy count includes an idle running GPU. Public job counts

@@ -25,7 +25,7 @@ export function parseMovingDriftCommand(input) {
 export function movingDriftConfiguration(env={}) {
   if(env.CROUPIER_STUDIO_MOVING_DRIFT_API!=='1') return null;
   const raw=env.CROUPIER_STUDIO_MOVING_DRIFT_PROFILES;
-  if(typeof raw!=='string'||Buffer.byteLength(raw)>8192) throw driftError('drift_invalid_configuration',422);
+  if(typeof raw!=='string'||new TextEncoder().encode(raw).byteLength>8192) throw driftError('drift_invalid_configuration',422);
   let profiles;
   try {profiles=JSON.parse(raw);} catch {throw driftError('drift_invalid_configuration',422);}
   const keys=['id','label','endpointId','releaseDigest','bankHash'];

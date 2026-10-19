@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMovingDriftObserver} from '../services/game/moving-drift-observer.mjs';
+import {createMovingDriftController} from '../services/game/moving-drift-controller.mjs';
 import {createMovingSpeechRunPod,summarizeMovingWorkerHealth} from '../services/game/moving-speech-runpod.mjs';
 import {movingCapacityFixture} from './fixtures/moving-capacity.mjs';
 
@@ -118,6 +119,52 @@ test('a slow read or invalid clock cannot stamp old evidence as a fresh observat
   for(const end of [stamp+15001,stamp-1,stamp+0.5,NaN]) {
     const f=fixture();let calls=0;
     const observer=createMovingDriftObserver({profile,provider:f.provider,now:()=>calls++===0?stamp:end});
+    await assert.rejects(observer.observe(),rejects);
+  }
+});
+
+test('collection start survives a fourteen-second read instead of renewing the freshness window',async()=>{
+  const f=fixture();let calls=0;
+  const observer=createMovingDriftObserver({profile,provider:f.provider,now:()=>calls++===0?stamp:stamp+14000});
+  assert.equal((await observer.observe()).observedAtMs,stamp);
+});
+
+test('the actual controller loses connected and admission when collected evidence reaches sixteen seconds',async()=>{
+  const f=fixture();let calls=0;
+  const snapshot=await createMovingDriftObserver({profile,provider:f.provider,now:()=>calls++===0?stamp:stamp+14000}).observe();
+  let time=stamp+14000,row=null;
+  const store={async transact(work){const result=work(structuredClone(row),time);row=structuredClone(result.state);return structuredClone(result.value);}};
+  const controller=createMovingDriftController({store,profiles:[{...profile,label:'Bas'}],capabilities:{connected:true,requireExecutor:true}});
+  let execution=await controller.claimExecution({holderId:'clock-test',profileId:profile.id});
+  const observe=()=>controller.observe({...snapshot,revision:execution.revision,operationId:execution.operationId,
+    observedProfileIds:[profile.id],execution,applied:{revision:execution.revision,operationId:execution.operationId,
+      mode:execution.desired.mode,profileId:execution.desired.profileId,workersMin:0,workersMax:1}});
+  const off=await observe();assert.equal(off.capabilities.connected,true);
+  await controller.command({mode:'saving',profileId:profile.id,commandId:'clock-saving',expectedRevision:off.revision});
+  execution=await controller.claimExecution({holderId:'clock-test',profileId:profile.id});
+  assert.equal((await observe()).admission.allowed,true);
+  time=stamp+16000;
+  const stale=await controller.status();
+  assert.equal(stale.capabilities.connected,false);assert.equal(stale.admission.allowed,false);
+});
+
+test('the oldest release or template evidence is retained even when it predates collection',async()=>{
+  for(const [releaseAt,templateAt,end,oldest] of [
+    [stamp-1000,stamp-2000,stamp+1000,stamp-2000],
+    [stamp-2000,stamp-1000,stamp+1000,stamp-2000],
+    [stamp+7000,stamp+8000,stamp+14000,stamp],
+  ]){
+    const f=fixture();f.proof.release.observedAtMs=releaseAt;f.proof.release.templateCorroboration.observedAtMs=templateAt;let calls=0;
+    const observer=createMovingDriftObserver({profile,provider:f.provider,now:()=>calls++===0?stamp:end});
+    assert.equal((await observer.observe()).observedAtMs,oldest);
+  }
+});
+
+test('all source timestamps are checked against completion and malformed or expired evidence stays closed',async()=>{
+  for(const source of ['release','template'])for(const at of [undefined,null,NaN,-1,stamp+0.5,stamp+14001,stamp-1001]){
+    const f=fixture(),value=source==='release'?f.proof.release:f.proof.release.templateCorroboration;let calls=0;
+    if(at===undefined)delete value.observedAtMs;else value.observedAtMs=at;
+    const observer=createMovingDriftObserver({profile,provider:f.provider,now:()=>calls++===0?stamp:stamp+14000});
     await assert.rejects(observer.observe(),rejects);
   }
 });

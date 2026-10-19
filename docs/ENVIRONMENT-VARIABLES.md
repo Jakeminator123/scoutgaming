@@ -18,8 +18,9 @@ Detta är intern serverkonfiguration, aldrig klientinmatning eller en ny medieka
 Lagringen använder native Admins befintliga databas och miljöscope samt optional
 SQL016. Saknad/felaktig konfiguration ger stängt API (503); övrig Admin påverkas inte.
 API-flaggan startar ingen provider. `connected:true` kräver färsk matchande
-executorlease/observation i samma databas. Enbart API-konfiguration ger fortsatt
-bara önskat Av. För runtime på Render krävs dessutom befintlig
+executorlease/observation i samma databas. Utan färsk executor tillåts endast
+Av-kommandon; ett tidigare önskat läge kan ligga kvar, men admission är stängd.
+För runtime på Render krävs dessutom befintlig
 `CROUPIER_MOVING_SPEECH_ENABLED=1` och dess tidigare verifierade worker/bank/env;
 ingen ny API-nyckel eller endpoint skapas av driftväljaren.
 

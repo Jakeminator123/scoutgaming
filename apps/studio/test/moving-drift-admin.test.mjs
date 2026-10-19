@@ -51,6 +51,23 @@ test('configuration is explicit, bounded and cannot enable runtime/provider capa
   assert.equal(f.state.revision,0);
 });
 
+test('configuration enforces the exact UTF-8 byte limit without a Node Buffer global',()=>{
+  for(const label of ['Bas','Å😀漢']) {
+    const configured=[{...profiles[0],label}],json=JSON.stringify(configured),bytes=Buffer.byteLength(json,'utf8');
+    for(const limit of [8191,8192,8193]) {
+      const raw=json+' '.repeat(limit-bytes);
+      assert.equal(Buffer.byteLength(raw,'utf8'),limit);
+      const previous=globalThis.Buffer;
+      try {
+        globalThis.Buffer=undefined;
+        const parse=()=>movingDriftAdminConfiguration({...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:raw});
+        if(limit<=8192) assert.deepEqual(parse().profiles,configured);
+        else assert.throws(parse,error=>error.code==='drift_invalid_configuration'&&error.statusCode===422);
+      } finally {globalThis.Buffer=previous;}
+    }
+  }
+});
+
 test('unconfigured or invalid optional control plane leaves other Admin actions available',async()=>{
   for(const env of [{},{...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:'bad'},
     {...enabled,CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([{...profiles[0],bankHash:'bad'}])}]) {

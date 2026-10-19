@@ -3,8 +3,10 @@
 ## Driftväljare: Av och Sparläge — 19 oktober 2026
 
 HUVUDAGENT5 äger backend, UIUX Admin och POST-PISYNK4 tal/provaktivering.
-API/kontrollplanet i PR270 är mergat via `cb0c3275` enligt MERGE3. Nästa
-etapp ligger separat på `codex/moving-drift-executor`; MERGE3 granskar/mergar.
+API/kontrollplanet i PR270 är mergat via `cb0c3275` enligt MERGE3. Körkopplingen
+i [PR275](https://github.com/Jakeminator123/scoutgaming/pull/275) granskas av MERGE3.
+Samlad sluträttning gäller observationsålder, browserkompatibel UTF8-kontroll
+och testförväntan för required017. Ny slut-CI och merge återstår.
 
 GET/POST återanvänder N1, färsk session, origin/CSRF och miljö/workspace.
 Behörighet och POST-state delar SQL-transaktion. Browserkontraktet är oförändrat;
