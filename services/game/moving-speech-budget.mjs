@@ -4,7 +4,9 @@
 export const MOVING_BUDGET_MAX_MICRO_USD = 45000000;
 // Provider-wide coverage includes retained windows; durable grants remain capped above.
 // This technical capacity never authorizes an amendment or releases reservations.
-export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 50000000;
+// Raised 50 → 75 USD on 19 October 2026 at Jakob's instruction so that the
+// retained earlier windows (47 USD) leave room for further diagnosed trials.
+export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 75000000;
 export const MOVING_TRIAL_BUDGET = Object.freeze({
   budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
   initialBudgetMicroUsd: 13200000,

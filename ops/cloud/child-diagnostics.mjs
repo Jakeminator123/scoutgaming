@@ -62,6 +62,9 @@ export function createChildDiagnosticForwarder({ emit = value => console.warn(va
   };
 }
 
+// The game logs these events with console.warn (stderr); the same allowlist
+// filter is applied to both streams and shares one per-process cap.
 export function withChildDiagnostics(specifications, options) {
-  return { ...specifications, web: { ...specifications.web, onStdoutLine: createChildDiagnosticForwarder(options) } };
+  const forward = createChildDiagnosticForwarder(options);
+  return { ...specifications, web: { ...specifications.web, onStdoutLine: forward, onStderrLine: forward } };
 }
