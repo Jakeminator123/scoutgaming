@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
+import { MOVING_SPEECH_FPS, MOVING_SPEECH_AUDIO_LEAD_MS, MOVING_SPEECH_MAX_FRAMES, MOVING_SPEECH_PCM_RATE } from './moving-speech-timing.mjs';
+export { MOVING_SPEECH_FPS, MOVING_SPEECH_AUDIO_LEAD_MS } from './moving-speech-timing.mjs';
 
 // Preparation only: no provider calls, player hook, decoder or game scheduling.
 // Wire fields follow kevin-staging 315cfc5543 server/rorlig-lipsync.mjs.
-export const MOVING_SPEECH_FPS = 24;
-export const MOVING_SPEECH_AUDIO_LEAD_MS = 220;
-const MAX_FRAMES = 600;
+const MAX_FRAMES = MOVING_SPEECH_MAX_FRAMES;
 const HASH = /^[a-f0-9]{64}$/;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const TAKE = /^[a-z][a-z0-9-]{0,63}$/;
@@ -68,7 +68,7 @@ export function prepareMovingSpeechPlan({ binding, clips, frames, fromFrame = 0 
   const ownedBinding = Object.fromEntries(bindingKeys.map(key => [key, binding[key]]));
   const planSha256 = hash({ binding: ownedBinding, timeline, fromFrame });
   const workerId = `${binding.talkId}#${binding.revision}#${planSha256}`;
-  const start = freeze({ t: 'start', id: workerId, ljud_id: binding.talkId, rate: 24000, karta, fran_ruta: fromFrame });
+  const start = freeze({ t: 'start', id: workerId, ljud_id: binding.talkId, rate: MOVING_SPEECH_PCM_RATE, karta, fran_ruta: fromFrame });
   const end = freeze({ t: 'end', id: workerId });
   freeze(ownedBinding); freeze(timeline);
   let cancelled = false;

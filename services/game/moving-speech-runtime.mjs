@@ -3,6 +3,7 @@ import { Readable } from 'node:stream';
 import { createRequire } from 'node:module';
 import { createRegisteredMovingSpeech, assertMovingSpeechSource } from './moving-speech-bank.mjs';
 import { createMovingBankDownloads } from './moving-speech-bank-artifacts.mjs';
+import { MOVING_SPEECH_MAX_PCM_BYTES, movingSpeechPcmFrameCount } from './moving-speech-timing.mjs';
 import {createMovingDealReservations,prepareMovingDealPlan,presentationFingerprint} from './moving-speech-deal-plan.mjs';
 import {SPEECH_PREPARATION_FAILURE_CODES} from '../../packages/presentation/contracts/chat-response.mjs';
 const {WebSocketServer,WebSocket}=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url))('ws');
@@ -299,10 +300,10 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         phase='voice';
         const chunks=[];let size=0;
         for await (const chunk of record.voice.source({text:input.text,signal,beforeCostly:()=>current(record)})) {
-          size+=chunk.byteLength;if(size>1200000)fail('moving_speech_audio_limit');chunks.push(Buffer.from(chunk));
+          size+=chunk.byteLength;if(size>MOVING_SPEECH_MAX_PCM_BYTES)fail('moving_speech_audio_limit');chunks.push(Buffer.from(chunk));
         }
         record.pcm=Buffer.concat(chunks);chunks.forEach(chunk=>chunk.fill(0));
-        const frames=Array.from({length:Math.floor((size/2+18000)/1000)},(_,k)=>record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
+        const frames=Array.from({length:movingSpeechPcmFrameCount(size)},(_,k)=>record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
         phase='plan';
         record.input=await registered.prepare({sourceSet:bank.sourceSet,avatarSha256:bank.archive.sha256,frozenContext:record.evidence.frozenContext,
           binding:{sessionId:record.id,talkId:input.requestId,revision:1,profileRevision:record.voice.profileRevision,textSha256:digest(input.text),audioSha256:digest(record.pcm)},

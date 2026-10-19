@@ -22,6 +22,7 @@ COPY --chown=node:node packages/director/engine.mjs /app/packages/director/engin
 COPY --chown=node:node packages/director/openclaw.mjs /app/packages/director/openclaw.mjs
 COPY --chown=node:node packages/director/product-probe.mjs /app/packages/director/product-probe.mjs
 COPY --chown=node:node packages/director/product-speech.mjs /app/packages/director/product-speech.mjs
+COPY --chown=node:node packages/director/generated-speech-text.mjs /app/packages/director/generated-speech-text.mjs
 COPY --chown=node:node packages/director/social.mjs /app/packages/director/social.mjs
 COPY --chown=node:node packages/director/speech-routing.mjs /app/packages/director/speech-routing.mjs
 COPY --chown=node:node packages/director/studio-admin-contract.mjs /app/packages/director/studio-admin-contract.mjs

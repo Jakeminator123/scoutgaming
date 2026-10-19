@@ -22,6 +22,7 @@
 !packages/director/openclaw.mjs
 !packages/director/product-probe.mjs
 !packages/director/product-speech.mjs
+!packages/director/generated-speech-text.mjs
 !packages/director/social.mjs
 !packages/director/speech-routing.mjs
 !packages/director/studio-admin-contract.mjs

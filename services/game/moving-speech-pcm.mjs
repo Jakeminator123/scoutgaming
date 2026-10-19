@@ -1,9 +1,8 @@
 import { createHash } from 'node:crypto';
 import { prepareMovingSpeechPlan } from './moving-speech-plan.mjs';
+import { MOVING_SPEECH_PCM_RATE as RATE, movingSpeechPcmFrameCount } from './moving-speech-timing.mjs';
 
-const RATE = 24000;
 const CHUNK_BYTES = 32768;
-const MAX_BYTES = RATE * 2 * 25;
 const fail = code => { throw Error(code); };
 
 /**
@@ -15,7 +14,8 @@ const fail = code => { throw Error(code); };
 export function prepareMovingSpeechPcmInput({ audio, ...planInput } = {}) {
   if (!audio || audio.sampleRate !== RATE || audio.channels !== 1 || audio.format !== 's16le'
     || !(audio.pcm instanceof Uint8Array) || !audio.pcm.byteLength
-    || audio.pcm.byteLength % 2 || audio.pcm.byteLength > MAX_BYTES) fail('invalid_moving_speech_pcm');
+    || audio.pcm.byteLength % 2) fail('invalid_moving_speech_pcm');
+  movingSpeechPcmFrameCount(audio.pcm.byteLength);
   const plan = prepareMovingSpeechPlan(planInput);
   const pcm = Buffer.from(audio.pcm);
   const audioSha256 = createHash('sha256').update(pcm).digest('hex');

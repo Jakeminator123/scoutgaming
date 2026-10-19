@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { setTimeout as pause } from 'node:timers/promises';
 import { createMovingSpeechRuntime, movingSpeechFailureReceipt, movingSpeechPreparationFailureReceipt } from '../services/game/moving-speech-runtime.mjs';
 import { createMovingSpeechSourceSet } from '../services/game/moving-speech-bank.mjs';
+import { MOVING_SPEECH_MAX_PCM_BYTES } from '../services/game/moving-speech-timing.mjs';
 import { validateMovingSpeechStream } from '../packages/presentation/runtime/moving-speech-player.mjs';
 import {DRAGAN_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 
@@ -18,7 +19,7 @@ const record = (extension, type, bytes) => ({ provider: 'vercel-blob',
 async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await pause(5); } assert.fail('runtime fixture did not settle'); }
 
 async function setup(t, options = {}) {
-  const original = Buffer.from('synthetic-original'), pcm = Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [], preparationFailures = [];
+  const original = Buffer.from('synthetic-original'), pcm = options.pcm ?? Buffer.alloc(36000, 1), trace = [], sockets = [], failures = [], preparationFailures = [];
   const dealClips=options.deal?DRAGAN_KEVIN_PROFILE.takes.map((take,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,
     sha256:take.sha256,bytes:100+i,fps:24,frameCount:take.frames,width:1080,height:1920})):[];
   const sourceSet = createMovingSpeechSourceSet({ dealerId: 'dragan', clips: [...dealClips,{ videoId, sha256: digest(original), bytes: original.length,
@@ -55,7 +56,8 @@ async function setup(t, options = {}) {
       trace.push('voice-prepared'); return { profileRevision: h, compositing: null,
         async assertFresh() { if (state.profileChanged) throw Error('generated_speech_profile_changed'); },
         async *source({ beforeCostly, signal }) { trace.push('tts'); await beforeCostly(); signal.throwIfAborted();
-          await options.onTts?.(state); yield pcm; },
+          await options.onTts?.(state);
+          for (const chunk of options.pcmChunks ?? [pcm]) { options.onTtsChunk?.(chunk); yield chunk; } },
       };
     } },
     sessions: { async admit(args) {
@@ -176,6 +178,27 @@ test('bank-ready admission precedes TTS; exact descriptor and plan survive real 
   assert.deepEqual(client.messages.at(-1), { t: 'done', id: ready.plan.start.id, frames: 36 });
   assert.equal(f.state.chunks, 3); assert.equal(f.state.cancelled, 1);
   assert.deepEqual(f.failures, []);
+});
+
+test('maximum PCM prepares 600 frames; the next sample stops TTS consumption before render dispatch', async t => {
+  const f = await setup(t, { pcm: Buffer.alloc(MOVING_SPEECH_MAX_PCM_BYTES, 1) });
+  const descriptor = await f.prepare(), client = f.connect(descriptor);
+  assert.equal((await client.opened).status, 101);
+  await until(() => client.messages.length === 3);
+  assert.equal(client.messages[0].plan.timeline.length, 600);
+  assert.deepEqual(client.messages[2], f.pcm);
+  client.socket.close(); await client.close;
+
+  let consumed = 0;
+  const tooLong = await setup(t, { pcmChunks: [Buffer.alloc(MOVING_SPEECH_MAX_PCM_BYTES), Buffer.alloc(2), Buffer.alloc(2)],
+    onTtsChunk: () => consumed++ });
+  await assert.rejects(tooLong.prepare(), /moving_speech_audio_limit/);
+  assert.equal(consumed, 2, 'stop reading at the first overflowing sample');
+  assert.equal(tooLong.state.dispatched, 0, 'no PCM/plan dispatched to GPU rendering');
+  assert.equal(tooLong.state.cancelled, 1);
+  assert.equal(tooLong.admitted.signal.aborted, true);
+  assert.deepEqual(tooLong.preparationFailures, [{event:'moving_speech_preparation_failed',code:'moving_speech_audio_limit',
+    phase:'voice',streamId:sessionId,requestId:tooLong.input.requestId}]);
 });
 
 test('server interruption receipts allow only known reasons and valid correlation fields', () => {
