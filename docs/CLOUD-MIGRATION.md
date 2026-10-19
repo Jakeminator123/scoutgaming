@@ -14,15 +14,26 @@ endast i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Sparat bolag, rum,
 sammansättning och spel följer länkarna. Rumsändringar använder befintlig scoped
 writer; scen-/dealermall och rum är skilda skrivmål.
 
-PR274–277 är levererade. Kontrollplanet för Av/Sparläge och executor är kodleverans;
-aktiverat rörligt tal, bildkvalitet och budgetavstämning har egna bevisgränser.
-PR276 dokumenterar den separat utförda behörighetsrättningen för kontrollplanet. PR277:s main
-`989e74e2b8357918fb5885c2d08a1e9fc29fbb6d` hade grön
-[main-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39201388699)
-och samma version på Vercel och Render vid MERGE4:s kontroll 19 oktober
-05:02 UTC. Det är ett daterat kvitto; läs faktisk deployment och
-`/__cloud/version` inför återställning eller nytt driftprov. Nästa leverans och
-kvarvarande aktivering finns i [handoffen](JOHN-HANDOFF.md#driftväljare-av-och-sparläge--19-oktober-2026).
+PR274–283 är levererade. Rumsflödet och den verifierade legacy-/teststädningen
+är integrerade i main `a2dc503e2c63ef49107c0a1074880349e1898c61`, med grön
+[main-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39206231216).
+Vercel och Render körde samma SHA vid MERGE4:s egen kontroll 19 oktober
+05:55:42 UTC; spelmotorns hälsa var ok. UI/UX2:s separata N1-läsning verifierade
+rätt rum/scen och rensat gammalt dealerbokmärke utan spel eller sparningar.
+[Handoffens slutkvitto](JOHN-HANDOFF.md#merge4-verifierad-legacy-städning-och-main-flöde--19-oktober-2026)
+skiljer dessa bevis från senare driftprov. Läs faktisk deployment och
+`/__cloud/version` inför återställning eller nytt prov.
+
+Kontrollplanet för Av/Sparläge och executor är kodleverans. PR276 dokumenterar
+den separat utförda behörighetsrättningen; PR279 rättar molnstartens child-env.
+POST-LIPSYNC5:s senare GPU-jobb avslutades med workerfel vid bankhämtningen
+(HTTP403), utan godkänd taluppspelning. Normal Av, noll workers/öppna sessioner,
+profilens preparation-läge och avstängd talflagga verifierades av POST före
+fortsatt merge. Terminaljobbets callbackväntan och bankens HTTP-åtkomst hanteras
+separat; inga nya budget-/kapacitetsgränser införs av UI-/städleveransen.
+Aktiverat rörligt tal, bildkvalitet och budgetavstämning kräver sina egna belägg.
+Aktuellt prov och nästa konkreta rättning finns i
+[talhandoffen](JOHN-HANDOFF.md#post-lipsync5-produktionsprov).
 
 Normal lokal start visar produktens adress. `--offline` är det uttryckliga valet
 för tillfälliga syntetiska data, utan externa genereringsanrop. Äldre lokala
