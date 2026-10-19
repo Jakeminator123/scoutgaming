@@ -1,5 +1,18 @@
 # Aktuell handoff — Scoutgaming
 
+## Driftväljare: isolerad backendetapp — 19 oktober 2026
+
+HUVUDAGENT5 äger kontrollplan/lagring på `codex/admin-drift-backend`;
+UIUX äger Admin-vyn och POST-PISYNK4 tal-/textflödet. Kontraktet skiljer
+önskat läge från observerad workerstatus och prövar revision, sluttid,
+budgetunderlag, stopp och tömning före profilbyte. SQL016 är deployment-optional.
+Verifierat: 95 fokuserade offlineprov samt isolerad PostgreSQL med samtidiga
+kommandon, miljöisolering, constraints och återstart. Inga GPU-/produktionsanrop.
+**Ej driftklart:** ingen HTTP-/providerkoppling eller periodisk exekverare.
+Varm drift kräver oberoende avstängning, faktisk kostnadsreservation och exakt
+förberedelseattestering; `nextAction` är bara en plan. Befintlig min0/max1-admission
+är orörd. Se [tekniska gränser](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+
 ## UX/UI: första Admin-klippkartan — 19 oktober 2026
 
 Dokumentationsförslaget [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260)

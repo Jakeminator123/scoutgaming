@@ -27,6 +27,8 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+  'packages/presentation/contracts/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
+  'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/postgres-moving-drift.mjs',
   'packages/operators/server/public-rooms.mjs',
   'packages/presentation/server/studio-policy-runtime.mjs',
   'packages/shared/blackjack-shoe-rules.mjs',
@@ -137,7 +139,7 @@ export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, rest
   } finally { await close(); }
 }
 
-export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = false } = {}) {
+export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = false, movingDriftOnly = false } = {}) {
   if (process.platform !== 'linux' || process.getuid?.() === 0) throw new Error('isolated_qa_requires_nonroot_linux');
   const root = await mkdtemp(join(tmpdir(), 'croupier-studio-qa-'));
   await writeFile(join(root, '.croupier-qa-owned'), owner, { mode: 0o600 });
@@ -186,6 +188,21 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const open = () => new Pool({ connectionString: `postgresql://studio_qa@127.0.0.1:${pgPort}/postgres`, max: 8, connectionTimeoutMillis: 5000, query_timeout: 15000 });
     await start(); pool = open();
     const restart = async () => { await pool.end(); await stop(); await start(); pool = open(); return pool; };
+    if (movingDriftOnly) {
+      const {loadStudioMigrations,planStudioMigrations,applyStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
+      const driftSources = ['packages/presentation/contracts/moving-drift.mjs','services/game/moving-drift-controller.mjs',
+        'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
+        ...(await loadStudioMigrations()).map(row=>'ops/neon-studio/'+row.file)];
+      const sourceDigest = async () => createHash('sha256').update((await Promise.all(driftSources.map(file=>readFile(join(repository,file))))).map(bytes=>createHash('sha256').update(bytes).digest('hex')).join('\n')).digest('hex');
+      const before = await sourceDigest();
+      const target = (await planStudioMigrations({pool})).target;
+      await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
+      const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
+      const drift = await runMovingDriftPostgresChecks({pool,restart}); pool = drift.pool;
+      if (await sourceDigest() !== before) throw new Error('isolated_qa_sources_changed_rerun_required');
+      console.log(JSON.stringify({acceptance:'isolated-moving-drift-sql-restart',sourceDigest:before,checks:drift.checks}));
+      return {integrationChecks:drift.checks};
+    }
     const sql = (await readFile(join(repository, 'ops/neon-game/product-schema.sql'), 'utf8')).replace(/\r\n/g, '\n');
     await pool.query(sql);
     await pool.query('INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ($1,$2,$3,$4)',
@@ -217,7 +234,9 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       } });
     const { runRoulettePostgresChecks } = await import('../test/roulette-postgres.mjs');
     const roulette = await runRoulettePostgresChecks({pool,restart}); pool = roulette.pool;
-    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks];
+    const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
+    const drift = await runMovingDriftPostgresChecks({pool,restart}); pool = drift.pool;
+    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks, ...drift.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();
@@ -232,8 +251,10 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
+  const movingDriftOnly = args.includes('--moving-drift');
+  if (movingDriftOnly) args.splice(args.indexOf('--moving-drift'),1);
   const options = args.length === 1 && args[0] === '--download-postgres' ? { downloadPostgres: true }
     : args.length === 2 && args[0] === '--postgres-bin' ? { postgresBin: args[1] } : null;
-  if (!options) { console.error('Usage: node tools/studio-isolated-qa.mjs --download-postgres | --postgres-bin /absolute/bin'); process.exitCode = 1; }
-  else runIsolatedStudioQa(options).catch(error => { console.error(error.message); process.exitCode = 1; });
+  if (!options) { console.error('Usage: node tools/studio-isolated-qa.mjs [--moving-drift] --download-postgres | --postgres-bin /absolute/bin'); process.exitCode = 1; }
+  else runIsolatedStudioQa({...options,movingDriftOnly}).catch(error => { console.error(error.message); process.exitCode = 1; });
 }

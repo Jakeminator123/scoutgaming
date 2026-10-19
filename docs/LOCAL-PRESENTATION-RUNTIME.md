@@ -1,5 +1,38 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Driftväljare: kontrollplan
+
+<a id="driftvaljare-kontrollplan"></a>
+
+`packages/presentation/contracts/moving-drift.mjs` definierar kommandot:
+`expectedRevision`, `commandId`, `mode` (`off|saving|warm`), `profileId`
+enbart för saving/warm och `durationSeconds` enbart för warm (1800/7200/86400).
+Servern bestämmer sluttiden. Klienten får inte ange endpoint, pris, budget eller
+workerstatus. `services/game/moving-drift-controller.mjs` ger serverklocka,
+revision/operation, önskat läge, observerad status, vald/faktisk profil,
+exakt release-/bankberedskap, capability/skälkod och kostnadsunderlag.
+Saknad/gammal observation ger `unknown`; cached EXITED är ingen aktiv GPU.
+`nextAction` är en intern plan, aldrig en genomförandekvittens.
+
+`postgres-moving-drift.mjs` serialiserar en rad per miljö för alla profiler/rum,
+använder databasklocka och kräver atomisk commit. SQL016 är valfri vid deployment;
+modulerna startar ingenting och läser inga credentials. Utgången varm period
+övergår till Av vid nästa serveranrop/avstämning. Det bevisar återställning efter
+omstart, **inte avstängning medan servern ligger nere**.
+
+Denna etapp har ingen HTTP-route, schemalagd exekverare eller produktionskoppling.
+Inkoppling kräver N1-/originkontroll, globalt synkroniserad admission med befintlig
+journal, färska bevis från samtliga endpoints och kontrollerad drain/stop.
+Varm aktivering kräver därutöver oberoende verkställd sluttid, faktisk reservation
+av hela perioden inklusive avstängning och attestering av exakt release/bank.
+Det injicerade budgetunderlaget är bundet till kommando/revision/profil; beräknad
+kostnad är inte en faktura eller reservation. Kapaciteten är avstängd som standard.
+Befintlig RunPod-adapter, worker och taljournal är oförändrade.
+
+Lokalt SQL-/omstartsprov: `node tools/studio-isolated-qa.mjs --moving-drift --download-postgres`
+i Linux/WSL med game-paketets låsta beroenden. Verktyget använder en tillfällig
+localhost-databas, kontrollerar oförändrade källfiler och stänger/rensar sin klusterprocess.
+
 Rena projekt-, media- och browserkontrakt ägs av `packages/presentation/contracts/`.
 Studio och spelserver använder samma validering och typer. Den explicita listan
 `packages/presentation/public-modules.mjs` bevarar äldre publika moduladresser

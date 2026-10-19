@@ -41,6 +41,9 @@ const sources = Object.freeze([
   // This changes technical capacity only, not any existing budget grant.
   { version:'015', file:'015-moving-budget-capacity.sql', tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
+  // Control-plane draft only: no live HTTP/provider wiring requires this version.
+  { version:'016', file:'016-moving-drift-control.sql', deploymentOptional:true,
+    tables:['moving_drift_control'], indexes:[] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
