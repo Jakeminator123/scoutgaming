@@ -58,6 +58,9 @@ Spelbolag & rum och Back återställer rätt val; desktop markerar Klippkarta
 som enda aktiv menylänk. Förhandsvisningen blockerar alla API-skrivningar
 och har inget produktionsregister. Bilder ligger privat i UX/UI2:s
 visualiseringsmapp. Detta är layout-/navigationskontroll, inte talacceptans.
+CI-uppföljning: två testladdare läser nu den verkliga navigationsmodulen;
+33 berörda beteendeprov och hela Admin-regressionen (338 prov i 13 grupper)
+passerar utan skips. Produktionskoden är oförändrad av rättningen.
 
 H6 rapporterade normal autentiserad drift-GET 503→200 efter riktat
 tabell-GRANT 04:14:48/04:16:00 UTC. DTO schema1, önskat Av, connected:false
