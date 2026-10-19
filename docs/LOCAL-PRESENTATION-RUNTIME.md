@@ -27,9 +27,11 @@ omstart, **inte avstängning medan servern ligger nere**.
 
 Admins befintliga catch-all registrerar GET/POST `/studio/api/admin/moving-drift`
 (eller `/api/admin` enligt `apiBase`). N1, färsk session, exakt origin/CSRF och
-konfigurerat environment/workspace kontrolleras före anrop. Behörighet och
-driftlagring delar samma produkttransaktion/anslutning, med rollback även för
-driftstate. Browserkontrakt/typer finns i `moving-drift-admin.mjs`/`.d.mts` under
+konfigurerat environment/workspace kontrolleras före anrop. POST:s behörighetskontroll
+och driftlagring delar samma produkttransaktion/anslutning; POST-rollback återställer
+driftstate. GET autentiseras före en separat statustransaktion. Den kan initialisera
+önskat Av eller markera en utgången önskad period som Av; den verkställer inget
+GPU-stopp. Browserkontrakt/typer finns i `moving-drift-admin.mjs`/`.d.mts` under
 `packages/presentation/contracts/`; interna `nextAction`, endpoints och hashunderlag
 utelämnas. 200 bekräftar önskat läge, aldrig genomförd GPU-drift. Konflikter ger
 409 med säker kod; saknad optional016 ger 503 utan SQL-detaljer.

@@ -3,17 +3,20 @@
 ## Driftväljare: kontrollplan och API — 19 oktober 2026
 
 HUVUDAGENT5 äger backend; UIUX äger separat Admin-koppling och POST-PISYNK4
-talflödet. PR268:s kontrollplan är fryst på `52e997f6`; API-etappen levereras
-separat på `codex/admin-drift-api`. MERGE3 äger granskning och merge.
+talflödet. Den samlade leveransen i PR270 på `codex/admin-drift-api` inkluderar
+PR268:s granskade kontrollplan. PR268 hålls öppen tills PR270 är mergad och kan
+stängas som ersatt. MERGE3 äger granskning, integrationsordning och merge.
 GET/POST `/studio/api/admin/moving-drift` återanvänder N1, färsk session,
-origin/CSRF och konfigurerat scope. Driftstate och behörighet delar SQL-transaktion;
-rollback rullar tillbaka båda. Browsern får önskat/observerat läge, revision,
+origin/CSRF och konfigurerat scope. POST:s behörighetskontroll och driftlagring
+delar SQL-transaktion/anslutning; POST-rollback återställer driftstate. GET
+autentiseras före sin statustransaktion, som kan initialisera önskat Av eller
+markera en utgången önskad period som Av. Browsern får önskat/observerat läge, revision,
 profiler och capabilities, aldrig interna exekveringsplaner eller endpoint/hashar.
 
 Verifierat: 98 fokuserade prov och 13 verkliga isolerade SQL-/native-API-kontroller,
 inklusive fyra samtidiga kommandon på en anslutning, återkallad session, rollback,
 JSONB/COMMIT-svarsförlust och omstart/retry. Optional016 saknad ger säker 503.
-Historiska 014→015-bevis är kvar. Ny full CI återstår för API-headet.
+Historiska 014→015-bevis är kvar. CI på 71388819 är grön; integrerat head kräver ny CI.
 API:t kräver uttrycklig server-opt-in/profilkonfiguration, är avstängt som standard
 och anger alltid `connected:false`; enbart önskat Av kan sparas. 200 bevisar
 inte faktisk avstängning. Ingen provider, HTTP-webbläsar-E2E eller GPU har provats.
