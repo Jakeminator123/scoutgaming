@@ -33,6 +33,8 @@ export type StudioAdministrationProps = {
   /** Group id from ?tab=. Unknown values open Spelstatus & integritet. */
   initialGroup?: string;
   initialDealerId?: string;
+  /** Connected operations UI bound to the freshly read actor. */
+  renderOperations?: (actor: StudioAdminActor) => ReactNode;
   /** Enclosing backoffice destination; existing standalone links stay compatible. */
   roomsHref?: string;
   /** Explain a legacy team editor when this view is embedded in the new Admin. */
@@ -156,7 +158,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     if (!actor || role !== actor.role) throw new StudioAdminUiError(403);
     return actor;
   }
-  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedReadActor?: StudioAdminActor) {
+  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
     if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
@@ -164,6 +166,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();
     aborted(signal);
     if (preflightActor && !studioRoleMeetsMinimum(preflightActor.role, descriptor.minimumRole)) throw new StudioAdminUiError(403);
+    if (preflightActor && expectedActor && (preflightActor.username !== expectedActor.username || preflightActor.role !== expectedActor.role)) throw new StudioAdminUiError(403);
     if (method === 'POST') {
       if (!preflightActor) throw new StudioAdminUiError(401);
       if (!object(body)) throw new StudioAdminUiError(400);
@@ -177,7 +180,7 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     if (!response.ok) throw new StudioAdminUiError(response.status);
     const actor = preflightActor ?? responseActor(response);
     if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
-      || (method === 'GET' && expectedReadActor && (actor.username !== expectedReadActor.username || actor.role !== expectedReadActor.role))) throw new StudioAdminUiError(403);
+      || (method === 'GET' && expectedActor && (actor.username !== expectedActor.username || actor.role !== expectedActor.role))) throw new StudioAdminUiError(403);
     return readPayload(method, action, response, actor, signal);
   }
   async function send(method: Method, action: string, body?: JsonObject, signal?: AbortSignal) {
@@ -198,6 +201,10 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     try { payload = object(await response.json()); } catch { throw new StudioAdminUiError(503); }
     aborted(signal);
     if (!payload || payload.ok === false || typeof payload.error === 'string') throw new StudioAdminUiError(400);
+    if (action === 'moving-drift') {
+      if (payload.schemaVersion !== 1 || !Number.isSafeInteger(payload.revision)) throw new StudioAdminUiError(503);
+      return { actor, payload };
+    }
     if (method === 'POST') {
       if (payload.ok !== true) throw new StudioAdminUiError(503);
       // Explicit one-time partner values are isolated from lists/resources. Invite
@@ -774,6 +781,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   return <div className={styles.administration} aria-busy={busy}>
     <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
+    {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
     {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
     {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/control/rooms')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}

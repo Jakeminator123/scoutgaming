@@ -29,50 +29,55 @@ verklig kostnadsreservation och exakt release-/bankattestering.
 Ingen GPU-/produktionsändring. [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan)
 och [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
-## UX/UI: klippkarta och scenplacering — 19 oktober 2026
+## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
 [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267) är granskad och
-mergad som `05facce2` från `ab939f15`. Vercel är READY på `05facce2` och senare
-`819a88ff`; Render `dep-dbanq3hsrm7s73alt270` och publik versionsroute är `05facce2`.
-Publik capability21 ger HTTP200 och `blackjackAnchors:v1` (1019 byte). [PR264](https://github.com/Jakeminator123/scoutgaming/pull/264)
-samlade klipp som kategori → situation → standard/varianter; [PR265](https://github.com/Jakeminator123/scoutgaming/pull/265)
-bevarar filmreferensens typ och kräver avstängd profil före referensbyte.
+publicerad från `ab939f15` via main `05facce2`. Egen publik versionskontroll och
+capability21 gav HTTP200 och `blackjackAnchors:v1`. Den senare main `819a88ff`
+är också publicerad enligt MERGE3; det är inget nytt mediakvitto.
 
 `/admin/clips` → **Scen & lager** redigerar vald gemensam mall. Dealer och bord
 flyttas separat eller tillsammans; kort och marker följer bord, dealer eller
 ligger still i scenen. Ankarbyte bevarar placeringen; punkt/grupp kan dras,
 finjusteras och återställas till verklig sparad bas. Mobil/desktop och varje
-borddesign har egna värden. Explicit mall/spel behålls även vid annan
-rumskontext; byte till nytt rum ärver inte föregående mall/spel. Rummets
-registrerade koppling och `roomOverrides` ändras inte. Sparning använder
-projektrevision och bekräftelse av berörda rum. Frysta paket behåller geometri;
-alla berörda publicerings-/livscykelvägar kräver capability21 för ankare,
-även under låst transaktion. Ingen SQL-migration. Filmspår, källrutor, tal,
-serverkort och saldo är orörda. Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
+borddesign har egna värden. Mall/spel och rumskontext hålls isär. Sparning
+använder projektrevision och visar berörda rum; publicerade paket ändras inte.
+Capability21 skyddar ankarpublicering även under transaktion. Filmspår,
+källrutor, tal, serverkort och saldo är orörda; ingen SQL-migration behövs.
+Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
 
-Verifierat lokalt: klientbygge, båda typkontrollerna, 69 UI/contextprov,
-124 backendprov plus fem dealer/CAS-prov och 113 partner/readinessprov.
-Isolerat browserprov med syntetiska medier/minnesdata täcker separat och
-gemensam flytt, följval, dragning, återställning samt sparning/återläsning
-för båda formaten. Riktig lokal PostgreSQL, omstart och HTTPS klarar fyra
-kontrakts-, 26 legacy- och 59 integrationskontroller med 201 stabila källhashar.
-Den därefter kompletterade källistan klarar sex integritetsprov. Två valfria
-browserprov kördes inte utan sin fixtur. Slut-CI39187800963 och GitGuardian för
-`ab939f15` är gröna enligt MERGE3; detta ersätter äldre CI-kvitton. Eget liveprov
-på `/admin/clips` verifierar separata lager, kortretarget utan hopp, följande kort,
-scenfasta manuella marker och gemensam flytt exakt en gång via synliga fält/SVG.
-Provets lokala ändringar är kastade och sparknappen är åter inaktiv. Ingen
-produktionssparning, publiceringsändring eller GPU-/talaktivering gjordes.
+Den separata etappen på `codex/admin-drift-ui`, baserad på main `243f0e74`,
+gör scenpanelen bredare och låter förhandsvisning/reglage anpassas efter
+panelens verkliga bredd. `/admin/drift` får lägen, profilval och tidsval mot
+HUVUDAGENT5:s publika, revisionsstyrda DTO från mergad PR270. Sparat önskemål
+visas separat från färsk observerad drift; okänd GPU/kostnad uppfinns inte.
+Sessionbyte, dubbelklick, svarsförlust, gammal status och revisionskonflikt
+hanteras utan automatisk omsändning. Färskheten räknar hela GET-/POST-tiden;
+20 sekunders fördröjning är rött/grönt-verifierad för båda svarsvägarna.
+Serverns capabilities styr vilka lägen
+som går att välja. UI:t öppnar inga egna provider- eller GPU-anslutningar.
 
-Kvar: bredare visuell omarbetning av Admin och större förhandsvisning i scenpanelen, PNG-idle, generell chattregeleditor
-och var åttonde utdelning per box. HUVUDAGENT5 äger drift-API i draft-PR270;
-UI/UX äger driftväljaren, och providerkoppling/observerad drift återstår.
-POST-PISYNK4 äger tal under utdelning och OpenClaw-proven; inget nytt
-uppspelningskvitto finns. Privata demoer och arbetslogg behålls i
-`C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`. Egna QA-servrar/processer och
-tempstatusfiler är undanplockade; aktiva testberoenden behålls. Två befintliga
-GitGuardian-incidenter (38318914/38318915), partiell platstäckning och historisk
-skanning `too_large` är fortsatt separat oavklarad säkerhetsstatus.
+Verifierat för UI-etappen: 92 riktade UI-/transportprov, Studio-typkontroll,
+Admin/lobby-typkontroller och klientbygge. Befintliga CSS-composes-varningar
+kvarstår. Isolerat HTTP-webbprov på c346e606 använde riktiga Admin-API-/transportmoduler
+med syntetisk controller och minnesdata: Sparläge → observerat Redo → Av
+→ bekräftat Av, inga verkliga provideranrop. Scenförhandsvisningen mättes till
+431 px vid 1333 px faktisk webbläsarbredd; panelerna hade ingen egen horisontell
+överrullning även vid 250 px. Detta är inte produktions- eller GPU-acceptans.
+
+PR267:s tidigare SQL-/HTTPS-/omstartsprov och gröna slut-CI39187800963 är
+oförändrat underlag. Eget liveprov verifierade separat/gemensam flytt,
+retarget utan hopp och scenfasta marker. Lokala provändringar kastades;
+ingen produktionssparning, publiceringsändring eller talaktivering gjordes.
+
+Kvar: bredare visuell Admin-omarbetning, PNG-idle, generell chattregeleditor
+och var åttonde utdelning per box. HUVUDAGENT5 äger verklig driftexekverare;
+POST-PISYNK4 äger tal/OpenClaw och saknade publicerade spelsvar. Kontrollplanets
+`connected:false` är inte fungerande GPU-drift. [Användarsteg](../apps/studio/docs/README.md).
+Privata demoer/logg ligger kvar i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
+Egna QA-processer, sessionslås och temporärskript är städade; aktiva beroenden
+behålls. Senaste säkerhetsläsning har noll öppna incidenter i källan, men
+platsmetadata är partiell och historisk GitGuardian-skanning `too_large`.
 
 <a id="dragan-talstatus"></a>
 

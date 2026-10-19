@@ -129,7 +129,8 @@ test('native administration preserves its standalone shell and embeds without a 
     module: { type: 'commonjs' },
   }).code, { module, exports: module.exports,
     require: name => name === './studio-administration'
-      ? { StudioAdministration: props => { views.push(props); return React.createElement('section', { 'data-native-view': true }); }, StudioAdminUiError: Error }
+      ? { StudioAdministration: props => { views.push(props); return React.createElement('section', { 'data-native-view': true }); }, StudioAdminUiError: Error, createStudioAdminClient: () => ({ available: () => false, request: () => assert.fail('render must not send commands') }) }
+      : name === './moving-drift-controls' ? { MovingDriftControls: () => React.createElement('section', { 'data-moving-drift': true }) }
       : name === '../lib/studio-login-client.mjs'
         ? { createStudioLoginClient: () => assert.fail('render must not change the session'), StudioLoginUiError: Error }
         : name.endsWith('.module.css')
@@ -157,6 +158,8 @@ test('native administration preserves its standalone shell and embeds without a 
   assert.equal(views[2].roomsHref, '/admin/rooms');
   assert.equal(views[2].companyTeamLabel, 'Bolag & team');
   assert.equal(views[2].showGroupNavigation, false);
+  assert.equal(typeof views[2].renderOperations, 'function');
+  assert.match(renderToStaticMarkup(views[2].renderOperations({ username: 'fixture-admin', role: 'admin' })), /data-moving-drift/);
 });
 
 function buttons(tree, text) { return nodes(tree, node => node.type === 'button' && node.props.children === text); }
@@ -1321,4 +1324,26 @@ test('legacy config without a selected game lane never infers a dealer from a st
     const creator=nodes(tree,node=>node.type===h.TechnicalLaneCreate)[0];
     assert.equal(creator.props.activeDealer,undefined);
   }
+});
+
+test('an expected actor change blocks POST before any command leaves the browser', async () => {
+  const h=harness();let calls=0;
+  const client=h.createStudioAdminClient({apiBase:'/studio/api/admin',session:async()=>({username:'changed-admin',role:'admin'}),availableActions:['POST users/role'],fetchImpl:async()=>{calls++;return reply({ok:true});}});
+  await assert.rejects(client.request('POST','users/role',{username:'third-user',role:'player'},undefined,{username:'original-admin',role:'admin'}),error=>error.status===403);
+  assert.equal(calls,0);
+});
+test('activated moving drift GET and POST retain the raw revisioned DTO without an ok envelope', async () => {
+  const h=harness(),current=actor('admin'),calls=[];
+  const status={schemaVersion:1,revision:4,operationId:null,serverNowMs:100000,desired:{mode:'off',profileId:null,endsAtMs:null},observed:{status:'unknown',atMs:null,reasonCode:'drift_observation_missing'},profiles:[{id:'fixture',label:'Fixture'}],selectedProfileId:null,actual:{profileId:null,gpu:null,workerId:null},readiness:{modelReady:false,releaseMatches:false,bankMatches:false},admission:{allowed:false,reasonCode:'drift_not_admitting'},capabilities:{connected:false,allowedModes:['off'],reasonCode:'drift_runtime_unavailable'},cost:{estimatedMicroUsd:null,source:null,quotedAtMs:null,shutdownTailMs:null}};
+  const client=h.createStudioAdminClient({apiBase:'/studio/api/admin',session:async()=>current,readIdentity:'response-headers-v1',availableActions:['GET moving-drift','POST moving-drift'],fetchImpl:async(url,options)=>{calls.push({url,options});return nativeReply({...status,revision:options.method==='POST'?5:4},200,current);}});
+  const read=await client.request('GET','moving-drift',undefined,undefined,current);assert.equal(read.payload.revision,4);assert.equal(read.payload.observed.status,'unknown');
+  const body={expectedRevision:4,commandId:'fixture-command',mode:'off'};
+  const saved=await client.request('POST','moving-drift',body,undefined,current);assert.equal(saved.payload.revision,5);assert.equal(saved.payload.desired.mode,'off');assert.equal(saved.payload.observed.status,'unknown');
+  for(const {url,options} of calls){assert.equal(url,'/studio/api/admin/moving-drift');assert.equal(options.credentials,'same-origin');assert.equal(options.cache,'no-store');assert.equal(options.redirect,'error');}
+  assert.deepEqual(JSON.parse(calls[1].options.body),body);
+});
+test('malformed moving drift response cannot become a successful command receipt', async () => {
+  const h=harness(),current=actor('admin');
+  const client=h.createStudioAdminClient({apiBase:'/studio/api/admin',session:async()=>current,availableActions:['POST moving-drift'],fetchImpl:async()=>nativeReply({schemaVersion:1,revision:'5'},200,current)});
+  await assert.rejects(client.request('POST','moving-drift',{expectedRevision:4,commandId:'fixture-command',mode:'off'},undefined,current),error=>error.status===503);
 });
