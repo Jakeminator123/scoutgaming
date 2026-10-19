@@ -1,3 +1,4 @@
+import {sanitizeDriftGuardDiagnostic} from './moving-drift-diagnostics.mjs';
 import { MOVING_BUDGET_MAX_MICRO_USD, validMovingBudgetAmendment, freshMovingBudgetAmendment } from './moving-speech-budget.mjs';
 import { createHash } from 'node:crypto';
 import { StudioStorageError, validateStudioEnvironmentId, validateStudioScope, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
@@ -89,7 +90,7 @@ export async function createSpeechJournal({ pool, environmentId, now, driftContr
   if (!pool || (typeof pool.connect !== 'function' && typeof pool.query !== 'function') || (now !== undefined && typeof now !== 'function')) fail('invalid_generated_speech_journal_input', 422);
 
   if (driftControl !== undefined && (!driftControl || typeof driftControl !== 'object'
-    || typeof driftControl.guard !== 'function')) fail('invalid_generated_speech_journal_input',422);
+    || typeof driftControl.guard !== 'function'||driftControl.onRejection!==undefined&&typeof driftControl.onRejection!=='function')) fail('invalid_generated_speech_journal_input',422);
   const driftScope=driftControl===undefined?null:movingScope(driftControl.scope);
   const driftGuard=driftControl?.guard;
 
@@ -127,8 +128,13 @@ export async function createSpeechJournal({ pool, environmentId, now, driftContr
       if(driftGuard&&driftOperation){
         try {await driftGuard({client,...driftOperation});}
         catch(error){
-          if(/^drift_[a-z_]+$/.test(error?.code??'')&&[409,422,503].includes(error.statusCode)){
-            guardFailure=Object.assign(new Error(error.code),{code:error.code,statusCode:error.statusCode});
+          const code=error?.code,statusCode=error?.statusCode;
+          if(typeof code==='string'&&/^drift_[a-z_]+$/.test(code)&&[409,422,503].includes(statusCode)){
+            guardFailure=Object.assign(new Error(code),{code,statusCode});
+            if(code==='drift_not_admitting')try {
+              const diagnostic=sanitizeDriftGuardDiagnostic(Object.getOwnPropertyDescriptor(error,'driftDiagnostic')?.value);
+              if(diagnostic)Object.defineProperty(guardFailure,'driftDiagnostic',{value:diagnostic});
+            } catch {} // Invalid diagnostics cannot replace the original rejection.
             throw guardFailure;
           }
           throw error;
@@ -146,7 +152,13 @@ export async function createSpeechJournal({ pool, environmentId, now, driftContr
       await client.query('COMMIT'); began = false;
       return result;
     } catch (error) {
-      if (began) { try { await client.query('ROLLBACK'); } catch { /* A lost COMMIT is uncertain, never retried. */ } }
+      let rolledBack=false;
+      if (began) { try { await client.query('ROLLBACK');rolledBack=true; } catch { /* A lost COMMIT is uncertain, never retried. */ } }
+      // Emit only validated finite evidence after rollback has completed. A
+      // logger failure never changes journal ownership or the rejection code.
+      if(rolledBack&&error===guardFailure&&guardFailure?.driftDiagnostic){
+        try {Promise.resolve(driftControl?.onRejection?.(guardFailure.driftDiagnostic)).catch(()=>{});} catch {}
+      }
       if (guardFailure && error === guardFailure || error instanceof StudioStorageError) throw error;
       fail('generated_speech_journal_unavailable');
     } finally {

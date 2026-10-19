@@ -1,4 +1,5 @@
 import {createHash,randomUUID} from 'node:crypto';
+import {driftAgeClass,driftLeaseClass,sanitizeDriftGuardDiagnostic} from './moving-drift-diagnostics.mjs';
 import {driftError,parseMovingDriftCommand,MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift.mjs';
 
 const fail=(code,status)=>{throw driftError(code,status);};
@@ -240,18 +241,53 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       return null;
     }),
     guardAdmission:async ({phase,sessionId,endpointId,admission}={})=>transact((state,now)=>{
-      if(!['reserve','current','submit','dispatch'].includes(phase)||!id(sessionId)) fail('drift_not_admitting');
       const profile=catalogue.get(state.desired.profileId);
-      if(!profile||state.desired.mode!=='saving'||state.drainRequired===true||!runtimeConnected(state,now)
-        ||admission?.revision!==state.revision||admission.operationId!==state.operationId
-        ||admission.profileId!==profile.id||admission.endpointId!==profile.endpointId||endpointId!==profile.endpointId
-        ||admission.catalogueFingerprint!==catalogueFingerprint
-        ||caps.requireExecutor&&admission.executionFence!==state.execution?.fence) fail('drift_not_admitting');
-      const status=view(state,now);
-      const applied=state.observation?.applied;
-      if(status.observed.status==='unknown'||status.observed.status==='error'
-        ||applied?.revision!==state.revision||applied?.operationId!==state.operationId
-        ||phase==='reserve'&&!status.admission.allowed) fail('drift_not_admitting');
+      const reject=reason=>{
+        const error=driftError('drift_not_admitting');
+        // Pure projection of this exact locked state and DB clock. Never read
+        // status again, log under the lock, or attach identities/raw state.
+        try {
+          const status=view(state,now),execution=state.execution,obs=state.observation,applied=obs?.applied;
+          const diagnostic=sanitizeDriftGuardDiagnostic({
+            phase:['reserve','current','submit','dispatch'].includes(phase)?phase:'invalid',reason,
+            desiredMode:state.desired.mode,drainRequired:state.drainRequired===true,
+            observedStatus:status.observed.status,observedReason:status.observed.reasonCode,
+            executionAge:driftAgeClass(execution?.observedAtMs,now),observationAge:driftAgeClass(obs?.observedAtMs,now),
+            lease:driftLeaseClass(execution?.leaseUntilMs,now),
+            revisionMatches:admission?.revision===state.revision,operationMatches:admission?.operationId===state.operationId,
+            profileMatches:!!profile&&admission?.profileId===profile.id,
+            endpointMatches:!!profile&&admission?.endpointId===profile.endpointId&&endpointId===profile.endpointId,
+            catalogueMatches:admission?.catalogueFingerprint===catalogueFingerprint,
+            executorFenceMatches:!caps.requireExecutor||admission?.executionFence===execution?.fence,
+            appliedRevisionMatches:applied?.revision===state.revision,appliedOperationMatches:applied?.operationId===state.operationId,
+            executionIdentityMatches:execution?.catalogueFingerprint===catalogueFingerprint
+              &&integer(execution.fence)&&execution.fence>0&&id(execution.holderId),
+            observationCatalogueMatches:obs?.catalogueFingerprint===catalogueFingerprint&&Array.isArray(obs.observedProfileIds)
+              &&obs.observedProfileIds.length===catalogue.size&&new Set(obs.observedProfileIds).size===catalogue.size
+              &&obs.observedProfileIds.every(profileId=>catalogue.has(profileId)),
+          });
+          if(diagnostic)Object.defineProperty(error,'driftDiagnostic',{value:diagnostic});
+        } catch {} // Diagnostics never replace or relax the original rejection.
+        throw error;
+      };
+      // Preserve the original left-to-right guard priority and public error.
+      if(!['reserve','current','submit','dispatch'].includes(phase)||!id(sessionId)) reject('invalid_context');
+      if(!profile) reject('profile_missing');
+      if(state.desired.mode!=='saving') reject('mode_not_saving');
+      if(state.drainRequired===true) reject('draining');
+      if(!runtimeConnected(state,now)) reject('runtime_unavailable');
+      if(admission?.revision!==state.revision) reject('revision_changed');
+      if(admission.operationId!==state.operationId) reject('operation_changed');
+      if(admission.profileId!==profile.id) reject('profile_changed');
+      if(admission.endpointId!==profile.endpointId||endpointId!==profile.endpointId) reject('endpoint_changed');
+      if(admission.catalogueFingerprint!==catalogueFingerprint) reject('catalogue_changed');
+      if(caps.requireExecutor&&admission.executionFence!==state.execution?.fence) reject('executor_fence_changed');
+      const status=view(state,now),applied=state.observation?.applied;
+      if(status.observed.status==='unknown') reject('observation_unknown');
+      if(status.observed.status==='error') reject('observation_error');
+      if(applied?.revision!==state.revision) reject('applied_revision_changed');
+      if(applied?.operationId!==state.operationId) reject('applied_operation_changed');
+      if(phase==='reserve'&&!status.admission.allowed) reject('reserve_busy');
       return {revision:state.revision,operationId:state.operationId};
     }),
     // Additional admission gate, not a replacement for the existing journal,

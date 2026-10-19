@@ -88,6 +88,32 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Säker driftorsaksdiagnostik — HUVUDAGENT6
+
+Det tredje produktionsprovets bank403 är fortsatt olöst; POST:s exakta
+prov-/stopp-/budgetkvitto finns i [egen sektion](#post-lipsync5-produktionsprov).
+En kontrollerad offlinekedja visar att 2 s pollintervall +14 s lyckad läsning
+kan ge 16 s gammalt föregående bevis och nekat dispatch utan readback-fel.
+Det är en reproducerad mekanism, inte prov3:s fastställda historiska orsak.
+
+Diagnostiken fångar nu första fallande guardorsak/fas, ändliga ålders-/
+leaseklasser och matchningsbooler från samma nekande SQL-state/DB-klocka.
+Allowlistad metadata överlever felkloningen; loggning sker först efter
+kvitterad rollback. Läsvarvens ändliga fas/tidsklass skiljer långsam success
+från failure. [Kanoniskt loggkontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+
+191 fokuserade observer-/executor-/controller-/diagnostik-/SQL-journal-/
+session-/runtime-/bankprov passerar med Node24.21.0 och fyra workers.
+De täcker orsaksprioritet, samma snapshot utan extraläsning, rollback/ACK,
+metadata/getter/proxyfiltrering, loggerfel och långsam lyckad läsning.
+Oberoende slutgranskning fann inga blockerande fynd. POST:s överlämnade
+stoppcommit7def8fe9 är integrerad med egen sektion bevarad.
+
+Inga freshness-, Av-, fence-, auth- eller budgetgrindar sänks. Publika felkoder,
+bankheader, providergränser och scheman är oförändrade. Inga moln-, GPU-,
+finansierings- eller migrationsåtgärder gjordes. MERGE4 äger slutlig CI,
+granskning och publicering; POST äger eventuellt senare avgränsat prov.
+
 ### Gateway-RPC: deterministiskt deadlineprov — HUVUDAGENT6
 
 MERGE4 rapporterade att PR288:s OpenClaw-prov nådde korrekt timeout men fick
@@ -105,7 +131,8 @@ riktiga WebSocket-proven för signering, scope/version och osäker mutation
 
 Endast testet och denna handoff ändras. Produktkod, tidsgränser, auth,
 OpenClawkonfiguration, moln, media, GPU och budget är orörda; PR288 hålls
-fryst. MERGE4 äger CI, slutgranskning och samlad publicering.
+fryst i den leveransen. PR289 är nu mergad/publicerad med full grön main-CI
+39218098988 på2c7f1c0e enligt MERGE4:s publiceringskvitto.
 
 ### Cacheinitialisering och pinnad session — HUVUDAGENT6
 

@@ -70,6 +70,27 @@ arbete eller avstängning uppfinns. Privat bankhämtning tillåter uttryckligen
 submission_started före attach-COMMIT med samma fence; vanlig voice/output
 gör inte det. Astrids ursprungliga journal saknar denna optional moving-hook.
 
+Intern nekansdiagnostik definieras av
+[serverkontraktet](../services/game/moving-drift-diagnostics.mjs).
+`moving_drift_guard_rejected` innehåller första fallande guardorsak och fas,
+önskat läge/drain, observerad status/skälkod, ändliga ålders-/leaseklasser
+samt booleska bindnings-/fence-/katalogmatchningar. Underlaget fångas från
+samma låsta SQL-state och databasklocka som nekar. Journalen omsanitiserar
+metadata genom felkloningen och emitterar först efter kvitterad rollback;
+missad rollbackkvittens ger ingen sådan logg. Publik felkod och bankheader
+är oförändrade. Inga token, UUID, hashvärden, URL:er eller råfel loggas.
+
+`moving_drift_readback_timing` anger ändlig fas, success/failure och
+hela läsvarvets tidsklass: fast ≤7,5 s, slow ≤15 s, overdue >15 s eller
+invalid klocka. Snabba lyckade varv är tysta; långsamma lyckade varv är
+success, aldrig failure. Vid fel fångas klassen före cleanup och emitteras
+efter invalidationförsöket; fasen anger sista påbörjade steg, inte hur lång
+tid just det steget tog. Loggerfel ändrar inte avslag eller återkallelse.
+En pågående, senare lyckad läsning kan lämna föregående observation äldre än
+15 s utan någon readback-fellogg. Pinnad bankhämtning använder dispatch;
+busy ensam nekar inte den grinden. Loggarna förlänger ingen observation
+och ett senare kvitto bevisar inte historiskt tillstånd vid ett tidigare403.
+
 Av ligger kvar som drainkrav även vid snabb Av → Sparläge. Executor avbryter
 endast ägda sessioner, återanvänder befintlig recovery och läser färsk release/
 health. Jobs, aktiva och okända workers samt öppna journalposter blockerar

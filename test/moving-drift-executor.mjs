@@ -7,7 +7,7 @@ import {summarizeMovingWorkerHealth} from '../services/game/moving-speech-runpod
 import {movingCapacityFixture} from './fixtures/moving-capacity.mjs';
 
 const profile={id:'base',label:'Bas',endpointId:'endpoint-base',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)};
-function fixture(){
+function fixture(executorOptions={}){
   let time=1800000000000,row=null,queue=Promise.resolve(),reads=0,cancels=0;
   const store={transact(fn){const task=queue.then(()=>{const result=fn(structuredClone(row),time);row=structuredClone(result.state);return structuredClone(result.value);});queue=task.catch(()=>{});return task;}};
   const make=()=>createMovingDriftController({store,profiles:[profile],capabilities:{connected:true,requireExecutor:true}});
@@ -17,7 +17,7 @@ function fixture(){
   const observer={async observe(){reads++;return {observedAtMs:time,...structuredClone(snapshot)};}};
   const sessions={async reconcile(){return {recovered:[],unresolved};}};
   const executor=createMovingDriftExecutor({controller,profile,observer,sessions,holderId:'server-a',
-    cancelActive:async()=>{cancels++;},readOpenSessions:async()=>unresolved});
+    cancelActive:async()=>{cancels++;},readOpenSessions:async()=>unresolved,now:()=>time,...executorOptions});
   return {controller,make,executor,observer,sessions,advance:ms=>time+=ms,
     snapshot:value=>snapshot=value,unresolved:value=>unresolved=value,
     counts:()=>({reads,cancels}),row:()=>structuredClone(row)};
@@ -157,6 +157,7 @@ test('runtime factory binds one verified profile and injects a separate journal 
   const runtime=await createMovingDriftRuntime(options);
   assert.equal(seen.provider,0);assert.equal(sessionOptions.journal,journal);
   assert.deepEqual(journalOptions.driftControl.scope,scope);
+  assert.equal(typeof journalOptions.driftControl.onRejection,'function');
   await assert.rejects(sessionOptions.driftControl.pin({endpointId:profile.endpointId}),rejects('drift_not_admitting'));
   await runtime.tick();
   let status=await runtime.controller.command(saving(await runtime.controller.status()));
@@ -213,4 +214,105 @@ test('corroborated cache initialization cannot revoke a pinned running session w
   await controller.command(off(status));
   for(const phase of ['current','dispatch'])await assert.rejects(controller.guardAdmission({...owned,phase}),rejects('drift_not_admitting'));
   await executor.close();
+});
+
+
+test('readback diagnostics validate optional dependencies and stay silent for fast success',async()=>{
+  const events=[],f=fixture({onReadback:event=>events.push(event)});
+  await f.executor.tick();
+  assert.deepEqual(events,[]);
+  for(const change of [{now:0},{onReadback:null}]){
+    assert.throws(()=>fixture(change),rejects('drift_invalid_configuration'));
+  }
+});
+
+test('readback failures report the first failing finite phase and elapsed class without raw errors',async t=>{
+  for(const phase of ['claim','configuration','cancel','reconcile','provider_observation','session_read','controller_observe']){
+    await t.test(phase,async()=>{
+      let time=1800000000000,invalidations=0;
+      const events=[],error=Object.assign(Error('private provider text'),{token:'private-token'});
+      const fail=()=>{time+=8000;throw error;};
+      const execution={desired:{mode:phase==='configuration'?'warm':['cancel','reconcile'].includes(phase)?'off':'saving',profileId:'base'}};
+      const controller={claimExecution:phase==='claim'?fail:async()=>execution,status:async()=>{},
+        observe:phase==='controller_observe'?fail:async()=>({ok:true}),invalidateExecution:async()=>{invalidations++;}};
+      const executor=createMovingDriftExecutor({controller,profile,holderId:'diagnostic-server',now:()=>time,
+        observer:{observe:phase==='provider_observation'?fail:async()=>({workers:[],busyJobs:0,queuedJobs:0,workersMin:0,workersMax:1})},
+        sessions:{reconcile:phase==='reconcile'?fail:async()=>{}},cancelActive:phase==='cancel'?fail:async()=>{},
+        readOpenSessions:phase==='session_read'?fail:async()=>[],onReadback:event=>events.push(event)});
+      await assert.rejects(executor.tick(),phase==='configuration'?rejects('drift_profile_unavailable'):value=>value===error);
+      assert.deepEqual(events,[{phase,result:'failure',durationClass:phase==='configuration'?'fast':'slow'}]);
+      assert.equal(invalidations,phase==='claim'?0:1);
+      await executor.close();
+    });
+  }
+});
+
+test('throwing or rejecting readback hooks and broken diagnostic clocks cannot affect tick security outcomes',async()=>{
+  for(const hook of [()=>{throw Error('diagnostic failure');},()=>Promise.reject(Error('diagnostic failure'))]){
+    const f=fixture({onReadback:hook});
+    await f.executor.tick();await f.controller.command(saving(await f.controller.status()));
+    f.observer.observe=async()=>{f.advance(8000);return {observedAtMs:f.row().execution.observedAtMs+8000,workers:[],busyJobs:0,queuedJobs:0,workersMin:0,workersMax:1};};
+    assert.equal((await f.executor.tick()).admission.allowed,true);
+    const error=Error('provider failed');
+    f.observer.observe=async()=>{throw error;};
+    await assert.rejects(f.executor.tick(),value=>value===error);
+    assert.equal((await f.controller.status()).capabilities.connected,false);
+    await f.executor.close();
+  }
+  const events=[],f=fixture({now:()=>{throw Error('clock failed');},onReadback:event=>events.push(event)});
+  await f.executor.tick();assert.deepEqual(events,[]);
+  f.observer.observe=async()=>{throw Error('provider failed');};
+  await assert.rejects(f.executor.tick(),/provider failed/);
+  assert.deepEqual(events,[{phase:'provider_observation',result:'failure',durationClass:'invalid'}]);
+  assert.equal((await f.controller.status()).capabilities.connected,false);
+});
+
+test('a successful 14-second provider read after the 2-second interval reports slow while the previous evidence expires',async()=>{
+  let time=1800000000000,row=null,releaseRead=null;
+  const p={...profile,endpointId:'endpointfixture'},events=[];
+  const store={async transact(work){const result=work(structuredClone(row),time);row=structuredClone(result.state);return structuredClone(result.value);}};
+  const controller=createMovingDriftController({store,profiles:[p],capabilities:{connected:true,requireExecutor:true}});
+  const observer=createMovingDriftObserver({profile:p,now:()=>time,provider:{
+    release:async()=>releaseRead?releaseRead():movingCapacityFixture({warm:false,now:time}).release,
+    workerState:async()=>summarizeMovingWorkerHealth(movingCapacityFixture({warm:false,now:time}).health)}});
+  const executor=createMovingDriftExecutor({controller,profile:p,observer,holderId:'owned-server',now:()=>time,
+    sessions:{reconcile:async()=>{}},cancelActive:async()=>{},readOpenSessions:async()=>[],
+    onReadback:event=>events.push(event)});
+  await executor.tick();await controller.command(saving(await controller.status()));
+  const status=await executor.tick();
+  const admission=await controller.authorizeAdmission({revision:status.revision,profileId:p.id});
+  const pinned={phase:'dispatch',sessionId:'owned-session',endpointId:p.endpointId,admission};
+  await controller.guardAdmission(pinned);
+  time+=2000;
+  let finish,entered;
+  const started=new Promise(resolve=>entered=resolve);
+  releaseRead=()=>{entered();return new Promise(resolve=>finish=()=>resolve(movingCapacityFixture({warm:false,now:time}).release));};
+  const pending=executor.tick();await started;
+  assert.equal(executor.tick(),pending);
+  time+=14000;
+  assert.ok(row.execution.leaseUntilMs>time,'the executor lease remains valid');
+  assert.equal(time-row.observation.observedAtMs,16000);
+  assert.equal(row.observation!==null,true,'no failed read invalidated the prior observation');
+  await assert.rejects(controller.guardAdmission(pinned),rejects('drift_not_admitting'));
+  assert.deepEqual(events,[]);
+  finish();
+  assert.equal((await pending).capabilities.connected,true);
+  assert.deepEqual(events,[{phase:'controller_observe',result:'success',durationClass:'slow'}]);
+  await controller.guardAdmission(pinned);
+  await executor.close();
+});
+
+test('failure telemetry is captured before cleanup but emitted only after the invalidation attempt',async()=>{
+  for(const invalidationFails of [false,true]){
+    let time=1000;const order=[],error=Error('private provider failure'),events=[];
+    const controller={status:async()=>({}),claimExecution:async()=>({desired:{mode:'saving',profileId:'base'}}),observe:async()=>assert.fail('failed read cannot publish'),
+      invalidateExecution:async()=>{await Promise.resolve();order.push('invalidate');time+=20000;if(invalidationFails)throw Error('private rollback failure');}};
+    const executor=createMovingDriftExecutor({controller,profile,holderId:'owned-server',now:()=>time,
+      observer:{observe:async()=>{time+=8000;throw error;}},sessions:{reconcile:async()=>{}},cancelActive:async()=>{},readOpenSessions:async()=>[],
+      onReadback:event=>{order.push('report');events.push(event);}});
+    await assert.rejects(executor.tick(),value=>value===error);
+    assert.deepEqual(order,['invalidate','report']);
+    assert.deepEqual(events,[{phase:'provider_observation',result:'failure',durationClass:'slow'}]);
+    await executor.close();
+  }
 });
