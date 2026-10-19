@@ -226,47 +226,49 @@ C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 ## Dragan: produktionsprov — POST-LIPSYNC5, 19 oktober 2026
 
-POST-LIPSYNC5 äger tal-/GPU-provet, HUVUDAGENT6 backend, UI/UX2 Admin och
-MERGE4 granskning/publicering. PR275 är mergad som `087f4fd5`; senare
-dokumentleverans `800073bb` var verifierad på både web och game.
+POST-LIPSYNC5 äger tal-/GPU-provet och bank403-diagnosen, HUVUDAGENT6
+backendens terminalövervakning, UI/UX2 Admin och MERGE4 publiceringen.
+PR279:s forwardingrättning är publicerad på web/game `43dfc237`. Talflagga1
+blev LIVE05:26:34 UTC; normal N1 visade färsk ansluten executor. Basprofilens
+kalla Sparläge tillät tal med modelReady=false. Sparläge→Av provades genom
+normal CAS: faktisk Av, blockerad admission, ingen worker, ingen öppen session
+och ingen återstående åtgärd. Exakt Dragan-profil aktiverades därefter med
+färskt verifierat rootkvitto, revisionskontroll och oförändrat övrigt projekt.
 
-Egen normal autentiserad Admin-GET200, oförändrad Dragan-profil och de
-50 registrerade källreferenserna är återkontrollerade. Den lokala fullbanken
-594432000 byte fullhashades till `5dcf0f32…`; det lilla privata Blob-kvittot
-verifierades separat. Ingen nykalibrering, migration, finansieringsändring
-eller medieomuppladdning har gjorts av POST5.
+Jakobs vanliga chattprov startade ett journalfört jobb05:31:39 UTC på rätt
+endpoint `zjsdlni6cn8dvo`/template `5dkkc3wolw` och oförändrad image/bank.
+Text visades men inget färdigt ljud/bildresultat verifierades. Providerstatus
+COMPLETED beskriver den avslutade begäran: innehållet var status=failed,
+code=bank_http_rejected. Första felande fas var bankReceiptFetchMs370,343ms;
+bankarkiv, callback och renderade/skickade rutor nåddes inte. Renderloggen
+belägger GET till den tokenbundna bankkvittorutten→40305:31:53 UTC. En separat
+läsning med faktiska Renderinställningar verifierade bankkvittots1045 byte och
+exakta SHA; dess lokala authstub var inte produktionsacceptans.
 
-Första flagga1-publiceringen blev `update_failed`. H6 fann och POST5
-reproducerade providerfritt att molnstartaren tappar de två driftfälten före
-spelprocessen. En minimal forwardingrättning levereras separat; 30s
-beredskap/bankladdning är ett annat, ännu obevisat felspår. Talflaggan
-återställdes till0. Rollback `dep-dbaq0vm1egvs73bm8je0` blev LIVE
-04:46:53 UTC på `800073bb`; publik version återlästes04:47:07 UTC.
-Dragan är fortsatt preparation. Ingen GPU/session eller spelinsats har
-startats av POST5. Fysisk mikrofon och produktionsutdelning återstår.
+Normal Av revision4 och verklig tömning verifierades före återgången.
+Profilen återställdes till preparation genom vanlig CAS05:38:11 UTC och
+talflaggan till0; rollback `dep-dbaqpi49v7es739j8i4g` blev LIVE05:39:16 UTC.
+Färsk avstämning05:41:14 UTC visade0aktivaGPU/0öppna sessioner/ingen åtgärd,
+oförändrad grant20,40USD och16historiska reservationer/19,20USD. Ingen
+reservation återbetalades. Skyddskalkyl40,750823USD är inklusive reserver och
+eftersläpande provideruppgifter, ingen slutfaktura. Den nya provperioden ska
+behållas även inför en senare finansieringskontroll. Min0/max1 behölls efter
+Jakobs delegerade beslut; ingen kapacitets- eller finansieringsändring gjordes.
 
-Budget-ID `dragan-test-20261017`, totalt45 USD, är oförändrat. Senaste
-förkontrollen visade15 historiska reservationer/18 USD, finansierad grant
-20,40 USD och noll öppna sessioner/aktiva GPU. Skyddskalkyl40,750823 USD
-inkluderar behållna reserver och ett nytt2,40-fönster; det är ingen slutfaktura
-och måste kontrolleras färskt före nästa betalda jobb.
+Denna diagnostik gör en giltig bankbegärans nekande kontroll synlig i en intern
+gatewaylogg med enbart fasta fas-/felkoder. Den interna headern strippas;
+tokens, URL:er, råfel och spelaridentiteter loggas inte. Auth-, hash-, CAS-
+och budgetkontroller kvarstår.17riktade bank-/gatewayprov passerar. H6:s
+separata PR284 hanterar den långa väntan när provider avslutar före callback;
+den ersätter inte rättningen av bank403. Synkat ljud/bild, tal under utdelning
+och fysisk mikrofon är ännu inte godkända. Ingen ny GPU-beställning görs utan
+ett nytt avgränsat prov och färska aktuella grindar.
 
-Gamla källworktrees försvann under överlämningen; deras exakta revisioner
-är återtagna i två nya rena arbetskopior. Återbundna privata hjälpare,
-rootkvitto-/återgångskontroller och oberoende12-minuters provstopp finns
-utanför Git.14 offlinegrindprov passerar; inget av detta är GPU- eller
-visuell produktionsacceptans. Den befintliga privata checklistan behåller
-exakta sökvägar, hashunderlag och versionsbundna kvitton.
-
-Den pensionerade lokala Git-filmvisaren med fem filer och enbart dess
-CI-/testupptäckt är borttagen. Anroparinventering fann inga produktionsanropare
-och processinventering inga aktiva tittarprocesser. Originalmedia,
-publiceringshistorik, banker och acceptanskvitton bevaras.
-
-Nästa steg är publicerad forwardingrättning, färska drift-/budgetbevis,
-verifierat Av/Sparläge och exakt revisionskontrollerad profilaktivering.
-Därefter ett kort normalt GPU-textprov; utdelning och fysisk mikrofon
-slutverifieras med Jakob när han är tillgänglig.
+PR280 pensionerade den inventerade lokala Git-filmvisaren och dess enskilda
+testkopplingar. Originalmedia, de50verifierade bankkällorna, historik och
+acceptanskvitton bevaras. Privata hjälpare, källrevisioner och alla exakta
+kvitton finns i den befintliga privata checklistan; inga egna devservrar är
+aktiva och det tidsbundna provstoppet är avaktiverat efter verifierat stopp.
 [Användarflöde](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
 [tekniska grindar](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
 

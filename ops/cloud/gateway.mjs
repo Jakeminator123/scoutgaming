@@ -4,9 +4,10 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { LAB_PORT, WEB_PORT, NATIVE_P6_QA } from './config.mjs';
 import { checkLabSession } from './lab-session-check.mjs';
 import { vercelIngressRequest, movingCallbackPath } from './vercel-ingress.mjs';
+import {MOVING_BANK_DIAGNOSTIC_HEADER,readMovingBankDiagnostic} from '../../packages/presentation/contracts/moving-bank-diagnostics.mjs';
 
 const HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate',
-  'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade']);
+  'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade', MOVING_BANK_DIAGNOSTIC_HEADER]);
 
 export function upstreamForHost(host, config) {
   if (host === new URL(config.gameOrigin).host) return WEB_PORT;
@@ -116,7 +117,8 @@ export function nativeP6QaRouterRequest(incoming, qa) {
 // One platform port, three exact public hostnames. The original Host and Origin
 // reach the child; rewriting them to loopback would defeat application checks.
 export function createCloudGateway(config, { labInternalSecret, sessionCheck = checkLabSession,
-  webPort = WEB_PORT, labPort = LAB_PORT, vercelIngress = config.vercelIngress, renderGitCommit } = {}) {
+  webPort = WEB_PORT, labPort = LAB_PORT, vercelIngress = config.vercelIngress, renderGitCommit,
+  onMovingBankRejection = value => console.warn(JSON.stringify({event:'moving_bank_rejected',...value})) } = {}) {
   if (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32) {
     throw new Error('The cloud Lab gateway requires an internal secret.');
   }
@@ -215,6 +217,13 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     const targetPort = routePort === WEB_PORT ? webPort : labPort;
     const upstream = httpRequest({ hostname: '127.0.0.1', port: targetPort,
       method: incoming.method, path: incoming.url, headers }, response => {
+      // Only trusted application metadata on a direct bank capability request
+      // reaches the parent log. Strip the internal header on every response.
+      if(ingress.movingCapability&&/^\/api\/moving-speech\/bank\/[a-f0-9]{64}\/(archive|receipt)$/.test(incoming.url)
+        &&[403,503].includes(response.statusCode)){
+        const diagnostic=readMovingBankDiagnostic(response.headers[MOVING_BANK_DIAGNOSTIC_HEADER]);
+        if(diagnostic)try{onMovingBankRejection({...diagnostic,httpStatus:response.statusCode});}catch{}
+      }
       outgoing.writeHead(response.statusCode ?? 502, headersWithoutHops(response.headers));
       response.pipe(outgoing);
     });
@@ -260,6 +269,7 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
       if (socket.destroyed) { peer.destroy(); return; }
       const lines = [`HTTP/${response.httpVersion} ${response.statusCode} ${response.statusMessage}`];
       for (let i = 0; i < response.rawHeaders.length; i += 2) {
+        if(response.rawHeaders[i].toLowerCase()===MOVING_BANK_DIAGNOSTIC_HEADER)continue;
         lines.push(`${response.rawHeaders[i]}: ${response.rawHeaders[i + 1]}`);
       }
       socket.write(`${lines.join('\r\n')}\r\n\r\n`);

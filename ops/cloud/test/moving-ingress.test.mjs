@@ -78,6 +78,7 @@ test('gateway streams exact bank bytes only after application capability authori
 test('gateway carries owned direct callback and signed moving client independently of legacy streaming flag',{timeout:5000},async()=>{
   const web=createServer(),channel=createMovingWorkerChannel({origin:transport,avatar:'dragan',verifiedAvatar:'dragan'});
   const wss=new WebSocketServer({noServer:true,handleProtocols:p=>p.has('moving-v1')?'moving-v1':false});let gateway,worker,client;const seen=[];
+  wss.on('headers',headers=>headers.push('X-Croupier-Moving-Bank-Diagnostic: read:rejected'));
   web.on('upgrade',(req,peer,head)=>{
     seen.push(req.url);
     if(channel.handleUpgrade(req,peer,head))return;
@@ -95,10 +96,28 @@ test('gateway carries owned direct callback and signed moving client independent
     const protocols=['moving-v1','ticket.fixture.signature'];
     assert.equal(await rejected(socket(port,'/moving-speech-stream',{origin,cookie:'player=owner'},protocols)),421);
     const signed={origin,cookie:'player=owner','x-croupier-vercel-secret':secret,'x-croupier-public-origin':origin,'x-forwarded-host':new URL(origin).host,'x-forwarded-proto':'https'};
-    client=socket(port,'/moving-speech-stream',signed,protocols);await once(client,'open');assert.equal(client.protocol,'moving-v1');
+    let upgradeHeaders;
+    client=socket(port,'/moving-speech-stream',signed,protocols);client.once('upgrade',response=>{upgradeHeaders=response.headers;});
+    await once(client,'open');assert.equal(client.protocol,'moving-v1');
+    assert.equal(upgradeHeaders['x-croupier-moving-bank-diagnostic'],undefined);
+    assert.equal(upgradeHeaders.upgrade.toLowerCase(),'websocket');assert.match(upgradeHeaders.connection,/upgrade/i);
     const echoed=once(client,'message');client.send(Buffer.from('patch'));assert.deepEqual((await echoed)[0],Buffer.from('patch'));
     const reached=seen.length;
     for(const extra of [{origin},{cookie:'player=owner'}])assert.equal(await rejected(socket(port,path,extra)),421);
     assert.equal(await rejected(socket(port,'/lipsync-worker')),421);assert.equal(seen.length,reached);
   }finally{worker?.terminate();client?.terminate();channel.close();for(const ws of wss.clients)ws.terminate();wss.close();await Promise.all([close(web),...(gateway?[close(gateway)]:[])]);}
+});
+test('gateway logs finite bank rejection metadata and strips it from every response',{timeout:5000},async()=>{
+ const header='x-croupier-moving-bank-diagnostic',seen=[];let diagnostic='authorization:drift_not_admitting';
+ const web=createServer((_req,res)=>{res.writeHead(403,{[header]:diagnostic});res.end();});let gateway;
+ try{
+  const webPort=await listen(web);gateway=createCloudGateway(config,{labInternalSecret:secret,webPort,onMovingBankRejection:value=>seen.push(value)});
+  const port=await listen(gateway),denied=await query(port,bank,{headers:{[header]:'read:rejected'}});
+  assert.equal(denied.status,403);assert.equal(denied.headers[header],undefined);
+  assert.deepEqual(seen,[{stage:'authorization',code:'drift_not_admitting',httpStatus:403}]);
+  diagnostic='authorization:private-token';
+  const unknown=await query(port,bank);assert.equal(unknown.status,403);assert.equal(unknown.headers[header],undefined);assert.equal(seen.length,1);
+  diagnostic='read:rejected';
+  const unrelated=await query(port,'/api/table');assert.equal(unrelated.status,421);assert.equal(seen.length,1);
+ }finally{if(gateway)await close(gateway);await close(web);}
 });

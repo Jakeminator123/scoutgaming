@@ -1,5 +1,6 @@
 import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
 import { randomBytes } from 'node:crypto';
+import {MOVING_BANK_DIAGNOSTIC_HEADER,movingBankDiagnostic} from '../../packages/presentation/contracts/moving-bank-diagnostics.mjs';
 import { validatePrivateMedia, getPrivateMedia, withVerifiedPrivateMediaFile } from './blob-media.mjs';
 import { validateMovingSpeechSourceSet } from './moving-speech-bank.mjs';
 
@@ -78,21 +79,24 @@ export function createMovingBankDownloads({origin, bank, read = getPrivateMedia,
     async response(request) {
       const url = new URL(request.url);
       if (!url.pathname.startsWith(PREFIX)) return null;
-      const denied = status => new Response(null,{status,headers:{'Cache-Control':'private, no-store'}});
+      const denied = (status,diagnostic=null) => new Response(null,{status,headers:{'Cache-Control':'private, no-store',
+        ...(diagnostic?{[MOVING_BANK_DIAGNOSTIC_HEADER]:diagnostic}:{})}});
       const match = /^\/api\/moving-speech\/bank\/([a-f0-9]{64})\/(archive|receipt)$/.exec(url.pathname);
       if (!match || url.search || request.method !== 'GET' || request.headers.has('range')
         || request.headers.has('origin') || request.headers.get('sec-fetch-site') === 'cross-site') return denied(403);
       const entry = pending.get(match[1]);
       if (!entry || entry.signal.aborted || entry.expiresAt <= now()) {entry?.revoke(); return denied(403);}
+      let stage='authorization';
       try {
         const signal = AbortSignal.any([entry.signal,request.signal]);
         const check = () => {if(entry.expiresAt <= now())entry.revoke();signal.throwIfAborted();};
         check();await beforeAbort(() => entry.authorize(),signal);check();
+        stage='read';
         const record = bank[match[2]], scoped = new Request(request,{signal});
         const result = await beforeAbort(() => read(record,scoped,options),signal,value => value.body?.cancel());
         try {check();} catch(error) {await result.body?.cancel().catch(() => {});throw error;}
         if (result.status !== 200 || !result.body || result.headers.get('content-length') !== String(record.size)
-          || result.headers.has('content-encoding')) {await result.body?.cancel();return denied(503);}
+          || result.headers.has('content-encoding')) {await result.body?.cancel();return denied(503,movingBankDiagnostic('metadata'));}
         let bytes = 0;
         const bounded = new TransformStream({
           transform(chunk,controller) {
@@ -106,7 +110,7 @@ export function createMovingBankDownloads({origin, bank, read = getPrivateMedia,
         // source while bounding queued bytes. Never leave its rejection unhandled.
         void result.body.pipeTo(bounded.writable,{signal}).catch(() => {});
         return new Response(bounded.readable,{status:result.status,headers:result.headers});
-      } catch {return denied(403);}
+      } catch(error) {return denied(403,movingBankDiagnostic(stage,error));}
     },
     close() {for (const entry of pending.values()) entry.revoke();},
   });
