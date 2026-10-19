@@ -1,5 +1,30 @@
 # Aktuell handoff — Scoutgaming
 
+## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
+
+Den avslutade registerflyttens `prepareLegacyStudioSnapshot` hade endast
+ett eget test som konsument. Hjälparen, det testet och dess enda fullrunnerpost
+är borttagna. Två andra testfall som endast låste gamla Control-wrappers har
+rensats; sex aktiva komponentprov för dealer-/policygräns och klippval kvarstår.
+Oberoende konsumentinventering och egen sökning omfattade kod, verktyg,
+guider och CI. Aktiva legacy-fixturer, middleware, klipppolicy och återanvända
+Control-redigerare behålls; de har konkreta Admin-/runtimekonsumenter.
+
+Main-flödet och återställningsproceduren finns i CLOUD-MIGRATION,
+ENVIRONMENT-RESTORATION och docs/AI/scoutgaming-agentflode. Förbrukade
+separata frontend-/Studio-återgångsinstruktioner har ersatts med kontroll av
+den samlade produktens faktiska web-/gameversion, schema och miljökontrakt.
+Användarsteg, produkttermer och tekniska format behåller sina kanoniska guider.
+
+Egen verifiering: 67 repository-/policy-/kontrollprov samt det isolerade
+cutoverprovet och sex kvarvarande komponentprov passerade. Cutoverprovet
+kunde först inte laddas utan `ws`; låsta beroenden installerades i denna
+arbetskopia och provet passerade därefter. Delade Studio-beroenden återanvändes
+först efter identisk package-/lockhash. Testinventeringen fann 526 kandidater,
+0 föräldralösa; Pythoninventeringen är separat. Full produktregression och
+slutlig CI/publicering följer i PR. Inga privata data, medier, molninställningar
+eller andra agenters arbetskopior rensades.
+
 ## Driftväljare: Av och Sparläge — 19 oktober 2026
 
 HUVUDAGENT6 äger backendrättningen nedan, UI/UX2 Admin och POST-LIPSYNC5

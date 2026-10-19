@@ -13,53 +13,37 @@ Lokal origin och push-/säkerhetspolicy använder den nya adressen.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
-Vercelproduktion är `scoutgaming`, ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`,
-i team `scoutgaming` (`team_Scxorb9qtZHjNae1YEQnFCaT`): reporot, framework
-services, två Next-appar och en taltransport, region fra1, Git-autobyggen aktiva.
-www och apex samt de gamla frontend-/Studio-aliasen tillhör samma projekt;
-apex och gammal frontend omdirigerar till www. Vid kontroll 14 oktober
-22:25 UTC var main `a0df4e26` READY på `dpl_7FAC4NFoEdSQCA521AQcWe1XqJme`.
-Render `croupier-v2` gav hälsa 200 och samma SHA via `/__cloud/version`.
-Det är ett daterat kvitto; kontrollera senaste version före återställning.
+## Återställ den samlade produkten
 
-Det historiskt dokumenterade reservprojektet `scoutgaming-legacy-frontend`,
-`prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s`, gav 404 i båda tillgängliga teamen vid
-kontroll 15 oktober. Namnsökning hittade inte projektet. Det är därför ingen
-verifierad återställningskälla; tillgänglig env/historik eller radering är
-inte bevisad.
+Vercelproduktion är `scoutgaming`, projekt
+`prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` i team
+`team_Scxorb9qtZHjNae1YEQnFCaT`. Reporoten bygger webb, Studio och taltransport;
+www/apex tillhör detta projekt. Spelmotorn kör på Render `croupier-v2`, tjänst
+`srv-datg3j6gekts73amgli0` i workspace `tea-d19jsa63jp1c73ch0sc0`.
 
-**Historisk återgång före den samlade produkten:** den äldre proceduren
-byggde på separat frontend-/Studio-projekt, flytt av www/apex och återställda
-Unified/UI-flaggor. Den är inte en aktuell körinstruktion eller en verifierad
-reservväg. Ursprungliga projektinställningar/deployment-ID finns privat i
-`lab/data/platform-private/scoutgaming-project-before-services.json`.
-Deras existens bevisar inte åtkomst till de tidigare molnresurserna.
+1. Frys aktuell main-SHA, faktisk Vercel-/Render-version och avsedd återgångs-SHA.
+   Läs både deploymentstatus och Renders `/__cloud/version` samt `/__cloud/health`.
+   Grön byggstatus bevisar inte att båda tjänsterna kör samma version.
+2. Kontrollera att återgångskoden fungerar med installerat Neon-schema,
+   lagrade paket/media och nuvarande miljökontrakt. Följ
+   [miljöguiden](ENVIRONMENT-VARIABLES.md) och aktuell handoff för talflagga,
+   stoppväg, behörigheter och pågående driftprov.
+3. Gör en avgränsad kodåtergång genom ordinarie featurebranch/PR och erforderlig
+   CI/readiness. Samordna pågående aktivering innan nästa automatiska deploy.
+   Kontrollera därefter faktisk version och den berörda funktionen igen.
 
-**Verifierad versionsreferens inför Dragan-rättningen, 16 oktober 2026:**
-Vercel `dpl_BvYsArnsKqDHpWymic2P89LiBmj3` är läsbar och READY i produktion
-i projektet/teamet ovan, med www/apex tilldelade. Render
-`dep-db902o1srm7s73a3noc0` är live på `croupier-v2`
-(`srv-datg3j6gekts73amgli0`) i Jakob's workspace
-(`tea-d19jsa63jp1c73ch0sc0`). Båda kör
-`10d3255e03b704e27bfe05b30855e7e26b7f8aba`; Renders publika
-`/__cloud/version` bekräftar samma SHA och `/__cloud/health` svarar 200/ok.
-PR178 ändrar klientens återhämtning, tester och dokumentation; databas,
-frysta paket, mediebyte och miljökontrakt ändras inte i den leveransen.
-Versionsparet är därför en konkret referens vid en avgränsad kodåtergång
-från PR178. Ingen rollback eller databasåterställning har utförts.
+Återställ inte gamla env-filer, produktregister eller domänkopplingar som en del
+av vanlig kodrollback. En ändrad databasbehörighet eller talflagga har en egen
+återgång och följer inte automatiskt med koden. Guiden utför ingen sådan åtgärd.
+Neon/Blob/Resend, konton, historik och QA-data får inte skrivas över.
 
-Återläs resursåtkomst, SHA och kompatibilitet inför en faktisk återgång;
-andra senare ändringar kan kräva andra åtgärder. Behåll samma samlade
-projekt och domäner. Miljöprofiler och bygg-/runtimeflaggor ska följa
-[den aktuella loaderkartan](ENVIRONMENT-VARIABLES.md#aktuell-avgränsning-15-oktober-2026-kväll);
-återställ inte äldre env-filer eller flytta domäner som en rutinmässig del av
-kodrollback. Denna dokumenträttning utför ingen omkoppling eller molnändring.
-
-De två äldre native-QA-projekten finns fortfarande i
-`jakeminator123s-projects`, utan Scoutgamings produktionsdomäner. De är
-separata testmiljöer, inte alternativa produktionssajter. Deras namn och
-datagräns finns i [miljöregistret](ENVIRONMENT-VARIABLES.md). En gammal
-READY-deployment är inte ett färskt funktions- eller isoleringsprov.
+Tidigare separata frontend-/Studio-projekt är inga verifierade reservvägar.
+Det historiska `scoutgaming-legacy-frontend` gav 404 vid kontroll 15 oktober;
+det bevisar varken radering eller tillgänglig historik. Äldre deployment-ID:n
+och inställningar är historiskt underlag, inte aktuella startinstruktioner.
+Två äldre native-QA-projekt i `jakeminator123s-projects` saknar produktionsdomäner
+och behåller sin datagräns enligt [miljöregistret](ENVIRONMENT-VARIABLES.md).
+En gammal READY-deployment är inget färskt funktions- eller isoleringsprov.
 
 ## Byggdelar och Node-versioner
 
@@ -156,10 +140,14 @@ att branchen redan finns på GitHub; ingen force-push behövs.
 
 ## Lokal miljö
 
-Starta med `node apps/studio/start.mjs` enligt [Studioguiden](../apps/studio/docs/README.md). Sessionsvakten i `services/openclaw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
-Kör endast ett produkt-/labbpar; stoppa det före miljöbyte. Från Codex används
-`--no-open`. Återanvänd spel- och labbflik, bevara utkast och spel.
-Stoppade servrar förblir stoppade tills Jakob ber om start.
+`node apps/studio/start.mjs --no-open` visar den publicerade lobbyns adress.
+Det startar inga lokala produktservrar och läser inget lokalt produktregister.
+För isolerad provkörning används uttryckligen `--offline --no-open` enligt
+[Studioguiden](../apps/studio/docs/README.md). Bara fixturen använder ett lokalt
+serverpar och sessionsvakten i `services/openclaw/lab/deploy/local-session.mjs`.
+Kör ett sådant par åt gången; dess stoppväg rensar egna processer och testdata.
+Återanvänd relevanta browserflikar, bevara utkast/spel och lämna stoppade servrar
+stoppade tills Jakob ber om start.
 Sparade lokala projekt, historik och profiler finns i `lab/data`;
 spel-/CRAIG-databaserna ligger i `lab/data/players`. Isolerade testprofiler
 får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs` läser fortsatt

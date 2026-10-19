@@ -40,16 +40,6 @@ function loadTs(fileUrl) {
 const project = createSeedProject();
 const props = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'astrid' };
 
-test('probe route loads studio data for /control/probe and tolerates a missing searchParams argument', () => {
-  const source = readFileSync(new URL('../app/control/probe/page.tsx', import.meta.url), 'utf8');
-  assert.match(source, /loadControlStudio\('\/control\/probe'\)/);
-  assert.match(source, /props\?\.searchParams/);
-  assert.match(source, /firstQueryValue\(query\.dealer\)/);
-  assert.match(source, /firstQueryValue\(query\.event\)/);
-  assert.match(source, /title: 'AI-småprat vid inaktivitet · Croupier Studio'/);
-  assert.match(source, /dynamic = 'force-dynamic'/);
-});
-
 test('unsupported dealers keep their identity and cannot edit or test Astrids probe policy', () => {
   const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
   const customProject = addDealer(project, 'paow', 'PAOW');

@@ -1,18 +1,35 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
-## UX/UI och HUVUDAGENT5 — 18 oktober 2026
+## Leverans och städning på main — 19 oktober 2026
 
-På Jakobs uttryckliga uppdrag samordnar UI/UX och HUVUDAGENT5 klippkartans
-namn, Blackjack-struktur och gränsen mellan scenlayout och filmkalibrering.
-UI/UX äger produkttext, navigation, förslag och UX-avsnittet i
-[handoffen](../JOHN-HANDOFF.md#uxui-arbetslogg-och-kommande-körordning--18-oktober-2026).
-HUVUDAGENT5 äger teknisk verifiering och namn-/importreferensen i
-[BLOB-NEON](../storage/BLOB-NEON.md). Produktmodellen styrs fortsatt enbart av
+MERGE4 samordnar aktuell review/CI/merge, UI/UX2 Admin-flödet, HUVUDAGENT6
+backendens startkontrakt och POST-LIPSYNC5 talaktivering, stoppväg och budget.
+Nästa konkreta leverans och verklig driftstatus finns i
+[handoffen](../JOHN-HANDOFF.md). Rollnamnen ger inget utökat ändrings- eller
+kostnadsmandat. Produktbegrepp finns endast i
 [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md).
-De delar inte filägarskap: meddela berörd agent före överlapp eller Git-operation
-i samma checkout. Inga nya underagenter, medieflyttar eller runtimeändringar
-följer automatiskt av denna planering. Andra agenters provresultat tillskrivs
-sin källa och räknas inte som nya körningar.
+
+Frys PR-head och läs aktuell kod, CI och ägarskap före mergebeslut enligt
+rotens AGENTS. Oberoende läsgranskning sker mot samma fulla SHA; ändrad head
+kräver kontroll av deltat. Författarens tester/bilder tillskrivs författaren.
+Efter merge skiljs main-CI, Vercels webbversion och Renders spelversion från
+faktisk funktion och tal-/GPU-acceptans. Ett pågående driftprov kan kräva ett
+avgränsat deployhåll hos mergeägaren; en färdig kodgranskning häver det inte.
+
+Varje agent äger konkreta filer/avsnitt i egen checkout. Samma fil i olika
+checkouter kräver fortfarande samordning och normal mainintegration; skydda
+andra agenters handoffavsnitt och använd aldrig force-push som konfliktlösning.
+Städa en ersatt implementation tillsammans med dess enda tester, registreringar
+och oanvända dokumentinstruktioner. Namn som `legacy`, `lab` eller `control`
+bevisar inte att gemensam kod, lagrade ID:n eller verifierade medier är förbrukade.
+Den oanropade engångsimporten `prepareLegacyStudioSnapshot` är pensionerad;
+aktiva snapshot-, åtkomst- och runtimekontrakt behålls.
+
+Uppdatera befintliga kanoniska guider och eget handoffavsnitt med ändring,
+verifiering och kvarvarande fel. Skapa inga parallella rapporter eller trackers.
+Mål och paus används efter Jakobs uttryckliga instruktion; en pausad agent ska
+inte ersättas med en egen pollningsloop. Återstående självständigt arbete utförs
+innan väntan, och ett mål markeras färdigt först när hela resultatet är verifierat.
 
 ## Rörligt tal, källbevaring och verifiering — 18 oktober 2026
 
