@@ -39,6 +39,7 @@ export async function copyOpenClawRuntime(root) {
     'packages/director/conversation-memory.mjs',
     'packages/director/dashboard-handoff-contract.mjs',
     'packages/director/engine.mjs',
+    'packages/director/generated-speech-text.mjs',
     'packages/director/openclaw.mjs',
     'packages/director/product-probe.mjs',
     'packages/director/product-speech.mjs',
