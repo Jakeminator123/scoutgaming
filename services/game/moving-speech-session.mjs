@@ -266,7 +266,39 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
           return submission;
         },
         ready() {
-          if (!readiness) readiness = (async () => { await api.submit(); return connection.ready(); })();
+          if (!readiness) readiness = (async () => {
+            await api.submit();
+            const monitor = new AbortController();
+            const signal = AbortSignal.any([requestSignal, monitor.signal]);
+            const ended = new Promise((_, reject) => {
+              void (async () => {
+                while (!signal.aborted) {
+                  // A handler can return a terminal diagnostic before opening
+                  // its callback. Observe status only; never retry a paid POST
+                  // or expose provider output. Fast callbacks need no read.
+                  await pause(pollMs, undefined, { signal });
+                  let status;
+                  try {
+                    status = (await bounded(s => provider.status({ jobId: acceptedJob, signal: s }),
+                      signal, idleMs, 'generated_speech_moving_status_unknown'))?.status;
+                  } catch (error) {
+                    if (signal.aborted) return;
+                    // Unknown observations keep the original callback deadlines
+                    // and durable reservation; they cannot prove readiness.
+                    continue;
+                  }
+                  if (terminal.has(status)) fail('moving_worker_closed', 503);
+                }
+              })().catch(error => {
+                // Abort belongs to the callback: preserve its original timeout,
+                // attestation or cancellation error. Never resolve as ready.
+                if (!signal.aborted) reject(error);
+              });
+            });
+            try { return await Promise.race([connection.ready(), ended]); }
+            catch (error) { await connection.cancel(); throw error; }
+            finally { monitor.abort(); }
+          })();
           return readiness;
         },
         async dispatch(input, options) {

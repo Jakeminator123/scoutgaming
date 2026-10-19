@@ -76,6 +76,26 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Avslutat providerjobb före callback — HUVUDAGENT6
+
+POST-LIPSYNC5 belade 19 oktober att ett providerjobb blev `COMPLETED` med
+workerresultat `failed/bank_http_rejected` redan vid receipthämtningen. Ingen
+callback öppnades, men `ready()` väntade tidigare på den upp till startupgränsen.
+
+Väntan övervakar nu det redan accepterade jobbets status och avvisas med den
+befintliga säkra koden `moving_worker_closed` när jobbet är terminalt före callback.
+Ordinarie cancellation/journalfinalisering gäller fortsatt; inga nya betalda
+försök, återbetalningar eller ändrade timeout-/budget-/workergränser tillkommer.
+Okänd providerstatus behåller callbackens ursprungliga tidsgränser och reservation.
+Övervakningen upphör vid readiness/fel och bevarar callbackens eget abort-/attestfel.
+
+Terminalregressionerna visade felet före rättningen. 129 session-/runtime-/provider-/
+journalprov samt 38 transportprov passerar efteråt, inklusive användarabort under statusläsning och sent
+terminalsvar. Gatewayns låsta `ws` installerades i denna arbetskopia för proven.
+Oberoende läsgranskning fann inga blockerare. Bankens faktiska HTTP403 har ett
+separat diagnosspår hos POST-LIPSYNC5; rättningen bevisar varken fungerande
+bankhämtning eller godkänt tal/uppspelning. MERGE4 äger slutgranskning/CI/merge.
+
 ### Molnstart: driftprofil till spelprocessen — HUVUDAGENT6
 
 Molnstartens explicita child-env tappade `CROUPIER_STUDIO_MOVING_DRIFT_API` och
