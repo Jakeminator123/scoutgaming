@@ -189,6 +189,29 @@ test('an initializing cache slot beside the exact running job does not relabel o
   assert.equal(result.busyJobs,1);
 });
 
+test('a job dispatched to a cached idle slot stays observable while health still reports the slot as idle',async()=>{
+  // Real provider reads 2026-10-19 14:31:01–14:31:12 UTC: pod RUNNING with the
+  // exact image/version, jobs.inProgress=1, health idle=1 running=0 initializing=0.
+  const f=fixture({warm:true});
+  Object.assign(f.proof.health.workers,{idle:1,running:0,initializing:0,ready:1});
+  f.proof.health.jobs.inProgress=1;
+  const result=await f.observer.observe();
+  assert.equal(result.workers.length,1);assert.equal(result.workers[0].id,'owned-pod');
+  assert.equal(result.workers[0].state,'initializing');assert.equal(result.workers[0].modelReady,false);
+  assert.equal(result.busyJobs,1);
+  // Twelve seconds later the counters catch up and the same pod is running.
+  Object.assign(f.proof.health.workers,{idle:0,running:1,ready:0});
+  assert.equal((await f.observer.observe()).workers[0].state,'running');
+  // A live pod that neither initializing nor a cached idle slot can explain is still unverified.
+  Object.assign(f.proof.health.workers,{idle:0,running:0,initializing:0,ready:0});
+  await assert.rejects(f.observer.observe(),rejects);
+  // Two unexplained starting pods or an unhealthy slot never pass either.
+  const two=fixture({warm:true});
+  Object.assign(two.proof.health.workers,{idle:1,running:0,initializing:0,unhealthy:1});two.proof.health.jobs.inProgress=1;
+  const unhealthy=await two.observer.observe();
+  assert.equal(unhealthy.workers[0].state,'unknown');
+});
+
 test('initialization cannot hide missing, stale or foreign cached evidence or unhealthy capacity',async()=>{
   for(const change of [
     f=>{f.proof.release.workers.workers.pop();},

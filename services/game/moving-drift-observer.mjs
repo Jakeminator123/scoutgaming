@@ -44,21 +44,28 @@ export function createMovingDriftObserver({profile,provider,now=Date.now}={}) {
       requireEvidence(Array.isArray(pods)&&pods.length===release.activeWorkers&&pods.length===occupied.length
         &&pods.length<=1&&new Set(pods.map(pod=>pod?.id)).size===pods.length);
       const occupiedHealth=workers.running+workers.unhealthy+workers.throttled;
-      const initializingPods=pods.length-occupiedHealth;
+      // Live pods the health counters do not yet count as running. Observed on
+      // 19 October 2026 with real provider reads: a job dispatched to a cached
+      // idle slot shows the pod RUNNING with jobs.inProgress=1 for about twelve
+      // seconds while health still reports idle=1, running=0, initializing=0.
+      // Such a pod is starting, so it may be explained by `initializing` or by
+      // the cached `idle` slot it is warming from; it is never ready or hidden.
+      const startingPods=pods.length-occupiedHealth;
+      requireEvidence(startingPods>=0&&startingPods<=workers.initializing+workers.idle&&(jobs.inProgress===0||pods.length>0));
       // Initializing may include an unbilled cache slot (also recognized by the
       // admission capacity contract). Subtract only fresh matching EXITED rows;
       // never hide missing live pods, unhealthy capacity or unmatched counters.
       const currentCache=receipt.workers.workers.filter(worker=>worker.state==='scaled-down'
         &&worker.image===release.image&&worker.version===release.endpointVersion&&worker.isStale===false).length;
+      const initializingPods=Math.min(startingPods,workers.initializing);
       const cachedInitializing=workers.initializing-initializingPods;
-      requireEvidence(initializingPods>=0&&initializingPods<=workers.initializing
-        &&cachedInitializing<=currentCache&&(jobs.inProgress===0||pods.length>0));
+      requireEvidence(cachedInitializing<=currentCache);
       const observedWorkers=pods.map((pod,index)=>{
         const entry=occupied[index],state=pod?.state??'unknown',entryState=entry.state??'unknown';
         requireEvidence(pod&&id(pod.id)&&(entry.id===undefined||entry.id===pod.id)&&state===entryState&&occupies(pod)
           &&pod.image===release.image&&pod.version===release.endpointVersion&&pod.isStale===false);
         return {id:pod.id,profileId,state:state==='unknown'||workers.unhealthy>0||workers.throttled>0?'unknown':
-          initializingPods>0?'initializing':'running',gpu:'',releaseDigest:null,bankHash:null,modelReady:false};
+          startingPods>0?'initializing':'running',gpu:'',releaseDigest:null,bankHash:null,modelReady:false};
       });
       return {observedAtMs,workers:observedWorkers,busyJobs:jobs.inProgress,queuedJobs:jobs.inQueue,
         workersMin:0,workersMax:1};
