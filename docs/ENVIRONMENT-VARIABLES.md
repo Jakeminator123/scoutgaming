@@ -38,6 +38,16 @@ Kodändringen skriver inga molnvariabler
 eller produktionsdata. Runtime-/budgetaktivering samordnas separat med
 POST-LIPSYNC5 och granskning/merge med MERGE4.
 
+**19 oktober 2026, Jakobs beslut ”sätt på alla flaggor”:** båda drift-namnen
+är nu listade som conditional för `render-game` och `vercel-frontend-production`
+i `environment-variables.json` (de fanns i molnet men inte i registret).
+`CROUPIER_MOVING_SPEECH_ENABLED` sattes från `0` till `1` på Render `croupier-v2`
+via Render-API:t på Jakobs uppdrag; inga namn lades till eller togs bort och
+inga värden skrevs i Git. Flaggan ensam är ingen aktivering: Dragans talprofil
+måste vara `enabled` i Studio och Drift måste stå i Sparläge med Basprofil.
+Den tidigare rutinen att återställa flaggan till `0` efter varje prov gäller
+inte längre som standard; Av i Drift är den ordinarie stoppvägen.
+
 ### Runtime-rollens tabellbehörigheter — verifierat 19 oktober 2026
 
 Installerad SQL016 och grön migrations-readiness bevisar inte runtime-rollens

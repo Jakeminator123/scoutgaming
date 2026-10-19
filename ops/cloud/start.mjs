@@ -8,6 +8,7 @@ import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 import { verifyCloudAccess } from './access-check.mjs';
 import { createStorageExportServer } from './storage-export.mjs';
+import { withChildDiagnostics } from './child-diagnostics.mjs';
 import { SHUTDOWN_BUDGET, trackServerConnections } from '../../services/game/graceful-shutdown.mjs';
 
 // Deliberate pilot opt-in is not a claim of production acceptance.
@@ -60,8 +61,10 @@ async function preflight(env) {
   return config;
 }
 
+// Ordinary production start forwards only the allowlisted finite game
+// diagnostics; the QA runner supplies its own transform and allowlist.
 export async function main(args = process.argv.slice(2), env = process.env,
-  { transformChildSpecifications = specifications => specifications } = {}) {
+  { transformChildSpecifications = withChildDiagnostics } = {}) {
   if (args.length !== 1 || !['--check', '--start'].includes(args[0])) {
     throw new Error('Usage: node ops/cloud/start.mjs --check|--start');
   }

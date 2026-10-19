@@ -38,6 +38,52 @@ satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo
 `scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
 i `docs/environment-variables.json` för både Studio och spelservern.
 
+## Flaggor på, första prov och synlig barndiagnostik — 19 oktober 2026, ~12:30–12:45 UTC
+
+På Jakobs uppdrag (”sätt på alla flaggor”): Render `croupier-v2` fick
+`CROUPIER_MOVING_SPEECH_ENABLED=1` via API (deploy `dep-dbb0r1ff3r2c73frpa2g`,
+LIVE 12:33:09 UTC på samma kod `1c8dc82f`); Drift sattes till Sparläge/Basprofil
+(revision 13, `connected:true`, `admission.allowed:true`); Dragans talprofil sattes
+till `enabled` genom det ordinarie projektskrivaren (revision
+`studio-c4666576-db78-421a-a69d-5885c8bc9075`). Flaggorna lämnas på; Av i Drift är
+ordinarie stoppväg. RunPod-endpointen har max 1 worker och 60 s tomgång, så
+vilokostnaden är noll. Journalens grant 24,00 USD har 1,20 USD kvar efter
+POST-LIPSYNC5:s 19 reservationer; fler jobb än ett kräver en ny append-only
+CAS-höjning inom Jakobs tak.
+
+**Provet 12:35:30 UTC** (text ”Svara kort på svenska: säg hej Jakob.”, OpenClaw,
+ljud på) misslyckades efter 22,4 s i förberedelsen med klientkoden `chat_failed`
+(stages text 630 ms, video-queue 4,6 s och 15,6 s). Enda serverloggen är
+gatewayns `moving_bank_rejected stage=authorization code=drift_not_admitting
+httpStatus=403`: workerns bankhämtning nekades av driftguarden medan jobbet
+pågick — samma symptom som det tredje provets bank-403. Guardens exakta orsak
+syns inte, eftersom spelprocessens stdout kastas i produktion
+(`process-group.mjs`, `stdio:'ignore'`); H6:s `moving_drift_guard_rejected`-
+och `readback_timing`-diagnostik har därför aldrig nått Render-loggen. Observationens
+ålder i vila är 1,2–3,5 s mot 15 s gräns; under jobb är den omätt.
+
+Rättning i denna leverans: `ops/cloud/child-diagnostics.mjs` vidarebefordrar
+endast allowlistade, ändliga barnhändelser (guardorsak, readback-timing/fel,
+förberedelse-/strömkvitton med säkra koder och id:n, recovery) till
+plattformsloggen med `source:"game"`, högst 2000 rader per process; startrader,
+fri text och allt annat kastas fortsatt. Nästa prov efter deploy visar orsaken
+direkt i Render-loggen. Ingen grind, tidsgräns eller budget ändrades.
+
+## Klippnamn och poskedja — 19 oktober 2026
+
+Ny gemensam namnregel i `packages/presentation/contracts/clip-naming.mjs`
+(fack + Kevins i/iv/v/base-suffix som poskedja + språk/tagning för repliker)
+driver importassistentens filnamnsförslag och täcker alla 36 fack inklusive
+skövergångar, reaktioner och VILA/REDO-bilder. Utdelnings-, vändnings- och
+övergångsklipp kan nu bära `startPose`/`endPose` = VILA/REDO i klassificeringen
+(schema och `validateClipPoses`); importraden visar och låter ändra kedjan,
+klippkartan och mediebiblioteket visar den som läsbricka. Deklarationen är
+authoringmetadata; spelarens filmade sekvens använder fortfarande den verifierade
+profilen. Verifierat: 163 Studio-prov (importkatalog, intake, klient, komponenter),
+36 ops-prov, båda typkontrollerna, env-register och orphan-kontroll. Guide i
+[README](../apps/studio/docs/README.md) och teknik i
+[runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md#klippnamn-och-deklarerad-poskedja-19-oktober-2026).
+
 ## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
 
 Den avslutade registerflyttens `prepareLegacyStudioSnapshot` hade endast
