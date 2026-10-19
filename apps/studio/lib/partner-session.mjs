@@ -15,6 +15,7 @@ import { normalizeStudioRole } from '../../../packages/studio-access/studio-acce
 import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { PARTNER_TEAM_CONFLICTS, createPartnerTeamApi } from './partner-team-api.mjs';
+import { wrapNativePresentationRepository } from './presentation-runtime-readiness.mjs';
 
 // Opaque partner sessions are stored in the existing lab_sessions table.
 // The digest is purpose-prefixed so a lab_session or bo_jwt value can never
@@ -418,7 +419,8 @@ async function brandingResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const { session, store, operator } = found;
   const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
-  const repository=config.store?null:createStudioRepository({pool:config.pool,scope:config.scope});
+  const repository=config.store?null:wrapNativePresentationRepository(createStudioRepository({pool:config.pool,scope:config.scope}),
+    {env:config.env??process.env,fetchImpl:config.fetchImpl??fetch});
   const readAdministration=async()=>{
     if(typeof config.readAdministration==='function') {
       const value=await config.readAdministration();
@@ -436,7 +438,7 @@ async function brandingResponse(prepared, config) {
       ||!sameOperatorScope(decided.scope,session.scope))fail(403);
     return allowsWorkspaceResource(decided,'presentations.configure',{scope:session.scope,operatorId:operator.id});
   };
-  const withWriteContext=async work=>{
+  const withWriteContext=async(work,options={})=>{
     if(config.store)return work({store,readAdministration,reauthorize:()=>reauthorize(store)});
     return repository.transaction(()=>repository.withTransactionClient(async client=>{
       try {
@@ -448,12 +450,13 @@ async function brandingResponse(prepared, config) {
       if(!locked.rows.length)fail(404);
       const source=await createOperatorStore({sql:client,scope:config.scope,now:config.now,
         transaction:callback=>repository.withTransactionClient(callback)});
-      return await work({store:source,readAdministration,reauthorize:()=>reauthorize(source)});
+      return await work({store:source,readAdministration,reauthorize:()=>reauthorize(source),
+        withMutationContext:repository.withMutationContext});
       } catch(error) {
         if(Number.isInteger(error?.statusCode))throw new StudioStorageError('partner_request_rejected',error.statusCode);
         throw error;
       }
-    }));
+    }),options);
   };
   const api = createPartnerBrandingApi({store,readAdministration,withWriteContext,
     readProject:typeof config.readProject==='function'?config.readProject:defaultReadProject});

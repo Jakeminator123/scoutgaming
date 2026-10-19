@@ -145,6 +145,13 @@ export async function readDealerArchiveImpact({repository,...input}){
 export async function applyDealerArchiveImpact({repository,impactToken,actor,...input}){
   return repository.transaction(async()=>{
     const plan=await readWithin(repository,input);
+    // Preflight covered only the retained publications from its exact plan.
+    // Recheck the fresh plan under the same lock before any document/package
+    // write; an active mutation context cannot acquire new features or fetch.
+    if(repository.withMutationContext){
+      const retained=plan.packageChanges.map(readPackagePresentation).filter(Boolean);
+      await repository.withMutationContext(async()=>{},retained.map(value=>({kind:'presentation-package',value})));
+    }
     if(typeof impactToken!=='string'||impactToken!==plan.impact.token)fail('studio_conflict');
     if(!same(plan.administration,plan.administrationDocument.value))await repository.saveDocument('administration',{
       value:plan.administration,expectedRevision:plan.administrationDocument.revision,actor});

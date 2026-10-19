@@ -471,23 +471,43 @@ import {canonicalStudioJson} from '../../../packages/studio-registry/server/docu
 import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 import {createGameEntrySelector} from '../../../packages/presentation/server/game-entry-selector.mjs';
 import {resolvePlayerSelection} from '../../../packages/presentation/runtime/player-choices.mjs';
 
-async function nativeBrandingFixture() {
+async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabilityVersion=21,unrelatedAnchors=false}={}) {
   const base=createStudioMemoryPool(),trace=[];
   const scoped=row=>({environment_id:scope.environment,workspace_id:scope.workspaceId,...row});
   const lane={...defaultPresentationLane('linnea'),id:'linnea-published',dealers:['linnea','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
   lane.layers.dealer={enabled:true,default:'linnea',allowed:['linnea','nora']};
+  const tableAsset={schemaVersion:1,id:'33333333-3333-4333-8333-333333333333',role:'table',label:'Board',
+    contentType:'image/png',sha256:'a'.repeat(64),size:32,width:1920,height:1080};
+  tableAsset.pathname=layerAssetPath(tableAsset);
+  if(tableGeometry){
+    lane.operatorAdjustable.push('table.color');
+    lane.layers.table={...lane.layers.table,enabled:true,default:tableAsset.id,allowed:[tableAsset.id]};
+    lane.composition.blackjackTables=[defaultBlackjackTableGeometry(tableAsset.id)];
+    if(anchors)lane.composition.blackjackTables[0].desktop.anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.6,height:.5}}};
+  }
   // v2 intentionally keeps this room on its one published portrait adapter.
-  const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane]}).presentation;
+  const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane],assets:tableGeometry?[tableAsset]:[]}).presentation;
   const presentation={...captured,schemaVersion:2};
   let state={drafts:[],operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
     roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
-  let beforeWrite=null,clientSequence=0;
+  function anchoredPresentation(){
+    const value=structuredClone(presentation),target=value.lanes[0];
+    target.layers.table={...target.layers.table,enabled:true,default:tableAsset.id,allowed:[tableAsset.id]};
+    value.assets=[tableAsset];target.composition.blackjackTables=[defaultBlackjackTableGeometry(tableAsset.id)];
+    target.composition.blackjackTables[0].desktop.anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.6,height:.5}}};
+    return value;
+  }
+  if(unrelatedAnchors)state.packages.push(scoped({...state.packages[0],operator_id:'other-operator',
+    branding:canonicalStudioJson(withPackagePresentation({name:'Other'},anchoredPresentation()))}));
+  let beforeWrite=null,clientSequence=0,writeTransactions=0;
   const copy=value=>structuredClone(value);
   const result=(rows=[],command='SELECT')=>({rows:copy(rows),command});
   function operatorQuery(sql,values,source) {
@@ -518,15 +538,15 @@ async function nativeBrandingFixture() {
   const pool={trace,base,snapshot:()=>copy(state),
     async query(sql,values=[]) {trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
     async connect() {
-      const client=await base.connect(),id=++clientSequence;let working,readonly;
+      const client=await base.connect(),id=++clientSequence;let working,readonly,mutating=false;
       return {release:()=>client.release(),async query(sql,values=[]) {
         const tag=/operator-store:([a-z-]+)/.exec(sql)?.[1]??/studio:([a-z-]+)/.exec(sql)?.[1]??sql.split(/\s/)[0];
         trace.push({client:id,tag,sql,values:copy(values)});
-        if(sql.startsWith('BEGIN')) {readonly=sql.includes('READ ONLY');if(!readonly&&beforeWrite){const change=beforeWrite;beforeWrite=null;change();}working=copy(state);}
+        if(sql.startsWith('BEGIN')) {readonly=sql.includes('READ ONLY');if(!readonly){writeTransactions++;mutating=true;if(beforeWrite){const change=beforeWrite;beforeWrite=null;change();}}working=copy(state);}
         if(sql.includes('operator-store:'))return operatorQuery(sql,values,working);
         const response=await client.query(sql,values);
         if(sql==='COMMIT'&&!readonly&&response.command!=='ROLLBACK')state=working;
-        if(sql==='COMMIT'||sql==='ROLLBACK')working=null;
+        if(sql==='COMMIT'||sql==='ROLLBACK'){if(mutating){writeTransactions--;mutating=false;}working=null;}
         return response;
       }};
     },
@@ -536,13 +556,21 @@ async function nativeBrandingFixture() {
     gameLane:'portrait-linnea',gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],
     tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
   await repository.initializeDocument('administration',{value:administration,revision:'admin-native-1',actor:'fixture'});
-  const nativeConfig={...config,pool,readProject:()=>assert.fail('frozen N2 never reads latest project')};
+  const nativeConfig={...config,pool,readProject:()=>assert.fail('frozen N2 never reads latest project'),
+    env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
+      assert.equal(writeTransactions,0,'no capability HTTP inside SQL mutation');
+      const requested=Number(headers['X-Presentation-Capability-Version']??1);
+      trace.push({client:0,tag:'capabilities',requested});
+      return Response.json(presentationCapabilitiesForVersion(Math.min(requested,capabilityVersion)));
+    }};
   const login=await handlePartnerAuth(loginRequest('north-partner',secret),nativeConfig),cookie='partner_session='+tokenOf(login);
   const get=()=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{headers:{host:'public.example.invalid',cookie}}),nativeConfig);
   const command=body=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{
     method:'POST',headers:{host:'public.example.invalid',cookie,origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
     body:JSON.stringify(body)}),nativeConfig);
   const save=(dealer='linnea')=>command({action:'save-draft',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,branding:{lane:lane.id,dealer}});
+  const saveRoomColor=()=>command({action:'save-draft',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,
+    branding:{lane:lane.id,color:'#112233',roomOverrides:{'room-native':{color:'#334455'}}}});
   const review=()=>command({action:'review',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1});
   const publish=reviewToken=>command({action:'publish',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,reviewToken});
   const post=async(dealer='linnea')=>{
@@ -551,7 +579,9 @@ async function nativeBrandingFixture() {
     return publish((await reviewed.json()).reviewToken);
   };
   trace.length=0;
-  return {pool,repository,presentation,administration,get,post,save,review,publish,changeBeforeWrite:change=>{beforeWrite=change;},
+  return {pool,repository,presentation,administration,get,post,save,saveRoomColor,review,publish,changeBeforeWrite:change=>{beforeWrite=change;},
+    addLockedAnchors:()=>{state.packages[0].branding=canonicalStudioJson(withPackagePresentation({name:'North'},anchoredPresentation()));},
+    changePackageRevision:()=>{state.packages[0].package_revision=2;},
     revoke:()=>{state.memberships[0].status='suspended';},
     changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
 }
@@ -596,4 +626,49 @@ test('native package publish failure rolls back and retry preserves the original
   const failed=await f.publish(token);assert.equal(failed.status,503);assert.deepEqual(f.pool.snapshot(),before);assert.ok(f.pool.trace.some(row=>row.tag==='publish-package'),'failure follows actual publish, before commit');
   assert.equal((await f.publish(token)).status,200);assert.equal(f.pool.snapshot().packages.length,2);
   assert.deepEqual(JSON.parse(f.pool.snapshot().packages[1].branding)._scoutPresentation,JSON.parse(before.packages[0].branding)._scoutPresentation);
+});
+for(const version of [19,20])test(`native partner publication retains frozen anchors only with reader21, reader${version} makes no writes`,async()=>{
+  const f=await nativeBrandingFixture({anchors:true,capabilityVersion:version});
+  assert.equal((await f.get()).status,200);
+  assert.equal((await f.saveRoomColor()).status,200,'room-scoped draft remains available without a runtime upgrade');
+  const token=(await(await f.review()).json()).reviewToken;
+  assert.equal(f.pool.trace.some(row=>row.tag==='capabilities'),false,'reads, save and review do not negotiate publication');
+  const before=f.pool.snapshot();f.pool.trace.length=0;
+  assert.equal((await f.publish(token)).status,503);
+  assert.deepEqual(f.pool.snapshot(),before);
+  assert.deepEqual(f.pool.trace.filter(row=>row.tag==='capabilities').map(row=>row.requested),[21]);
+  assert.equal(f.pool.trace.some(row=>row.sql?.startsWith('BEGIN')&&!row.sql.includes('READ ONLY')),false,'preflight precedes SQL mutation');
+  assert.equal(f.pool.trace.some(row=>['publish-package','write-branding-draft','audit-write'].includes(row.tag)),false);
+});
+test('native reader21 publishes frozen anchors atomically, rolls back on commit failure and can retry',async()=>{
+  const f=await nativeBrandingFixture({anchors:true});
+  assert.equal((await f.saveRoomColor()).status,200);const token=(await(await f.review()).json()).reviewToken;
+  const before=f.pool.snapshot();f.changeBeforeWrite(()=>{f.pool.base.commitRollback=true;});
+  assert.equal((await f.publish(token)).status,503);assert.deepEqual(f.pool.snapshot(),before);
+  assert.ok(f.pool.trace.some(row=>row.tag==='publish-package'),'failure followed actual publication');
+  assert.equal((await f.publish(token)).status,200);
+  const after=f.pool.snapshot();assert.equal(after.packages.length,2);assert.equal(after.drafts.at(-1).action,'draft.publish');
+  assert.deepEqual(JSON.parse(after.packages[1].branding)._scoutPresentation,JSON.parse(before.packages[0].branding)._scoutPresentation);
+  assert.deepEqual(f.pool.trace.filter(row=>row.tag==='capabilities').map(row=>row.requested),[21,21]);
+});
+test('native locked package cannot acquire anchors beyond its preflight coverage',async()=>{
+  const f=await nativeBrandingFixture({tableGeometry:true,capabilityVersion:19});
+  assert.equal((await f.save()).status,200);const token=(await(await f.review()).json()).reviewToken;
+  f.changeBeforeWrite(f.addLockedAnchors);f.pool.trace.length=0;
+  assert.equal((await f.publish(token)).status,503);
+  assert.equal(f.pool.snapshot().packages.length,1);assert.equal(f.pool.snapshot().drafts.length,1);
+  assert.equal(f.pool.trace.filter(row=>row.tag==='capabilities').length,1,'no retry HTTP under lock');
+  assert.equal(f.pool.trace.some(row=>['publish-package','write-branding-draft','audit-write'].includes(row.tag)),false);
+  assert.ok(f.pool.trace.some(row=>row.tag==='ROLLBACK'));
+});
+test('native anchored publication preserves package CAS and ignores other operators frozen anchors',async()=>{
+  const anchored=await nativeBrandingFixture({anchors:true});
+  assert.equal((await anchored.save()).status,200);const token=(await(await anchored.review()).json()).reviewToken;
+  anchored.changeBeforeWrite(anchored.changePackageRevision);anchored.pool.trace.length=0;
+  assert.equal((await anchored.publish(token)).status,409);
+  assert.equal(anchored.pool.trace.some(row=>['publish-package','write-branding-draft','audit-write'].includes(row.tag)),false);
+  const plain=await nativeBrandingFixture({capabilityVersion:19,unrelatedAnchors:true});
+  assert.equal((await plain.post()).status,200);
+  assert.deepEqual(plain.pool.trace.filter(row=>row.tag==='capabilities').map(row=>row.requested),[3]);
+  assert.equal(plain.pool.snapshot().packages.filter(row=>row.operator_id==='other-operator').length,1);
 });

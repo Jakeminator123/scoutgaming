@@ -1,7 +1,7 @@
 // Isolated visual harness for the already-built /admin UI. No Next/game server,
 // provider credentials, remote media or production state. Run from the checkout:
 // Build with CROUPIER_LAB_BASE_PATH=/studio, then run:
-// node tools/admin-clips-fixture.mjs --ffmpeg <installed-ffmpeg.exe>
+// node tools/admin-clips-fixture.mjs --ffmpeg <installed-ffmpeg.exe> [--scene]
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import {createServer} from 'node:http';
@@ -13,6 +13,7 @@ import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 
 const args=process.argv.slice(2),option=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
+const sceneMode=args.includes('--scene');
 const port=Number(option('--port','4196')),host='127.0.0.1',origin=`http://${host}:${port}`;
 const ffmpeg=option('--ffmpeg','ffmpeg'),root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Invalid loopback port');
@@ -23,7 +24,9 @@ process.env.CROUPIER_QA_ALLOWED_PORTS=String(port);
 const {installComparisonProcessGuard}=await import('./start-local-comparison.mjs');
 installComparisonProcessGuard();
 const {acquireLocalSession}=await import('../services/openclaw/lab/deploy/local-session.mjs');
-const {createEmptyProject,addDealer,addVariant,validateProject}=await import('../packages/presentation/contracts/studio-model.mjs');
+const {createEmptyProject,addDealer,addVariant,validateProject,defaultPresentationLane}=await import('../packages/presentation/contracts/studio-model.mjs');
+const {defaultCompositionSettings,defaultBlackjackTableGeometry}=await import('../packages/presentation/contracts/composition-settings.mjs');
+const {compositionRuntimeResponse}=await import('../services/game/composition-runtime.mjs');
 const {bindClip,clipSlots,createStudioClient}=await import('../apps/studio/client/admin/lib/connected-studio.mjs');
 const {kindForEvent}=await import('../packages/presentation/contracts/video-intake.mjs');
 const {layerAssetPath}=await import('../packages/presentation/contracts/presentation-layers.mjs');
@@ -79,8 +82,16 @@ try {
   const asset={schemaVersion:1,id:assetId,role:'table',game:'blackjack',label:'Grönt provbord',contentType:'image/png',sha256:digest(assetBytes),size:assetBytes.length,width:720,height:360};
   asset.pathname=layerAssetPath(asset);project.layerAssets=[asset];
   media.set('/studio/api/layer-assets/'+assetId,{bytes:assetBytes,contentType:'image/png'});
+  const rooms=[];
+  if(sceneMode){
+    const lane=defaultPresentationLane(dealerId);lane.id='fixture-scene';lane.label='Delad provscen';lane.renderer='layered';
+    lane.layers.table={enabled:true,default:assetId,allowed:[assetId]};lane.composition=defaultCompositionSettings();
+    lane.composition.mobile.table.y=.45;lane.composition.desktop.table.y=.45;
+    lane.composition.blackjackTables=[defaultBlackjackTableGeometry(assetId)];project.lanes=[lane];
+    rooms.push({id:'fixture-room',name:'Scenprov',operatorId:'fixture-company',game:'blackjack',compositionId:lane.id,state:'draft',published:false,playable:false,dealerIds:[dealerId],dealers:[{id:dealerId,name:'Elin · isolerad provdealer'}]});
+  }
   project=validateProject({...project,revision:'fixture.ui.1'});
-  assert.equal(project.lanes.length,0,'The dealer must have no room or shared composition');
+  assert.equal(project.lanes.length,sceneMode?1:0);
   const seed=structuredClone(project);let revision=1,saves=0,conflicts=0;
   const account={id:'7',username:'fixture-admin',role:'admin',email:'fixture@example.invalid',salt:randomBytes(16).toString('hex'),hash:randomBytes(64).toString('hex'),epoch:0};
   const signer=randomBytes(32),stamp=digest(Buffer.from(account.salt+':'+account.hash));
@@ -98,21 +109,23 @@ try {
   const headers={'cache-control':'private, no-store','content-security-policy':csp,'x-content-type-options':'nosniff'};
   const json=(value,status=200)=>Response.json(value,{status,headers});
   const fixtureOperators=[{id:'fixture-company',slug:'provbolaget',name:'Provbolaget',status:'active',archivedAt:null,packageRevision:null},{id:'fixture-archive',slug:'arkivbolaget',name:'Arkiverat provbolag',status:'archived',archivedAt:'2026-10-01T00:00:00Z',packageRevision:null}];
-  const catalog=()=>({source:'registered',operators:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label})),administration:{operators:fixtureOperators,rooms:[],compositions:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label,archived:false})),revisions:{project:project.revision,administration:'fixture-admin-1'}}});
+  const catalog=()=>({source:'registered',operators:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label})),administration:{operators:fixtureOperators,rooms,compositions:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label,archived:false})),revisions:{project:project.revision,administration:'fixture-admin-1'}}});
   function bump(value){project=validateProject({...structuredClone(value),revision:'fixture.ui.'+(++revision)});return project;}
   async function handle(request){
     const url=new URL(request.url);
     if(url.origin!==origin||request.headers.get('host')&&request.headers.get('host')!==new URL(origin).host)return json({error:'fixture_origin_required'},403);
     if(url.pathname==='/__fixture/start'&&request.method==='GET')return new Response(null,{status:303,headers:{...headers,'set-cookie':createCookie()+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=14400',location:'/admin/clips?dealer='+dealerId}});
     await authorize(request);
+    const previewModule=['/studio/preview/compositor.js','/studio/preview/geometry.js'].includes(url.pathname);
+    const compositor=await compositionRuntimeResponse(previewModule?new Request(origin+'/composition-runtime/'+basename(url.pathname),request):request);if(compositor)return compositor;
     if(!['GET','HEAD'].includes(request.method)&&request.headers.get('origin')!==origin)return json({error:'fixture_origin_required'},403);
-    if(url.pathname==='/__fixture/state')return json({isolated:true,revision:project.revision,saves,conflicts,dealerId,rooms:0,compositions:0,project});
+    if(url.pathname==='/__fixture/state')return json({isolated:true,revision:project.revision,saves,conflicts,dealerId,rooms:rooms.length,compositions:project.lanes.length,project});
     if(url.pathname==='/__fixture/conflict'&&request.method==='POST'){
       const other=structuredClone(project);other.dealers[0].label='Elin · sparad från annan session';bump(other);return json({revision:project.revision});
     }
     if(url.pathname==='/__fixture/reset'&&request.method==='POST'){bump(seed);saves=0;conflicts=0;return json({revision:project.revision});}
     if(url.pathname==='/__fixture/stop'&&request.method==='POST'){setTimeout(()=>void stop().then(()=>process.exit(0)),100);return json({stopping:true});}
-    if(url.pathname==='/__fixture')return new Response(`<!doctype html><meta charset="utf-8"><title>Isolerad Admin-fixtur</title><style>body{font:18px system-ui;padding:36px;background:#13222c;color:white}button,a{padding:12px;margin:8px;color:inherit}button{background:#334855}</style><h1>Isolerad Admin-fixtur</h1><p>Minne, syntetisk N1-identitet och tre lokala tekniska provklipp. Inga rum, molntjänster eller produktdata.</p><p><a href="/admin/clips?dealer=${dealerId}">Öppna klippkartan</a><a href="/admin/assets">Materialbibliotek</a><a href="/__fixture/state">Sparat projekt / revisionskvitto</a></p><form method="post" action="/__fixture/conflict"><button>Skapa konkurrerande sparning</button></form><form method="post" action="/__fixture/reset"><button>Återställ endast fixturen</button></form><form method="post" action="/__fixture/stop"><button>Stoppa fixturen</button></form>`,{headers:{...headers,'content-type':'text/html; charset=utf-8'}});
+    if(url.pathname==='/__fixture')return new Response(`<!doctype html><meta charset="utf-8"><title>Isolerad Admin-fixtur</title><style>body{font:18px system-ui;padding:36px;background:#13222c;color:white}button,a{padding:12px;margin:8px;color:inherit}button{background:#334855}</style><h1>Isolerad Admin-fixtur</h1><p>Minne, syntetisk N1-identitet och tre lokala tekniska provklipp. ${sceneMode?"En syntetisk rumsmall för scenprov. ":"Inga rum. "}Inga molntjänster eller produktdata.</p><p><a href="/admin/clips?dealer=${dealerId}">Öppna klippkartan</a><a href="/admin/assets">Materialbibliotek</a><a href="/__fixture/state">Sparat projekt / revisionskvitto</a></p><form method="post" action="/__fixture/conflict"><button>Skapa konkurrerande sparning</button></form><form method="post" action="/__fixture/reset"><button>Återställ endast fixturen</button></form><form method="post" action="/__fixture/stop"><button>Stoppa fixturen</button></form>`,{headers:{...headers,'content-type':'text/html; charset=utf-8'}});
     // Read-only synthetic System data. Mutation capabilities and external services stay absent.
     const systemData={
       'resource-lifecycle':{administrationRevision:'fixture-admin-1',operators:fixtureOperators,rooms:[],presentations:[],historyCoverage:'complete'},
@@ -162,7 +175,7 @@ try {
   await assert.rejects(handle(new Request(origin+'/studio/api/project')),error=>error.statusCode===401);
   assert.equal((await fixtureRequest('/studio/api/project',{method:'PUT',headers:{origin:'https://outside.invalid'},body:'{}'})).status,403);
   const client=createStudioClient({fetchImpl:fixtureRequest});const loaded=await client.load();
-  assert.equal(loaded.project.dealers.length,1);assert.equal(loaded.project.lanes.length,0);
+  assert.equal(loaded.project.dealers.length,1);assert.equal(loaded.project.lanes.length,sceneMode?1:0);
   const changed=structuredClone(loaded.project);changed.dealers[0].label='Elin · kontrollsparning';const saved=await client.save(changed);
   assert.equal((await client.load()).project.revision,saved.revision);
   await fixtureRequest('/__fixture/conflict',{method:'POST'});
@@ -190,5 +203,5 @@ try {
     }catch(error){const status=error.statusCode??400;res.writeHead(status,{...headers,'content-type':'application/json'});res.end(JSON.stringify({error:status===401?'studio_login_required':'fixture_request_rejected'}));}
   });
   await new Promise((resolveReady,reject)=>{server.once('error',reject);server.listen(port,host,resolveReady);});
-  console.log(JSON.stringify({ready:true,pid:process.pid,url:origin+'/__fixture/start',controls:origin+'/__fixture',selfChecks:['native-auth-denied','session-renewed-after-expiry','foreign-origin-denied','save-reload','revision-conflict','system-read-identity','model-writes-denied','outbound-network-blocked','env-files-blocked'],dealerId,rooms:0,clips:inventory.videos.map(row=>({id:row.id,label:row.label,sha256:row.sha256})),bindingVariants:project.lines.find(row=>row.eventId==='deal.player.left').variants.filter(row=>row.videoGenerationId).map(row=>({id:row.id,videoId:row.videoGenerationId}))}));
+  console.log(JSON.stringify({ready:true,pid:process.pid,url:origin+'/__fixture/start',controls:origin+'/__fixture',selfChecks:['native-auth-denied','session-renewed-after-expiry','foreign-origin-denied','save-reload','revision-conflict','system-read-identity','model-writes-denied','outbound-network-blocked','env-files-blocked'],dealerId,rooms:rooms.length,clips:inventory.videos.map(row=>({id:row.id,label:row.label,sha256:row.sha256})),bindingVariants:project.lines.find(row=>row.eventId==='deal.player.left').variants.filter(row=>row.videoGenerationId).map(row=>({id:row.id,videoId:row.videoGenerationId}))}));
 }catch(error){await stop();throw error;}

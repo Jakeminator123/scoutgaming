@@ -41,9 +41,13 @@ const sources = Object.freeze([
   // This changes technical capacity only, not any existing budget grant.
   { version:'015', file:'015-moving-budget-capacity.sql', tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
-  // Control-plane draft only: no live HTTP/provider wiring requires this version.
+  // Optional Admin control plane: a missing table fails closed at the API.
   { version:'016', file:'016-moving-drift-control.sql', deploymentOptional:true,
     tables:['moving_drift_control'], indexes:[] },
+  // Additive capacity bridge: production SQL and a separate funded amendment
+  // must be verified before 017 becomes required or the higher grant is used.
+  { version:'017', file:'017-moving-budget-capacity.sql', deploymentOptional:true, tables:[], indexes:[],
+    fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -68,8 +72,8 @@ const movingCapacityChecks = Object.freeze([
   ['moving_speech_budget_amendments','budget_limit_micro_usd'],
 ].map(([table,column]) => Object.freeze({table,column,name:`${table}_${column}_check`})));
 const movingCapacityDefinition = (column,ceiling) => `CHECK (${column} >= 1 AND ${column} <= ${ceiling})`;
-const movingCapacityAlters = movingCapacityChecks.map(({table,column,name}) =>
-  `ALTER TABLE croupier_studio.${table} DROP CONSTRAINT ${name}, ADD CONSTRAINT ${name} CHECK (${column} BETWEEN 1 AND 40000000)`);
+const movingCapacityAlters = ceiling => movingCapacityChecks.map(({table,column,name}) =>
+  `ALTER TABLE croupier_studio.${table} DROP CONSTRAINT ${name}, ADD CONSTRAINT ${name} CHECK (${column} BETWEEN 1 AND ${ceiling})`);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
 
 function statements(sql) {
@@ -91,9 +95,9 @@ function statements(sql) {
 }
 
 function validateSql(source, sql) {
-  if (source.version === '015') {
-    const parts = statements(sql);
-    if (parts.length !== movingCapacityAlters.length || parts.some((part,index) => part.replace(/\s+/g,' ') !== movingCapacityAlters[index])) refuse('studio_migration_invalid_source',422);
+  if (source.version === '015' || source.version === '017') {
+    const parts = statements(sql), expected = movingCapacityAlters(source.version === '015' ? 40000000 : 45000000);
+    if (parts.length !== expected.length || parts.some((part,index) => part.replace(/\s+/g,' ') !== expected[index])) refuse('studio_migration_invalid_source',422);
     return;
   }
   if (source.version === '011') {
@@ -207,6 +211,21 @@ function verifyObjects(objects, migrations) {
     || objects.indexes.some(row => !row.valid || !row.ready) || objects.constraints.some(row => !row.validated)) refuse('studio_migration_unexpected_structure');
 }
 
+/** Match the ordered ledger to reviewed sources, preserving pending optional gaps. */
+export function planStudioMigrationVersions(migrations, versions) {
+  const installed = [], pending = []; let next = 0;
+  for (const version of versions) {
+    while (next < migrations.length && migrations[next].version !== version) {
+      const skipped = migrations[next++];
+      if (!skipped.deploymentOptional) refuse('studio_migration_ambiguous_ledger');
+      pending.push(skipped);
+    }
+    if (next === migrations.length) refuse('studio_migration_ambiguous_ledger');
+    installed.push(migrations[next++]);
+  }
+  return { installed, toApply: [...pending, ...migrations.slice(next)] };
+}
+
 async function inspect(client, migrations, objects) {
   objects ??= await catalog(client);
   if (!objects.present) return { objects, applied: [], toApply: migrations };
@@ -214,12 +233,12 @@ async function inspect(client, migrations, objects) {
   if (ledgerColumns.join(',') !== 'version,checksum,structure_checksum,applied_at') refuse('studio_migration_ambiguous_ledger');
   const rows = (await client.query(`/* studio-migrations:ledger */ SELECT version,checksum,structure_checksum
     FROM croupier_studio.storage_migrations ORDER BY version`)).rows;
-  if (!rows.length || rows.length > migrations.length || rows.some((row, index) => row.version !== migrations[index]?.version)) refuse('studio_migration_ambiguous_ledger');
+  if (!rows.length || rows.length > migrations.length) refuse('studio_migration_ambiguous_ledger');
+  const {installed,toApply} = planStudioMigrationVersions(migrations,rows.map(row => row.version));
   for (let index = 0; index < rows.length; index++) {
-    if (rows[index].checksum !== migrations[index].checksum) refuse('studio_migration_checksum_mismatch');
+    if (rows[index].checksum !== installed[index].checksum) refuse('studio_migration_checksum_mismatch');
     if (typeof rows[index].structure_checksum !== 'string' || !/^[a-f0-9]{64}$/.test(rows[index].structure_checksum)) refuse('studio_migration_ambiguous_ledger');
   }
-  const installed = migrations.slice(0, rows.length);
   verifyObjects(objects, installed);
   // Preserve 002's historical fingerprint byte for byte. Only ledgered 011 may
   // project this exact constraint back to its historical 10 USD definition.
@@ -230,17 +249,28 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== budgetDefinition(20000000)) refuse('studio_migration_structure_mismatch');
     historical = { ...objects, constraints: objects.constraints.map(row => row === matches[0] ? { ...row, definition: budgetDefinition(10000000) } : row) };
   }
-  // Ledgered 015 projects only its three exact CHECKs back for 014's proof.
-  // Historical ledger rows and source checksums are never rewritten.
-  let movingPrevious = objects;
-  if (installed.some(row => row.version === '015')) {
+  // Ledgered 017 projects only its three exact CHECKs back for 015's proof.
+  let movingCapacityPrevious = objects;
+  if (installed.some(row => row.version === '017')) {
     const replacements = new Map();
     for (const {table,column,name} of movingCapacityChecks) {
       const matches = objects.constraints.filter(row => row.table_name === table && row.name === name);
+      if (matches.length !== 1 || matches[0].definition !== movingCapacityDefinition(column,45000000)) refuse('studio_migration_structure_mismatch');
+      replacements.set(matches[0],{...matches[0],definition:movingCapacityDefinition(column,40000000)});
+    }
+    movingCapacityPrevious = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
+  }
+  // Ledgered 015 projects only its three exact CHECKs back for 014's proof.
+  // Historical ledger rows and source checksums are never rewritten.
+  let movingPrevious = movingCapacityPrevious;
+  if (installed.some(row => row.version === '015')) {
+    const replacements = new Map();
+    for (const {table,column,name} of movingCapacityChecks) {
+      const matches = movingCapacityPrevious.constraints.filter(row => row.table_name === table && row.name === name);
       if (matches.length !== 1 || matches[0].definition !== movingCapacityDefinition(column,40000000)) refuse('studio_migration_structure_mismatch');
       replacements.set(matches[0],{...matches[0],definition:movingCapacityDefinition(column,15000000)});
     }
-    movingPrevious = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
+    movingPrevious = {...movingCapacityPrevious,constraints:movingCapacityPrevious.constraints.map(row => replacements.get(row) ?? row)};
   }
   // Ledgered 014 may project only this exact limit back for 013's old proof.
   let movingHistorical = movingPrevious;
@@ -249,8 +279,8 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
     movingHistorical = { ...movingPrevious, constraints:movingPrevious.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
   }
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
-  return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply: migrations.slice(rows.length) };
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply };
 }
 
 function result(verifiedTarget, state) {
@@ -287,19 +317,28 @@ export async function planStudioMigrations({ pool, directory } = {}) {
   return withClient(pool, true, async client => result(await target(client), await inspect(client, migrations)));
 }
 
-export async function applyStudioMigrations({ pool, expectedTarget, confirm } = {}) {
+export async function applyStudioMigrations({ pool, expectedTarget, confirm, deferOptional = [] } = {}) {
   if (confirm !== true || !expectedTarget) refuse('studio_migration_apply_requires_confirmation', 422);
   let expected;
   try { expected = canonicalStudioJson(expectedTarget); } catch { refuse('studio_migration_target_unverified', 422); }
   const migrations = await loadStudioMigrations();
+  // Independent additive rollouts may leave reviewed optional versions pending.
+  // Required versions and installed proofs remain mandatory in every plan.
+  if (!Array.isArray(deferOptional) || new Set(deferOptional).size !== deferOptional.length
+    || deferOptional.some(version => typeof version !== 'string'
+      || !migrations.some(row => row.version === version && row.deploymentOptional))) {
+    refuse('studio_migration_invalid_defer_optional', 422);
+  }
+  const deferred = new Set(deferOptional);
   return withClient(pool, false, async client => {
     const verifiedTarget = await target(client);
     if (canonicalStudioJson(verifiedTarget) !== expected) refuse('studio_migration_target_mismatch');
     const before = await inspect(client, migrations), appliedNow = [];
-    for (const migration of before.toApply) {
+    for (const migration of before.toApply.filter(row => !deferred.has(row.version))) {
       await client.query(migration.sql);
       const objects = await catalog(client);
-      verifyObjects(objects, migrations.filter(version => version.version <= migration.version));
+      const appliedVersions = new Set([...before.applied.map(row => row.version), ...appliedNow, migration.version]);
+      verifyObjects(objects, migrations.filter(version => appliedVersions.has(version.version)));
       const structureChecksum = fingerprint(objects, migration);
       await client.query(`/* studio-migrations:record */ INSERT INTO croupier_studio.storage_migrations
         (version,checksum,structure_checksum) VALUES ($1,$2,$3)`, [migration.version, migration.checksum, structureChecksum]);

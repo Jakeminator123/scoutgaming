@@ -33,6 +33,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
   'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/postgres-moving-drift.mjs',
   'packages/operators/server/public-rooms.mjs',
   'packages/presentation/server/studio-policy-runtime.mjs',
+  'packages/presentation/capability-contract.mjs',
   'packages/shared/blackjack-shoe-rules.mjs',
   'packages/presentation/server/generated-speech-provider.mjs','packages/presentation/contracts/speech-package.mjs','packages/presentation/contracts/astrid-voice-profile.mjs','packages/presentation/server/generated-speech-service.mjs','packages/presentation/server/generated-speech-runtime.mjs','packages/presentation/server/speech-journal-lease.mjs',
       "services/game/storage/legacy-clip-inventory.mjs",
@@ -55,6 +56,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/director/openclaw.mjs',
       'packages/director/product-probe.mjs',
       'packages/director/product-speech.mjs',
+      'packages/director/generated-speech-text.mjs',
       'packages/director/social.mjs',
       'packages/director/speech-routing.mjs',
       'packages/director/studio-admin-contract.mjs',
@@ -65,8 +67,10 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'services/openclaw/lab/src/settings.mjs',
 
       'services/game/moving-speech-limits.mjs',
+      'services/game/moving-speech-timing.mjs',
       'services/game/moving-speech-capacity.mjs','test/fixtures/moving-capacity.mjs',
       'ops/neon-studio/015-moving-budget-capacity.sql',
+      'ops/neon-studio/017-moving-budget-capacity.sql',
       'ops/neon-studio/014-moving-speech-budget-amendments.sql','services/game/moving-speech-budget.mjs','test/fixtures/moving-budget-sql-checks.mjs',
       'ops/neon-studio/013-moving-speech-admission.sql','services/game/moving-speech-binding.mjs','services/game/moving-speech-session.mjs','services/game/moving-speech-transport.mjs',
       'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs', 'test/fixtures/runtime-media-catalog.mjs',
@@ -191,7 +195,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     await start(); pool = open();
     const restart = async () => { await pool.end(); await stop(); await start(); pool = open(); return pool; };
     if (movingDriftOnly) {
-      const {loadStudioMigrations,planStudioMigrations,applyStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
+      const {loadStudioMigrations,planStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
       const driftSources = [...STUDIO_ISOLATED_QA_SOURCES,'packages/presentation/contracts/moving-drift.mjs','services/game/moving-drift-controller.mjs',
         'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','test/fixtures/moving-budget-sql-checks.mjs',
         'tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
@@ -200,10 +204,10 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       const before = await sourceDigest();
       const initial = await planStudioMigrations({pool});
       if (initial.schemaPresent) throw new Error('isolated_drift_fixture_not_empty');
-      const {runMovingBudgetMigrationSqlChecks} = await import('../test/fixtures/moving-budget-sql-checks.mjs');
+      const {runMovingBudgetMigrationSqlChecks,runMovingDriftMigrationAfterBudgetSqlChecks} = await import('../test/fixtures/moving-budget-sql-checks.mjs');
       await runMovingBudgetMigrationSqlChecks({pool});
       if (JSON.stringify(await planStudioMigrations({pool})) !== JSON.stringify(initial)) throw new Error('isolated_drift_historical_fixture_not_rolled_back');
-      await applyStudioMigrations({pool,expectedTarget:initial.target,confirm:true});
+      const migration = await runMovingDriftMigrationAfterBudgetSqlChecks({pool,restart}); pool = migration.pool;
       const productSql=(await readFile(join(repository,'ops/neon-game/product-schema.sql'),'utf8')).replace(/\r\n/g,'\n');
       await pool.query(productSql);
       await pool.query('INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ($1,$2,$3,$4)',
@@ -211,7 +215,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
       const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
       if (await sourceDigest() !== before) throw new Error('isolated_qa_sources_changed_rerun_required');
-      const integrationChecks = ['drift-historical015-rollback',...drift.checks];
+      const integrationChecks = ['drift-historical014-015-017-rollback',...migration.checks,...drift.checks];
       console.log(JSON.stringify({acceptance:'isolated-moving-drift-sql-restart',sourceDigest:before,checks:integrationChecks}));
       return {integrationChecks};
     }

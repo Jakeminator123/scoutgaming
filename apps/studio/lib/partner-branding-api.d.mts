@@ -17,6 +17,7 @@ export interface PartnerPackageRecord {
 }
 type Audit={actorId:string;accessClass:string;requestId:string;action?:string};
 type DraftInput={operatorId:string;actor:string;audit?:Audit;expectedDraftRevision:number;expectedPackageRevision:number;branding:Record<string,unknown>;sourcePackageRevision?:number};
+type PresentationMutation={kind:'presentation-package';value:import('../../../packages/presentation/contracts/presentation-layers.mjs').PresentationPackage};
 type Store={
  scope?:unknown;
  getCurrentPackage(operatorId:string):Promise<PartnerPackageRecord|null>;
@@ -31,7 +32,8 @@ export function adjustableForPackage(laneIds:readonly string[],saved:unknown):st
 export function createPartnerBrandingApi(options:{
  store:Store;readProject():Promise<unknown>;
  readAdministration():Promise<{revision:string;value:unknown}>;
- withWriteContext<T>(work:(context:{store:Store;readAdministration():Promise<{revision:string;value:unknown}>;reauthorize():Promise<boolean>})=>Promise<T>):Promise<T>;
+ withWriteContext<T>(work:(context:{store:Store;readAdministration():Promise<{revision:string;value:unknown}>;reauthorize():Promise<boolean>;
+   withMutationContext?<T>(work:()=>Promise<T>,descriptor:PresentationMutation):Promise<T>})=>Promise<T>,options?:{presentationMutation?:PresentationMutation}):Promise<T>;
 }):{
  read(input:{operatorId:string}):Promise<PartnerBrandingView>;
  readState(input:{operatorId:string}):Promise<PartnerBrandingView>;

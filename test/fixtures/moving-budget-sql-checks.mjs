@@ -3,10 +3,10 @@ import { randomBytes,randomUUID } from 'node:crypto';
 import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS } from '../../services/game/postgres-speech-journal.mjs';
 import { MOVING_TRIAL_BUDGET } from '../../services/game/moving-speech-budget.mjs';
 import { movingCapacityFixture } from './moving-capacity.mjs';
-import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
+import { loadStudioMigrations,planStudioMigrations,applyStudioMigrations,isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
 
 // Called only after the integration harness verifies an empty localhost fixture.
-// Exercise the actual immutable 014 DDL before 015, then roll back everything so
+// Exercise immutable014/015 before017, then roll back everything so
 // the normal migration runner independently verifies all ledger fingerprints.
 export async function runMovingBudgetMigrationSqlChecks({pool}) {
   const migrations=await loadStudioMigrations(),historical=migrations.filter(row=>row.version<'015'),client=await pool.connect();
@@ -28,8 +28,7 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
     const snapshot=async()=>{
       const data={};
       for(const table of historical.flatMap(row=>row.tables)) {
-        // Only the tables installed in this historical fixture: 015 adds no tables.
-        // Later optional migrations must not leak into the 014-to-015 data proof.
+        // Only reviewed tables installed here: later optional016 is still absent.
         data[table]=(await client.query(`SELECT to_jsonb(t) AS row FROM croupier_studio.${table} t ORDER BY to_jsonb(t)::text`)).rows;
       }
       return data;
@@ -48,7 +47,105 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       await assert.rejects(insert(previous,limit),error=>error.code==='23514');
       await client.query('ROLLBACK TO SAVEPOINT invalid_capacity');
     }
+    const before017=await snapshot();
+    await client.query(migrations.find(row=>row.version==='017').sql);
+    assert.deepEqual(await snapshot(),before017,'017 changes no grant, reservation, policy, data or ledger row');
+    assert.deepEqual(await checks(),oldChecks.map(row=>({...row,definition:row.definition.replace('15000000','45000000')})));
+    await runInitialBudgetSqlChecks(client,'017');
+    await insert(43800000,45000000);
+    for(const [previous,limit] of [[43800000,45000001],[45000001,45000002]]){
+      await client.query('SAVEPOINT invalid_capacity45');
+      await assert.rejects(insert(previous,limit),error=>error.code==='23514');
+      await client.query('ROLLBACK TO SAVEPOINT invalid_capacity45');
+    }
+    const priorBindings=await snapshot();
+    await client.query('SAVEPOINT binding_capacity45');
+    const exact=await client.query(`UPDATE croupier_studio.moving_speech_bindings SET budget_limit_micro_usd=45000000
+      WHERE environment_id='qa_initial_017' AND session_id=(SELECT session_id FROM croupier_studio.moving_speech_bindings
+      WHERE environment_id='qa_initial_017' ORDER BY session_id LIMIT 1) RETURNING session_id`);
+    assert.equal(exact.rowCount,1);
+    await assert.rejects(client.query(`UPDATE croupier_studio.moving_speech_bindings SET budget_limit_micro_usd=45000001
+      WHERE environment_id='qa_initial_017' AND session_id=$1`,[exact.rows[0].session_id]),error=>error.code==='23514');
+    await client.query('ROLLBACK TO SAVEPOINT binding_capacity45');
+    assert.deepEqual(await snapshot(),priorBindings,'SQL boundary checks leave all prior budget history unchanged');
   } finally {try{await client.query('ROLLBACK');}finally{client.release();}}
+}
+
+// A committed017-before016 installation, unlike the rollback-only capacity probe.
+// The caller owns the already-created localhost cluster and its restart lifecycle.
+export async function runMovingDriftMigrationAfterBudgetSqlChecks({pool,restart}) {
+  assert.equal(typeof restart,'function');
+  const target=(await pool.query('SELECT current_user AS role,current_database() AS database,inet_server_addr()::text AS address')).rows[0];
+  assert.equal(target.role,'studio_qa');assert.equal(target.database,'postgres');
+  assert.ok(['127.0.0.1','127.0.0.1/32','::1','::1/128'].includes(target.address));
+  const migrations=await loadStudioMigrations(),initial=await planStudioMigrations({pool});
+  assert.equal(initial.schemaPresent,false,'017-first probe requires the existing empty localhost fixture');
+  const first=await applyStudioMigrations({pool,expectedTarget:initial.target,confirm:true,deferOptional:['016']});
+  assert.ok(first.appliedNow.includes('017'));assert.equal(first.appliedNow.includes('016'),false);
+  const beforePlan=await planStudioMigrations({pool});
+  assert.equal(isStudioMigrationPlanReady(beforePlan),true);
+  assert.deepEqual(beforePlan.optionalPending.map(row=>row.version),['016']);
+  assert.equal(beforePlan.applied.some(row=>row.version==='017'),true);
+  assert.equal(beforePlan.applied.some(row=>row.version==='016'),false);
+  const client=await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await runInitialBudgetSqlChecks(client,'017_before016');
+    await client.query(`INSERT INTO croupier_studio.moving_speech_budget_amendments
+      (environment_id,workspace_id,budget_id,amendment_id,previous_limit_micro_usd,budget_limit_micro_usd,reserved_before_micro_usd,amendment,created_at_ms)
+      VALUES('isolated-capacity','qa','existing-grant',$1,10800000,13200000,10800000,'{}',1)`,[randomUUID()]);
+    await client.query('COMMIT');
+  } catch(error) {
+    await client.query('ROLLBACK');throw error;
+  } finally {client.release();}
+  const snapshot=async()=>{
+    const data={};
+    // Every pre-existing table, including the complete immutable migration rows.
+    for(const table of migrations.filter(row=>row.version!=='016').flatMap(row=>row.tables)) {
+      const where=table==='storage_migrations'?" WHERE t.version <> '016'":'';
+      data[table]=(await pool.query(`SELECT to_jsonb(t) AS row FROM croupier_studio.${table} t${where} ORDER BY to_jsonb(t)::text`)).rows;
+    }
+    const columns=(await pool.query(`SELECT table_name,column_name,ordinal_position,data_type,udt_name,
+      column_default,is_nullable,character_maximum_length,numeric_precision,numeric_scale,
+      identity_generation,is_generated,generation_expression FROM information_schema.columns
+      WHERE table_schema='croupier_studio' AND table_name<>'moving_drift_control'
+      ORDER BY table_name,ordinal_position`)).rows;
+    const constraints=(await pool.query(`SELECT c.relname AS table_name,co.conname AS name,co.convalidated AS validated,
+      pg_get_constraintdef(co.oid,true) AS definition FROM pg_constraint co JOIN pg_class c ON c.oid=co.conrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='croupier_studio'
+      AND c.relname IN ('moving_speech_bindings','moving_speech_budget_amendments') ORDER BY c.relname,co.conname`)).rows;
+    return {data,columns,constraints};
+  };
+  const before=await snapshot();
+  assert.equal(before.data.moving_speech_bindings.length,11);
+  assert.equal(before.data.moving_speech_budget_amendments.length,1);
+  const capacityNames=new Set(['moving_speech_bindings_budget_limit_micro_usd_check',
+    'moving_speech_budget_amendments_previous_limit_micro_usd_check','moving_speech_budget_amendments_budget_limit_micro_usd_check']);
+  const capacity=before.constraints.filter(row=>capacityNames.has(row.name));
+  assert.equal(capacity.length,3);assert.ok(capacity.every(row=>row.validated&&row.definition.endsWith('<= 45000000)')));
+  const applied=await applyStudioMigrations({pool,expectedTarget:beforePlan.target,confirm:true});
+  assert.deepEqual(applied.appliedNow,['016'],'backfill executes the real016 DDL after committed017');
+  assert.deepEqual(await snapshot(),before,'016 preserves all prior data, grants, reservations, columns and complete ledger rows');
+  const verifyPlan=async()=>{
+    const plan=await planStudioMigrations({pool});
+    assert.equal(isStudioMigrationPlanReady(plan),true);
+    assert.deepEqual(plan.toApply,[]);assert.deepEqual(plan.optionalPending,[]);
+    assert.deepEqual(plan.applied.filter(row=>row.version!=='016'),beforePlan.applied,'all historical source/structure checksums remain unchanged');
+    const drift=plan.applied.find(row=>row.version==='016');
+    assert.equal(drift.checksum,migrations.find(row=>row.version==='016').checksum);
+    assert.match(drift.structureChecksum,/^[a-f0-9]{64}$/);
+    assert.deepEqual((await pool.query(`SELECT column_name FROM information_schema.columns
+      WHERE table_schema='croupier_studio' AND table_name='moving_drift_control' ORDER BY ordinal_position`)).rows.map(row=>row.column_name),
+      ['environment_id','revision','state']);
+    return plan;
+  };
+  const afterPlan=await verifyPlan();
+  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:afterPlan.target,confirm:true})).appliedNow,[]);
+  pool=await restart(pool);
+  assert.deepEqual(await verifyPlan(),afterPlan,'017-before016 installation remains ready after a real PostgreSQL restart');
+  assert.deepEqual(await snapshot(),before,'restart preserves every historical row and column');
+  return {pool,checks:['drift016-after017-real-ddl','drift016-after017-history-checksums-columns',
+    'drift016-after017-idempotent-planner-restart']};
 }
 
 async function runInitialBudgetSqlChecks(client,version) {
@@ -81,7 +178,7 @@ async function runInitialBudgetSqlChecks(client,version) {
   };
   for(let attempt=1;attempt<=11;attempt++){
     const saved=await journal.reserveMovingSession(request());
-    assert.equal(saved.totalBudgetMicroUsd,13200000,`${version}: initial and durable grant must not inherit technical40`);
+    assert.equal(saved.totalBudgetMicroUsd,13200000,`${version}: initial and durable grant must not inherit technical capacity`);
     assert.equal(saved.totalReservedMicroUsd,attempt*1200000);
     const jobId=`initial-${saved.sessionId}`;
     await journal.markRequestSubmissionStarted({key:saved.key,lease});
@@ -241,7 +338,7 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   }
   const afterCapacity=await history();assert.equal(afterCapacity.length,13);
   await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
-  assert.deepEqual(await history(),afterCapacity,'40 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
+  assert.deepEqual(await history(),afterCapacity,'45 USD runtime capacity alone cannot spend beyond the explicit 15.6 USD grant');
   const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
   assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next,productionTrial,secondTrial,thirdTrial,twoReplies,fundedCapacity]);
   await journal.releaseLease({lease});

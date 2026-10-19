@@ -1,4 +1,5 @@
 import { normalizeConversationMemory } from '../../packages/director/conversation-memory.mjs';
+import { normalizeGeneratedSpeechText } from '../../packages/director/generated-speech-text.mjs';
 
 import { normalizeAstridObservation } from '../../packages/director/astrid-observation.mjs';
 
@@ -198,7 +199,7 @@ function validateChoice(value, request, status) {
   }
   if (value.kind === 'generatedText') {
     if (!exact(value, [...common, 'text']) || !status.allowedSpeech.generatedText) fail('disallowed_openclaw_speech_choice', 502);
-    const text = canonicalText(value.text);
+    const text = normalizeGeneratedSpeechText(value.text);
     if (!safeText(text, OPENCLAW_CHAT_LIMITS.generatedText)) fail('invalid_openclaw_speech_choice', 502);
     return { kind: 'generatedText', requestId: request.requestId, dealerId: status.dealerId,
       sessionRevision: status.sessionRevision, roundRevision: status.roundRevision,

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { normalizeGeneratedSpeechText } from './generated-speech-text.mjs';
 import { boundedJson, complete, GatewayError } from './openclaw.mjs';
 import { isLoopback } from './configuration.mjs';
 import { normalizeAstridObservation } from './astrid-observation.mjs';
@@ -176,7 +177,7 @@ export function validateProductSpeechChoice(value, envelopeValue) {
     if (!line || (value.variantId !== null && !line.variantIds.includes(value.variantId))) fail('disallowed_openclaw_speech_choice', 502);
   } else if (value.kind === 'generatedText') {
     if (!exact(value, [...common, 'text']) || !envelope.status.allowedSpeech.generatedText) fail('disallowed_openclaw_speech_choice', 502);
-    value = { ...value, text: canonicalText(value.text) };
+    value = { ...value, text: normalizeGeneratedSpeechText(value.text) };
     if (!safeText(value.text, LIMITS.generatedText)) fail('invalid_openclaw_speech_choice', 502);
   } else if (!exact(value, common) || !envelope.status.allowedSpeech.silence) fail('disallowed_openclaw_speech_choice', 502);
   return structuredClone(value);

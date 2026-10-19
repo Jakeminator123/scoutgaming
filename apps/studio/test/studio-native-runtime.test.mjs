@@ -121,7 +121,7 @@ test('bundled source paths load all reviewed migrations without asset URLs', asy
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
   assert.equal(actual.filter(row => !row.deploymentOptional).at(-1).file, '015-moving-budget-capacity.sql');
-  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['016']);
+  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['016','017']);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });
 

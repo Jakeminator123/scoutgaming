@@ -122,6 +122,83 @@ test('changing only a voice preserves an unchanged own reference; replaced bytes
   h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'WZVEBKUreb9jAKojf0QF');
 });
 
+async function referencePanel(kind,state='preparation') {
+  const h=await panelHarness(),reference={kind,videoId:'dragan-reference',sha256:'a'.repeat(64),offsetMs:200};
+  h.props.dealerId='dragan';h.props.projectDirty=false;
+  h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan',speechProfile:{schemaVersion:2,state,
+    voice:{provider:'elevenlabs',voiceId:'own-voice',modelId:'eleven_v3'},reference}}]};
+  h.props.inventory.videos=[{id:reference.videoId,dealer:'dragan',available:true,bytes:100,sha256:reference.sha256,duration:3,previewUrl:'/studio/api/videos/dragan-reference'}];
+  h.render();h.flush();h.render();h.flush();
+  return h;
+}
+function reviewReference(h) {
+  const node=h.nodes(h.render(),row=>row.type==='video')[0];
+  node.props.ref.current={duration:3,currentTime:0,readyState:2,seeking:false,pause(){}};
+  node.props.onLoadedMetadata();node.props.onSeeked();
+  return h.render();
+}
+for(const kind of ['motion-video','video-frame'])for(const change of ['offset','source','bytes'])test(`${kind} reference ${change} edit preserves its mode after a fresh preview`,async()=>{
+  const h=await referencePanel(kind),before=structuredClone(h.props.project);let tree=h.render();
+  if(change==='offset')h.field(tree,'Referensposition').props.onChange({target:{value:'400'}});
+  if(change==='source'){
+    h.props.inventory.videos.push({...h.props.inventory.videos[0],id:'dragan-new',sha256:'b'.repeat(64),previewUrl:'/studio/api/videos/dragan-new'});
+    tree=h.render();h.field(tree,'Dealerns egen referensvideo').props.onChange({target:{value:'dragan-new'}});
+  }
+  if(change==='bytes'){
+    h.props.inventory.videos[0].sha256='b'.repeat(64);
+    h.field(tree,'Referensposition').props.onChange({target:{value:'400'}});
+  }
+  tree=h.render();h.flush();tree=h.render();
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true,'changed source/time requires review');
+  h.button(tree,'Lägg talprofil').props.onClick();assert.deepEqual(h.props.project,before);
+  tree=reviewReference(h);
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
+  assert.equal(h.field(tree,'Begär AI-tal').props.disabled,kind==='motion-video','editing a motion reference cannot unlock still-frame activation');
+  h.button(tree,'Lägg talprofil').props.onClick();
+  const saved=h.props.project.dealers[0].speechProfile;
+  assert.deepEqual(saved.reference,{kind,videoId:change==='source'?'dragan-new':'dragan-reference',sha256:(change==='offset'?'a':'b').repeat(64),offsetMs:change==='source'?200:400});
+  assert.deepEqual(saved.voice,before.dealers[0].speechProfile.voice);assert.equal(saved.state,'preparation');
+  assert.equal(h.calls.length,0,'staging a reference cannot start generation');
+});
+
+for(const change of ['offset','source','bytes'])test(`enabled motion ${change} edit requires explicit deactivation before staging`,async()=>{
+  const h=await referencePanel('motion-video','enabled'),before=structuredClone(h.props.project);let tree=h.render();
+  if(change==='offset')h.field(tree,'Referensposition').props.onChange({target:{value:'400'}});
+  if(change==='source'){
+    h.props.inventory.videos.push({...h.props.inventory.videos[0],id:'dragan-new',sha256:'b'.repeat(64),previewUrl:'/studio/api/videos/dragan-new'});
+    tree=h.render();h.field(tree,'Dealerns egen referensvideo').props.onChange({target:{value:'dragan-new'}});
+  }
+  if(change==='bytes')h.props.inventory.videos[0].sha256='b'.repeat(64);
+  tree=h.render();h.flush();tree=reviewReference(h);
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
+  h.button(tree,'Lägg talprofil').props.onClick();assert.deepEqual(h.props.project,before);
+  assert.equal(h.button(tree,'Förbered').props.disabled,true);
+  h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
+  h.button(tree,'Lägg talprofil').props.onClick();
+  const saved=h.props.project.dealers[0].speechProfile;
+  assert.equal(saved.state,'preparation');assert.equal(saved.reference.kind,'motion-video');
+  assert.equal(saved.reference.videoId,change==='source'?'dragan-new':'dragan-reference');
+  assert.equal(saved.reference.sha256,(change==='offset'?'a':'b').repeat(64));
+  assert.equal(saved.reference.offsetMs,change==='offset'?400:200);assert.equal(h.calls.length,0);
+});
+
+test('voice-only editing preserves enabled motion identity without another preview',async()=>{
+  const h=await referencePanel('motion-video','enabled'),reference=structuredClone(h.props.project.dealers[0].speechProfile.reference);let tree=h.render();
+  h.field(tree,'Voice-ID').props.onChange({target:{value:'other-voice'}});tree=h.render();
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);h.button(tree,'Lägg talprofil').props.onClick();
+  assert.deepEqual(h.props.project.dealers[0].speechProfile.reference,reference);
+  assert.equal(h.props.project.dealers[0].speechProfile.state,'enabled');assert.equal(h.calls.length,0);
+});
+
+test('an enabled motion reference can still be turned off without changing its identity',async()=>{
+  const h=await referencePanel('motion-video','enabled'),before=structuredClone(h.props.project.dealers[0].speechProfile);let tree=h.render();
+  assert.equal(h.field(tree,'Begär AI-tal').props.disabled,false);
+  h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
+  h.button(tree,'Lägg talprofil').props.onClick();
+  assert.deepEqual(h.props.project.dealers[0].speechProfile,{...before,state:'preparation'});assert.equal(h.calls.length,0);
+});
+
 for(const failure of ['alpha','decode'])test(`admin blocks ${failure} reference even when it was already saved as enabled`,async()=>{
   const h=await panelHarness(),ref={kind:'video-frame',videoId:'paow-idle',sha256:'a'.repeat(64),offsetMs:200};
   h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow',speechProfile:{schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'older',modelId:'eleven_v3'},reference:ref}}]};

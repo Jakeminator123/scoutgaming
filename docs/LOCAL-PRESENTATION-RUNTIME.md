@@ -21,7 +21,10 @@ Visningsetiketter och profilernas ordning ändrar inte detta fingeravtryck.
 
 `postgres-moving-drift.mjs` serialiserar en rad per miljö för alla profiler/rum,
 använder databasklocka och kräver atomisk commit. SQL016 är valfri vid deployment;
-modulerna startar ingenting och läser inga credentials. Utgången varm period
+modulerna startar ingenting och läser inga credentials. `applyStudioMigrations`
+kan skjuta upp enbart kända deploymentOptional-versioner med `deferOptional`;
+016 och 017 kan därmed rullas ut separat. Installerad historik och fingeravtryck
+verifieras fortsatt. Utgången varm period
 övergår till Av vid nästa serveranrop/avstämning. Det bevisar återställning efter
 omstart, **inte avstängning medan servern ligger nere**.
 
@@ -45,7 +48,8 @@ journal, färska bevis från samtliga endpoints och kontrollerad drain/stop.
 Varm aktivering kräver därutöver oberoende verkställd sluttid, faktisk reservation
 av hela perioden inklusive avstängning och attestering av exakt release/bank.
 Det injicerade budgetunderlaget är bundet till kommando/revision/profil; beräknad
-kostnad är inte en faktura eller reservation. Kapaciteten är avstängd som standard.
+kostnad är inte en faktura eller reservation. DTO-kostnaden gäller accepterad period,
+inte timpris eller offert för ett nytt profil-/tidsval. Kapaciteten är avstängd som standard.
 Befintlig RunPod-adapter, worker och taljournal är oförändrade.
 
 Lokalt SQL-/omstartsprov: `node tools/studio-isolated-qa.mjs --moving-drift --download-postgres`
@@ -125,6 +129,31 @@ ansiktsdata, rätt ljud och den gemensamma spelaren. Ett isolerat sådant prov
 verifierar inte automatiskt produktionsserverns antagning, kort eller saldo.
 Aktuella resultat och deras gränser finns i [handoffen](JOHN-HANDOFF.md#dragan-talstatus).
 
+Genererad OpenClaw-text får en gemensam radbrytningsnormalisering före
+förhandsvisning, TTS och hashning; inspelade repliker behåller originaltexten.
+`services/game/moving-speech-timing.mjs` räknar PCM-gränsen från workerens
+24 kHz/24 fps, 220 ms förmarginal, 530 ms eftermarginal och högst 600 rutor.
+Sista giltiga ljud är 582 999 samples (24,291625 s), med oförändrad avrundning.
+Nästa sample avbryter insamlingen före render-dispatch; redan gjord TTS eller
+GPU-förberedelse är inte kostnadsfri och ingen tidigare bildacceptans utökas.
+
+Spelaren lämnar begränsade klienttider i den tillfälliga `playbackReceipt`:
+socketöppning, första hashverifierade PCM, komplett svar (`reply_ready_ms`),
+ljudets `play()` och första renderade talruta. Tiderna räknas från spelarens
+socketanslutningsförsök; de omfattar inte tidigare Director-/TTS-förberedelse.
+`reply_ready_ms` mäter mottaget och validerat `done`, inte GPU-rendering separat
+från providerfinalisering. Ljudenhetens faktiska hörbara start och visuell
+läppsynk kräver fortfarande ett inspelat/observerat prov. Kvittot innehåller
+varken repliktext, transportticket eller ett visuellt godkännande.
+
+`test/moving-speech-deal-integration.mjs` driver verklig blackjack-commit och
+beständig presentation i ett eget SQLite-minne vidare till talets WebSocket.
+`test/microphone-openclaw-integration.mjs` kopplar mikrofonkontroll, WAV,
+transkriptions-API, Director, NDJSON, röstadapter och moving-runtime i loopback.
+De skyddar kort-/saldobehörighet, isolering, originalspråk och avbrott men
+använder syntetiska enheter, modell, TTS, GPU och mediebytes. De ersätter inte
+ett inspelat prov av den registrerade Dragan-banken och hela livekedjan.
+
 Det finns flera olika former av varm/kall lagring och beräkning:
 
 | Del | Faktiskt beteende |
@@ -164,7 +193,7 @@ antagnings-, avbrotts- och städskydd; det ingår inte i tvåreplikskvittot.
 
 ### Budgetens tre nivåer
 
-`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 40 USD och runtime-dygn
+`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 45 USD och runtime-dygn
 20 USD. Det separata initiala beloppet 13,2 USD används bara för ett tomt
 Dragan-budget-ID. Därefter gäller det lägsta av runtimekapaciteten och
 journalens varaktiga beviljade tak. En explicit finansierad amendment måste
@@ -177,6 +206,13 @@ tre CHECK-gränser ändrades, inte befintligt beviljat belopp. Denna leverans
 gör 015 obligatorisk i readiness, Studio och båda importörerna. Handoffens
 daterade appdriftkvitto avser PR262 före denna slutleverans; den beskriver
 även det exakta migrationskvittot och verifieringen av denna ändring.
+
+Jakob har 19 oktober satt det sammanlagda taket till 45 USD; det är inte
+45 USD extra. Den nya migrationen 017 höjer enbart de tre CHECK-gränserna
+40→45 USD och lämnar tillämpad 015 samt historiska ledgerbevis orörda.
+017 är först `deploymentOptional`: produktionens SQL, readiness och separat
+finansierad amendment måste återläsas innan den högre budgeten används och
+017 görs obligatorisk. Initialbelopp, dygnstak och försöksreserv är oförändrade.
 
 Faktisk leverantörsdebitering, kvarhållna providerreserver och SQL-journalens
 reservationer är skilda redovisningar. Summera inte journalen som faktura.
@@ -1762,7 +1798,7 @@ normaliserade 0–1 i bordbildens hela rektangel, inklusive transparenta kanter.
 Kortbredden är 0,02–0,15 av samma bildbredd. Scen och spelplatser använder
 samma 860px-gräns. Serverns box-ID behålls också för återupptagna händer.
 
-Admin → Sammansättningar → Bord har ett gemensamt visuellt reglage för
+Admin → Klippkarta → Scen & lager har visuella reglage för
 placeringarna. Varje bordsdesign kalibreras separat; startpunkterna är inte
 visuellt godkända standardvärden. Befintliga sammansättningar utan fältet
 behåller tidigare placering. Val av ett annat, okalibrerat bord visas med
@@ -1775,13 +1811,44 @@ dess utkastgeometri, även ur dealerarkiv; återställning återkopplar den inte
 
 Nya skrivningar kräver runtime capability 16 innan beständig lagring.
 Ingen SQL-migration krävs. Vercel och Render ska ha den nya läsaren innan
-geometri sparas i produktion. Två visuella provspelningar och formatkontroll
-behövs utöver kontrakttesterna före acceptans av en konkret sammansättning.
+geometri sparas i produktion. Kontrollera en konkret sammansättnings placering
+och handkontakt i de format den använder; kodprov är inget visuellt godkännande.
+
+### Oberoende kort- och markerankare, 19 oktober 2026
+
+Varje format kan dessutom ha `anchors.cards` och/eller `anchors.bets`:
+`{target: 'table' | 'dealer' | 'scene', rect: {x,y,width,height}}`.
+Rektangeln är normaliserad i valt referensplan; saknad grupp använder hela
+bordbilden. Punkter förblir 0–1 inom respektive ram och `cardWidth` avser
+kortramens bredd. Offset är ändlig inom ±40 och storlek 0,0001–80.
+Dealerplanet är kompositionens stabila 1080×1920-plan; klippets beskärning,
+filmade hand och `sourcePlane` ändrar inte ankaret. Scenplanet är 1080×1920
+mobil eller 1920×1080 desktop med samma contain-projektion som bilden.
+
+Ankarbyte räknar om ramen och bevarar läge/storlek. Kort och manuella marker
+har separata ramar och kontrollskalor. `under-cards` har företräde men behåller
+den manuella markerramen. Återställning hämtar sparad grupp för valt bord/format
+från föräldervyns sparade bas, även efter panelbyte och jämförelse med serverrevision.
+Gemensam scenflytt är en editoroperation som ändrar dealer/bord en gång vardera;
+följvalen avgör kortens och markernas rörelse. Ingen separat grupptransform lagras.
+
+Valen skrivs i den delade mallens projekt via befintlig revision, aldrig som
+`roomOverrides`. Aktiva/arkiverade projekt och frysta paket med `anchors` kräver
+runtime capability **21**, `blackjackAnchors: 'v1'`, före skrivning. Rum/bolagslivscykel
+inkluderar vald operatörs aktuella frysta paket i preflight före SQL och kontrollerar
+paketets faktiska fält igen under transaktionen. Borttagna ankare i projektutkastet
+sänker därför inte kravet för kvarvarande frysta ankare. Materialpapperskorgen
+förkontrollerar de kvarvarande presentationerna i planens faktiska paketändringar
+och kontrollerar dem igen under låset före första mutation. Oberörda operatörer
+och borttagna sceners ankare höjer inte kontraktskravet. Äldre
+paket behåller sin tidigare layout. Ingen SQL-migration eller ändring av kort,
+saldo, filmspår eller talplan ingår. Äldre bordseditor hänvisar ankarscener till
+Admin i stället för att visa punkterna i fel koordinatsystem.
 ### Dynamiska insatsplatser och spelarens kortvy
 
 Varje blackjackTables-format kan från runtime v19 ha betMode: 'under-cards'. Då är kortpunkten gemensam vågrät ankare; markerytans lodräta läge räknas från aktuell kortvy, poängbricka och kontrollstorlek. De sparade bet-punkterna bevaras för återgång till manuell placering. Saknat fält ger exakt tidigare manuella geometri. Mobilens kollisionskontroll räknar de verkliga, oskalade tryckytorna. Bordsbildens storlek ställs fortsatt med befintliga mobile/desktop.table; det finns inget extra storleksregister.
 
-Upplyfta/På bordet är en lokal, validerad spelarpreferens. Den ändrar varken spelbeslut, kortvärden, tillgångar eller publicering. Det filmade källspåret förblir oförändrat före släpp; övergången landar i vald kortvy. Byte mitt i ett kontaktspår revokerar spåret och behåller serverns statiska kort. Admin visar samma editor som kompatibilitetsytan och sparar fortfarande via mallens ordinarie revisionskontroll. Explicit material-/dealer-/rumslivscykel kräver nu v19 eftersom åtgärden kan skriva om ett paket med nya profilfält. Ingen SQL-migration.
+Upplyfta/På bordet är en lokal, validerad spelarpreferens. Den ändrar varken spelbeslut, kortvärden, tillgångar eller publicering. Det filmade källspåret förblir oförändrat före släpp; övergången landar i vald kortvy. Byte mitt i ett kontaktspår revokerar spåret och behåller serverns statiska kort. Admin visar sceneditorn ovan och sparar via mallens ordinarie revisionskontroll. Äldre bordseditor används för geometri utan ankare. Explicit material-/dealer-/rumslivscykel kräver minst v19; projekt med ankare kräver v21 eftersom åtgärden kan skriva om dessa profilfält. Ingen SQL-migration.
 
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 
@@ -2433,7 +2500,8 @@ aktiveringen begär samtycke. Text/bilder visas i en tillfällig logg via
 fem sekunders långtryck, inte i normalvyn.
 
 Webbläsarens lokala talstöd krävs för aktiveringsordet. Produktservern
-använder Whisper `whisper-1` via audio/translations för engelsk text;
+använder Whisper `whisper-1` via `audio/transcriptions` och behåller talets
+originalspråk utan påtvingad översättning eller förvalt inmatningsspråk.
 Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst. Nycklar
 finns enbart på servern. Modell- och
 bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är

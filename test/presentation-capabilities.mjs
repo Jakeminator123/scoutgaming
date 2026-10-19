@@ -25,10 +25,22 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '21', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
+});
+
+test('v21 advertises independent anchors within the readiness response limit', async () => {
+  const headers={'X-Presentation-Capability-Version':'21'};
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);
+  const body=await response.text();assert.ok(Buffer.byteLength(body)<=1024);
+  assert.equal(validatePresentationCapabilities(JSON.parse(body),{expectedVersion:21}).blackjackAnchors,'v1');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));
+  assert.equal(head.status,200);assert.equal(await head.text(),'');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'20'}})).json();
+  assert.equal(Object.hasOwn(old,'blackjackAnchors'),false);
 });
 
 test('v20 advertises exact speech slot standards within the same bounded response', async () => {

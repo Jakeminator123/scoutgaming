@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {createSeedProject,defaultPresentationLane,validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import * as anchors from '../../../../../packages/presentation/runtime/composition-anchors.mjs';
 import * as settings from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {rouletteReferencePreview} from './roulette-clip-map.mjs';
@@ -16,11 +17,12 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','BlackjackTableGeometryEditor'].map(key=>[key,()=>null]));
+  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
   runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>{
     if(name==='react')return hooks;
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('composition-settings.mjs'))return settings;
+    if(name.includes('composition-anchors.mjs'))return anchors;
     if(name.includes('dealer-compositing.mjs'))return {effectiveDealerCompositing:()=>({})};
     if(name.includes('layer-asset-contract.mjs'))return {layerAssetFitsGame};
     if(name.includes('roulette-clip-map.mjs'))return {rouletteReferencePreview};
@@ -30,7 +32,7 @@ function panelHarness(){
     return require(name);
   }});
   const project=createSeedProject(),lane=defaultPresentationLane('astrid');project.lanes=[lane];
-  const edits=[],props={project,inventory:{videos:[]},room:{id:'room-a',name:'Main',compositionId:lane.id,game:'blackjack'},dealerId:'astrid',
+  const edits=[],props={project,savedProject:structuredClone(project),inventory:{videos:[]},room:{id:'room-a',name:'Main',compositionId:lane.id,game:'blackjack'},dealerId:'astrid',
     uses:[{roomId:'room-a',roomName:'Main',operatorName:'North'},{roomId:'room-b',roomName:'VIP',operatorName:'South'}],roomChoicesPath:'/admin/rooms?view=registered&operator=north&table=room-a',
     blocked:false,projectDirty:false,onEdit:next=>{edits.push(next);props.project=next;},onRegistered(){},onSaved(){},onBusyChange(){}};
   return {props,edits,LayerAssetSelect,...components,render:()=>{cursor=0;return module.exports.StudioCompositionPanel(props);}};
@@ -63,6 +65,32 @@ test('changing composition returns the next shared template to preview mode whil
   h.props.project.lanes.push(other);h.props.room={...h.props.room,compositionId:other.id};tree=h.render();
   assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
   assert.ok(text(tree).includes('Redigera gemensam mall'));assert.equal(h.props.project.lanes.length,2);
+});
+
+test('explicit shared template edits never follow or reassign a different room template',()=>{
+  const h=panelHarness(),originalRoom=structuredClone(h.props.room),original=structuredClone(h.props.project.lanes[0]);
+  const other={...structuredClone(original),id:'other-composition',label:'Other shared scene'};
+  h.props.project.lanes.push(other);h.props.compositionId=other.id;h.props.game='blackjack';
+  let tree=h.render();assert.equal(nodes(tree,node=>node.type==='h2')[0].props.children,other.label);
+  assert.equal(nodes(tree,node=>node.type==='a')[0].props.href,h.props.roomChoicesPath);
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  tree=h.render();const updated={...structuredClone(other),openclaw:{...other.openclaw,idle:'rules'}};
+  nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(updated);
+  assert.deepEqual(h.props.project.lanes[0],original);assert.equal(h.props.project.lanes[1].openclaw.idle,'rules');
+  assert.deepEqual(h.props.room,originalRoom);
+  h.props.compositionId='missing';tree=h.render();
+  assert.ok(text(tree).includes('Den valda sammansättningen finns inte.'));
+  assert.equal(nodes(tree,node=>node.type===h.LayerAssetSelect).length,0);
+});
+
+test('a selected library composition is editable without inventing a room context',()=>{
+  const h=panelHarness();h.props.compositionId=h.props.project.lanes[0].id;h.props.game='blackjack';
+  h.props.room=undefined;h.props.roomChoicesPath=null;
+  let tree=h.render();assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  tree=h.render();const lane=structuredClone(h.props.project.lanes[0]);lane.openclaw.idle='rules';
+  nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(lane);
+  assert.equal(h.edits.length,1);assert.equal(h.props.room,undefined);
 });
 
 test('roulette preview never borrows blackjack idle or a blackjack table and keeps video upload game-scoped',()=>{
@@ -104,12 +132,12 @@ test('Admin table profile edits only the selected table and format behind templa
   const h=panelHarness(),table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000002',role:'table',game:'blackjack',label:'Oak',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
   h.props.project.layerAssets=[{...table,pathname:layerAssetPath(table)}];
   const lane=h.props.project.lanes[0];lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition=settings.defaultCompositionSettings();
-  let tree=h.render(),editor=nodes(tree,node=>node.type===h.BlackjackTableGeometryEditor)[0];
+  let tree=h.render(),editor=nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0];
   assert.equal(editor.props.disabled,true);assert.equal(editor.props.tableId,table.id);
   const profile=settings.defaultBlackjackTableGeometry(table.id);profile.mobile.betMode='under-cards';
   editor.props.onChange(profile);assert.equal(h.edits.length,0);
   nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
-  editor=nodes(tree,node=>node.type===h.BlackjackTableGeometryEditor)[0];assert.equal(editor.props.disabled,false);
+  editor=nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0];assert.equal(editor.props.disabled,false);
   editor.props.onChange(profile);assert.equal(h.edits.length,1,text(h.render()));
   assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].mobile.betMode,'under-cards');
   assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].desktop.betMode,undefined);
@@ -118,7 +146,7 @@ test('Admin table profile edits only the selected table and format behind templa
   nodes(width,node=>node.type==='input')[0].props.onChange({target:{valueAsNumber:165}});
   assert.equal(h.edits.at(-1).lanes[0].composition.mobile.table.width,1.65);
   assert.deepEqual(h.edits.at(-1).lanes[0].composition.desktop,beforeDesktop);
-  h.props.room.game='roulette';assert.equal(nodes(h.render(),node=>node.type===h.BlackjackTableGeometryEditor).length,0);
+  h.props.room.game='roulette';assert.equal(nodes(h.render(),node=>node.type===h.BlackjackScenePlacementEditor).length,0);
 });
 
 

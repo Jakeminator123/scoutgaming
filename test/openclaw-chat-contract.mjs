@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { openClawChat, projectOpenClawGameStatus } from '../services/game/openclaw-chat.mjs';
+import { completeChatWithSpeech } from '../services/game/generated-speech-chat.mjs';
+import { readChatResponse } from '../packages/presentation/contracts/chat-response.mjs';
+import { validateProductSpeechChoice } from '../packages/director/product-speech.mjs';
 
 const policy = () => ({
   recordedLines: [{ lineId: 'goodluck', exactText: 'Good luck.', familyId: 'speak.goodluck', variantIds: ['goodluck.warm'] }],
@@ -161,7 +164,7 @@ test('generated text is normalized to the neutral visual contract and silence is
     completeImpl: async () => JSON.stringify({ kind: 'generatedText', requestId: 'chat-request-001', dealerId: 'astrid',
       sessionRevision: '7', roundRevision: '12', text: '  Ett lugnt svar.\r\nTack.  ' }),
   });
-  assert.equal(generated.exactText, 'Ett lugnt svar.\nTack.');
+  assert.equal(generated.exactText, 'Ett lugnt svar. Tack.');
   assert.equal(generated.visualMode, 'neutral');
 
   const silent = await openClawChat(request(), authoritative(), {
@@ -184,4 +187,64 @@ test('paths, URLs, timing, playNow, unknown lines and stale revisions are reject
       settingsProvider: () => settings, completeImpl: async () => JSON.stringify(choice),
     }), error => ['invalid_openclaw_speech_choice', 'disallowed_openclaw_speech_choice', 'stale_openclaw_speech_choice'].includes(error.code));
   }
+});
+
+test('multiline generated replies reach preview and speech preparation as the same single line', async () => {
+  for (const relay of [false, true]) {
+    const frames = [], previews = [];
+    let speechText;
+    const text = '  Hej, Dragan här.\r\n\n  Varsågod!\rTack.  ';
+    const choice = { kind: 'generatedText', requestId: request().requestId, dealerId: 'dragan',
+      sessionRevision: '7', roundRevision: '12', text };
+    const state = { ...authoritative(), dealerId: 'dragan' };
+    assert.equal(validateProductSpeechChoice(choice, { request: request(), status: projectOpenClawGameStatus(state) }).text,
+      'Hej, Dragan här. Varsågod! Tack.');
+    const result = await completeChatWithSpeech({
+      request: request(), status: projectOpenClawGameStatus(state), owner: 'fixture-owner',
+      readOwner: () => 'fixture-owner', readStatus: () => projectOpenClawGameStatus(state),
+      decide: input => openClawChat(input, state, {
+        settingsProvider: () => relay ? { ...settings, speechUrl: 'https://director.example.test', speechToken: 'fixture-token' } : settings,
+        completeImpl: async () => JSON.stringify(choice),
+        fetchImpl: async () => new Response(JSON.stringify(choice), { headers: { 'Content-Type': 'application/json' } }),
+      }),
+      onDecision: exactText => frames.push({ type: 'preview', exactText }),
+      streamService: { prepare: async input => {
+        await input.beforeCostly(); speechText = input.text;
+        assert.equal(input.dealerId, 'dragan');
+        return { fixture: true };
+      } },
+    });
+    frames.push({ type: 'result', decision: result });
+    const response = new Response(frames.map(frame => JSON.stringify(frame)).join('\n') + '\n', {
+      headers: { 'Content-Type': 'application/x-ndjson' },
+    });
+    const received = await readChatResponse(response, () => {}, text => previews.push(text));
+    assert.deepEqual(previews, ['Hej, Dragan här. Varsågod! Tack.']);
+    assert.equal(speechText, received.exactText);
+    assert.equal(received.exactText, previews[0]);
+  }
+});
+
+test('generated-text line folding still rejects control characters before speech work', async () => {
+  for (const text of ['Hej.\u0000Tack.', '\tHej.', 'Hej.\u000b', 'Hej.\u001fTack.', 'Hej.\u007f', 'Hej.\u0085', ' \r\n ', 'x'.repeat(501)]) {
+    await assert.rejects(openClawChat(request(), authoritative(), {
+      settingsProvider: () => settings,
+      completeImpl: async () => JSON.stringify({ kind: 'generatedText', requestId: request().requestId,
+        dealerId: 'astrid', sessionRevision: '7', roundRevision: '12', text }),
+    }), { code: 'invalid_openclaw_speech_choice' });
+  }
+});
+
+test('recorded multiline text keeps its exact policy-owned wording and media identity', async () => {
+  const state = authoritative();
+  state.policy.recordedLines[0].exactText = 'Good luck.\nEnjoy the game.';
+  const result = await openClawChat(request(), state, {
+    settingsProvider: () => settings,
+    completeImpl: async () => JSON.stringify({ kind: 'recordedLine', requestId: request().requestId,
+      dealerId: 'astrid', sessionRevision: '7', roundRevision: '12', lineId: 'goodluck', variantId: 'goodluck.warm' }),
+  });
+  assert.equal(result.exactText, state.policy.recordedLines[0].exactText);
+  assert.equal(result.lineId, 'goodluck');
+  assert.equal(result.familyId, 'speak.goodluck');
+  assert.equal(result.variantId, 'goodluck.warm');
 });
