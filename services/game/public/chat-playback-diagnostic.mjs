@@ -1,6 +1,6 @@
 import { chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
 
-const timingKeys = ['socket_open_ms', 'first_media_ms', 'socket_to_media_ms', 'first_playing_ms', 'first_visible_frame_ms'];
+const timingKeys = ['socket_open_ms', 'first_media_ms', 'socket_to_media_ms', 'reply_ready_ms', 'first_playing_ms', 'first_visible_frame_ms'];
 const terminalStates = new Set(['ended', 'interrupted', 'failed', 'cancelled', 'text-only', 'silent', 'unverified']);
 
 // One volatile DOM receipt for the current request. Never copy text, tickets,

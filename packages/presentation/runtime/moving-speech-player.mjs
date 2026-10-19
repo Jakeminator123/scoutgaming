@@ -162,6 +162,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   const raf = dependencies.requestAnimationFrame ?? globalThis.requestAnimationFrame;
   const caf = dependencies.cancelAnimationFrame ?? globalThis.cancelAnimationFrame;
   const createURL = dependencies.createURL ?? URL.createObjectURL, revokeURL = dependencies.revokeURL ?? URL.revokeObjectURL;
+  const now = dependencies.now ?? (() => performance.now()), timings = {};
+  let connectedAt, socketOpenedAt;
+  const mark = key => { timings[key] = Math.max(0, Math.round(now() - connectedAt)); };
   const controller = new AbortController(), audio = doc.createElement('audio');
   let socket, layer, restCanvas, bodyFrames, ready, speech, pendingBinary, frameHandle, audioURL, queued = 0, queuedBytes = 0;
   let received = 0, receivedParts = 0, credited = 0, released = 0, pcmReady = false, workerDone = false, audioEnded = false;
@@ -236,7 +239,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         ...(ready.sequence?{speechFrame:k}:{}) }) !== true) fail('moving_speech_render_failed');
       if(ready.sequence?.frames[k]){onSequenceFrame?.(ready.sequence,k);void bodyFrames.prefetch(k).catch(stop);}
       else if(ready.sequence)onSequenceEnd?.(ready.sequence);
-      if (!firstFrame) { firstFrame = true; onFirstFrame(); }
+      if (!firstFrame) { firstFrame = true; mark('first_visible_frame_ms'); onFirstFrame(); }
       frameHandle = raf(tick);
     } catch (error) { stop(error); }
   };
@@ -249,8 +252,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     if(ready.sequence&&renderFrame(bodyFrames.get(0))!==true)fail('moving_speech_render_failed');
     await abortable(audio.play(), controller.signal); check();
     if (audio.paused) fail('moving_speech_audio_paused');
-    started = true; onStart(exactText); onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId,
-      evidence: 'media-playing', planSha256: ready.plan.planSha256, reviewStatus: 'pending' });
+    started = true; mark('first_playing_ms'); onStart(exactText); onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId,
+      evidence: 'media-playing', planSha256: ready.plan.planSha256, reviewStatus: 'pending', timings: { ...timings } });
     tick();
   };
   const processMessage = async data => {
@@ -260,7 +263,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
       const pending = pendingBinary; pendingBinary = null; const bytes = new Uint8Array(data);
       if (pending.t === 'pcm') {
         if (bytes.byteLength !== ready.audio.byteLength || await digest(bytes) !== ready.plan.binding.audioSha256) fail('moving_speech_pcm_hash_mismatch');
-        check(); audioURL = createURL(wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined)); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
+        check(); mark('first_media_ms');
+        if (socketOpenedAt !== undefined) timings.socket_to_media_ms = Math.max(0, Math.round(now() - socketOpenedAt));
+        audioURL = createURL(wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined)); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
       } else {
         if (!bytes.byteLength) fail('invalid_moving_speech_bytes');
         if (stagedBytes + bytes.byteLength > MAX_STAGED_BYTES) fail('moving_speech_queue_full');
@@ -310,7 +315,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         rutor: message.rutor.map(tag => tag === null ? null : { tagning: tag.tagning, ruta: tag.ruta, rect: [...tag.rect] }) };
     } else if (message.t === 'done' && keys(message, ['t', 'id', 'frames']) && !workerDone
       && message.id === ready.plan.start.id && message.frames === ready.plan.timeline.length && received === message.frames) {
-      workerDone = true; await maybeStart(); finish();
+      workerDone = true; mark('reply_ready_ms'); await maybeStart(); finish();
     } else fail('invalid_moving_speech_message');
   };
   try {
@@ -323,7 +328,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     if (speech.expiresAt <= Date.now()) fail('moving_speech_ticket_expired');
     audio.onended = finishAudioPlayback;
     audio.onerror = () => stop(Error('moving_speech_audio_failed'));
+    connectedAt = now();
     socket = connect(speech.url, ['moving-v1', `ticket.${speech.ticket}`]); socket.binaryType = 'arraybuffer';
+    socket.onopen = () => { socketOpenedAt = now(); mark('socket_open_ms'); };
     socket.onmessage = event => {
       if (terminal) return;
       const size = typeof event.data === 'string' ? event.data.length * 2 : event.data?.byteLength;
@@ -342,7 +349,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     audio.pause(); audio.muted = true; audio.onended = audio.onerror = null;
     if (frameHandle !== undefined) caf(frameHandle);
     if (socket) {
-      socket.onmessage = socket.onerror = socket.onclose = null;
+      socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
       if (socket.readyState === 1 && !completed) socket.send(JSON.stringify({ t: 'abort', id: speech?.id }));
       socket.close();
     }
@@ -355,6 +362,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     audio.removeAttribute('src'); audio.load(); if (audioURL) revokeURL(audioURL);
     onReceipt({ state: completed ? 'end' : 'interrupted', streamId: value?.id, requestId: value?.requestId,
       evidence: 'media-lifecycle', started, firstFrame, reviewStatus: 'pending',
+      timings: { ...timings },
       ...(failureCode ? { failureCode } : {}),
       frameCounts: { received, released, total: ready?.plan.timeline.length ?? 0 } });
   }

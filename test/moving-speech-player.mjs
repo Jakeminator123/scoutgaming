@@ -98,6 +98,29 @@ function fixture({ samples = 30000, overrides = {}, dependencies = {}, bodyCount
   };
 }
 
+test('moving timings distinguish verified PCM, full reply and audio/frame start without claiming audible or visual acceptance', async () => {
+  let clock = 100, checks = 0;
+  const status = { dataset: {} }, diagnostic = createChatPlaybackDiagnostic(() => status, () => clock);
+  diagnostic.begin(requestId);
+  const f = fixture({ dependencies: { now: () => clock }, overrides: {
+    beforeStart: async () => { if (++checks === 2) clock = 240; },
+    onReceipt: receipt => { f.receipts.push(receipt); diagnostic.stream(requestId, receipt); },
+  } });
+  await f.ready(); clock = 110; f.socket.onopen();
+  clock = 140; await f.pcm(); await f.allChunks();
+  assert.equal(f.audio.plays, 0);
+  clock = 200; f.done(); await until(() => f.receipts.length, 'timed audio start');
+  assert.deepEqual(f.receipts[0].timings, { socket_open_ms: 10, first_media_ms: 40, socket_to_media_ms: 30,
+    reply_ready_ms: 100, first_playing_ms: 140 });
+  assert.equal(f.receipts[0].reviewStatus, 'pending');
+  clock = 1000; f.audio.onended(); await f.promise;
+  const end = f.receipts.at(-1), saved = JSON.parse(status.dataset.playbackReceipt);
+  assert.equal(end.timings.first_visible_frame_ms, 140);
+  assert.equal(f.receipts[0].timings.first_visible_frame_ms, undefined, 'later repaint cannot rewrite start evidence');
+  assert.equal(saved.timings.reply_ready_ms, 100); assert.equal(saved.timings.first_visible_frame_ms, 140);
+  assert.equal(saved.reviewStatus, 'pending'); assert.equal(saved.elapsedMs, 900);
+});
+
 test('descriptor binds exact text, dealer, ticket attempt/nonce and same-origin endpoint before connecting', async () => {
   assert.equal((await validateMovingSpeechStream(descriptor(), options)).dealerId, 'dragan');
   for (const change of [d => d.dealerId = 'astrid', d => d.requestId = 'other', d => d.nonce = 'other', d => d.attemptId = 'other',
