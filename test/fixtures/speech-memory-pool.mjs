@@ -72,6 +72,10 @@ export function speechMemoryPool(clock = () => Date.parse('2026-10-03T12:00:00Z'
             const saved = { environment_id: env, version: 1, daily_budget_micro_usd: number(p[1]), created_at_ms: number(p[2]) };
             state.policies.set(env, saved); return rows(saved);
           }
+          if (tag === 'update_policy') {
+            const saved = state.policies.get(env); if (!saved) return rows(undefined);
+            saved.daily_budget_micro_usd = number(p[1]); return rows(saved);
+          }
           if (tag === 'get_file_policy') return rows(state.filePolicies.get(env));
           if (tag === 'insert_file_policy') {
             if (state.filePolicies.has(env)) duplicate();

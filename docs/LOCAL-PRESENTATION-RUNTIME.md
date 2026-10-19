@@ -248,7 +248,10 @@ antagnings-, avbrotts- och städskydd; det ingår inte i tvåreplikskvittot.
 ### Budgetens tre nivåer
 
 `MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 45 USD och runtime-dygn
-20 USD. Det separata initiala beloppet 13,2 USD används bara för ett tomt
+40 USD (höjt från 20 USD den 19 oktober 2026 på Jakobs beslut; dygnets
+effektiva tak är fortfarande det lägsta av koden och den sparade policyraden
+`gpu_budget_policies`, som bara ändras med `amendBudgetPolicy` och dess
+uttryckliga bekräftelse). Det separata initiala beloppet 13,2 USD används bara för ett tomt
 Dragan-budget-ID. Därefter gäller det lägsta av runtimekapaciteten och
 journalens varaktiga beviljade tak. En explicit finansierad amendment måste
 matcha tidigare tak, reserverat belopp, antal reservationer och färsk
