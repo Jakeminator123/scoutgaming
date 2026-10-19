@@ -6,17 +6,17 @@ import vm from 'node:vm';
 const app = readFileSync(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
 const visibility = app.slice(app.indexOf('function setChatOpen(open)'), app.indexOf('\n}', app.indexOf('function setChatOpen(open)')) + 2);
 
-function harness(dealer, localPresentationEnabled = true, studioPreview = null) {
+function harness(studioPreview = null) {
   let open = false;
   const chatToggle = { dataset: { unread: '1' }, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; } };
-  const context = vm.createContext({ studioPreview, DEALER: { key: dealer }, localPresentationEnabled, chatToggle,
+  const context = vm.createContext({ studioPreview, chatToggle,
     $: () => ({ classList: { toggle: (_name, value) => { open = value; } } }) });
   vm.runInContext(visibility, context);
   return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, chatToggle };
 }
 
-test('Astrid conversation opens and closes on request, including a compact viewport', () => {
-  const h = harness('astrid');
+test('conversation opens and closes on request with accessible state and cleared unread status', () => {
+  const h = harness();
   for (const requested of [true, false, false, true, false]) {
     h.set(requested);
     assert.equal(h.isOpen(), requested);
@@ -25,34 +25,24 @@ test('Astrid conversation opens and closes on request, including a compact viewp
   }
 });
 
-test('other dealer presentations retain their existing open/close behavior', () => {
-  for (const dealer of ['vera', 'amira', 'mei', 'paow', 'dragge']) {
-    const h = harness(dealer);
-    h.set(true); assert.equal(h.isOpen(), true);
-    h.set(false); assert.equal(h.isOpen(), false);
-  }
-});
-
 test('chat controls never move into the hidden private camera panel', () => {
   assert.doesNotMatch(app, /debugContainer\.append\([^;]*(?:chat-input|chat-log)/);
   assert.doesNotMatch(app, /onLogToggle:\s*[^\n]*setChatOpen/);
   const init = app.match(/^if \(astridCamera\) setChatOpen\(false\);$/m)?.[0];
   assert.ok(init,'conversation starts folded alongside voice controls');
-  const h = harness('astrid');
+  const h = harness();
   vm.runInNewContext(init, { astridCamera: {}, chatToggle: h.chatToggle, setChatOpen: value => h.set(value) });
   assert.equal(h.isOpen(), false);
   assert.notEqual(h.chatToggle.hidden, true);
 });
 
 test('Studio preview cannot expose chat through ordinary open or close controls', () => {
-  for (const dealer of ['astrid', 'vera', 'amira', 'mei']) {
-    const h = harness(dealer, true, { sessionId: 'preview-fixture' });
-    for (const requested of [true, false, true]) {
-      h.set(requested);
-      assert.equal(h.isOpen(), false);
-      assert.deepEqual(h.chatToggle.attributes, {});
-      assert.equal(h.chatToggle.dataset.unread, '1');
-    }
+  const h = harness({ sessionId: 'preview-fixture' });
+  for (const requested of [true, false, true]) {
+    h.set(requested);
+    assert.equal(h.isOpen(), false);
+    assert.deepEqual(h.chatToggle.attributes, {});
+    assert.equal(h.chatToggle.dataset.unread, '1');
   }
 });
 

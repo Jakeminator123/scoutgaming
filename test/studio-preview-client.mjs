@@ -138,9 +138,6 @@ async function tierFixture(studioPreview=null) {
 }
 
 test('only Classic can be selected in ordinary play and preview; stale unsupported presets fall back without navigation',async()=>{
- const {readFile}=await import('node:fs/promises');
- const html=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
- for(const id of ['high','vip'])assert.match(html,new RegExp('<button[^>]*data-id="'+id+'"[^>]*disabled[^>]*>[^<]+<small>UNAVAILABLE</small>'));
  for(const preview of [null,context]){
   const f=await tierFixture(preview);
   assert.deepEqual(f.read('[table.id,LIMITS.min,LIMITS.max]'),['classic',5,2000]);

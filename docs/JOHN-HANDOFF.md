@@ -98,6 +98,16 @@ granskning/CI/merge. Ingen produktions-/provider-/GPU-ändring gjordes i rättni
 Bankförladdning före listen och 30-sekunders readiness är ett separat diagnosspår;
 inga tidsgränser eller loggningsregler har ändrats.
 
+### Avgränsad teststädning — HUVUDAGENT6
+
+`test/astrid-chat-visibility.mjs` använder nu endast chattfunktionens verkliga
+indata; upprepade dealerprov och ett ogrundat viewportpåstående är borttagna.
+Kamerans dealer-/local-/previewmatris, ARIA, unread och privatpanelsskydd finns kvar.
+`test/studio-preview-client.mjs` släpper det exakta HTML-kravet på disabled-knapparnas
+etikett/markup; beteendeproven för Classic, insatser, limiter, ägarskap och isolering
+är kvar. De två filernas 20 tester passerar med Node 24.21.0 och fyra workers.
+Ändringen omfattar testkod och denna handoff; MERGE4 äger granskning/CI/merge.
+
 ### Rättad produktionsbehörighet — HUVUDAGENT6, 19 oktober 2026
 
 Normal autentiserad N1-GET till `/studio/api/admin/moving-drift` är verifierat
