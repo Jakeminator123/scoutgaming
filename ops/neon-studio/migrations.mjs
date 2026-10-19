@@ -41,7 +41,9 @@ const sources = Object.freeze([
   // This changes technical capacity only, not any existing budget grant.
   { version:'015', file:'015-moving-budget-capacity.sql', tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
-  // 016 belongs to the independently reviewed drift-control feature.
+  // Optional Admin control plane: a missing table fails closed at the API.
+  { version:'016', file:'016-moving-drift-control.sql', deploymentOptional:true,
+    tables:['moving_drift_control'], indexes:[] },
   // Additive capacity bridge: production SQL and a separate funded amendment
   // must be verified before 017 becomes required or the higher grant is used.
   { version:'017', file:'017-moving-budget-capacity.sql', deploymentOptional:true, tables:[], indexes:[],
@@ -315,16 +317,24 @@ export async function planStudioMigrations({ pool, directory } = {}) {
   return withClient(pool, true, async client => result(await target(client), await inspect(client, migrations)));
 }
 
-export async function applyStudioMigrations({ pool, expectedTarget, confirm } = {}) {
+export async function applyStudioMigrations({ pool, expectedTarget, confirm, deferOptional = [] } = {}) {
   if (confirm !== true || !expectedTarget) refuse('studio_migration_apply_requires_confirmation', 422);
   let expected;
   try { expected = canonicalStudioJson(expectedTarget); } catch { refuse('studio_migration_target_unverified', 422); }
   const migrations = await loadStudioMigrations();
+  // Independent additive rollouts may leave reviewed optional versions pending.
+  // Required versions and installed proofs remain mandatory in every plan.
+  if (!Array.isArray(deferOptional) || new Set(deferOptional).size !== deferOptional.length
+    || deferOptional.some(version => typeof version !== 'string'
+      || !migrations.some(row => row.version === version && row.deploymentOptional))) {
+    refuse('studio_migration_invalid_defer_optional', 422);
+  }
+  const deferred = new Set(deferOptional);
   return withClient(pool, false, async client => {
     const verifiedTarget = await target(client);
     if (canonicalStudioJson(verifiedTarget) !== expected) refuse('studio_migration_target_mismatch');
     const before = await inspect(client, migrations), appliedNow = [];
-    for (const migration of before.toApply) {
+    for (const migration of before.toApply.filter(row => !deferred.has(row.version))) {
       await client.query(migration.sql);
       const objects = await catalog(client);
       const appliedVersions = new Set([...before.applied.map(row => row.version), ...appliedNow, migration.version]);
