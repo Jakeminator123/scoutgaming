@@ -1757,7 +1757,10 @@ Valen skrivs i den delade mallens projekt via befintlig revision, aldrig som
 runtime capability **21**, `blackjackAnchors: 'v1'`, före skrivning. Rum/bolagslivscykel
 inkluderar vald operatörs aktuella frysta paket i preflight före SQL och kontrollerar
 paketets faktiska fält igen under transaktionen. Borttagna ankare i projektutkastet
-sänker därför inte kravet för kvarvarande frysta ankare. Äldre
+sänker därför inte kravet för kvarvarande frysta ankare. Materialpapperskorgen
+förkontrollerar de kvarvarande presentationerna i planens faktiska paketändringar
+och kontrollerar dem igen under låset före första mutation. Oberörda operatörer
+och borttagna sceners ankare höjer inte kontraktskravet. Äldre
 paket behåller sin tidigare layout. Ingen SQL-migration eller ändring av kort,
 saldo, filmspår eller talplan ingår. Äldre bordseditor hänvisar ankarscener till
 Admin i stället för att visa punkterna i fel koordinatsystem.

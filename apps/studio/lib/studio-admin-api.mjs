@@ -137,7 +137,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // Render revalidates inside its own product transaction. Local mutations
       // hold that same product lock while validating current identity and writing.
       const presentationOptions = ['material-trash-check','material-trash'].includes(endpoint.action)
-        ? {presentationDocuments:['project','administration'],presentationMutation:{kind:'material-trash',value:{}}}
+        ? {presentationDocuments:['project','administration'],presentationMaterialTrash:{id:body.id,archived:body.archived,expectedRevision:body.expectedRevision},presentationMutation:{kind:'material-trash',value:{}}}
         : ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
         ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : endpoint.action === 'presentation-room'

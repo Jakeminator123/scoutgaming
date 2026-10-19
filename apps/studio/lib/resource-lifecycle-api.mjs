@@ -126,6 +126,10 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   if(!id(body.id)||typeof body.archived!=='boolean')fail('studio_invalid_request',400);
   validateRevision(body.expectedRevision);
   const plan=await materialTrashPlan({repository,operators,id:body.id,archived:body.archived,expectedRevision:body.expectedRevision,now});
+  if(repository.withMutationContext){
+   const retained=plan.changes.map(change=>readPackagePresentation(change)).filter(Boolean);
+   await repository.withMutationContext(async()=>{},retained.map(value=>({kind:'presentation-package',value})));
+  }
   if(action==='material-trash-check')return {impact:plan.impact};
   if(typeof body.impactToken!=='string'||body.impactToken!==plan.impact.token)fail('studio_conflict');
   const saved=await repository.saveDealerLifecycle(plan.project,{expectedRevision:body.expectedRevision,actor:context.actor.user});

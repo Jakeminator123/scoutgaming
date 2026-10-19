@@ -12,6 +12,10 @@ import {createOperatorStore} from '../../../packages/operators/server/operator-s
 import {withPackagePresentation,readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
+import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
+import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
+import {withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
 
 const scope={environment:'material-trash-test',workspaceId:'isolated'},origin='https://trash.example.invalid';
 const actor={user:'fixture-admin',role:'admin',scope},now=()=>1791753600000;
@@ -19,7 +23,14 @@ function asset(n,role='background'){
  const row={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:`Material ${n}`,sha256:String(n).repeat(64),size:128,contentType:'image/png',width:1920,height:1080};
  row.pathname=layerAssetPath(row);return row;
 }
-async function fixture(){
+function withRetainedAnchors(input){
+ const value=structuredClone(input),table=asset(3,'table');value.assets.push(table);
+ const lane=value.lanes.find(row=>row.id==='other-composition');lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};
+ const geometry=defaultBlackjackTableGeometry(table.id);
+ for(const layout of ['mobile','desktop'])geometry[layout].anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}},bets:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
+ lane.composition={...defaultCompositionSettings(),blackjackTables:[geometry]};return value;
+}
+async function fixture({nativeVersion,frozenAnchors=false}={}){
  const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),target=asset(1),kept=asset(2);
  const lane=defaultPresentationLane('astrid');lane.layers.background={enabled:true,mode:'image',default:target.id,allowed:[target.id]};
  const retained={...structuredClone(lane),id:'other-composition',label:'Behållen sammansättning'};
@@ -31,12 +42,21 @@ async function fixture(){
  await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
  await repository.initializeDocument('administration',{value:{tiers:{classic:'vera',high:'astrid',vip:'amira'},rooms,gameLanes:[gameLane],gameLane:gameLane.id,tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}},actor:'fixture'});
  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,now,transaction:fn=>repository.withTransactionClient(fn)}))));
- await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[lane.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},cloud.presentation)}));
- const service=createResourceLifecycleApi({repository,scope,now});
- const api=createStudioAdminApi({handlers:service.handlers,authorize:async()=>actor,allowedOrigins:[origin],publicHosts:[new URL(origin).host],mutationTransaction:work=>work()});
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[lane.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},frozenAnchors?withRetainedAnchors(cloud.presentation):cloud.presentation)}));
+ const gates={version:nativeVersion,fetches:[],transactions:0,beforeMutation:null},nativeRepository=nativeVersion===undefined?repository:wrapNativePresentationRepository(repository,{
+  env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
+   assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.ok(!gates.active,'no HTTP under product lock');
+   const version=Number(headers['X-Presentation-Capability-Version']);gates.fetches.push(version);
+   return version>gates.version?new Response(null,{status:406}):Response.json(presentationCapabilitiesForVersion(version));
+  }});
+ const readPool={async query(sql,values){const client=await pool.connect();try{await client.query('BEGIN READ ONLY');const result=await client.query(sql,values);await client.query('COMMIT');return result;}finally{client.release();}}};
+ const mutationTransaction=nativeVersion===undefined?work=>work():createNativePresentationMutationTransaction({repository:nativeRepository,pool:readPool,scope,
+  boDb:{async transaction(work){gates.transactions++;gates.active=true;try{if(gates.beforeMutation)await gates.beforeMutation();return await work();}finally{gates.active=false;}}}});
+ const service=createResourceLifecycleApi({repository:nativeRepository,scope,now});
+ const api=createStudioAdminApi({handlers:service.handlers,authorize:async()=>actor,allowedOrigins:[origin],publicHosts:[new URL(origin).host],mutationTransaction});
  const post=async(action,body,headers={})=>{const response=await api.handle(new Request(origin+'/studio/api/admin/'+action,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',...headers},body:JSON.stringify(body)}));return {status:response.status,body:await response.json()};};
  const body=async(archived=true)=>({id:target.id,archived,expectedRevision:(await repository.readDocument('project')).revision});
- return {pool,repository,target,kept,lane,retained,cloud,stored,post,body};
+ return {pool,repository,target,kept,lane,retained,cloud,stored,post,body,gates};
 }
 
 test('material trash removes active and archived draft references and restores only the asset',()=>{
@@ -114,4 +134,62 @@ test('ordinary project PUT cannot forge material trash; foreign origins and toke
  const before=f.pool.snapshot(),body=await f.body();
  assert.equal((await f.post('material-trash-check',body,{origin:'https://foreign.invalid'})).status,403);
  assert.equal((await f.post('material-trash',body)).status,400);assert.deepEqual(f.pool.snapshot(),before);
+});
+
+for(const version of [19,20])test(`material trash refuses v${version} before writes when a retained frozen lane alone has anchors`,async()=>{
+ const f=await fixture({nativeVersion:21,frozenAnchors:true}),body=await f.body();
+ assert.ok(f.cloud.project.lanes.every(lane=>!lane.composition?.blackjackTables));
+ const check=await f.post('material-trash-check',body);assert.equal(check.status,200);
+ f.gates.version=version;const before=f.pool.snapshot(),offset=f.pool.trace.length,transactions=f.gates.transactions;
+ const result=await f.post('material-trash',{...body,impactToken:check.body.impact.token});
+ assert.equal(result.status,503);assert.equal(result.body.code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+ assert.equal(f.gates.fetches.at(-1),21);assert.equal(f.gates.transactions,transactions);assert.deepEqual(f.pool.snapshot(),before);
+ assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','operator-status','audit','audit-write'].includes(row.marker)));
+});
+
+test('v21 material trash detaches only the affected lane while retaining frozen anchors and atomic rollback',async()=>{
+ const f=await fixture({nativeVersion:21,frozenAnchors:true}),body=await f.body(),check=await f.post('material-trash-check',body);
+ assert.equal(check.status,200);const before=f.pool.snapshot(),original=await f.stored(store=>store.getCurrentPackage('north'));
+ for(const fault of ['publish-package','audit-write']){
+  f.pool.fail(fault);assert.equal((await f.post('material-trash',{...body,impactToken:check.body.impact.token})).status,503);assert.deepEqual(f.pool.snapshot(),before);
+ }
+ const result=await f.post('material-trash',{...body,impactToken:check.body.impact.token});assert.equal(result.status,200);
+ const pack=await f.stored(store=>store.getCurrentPackage('north'));
+ assert.equal(pack.revision,2);assert.deepEqual(pack.tables,['room-kept']);assert.deepEqual(pack.lanes,[f.retained.id]);
+ assert.deepEqual(readPackagePresentation(pack).lanes,[readPackagePresentation(original).lanes[1]]);
+ assert.deepEqual((await f.repository.readDocument('administration')).value.rooms.map(room=>room.id),['room-kept']);
+ assert.equal((await f.repository.readDocument('project')).value.layerAssetTrash[0].asset.id,f.target.id);
+ assert.deepEqual(f.pool.snapshot().packages[0],before.packages[0]);assert.ok(f.gates.fetches.every(version=>version===21));
+});
+
+test('material transaction rejects retained anchors introduced after preflight before its first write',async()=>{
+ const f=await fixture({nativeVersion:21}),body=await f.body(),check=await f.post('material-trash-check',body);
+ assert.equal(check.status,200);let afterConcurrent,offset;
+ f.gates.beforeMutation=async()=>{
+  await f.stored(async store=>{const pack=await store.getCurrentPackage('north');await store.publishPackage({...pack,actor:'fixture',expectedRevision:pack.revision,branding:withPackagePresentation(pack.branding,withRetainedAnchors(readPackagePresentation(pack)))});});
+  afterConcurrent=f.pool.snapshot();offset=f.pool.trace.length;
+ };
+ const result=await f.post('material-trash',{...body,impactToken:check.body.impact.token});
+ assert.equal(result.status,503);assert.equal(result.body.code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+ assert.deepEqual(f.gates.fetches,[19,19]);assert.deepEqual(f.pool.snapshot(),afterConcurrent);
+ assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','audit','audit-write'].includes(row.marker)));
+});
+
+test('unaffected operator anchors do not widen the material-trash preflight',async()=>{
+ const f=await fixture({nativeVersion:19}),retained=withoutPresentationLanes(withRetainedAnchors(f.cloud.presentation),[f.lane.id]);
+ const other=await f.stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:[f.retained.id],games:['blackjack'],tables:[],branding:withPackagePresentation({},retained)}));
+ const body=await f.body(),check=await f.post('material-trash-check',body);assert.equal(check.status,200);
+ assert.equal((await f.post('material-trash',{...body,impactToken:check.body.impact.token})).status,200);
+ assert.deepEqual(f.gates.fetches,[19,19]);assert.deepEqual(await f.stored(store=>store.getCurrentPackage('other')),other);
+});
+
+test('anchors removed with the affected frozen lane do not require v21 for the retained plain lane',async()=>{
+ const f=await fixture({nativeVersion:19}),presentation=withRetainedAnchors(f.cloud.presentation);
+ presentation.lanes[0].layers.table=structuredClone(presentation.lanes[1].layers.table);
+ presentation.lanes[0].composition=structuredClone(presentation.lanes[1].composition);
+ presentation.lanes[1]=structuredClone(f.cloud.presentation.lanes[1]);
+ await f.stored(async store=>{const pack=await store.getCurrentPackage('north');await store.publishPackage({...pack,actor:'fixture',expectedRevision:pack.revision,branding:withPackagePresentation(pack.branding,presentation)});});
+ const body=await f.body(),check=await f.post('material-trash-check',body);assert.equal(check.status,200);
+ assert.equal((await f.post('material-trash',{...body,impactToken:check.body.impact.token})).status,200);
+ const pack=await f.stored(store=>store.getCurrentPackage('north'));assert.deepEqual(readPackagePresentation(pack).lanes,[f.cloud.presentation.lanes[1]]);assert.deepEqual(f.gates.fetches,[19,19]);
 });

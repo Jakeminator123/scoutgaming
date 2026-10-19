@@ -38,6 +38,7 @@ import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {materialTrashPlan} from './material-trash.mjs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -99,6 +100,7 @@ export function createNativePresentationMutationTransaction({repository,boDb,poo
   return async (work, options = {}) => {
     const descriptors = options.presentationMutation === undefined ? [] : structuredClone(Array.isArray(options.presentationMutation) ? options.presentationMutation : [options.presentationMutation]);
     const documents=[...(options.presentationDocuments??[])],operatorIds=options.presentationOperatorIds===undefined?undefined:structuredClone(options.presentationOperatorIds);
+    const materialTrash=options.presentationMaterialTrash===undefined?undefined:structuredClone(options.presentationMaterialTrash);
     for (const kind of documents) {
       if (!['project','administration'].includes(kind)) unavailable();
       const saved = await repository.readDocument(kind);
@@ -114,6 +116,16 @@ export function createNativePresentationMutationTransaction({repository,boDb,poo
       for (const operatorId of operatorIds) {
         const presentation=readPackagePresentation(await operators.getCurrentPackage(operatorId));
         if (presentation) descriptors.push({kind:'presentation-package',value:presentation});
+      }
+    }
+    if(materialTrash!==undefined){
+      const operators=await createOperatorStore({sql:pool,scope});
+      const plan=await materialTrashPlan({repository,operators,...materialTrash});
+      // Only retained presentations that this deletion republishes matter.
+      // An unrelated operator's frozen anchors cannot widen this preflight.
+      for(const change of plan.changes){
+        const presentation=readPackagePresentation(change);
+        if(presentation)descriptors.push({kind:'presentation-package',value:presentation});
       }
     }
     return repository.withMutationContext(() => boDb.transaction(work), descriptors);
