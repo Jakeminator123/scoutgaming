@@ -72,6 +72,10 @@ via sidnavigering, så befintliga varningar för osparade formulär används.
 Engångsresultat för integrationer döljs när sidan lämnas.
 **Spelbolag & rum** (`/admin/rooms`) öppnar rummets egna val direkt. Välj
 bolag och rum, ändra tillåtna alternativ och granska före publicering.
+På större skärmar visas bolagets rum som kort med spel och faktisk rums-/
+publiceringsstatus. Kortet öppnar exakt det rummet; osparade ändringar skyddas
+vid byte. Mobilens rumsväljare har samma rum och bytesregler.
+**Granska publicering** öppnar publiceringsverktyget med rätt bolag och rum.
 Rumsval sparas bara för valt rum. Gemensam mall finns i en separat
 detaljsektion; dess redigerare visar vilka andra rum som kan påverkas.
 Gamla länkar med `view=registered` fungerar men behövs inte längre.

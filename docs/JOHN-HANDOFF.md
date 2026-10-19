@@ -102,47 +102,49 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 ## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
 Klippkartans scenreglage från [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
-och den bredare scenpanelen/driftväljaren från
+och bredare scenpanel/driftväljare från
 [PR274](https://github.com/Jakeminator123/scoutgaming/pull/274) är publicerade.
-Föregående UI/UX-agent livekontrollerade separat/gemensam dealer-/bordflytt,
-kortens följval och scenfasta marker utan produktionssparning. Hans 92 riktade
-UI-/transportprov och SQL-/HTTPS-underlag är tidigare evidens, inte nya körningar.
+Tidigare UI/UX-agent livekontrollerade flytt/följval utan produktionssparning;
+hans 92 UI-/transportprov och SQL-/HTTPS-underlag är tidigare evidens.
 Scen & lager skriver vald gemensam mall med projektrevision och berörda rum;
-publicerade paket och rumsspecifika val har fortsatt egna kontrakt.
+rummets egna val använder fortsatt den rumsbundna editorn/writern.
 
-UX/UI2:s nästa avgränsning finns på codex/admin-workspaces-ui2, från main
-b3ff83d4: Admins startsida och desktop-/mobilmeny får de gemensamma
-områdena **Skapande** och **Verksamhet** enligt produktmodellen. Klippkarta,
-Dealerregister, Bord & bakgrunder och Provspelning ligger i Skapande;
-Spelbolag & rum, Bolag & team, Drift och Ekonomi i Verksamhet. System och
-övriga verktyg finns kvar. En gemensam navigationslista håller namn/länkar
-samstämmiga. Äldre Admin-bokmärken och befintligt utkast-/historikskydd behålls.
-Detta steg ändrar inga API-/DTO-/schema-, behörighets- eller mediakontrakt.
+[PR277](https://github.com/Jakeminator123/scoutgaming/pull/277) är mergad som 989e74e2 och publicerad på webb enligt MERGE4:s Vercel-kvitto. Admin-startsida och desktop-/mobilmeny får
+**Skapande** och **Verksamhet** enligt produktmodellen. En gemensam lista
+håller namn/länkar samstämmiga; System och tidigare arbetsytor finns kvar.
+61 navigations-/åtkomstprov, typer/klientbygge och isolerad CSS-bredd
+1280/960/390 px är verifierade. CI:s två gamla testladdare är rättade mot
+verklig navigation; hela Admin-gruppen passerar lokalt, 338 prov i 13 grupper
+utan skips. Publiceringskontrollen är tillskriven MERGE4.
 
-Egen verifiering: 61 befintliga navigations-, utkastskydds-, route- och
-åtkomstprov passerar utan skips. Admin/lobby-typkontroll och klientbygge
-passerar; befintliga CSS-composes-varningar kvarstår. Isolerad statisk
-webbläsarvy med verkligt klientbygge kontrollerades vid faktisk CSS-bredd
-1280, 960 och 390 px utan horisontell sidöverrullning. Mobilens sidbyte till
-Spelbolag & rum och Back återställer rätt val; desktop markerar Klippkarta
-som enda aktiv menylänk. Förhandsvisningen blockerar alla API-skrivningar
-och har inget produktionsregister. Bilder ligger privat i UX/UI2:s
-visualiseringsmapp. Detta är layout-/navigationskontroll, inte talacceptans.
-CI-uppföljning: två testladdare läser nu den verkliga navigationsmodulen;
-33 berörda beteendeprov och hela Admin-regressionen (338 prov i 13 grupper)
-passerar utan skips. Produktionskoden är oförändrad av rättningen.
+PR278 på codex/admin-rooms-ui2 är integrerad med main 989e74e2:
+/admin/rooms visar rumskort för exakt valt aktivt bolag, med spel, sparad
+rumsstatus och publiceringsstatus. Rumsdetaljen visar valt rum och en tydlig
+väg till befintlig publiceringsgranskning. Kortbyte använder samma
+selectContext, historik-/utkastskydd och exakta bolag/rum/mall/spel-kontext
+som rumsväljaren. Rum från andra bolag och arkiverade rum visas inte i listan.
+Publicerade rum behåller samma PartnerAppearanceLoader, API och callbacks.
+Delad mall ligger kvar separat med påverkanstext. På mobil används den
+kompakta befintliga rumsväljaren; breda vyer får listan intill detaljytan.
 
-H6 rapporterade normal autentiserad drift-GET 503→200 efter riktat
-tabell-GRANT 04:14:48/04:16:00 UTC. DTO schema1, önskat Av, connected:false
-och endast Av tillåtet är tillskrivet H6:s kvitto. MERGE4 äger granskning,
-merge och publicering; POST-LIPSYNC5 äger faktisk tal-/GPU-aktivering.
+Reviewuppföljning: klick på redan valt rum är no-op före navigation/dirty-reset. Nytt prov täcker aktivt dirtykort, direkt väljare, gammalt bokmärke och fortsatt beforeunload/annat-rum-skydd. 20 rumsprov passerar.
 
-Kvar: vidare layout i respektive Admin-arbetsyta, PNG-idle, generell
-chattregeleditor, var åttonde utdelning per box och enhetliga lagerlås.
-Ny UI-etapp är ännu inte publicerad. Användarstegen uppdateras i
-[README](../apps/studio/docs/README.md); produktmodellen styrs enbart av
-[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Tidigare demoer i
-C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
+Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips. Efter integration med main passerar hela Admin-gruppen (338 prov i 13 grupper),
+inklusive nytt kortprov för bolagsgräns, avvisat osparat byte, pågående
+operation och exakt accepterad kontext. Admin/lobby-typer och klientbygge
+passerar; befintliga CSS-composes-varningar kvarstår. Verkligt klientbygge
+med syntetiskt GET-katalogsvar kontrollerades vid CSS-bredd 1600, 1280 och
+390 px utan horisontell sidöverrullning. Kort- och bolagsbyte visar rätt rum;
+samtliga API-skrivningar är blockerade i förhandsvisningen. Browserbilderna
+verifierar utkast-/översiktslayout, inte produktionsdata eller medieuppspelning.
+
+H6:s tidigare 503→200-kvitto och MERGE4:s publicerade executor 087f4fd5 är
+tillskriven evidens. POST-LIPSYNC5 äger faktisk tal-/GPU-aktivering.
+Kvar: vidare layout i övriga arbetsytor, PNG-idle, generell chattregeleditor,
+var åttonde utdelning per box och enhetliga lagerlås. Produktmodellen styrs
+enbart av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md);
+[användarstegen](../apps/studio/docs/README.md) uppdateras i samma guider.
+Privata demoer i C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 <a id="dragan-talstatus"></a>
 

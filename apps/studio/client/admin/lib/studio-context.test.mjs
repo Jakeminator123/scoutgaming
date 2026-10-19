@@ -87,7 +87,7 @@ async function registeredStudioHtml(path,search='',overrides={},interactive=fals
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
   runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{}},
-    fetch:async()=>Response.json(value),require:name=>name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
+    fetch:async()=>Response.json(value),require:name=>name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
   const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register'})};
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
@@ -125,7 +125,7 @@ test('unpublished rooms lead to the existing template and publication without a 
 test('an active company without registered rooms can still create its first room in Admin',async()=>{
   const html=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[]});
   assert.deepEqual(hrefs(html).filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=b']);
-  assert.match(html,/Skapa\/publicera rum/);assert.doesNotMatch(html,/data-room-editor=/);
+  assert.match(html,/Skapa rum/);assert.doesNotMatch(html,/data-room-editor=/);
 });
 test('company team editor links to the supported Admin workspace',async()=>{
   const html=await registeredStudioHtml('/admin/admin/operators','?operator=b');
@@ -189,5 +189,43 @@ test('library context accepts only the explicitly selected room and its register
     const context=studioContext(catalog,project,{...selection,dealerId:'paow-v2',library:true});
     assert.equal(context.room,undefined);assert.equal(context.lane,undefined);
     assert.equal(context.dealer.id,'paow-v2');
+  }
+});
+
+test('room cards list only the active owner and preserve dirty/busy guards before exact room navigation',async()=>{
+  const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=roulette',{},true);
+  const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+  const cards=()=>walk(h.render(),node=>node.type==='button'&&node.props?.['aria-label']?.startsWith('Öppna rum '));
+  const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+  assert.deepEqual(cards().map(node=>node.props['aria-label']),['Öppna rum bj','Öppna rum roulette']);
+  assert.equal(cards()[1].props['aria-pressed'],true);
+  editor().props.onDirtyChange(true);h.render();cards()[0].props.onClick();
+  assert.equal(new URLSearchParams(h.search).get('table'),'roulette');assert.equal(h.confirms,1);
+  editor().props.onBusyChange(true);h.render();assert.ok(cards().every(node=>node.props.disabled));
+  cards()[0].props.onClick();assert.equal(new URLSearchParams(h.search).get('table'),'roulette');assert.equal(h.confirms,1);
+  editor().props.onBusyChange(false);h.render();h.allowLeave(true);cards()[0].props.onClick();
+  assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{operator:'a',table:'bj',composition:'one',game:'blackjack'});
+  assert.equal(editor().props.roomId,'bj');assert.equal(cards()[0].props['aria-pressed'],true);
+});
+
+test('selecting the active room is inert and preserves dirty guards even without explicit room URL context',async()=>{
+  for(const search of ['?dealer=astrid&game=blackjack','?operator=a&table=roulette']){
+    const h=await registeredStudioHtml('/admin/rooms',search,{},true);
+    const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+    const cards=()=>walk(h.render(),node=>node.type==='button'&&node.props?.['aria-label']?.startsWith('Öppna rum '));
+    const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+    const activeRoom=editor().props.roomId;
+    editor().props.onDirtyChange(true);h.render();h.allowLeave(true);
+    cards().find(node=>node.props['aria-pressed']).props.onClick();
+    walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:activeRoom}});
+    assert.equal(h.confirms,0);assert.equal(h.notifications,0);assert.equal(h.search,search);
+    assert.equal(editor().props.roomId,activeRoom);
+    const unload={prevented:false,returnValue:undefined,preventDefault(){this.prevented=true;}};
+    h.listeners.get('beforeunload')(unload);
+    assert.equal(unload.prevented,true);assert.equal(unload.returnValue,'');
+    h.allowLeave(false);
+    cards().find(node=>!node.props['aria-pressed']).props.onClick();
+    assert.equal(h.confirms,1);assert.equal(h.notifications,0);assert.equal(h.search,search);
+    assert.equal(editor().props.roomId,activeRoom);
   }
 });
