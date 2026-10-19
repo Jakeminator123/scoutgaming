@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { validateCloudConfig, childSpecifications } from '../ops/cloud/config.mjs';
+import { movingDriftConfiguration } from '../packages/presentation/contracts/moving-drift.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 // Never use real connections: generate an inert credential once per fixture.
@@ -25,11 +26,13 @@ const base = () => ({NODE_ENV:'production',PORT:'10000',CROUPIER_DATABASE:'postg
   CROUPIER_SPEECH_STREAM_TICKET_SECRET:'fixture-astrid-ticket-'.repeat(4),CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD:'1',
   CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'5',CARTESIA_API_KEY:'fixture-cartesia',RUNPOD_API_KEY:'fixture-legacy-runpod',
   CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'legacy-endpoint'});
+const driftProfile={id:'baseline',label:'Basprofil',endpointId:'movingfixture',releaseDigest:hash('owned fixture source'),bankHash:hash('fixture archive')};
 const moving = () => ({CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORD:JSON.stringify(privateManifest),
   CROUPIER_MOVING_SPEECH_WORKER_ORIGIN:'https://fixture-game.onrender.com',
   CROUPIER_MOVING_SPEECH_ENDPOINT_ID:'movingfixture',CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY:'fixture-owned-runpod',
   CROUPIER_MOVING_SPEECH_IMAGE:`ghcr.io/jakeminator123/moving-gpu-worker@sha256:${hash('owned fixture image')}`,
-  CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('owned fixture source'),CROUPIER_MOVING_SPEECH_TICKET_SECRET:'fixture-moving-ticket-'.repeat(4)});
+  CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('owned fixture source'),CROUPIER_MOVING_SPEECH_TICKET_SECRET:'fixture-moving-ticket-'.repeat(4),
+  CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([driftProfile])});
 const children = env => childSpecifications(validateCloudConfig(env),env,{labInternalSecret:'fixture-lab-only-'.repeat(4)});
 
 test('moving configuration is explicit and passes its private values to Web only; Astrid stays unchanged',()=>{
@@ -38,8 +41,32 @@ test('moving configuration is explicit and passes its private values to Web only
     assert.equal(configured.web.env[key],value);assert.equal(configured.lab.env[key],undefined);
   }
   assert.deepEqual(configured.lab,legacy.lab);
-  const withoutMoving=Object.fromEntries(Object.entries(configured.web.env).filter(([key])=>!key.startsWith('CROUPIER_MOVING_')));
+  const withoutMoving=Object.fromEntries(Object.entries(configured.web.env).filter(([key])=>!key.startsWith('CROUPIER_MOVING_')&&!['CROUPIER_STUDIO_MOVING_DRIFT_API','CROUPIER_STUDIO_MOVING_DRIFT_PROFILES'].includes(key)));
   assert.deepEqual(withoutMoving,legacy.web.env);
+});
+
+test('moving drift forwards the validated baseline to the game child without unrelated environment',()=>{
+  const env={...base(),...moving(),UNRELATED_PROVIDER_SECRET:'must-not-leak',CROUPIER_STUDIO_MOVING_DRIFT_OTHER:'must-not-leak'};
+  const config=validateCloudConfig(env);
+  // Forward the validated snapshot even if the caller subsequently edits its input.
+  env.CROUPIER_STUDIO_MOVING_DRIFT_PROFILES='[]';
+  const specs=childSpecifications(config,env,{labInternalSecret:'fixture-lab-only-'.repeat(4)});
+  assert.deepEqual(movingDriftConfiguration(specs.web.env),{profiles:[driftProfile]});
+  assert.equal(specs.web.env.CROUPIER_MOVING_SPEECH_ENABLED,'1');
+  for(const name of ['CROUPIER_STUDIO_MOVING_DRIFT_API','CROUPIER_STUDIO_MOVING_DRIFT_PROFILES'])assert.equal(specs.lab.env[name],undefined);
+  for(const name of ['UNRELATED_PROVIDER_SECRET','CROUPIER_STUDIO_MOVING_DRIFT_OTHER']){
+    assert.equal(specs.web.env[name],undefined);assert.equal(specs.lab.env[name],undefined);
+  }
+});
+
+test('moving drift rejects missing, malformed or mismatched catalogues before starting children',()=>{
+  for(const change of [
+    {CROUPIER_STUDIO_MOVING_DRIFT_API:undefined},{CROUPIER_STUDIO_MOVING_DRIFT_API:'0'},{CROUPIER_STUDIO_MOVING_DRIFT_API:'true'},
+    ...[undefined,'','invalid','[]',JSON.stringify([driftProfile,{...driftProfile,id:'other'}]),
+      JSON.stringify([{...driftProfile,endpointId:'another001'}]),JSON.stringify([{...driftProfile,releaseDigest:hash('different release')}]),
+      JSON.stringify([{...driftProfile,apiKey:'must-not-leak'}])].map(raw=>({CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:raw})),
+  ])assert.throws(()=>validateCloudConfig({...base(),...moving(),...change}),
+    error=>/CROUPIER_STUDIO_MOVING_DRIFT/.test(error.message)&&!error.message.includes('must-not-leak'));
 });
 
 test('unset and disabled moving flags forward no staged credentials and preserve legacy children',()=>{
