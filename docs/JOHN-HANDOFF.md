@@ -101,53 +101,48 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
-[PR267](https://github.com/Jakeminator123/scoutgaming/pull/267) är granskad och
-publicerad från `ab939f15` via main `05facce2`. Egen publik versionskontroll och
-capability21 gav HTTP200 och `blackjackAnchors:v1`. Den senare main `819a88ff`
-är också publicerad enligt MERGE3; det är inget nytt mediakvitto.
+Klippkartans scenreglage från [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
+och den bredare scenpanelen/driftväljaren från
+[PR274](https://github.com/Jakeminator123/scoutgaming/pull/274) är publicerade.
+Föregående UI/UX-agent livekontrollerade separat/gemensam dealer-/bordflytt,
+kortens följval och scenfasta marker utan produktionssparning. Hans 92 riktade
+UI-/transportprov och SQL-/HTTPS-underlag är tidigare evidens, inte nya körningar.
+Scen & lager skriver vald gemensam mall med projektrevision och berörda rum;
+publicerade paket och rumsspecifika val har fortsatt egna kontrakt.
 
-`/admin/clips` → **Scen & lager** redigerar vald gemensam mall. Dealer och bord
-flyttas separat eller tillsammans; kort och marker följer bord, dealer eller
-ligger still i scenen. Ankarbyte bevarar placeringen; punkt/grupp kan dras,
-finjusteras och återställas till verklig sparad bas. Mobil/desktop och varje
-borddesign har egna värden. Mall/spel och rumskontext hålls isär. Sparning
-använder projektrevision och visar berörda rum; publicerade paket ändras inte.
-Capability21 skyddar ankarpublicering även under transaktion. Filmspår,
-källrutor, tal, serverkort och saldo är orörda; ingen SQL-migration behövs.
-Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
+UX/UI2:s nästa avgränsning finns på codex/admin-workspaces-ui2, från main
+b3ff83d4: Admins startsida och desktop-/mobilmeny får de gemensamma
+områdena **Skapande** och **Verksamhet** enligt produktmodellen. Klippkarta,
+Dealerregister, Bord & bakgrunder och Provspelning ligger i Skapande;
+Spelbolag & rum, Bolag & team, Drift och Ekonomi i Verksamhet. System och
+övriga verktyg finns kvar. En gemensam navigationslista håller namn/länkar
+samstämmiga. Äldre Admin-bokmärken och befintligt utkast-/historikskydd behålls.
+Detta steg ändrar inga API-/DTO-/schema-, behörighets- eller mediakontrakt.
 
-Den separata etappen på `codex/admin-drift-ui`, baserad på main `243f0e74`,
-gör scenpanelen bredare och låter förhandsvisning/reglage anpassas efter
-panelens verkliga bredd. `/admin/drift` får lägen, profilval och tidsval mot
-HUVUDAGENT5:s publika, revisionsstyrda DTO från mergad PR270. Sparat önskemål
-visas separat från färsk observerad drift; okänd GPU/kostnad uppfinns inte.
-Sessionbyte, dubbelklick, svarsförlust, gammal status och revisionskonflikt
-hanteras utan automatisk omsändning. Färskheten räknar hela GET-/POST-tiden;
-20 sekunders fördröjning är rött/grönt-verifierad för båda svarsvägarna.
-Serverns capabilities styr vilka lägen
-som går att välja. UI:t öppnar inga egna provider- eller GPU-anslutningar.
+Egen verifiering: 61 befintliga navigations-, utkastskydds-, route- och
+åtkomstprov passerar utan skips. Admin/lobby-typkontroll och klientbygge
+passerar; befintliga CSS-composes-varningar kvarstår. Isolerad statisk
+webbläsarvy med verkligt klientbygge kontrollerades vid faktisk CSS-bredd
+1280, 960 och 390 px utan horisontell sidöverrullning. Mobilens sidbyte till
+Spelbolag & rum och Back återställer rätt val; desktop markerar Klippkarta
+som enda aktiv menylänk. Förhandsvisningen blockerar alla API-skrivningar
+och har inget produktionsregister. Bilder ligger privat i UX/UI2:s
+visualiseringsmapp. Detta är layout-/navigationskontroll, inte talacceptans.
+CI-uppföljning: två testladdare läser nu den verkliga navigationsmodulen;
+33 berörda beteendeprov och hela Admin-regressionen (338 prov i 13 grupper)
+passerar utan skips. Produktionskoden är oförändrad av rättningen.
 
-Verifierat för UI-etappen: 92 riktade UI-/transportprov, Studio-typkontroll,
-Admin/lobby-typkontroller och klientbygge. Befintliga CSS-composes-varningar
-kvarstår. Isolerat HTTP-webbprov på c346e606 använde riktiga Admin-API-/transportmoduler
-med syntetisk controller och minnesdata: Sparläge → observerat Redo → Av
-→ bekräftat Av, inga verkliga provideranrop. Scenförhandsvisningen mättes till
-431 px vid 1333 px faktisk webbläsarbredd; panelerna hade ingen egen horisontell
-överrullning även vid 250 px. Detta är inte produktions- eller GPU-acceptans.
+H6 rapporterade normal autentiserad drift-GET 503→200 efter riktat
+tabell-GRANT 04:14:48/04:16:00 UTC. DTO schema1, önskat Av, connected:false
+och endast Av tillåtet är tillskrivet H6:s kvitto. MERGE4 äger granskning,
+merge och publicering; POST-LIPSYNC5 äger faktisk tal-/GPU-aktivering.
 
-PR267:s tidigare SQL-/HTTPS-/omstartsprov och gröna slut-CI39187800963 är
-oförändrat underlag. Eget liveprov verifierade separat/gemensam flytt,
-retarget utan hopp och scenfasta marker. Lokala provändringar kastades;
-ingen produktionssparning, publiceringsändring eller talaktivering gjordes.
-
-Kvar: bredare visuell Admin-omarbetning, PNG-idle, generell chattregeleditor
-och var åttonde utdelning per box. HUVUDAGENT5 äger verklig driftexekverare;
-POST-PISYNK4 äger tal/OpenClaw och saknade publicerade spelsvar. Kontrollplanets
-`connected:false` är inte fungerande GPU-drift. [Användarsteg](../apps/studio/docs/README.md).
-Privata demoer/logg ligger kvar i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
-Egna QA-processer, sessionslås och temporärskript är städade; aktiva beroenden
-behålls. Senaste säkerhetsläsning har noll öppna incidenter i källan, men
-platsmetadata är partiell och historisk GitGuardian-skanning `too_large`.
+Kvar: vidare layout i respektive Admin-arbetsyta, PNG-idle, generell
+chattregeleditor, var åttonde utdelning per box och enhetliga lagerlås.
+Ny UI-etapp är ännu inte publicerad. Användarstegen uppdateras i
+[README](../apps/studio/docs/README.md); produktmodellen styrs enbart av
+[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Tidigare demoer i
+C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 <a id="dragan-talstatus"></a>
 
