@@ -1,8 +1,9 @@
 # Scoutgaming: användarguide
 
 Produktmodell, ord och ny UX-inriktning har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
-Den här guiden beskriver befintliga arbetssteg. Målbildens gemensamma sceneditor
-och enhetliga låsningar per lager är ännu inte levererade.
+Den här guiden beskriver befintliga arbetssteg. **Klippkarta → Scen & lager**
+redigerar vald gemensam mall. Enhetliga låsningar per lager i alla tre nivåer
+är fortsatt målbild.
 
 **Öppna produkten:** `node apps/studio/start.mjs` öppnar den publicerade lobbyn.
 Från Codex används `node apps/studio/start.mjs --no-open`, som bara skriver adressen.
@@ -226,7 +227,7 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 **Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Tal & automatik** och är fortfarande begränsat till Astrid.
 
-**Scenens storlek:** **Scen & format** öppnar Sammansättning. Där delar alla klipp samma sparade skalning och placering för dealer, bord och bakgrund inom vald sammansättning. Mobil och helskärm har egna formatinställningar. Detta är ännu inte en ärvd dealerstandard för alla sammansättningar, och mobil/helskärm får inte automatiskt gemensam beskärning. **Hantera sammansättning → Ta bort sammansättning** är synligt och tar bort utkastets profil; media och redan publicerade paket behålls.
+**Scenens storlek:** öppna **Klippkarta → Scen & lager → Redigera gemensam mall**. Där delar alla klipp samma sparade skalning och placering för dealer, bord och bakgrund inom vald sammansättning. Mobil och desktop har egna formatinställningar. Detta är ännu inte en ärvd dealerstandard för alla sammansättningar, och mobil/desktop får inte automatiskt gemensam beskärning. I verktyget **Sammansättningar** finns **Hantera sammansättning → Ta bort sammansättning**; det tar bort utkastets profil. Media och redan publicerade paket behålls.
 
 **Kort och marker:** öppna **Klippkarta → Rum och publicering**, välj rum och öppna **Scen & lager → Redigera gemensam mall**. Välj mobil eller desktop. Dealer och bord flyttas separat; **Flytta scenen tillsammans** kopplar ihop deras reglage. Välj för kort respektive marker: **Bordet**, **Dealern** eller **Ligg still i scenen**. Bytet bevarar placeringen. **Markerna följer korten** behåller tidigare manuella markerval för återgång. Dra en punkt i scenen eller välj **Flytta punkt** och procentfälten; gruppens läge kan också flyttas. **Återställ sparade kort/marker** återställer bara vald grupp i detta format. Desktop har sju spelarplatser och en dealerplats; mobil visar tre spelarplatser åt gången. **Spara utkast** visar berörda rum; publicering görs separat. Den filmade handrörelsen ändras inte.
 
