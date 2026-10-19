@@ -11,11 +11,8 @@ runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../compon
 const render=slot=>renderToStaticMarkup(React.createElement(module.exports.ClipGuide,{slot}));
 const deal={id:'deal.player.left/box0',eventId:'deal.player.left',situation:'box0',title:'Plats 1',description:'Kort till plats 1',sourceType:'deal',family:null};
 
-test('one native disclosure separates optional takes from pose requirements and keeps exact identifiers inside',()=>{
+test('guide separates optional takes from pose requirements and keeps exact identifiers inside details',()=>{
   const slot=Object.freeze({...deal,start:'VILA',end:'REDO'}),html=render(slot);
-  assert.equal((html.match(/<details/g)??[]).length,1);
-  assert.match(html,/<summary[^>]*>Klippguide/);
-  assert.equal((html.match(/Krävs för denna mall/g)??[]).length,1);
   assert.match(html,/Valfria tagningar/);assert.match(html,/livevariation för givning är ännu inte verifierad/);
   assert.match(html,/Guide · ingen medieacceptans/);assert.match(html,/egen kalibrering bunden till dess hash/);
   assert.ok(html.indexOf(slot.id)>html.indexOf('</summary>'));

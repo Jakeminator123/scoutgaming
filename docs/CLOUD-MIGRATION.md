@@ -1,9 +1,37 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
-Uppdaterad 18 oktober 2026. Detta är den enda migrationsöversikten.
+Uppdaterad 19 oktober 2026. Detta är den enda migrationsöversikten.
 Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
+
+## Aktuellt flöde på main — 19 oktober 2026
+
+Öppna den publicerade produkten från [Admin](https://www.scoutgaming.tech/admin)
+eller [lobbyn](https://www.scoutgaming.tech/lobby). Följ de aktuella
+[användarstegen](../apps/studio/docs/README.md); produktens namn och ansvar finns
+endast i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Sparat bolag, rum,
+sammansättning och spel följer länkarna. Rumsändringar använder befintlig scoped
+writer; scen-/dealermall och rum är skilda skrivmål.
+
+PR274–277 är levererade. Kontrollplanet för Av/Sparläge och executor är kodleverans;
+aktiverat rörligt tal, bildkvalitet och budgetavstämning har egna bevisgränser.
+PR276 dokumenterar den separat utförda behörighetsrättningen för kontrollplanet. PR277:s main
+`989e74e2b8357918fb5885c2d08a1e9fc29fbb6d` hade grön
+[main-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39201388699)
+och samma version på Vercel och Render vid MERGE4:s kontroll 19 oktober
+05:02 UTC. Det är ett daterat kvitto; läs faktisk deployment och
+`/__cloud/version` inför återställning eller nytt driftprov. Nästa leverans och
+kvarvarande aktivering finns i [handoffen](JOHN-HANDOFF.md#driftväljare-av-och-sparläge--19-oktober-2026).
+
+Normal lokal start visar produktens adress. `--offline` är det uttryckliga valet
+för tillfälliga syntetiska data, utan externa genereringsanrop. Äldre lokala
+register, engångsexporter eller testspelare ska aldrig återinföras som fallback
+för publicerad drift. Den avslutade registerflyttens oanropade
+`prepareLegacyStudioSnapshot` och dess enda test är pensionerade. Generella
+snapshot-/importformat, återställningsunderlag och aktiva kompatibilitetsregler
+behålls. En provfil tas bort när beteendet är ersatt eller konsumenten saknas;
+aktuella auth-, rum-, spel-, media- och kostnadsgränser verifieras fortsatt.
 
 ## Teknisk register-/runtimeflytt: avslutad i produktion
 

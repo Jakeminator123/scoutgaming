@@ -28,12 +28,44 @@
 .history > summary { font-weight:600; cursor:pointer; padding:3px 0; }
 .history[open] > summary { margin-bottom:14px; }
 
-.roomPanel { max-width:none; }
-.roomLayout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:24px; align-items:start; }
+/* The room editor is embedded beside the registered room list. Its own width,
+   rather than the viewport, determines when the scene and choices fit together. */
+.statusBar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.panel [hidden] { display:none; }
+.roomPanel { max-width:none; container-type:inline-size; gap:16px; }
+.roomPanel .heading { align-items:center; gap:12px; }
+.roomPanel .heading h3 { font-size:18px; font-weight:600; letter-spacing:-.02em; }
+.roomPanel .heading p { max-width:58ch; line-height:1.55; }
+.roomPanel .revisions { display:flex; flex-wrap:wrap; gap:8px; font-size:12px; }
+.roomPanel .revisions span { padding:6px 9px; border:1px solid var(--sg-border,#657085); border-radius:6px; color:var(--sg-muted); }
+.roomPanel .revisions strong { color:var(--sg-text); }
+.roomPanel .statusBar { padding:12px 16px; border:1px solid var(--sg-border,#657085); border-radius:8px; background:var(--sg-surface-2,#171b21); }
+.roomPanel .statusBar p { font-size:13px; line-height:1.5; }
+.roomPanel .statusBar button { font-size:12px; min-height:34px; }
+.roomLayout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(240px,1fr); gap:18px; align-items:start; }
 .roomLayout > * { min-width:0; }
-.roomLayout .fields { grid-template-columns:1fr; }
-.roomLayout .preview { position:sticky; top:12px; }
+.roomLayout > [data-appearance-preview] { position:sticky; top:16px; padding:18px; border:1px solid var(--sg-border,#657085); border-radius:10px; background:var(--sg-surface-2,#171b21); }
+.roomLayout .preview { gap:10px; }
+.roomLayout .preview > p:not(.hint) { font-size:12px; color:var(--sg-muted); }
+.roomLayout .editor { padding:16px; background:var(--sg-surface-2,#171b21); gap:14px; }
+.roomLayout .fields { grid-template-columns:1fr; gap:12px; }
+.roomPanel .row { font-size:13px; gap:8px; }
+.roomPanel input,.roomPanel select { padding:8px 10px; background:var(--sg-bg,#101316); color:var(--sg-text); border:1px solid var(--sg-border,#657085); border-radius:6px; }
+.roomPanel input[type=color] { padding:4px; width:100%; max-width:80px; }
+.roomPanel .actions { padding-top:4px; gap:10px; }
+.roomPanel button { font-size:13px; }
+.roomPanel button:focus-visible,.roomPanel select:focus-visible,.roomPanel input:focus-visible { outline:2px solid var(--sg-lime,#c8f044); outline-offset:3px; }
+.roomPanel button:disabled { cursor:not-allowed; }
 .lockedChoice { display:grid; gap:5px; padding:12px; border:1px solid var(--sg-border,#657085); border-radius:8px; }
-.lockedChoice strong { overflow-wrap:anywhere; }
-.lockedChoice small { opacity:.75; }
-@media(max-width:1000px) { .roomLayout { grid-template-columns:1fr; } .roomLayout .preview { position:static; } .roomLayout .fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); } }
+.lockedChoice span { font-size:12px; color:var(--sg-muted); }
+.lockedChoice strong { overflow-wrap:anywhere; font-size:14px; font-weight:600; }
+.lockedChoice small { font-size:11px; color:var(--sg-muted); }
+.roomPanel .history,.roomPanel .review { background:var(--sg-surface-2,#171b21); }
+.roomPanel .history > p { color:var(--sg-muted); font-size:13px; line-height:1.6; }
+@container(max-width:850px) { .roomLayout { grid-template-columns:1fr; } .roomLayout > [data-appearance-preview] { position:static; } .roomLayout .fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); } }
+@container(max-width:500px) { .roomPanel .heading { align-items:flex-start; } .roomPanel .statusBar { padding:12px; } .roomLayout > [data-appearance-preview],.roomLayout .editor { padding:12px; } .roomPanel .actions > button { flex:1 1 100%; } }
+
+.previewHelp { font-size:12px; color:var(--sg-muted); }
+.previewHelp summary { cursor:pointer; width:fit-content; }
+.previewHelp p { margin-top:8px; line-height:1.55; }
+.roomPanel .preview .actions button[aria-pressed=true] { background:var(--sg-hover,#272d23); color:var(--sg-lime,#c8f044); border-color:var(--sg-lime,#c8f044); }
