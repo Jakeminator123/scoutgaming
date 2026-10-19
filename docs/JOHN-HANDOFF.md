@@ -20,10 +20,22 @@ Egen verifiering: 67 repository-/policy-/kontrollprov samt det isolerade
 cutoverprovet och sex kvarvarande komponentprov passerade. Cutoverprovet
 kunde först inte laddas utan `ws`; låsta beroenden installerades i denna
 arbetskopia och provet passerade därefter. Delade Studio-beroenden återanvändes
-först efter identisk package-/lockhash. Testinventeringen fann 526 kandidater,
-0 föräldralösa; Pythoninventeringen är separat. Full produktregression och
-slutlig CI/publicering följer i PR. Inga privata data, medier, molninställningar
+först efter identisk package-/lockhash. Ordinarie hook passerade 39/39; dess
+första Windows-timeout i ett FFmpeg-fixturprov passerade både separat och vid
+hel omkörning. Samlad main har 525 JS/TS-testkandidater och 0 föräldralösa;
+Pythoninventeringen är separat. Inga privata data, medier, molninställningar
 eller andra agenters arbetskopior rensades.
+
+[PR281](https://github.com/Jakeminator123/scoutgaming/pull/281) är mergad som
+f03c5ccf efter grön CI och oberoende slutgranskning utan blockerare. Även
+PR278/280/282/283 är mergade. Samlad main
+`a2dc503e2c63ef49107c0a1074880349e1898c61` har grön
+[main-CI 39206231216](https://github.com/Jakeminator123/scoutgaming/actions/runs/39206231216),
+Vercel `dpl_GtYpcfRMYV32jFxGcgcExZziLFhH` READY/www och Render
+`dep-dbar0qu7bikc73euh400` LIVE. MERGE4 återläste publik version och hälsa
+05:55:42 UTC den 19 oktober. Egen integrationskontroll bekräftar att de sju
+pensionerade filerna saknas och de granskade UI-/beteendefilerna är bytebevarade.
+Det är kod-/publiceringsbevis; bankens HTTP403 och talacceptans är separata.
 
 ## Driftväljare: Av och Sparläge — 19 oktober 2026
 
@@ -149,11 +161,13 @@ CSS-bredd 1280/960/390 px och 338 Admin-prov i 13 grupper utan skips.
 
 [PR278](https://github.com/Jakeminator123/scoutgaming/pull/278), fryst
 82ddf669, integrerar samma navigation med bolagets exakta rumskort och
-rumsdetalj. Den granskas av MERGE4; 72 rums-/navigationsprov, klientbygge/typer
+rumsdetalj. Den är mergad som f2881516 efter grön CI och slutgranskning;
+72 rums-/navigationsprov, klientbygge/typer
 och hela Admin-gruppen (338 prov) passerar. Syntetisk GET-katalog och blockerade
 skrivningar verifierades vid CSS-bredd 1600/1280/390 px. Inget livepaket ändrades.
 
-Uppföljningen på codex/admin-room-editor-ui2 rättar stale dealer=astrid i
+[PR282](https://github.com/Jakeminator123/scoutgaming/pull/282), mergad som
+1985b7dc, rättar stale dealer=astrid i
 rumsadresser, även befintliga bokmärken. Exakt bolag/rum, extra queryvärden och
 fragment bevaras; normaliseringen respekterar delad navigering och pågående
 redigering/operationer. Den publicerade rumspresentationen väljer fortsatt sin
@@ -169,7 +183,16 @@ textantal- och DOM-ordningskrav i studio-layout/clip-guide/partner-appearance
 samt gammal Control-textassertion. Aktivt rumsscope, behörighet, sparning,
 historik, exakta media och revisionsbunden granskning/publicering behålls.
 Nytt roomLayout-prov verifierar spara → granska → publicera med exakta
-revisionsvärden/token och bevarat annat rums val. Egen verifiering: 94 riktade UI-/routing-/appearanceprov efter integration av reviewrättningen utan skips, hela Admin-gruppen (338 prov i 13 grupper) och slutligt Admin/lobby-typkontrollerat klientbygge passerar. Isolerad scen använder neutrala testbilder och inga videor/GPU-anrop; GET-fixturer och blockerade skrivningar behålls. Faktisk CSS-bredd 1600 och 390 px är kontrollerad utan horisontell sidöverrullning; Desktop/Mobil-val fungerar och dold granskning har display:none. Normaliseringen bevarar bolag/rum/hash i browsern. Ny uppföljning är ännu inte publicerad.
+revisionsvärden/token och bevarat annat rums val. Egen verifiering: 94 riktade UI-/routing-/appearanceprov efter integration av reviewrättningen utan skips samt slutligt integrerat Admin/lobby-typkontrollerat klientbygge passerar. Hela Admin-gruppens 338 prov i 13 grupper är ett tidigare kvitto före den separata återvalsrättningen. Isolerad scen använder neutrala testbilder och inga videor/GPU-anrop; GET-fixturer och blockerade skrivningar behålls. Faktisk CSS-bredd 1600 och 390 px är kontrollerad utan horisontell sidöverrullning; Desktop/Mobil-val fungerar och dold granskning har display:none. Normaliseringen bevarar bolag/rum/hash i browsern. Uppföljningen är publicerad på webb i main a2dc503e, Vercel
+`dpl_GtYpcfRMYV32jFxGcgcExZziLFhH` READY/www enligt MERGE4:s egen läsning.
+
+UI/UX2 gjorde en separat normal N1-läsning 19 oktober 07:50 CEST: ett äldre
+`/admin/rooms?dealer=astrid&game=blackjack` rensades till `?game=blackjack`.
+Rätt Dragan-rum, paket 4 utan utkast, scen/lager, samlad versionsstatus,
+stängd hjälprad och dold granskning visades. CSS-bredd 1427 px gav ingen
+horisontell sidöverrullning eller alert. Inga Play-/spara-/publiceraåtgärder
+eller lokala serverstarter gjordes. Detta är tillskriven UI-/adresskontroll,
+inte tal-, spel- eller samlad main-CI-acceptans.
 
 H6:s 503→200-kvitto och MERGE4:s executor-publicering är tillskriven evidens.
 POST-LIPSYNC5 äger verkligt tal, exakta videoidentiteter och GPU-aktivering.
