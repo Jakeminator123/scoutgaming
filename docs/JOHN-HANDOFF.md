@@ -65,8 +65,10 @@ Samma browseranrop gav 200 04:14:48 UTC och 04:16:00 UTC på publicerad main
 Ingen GPU-/talaktivering eller ny koddeploy gjordes. Vercels anslutningshemlighet
 är fortsatt maskerad; före/efterprovet belägger den riktade rättningens effekt.
 
-PR275:s frysta head `3c1343fbdcdd051738996240057b44140ff407c8` ändrades inte.
-MERGE4 äger dess slutreview/merge; POST-LIPSYNC5 äger senare liveaktivering/prov.
+PR275:s granskade head `3c1343fbdcdd051738996240057b44140ff407c8` ändrades inte
+av denna rättning. MERGE4 bekräftade senare merge till main
+`087f4fd5f8b354371521d49c52d8ab210f9ee6b0`; publiceringen följs separat av MERGE4.
+POST-LIPSYNC5 äger senare liveaktivering/prov.
 Detta kvitto löser 503-hindret men ersätter inte deras executor-/providerkontroller.
 [Exakt behörighetsändring och återgång](ENVIRONMENT-VARIABLES.md#runtime-rollens-tabellbehörigheter--verifierat-19-oktober-2026).
 Privata SQL-/browserkvitton och skärmbild finns utanför Git i HUVUDAGENT6:s
