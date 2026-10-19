@@ -2,11 +2,11 @@
 
 ## Driftväljare: Av och Sparläge — 19 oktober 2026
 
-HUVUDAGENT5 äger backend, UIUX Admin och POST-PISYNK4 tal/provaktivering.
-API/kontrollplanet i PR270 är mergat via `cb0c3275` enligt MERGE3. Körkopplingen
-i [PR275](https://github.com/Jakeminator123/scoutgaming/pull/275) granskas av MERGE3.
-Samlad sluträttning gäller observationsålder, browserkompatibel UTF8-kontroll
-och testförväntan för required017. Ny slut-CI och merge återstår.
+HUVUDAGENT6 äger backendrättningen nedan, UI/UX2 Admin och POST-LIPSYNC5
+aktivering/prov. API/kontrollplanet i PR270 är mergat via `cb0c3275`. MERGE4
+bekräftade PR275:s granskning, grön CI/readiness och publicering på Vercel/Render
+från main `087f4fd5f8b354371521d49c52d8ab210f9ee6b0`. Det är tillskriven
+publicering, inte HUVUDAGENT6:s GPU-/talacceptans.
 
 GET/POST återanvänder N1, färsk session, origin/CSRF och miljö/workspace.
 Behörighet och POST-state delar SQL-transaktion. Browserkontraktet är oförändrat;
@@ -45,10 +45,33 @@ De två importernas dubbla schema-listor ersattes med gemensam required-readines
 installerad ledger och rollback kontrolleras fortsatt. Egna fixturekluster och
 den tillfälliga Linux-Node-installationen rensades efter provet.
 Sluträttningen klarade 39 fokuserade och fem browserbindningsprov; integrationen
-med PR274/main `b3ff83d4` klarade 125 prov. Slut-CI och produktionsreadiness återstår.
+med PR274/main `b3ff83d4` klarade 125 prov. PR275:s slut-CI/readiness passerade
+enligt MERGE4; den separata konfigurationsrättningen nedan har egen CI.
 Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+
+### Molnstart: driftprofil till spelprocessen — HUVUDAGENT6
+
+Molnstartens explicita child-env tappade `CROUPIER_STUDIO_MOVING_DRIFT_API` och
+`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES`. Vid talflagga 1 blir då driftkonfigurationen
+null och executorn avvisar initieringen. Det är ett reproducerat kodfel, inte
+bevis att den historiska misslyckade deployen hann fram till just denna grind.
+
+`codex/moving-drift-cloud-env` validerar en enda profil och exakt endpoint/release
+i preflight. Endast det validerade JSON-värdet och flagga 1 går vidare till
+spelprocessen när tal är aktiverat; Lab och avstängt läge får inga driftfält.
+Bankhashen verifieras fortsatt mot verkligt bankarkiv av befintlig runtimegrind.
+
+Två beteenderegressioner visade felet före rättningen; 42 cloud-config/runtime/
+launch-prov passerar efteråt, inklusive source-closure-import utan frontend-/
+speechberoenden. Isoleringsprovet behövde en tillfällig tom Lab-node_modules-katalog
+för sitt realpath-krav; den är borttagen. Inga beroenden installerades.
+
+POST-LIPSYNC5 äger talflagga, stoppväg, budget och aktiveringsprov; MERGE4 äger
+granskning/CI/merge. Ingen produktions-/provider-/GPU-ändring gjordes i rättningen.
+Bankförladdning före listen och 30-sekunders readiness är ett separat diagnosspår;
+inga tidsgränser eller loggningsregler har ändrats.
 
 ### Rättad produktionsbehörighet — HUVUDAGENT6, 19 oktober 2026
 
