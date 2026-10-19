@@ -33,6 +33,10 @@ stillastående marker, dragning av kortpunkt, återställning, följval, berörd
 rum-bekräftelse, sparning och återläsning. Två sparningar gav skilda mobil- och
 desktopvärden. Fixturen är stoppad; inga verkliga spel-/media-/GPU- eller
 produktionsprov ingår. Browsermoduler och filmad bindningsinvalidering är testade.
+Första full-CI stoppade setup på ett oregistrerat ankartest. Testet är nu
+registrerat i presentation/card-view; orphan-kontrollen är grön (518 kandidater)
+och 40 riktade omprov passerar. Övriga då visade CI-fel var saknade beroenden
+efter överhoppad setup, enligt MERGE3:s loggläsning. Ny slut-CI återstår.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
 HUVUDAGENT5 bygger separat driftbackend; UI-driftväljaren inväntar DTO.
