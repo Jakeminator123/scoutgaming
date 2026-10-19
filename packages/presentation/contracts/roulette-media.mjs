@@ -16,7 +16,9 @@ export function rouletteMediaDefaults(eventId,situation) {
 export function validateRouletteMedia(input) {
   const event=rouletteMediaEvent(input.eventId);
   if(!event) {
-    if(['game','action','startPose','endPose'].some(key=>input[key]!==undefined))throw Error('Roulettens poser och handlingar får inte användas i blackjackfack.');
+    // Blackjack action clips may declare a VILA/REDO hand pose chain; that is
+    // validated by video-intake. Roulette's game/action vocabulary stays here.
+    if(['game','action'].some(key=>input[key]!==undefined)||[input.startPose,input.endPose].some(pose=>pose!==undefined&&!['VILA','REDO'].includes(pose)))throw Error('Roulettens poser och handlingar får inte användas i blackjackfack.');
     return;
   }
   const expected=rouletteMediaDefaults(input.eventId,input.situation);

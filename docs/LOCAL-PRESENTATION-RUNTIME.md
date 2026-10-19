@@ -1237,6 +1237,41 @@ inte på gamla defaults eller migrerar sparade data.
 
 ## Dealerimport och samtalskontroll, 13 oktober 2026
 
+### Klippnamn och deklarerad poskedja, 19 oktober 2026
+
+`packages/presentation/contracts/clip-naming.mjs` är den enda tolkningen av
+filnamn till fack. `parseClipFilename(name,{type})` ger kandidatfack,
+poskedja, språk och tagning; `clipNamingGuide()` listar mönster per fack och
+filtreras i importkatalogen mot den sparade kartans faktiska fack. Tolkningen
+täcker idle, båda skövergångarna, box0–box6, öppet/dolt dealerkort, vändning,
+alla 17 standardrepliker, `turn.player`, `settle.*` och VILA/REDO-bilder.
+Reaktioner kräver prefix (`settle`, `reaktion`, `reaction`, `resultat`) så att
+replikordet `blackjack` inte blir tvetydigt; flera platser i ett namn ger ingen
+mappning. Filnamnet är rådgivning och kan aldrig skapa fack, dealers eller media.
+
+Kevins suffix tolkas som en förflyttning av fackets grundkedja: utdelning och
+öppet dealerkort är REDO → REDO, dolt kort REDO → VILA, vändning VILA → VILA;
+`-i`/`in` sätter starten till VILA, `-v`/`-u`/`ut` slutet, `-iv`/`-iu` båda.
+Det motsvarar tagningarna i `kevin-dragan-f15b2af1.mjs` (`hole:i` = VILA → VILA).
+Utan suffix nämns fackets vanliga kedja i förslagets text (confidence `medium`)
+men ingen pose skrivs; med suffix eller för övergångar är förslaget `high` och
+kedjan följer med som `poses` på raden.
+
+`video.schema.json` tillåter nu `startPose`/`endPose` = `REDO`. `validateClipPoses`
+i `video-intake.mjs` godtar paret endast för `kind:'action'` på `deal.*`,
+`reveal.*` och `transition.shoe`, kräver båda fälten, VILA/REDO, och binder
+övergångarnas kedja (till skon VILA → REDO, från skon REDO → VILA). Roulettes
+`WHEEL`/`unverified` förblir roulettens. Klientens `importClassification`
+skriver paret från radens val eller filnamnet; övergångsfack får alltid sin
+fasta kedja. Ett klipp med deklarerad kedja är den nya mediefunktionen
+`clipPoses` (`dealer-media-features.mjs`) och kräver spelserverns kapabilitet
+**v22 `clipPoses:'vila-redo-v1'`** före grant, Blob och SQL; posefält på
+roulettemärkta poster är fortsatt `rouletteMedia` (v12). Readiness-läsaren
+tillåter nu 2048 byte eftersom v22-svaret är 1046. Deklarationen är authoringmetadata: spelarens filmade
+utdelningssekvens använder fortfarande den verifierade profilens SHA-bundna
+tagningar (`filmed-deal-selection.mjs`) och läser inte dessa fält. En framtida
+generisk profil kan härledas ur dem först efter egen verifiering per klipp.
+
 `/admin/clips` har en importassistent mot Studios registrerade dealers och
 exakta fack. Den anslutna klippkartan och servicesidorna från PR #55 behålls;
 importen ersätter inte den riktiga kartan med ett designexempel.

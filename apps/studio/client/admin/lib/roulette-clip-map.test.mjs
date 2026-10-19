@@ -134,6 +134,7 @@ test('roulette cards allow explicit idle binding while reference and planned car
       if(name==='../../lib/studio-layout.mjs')return {slotCaption,slotExplanation,isRenderedOutcome};
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
+      if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');
       return require(name);
     }});
   const render=(slot,component=module.exports.ConnectedClipDetails)=>{const clips=slot.planned?[]:[video(slot,'a')];return renderToStaticMarkup(React.createElement(component,{data:{

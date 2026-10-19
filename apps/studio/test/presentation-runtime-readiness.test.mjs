@@ -9,6 +9,7 @@ import {defaultPresentationLane} from '../../../packages/presentation/contracts/
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
+import {extendedDealerMediaFeatures} from '../../../packages/presentation/contracts/dealer-media-features.mjs';
 
 const env = { CROUPIER_BACKEND_ORIGIN: 'https://render.example.invalid' };
 const capability = { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' };
@@ -36,6 +37,23 @@ test('anchor presence gates active, archived and frozen geometry on v21 before a
   });
   let version=21;const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
   const work=()=>f.wrapped.saveDocument('presentation-package',{value});await work();version=20;await assert.rejects(work,blocked);assert.equal(f.writes.length,1);
+});
+test('a declared VILA/REDO pose chain on a blackjack clip gates media writes on v22, not on the roulette v12 feature',async()=>{
+  const chained={label:'Plats 1',dealerId:'dragan',eventId:'deal.player.left',kind:'action',role:'alternative',situation:'box0',notes:'',playback:'once',startPose:'VILA',endPose:'REDO'};
+  const plain={...chained};delete plain.startPose;delete plain.endPose;
+  assert.deepEqual(extendedDealerMediaFeatures(chained),{recordedSpeech:false,mediaAlpha:false,rouletteMedia:false,clipPoses:true});
+  assert.deepEqual(extendedDealerMediaFeatures(plain),{recordedSpeech:false,mediaAlpha:false,rouletteMedia:false,clipPoses:false});
+  assert.deepEqual(extendedDealerMediaFeatures({eventId:'roulette.reference',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA'}),{recordedSpeech:false,mediaAlpha:false,rouletteMedia:true,clipPoses:false});
+  for(const version of [21,22]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.registerMedia({id:'40000000-0000-4000-8000-000000000001',classification:chained});
+    if(version===21)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'22');
+  }
+  // A verified v21 transaction cannot acquire the v22 permission for a chained clip inside it.
+  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+  await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.registerMedia({classification:chained}),blocked);},{metadata:plain});
+  assert.equal(f.writes.length,0);
 });
 test('a preflight without anchors cannot acquire them inside its transaction',async()=>{
   const plain={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
@@ -386,7 +404,9 @@ const extendedMedia=[
   {dealerId:'astrid',compositing:{mode:'alpha'}},
   {dealerId:'astrid',mediaType:'image'},
   {dealerId:'astrid',eventId:'roulette.wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL',compositing:{mode:'green-screen'}},
-  ...['game','action','startPose','endPose'].map(key=>({dealerId:'astrid',[key]:'unverified'})),
+  ...['game','action'].map(key=>({dealerId:'astrid',[key]:'unverified'})),
+  // Pose fields on a roulette-marked record stay roulette media (v12).
+  {dealerId:'astrid',game:'roulette',startPose:'unverified'},{dealerId:'astrid',action:'reference',endPose:'unverified'},
 ];
 
 test('archived dealer categories require v14 before any write, including empty categories',async()=>{

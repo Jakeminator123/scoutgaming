@@ -1,5 +1,89 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: varför svaret visas som text — läsdiagnos 19 oktober 2026
+
+Jakob såg ”Dragans röstvideo saknas. Svaret visas som text.” i produktion
+och tolkade det som en saknad inspelad video. Orsaken är en annan: genererat
+tal skickas bara när dealerns `speechProfile.state` är `enabled` i Studio och
+Render kör `CROUPIER_MOVING_SPEECH_ENABLED=1` (`services/game/server.mjs`
+rad 1141–1171, `generated-speech-chat.mjs`). Läst i Admin 19 oktober ~12:00 UTC:
+Dragans profil står i `preparation`, Drift visar önskat Av (revision 12),
+`connected:false`/`drift_runtime_unavailable` och senaste observation från
+POST-LIPSYNC5:s closeout 10:43 UTC. Det är provprotokollets avsedda slutläge,
+inte en regression. Klienttexten är ändrad till ”Genererat tal är inte aktiverat
+för Dragan just nu. Svaret visas som text.”; `test/chat-decision-player.mjs`
+passerar 14/14. Inga serverkontrakt, grindar eller prov ändrades.
+
+Klippinventering ur registret (56 Dragan-filer, alla tillgängliga): 35 Kevin-
+tagningar (plats 1–7, öppet/dolt, vändning med i/iv/v/base), 10 äldre `deal_pos*`,
+5 grundloopar, båda skövergångarna (`in_vila_till_redo`, `ut_redo_till_vila`)
+och fyra inspelade repliker (goodluck, insurance, double, win). I projektet är
+goodluck/insurance/double bundna; `win_1` är uppladdad men obunden och övriga
+13 repliker, inklusive välkomsthälsningen, saknar film. Skövergångar och
+reaktionsfack spelas inte av spelaren ännu oavsett uppladdning. Rummet
+`Dragan · dynamiskt taltest` är öppet på paket 4 (publicerat 18 oktober
+14:31:54) utan väntande utkast. Radera inte dealern/klippen: bankens 50 källor
+hashbinds i `server.mjs` rad 1420–1427 och ger `moving_speech_bank_source_missing`.
+Papperskorgen innehåller `paow-kevin` (11 arkiverade filer), `anna-jonsson` (2)
+och `adminprov-2026-10-13`; permanent radering är ett separat beslut.
+`origin/kevin-staging` är inte mergad i main (190 commits utanför); Kevins
+bidrag i main är de registrerade källklippen från PR124/128.
+
+Molnläsning samma tid, inget ändrat: Vercel production
+`dpl_FkpqF9VDGiHu8hSzBUZLfEK8qhmY` och Render `dep-dbb001rrjlhs73d2u1eg` är båda
+LIVE/READY på main `1c8dc82f`; inga 5xx eller fel i loggarna. Render har
+`CROUPIER_MOVING_SPEECH_ENABLED=0` och alla `CROUPIER_MOVING_SPEECH_*`-namn
+satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo`
+(max 1, idle 60 s, CA-MTL-1). Vercel-pluginens anslutning ger 403 för teamet
+`scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
+i `docs/environment-variables.json` för både Studio och spelservern.
+
+## Flaggor på, första prov och synlig barndiagnostik — 19 oktober 2026, ~12:30–12:45 UTC
+
+På Jakobs uppdrag (”sätt på alla flaggor”): Render `croupier-v2` fick
+`CROUPIER_MOVING_SPEECH_ENABLED=1` via API (deploy `dep-dbb0r1ff3r2c73frpa2g`,
+LIVE 12:33:09 UTC på samma kod `1c8dc82f`); Drift sattes till Sparläge/Basprofil
+(revision 13, `connected:true`, `admission.allowed:true`); Dragans talprofil sattes
+till `enabled` genom det ordinarie projektskrivaren (revision
+`studio-c4666576-db78-421a-a69d-5885c8bc9075`). Flaggorna lämnas på; Av i Drift är
+ordinarie stoppväg. RunPod-endpointen har max 1 worker och 60 s tomgång, så
+vilokostnaden är noll. Journalens grant 24,00 USD har 1,20 USD kvar efter
+POST-LIPSYNC5:s 19 reservationer; fler jobb än ett kräver en ny append-only
+CAS-höjning inom Jakobs tak.
+
+**Provet 12:35:30 UTC** (text ”Svara kort på svenska: säg hej Jakob.”, OpenClaw,
+ljud på) misslyckades efter 22,4 s i förberedelsen med klientkoden `chat_failed`
+(stages text 630 ms, video-queue 4,6 s och 15,6 s). Enda serverloggen är
+gatewayns `moving_bank_rejected stage=authorization code=drift_not_admitting
+httpStatus=403`: workerns bankhämtning nekades av driftguarden medan jobbet
+pågick — samma symptom som det tredje provets bank-403. Guardens exakta orsak
+syns inte, eftersom spelprocessens stdout kastas i produktion
+(`process-group.mjs`, `stdio:'ignore'`); H6:s `moving_drift_guard_rejected`-
+och `readback_timing`-diagnostik har därför aldrig nått Render-loggen. Observationens
+ålder i vila är 1,2–3,5 s mot 15 s gräns; under jobb är den omätt.
+
+Rättning i denna leverans: `ops/cloud/child-diagnostics.mjs` vidarebefordrar
+endast allowlistade, ändliga barnhändelser (guardorsak, readback-timing/fel,
+förberedelse-/strömkvitton med säkra koder och id:n, recovery) till
+plattformsloggen med `source:"game"`, högst 2000 rader per process; startrader,
+fri text och allt annat kastas fortsatt. Nästa prov efter deploy visar orsaken
+direkt i Render-loggen. Ingen grind, tidsgräns eller budget ändrades.
+
+## Klippnamn och poskedja — 19 oktober 2026
+
+Ny gemensam namnregel i `packages/presentation/contracts/clip-naming.mjs`
+(fack + Kevins i/iv/v/base-suffix som poskedja + språk/tagning för repliker)
+driver importassistentens filnamnsförslag och täcker alla 36 fack inklusive
+skövergångar, reaktioner och VILA/REDO-bilder. Utdelnings-, vändnings- och
+övergångsklipp kan nu bära `startPose`/`endPose` = VILA/REDO i klassificeringen
+(schema och `validateClipPoses`); importraden visar och låter ändra kedjan,
+klippkartan och mediebiblioteket visar den som läsbricka. Deklarationen är
+authoringmetadata; spelarens filmade sekvens använder fortfarande den verifierade
+profilen. Verifierat: 163 Studio-prov (importkatalog, intake, klient, komponenter),
+36 ops-prov, båda typkontrollerna, env-register och orphan-kontroll. Guide i
+[README](../apps/studio/docs/README.md) och teknik i
+[runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md#klippnamn-och-deklarerad-poskedja-19-oktober-2026).
+
 ## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
 
 Den avslutade registerflyttens `prepareLegacyStudioSnapshot` hade endast

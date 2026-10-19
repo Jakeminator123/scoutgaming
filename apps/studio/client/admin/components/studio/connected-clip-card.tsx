@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Film, Upload, Check } from 'lucide-react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { ClipGuide } from './clip-guide';
+import { clipPoseChain } from '../../../../components/clip-pose-chain.mjs';
 import type { ClipSlot, VideoEntry } from '../../lib/connected-studio.mjs';
 import type { StudioClipUsage } from '../../lib/studio-policy.mjs';
 import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup, type ClipLibraryGroup } from '../../lib/studio-layout.mjs';
@@ -15,6 +16,7 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
   const recording=selected?.classification?.recordedSpeech;
+  const chain=data.slot.game==='roulette'?null:clipPoseChain(selected?.classification);
   const preview=useRef<HTMLVideoElement|null>(null);
   useEffect(()=>{
     const video=preview.current;
@@ -50,6 +52,7 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
         :<div className="studio-preview-empty"><Film size={28}/><span>Välj ett klipp för att förhandsvisa</span></div>}</div>
         <div className="studio-card-summary"><span className="studio-card-eyebrow">{image?'Bild':'Valt klipp'}</span>
           <p title={selected?.label}>{selected?.label??(planned?'Återstår att ansluta':image?'Dra in en PNG':'Dra in ett klipp')}</p>
+          {chain&&<span className={`studio-pose-chain ${chain.declared?'':'is-missing'}`} title={chain.declared?'Angiven vid import · inte kontrollerad mot bildrutorna':undefined}>{chain.declared?<>Poskedja <strong>{chain.text}</strong></>:chain.text}</span>}
           <span className={`studio-card-status ${ready?'is-ready':''}`}>{ready?<Check size={11}/>:<span className="studio-empty-dot"/>}{data.busy?'Bearbetar…':data.localPreviewUrl?'Lokalt prov · inte sparat':planned?'Planerat fack':intake?data.clips.length?'Registrerat · ej spelkopplat':'Material saknas':ready?data.usageChanged?'Ändrat lokalt · ej sparat':'Kopplat i sparat utkast':selected?exactBinding?'Valt för prov · ej kopplat till vald variant':'Valt för prov · ej kopplat':'Ingen tagning vald'}</span></div></div>
       {recording&&<section className="studio-recorded-speech" aria-label="Inspelad replik"><strong>Inspelat tal · originalets ljud</strong><p>{recording.exactText}</p><small>Språk: {recording.language}. Text, ljud och video hör ihop; ny generering är ett separat val i Röst &amp; tal.</small></section>}
       {data.variants.length>1&&<label className="studio-card-select">Standard och varianter<select aria-label={`Variant ${data.slot.id}`} value={data.variantId} disabled={data.busy} onChange={event=>data.onVariant(event.target.value)}>{data.variants.map(row=><option key={row.id} value={row.id}>{row.baseline?'Standardklipp':row.label}</option>)}</select></label>}

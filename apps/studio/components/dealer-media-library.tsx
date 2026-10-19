@@ -3,6 +3,7 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {StudioProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {DEALER_MEDIA_CATEGORIES,dealerMediaSlots,mediaClassification,dealerLibraryVideos,draftUsesMedia,mediaMatchesSlot,dealerSlotStatus,mediaPage,mediaUsage,type DealerMediaSlot} from '../lib/dealer-media-library.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
+import {clipPoseChain} from './clip-pose-chain.mjs';
 import {mediaContentType} from '../../../packages/shared/media-file-types.mjs';
 import {NATIVE_MEDIA_ACCEPT,nativeMediaFileError,assertNativeMediaFiles} from '../lib/native-media-intake.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
@@ -139,10 +140,11 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     {displayed.length?<div className={styles.grid}>{paged.items.map(video=>{
       const metadata=video.classification,eventId=metadata?.eventId??video.eventId??video.suggestedEventId,situation=metadata?.situation??video.situation;
       const slot=allSlots.find(row=>row.eventId===eventId&&(row.situation===(situation??'')||row.eventId==='idle.ready'));
-      const used=draftUsesMedia(project,video.id),editable=video.source==='upload'&&Boolean(metadata);
+      const used=draftUsesMedia(project,video.id),editable=video.source==='upload'&&Boolean(metadata),chain=clipPoseChain(metadata);
       return <article className={styles.card} key={video.id}>
         {video.deletion?<div className={styles.empty}>Radering påbörjad · filen kan inte återställas</div>:metadata?.mediaType==='audio'?<audio src={video.previewUrl} controls preload="none"/>:<DealerClipPreview mediaType={metadata?.mediaType==='image'?'image':undefined} url={video.previewUrl} framing={metadata?.framing} compositing={metadata?.compositing} label={`Förhandsvisa ${video.label}`}/>}
         <h4>{clipLabel({id:video.id,label:video.label,familyId:video.familyId,role:video.role},project.clipLabels)}</h4><p>{slot?.label??'Ej kategoriserad'} · {metadata?.mediaType==='audio'?'Ljud':metadata?.mediaType==='image'?'VILA-bild':'Video'}</p>
+        {chain?<span className={chain.declared?styles.poseChain:styles.poseChainMissing} title={chain.declared?'Angiven vid import · inte kontrollerad mot bildrutorna':undefined}>{chain.declared?<>Poskedja <strong>{chain.text}</strong></>:chain.text}</span>:null}
         <small>{mediaUsage(project,video,dealerId)}{!video.available?' · Otillgänglig':''}</small>
         {editable&&!archived&&!video.deletion?<DealerFileSettings key={video.id+JSON.stringify(metadata)} video={video} disabled={busy||disabled} onSaved={onInventory} onBusyChange={onLifecycleChange}/>:null}
         <div className={styles.actions}>{!archived&&slot?settings(slot):null}

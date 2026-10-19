@@ -5,6 +5,7 @@ import { kindForEvent, MAX_VIDEO_BYTES, validateVideoMetadata } from '../../../p
 import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../../packages/presentation/contracts/dealer-compositing.mjs';
 import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { parseClipFilename, clipNamingGuide, CLIP_POSE_VARIANTS } from '../../../packages/presentation/contracts/clip-naming.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
   maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, vision: false });
@@ -21,7 +22,9 @@ export function dealerImportCatalog(project) {
   const dealers = project.dealers.filter(row => active.has(row.id)).map(row => ({ id: row.id, label: row.label || row.id }));
   const slots = supportedDealerImportSlots(project, dealerMediaSlots(project));
   slots.push(...['vila', 'redo'].map(pose => ({ id: `pose/${pose}`, label: `${pose.toUpperCase()} · referensbild`, category: 'pose', kind: 'pose', pose, start: pose.toUpperCase(), end: pose.toUpperCase() })));
-  return { dealers, slots, limits: DEALER_IMPORT_LIMITS };
+  // The naming guide only lists slots that exist in this saved project.
+  const naming = clipNamingGuide().filter(row => slots.some(slot => slot.id === row.slotId));
+  return { dealers, slots, limits: DEALER_IMPORT_LIMITS, naming, poseVariants: Object.entries(CLIP_POSE_VARIANTS).map(([id, row]) => ({ id, ...row })) };
 }
 
 export function supportedDealerImportSlots(project, candidates) {
@@ -87,40 +90,30 @@ export function dealerImportChatContext(catalog, selectedDealerId) {
     truncated: shortened || dealers.length < catalog.dealers.length || slots.length < catalog.slots.length };
 }
 
-function filenameHints(file) {
-  const name = file.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\.[^.]+$/, '').replace(/[\s_.]+/g, '-');
-  const token = word => new RegExp(`(?:^|-)(?:${word})(?:-|$)`).test(name);
-  const hints = new Set();
-  if (file.type.startsWith('image/')) {
-    if (token('vila|keystone|rest')) hints.add('pose/vila');
-    if (token('redo|ready')) hints.add('pose/redo');
-    return hints;
-  }
-  if (token('to-shoe|till-skon')) hints.add('transition.shoe/to-shoe');
-  if (token('from-shoe|fran-skon')) hints.add('transition.shoe/from-shoe');
-  const positions = [...name.matchAll(/(?:^|-)(?:pos(?:ition)?|plats|seat)-?([1-7])(?:[a-z]|-?alt\d*)?(?=-|$)/g)];
-  const boxes = [...name.matchAll(/(?:^|-)box-?([0-6])(?=-|$)/g)];
-  for (const box of [...positions.map(match => Number(match[1]) - 1), ...boxes.map(match => Number(match[1]))]) {
-    hints.add(`deal.player.${box < 2 ? 'left' : box < 5 ? 'centre' : 'right'}/box${box}`);
-  }
-  if (token('dealer-up|dealerup|oppet-dealerkort')) hints.add('deal.dealer/dealer-up');
-  const reveal = token('reveal|flip|vand');
-  if (reveal) hints.add('reveal.dealer/dealer-hole');
-  if (token('dealer-hole|dealerhole|hole-card|holecard') && !reveal) hints.add('deal.dealer/dealer-hole');
-  if (token('idle|grundloop')) hints.add('idle.ready/');
-  for (const line of ['goodluck', 'insurance', 'double', 'placebets', 'dealerblackjack', 'blackjack', 'dealerbust', 'win', 'push', 'lose', 'greeting', 'peek', 'bust', 'sidebet', 'chatter1', 'chatter2', 'farewell']) {
-    if (token(line)) hints.add(`${['goodluck', 'insurance', 'double'].includes(line) ? `speak.${line}` : 'speak.other'}/${line}`);
-  }
-  return hints;
+// Filename advice comes from the shared naming convention. Pose, language and
+// take are derived from the name only; they are proposals until a human saves.
+// Only an explicit chain (suffix or shoe transition) becomes a declaration; an
+// assumed chain is mentioned but never written on the operator's behalf.
+export function filenameClipAdvice(file, catalog) {
+  const parsed = parseClipFilename(file.name, { type: file.type });
+  const hints = parsed.slotIds.filter(id => catalog.slots.some(slot => slot.id === id));
+  const slotId = hints.length === 1 ? hints[0] : null;
+  const chained = slotId && slotId === parsed.slotId && parsed.poses && /^(?:deal|reveal|transition)\./.test(slotId) ? parsed.poses : null;
+  return { slotId, hints, poses: chained && parsed.explicitPose ? chained : null, assumed: chained && !parsed.explicitPose ? chained : null,
+    variant: chained ? parsed.variant : null, language: slotId?.startsWith('speak.') ? parsed.language : null,
+    take: slotId?.startsWith('speak.') ? parsed.take : null, canonical: slotId !== null && parsed.canonical };
 }
 
 export function filenameDealerImportRows(input, catalog) {
   return input.files.map(file => {
-    const hints = [...filenameHints(file)].filter(id => catalog.slots.some(slot => slot.id === id));
-    const slotId = hints.length === 1 ? hints[0] : null;
-    return { fileId: file.id, slotId, confidence: slotId ? 'medium' : 'low', reason: slotId
-      ? 'Filnamnet matchar ett exakt fack. Innehåll och ändposer är inte verifierade.'
-      : hints.length > 1 ? 'Filnamnet anger flera möjliga fack. Välj rätt fack själv.' : 'Filnamnet räcker inte för en säker placering. Välj ett fack eller förtydliga kontexten.' };
+    const advice = filenameClipAdvice(file, catalog);
+    const { slotId, hints } = advice;
+    const chain = advice.poses ? ` Poskedja ${advice.poses.start} → ${advice.poses.end} enligt namnet.`
+      : advice.assumed ? ` Namnet saknar poskedja; fackets vanliga kedja är ${advice.assumed.start} → ${advice.assumed.end}. Välj den i raden om den stämmer.` : '';
+    return { fileId: file.id, slotId, confidence: slotId ? advice.canonical ? 'high' : 'medium' : 'low', reason: slotId
+      ? `Filnamnet matchar ett exakt fack.${chain} Innehållet är inte verifierat.`
+      : hints.length > 1 ? 'Filnamnet anger flera möjliga fack. Välj rätt fack själv.' : 'Filnamnet räcker inte för en säker placering. Välj ett fack eller förtydliga kontexten.',
+      ...(advice.poses ? { poses: advice.poses } : {}), ...(advice.language ? { language: advice.language } : {}), ...(advice.take !== null ? { take: advice.take } : {}) };
   });
 }
 
@@ -164,13 +157,21 @@ export function finishDealerImportRows(rows, input, catalog) {
     }
     if (slot?.kind === 'pose') warnings.push('Referensbilden sparas inte i klippbanken. Hantera VILA/REDO separat i Skapa material; ett posebyte kräver ny granskning.');
     else if (slot) {
+      // Pose, language and take are read from the filename for the same slot only;
+      // a model may pick another slot, and then the name's chain does not apply.
+      const advice = filenameClipAdvice(file, catalog), named = advice.slotId === slot.id;
+      const poses = named && !audio && advice.poses ? { startPose: advice.poses.start, endPose: advice.poses.end } : {};
+      const notes = ['Importförslag · innehållet är inte visuellt godkänt.',
+        ...(named && advice.language ? [`Språk i filnamnet: ${advice.language}.`] : []), ...(named && advice.take !== null ? [`Tagning ${advice.take} enligt filnamnet.`] : [])].join(' ');
       classification = validateVideoMetadata({ dealerId: input.dealerId, eventId: slot.eventId, situation: slot.situation,
-        kind: slot.kind, role: 'alternative', playback: 'once', label: file.name.slice(0, 120), notes: 'Importförslag · innehållet är inte visuellt godkänt.',
+        kind: slot.kind, role: 'alternative', playback: 'once', label: file.name.slice(0, 120), notes, ...poses,
         ...(audio ? { mediaType: 'audio' } : { compositing: { ...DEFAULT_DEALER_COMPOSITING } }) }, { forWrite: true });
+      if (named && advice.assumed) warnings.push('Ingen poskedja sparas: filnamnet saknar -i, -v eller -iv. Välj kedjan i raden om du vet var händerna är när klippet börjar och slutar.');
       if (slot.kind === 'speech') warnings.push('Kontrollera exakt manus, ljud, läppsynk och cue-data. Replik-ID eller filnamn bevisar inte att talet stämmer.');
       if (!audio) warnings.push('Kontrollera grön bakgrund och mobilformat. Frilagda alfaklipp kan förhandsvisas men är spärrade för import tills assistentens kontroll och granskning är färdig. Ingen beskärning eller formatkonvertering utförs.');
     }
     if ((counts.get(row.slotId) ?? 0) > 1) warnings.push('Flera filer föreslås till samma fack. Granska varje alternativ; förslaget ersätter ingen standard.');
-    return { ...row, classification, warnings };
+    const { poses: _poses, language: _language, take: _take, ...base } = row;
+    return { ...base, classification, warnings, ...(classification?.startPose ? { poses: { start: classification.startPose, end: classification.endPose } } : {}) };
   });
 }

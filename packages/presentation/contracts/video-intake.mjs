@@ -47,6 +47,7 @@ export function validateVideoMetadata(input, { allowLegacySituation = false, for
   if (event.sourceType === 'speak' && !input.situation) throw new Error('En talvideo måste ha ett exakt replik-ID.');
   if (input.compositing !== undefined) validateVideoCompositing(input.compositing);
   if (input.framing !== undefined) validateDealerFraming(input.framing);
+  if (!rouletteMediaEvent(input.eventId)) validateClipPoses(input, event);
   let recordedSpeech;
   if (Object.hasOwn(input, 'recordedSpeech')) {
     if (event.sourceType !== 'speak' || input.mediaType !== undefined || input.game === 'roulette') throw new Error('Inspelat tal kräver en egen talvideo med exakt replik.');
@@ -55,6 +56,19 @@ export function validateVideoMetadata(input, { allowLegacySituation = false, for
   return { ...input, label: input.label.trim(), notes: input.notes.trim(),
     ...(recordedSpeech ? {recordedSpeech} : {}),
     ...(forWrite && input.mediaType !== 'audio' ? {compositing:assertDealerCompositingWrite(input.compositing)} : {}) };
+}
+// A declared hand pose chain is authoring metadata for deal, reveal and shoe
+// transition clips. It never replaces the verified filmed profile that the
+// player's deal sequence uses, and speech/idle/reaction clips do not carry it.
+export function validateClipPoses(input, event) {
+  const declared = input.startPose !== undefined || input.endPose !== undefined;
+  if (!declared) return;
+  if (input.kind !== 'action' || input.mediaType !== undefined || !['deal', 'reveal', 'transition'].includes(event.sourceType) && event.id !== 'transition.shoe') throw new Error('Start- och slutpose gäller bara utdelnings-, vändnings- och övergångsklipp.');
+  if (!['VILA', 'REDO'].includes(input.startPose) || !['VILA', 'REDO'].includes(input.endPose)) throw new Error('Ange både start- och slutpose som VILA eller REDO.');
+  if (input.eventId === 'transition.shoe') {
+    const expected = input.situation === 'to-shoe' ? ['VILA', 'REDO'] : ['REDO', 'VILA'];
+    if (input.startPose !== expected[0] || input.endPose !== expected[1]) throw new Error('Till skon går VILA → REDO och från skon REDO → VILA.');
+  }
 }
 export function validateVideoCompositing(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ogiltig friläggning.');

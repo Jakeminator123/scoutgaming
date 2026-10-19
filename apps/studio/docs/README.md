@@ -180,6 +180,31 @@ för omgången och **Sortera klippen**. Granska facken och välj
 **OK – placera klippen**. Fel visas med filnamn. En tidigare lokal import
 behålls tills du uttryckligen väljer att byta dealer.
 
+**Namnge filerna så sorteras de rätt.** Importassistenten läser filnamnet
+mot en gemensam namnregel som täcker alla 36 fack; **Så namnger du filerna**
+i importpanelen visar mönster och exempel för just den sparade kartan. Mönstret
+är `<dealer>_<fack>[_<poskedja>][_<språk>_<nr>]`, med `_` eller `-` som
+avdelare:
+
+- Grundloop: `dragan_idle_andning.mp4`. Övergångar: `dragan_vila_till_redo.mp4`
+  (Till skon) och `dragan_redo_till_vila.mp4` (Från skon).
+- Utdelning: `pos1`–`pos7` är Spelarplats 1–7 (box0–box6), `posdealer` öppet
+  dealerkort, `hole` dolt kort, `flip` vändning. Kevins suffix anger var
+  händerna är när klippet börjar och slutar: utan suffix REDO → REDO (vid skon),
+  `-i` börjar i VILA, `-v` slutar i VILA, `-iv` båda. Exempel: `dragan_pos3-iv.mp4`.
+  Poskedjan sparas som start-/slutpose på klippet bara när namnet anger den
+  eller du väljer den i raden; utan suffix föreslås fackets vanliga kedja i
+  texten men inget skrivs. Den är en deklaration, inte ett bevis på att klippen
+  kedjar, och kräver att spelservern annonserar kapabilitet 22.
+- Repliker: `<replik>_<språk>_<nr>`, till exempel `dragan_goodluck_sv_1.mp4`.
+  Språk och tagningsnummer följer med som notering; manus, ljud och granskning
+  sätts separat under Tal-klipp & ljud.
+- Reaktioner kräver prefix: `dragan_settle_win.mp4`, `dragan_turn.mp4`.
+
+Ett namn som bara anger `blackjack` tolkas som repliken, inte reaktionen. Två
+platser i samma namn lämnas osorterade. Namnet föreslår; du granskar innehåll,
+bakgrund och fack innan filerna sparas.
+
 I **Adminroboten** kan du dra in samma filmer direkt i chatten, välja dealer och
 bakgrund och **Sortera och placera**. Det är själva importuppdraget; inga extra
 godkännanderutor tillkommer. Oklara fack visas i chatten för rättning innan

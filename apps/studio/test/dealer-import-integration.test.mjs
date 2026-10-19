@@ -122,7 +122,7 @@ function assertNoUploadEffects(f, sqlBefore) {
 test('filename proposals and manually reviewed MP4/WebM reach native grants, verified bytes and memory-backed registry rows', async t => {
   for (const mode of ['filename', 'manual']) for (const input of cases) {
     const f = await fixture(t), item = prepared(mode, input, f.catalog), metadata = item.classification;
-    assert.deepEqual(extendedDealerMediaFeatures(metadata), { mediaAlpha: false, rouletteMedia: false, recordedSpeech:false });
+    assert.deepEqual(extendedDealerMediaFeatures(metadata), { mediaAlpha: false, rouletteMedia: false, recordedSpeech:false, clipPoses:false });
     assert.equal(metadata.role, 'alternative'); assert.equal(metadata.playback, 'once');
     assert.equal(metadata.dealerId, 'astrid'); assert.equal(`${metadata.eventId}/${metadata.situation}`, input.slot);
     assert.deepEqual(metadata.compositing, DEFAULT_DEALER_COMPOSITING);

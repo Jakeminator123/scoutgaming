@@ -3,7 +3,8 @@ import { ArrowUpRight, Check, FileVideo, MessageCircle, RefreshCw, ShieldCheck, 
 import { uploadNativeVideo } from '../../../../lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../lib/media-upload-batch.mjs';
 import { labUrl, appendAssistantHistory, applyImportProposals, compatibleImportSlot, importClassification, importContentType, importErrorMessage, importFileError, importRowError, planImportFiles, importDealerId, registerImportDealer,
-  type AssistantHistoryEntry, type ImportCatalog, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealer-import.mjs';
+  CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses, importRowPoses, slotAcceptsPoses,
+  type AssistantHistoryEntry, type ImportCatalog, type ImportNamingRow, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealer-import.mjs';
 
 type Answer = {dealerId:string|null;intent:ImportIntent;selectedModel:ImportModel;source:'ai'|'filename-rules'|'unavailable';assistantMessage:string;rows:ImportProposal[];warnings:string[]};
 type ChatEntry = {speaker:'Du'|'Assistent';text:string};
@@ -20,6 +21,23 @@ function validateCatalog(value:ImportCatalog) {
     || !Number.isInteger(value.limits.maxFiles) || value.limits.maxFiles < 1 || value.limits.maxFiles > 30
     || !Number.isInteger(value.limits.maxFileBytes) || value.limits.maxFileBytes > 134217728) throw Error('Studios importkatalog kunde inte verifieras.');
   return value;
+}
+function namingGroups(rows:ImportNamingRow[]) {
+  const groups:{note:string;rows:ImportNamingRow[]}[]=[];
+  for(const row of rows){const last=groups.at(-1);if(last&&last.note===row.note)last.rows.push(row);else groups.push({note:row.note,rows:[row]});}
+  return groups;
+}
+function NamingGuide({rows,slots}:{rows:ImportNamingRow[];slots:ImportCatalog['slots']}) {
+  return <details className="dealer-import-naming"><summary>Så namnger du filerna · {rows.length} fack</summary><div className="dealer-import-naming-body">
+    <p>Ett namn enligt mönstret föreslår rätt fack direkt. Du granskar alltid innehållet.</p>
+    <h3>Händernas läge · suffix</h3>
+    <dl className="dealer-import-naming-legend">{Object.entries(CLIP_POSE_VARIANTS).map(([id,variant])=><div key={id}><dt>{id==='base'?'utan suffix':<code>-{id}</code>}</dt><dd>{variant.label}</dd></div>)}</dl>
+    <p>Spelarplats 1–7 = box0–box6. Repliker: replik, språk och tagningsnummer.</p>
+    <div className="dealer-import-naming-list" role="region" aria-label="Namnmönster per fack" tabIndex={0}>{namingGroups(rows).map(group=><div className="dealer-import-naming-group" key={group.rows[0].slotId}>
+      <dl>{group.rows.map(row=><div key={row.slotId}><dt>{slots.find(slot=>slot.id===row.slotId)?.label??row.slotId}</dt><dd><code>{row.pattern}</code></dd><dd><span>t.ex.</span> <code>{row.example}</code></dd></div>)}</dl>
+      {group.note&&<p>{group.note}</p>}
+    </div>)}</div>
+  </div></details>;
 }
 function LocalPreview({file}:{file:File}) {
   const [url,setUrl] = useState('');
@@ -223,6 +241,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
           <label>Bakgrund för hela omgången<select value={batchBackground} disabled={Boolean(busy)} onChange={event=>{const background=event.target.value;setBatchBackground(background);setRows(items=>items.map(row=>row.state==='ready'&&importContentType(row.file.name).startsWith('video/')?{...row,background}:row));invalidate();}}><option value="">Välj bakgrund…</option><option value="green-screen">Grön bakgrund</option><option value="alpha">Transparent bakgrund</option></select></label>
           <label>Din kontext<textarea value={context} maxLength={4000} rows={3} disabled={Boolean(busy)} placeholder="Exempel: Vänster arm mot skon. Box 1–7 är spelarplatser från vänster. Filen redo.png är posen vid skon. Materialet är 1080 × 1920 med grön bakgrund." onChange={event=>{setContext(event.target.value);invalidate();}}/></label>
           <p className="dealer-import-help">Filnamn och kontext kan skickas till den konfigurerade textmodellen när du ber om ett förslag. Endast MP4 och WebM kan sparas just nu, efter ditt godkännande. Ljud och posebilder kan granskas lokalt och få fack, men måste tas bort ur denna import innan videorna kan sparas. Originalfilerna på din dator påverkas inte.</p>
+          {catalog.naming?.length ? <NamingGuide rows={catalog.naming} slots={catalog.slots}/> : null}
           <p className="dealer-import-help">{catalog.provider.configured?'Kartläggning: Sol 6.1 · High.':'AI-kartläggning är inte ansluten; filnamnsregler används.'}</p>
           <button className="dealer-import-primary" disabled={!dealer||Boolean(busy)||!rows.some(row=>row.state==='ready')} onClick={()=>void ask('mapping')}><MessageCircle size={16}/>{busy==='mapping'?'Sorterar klippen…':'Sortera klippen'}</button>
         </section>
@@ -237,13 +256,16 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
               <div className="dealer-import-row-title"><FileVideo size={17}/><strong>{row.file.name}</strong><small>{(row.file.size/1048576).toFixed(1)} MB</small>
                 <button aria-label={`Ta bort ${row.file.name} ur listan`} disabled={Boolean(busy)} onClick={()=>{setRows(current=>current.filter(item=>item.id!==row.id));invalidate();}}><X size={16}/></button></div>
               <div className="dealer-import-row-fields"><label>Namn i banken<input aria-label={`Namn för ${row.file.name}`} value={row.label} maxLength={120} disabled={!editable} onChange={event=>update(row.id,{label:event.target.value})}/></label>
-                <label>Exakt fack<select aria-label={`Fack för ${row.file.name}`} aria-describedby={issue?`import-error-${row.id}`:undefined} value={row.slotId} disabled={!editable} onChange={event=>update(row.id,{slotId:event.target.value,reason:'Du valde det här facket.',confidence:undefined})}>
+                <label>Exakt fack<select aria-label={`Fack för ${row.file.name}`} aria-describedby={issue?`import-error-${row.id}`:undefined} value={row.slotId} disabled={!editable} onChange={event=>{const next=catalog.slots.find(item=>item.id===event.target.value);update(row.id,{slotId:event.target.value,reason:'Du valde det här facket.',confidence:undefined,poses:slotAcceptsPoses(next)?row.poses:undefined});}}>
                   <option value="">Välj fack…</option>{catalog.slots.filter(item=>compatibleImportSlot(row.file,item)).map(item=><option value={item.id} key={item.id}>{item.label} · {item.id}</option>)}
                 </select></label>
                 {video && <label>Bakgrund<select aria-label={`Bakgrund för ${row.file.name}`} value={row.background} disabled={!editable} onChange={event=>update(row.id,{background:event.target.value})}>
                   <option value="">Bekräfta bakgrund…</option><option value="green-screen">Grön bakgrund</option><option value="alpha">Frilagd alfa · import väntar på stöd</option></select></label>}
+                {video && slotAcceptsPoses(slot) && slot?.eventId!=='transition.shoe' && <label>Poskedja<select aria-label={`Poskedja för ${row.file.name}`} value={clipVariantForPoses(row.poses)??''} disabled={!editable} onChange={event=>{const poses=clipPosesForVariant(event.target.value);update(row.id,poses?{poses}:{poses:undefined});}}>
+                  <option value="">Okänd · välj var händerna är</option>{Object.entries(CLIP_POSE_VARIANTS).map(([id,variant])=><option value={id} key={id}>{variant.label}</option>)}</select></label>}
               </div>
-              {slot && <p className="dealer-import-help">{slot.start&&slot.end?`${slot.start} → ${slot.end} · `:''}{slot.id}</p>}
+              {slot && (()=>{const poses=importRowPoses(row,slot)??(slot.start&&slot.end&&!slotAcceptsPoses(slot)?{start:slot.start,end:slot.end}:null);
+                return <p className="dealer-import-row-chain">{poses&&<span className="dealer-import-chain">{poses.start} → {poses.end}</span>}<code>{slot.id}</code></p>;})()}
               {row.reason && <p>{row.confidence==='low'?'Osäkert förslag · ':''}{row.reason}</p>}
               {row.warnings?.map((warning,index)=><p key={index} className="dealer-import-warning">{warning}</p>)}
               {image && <p className="dealer-import-warning">Lokal posereferens. Bilden ersätter ingen låst pose och måste tas bort ur denna import innan videorna kan sparas.</p>}
