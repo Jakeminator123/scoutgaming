@@ -36,7 +36,7 @@ SQL016 måste vara installerad före runtimeaktivering; POST-PISYNK4 har verifie
 både 016 och 017 apply. 017 är nu required, 016 fortsatt optional i manifestet.
 Kodändringen skriver inga molnvariabler
 eller produktionsdata. Runtime-/budgetaktivering samordnas separat med
-POST-PISYNK4 och granskning/merge med MERGE3.
+POST-LIPSYNC5 och granskning/merge med MERGE4.
 
 ### Runtime-rollens tabellbehörigheter — verifierat 19 oktober 2026
 
@@ -1071,7 +1071,7 @@ filerna var oförändrade efter kontrollen. Web/Labs tre relevanta värden
   Den lokala jämförelsen får inte beskrivas som full molnverifiering.
 
 Ingen provider, röst, flagga, credential eller resurs ändrades och inga
-TTS-/GPU-jobb kördes. Editorn `lipsync-test` läser över huvud taget inga env-filer.
+TTS-/GPU-jobb kördes.
 
 ### Talnycklar och sparade modeller
 

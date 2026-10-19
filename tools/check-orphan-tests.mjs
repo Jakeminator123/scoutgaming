@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testExtensions = new Set(['.mjs', '.js', '.cjs', '.ts', '.mts', '.cts']);
-const discoveryRoots = ['test', 'apps/studio/test', 'apps/studio/components', 'apps/studio/lib', 'apps/studio/client', 'packages', 'tools/media', 'ops', 'apps', 'services', 'lipsync-test'];
-const coverageRoots = /^(?:test|lab|ops|apps|services|packages|tools\/media|lipsync-test)\//;
+const discoveryRoots = ['test', 'apps/studio/test', 'apps/studio/components', 'apps/studio/lib', 'apps/studio/client', 'packages', 'tools/media', 'ops', 'apps', 'services'];
+const coverageRoots = /^(?:test|lab|ops|apps|services|packages|tools\/media)\//;
 const skippedDirectories = new Set(['node_modules', '.git', '.next', '.nuxt', '.cache', '.turbo', 'coverage',
   'playwright-report', 'test-results', '__pycache__', '.venv', '.lipsync-venv', 'vendor', 'arkiv',
   'data', 'media', 'staging', 'fixtures', '__fixtures__']);

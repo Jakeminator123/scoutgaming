@@ -39,6 +39,18 @@ GPU-stopp. Browserkontrakt/typer finns i `moving-drift-admin.mjs`/`.d.mts` under
 utelämnas. 200 bekräftar önskat läge, aldrig genomförd GPU-drift. Konflikter ger
 409 med säker kod; saknad optional016 ger 503 utan SQL-detaljer.
 
+För produktion krävs också att molnstartens explicita child-env för vidare
+den validerade driftflaggan och exakt samma profilkatalog till spelprocessen.
+En korrekt konfiguration i huvudprocessen räcker inte. Saknad katalog i
+spelprocessen ska neka start; autentisering och fältgränser får inte kringgås.
+
+Sparläge är verifierat först när en färsk ansluten executor har tillämpat
+aktuell revision/operation och `admission.allowed=true` för `baseline`.
+Kall min0-drift får ha `modelReady=false`; det är inget bevis på laddad bank
+i en framtida worker. Av kräver nekad antagning, färsk observerad Av,
+noll aktiva workers/öppna sessioner och ingen kvarstående intern åtgärd.
+Okänt providerutfall behåller reservationen tills det kan avstämmas.
+
 API:t är avstängt utan server-opt-in/profilkonfiguration enligt
 [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 `moving-drift-executor.mjs` kopplar endast Av/Sparläge till en befintlig,
@@ -742,8 +754,8 @@ workerinställning eller extern tjänst ändrades i denna implementation.
 ### Verifierad zip-export och minsta integrationsförslag, 16 oktober 2026
 
 **Aktuell inriktning:** Jakob vill återanvända Emils teknik med egna filmer
-från `main`, inte koppla in Emils färdiga avatarbanker. Han har därefter bett
-om en liten lokal `lipsync-test` i den separata arbetskopian. Skrivbordskopiering
+från `main`, inte koppla in Emils färdiga avatarbanker. Den daterade export-
+granskningen och dess jämförelseunderlag bevaras. Skrivbordskopiering
 är uttryckligen uppskjuten. QA, produktionskoppling och läppsynkaktivering
 är fortsatt utanför leveransen; Admin-agentens checkout är orörd.
 
@@ -807,49 +819,18 @@ Den historiska kopplingen till själva bankbygget är fortfarande Emils uppgift;
 Paow byggdes enligt honom före första commit av `paketera.py`. Inget av dessa
 klipp eller bankbundna testdata importeras till produkten eller editorn.
 
-**Lokal editor:** kör `node lipsync-test/server.mjs` från denna arbetskopia
-med repots Node 24.21.0. `--check` listar fryst main-SHA, antal och totalstorlek
-utan serverstart. Visaren binds enbart till `127.0.0.1` på ledig port och
-skriver sin sessionsadress; Ctrl+C stoppar den. Det är en läsande filmvisare,
-inte en extra spel-/Lab-server. Inga env-filer, providers eller databaser laddas.
+Den fristående lokala Git-filmvisaren är pensionerad. Aktuella registrerade
+original granskas i **Admin → Klippkarta**, med rätt dealer och situation.
+Original, ZIP-proveniens, bankmanifest och exakta acceptanskvitton ovan
+bevaras; den äldre filmvisaren gav ingen produktions- eller läppsynkacceptans.
+Tidigare tillfälliga localhost-länkar till visaren används inte längre.
 
-Filmvalet läses vid start ur `origin/main` och byte levereras ur exakt Git-blob,
-inte ändrade arbetsfiler. Den kontrollerade main-versionen har 139 filmer
-(284 809 677 byte) inom produktens media-/publicmappar, högst 12 MB styck.
-Ingen parallell katalog eller mediekopia sparas. Sökning/samlingsfilter,
-uppspelning, valbara tidssteg och lokal original/resultat-jämförelse ingår.
-Resultat väljs som lokal fil och laddas inte upp; byte av original rensar den
-kopplingen. Stegen är inte verifierade bildruteindex och jämförelsen är inte
-synkroniserad runtimeacceptans. Packade färg-/maskfilmer visas som lagrade.
-Ingen ny läppsynk genereras och inget godkännandekvitto skrivs.
-
-Main har inga Paow/Dragan-tagningar i den incheckade mediekatalogen; endast
-Dragan-klippet för lobbyn ingår. Studio/Blob-filer måste väljas via befintligt
-register/publiceringspaket, inte fyllas ut från Kevins branch eller exporten.
-
-**Nästa tekniska steg:** förbered en egen avatarbank från exakt valda original,
-med hashbundet källmanifest och rätt fps/geometri. Återanvänd befintlig
-plan/PCM/workertransport, dealer-ID/profilrevision, exakt text/ljud, journal,
-behörighetskontroller, servergenererad podtoken och miljöprofiler. Cartesia
-levererar tal; GPU-workern kan senare köras på verifierad egen RunPod. Render
-behåller spelservern och GitHub koden. Ingen stagingadress/token, ny env-stack,
-reservprovider eller alternativ spelserver införs. Workerns starta/end/avbryt
-måste fortsatt kopplas till accepterat ägarbundet jobb, budget och avbrott.
-
-**Verifierat lokalt:** Node 24.21.0; två isolerade editorprov testar fryst main,
-ändrade arbetsfiler, branch-/hemlighetsisolering, byte ranges, metod och origin/
-host-spärr. Headless Chrome verifierade 139 val, två uppspelningsstarter,
-tidssteg, lokal jämförelse och rensning vid filmbyte utan JS-fel. Lab-build
-passerade före ändringen. Ordinarie fullhook redovisas i PR-kvittot.
-
-**Implementerat:** lokal läsande editor och verifierad exportgranskning.
-**Driftsatt:** inget. **Visuellt accepterad ny läppsynk:** inget.
-Kvar: exakta egna Paow/Dragan-original, verifierat ägande för effektiv
-RunPod/Cartesia-konfiguration, eget pinnat bank-/imagebygge, applikationsadapter,
-mandat för betalda prov, två riktiga sammanhängande talprov per dealer samt
-Jakobs aktiveringsgodkännande. Ingen gammal runtimeväg är verifierat ersatt
-eller kan tas bort. Originalmedia, exakta repliker och tidigare godkännanden
-bevaras. Pod1/pod5 är orörda.
+Aktuellt tal använder den publicerade produktens Neon-/Blob-identiteter,
+serverägd spelkontext, ljudklocka och budgetjournal.
+[Användarflödet](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal)
+och [aktuell handoff](JOHN-HANDOFF.md#post-lipsync5-produktionsprov) anger
+start, stopp och vad som fortfarande behöver provas. Den daterade
+exportgranskningen skapar inga nya provantal eller aktiveringskrav.
 
 ## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
 

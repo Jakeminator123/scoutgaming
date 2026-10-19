@@ -121,6 +121,54 @@ Ny UI-etapp är ännu inte publicerad. Användarstegen uppdateras i
 [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Tidigare demoer i
 C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
+<a id="post-lipsync5-produktionsprov"></a>
+
+## Dragan: produktionsprov — POST-LIPSYNC5, 19 oktober 2026
+
+POST-LIPSYNC5 äger tal-/GPU-provet, HUVUDAGENT6 backend, UI/UX2 Admin och
+MERGE4 granskning/publicering. PR275 är mergad som `087f4fd5`; senare
+dokumentleverans `800073bb` var verifierad på både web och game.
+
+Egen normal autentiserad Admin-GET200, oförändrad Dragan-profil och de
+50 registrerade källreferenserna är återkontrollerade. Den lokala fullbanken
+594432000 byte fullhashades till `5dcf0f32…`; det lilla privata Blob-kvittot
+verifierades separat. Ingen nykalibrering, migration, finansieringsändring
+eller medieomuppladdning har gjorts av POST5.
+
+Första flagga1-publiceringen blev `update_failed`. H6 fann och POST5
+reproducerade providerfritt att molnstartaren tappar de två driftfälten före
+spelprocessen. En minimal forwardingrättning levereras separat; 30s
+beredskap/bankladdning är ett annat, ännu obevisat felspår. Talflaggan
+återställdes till0. Rollback `dep-dbaq0vm1egvs73bm8je0` blev LIVE
+04:46:53 UTC på `800073bb`; publik version återlästes04:47:07 UTC.
+Dragan är fortsatt preparation. Ingen GPU/session eller spelinsats har
+startats av POST5. Fysisk mikrofon och produktionsutdelning återstår.
+
+Budget-ID `dragan-test-20261017`, totalt45 USD, är oförändrat. Senaste
+förkontrollen visade15 historiska reservationer/18 USD, finansierad grant
+20,40 USD och noll öppna sessioner/aktiva GPU. Skyddskalkyl40,750823 USD
+inkluderar behållna reserver och ett nytt2,40-fönster; det är ingen slutfaktura
+och måste kontrolleras färskt före nästa betalda jobb.
+
+Gamla källworktrees försvann under överlämningen; deras exakta revisioner
+är återtagna i två nya rena arbetskopior. Återbundna privata hjälpare,
+rootkvitto-/återgångskontroller och oberoende12-minuters provstopp finns
+utanför Git.14 offlinegrindprov passerar; inget av detta är GPU- eller
+visuell produktionsacceptans. Den befintliga privata checklistan behåller
+exakta sökvägar, hashunderlag och versionsbundna kvitton.
+
+Den pensionerade lokala Git-filmvisaren med fem filer och enbart dess
+CI-/testupptäckt är borttagen. Anroparinventering fann inga produktionsanropare
+och processinventering inga aktiva tittarprocesser. Originalmedia,
+publiceringshistorik, banker och acceptanskvitton bevaras.
+
+Nästa steg är publicerad forwardingrättning, färska drift-/budgetbevis,
+verifierat Av/Sparläge och exakt revisionskontrollerad profilaktivering.
+Därefter ett kort normalt GPU-textprov; utdelning och fysisk mikrofon
+slutverifieras med Jakob när han är tillgänglig.
+[Användarflöde](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
+[tekniska grindar](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+
 <a id="dragan-talstatus"></a>
 
 ## POST-PISYNK4 — talflöde och isolering, 19 oktober 2026
