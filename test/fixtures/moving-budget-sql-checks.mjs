@@ -9,10 +9,10 @@ import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 // Exercise the actual immutable 014 DDL before 015, then roll back everything so
 // the normal migration runner independently verifies all ledger fingerprints.
 export async function runMovingBudgetMigrationSqlChecks({pool}) {
-  const migrations=await loadStudioMigrations(),client=await pool.connect();
+  const migrations=await loadStudioMigrations(),historical=migrations.filter(row=>row.version<'015'),client=await pool.connect();
   try {
     await client.query('BEGIN');
-    for(const migration of migrations.filter(row=>row.version<'015'))await client.query(migration.sql);
+    for(const migration of historical)await client.query(migration.sql);
     const checks=()=>client.query(`SELECT c.relname AS table_name,co.conname AS name,co.convalidated AS validated,
       pg_get_constraintdef(co.oid,true) AS definition FROM pg_constraint co JOIN pg_class c ON c.oid=co.conrelid
       JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='croupier_studio'
@@ -27,8 +27,9 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       VALUES('isolated-capacity','qa','existing-grant',$1,10800000,13200000,10800000,'{}',1)`,[randomUUID()]);
     const snapshot=async()=>{
       const data={};
-      for(const table of migrations.flatMap(row=>row.tables)) {
-        // Identifiers come only from the reviewed fixed migration manifest.
+      for(const table of historical.flatMap(row=>row.tables)) {
+        // Only the tables installed in this historical fixture: 015 adds no tables.
+        // Later optional migrations must not leak into the 014-to-015 data proof.
         data[table]=(await client.query(`SELECT to_jsonb(t) AS row FROM croupier_studio.${table} t ORDER BY to_jsonb(t)::text`)).rows;
       }
       return data;

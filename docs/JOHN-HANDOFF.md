@@ -8,8 +8,11 @@ UIUX äger Admin-vyn och POST-PISYNK4 tal-/textflödet. Kontraktet skiljer
 budgetunderlag, stopp och tömning före profilbyte. SQL016 är deployment-optional.
 Verifierat: 95 fokuserade offlineprov samt isolerad PostgreSQL med samtidiga
 kommandon, miljöisolering, constraints och återstart. Inga GPU-/produktionsanrop.
-PR268:s CI hittade två saknade testregistreringar; båda ingår nu i
-fullregressionens databasgrupp och orphan-kontrollen passerar. Ny CI krävs.
+PR268:s CI-fixar registrerar båda driftproven och uppdaterar bundleprovet för
+valfri016. Historiska 014→015-provet inventerar bara sina installerade tabeller;
+016 läggs inte till där. Verifierat efter fix: 56 fokuserade prov och fem
+SQL-/omstartskontroller inklusive historik/rollback. Proxyfilens 12 prov passerar
+orörda; inget bekräftat proxyfel. Orphan-kontrollen är grön. Ny full CI krävs.
 **Ej driftklart:** ingen HTTP-/providerkoppling eller periodisk exekverare.
 Varm drift kräver oberoende avstängning, faktisk kostnadsreservation och exakt
 förberedelseattestering; `nextAction` är bara en plan. Befintlig min0/max1-admission

@@ -191,17 +191,23 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     if (movingDriftOnly) {
       const {loadStudioMigrations,planStudioMigrations,applyStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
       const driftSources = ['packages/presentation/contracts/moving-drift.mjs','services/game/moving-drift-controller.mjs',
-        'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
+        'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','test/fixtures/moving-budget-sql-checks.mjs',
+        'tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
         ...(await loadStudioMigrations()).map(row=>'ops/neon-studio/'+row.file)];
       const sourceDigest = async () => createHash('sha256').update((await Promise.all(driftSources.map(file=>readFile(join(repository,file))))).map(bytes=>createHash('sha256').update(bytes).digest('hex')).join('\n')).digest('hex');
       const before = await sourceDigest();
-      const target = (await planStudioMigrations({pool})).target;
-      await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
+      const initial = await planStudioMigrations({pool});
+      if (initial.schemaPresent) throw new Error('isolated_drift_fixture_not_empty');
+      const {runMovingBudgetMigrationSqlChecks} = await import('../test/fixtures/moving-budget-sql-checks.mjs');
+      await runMovingBudgetMigrationSqlChecks({pool});
+      if (JSON.stringify(await planStudioMigrations({pool})) !== JSON.stringify(initial)) throw new Error('isolated_drift_historical_fixture_not_rolled_back');
+      await applyStudioMigrations({pool,expectedTarget:initial.target,confirm:true});
       const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
       const drift = await runMovingDriftPostgresChecks({pool,restart}); pool = drift.pool;
       if (await sourceDigest() !== before) throw new Error('isolated_qa_sources_changed_rerun_required');
-      console.log(JSON.stringify({acceptance:'isolated-moving-drift-sql-restart',sourceDigest:before,checks:drift.checks}));
-      return {integrationChecks:drift.checks};
+      const integrationChecks = ['drift-historical015-rollback',...drift.checks];
+      console.log(JSON.stringify({acceptance:'isolated-moving-drift-sql-restart',sourceDigest:before,checks:integrationChecks}));
+      return {integrationChecks};
     }
     const sql = (await readFile(join(repository, 'ops/neon-game/product-schema.sql'), 'utf8')).replace(/\r\n/g, '\n');
     await pool.query(sql);
