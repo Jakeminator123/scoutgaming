@@ -71,8 +71,10 @@ och 16:35:58–16:36:14). Observatören nekade varje tick i fönstret. PR297
 ett upptaget jobb (dränering, aldrig kapacitet, aldrig Off); två olistade,
 unhealthy/throttled eller jobb utan pod nekas fortfarande. Praktiskt: en fråga
 cirka 60–80 s efter föregående svar träffade fönstret; efter PR297 ska den
-i stället vänta på ledig plats. CI på `main` grönt för `d9c27979`; Render-
-bygget pågick när detta skrevs (~17:40 UTC) och är inte verifierat live.
+i stället vänta på ledig plats. Render blev LIVE på `d9c27979` 17:37:15 UTC.
+Tre spelade händer 17:36–17:43 UTC (vinst, förlust, bust) körde filmade
+giv/hit-klipp utan presentationsfel; inget nytt talprov har ännu körts på den
+rättade observatören, så spegelfönstret är rättat i test men inte belagt live.
 Jakobs eget prov 17:33 UTC (”?” → ”What's up, Jakob?”, på kod `25e80444`)
 spelades: `ended`, `completed:true`, 48/48 bildrutor, ström→bild 13,5 s,
 helt förlopp 123 s. Jakob bekräftade i chatten att det fungerade. Kvar för
