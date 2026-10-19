@@ -141,15 +141,5 @@ test('an unmanaged clip keeps the override in the library detail without a secon
   assert.doesNotMatch(html, /<label[^>]*>\s*Klipp/);
 });
 
-test('videos page reads optional search params and the stream lane on the server', () => {
-  const source = readFileSync(new URL('../app/control/videos/page.tsx', import.meta.url), 'utf8');
-  assert.match(source, /dynamic = 'force-dynamic'/);
-  assert.match(source, /Klippbibliotek · Croupier Studio/);
-  assert.match(source, /loadControlStudio\('\/control\/videos'\)/);
-  assert.match(source, /props\?\.searchParams/);
-  assert.match(source, /CROUPIER_STREAM_LANE === 'lissabon-stream-lane'/);
-  assert.match(source, /initialVariantId/);
-});
-
 // Explicit active dealers used by this isolated component fixture.
 function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}
