@@ -38,6 +38,10 @@ textfråga och lämna mikrofonen avstängd. Kontrollera rätt röst, hörbart
 ljud, munrörelser och återgång till grundloopen innan mikrofonprovet.
 Ett eget spelprov görs i samma spelvy; saldo och kort hanteras av servern.
 
+Admin-provspel använder ett separat testsaldo och har chatt/genererat tal
+avstängda. Den ordinarie spelvyn använder den inloggade spelarprofilens saldo;
+rummets testnamn skapar ingen separat plånbok.
+
 När textprovet fungerar kan spelaren slå på mikrofonen och lämna det
 vanliga webbläsartillståndet. Kontrollera att transkriptionen behåller talets
 språk, att svaret följer dealerns språkpolicy och att rätt röst/video spelas upp.

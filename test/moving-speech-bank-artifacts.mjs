@@ -1,3 +1,4 @@
+import {movingBankDiagnostic,readMovingBankDiagnostic} from '../packages/presentation/contracts/moving-bank-diagnostics.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMovingSpeechSourceSet} from '../services/game/moving-speech-bank.mjs';
@@ -119,4 +120,33 @@ test('bank transfer survives the measured cold start, then expires or revokes wi
   assert.equal((await service.response(new Request(issued.descriptor.receipt.url))).status,403);assert.equal(reads,1);
   const next=service.issue({signal:abort.signal,authorize:async()=>{}});abort.abort();
   assert.equal((await service.response(new Request(next.descriptor.archive.url))).status,403);
+});
+
+test('bank denial keeps authorization enforced and emits only finite internal metadata',async()=>{
+ const controller=new AbortController();let reads=0;
+ const service=createMovingBankDownloads({origin:'https://game.example',bank,read:async()=>{reads++;return new Response('private');}});
+ const issued=service.issue({signal:controller.signal,authorize:async()=>{throw Error('drift_not_admitting');}});
+ const denied=await service.response(new Request(issued.descriptor.receipt.url));
+ assert.equal(denied.status,403);assert.equal(reads,0);
+ assert.equal(denied.headers.get('x-croupier-moving-bank-diagnostic'),'authorization:drift_not_admitting');
+ const unknown=await service.response(new Request(issued.descriptor.receipt.url.replace(/bank\/[a-f0-9]{64}/,'bank/'+ 'e'.repeat(64))));
+ assert.equal(unknown.status,403);assert.equal(unknown.headers.get('x-croupier-moving-bank-diagnostic'),null);
+ controller.abort();service.close();
+});
+test('bank storage exceptions never expose their message',async()=>{
+ const controller=new AbortController();
+ const service=createMovingBankDownloads({origin:'https://game.example',bank,read:async()=>{throw Error('private-url?token=private');}});
+ const issued=service.issue({signal:controller.signal,authorize:async()=>{}});
+ const denied=await service.response(new Request(issued.descriptor.receipt.url));
+ assert.equal(denied.status,403);assert.equal(denied.headers.get('x-croupier-moving-bank-diagnostic'),'read:rejected');
+ assert.equal(await denied.text(),'');controller.abort();service.close();
+});
+
+test('internal bank diagnostics retain only finite codes and stages',()=>{
+ assert.deepEqual(readMovingBankDiagnostic(movingBankDiagnostic('authorization',Error('stale_chat_session'))),{stage:'authorization',code:'stale_chat_session'});
+ assert.equal(movingBankDiagnostic('read',Object.assign(Error('private-token'),{code:'drift_not_admitting'})),'read:drift_not_admitting');
+ assert.equal(movingBankDiagnostic('read',new DOMException('private','AbortError')),'read:aborted');
+ for(const message of ['private-token','https://private.example/token','stale_chat_session?token=private'])assert.equal(movingBankDiagnostic('authorization',Error(message)),'authorization:rejected');
+ assert.equal(movingBankDiagnostic('read',{get code(){throw Error('private');}}),'read:rejected');
+ for(const value of [null,['authorization:rejected'],'authorization:private','private:rejected','authorization:rejected:private','read:rejected\r\nprivate'])assert.equal(readMovingBankDiagnostic(value),null);
 });
