@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMovingDriftController} from '../services/game/moving-drift-controller.mjs';
 import {createMovingDriftExecutor} from '../services/game/moving-drift-executor.mjs';
+import {createMovingDriftObserver} from '../services/game/moving-drift-observer.mjs';
+import {summarizeMovingWorkerHealth} from '../services/game/moving-speech-runpod.mjs';
+import {movingCapacityFixture} from './fixtures/moving-capacity.mjs';
 
 const profile={id:'base',label:'Bas',endpointId:'endpoint-base',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)};
 function fixture(){
@@ -178,4 +181,36 @@ test('connected expires with the provider observation even when the SQL heartbea
   f.advance(1001);
   const status=await f.controller.status();
   assert.equal(status.capabilities.connected,false);assert.equal(status.observed.status,'unknown');
+});
+
+
+test('corroborated cache initialization cannot revoke a pinned running session while new admission stays blocked',async()=>{
+  const time=1800000000000,p={...profile,endpointId:'endpointfixture'};let row=null,open=[];
+  const store={async transact(work){const result=work(structuredClone(row),time);row=structuredClone(result.state);return structuredClone(result.value);}};
+  const controller=createMovingDriftController({store,profiles:[p],capabilities:{connected:true,requireExecutor:true}});
+  let proof=movingCapacityFixture({warm:false,now:time});
+  const observer=createMovingDriftObserver({profile:p,now:()=>time,provider:{
+    release:async()=>structuredClone(proof.release),workerState:async()=>summarizeMovingWorkerHealth(proof.health)}});
+  const executor=createMovingDriftExecutor({controller,profile:p,observer,holderId:'owned-server',
+    sessions:{reconcile:async()=>({recovered:[],unresolved:[]})},cancelActive:async()=>{},readOpenSessions:async()=>open});
+  await executor.tick();await controller.command(saving(await controller.status()));
+  let status=await executor.tick();
+  const admission=await controller.authorizeAdmission({revision:status.revision,profileId:p.id});
+  const owned={sessionId:'owned-session',endpointId:p.endpointId,admission};
+  await controller.guardAdmission({...owned,phase:'reserve'});
+  await controller.guardAdmission({...owned,phase:'dispatch'});
+  open=[{sessionId:owned.sessionId}];
+  proof=movingCapacityFixture({warm:true,now:time});proof.health.jobs.inProgress=1;
+  proof.health.workers.initializing=1;
+  proof.release.workers.workers.push({state:'scaled-down',image:proof.release.expectedImage,version:3,isStale:false});
+  status=await executor.tick();
+  assert.equal(status.capabilities.connected,true);assert.equal(status.observed.status,'loading');
+  assert.equal(status.admission.allowed,false);
+  await assert.rejects(controller.authorizeAdmission({revision:status.revision,profileId:p.id}),rejects('drift_not_admitting'));
+  await assert.rejects(controller.guardAdmission({...owned,phase:'reserve'}),rejects('drift_not_admitting'));
+  await controller.guardAdmission({...owned,phase:'current'});
+  await controller.guardAdmission({...owned,phase:'dispatch'});
+  await controller.command(off(status));
+  for(const phase of ['current','dispatch'])await assert.rejects(controller.guardAdmission({...owned,phase}),rejects('drift_not_admitting'));
+  await executor.close();
 });
