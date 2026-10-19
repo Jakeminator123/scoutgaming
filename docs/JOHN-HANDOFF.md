@@ -52,53 +52,49 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 
 ## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
-[PR267](https://github.com/Jakeminator123/scoutgaming/pull/267) är granskad och
-publicerad från `ab939f15` via main `05facce2`. Egen publik versionskontroll och
-capability21 gav HTTP200 och `blackjackAnchors:v1`. Den senare main `819a88ff`
-är också publicerad enligt MERGE3; det är inget nytt mediakvitto.
+Klippkartans scenreglage från [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
+och bredare scenpanel/driftväljare från
+[PR274](https://github.com/Jakeminator123/scoutgaming/pull/274) är publicerade.
+Tidigare UI/UX-agent livekontrollerade flytt/följval utan produktionssparning;
+hans 92 UI-/transportprov och SQL-/HTTPS-underlag är tidigare evidens.
+Scen & lager skriver vald gemensam mall med projektrevision och berörda rum;
+rummets egna val använder fortsatt den rumsbundna editorn/writern.
 
-`/admin/clips` → **Scen & lager** redigerar vald gemensam mall. Dealer och bord
-flyttas separat eller tillsammans; kort och marker följer bord, dealer eller
-ligger still i scenen. Ankarbyte bevarar placeringen; punkt/grupp kan dras,
-finjusteras och återställas till verklig sparad bas. Mobil/desktop och varje
-borddesign har egna värden. Mall/spel och rumskontext hålls isär. Sparning
-använder projektrevision och visar berörda rum; publicerade paket ändras inte.
-Capability21 skyddar ankarpublicering även under transaktion. Filmspår,
-källrutor, tal, serverkort och saldo är orörda; ingen SQL-migration behövs.
-Se [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md#oberoende-kort--och-markerankare-19-oktober-2026).
+[PR277](https://github.com/Jakeminator123/scoutgaming/pull/277), senast
+7cefa6fd, granskas av MERGE4. Admin-startsida och desktop-/mobilmeny får
+**Skapande** och **Verksamhet** enligt produktmodellen. En gemensam lista
+håller namn/länkar samstämmiga; System och tidigare arbetsytor finns kvar.
+61 navigations-/åtkomstprov, typer/klientbygge och isolerad CSS-bredd
+1280/960/390 px är verifierade. CI:s två gamla testladdare är rättade mot
+verklig navigation; hela Admin-gruppen passerar lokalt, 338 prov i 13 grupper
+utan skips. MERGE4 håller main-publicering under POST:s avtalade provfönster.
 
-Den separata etappen på `codex/admin-drift-ui`, baserad på main `243f0e74`,
-gör scenpanelen bredare och låter förhandsvisning/reglage anpassas efter
-panelens verkliga bredd. `/admin/drift` får lägen, profilval och tidsval mot
-HUVUDAGENT5:s publika, revisionsstyrda DTO från mergad PR270. Sparat önskemål
-visas separat från färsk observerad drift; okänd GPU/kostnad uppfinns inte.
-Sessionbyte, dubbelklick, svarsförlust, gammal status och revisionskonflikt
-hanteras utan automatisk omsändning. Färskheten räknar hela GET-/POST-tiden;
-20 sekunders fördröjning är rött/grönt-verifierad för båda svarsvägarna.
-Serverns capabilities styr vilka lägen
-som går att välja. UI:t öppnar inga egna provider- eller GPU-anslutningar.
+Nästa separata etapp finns på codex/admin-rooms-ui2, från main 087f4fd5:
+/admin/rooms visar rumskort för exakt valt aktivt bolag, med spel, sparad
+rumsstatus och publiceringsstatus. Rumsdetaljen visar valt rum och en tydlig
+väg till befintlig publiceringsgranskning. Kortbyte använder samma
+selectContext, historik-/utkastskydd och exakta bolag/rum/mall/spel-kontext
+som rumsväljaren. Rum från andra bolag och arkiverade rum visas inte i listan.
+Publicerade rum behåller samma PartnerAppearanceLoader, API och callbacks.
+Delad mall ligger kvar separat med påverkanstext. På mobil används den
+kompakta befintliga rumsväljaren; breda vyer får listan intill detaljytan.
 
-Verifierat för UI-etappen: 92 riktade UI-/transportprov, Studio-typkontroll,
-Admin/lobby-typkontroller och klientbygge. Befintliga CSS-composes-varningar
-kvarstår. Isolerat HTTP-webbprov på c346e606 använde riktiga Admin-API-/transportmoduler
-med syntetisk controller och minnesdata: Sparläge → observerat Redo → Av
-→ bekräftat Av, inga verkliga provideranrop. Scenförhandsvisningen mättes till
-431 px vid 1333 px faktisk webbläsarbredd; panelerna hade ingen egen horisontell
-överrullning även vid 250 px. Detta är inte produktions- eller GPU-acceptans.
+Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips,
+inklusive nytt kortprov för bolagsgräns, avvisat osparat byte, pågående
+operation och exakt accepterad kontext. Admin/lobby-typer och klientbygge
+passerar; befintliga CSS-composes-varningar kvarstår. Verkligt klientbygge
+med syntetiskt GET-katalogsvar kontrollerades vid CSS-bredd 1600, 1280 och
+390 px utan horisontell sidöverrullning. Kort- och bolagsbyte visar rätt rum;
+samtliga API-skrivningar är blockerade i förhandsvisningen. Browserbilderna
+verifierar utkast-/översiktslayout, inte produktionsdata eller medieuppspelning.
 
-PR267:s tidigare SQL-/HTTPS-/omstartsprov och gröna slut-CI39187800963 är
-oförändrat underlag. Eget liveprov verifierade separat/gemensam flytt,
-retarget utan hopp och scenfasta marker. Lokala provändringar kastades;
-ingen produktionssparning, publiceringsändring eller talaktivering gjordes.
-
-Kvar: bredare visuell Admin-omarbetning, PNG-idle, generell chattregeleditor
-och var åttonde utdelning per box. HUVUDAGENT5 äger verklig driftexekverare;
-POST-PISYNK4 äger tal/OpenClaw och saknade publicerade spelsvar. Kontrollplanets
-`connected:false` är inte fungerande GPU-drift. [Användarsteg](../apps/studio/docs/README.md).
-Privata demoer/logg ligger kvar i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`.
-Egna QA-processer, sessionslås och temporärskript är städade; aktiva beroenden
-behålls. Senaste säkerhetsläsning har noll öppna incidenter i källan, men
-platsmetadata är partiell och historisk GitGuardian-skanning `too_large`.
+H6:s tidigare 503→200-kvitto och MERGE4:s publicerade executor 087f4fd5 är
+tillskriven evidens. POST-LIPSYNC5 äger faktisk tal-/GPU-aktivering.
+Kvar: vidare layout i övriga arbetsytor, PNG-idle, generell chattregeleditor,
+var åttonde utdelning per box och enhetliga lagerlås. Produktmodellen styrs
+enbart av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md);
+[användarstegen](../apps/studio/docs/README.md) uppdateras i samma guider.
+Privata demoer i C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 <a id="dragan-talstatus"></a>
 

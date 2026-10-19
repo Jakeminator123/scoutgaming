@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, Building2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import styles from './registered-studio.module.css';
 import {RegisteredResourceLifecycle} from './registered-resource-lifecycle';
 import {operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {PartnerAppearanceLoader} from '../../../../components/partner-appearance-loader.mjs';
@@ -98,7 +99,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const dealerName = (id: string) => data?.dealers.find(row => row.id === id)?.name ?? id;
   const editHref = workspaceLink('/admin/clips', operator, selectedRoom) + '&panel=layers';
   return <>
-    <nav aria-label="Registrerad struktur" className="flex flex-wrap items-center gap-3 border-b border-sg-line bg-sg-panel/60 px-6 py-3 text-xs">
+    <nav aria-label="Registrerad struktur" className={cn("flex flex-wrap items-center gap-3 border-b border-sg-line bg-sg-panel/60 px-6 py-3 text-xs",roomView&&styles.context)}>
       <label className="flex items-center gap-2 text-sg-muted">Spelbolag
         <select aria-label="Välj spelbolag" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={operator?.id ?? ''} disabled={!data?.operators.length||lifecycleBusy||roomBusy}
           onChange={event => selectContext({operator:event.target.value})}>
@@ -120,9 +121,9 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
       </label>
       <a href="/lobby" className={cn(linkClass, 'ml-auto')}>Öppna spellobbyn <ArrowUpRight size={13} /></a>
     </nav>
-    <section className="flex flex-1 flex-col gap-6 px-6 py-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-sg-lime">{'// Studio · Register'}</p>
+    <section className={cn("flex flex-1 flex-col gap-6 px-6 py-5",roomView&&styles.roomPage)}>
+      <header className={cn("flex flex-wrap items-start justify-between gap-4",roomView&&styles.pageHeader)}>
+        <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-sg-lime">{roomView?'Verksamhet':'Spelbolag'}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{roomView ? 'Spelbolag & rum' : title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-sg-muted">{roomView ? 'Välj ett rum och se bakgrund, dealer och bord tillsammans. Rumsval gäller bara det valda rummet.' : 'Registrerade spelbolag och rum. Team och publicering nås via bolagets länkar.'}</p>
         </div>
@@ -145,16 +146,30 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
           {path === '/admin/admin/operators' ? <ul className="grid gap-3 sm:grid-cols-2">
             {!data.operators.length && <li className="text-sm text-sg-muted">Inga spelbolag är registrerade.</li>}
             {data.operators.map(row => <li key={row.id} className={cn(panelClass, 'p-4')}><Building2 size={20} className="mb-3 text-sg-lime" /><h2 className="font-semibold">{row.name}</h2><p className="my-2 text-xs text-sg-muted">{row.archivedAt?'I papperskorgen':labels[row.status] ?? row.status} · {data.rooms.filter(room => room.operatorId === row.id).length} rum · {row.packageRevision === null ? 'Inget publicerat paket' : `Paket ${row.packageRevision}`}</p><div className="mt-4 flex flex-wrap gap-4"><a className={linkClass} href={workspaceLink('/admin/companies', row)}>Bolag & team ↗</a>{row.status === 'active' && <a className={linkClass} href={'/partner/' + encodeURIComponent(row.slug)}>Spelbolagsportal ↗</a>}</div></li>)}
-          </ul> : roomView ? <div className="flex flex-col gap-5">
-            <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-semibold">{selectedRoom?.name ?? operator?.name ?? 'Välj ett spelbolag'}</h2>{selectedRoom&&<p className="mt-1 text-sm text-sg-muted">{labels[selectedRoom.game]??selectedRoom.game} · {labels[selectedRoom.state]??selectedRoom.state} · {selectedRoom.published?'Publicerat rum':'Inte publicerat'}</p>}</div>{operator&&<div className="flex flex-wrap gap-4"><a href={workspaceLink('/admin/companies',operator)} className={linkClass}>Bolag & team</a><a href={workspaceLink('/admin/publication',operator,selectedRoom)} className={linkClass}>Skapa/publicera rum ↗</a></div>}</div>
-            {roomId&&!selectedRoom&&<p role="alert">Det valda rummet finns inte hos detta aktiva spelbolag. Välj rum uttryckligen för att fortsätta.</p>}
-            {selectedRoom&&operator&&<>
-              {disabled&&<p role="status">Spara det pågående Studio-arbetet innan du ändrar rummets val.</p>}
-              {selectedRoom.published ? <PartnerAppearanceLoader key={operator.id+':'+selectedRoom.id+':'+refresh} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout disabled={disabled||lifecycleBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onSaved={()=>onChanged?.()}/>
-                : <p role="status">Rummet saknar ett publicerat paket. Förbered lagren i den delade mallen och granska sedan rummets första publicering.</p>}
-              <details className={cn(panelClass,'p-4')}><summary className="cursor-pointer font-semibold">Gemensam mall och tillåtna alternativ</summary><p className="my-2 text-sm text-sg-muted">Malländringar kan beröra flera rum. Berörda rum visas i mallredigeraren innan du ändrar eller sparar.</p><div className="flex flex-wrap gap-4"><a href={editHref} className={linkClass}>Öppna gemensam mall för {selectedRoom.name} ↗</a><a href="/admin/assets" className={linkClass}>Bord & bakgrunder · bibliotek</a></div></details>
-            </>}
-            {!operatorRooms.length&&operator&&<p className="text-sm text-sg-muted">Inga rum är registrerade för det valda spelbolaget.</p>}
+          </ul> : roomView ? <div className={styles.workspace}>
+            <aside className={styles.roomList} aria-labelledby="registered-rooms-title">
+              <header><div><p>{operator?.name??'Välj ett spelbolag'}</p><h2 id="registered-rooms-title">Rum</h2></div><span className={styles.count} aria-label={operatorRooms.length+' rum'}>{operatorRooms.length}</span></header>
+              {operator&&operatorRooms.length>0?<ul className={styles.rooms}>{operatorRooms.map(row=><li key={row.id}>
+                <button type="button" aria-label={'Öppna rum '+row.name} aria-pressed={selectedRoom?.id===row.id} disabled={roomBusy||lifecycleBusy}
+                  onClick={()=>selectContext({operator:operator.id,table:row.id,composition:row.compositionId,game:row.game})}>
+                  <span className={styles.cardTop}><strong>{row.name}</strong><ArrowUpRight size={16} aria-hidden="true"/></span>
+                  <span className={styles.cardGame}>{labels[row.game]??row.game}</span>
+                  <span className={styles.cardBottom}><span className={styles.state} data-state={row.state}>{labels[row.state]??row.state}</span><span>{row.published?'Publicerat':'Inte publicerat'}</span></span>
+                </button>
+              </li>)}</ul>:<p className={styles.empty}>{operator?'Inga rum är registrerade för det valda spelbolaget.':'Välj ett aktivt spelbolag för att se dess rum.'}</p>}
+            </aside>
+            <section className={styles.roomDetail} aria-labelledby="registered-room-title">
+              <header className={styles.detailHeader}><div><p className={styles.detailEyebrow}>{selectedRoom?'Valt rum':'Rumsval'}</p><h2 id="registered-room-title">{selectedRoom?.name??operator?.name??'Välj ett spelbolag'}</h2>{selectedRoom&&<p>{labels[selectedRoom.game]??selectedRoom.game} · {labels[selectedRoom.state]??selectedRoom.state} · {selectedRoom.published?'Publicerat rum':'Inte publicerat'}</p>}</div>
+                {operator&&<div className={styles.detailActions}><a href={workspaceLink('/admin/companies',operator)} className={linkClass}>Bolag & team</a><a href={workspaceLink('/admin/publication',operator,selectedRoom)} className="studio-button primary">{selectedRoom?'Granska publicering':'Skapa rum'} <ArrowUpRight size={14} aria-hidden="true"/></a></div>}
+              </header>
+              {roomId&&!selectedRoom&&<p role="alert" className={styles.message}>Det valda rummet finns inte hos detta aktiva spelbolag. Välj rum uttryckligen för att fortsätta.</p>}
+              {selectedRoom&&operator&&<>
+                {disabled&&<p role="status" className={styles.message}>Spara det pågående Studio-arbetet innan du ändrar rummets val.</p>}
+                {selectedRoom.published ? <PartnerAppearanceLoader key={operator.id+':'+selectedRoom.id+':'+refresh} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout disabled={disabled||lifecycleBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onSaved={()=>onChanged?.()}/>
+                  : <div className={styles.unpublished} role="status"><h3>Förbered rummets första publicering</h3><p>Rummet saknar ett publicerat paket. Förbered lagren i den delade mallen och granska sedan rummets första publicering.</p></div>}
+                <details className={cn(panelClass,styles.sharedTemplate)}><summary>Gemensam mall och tillåtna alternativ</summary><p>Malländringar kan beröra flera rum. Berörda rum visas i mallredigeraren innan du ändrar eller sparar.</p><div><a href={editHref} className={linkClass}>Öppna gemensam mall för {selectedRoom.name} ↗</a><a href="/admin/assets" className={linkClass}>Bord & bakgrunder · bibliotek</a></div></details>
+              </>}
+            </section>
           </div> : null}
           {selectedRoom && !roomView && <p className="text-xs text-sg-muted">Valt rum: {selectedRoom.name} · {selectedRoom.dealerIds.map(dealerName).join(', ') || 'Inga dealers kopplade'}</p>}
           {selectedRoom?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Granska materialets katalogtagg och spelets bord före nästa publicering.</p>}
