@@ -1,5 +1,34 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: varför svaret visas som text — läsdiagnos 19 oktober 2026
+
+Jakob såg ”Dragans röstvideo saknas. Svaret visas som text.” i produktion
+och tolkade det som en saknad inspelad video. Orsaken är en annan: genererat
+tal skickas bara när dealerns `speechProfile.state` är `enabled` i Studio och
+Render kör `CROUPIER_MOVING_SPEECH_ENABLED=1` (`services/game/server.mjs`
+rad 1141–1171, `generated-speech-chat.mjs`). Läst i Admin 19 oktober ~12:00 UTC:
+Dragans profil står i `preparation`, Drift visar önskat Av (revision 12),
+`connected:false`/`drift_runtime_unavailable` och senaste observation från
+POST-LIPSYNC5:s closeout 10:43 UTC. Det är provprotokollets avsedda slutläge,
+inte en regression. Klienttexten är ändrad till ”Genererat tal är inte aktiverat
+för Dragan just nu. Svaret visas som text.”; `test/chat-decision-player.mjs`
+passerar 14/14. Inga serverkontrakt, grindar eller prov ändrades.
+
+Klippinventering ur registret (56 Dragan-filer, alla tillgängliga): 35 Kevin-
+tagningar (plats 1–7, öppet/dolt, vändning med i/iv/v/base), 10 äldre `deal_pos*`,
+5 grundloopar, båda skövergångarna (`in_vila_till_redo`, `ut_redo_till_vila`)
+och fyra inspelade repliker (goodluck, insurance, double, win). I projektet är
+goodluck/insurance/double bundna; `win_1` är uppladdad men obunden och övriga
+13 repliker, inklusive välkomsthälsningen, saknar film. Skövergångar och
+reaktionsfack spelas inte av spelaren ännu oavsett uppladdning. Rummet
+`Dragan · dynamiskt taltest` är öppet på paket 4 (publicerat 18 oktober
+14:31:54) utan väntande utkast. Radera inte dealern/klippen: bankens 50 källor
+hashbinds i `server.mjs` rad 1420–1427 och ger `moving_speech_bank_source_missing`.
+Papperskorgen innehåller `paow-kevin` (11 arkiverade filer), `anna-jonsson` (2)
+och `adminprov-2026-10-13`; permanent radering är ett separat beslut.
+`origin/kevin-staging` är inte mergad i main (190 commits utanför); Kevins
+bidrag i main är de registrerade källklippen från PR124/128.
+
 ## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
 
 Den avslutade registerflyttens `prepareLegacyStudioSnapshot` hade endast

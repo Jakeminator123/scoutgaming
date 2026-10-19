@@ -1882,7 +1882,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
       if(dealSpeech&&input.value.trim()===message)input.value='';
       chatPlaybackDiagnostic.finish(requestId, decision.kind === 'silence' ? 'silent' : 'unverified');
       setChatStatus(decision.kind === 'silence' ? `${DEALER.name} valde att inte svara på det meddelandet.`
-        : pendingChatReplies.get(requestId)?.voiceUnavailable ? `${DEALER.name}s röstvideo saknas. Svaret visas som text.` : '');
+        : pendingChatReplies.get(requestId)?.voiceUnavailable ? `Genererat tal är inte aktiverat för ${DEALER.name} just nu. Svaret visas som text.` : '');
     }
     return receipt.status==='completed';
   } catch (error) {
