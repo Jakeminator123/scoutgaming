@@ -81,6 +81,23 @@ Sista giltiga ljud är 582 999 samples (24,291625 s), med oförändrad avrundnin
 Nästa sample avbryter insamlingen före render-dispatch; redan gjord TTS eller
 GPU-förberedelse är inte kostnadsfri och ingen tidigare bildacceptans utökas.
 
+Spelaren lämnar begränsade klienttider i den tillfälliga `playbackReceipt`:
+socketöppning, första hashverifierade PCM, komplett svar (`reply_ready_ms`),
+ljudets `play()` och första renderade talruta. Tiderna räknas från spelarens
+socketanslutningsförsök; de omfattar inte tidigare Director-/TTS-förberedelse.
+`reply_ready_ms` mäter mottaget och validerat `done`, inte GPU-rendering separat
+från providerfinalisering. Ljudenhetens faktiska hörbara start och visuell
+läppsynk kräver fortfarande ett inspelat/observerat prov. Kvittot innehåller
+varken repliktext, transportticket eller ett visuellt godkännande.
+
+`test/moving-speech-deal-integration.mjs` driver verklig blackjack-commit och
+beständig presentation i ett eget SQLite-minne vidare till talets WebSocket.
+`test/microphone-openclaw-integration.mjs` kopplar mikrofonkontroll, WAV,
+transkriptions-API, Director, NDJSON, röstadapter och moving-runtime i loopback.
+De skyddar kort-/saldobehörighet, isolering, originalspråk och avbrott men
+använder syntetiska enheter, modell, TTS, GPU och mediebytes. De ersätter inte
+ett inspelat prov av den registrerade Dragan-banken och hela livekedjan.
+
 Det finns flera olika former av varm/kall lagring och beräkning:
 
 | Del | Faktiskt beteende |
@@ -2389,7 +2406,8 @@ aktiveringen begär samtycke. Text/bilder visas i en tillfällig logg via
 fem sekunders långtryck, inte i normalvyn.
 
 Webbläsarens lokala talstöd krävs för aktiveringsordet. Produktservern
-använder Whisper `whisper-1` via audio/translations för engelsk text;
+använder Whisper `whisper-1` via `audio/transcriptions` och behåller talets
+originalspråk utan påtvingad översättning eller förvalt inmatningsspråk.
 Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst. Nycklar
 finns enbart på servern. Modell- och
 bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
