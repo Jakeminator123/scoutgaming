@@ -226,49 +226,61 @@ C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 ## Dragan: produktionsprov — POST-LIPSYNC5, 19 oktober 2026
 
-POST-LIPSYNC5 äger tal-/GPU-provet och bank403-diagnosen, HUVUDAGENT6
-backendens terminalövervakning, UI/UX2 Admin och MERGE4 publiceringen.
-PR279:s forwardingrättning är publicerad på web/game `43dfc237`. Talflagga1
-blev LIVE05:26:34 UTC; normal N1 visade färsk ansluten executor. Basprofilens
-kalla Sparläge tillät tal med modelReady=false. Sparläge→Av provades genom
-normal CAS: faktisk Av, blockerad admission, ingen worker, ingen öppen session
-och ingen återstående åtgärd. Exakt Dragan-profil aktiverades därefter med
-färskt verifierat rootkvitto, revisionskontroll och oförändrat övrigt projekt.
+POST-LIPSYNC5 äger produktionsprovet, HUVUDAGENT6 backendrättningen,
+UI/UX2 Admin och MERGE4 granskning/publicering. PR279, PR284 och PR286
+är publicerade på web/game `8d8b7fcd8dc82223bac9f6b3053556e2fbe5a47b`;
+MERGE4 verifierade grön main-CI39209624244 och publik hälsa.
+PR286 ger fasta interna bankfelkoder; headern strippas även från101-svar.
+Auth-, hash-, CAS- och budgetkontroller är bevarade.17riktade beteendeprov
+och den ordinarie hooken passerade; H6/oberoende/Pro fann inga blockerare.
 
-Jakobs vanliga chattprov startade ett journalfört jobb05:31:39 UTC på rätt
-endpoint `zjsdlni6cn8dvo`/template `5dkkc3wolw` och oförändrad image/bank.
-Text visades men inget färdigt ljud/bildresultat verifierades. Providerstatus
-COMPLETED beskriver den avslutade begäran: innehållet var status=failed,
-code=bank_http_rejected. Första felande fas var bankReceiptFetchMs370,343ms;
-bankarkiv, callback och renderade/skickade rutor nåddes inte. Renderloggen
-belägger GET till den tokenbundna bankkvittorutten→40305:31:53 UTC. En separat
-läsning med faktiska Renderinställningar verifierade bankkvittots1045 byte och
-exakta SHA; dess lokala authstub var inte produktionsacceptans.
+Det andra produktionsprovet06:41 UTC använde den vanliga publicerade
+spelvyn, klippval OpenClaw och en enda kort svensk textfråga. Färsk ansluten
+executor, verifierat Av och kallt Sparläge med admission.allowed=true
+kontrollerades före exakt profilaktivering med normal revisionskontroll.
+Röst, referens och övrigt projekt bevarades. Mikrofonen var av; inga insatser,
+DEAL eller walletändringar gjordes av POST.
 
-Normal Av revision4 och verklig tömning verifierades före återgången.
-Profilen återställdes till preparation genom vanlig CAS05:38:11 UTC och
-talflaggan till0; rollback `dep-dbaqpi49v7es739j8i4g` blev LIVE05:39:16 UTC.
-Färsk avstämning05:41:14 UTC visade0aktivaGPU/0öppna sessioner/ingen åtgärd,
-oförändrad grant20,40USD och16historiska reservationer/19,20USD. Ingen
-reservation återbetalades. Skyddskalkyl40,750823USD är inklusive reserver och
-eftersläpande provideruppgifter, ingen slutfaktura. Den nya provperioden ska
-behållas även inför en senare finansieringskontroll. Min0/max1 behölls efter
-Jakobs delegerade beslut; ingen kapacitets- eller finansieringsändring gjordes.
+Jobb `a09da4be-58d6-478d-9d82-f5ba3707dfcb-e1` använde rätt endpoint
+`zjsdlni6cn8dvo`/template `5dkkc3wolw` och oförändrad image/bank.
+Bankkvittot hämtades på1081,707ms; arkivhämtningen nekades efter605,196ms.
+Gatewayloggen06:41:32.169 UTC belägger **authorization / drift_not_admitting,
+HTTP403**. Providerstatus COMPLETED innehöll status=failed,
+code=bank_http_rejected; callback, rendering och synkad uppspelning nåddes
+inte. Klienten avslutade med fel efter16,1s i stället för den tidigare långa
+callbackväntan. PR284:s terminalkontroll fungerar i detta prov.
+Det tidigare provet05:31 föll redan vid bankkvittot; dess403 har inget
+motsvarande exakt authkvitto och ska inte tillskrivas den nya orsaken.
 
-Denna diagnostik gör en giltig bankbegärans nekande kontroll synlig i en intern
-gatewaylogg med enbart fasta fas-/felkoder. Den interna headern strippas;
-tokens, URL:er, råfel och spelaridentiteter loggas inte. Auth-, hash-, CAS-
-och budgetkontroller kvarstår.17riktade bank-/gatewayprov passerar. H6:s
-separata PR284 hanterar den långa väntan när provider avslutar före callback;
-den ersätter inte rättningen av bank403. Synkat ljud/bild, tal under utdelning
-och fysisk mikrofon är ännu inte godkända. Ingen ny GPU-beställning görs utan
-ett nytt avgränsat prov och färska aktuella grindar.
+Normal Av/CAS revision6 kvitterades06:42:15 UTC. Faktisk Av, blockerad
+antagning,0workers,0öppna sessioner och ingen återstående åtgärd verifierades
+före profilens normala CAS-rollback till preparation06:43:08 UTC.
+Flagga0-deploy `dep-dbaro4cs728c739e4o4g` blev LIVE06:44:32 UTC.
+Färsk provider-/SQL-/projektavstämning06:45:36 UTC visade0aktivaGPU,
+0öppna sessioner, ingen åtgärd och preparation. Den oberoende stoppvakten
+avaktiverades med ett kvitto bundet till detta prov och avslutades.
+Deployhållet släpptes. Ingen egen devserver är aktiv.
 
-PR280 pensionerade den inventerade lokala Git-filmvisaren och dess enskilda
-testkopplingar. Originalmedia, de50verifierade bankkällorna, historik och
-acceptanskvitton bevaras. Privata hjälpare, källrevisioner och alla exakta
-kvitton finns i den befintliga privata checklistan; inga egna devservrar är
-aktiva och det tidsbundna provstoppet är avaktiverat efter verifierat stopp.
+Budgetjournalen har17historiska reservationer/20,40USD, lika med den
+oförändrade finansierade granten. Inga reservationer återbetalades och ingen
+provisionering, migration eller finansieringsändring gjordes.
+Skyddskalkyl43,174312USD inkluderar reserver och eftersläpande providerdata;
+den är ingen slutfaktura. Nästa prov kräver uppdaterad historik,
+behållna reserver och ett faktiskt finansierat nytt fönster. Min0/max1
+behölls efter Jakobs delegerade beslut.
+
+H6 följer nu den belagda nekningen genom observer/executor/controller/session
+med offlineprov. Ett exakt authfel bevisar ännu inte varför driftobservationen
+ändrades; ingen grind ska sänkas från en hypotes. Synkat ljud/bild, tal under
+utdelning och fysisk mikrofon är fortfarande **inte godkända**.
+Nästa GPU-prov förutsätter verifierad rättning, publicering, nya aktuella
+grindar och ett nytt avgränsat aktiverings-/stoppkvitto.
+
+PR280 pensionerade den inventerade lokala filmvisaren och dess testkopplingar.
+Originalmedia,50verifierade bankkällor, historik och acceptanskvitton bevaras.
+Fyra pending-repliker är en separat innehållsgranskning; namnbyte eller bred
+omuppladdning bevisar ingen synk. Privata exakta bevis och hjälpare finns i
+den befintliga privata checklistan.
 [Användarflöde](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
 [tekniska grindar](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
 
