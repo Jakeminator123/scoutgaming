@@ -375,6 +375,22 @@ test('a receiver can edit an explicit library scene without assigning a company 
   }finally{pane.unmount();}
 });
 
+test('a mounted receiver takes the new room game and template when the target omits both',async()=>{
+  const h=harness('/admin/clips?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack&panel=layers');
+  const pane=await mountClipMap(h,{scene:true});
+  try{
+    const rooms=pane.registeredRooms();
+    assert.equal(h.api.navigate('/admin/clips?operator=b&table=room-b&panel=layers'),true);await pane.settle();
+    assert.deepEqual(pane.selection(),{operator:'b',room:'room-b',dealer:'astrid',game:'roulette'});
+    assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),false,'roulette must not show the blackjack placement editor');
+    const target=h.location.search,query=new URLSearchParams(target);
+    assert.equal(query.get('game'),'roulette');assert.equal(query.get('composition'),'scene-b');
+    h.go(-1);await pane.settle();assert.equal(pane.selection().game,'blackjack');assert.equal(pane.composition(),'scene-a');
+    h.go(1);await pane.settle();assert.equal(pane.selection().game,'roulette');assert.equal(pane.composition(),'scene-b');
+    assert.equal(h.location.search,target);assert.deepEqual(pane.registeredRooms(),rooms);
+  }finally{pane.unmount();}
+});
+
 for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])test(`scene reset uses the saved ${layout} ${group} after unmount, retained drafts and a later save`,async()=>{
   const pane=await mountClipMap(harness('/admin/clips?operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{

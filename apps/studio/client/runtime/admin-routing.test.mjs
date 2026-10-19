@@ -47,12 +47,19 @@ test('explicit shared scene links win while a new room does not inherit the old 
   const target=href=>new URL(withAdminContext(href,context),'https://admin.fixture.invalid').searchParams;
   const otherRoom=target('/admin/clips?operator=b&table=room-b&game=roulette');
   assert.equal(otherRoom.has('composition'),false);assert.equal(otherRoom.has('lane'),false);
+  assert.equal(otherRoom.get('game'),'roulette');
+  for(const href of ['/admin/clips?operator=b&table=room-b','/admin/clips?table=room-b','/admin/clips?operator=b']){
+    const inherited=target(href);
+    assert.equal(inherited.has('game'),false,'an omitted game belongs to the new room');
+    assert.equal(inherited.has('composition'),false);
+  }
   for(const field of ['composition','lane']){
     const explicit=target('/admin/clips?'+field+'=scene-b&panel=layers');
     assert.equal(explicit.get(field),'scene-b');assert.equal(explicit.has(field==='lane'?'composition':'lane'),false);
     assert.equal(explicit.get('table'),'room-a');assert.equal(explicit.get('operator'),'a');
   }
   assert.equal(target('/admin/clips?dealer=nora').get('composition'),'scene-a');
+  assert.equal(target('/admin/clips?dealer=nora').get('game'),'blackjack');
 });
 
 test('old design links translate root queries and fragments without changing external or similar paths',()=>{

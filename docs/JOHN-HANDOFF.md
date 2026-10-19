@@ -21,7 +21,10 @@ ankarscener till Admin med aktuell sammansättning, startdealer, spel, operatör
 och uttryckligt rum (aldrig bordfilens ID). Länken använder förälderns sparskydd.
 Mottagaren behåller explicit mall/spel även när rumskontexten hör till en annan
 mall; panelen redigerar vald mall och rummets registrerade koppling ändras inte.
-Nytt rum utan uttryckligt mallval ärver inte föregående rums mall.
+Nytt rum utan uttryckligt mallval ärver inte föregående rums mall. Utelämnat
+spel vid byte av rum/bolag ärvs inte heller: det nya rummets spel gäller medan
+ett uttryckligt spelval behålls. 69 riktade context-/panel-/routing-/navigationprov
+passerar, inklusive monterat rumsbyte och Bakåt/Framåt utan ändrade rumsdata.
 
 Sparning går via den delade mallens projekt, revision och bekräftelse av berörda
 rum. Frysta paket behåller geometri; roomOverrides får inga nya fält. Nytt
