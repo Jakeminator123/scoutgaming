@@ -38,6 +38,61 @@ satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo
 `scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
 i `docs/environment-variables.json` för både Studio och spelservern.
 
+## Kvällsprov med Jakob: budget, spegelfördröjning, grundloopsgrind — 19 oktober 2026, 16:30–17:30 UTC
+
+Jakobs egna försök 16:41–16:47 UTC föll med
+`generated_speech_total_budget_exhausted` i chatten visad som den allmänna
+texten ”Rösten eller läppsynken kunde inte skapas. Försök igen.”; journalen var
+25 reservationer / 30 USD. Åtgärder: amendment `5fa14c5f` (grant 30 → 45 USD,
+journalens tak; provider-tak 75 USD oförändrat) och PR296 (`25e80444`) som
+visar ”Provbudgeten för läppsynk är slut …” i stället för att föreslå nytt
+försök. Ett `moving_bank_rejected code=stale_round_revision` 16:34:56 var inte
+ett fel: svaret avbröts för att rundan ändrades under förberedelsen.
+
+Prov 16:51 UTC (”välkommen till bordet, Jakob”) blev klart på servern efter
+27 s (`ready` 27,3 s) men klienten stod i ”Svar klart · väntar på ledigt bord”
+i över tre minuter. Orsak på klienten: talgrinden öppnas först när dealerns
+grundloop visat en bildruta, och grundloopen låg fast i Chromes
+”play() request was interrupted because video-only background media was
+paused to save power” från när fliken var dold; felkoden ingår inte i
+grundloopens omstartslista, så bara omladdning hjälpte. Öppen klientbrist:
+återuppta grundloopen när fliken blir synlig igen. Efter omladdning spelades
+prov 17:02 UTC (”Välkommen till bordet, Jakob.”) i publicerad spelvy: `ended`,
+`completed:true`, 61/61 bildrutor, ström→första bild 21,1 s, helt förlopp
+129 s (text + förberedelse ≈ 105 s). Render-loggen hade inga avslag.
+
+Prov 17:04:56 UTC (”Blanka och Zelda är bäst”) nekades av guarden
+(`moving_speech_unavailable`, fas guard) efter 3,5 s. Loggen belägger
+**spegelfördröjningen vid nedstängning**: arbetaren stängde 17:03:42, podden
+försvann ur REST vid 60 s tomgång, och 17:04:44–17:05:01 rapporterade health
+fortfarande `running=1` medan REST-listan var tom (samma mönster 16:53:04–:24
+och 16:35:58–16:36:14). Observatören nekade varje tick i fönstret. PR297
+(`d9c27979`): en enda olistad frisk arbetare utan pågående jobb rapporteras som
+ett upptaget jobb (dränering, aldrig kapacitet, aldrig Off); två olistade,
+unhealthy/throttled eller jobb utan pod nekas fortfarande. Praktiskt: en fråga
+cirka 60–80 s efter föregående svar träffade fönstret; efter PR297 ska den
+i stället vänta på ledig plats. CI på `main` grönt för `d9c27979`; Render-
+bygget pågick när detta skrevs (~17:40 UTC) och är inte verifierat live.
+Jakobs eget prov 17:33 UTC (”?” → ”What's up, Jakob?”, på kod `25e80444`)
+spelades: `ended`, `completed:true`, 48/48 bildrutor, ström→bild 13,5 s,
+helt förlopp 123 s. Jakob bekräftade i chatten att det fungerade. Kvar för
+människa oförändrat: röst/läppsynk-kvalitet, svarstid (~105 s text +
+förberedelse före GPU), OpenClaw svarar på engelska på svenska frågor.
+
+Övrigt samma kväll: Vercel `commandForIgnoringBuildStep` bygger nu bara
+`main`, `jakob/*`, `codex/*` och `cursor/*` (tidigare hoppades bara exakt
+`kevin` över; `kevin-staging`, `roulette-on-kevin-staging`, `emil`, `john`,
+`jakob-export` byggde förhandsvisningar). Render `croupier-v2` har inga
+PR-förhandsvisningar (`previews.generation=off`, autodeploy `main` efter CI).
+Miljövariabler: alla sju obligatoriska `render-game`-nycklar finns på Render;
+saknade villkorliga nycklar gäller lokala kataloger, P6-QA, Bettalotto och
+lagringsexport, inte Dragans tal. Kevins grenar refererar 40-talet egna namn
+(`DRAGGE_LIPSYNC_ENDPOINT`, `RORLIG_*`, `LIPSYNC_POD_*`, `GEMINI_*`,
+`CARTESIA_VOICE`, `TABLE_DB` …) som hör till hans separata server under
+`kevin/croupier-scoutgg/` och inte används av `main`; inget saknas för Dragan.
+Odokumenterade nycklar satta på Render: `CROUPIER_BACKEND_ORIGIN`,
+`CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_STUDIO_NATIVE_ADMIN` (ej åtgärdat).
+
 ## Bank-403 belagd och rättad; Dragan svarade med tal — 19 oktober 2026, 14:27–14:35 UTC
 
 Med barndiagnostiken från PR292/293 live (`7d9886ce`) och amendment
