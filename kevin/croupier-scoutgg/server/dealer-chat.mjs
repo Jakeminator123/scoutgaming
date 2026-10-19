@@ -38,6 +38,12 @@ const BLOCK = [
   /\b(pronto para (jogar|apostar)|vamos jogar|sente-se|sente aqui|fa[çc]am suas apostas|fa[çc]a sua aposta|fa[çc]a suas apostas|hora de jogar|o que as cartas dizem)/i,
   /\b(garantid|garantia|vit[óo]ria certa|ganho certo|a pr[óo]xima carta (é|e|vai|ser[áa])|voc[êe] vai (ganhar|perder)|mar[ée] de sorte)/i,
   /\b(empr[ée]st|emprestar|cart[ãa]o de cr[ée]dito|conta banc[áa]ria|senha|cpf|endere[çc]o|telefone)/i,
+  // Korean (19 Oct): the same five kinds. Hangul is not \w to a regex, so \b never matches before it: no \b here.
+  /(히트|스탠드|더블|스플릿|서렌더)(를 |을 )?(하세요|하시죠|하셔야|하시는 게|해 보세요)|추천(해요|합니다|드려요|드릴게요)|카드를? (한 장 )?더 (받으세요|받으시는 게|받아 보세요)|거기서 멈추세요/,
+  /(더|크게|전부) (베팅|거세요|걸어)|베팅을? (올리세요|올려 보세요|늘리세요)|올인|만회|본전을? (찾|되찾)|되찾으세요/,
+  /(게임|플레이)(을|를)? (하실래요|시작할까요|합시다)|앉으세요|자리에 앉|베팅하세요|베팅해 주세요|칩을 놓아|테이블에 참여/,
+  /보장|확실한 (승리|돈|수익)|무조건 (이기|따)|다음 카드(는|가) |(이기실|지실|따실|잃으실) (거예요|겁니다|거에요)|연승|운이 트였/,
+  /빌려|대출|신용 ?카드|계좌|비밀번호|주민등록번호|주소|전화번호/,
 ];
 export function guardReply(text) {
   const s = String(text ?? '').replace(/\s+/g, ' ').trim();
@@ -63,7 +69,7 @@ export async function dealerTalk(o) {
 
 async function talkOnce({ text, dealer = 'astrid', language = 'en', facts = '', history = [], memory = '', playerName = '', fetchImpl = fetch, timeoutMs = 12000, retry = false }) {
   const name = { dragge: 'Dragan', paow: 'Paow', marten: 'Mårten', astrid2: 'Astrid' }[dealer] ?? 'Astrid';
-  const lang = { sv: 'Swedish', en: 'English', es: 'Spanish', fr: 'French', zh: 'Chinese', pt: 'Brazilian Portuguese' }[language] ?? 'English';
+  const lang = { sv: 'Swedish', en: 'English', es: 'Spanish', fr: 'French', zh: 'Chinese', pt: 'Brazilian Portuguese', ko: 'Korean' }[language] ?? 'English';
   const convo = history.slice(-6).map(h => `${h.who === 'dealer' ? name : 'Player'}: ${h.text}`).join('\n');
   const prompt = `${PERSONAS[dealer] ?? PERSONAS.astrid}\n${RULES}\nLanguage: ${lang}.\nThe player is called "${playerName || 'unknown'}" at this table. ${memory}\nUse what you remember naturally (their name, running jokes), without listing it.\nTable facts (the player's own view): ${facts || 'no round in play'}\n\n${convo ? convo + '\n' : ''}Player: ${String(text).slice(0, 280)}\n${retry ? 'Say it differently this time: no betting or playing talk at all, just a joke.\n' : ''}${name}:\n\nAfter your reply, on a NEW line, write "MEMORY: " followed by one short thing worth remembering about this player for next time (a nickname, a joke, what they like), or "MEMORY: none". Never personal data.`;
   // Kevin 12 Oct: the dealers talk through Gemini (the key Astrid already uses); the game never calls the Claude agent.

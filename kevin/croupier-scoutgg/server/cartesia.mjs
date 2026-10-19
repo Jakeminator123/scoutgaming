@@ -17,6 +17,7 @@ export const LANGS = {
   fr: { voice: "a7d6a620-ee74-422b-bd31-61b0b1bf6718", name: "French", label: "FR" },    // Freja (franska)
   zh: { voice: "cef8def7-8d39-40bd-992b-71bf57bbed86", name: "Chinese", label: "中文" }, // Freja (kinesiska, mandarin)
   pt: { voice: "25a07829-a967-4cc2-b450-77712701a9a0", name: "Portuguese", label: "PT" },  // Freja (brasiliansk portugisiska, dialect br, 2026-10-15)
+  ko: { voice: "97348d60-343d-4ea2-baa7-e9486ebebdfa", name: "Korean", label: "KO" },      // Freja (koreanska, 2026-10-19)
 };
 export const lang = (l) => (Object.hasOwn(LANGS, l) ? l : "en");
 

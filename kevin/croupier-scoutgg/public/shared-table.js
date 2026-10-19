@@ -203,7 +203,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     language.value=state.language??'en';
     // Emil 11 Oct: only the languages this dealer speaks are offered: his recorded lines (Dragge, Paow), Astrid's
     // recorded languages (no Swedish), English only for a dealer without a voice yet (Mårten).
-    const spoken=dealer.lines===undefined?(state.availableLanguages??['en']).filter(l=>l!=='sv'&&l!=='pt'):dealer.lines??['en'];
+    const spoken=dealer.lines===undefined?(state.availableLanguages??['en']).filter(l=>l!=='sv'&&l!=='pt'&&l!=='ko'):dealer.lines??['en'];
     for(const option of language.options){const ok=(state.availableLanguages??['en']).includes(option.value)&&spoken.includes(option.value);option.disabled=!ok;option.hidden=!ok;}
     language.disabled=!entered||sending||preparing||paused||state.phase!=='bets'||state.bets.some(b=>Object.values(b).some(v=>v>0));
     $('#dealerLanguageHint').textContent=!entered?`Join the table to choose ${dealer.name}’s language.`:state.phase!=='bets'||state.deadline?'Available before placing bets in the next round.':'Shared by everyone at this table. Choose before placing bets.';

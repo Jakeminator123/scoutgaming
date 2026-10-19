@@ -254,6 +254,8 @@ async function talkReply(ws, text, dealer) {
 // "Grattis Anders och Emil!": the names of the players up on the round, said once the last card has landed
 const CHEER = { sv: ['Grattis', 'och'], en: ['Congratulations,', 'and'], es: ['¡Enhorabuena,', 'y'], pt: ['Parabéns,', 'e'] };
 function cheerText(names, language) {
+  // Korean puts the names first, each with 님: "Anna님, Emil님, 축하해요!" (19 Oct)
+  if (language === 'ko') return `${names.map(n => `${n}님`).join(', ')}, 축하해요!`;
   const [hi, and] = CHEER[language] ?? CHEER.en;
   return `${hi} ${names.length > 1 ? `${names.slice(0, -1).join(', ')} ${and} ${names.at(-1)}` : names[0]}!`;
 }

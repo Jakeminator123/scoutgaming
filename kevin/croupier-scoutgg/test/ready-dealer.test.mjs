@@ -93,7 +93,7 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
   const a = DEALERS.astrid2;
   assert.equal(a.name, 'Astrid');
   assert.equal(a.label, 'Astrid');   // Emil 14 Oct: shown as Astrid
-  assert.deepEqual(a.lines, ['en', 'pt']);
+  assert.deepEqual(a.lines, ['en', 'pt', 'ko']);
   for (const idle of a.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id);
   assert.ok(a.idles[0].vikt >= 10);
   for (const line of ['greeting_1', 'goodluck_1', 'win_1', 'greet_guest', 'greet_emil', 'remark_hit17_1', 'banter_1', 'table_cash_1'])

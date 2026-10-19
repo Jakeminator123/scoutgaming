@@ -13,8 +13,9 @@ export const RESPONSES=Object.freeze({
 export function localResponse(text){
  const s=String(text??'').normalize('NFKC').toLowerCase();
  // Portuguese words too since the dealers speak it (15 Oct): senha, cartão de crédito, perdi, vício, dívida, ajuda, "tenho 16 anos" …
- if(/@|https?:|\d{5}|password|passport|credit card|bank account|personnummer|lösenord|senha|passaporte|cart[ãa]o de cr[ée]dito|conta banc[áa]ria|\bcpf\b/iu.test(s))return 'privacy';
- if(/\b(loss|losses|lost|addict|debt|rent|suicid|underage|minor|stop|break|help|förlor|beroende|skuld|paus|hjälp|perdi|perdendo|v[íi]cio|viciad|d[íi]vida|aluguel|menor de idade|parar|ajuda)/u.test(s)||/\b(?:i am|i'm|im|jag är|tenho)\s*(?:[0-9]|1[0-7])\b/u.test(s))return 'support';
+ // and Korean (19 Oct): 비밀번호, 계좌, 잃었어요, 중독, 빚, 도와주세요, "16살" … (no \b: Hangul is not \w)
+ if(/@|https?:|\d{5}|password|passport|credit card|bank account|personnummer|lösenord|senha|passaporte|cart[ãa]o de cr[ée]dito|conta banc[áa]ria|\bcpf\b|비밀번호|여권|신용 ?카드|계좌|주민등록번호/iu.test(s))return 'privacy';
+ if(/\b(loss|losses|lost|addict|debt|rent|suicid|underage|minor|stop|break|help|förlor|beroende|skuld|paus|hjälp|perdi|perdendo|v[íi]cio|viciad|d[íi]vida|aluguel|menor de idade|parar|ajuda)/u.test(s)||/(잃었|잃고|잃어|중독|빚|월세|자살|미성년|그만하고 싶|그만할래|쉬고 싶|도와|도움)/u.test(s)||/(?<![0-9])(?:[0-9]|1[0-7])\s*살/u.test(s)||/\b(?:i am|i'm|im|jag är|tenho)\s*(?:[0-9]|1[0-7])\b/u.test(s))return 'support';
  if(/bet|win|predict|rig|outcome|balance|blackjack|card|insur|split|double|odds|rtp|spela|vinna|kort/iu.test(s))return /rule|regler|pays|payout/iu.test(s)?'rules':'outcome';
  if(/ignore|instruction|prompt|system|developer|pretend|roleplay|repeat|translate|say exactly/iu.test(s))return 'fallback';
  return null;

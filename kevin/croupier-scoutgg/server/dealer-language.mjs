@@ -7,6 +7,7 @@ export const DEALER_LANGUAGES = Object.freeze({
   fr: { code: 'fr', name: 'French', label: 'FR' },
   zh: { code: 'zh', name: 'Chinese', label: '中文' },
   pt: { code: 'pt', name: 'Portuguese', label: 'PT' },
+  ko: { code: 'ko', name: 'Korean', label: 'KO' },
 });
 
 const TEXT = Object.freeze({
@@ -55,6 +56,15 @@ const TEXT = Object.freeze({
     support: 'Você pode fazer uma pausa de 24 horas com o botão Take a break. Os links de ajuda estão em Demo information.',
     privacy: 'Não compartilhe dados pessoais ou financeiros. O chat da mesa é visível para os outros visitantes.',
     fallback: 'Posso explicar as regras e os controles da demonstração. Não posso dar conselhos de apostas nem incentivar você a jogar.',
+  },
+  ko: {
+    greeting: '안녕하세요, 환영합니다. 이 데모의 규칙과 조작 방법을 설명해 드릴 수 있어요.',
+    social: '대화해 주셔서 감사해요. 게임 규칙이나 여기서 쓸 수 있는 조작 방법을 설명해 드릴 수 있어요.',
+    rules: '블랙잭은 삼 대 이로 지급됩니다. 딜러는 모든 십칠에서 멈춥니다. 전체 규칙과 사이드 벳 배당은 Demo information에 있어요.',
+    outcome: '카드와 지급은 게임 서버가 정합니다. 저는 결과를 예측하거나 바꿀 수 없어요.',
+    support: 'Take a break 버튼으로 데모를 24시간 동안 쉴 수 있어요. 도움을 받을 수 있는 링크는 Demo information에 있어요.',
+    privacy: '개인 정보나 금융 정보는 공유하지 마세요. 테이블 채팅은 다른 방문자에게도 보여요.',
+    fallback: '데모의 규칙과 조작 방법은 설명해 드릴 수 있어요. 하지만 베팅 조언을 하거나 게임을 권할 수는 없어요.',
   },
 });
 

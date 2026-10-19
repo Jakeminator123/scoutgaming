@@ -113,7 +113,7 @@ export async function draggeVoice(text, language, { fetchImpl = fetch, dealer = 
   const VOICE = DEALER_VOICES[dealer].voice, read = voiceRead(dealer, language);
   const tts = await fetchImpl(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}?output_format=pcm_${RATE}`, {
     method: 'POST', headers: { 'xi-api-key': XI(), 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ text, model_id: read.model, ...(read.model === 'eleven_v3' ? {} : { language_code: ['sv', 'en', 'es', 'fr', 'zh', 'pt'].includes(language) ? language : 'en' }),
+    body: JSON.stringify({ text, model_id: read.model, ...(read.model === 'eleven_v3' ? {} : { language_code: ['sv', 'en', 'es', 'fr', 'zh', 'pt', 'ko'].includes(language) ? language : 'en' }),
       voice_settings: read.settings }),
   });
   if (!tts.ok) throw new Error(`voice ${tts.status}`);

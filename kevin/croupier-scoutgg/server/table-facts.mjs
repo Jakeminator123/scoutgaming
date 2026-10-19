@@ -1,7 +1,7 @@
 // The dealer can SEE the table: questions about the visitor's own game are answered from the
 // shared table's state (cards, dealer's up card, last result, whose turn, shoe, balance).
 // Replies are built here from reviewed templates filled with facts only: no model text, no
-// predictions, no betting advice. sv, en and pt have their own; es/fr/zh use the English templates.
+// predictions, no betting advice. sv, en, pt and ko have their own; es/fr/zh use the English templates.
 import { total } from '../public/game-events.js';
 
 const RENDERED = new Set();   // only strings built here may be spoken as a fact reply
@@ -67,6 +67,26 @@ const T = {
     table: (players, left, decks) => `${players} na mesa e ${left} cartas restantes no sapato de ${decks} baralhos.`,
     one: 'Um jogador', many: n => `${n} jogadores`,
     balance: b => `Seu saldo de demonstração é ${b}.`,
+  },
+  // Emil 19 Oct: Dragan, Paow and Astrid 2.0 speak Korean; the round result is said in it too (입니다 after a value, whatever its last sound)
+  ko: {
+    noRound: '지금은 진행 중인 라운드가 없어요.',
+    notSeated: '아직 테이블에 앉지 않으셨어요. 박스를 골라 참여하세요.',
+    hand: (box, cards, value, bust) => `박스 ${box}: ${cards}, ${bust ? `${value}, 버스트` : value}.`,
+    dealerShows: (cards, value) => `딜러 카드는 ${cards}${value ? ` (${value})` : ''}입니다.`,
+    decide: '그 결정은 손님 몫이에요. 저는 조언을 드리지 않아요.',
+    predict: '다음 카드는 아무도 알 수 없어요. 셔플은 라운드가 시작되기 전에 고정돼요.',
+    turnMine: (box, secs) => `박스 ${box} 차례입니다. ${secs}초 남았어요.`,
+    turnOther: name => `지금은 ${name}님 차례입니다.`,
+    turnNone: '지금은 아무의 차례도 아니에요.',
+    lastNone: '아직 플레이한 라운드가 없어요.',
+    last: (net, staked, lines) => `지난 라운드에 ${staked}를 베팅해서 ${net > 0 ? `${money(net)}를 따셨어요` : net < 0 ? `${money(-net)}를 잃으셨어요` : '본전이었어요'}. ${lines}`,
+    lastBoxes: (lines, net, staked) => `지난 라운드: ${lines} 모두 합쳐 ${staked}를 베팅해서 ${net > 0 ? `${money(net)}를 따셨어요` : net < 0 ? `${money(-net)}를 잃으셨어요` : '본전이었어요'}.`,
+    lastHand: (box, value, res) => `박스 ${box}: ${value}, ${res}.`,
+    won: '승리', lost: '패배', push: '푸시', bust: '버스트', bj: '블랙잭',
+    table: (players, left, decks) => `테이블에 ${players}, ${decks}덱 슈에 카드가 ${left}장 남아 있어요.`,
+    one: '플레이어 한 명', many: n => `플레이어 ${n}명`,
+    balance: b => `데모 잔액은 ${b}입니다.`,
   },
 };
 const t = lang => T[lang] ?? T.en;
