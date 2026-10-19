@@ -76,6 +76,8 @@ produktionsinställning ändras av kodleveransen.
 Fokuserat: 3 utdelningsprov, 3 mikrofonbryggprov och 22 spelarprov passerar;
 2 valfria browserprov är överhoppade utan installerad fixturemodul.
 En oberoende läsande Codex-granskning hittade inga blockerande fynd.
+CI upptäckte att de två nya integrationerna saknades i fullsvitens register;
+de är nu registrerade i grupperna `moving-speech-deal` och `astrid-camera`.
 UI/UX äger Admin och HUVUDAGENT5 driftstyrningen; gemensamma filer samordnas.
 
 ## Lipsync 3 — verifierad slutstatus 18 oktober 2026, UTC
