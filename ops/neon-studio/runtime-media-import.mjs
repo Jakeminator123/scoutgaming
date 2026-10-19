@@ -5,12 +5,11 @@ import {createHash,randomUUID} from 'node:crypto';
 import {isAbsolute,join} from 'node:path';
 import {StudioStorageError,canonicalStudioJson,studioStorageFailure,validateActor,validateStudioScope} from '../../packages/studio-registry/server/document-contract.mjs';
 import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogJson,runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
-import {planStudioMigrations,loadStudioMigrations} from './migrations.mjs';
+import {planStudioMigrations,isStudioMigrationPlanReady} from './migrations.mjs';
 import {validateMediaLayout} from '../../tools/media-layout.mjs';
 import {validatePrivateMedia} from '../../apps/studio/lib/cloud-media-store.mjs';
 
 const sources=Object.freeze({layout:'media/layout.json',blobIndex:'media/blob-index.json',presentation:'media/catalog/presentation.json',legacy:'media/catalog/legacy.json'});
-const versions='001,002,003,004,005,006,007,008,011,012,013,014,015';
 const sha=/^[a-f0-9]{64}$/;
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const same=(a,b)=>canonicalStudioJson(a)===canonicalStudioJson(b);
@@ -82,14 +81,9 @@ function summary(prepared) {
     blobVerification:'metadata-only'};
 }
 async function verifiedSchema({pool,schemaCheck}) {
-  const optional=new Set((await loadStudioMigrations()).filter(row=>row.deploymentOptional).map(row=>row.version));
   const plan=await schemaCheck({pool});
-  const applied=Array.isArray(plan?.applied)?plan.applied.map(row=>row?.version):[];
-  // Keep the importer's required schema exact; only reviewed optional versions may extend it.
-  // Every applied row, including optional rows, is still rechecked against the locked ledger.
-  if(!plan?.schemaPresent||plan.toApply?.length!==0||new Set(applied).size!==applied.length
-    ||applied.filter(version=>!optional.has(version)).join(',')!==versions
-    ||plan.applied.some(row=>!sha.test(row.checksum??'')||!sha.test(row.structureChecksum??'')))fail('schema_unverified');
+  if(!isStudioMigrationPlanReady(plan))fail('schema_unverified');
+  // currentPlan still compares every installed proof with the locked SQL ledger.
   return plan;
 }
 async function transaction({pool,scope,write=false},work) {

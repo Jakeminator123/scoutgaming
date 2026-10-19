@@ -42,7 +42,8 @@ async function setup(t, options = {}) {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`, address = base.replace('http:', 'ws:') + '/moving-speech-stream';
   runtime = createMovingSpeechRuntime({ server, origin, bank, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4), now: () => state.now,
-    connectionMs: options.connectionMs ?? 15000, onCleanupError:()=>trace.push('cleanup-recovery'),
+    connectionMs: options.connectionMs ?? 15000, admissionCheck:options.admissionCheck,
+    onCleanupError:()=>trace.push('cleanup-recovery'),
     onStreamFailure:receipt=>{failures.push(receipt);return options.onStreamFailure?.(receipt);},
     onPreparationFailure:receipt=>{preparationFailures.push(receipt);return options.onPreparationFailure?.(receipt);},
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
@@ -63,7 +64,9 @@ async function setup(t, options = {}) {
     sessions: { async admit(args) {
       trace.push('admit'); admitted = args; await options.onAdmit?.(args,state); await args.beforeCostly();
       const binding = { ...args.binding, schemaVersion: 1, sessionId, attemptId: 'attempt-1', nonce: '2'.repeat(64) };
-      return { sessionId, binding, async submit() { trace.push('submit'); await args.beforeCostly(); },
+      return { sessionId, binding, async assertCurrent(admissionOptions){await options.assertSessionCurrent?.(state,admissionOptions);},
+        async submit() { trace.push('submit'); state.submitting=true;
+          try {await args.beforeCostly();} finally {state.submitting=false;} },
         async ready() { trace.push('ready'); await options.onReady?.(state); }, handleUpgrade() { return false; },
         async cancel() { trace.push('cancel'); state.cancelled++; if(options.cancelFails)throw Error('journal_unavailable'); },
         async dispatch(input, { onChunk }) {
@@ -475,4 +478,67 @@ test('owner abort during cold wait prevents late attestation from starting paid 
   for(let i=0;i<100&&!f.trace.includes('ready');i++)await new Promise(setImmediate);
   t.mock.timers.tick(296000);abort.abort();attest();await rejected;
   assert.equal(f.trace.includes('tts'),false);assert.ok(f.state.cancelled>0);
+});
+
+test('Off gates ordinary moving preparation before voice, and cancelActive preserves the service for later Saving',async t=>{
+  let enabled=false,checks=0;
+  const f=await setup(t,{admissionCheck:async()=>{checks++;if(!enabled)throw Error('drift_not_admitting');}});
+  await assert.rejects(f.prepare(),/drift_not_admitting/);
+  assert.equal(f.trace.includes('voice-prepared'),false);assert.equal(f.trace.includes('admit'),false);
+  enabled=true;
+  const first=await f.prepare();
+  await f.runtime.cancelActive();assert.equal(f.state.cancelled,1);
+  const old=f.connect(first);assert.equal((await old.opened).status,403);
+  // This fixture deliberately has a fixed session ID; real sessions use fresh
+  // random IDs. Verify revocation before creating the next fixture descriptor.
+  await f.prepare({requestId:'request-2'});
+  assert.equal(checks,3);assert.equal(f.state.cancelled,1);
+});
+
+test('beforeCostly uses the pinned session check before voice source after a late Off',async t=>{
+  let valid=true;
+  const f=await setup(t,{onReady:()=>{valid=false;},
+    assertSessionCurrent:async()=>{if(!valid)throw Error('drift_not_admitting');}});
+  await assert.rejects(f.prepare(),/drift_not_admitting/);
+  assert.equal(f.trace.includes('tts'),false);assert.equal(f.state.cancelled,1);
+});
+
+test('product freshness inside submit does not reenter the ordinary reserved/running session check',async t=>{
+  let checks=0;
+  const f=await setup(t,{assertSessionCurrent:async state=>{
+    assert.equal(state.submitting,false);checks++;
+  }});
+  await f.prepare();assert.ok(checks>0);assert.ok(f.trace.includes('submit'));assert.ok(f.trace.includes('tts'));
+});
+
+test('ordinary preparation retains its first admission token across slow profile preparation',async t=>{
+  const admission=Object.freeze({revision:1,operationId:'original-op'});let revision=1,pins=0;
+  const f=await setup(t,{admissionCheck:async()=>{pins++;return admission;},
+    onPrepare:async()=>{revision=3;},
+    onAdmit:async args=>{
+      assert.equal(revision,3);assert.equal(args.driftAdmission,admission);
+      throw Error('drift_not_admitting');
+    }});
+  await assert.rejects(f.prepare(),/drift_not_admitting/);
+  assert.equal(pins,1);assert.equal(f.trace.includes('submit'),false);assert.equal(f.trace.includes('tts'),false);
+});
+
+test('private bank read keeps the pinned SQL fence while permitting submission_started before attach COMMIT',async t=>{
+  let finish;const ready=new Promise(resolve=>finish=resolve);let allowed=true,checks=0;
+  const f=await setup(t,{onReady:()=>ready,
+    bankRead:async record=>new Response(new Uint8Array(record.size),{headers:{'content-length':String(record.size)}}),
+    assertSessionCurrent:async(_state,options)=>{
+      checks++;assert.equal(options.submissionPhase,true);
+      if(!allowed)throw Error('drift_not_admitting');
+    }});
+  t.after(()=>finish());
+  const prepared=f.prepare();prepared.catch(()=>{});
+  await until(()=>f.trace.includes('ready'));
+  const session=new AbortController();
+  const bank=await f.admitted.bankDownload({sessionSignal:session.signal,ttlMs:1000});
+  const local=path=>f.base+new URL(path).pathname;
+  const archive=await fetch(local(bank.archive.url));assert.equal(archive.status,200);await archive.arrayBuffer();
+  allowed=false;
+  assert.equal((await fetch(local(bank.receipt.url))).status,403);assert.ok(checks>=2);
+  await f.runtime.cancelActive();finish();await assert.rejects(prepared);
 });

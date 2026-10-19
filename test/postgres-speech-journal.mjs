@@ -415,3 +415,117 @@ test('lost fullfile COMMIT and uncertain/cancelled jobs keep reserved cost after
    await reserve(journal,lease,sessionId2,{reserveMicroUsd:500000,currentBudgetMicroUsd:20000000});
    assert.equal(pool.state.reservations.size,2);
  });
+
+
+const driftScope=Object.freeze({environment:'isolated-qa',workspaceId:'drift-test'});
+const driftToken=Object.freeze({revision:7,operationId:'drift-operation',profileId:'fixture',endpointId:'endpoint-fixture'});
+const driftBinding=Object.freeze({schemaVersion:1,sessionId,attemptId:'attempt-fixture',nonce:'1'.repeat(64),
+  dealerId:'dragan',workerAvatar:'dragan',releaseSha256:'2'.repeat(64),profileRevision:'3'.repeat(64),
+  sourceSetSha256:'4'.repeat(64),avatarSha256:'5'.repeat(64),bankReceiptSha256:'6'.repeat(64)});
+
+
+const driftReferences=[{id:'12345678-1234-1234-1234-123456789abc',revision:'media-fixture',sha256:'a'.repeat(64),pathname:'croupier/media/drift-fixture.mp4'}];
+const driftReservation=lease=>({scope:driftScope,sessionId,endpointId:'endpoint-fixture',lease,binding:driftBinding,driftAdmission:driftToken,
+  ownerHash,requestId:'drift-request',fingerprint,projectRevision:'project-fixture',mediaReferences:driftReferences,
+  budgetId:'drift-budget',totalBudgetMicroUsd:1000000,reserveMicroUsd:250000,currentBudgetMicroUsd:1000000,workerState:emptyWorker});
+
+async function driftJournalFixture(guard) {
+  const f=await fixture();
+  // Only the new lock boundary is intercepted here. Existing journal SQL and
+  // rollback accounting still use the deterministic transactional pool above.
+  const pool={async connect(){
+    const client=await f.pool.connect();
+    return {release:()=>client.release(),query:async(sql,values)=>{
+      if(sql.includes('/* speech:studio_lock */')){f.pool.trace.push('studio_lock');return{rows:[]};}
+      const tag=/\/\* speech:([^*]+) \*\//.exec(sql)?.[1];
+      const reference=driftReferences[0];
+      const movingRows={moving_ready:[{present:true}],moving_project:[{revision:'project-fixture'}],
+        moving_media:[{id:reference.id,revision:reference.revision,record:{sha256:reference.sha256,pathname:reference.pathname,
+          classification:{dealerId:'dragan',kind:'idle'},contentType:'video/mp4'}}],
+        moving_budget:[{used:'0',count:'0',ceiling:null}],moving_amendments_ready:[{present:false}],insert_moving:[],
+        get_moving:[{workspace_id:driftScope.workspaceId,project_revision:'project-fixture',binding:driftBinding,
+          media_references:driftReferences,request_key:speechRequestKey(ownerHash,'drift-request')}]};
+      if(Object.hasOwn(movingRows,tag)){f.pool.trace.push(tag);return{rows:structuredClone(movingRows[tag])};}
+      return client.query(sql,values);
+    }};
+  }};
+  const journal=await createSpeechJournal({...f.options,pool,driftControl:{scope:driftScope,guard:async input=>{
+    f.pool.trace.push('drift-guard:'+input.phase);assert.equal(typeof input.client.query,'function');
+    assert.equal(input.driftAdmission,undefined,'guard receives admission, not an accidental second token name');
+    assert.equal(input.admission,driftToken);assert.equal(typeof input.endpointId,'string');assert.equal(input.sessionId,sessionId);
+    return guard(input);
+  }}});
+  return {...f,guarded:journal};
+}
+
+test('guarded moving reserve/current/submit/dispatch reject atomically before the speech fence and all cost/request writes',async()=>{
+  for(const phase of ['reserve','current','submit','dispatch']){
+    const f=await driftJournalFixture(()=>{throw Object.assign(Error('private guard diagnostic'),{code:'drift_not_admitting',statusCode:409});});
+    await initPolicy(f.journal);const lease=await streamLease(f.journal);
+    if(phase!=='reserve')await reserve(f.journal,lease);
+    const before=structuredClone(f.pool.state),start=f.pool.trace.length;
+    const input={scope:driftScope,sessionId,endpointId:'endpoint-fixture',lease,binding:driftBinding,driftAdmission:driftToken};
+    const operation=phase==='reserve'?()=>f.guarded.reserveMovingSession({...input,ownerHash,requestId:'drift-request',fingerprint,
+      projectRevision:'project-fixture',mediaReferences:driftReferences,budgetId:'drift-budget',totalBudgetMicroUsd:1000000,
+      reserveMicroUsd:250000,currentBudgetMicroUsd:1000000,workerState:emptyWorker}):
+      phase==='submit'?()=>f.guarded.markSubmissionStarted(input):()=>f.guarded.assertMovingSession({...input,submissionPhase:phase==='dispatch'});
+    await assert.rejects(operation(),rejection('drift_not_admitting',409));
+    const trace=f.pool.trace.slice(start);
+    assert.ok(trace.indexOf('studio_lock')<trace.indexOf('drift-guard:'+phase));
+    assert.equal(trace.includes('lock'),false,'a rejected drift guard cannot enter the cost/request mutation fence');
+    assert.equal(trace.at(-1),'ROLLBACK');assert.deepEqual(f.pool.state,before);
+  }
+});
+
+test('off drift admission never blocks generic Astrid cleanup or recovery methods',async()=>{
+  let calls=0;
+  const f=await driftJournalFixture(()=>{calls++;throw Error('drift guard must not run during cleanup');});
+  await initPolicy(f.journal);const lease=await streamLease(f.journal);
+  await running(f.journal,lease);
+  await f.guarded.requestCancel({sessionId,lease,jobId:`job-${sessionId}`});
+  await finish(f.guarded,lease);await f.guarded.releaseLease({lease});
+  assert.equal(calls,0);assert.equal(f.pool.state.sessions.get(`isolated-qa\0${sessionId}`).released_at_ms,f.getTime());
+  assert.equal([...f.pool.state.reservations.values()].reduce((sum,row)=>sum+Number(row.reserved_micro_usd),0),250000);
+});
+
+test('invalid optional journal drift guard configuration is rejected before any transaction',async()=>{
+  const f=await fixture();
+  for(const driftControl of [null,{}, {scope:driftScope,guard:1}]){
+    await assert.rejects(createSpeechJournal({...f.options,driftControl}),rejection('invalid_generated_speech_journal_input',422));
+  }
+  assert.equal(f.pool.trace.length,0);
+});
+
+
+test('guarded moving journal commits in Studio-drift-speech order, checks saved endpoints, and limits dispatch-only state',async()=>{
+  const seen=[],f=await driftJournalFixture(input=>{seen.push(input.phase);});
+  await initPolicy(f.journal);const lease=await streamLease(f.journal),input=driftReservation(lease);
+  const start=f.pool.trace.length;
+  await f.guarded.reserveMovingSession(input);
+  const trace=f.pool.trace.slice(start);
+  assert.ok(trace.indexOf('studio_lock')<trace.indexOf('drift-guard:reserve'));
+  assert.ok(trace.indexOf('drift-guard:reserve')<trace.indexOf('lock'));
+  assert.ok(trace.indexOf('lock')<trace.indexOf('insert_reservation'));
+  await f.guarded.assertMovingSession(input);
+  await assert.rejects(f.guarded.markSubmissionStarted({...input,endpointId:'another-endpoint'}),rejection('generated_speech_moving_endpoint_mismatch',409));
+  assert.equal(f.pool.state.sessions.get(`isolated-qa\0${sessionId}`).state,'reserved');
+  await f.guarded.markSubmissionStarted(input);
+  await assert.rejects(f.guarded.assertMovingSession(input),rejection('generated_speech_moving_session_inactive',409));
+  await assert.rejects(f.guarded.assertMovingSession({...input,endpointId:'another-endpoint',submissionPhase:true}),rejection('generated_speech_moving_endpoint_mismatch',409));
+  await f.guarded.assertMovingSession({...input,submissionPhase:true});
+  assert.deepEqual(seen,['reserve','current','submit','submit','current','dispatch','dispatch']);
+  assert.equal(f.pool.state.sessions.get(`isolated-qa\0${sessionId}`).state,'submission_started');
+  assert.equal([...f.pool.state.reservations.values()].reduce((sum,row)=>sum+Number(row.reserved_micro_usd),0),250000);
+});
+
+test('guarded moving methods cannot omit endpoint or token and silently become generic operations',async()=>{
+  const f=await driftJournalFixture(()=>assert.fail('invalid arguments must fail before transaction'));
+  const input=driftReservation({resource:'stream-session',holderId:'fixture',fence:1});
+  for(const method of ['reserveMovingSession','assertMovingSession','markSubmissionStarted']){
+    for(const omitted of ['endpointId','driftAdmission']){
+      const invalid={...input,[omitted]:undefined};
+      await assert.rejects(f.guarded[method](invalid),rejection('invalid_generated_speech_journal_input',422));
+    }
+  }
+  assert.deepEqual(f.pool.trace,[]);assert.equal(f.pool.state.requests.size,0);assert.equal(f.pool.state.reservations.size,0);
+});

@@ -17,8 +17,26 @@ endpoint-ID och SHA-256 valideras av kontrollplanet; extra fält avvisas.
 Detta är intern serverkonfiguration, aldrig klientinmatning eller en ny mediekatalog.
 Lagringen använder native Admins befintliga databas och miljöscope samt optional
 SQL016. Saknad/felaktig konfiguration ger stängt API (503); övrig Admin påverkas inte.
-Flaggan aktiverar ingen provider: `connected:false`, bara önskat Av, ingen admission.
-Denna etapp ändrade inga molnvariabler eller produktionsdata.
+API-flaggan startar ingen provider. `connected:true` kräver färsk matchande
+executorlease/observation i samma databas. Utan färsk executor tillåts endast
+Av-kommandon; ett tidigare önskat läge kan ligga kvar, men admission är stängd.
+För runtime på Render krävs dessutom befintlig
+`CROUPIER_MOVING_SPEECH_ENABLED=1` och dess tidigare verifierade worker/bank/env;
+ingen ny API-nyckel eller endpoint skapas av driftväljaren.
+
+Första runtimeetappen tillåter exakt EN profil: använd ID `baseline`, etikett
+`Basprofil`, befintligt endpoint-ID, `releaseDigest` exakt lika med
+`CROUPIER_MOVING_SPEECH_RELEASE_SHA256`, och `bankHash` lika med archive.sha256
+i det verifierade `CROUPIER_MOVING_SPEECH_BANK_RECORD`. Samma profil-JSON ska
+konfigureras i Admin och spelserver, med samma environment/workspace.
+Fler profiler eller ändrat endpoint/release/bank-underlag nekar runtime-start.
+Endast Av/Sparläge stöds; jämförelse och varm drift saknar aktiveringsstöd.
+
+SQL016 måste vara installerad före runtimeaktivering; POST-PISYNK4 har verifierat
+både 016 och 017 apply. 017 är nu required, 016 fortsatt optional i manifestet.
+Kodändringen skriver inga molnvariabler
+eller produktionsdata. Runtime-/budgetaktivering samordnas separat med
+POST-PISYNK4 och granskning/merge med MERGE3.
 
 ## Aktuellt miljöval för Admin — verifierat 18 oktober 2026
 

@@ -1881,7 +1881,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     else {
       if(dealSpeech&&input.value.trim()===message)input.value='';
       chatPlaybackDiagnostic.finish(requestId, decision.kind === 'silence' ? 'silent' : 'unverified');
-      setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.'
+      setChatStatus(decision.kind === 'silence' ? `${DEALER.name} valde att inte svara på det meddelandet.`
         : pendingChatReplies.get(requestId)?.voiceUnavailable ? `${DEALER.name}s röstvideo saknas. Svaret visas som text.` : '');
     }
     return receipt.status==='completed';

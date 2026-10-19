@@ -19,3 +19,20 @@ export function parseMovingDriftCommand(input) {
   if(input.mode==='warm'&&!MOVING_DRIFT_DURATIONS.includes(input.durationSeconds)) fail();
   return Object.fromEntries(keys.map(key=>[key,input[key]]));
 }
+
+// One shared, explicit configuration parser for Admin and the game runtime.
+// No environment reads or connection at module import.
+export function movingDriftConfiguration(env={}) {
+  if(env.CROUPIER_STUDIO_MOVING_DRIFT_API!=='1') return null;
+  const raw=env.CROUPIER_STUDIO_MOVING_DRIFT_PROFILES;
+  if(typeof raw!=='string'||new TextEncoder().encode(raw).byteLength>8192) throw driftError('drift_invalid_configuration',422);
+  let profiles;
+  try {profiles=JSON.parse(raw);} catch {throw driftError('drift_invalid_configuration',422);}
+  const keys=['id','label','endpointId','releaseDigest','bankHash'];
+  if(!Array.isArray(profiles)||!profiles.length||profiles.length>8||profiles.some(profile=>
+    !profile||typeof profile!=='object'||Array.isArray(profile)
+    ||Object.keys(profile).length!==keys.length||keys.some(key=>!Object.hasOwn(profile,key)))) {
+    throw driftError('drift_invalid_configuration',422);
+  }
+  return Object.freeze({profiles:structuredClone(profiles)});
+}

@@ -19,11 +19,12 @@ function fixture(overrides={}) {
     async listMovingSessions(){return overrides.recoverable??[];},
     async acquireLease(){events.push('lease');return{resource:'stream-session',holderId:'fixture',fence:1};},
     async renewLease({lease}){return lease;},async releaseLease(){events.push('release');state.released=true;},
-    async reserveMovingSession(input){events.push('reserve');state.cost+=input.reserveMicroUsd;state.state='reserved';
+    async reserveMovingSession(input){await overrides.driftGuard?.({phase:'reserve',...input});events.push('reserve');state.cost+=input.reserveMicroUsd;state.state='reserved';
       state.input=input;return{key:sha('1'),workerId:`croupier-${input.sessionId}`,...input};},
-    async assertMovingSession(){if(state.state!=='reserved'&&state.state!=='running')throw Error('inactive');return{};},
+    async assertMovingSession(input){await overrides.driftGuard?.({phase:input.submissionPhase?'dispatch':'current',...input});
+      if(state.state!=='reserved'&&state.state!=='running'&&!(input.submissionPhase&&state.state==='submission_started'))throw Error('inactive');return{};},
     async markRequestSubmissionStarted(){events.push('request-start');state.request='submission_started';},
-    async markSubmissionStarted(){events.push('submit-start');state.state='submission_started';await overrides.onMarkSubmission?.();},
+    async markSubmissionStarted(input){await overrides.driftGuard?.({phase:'submit',...input});events.push('submit-start');state.state='submission_started';await overrides.onMarkSubmission?.();},
     async attachJob({jobId}){events.push('attach');if(overrides.attachFailure)throw Error('generated_speech_journal_unavailable');state.state='running';state.jobId=jobId;},
     async markSubmissionUncertain(){events.push('unknown');state.state='submission_uncertain';},
     async failRequest(){state.request='submission_uncertain';},
@@ -245,4 +246,154 @@ test('changed capacity immediately before POST keeps the reservation pinned and 
     assert.equal(f.state.state,'submission_uncertain');assert.equal(f.state.released,false);
     assert.equal(f.state.cost,250000);
   }
+});
+
+
+function driftFixture(overrides={}) {
+  const token=Object.freeze({revision:1,operationId:'drift-one',profileId:'fixture',endpointId:'endpointfixture'});
+  const drift={current:token,pins:0,phases:[]};
+  let f;
+  const guard=async input=>{
+    drift.phases.push(input.phase);
+    assert.equal(input.driftAdmission,token,'the original admission token must survive every await');
+    assert.equal(input.endpointId,'endpointfixture');
+    if(drift.current!==token)throw Object.assign(Error('drift_not_admitting'),{code:'drift_not_admitting',statusCode:409});
+    await overrides.onDriftGuard?.(input);
+  };
+  f=fixture({...overrides,driftGuard:guard,configuration:{...overrides.configuration,driftControl:{pin:async({endpointId,signal})=>{
+    drift.pins++;f.events.push('drift-pin');assert.equal(endpointId,'endpointfixture');assert.equal(signal.aborted,false);
+    if(drift.current!==token)throw Object.assign(Error('drift_not_admitting'),{code:'drift_not_admitting',statusCode:409});
+    return token;
+  }}}});
+  return {...f,drift,token};
+}
+
+test('moving drift admission pins once before any lease or provider read and guards dispatch immediately before POST',async()=>{
+  const f=driftFixture(),attempt=await f.admit();
+  assert.ok(f.events.indexOf('guard:admit')<f.events.indexOf('drift-pin'));
+  assert.ok(f.events.indexOf('drift-pin')<f.events.indexOf('lease'));
+  await attempt.submit();assert.equal(f.drift.pins,1);
+  assert.ok(f.drift.phases.includes('reserve'));assert.ok(f.drift.phases.includes('submit'));assert.ok(f.drift.phases.includes('dispatch'));
+  await attempt.cancel();assert.equal(f.state.released,true);assert.equal(f.state.cost,250000);
+});
+
+test('moving drift off before admission does not acquire a lease or reserve budget',async()=>{
+  const f=driftFixture();f.drift.current=null;
+  await assert.rejects(f.admit(),/drift_not_admitting/);
+  assert.equal(f.drift.pins,1);assert.equal(f.events.includes('lease'),false);
+  assert.equal(f.events.includes('reserve'),false);assert.equal(f.events.includes('provider-submit'),false);assert.equal(f.state.cost,0);
+});
+
+test('moving drift token changed during delayed provider release rejects reservation without repinning',async()=>{
+  let resume,started;
+  const wait=new Promise(resolve=>{resume=resolve;}),entered=new Promise(resolve=>{started=resolve;});
+  const f=driftFixture({configuration:{release:async()=>{started();await wait;return receipt();}}});
+  const pending=f.admit();await entered;f.drift.current={...f.token,revision:2};resume();
+  await assert.rejects(pending,/drift_not_admitting/);
+  assert.equal(f.drift.pins,1);assert.equal(f.state.cost,0);assert.equal(f.events.includes('provider-submit'),false);
+});
+
+test('moving drift off during bank download blocks the prepared submit and never refreshes its token',async()=>{
+  const f=driftFixture(),attempt=await f.admit({bankDownload:async()=>{f.drift.current=null;return{};}});
+  await assert.rejects(attempt.submit(),/drift_not_admitting/);
+  assert.equal(f.drift.pins,1);assert.equal(f.events.includes('provider-submit'),false);
+  assert.equal(f.state.cost,250000);assert.equal((await attempt.closed).released,false);
+});
+
+test('moving drift final dispatch guard blocks old tokens for both legacy and verified-capacity paths',async()=>{
+  for(const verified of [false,true]){
+    let f;
+    f=driftFixture({onMarkSubmission:()=>{f.drift.current={...f.token,revision:2};},configuration:verified?{
+      release:async()=>movingCapacityFixture().release,
+      workerState:async()=>summarizeMovingWorkerHealth(movingCapacityFixture().health)}:{}});
+    const attempt=await f.admit();await assert.rejects(attempt.submit(),/submission_unknown/);
+    assert.ok(f.drift.phases.includes('dispatch'));assert.equal(f.drift.pins,1);
+    assert.equal(f.events.includes('provider-submit'),false);assert.equal(f.state.cost,250000);
+    assert.equal(f.state.state,'submission_uncertain');assert.equal((await attempt.closed).released,false);
+  }
+});
+
+test('moving drift change after POST leaves unknown paid work pinned and never retries or refunds',async()=>{
+  let f;
+  f=driftFixture({submit:async()=>{f.drift.current=null;throw Error('lost provider reply');}});
+  const attempt=await f.admit();await assert.rejects(attempt.submit(),/submission_unknown/);
+  await assert.rejects(attempt.submit(),/submission_unknown/);
+  assert.equal(f.events.filter(value=>value==='provider-submit').length,1);
+  assert.equal(f.drift.pins,1);assert.equal(f.state.cost,250000);assert.equal(f.state.state,'submission_uncertain');
+  assert.equal((await attempt.closed).released,false);
+});
+
+test('invalid optional moving drift hooks are rejected without changing default configuration',()=>{
+  for(const driftControl of [null,{}, {pin:1}])assert.throws(()=>fixture({configuration:{driftControl}}),/configuration/);
+  assert.doesNotThrow(()=>fixture());
+});
+
+
+test('SQL-only current admission reuses the started session token without reentering beforeCostly after Off',async()=>{
+  for(const changed of [null,{revision:2}]){
+    const f=driftFixture(),attempt=await f.admit();await attempt.submit();
+    const costly=f.events.filter(value=>value.startsWith('guard:')).length;
+    await attempt.assertCurrent();
+    assert.equal(f.events.filter(value=>value.startsWith('guard:')).length,costly,'SQL-only assertion must not recurse into runtime.current');
+    f.drift.current=changed;
+    await assert.rejects(attempt.assertCurrent(),/drift_not_admitting/);
+    assert.equal(f.events.filter(value=>value.startsWith('guard:')).length,costly);
+    assert.equal(f.drift.pins,1);assert.equal(f.events.filter(value=>value==='provider-submit').length,1);
+    assert.equal(f.state.cost,250000);await attempt.cancel();
+    await assert.rejects(attempt.assertCurrent(),{name:'AbortError'});
+  }
+});
+
+
+test('prepared Saving1 admission survives voice wait through Off2 and Saving3 without silently repinning',async()=>{
+  const f=driftFixture(),early=f.token;
+  f.drift.current={...early,revision:3,operationId:'saving-three'};
+  await assert.rejects(f.admit({driftAdmission:early}),/drift_not_admitting/);
+  assert.equal(f.drift.pins,0);assert.equal(f.state.cost,0);
+  assert.equal(f.events.includes('reserve'),false);assert.equal(f.events.includes('provider-submit'),false);
+});
+
+test('explicit null prepared admission fails closed without repinning or leasing',async()=>{
+  const f=driftFixture();
+  await assert.rejects(f.admit({driftAdmission:null}),/invalid_generated_speech_moving_admission/);
+  assert.equal(f.drift.pins,0);assert.equal(f.events.includes('lease'),false);assert.equal(f.state.cost,0);
+});
+
+test('a mutable prepared admission is copied once so caller mutation cannot refresh a prepared attempt',async()=>{
+  const early={revision:1,operationId:'saving-one',profileId:'fixture',endpointId:'endpointfixture'},original={...early};
+  const tokens=[];
+  const f=fixture({driftGuard:input=>{
+    assert.ok(Object.isFrozen(input.driftAdmission));assert.deepEqual(input.driftAdmission,original);tokens.push(input.driftAdmission);
+  },configuration:{driftControl:{pin:()=>assert.fail('prepared admission must never repin')}}});
+  const attempt=await f.admit({driftAdmission:early,bankDownload:async()=>{early.revision=3;return{};}});
+  await attempt.submit();
+  assert.notEqual(tokens[0],early);assert.ok(tokens.every(token=>token===tokens[0]));
+  await attempt.cancel();
+});
+
+
+test('private bank authorization accepts submission_started before attach with the original token while normal output and Off fail closed',async()=>{
+  let resume,entered;
+  const waiting=new Promise(resolve=>{resume=resolve;}),posted=new Promise(resolve=>{entered=resolve;});
+  const f=driftFixture({submit:async()=>{entered();await waiting;return{id:'accepted-job'};}}),attempt=await f.admit();
+  const submitting=attempt.submit();submitting.catch(()=>{});
+  try{
+    await posted;assert.equal(f.state.state,'submission_started');assert.equal(f.state.jobId,undefined);
+    await assert.rejects(attempt.assertCurrent(),/inactive/);
+    const costly=f.events.filter(value=>value.startsWith('guard:')).length;
+    await attempt.assertCurrent({submissionPhase:true});
+    assert.equal(f.events.filter(value=>value.startsWith('guard:')).length,costly);
+    f.drift.current=null;
+    await assert.rejects(attempt.assertCurrent({submissionPhase:true}),/drift_not_admitting/);
+    assert.equal(f.drift.pins,1);assert.equal(f.events.filter(value=>value==='provider-submit').length,1);
+    assert.equal(f.state.cost,250000);assert.equal(f.state.released,false);
+  }finally{resume();await submitting;await attempt.cancel();}
+});
+
+test('SQL-only current admission requires an explicit boolean submissionPhase',async()=>{
+  const f=driftFixture(),attempt=await f.admit();
+  for(const submissionPhase of [null,1,'true',{}]){
+    await assert.rejects(attempt.assertCurrent({submissionPhase}),{code:'invalid_generated_speech_journal_input',statusCode:422});
+  }
+  assert.equal(f.drift.pins,1);assert.equal(f.events.includes('provider-submit'),false);await attempt.cancel();
 });

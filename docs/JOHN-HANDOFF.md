@@ -1,33 +1,54 @@
 # Aktuell handoff — Scoutgaming
 
-## Driftväljare: kontrollplan och API — 19 oktober 2026
+## Driftväljare: Av och Sparläge — 19 oktober 2026
 
-HUVUDAGENT5 äger backend; UIUX äger separat Admin-koppling och POST-PISYNK4
-talflödet. Den samlade leveransen i PR270 på `codex/admin-drift-api` inkluderar
-PR268:s granskade kontrollplan. PR268 hålls öppen tills PR270 är mergad och kan
-stängas som ersatt. MERGE3 äger granskning, integrationsordning och merge.
-GET/POST `/studio/api/admin/moving-drift` återanvänder N1, färsk session,
-origin/CSRF och konfigurerat scope. POST:s behörighetskontroll och driftlagring
-delar SQL-transaktion/anslutning; POST-rollback återställer driftstate. GET
-autentiseras före sin statustransaktion, som kan initialisera önskat Av eller
-markera en utgången önskad period som Av. Browsern får önskat/observerat läge, revision,
-profiler och capabilities, aldrig interna exekveringsplaner eller endpoint/hashar.
+HUVUDAGENT5 äger backend, UIUX Admin och POST-PISYNK4 tal/provaktivering.
+API/kontrollplanet i PR270 är mergat via `cb0c3275` enligt MERGE3. Körkopplingen
+i [PR275](https://github.com/Jakeminator123/scoutgaming/pull/275) granskas av MERGE3.
+Samlad sluträttning gäller observationsålder, browserkompatibel UTF8-kontroll
+och testförväntan för required017. Ny slut-CI och merge återstår.
 
-Main 819a88ff (PR267/269/271/272) är integrerad. Verifierat: 108 fokuserade prov
-samt full isolerad SQL/HTTPS/omstart med 29 legacy- och 71 integrationskontroller,
-plus fyra retained-kontraktsprov. Dessa omfattar fyra samtidiga API-kommandon på
-en anslutning, återkallad session, rollback, JSONB/COMMIT-svarsförlust och retry.
-Verklig 016-DDL körs efter ledgerad 017; tidigare budgetdata, ledger/checksums och
-kolumner bevaras även efter omstart. Historiska 014→015→017-rollbackprov är kvar.
-Optional016 saknad ger säker 503. Bara kända optionalversioner kan skjutas upp;
-required-readiness och installerade fingeravtryck gäller fortsatt. Ny CI återstår.
-API:t kräver uttrycklig server-opt-in/profilkonfiguration, är avstängt som standard
-och anger alltid `connected:false`; enbart önskat Av kan sparas. 200 bevisar
-inte faktisk avstängning. Ingen provider, HTTP-webbläsar-E2E eller GPU har provats.
-Faktisk drift kräver ännu exekverare, synkroniserad admission, oberoende sluttid,
-verklig kostnadsreservation och exakt release-/bankattestering.
-Ingen GPU-/produktionsändring. [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan)
-och [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+GET/POST återanvänder N1, färsk session, origin/CSRF och miljö/workspace.
+Behörighet och POST-state delar SQL-transaktion. Browserkontraktet är oförändrat;
+önskat läge är aldrig ett kvitto på genomförd GPU-drift. `connected` kräver nu
+en matchande färsk executorlease/observation i samma databas, inte bara en envflagga.
+Första runtimekopplingen gäller exakt en verifierad profil/endpoint med min0/max1,
+Av och Sparläge. Varm drift och jämförelse/profilbyte är inte anslutna.
+
+Talets första admission-token bevaras genom förberedelse och väntan. SQL-journalen
+kontrollerar den atomiskt vid reserve/current/submit och sist före provider-POST,
+i låsordningen Studio → drift → speech. Av revokerar äldre försök; en snabb
+Av → Sparläge behåller krav på avbrott/drain. Sessionsavbrott, bankhämtning och
+tal/utdata använder samma token. Astrid behåller sin tidigare journal utan hook.
+
+Executor gör endast leverantörsläsning och avbryter journalägda jobb. Den skapar
+eller ändrar ingen endpoint. Ny/felande/gammal observation blir unknown; Av
+kräver färsk tom leverantörskapacitet och tömd journal. Health/deploymentdata
+påstår aldrig att modell/bank redan är varm. Befintlig exakt runtimeattestering
+och faktisk kostnadsreservation gäller fortfarande vid varje talstart.
+
+Gräns: avbruten eller okänd submission utan känt jobb behåller reservation och
+kan hålla status i stopping/blockera nästa körning. Ingen automatisk återhämtning,
+återbetalning eller retry hävdas. Ett redan tillåtet/pågående nätanrop kan inte
+göras oskickat av Av; det hanteras som pågående/osäkert tills kvittot kan verifieras.
+
+SQL017 är nu required efter POST-PISYNK4:s verifierade apply 19 oktober 02:32:59 UTC
+(endast 017; äldre ledger oförändrad). POST verifierade även enbart 016 apply
+03:02:56 UTC med oförändrad ledger/budget och tom kontrolltabell. Det är
+tillskrivna kvitton, inga egna molnkörningar. 016 är fortsatt deployment-optional
+i manifestet; runtime kräver installerad tabell och separat aktivering.
+Verifierat på föregående `c5c85bda`: 209 fokuserade tester samt 29 legacy- och 77 integrationskontroller
+i verklig isolerad SQL/HTTPS/omstart, plus fyra mediekontraktsprov. Både Windows
+och sista Linux/WSL-provet använde Node 24.21.0. 214 namngivna källfiler var
+oförändrade genom det breda provet; detta är inte liveprovider- eller GPU-acceptans.
+De två importernas dubbla schema-listor ersattes med gemensam required-readiness;
+installerad ledger och rollback kontrolleras fortsatt. Egna fixturekluster och
+den tillfälliga Linux-Node-installationen rensades efter provet.
+Sluträttningen klarade 39 fokuserade och fem browserbindningsprov; integrationen
+med PR274/main `b3ff83d4` klarade 125 prov. Slut-CI och produktionsreadiness återstår.
+Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
+[Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
+[serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
 ## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
 
