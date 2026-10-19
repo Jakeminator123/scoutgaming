@@ -23,8 +23,8 @@ bara önskat Av. För runtime på Render krävs dessutom befintlig
 `CROUPIER_MOVING_SPEECH_ENABLED=1` och dess tidigare verifierade worker/bank/env;
 ingen ny API-nyckel eller endpoint skapas av driftväljaren.
 
-Första runtimeetappen tillåter exakt EN profil: använd ID `base`, etikett
-`Dragan`, befintligt endpoint-ID, `releaseDigest` exakt lika med
+Första runtimeetappen tillåter exakt EN profil: använd ID `baseline`, etikett
+`Basprofil`, befintligt endpoint-ID, `releaseDigest` exakt lika med
 `CROUPIER_MOVING_SPEECH_RELEASE_SHA256`, och `bankHash` lika med archive.sha256
 i det verifierade `CROUPIER_MOVING_SPEECH_BANK_RECORD`. Samma profil-JSON ska
 konfigureras i Admin och spelserver, med samma environment/workspace.
