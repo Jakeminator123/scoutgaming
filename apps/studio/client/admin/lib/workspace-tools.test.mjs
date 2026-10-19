@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as adminNavigation from './admin-navigation.ts';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
@@ -54,7 +55,7 @@ function shell(file,path){
     require:name=>name==='react'?hooks:name==='react/jsx-runtime'?require(name)
       :name==='react-dom/client'?{createRoot:()=>({render:element=>{mounted=element;}})}
       :name==='next/link'||name==='next/navigation'||name==='../runtime/navigation'?navigation
-      :name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?adminRouting:placeholders,
+      :name.includes('admin-navigation')?adminNavigation:name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?adminRouting:placeholders,
   });
   return mounted?mounted.type(mounted.props):module.exports.StudioSidebar();
 }
@@ -69,7 +70,7 @@ test('each workspace tool has one active main menu entry and companies remains r
     const menu=node(tree,item=>item.props?.['aria-label']==='Huvudmeny');
     const active=descendants(menu).filter(item=>item.props?.['aria-current']==='page');
     assert.equal(active.length,1,key);
-    assert.equal(active[0].props.href,'/admin/tools',key);
+    assert.equal(active[0].props.href,['companies','rehearsal'].includes(key)?'/admin/'+key:'/admin/tools',key);
   }
   const tools=harness('../components/studio/workspace-tools.tsx');
   assert.ok(node(tools.exports.WorkspaceToolsHome(),item=>item.props?.href==='/admin/companies'));
