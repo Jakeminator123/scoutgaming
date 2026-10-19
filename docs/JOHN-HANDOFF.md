@@ -334,6 +334,20 @@ verifierad, inklusive rättningen av lokal klippmappning. Inga fler rotflyttar
 återstår i strukturplanen. Tal/läppsynk och övriga öppna produktfunktioner är
 separata arbeten; hela casinoprodukten är inte slutverifierad.
 
+## Navigationstester — 19 oktober 2026
+
+`apps/studio/test/scout-navigation.test.mjs` härleder menygrupp och dold panel
+från aktuell navigation i stället för att kräva fyra grupper, deras gamla ID:n
+och tre dolda paneler. Detta följer arbetslägena i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
+Alla registrerade länkar provas mot aktivmarkering med och utan `/studio`;
+alias, N1-/partneravskiljning, utkastskydd och tangentbordsbeteende behåller sina prov.
+
+**Verifierat:** 45 riktade Admin-/navigationstester passerar. Ett minnesbaserat
+omgrupperingsprov med identiska länkar gav tidigare tre layoutfel och passerar
+nu alla elva tester. Ett separat negativt prov där biblioteksrutten tappar sin
+aktivmarkering stoppas av den nya länkassertionen. Produktkoden är oförändrad;
+två arbetslägen är här ett testprov, ingen levererad UI-ändring.
+
 ## HUVUDAGENT4: avgränsad rutinstädning — 18 oktober 2026
 
 [PR243](https://github.com/Jakeminator123/scoutgaming/pull/243) och

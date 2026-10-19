@@ -17,14 +17,18 @@ const sidebar = [...groups.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGA
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
-  assert.deepEqual(groups.map(group => group.label), ['Studio', 'Spelbolag', 'Drift', 'System']);
-  assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control/clips', 'Dealers & klipp'], ['/control/library', 'Bord & bakgrunder'], ['/control/compositions', 'Sammansättningar']],
-    [['/control/companies', 'Bolag & team'], ['/control/rooms', 'Spelrum & publicering']],
-    [['/control/administration?tab=operations', 'Spelstatus & integritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
-    [['/control/administration?tab=accounts', 'Konton & åtkomst'], ['/control/administration?tab=partners', 'API & integrationer'], ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt']],
-  ]);
+test('work groups expose unique labelled destinations that resolve to their active menu item', () => {
+  assert.ok(groups.length > 0);
+  for (const group of groups) {
+    assert.ok(group.label.trim());
+    assert.ok(group.items.length > 0, group.id);
+  }
+  for (const item of sidebar) {
+    assert.ok(item.label.trim(), item.href);
+    for (const base of ['', '/studio']) {
+      assert.equal(scoutNavigationItem(`${base}${item.href}`, base), item, item.href);
+    }
+  }
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
     ['/control', 'Översikt'], ['/control/guide', 'Guide & hjälp'],
   ]);
@@ -140,22 +144,26 @@ test('query-specific links win without losing the chat alias or selecting public
 });
 
 test('reload on a deep route expands only its work group and marks exactly one sublink', () => {
-  for (const [pathname, search, groupId, label] of [
-    ['/control/preview', 'lane=t10', 'studio', 'Sammansättningar'],
-    ['/control/events', 'dealer=astrid&event=idle.ready', 'studio', 'Dealers &amp; klipp'],
-    ['/control/administration', 'tab=tables', 'companies', 'Spelrum &amp; publicering'],
-    ['/control/openclaw', 'tab=chat&dealer=astrid', 'system', 'Intern agentchatt'],
-    ['/control/lanes', 'tab=companies&lane=t10', 'companies', 'Bolag &amp; team'],
+  for (const [pathname, search, label] of [
+    ['/control/preview', 'lane=t10', 'Sammansättningar'],
+    ['/control/events', 'dealer=astrid&event=idle.ready', 'Dealers &amp; klipp'],
+    ['/control/administration', 'tab=tables', 'Spelrum &amp; publicering'],
+    ['/control/openclaw', 'tab=chat&dealer=astrid', 'Intern agentchatt'],
+    ['/control/lanes', 'tab=companies&lane=t10', 'Bolag &amp; team'],
   ]) {
+    const active = scoutNavigationItem(`${pathname}?${search}`);
+    const currentGroup = groups.find(group => group.items.includes(active));
+    assert.ok(currentGroup, pathname);
     const html = renderToStaticMarkup(loadNavigation(pathname, search).WorkspaceNavigation());
-    assert.match(html, new RegExp(`id="scout-navigation-${groupId}"[^>]*aria-expanded="true"`), pathname);
     assert.match(html, new RegExp(`aria-current="page"[^>]*>${label}`), pathname);
     assert.equal((html.match(/aria-expanded="true"/g) ?? []).length, 1, pathname);
-    assert.equal((html.match(/hidden=""/g) ?? []).length, 3, pathname);
     assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1, pathname);
     for (const group of groups) {
+      assert.match(html, new RegExp(`id="scout-navigation-${group.id}"[^>]*aria-expanded="${group === currentGroup}"`), pathname);
       assert.match(html, new RegExp(`aria-controls="scout-navigation-${group.id}-items"`));
       assert.match(html, new RegExp(`id="scout-navigation-${group.id}-items"[^>]*aria-labelledby="scout-navigation-${group.id}"`));
+      const panel = html.match(new RegExp(`id="scout-navigation-${group.id}-items"[^>]*`))?.[0];
+      assert.equal(/\bhidden=""/.test(panel), group !== currentGroup, `${pathname}: ${group.id}`);
     }
   }
 });
@@ -173,7 +181,7 @@ test('group controls toggle without navigation and reopen on route changes inclu
     },
   };
   const { NavigationGroup } = loadNavigation('/control/clips', '', hooks);
-  const group = groups.find(item => item.id === 'studio');
+  const group = groups.find(group => group.items.some(item => item.href === '/control/clips'));
   function render(active, routeKey) {
     let tree = NavigationGroup({ group, active, routeKey });
     if (pendingEffect) { const effect = pendingEffect; pendingEffect = null; effect(); tree = NavigationGroup({ group, active, routeKey }); }
@@ -242,7 +250,7 @@ test('mobile menu starts collapsed and closes with Escape or its native button w
 
 test('current document does not reload a draft and contextual tools still link back to their workspace', () => {
   const { ItemLink } = loadNavigation('/control/preview');
-  const composition = groups[0].items.find(item => item.href === '/control/compositions'), content = groups[0].items.find(item => item.href === '/control/clips');
+  const composition = sidebar.find(item => item.href === '/control/compositions'), content = sidebar.find(item => item.href === '/control/clips');
   for (const routeKey of ['/control/compositions?composition=saved', '/studio/control/compositions?composition=saved']) {
     const current = ItemLink({ item: composition, active: true, routeKey });
     assert.equal(current.type, 'span');
