@@ -88,6 +88,37 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Cacheinitialisering och pinnad session — HUVUDAGENT6
+
+Ett offlineprov visar att driftobservatören avvisade färsk providerdata med
+exakt aktuell EXITED-cache och en extra initializing-räknare. Samma kalla
+form godtas redan av kapacitetskontraktet. Avvisningen fick executorn att
+ogiltigförklara observationen; controllern nekade då nästa current/dispatch
+med `drift_not_admitting` trots oförändrad pinnad session.
+
+Observatören räknar nu bara den extra initialisering som styrks av aktuell
+scaled-down-cache med exakt image/version och `isStale:false` som cache.
+Verkliga pods, oförklarade räknare, okända workers, färskhet och min0/max1
+kontrolleras fortsatt. En cachepost blir aldrig modell-/bankattestering.
+Ingen admission-, SQL-, lease-, Av- eller budgetgrind har ändrats.
+
+Tre nya positiva regressioner föll före rättningen. Efteråt passerar 180
+observer-/executor-/controller-/kapacitets-/provider-/SQL-journal-/session-/
+runtimeprov med Node 24.21.0 och fyra workers; ordinarie hook passerar 28/28.
+Provet med verklig observer/controller/executor behåller current/dispatch
+för samma pinnade jobb, spärrar ny admission/reserve och nekar efter Av.
+Saknad, gammal eller felaktig cache samt oförklarad kapacitet förblir nekade.
+Oberoende läsgranskning fann inga blockerande fynd.
+
+Det historiska felet 06:41:32 UTC saknar motsvarande exakt health/pod-snapshot.
+Detta är en verifierad kodmekanism, inte bevis för just den körningens orsak
+eller fungerande bankhämtning i produktion. POST:s stopp-/budgetkvitto och
+återstående talacceptans finns i
+[produktionsprovet](#post-lipsync5-produktionsprov). Inga moln-, provider-,
+GPU-, finansierings- eller medieändringar gjordes i rättningen. MERGE4 äger
+slutgranskning, CI och publicering; ett nytt betalt prov kräver nytt beslut
+och ett faktiskt finansierat fönster.
+
 ### Avslutat providerjobb före callback — HUVUDAGENT6
 
 POST-LIPSYNC5 belade 19 oktober att ett providerjobb blev `COMPLETED` med
@@ -106,7 +137,8 @@ journalprov samt 38 transportprov passerar efteråt, inklusive användarabort un
 terminalsvar. Gatewayns låsta `ws` installerades i denna arbetskopia för proven.
 Oberoende läsgranskning fann inga blockerare. Bankens faktiska HTTP403 har ett
 separat diagnosspår hos POST-LIPSYNC5; rättningen bevisar varken fungerande
-bankhämtning eller godkänt tal/uppspelning. MERGE4 äger slutgranskning/CI/merge.
+bankhämtning eller godkänt tal/uppspelning. PR284 är mergad och publicerad;
+POST:s andra produktionsprov nedan bekräftar felavslut efter 16,1 sekunder.
 
 ### Molnstart: driftprofil till spelprocessen — HUVUDAGENT6
 
@@ -138,7 +170,8 @@ Kamerans dealer-/local-/previewmatris, ARIA, unread och privatpanelsskydd finns 
 `test/studio-preview-client.mjs` släpper det exakta HTML-kravet på disabled-knapparnas
 etikett/markup; beteendeproven för Classic, insatser, limiter, ägarskap och isolering
 är kvar. De två filernas 20 tester passerar med Node 24.21.0 och fyra workers.
-Ändringen omfattar testkod och denna handoff; MERGE4 äger granskning/CI/merge.
+Ändringen är mergad i PR283. Samlad grön main-verifiering och publicering
+finns i MERGE4:s avsnitt ovan.
 
 ### Rättad produktionsbehörighet — HUVUDAGENT6, 19 oktober 2026
 
