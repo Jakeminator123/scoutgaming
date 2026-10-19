@@ -61,8 +61,8 @@ test('the forwarder is bounded, swallows emitter failures and is attached only b
 test('a real child process: console.warn diagnostics on stderr reach the parent emitter, startup text and stdout noise do not', async () => {
   const emitted = [];
   const script = [
-    "console.log('croupier demo on http://127.0.0.1:4173 token=should-never-forward');",
-    "console.warn('Bearer secret-looking startup line');",
+    "console.log('croupier demo on http://127.0.0.1:4173 private-startup-detail');",
+    "console.warn('plain startup warning that must stay private');",
     "console.warn(JSON.stringify({event:'moving_drift_guard_rejected',phase:'submit',reason:'observation_unknown',desiredMode:'saving',drainRequired:false,observedStatus:'unknown',observedReason:'drift_observation_stale',executionAge:'fresh',observationAge:'stale',lease:'active',revisionMatches:true,operationMatches:true,profileMatches:true,endpointMatches:true,catalogueMatches:true,executorFenceMatches:true,appliedRevisionMatches:true,appliedOperationMatches:true,executionIdentityMatches:true,observationCatalogueMatches:true}));",
     "console.info(JSON.stringify({event:'moving_drift_readback_timing',phase:'provider_observation',result:'success',durationClass:'overdue'}));",
     "console.warn(JSON.stringify({event:'moving_speech_preparation_failed',code:'generated_speech_total_budget_exhausted',phase:'admission',streamId:null,requestId:'62fe0cc0-912f-4a4d-8a56-819794c8b2c1'}));",
@@ -78,5 +78,5 @@ test('a real child process: console.warn diagnostics on stderr reach the parent 
   assert.deepEqual(seenStdio, ['ignore', 'pipe', 'pipe']);
   assert.deepEqual(emitted.map(row => row.event).sort(), ['moving_drift_guard_rejected', 'moving_drift_readback_timing', 'moving_speech_preparation_failed']);
   assert.equal(emitted.find(row => row.event === 'moving_speech_preparation_failed').code, 'generated_speech_total_budget_exhausted');
-  assert.ok(emitted.every(row => row.source === 'game' && !JSON.stringify(row).includes('secret') && !JSON.stringify(row).includes('token=')));
+  assert.ok(emitted.every(row => row.source === 'game' && !JSON.stringify(row).includes('private') && !JSON.stringify(row).includes('startup')));
 });
