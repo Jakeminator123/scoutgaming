@@ -44,6 +44,8 @@ test('legacy JSON clients work and failures get distinct explanations', async ()
   assert.match(chatFailureMessage('generated_speech_timeout'), /lång tid/);
   assert.match(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Dagens budget/);
   assert.doesNotMatch(chatFailureMessage('generated_speech_daily_budget_exhausted'), /Försök igen\./);
+  assert.match(chatFailureMessage('generated_speech_total_budget_exhausted'), /Provbudgeten/);
+  assert.doesNotMatch(chatFailureMessage('generated_speech_total_budget_exhausted'), /Försök igen\./);
 });
 
 test('DOM failure diagnostics keep application codes and redact arbitrary upstream data', () => {
