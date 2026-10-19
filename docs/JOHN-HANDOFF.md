@@ -38,6 +38,37 @@ satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo
 `scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
 i `docs/environment-variables.json` för både Studio och spelservern.
 
+## Bank-403 belagd och rättad; Dragan svarade med tal — 19 oktober 2026, 14:27–14:35 UTC
+
+Med barndiagnostiken från PR292/293 live (`7d9886ce`) och amendment
+`cfb73003` (grant 24 → 30 USD, 20 historiska reservationer bevarade) visade
+tredje provet 14:28 UTC hela orsakskedjan i Render-loggen:
+`moving_drift_readback_failed drift_observation_unverified` varje tick under
+jobbet → `moving_drift_guard_rejected phase=dispatch reason=runtime_unavailable
+observationAge=missing` → `moving_bank_rejected 403` → `moving_worker_closed`.
+Ett läsande prov mot verklig RunPod-REST/health 14:31:01–14:31:12 UTC visade
+varför observatören föll: när jobbet dispatchas till en **cachad idle-slot**
+rapporterar REST podden `RUNNING` med `jobs.inProgress=1` i cirka tolv sekunder
+medan health fortfarande säger `idle=1, running=0, initializing=0`.
+Observatörens villkor `initializingPods <= workers.initializing` (1 ≤ 0) föll,
+exekutorn ogiltigförklarade observationen och guarden nekade bankhämtningen.
+Kallstart (prov 4 kl 09:54) och sena bankhämtningar (prov 14:30) klarade sig
+för att health hann ikapp. Det är den historiska bank-403:ans orsak.
+
+Rättning i `moving-drift-observer.mjs`: en levande pod som health ännu inte
+räknar som running får förklaras av `initializing` **eller** den cachade
+`idle`-slot den värms från, och rapporteras som `initializing` (aldrig ready
+eller dold); oförklarade poddar, unhealthy och dubbla slots nekas fortsatt.
+Regression med exakt den observerade providerbilden; 163 moving-prov passerar.
+
+Fjärde provet 14:30:49 UTC (”Säg bara: hej igen Jakob.”) gick igenom i
+publicerad spelvy: chatten ”hej igen Jakob.”, `generated-lipsync-stream`
+`ended`, `completed:true`, 50/50 bildrutor, ljudstart 17,3 s efter ström,
+klientens hela förlopp 122 s (varav ~94 s text + förberedelse). Hörbar röst och
+läppsynkens kvalitet är inte granskade av människa (`reviewStatus pending`).
+Journalen är nu 24 reservationer (2 nekade 403-försök, 1 budgetnekat utan
+reservation, 1 lyckat) inom grant 30 USD; cirka tre 1,20-fönster återstår.
+
 ## Flaggor på, första prov och synlig barndiagnostik — 19 oktober 2026, ~12:30–12:45 UTC
 
 På Jakobs uppdrag (”sätt på alla flaggor”): Render `croupier-v2` fick
