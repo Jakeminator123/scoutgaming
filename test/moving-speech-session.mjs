@@ -118,10 +118,10 @@ test('Dragan admission forwards its bounded initial grant independently of techn
 });
 
 test('configuration bounds technical capacity and retains per-job, daily and moving-window limits',()=>{
-  assert.doesNotThrow(()=>fixture({configuration:{totalBudgetMicroUsd:45000000,currentDailyBudgetMicroUsd:20000000}}));
+  assert.doesNotThrow(()=>fixture({configuration:{totalBudgetMicroUsd:45000000,currentDailyBudgetMicroUsd:40000000}}));
   for(const configuration of [{totalBudgetMicroUsd:45000001},{totalBudgetMicroUsd:45000000,reserveMicroUsd:5000001},
     {initialBudgetMicroUsd:0},{initialBudgetMicroUsd:5000001},{initialBudgetMicroUsd:'13200000'},
-    {currentDailyBudgetMicroUsd:20000001},{lifetimeMs:480001},{startupMs:450001},
+    {currentDailyBudgetMicroUsd:40000001},{lifetimeMs:480001},{startupMs:450001},
     {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
 });
 

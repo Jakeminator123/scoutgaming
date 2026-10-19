@@ -8,7 +8,9 @@ import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from '../.
 
 export { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS };
 const MAX_MICRO_USD = 10000000;
-const MAX_DAILY_MICRO_USD = 20000000;
+// Raised 20 → 40 USD on 19 October 2026 at Jakob's instruction for the Dragan
+// trial evening; the persisted policy row still bounds the effective value.
+const MAX_DAILY_MICRO_USD = 40000000;
 const resources = new Set(['fullfile-provider', 'stream-session', 'operator-qa']);
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const activeRequests = new Set(['reserved', 'submission_started', 'submission_uncertain']);
@@ -458,6 +460,21 @@ export async function createSpeechJournal({ pool, environmentId, now, driftContr
         if (integer(count.count)) fail('generated_speech_journal_invalid', 409);
         await row(client, 'insert_policy', 'INSERT INTO croupier_studio.gpu_budget_policies (environment_id, version, daily_budget_micro_usd, created_at_ms) VALUES ($1, 1, $2, $3) RETURNING *', [environment, dailyBudgetMicroUsd, time]);
         return { dailyBudgetMicroUsd, savedBudgetMicroUsd: dailyBudgetMicroUsd };
+      });
+    },
+    // Explicit operator amendment of the persisted daily ceiling. It never
+    // creates a policy, never touches reservations and stays within the code
+    // maximum; the runtime still applies min(persisted, configured) per read.
+    async amendBudgetPolicy({ dailyBudgetMicroUsd, confirmation } = {}) {
+      microUsd(dailyBudgetMicroUsd, MAX_DAILY_MICRO_USD);
+      if (confirmation !== 'apply-explicit-daily-budget-amendment') fail('generated_speech_budget_amendment_unauthorized', 409);
+      return transaction(async client => {
+        const existing = await row(client, 'get_policy', 'SELECT * FROM croupier_studio.gpu_budget_policies WHERE environment_id = $1 FOR UPDATE', [environment]);
+        if (!existing || existing.version !== 1) fail('generated_speech_budget_policy_missing', 409);
+        const previous = integer(existing.daily_budget_micro_usd, MAX_DAILY_MICRO_USD);
+        if (previous === dailyBudgetMicroUsd) return { previousDailyBudgetMicroUsd: previous, dailyBudgetMicroUsd, changed: false };
+        await row(client, 'update_policy', 'UPDATE croupier_studio.gpu_budget_policies SET daily_budget_micro_usd = $2 WHERE environment_id = $1 AND version = 1 RETURNING *', [environment, dailyBudgetMicroUsd]);
+        return { previousDailyBudgetMicroUsd: previous, dailyBudgetMicroUsd, changed: true };
       });
     },
     async initializeFullfileBudgetPolicy({reserveMicroUsd,currentBudgetMicroUsd,confirmation}={}){

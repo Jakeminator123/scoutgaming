@@ -43,7 +43,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
     || driftControl !== undefined && (!driftControl || typeof driftControl.pin !== 'function')
     || !positive(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD) || !positive(reserveMicroUsd, Math.min(totalBudgetMicroUsd,5000000))
     || !positive(initialBudgetMicroUsd, totalBudgetMicroUsd)
-    || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
+    || !positive(currentDailyBudgetMicroUsd, 40000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
     || !positive(startupMs, Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs))
     || !positive(idleMs, 15000) || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);
   const ownership = createSpeechJournalLease({ journal, resource: 'stream-session', holderId });
