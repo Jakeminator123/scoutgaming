@@ -1,3 +1,9 @@
+import {createHash,createHmac} from 'node:crypto';
+import {createPostgresStore} from '../packages/storage/server/postgres-store.mjs';
+import {createStudioNativeAuth} from '../packages/studio-access/studio-native-auth.mjs';
+import {createStudioAdminApi} from '../apps/studio/lib/studio-admin-api.mjs';
+import {createMovingDriftAdminApi} from '../apps/studio/lib/moving-drift-admin.mjs';
+import {createNativeStudioRequestHandlers} from '../apps/studio/lib/studio-native-runtime.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {pathToFileURL} from 'node:url';
@@ -50,7 +56,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href) {
 /** Caller must supply the existing isolated localhost QA cluster, already migrated.
  * No environment variables, remote DB discovery or database creation here.
  */
-export async function runMovingDriftPostgresChecks({pool,restart}) {
+export async function runMovingDriftPostgresChecks({pool,restart,createPool}) {
   const target=(await pool.query("SELECT current_user AS role,current_database() AS database,inet_server_addr()::text AS address")).rows[0];
   assert.equal(target.role,'studio_qa');assert.equal(target.database,'postgres');
   assert.ok(['127.0.0.1','127.0.0.1/32','::1','::1/128'].includes(target.address));
@@ -109,5 +115,87 @@ export async function runMovingDriftPostgresChecks({pool,restart}) {
   assert.equal(recovered.observed.status,'unknown');
   const row=(await pool.query('SELECT revision,state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[environmentId])).rows[0];
   assert.equal(Number(row.revision),recovered.revision);assert.equal(row.state.desired.mode,'off');
-  return {pool,checks:['drift-jsonb-retry-after-ack-loss-and-restart','drift-initial-off-attestation','drift-sql-state-constraints','drift-concurrent-command-cas','drift-environment-isolation','drift-postgres-restart-expiry']};
+  const apiChecks=await runMovingDriftAdminSqlChecks({pool,restart,createPool});pool=apiChecks.pool;
+  return {pool,checks:[...apiChecks.checks,'drift-jsonb-retry-after-ack-loss-and-restart','drift-initial-off-attestation','drift-sql-state-constraints','drift-concurrent-command-cas','drift-environment-isolation','drift-postgres-restart-expiry']};
+}
+
+/** Called only after the caller's loopback/role/database guard above. */
+async function runMovingDriftAdminSqlChecks({pool,restart,createPool}) {
+  const origin='https://studio.croupier-qa.invalid',apiPath='/studio/api/admin/moving-drift';
+  const scope={environment:'drift-api-sql',workspaceId:'isolated-qa'};
+  const env={CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify(profiles)};
+  await pool.query("INSERT INTO croupier_auth.meta(k,v) VALUES('jwt_secret',$1) ON CONFLICT(k) DO NOTHING",['c'.repeat(64)]);
+  const signer=(await pool.query("SELECT v FROM croupier_auth.meta WHERE k='jwt_secret'")).rows[0].v;
+  const salt='d'.repeat(32),passwordHash='e'.repeat(128);
+  const owner=(await pool.query(
+    "INSERT INTO croupier_auth.users(username,salt,hash,role,created_at) VALUES($1,$2,$3,'admin',$4) RETURNING id,username",
+    ['drift-api-sql-owner',salt,passwordHash,new Date().toISOString()])).rows[0];
+  const mint=async()=>{
+    const epoch=Number((await pool.query('SELECT epoch FROM croupier_auth.bo_auth_epochs WHERE user_id=$1',[owner.id])).rows[0]?.epoch??0);
+    const body=Buffer.from(JSON.stringify({aud:'backoffice',sub:owner.username,role:'admin',auth_epoch:epoch,
+      source_stamp:createHash('sha256').update(salt+':'+passwordHash).digest('hex'),exp:Math.floor(Date.now()/1000)+3600})).toString('base64url');
+    const header=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
+    return header+'.'+body+'.'+createHmac('sha256',Buffer.from(signer,'hex')).update(header+'.'+body).digest('base64url');
+  };
+  let token=await mint(),apiPool=createPool?createPool():pool;
+  const ownsPool=!!createPool;
+  const build=(rollback=false)=>{
+    const store=createPostgresStore({pool:apiPool});
+    const authorize=createStudioNativeAuth({boDb:store.boDb,scope});
+    const service=createMovingDriftAdminApi({boDb:store.boDb,scope,env});
+    assert.equal(service.configured,true);
+    const api=createStudioAdminApi({authorize,handlers:service.handlers,gates:service.gates,
+      allowedOrigins:[origin],publicHosts:[new URL(origin).host],
+      mutationTransaction:work=>store.boDb.transaction(async()=>{
+        const value=await work();if(rollback)throw Error('private_rollback_fixture');return value;
+      })});
+    return createNativeStudioRequestHandlers({configuration:()=>({
+      allowedOrigins:[origin,'https://lab.croupier-qa.invalid'],publicHosts:[new URL(origin).host,'lab.croupier-qa.invalid'],
+      apiBase:'/studio/api/admin',authBase:'/studio/api/auth'}),runtime:async()=>({api})});
+  };
+  const request=(body,headers={})=>new Request(origin+apiPath,{method:body?'POST':'GET',
+    ...(body?{body:JSON.stringify(body)}:{}),headers:{cookie:'bo_jwt='+token,origin,
+      'sec-fetch-site':'same-origin','content-type':'application/json',...headers}});
+  const stop={mode:'off',expectedRevision:0,commandId:'api-sql-stop'};
+  try {
+    let handler=build(),response=await handler.handleNativeAdmin(request());
+    assert.equal(response.status,200);const initial=await response.json();
+    assert.equal(initial.revision,0);assert.equal(initial.observed.status,'unknown');
+    assert.equal(initial.capabilities.connected,false);assert.equal(initial.admission.allowed,false);
+    response=await handler.handleNativeAdmin(request(stop,{origin:'https://evil.croupier-qa.invalid'}));
+    assert.equal(response.status,403);
+    assert.equal(Number((await pool.query('SELECT revision FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[scope.environment])).rows[0].revision),0);
+    const race=await Promise.all(Array.from({length:4},(_,index)=>
+      handler.handleNativeAdmin(request({...stop,commandId:'api-race-'+index}))));
+    assert.deepEqual(race.map(row=>row.status).sort(),[200,409,409,409]);
+    const winnerIndex=race.findIndex(row=>row.status===200),winningCommand={...stop,commandId:'api-race-'+winnerIndex};
+    const saved=await race[winnerIndex].json();assert.equal(saved.revision,1);
+    assert.equal(saved.desired.mode,'off');assert.equal(saved.observed.status,'unknown');
+    assert.equal('nextAction' in saved,false);assert.equal(JSON.stringify(saved).includes('endpoint-test'),false);
+    assert.equal(saved.admission.allowed,false);
+    const rollback=build(true);
+    response=await rollback.handleNativeAdmin(request({mode:'off',expectedRevision:1,commandId:'rollback-command'}));
+    assert.equal(response.status,500);
+    assert.equal(Number((await pool.query('SELECT revision FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[scope.environment])).rows[0].revision),1);
+    await pool.query('INSERT INTO croupier_auth.bo_auth_epochs(user_id,epoch) VALUES($1,1) ON CONFLICT(user_id) DO UPDATE SET epoch=croupier_auth.bo_auth_epochs.epoch+1',[owner.id]);
+    for(const body of [undefined,{mode:'off',expectedRevision:1,commandId:'revoked-command'}]) {
+      response=await handler.handleNativeAdmin(request(body));assert.equal(response.status,401);
+    }
+    token=await mint();
+    if(ownsPool)await apiPool.end();
+    pool=await restart(pool);apiPool=createPool?createPool():pool;handler=build();
+    response=await handler.handleNativeAdmin(request(winningCommand));
+    assert.equal(response.status,200);const restored=await response.json();
+    assert.equal(restored.revision,saved.revision);assert.equal(restored.operationId,saved.operationId);
+    assert.deepEqual(restored.desired,saved.desired);assert.equal(restored.admission.allowed,false);
+    await pool.query('ALTER TABLE croupier_studio.moving_drift_control RENAME TO moving_drift_fixture_hidden');
+    try {
+      response=await handler.handleNativeAdmin(request());
+      assert.equal(response.status,503);
+      assert.deepEqual(await response.json(),{error:'Driftläget kan inte läsas eller sparas just nu.',code:'drift_store_unavailable'});
+    } finally {await pool.query('ALTER TABLE croupier_studio.moving_drift_fixture_hidden RENAME TO moving_drift_control');}
+    return {pool,checks:['drift-api-native-auth-csrf','drift-api-single-connection-concurrent-cas',
+      'drift-api-shared-transaction-rollback','drift-api-session-revocation',
+      'drift-api-postgres-restart-retry','drift-api-optional-schema-fails-closed']};
+  } finally {if(ownsPool)await apiPool.end();}
 }

@@ -13,6 +13,7 @@ import { createStudioRepository } from '../../../packages/studio-registry/server
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
+import { createMovingDriftAdminApi } from './moving-drift-admin.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
 import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../../packages/presentation/server/saved-game-policy.mjs';
@@ -184,6 +185,9 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     for (const [key, handler] of createResourceLifecycleApi({ repository, scope: config.scope }).handlers) {
       if (handlers.has(key)) unavailable(); handlers.set(key, handler);
     }
+    const drift = createMovingDriftAdminApi({pool,boDb:store.boDb,scope:config.scope,env});
+    for (const [key,handler] of drift.handlers) { if(handlers.has(key)) unavailable(); handlers.set(key,handler); }
+    for (const [key,gate] of drift.gates) { if(gates.has(key)) unavailable(); gates.set(key,gate); }
     const api = createStudioAdminApi({ authorize, handlers, gates, preparations, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     const native={ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,

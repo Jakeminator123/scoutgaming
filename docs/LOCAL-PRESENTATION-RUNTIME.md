@@ -25,8 +25,20 @@ modulerna startar ingenting och läser inga credentials. Utgången varm period
 övergår till Av vid nästa serveranrop/avstämning. Det bevisar återställning efter
 omstart, **inte avstängning medan servern ligger nere**.
 
-Denna etapp har ingen HTTP-route, schemalagd exekverare eller produktionskoppling.
-Inkoppling kräver N1-/originkontroll, globalt synkroniserad admission med befintlig
+Admins befintliga catch-all registrerar GET/POST `/studio/api/admin/moving-drift`
+(eller `/api/admin` enligt `apiBase`). N1, färsk session, exakt origin/CSRF och
+konfigurerat environment/workspace kontrolleras före anrop. Behörighet och
+driftlagring delar samma produkttransaktion/anslutning, med rollback även för
+driftstate. Browserkontrakt/typer finns i `moving-drift-admin.mjs`/`.d.mts` under
+`packages/presentation/contracts/`; interna `nextAction`, endpoints och hashunderlag
+utelämnas. 200 bekräftar önskat läge, aldrig genomförd GPU-drift. Konflikter ger
+409 med säker kod; saknad optional016 ger 503 utan SQL-detaljer.
+
+API:t är avstängt utan server-opt-in/profilkonfiguration enligt
+[ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+Denna etapp anger alltid `connected:false`, tillåter bara önskat Av och öppnar
+ingen admission. Saving/warm är spärrade; ingen provider eller exekverare finns.
+Framtida faktisk drift kräver globalt synkroniserad admission med befintlig
 journal, färska bevis från samtliga endpoints och kontrollerad drain/stop.
 Varm aktivering kräver därutöver oberoende verkställd sluttid, faktisk reservation
 av hela perioden inklusive avstängning och attestering av exakt release/bank.

@@ -27,6 +27,8 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+  'packages/presentation/contracts/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
+  'apps/studio/test/moving-drift-admin.test.mjs',
   'packages/presentation/contracts/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
   'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/postgres-moving-drift.mjs',
   'packages/operators/server/public-rooms.mjs',
@@ -185,12 +187,12 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const start = async () => { await guarded(data); await run(binary('pg_ctl'), ['-D', data, '-l', join(root, 'postgres.log'), '-w', 'start'], { env }); active = true; };
     const stop = async () => { if (active) { await guarded(data); await run(binary('pg_ctl'), ['-D', data, '-m', 'fast', '-w', 'stop'], { env }); active = false; } };
     const { Pool } = createRequire(new URL('../services/game/package.json', import.meta.url))('pg');
-    const open = () => new Pool({ connectionString: `postgresql://studio_qa@127.0.0.1:${pgPort}/postgres`, max: 8, connectionTimeoutMillis: 5000, query_timeout: 15000 });
+    const open = (max=8) => new Pool({ connectionString: `postgresql://studio_qa@127.0.0.1:${pgPort}/postgres`, max, connectionTimeoutMillis: 5000, query_timeout: 15000 });
     await start(); pool = open();
     const restart = async () => { await pool.end(); await stop(); await start(); pool = open(); return pool; };
     if (movingDriftOnly) {
       const {loadStudioMigrations,planStudioMigrations,applyStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
-      const driftSources = ['packages/presentation/contracts/moving-drift.mjs','services/game/moving-drift-controller.mjs',
+      const driftSources = [...STUDIO_ISOLATED_QA_SOURCES,'packages/presentation/contracts/moving-drift.mjs','services/game/moving-drift-controller.mjs',
         'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','test/fixtures/moving-budget-sql-checks.mjs',
         'tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
         ...(await loadStudioMigrations()).map(row=>'ops/neon-studio/'+row.file)];
@@ -202,8 +204,12 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       await runMovingBudgetMigrationSqlChecks({pool});
       if (JSON.stringify(await planStudioMigrations({pool})) !== JSON.stringify(initial)) throw new Error('isolated_drift_historical_fixture_not_rolled_back');
       await applyStudioMigrations({pool,expectedTarget:initial.target,confirm:true});
+      const productSql=(await readFile(join(repository,'ops/neon-game/product-schema.sql'),'utf8')).replace(/\r\n/g,'\n');
+      await pool.query(productSql);
+      await pool.query('INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ($1,$2,$3,$4)',
+        ['product-v1',createHash('sha256').update(productSql).digest('hex'),'{}',new Date().toISOString()]);
       const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
-      const drift = await runMovingDriftPostgresChecks({pool,restart}); pool = drift.pool;
+      const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
       if (await sourceDigest() !== before) throw new Error('isolated_qa_sources_changed_rerun_required');
       const integrationChecks = ['drift-historical015-rollback',...drift.checks];
       console.log(JSON.stringify({acceptance:'isolated-moving-drift-sql-restart',sourceDigest:before,checks:integrationChecks}));
@@ -241,7 +247,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const { runRoulettePostgresChecks } = await import('../test/roulette-postgres.mjs');
     const roulette = await runRoulettePostgresChecks({pool,restart}); pool = roulette.pool;
     const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
-    const drift = await runMovingDriftPostgresChecks({pool,restart}); pool = drift.pool;
+    const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
     const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks, ...drift.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));

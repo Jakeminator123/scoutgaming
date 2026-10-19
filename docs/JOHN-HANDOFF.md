@@ -1,23 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
-## Driftväljare: isolerad backendetapp — 19 oktober 2026
+## Driftväljare: kontrollplan och API — 19 oktober 2026
 
-HUVUDAGENT5 äger kontrollplan/lagring på `codex/admin-drift-backend`;
-UIUX äger Admin-vyn och POST-PISYNK4 tal-/textflödet. Kontraktet skiljer
-önskat läge från observerad workerstatus och prövar revision, sluttid,
-budgetunderlag, stopp och tömning före profilbyte. SQL016 är deployment-optional.
-Granskningsfixar: identiska kommandon tål JSONB-omordning, revision0/Av kan
-bekräftas med null-kvitto utan att öppna senare aktivering, och sparad observation
-ogiltigförklaras vid ändrat profil-/endpoint-/release-/bankunderlag.
-Verifierat: 59 fokuserade offlineprov och sju isolerade SQL-/omstartskontroller,
-inklusive återförsök efter faktisk COMMIT med simulerat förlorat svar. Historiska
-014→015-budgetbevis, rollback och optional016/bundlebevis är kvar. Orphan-kontrollen
-är grön. Proxyfilens tidigare 12 prov passerade orörda; inget bekräftat proxyfel.
-Ny full CI krävs. Inga GPU-/produktionsanrop.
-**Ej driftklart:** ingen HTTP-/providerkoppling eller periodisk exekverare.
-Varm drift kräver oberoende avstängning, faktisk kostnadsreservation och exakt
-förberedelseattestering; `nextAction` är bara en plan. Befintlig min0/max1-admission
-är orörd. Se [tekniska gränser](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+HUVUDAGENT5 äger backend; UIUX äger separat Admin-koppling och POST-PISYNK4
+talflödet. PR268:s kontrollplan är fryst på `52e997f6`; API-etappen levereras
+separat på `codex/admin-drift-api`. MERGE3 äger granskning och merge.
+GET/POST `/studio/api/admin/moving-drift` återanvänder N1, färsk session,
+origin/CSRF och konfigurerat scope. Driftstate och behörighet delar SQL-transaktion;
+rollback rullar tillbaka båda. Browsern får önskat/observerat läge, revision,
+profiler och capabilities, aldrig interna exekveringsplaner eller endpoint/hashar.
+
+Verifierat: 98 fokuserade prov och 13 verkliga isolerade SQL-/native-API-kontroller,
+inklusive fyra samtidiga kommandon på en anslutning, återkallad session, rollback,
+JSONB/COMMIT-svarsförlust och omstart/retry. Optional016 saknad ger säker 503.
+Historiska 014→015-bevis är kvar. Ny full CI återstår för API-headet.
+API:t kräver uttrycklig server-opt-in/profilkonfiguration, är avstängt som standard
+och anger alltid `connected:false`; enbart önskat Av kan sparas. 200 bevisar
+inte faktisk avstängning. Ingen provider, HTTP-webbläsar-E2E eller GPU har provats.
+Faktisk drift kräver ännu exekverare, synkroniserad admission, oberoende sluttid,
+verklig kostnadsreservation och exakt release-/bankattestering.
+Ingen GPU-/produktionsändring. [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan)
+och [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
 ## UX/UI: första Admin-klippkartan — 19 oktober 2026
 
