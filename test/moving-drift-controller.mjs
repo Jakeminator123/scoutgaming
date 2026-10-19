@@ -12,14 +12,15 @@ function fixture(options = {}) {
   const store = { transact(fn) {
     const job = queue.then(async () => {
       const result = await fn(structuredClone(row), time);
-      row = structuredClone(result.state);
+      row = options.reorderKeys ? JSON.parse(JSON.stringify(result.state),(key,value)=>value&&typeof value==='object'&&!Array.isArray(value)
+        ? Object.fromEntries(Object.entries(value).reverse()) : value) : structuredClone(result.state);
       return structuredClone(result.value);
     });
     queue = job.catch(() => {});
     return job;
   }};
   const capabilities = { connected:true, warm:false, ...options.capabilities };
-  const make = (extra = {}) => createMovingDriftController({store,profiles,capabilities:{...capabilities,...extra}});
+  const make = (extra = {},configuredProfiles=profiles) => createMovingDriftController({store,profiles:configuredProfiles,capabilities:{...capabilities,...extra}});
   const controller = make();
   const observe = async (extra = {}) => {
     const status = await controller.status();
@@ -204,4 +205,67 @@ test('a warm reservation is bound to its command/revision/profile and cannot fun
   await f.controller.command(command('off',{expectedRevision:1,commandId:'stop'}));
   await assert.rejects(f.controller.command(command('warm',{expectedRevision:2,durationSeconds:1800})),rejects('drift_warm_budget_unavailable'));
   await assert.rejects(f.controller.command(command('saving',{expectedRevision:2,commandId:123})),rejects('drift_invalid_command'));
+});
+
+test('identical command retry survives reordered stored JSON keys and a new controller',async()=>{
+  const f=fixture({reorderKeys:true}),cmd=command('saving');
+  const first=await f.controller.command(cmd);
+  for(const controller of [f.controller,f.make()]) {
+    const retried=await controller.command({...cmd});
+    assert.equal(retried.revision,first.revision);
+    assert.equal(retried.operationId,first.operationId);
+    assert.deepEqual(retried.desired,first.desired);
+  }
+  await assert.rejects(f.make().command(command('saving',{profileId:'comparison'})),rejects('drift_command_reused'));
+});
+
+test('revision-zero off can be attested without a command, but null never fences activation or later off',async()=>{
+  const f=fixture(),initial=await f.controller.status();
+  const off=applied(initial,'off',null);
+  let result=await f.observe({applied:off});
+  assert.equal(result.revision,0);
+  assert.equal(result.operationId,null);
+  assert.equal(result.observed.status,'off');
+  assert.equal(result.nextAction.type,'none');
+  assert.equal(result.admission.allowed,false);
+  for(const invalid of [{...off,mode:'saving',profileId:'base'},{...off,workersMin:1},{...off,workersMax:2}]) {
+    await assert.rejects(f.observe({applied:invalid}),rejects('drift_invalid_observation'));
+  }
+  result=await f.observe({applied:off,workers:[active()]});
+  assert.equal(result.observed.status,'stopping');
+  assert.equal(result.nextAction.type,'stop');
+  const saving=await f.controller.command(command('saving'));
+  await assert.rejects(f.observe({applied:{...applied(saving),operationId:null}}),rejects('drift_invalid_observation'));
+  await assert.rejects(f.observe({applied:off}),rejects('drift_invalid_observation'));
+  const stopped=await f.controller.command(command('off',{expectedRevision:1,commandId:'stop'}));
+  await assert.rejects(f.observe({applied:{...applied(stopped,'off',null),operationId:null}}),rejects('drift_invalid_observation'));
+});
+
+test('restart invalidates cached fleet proof for changed IDs, endpoints, releases or banks',async()=>{
+  const f=fixture(),saved=await f.controller.command(command('saving'));
+  await f.observe({applied:applied(saved)});
+  const changes=[
+    [profiles[0],{...profiles[1],id:'new-comparison'}],
+    [profiles[0]],
+    [...profiles,{...profiles[1],id:'extra',endpointId:'endpoint-extra'}],
+    [{...profiles[0],endpointId:'new-endpoint-base'},profiles[1]],
+    [profiles[0],{...profiles[1],endpointId:'new-endpoint-comparison'}],
+    [profiles[0],{...profiles[1],releaseDigest:'d'.repeat(64)}],
+    [profiles[0],{...profiles[1],bankHash:'e'.repeat(64)}],
+  ];
+  for(const changed of changes) {
+    const controller=f.make({},changed),status=await controller.status();
+    assert.equal(status.observed.status,'unknown');
+    assert.equal(status.observed.reasonCode,'drift_catalogue_changed');
+    assert.equal(status.nextAction.type,'inspect');
+    assert.equal(status.admission.allowed,false);
+    await assert.rejects(controller.authorizeAdmission({revision:saved.revision,profileId:'base'}),rejects('drift_not_admitting'));
+  }
+  const unchanged=f.make({},[...profiles].reverse().map(p=>({...p,label:'New label'})));
+  assert.equal((await unchanged.status()).admission.allowed,true,'order and display labels are not fleet identity');
+  const changed=changes[0],controller=f.make({},changed);
+  const renewed=await controller.observe({revision:saved.revision,operationId:saved.operationId,
+    observedAtMs:f.getTime(),observedProfileIds:changed.map(p=>p.id),applied:applied(saved),workers:[],queuedJobs:0,busyJobs:0});
+  assert.equal(renewed.admission.allowed,true,'only a new complete observation restores admission');
+  assert.equal((await f.controller.status()).admission.allowed,false,'old configured instance cannot reuse the replacement fleet proof');
 });

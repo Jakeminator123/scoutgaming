@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {driftError,parseMovingDriftCommand,MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift.mjs';
 
 const fail=(code,status)=>{throw driftError(code,status);};
@@ -26,6 +26,10 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       || typeof p.label!=='string'||!p.label.trim()||p.label.length>80||!hash(p.releaseDigest)||!hash(p.bankHash))) {
     fail('drift_invalid_configuration',422);
   }
+  // Persist the exact fleet identity with each observation. Display labels and
+  // input order do not change identity; endpoint/release/bank changes do.
+  const catalogueFingerprint=createHash('sha256').update(JSON.stringify([...catalogue.values()]
+    .map(p=>[p.id,p.endpointId,p.releaseDigest,p.bankHash]).sort((a,b)=>a[0]<b[0]?-1:1))).digest('hex');
   const caps=clone(capabilities);
   const connected=caps.connected===true;
   const warmAvailable=connected&&caps.warm===true&&caps.independentDeadline===true;
@@ -35,7 +39,7 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
     if(state.desired.mode==='warm'&&now>=state.desired.endsAtMs) {
       state.revision++;state.operationId=randomUUID();state.updatedAtMs=now;
       state.desired={mode:'off',profileId:null,endsAtMs:null};
-      // Keep the old command identity: a retry cannot restart an expired period.
+      // The old expected revision is now stale; a retry cannot restart this period.
       state.lastCommand=null;
     }
     return state;
@@ -57,6 +61,10 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       nextAction:{type:'inspect',revision:state.revision,operationId:state.operationId}};
     const action=(type,extra={})=>{result.nextAction={type,revision:state.revision,operationId:state.operationId,...extra};};
     const error=code=>{result.observed.status='error';result.observed.reasonCode=code;return result;};
+    const sameCatalogue=obs?.catalogueFingerprint===catalogueFingerprint&&Array.isArray(obs.observedProfileIds)
+      &&obs.observedProfileIds.length===catalogue.size&&new Set(obs.observedProfileIds).size===catalogue.size
+      &&obs.observedProfileIds.every(profileId=>catalogue.has(profileId));
+    if(obs&&!sameCatalogue){result.observed.reasonCode='drift_catalogue_changed';return result;}
     if(!fresh){result.observed.reasonCode=obs?'drift_observation_stale':'drift_observation_missing';return result;}
     const occupied=obs.workers.filter(w=>!['exited','terminated'].includes(w.state));
     if(occupied.length>1) return error('drift_capacity_exceeded');
@@ -126,8 +134,11 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
     command:async input=>{
       const cmd=parseMovingDriftCommand(input);
       return transact((state,now)=>{
-        if(state.lastCommand?.input.commandId===cmd.commandId) {
-          if(JSON.stringify(cmd)!==JSON.stringify(state.lastCommand.input)) fail('drift_command_reused');
+        if(state.lastCommand?.input?.commandId===cmd.commandId) {
+          const previous=state.lastCommand.input;
+          // The command is a strict flat scalar DTO; JSONB key order is irrelevant.
+          if(Object.keys(cmd).length!==Object.keys(previous).length
+            ||Object.keys(cmd).some(key=>!Object.hasOwn(previous,key)||cmd[key]!==previous[key])) fail('drift_command_reused');
           return view(state,now);
         }
         if(cmd.expectedRevision!==state.revision) fail('drift_revision_conflict');
@@ -164,7 +175,10 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       let applied=null;
       if(input.applied) {
         const a=input.applied;
-        if(!integer(a.revision)||a.revision>state.revision||!id(a.operationId)
+        // Null is a receipt for the pristine off state only, never an activation fence.
+        const initialOff=state.revision===0&&state.operationId===null&&state.desired.mode==='off'
+          &&a.revision===0&&a.operationId===null&&a.mode==='off'&&a.profileId===null&&a.workersMin===0&&a.workersMax===1;
+        if(!integer(a.revision)||a.revision>state.revision||!id(a.operationId)&&!initialOff
           ||!['off','saving','warm'].includes(a.mode)||!(a.profileId===null&&a.mode==='off'||catalogue.has(a.profileId))
           ||!integer(a.workersMin)||!integer(a.workersMax)) fail('drift_invalid_observation',422);
         applied={revision:a.revision,operationId:a.operationId,mode:a.mode,profileId:a.profileId,workersMin:a.workersMin,workersMax:a.workersMax};
@@ -172,7 +186,7 @@ export function createMovingDriftController({store,profiles,capabilities={}}={})
       for(const key of ['providerDeadlineMs','budgetCoveredUntilMs']) {
         if(input[key]!==undefined&&!integer(input[key])) fail('drift_invalid_observation',422);
       }
-      state.observation={observedAtMs:input.observedAtMs,observedProfileIds:[...input.observedProfileIds],workers,busyJobs:input.busyJobs,queuedJobs:input.queuedJobs,applied,
+      state.observation={catalogueFingerprint,observedAtMs:input.observedAtMs,observedProfileIds:[...input.observedProfileIds],workers,busyJobs:input.busyJobs,queuedJobs:input.queuedJobs,applied,
         providerDeadlineMs:input.providerDeadlineMs??null,budgetCoveredUntilMs:input.budgetCoveredUntilMs??null};
       return view(state,now);
     }),

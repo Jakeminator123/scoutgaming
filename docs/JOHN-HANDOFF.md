@@ -6,13 +6,14 @@ HUVUDAGENT5 äger kontrollplan/lagring på `codex/admin-drift-backend`;
 UIUX äger Admin-vyn och POST-PISYNK4 tal-/textflödet. Kontraktet skiljer
 önskat läge från observerad workerstatus och prövar revision, sluttid,
 budgetunderlag, stopp och tömning före profilbyte. SQL016 är deployment-optional.
-Verifierat: 95 fokuserade offlineprov samt isolerad PostgreSQL med samtidiga
-kommandon, miljöisolering, constraints och återstart. Inga GPU-/produktionsanrop.
-PR268:s CI-fixar registrerar båda driftproven och uppdaterar bundleprovet för
-valfri016. Historiska 014→015-provet inventerar bara sina installerade tabeller;
-016 läggs inte till där. Verifierat efter fix: 56 fokuserade prov och fem
-SQL-/omstartskontroller inklusive historik/rollback. Proxyfilens 12 prov passerar
-orörda; inget bekräftat proxyfel. Orphan-kontrollen är grön. Ny full CI krävs.
+Granskningsfixar: identiska kommandon tål JSONB-omordning, revision0/Av kan
+bekräftas med null-kvitto utan att öppna senare aktivering, och sparad observation
+ogiltigförklaras vid ändrat profil-/endpoint-/release-/bankunderlag.
+Verifierat: 59 fokuserade offlineprov och sju isolerade SQL-/omstartskontroller,
+inklusive återförsök efter faktisk COMMIT med simulerat förlorat svar. Historiska
+014→015-budgetbevis, rollback och optional016/bundlebevis är kvar. Orphan-kontrollen
+är grön. Proxyfilens tidigare 12 prov passerade orörda; inget bekräftat proxyfel.
+Ny full CI krävs. Inga GPU-/produktionsanrop.
 **Ej driftklart:** ingen HTTP-/providerkoppling eller periodisk exekverare.
 Varm drift kräver oberoende avstängning, faktisk kostnadsreservation och exakt
 förberedelseattestering; `nextAction` är bara en plan. Befintlig min0/max1-admission

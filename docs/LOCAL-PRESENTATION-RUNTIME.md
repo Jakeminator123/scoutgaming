@@ -13,6 +13,11 @@ revision/operation, önskat läge, observerad status, vald/faktisk profil,
 exakt release-/bankberedskap, capability/skälkod och kostnadsunderlag.
 Saknad/gammal observation ger `unknown`; cached EXITED är ingen aktiv GPU.
 `nextAction` är en intern plan, aldrig en genomförandekvittens.
+Identiska kommandon jämförs fältvis så JSONB:s nyckelordning inte påverkar retry.
+Null-kvitto tillåts bara för revision0/ursprungligt Av (min0/max1), aldrig för
+senare aktivering. Observationens katalogfingeravtryck omfattar profil-ID,
+endpoint, release och bank; ändrat underlag kräver ny komplett observation.
+Visningsetiketter och profilernas ordning ändrar inte detta fingeravtryck.
 
 `postgres-moving-drift.mjs` serialiserar en rad per miljö för alla profiler/rum,
 använder databasklocka och kräver atomisk commit. SQL016 är valfri vid deployment;

@@ -56,17 +56,46 @@ export async function runMovingDriftPostgresChecks({pool,restart}) {
   assert.ok(['127.0.0.1','127.0.0.1/32','::1','::1/128'].includes(target.address));
   const environmentId='isolated-drift';
   assert.equal((await pool.query('SELECT count(*)::integer AS n FROM croupier_studio.moving_drift_control')).rows[0].n,0);
-  const make=()=>createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId}),profiles,capabilities:{connected:true}});
-  const first=make(),second=make();
-  const race=await Promise.allSettled([first.command(command()),second.command(command({commandId:'second'}))]);
+  const make=(storeOptions={})=>createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId,...storeOptions}),profiles,capabilities:{connected:true}});
+  const pristine=make({environmentId:'initial-off-fixture'}),initial=await pristine.status();
+  const confirmed=await pristine.observe({revision:0,operationId:null,observedAtMs:initial.serverNowMs,
+    observedProfileIds:['base'],workers:[],queuedJobs:0,busyJobs:0,
+    applied:{revision:0,operationId:null,mode:'off',profileId:null,workersMin:0,workersMax:1}});
+  assert.equal(confirmed.observed.status,'off');assert.equal(confirmed.nextAction.type,'none');assert.equal(confirmed.admission.allowed,false);
+  const first=make(),second=make(),commands=[command(),command({commandId:'second'})];
+  const race=await Promise.allSettled([first.command(commands[0]),second.command(commands[1])]);
   assert.equal(race.filter(x=>x.status==='fulfilled').length,1);
   assert.equal(race.find(x=>x.status==='rejected').reason.code,'drift_revision_conflict');
-  const saved=await first.status();
+  const saved=await first.status(),winner=commands[race.findIndex(result=>result.status==='fulfilled')];
+  const retried=await make().command(winner);
+  assert.equal(retried.revision,saved.revision);assert.equal(retried.operationId,saved.operationId);
   await assert.rejects(pool.query("UPDATE croupier_studio.moving_drift_control SET state='{}'::jsonb WHERE environment_id=$1",[environmentId]),error=>error.code==='23514');
   await assert.rejects(pool.query('UPDATE croupier_studio.moving_drift_control SET revision=revision+1 WHERE environment_id=$1',[environmentId]),error=>error.code==='23514');
   const other=createMovingDriftController({store:createPostgresMovingDriftStore({pool,environmentId:'other-fixture'}),profiles});
   assert.equal((await other.status()).revision,0);
   assert.equal((await first.status()).revision,1);
+  // Commit to real PostgreSQL, then inject loss of its response. Retrying must
+  // read the durable JSONB command, not create another operation after restart.
+  let loseCommitResponse=true;
+  const uncertainPool={async connect(){
+    const client=await pool.connect();
+    return {async query(sql,values){
+      const result=await client.query(sql,values);
+      if(sql==='COMMIT'&&loseCommitResponse){loseCommitResponse=false;throw new Error('fixture_commit_response_lost');}
+      return result;
+    },release(){client.release();}};
+  }};
+  const uncertainEnvironment='uncertain-commit-fixture',uncertainCommand=command({commandId:'lost-ack'});
+  await assert.rejects(make({pool:uncertainPool,environmentId:uncertainEnvironment}).command(uncertainCommand),reject('drift_store_unavailable'));
+  const committed=(await pool.query('SELECT state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[uncertainEnvironment])).rows[0].state;
+  assert.equal(committed.revision,1);
+  pool=await restart(pool);
+  const retryAfterRestart=await make().command(winner);
+  assert.equal(retryAfterRestart.revision,saved.revision);assert.equal(retryAfterRestart.operationId,saved.operationId);
+  const recoveredCommand=await make({environmentId:uncertainEnvironment}).command(uncertainCommand);
+  assert.equal(recoveredCommand.revision,committed.revision);assert.equal(recoveredCommand.operationId,committed.operationId);
+  assert.deepEqual(recoveredCommand.desired,committed.desired);
+  await assert.rejects(make({environmentId:uncertainEnvironment}).command({mode:'off',expectedRevision:0,commandId:'lost-ack'}),reject('drift_command_reused'));
   // Seed an already expired desired period, not provider/runtime data.
   await pool.query(`UPDATE croupier_studio.moving_drift_control
     SET state=jsonb_set(jsonb_set(state,'{desired,mode}','"warm"'::jsonb),'{desired,endsAtMs}',
@@ -80,5 +109,5 @@ export async function runMovingDriftPostgresChecks({pool,restart}) {
   assert.equal(recovered.observed.status,'unknown');
   const row=(await pool.query('SELECT revision,state FROM croupier_studio.moving_drift_control WHERE environment_id=$1',[environmentId])).rows[0];
   assert.equal(Number(row.revision),recovered.revision);assert.equal(row.state.desired.mode,'off');
-  return {pool,checks:['drift-sql-state-constraints','drift-concurrent-command-cas','drift-environment-isolation','drift-postgres-restart-expiry']};
+  return {pool,checks:['drift-jsonb-retry-after-ack-loss-and-restart','drift-initial-off-attestation','drift-sql-state-constraints','drift-concurrent-command-cas','drift-environment-isolation','drift-postgres-restart-expiry']};
 }
