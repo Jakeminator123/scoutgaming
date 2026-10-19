@@ -24,6 +24,31 @@ trelagersversion.** Hennes befintliga tal, filmer och historik ligger kvar på
 samma molnväg. Astrid-specifika avsnitt nedan beskriver dessa referensverktyg,
 inte standardval eller krav på en parallell lokal produkt.
 
+### Dragan: prova publicerad chatt och tal
+
+Öppna **Drift** i Admin. Använd **Basprofil** och **Sparläge** när
+serverfunktionen är ansluten och tillåter tal. Ett sparat önskemål eller
+ett textsvar bevisar inte att rösten fungerar. Kall Sparläge kan visa
+att modellen ännu inte är laddad. Varm drift och profiljämförelser ska
+förbli spärrade tills deras oberoende stopp och budgetstöd är verifierade.
+
+Öppna den publicerade lobbyn, välj bolag, spelrum och Dragan. Välj
+**OpenClaw** som klippval och slå på taluppspelning. Börja med en kort
+textfråga och lämna mikrofonen avstängd. Kontrollera rätt röst, hörbart
+ljud, munrörelser och återgång till grundloopen innan mikrofonprovet.
+Ett eget spelprov görs i samma spelvy; saldo och kort hanteras av servern.
+
+När textprovet fungerar kan spelaren slå på mikrofonen och lämna det
+vanliga webbläsartillståndet. Kontrollera att transkriptionen behåller talets
+språk, att svaret följer dealerns språkpolicy och att rätt röst/video spelas upp.
+
+**Stoppa drift** begär Av. Vänta på färsk faktisk Av och verifierat stopp;
+att bara önskemålet ändras räcker inte. Röstprofilens aktivering är ett
+separat sparande och förutsätter rätt verifierat underlag.
+[Faktiskt provläge och kvarvarande begränsningar](../../../docs/JOHN-HANDOFF.md#post-lipsync5-produktionsprov)
+anges i handoffen. Inspelade standardrepliker är en separat granskning
+från fri chatt; ett filnamn eller röstval godkänner inte deras synk.
+
 **Roulettescenens storlek:** öppna Spelbolag & rum, välj rummet och
 **Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
 **Redigera gemensam mall**. **Zooma in scenen** och
