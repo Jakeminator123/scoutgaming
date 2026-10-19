@@ -87,11 +87,15 @@ export async function startChildren(specs, { spawnProcess = spawn, wait = waitFo
   try {
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');
     await portCheck();
+    // Each stream is observed only when an explicit line filter is supplied;
+    // console.warn diagnostics arrive on stderr, console.info on stdout.
+    const observeOut = typeof specs.web.onStdoutLine === 'function', observeErr = typeof specs.web.onStderrLine === 'function';
     web = spawnProcess(specs.web.command, specs.web.args,
       { cwd: specs.web.cwd, env: specs.web.env,
-        stdio: typeof specs.web.onStdoutLine === 'function' ? ['ignore', 'pipe', 'ignore'] : 'ignore', windowsHide: true });
+        stdio: observeOut || observeErr ? ['ignore', observeOut ? 'pipe' : 'ignore', observeErr ? 'pipe' : 'ignore'] : 'ignore', windowsHide: true });
     web.on('error', () => {});
-    if (typeof specs.web.onStdoutLine === 'function') observeChildStdout(web.stdout, specs.web.onStdoutLine);
+    if (observeOut) observeChildStdout(web.stdout, specs.web.onStdoutLine);
+    if (observeErr) observeChildStdout(web.stderr, specs.web.onStderrLine);
     webExit = new Promise(resolve => web.once('exit', () => resolve('web-exit')));
     await wait(web, 'http://127.0.0.1:4173/api/auth/access', response => [200, 302, 401].includes(response.status), 30000, signal);
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');

@@ -66,8 +66,19 @@ Rättning i denna leverans: `ops/cloud/child-diagnostics.mjs` vidarebefordrar
 endast allowlistade, ändliga barnhändelser (guardorsak, readback-timing/fel,
 förberedelse-/strömkvitton med säkra koder och id:n, recovery) till
 plattformsloggen med `source:"game"`, högst 2000 rader per process; startrader,
-fri text och allt annat kastas fortsatt. Nästa prov efter deploy visar orsaken
-direkt i Render-loggen. Ingen grind, tidsgräns eller budget ändrades.
+fri text och allt annat kastas fortsatt. Ingen grind, tidsgräns eller budget ändrades.
+
+**Uppföljning 13:42 UTC på main `b018590d` (PR292 mergad och LIVE 13:33):**
+nytt textprov nekades efter 8,3 s med `generated_speech_total_budget_exhausted`
+— det nekade jobbet 12:35 behöll sin 1,20 USD-reservation, så granten 24,00 USD
+är fullt reserverad (20 reservationer). Ett nytt prov kräver en append-only
+amendment via `authorizeMovingBudgetAmendment`; dess 50 USD-providertak
+(`MOVING_PROVIDER_BUDGET_MAX_MICRO_USD`) är i praktiken nått eftersom alla
+äldre fönster räknas som behållna (kalkyl 49,72 USD). Det är Jakobs beslut:
+höj providertaket i kod och gör en amendment, eller frigör verifierat
+avslutade äldre reservationer. Första vidarebefordran missade dessutom att spelet
+loggar dessa händelser med `console.warn` (stderr); `process-group.mjs` observerar
+nu båda strömmarna genom samma allowlist, verifierat med en riktig barnprocess.
 
 ## Klippnamn och poskedja — 19 oktober 2026
 

@@ -145,9 +145,9 @@ private sessionsjobb input. No paid worker is started by this package.
 production Lab build exists. It also rejects an empty or missing CRAIG database
 without bootstrap credentials. It returns 0 only for these local checks. The launcher
 would stop accepting requests, let in-flight requests drain briefly, terminate
-Lab then Web, and force-stop unresponsive children. Child stderr is never
-forwarded and stdout is discarded, except for the allowlist in
-`child-diagnostics.mjs`: finite moving-speech/drift events
+Lab then Web, and force-stop unresponsive children. Child stdout and stderr
+are discarded, except for the allowlist in `child-diagnostics.mjs` applied to
+both streams (the game emits these with `console.warn`, i.e. stderr): finite moving-speech/drift events
 (`moving_drift_guard_rejected`, `moving_drift_readback_*`,
 `moving_speech_preparation_failed`, `moving_speech_stream_interrupted`,
 `moving_speech_recovery`) whose fields are enums, safe application codes or
