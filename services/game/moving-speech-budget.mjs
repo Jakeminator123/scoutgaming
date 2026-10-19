@@ -10,7 +10,9 @@ export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 75000000;
 export const MOVING_TRIAL_BUDGET = Object.freeze({
   budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
   initialBudgetMicroUsd: 13200000,
-  reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 20000000,
+  // Daily ceiling 20 → 40 USD on 19 October 2026 (Jakob: run the trial evening
+  // at test cost). Sixteen 1.20 USD reservations had filled the UTC day.
+  reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 40000000,
 });
 const id = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
