@@ -124,52 +124,50 @@ visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
 
-## UX/UI: klippkarta, scenplacering och drift — 19 oktober 2026
+## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
-Klippkartans scenreglage från [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
-och bredare scenpanel/driftväljare från
-[PR274](https://github.com/Jakeminator123/scoutgaming/pull/274) är publicerade.
-Tidigare UI/UX-agent livekontrollerade flytt/följval utan produktionssparning;
-hans 92 UI-/transportprov och SQL-/HTTPS-underlag är tidigare evidens.
-Scen & lager skriver vald gemensam mall med projektrevision och berörda rum;
-rummets egna val använder fortsatt den rumsbundna editorn/writern.
+Klippkartans scenreglage i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
+och bredare scenpanel/driftväljare i [PR274](https://github.com/Jakeminator123/scoutgaming/pull/274)
+är publicerade. Föregående UI/UX-agents 92 prov och visuella kontroller är
+tidigare evidens; gemensam mall och rummets egna val använder skilda writers.
 
-[PR277](https://github.com/Jakeminator123/scoutgaming/pull/277) är mergad som 989e74e2 och publicerad på webb enligt MERGE4:s Vercel-kvitto. Admin-startsida och desktop-/mobilmeny får
-**Skapande** och **Verksamhet** enligt produktmodellen. En gemensam lista
-håller namn/länkar samstämmiga; System och tidigare arbetsytor finns kvar.
-61 navigations-/åtkomstprov, typer/klientbygge och isolerad CSS-bredd
-1280/960/390 px är verifierade. CI:s två gamla testladdare är rättade mot
-verklig navigation; hela Admin-gruppen passerar lokalt, 338 prov i 13 grupper
-utan skips. Publiceringskontrollen är tillskriven MERGE4.
+[PR277](https://github.com/Jakeminator123/scoutgaming/pull/277) är mergad som
+989e74e2 och publicerad på webb enligt MERGE4:s exakta Vercel-kvitto.
+Startsida och desktop-/mobilmeny använder samma Skapande/Verksamhet-länkar.
+Egen verifiering: 61 navigations-/åtkomstprov, typer/klientbygge, isolerad
+CSS-bredd 1280/960/390 px och 338 Admin-prov i 13 grupper utan skips.
 
-PR278 på codex/admin-rooms-ui2 är integrerad med main 989e74e2:
-/admin/rooms visar rumskort för exakt valt aktivt bolag, med spel, sparad
-rumsstatus och publiceringsstatus. Rumsdetaljen visar valt rum och en tydlig
-väg till befintlig publiceringsgranskning. Kortbyte använder samma
-selectContext, historik-/utkastskydd och exakta bolag/rum/mall/spel-kontext
-som rumsväljaren. Rum från andra bolag och arkiverade rum visas inte i listan.
-Publicerade rum behåller samma PartnerAppearanceLoader, API och callbacks.
-Delad mall ligger kvar separat med påverkanstext. På mobil används den
-kompakta befintliga rumsväljaren; breda vyer får listan intill detaljytan.
+[PR278](https://github.com/Jakeminator123/scoutgaming/pull/278), fryst
+82ddf669, integrerar samma navigation med bolagets exakta rumskort och
+rumsdetalj. Den granskas av MERGE4; 72 rums-/navigationsprov, klientbygge/typer
+och hela Admin-gruppen (338 prov) passerar. Syntetisk GET-katalog och blockerade
+skrivningar verifierades vid CSS-bredd 1600/1280/390 px. Inget livepaket ändrades.
 
-Reviewuppföljning: klick på redan valt rum är no-op före navigation/dirty-reset. Nytt prov täcker aktivt dirtykort, direkt väljare, gammalt bokmärke och fortsatt beforeunload/annat-rum-skydd. 20 rumsprov passerar.
+Uppföljningen på codex/admin-room-editor-ui2 rättar stale dealer=astrid i
+rumsadresser, även befintliga bokmärken. Exakt bolag/rum, extra queryvärden och
+fragment bevaras; normaliseringen respekterar delad navigering och pågående
+redigering/operationer. Den publicerade rumspresentationen väljer fortsatt sin
+riktiga dealer. Rumseditorn får samlad versions-/arbetsstatus, tydlig scenyta
+intill tillåtna val och breddstyrd layout. Tom granskning döljs tills ett
+utkast finns. Ett enda rum slipper ett dubblerat rumskort.
 
-Egen verifiering för rumsetappen: 72 rums-/navigationsprov utan skips. Efter integration med main passerar hela Admin-gruppen (338 prov i 13 grupper),
-inklusive nytt kortprov för bolagsgräns, avvisat osparat byte, pågående
-operation och exakt accepterad kontext. Admin/lobby-typer och klientbygge
-passerar; befintliga CSS-composes-varningar kvarstår. Verkligt klientbygge
-med syntetiskt GET-katalogsvar kontrollerades vid CSS-bredd 1600, 1280 och
-390 px utan horisontell sidöverrullning. Kort- och bolagsbyte visar rätt rum;
-samtliga API-skrivningar är blockerade i förhandsvisningen. Browserbilderna
-verifierar utkast-/översiktslayout, inte produktionsdata eller medieuppspelning.
+Aktivt rum är no-op före history/dirty-reset. Regressionen verifierar aktivt
+dirtykort, direkt väljare, gammalt bokmärke och fortsatt bytes-/unloadskydd.
 
-H6:s tidigare 503→200-kvitto och MERGE4:s publicerade executor 087f4fd5 är
-tillskriven evidens. POST-LIPSYNC5 äger faktisk tal-/GPU-aktivering.
-Kvar: vidare layout i övriga arbetsytor, PNG-idle, generell chattregeleditor,
-var åttonde utdelning per box och enhetliga lagerlås. Produktmodellen styrs
-enbart av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md);
-[användarstegen](../apps/studio/docs/README.md) uppdateras i samma guider.
-Privata demoer i C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
+Teststädning inom UI-scope tar bort förbrukade pixel/breakpoint-, exakt-markup-,
+textantal- och DOM-ordningskrav i studio-layout/clip-guide/partner-appearance
+samt gammal Control-textassertion. Aktivt rumsscope, behörighet, sparning,
+historik, exakta media och revisionsbunden granskning/publicering behålls.
+Nytt roomLayout-prov verifierar spara → granska → publicera med exakta
+revisionsvärden/token och bevarat annat rums val. Egen verifiering: 94 riktade UI-/routing-/appearanceprov efter integration av reviewrättningen utan skips, hela Admin-gruppen (338 prov i 13 grupper) och slutligt Admin/lobby-typkontrollerat klientbygge passerar. Isolerad scen använder neutrala testbilder och inga videor/GPU-anrop; GET-fixturer och blockerade skrivningar behålls. Faktisk CSS-bredd 1600 och 390 px är kontrollerad utan horisontell sidöverrullning; Desktop/Mobil-val fungerar och dold granskning har display:none. Normaliseringen bevarar bolag/rum/hash i browsern. Ny uppföljning är ännu inte publicerad.
+
+H6:s 503→200-kvitto och MERGE4:s executor-publicering är tillskriven evidens.
+POST-LIPSYNC5 äger verkligt tal, exakta videoidentiteter och GPU-aktivering.
+Kvar utanför denna UI-etapp: övriga Admin-arbetsytor, PNG-idle, chattregeleditor,
+var åttonde utdelning per box och enhetliga lagerlås. Produktmodellen finns
+endast i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), användarstegen i
+[README](../apps/studio/docs/README.md). Privata demoer i
+C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 <a id="post-lipsync5-produktionsprov"></a>
 

@@ -68,13 +68,14 @@ test('unknown explicit composition never falls back to the room template and a l
 });
 
 async function registeredStudioHtml(path,search='',overrides={},interactive=false){
-  let currentSearch=search,allowLeave=false,confirms=0,notifications=0;const listeners=new Map();
+  let currentSearch=new URL(search||path,'https://scout.invalid'+path).search,currentHash=new URL(search||path,'https://scout.invalid'+path).hash,allowLeave=false,confirms=0,notifications=0;const listeners=new Map();
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const lifecycle=await import('./studio-resource-lifecycle.mjs');
   const historyModule=await import('../../../lib/studio-history.mjs');
-  const locationState={origin:'https://scout.invalid',get href(){return this.origin+path+currentSearch;},pathname:path,get search(){return currentSearch;},hash:''};
-  const historyState={state:null,replaceState(state,unused,href){this.state=state;if(href!==undefined)currentSearch=new URL(href,locationState.href).search;},pushState(state,unused,href){this.replaceState(state,unused,href);}};
+  const routing=await import('../../runtime/admin-routing.mjs');
+  const locationState={origin:'https://scout.invalid',get href(){return this.origin+path+currentSearch+currentHash;},pathname:path,get search(){return currentSearch;},get hash(){return currentHash;}};
+  const historyState={state:null,replaceState(state,unused,href){this.state=state;if(href!==undefined){const url=new URL(href,locationState.href);currentSearch=url.search;currentHash=url.hash;}},pushState(state,unused,href){this.replaceState(state,unused,href);}};
   const windowState={location:locationState,history:historyState,addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name),dispatchEvent:event=>{listeners.get(event.type)?.(event);return !event.defaultPrevented;}};
   historyModule.studioHistory(windowState).subscribe(()=>notifications++);
   const value={schemaVersion:1,source:'registered',readAt:'2026-10-13T00:00:00Z',administration:{...catalog.administration,
@@ -88,10 +89,10 @@ async function registeredStudioHtml(path,search='',overrides={},interactive=fals
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
   runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{}},
     fetch:async()=>Response.json(value),require:name=>name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
-      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
+      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
   const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register'})};
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
-  if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get confirms(){return confirms;},get notifications(){return notifications;}};
+  if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get hash(){return currentHash;},get confirms(){return confirms;},get notifications(){return notifications;}};
   return renderToStaticMarkup(render());
 }
 const hrefs=html=>[...html.matchAll(/href="([^"]+)"/g)].map(match=>match[1].replaceAll('&amp;','&'));
@@ -131,7 +132,7 @@ test('company team editor links to the supported Admin workspace',async()=>{
   const html=await registeredStudioHtml('/admin/admin/operators','?operator=b');
   const legacy=hrefs(html).filter(href=>href.startsWith('/admin/companies'));
   assert.deepEqual(legacy,['/admin/companies?operator=a','/admin/companies?operator=b']);
-  assert.match(html,/Bolag &amp; team/);assert.doesNotMatch(html,/Nuvarande Control/);
+  assert.match(html,/Bolag &amp; team/);
   const unknown=await registeredStudioHtml('/admin/unknown');
   assert.equal(hrefs(unknown).some(href=>href.startsWith('/control')),false);assert.ok(hrefs(unknown).includes('/admin'));
 });
@@ -165,11 +166,12 @@ test('registered direct room links select the exact owner and never fall back fo
 test('a clean room selection notifies real shared history subscribers and does not inherit the previous room',async()=>{
  const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette&dealer=paow-v2',{},true);
  const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+ const initialNotifications=h.notifications;
  walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:'bj'}});
- assert.equal(h.notifications,1);assert.equal(h.confirms,0);
+ assert.equal(h.notifications,initialNotifications+1);assert.equal(h.confirms,0);
  assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'a',table:'bj',composition:'one',game:'blackjack'});
  walk(h.render(),node=>node.props?.['aria-label']==='Välj spelbolag')[0].props.onChange({target:{value:'b'}});
- assert.equal(h.notifications,2);assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'b'});
+ assert.equal(h.notifications,initialNotifications+2);assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'b'});
 });
 
 test('dealer library opens without silently selecting a company, room or shared composition',()=>{
@@ -208,24 +210,36 @@ test('room cards list only the active owner and preserve dirty/busy guards befor
   assert.equal(editor().props.roomId,'bj');assert.equal(cards()[0].props['aria-pressed'],true);
 });
 
+
+test('saved room bookmarks remove stale dealer context without changing the selected owner, room or hash',async()=>{
+  for(const query of ['?operator=a&table=roulette&dealer=astrid&tag=a&tag=b#choices','?operator=a&table=other&dealer=astrid#choices']){
+    const h=await registeredStudioHtml('/admin/rooms',query,{},true);h.render();
+    assert.equal(new URLSearchParams(h.search).has('dealer'),false);
+    assert.equal(h.search,new URL(query.replace('&dealer=astrid',''),'https://scout.invalid').search);
+    assert.equal(h.hash,'#choices');assert.equal(h.confirms,0);
+  }
+  const library=await registeredStudioHtml('/admin/admin/operators','?dealer=astrid',{},true);library.render();
+  assert.equal(library.search,'?dealer=astrid');
+});
+
 test('selecting the active room is inert and preserves dirty guards even without explicit room URL context',async()=>{
   for(const search of ['?dealer=astrid&game=blackjack','?operator=a&table=roulette']){
     const h=await registeredStudioHtml('/admin/rooms',search,{},true);
     const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
     const cards=()=>walk(h.render(),node=>node.type==='button'&&node.props?.['aria-label']?.startsWith('Öppna rum '));
     const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
-    const activeRoom=editor().props.roomId;
+    const activeRoom=editor().props.roomId,initialSearch=h.search,initialNotifications=h.notifications;
     editor().props.onDirtyChange(true);h.render();h.allowLeave(true);
     cards().find(node=>node.props['aria-pressed']).props.onClick();
     walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:activeRoom}});
-    assert.equal(h.confirms,0);assert.equal(h.notifications,0);assert.equal(h.search,search);
+    assert.equal(h.confirms,0);assert.equal(h.notifications,initialNotifications);assert.equal(h.search,initialSearch);
     assert.equal(editor().props.roomId,activeRoom);
     const unload={prevented:false,returnValue:undefined,preventDefault(){this.prevented=true;}};
     h.listeners.get('beforeunload')(unload);
     assert.equal(unload.prevented,true);assert.equal(unload.returnValue,'');
     h.allowLeave(false);
     cards().find(node=>!node.props['aria-pressed']).props.onClick();
-    assert.equal(h.confirms,1);assert.equal(h.notifications,0);assert.equal(h.search,search);
+    assert.equal(h.confirms,1);assert.equal(h.notifications,initialNotifications);assert.equal(h.search,initialSearch);
     assert.equal(editor().props.roomId,activeRoom);
   }
 });

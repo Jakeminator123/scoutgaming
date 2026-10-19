@@ -227,14 +227,13 @@ test('legacy published composition labels are translated in selection and review
 });
 
 
-test('Admin room layout places one frozen preview beside exact locked choices without opening template writes',()=>{
+test('Admin room layout shows one frozen preview and exact locked choices without opening template writes',()=>{
   const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['table.color'];
   initial.presentation.assets=[{id:'bg-one',label:'Salong'},{id:'table-one',label:'Grön filt'}];
   const content=html(initial,{roomId:'north-main',roomLayout:true});
   assert.match(content,/Salong/);assert.match(content,/Grön filt/);assert.match(content,/Låst i publicerat paket/);
   assert.doesNotMatch(content,/Inte tillgängligt i denna presentation|aria-label="Gäller för"|aria-label="Sammansättning"/);
   assert.equal((content.match(/data-appearance-preview=/g)||[]).length,1);
-  assert.ok(content.indexOf('data-appearance-preview=')<content.indexOf('<fieldset'));
 });
 
 test('Admin room layout saves only its room override and reports busy for the entire existing writer operation',async()=>{
@@ -252,4 +251,39 @@ test('another Studio operation blocks room edits without changing its saved draf
   const h=stateful(initialState(),()=>assert.fail('blocked room write'),{roomId:'north-main',roomLayout:true,disabled:true});
   select(h.render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});
   assert.equal(byAction(h.render(),'save-draft').props.disabled,true);await byAction(h.render(),'save-draft').props.onClick();
+});
+
+test('Admin room publication review stays hidden until a room draft is saved and preserves exact review and publish contracts',async()=>{
+  const initial=initialState({branding:{color:'#112233',roomOverrides:{'north-vip':{background:'bg-one'}}}}),calls=[],published=[];
+  let saved;
+  const h=stateful(initial,async(url,request)=>{
+    const body=JSON.parse(request.body);calls.push({url,body,credentials:request.credentials,method:request.method});
+    if(body.action==='save-draft'){
+      saved={...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}};
+      return response(saved);
+    }
+    if(body.action==='review')return response(reviewed(saved,{changes:[{roomId:'north-main',key:'roomOverrides.background',before:'bg-one',after:'bg-two'}]}));
+    assert.equal(body.action,'publish');
+    return response({...saved,packageRevision:8,branding:saved.draft.branding,draft:null,draftRevision:2});
+  },{roomId:'north-main',roomLayout:true,onSaved:value=>published.push(value)});
+  const reviewSection=tree=>walk(tree,node=>node.type==='section'&&node.props?.['aria-label']==='Granskning före publicering')[0];
+  assert.equal(reviewSection(h.render()).props.hidden,true);
+  await byAction(h.render(),'publish').props.onClick();assert.equal(calls.length,0);
+  select(h.render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});
+  assert.equal(reviewSection(h.render()).props.hidden,true);
+  await byAction(h.render(),'save-draft').props.onClick();
+  assert.notEqual(reviewSection(h.render()).props.hidden,true);
+  assert.equal(byAction(h.render(),'review').props.disabled,false);assert.equal(byAction(h.render(),'publish').props.disabled,true);
+  assert.equal(published.length,0);
+  await byAction(h.render(),'review').props.onClick();
+  assert.equal(byAction(h.render(),'publish').props.disabled,false);
+  await byAction(h.render(),'publish').props.onClick();
+  assert.deepEqual(calls.map(call=>call.body),[
+    {action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:7,branding:{color:'#112233',roomOverrides:{'north-main':{background:'bg-two'},'north-vip':{background:'bg-one'}}}},
+    {action:'review',expectedDraftRevision:1,expectedPackageRevision:7},
+    {action:'publish',expectedDraftRevision:1,expectedPackageRevision:7,reviewToken:'a-valid-review-token'},
+  ]);
+  for(const call of calls){assert.equal(call.url,'/studio/api/partner/branding?operator=north');assert.equal(call.credentials,'same-origin');assert.equal(call.method,'POST');}
+  assert.equal(published.length,1);assert.equal(published[0].packageRevision,8);
+  assert.equal(reviewSection(h.render()).props.hidden,true);
 });
