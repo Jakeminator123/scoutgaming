@@ -1,3 +1,4 @@
+import {createMovingDriftController} from '../services/game/moving-drift-controller.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -429,13 +430,14 @@ const driftReservation=lease=>({scope:driftScope,sessionId,endpointId:'endpoint-
   ownerHash,requestId:'drift-request',fingerprint,projectRevision:'project-fixture',mediaReferences:driftReferences,
   budgetId:'drift-budget',totalBudgetMicroUsd:1000000,reserveMicroUsd:250000,currentBudgetMicroUsd:1000000,workerState:emptyWorker});
 
-async function driftJournalFixture(guard) {
+async function driftJournalFixture(guard,onRejection,{loseRollbackAck=false}={}) {
   const f=await fixture();
   // Only the new lock boundary is intercepted here. Existing journal SQL and
   // rollback accounting still use the deterministic transactional pool above.
   const pool={async connect(){
     const client=await f.pool.connect();
     return {release:()=>client.release(),query:async(sql,values)=>{
+      if(sql==='ROLLBACK'&&loseRollbackAck){await client.query(sql,values);throw Error('private lost rollback acknowledgement');}
       if(sql.includes('/* speech:studio_lock */')){f.pool.trace.push('studio_lock');return{rows:[]};}
       const tag=/\/\* speech:([^*]+) \*\//.exec(sql)?.[1];
       const reference=driftReferences[0];
@@ -449,7 +451,7 @@ async function driftJournalFixture(guard) {
       return client.query(sql,values);
     }};
   }};
-  const journal=await createSpeechJournal({...f.options,pool,driftControl:{scope:driftScope,guard:async input=>{
+  const journal=await createSpeechJournal({...f.options,pool,driftControl:{scope:driftScope,onRejection,guard:async input=>{
     f.pool.trace.push('drift-guard:'+input.phase);assert.equal(typeof input.client.query,'function');
     assert.equal(input.driftAdmission,undefined,'guard receives admission, not an accidental second token name');
     assert.equal(input.admission,driftToken);assert.equal(typeof input.endpointId,'string');assert.equal(input.sessionId,sessionId);
@@ -490,7 +492,7 @@ test('off drift admission never blocks generic Astrid cleanup or recovery method
 
 test('invalid optional journal drift guard configuration is rejected before any transaction',async()=>{
   const f=await fixture();
-  for(const driftControl of [null,{}, {scope:driftScope,guard:1}]){
+  for(const driftControl of [null,{}, {scope:driftScope,guard:1},{scope:driftScope,guard:()=>{},onRejection:1}]){
     await assert.rejects(createSpeechJournal({...f.options,driftControl}),rejection('invalid_generated_speech_journal_input',422));
   }
   assert.equal(f.pool.trace.length,0);
@@ -528,4 +530,88 @@ test('guarded moving methods cannot omit endpoint or token and silently become g
     }
   }
   assert.deepEqual(f.pool.trace,[]);assert.equal(f.pool.state.requests.size,0);assert.equal(f.pool.state.reservations.size,0);
+});
+
+async function finiteDriftRejection() {
+  const controller=createMovingDriftController({profiles:[{id:'base',label:'Bas',endpointId:'endpoint-fixture',releaseDigest:'a'.repeat(64),bankHash:'b'.repeat(64)}],
+    capabilities:{connected:true,requireExecutor:true},store:{transact:work=>work(null,1800000000000).value}});
+  try {await controller.guardAdmission({phase:'dispatch',sessionId,endpointId:'endpoint-fixture',admission:driftToken});}
+  catch(error){return error;}
+  assert.fail('initial Off must reject');
+}
+
+test('guard diagnostic survives error cloning and emits once only after rollback without secret metadata',async()=>{
+  const original=await finiteDriftRejection();let extraReads=0,logged=0,before;
+  const metadata={...original.driftDiagnostic,token:'private-token',uuid:'private-uuid',hash:'private-hash',url:'https://private.invalid'};
+  Object.defineProperty(metadata,'secret',{get(){extraReads++;throw Error('private');}});
+  const thrown=Object.assign(Error('private raw diagnostic'),{code:'drift_not_admitting',statusCode:409,driftDiagnostic:metadata});
+  const f=await driftJournalFixture(()=>{throw thrown;},diagnostic=>{
+    logged++;assert.equal(f.pool.trace.at(-1),'ROLLBACK');assert.deepEqual(f.pool.state,before);
+    assert.deepEqual(diagnostic,original.driftDiagnostic);assert.equal(Object.isFrozen(diagnostic),true);
+    f.pool.trace.push('safe-diagnostic');throw Error('logger failed privately');
+  });
+  await initPolicy(f.journal);const lease=await streamLease(f.journal);before=structuredClone(f.pool.state);
+  await assert.rejects(f.guarded.reserveMovingSession(driftReservation(lease)),error=>{
+    assert.equal(error.message,'drift_not_admitting');assert.deepEqual(error.driftDiagnostic,original.driftDiagnostic);
+    assert.equal(Object.getOwnPropertyDescriptor(error,'driftDiagnostic').enumerable,false);return error.code==='drift_not_admitting';
+  });
+  assert.equal(logged,1);assert.equal(extraReads,0);assert.deepEqual(f.pool.state,before);
+  assert.equal(f.pool.trace.at(-1),'safe-diagnostic');assert.equal(f.pool.trace.includes('insert_moving'),false);
+});
+
+test('invalid or inaccessible guard metadata cannot replace rejection or produce a log',async()=>{
+  const original=await finiteDriftRejection();let reads=0,logs=0;
+  const invalid=Object.assign(Error('private'),{code:'drift_not_admitting',statusCode:409,driftDiagnostic:{...original.driftDiagnostic,reason:'private-token'}});
+  const accessor=Object.assign(Error('private'),{code:'drift_not_admitting',statusCode:409});
+  Object.defineProperty(accessor,'driftDiagnostic',{get(){reads++;throw Error('private');}});
+  const proxy=new Proxy(original,{getOwnPropertyDescriptor(){throw Error('private');}});
+  for(const error of [invalid,accessor,proxy]){
+    const f=await driftJournalFixture(()=>{throw error;},()=>{logs++;});
+    await initPolicy(f.journal);const lease=await streamLease(f.journal);
+    await assert.rejects(f.guarded.reserveMovingSession(driftReservation(lease)),value=>value.code==='drift_not_admitting'&&value.driftDiagnostic===undefined);
+    assert.equal(f.pool.trace.at(-1),'ROLLBACK');
+  }
+  assert.equal(reads,0);assert.equal(logs,0);
+});
+
+test('an asynchronous diagnostic logger failure cannot change the rolled-back rejection',async()=>{
+  const original=await finiteDriftRejection();let logged=0;
+  const f=await driftJournalFixture(()=>{throw original;},async()=>{logged++;assert.equal(f.pool.trace.at(-1),'ROLLBACK');throw Error('private');});
+  await initPolicy(f.journal);const lease=await streamLease(f.journal);
+  await assert.rejects(f.guarded.reserveMovingSession(driftReservation(lease)),rejection('drift_not_admitting',409));
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(logged,1);
+});
+
+test('missing rollback acknowledgement cannot emit a successful rollback diagnostic',async()=>{
+  const original=await finiteDriftRejection();let logs=0;
+  const f=await driftJournalFixture(()=>{throw original;},()=>{logs++;},{loseRollbackAck:true});
+  await initPolicy(f.journal);const lease=await streamLease(f.journal),before=structuredClone(f.pool.state);
+  await assert.rejects(f.guarded.reserveMovingSession(driftReservation(lease)),rejection('drift_not_admitting',409));
+  assert.equal(logs,0);assert.deepEqual(f.pool.state,before);assert.equal(f.pool.trace.at(-1),'ROLLBACK');
+});
+
+test('guard error code and status are captured once before cloning',async()=>{
+  const original=await finiteDriftRejection();let codeReads=0,statusReads=0;
+  const error=Object.assign(Error('private raw data'),{driftDiagnostic:original.driftDiagnostic});
+  Object.defineProperties(error,{code:{get(){return ++codeReads===1?'drift_not_admitting':'private-token';}},
+    statusCode:{get(){return ++statusReads===1?409:999;}}});
+  const f=await driftJournalFixture(()=>{throw error;});await initPolicy(f.journal);const lease=await streamLease(f.journal);
+  await assert.rejects(f.guarded.reserveMovingSession(driftReservation(lease)),rejection('drift_not_admitting',409));
+  assert.equal(codeReads,1);assert.equal(statusReads,1);
+});
+
+test('non-string or inaccessible guard codes cannot be coerced into a public drift error',async()=>{
+  let coerced=0,logs=0;
+  const objectCode={toString(){coerced++;return coerced===1?'drift_not_admitting':'private-token';}};
+  const throwingCode=Object.assign(Error('private raw error'),{statusCode:409});
+  Object.defineProperty(throwingCode,'code',{get(){throw Error('private token');}});
+  const throwingStatus=Object.assign(Error('private raw error'),{code:'drift_not_admitting'});
+  Object.defineProperty(throwingStatus,'statusCode',{get(){throw Error('private token');}});
+  const proxy=new Proxy(Error('private raw error'),{get(){throw Error('private token');}});
+  for(const error of [{code:objectCode,statusCode:409},{code:Symbol('private-token'),statusCode:409},throwingCode,throwingStatus,proxy]){
+    const f=await driftJournalFixture(()=>{throw error;},()=>{logs++;});await initPolicy(f.journal);const lease=await streamLease(f.journal);
+    await assert.rejects(f.guarded.reserveMovingSession(driftReservation(lease)),rejection('generated_speech_journal_unavailable',503));
+    assert.equal(f.pool.trace.at(-1),'ROLLBACK');
+  }
+  assert.equal(coerced,0);assert.equal(logs,0);
 });

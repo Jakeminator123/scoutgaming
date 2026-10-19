@@ -269,3 +269,74 @@ test('restart invalidates cached fleet proof for changed IDs, endpoints, release
   assert.equal(renewed.admission.allowed,true,'only a new complete observation restores admission');
   assert.equal((await f.controller.status()).admission.allowed,false,'old configured instance cannot reuse the replacement fleet proof');
 });
+
+async function diagnosticFixture(capabilities={}) {
+  let row=null,time=epoch,calls=0;
+  const store={async transact(work){calls++;const result=work(structuredClone(row),time);row=structuredClone(result.state);return structuredClone(result.value);}};
+  const controller=createMovingDriftController({store,profiles:[profiles[0]],capabilities:{connected:true,requireExecutor:true,...capabilities}});
+  const publish=async extra=>{
+    const execution=await controller.claimExecution({holderId:'owned-server',profileId:'base'});
+    return controller.observe({revision:execution.revision,operationId:execution.operationId,execution,
+      observedAtMs:time,observedProfileIds:['base'],workers:[],busyJobs:0,queuedJobs:0,
+      applied:applied(execution,execution.desired.mode,execution.desired.profileId),...extra});
+  };
+  await publish();await controller.command(command('saving'));await publish();
+  const admission=await controller.authorizeAdmission({revision:1,profileId:'base'});
+  return {controller,admission,publish,mutate:work=>work(row),advance:ms=>{time+=ms;},calls:()=>calls,
+    input:{phase:'dispatch',sessionId:'owned-session',endpointId:profiles[0].endpointId,admission}};
+}
+
+test('denial diagnostics preserve first failing guard priority and exact locked state without another read',async()=>{
+  for(const [change,reason] of [
+    [f=>{f.input.phase='private-phase';f.input.admission={...f.admission,revision:999};},'invalid_context'],
+    [f=>{f.input.admission={...f.admission,revision:999,operationId:'wrong'};},'revision_changed'],
+    [f=>{f.input.admission={...f.admission,operationId:'wrong',profileId:'wrong'};},'operation_changed'],
+    [f=>{f.input.admission={...f.admission,profileId:'wrong',endpointId:'wrong'};},'profile_changed'],
+    [f=>{f.input.admission={...f.admission,endpointId:'wrong',catalogueFingerprint:'wrong'};},'endpoint_changed'],
+    [f=>{f.input.admission={...f.admission,catalogueFingerprint:'wrong',executionFence:999};},'catalogue_changed'],
+    [f=>{f.input.admission={...f.admission,executionFence:999};},'executor_fence_changed'],
+    [f=>{f.mutate(row=>{row.drainRequired=true;row.execution.leaseUntilMs=0;});},'draining'],
+    [f=>{f.advance(16000);f.input.admission={...f.admission,revision:999};},'runtime_unavailable'],
+    [f=>{f.mutate(row=>{row.observation.workers=[active({state:'unknown'})];row.observation.applied.revision=0;});},'observation_error'],
+    [f=>{f.mutate(row=>{row.observation.applied.revision=0;row.observation.applied.operationId='wrong';});},'applied_revision_changed'],
+    [f=>{f.mutate(row=>{row.observation.applied.operationId='wrong';});},'applied_operation_changed'],
+    [f=>{f.input.phase='reserve';f.mutate(row=>{row.observation.busyJobs=1;});},'reserve_busy'],
+  ]){
+    const f=await diagnosticFixture();change(f);const before=f.calls();let error;
+    await assert.rejects(f.controller.guardAdmission(f.input),value=>{error=value;return value.code==='drift_not_admitting'&&value.message==='drift_not_admitting';});
+    assert.equal(f.calls(),before+1,'diagnostics cannot perform another status transaction');
+    assert.equal(error.driftDiagnostic.reason,reason);
+    assert.equal(Object.isFrozen(error.driftDiagnostic),true);
+    assert.equal(Object.getOwnPropertyDescriptor(error,'driftDiagnostic').enumerable,false);
+    assert.equal(JSON.stringify(error).includes('driftDiagnostic'),false);
+    if(reason==='runtime_unavailable'){
+      assert.equal(error.driftDiagnostic.observationAge,'stale');assert.equal(error.driftDiagnostic.executionAge,'stale');
+      assert.equal(error.driftDiagnostic.lease,'active');assert.equal(error.driftDiagnostic.revisionMatches,false);
+      f.advance(60000);assert.equal(error.driftDiagnostic.lease,'active','captured state cannot become a later snapshot');
+    }
+  }
+});
+
+test('normal Off and invalidated observations retain finite context while busy alone permits pinned dispatch',async()=>{
+  const f=await diagnosticFixture();await f.publish({busyJobs:1});
+  await f.controller.guardAdmission(f.input);
+  await f.controller.command(command('off',{expectedRevision:1,commandId:'off-diagnostic'}));
+  await assert.rejects(f.controller.guardAdmission(f.input),error=>{
+    assert.equal(error.driftDiagnostic.reason,'profile_missing');assert.equal(error.driftDiagnostic.desiredMode,'off');
+    assert.equal(error.driftDiagnostic.drainRequired,true);return error.code==='drift_not_admitting';
+  });
+  const missing=await diagnosticFixture();missing.mutate(row=>{row.observation=null;row.execution.observedAtMs=null;});
+  await assert.rejects(missing.controller.guardAdmission(missing.input),error=>{
+    assert.equal(error.driftDiagnostic.reason,'runtime_unavailable');assert.equal(error.driftDiagnostic.executionAge,'missing');
+    assert.equal(error.driftDiagnostic.observationAge,'missing');return error.code==='drift_not_admitting';
+  });
+});
+
+test('diagnostics retain mode and unknown-observation reasons without changing their guard priority',async()=>{
+  const warm=await diagnosticFixture();warm.mutate(row=>{row.desired.mode='warm';row.desired.endsAtMs=epoch+60000;});
+  await assert.rejects(warm.controller.guardAdmission(warm.input),error=>error.code==='drift_not_admitting'
+    &&error.driftDiagnostic.reason==='mode_not_saving'&&error.driftDiagnostic.desiredMode==='warm');
+  const unknown=await diagnosticFixture({requireExecutor:false});unknown.mutate(row=>{row.observation=null;});
+  await assert.rejects(unknown.controller.guardAdmission(unknown.input),error=>error.code==='drift_not_admitting'
+    &&error.driftDiagnostic.reason==='observation_unknown'&&error.driftDiagnostic.observationAge==='missing');
+});

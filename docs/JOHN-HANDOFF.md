@@ -88,6 +88,38 @@ Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
 [Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
 [serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
+### Säker driftorsaksdiagnostik — HUVUDAGENT6
+
+Det tredje produktionsprovets bank403 är fortsatt olöst; POST:s exakta
+prov-/stopp-/budgetkvitto finns i [egen sektion](#post-lipsync5-produktionsprov).
+En kontrollerad offlinekedja visar att 2 s pollintervall +14 s lyckad läsning
+kan ge 16 s gammalt föregående bevis och nekat dispatch utan readback-fel.
+Det är en reproducerad mekanism, inte prov3:s fastställda historiska orsak.
+
+Diagnostiken fångar nu första fallande guardorsak/fas, ändliga ålders-/
+leaseklasser och matchningsbooler från samma nekande SQL-state/DB-klocka.
+Allowlistad metadata överlever felkloningen; loggning sker först efter
+kvitterad rollback. Läsvarvens ändliga fas/tidsklass skiljer långsam success
+från failure. [Kanoniskt loggkontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+
+191 fokuserade observer-/executor-/controller-/diagnostik-/SQL-journal-/
+session-/runtime-/bankprov passerar med Node24.21.0 och fyra workers.
+De täcker orsaksprioritet, samma snapshot utan extraläsning, rollback/ACK,
+metadata/getter/proxyfiltrering, loggerfel och långsam lyckad läsning.
+CI upptäckte att det nya säkerhetstestet saknade fullsvitsregistrering. Det
+är nu inkopplat i befintlig database/moving-drift; orphan-grinden behålls.
+SQL-fixturens befintliga källista hashbinder också den importerade hjälparen.
+Kontrollen finner 526 JS/TS-testkandidater och 0 orphans; registrerad grupp
+passerar 66/66. Verktygsproven ger 17 PASS och fem POSIX-fall är explicit
+överhoppade på Windows. Ingen orphan-exception eller grind har ändrats.
+Oberoende slutgranskning fann inga blockerande fynd. POST:s överlämnade
+stoppcommit7def8fe9 är integrerad med egen sektion bevarad.
+
+Inga freshness-, Av-, fence-, auth- eller budgetgrindar sänks. Publika felkoder,
+bankheader, providergränser och scheman är oförändrade. Inga moln-, GPU-,
+finansierings- eller migrationsåtgärder gjordes. MERGE4 äger slutlig CI,
+granskning och publicering; POST äger eventuellt senare avgränsat prov.
+
 ### Gateway-RPC: deterministiskt deadlineprov — HUVUDAGENT6
 
 MERGE4 rapporterade att PR288:s OpenClaw-prov nådde korrekt timeout men fick
@@ -105,7 +137,8 @@ riktiga WebSocket-proven för signering, scope/version och osäker mutation
 
 Endast testet och denna handoff ändras. Produktkod, tidsgränser, auth,
 OpenClawkonfiguration, moln, media, GPU och budget är orörda; PR288 hålls
-fryst. MERGE4 äger CI, slutgranskning och samlad publicering.
+fryst i den leveransen. PR289 är nu mergad/publicerad med full grön main-CI
+39218098988 på2c7f1c0e enligt MERGE4:s publiceringskvitto.
 
 ### Cacheinitialisering och pinnad session — HUVUDAGENT6
 
@@ -278,74 +311,76 @@ C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 ## Dragan: produktionsprov — POST-LIPSYNC5, 19 oktober 2026
 
-POST-LIPSYNC5 äger produktionsprovet, HUVUDAGENT6 backendrättningen,
-UI/UX2 Admin och MERGE4 granskning/publicering. PR279, PR284 och PR286
-är publicerade på web/game `8d8b7fcd8dc82223bac9f6b3053556e2fbe5a47b`;
-MERGE4 verifierade grön main-CI39209624244 och publik hälsa.
-PR286 ger fasta interna bankfelkoder; headern strippas även från101-svar.
-Auth-, hash-, CAS- och budgetkontroller är bevarade.17riktade beteendeprov
-och den ordinarie hooken passerade; H6/oberoende/Pro fann inga blockerare.
+POST-LIPSYNC5 äger aktivering, finansiering, prov och stopp. HUVUDAGENT6
+äger backendrättningen, UI/UX2 Admin och MERGE4 granskning/publicering.
+PR287/288/289 är mergade och publicerade på
+`2c7f1c0e0a464e06e94d6e837b441f985d8ef417`. MERGE4 verifierade full
+main-CI 39218098988, inklusive workerbygge, gateway-deadlineprov och riktig
+SQL/schema-readiness. POST återläste själv samma web/game-SHA före provet.
+PR288:s riktiga SQL-kedja passerade också på oförändrad head i CI attempt 2.
 
-Det andra produktionsprovet06:41 UTC använde den vanliga publicerade
-spelvyn, klippval OpenClaw och en enda kort svensk textfråga. Färsk ansluten
-executor, verifierat Av och kallt Sparläge med admission.allowed=true
-kontrollerades före exakt profilaktivering med normal revisionskontroll.
-Röst, referens och övrigt projekt bevarades. Mikrofonen var av; inga insatser,
-DEAL eller walletändringar gjordes av POST.
+Det tredje produktionsprovet 08:26:14.724 UTC använde ordinarie spelvy,
+OpenClaw och exakt en kort svensk textfråga. Färsk ansluten executor,
+verkligt Av och kallt Sparläge med admission.allowed=true verifierades.
+En oberoende stoppvakt på 12 minuter var bunden till den planhash den faktiskt
+läst. Exakt Draganprofil aktiverades med normal CAS/PUT200; röst, referens
+och övrigt projekt bevarades. Mikrofon/kamera var av. POST gjorde inga
+insatser, DEAL eller walletändringar.
 
-Jobb `a09da4be-58d6-478d-9d82-f5ba3707dfcb-e1` använde rätt endpoint
-`zjsdlni6cn8dvo`/template `5dkkc3wolw` och oförändrad image/bank.
-Bankkvittot hämtades på1081,707ms; arkivhämtningen nekades efter605,196ms.
-Gatewayloggen06:41:32.169 UTC belägger **authorization / drift_not_admitting,
-HTTP403**. Providerstatus COMPLETED innehöll status=failed,
-code=bank_http_rejected; callback, rendering och synkad uppspelning nåddes
-inte. Klienten avslutade med fel efter16,1s i stället för den tidigare långa
-callbackväntan. PR284:s terminalkontroll fungerar i detta prov.
-Det tidigare provet05:31 föll redan vid bankkvittot; dess403 har inget
-motsvarande exakt authkvitto och ska inte tillskrivas den nya orsaken.
+Jobb `6f99934f-3090-4b72-8453-7f71bae54f74-e1` använde egen endpoint
+`zjsdlni6cn8dvo`/template `5dkkc3wolw`, min0/max1 och samma image/bank.
+Gatewayloggen 08:26:34.969 UTC belägger åter **authorization /
+drift_not_admitting, HTTP403**. Första bankkvittot nekades efter 349,952 ms;
+arkivhämtning, modell, callback och rendering nåddes inte. Providerstatus
+COMPLETED innehöll failed/bank_http_rejected, kö 7752 ms/execution 463 ms.
+Browserns verkliga kvitto var completed=false/chat_failed efter 20619 ms.
+En avgränsad loggläsning 08:26:14–36 hittade inga
+moving_drift_readback_failed-rader. Det bevisar ingen annan felorsak.
+H6 undersöker nu den nekande SQL-transaktionen utan nytt betalt prov.
+PR287:s offlinefix bevisar ännu inte att hela produktionsfelet är löst.
+H6 reproducerade dessutom att en långsam men lyckad providerläsning kan
+ge stale observation utan readback-fellogg. Det är en offline-mekanism;
+provets historiska guardorsak måste fortfarande styrkas i samma SQL-state.
 
-Normal Av/CAS revision6 kvitterades06:42:15 UTC. Faktisk Av, blockerad
-antagning,0workers,0öppna sessioner och ingen återstående åtgärd verifierades
-före profilens normala CAS-rollback till preparation06:43:08 UTC.
-Flagga0-deploy `dep-dbaro4cs728c739e4o4g` blev LIVE06:44:32 UTC.
-Färsk provider-/SQL-/projektavstämning06:45:36 UTC visade0aktivaGPU,
-0öppna sessioner, ingen åtgärd och preparation. Den oberoende stoppvakten
-avaktiverades med ett kvitto bundet till detta prov och avslutades.
-Deployhållet släpptes. Ingen egen devserver är aktiv.
+Normal Av/CAS revision 7→8 kvitterades 08:27:23 UTC. Faktisk Av,
+blockerad antagning,0 workers, 0 öppna sessioner och ingen åtgärd verifierades
+före profilens normala rollback till preparation 08:28:42 UTC.
+Flagga 0-deploy `dep-dbat9fm1egvs73c29g4g` blev LIVE 08:29:45.744 UTC.
+Closeout 08:30:47.813 UTC återläste globalt 0 GPU, 0 öppna sessioner,
+preparation och flagga 0. Stoppvakten avarmerades med detta planspecifika
+kvitto och avslutades med exit 0; merge-/deployhållet släpptes.
+Efter flagga 0 påstås ingen ny ansluten driftobservation.
 
-Budgetjournalen har17historiska reservationer/20,40USD, lika med den
-oförändrade finansierade granten. Inga reservationer återbetalades och ingen
-provisionering, migration eller finansieringsändring gjordes.
-Skyddskalkyl43,174312USD inkluderar reserver och eftersläpande providerdata;
-den är ingen slutfaktura. Nästa prov kräver uppdaterad historik,
-behållna reserver och ett faktiskt finansierat nytt fönster. Min0/max1
-behölls efter Jakobs delegerade beslut.
+Jakobs delegerade budgetbeslut används med ändligt 50 USD kumulativt
+providerskydd inklusive alla behållna reserver. Journalens 45 USD-kapacitet,
+1,20 USD per jobb och20 USD-dagstak är oförändrade. Efter publicering och
+färska kontroller gjordes en normal append-only CAS 20,40→21,60 USD 08:18:35.
+Alla 17 äldre reservationer/20,40 USD och deras historikhash bevarades.
+Efter detta enda jobb finns 18 historiska reservationer/21,60 USD och
+grant 21,60 USD; 0 öppna. Inga refunds, migrations- eller provisioneringsjobb.
+Skyddskalkyl 45,595875 USD inkluderar rapporterad provider 0,992540 USD,
+behållna reserver 42,203335 USD och provfönstret2,40 USD; den är ingen slutfaktura.
+Inför ett eventuellt senare fönster ska även detta 2,40 USD behållas:
+behållna reserver 44,603335 USD. Befintliga privata 17/20,40-förkontroller är nu
+stale/failclosed och får inte återanvändas som ny finansieringsbevisning.
 
-Jakobs senare instruktion ”Skit i budget”, följd av ”du bestämmer”, används
-för en ändlig ny provperiod under **50USD kumulativt providerskydd** inklusive
-alla behållna reserver. Providerredovisningens tekniska max separeras från
-journalens oförändrade45USD-kapacitet,1,20USD-reservation och20USD-dagstak.
-Det ändrar ingen grant och kräver ingen ny migration. En tänkt normal
-append-only CAS20,40→21,60USD får göras först efter publicerad kod och färsk
-finansierings-/dräneringskontroll. Inget sådant budgetwrite har gjorts här.
-Sju rena budgetprov passerar; befintlig isolerad SQL-fixtur har utökats med
-provider50-amendment, exakt en ny reservation och bevarad historik.
-Det riktiga SQL-provet återstår i Linux-CI; ingen lokal produktserver startades.
+De 42 privata kontrollproven passerade före körningen. En upptäckt lucka
+rättades så att vakten sparar planhash vid armering och receipt/aktivering
+jämför den oförändrad; verklig filladdning provas negativt efter planändring.
+Detta är kod-/grindprov. Synkat produktionsljud/bild, tal under utdelning
+och fysisk mikrofon är fortfarande **inte godkända**. Ingen blind omkörning.
 
-H6:s observerfix i PR287 är mergad som81308b6b; MERGE4 verifierar dess
-faktiska publicering. De180riktade proven och28hookproven är H6:s evidens.
-Fixen följer den belagda nekningen genom observer/executor/controller/session
-med offlineprov. Ett exakt authfel bevisar ännu inte varför driftobservationen
-ändrades; ingen grind ska sänkas från en hypotes. Synkat ljud/bild, tal under
-utdelning och fysisk mikrofon är fortfarande **inte godkända**.
-Nästa GPU-prov förutsätter verifierad rättning, publicering, nya aktuella
-grindar och ett nytt avgränsat aktiverings-/stoppkvitto.
+Det tidigare provet 06:41 nekades vid arkivhämtning efter ett lyckat
+bankkvitto; 05:31 nekades redan bankkvittot utan exakt authkvitto.
+Deras privata kvitton bevaras och tillskrivs inte automatiskt samma
+historiska orsak. Senaste bevis: trial-31488611-provider.json,
+trial-31488611-browser.json, trial-31488611-bank-denial.json och
+closeout-1792398647813.json i den befintliga privata checklistans provmapp.
 
 PR280 pensionerade den inventerade lokala filmvisaren och dess testkopplingar.
-Originalmedia,50verifierade bankkällor, historik och acceptanskvitton bevaras.
+Originalmedia, 50 verifierade bankkällor, historik och acceptanskvitton bevaras.
 Fyra pending-repliker är en separat innehållsgranskning; namnbyte eller bred
-omuppladdning bevisar ingen synk. Privata exakta bevis och hjälpare finns i
-den befintliga privata checklistan.
+omuppladdning bevisar ingen synk.
 [Användarflöde](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
 [tekniska grindar](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
 
