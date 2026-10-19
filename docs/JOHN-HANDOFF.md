@@ -69,6 +69,17 @@ läppsynkens kvalitet är inte granskade av människa (`reviewStatus pending`).
 Journalen är nu 24 reservationer (2 nekade 403-försök, 1 budgetnekat utan
 reservation, 1 lyckat) inom grant 30 USD; cirka tre 1,20-fönster återstår.
 
+**Verifierat på rättad kod:** PR294 mergad som `3fd3b843`, Render
+`dep-dbb2tr942hec73e74ip0` LIVE 14:56:34 UTC. Femte provet 15:02:13 UTC
+(”Vad heter du och vilket spel delar du?”) svarade ”I'm Dragan, and we're
+playing blackjack.” med `ended`, `completed:true`, 71/71 bildrutor, ljudstart
+20,5 s efter ström, hela förloppet 117 s; Render-loggen hade **inga**
+observations-, guard- eller bankavslag under jobbet. Flaggorna och Sparläge
+är kvar på; journalen har efter detta cirka två 1,20-fönster kvar inom 30 USD.
+Kvar för människa: hörbar röst, läppsynkens kvalitet och svarstid (text ≈ 80 s
+innan GPU-steget startar; se `reply_ready_ms`), samt att OpenClaw svarade på
+engelska på en svensk fråga.
+
 ## Flaggor på, första prov och synlig barndiagnostik — 19 oktober 2026, ~12:30–12:45 UTC
 
 På Jakobs uppdrag (”sätt på alla flaggor”): Render `croupier-v2` fick
