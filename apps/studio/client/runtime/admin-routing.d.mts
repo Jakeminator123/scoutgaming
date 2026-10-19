@@ -6,3 +6,4 @@ export declare function hasAdminContext(search:string):boolean;
 export declare function isStudioAdminRoute(path:string,search:string):boolean;
 export declare function withAdminContext(href:string,currentSearch:string):string;
 export function adminToolName(path:string):string|null;
+export declare function adminRoomHref(search:string,hash?:string):string;

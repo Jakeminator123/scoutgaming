@@ -70,15 +70,27 @@ inte en fullständig ekonomisk periodrapport.
 återställer osparade val. Byte från konton, integrationer eller modellval går
 via sidnavigering, så befintliga varningar för osparade formulär används.
 Engångsresultat för integrationer döljs när sidan lämnas.
-**Spelbolag & rum** (`/admin/rooms`) öppnar rummets egna val direkt. Välj
-bolag och rum, ändra tillåtna alternativ och granska före publicering.
-På större skärmar visas bolagets rum som kort med spel och faktisk rums-/
-publiceringsstatus. Kortet öppnar exakt det rummet; osparade ändringar skyddas
-vid byte. Mobilens rumsväljare har samma rum och bytesregler.
-**Granska publicering** öppnar publiceringsverktyget med rätt bolag och rum.
-Rumsval sparas bara för valt rum. Gemensam mall finns i en separat
-detaljsektion; dess redigerare visar vilka andra rum som kan påverkas.
-Gamla länkar med `view=registered` fungerar men behövs inte längre.
+**Spelbolag & rum** (`/admin/rooms`) öppnar rummets egna val. Välj bolag
+och rum. När bolaget har flera rum visas kort med spel och faktisk rums-/
+publiceringsstatus på större skärmar; mobilens rumsväljare har samma val och
+bytesregler. Ett enda rum behöver inget extra rumskort. Osparade ändringar
+skyddas vid byte. Adressen rensar äldre `dealer`-val; rummets publicerade
+paket bestämmer vilka dealer-, bakgrunds- och bordslager som visas.
+
+Scenen och de tillåtna rumsvalen visas tillsammans. **Låst i publicerat paket**
+betyder att valet ändras genom den gemensamma mallen, inte genom rumsvalen.
+Ändra tillåtna alternativ → **Spara utkast** → **Granska publicering** i
+rumseditorn → kontrollera skillnaden och berörda rum → **Publicera granskat
+utkast**. Granskningsytan visas när ett sparat utkast finns. Sparning ändrar
+bara utkastet; live ändras först efter publicering. Rumsval sparas bara för
+valt rum. **Hämta senaste version** bevarar egen redigering tills du väljer
+hur den senaste versionen ska läsas in.
+
+Länken **Granska publicering** vid rumsrubriken öppnar det separata
+publiceringsverktyget med rätt bolag och rum. **Gemensam mall och tillåtna
+alternativ** ligger i en separat detaljsektion; mallredigeraren visar vilka
+andra rum som kan påverkas. Gamla länkar med `view=registered` fungerar men
+behövs inte längre.
 
 **Hitta rätt i Admin:** Startsidan och menyn delar arbetet i **Skapande** och
 **Verksamhet**. Under Skapande finns **Klippkarta**, **Dealerregister**,

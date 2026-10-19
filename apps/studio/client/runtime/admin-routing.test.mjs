@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {adminHref,adminPathname,hasAdminContext,isInternalAdminPathname,isStudioAdminRoute,withAdminContext} from './admin-routing.mjs';
+import {adminHref,adminPathname,hasAdminContext,isInternalAdminPathname,isStudioAdminRoute,withAdminContext,adminRoomHref} from './admin-routing.mjs';
 
 test('plain admin root is home but old context bookmarks still open Studio',()=>{
   assert.equal(isStudioAdminRoute('/admin',''),false);
@@ -30,7 +30,7 @@ test('explicit home navigation clears context while deep links retain it',()=>{
   const context='?operator=north&table=room-one&dealer=anna';
   assert.equal(withAdminContext('/admin',context),'/admin');
   assert.equal(withAdminContext('/admin?dealer=bea',context),'/admin?dealer=bea');
-  assert.equal(withAdminContext('/admin/rooms',context),'/admin/rooms?operator=north&table=room-one&dealer=anna');
+  assert.equal(withAdminContext('/admin/rooms',context),'/admin/rooms?operator=north&table=room-one');
   assert.equal(withAdminContext('/admin/clips?dealer=bea#cards',context),'/admin/clips?dealer=bea&operator=north&table=room-one#cards');
   assert.equal(withAdminContext('https://outside.invalid/admin/clips',context),'https://outside.invalid/admin/clips');
 });
@@ -90,4 +90,13 @@ test('saved player-account aliases use accounts while retaining exact query, fra
   for(const path of ['/admin/admin/players','/studio/admin/admin/players'])assert.equal(adminPathname(path),'/admin/admin/accounts');
   assert.equal(withAdminContext(adminHref('/admin/admin/players?operator=north#history'),'?operator=other&dealer=anna'),'/admin/admin/accounts?operator=north&dealer=anna#history');
   for(const href of ['/admin/admin/players-extra','/admin/admin/players/details','https://outside.invalid/admin/admin/players','//outside.invalid/admin/admin/players','/control/login?returnTo=%2Fadmin%2Fadmin%2Fplayers'])assert.equal(adminHref(href),href);
+});
+
+
+test('room addresses discard library dealers while preserving exact ownership, repeated query and fragment',()=>{
+  const search='?dealer=astrid&operator=north&table=room-one&game=roulette&tag=a&tag=b';
+  assert.equal(adminRoomHref(search,'#choices'),'/admin/rooms?operator=north&table=room-one&game=roulette&tag=a&tag=b#choices');
+  assert.equal(adminRoomHref('?dealer=astrid'),'/admin/rooms');
+  assert.equal(withAdminContext('/admin/rooms?dealer=wrong&operator=other&table=other-room#choices',search),'/admin/rooms?operator=other&table=other-room#choices');
+  assert.equal(withAdminContext('/admin/clips?dealer=dragan',search).includes('dealer=dragan'),true);
 });

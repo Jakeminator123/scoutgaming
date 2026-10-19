@@ -28,17 +28,25 @@ export function isStudioAdminRoute(path,search){
     || path==='/admin/clips';
 }
 
+// Room appearance comes from the selected room, never from a dealer-library query.
+export function adminRoomHref(search,hash=''){
+  const params=new URLSearchParams(search);params.delete('dealer');
+  return '/admin/rooms'+(params.size?'?'+params:'')+hash;
+}
+
 export function withAdminContext(href,currentSearch){
   if(!href.startsWith('/admin'))return href;
   const url=new URL(href,'https://admin-routing.invalid');
   // A dealer library is independent of a room's permitted appearance choices.
   if(url.pathname==='/admin/dealers')return href;
   if(!isInternalAdminPathname(url.pathname)||url.pathname==='/admin')return href;
+  if(url.pathname==='/admin/rooms')url.searchParams.delete('dealer');
   const context=new URLSearchParams(currentSearch);
   const explicitComposition=url.searchParams.has('composition')||url.searchParams.has('lane');
   const changedRoom=['operator','table'].some(key=>url.searchParams.has(key)&&url.searchParams.get(key)!==context.get(key));
   const changedRoomContext=changedRoom||url.searchParams.has('game')&&url.searchParams.get('game')!==context.get('game');
   for(const key of adminContextKeys){
+    if(key==='dealer'&&url.pathname==='/admin/rooms')continue;
     // An omitted template follows a newly selected room; an explicit template
     // (including an old lane bookmark) must never inherit a competing ID.
     if((key==='composition'||key==='lane')&&(explicitComposition||changedRoomContext))continue;
