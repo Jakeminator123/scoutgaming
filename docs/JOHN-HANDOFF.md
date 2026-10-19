@@ -38,6 +38,60 @@ satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo
 `scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
 i `docs/environment-variables.json` för både Studio och spelservern.
 
+## Fem repliker i följd i produktion — 19 oktober 2026, 19:06–19:13 UTC
+
+Jakobs krav ”4–5 repliker i följd” uppfylldes på `main` `4a4d502b` (Render
+LIVE 18:55 UTC), spelvy `/play/blackjack?operator=dragan-test`, Klippval
+OpenClaw, uppspelning av (Voice off), alla fem `generated-lipsync-stream`
+`ended`, `completed:true`, samtliga bildrutor mottagna:
+
+| Skickad (UTC) | Fråga → svar | Totalt | Ström→bild | Rutor |
+| --- | --- | --- | --- | --- |
+| 19:06:54 | ”Blanka och Zelda är bäst” → ”Blanka och Zelda är bäst.” | 116 s (kall) | 13,6 s | 57/57 |
+| 19:08:57 | namn/spel → ”Jag heter Dragan, och vi spelar blackjack.” | 45 s | 18,3 s | 69/69 |
+| 19:09:50 | lycka till → ”Lycka till på nästa hand, Jakob!” | 47 s | 19,6 s | 65/65 |
+| 19:10:43 | kortlekar → ”Jag har inte information om hur många kortlekar som finns i skon.” | 61 s | 30,4 s | 110/110 |
+| 19:11:50 | god natt → ”God natt, Jakob. Sov gott!” | 51 s | 20,7 s | 62/62 |
+
+Render-loggen 19:05–19:14 UTC: fem arbetar-websocketsessioner (18–35 s),
+inga `moving_drift_readback_failed`, guard-, bank- eller budgetavslag.
+Varm arbetare (nästa fråga direkt efter föregående svar) ger 45–60 s helt
+förlopp mot 116 s kallstart; den återstående tiden är främst text + röst +
+GPU-kö, inte spegelfönstret. Svenska frågor gav svenska svar. OpenClaw
+svarade fel i sak på kortleksfrågan (skon har åtta lekar) — modellfråga, inte
+transport. Kvalitet på röst/läppsynk är fortfarande inte granskad av människa
+(`reviewStatus pending`); canvas-export av bildrutor ger tomma bilder, så
+visuell granskning sker i spelvyn.
+
+Vad som krävdes samma kväll för att komma dit:
+
+1. **Dygnsbudget.** 16 reservationer (19,20 USD) hade fyllt dygnets 20 USD;
+   chatten visade ”Dagens budget för läppsynk är nådd”. Taket sitter i tre
+   lager: kod (`MOVING_TRIAL_BUDGET`, sessionsvalidering, journalens max),
+   policyraden `gpu_budget_policies` och dess CHECK-constraint (011).
+   PR299 (`4a4d502b`) höjer koden till 40 USD och inför
+   `journal.amendBudgetPolicy` (bekräftelse `apply-explicit-daily-budget-
+   amendment`); PR301 (`eeb85eff`) är migration 018 (`deploymentOptional`)
+   med constraint 40 USD. 018 applicerades i produktion 19:04 UTC med
+   `tools/check-migration-readiness.mjs --apply` (ledger 001–018, alla
+   strukturbevis OK, återläst), därefter policyraden 20 → 40 USD via
+   `amendBudgetPolicy` (bevis-JSON i Jakobs `%TEMP%`). Dygnet 2026-10-19 har
+   efter serien 21 reservationer / 25,20 USD av 40; granten 45 USD har
+   35 reservationer / 42 USD — **tre 1,20-fönster kvar** innan en ny
+   grant-amendment behövs (journalens maxtak är 45 USD; högre kräver kod).
+2. **Grundloopsgrinden** (”Svar klart · väntar på ledigt bord” i minuter,
+   18:21 och 18:30 UTC igen): Chrome avbryter video-only-uppspelning i en dold
+   flik med ”paused to save power”; `live-idle.failed()` svartlistade då
+   grundloopen permanent, ingen idle-bildruta kom och talgrinden öppnades
+   aldrig förrän sidan laddades om. PR300 (`cursor/idle-powersave-retry`)
+   gör om försöket för övergående avbrott och återupptar vid synlig flik;
+   regression med Chromes exakta text. Mergad som 82b112a5 (PR300); Render-
+   deploy följer CI på main och är inte verifierad live i detta stycke.
+3. **Spegelfönstret** (PR297) nekar fortfarande en fråga som skickas ~60–80 s
+   efter föregående svar, nu med `drift_busy` → `drift_not_admitting` i
+   guard-fasen i stället för observationsfel. Kvar: låt guard-fasen vänta på
+   nästa observation i stället för att falla direkt.
+
 ## Kvällsprov med Jakob: budget, spegelfördröjning, grundloopsgrind — 19 oktober 2026, 16:30–17:30 UTC
 
 Jakobs egna försök 16:41–16:47 UTC föll med
