@@ -79,6 +79,13 @@ Efter integration passerar 69 UI/contextprov och 28 isolerade tal-/mikrofonprov.
 Två valfria browserprov kördes inte utan browserfixtur. Första försöket för två
 integrationstestmoduler saknade lokalt `ws`; låsta gatewayberoenden installerades
 och båda modulerna passerar (sex prov). Orphan-kontrollen: 520 kandidater, noll orphan.
+Partnerns isolerade SQL-fixtur har nu explicit syntetisk readinesstransport för
+native publiceringspreflighten. Produktionsspärren och 409/403-/auditrollback-
+assertionerna är oförändrade. Hela `tools/studio-isolated-qa.mjs` är körd i WSL
+med Node24.21 och tillfällig PostgreSQL: fyra kontraktskontroller, 26 legacy-
+och 59 integrationskontroller passerar; 201 källhashar förblir oförändrade.
+Verklig SQL, omstart och HTTPS ingår; inga produktionsanslutningar används.
+39 närliggande partnerprov passerar också.
 Detta är kod-/fixtureprov, ingen ny produktions- eller medieacceptans.
 
 PNG-idle, generell chattregeleditor och var åttonde utdelning per box återstår.
