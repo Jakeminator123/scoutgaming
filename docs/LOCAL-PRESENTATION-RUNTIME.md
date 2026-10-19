@@ -120,7 +120,7 @@ antagnings-, avbrotts- och städskydd; det ingår inte i tvåreplikskvittot.
 
 ### Budgetens tre nivåer
 
-`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 40 USD och runtime-dygn
+`MOVING_TRIAL_BUDGET` anger teknisk total kapacitet 45 USD och runtime-dygn
 20 USD. Det separata initiala beloppet 13,2 USD används bara för ett tomt
 Dragan-budget-ID. Därefter gäller det lägsta av runtimekapaciteten och
 journalens varaktiga beviljade tak. En explicit finansierad amendment måste
@@ -133,6 +133,13 @@ tre CHECK-gränser ändrades, inte befintligt beviljat belopp. Denna leverans
 gör 015 obligatorisk i readiness, Studio och båda importörerna. Handoffens
 daterade appdriftkvitto avser PR262 före denna slutleverans; den beskriver
 även det exakta migrationskvittot och verifieringen av denna ändring.
+
+Jakob har 19 oktober satt det sammanlagda taket till 45 USD; det är inte
+45 USD extra. Den nya migrationen 017 höjer enbart de tre CHECK-gränserna
+40→45 USD och lämnar tillämpad 015 samt historiska ledgerbevis orörda.
+017 är först `deploymentOptional`: produktionens SQL, readiness och separat
+finansierad amendment måste återläsas innan den högre budgeten används och
+017 görs obligatorisk. Initialbelopp, dygnstak och försöksreserv är oförändrade.
 
 Faktisk leverantörsdebitering, kvarhållna providerreserver och SQL-journalens
 reservationer är skilda redovisningar. Summera inte journalen som faktura.
