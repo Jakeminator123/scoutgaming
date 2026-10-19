@@ -2,7 +2,9 @@
 // journal uses the lower durable limit until an explicit, funded amendment.
 // Migrations 015/017 change only schema capacity; they grant no budget or refund.
 export const MOVING_BUDGET_MAX_MICRO_USD = 45000000;
-export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 45000000;
+// Provider-wide coverage includes retained windows; durable grants remain capped above.
+// This technical capacity never authorizes an amendment or releases reservations.
+export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 50000000;
 export const MOVING_TRIAL_BUDGET = Object.freeze({
   budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
   initialBudgetMicroUsd: 13200000,

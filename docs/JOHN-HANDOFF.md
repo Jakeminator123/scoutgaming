@@ -302,7 +302,20 @@ den är ingen slutfaktura. Nästa prov kräver uppdaterad historik,
 behållna reserver och ett faktiskt finansierat nytt fönster. Min0/max1
 behölls efter Jakobs delegerade beslut.
 
-H6 följer nu den belagda nekningen genom observer/executor/controller/session
+Jakobs senare instruktion ”Skit i budget”, följd av ”du bestämmer”, används
+för en ändlig ny provperiod under **50USD kumulativt providerskydd** inklusive
+alla behållna reserver. Providerredovisningens tekniska max separeras från
+journalens oförändrade45USD-kapacitet,1,20USD-reservation och20USD-dagstak.
+Det ändrar ingen grant och kräver ingen ny migration. En tänkt normal
+append-only CAS20,40→21,60USD får göras först efter publicerad kod och färsk
+finansierings-/dräneringskontroll. Inget sådant budgetwrite har gjorts här.
+Sju rena budgetprov passerar; befintlig isolerad SQL-fixtur har utökats med
+provider50-amendment, exakt en ny reservation och bevarad historik.
+Det riktiga SQL-provet återstår i Linux-CI; ingen lokal produktserver startades.
+
+H6:s observerfix i PR287 är mergad som81308b6b; MERGE4 verifierar dess
+faktiska publicering. De180riktade proven och28hookproven är H6:s evidens.
+Fixen följer den belagda nekningen genom observer/executor/controller/session
 med offlineprov. Ett exakt authfel bevisar ännu inte varför driftobservationen
 ändrades; ingen grind ska sänkas från en hypotes. Synkat ljud/bild, tal under
 utdelning och fysisk mikrofon är fortfarande **inte godkända**.
