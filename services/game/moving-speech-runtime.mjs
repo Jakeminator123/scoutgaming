@@ -70,7 +70,7 @@ const publicPlan = plan => JSON.parse(JSON.stringify(plan));
  * Initial playback is the bank's explicit rest frame between card sequences. */
 export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, bank, releaseSha256,
   sessions, dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
-  bankOptions, readPresentation, publicVideo, now = Date.now, connectionMs = 15000,
+  bankOptions, readPresentation, publicVideo, admissionCheck, now = Date.now, connectionMs = 15000,
   onStreamFailure = receipt => console.warn(JSON.stringify(receipt)),
   onPreparationFailure = receipt => console.warn(JSON.stringify(receipt)),
   onCleanupError = () => console.warn(JSON.stringify({event:'moving_speech_cleanup_requires_recovery'}))} = {}) {
@@ -102,8 +102,9 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     }).finally(()=>records.delete(record.id));
     return record.cancelled;
   }
-  async function current(record) {
+  async function current(record,{checkSession=true,submissionPhase=false}={}) {
     record.signal.throwIfAborted(); await record.beforeCostly();
+    if(checkSession) await record.session?.assertCurrent?.({submissionPhase});
     await record.voice.assertFresh();
     if(record.deal){
       record.reservation.assertCurrent();
@@ -258,6 +259,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       let phase='guard';
       try {
         await input.beforeCostly(); signal.throwIfAborted();
+        record.driftAdmission=await admissionCheck?.();
+        signal.throwIfAborted();
         phase='profile-voice';
         record.voice=await dealerRuntime.prepareMoving({...input,signal,sourceSet:bank.sourceSet});
         phase='publication';
@@ -290,9 +293,13 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           binding:{releaseSha256,dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,profileRevision:record.voice.profileRevision,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256,bankReceiptSha256:bank.receipt.sha256},
           mediaReferences:record.evidence.mediaReferences,projectRevision:record.evidence.projectRevision,
-          beforeCostly:()=>current(record),signal,
+          driftAdmission:record.driftAdmission,
+          // Session guards already check SQL after product freshness, including
+          // submission_started at the final dispatch. Avoid recursively applying
+          // the ordinary reserved/running check inside that callback.
+          beforeCostly:()=>current(record,{checkSession:false}),signal,
           bankDownload:async({sessionSignal,ttlMs})=>{record.download=downloads.issue({
-            signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record)});return record.download.descriptor;}});
+            signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record,{submissionPhase:true})});return record.download.descriptor;}});
         record.id=record.session.sessionId;record.binding=record.session.binding; records.set(record.id,record);
         phase='submit'; await record.session.submit();
         phase='worker-ready'; await record.session.ready();
@@ -346,6 +353,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       if (!response.body) res.end(); else {const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);}
       return true;
     },
+    cancelActive: ()=>Promise.all([...new Set([...pending,...records.values()])].map(cancel)),
     cancelOwner: value=>Promise.all([...new Set([...pending,...records.values()])].filter(r=>r.owner===value).map(cancel)),
     cancelPlayer: value=>Promise.all([...new Set([...pending,...records.values()])].filter(r=>r.playerId===value).map(cancel)),
     async close() {closing=true;server.off('upgrade',upgrade);downloads.close();await Promise.all([...new Set([...pending,...records.values()])].map(cancel));wss.close();},

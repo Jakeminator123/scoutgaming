@@ -1,32 +1,17 @@
 import {createMovingDriftController} from '../../../services/game/moving-drift-controller.mjs';
 import {createPostgresMovingDriftStore} from '../../../services/game/postgres-moving-drift.mjs';
-import {driftError} from '../../../packages/presentation/contracts/moving-drift.mjs';
+import {driftError,movingDriftConfiguration} from '../../../packages/presentation/contracts/moving-drift.mjs';
 import {publicMovingDriftStatus} from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
 import {validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
 
 const path='/studio/api/admin/moving-drift';
-const profileKeys=['id','label','endpointId','releaseDigest','bankHash'];
-
-/** Explicit server configuration only. Importing or configuring never connects. */
-export function movingDriftAdminConfiguration(env={}) {
-  if(env.CROUPIER_STUDIO_MOVING_DRIFT_API!=='1') return null;
-  const raw=env.CROUPIER_STUDIO_MOVING_DRIFT_PROFILES;
-  if(typeof raw!=='string'||Buffer.byteLength(raw)>8192) throw driftError('drift_invalid_configuration',422);
-  let profiles;
-  try { profiles=JSON.parse(raw); } catch { throw driftError('drift_invalid_configuration',422); }
-  if(!Array.isArray(profiles)||!profiles.length||profiles.length>8||profiles.some(profile=>
-    !profile||typeof profile!=='object'||Array.isArray(profile)
-      ||Object.keys(profile).length!==profileKeys.length||profileKeys.some(key=>!Object.hasOwn(profile,key)))) {
-    throw driftError('drift_invalid_configuration',422);
-  }
-  return Object.freeze({profiles:structuredClone(profiles)});
-}
+export {movingDriftConfiguration as movingDriftAdminConfiguration};
 
 /**
  * Control state only. N1, same-origin/CSRF, fresh identity and the product mutation
  * lock belong to createStudioAdminApi. Calls also bind to the configured scope.
- * No provider/executor/observer/admission capability is exposed.
- * Configuration cannot declare a live runtime: connected is always false here.
+ * No provider/executor/observer/admission capability is exposed. The browser
+ * cannot assert connected: a matching fresh executor lease/readback in SQL is required.
  */
 function nativeStore({pool,boDb,environmentId}) {
   if(!boDb) return createPostgresMovingDriftStore({pool,environmentId});
@@ -42,11 +27,11 @@ export function createMovingDriftAdminApi({pool,boDb,scope,env={},controllerFact
   scope=validateStudioScope(scope);
   let controller;
   try {
-    const configuration=movingDriftAdminConfiguration(env);
+    const configuration=movingDriftConfiguration(env);
     if(!configuration) return Object.freeze({handlers:new Map(),gates:new Map(),configured:false});
     controller=controllerFactory({
       store:storeFactory({pool,boDb,environmentId:scope.environment}),
-      profiles:configuration.profiles,capabilities:{connected:false},
+      profiles:configuration.profiles,capabilities:{connected:true,requireExecutor:true},
     });
     if(typeof controller?.status!=='function'||typeof controller?.command!=='function') throw Error('invalid_controller');
   } catch {

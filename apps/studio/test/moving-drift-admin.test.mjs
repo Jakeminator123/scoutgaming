@@ -169,3 +169,24 @@ test('availableModes and admission come from the controller, never from command 
   const warm=await f.api.handle(request({mode:'warm',expectedRevision:1,commandId:'warm-1',profileId:'base',durationSeconds:1800}));
   assert.equal(warm.status,409);assert.equal((await warm.json()).code,'drift_warm_unavailable');
 });
+test('Admin reports connected only from a fresh shared executor lease, and loses admission when it expires',async()=>{
+  const f=fixture();
+  const backend=createMovingDriftController({store:f.store,profiles,capabilities:{connected:true,requireExecutor:true}});
+  const initial=await backend.status();
+  const execution=await backend.claimExecution({holderId:'server-fixture',profileId:'base'});
+  const observe=status=>backend.observe({revision:status.revision,operationId:status.operationId,execution,
+    observedAtMs:status.serverNowMs,observedProfileIds:['base'],workers:[],queuedJobs:0,busyJobs:0,
+    applied:{revision:status.revision,operationId:status.operationId,mode:status.desired.mode,profileId:status.desired.profileId,workersMin:0,workersMax:1}});
+  await observe(initial);
+  let response=await f.api.handle(request()),body=await response.json();
+  assert.equal(body.capabilities.connected,true);assert.deepEqual(body.capabilities.allowedModes,['off','saving']);
+  response=await f.api.handle(request({expectedRevision:0,commandId:'saving',mode:'saving',profileId:'base'}));
+  assert.equal(response.status,200);const accepted=await response.json();
+  await observe(accepted);
+  response=await f.api.handle(request());body=await response.json();assert.equal(body.admission.allowed,true);
+  assert.equal(JSON.stringify(body).includes(profiles[0].endpointId),false);
+  f.advance(15001);
+  response=await f.api.handle(request());body=await response.json();
+  assert.equal(body.capabilities.connected,false);assert.equal(body.admission.allowed,false);
+  assert.equal(body.observed.status,'unknown');
+});

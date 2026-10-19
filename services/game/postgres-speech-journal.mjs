@@ -84,12 +84,23 @@ export function speechRequestKey(ownerHash, requestId) {
 // the existing streaming-only policy and separate operator speech-QA gate stay.
 // Production uses the database clock; `now` is only an isolated-test injection.
 // `pool` is pg.Pool, or a query-only wrapper around an ALREADY connected client.
-export async function createSpeechJournal({ pool, environmentId, now } = {}) {
+export async function createSpeechJournal({ pool, environmentId, now, driftControl } = {}) {
   const environment = validateStudioEnvironmentId(environmentId);
   if (!pool || (typeof pool.connect !== 'function' && typeof pool.query !== 'function') || (now !== undefined && typeof now !== 'function')) fail('invalid_generated_speech_journal_input', 422);
 
-  async function transaction(work, studioScope) {
-    let client, previous, unlockDirect, release = false, began = false;
+  if (driftControl !== undefined && (!driftControl || typeof driftControl !== 'object'
+    || typeof driftControl.guard !== 'function')) fail('invalid_generated_speech_journal_input',422);
+  const driftScope=driftControl===undefined?null:movingScope(driftControl.scope);
+  const driftGuard=driftControl?.guard;
+
+  async function transaction(work, studioScope, driftOperation) {
+    if(driftGuard&&driftOperation){
+      if(studioScope&&canonicalStudioJson(studioScope)!==canonicalStudioJson(driftScope))fail('studio_scope_mismatch',409);
+      studioScope=driftScope;
+      check(driftOperation.endpointId,endpointPattern);check(driftOperation.sessionId,sessionIdPattern);
+      if(driftOperation.admission===undefined||driftOperation.admission===null)fail('invalid_generated_speech_journal_input',422);
+    }
+    let client, previous, unlockDirect, guardFailure, release = false, began = false;
     try {
       if (typeof pool.connect === 'function') {
         client = await pool.connect(); release = true;
@@ -111,6 +122,18 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         const digest = createHash('sha256').update(`croupier-studio\0${canonicalStudioJson(studioScope)}`).digest();
         await client.query('/* speech:studio_lock */ SELECT pg_advisory_xact_lock($1::integer,$2::integer)', [digest.readInt32BE(0), digest.readInt32BE(4)]);
       }
+      // Guarded moving operations use the same transaction and strict order:
+      // Studio -> drift control -> speech. The injected guard is SQL-only.
+      if(driftGuard&&driftOperation){
+        try {await driftGuard({client,...driftOperation});}
+        catch(error){
+          if(/^drift_[a-z_]+$/.test(error?.code??'')&&[409,422,503].includes(error.statusCode)){
+            guardFailure=Object.assign(new Error(error.code),{code:error.code,statusCode:error.statusCode});
+            throw guardFailure;
+          }
+          throw error;
+        }
+      }
       // Short transactions, one lock order for every writer in this environment.
       // No provider call, file/Blob I/O, wait or paid retry under this lock.
       await client.query('/* speech:lock */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`croupier:speech:${environment}`]);
@@ -124,7 +147,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
       return result;
     } catch (error) {
       if (began) { try { await client.query('ROLLBACK'); } catch { /* A lost COMMIT is uncertain, never retried. */ } }
-      if (error instanceof StudioStorageError) throw error;
+      if (guardFailure && error === guardFailure || error instanceof StudioStorageError) throw error;
       fail('generated_speech_journal_unavailable');
     } finally {
       try {
@@ -484,7 +507,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     // Moving admission requires migration 013; amendments require 014.
     // One atomic admission: spent request, exact media, GPU/day and total budget.
     async reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences, projectRevision,
-      budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, movingCapacity, ...gpu } = {}) {
+      budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, movingCapacity, driftAdmission, ...gpu } = {}) {
       scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
       const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash); check(budgetId, identifier);
       microUsd(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD); microUsd(gpu.reserveMicroUsd, 5000000);
@@ -513,19 +536,21 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
           VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10,$11) RETURNING session_id`,
         [environment,scope.workspaceId,gpu.sessionId,key,projectRevision,JSON.stringify(binding),JSON.stringify(mediaReferences),budgetId,ceiling,gpu.reserveMicroUsd,time]);
         return { ...saved, key, binding, totalReservedMicroUsd: integer(budget.used) + gpu.reserveMicroUsd, totalBudgetMicroUsd: ceiling };
-      }, scope);
+      }, scope, {phase:'reserve',sessionId:gpu.sessionId,endpointId:gpu.endpointId,admission:driftAdmission});
     },
-    async assertMovingSession({ scope, sessionId, lease, binding, jobId } = {}) {
+    async assertMovingSession({ scope, sessionId, endpointId, lease, binding, jobId, driftAdmission, submissionPhase = false } = {}) {
       scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
+      if(typeof submissionPhase!=='boolean')fail('invalid_generated_speech_journal_input',422);
       return transaction(async (client, time) => {
         const session = await getSession(client, sessionId, lease, time, true);
-        if (session.released_at_ms !== null || !['reserved','running'].includes(session.state)) fail('generated_speech_moving_session_inactive', 409);
+        if(endpointId!==undefined&&session.endpoint_id!==endpointId)fail('generated_speech_moving_endpoint_mismatch',409);
+        if (session.released_at_ms !== null || !['reserved','running',...(submissionPhase?['submission_started']:[])].includes(session.state)) fail('generated_speech_moving_session_inactive', 409);
         if (jobId !== undefined) knownJob(session, jobId);
         const saved = await row(client, 'get_moving', 'SELECT * FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1 AND session_id=$2', [environment, sessionId]);
         if (!saved || saved.workspace_id !== scope.workspaceId || canonicalStudioJson(saved.binding) !== canonicalStudioJson(binding)) fail('generated_speech_moving_binding_changed', 409);
         await assertMovingMedia(client, scope, saved.project_revision, binding, saved.media_references);
         return { ...sessionResult(session), key: saved.request_key };
-      }, scope);
+      }, scope, {phase:submissionPhase?'dispatch':'current',sessionId,endpointId,admission:driftAdmission});
     },
     async listMovingSessions({ scope } = {}) {
       scope = movingScope(scope);
@@ -538,12 +563,13 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
           .map(saved=>({ ...sessionResult(saved), key:saved.request_key }));
       });
     },
-    async markSubmissionStarted({ sessionId, lease } = {}) {
+    async markSubmissionStarted({ sessionId, endpointId, lease, driftAdmission } = {}) {
       return transaction(async (client, time) => {
         const saved = await getSession(client, sessionId, lease, time, true);
+        if(endpointId!==undefined&&saved.endpoint_id!==endpointId)fail('generated_speech_moving_endpoint_mismatch',409);
         if (saved.state !== 'reserved' || saved.job_id) fail('generated_speech_session_already_attempted', 409);
         return sessionResult(await updateSession(client, sessionId, { state: 'submission_started' }));
-      });
+      }, undefined, {phase:'submit',sessionId,endpointId,admission:driftAdmission});
     },
     async attachJob({ sessionId, lease, jobId } = {}) {
       check(jobId, jobIdPattern);

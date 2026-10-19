@@ -23,7 +23,7 @@ Visningsetiketter och profilernas ordning ändrar inte detta fingeravtryck.
 använder databasklocka och kräver atomisk commit. SQL016 är valfri vid deployment;
 modulerna startar ingenting och läser inga credentials. `applyStudioMigrations`
 kan skjuta upp enbart kända deploymentOptional-versioner med `deferOptional`;
-016 och 017 kan därmed rullas ut separat. Installerad historik och fingeravtryck
+016 kan därmed installeras efter redan ledgerad 017. Installerad historik och fingeravtryck
 verifieras fortsatt. Utgången varm period
 övergår till Av vid nästa serveranrop/avstämning. Det bevisar återställning efter
 omstart, **inte avstängning medan servern ligger nere**.
@@ -41,16 +41,35 @@ utelämnas. 200 bekräftar önskat läge, aldrig genomförd GPU-drift. Konflikte
 
 API:t är avstängt utan server-opt-in/profilkonfiguration enligt
 [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
-Denna etapp anger alltid `connected:false`, tillåter bara önskat Av och öppnar
-ingen admission. Saving/warm är spärrade; ingen provider eller exekverare finns.
-Framtida faktisk drift kräver globalt synkroniserad admission med befintlig
-journal, färska bevis från samtliga endpoints och kontrollerad drain/stop.
-Varm aktivering kräver därutöver oberoende verkställd sluttid, faktisk reservation
-av hela perioden inklusive avstängning och attestering av exakt release/bank.
-Det injicerade budgetunderlaget är bundet till kommando/revision/profil; beräknad
-kostnad är inte en faktura eller reservation. DTO-kostnaden gäller accepterad period,
-inte timpris eller offert för ett nytt profil-/tidsval. Kapaciteten är avstängd som standard.
-Befintlig RunPod-adapter, worker och taljournal är oförändrade.
+`moving-drift-executor.mjs` kopplar endast Av/Sparläge till en befintlig,
+verifierad min0/max1-endpoint. Konstruktion gör inga provideranrop; serverns
+uttryckliga opt-in startar avstämningen. Samma katalog och databasscope används
+i Admin och spelserver. En SQL-lease med fence och färsk observation krävs för
+`connected:true`; processdöd/felande läsning stänger admission. Ingen PATCH,
+ny endpoint, varm keepalive eller automatisk betald retry ingår.
+
+Den första admission-token följer hela prepare/session-försöket utan ompinning.
+Journalens samma anslutning låser Studio → drift → speech och kontrollerar
+token vid reserve/current/submit samt sist före POST. Därefter kan ett redan
+tillåtet nätanrop vara på väg även om Av har sparats; inget kvitto på oskickat
+arbete eller avstängning uppfinns. Privat bankhämtning tillåter uttryckligen
+submission_started före attach-COMMIT med samma fence; vanlig voice/output
+gör inte det. Astrids ursprungliga journal saknar denna optional moving-hook.
+
+Av ligger kvar som drainkrav även vid snabb Av → Sparläge. Executor avbryter
+endast ägda sessioner, återanvänder befintlig recovery och läser färsk release/
+health. Jobs, aktiva och okända workers samt öppna journalposter blockerar
+verifierat Av. Avbruten/osäker submission utan känt jobb kan därför stanna
+i stopping och blockera nästa start; automatisk återhämtning hävdas inte.
+Ingen budgetrad raderas eller återbetalas. Saving kan kallstarta utan att
+påstå varm modell/bank: okända runtimehashar är null och readiness false;
+känd mismatch spärrar. Befintlig exakt workerattestering krävs fortfarande.
+
+Varm drift/profilbyte är spärrade i första runtimeetappen. Varm aktivering
+kräver oberoende verkställd sluttid, reservation av hela perioden inklusive
+avstängning och exakt release/bank. Beräknad kostnad är ingen faktura/reservation.
+SQL017 är required;016 förblir deployment-optional, men behövs innan denna
+runtime uttryckligen aktiveras. Ingen moln-/GPU-acceptans följer av kodproven.
 
 Lokalt SQL-/omstartsprov: `node tools/studio-isolated-qa.mjs --moving-drift --download-postgres`
 i Linux/WSL med game-paketets låsta beroenden. Verktyget använder en tillfällig
