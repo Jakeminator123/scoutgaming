@@ -74,9 +74,13 @@ nytt textprov nekades efter 8,3 s med `generated_speech_total_budget_exhausted`
 är fullt reserverad (20 reservationer). Ett nytt prov kräver en append-only
 amendment via `authorizeMovingBudgetAmendment`; dess 50 USD-providertak
 (`MOVING_PROVIDER_BUDGET_MAX_MICRO_USD`) är i praktiken nått eftersom alla
-äldre fönster räknas som behållna (kalkyl 49,72 USD). Det är Jakobs beslut:
-höj providertaket i kod och gör en amendment, eller frigör verifierat
-avslutade äldre reservationer. Första vidarebefordran missade dessutom att spelet
+äldre fönster räknas som behållna (kalkyl 49,72 USD). Jakob gav 15:45 UTC
+mandatet ”om detta inte går har du tillåtelse” med målet fungerande tal inom
+några timmar; providertaket höjs därför till **75 USD** i kod (denna leverans)
+och en amendment 24 → 30 USD (fem 1,20-fönster; kalkyl 1,02 + 47,00 + 6,00 =
+54,02 USD) appliceras efter deploy via journalens `authorizeMovingBudgetAmendment`
+med färsk drained-läsning från providern. Journalkapaciteten 45 USD och alla
+20 historiska reservationer består. Första vidarebefordran missade dessutom att spelet
 loggar dessa händelser med `console.warn` (stderr); `process-group.mjs` observerar
 nu båda strömmarna genom samma allowlist, verifierat med en riktig barnprocess.
 

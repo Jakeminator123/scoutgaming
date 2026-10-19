@@ -13,8 +13,8 @@ test('one additional reservation fits the existing ID and cumulative human cap',
  assert.equal(freshMovingBudgetAmendment(input,1300001),false);
  assert.equal(freshMovingBudgetAmendment(input,999999),false);
 });
-test('insufficient coverage, grant above 45 USD, provider cap above 50 USD or refund cannot authorize',()=>{
- for(const patch of [{globalLimitMicroUsd:50000001},{newLimitMicroUsd:45000001},{newLimitMicroUsd:4800000},
+test('insufficient coverage, grant above 45 USD, provider cap above 75 USD or refund cannot authorize',()=>{
+ for(const patch of [{globalLimitMicroUsd:75000001},{newLimitMicroUsd:45000001},{newLimitMicroUsd:4800000},
   {newLimitMicroUsd:4700000},{expectedReservedMicroUsd:4800001},{windowReserveMicroUsd:1199999},
   {otherReservedMicroUsd:14000000},{providerSpentMicroUsd:-1},{expectedReservationCount:0},
   {globalLimitMicroUsd:'15000000'},{authorizationId:''},{evidenceSha256:'unverified'},{unexpected:true}]){
@@ -31,9 +31,9 @@ test('historical third production trial permitted one additional 1.20 USD reserv
  assert.equal(validMovingBudgetAmendment(next),true);
  assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
  assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
- assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,50000000);
+ assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,75000000);
  assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
- for(const patch of [{newLimitMicroUsd:12000000},{newLimitMicroUsd:40000001},{globalLimitMicroUsd:50000001},
+ for(const patch of [{newLimitMicroUsd:12000000},{newLimitMicroUsd:40000001},{globalLimitMicroUsd:75000001},
    {providerSpentMicroUsd:45000001},{otherReservedMicroUsd:45000001},{otherReservedMicroUsd:38000000},
   {windowReserveMicroUsd:1199999},{globalLimitMicroUsd:'40000000'}])
   assert.equal(validMovingBudgetAmendment({...next,...patch}),false,JSON.stringify(patch));
@@ -80,8 +80,8 @@ test('the durable grant still stops at 45 USD while provider accounting has its 
   providerSpentMicroUsd:600000,otherReservedMicroUsd:24000000,windowReserveMicroUsd:1200000};
  const saved=structuredClone(ceiling);
  assert.equal(validMovingBudgetAmendment(ceiling),true);
- for(const patch of [{newLimitMicroUsd:45000001},{globalLimitMicroUsd:50000001},
-   {providerSpentMicroUsd:50000001},{otherReservedMicroUsd:50000001}])
+ for(const patch of [{newLimitMicroUsd:45000001},{globalLimitMicroUsd:75000001},
+   {providerSpentMicroUsd:75000001},{otherReservedMicroUsd:75000001}])
   assert.equal(validMovingBudgetAmendment({...ceiling,...patch}),false,JSON.stringify(patch));
  assert.equal(validMovingBudgetAmendment({...ceiling,providerSpentMicroUsd:19800001}),false,'all provider coverage shares the same45USD cap');
  assert.deepEqual(ceiling,saved,'validation cannot rewrite historical amounts');
@@ -104,7 +104,12 @@ test('a funded 50 USD provider window retains old reservations without increasin
   newLimitMicroUsd:45000000,windowReserveMicroUsd:1200001,otherReservedMicroUsd:0};
  assert.equal(validMovingBudgetAmendment(grantBoundary),true,'the control case has enough window and provider coverage');
  assert.equal(validMovingBudgetAmendment({...grantBoundary,newLimitMicroUsd:45000001}),false,'provider coverage cannot expand durable schema capacity even when the window funds it');
- assert.equal(validMovingBudgetAmendment({...next,globalLimitMicroUsd:50000001}),false);
+ assert.equal(validMovingBudgetAmendment({...next,globalLimitMicroUsd:75000001}),false);
+ // Jakob's 19 October decision: retained windows plus five more 1.20 USD trials fit under 75 USD.
+ const widened={...next,authorizationId:'jakob-chat-20261019-satt-pa-alla-flaggor',expectedLimitMicroUsd:24000000,expectedReservedMicroUsd:24000000,
+  expectedReservationCount:20,newLimitMicroUsd:30000000,globalLimitMicroUsd:75000000,providerSpentMicroUsd:1015650,otherReservedMicroUsd:47003335,windowReserveMicroUsd:6000000};
+ assert.equal(validMovingBudgetAmendment(widened),true);
+ assert.equal(validMovingBudgetAmendment({...widened,globalLimitMicroUsd:50000000}),false,'the same window does not fit under the former 50 USD cap');
  assert.deepEqual(next,saved,'validation cannot rewrite historical reservations');
  assert.equal(MOVING_BUDGET_MAX_MICRO_USD,45000000);
  assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,45000000);
