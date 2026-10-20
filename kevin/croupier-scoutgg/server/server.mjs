@@ -125,7 +125,7 @@ const makeRorlig = apiKey => new RorligLipsync({
 // the key Paow's voice already uses (local QA disables only Astrid's); given later on /studio/lipsync.html it starts then
 let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
 const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
-  talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language)}:null;},
+  talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language),idle:rorlig.idleTakes(d)}:null;},   // idle: the idle takes a connected worker can map (the chain at rest is laid from these)
   // the winners of a round by name, live in his voice over whatever he shows (Emil 14 Oct); without a warm worker the table
   // plays his recorded "congratulations to the winners" instead
   winners:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)&&hasVoice(d)&&draggeVoiceReady(d)?(names,language,notBefore)=>{cheerWinners(room,d,names,language,notBefore).catch(e=>console.log(`vinnarna: ${e.message}`));}:null;},

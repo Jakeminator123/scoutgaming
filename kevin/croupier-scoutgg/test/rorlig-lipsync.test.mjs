@@ -65,7 +65,7 @@ function talkTable(opts={}){
   const ready={frames,restEnd:['hole','flip'],restStart:['flip'],...(opts.idle?{idle:opts.idle}:{})};
   const dir=mkdtempSync(join(tmpdir(),'talk-')),box={warm:true,planned:[],time:100000};
   const s=createSharedTable(join(dir,'t.sqlite'),{manifest:talkManifest,now:()=>box.time,readyFor:()=>ready,
-    talk:()=>box.warm?{line:clip=>({url:clip.url.replace('/media/repliker/','/media/dealers/paow/repliker/sv/'),lang:'sv',dur:3.2})}:null,
+    talk:()=>box.warm?{line:clip=>({url:clip.url.replace('/media/repliker/','/media/dealers/paow/repliker/sv/'),lang:'sv',dur:3.2}),...(opts.workerIdle?{idle:opts.workerIdle}:{})}:null,   // workerIdle: the idle takes the connected worker announced
     onPlan:(room,plan,r,extra)=>box.planned.push({plan,...extra}),...opts});
   const st=room=>s.run('kevin',{session:room,op:'state'});
   const send=(room,op,extra={})=>s.run('kevin',{session:room,op,version:st(room).version,requestId:crypto.randomUUID(),...extra});
@@ -381,7 +381,7 @@ test("a talk at rest gets its idle from its first frame; after a take under it t
 
 test('between rounds an answer runs over his idle takes, the same chain for every viewer and the worker; mid-round he waits in his pose as before', () => {
   const idle=[{take:'idle1',frames:39},{take:'idle2',frames:39}];
-  const t=talkTable({idle});
+  const t=talkTable({idle,workerIdle:['idle1','idle2']});
   try{
     t.send('paow','join',{name:'Kevin',seats:[3]});
     const a=t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2});
@@ -407,4 +407,78 @@ test('without idle takes nothing changes: no chain on any talk', () => {
     t.send('paow','join',{name:'Kevin',seats:[3]});
     assert.ok(!t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2}).talk.idle);
   }finally{t.close();}
+});
+
+// Kevin 20 Oct, part (b): the chain at rest only when a connected worker announced the idle takes (its pong "takes"),
+// built from the takes it has; the line then goes to that worker, everything else to the fastest as before.
+
+test('with only a worker that has the deals (ko2) a talk at rest gets no chain, and the chain uses only the takes the worker announced', () => {
+  const idle=[{take:'andas',frames:39},{take:'andasb',frames:39},{take:'huvud',frames:39}];
+  const none=talkTable({idle});
+  try{
+    none.send('paow','join',{name:'Kevin',seats:[3]});
+    assert.ok(!none.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2}).talk.idle,'no idle-capable worker: he rests on his still, the mouth on it, as before');
+  }finally{none.close();}
+  const some=talkTable({idle,workerIdle:['andas','blickvanster']});
+  try{
+    some.send('paow','join',{name:'Kevin',seats:[3]});
+    const a=some.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:4});
+    assert.ok(a.talk.idle?.length>=2);
+    assert.deepEqual([...new Set(a.talk.idle.map(c=>c.take))],['andas'],'only the take the worker has, never one it lacks');
+  }finally{some.close();}
+});
+
+test('a worker announces its takes in pong: a line over idle takes goes to the worker that has them, a plain line to the fastest, and with no such worker to the fastest as before', async () => {
+  const {RorligLipsync,idleTakesIn,vilaMap}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:60_000,dealers:['dragge']});
+  clearInterval(r.timer);
+  const pod=()=>{const sent=[],h=[],c=[];return {sent,h,c,ws:{readyState:1,off(ev,f){for(const l of [h,c]){const i=l.indexOf(f);if(i>=0)l.splice(i,1);}},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);if(ev==='close')c.push(f);}}};};
+  const ko2=pod(),ours=pod();
+  r.addWorker('dragge',ko2.ws,{rutor_per_s:95,spar:1},'ko2');
+  r.addWorker('dragge',ours.ws,{rutor_per_s:40,spar:1,takes:['pos1','pos1-i','hole','flip','andas','andasb']},'ours');
+  assert.deepEqual(r.idleTakes('dragge'),['andas','andasb'],'the idle takes some connected worker announced');
+  assert.equal(r.status().dragge.workers.find(w=>w.pod==='ours').takes,6);
+  const starts=p=>p.sent.filter(m=>m.t==='start').map(m=>m.id);
+  const done=(p,id)=>[...p.h].forEach(f=>f(JSON.stringify({t:'done',id}),false));
+  const now=Date.now();
+  const plain=r.speak('dragge','rum',{id:'plain',kartaStart:now+1000,endAt:now+4000,line:'/a.mp4'},[['pos1-i',0,30],['vila',0,10]]);
+  assert.deepEqual(starts(ko2),['plain'],'a plain line: the fastest worker');
+  done(ko2,'plain');await plain;
+  const over=r.speak('dragge','rum',{id:'over',kartaStart:now+1000,endAt:now+4000,line:'/a.mp4'},[['flip',0,20],['andas',0,39],['andasb',0,20]]);
+  assert.deepEqual(starts(ours),['over'],'a line over his idle takes: the worker that has them, although slower');
+  assert.deepEqual(ours.sent.find(m=>m.id==='over').karta[1],['andas',0,39],'its map keeps the idle takes');
+  done(ours,'over');await over;
+  assert.deepEqual(idleTakesIn([['flip',0,20],['andas',0,39],['vila',0,2],['posdealer-v',3,4],['hands',0,2]]),['andas']);
+  assert.deepEqual(vilaMap([['flip',0,20],['andas',0,39]]),[['flip',0,20],['vila',0,39]]);
+  ours.ws.readyState=3;   // only ko2 left: the line goes there as before
+  assert.deepEqual(r.idleTakes('dragge'),[]);
+  const alone=r.speak('dragge','rum',{id:'alone',kartaStart:now+1000,endAt:now+4000,line:'/a.mp4'},[['andas',0,39]]);
+  assert.deepEqual(starts(ko2),['plain','alone']);
+  done(ko2,'alone');await alone;
+});
+
+test('when the worker with his idle takes goes away mid-line, the line is remade once on another worker with the idle frames as rest', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:60_000,dealers:['dragge']});
+  clearInterval(r.timer);
+  const pod=()=>{const sent=[],h=[],c=[];return {sent,h,c,ws:{readyState:1,off(ev,f){for(const l of [h,c]){const i=l.indexOf(f);if(i>=0)l.splice(i,1);}},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);if(ev==='close')c.push(f);}}};};
+  const ko2=pod(),ours=pod();
+  r.addWorker('dragge',ko2.ws,{rutor_per_s:95,spar:1},'ko2');
+  r.addWorker('dragge',ours.ws,{rutor_per_s:40,spar:1,takes:['flip','andas']},'ours');
+  const now=Date.now();
+  const over=r.speak('dragge','rum',{id:'over',kartaStart:now+1000,endAt:now+6000,line:'/a.mp4'},[['flip',0,20],['andas',0,39]]);
+  assert.deepEqual(ours.sent.filter(m=>m.t==='start').map(m=>m.id),['over']);
+  ours.ws.readyState=3;[...ours.c].forEach(f=>f());   // gone mid-line
+  await new Promise(res=>setTimeout(res,10));
+  const again=ko2.sent.find(m=>m.t==='start'&&m.id==='over');
+  assert.ok(again,'made once more on the other worker');
+  assert.deepEqual(again.karta,[['flip',0,20],['vila',0,39]],'with the idle frames as rest, which that worker can make');
+  [...ko2.h].forEach(f=>f(JSON.stringify({t:'done',id:'over'}),false));await over;
+  assert.equal(r.index('over').fel,null);
+  await new Promise(res=>setTimeout(res,0));   // the worker's lane frees after the line's promise settles
+  // a plain line that fails is not remade (as before)
+  const plain=r.speak('dragge','rum',{id:'plain',kartaStart:now+1000,endAt:now+6000,line:'/a.mp4'},[['flip',0,20]]);
+  assert.ok(ko2.sent.some(m=>m.t==='start'&&m.id==='plain'));
+  ko2.ws.readyState=3;[...ko2.c].forEach(f=>f());await plain;
+  assert.equal(r.index('plain').fel,'worker gone');
 });

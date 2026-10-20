@@ -41,6 +41,7 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 // speaking when the new plan's cards come (their frames changed) for a new map; steg = the previous plan's steps + this one's.
 // The talk track lives on the room (r.talk), so an answer or a line outlives the plan it started in.
 export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null}={}) {
+  const talkFor=talk;
   const db=new DatabaseSync(filename);
   db.exec(`CREATE TABLE IF NOT EXISTS shared_rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS shared_players (room TEXT NOT NULL, token TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, balance REAL NOT NULL, seen REAL NOT NULL, last_return REAL, PRIMARY KEY(room,token));
@@ -57,10 +58,13 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // instead of freezing on his still: the talk carries the chain of idle takes every viewer and the worker's map follow
   // (rorlig-lipsync.mjs idleChain). Only when no card can come and cut it: between rounds, or once the round is settled
   // (his last take ends at rest and he talks about the result). Mid-round he waits in his pose as before (11 Oct).
-  function withIdle(r,ready,t,steg) {
-    if(!ready?.idle?.length||(r.phase==='round'&&r.round?.phase!=='settled'))return t;
+  // Only the idle takes a connected lip-sync worker announced (talker.idle, rorlig-lipsync.mjs idleTakes) go into the
+  // chain: with a worker that has the deals only (ko2) he rests on his still with the mouth on it, as before.
+  function withIdle(r,ready,t,steg,talker) {
+    const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take));
+    if(!takes.length||(r.phase==='round'&&r.round?.phase!=='settled'))return t;
     const from=idleFrom(steg,t,{restEnd:ready.restEnd??[]});
-    const idle=from===null?[]:idleChain(ready.idle,from,t.endAt+600,t.id);
+    const idle=from===null?[]:idleChain(takes,from,t.endAt+600,t.id);
     return idle.length?{...t,idle}:t;
   }
   function variantOf(r,clip,ready){
@@ -175,7 +179,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
     if(ready&&steps.length)at=readyTimeline(steps,ready);
-    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps])):[];
+    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps],talker)):[];
     if(spoken.length)r.talkUntil=spoken.at(-1).endAt+250;
     const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
     const live=(r.talk??[]).filter(t=>t.endAt>now()),omplanera=live.filter(t=>t.endAt+600>firstFrame);
@@ -434,13 +438,13 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       const speaking=live.filter(x=>x.startAt<=t+ANSWER_LEAD);
       const start=Math.round(Math.max(t+ANSWER_LEAD,input.notBefore??0,...speaking.map(x=>x.endAt+250)));
       const {notBefore,...said}=input;
-      const ready=readyFor(id),steg=[...(r.prevSteps??[]),...(r.plan?.steps??[])];
-      const talk=withIdle(r,ready,{id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`},steg);
+      const ready=readyFor(id),steg=[...(r.prevSteps??[]),...(r.plan?.steps??[])],talker=ready?talkFor(id):null;   // talkFor: the hook (talk below is the answer)
+      const talk=withIdle(r,ready,{id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`},steg,talker);
       let free=talk.endAt+250;const later=[],moved=[];
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
         if(x.startAt>=free){later.push(x);continue;}
         if(x.kind==='line'&&x.event==='goodluck')continue;
-        const d=x.endAt-x.startAt,{idle:_,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg);
+        const d=x.endAt-x.startAt,{idle:_,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg,talker);
         later.push(y);moved.push(y);free=y.endAt+250;
       }
       r.talk=[...speaking,talk,...later];r.talkUntil=Math.max(r.talkUntil??0,...r.talk.map(x=>x.endAt+250));

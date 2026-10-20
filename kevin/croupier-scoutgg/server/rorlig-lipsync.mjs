@@ -20,6 +20,12 @@ import { WebSocket } from 'ws';
 
 export const LJUD_FORE = .22;   // s of silence the worker puts before a line (its mouth opens on the sound, not before)
 const FPS = 24;
+// The takes every worker image has (the deals, Paow's hands) and the one picture; anything else in a map is one of the
+// dealer's idle takes (Kevin 20 Oct), which only a worker that announced them in its pong ("takes": [...]) can map.
+const DEAL_TAKE = /^(pos[1-7]|posdealer|hole|flip|hands)(-[iuv]+)?$/;
+export const idleTakesIn = karta => [...new Set((karta ?? []).map(k => k[0]).filter(t => t !== 'vila' && !DEAL_TAKE.test(t)))];
+/** The same map for a worker that has only the deals: its idle takes become rest frames (the fallback, ko2 today). */
+export const vilaMap = karta => (karta ?? []).map(([t, f, n]) => (t !== 'vila' && !DEAL_TAKE.test(t) ? ['vila', 0, n] : [t, f, n]));
 
 /** Duration in seconds of an mp4 (moov/mvhd), or null. */
 export function mp4Duration(buf) {
@@ -185,12 +191,22 @@ export class RorligLipsync {
   }
 
   #ok(w) { return Boolean(w.ws?.readyState === WebSocket.OPEN && w.info && (w.info.rutor_per_s ?? 0) >= MIN_FPS); }
+  // the takes a worker announced in its pong ("takes": all of them, or "idle": the idle ones); none announced = the deals only
+  #announced(w) { const t = w.info?.takes ?? w.info?.idle; return Array.isArray(t) ? t : []; }
+  #knows(w, names) { const has = this.#announced(w); return names.every(n => has.includes(n)); }
+  /** The idle takes a connected worker can map for this dealer (a chain at rest is laid from these, shared-table.mjs). */
+  idleTakes(dealer) {
+    const out = new Set();
+    for (const w of this.workers(dealer)) if (this.#ok(w)) for (const t of this.#announced(w)) if (t !== 'vila' && !DEAL_TAKE.test(t)) out.add(t);
+    return [...out];
+  }
 
   status() {
     return Object.fromEntries([...this.s].map(([d, s]) => {
       const first = s.workers.find(w => this.#ok(w));
       return [d, { ready: this.ready(d), info: first ? { gpu: first.info.gpu, motor: first.info.motor, forsta_bit_ms: first.info.forsta_bit_ms, rutor_per_s: first.info.rutor_per_s } : null,
-        workers: s.workers.map(w => ({ pod: w.pod, gpu: w.info?.gpu ?? null, rutor_per_s: w.info?.rutor_per_s ?? null, forsta_bit_ms: w.info?.forsta_bit_ms ?? null, running: w.running, up: Math.round((Date.now() - w.at) / 1000), ...(w.badUntil > Date.now() ? { resting: Math.round((w.badUntil - Date.now()) / 1000) } : {}) })),
+        idle: this.idleTakes(d),
+        workers: s.workers.map(w => ({ pod: w.pod, gpu: w.info?.gpu ?? null, rutor_per_s: w.info?.rutor_per_s ?? null, forsta_bit_ms: w.info?.forsta_bit_ms ?? null, takes: this.#announced(w).length, running: w.running, up: Math.round((Date.now() - w.at) / 1000), ...(w.badUntil > Date.now() ? { resting: Math.round((w.badUntil - Date.now()) / 1000) } : {}) })),
         asked: s.askedAt ? Math.round((Date.now() - s.askedAt) / 1000) : null, activeAgo: s.active ? Math.round((Date.now() - s.active) / 1000) : null,
         recent: s.recent }];
     }));
@@ -246,7 +262,7 @@ export class RorligLipsync {
     const rec = { room, ver: (old?.ver ?? 0) + 1, pieces: [], done: false, error: null, at: Date.now(), pcm: pcm ?? old?.pcm ?? null, pcmWs: old?.pcmWs ?? null, talk };
     this.talks.set(talk.id, rec);
     const base = this.publicBase();
-    const run = (w) => new Promise(resolve => {
+    const run = (w, map) => new Promise(resolve => {
       const ws = w.ws;
       if (rec !== this.talks.get(talk.id)) return resolve();   // a newer map came while this one waited
       if (!this.#ok(w) || (!rec.pcm && !base)) { rec.error = 'no worker'; rec.done = true; return resolve(); }
@@ -257,7 +273,15 @@ export class RorligLipsync {
       const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, worker: w.pod ?? 'serverless', queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
       // a worker that hangs (15 s without an answer) gets no lines for a minute while another one works (14 Oct: a pod far
       // from the server fell behind and every line it took after that timed out)
-      const finish = (err) => { if (err === 'timeout') { w.badUntil = Date.now() + 60_000; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: timeout — vilar 60 s`); } rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
+      const finish = (err) => { if (err === 'timeout') { w.badUntil = Date.now() + 60_000; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: timeout — vilar 60 s`); } rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20);
+        // the worker with his idle takes hung or went away mid-line: once more on another worker, with those frames as rest
+        // (it has only the deals), rather than no mouth at all for the line
+        if ((err === 'timeout' || err === 'worker gone') && job.idle.length && !job.retried && rec === this.talks.get(talk.id) && Date.now() < (talk.endAt ?? Infinity) && s.workers.some(o => o !== w && this.#ok(o))) {
+          job.retried = true; job.map = vilaMap(job.map); job.idle = []; rec.done = false; rec.error = null;
+          this.log(`läppsynk rörlig [${dealer}]: ${talk.event ?? talk.kind} görs om på en annan arbetare, utan idle-tagningarna`);
+          return resolve('retry');
+        }
+        resolve(); };
       let pending = null;
       const onMsg = (data, isBinary) => {
         if (isBinary) {
@@ -279,18 +303,23 @@ export class RorligLipsync {
       if (lanes) rec.abort = () => { try { ws.send(JSON.stringify({ t: 'avbryt', id: jid })); } catch {} };
       // fran: the first frame the viewers still need (a new map while it speaks): the worker makes only the rest
       // a new map for an answer this worker already has the voice of: not the voice again (~0.5 s when it matters most)
-      if (rec.pcm && rec.pcmWs === ws && lanes) ws.send(JSON.stringify({ t: 'start', id: jid, ljud_id: talk.id, rate: 24000, karta, fran_ruta: fran, samma_ljud: true }));
+      if (rec.pcm && rec.pcmWs === ws && lanes) ws.send(JSON.stringify({ t: 'start', id: jid, ljud_id: talk.id, rate: 24000, karta: map, fran_ruta: fran, samma_ljud: true }));
       else if (rec.pcm) {
-        ws.send(JSON.stringify({ t: 'start', id: jid, ljud_id: talk.id, rate: 24000, karta, fran_ruta: fran }));
+        ws.send(JSON.stringify({ t: 'start', id: jid, ljud_id: talk.id, rate: 24000, karta: map, fran_ruta: fran }));
         for (let i = 0; i < rec.pcm.length; i += 32768) ws.send(rec.pcm.subarray(i, i + 32768));
         rec.pcmWs = ws;
-      } else ws.send(JSON.stringify({ t: 'start', id: jid, rate: 24000, karta, ljud_url: base + talk.line, fran_ruta: fran }));
+      } else ws.send(JSON.stringify({ t: 'start', id: jid, rate: 24000, karta: map, ljud_url: base + talk.line, fran_ruta: fran }));
       ws.send(JSON.stringify({ t: 'end', id: jid }));
     });
     // The line needed on screen soonest first (earliest deadline): a line starting in a second goes before an answer made
     // for later, and a new map for what is on screen now goes before both. One at a time per worker (maxLanes).
+    // idle: the idle takes in the map, which only a worker that announced them can make (#pump); map: the map as sent
+    // (rewritten to rest frames for the fallback worker); a 'retry' from run queues the job again on another worker
+    let job;
     return new Promise(resolve => {
-      s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), voiceAt: () => rec.pcmWs, run: (w) => run(w).then(resolve, resolve) });
+      job = { deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), voiceAt: () => rec.pcmWs, idle: idleTakesIn(karta), map: karta, retried: false,
+        run: (w) => run(w, job.map).then(r => { if (r === 'retry') { s.jobs.push(job); queueMicrotask(() => this.#pump(dealer)); } else resolve(); }, resolve) };
+      s.jobs.push(job);
       this.#pump(dealer);
     });
   }
@@ -311,8 +340,12 @@ export class RorligLipsync {
     const idle = free.filter(w => !w.running), wait = s.jobs[0].deadline - Date.now() - (idle.length ? this.horizonMs : this.urgentMs);
     if (wait > 0) { s.later = setTimeout(() => this.#pump(dealer), wait); return; }
     const job = s.jobs.shift();
+    // a line over the dealer's idle takes goes to a worker that announced them (Kevin 20 Oct); none free: the fastest as
+    // before (its map then has takes it lacks: the chain is never laid unless such a worker is connected, shared-table.mjs)
+    const able = job.idle.length ? free.filter(w => this.#knows(w, job.idle)) : [];
+    const cand = able.length ? able : free, candIdle = cand.filter(w => !w.running);
     // the worker that already has this answer's voice when it is free (no ~0.5 s resend), else the fastest idle one
-    const pick = (idle.length ? idle : free).slice().sort((a, b) => (b.info?.rutor_per_s ?? 0) - (a.info?.rutor_per_s ?? 0));
+    const pick = (candIdle.length ? candIdle : cand).slice().sort((a, b) => (b.info?.rutor_per_s ?? 0) - (a.info?.rutor_per_s ?? 0));
     const w = pick.find(x => x.ws && x.ws === job.voiceAt()) ?? pick[0];
     w.running++;
     job.run(w).finally(() => { w.running--; if (!w.running) for (const f of w.waiters.splice(0)) f(); this.#pump(dealer); });
