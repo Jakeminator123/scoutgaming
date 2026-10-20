@@ -339,7 +339,15 @@ soundChip.addEventListener("click", () => {
   audio.set('enabled',true);
   if (cur) { cur.muted = !currentItem?.sound; cur.play().catch(() => {}); }
 });
-for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => { if (!$("#gate").classList.contains("off")) return; unlock(); recoverPlayback(); }, { passive: true });
+for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => { if (!$("#gate").classList.contains("off")) return; unlock(); retrySound(); recoverPlayback(); }, { passive: true });
+// WebKit refused the greeting's unmuted play() although the sound was unlocked (solvifyab 20 Oct), so the clip went on
+// muted with the pill up, and nothing tried again. Every later gesture is a chance: the clip on screen gets its sound
+// back, and the pill goes when it does.
+function retrySound() {
+  if (soundChip.hidden || !cur || !cur.muted || !currentItem?.sound || !audio.settings.enabled) return;
+  cur.muted = false;
+  cur.play().then(() => { soundChip.hidden = true; }).catch(() => { cur.muted = true; });
+}
 
 // ------------------------------------------------------------------ chatten ---
 const pending = new Map();   // svar-id → text som väntar på att matchande klipp ska börja
