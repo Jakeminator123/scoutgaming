@@ -346,7 +346,7 @@ async function welcomeGuest({session,name}) {
 function randomId(){return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
 
 // ------------------------------------------------------------------ http ---
-const TYPES = { ".mp3": "audio/mpeg", ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+const TYPES = { ".mp3": "audio/mpeg", '.wav': 'audio/wav', ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
 
 /**

@@ -1,3 +1,4 @@
+import { createVoicePool } from "./voice-pool.js";
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
 import {pickQueued,clipDuration} from './chat-priority.js';
@@ -265,6 +266,11 @@ function remarkNow(id) {
 }
 
 // The table's next step takes the screen now (shared timeline, it never waits). An answer already speaking talks on as
+// Kevin 20 Oct: no sound on his phone when the dealer spoke: every line and answer was a new Audio() started by a timer,
+// outside the player's gesture, which Safari on iPhone/iPad refuses. The pool (voice-pool.js) is unlocked in the gesture
+// and reused, and the next line's sound is loaded ahead so it starts on its first frame.
+const voices = createVoicePool({ busy: a => voiceOvers.has(a) });
+
 // sound only while the dealer's film goes on; one that had not started yet goes back to the front of the queue.
 function yieldAnswer() {
   const p = playing;
@@ -272,9 +278,9 @@ function yieldAnswer() {
   if (!p.started) { queue.unshift({ ...p.item }); return; }
   const v = cur;
   if (!v || v.paused || v.ended || v.muted) return;
-  const a = new Audio(p.item.url), from = v.currentTime, at = performance.now();
-  a.volume = v.volume; a.preload = 'auto'; a.dataset.voiceOver = '1';
-  a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(from + (performance.now() - at) / 1000, a.duration || from); }, { once: true });
+  const a = voices.take(p.item.url), from = v.currentTime, at = performance.now();
+  a.volume = v.volume; a.muted = false;
+  voices.seek(a, () => from + (performance.now() - at) / 1000);
   const end = () => { voiceOvers.delete(a); if (!voiceOvers.size && !currentItem?.sound) audio.speech(false); };
   a.onended = a.onerror = end;
   voiceOvers.add(a);
@@ -317,6 +323,7 @@ function showCaption(text) {
 /** iOS knyter ljudrätten till element som spelats under en riktig gest - båda videorna låses upp här. */
 function unlock() {
   audio.unlock();
+  voices.unlock();
   if (unlocked) return;
   unlocked = true;
   for (const v of [A, B]) {
@@ -522,8 +529,8 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
       if(onItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
-      const a=new Audio(url),at=performance.now();a.preload='auto';a.dataset.voiceOver='1';a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
-      a.addEventListener('loadedmetadata',()=>{const o=(offsetMs+performance.now()-at)/1000;if(o>.15)a.currentTime=Math.min(o,a.duration||o);},{once:true});
+      const a=voices.take(url),at=performance.now();a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
+      voices.seek(a,()=>(offsetMs+performance.now()-at)/1000);
       const end=()=>{voiceOvers.delete(a);if(!voiceOvers.size&&!currentItem?.sound)audio.speech(false);};
       a.onended=a.onerror=end;voiceOvers.add(a);a.play().then(()=>audio.speech(true)).catch(end);
       holdUntil=Math.max(holdUntil,Date.now()+remainMs+300);
@@ -531,6 +538,8 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       if(words){talkCaption=words;talkCaptionUntil=Date.now()+remainMs;showCaption(words);setTimeout(()=>{if(Date.now()>=talkCaptionUntil&&caption.textContent===talkCaption.replace(/—/g,', '))showCaption(null);},remainMs+50);}
       return t.kind==='answer'||t.kind==='cheer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
     },
+    // a line's sound, loaded into a pool element as soon as the table knows the line (speak() then starts it at once)
+    warmVoice:t=>{const url=t.ljud??dealerLineUrl(t.clip?.url,$('#dealerLanguage').value);if(url)voices.warm(url);},
     // the idle takes a talk at rest runs over (gameTable.idleChain): fetched when the talk is known, before it starts
     warmTakes:takes=>{for(const t of takes)videoBuffer.load(dealer.idles?.find(i=>i.id===t)?.url??dealerClipUrl(`/media/deal/${t}.mp4`),0).catch(()=>{});},
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.

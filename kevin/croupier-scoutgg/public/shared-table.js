@@ -12,7 +12,7 @@ const $=s=>document.querySelector(s);
 const money=n=>`$${Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 export const tableSession=new URLSearchParams(location.search).get('session')||dealerRoom(dealer.id);
 
-export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnter,onBusy,prepareMedia=async()=>{},warmPlan=()=>{},preloadNext=()=>{},remark=()=>{},speak=()=>false,lips=null,atRest=()=>true,hold=()=>{},warmTakes=()=>{}}) {
+export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnter,onBusy,prepareMedia=async()=>{},warmPlan=()=>{},preloadNext=()=>{},remark=()=>{},speak=()=>false,lips=null,atRest=()=>true,hold=()=>{},warmTakes=()=>{},warmVoice=()=>{}}) {
   const streak=createWinStreak();let quietTimer=null;
   const cards=createGameCards($('#gameCards'),manifest);
   let state=null,offset=0,sending=false,polling=false,notice='',chip=5,entered=false,entryStep=1,autoEntered=false;
@@ -280,7 +280,8 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   // his mouth, the same for every viewer and the worker. Its clips are fetched as soon as the talk is known.
   function syncTalk(now){
     for(const t of state?.talk??[]) {
-      if(t.idle?.length&&!warmed.has(t.id)){warmed.add(t.id);if(warmed.size>40)warmed.delete(warmed.values().next().value);warmTakes([...new Set(t.idle.map(c=>c.take))]);}
+      // a talk just seen: its sound is loaded ahead (warmVoice), and the idle takes its chain runs over are fetched
+      if(!warmed.has(t.id)){warmed.add(t.id);if(warmed.size>40)warmed.delete(warmed.values().next().value);if(now<t.endAt)warmVoice(t);if(t.idle?.length)warmTakes([...new Set(t.idle.map(c=>c.take))]);}
       // every tick, not once: each clip of the plan clears the idle hold (playNow), and no idle may start under a line
       const shift=spoken.get(t.id)??0;
       if(!t.flex&&now<t.endAt)hold(t.endAt-now+300);
