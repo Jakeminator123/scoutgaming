@@ -109,3 +109,10 @@ test('Dragan idles on the nine H3 takes in his own take folder (Kevin 20 Oct): r
   assert.deepEqual(d.idles.map(i => i.vikt), DEALERS.astrid2.idles.map(i => i.vikt));
   assert.ok(d.idles[0].vikt >= 10);
 });
+
+test('Paow idles on her seven H3 takes in v2/ (the two glances to the right derailed and are left out), weighted like the others', () => {
+  const d = DEALERS.paow;
+  assert.deepEqual(d.idles.map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']);
+  for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/paow/v2/'), idle.id); assert.equal(idle.dur, 1.625); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
+  assert.equal(d.idles.find(i => i.id === 'andas').vikt, DEALERS.astrid2.idles.find(i => i.id === 'andas').vikt);
+});

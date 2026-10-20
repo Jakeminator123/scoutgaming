@@ -39,7 +39,8 @@ const H3_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], [
   ['fingrar', 4, 'fingrarna rör sig lätt']];
 // dur: Astrid's are 3 s; Dragan's are Emil's length, 39 frames (e2e 20 Oct: at 73 frames H3 invented a felt and chips
 // mid-clip, at 39 the green plate holds).
-const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04) => H3_IDLES.map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur }));
+// only: the takes a dealer has (Paow's two glances to the right derailed in H3 and were left out, e2e 20 Oct)
+const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur }));
 const ASTRID2_IDLES = h3IdlesFor('astrid2');
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
@@ -53,7 +54,7 @@ export const DEALERS = {
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: idlesFor('paow'), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
   // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card
