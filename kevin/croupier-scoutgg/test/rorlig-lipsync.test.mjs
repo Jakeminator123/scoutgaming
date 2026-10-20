@@ -379,7 +379,8 @@ test("a talk at rest gets its idle from its first frame; after a take under it t
   assert.equal(idleFrom([hole2,flip],talk,{restEnd:['hole','flip']}),null,'the 80 ms before the next take is no room for an idle, also when that take starts after the talk');
 });
 
-test('between rounds an answer runs over his idle takes, the same chain for every viewer and the worker; mid-round he waits in his pose as before', () => {
+test('between rounds an answer runs over his idle takes, the same chain for every viewer and the worker; mid-round over the wait chain', () => {
+  const ms=f=>f*1000/24;
   const idle=[{take:'idle1',frames:39},{take:'idle2',frames:39}];
   const t=talkTable({idle,workerIdle:['idle1','idle2']});
   try{
@@ -397,7 +398,9 @@ test('between rounds an answer runs over his idle takes, the same chain for ever
     assert.ok(luck&&!luck.idle,'a line over the cards mid-round has no idle chain');
     t.box.time=view.plan.endAt+10;
     const mid=t.s.addTalk('paow',{text:'Jaha',lang:'sv',dur:1});
-    assert.ok(!mid.talk.idle,'mid-round an answer has none either: he holds his pose for the next card');
+    // Kevin 20 Oct: while the table waits for the player he no longer holds his pose: the answer runs over the wait's chain
+    assert.ok(mid.talk.idle?.length,'mid-round, while the table waits for the player, the answer runs over the wait chain');
+    assert.equal(mid.talk.idle[0].startAt,t.st('paow').waits[0].from+Math.floor((mid.talk.kartaStart-t.st('paow').waits[0].from)/ms(39))*ms(39),'the same clips every viewer shows');
   }finally{t.close();}
 });
 
@@ -481,4 +484,61 @@ test('when the worker with his idle takes goes away mid-line, the line is remade
   assert.ok(ko2.sent.some(m=>m.t==='start'&&m.id==='plain'));
   ko2.ws.readyState=3;[...ko2.c].forEach(f=>f());await plain;
   assert.equal(r.index('plain').fel,'worker gone');
+});
+
+// Kevin 20 Oct: while the table waits for a player (hit or stand) the dealer does not stand still in his pose: from the
+// plan's end, back at VILA, his idle takes run as a chain on the table clock, and the next take starts on a clip boundary.
+test('while the player decides, a wait chain runs from the plan\'s end; the hit starts on its next clip boundary and ends it; the round\'s end ends the waits', async () => {
+  const {DatabaseSync}=await import('node:sqlite');
+  const ms=f=>f*1000/24;
+  const idle=[{take:'andas',frames:39,vikt:20},{take:'huvud',frames:39,vikt:3}];
+  const t=talkTable({idle,workerIdle:['andas','huvud']});
+  try{
+    t.send('paow','join',{name:'Kevin',seats:[3]});
+    assert.deepEqual(t.st('paow').waits,[],'no wait before the cards');
+    t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
+    let view=t.st('paow');
+    if(view.round?.phase!=='decisions'){assert.ok(true,'a natural: nothing to decide this time');return;}
+    assert.equal(view.waits.length,1,'the opening deal leaves the table waiting for the player: one wait');
+    const w=view.waits[0];
+    assert.equal(w.from,view.plan.endAt,'from the plan\'s end, when he is back at VILA');
+    assert.equal(w.until,null);assert.deepEqual(w.takes.map(x=>x.take),['andas','huvud']);assert.equal(w.seed,view.plan.id);
+    // the player hits well into the wait: the take starts on the chain's next boundary, within one clip
+    t.box.time=w.from+ms(39)*2+700;
+    t.send('paow','act',{action:'hit'});
+    view=t.st('paow');
+    const first=view.plan.steps.find(x=>x.clip);
+    const n=(first.startAt-w.from)/ms(39);
+    assert.ok(Math.abs(n-Math.round(n))<.01,'the take starts on a clip boundary');
+    assert.ok(first.startAt>=t.box.time+700&&first.startAt<t.box.time+700+ms(39)+1,'at most one clip after the usual lead');
+    assert.equal(first.variant.startsWith('i'),true,'from VILA, as every take after a rest');
+    const old=view.waits.find(x=>x.seed===w.seed);
+    assert.equal(old.until,first.startAt,'the wait ends where the take starts');
+    if(view.round?.phase==='decisions'){const w2=view.waits.find(x=>!x.until);assert.ok(w2&&w2.from===view.plan.endAt,'a new wait from the new plan\'s end');}
+    // the player stands: the dealer plays and the round settles, no wait is left open
+    t.box.time=view.plan.endAt+10;
+    if(t.st('paow').round?.phase==='decisions')t.send('paow','act',{action:'stand'});
+    view=t.st('paow');
+    assert.ok(!view.waits.some(x=>!x.until),'no open wait once the player is done');
+    t.box.time=view.plan.endAt+10;t.s.tick();
+    t.box.time+=3000;t.s.tick();
+    assert.ok(!t.st('paow').waits.some(x=>!x.until));
+  }finally{t.close();}
+});
+
+test('a dealer whose idles no worker knows still gets the wait chain (it is only his body); without idle takes there is none', () => {
+  const idle=[{take:'andas',frames:39,vikt:20}];
+  const t=talkTable({idle});   // no workerIdle: the worker has the deals only
+  try{
+    t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
+    const view=t.st('paow');
+    if(view.round?.phase==='decisions'){assert.equal(view.waits.length,1,'the chain is laid: it is his body, no worker needed');
+      t.box.time=view.plan.endAt+10;const a=t.s.addTalk('paow',{text:'Jaha',lang:'sv',dur:1});
+      assert.ok(!a.talk.idle,'but a talk during it has no chain for the mouth: viewers rest on his still for it');}
+  }finally{t.close();}
+  const none=talkTable();
+  try{
+    none.send('paow','join',{name:'Kevin',seats:[3]});none.send('paow','bet',{seat:3,field:'main',chip:5});none.send('paow','ready');
+    assert.deepEqual(none.st('paow').waits,[],'no idle takes: he rests as before');
+  }finally{none.close();}
 });

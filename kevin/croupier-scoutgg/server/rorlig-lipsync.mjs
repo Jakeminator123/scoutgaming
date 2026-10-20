@@ -17,6 +17,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { WebSocket } from 'ws';
+import { layChain } from '../public/idle-chain.js';   // the one chain generator: the worker's map and every viewer lay the same clips
 
 export const LJUD_FORE = .22;   // s of silence the worker puts before a line (its mouth opens on the sound, not before)
 const FPS = 24;
@@ -108,24 +109,7 @@ export function idleFrom(steps, talk, { restEnd = [], minMs = 500 } = {}) {
  * a remap all lay the same chain. Weighted like his random idles (vikt), never the same take twice in a row when he has
  * more than one.
  */
-export function idleChain(idles, from, to, seed = '') {
-  const takes = (idles ?? []).filter(i => i?.take && i.frames > 0).map(i => ({ ...i, vikt: i.vikt > 0 ? i.vikt : 1 }));
-  if (!takes.length || !(to > from)) return [];
-  let h = 2166136261;
-  for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
-  const rnd = () => { h = (Math.imul(h ^ (h >>> 15), 2246822519) + 0x9e3779b9) >>> 0; return h / 2 ** 32; };
-  const out = [];
-  let at = from, last = null;
-  while (at < to && out.length < 64) {
-    const pool = takes.length > 1 ? takes.filter(t => t.take !== last) : takes;
-    let r = rnd() * pool.reduce((n, t) => n + t.vikt, 0), t = pool[pool.length - 1];
-    for (const c of pool) if ((r -= c.vikt) < 0) { t = c; break; }
-    const endAt = at + t.frames * 1000 / FPS;
-    out.push({ take: t.take, startAt: Math.round(at * 10) / 10, endAt: Math.round(endAt * 10) / 10, frames: t.frames });
-    last = t.take; at = endAt;
-  }
-  return out;
-}
+export function idleChain(idles, from, to, seed = '') { return layChain(idles, from, to, seed); }
 
 /**
  * Line timing for a plan: where each line the plan would have spoken as a step starts instead, so it plays over the

@@ -10,6 +10,7 @@ import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
 import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
 import {scheduleTalks,LJUD_FORE,idleFrom,idleChain} from './rorlig-lipsync.mjs';
+import {waitClips,waitBoundary} from '../public/idle-chain.js';
 
 const emptyBets = () => Array.from({length:7},()=>({main:0,pp:0,tp:0}));
 const sum = b => b.main+b.pp+b.tp;
@@ -62,7 +63,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // chain: with a worker that has the deals only (ko2) he rests on his still with the mouth on it, as before.
   function withIdle(r,ready,t,steg,talker) {
     const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take));
-    if(!takes.length||(r.phase==='round'&&r.round?.phase!=='settled'))return t;
+    if(!takes.length)return t;
+    // Kevin 20 Oct: during a wait for a player the talk runs over the wait's own chain, the body every viewer shows anyway
+    const w=(r.waits??[]).find(w=>w.from<t.endAt+600&&(!w.until||w.until>t.kartaStart));
+    if(w){const idle=waitClips(w,t.kartaStart,t.endAt+600);return idle.length?{...t,idle}:t;}
+    if(r.phase==='round'&&r.round?.phase!=='settled')return t;
     const from=idleFrom(steg,t,{restEnd:ready.restEnd??[]});
     const idle=from===null?[]:idleChain(takes,from,t.endAt+600,t.id);
     return idle.length?{...t,idle}:t;
@@ -143,6 +148,10 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // over the new take; without speech the pace is as before
     const speaking=Boolean(talker)&&(r.talk??[]).some(t=>t.startAt<=now()&&t.endAt>now()+300);
     const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
+    // Kevin 20 Oct: a wait's idle chain is running: the next take starts on its next clip boundary (at most one short take
+    // later), from VILA, so there is no jump in his face; the wait then ends there (until)
+    const open=(r.waits??[]).find(w=>!w.until);
+    if(open){at=waitBoundary(open,at);open.until=at;}
     const addClip=(clip,meta={})=>{if(!clip)return;
       // Emil 14 Oct: a ready dealer says one of his variants of a line, never the same one twice in a row (always the
       // first one sounded like a robot); a line only he has (twentyone) comes from his variants too
@@ -190,6 +199,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const handsOn=steps.some(x=>x.kind==='turn')&&ready&&lastDeal&&!steps.some(x=>x.kind==='speech'&&x.startAt>lastDeal.startAt);
     const turnAt=handsOn?Math.round(lastDeal.startAt+.62*(lastDeal.endAt-lastDeal.startAt)):at;
     r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at,turnAt};
+    // Kevin 20 Oct: the table waits for a player after this plan (hit or stand, insurance): from its end, back at VILA,
+    // his idle takes run as a chain on the table clock (public/idle-chain.js waitClips) instead of him standing still,
+    // the same for every viewer and the worker's map, until the next take. The wait before it stays until its take.
+    const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&ready?.idle?.length);
+    r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:ready.idle.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
     r.actionDeadline=at+actionMs;
     r.version++;
@@ -227,7 +241,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   function resetRound(r) {
     for(const [pid,keep] of Object.entries(r.boxesAfterRound??{}))for(const i of owned(r,pid))if(!keep.includes(i))r.owners[i]=null;
     r.boxesAfterRound={};
-    r.phase='bets';r.round=null;r.plan=null;r.bets=emptyBets();r.ready=[];r.history={};r.deadline=null;r.insurance={};r.leaving=[];r.actionDeadline=null;
+    r.phase='bets';r.round=null;r.plan=null;r.waits=[];r.bets=emptyBets();r.ready=[];r.history={};r.deadline=null;r.insurance={};r.leaving=[];r.actionDeadline=null;
   }
   function releaseSeats(r,playerId) {
     for(const i of owned(r,playerId)){r.owners[i]=null;r.bets[i]={main:0,pp:0,tp:0};}
@@ -274,7 +288,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const all=players(id),me=all.find(p=>p.token===token);
     const roster=all.filter(p=>owned(r,p.id).length).map(p=>({id:p.id,name:p.name,seats:owned(r,p.id),online:now()-p.seen<15000,ready:r.ready.includes(p.id)}));
     const insuranceDue=r.phase==='round'&&r.round?.phase==='insurance'&&me&&r.round.hands.some(h=>r.owners[h.box]===me.id)&&!Object.hasOwn(r.insurance,me.id);
-    return {limits:{name:L.name,tableName:L.tableName??null,min:L.min,max:L.max,sideMax:L.sideMax,chips:L.chips,refill:L.balance},session:id,language:dealerLanguage(r.language),availableLanguages:languages,pausedUntil:pausedUntil(token),roundId:r.roundId??null,actionMs,version:r.version,serverNow:now(),demo:true,phase:r.phase,players:roster,owners:r.owners,bets:r.bets,round:r.round,shoe:gameView(r.game).shoe,plan:r.plan,talk:(r.talk??[]).filter(t=>t.endAt>now()-2000),deadline:r.deadline,actionDeadline:r.actionDeadline,insuranceDue:Boolean(insuranceDue),me:me?{id:me.id,name:me.name,leaving:(r.leaving??[]).includes(me.id),balance:me.balance,seats:owned(r,me.id),boxesAfterRound:r.boxesAfterRound?.[me.id]??null,repeatable:Object.keys(r.lastBets?.[me.id]??{}).some(i=>owned(r,me.id).includes(Number(i))),lastReturn:me.last_return,lastSettlement:JSON.parse(db.prepare('SELECT receipt FROM shared_settlements WHERE room=? AND player_id=? ORDER BY rowid DESC LIMIT 1').get(id,me.id)?.receipt??'null')}:null};
+    return {limits:{name:L.name,tableName:L.tableName??null,min:L.min,max:L.max,sideMax:L.sideMax,chips:L.chips,refill:L.balance},session:id,language:dealerLanguage(r.language),availableLanguages:languages,pausedUntil:pausedUntil(token),roundId:r.roundId??null,actionMs,version:r.version,serverNow:now(),demo:true,phase:r.phase,players:roster,owners:r.owners,bets:r.bets,round:r.round,shoe:gameView(r.game).shoe,plan:r.plan,waits:(r.waits??[]).filter(w=>!w.until||w.until>now()-2000),talk:(r.talk??[]).filter(t=>t.endAt>now()-2000),deadline:r.deadline,actionDeadline:r.actionDeadline,insuranceDue:Boolean(insuranceDue),me:me?{id:me.id,name:me.name,leaving:(r.leaving??[]).includes(me.id),balance:me.balance,seats:owned(r,me.id),boxesAfterRound:r.boxesAfterRound?.[me.id]??null,repeatable:Object.keys(r.lastBets?.[me.id]??{}).some(i=>owned(r,me.id).includes(Number(i))),lastReturn:me.last_return,lastSettlement:JSON.parse(db.prepare('SELECT receipt FROM shared_settlements WHERE room=? AND player_id=? ORDER BY rowid DESC LIMIT 1').get(id,me.id)?.receipt??'null')}:null};
   }
   function readGameState(room='astrid',token=null,displayName=null) {
     const id=sessionName(room),row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(id);
