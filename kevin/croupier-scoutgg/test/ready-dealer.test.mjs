@@ -104,15 +104,21 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
 
 test('Dragan idles on the nine H3 takes in his own take folder (Kevin 20 Oct): rest to rest, weighted like Astrid 2.0, so a line he says at rest can run over a chain of them', () => {
   const d = DEALERS.dragge;
-  assert.deepEqual(d.idles.map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvud', 'huvudb', 'fingrar'], 'eight: no glance to the left (Kevin 20 Oct)');
+  assert.deepEqual(d.idles.slice(0, 8).map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvud', 'huvudb', 'fingrar'], 'eight: no glance to the left (Kevin 20 Oct)');
+  assert.deepEqual(d.idles.slice(8).map(i => i.id), ['axlar6101', 'axlar6103', 'blicksvep6101', 'nick6101', 'rakrygg6101', 'rakrygg6103', 'vikt6101', 'vikt6103', 'vikt7105', 'vridhoger6101', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103'], 'plus the thirteen Kevin picked (21 Oct)');
+  for (const idle of d.idles.slice(8)) assert.equal(idle.vikt, 6, idle.id);
+  const newShare = d.idles.slice(8).reduce((n, i) => n + i.vikt, 0) / d.idles.reduce((n, i) => n + i.vikt, 0);
+  assert.ok(newShare > .5, 'the new ones show more often than not');
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/dragge/v2/'), idle.id); assert.equal(idle.dur, 1.625, 'Emil\'s length, 39 frames'); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
-  assert.deepEqual(d.idles.map(i => i.vikt), DEALERS.astrid2.idles.filter(i => i.id !== 'blickvanster').map(i => i.vikt));
+  assert.deepEqual(d.idles.slice(0, 8).map(i => i.vikt), DEALERS.astrid2.idles.filter(i => i.id !== 'blickvanster').map(i => i.vikt));
   assert.ok(d.idles[0].vikt >= 10);
 });
 
 test('Paow idles on her seven H3 takes in v2/ (the two glances to the right derailed and are left out), weighted like the others', () => {
   const d = DEALERS.paow;
-  assert.deepEqual(d.idles.map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']);
+  assert.deepEqual(d.idles.slice(0, 7).map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']);
+  assert.deepEqual(d.idles.slice(7).map(i => i.id), ['axlar6101', 'axlar6103', 'axlar6104', 'axlar6105', 'lutfram6103', 'nick6101', 'nick6103', 'nick6105', 'rakrygg6101', 'rakrygg6105', 'vikt6101', 'vikt6103', 'vikt6105', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105'], 'plus the sixteen Kevin picked (21 Oct), axlar6105 included');
+  for (const idle of d.idles.slice(7)) assert.equal(idle.vikt, 6, idle.id);
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/paow/v2/'), idle.id); assert.equal(idle.dur, 1.625); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
   assert.equal(d.idles.find(i => i.id === 'andas').vikt, DEALERS.astrid2.idles.find(i => i.id === 'andas').vikt);
 });

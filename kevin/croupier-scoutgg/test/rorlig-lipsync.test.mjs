@@ -568,3 +568,19 @@ test('a line over idle takes waits for the busy worker that has them while there
   assert.ok(starts(ours).includes('late')&&starts(ko2).includes('urgent'),'the worker with the takes took the first, the urgent one could not wait');
   done(ours,'late');done(ko2,'urgent');await late;await urgent;
 });
+
+test('the wait chain is laid only from the idle takes the connected worker announced; without such a worker from all of them (his body only)', () => {
+  const idle=[{take:'andas',frames:39,vikt:20},{take:'nick6101',frames:39,vikt:6},{take:'vikt6103',frames:39,vikt:6}];
+  const some=talkTable({idle,workerIdle:['andas','vikt6103']});
+  try{
+    some.send('paow','join',{name:'Kevin',seats:[3]});some.send('paow','bet',{seat:3,field:'main',chip:5});some.send('paow','ready');
+    const v=some.st('paow');
+    if(v.round?.phase==='decisions')assert.deepEqual(v.waits[0].takes.map(t=>t.take),['andas','vikt6103'],'nick6101 is not in the worker image yet: not in the chain, so the mouth never misses on it');
+  }finally{some.close();}
+  const none=talkTable({idle});
+  try{
+    none.send('paow','join',{name:'Kevin',seats:[3]});none.send('paow','bet',{seat:3,field:'main',chip:5});none.send('paow','ready');
+    const v=none.st('paow');
+    if(v.round?.phase==='decisions')assert.deepEqual(v.waits[0].takes.map(t=>t.take),['andas','nick6101','vikt6103'],'no worker with idle takes: all of them, it is only his body');
+  }finally{none.close();}
+});

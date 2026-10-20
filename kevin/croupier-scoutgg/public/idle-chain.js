@@ -30,6 +30,18 @@ const FPS = 24;
  * like his random idles (vikt), never the same take twice in a row when he has more than one. The same code on the
  * server (a talk's chain, the worker's map) and in every viewer: a longer `to` only extends the same sequence.
  */
+/**
+ * One of `pool` by weight (vikt, 1 when unset), never the one last picked (by idOf) when there is more than one to choose
+ * from (Kevin 21 Oct: never the same clip twice in a row, whatever its weight). rnd: a number in [0, 1).
+ */
+export function pickWeighted(pool, last, rnd = Math.random, idOf = x => x.id) {
+  const cand = pool.length > 1 ? pool.filter(x => idOf(x) !== last) : pool;
+  const w = x => (x.vikt > 0 ? x.vikt : 1);
+  let r = rnd() * cand.reduce((n, x) => n + w(x), 0), t = cand[cand.length - 1];
+  for (const c of cand) if ((r -= w(c)) < 0) { t = c; break; }
+  return t;
+}
+
 export function layChain(idles, from, to, seed = '', { max = 64 } = {}) {
   const takes = (idles ?? []).filter(i => i?.take && i.frames > 0).map(i => ({ ...i, vikt: i.vikt > 0 ? i.vikt : 1 }));
   if (!takes.length || !(to > from)) return [];
@@ -39,9 +51,7 @@ export function layChain(idles, from, to, seed = '', { max = 64 } = {}) {
   const out = [];
   let at = from, last = null;
   while (at < to && out.length < max) {
-    const pool = takes.length > 1 ? takes.filter(t => t.take !== last) : takes;
-    let r = rnd() * pool.reduce((n, t) => n + t.vikt, 0), t = pool[pool.length - 1];
-    for (const c of pool) if ((r -= c.vikt) < 0) { t = c; break; }
+    const t = pickWeighted(takes, last, rnd, x => x.take);
     const endAt = at + t.frames * 1000 / FPS;
     out.push({ take: t.take, startAt: Math.round(at * 10) / 10, endAt: Math.round(endAt * 10) / 10, frames: t.frames });
     last = t.take; at = endAt;

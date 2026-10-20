@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chainClipAt, LEAD, layChain, waitClips, waitBoundary, waitClipAt } from '../public/idle-chain.js';
+import { chainClipAt, LEAD, layChain, waitClips, waitBoundary, waitClipAt, pickWeighted } from '../public/idle-chain.js';
 
 // 20 Oct: which clip of a talk's idle chain the table shows now must be gapless, or the handover on a clip's last frame
 // (1.5 frames = 62 ms before its end) finds nothing, drops the prepared clip and lets a random idle start under the line.
@@ -63,4 +63,17 @@ test('the wait clip now: none before the wait or after its end, the clip running
   assert.ok(waitClipAt([{ ...W, until: 12000 }], 11000));
   assert.equal(waitClipAt([W], 12000, [{ id: 't', kartaStart: 11500, startAt: 11720, endAt: 14000 }]), null, 'a talk without its own chain: he rests on his still for the mouth');
   assert.ok(waitClipAt([W], 12000, [{ id: 't', kartaStart: 11500, startAt: 11720, endAt: 14000, idle: [{ take: 'andas' }] }]), 'a talk over the chain: the chain goes on');
+});
+
+// Kevin 21 Oct: never the same clip twice in a row, whatever its weight: the random idles (app.js pickIdle) and the
+// chains (layChain) pick through the same function.
+test('the weighted pick never returns the clip last picked, even one that outweighs all the others, and follows the weights otherwise', () => {
+  const pool = [{ id: 'andas', vikt: 20 }, { id: 'nick6101', vikt: 6 }, { id: 'vikt6103', vikt: 6 }];
+  let last = null; const seen = {};
+  for (let i = 0; i < 400; i++) { const c = pickWeighted(pool, last); assert.notEqual(c.id, last, 'twice in a row'); seen[c.id] = (seen[c.id] ?? 0) + 1; last = c.id; }
+  assert.ok(seen.andas > 150 && seen.nick6101 > 40 && seen.vikt6103 > 40, JSON.stringify(seen));
+  assert.equal(pickWeighted([{ id: 'only', vikt: 1 }], 'only').id, 'only', 'one clip: it repeats, there is nothing else');
+  assert.equal(pickWeighted([{ id: 'a', vikt: 5 }, { id: 'b', vikt: 1 }], 'a', () => 0.99).id, 'b', 'a lone candidate is taken whatever the draw');
+  const chain = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'nick6101', frames: 39, vikt: 6 }], 0, 60000, 'seed');
+  for (let i = 1; i < chain.length; i++) assert.notEqual(chain[i].take, chain[i - 1].take, 'a chain never repeats either');
 });

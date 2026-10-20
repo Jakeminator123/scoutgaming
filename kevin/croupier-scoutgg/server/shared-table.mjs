@@ -202,8 +202,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // Kevin 20 Oct: the table waits for a player after this plan (hit or stand, insurance): from its end, back at VILA,
     // his idle takes run as a chain on the table clock (public/idle-chain.js waitClips) instead of him standing still,
     // the same for every viewer and the worker's map, until the next take. The wait before it stays until its take.
-    const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&ready?.idle?.length);
-    r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:ready.idle.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
+    // only takes the connected worker announced go into the wait chain (Kevin 21 Oct: the new idles may not be in the
+    // worker image yet, and a line over the wait maps onto these takes); no worker with idle takes: all of them, his body only
+    const known=talker?.idle?.length?(ready?.idle??[]).filter(i=>talker.idle.includes(i.take)):(ready?.idle??[]);
+    const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&known.length);
+    r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:known.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
     r.actionDeadline=at+actionMs;
     r.version++;

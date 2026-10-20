@@ -1,3 +1,4 @@
+import { pickWeighted } from "./idle-chain.js";
 import { createVoicePool } from "./voice-pool.js";
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
@@ -101,10 +102,9 @@ function playbackFeedback() {
 
 function pickIdle() {
   const cached = manifest.idle.filter(c=>videoBuffer.has(c.url));
-  const pool = (cached.length?cached:manifest.idle.slice(0,1)).filter((c) => !(c.id === lastIdle && c.vikt < 10));   // aldrig samma gest två gånger i rad
-  let r = Math.random() * pool.reduce((s, c) => s + c.vikt, 0);
-  for (const c of pool) { if ((r -= c.vikt) <= 0) { lastIdle = c.id; return c; } }
-  return pool[0];
+  // never the same gesture twice in a row, whatever its weight (Kevin 21 Oct; before, a heavy one could repeat)
+  const c = pickWeighted(cached.length ? cached : manifest.idle.slice(0, 1), lastIdle);
+  lastIdle = c.id; return c;
 }
 
 // a chain clip is one of the dealer's own idles (dealers.js: Dragan's in v2/, Astrid 2.0's in idle-v2/), by its take name
