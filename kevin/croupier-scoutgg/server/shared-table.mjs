@@ -205,8 +205,12 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // only takes the connected worker announced go into the wait chain (Kevin 21 Oct: the new idles may not be in the
     // worker image yet, and a line over the wait maps onto these takes); no worker with idle takes: all of them, his body only
     const known=talker?.idle?.length?(ready?.idle??[]).filter(i=>talker.idle.includes(i.take)):(ready?.idle??[]);
-    const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&known.length);
-    r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:known.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
+    // Kevin 21 Oct: while he waits for the player only the calm takes (dealers.js calm: breathing, shoulders, back, weight,
+    // fingers): too much head movement before. None calm among the announced: his plain breathing take, if he has it
+    const calm=known.filter(i=>i.calm);
+    const pool=calm.length?calm:(ready?.idle??[]).filter(i=>i.take==='andas');
+    const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&pool.length);
+    r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:pool.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
     r.actionDeadline=at+actionMs;
     r.version++;

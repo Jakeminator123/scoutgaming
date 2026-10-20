@@ -33,6 +33,11 @@ const ASTRID2_READY = { in: 24, land: { 1: 27, 2: 31, 3: 28, 4: 27, 5: 26, 6: 26
 // Dragan gets the same nine (Kevin 20 Oct, e2e's H3 takes), in his take folder v2/: there they are takes the lip-sync
 // worker can map, so a line he says at rest runs over a chain of them (server/shared-table.mjs withIdle) and his random
 // idles and that chain are the same clips, every one starting and ending on VILA.
+// Kevin 21 Oct: while the table waits for a player (hit or stand, insurance) only the calm takes play (calm: true):
+// breathing, a deep breath, shoulders, straightening the back, a shift of weight, fingers. Turns of the head, glances,
+// nods and leaning forward are for between rounds and under speech. The server lays the wait chain from these.
+const CALM_IDLE = /^(andas|andasb|djupandetag|fingrar|axlar|rakrygg|vikt)/;
+const calmIdle = id => CALM_IDLE.test(id);
 const H3_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], ['djupandetag', 8, 'ett djupare andetag'],
   ['blickvanster', 6, 'blicken mot spelarna till vänster'], ['blickhoger', 4, 'blicken mot spelarna till höger'],
   ['blickhogerb', 4, 'blicken mot spelarna till höger'], ['huvud', 3, 'lutar huvudet lite'], ['huvudb', 3, 'lutar huvudet lite'],
@@ -44,7 +49,7 @@ const H3_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], [
 // VILA to VILA. Weighted so they show often: 6 each against the old breathing takes' 20 (Dragan 13 x 6 = 78 against 66,
 // Paow 16 x 6 = 96 against 64).
 const NEW_IDLE_WEIGHT = 6;
-const extraIdles = (id, list) => list.map(([k, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/v2/${k}.mp4${V}`, vikt: NEW_IDLE_WEIGHT, beskrivning, dur: 1.625 }));
+const extraIdles = (id, list) => list.map(([k, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/v2/${k}.mp4${V}`, vikt: NEW_IDLE_WEIGHT, beskrivning, dur: 1.625, calm: calmIdle(k) }));
 const DRAGGE_NEW_IDLES = [['axlar6101', 'axlarna sjunker lätt'], ['axlar6103', 'axlarna sjunker lätt'], ['blicksvep6101', 'blicken sveper över spelarna'],
   ['nick6101', 'liten nick'], ['rakrygg6101', 'rätar på ryggen'], ['rakrygg6103', 'rätar på ryggen'], ['vikt6101', 'viktförskjutning på stolen'],
   ['vikt6103', 'viktförskjutning på stolen'], ['vikt7105', 'viktförskjutning på stolen'], ['vridhoger6101', 'vrider huvudet åt höger'],
@@ -54,7 +59,7 @@ const PAOW_NEW_IDLES = [['axlar6101', 'axlarna sjunker lätt'], ['axlar6103', 'a
   ['nick6105', 'liten nick'], ['rakrygg6101', 'rätar på ryggen'], ['rakrygg6105', 'rätar på ryggen'], ['vikt6101', 'viktförskjutning på stolen'],
   ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'], ['vridhoger6101', 'vrider huvudet åt höger'],
   ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6105', 'vrider huvudet åt vänster']];
-const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur }));
+const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur, calm: calmIdle(k) }));
 const ASTRID2_IDLES = h3IdlesFor('astrid2');
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 

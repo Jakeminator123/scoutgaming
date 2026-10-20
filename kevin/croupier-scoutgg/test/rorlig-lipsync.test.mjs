@@ -381,7 +381,7 @@ test("a talk at rest gets its idle from its first frame; after a take under it t
 
 test('between rounds an answer runs over his idle takes, the same chain for every viewer and the worker; mid-round over the wait chain', () => {
   const ms=f=>f*1000/24;
-  const idle=[{take:'idle1',frames:39},{take:'idle2',frames:39}];
+  const idle=[{take:'idle1',frames:39,calm:true},{take:'idle2',frames:39,calm:true}];
   const t=talkTable({idle,workerIdle:['idle1','idle2']});
   try{
     t.send('paow','join',{name:'Kevin',seats:[3]});
@@ -491,7 +491,7 @@ test('when the worker with his idle takes goes away mid-line, the line is remade
 test('while the player decides, a wait chain runs from the plan\'s end; the hit starts on its next clip boundary and ends it; the round\'s end ends the waits', async () => {
   const {DatabaseSync}=await import('node:sqlite');
   const ms=f=>f*1000/24;
-  const idle=[{take:'andas',frames:39,vikt:20},{take:'huvud',frames:39,vikt:3}];
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true},{take:'huvud',frames:39,vikt:3,calm:true}];   // both calm here: this test is about the timing
   const t=talkTable({idle,workerIdle:['andas','huvud']});
   try{
     t.send('paow','join',{name:'Kevin',seats:[3]});
@@ -527,7 +527,7 @@ test('while the player decides, a wait chain runs from the plan\'s end; the hit 
 });
 
 test('a dealer whose idles no worker knows still gets the wait chain (it is only his body); without idle takes there is none', () => {
-  const idle=[{take:'andas',frames:39,vikt:20}];
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true}];
   const t=talkTable({idle});   // no workerIdle: the worker has the deals only
   try{
     t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
@@ -570,7 +570,7 @@ test('a line over idle takes waits for the busy worker that has them while there
 });
 
 test('the wait chain is laid only from the idle takes the connected worker announced; without such a worker from all of them (his body only)', () => {
-  const idle=[{take:'andas',frames:39,vikt:20},{take:'nick6101',frames:39,vikt:6},{take:'vikt6103',frames:39,vikt:6}];
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true},{take:'nick6101',frames:39,vikt:6,calm:true},{take:'vikt6103',frames:39,vikt:6,calm:true}];   // all calm here: this test is about the worker
   const some=talkTable({idle,workerIdle:['andas','vikt6103']});
   try{
     some.send('paow','join',{name:'Kevin',seats:[3]});some.send('paow','bet',{seat:3,field:'main',chip:5});some.send('paow','ready');
@@ -583,4 +583,19 @@ test('the wait chain is laid only from the idle takes the connected worker annou
     const v=none.st('paow');
     if(v.round?.phase==='decisions')assert.deepEqual(v.waits[0].takes.map(t=>t.take),['andas','nick6101','vikt6103'],'no worker with idle takes: all of them, it is only his body');
   }finally{none.close();}
+});
+
+test('while the player decides only the calm takes play (Kevin 21 Oct), among those the worker announced; none calm announced: his breathing take', () => {
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true},{take:'vikt6101',frames:39,vikt:6,calm:true},{take:'nick6101',frames:39,vikt:6,calm:false},{take:'huvud',frames:39,vikt:3,calm:false}];
+  const deal=t=>{t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');return t.st('paow');};
+  const all=talkTable({idle,workerIdle:['andas','vikt6101','nick6101','huvud']});
+  try{const v=deal(all);if(v.round?.phase==='decisions')assert.deepEqual(v.waits[0].takes.map(t=>t.take),['andas','vikt6101'],'calm ones only, nods and head turns are for between rounds');}finally{all.close();}
+  const lively=talkTable({idle,workerIdle:['nick6101','huvud']});
+  try{const v=deal(lively);if(v.round?.phase==='decisions')assert.deepEqual(v.waits[0].takes.map(t=>t.take),['andas'],'no calm take announced: his breathing take');}finally{lively.close();}
+  const none=talkTable({idle});
+  try{const v=deal(none);if(v.round?.phase==='decisions')assert.deepEqual(v.waits[0].takes.map(t=>t.take),['andas','vikt6101'],'no idle worker: the calm ones, his body only');}finally{none.close();}
+  // between rounds nothing changes: an answer at rest runs over every announced take
+  const between=talkTable({idle,workerIdle:['andas','vikt6101','nick6101','huvud']});
+  try{between.send('paow','join',{name:'Kevin',seats:[3]});const a=between.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:40});
+    assert.ok(a.talk.idle.some(c=>c.take==='nick6101'||c.take==='huvud'),'between rounds the lively takes still play under speech');}finally{between.close();}
 });

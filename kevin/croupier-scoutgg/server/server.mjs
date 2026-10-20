@@ -78,7 +78,7 @@ const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // rest runs over a chain of them instead of the still (shared-table.mjs withIdle, rorlig-lipsync.mjs idleChain). Frames
 // are read from each file; a dealer with Kling loops (dur 5.04, not rest-to-rest takes) or missing files rests on the
 // still as before. The worker image must carry these takes under the same names.
-const idleTakes=id=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/(v2|idle-v2)/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m||!(i.dur<5))return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(PUBLIC,'media','dealers',id,m[1],m[2]+'.mp4')))??0)*24);return frames>0?[{take:m[2],frames,vikt:i.vikt??1}]:[];}catch{return [];}});
+const idleTakes=id=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/(v2|idle-v2)/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m||!(i.dur<5))return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(PUBLIC,'media','dealers',id,m[1],m[2]+'.mp4')))??0)*24);return frames>0?[{take:m[2],frames,vikt:i.vikt??1,calm:Boolean(i.calm)}]:[];}catch{return [];}});
 const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(id)}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
