@@ -65,3 +65,11 @@ test('each back office account sees only the tables it built (Kevin 12 Oct: aggr
   assert.deepEqual(tables.ownedBy('agg@two.com').map(t => t.slug), [b.slug]);
   assert.deepEqual(tables.ownedBy(null), []);
 });
+
+test('a table can open in the mobile view on a computer (Kevin 20 Oct); the desktop table stays the default', () => {
+  const tables = createStudioTables(path.join(mkdtempSync(path.join(tmpdir(), 'studio-')), 't.json'));
+  const desk = tables.create(table), mobile = tables.create({ ...table, name: 'Phone', layout: 'mobile' }), odd = tables.create({ ...table, name: 'Odd', layout: 'x' });
+  assert.equal(desk.layout, 'desk'); assert.equal(odd.layout, 'desk');
+  assert.equal(new URL(tables.gameUrl(desk), 'http://x').searchParams.get('layout'), null);
+  assert.equal(new URL(tables.gameUrl(mobile), 'http://x').searchParams.get('layout'), 'mobile');
+});

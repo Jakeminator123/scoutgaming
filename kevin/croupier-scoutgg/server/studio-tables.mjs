@@ -44,6 +44,8 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
     }
     if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 28) throw new Error("Invalid table name");
     config.name = input.name.trim();
+    // Kevin 20 Oct: a table can open in the phone layout on a computer too (desk-mode.js ?layout=mobile).
+    config.layout = input.layout === "mobile" ? "mobile" : "desk";
     config.custom = /^#[0-9a-f]{6}$/i.test(input.custom ?? "") ? input.custom : null;
     if (input.logo != null && input.logo !== "" && (typeof input.logo !== "string" || input.logo.length > LOGO_MAX || !LOGO.test(input.logo)))
       throw new Error("Logo must be a PNG, JPEG or WebP image under 300 KB");
@@ -62,7 +64,7 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   const limitsFor = slug => { const t = get(slug); return t ? { ...LIMIT_PRESETS[t.limit], preset: t.limit, tableName: t.name } : DEFAULT_LIMITS; };
 
   // The game URL for a saved table: its own shared-table session, so every table plays apart.
-  const gameUrl = t => `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug })}`;
+  const gameUrl = t => `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug, ...(t.layout === "mobile" ? { layout: "mobile" } : {}) })}`;
 
   // A back office account's own tables, newest first.
   const ownedBy = owner => Object.values(tables).filter(t => owner && t.owner === owner).sort((a, b) => b.created.localeCompare(a.created));

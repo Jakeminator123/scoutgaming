@@ -10,7 +10,7 @@ const LIMITS={casual:{name:'Casual',range:'$1 – $500',bal:'$500.00',chips:[1,5
 const CHIP={1:['#e8e2d4','#a9a294','#5a554c','#1c1a16'],5:['#1b7866','#0e4138'],10:['#b88441','#5d3c1c'],25:['#c55b42','#713227'],50:['#a85c9e','#572c56'],100:['#424a51','#181c20'],500:['#7852b3','#402957'],1000:['#d6b46a','#7d6230','#fff5da','#201c13'],5000:['#2f6496','#163252'],10000:['#9a3443','#4d1621'],25000:['#26282c','#0b0c0e','#dbc18a','#dbc18a']};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY='scout-bj-demo';
-let st=Object.assign({screen:'login',email:'',dealer:'astrid2',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
+let st=Object.assign({screen:'login',email:'',dealer:'astrid2',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both',layout:'desk'},JSON.parse(localStorage.getItem(KEY)||'{}'));
 // Emil 14 Oct: the first Astrid is retired from the builder; Astrid 2.0 is shown as "Astrid" (a saved choice of her moves over)
 const RETIRED=['astrid'];if(RETIRED.includes(st.dealer))st.dealer='astrid2';
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
@@ -38,12 +38,13 @@ const oc=$('#ovChips');oc.innerHTML='';L.chips.forEach((v,i)=>{const c=chipEl(v)
 const vals={dealer:d.name,room:ROOMS[st.room],felt:FELTS[st.felt].name,lang:LANGS[st.lang].name,limit:L.name+' · '+L.range};
 for(const k in vals)$('[data-v="'+k+'"]').textContent=vals[k];
 $$('.opt[data-k]').forEach(o=>o.setAttribute('aria-checked',String(st[o.dataset.k]===o.dataset.val)));
-const order=['dealer','room','felt','lang','limit','brand'];
+const order=['dealer','room','felt','lang','limit','brand','layout'];
 $$('.step').forEach(s=>{s.classList.toggle('open',s.dataset.step===st.open);s.classList.toggle('done',order.indexOf(s.dataset.step)<order.indexOf(st.open))});
 $('#rsDealer').textContent=d.name;$('#rsRoom').textContent=ROOMS[st.room];$('#rsFelt').textContent=FELTS[st.felt].name;$('#rsLang').textContent=LANGS[st.lang].name;$('#rsLimit').textContent=L.name+' · '+L.range;
 const lg=st.logo,fl=$('#feltLogo'),hl=$('#hdrLogo');showLogo(lg,fl,hl);fl.hidden=!lg||st.logoPos==='header';$('#stage').classList.toggle('has-felt-logo',!fl.hidden);hl.hidden=!lg||st.logoPos==='felt';
 $('#drop').classList.toggle('has',!!lg);if(lg){$('#logoThumb').src=lg;$('#logoName').textContent=st.logoName}
 const posName={both:'Felt + header',felt:'Felt',header:'Header'}[st.logoPos];$('[data-v="brand"]').textContent=lg?posName:'No logo';$('#rsLogo').textContent=lg?st.logoName+' · '+posName:'None';
+const layName=st.layout==='mobile'?'Mobile view':'Desktop table';$('[data-v="layout"]').textContent=layName;$('#rsLayout').textContent=layName;
 $('#pnSpec').textContent=d.name+' · '+ROOMS[st.room]+' · '+L.name;$('#readyName').textContent=st.name||'Blackjack';
 $('#shareUrl').textContent=st.slug?location.host+'/t/'+st.slug:location.host+'/t/'+((st.name||'blackjack').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'table');
 const em=st.email||'demo@scoutgaming.com';$('#userEmail').textContent=$('#userEmail2').textContent=em;$('#avatar').textContent=$('#avatar2').textContent=em[0];
@@ -102,7 +103,7 @@ $('#pw').value='';$('#formErr').textContent='';st.email=me.user;access(me);go('b
 $('#signOut').onclick=async()=>{await fetch('/api/studio/logout',{method:'POST'}).catch(()=>{});st.email='';go('login')};
 
 // builder
-const order=['dealer','room','felt','lang','limit','brand'];
+const order=['dealer','room','felt','lang','limit','brand','layout'];
 $$('.step-h').forEach(h=>h.onclick=()=>{const s=h.parentElement.dataset.step;st.open=st.open===s?'':s;render()});
 $$('.next').forEach(b=>b.onclick=()=>{const s=b.closest('.step').dataset.step;st.open=order[order.indexOf(s)+1];render()});
 $$('.opt[data-k]').forEach(o=>{const pick=e=>{if(e.target.closest('.play'))return;st[o.dataset.k]=o.dataset.val;render()};o.addEventListener('click',pick);o.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}})});
@@ -135,7 +136,7 @@ $('#exitBtn').onclick=leave;$('#backBuild').onclick=()=>{if('speechSynthesis' in
 const loaded=src=>new Promise(ok=>{const i=new Image();i.onload=i.onerror=()=>ok();i.src=src});
 $('#createBtn').onclick=async()=>{const L=$('#launch');const sp=$$('.launch-steps span');sp.forEach(s=>s.classList.remove('done'));L.classList.add('on');
 const fail=m=>{L.classList.remove('on');alertCreate(m)};
-let t;try{const r=await fetch('/api/studio/table',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:st.name||'Blackjack',dealer:st.dealer,room:st.room,felt:st.felt,custom:st.custom,lang:st.lang,limit:st.limit,logoPos:st.logoPos,logo:st.logo||null,logoName:st.logo?st.logoName:null})});
+let t;try{const r=await fetch('/api/studio/table',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:st.name||'Blackjack',dealer:st.dealer,room:st.room,felt:st.felt,custom:st.custom,lang:st.lang,limit:st.limit,logoPos:st.logoPos,layout:st.layout,logo:st.logo||null,logoName:st.logo?st.logoName:null})});
 t=await r.json();if(r.status===401){L.classList.remove('on');st.email='';go('login');$('#formErr').textContent='Sign in to create a table.';return}if(!r.ok)return fail(t.error||'Could not create the table')}catch{return fail('Could not reach the server')}
 st.slug=t.slug;save();sp[0].classList.add('done');
 await loaded(DEALERS[st.dealer].cut);sp[1].classList.add('done');
