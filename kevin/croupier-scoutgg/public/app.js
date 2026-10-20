@@ -224,6 +224,8 @@ async function play(item) {
     // decoding into an invisible layer and retain its first displayed frame.
     v.classList.add("on");
     if(cur&&cur!==v){cur.classList.remove("on");cur.pause();}
+    // the stage's labels follow what is on screen from this moment (QA reads them): play() resolves 0.3–0.5 s later in headless
+    { const stage = document.querySelector('#stage'); stage.dataset.clip = item.id ?? item.kind; stage.dataset.chain = item.chain ?? ''; }
     v.play().then(() => {
       if (done || token !== playToken) return;
       clearTimeout(loadTimeout);
@@ -231,7 +233,6 @@ async function play(item) {
       if (cur && cur !== v) { cur.classList.remove("on"); cur.pause(); }
       cur = v; currentItem = item; loading = false; audio.speech(Boolean(item.sound) || voiceOvers.size > 0); if (playing?.item === item) playing.started = true;
       if(item.kind==='idle'){warmIdle();prepareNextIdle(item);}
-      document.querySelector('#stage').dataset.clip = item.id ?? item.kind; document.querySelector('#stage').dataset.chain = item.chain ?? '';   // chain: the talk whose idle chain this clip belongs to (QA)
       // A dealer with a voice is heard, not captioned over the table (Kevin 10 Oct); Mårten (no voice yet) keeps his words.
       playbackFeedback(); tableBoxes?.setActive(item.id); if (item.text || Date.now() >= captionUntil) showCaption(isAlternative && !dealer.lines ? item.text : null);
       gameTable?.sourceStarted(item.id);
@@ -293,7 +294,9 @@ function enqueue(item) {
 setInterval(() => {
   const chain = dealer.ready && gameTable?.idleChain;
   // his moving idle under a talk starts now: a random idle playing gives way (it starts and ends on the same VILA)
-  if (chain && running && currentItem?.kind === 'idle' && !currentItem.chain && finishCurrent) { finishCurrent(true); return; }
+  // (playing.item, not currentItem: the clip on its way in counts too, else a chain clip loading would be cut here)
+  const onItem = playing?.item ?? currentItem;
+  if (chain && running && onItem?.kind === 'idle' && !onItem.chain && finishCurrent) { finishCurrent(true); return; }
   if (!running && (chain || Date.now() >= holdUntil)) next();
   else recoverPlayback();
 }, 400);
@@ -514,10 +517,11 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them (a cheer for the winners is said and captioned, never written in the chat: Emil 14 Oct)
       // his mouth is synced to him resting, dealing or on the talk's own idle chain, never to a random idle gesture: a random
       // idle playing now gives way (to his still, or to the chain the table names)
-      if(currentItem?.kind==='idle'&&!currentItem.chain&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
+      const onItem=playing?.item??currentItem;
+      if(onItem?.kind==='idle'&&!onItem.chain&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
-      if(currentItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
+      if(onItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
       const a=new Audio(url),at=performance.now();a.preload='auto';a.dataset.voiceOver='1';a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
       a.addEventListener('loadedmetadata',()=>{const o=(offsetMs+performance.now()-at)/1000;if(o>.15)a.currentTime=Math.min(o,a.duration||o);},{once:true});
       const end=()=>{voiceOvers.delete(a);if(!voiceOvers.size&&!currentItem?.sound)audio.speech(false);};

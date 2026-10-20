@@ -1,3 +1,4 @@
+import {chainClipAt} from './idle-chain.js';
 import {presentationState,themeChips,chipLabel} from './game-presentation.js';
 import { boxResults,createWinTracker,currentReceipt,mainResults,mainWin,showWinToast,visibleSideResults } from './win-feedback.js';
 import { createGameCards } from './game-cards.js';
@@ -384,7 +385,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     // timelineTime} on the table clock, shifted like the talk when this viewer started it late (flex). app.js plays it
     // in place of a random idle, so the mouth patches (tagged take and frame) land on the body every viewer shows.
     // next: the clip that follows it in the chain, so app.js can prepare it in the hidden video while this one plays.
-    get idleChain(){const n=time();for(const t of state?.talk??[]){if(!t.idle?.length||(t.flex&&!spoken.has(t.id)))continue;const shift=spoken.get(t.id)??0,at=n-shift;const i=t.idle.findIndex(c=>at>=c.startAt-40&&at<c.endAt-80);if(i<0)continue;const clip=c=>({talk:t.id,take:c.take,frames:c.frames,startAt:c.startAt+shift,endAt:c.endAt+shift,offset:Math.max(0,at-c.startAt)/1000,timelineTime:()=>Math.max(0,time()-shift-c.startAt)/1000});const cur=clip(t.idle[i]);if(t.idle[i+1])cur.next=clip(t.idle[i+1]);return cur;}return null;},
+    get idleChain(){const r=chainClipAt(state?.talk,time(),t=>t.flex&&!spoken.has(t.id)?null:(spoken.get(t.id)??0));if(!r)return null;const {shift}=r;const clip=c=>({talk:r.talk.id,take:c.take,frames:c.frames,startAt:c.startAt+shift,endAt:c.endAt+shift,offset:Math.max(0,time()-shift-c.startAt)/1000,timelineTime:()=>Math.max(0,time()-shift-c.startAt)/1000});const cur=clip(r.clip);if(r.next)cur.next=clip(r.next);return cur;},
     // How long the table surely leaves the screen alone (ms): none while a plan runs or a round is on (anyone may act),
     // the betting countdown while it runs, otherwise open-ended. A chat answer starts only if it ends within this.
     get talking(){return talking();},get quietMs(){if(busy()||sending||state?.phase==='round'||talking())return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};
