@@ -356,6 +356,7 @@ function metaLine(ms) {
 }
 
 function render(m) {
+  if (m.who !== me) noteUnread();
   if (m.who === "astrid") return bubble("her", `<span class="name">${esc(dealer.name)}</span>${esc(m.text)}${metaLine(m.ms)}`);
   const mine = m.who === me;
   return bubble(mine ? "me" : "them", (mine ? "" : `<span class="name">${esc(m.who)}</span>`) + esc(m.text));
@@ -546,7 +547,30 @@ connect();
 $("#toggleChat").addEventListener("click", e => {
   const open = document.querySelector('.side').classList.toggle('chat-open');
   e.currentTarget.setAttribute('aria-expanded', String(open));
+  syncChatIcon();
 });
+
+// Kevin 20 Oct: the chat icon in the header is always there (as at Evolution). It opens the chat where it lives on
+// this screen: the phone's dock (chat-open) or the desktop's panel, reopening a panel closed with "Close chat"
+// (panel-toggle.js), and puts the cursor in the message field. On a phone a second tap folds the dock again.
+const phone = () => matchMedia('(max-width: 820px)').matches;
+const chatVisible = () => { const log = $("#log"); return Boolean(log && log.offsetParent !== null && !document.querySelector('.app')?.classList.contains('panel-closed')); };
+function syncChatIcon() { const b = $("#chatIcon"); if (!b) return; const on = chatVisible(); b.setAttribute('aria-expanded', String(on)); b.setAttribute('aria-label', on ? 'Close chat' : 'Open chat'); if (on) { unread = 0; $("#chatBadge").hidden = true; } }
+let unread = 0;
+function noteUnread() { if (chatVisible() || document.hidden === false && chatVisible()) return; unread++; const b = $("#chatBadge"); if (b) { b.textContent = unread > 9 ? '9+' : String(unread); b.hidden = false; } }
+$("#chatIcon")?.addEventListener("click", () => {
+  const app = document.querySelector('.app'), side = document.querySelector('.side');
+  if (app.classList.contains('panel-closed')) { $("#showPanel")?.click(); }   // a closed panel comes back first
+  else if (phone() && side.classList.contains('chat-open')) { side.classList.remove('chat-open'); $("#toggleChat").setAttribute('aria-expanded', 'false'); syncChatIcon(); return; }
+  if (phone() && !side.classList.contains('chat-open')) { side.classList.add('chat-open'); $("#toggleChat").setAttribute('aria-expanded', 'true'); }
+  syncChatIcon();
+  const input = $("#input");
+  if (input) { input.focus({ preventScroll: phone() }); if (!phone()) input.scrollIntoView({ block: 'nearest' }); }
+});
+$("#showPanel")?.addEventListener("click", syncChatIcon);
+$("#hidePanel")?.addEventListener("click", syncChatIcon);
+addEventListener('resize', syncChatIcon);
+syncChatIcon();
 
 // ------------------------------------------------------------------ dealer ---
 // Per-viewer dealer picker: swaps the filmed dealer, never the round or the shoe.

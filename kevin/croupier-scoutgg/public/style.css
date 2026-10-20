@@ -221,3 +221,20 @@ button:disabled { cursor: default; opacity: .42; }
 
 /* Kevin 12 Oct: another dealer's table stays dark until its own dealer can be drawn (index.html sets .pending, dealer-layer.js clears it), so Astrid and an empty table never flash first. */
 #stage.pending > :is(.still, video, canvas, svg) { visibility: hidden; }
+
+/* Kevin 20 Oct: a chat icon that is always on the table (as at Evolution), phone and desktop, in the header's button
+   row. It opens the chat where it lives (the phone's dock, the desktop's panel), reopens a closed panel, and puts the
+   cursor in the message field; the badge counts what was said while the chat was out of sight. */
+.chat-icon { display: inline-flex; align-items: center; gap: 6px; position: relative; }
+.chat-icon svg { flex: none; }
+.chat-icon[aria-expanded="true"] { border-color: var(--sp-lime, #d4f83a); color: var(--sp-lime, #d4f83a); }
+.chat-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--sp-lime, #d4f83a); color: #0b0c0e;
+  font: 700 11px/18px Figtree, system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px #0b0c0e; }
+.app:not(.seated) .chat-icon { display: none; }   /* the gate first: the chat opens once you have sat down */
+/* Phones: the header row has no room for a fourth button (Settings wrapped to a second row), so the icon floats under
+   the row at the right edge, where the "Chat & table" pill sat when the panel was closed; the icon does that job now. */
+@media (max-width: 820px) {
+  .chat-icon-label { display: none; }
+  .table-settings .chat-icon { position: fixed; top: 64px; right: 10px; z-index: 21; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: #0e1415e6; }
+  .app:has(.chat-icon) .panel-show { display: none; }
+}
