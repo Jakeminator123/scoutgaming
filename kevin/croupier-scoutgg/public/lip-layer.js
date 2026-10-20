@@ -45,6 +45,20 @@ async function decode(buf) {
   return Promise.all(frames);
 }
 
+/**
+ * The patch keys to look for, for what is on screen: the take's frame; on a held last frame (the clip ended, the frame
+ * index may run one past the end, or the player holds the last frame of a take while the next one loads) the take's
+ * last known frames; at rest also the still ('vila'). last: take -> the highest frame index any patch of it carries.
+ */
+export function patchKeys(take, frame, rest, last = new Map()) {
+  const keys = [`${take}:${frame}`];
+  const top = last.get(take);
+  if (top !== undefined && frame >= top) { for (let f = top; f >= top - 2 && f >= 0; f--) if (f !== frame) keys.push(`${take}:${f}`); }
+  else if (rest) keys.push(`${take}:${frame - 1}`);
+  if (rest) keys.push('vila');
+  return keys;
+}
+
 export function createLipTracks() {
   // ?lipdebug=1: when each talk became known and each piece arrived, in ms from the talk's first frame (QA only)
   const trace = /[?&]lipdebug=1/.test(globalThis.location?.search ?? '') ? (globalThis.__lipTrace = []) : null;
@@ -72,7 +86,7 @@ export function createLipTracks() {
         const tag = meta.rutor?.[i], k = meta.fran + i, old = t.frames[k];
         if (old && old.ver > ver) { bitmap.close(); return; }
         old?.bitmap.close();
-        if (tag) { t.frames[k] = { bitmap, tag, ver }; t.silent.delete(k); const key = tag.tagning === 'vila' ? 'vila' : `${tag.tagning}:${tag.ruta}`; (t.index.get(key) ?? t.index.set(key, new Set()).get(key)).add(k); }
+        if (tag) { t.frames[k] = { bitmap, tag, ver }; t.silent.delete(k); const key = tag.tagning === 'vila' ? 'vila' : `${tag.tagning}:${tag.ruta}`; (t.index.get(key) ?? t.index.set(key, new Set()).get(key)).add(k); if (tag.tagning !== 'vila' && (t.last.get(tag.tagning) ?? -1) < tag.ruta) t.last.set(tag.tagning, tag.ruta); }
         else { bitmap.close(); t.frames[k] = undefined; t.silent.add(k); }
       });
     } catch { t.seen.delete(seen); }
@@ -103,7 +117,7 @@ export function createLipTracks() {
     talk(t, lips = true, shift = 0) {
       let x = talks.get(t.id);
       if (!x) {
-        x = { ...t, frames: [], index: new Map(), silent: new Set(), seen: new Set(), polling: false, ver: 0, lips, shift }; talks.set(t.id, x);
+        x = { ...t, frames: [], index: new Map(), last: new Map(), silent: new Set(), seen: new Set(), polling: false, ver: 0, lips, shift }; talks.set(t.id, x);
         trace?.push(`${Math.round(time() - t.kartaStart)} replik ${t.kind}/${t.event ?? ''} känd, ${early.get(t.id)?.length ?? 0} bitar väntade`);
         for (const [m, bytes] of early.get(t.id) ?? []) piece(x, m, bytes);
         early.delete(t.id);
@@ -134,7 +148,7 @@ export function createLipTracks() {
         let best = -1;
         // at rest on a clip's last frame the layer may count one frame past the map (floor of its end time): that frame's
         // patch is for the same VILA pose
-        for (const key of rest ? [`${take}:${frame}`, `${take}:${frame - 1}`, 'vila'] : [`${take}:${frame}`])
+        for (const key of patchKeys(take, frame, rest, t.last))
           for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
         if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}` }; }
       }

@@ -110,7 +110,7 @@ function pickIdle() {
 }
 
 // a chain clip is one of the dealer's own idles (dealers.js: Dragan's in v2/, Astrid 2.0's in idle-v2/), by its take name
-const chainItem = c => ({ url: dealer.idles?.find(i => i.id === c.take)?.url ?? dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime });
+const chainItem = c => ({ url: dealer.idles?.find(i => i.id === c.take)?.url ?? dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime, untilStart: c.untilStart });
 // The idle to play after the one on screen, prepared in the hidden video while this one plays (e2e 20 Oct: setting src
 // after 'ended' took 40–200 ms per switch, a stop in VILA of up to 5 frames, twice as often with 1.6 s takes). The next
 // clip of a chain, else the next random idle. A deal or line that comes first simply takes the element instead.
@@ -132,6 +132,9 @@ function next() {
   // can end before the table may need the screen (Emil: answers were cut by the next deal), else it waits.
   const at = pickQueued(queue, { playing: Boolean(gameTable?.playing), quietMs: gameTable?.quietMs ?? Infinity });
   let item = at >= 0 ? queue.splice(at, 1)[0] : null;
+  // a remark of his (the greeting) must not start while a line or answer with a mouth map is on or about to start: the
+  // map runs over the chain or the takes, and the remark's clip would sit on screen with no patch for it (20 Oct)
+  if (item?.kind === 'remark' && gameTable?.talking) { item.complete?.(false); item = null; }
   if (!item) {
     // A ready dealer waits on his rest pose between deals in a round: the next card (a hit, his turn) cut into an idle
     // loop mid-way and his face snapped back to rest (Kevin 11 Oct: "an idle position between, looks weird"). Every take
@@ -186,7 +189,7 @@ async function play(item) {
     if(!v.seeking)item.onFrame?.(frame?.mediaTime ?? v.currentTime, Number.isFinite(v.duration) ? v.duration : item.dur);
     // An idle with its successor prepared hands over on its last frame (VILA, the successor's first frame too), not on
     // 'ended': the event and the timeout after it left a window with no playing video on a busy main thread (e2e 20 Oct).
-    if (item.kind === 'idle' && nextIdle?.video === (v === A ? B : A) && nextIdle.video.readyState >= 3 && frame && Number.isFinite(v.duration) && frame.mediaTime >= v.duration - 1.5 / 24) { finish(true, { handover: true }); return; }
+    if (item.kind === 'idle' && nextIdle?.video === (v === A ? B : A) && nextIdle.video.readyState >= 3 && frame && Number.isFinite(v.duration) && frame.mediaTime >= v.duration - 1.5 / 24) { finish(true, { handover: true }); return; }   // the successor then waits for its own time (start)
     if (v.requestVideoFrameCallback) frameId = v.requestVideoFrameCallback(tick);
   };
   const finish = (ok = true, { handover = false } = {}) => {
@@ -210,6 +213,10 @@ async function play(item) {
   }, 60000);
   const start = () => {
     if (started || done || token !== playToken) return;
+    // a chain clip handed over before its time waits for its time (its predecessor's last frame, VILA, stays up): started
+    // early, every clip led the server's chain a little more, until the mouth sat on the wrong clip (20 Oct)
+    const early = item.untilStart?.() ?? 0;
+    if (early > 8 && early < 600) { setTimeout(start, early); return; }
     started = true;
     // A ready dealer's take runs a little slower so it ends with its slot: no frozen gap before the next card.
     // Card faces follow the clip's own time (onFrame), so they stay with his hand.
@@ -221,7 +228,10 @@ async function play(item) {
     }
     const offset=item.timelineTime?.()??item.startOffset;
     if(item.timelineTime&&offset>=item.dur){finish(true);return;}
-    const seek=initialVideoOffset(offset,v.duration||item.dur);
+    // a chain clip that comes up late (the switch took a few frames) joins the chain in phase, from the frame the table
+    // clock names: played from its first frame it ran behind the server's chain, was cut by the clock before its last
+    // frame, never handed over, and the next clip came up late in turn (20 Oct, 3–12 frames behind on staging)
+    const seek=item.chain?(offset>1/24?Math.min(offset,Math.max(0,(v.duration||item.dur)-.04)):0):initialVideoOffset(offset,v.duration||item.dur);
     if(seek) v.currentTime=seek;
     // Show the prepared layer BEFORE play(), so mobile WebKit does not start
     // decoding into an invisible layer and retain its first displayed frame.
@@ -305,6 +315,12 @@ setInterval(() => {
   // (playing.item, not currentItem: the clip on its way in counts too, else a chain clip loading would be cut here)
   const onItem = playing?.item ?? currentItem;
   if (chain && running && onItem?.kind === 'idle' && !onItem.chain && finishCurrent) { finishCurrent(true); return; }
+  // a chain about to start (a wait after the plan's last take, a talk's chain): its first clip goes into the hidden video
+  // now, so the switch into the chain has no moment without a picture (a random idle prepared there gives way)
+  if (dealer.ready && !chain && !loading && (!nextIdle || !nextIdle.item.chain)) {
+    const u = gameTable?.upcomingChain;
+    if (u && !(nextIdle && nextIdle.item.startAt === u.startAt)) { const other = cur === A ? B : A, n = chainItem(u); nextIdle = { item: n, video: other }; videoPreloader.prepare(other, n.url).catch(() => { if (nextIdle?.item === n) nextIdle = null; }); }
+  }
   if (!running && (chain || Date.now() >= holdUntil)) next();
   else recoverPlayback();
 }, 400);
@@ -539,7 +555,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       if(onItem?.kind==='idle'&&!onItem.chain&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
-      if(onItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
+      if(onItem?.kind==='remark'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       const a=voices.take(url),at=performance.now();a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
       voices.seek(a,()=>(offsetMs+performance.now()-at)/1000);
       const end=()=>{voiceOvers.delete(a);if(!voiceOvers.size&&!currentItem?.sound)audio.speech(false);};
