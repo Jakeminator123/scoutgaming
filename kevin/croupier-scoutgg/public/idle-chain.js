@@ -122,3 +122,18 @@ export function restingPool(idles) {
   const calm = (idles ?? []).filter(i => i.calm);
   return calm.length ? calm : (idles ?? []);
 }
+
+/**
+ * The first clip of a chain about to start (a wait, or a talk's chain) within `within` ms, so the player can load it into
+ * the hidden video ahead of time; null when none, or when a plan take starts before it (that take needs the element).
+ */
+export function upcomingChainAt(waits, talks, plan, now, within = 2500, shiftOf = () => 0) {
+  const cands = [];
+  for (const w of waits ?? []) if (w.from > now && w.from - now < within) { const c = waitClips(w, w.from, w.from + 1)[0]; if (c) cands.push({ talk: { id: 'wait:' + w.seed }, clip: c, shift: 0 }); }
+  for (const t of talks ?? []) { if (!t.idle?.length) continue; const shift = shiftOf(t); if (shift === null || shift === undefined) continue; const c = t.idle[0]; if (c.startAt + shift > now && c.startAt + shift - now < within) cands.push({ talk: t, clip: c, shift }); }
+  cands.sort((a, b) => (a.clip.startAt + a.shift) - (b.clip.startAt + b.shift));
+  const first = cands[0];
+  if (!first) return null;
+  if ((plan?.steps ?? []).some(s => s.clip && s.startAt > now && s.startAt <= first.clip.startAt + first.shift)) return null;
+  return { ...first, next: null };
+}

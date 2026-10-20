@@ -397,6 +397,7 @@ test('between rounds an answer runs over his idle takes, the same chain for ever
     const view=t.st('paow'),luck=view.talk.find(x=>x.event==='goodluck');
     assert.ok(luck&&!luck.idle,'a line over the cards mid-round has no idle chain');
     t.box.time=view.plan.endAt+10;
+    if(t.st('paow').round?.phase!=='decisions')return;   // a natural this time: nothing to decide, no wait to look at
     const mid=t.s.addTalk('paow',{text:'Jaha',lang:'sv',dur:1});
     // Kevin 20 Oct: while the table waits for the player he no longer holds his pose: the answer runs over the wait's chain
     assert.ok(mid.talk.idle?.length,'mid-round, while the table waits for the player, the answer runs over the wait chain');

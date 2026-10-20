@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chainClipAt, LEAD, layChain, waitClips, waitBoundary, waitClipAt, pickWeighted, restingPool } from '../public/idle-chain.js';
+import { chainClipAt, LEAD, layChain, waitClips, waitBoundary, waitClipAt, pickWeighted, restingPool, upcomingChainAt } from '../public/idle-chain.js';
+import { patchKeys } from '../public/lip-layer.js';
 
 // 20 Oct: which clip of a talk's idle chain the table shows now must be gapless, or the handover on a clip's last frame
 // (1.5 frames = 62 ms before its end) finds nothing, drops the prepared clip and lets a random idle start under the line.
@@ -90,4 +91,26 @@ test('at rest he draws from the calm takes only; the lively ones are left for a 
   assert.deepEqual(restingPool([]), []);
   const talk = layChain(idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt })), 0, 40000, 'answer');
   assert.ok(talk.some(c => c.take === 'nick6101' || c.take === 'huvud'), 'a chain under speech still uses the lively takes');
+});
+
+test('the first clip of a chain about to start is known 2.5 s ahead, a wait or a talk, unless a plan take comes first', () => {
+  const w = { from: 20000, until: null, seed: 'p2', takes };
+  assert.equal(upcomingChainAt([w], [], null, 17000), null, 'too early');
+  const u = upcomingChainAt([w], [], null, 18000);
+  assert.ok(u && u.talk.id === 'wait:p2' && u.clip.startAt === 20000 && u.next === null);
+  assert.equal(upcomingChainAt([w], [], { steps: [{ clip: {}, startAt: 19000, endAt: 19500 }] }, 18000), null, 'a take before it needs the hidden video');
+  assert.ok(upcomingChainAt([w], [], { steps: [{ clip: {}, startAt: 17500, endAt: 19000 }] }, 18000), 'a take already running is no obstacle');
+  const t = { id: 'a', idle: [{ take: 'andas', startAt: 19000, endAt: 19000 + ms(39), frames: 39 }] };
+  assert.equal(upcomingChainAt([w], [t], null, 18000).talk.id, 'a', 'the earliest of the two');
+  assert.equal(upcomingChainAt([], [{ ...t, flex: true }], null, 18000, 2500, x => (x.flex ? null : 0)), null, 'a flexible answer not started here: nothing to prepare');
+  assert.equal(upcomingChainAt([w], [], null, 20100), null, 'once it has started it is the chain, not upcoming');
+});
+
+test('which patches fit what is on screen: the frame itself; on a held last frame the take\'s last known frames; at rest also the still', () => {
+  const last = new Map([['pos1-i', 65], ['andas', 38]]);
+  assert.deepEqual(patchKeys('pos1-i', 30, false, last), ['pos1-i:30']);
+  assert.deepEqual(patchKeys('pos1-i', 66, false, last), ['pos1-i:66', 'pos1-i:65', 'pos1-i:64', 'pos1-i:63'], 'one past the end: the last frames (the player holds the last frame while the next take loads)');
+  assert.deepEqual(patchKeys('andas', 38, true, last), ['andas:38', 'andas:37', 'andas:36', 'vila'], 'the last frame of an idle, at rest');
+  assert.deepEqual(patchKeys('andas', 12, true, last), ['andas:12', 'andas:11', 'vila']);
+  assert.deepEqual(patchKeys('flip', 39, true, new Map()), ['flip:39', 'flip:38', 'vila'], 'a take without patches yet');
 });
