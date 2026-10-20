@@ -326,6 +326,7 @@ function unlock() {
   voices.unlock();
   if (unlocked) return;
   unlocked = true;
+  soundChip.hidden = true;   // the sound is on from this gesture: the pill was only hidden by a tap on itself before (solvifyab 20 Oct)
   for (const v of [A, B]) {
     v.muted = !(v===cur && currentItem?.sound && audio.settings.enabled);
     if (v.paused && v.src) v.play().then(() => { if (v !== cur) v.pause(); }).catch(() => {});
