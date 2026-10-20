@@ -542,3 +542,29 @@ test('a dealer whose idles no worker knows still gets the wait chain (it is only
     assert.deepEqual(none.st('paow').waits,[],'no idle takes: he rests as before');
   }finally{none.close();}
 });
+
+test('a line over idle takes waits for the busy worker that has them while there is time, and only falls back to the other one when it would be late', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:60_000,urgentMs:400,dealers:['dragge']});
+  clearInterval(r.timer);
+  const pod=()=>{const sent=[],h=[],c=[];return {sent,h,c,ws:{readyState:1,off(ev,f){for(const l of [h,c]){const i=l.indexOf(f);if(i>=0)l.splice(i,1);}},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);if(ev==='close')c.push(f);}}};};
+  const ko2=pod(),ours=pod();
+  r.addWorker('dragge',ko2.ws,{rutor_per_s:95,spar:1},'ko2');
+  r.addWorker('dragge',ours.ws,{rutor_per_s:40,spar:1,takes:['flip','andas','andasb']},'ours');
+  const starts=p=>p.sent.filter(m=>m.t==='start').map(m=>m.id), done=(p,id)=>[...p.h].forEach(f=>f(JSON.stringify({t:'done',id}),false));
+  const now=Date.now();
+  const answer=r.speak('dragge','rum',{id:'answer',kartaStart:now+500,endAt:now+5000,line:'/a.mp4'},[['andas',0,39],['andasb',0,39]]);
+  assert.deepEqual(starts(ours),['answer'],'the answer over idle takes: the worker that has them');
+  const line=r.speak('dragge','rum',{id:'lose',kartaStart:now+2000,endAt:now+6000,line:'/l.mp4'},[['flip',0,20],['andas',0,39]]);
+  await new Promise(res=>setTimeout(res,30));
+  assert.deepEqual(starts(ko2),[],'ko2 is free but has no idle takes: the line waits while there is time');
+  done(ours,'answer');await answer;await new Promise(res=>setTimeout(res,200));
+  assert.deepEqual(starts(ours),['answer','lose'],'as soon as the worker with the takes is free, the line goes there');
+  done(ours,'lose');await line;
+  // the same with no time left: it goes to the free worker rather than being late
+  const late=r.speak('dragge','rum',{id:'late',kartaStart:now+3000,endAt:now+9000,line:'/a.mp4'},[['andas',0,39]]);
+  const urgent=r.speak('dragge','rum',{id:'urgent',kartaStart:Date.now()+300,endAt:now+9000,line:'/u.mp4'},[['andas',0,39]]);
+  await new Promise(res=>setTimeout(res,30));
+  assert.ok(starts(ours).includes('late')&&starts(ko2).includes('urgent'),'the worker with the takes took the first, the urgent one could not wait');
+  done(ours,'late');done(ko2,'urgent');await late;await urgent;
+});

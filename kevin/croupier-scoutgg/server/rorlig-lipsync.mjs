@@ -327,6 +327,11 @@ export class RorligLipsync {
     // a line over the dealer's idle takes goes to a worker that announced them (Kevin 20 Oct); none free: the fastest as
     // before (its map then has takes it lacks: the chain is never laid unless such a worker is connected, shared-table.mjs)
     const able = job.idle.length ? free.filter(w => this.#knows(w, job.idle)) : [];
+    // the worker that has his idle takes is busy (an answer in hand) while another one is free: the line waits for it
+    // until it would be late (urgentMs), rather than going at once to a worker that cannot make its idle frames
+    if (job.idle.length && !able.length && ok.some(w => this.#knows(w, job.idle)) && job.deadline - Date.now() > this.urgentMs) {
+      s.jobs.unshift(job); s.later = setTimeout(() => this.#pump(dealer), 150); return;
+    }
     const cand = able.length ? able : free, candIdle = cand.filter(w => !w.running);
     // the worker that already has this answer's voice when it is free (no ~0.5 s resend), else the fastest idle one
     const pick = (candIdle.length ? candIdle : cand).slice().sort((a, b) => (b.info?.rutor_per_s ?? 0) - (a.info?.rutor_per_s ?? 0));
