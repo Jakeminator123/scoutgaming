@@ -11,7 +11,7 @@ const $=s=>document.querySelector(s);
 const money=n=>`$${Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 export const tableSession=new URLSearchParams(location.search).get('session')||dealerRoom(dealer.id);
 
-export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnter,onBusy,prepareMedia=async()=>{},warmPlan=()=>{},preloadNext=()=>{},remark=()=>{},speak=()=>false,lips=null,atRest=()=>true,hold=()=>{}}) {
+export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnter,onBusy,prepareMedia=async()=>{},warmPlan=()=>{},preloadNext=()=>{},remark=()=>{},speak=()=>false,lips=null,atRest=()=>true,hold=()=>{},warmTakes=()=>{}}) {
   const streak=createWinStreak();let quietTimer=null;
   const cards=createGameCards($('#gameCards'),manifest);
   let state=null,offset=0,sending=false,polling=false,notice='',chip=5,entered=false,entryStep=1,autoEntered=false;
@@ -273,10 +273,13 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   // the server clock and its mouth patches come from the lip-sync worker; speak() returns whether this viewer hears the
   // language the mouth was synced to. A flexible answer (said between rounds) starts here once the dealer rests: his idle
   // clips are this viewer's own, so it waits for the one playing to end, at most 6 s, and runs shifted by that wait.
-  const spoken=new Map();
+  const spoken=new Map(),warmed=new Set();
   const talking=()=>{const n=time();return (state?.talk??[]).some(t=>n<t.endAt+(t.flex?6300:300));};
+  // A talk said at rest carries a chain of his moving idle takes (t.idle, server/shared-table.mjs withIdle): the body under
+  // his mouth, the same for every viewer and the worker. Its clips are fetched as soon as the talk is known.
   function syncTalk(now){
     for(const t of state?.talk??[]) {
+      if(t.idle?.length&&!warmed.has(t.id)){warmed.add(t.id);if(warmed.size>40)warmed.delete(warmed.values().next().value);warmTakes([...new Set(t.idle.map(c=>c.take))]);}
       // every tick, not once: each clip of the plan clears the idle hold (playNow), and no idle may start under a line
       const shift=spoken.get(t.id)??0;
       if(!t.flex&&now<t.endAt)hold(t.endAt-now+300);
@@ -377,6 +380,10 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     try{localStorage.setItem(NICK,state.me.name);}catch{}
     return state.me.name;
   },sourceStarted:id=>cards.sourceStarted(id),get busy(){return busy()||sending;},get playing(){return state?.phase==='round';},
+    // The idle take the table shows right now under a talk said at rest (null: none due): {take, frames, offset s,
+    // timelineTime} on the table clock, shifted like the talk when this viewer started it late (flex). app.js plays it
+    // in place of a random idle, so the mouth patches (tagged take and frame) land on the body every viewer shows.
+    get idleChain(){const n=time();for(const t of state?.talk??[]){if(!t.idle?.length||(t.flex&&!spoken.has(t.id)))continue;const shift=spoken.get(t.id)??0,at=n-shift;const c=t.idle.find(c=>at>=c.startAt-40&&at<c.endAt-80);if(c)return{talk:t.id,take:c.take,frames:c.frames,startAt:c.startAt+shift,endAt:c.endAt+shift,offset:Math.max(0,at-c.startAt)/1000,timelineTime:()=>Math.max(0,time()-shift-c.startAt)/1000};}return null;},
     // How long the table surely leaves the screen alone (ms): none while a plan runs or a round is on (anyone may act),
     // the betting countdown while it runs, otherwise open-ended. A chat answer starts only if it ends within this.
     get talking(){return talking();},get quietMs(){if(busy()||sending||state?.phase==='round'||talking())return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};

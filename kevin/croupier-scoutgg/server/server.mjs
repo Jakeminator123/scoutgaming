@@ -72,7 +72,11 @@ const apiLimit=createRateLimit({limit:20});
 const demoGate=createDemoGate(), demoLimit=createRateLimit({limit:10});   // Play demo password: see demo-gate.mjs
 const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // Take lengths of the ready dealers (built by croupier-dealer-dragge/build_ready_dealer.py); a studio table with one of them deals on his own timing.
-const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id=>{try{return [id,{...JSON.parse(readFileSync(path.join(PUBLIC,'media','dealers',id,'v2','meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`}];}catch{return [id,null];}}));
+// His moving idles (Kevin 20 Oct): v2/idle1.mp4, idle2.mp4 … are short takes from VILA to VILA (H3, like the deals). A
+// line or answer he says at rest runs over a chain of them instead of his still (shared-table.mjs withIdle, rorlig-
+// lipsync.mjs idleChain). Frames are read from the file itself; without such files he rests on his still as before.
+const idleTakes=dir=>{try{return readdirSync(dir).filter(f=>/^idle\d+\.mp4$/.test(f)).sort().map(f=>({take:f.slice(0,-4),frames:Math.round((mp4Duration(readFileSync(path.join(dir,f)))??0)*24)})).filter(x=>x.frames>0);}catch{return [];}};
+const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(dir)}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
@@ -123,7 +127,7 @@ const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGu
   // plays his recorded "congratulations to the winners" instead
   winners:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)&&hasVoice(d)&&draggeVoiceReady(d)?(names,language,notBefore)=>{cheerWinners(room,d,names,language,notBefore).catch(e=>console.log(`vinnarna: ${e.message}`));}:null;},
   onPlan:(room,plan,ready,{nya,omplanera,steg})=>{if(!rorlig)return;const d=dealerOf(room);rorlig.activity(d);
-    const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
+    const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[],idle:t.idle??[]});
     // a line or answer still speaking when this plan's cards come: its frames changed, so it gets a map over the new takes,
     // FIRST (it is on screen now) and only from the frame where the new cards start (the frames before are with the viewers)
     const first=plan.steps.find(x=>x.clip)?.startAt??Date.now();
@@ -236,7 +240,7 @@ async function talkReply(ws, text, dealer) {
       const pcm=await draggeVoice(reply,language,{dealer});
       const {talk:spoken,moved,steg,ready}=shared.addTalk(ws.session,{text:reply,lang:language,dur:pcm.length/48000});
       rorlig.activity(dealer);
-      const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
+      const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[],idle:t.idle??[]});
       rorlig.speak(dealer,ws.session,spoken,karta(spoken),{pcm});
       for(const t of moved)rorlig.speak(dealer,ws.session,t,karta(t));   // recorded lines that now come after the answer
       out({t:'answer',id,to:ws.name,text:reply,dealer,talk:spoken.id});
@@ -263,7 +267,7 @@ async function cheerWinners(room, dealer, names, language, notBefore) {
   const text = cheerText(names, language), pcm = await draggeVoice(text, language, { dealer });
   const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { kind: 'cheer', text, lang: language, dur: pcm.length / 48000, notBefore });
   rorlig.activity(dealer);
-  const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [] });
+  const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [], idle: t.idle ?? [] });
   rorlig.speak(dealer, room, spoken, karta(spoken), { pcm });
   for (const t of moved) rorlig.speak(dealer, room, t, karta(t));
 }

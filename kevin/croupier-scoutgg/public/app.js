@@ -120,9 +120,15 @@ function next() {
     // starts from that pose, so it joins cleanly. His idles play while the table bets and after the round.
     // (Emil 12 Oct tried idles mid-round with a cross-fade: two keyed poses blended read as a ghost. The way forward is
     // short idles from rest to rest that may finish before a card, the take then catching up.)
-    if (!manifest.idle.length || Date.now() < holdUntil || (dealer.ready && gameTable?.playing)) { running = false; return; }   // står på stillbilden
-    const c = pickIdle();
-    item = { url: c.url, sound: false, kind: "idle" };
+    // Kevin 20 Oct: while he speaks at rest the table names the idle take on screen (gameTable.idleChain, the same for
+    // every viewer and the lip-sync worker): that take plays on the table clock instead of a random idle or his still.
+    const c = dealer.ready ? gameTable?.idleChain : null;
+    if (c) item = { url: dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, dur: c.frames / 24, timelineTime: c.timelineTime };
+    else {
+      if (!manifest.idle.length || Date.now() < holdUntil || (dealer.ready && gameTable?.playing)) { running = false; return; }   // står på stillbilden
+      const r = pickIdle();
+      item = { url: r.url, sound: false, kind: "idle" };
+    }
   }
   running = true;
   play(item);
@@ -262,7 +268,10 @@ function enqueue(item) {
 
 // Återuppta även när webbläsaren har pausat videon utan att skicka ended.
 setInterval(() => {
-  if (!running && Date.now() >= holdUntil) next();
+  const chain = dealer.ready && gameTable?.idleChain;
+  // his moving idle under a talk starts now: a random idle playing gives way (it starts and ends on the same VILA)
+  if (chain && running && currentItem?.kind === 'idle' && !currentItem.chain && finishCurrent) { finishCurrent(true); return; }
+  if (!running && (chain || Date.now() >= holdUntil)) next();
   else recoverPlayback();
 }, 400);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) recoverPlayback(); });
@@ -479,8 +488,9 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       const lang=$('#dealerLanguage').value,url=t.ljud??dealerLineUrl(t.clip?.url,lang);
       if(!url)return false;
       if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them (a cheer for the winners is said and captioned, never written in the chat: Emil 14 Oct)
-      // his mouth is synced to him resting or dealing, never to an idle gesture: an idle playing now gives way to his still
-      if(currentItem?.kind==='idle'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
+      // his mouth is synced to him resting, dealing or on the talk's own idle chain, never to a random idle gesture: a random
+      // idle playing now gives way (to his still, or to the chain the table names)
+      if(currentItem?.kind==='idle'&&!currentItem.chain&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
       if(currentItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
@@ -493,6 +503,8 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       if(words){talkCaption=words;talkCaptionUntil=Date.now()+remainMs;showCaption(words);setTimeout(()=>{if(Date.now()>=talkCaptionUntil&&caption.textContent===talkCaption.replace(/—/g,', '))showCaption(null);},remainMs+50);}
       return t.kind==='answer'||t.kind==='cheer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
     },
+    // the idle takes a talk at rest runs over (gameTable.idleChain): fetched when the talk is known, before it starts
+    warmTakes:takes=>{for(const t of takes)videoBuffer.load(dealerClipUrl(`/media/deal/${t}.mp4`),0).catch(()=>{});},
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),
     onEnter:name=>{me=name;who.value=name;store.set('astrid.name',name);if(ws?.readyState===1)ws.send(JSON.stringify({t:'name',name}));if(!greeted){greeted=true;remarkNow(greetingFor(name));}},

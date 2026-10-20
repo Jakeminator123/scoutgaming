@@ -9,7 +9,7 @@ import { createGameAudit } from './game-audit.mjs';
 import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
 import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
-import {scheduleTalks,LJUD_FORE} from './rorlig-lipsync.mjs';
+import {scheduleTalks,LJUD_FORE,idleFrom,idleChain} from './rorlig-lipsync.mjs';
 
 const emptyBets = () => Array.from({length:7},()=>({main:0,pp:0,tp:0}));
 const sum = b => b.main+b.pp+b.tp;
@@ -53,6 +53,16 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   const clipByEvent=(event,language)=>speechForEvent(manifest,event,language);
   // a line of a ready dealer's own (twentyone) has no clip of Astrid's: its first variant stands in until variantOf picks
   const ownLine=event=>({id:`${event}_1`,event,url:`/media/repliker/${event}_1.mp4`,text:'',dur:2});
+  // Kevin 20 Oct: a ready dealer with moving idles (readyFor().idle, v2/idle1.mp4 …) keeps moving while he speaks at rest,
+  // instead of freezing on his still: the talk carries the chain of idle takes every viewer and the worker's map follow
+  // (rorlig-lipsync.mjs idleChain). Only when no card can come and cut it: between rounds, or once the round is settled
+  // (his last take ends at rest and he talks about the result). Mid-round he waits in his pose as before (11 Oct).
+  function withIdle(r,ready,t,steg) {
+    if(!ready?.idle?.length||(r.phase==='round'&&r.round?.phase!=='settled'))return t;
+    const from=idleFrom(steg,t,{restEnd:ready.restEnd??[]});
+    const idle=from===null?[]:idleChain(ready.idle,from,t.endAt+600,t.id);
+    return idle.length?{...t,idle}:t;
+  }
   function variantOf(r,clip,ready){
     const n=ready.variants[clip.event],last=r.lastVariant?.[clip.event];
     const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>n<2||i!==last);
@@ -165,7 +175,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
     if(ready&&steps.length)at=readyTimeline(steps,ready);
-    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>({id:randomUUID(),kind:'line',...t})):[];
+    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps])):[];
     if(spoken.length)r.talkUntil=spoken.at(-1).endAt+250;
     const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
     const live=(r.talk??[]).filter(t=>t.endAt>now()),omplanera=live.filter(t=>t.endAt+600>firstFrame);
@@ -424,17 +434,18 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       const speaking=live.filter(x=>x.startAt<=t+ANSWER_LEAD);
       const start=Math.round(Math.max(t+ANSWER_LEAD,input.notBefore??0,...speaking.map(x=>x.endAt+250)));
       const {notBefore,...said}=input;
-      const talk={id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`};
+      const ready=readyFor(id),steg=[...(r.prevSteps??[]),...(r.plan?.steps??[])];
+      const talk=withIdle(r,ready,{id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`},steg);
       let free=talk.endAt+250;const later=[],moved=[];
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
         if(x.startAt>=free){later.push(x);continue;}
         if(x.kind==='line'&&x.event==='goodluck')continue;
-        const d=x.endAt-x.startAt,y={...x,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000};
+        const d=x.endAt-x.startAt,{idle:_,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg);
         later.push(y);moved.push(y);free=y.endAt+250;
       }
       r.talk=[...speaking,talk,...later];r.talkUntil=Math.max(r.talkUntil??0,...r.talk.map(x=>x.endAt+250));
       save(id,r);db.exec('COMMIT');
-      return{talk,moved,steg:[...(r.prevSteps??[]),...(r.plan?.steps??[])],ready:readyFor(id)};
+      return{talk,moved,steg,ready};
     }catch(e){db.exec('ROLLBACK');throw e;}
   }
   return{run,tick,readGameState,addTalk,hasRoom:room=>Boolean(db.prepare('SELECT 1 FROM shared_rooms WHERE id=?').get(String(room).toLowerCase())),language:session=>load(sessionName(session)).language,snapshot:(session,token)=>{const id=sessionName(session);return view(id,load(id),token?keyFor(token):null);},presentationContext:(room='astrid')=>{

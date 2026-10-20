@@ -48,9 +48,11 @@ export function takeOf(step) {
 /**
  * Which take and frame is on screen for n frames from t0 (ms, server clock), as the worker's map:
  * [[take, firstFrame, count], …]. Between two takes the last frame stays (the 80 ms gaps); before the plan and after a
- * take that ends at rest, the dealer rests ('vila'). Held frames are runs of one.
+ * take that ends at rest, the dealer rests: on his moving idle when the talk carries one (idle = its chain, idleChain
+ * below, Kevin 20 Oct: he keeps moving while he speaks, also between rounds), else on his still ('vila').
+ * Held frames are runs of one.
  */
-export function kartaFor(steps, t0, n, { restEnd = [] } = {}) {
+export function kartaFor(steps, t0, n, { restEnd = [], idle = [] } = {}) {
   const takes = (steps ?? []).filter(s => takeOf(s) && Number.isFinite(s.startAt) && s.endAt > s.startAt);
   const atRest = s => /[uv]/.test(s.variant ?? '') || restEnd.includes(s.track ?? s.seat);
   const out = [];
@@ -64,8 +66,51 @@ export function kartaFor(steps, t0, n, { restEnd = [] } = {}) {
     const s = takes.find(x => t >= x.startAt && t < x.endAt);
     if (s) { push(takeOf(s), Math.floor((t - s.startAt) * FPS / 1000 + 1e-6)); continue; }
     const prev = [...takes].reverse().find(x => x.endAt <= t);
-    if (prev && !atRest(prev)) push(takeOf(prev), Math.max(0, Math.round((prev.endAt - prev.startAt) * FPS / 1000) - 1));
+    if (prev && !atRest(prev)) { push(takeOf(prev), Math.max(0, Math.round((prev.endAt - prev.startAt) * FPS / 1000) - 1)); continue; }
+    const c = idle.find(x => t >= x.startAt && t < x.endAt);
+    if (c) push(c.take, Math.min(c.frames - 1, Math.floor((t - c.startAt) * FPS / 1000 + 1e-6)));
     else push('vila', 0);
+  }
+  return out;
+}
+
+/**
+ * When a talk's moving idle may start (ms, server clock), or null when he holds a pose then. His first frame when no take
+ * plays under the talk; after the last take under it ends, when that take ends at rest (-u, -v, hole, flip). A take that
+ * ends in REDO (more cards to come) holds its last frame as before: an idle there would snap him back to rest.
+ */
+export function idleFrom(steps, talk, { restEnd = [] } = {}) {
+  const from = talk.kartaStart, to = talk.endAt;
+  const takes = (steps ?? []).filter(s => takeOf(s) && Number.isFinite(s.startAt) && s.endAt > s.startAt && s.startAt < to);
+  const atRest = s => /[uv]/.test(s.variant ?? '') || restEnd.includes(s.track ?? s.seat);
+  const last = takes.sort((a, b) => a.endAt - b.endAt).at(-1);
+  if (!last) return from;
+  if (!atRest(last)) return null;
+  const start = Math.max(from, last.endAt);
+  return start < to ? start : null;
+}
+
+/**
+ * His idle takes (v2/idle1.mp4 …, short, VILA to VILA) laid back to back from `from` to `to` (ms, server clock), so a
+ * line or answer said while he rests runs over a moving body instead of his still: [{take, startAt, endAt, frames}].
+ * Every idle take starts and ends on VILA (the one picture he returns to), so the chain joins without a seam, any take
+ * can follow it and it ends on his still. Deterministic from the seed (the talk id): the worker's map, every viewer and
+ * a remap all lay the same chain. Never the same take twice in a row when he has more than one.
+ */
+export function idleChain(idles, from, to, seed = '') {
+  const takes = (idles ?? []).filter(i => i?.take && i.frames > 0);
+  if (!takes.length || !(to > from)) return [];
+  let h = 2166136261;
+  for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const rnd = () => { h = (Math.imul(h ^ (h >>> 15), 2246822519) + 0x9e3779b9) >>> 0; return h / 2 ** 32; };
+  const out = [];
+  let at = from, last = null;
+  while (at < to && out.length < 64) {
+    const pool = takes.length > 1 ? takes.filter(t => t.take !== last) : takes;
+    const t = pool[Math.floor(rnd() * pool.length)];
+    const endAt = at + t.frames * 1000 / FPS;
+    out.push({ take: t.take, startAt: Math.round(at * 10) / 10, endAt: Math.round(endAt * 10) / 10, frames: t.frames });
+    last = t.take; at = endAt;
   }
   return out;
 }

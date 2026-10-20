@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createSharedTable} from '../server/shared-table.mjs';
-import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE} from '../server/rorlig-lipsync.mjs';
+import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE,idleFrom,idleChain} from '../server/rorlig-lipsync.mjs';
 import {splitAccessUnits} from '../public/lip-layer.js';
 
 // Emil 12 Oct: a ready dealer says his lines while he deals; the mouth is a patch per frame, tagged with take and frame.
@@ -62,7 +62,7 @@ const talkManifest={deal:[1,2,3,4,5,6,7,'dealer'].map(i=>({id:`deal_pos${i}`,url
 function talkTable(opts={}){
   const take={'-':39,'-i':60,'-u':60,'-iu':81,'-v':39,'-iv':60},frames=Object.fromEntries(['1','2','3','4','5','6','7','dealer'].map(k=>[k,take]));
   frames.hole={'-':39,'-i':60,'-u':39,'-iu':60};frames.flip={'-':56,'-i':56,'-u':56,'-iu':56};
-  const ready={frames,restEnd:['hole','flip'],restStart:['flip']};
+  const ready={frames,restEnd:['hole','flip'],restStart:['flip'],...(opts.idle?{idle:opts.idle}:{})};
   const dir=mkdtempSync(join(tmpdir(),'talk-')),box={warm:true,planned:[],time:100000};
   const s=createSharedTable(join(dir,'t.sqlite'),{manifest:talkManifest,now:()=>box.time,readyFor:()=>ready,
     talk:()=>box.warm?{line:clip=>({url:clip.url.replace('/media/repliker/','/media/dealers/paow/repliker/sv/'),lang:'sv',dur:3.2})}:null,
@@ -326,4 +326,80 @@ test('the fastest idle pod takes a line, and a pod that hung rests for a minute 
   assert.deepEqual(starts(fast),['a#1','c#1']);
   [...fast.h].forEach(f=>f(JSON.stringify({t:'done',id:'c#1'}),false));await c;
   assert.equal(r.status().paow.workers.find(w=>w.pod==='pod2').resting>0,true);
+});
+
+// Kevin 20 Oct: a ready dealer keeps moving while he speaks at rest. His short idle takes (v2/idle1.mp4 …, VILA to VILA)
+// chain under the talk; the map, every viewer and a remap lay the same chain, and only his start picture is returned to.
+
+test('his idle takes chain from VILA to VILA under a talk at rest: the same chain for the same talk, never one take twice in a row, until the talk ends', () => {
+  const idles=[{take:'idle1',frames:39},{take:'idle2',frames:39},{take:'idle3',frames:73}];
+  const a=idleChain(idles,1000,5000,'talk-1');
+  assert.deepEqual(idleChain(idles,1000,5000,'talk-1'),a,'deterministic from the talk id');
+  assert.equal(a[0].startAt,1000);
+  for(let i=1;i<a.length;i++){assert.equal(a[i].startAt,a[i-1].endAt,'back to back');assert.notEqual(a[i].take,a[i-1].take,'never the same gesture twice in a row');}
+  assert.ok(a.at(-1).endAt>=5000,'covers the talk');
+  for(const c of a)assert.ok(Math.abs(c.endAt-c.startAt-c.frames*1000/24)<.2,'each clip lasts its frames');
+  const seeds=new Set(Array.from({length:12},(_,i)=>idleChain(idles,1000,5000,`talk-${i}`).map(c=>c.take).join()));
+  assert.ok(seeds.size>1,'different talks get different chains');
+  assert.deepEqual(idleChain([],1000,5000,'x'),[],'no idle takes: no chain');
+  assert.deepEqual(idleChain([{take:'idle1',frames:39}],0,100,'x').map(c=>c.take),['idle1'],'one take repeats');
+  assert.deepEqual(idleChain(idles,5000,1000,'x'),[]);
+});
+
+test('the frame map runs over the idle chain where he would rest: under the takes, and never over a held pose', () => {
+  const ms=f=>f*1000/24;
+  const steps=[{kind:'deal',clip:{url:'/media/deal/pos4.mp4'},variant:'i',startAt:1000,endAt:1000+ms(60)},
+    {kind:'deal',clip:{url:'/media/deal/pos2.mp4'},variant:'u',startAt:1000+ms(60)+80,endAt:1000+ms(120)+80}];
+  const idle=[{take:'idle1',startAt:0,endAt:ms(39),frames:39},{take:'idle2',startAt:ms(39),endAt:ms(78),frames:39}];
+  assert.deepEqual(kartaFor(steps,0,30,{idle}),[['idle1',0,24],['pos4-i',0,6]],'the idle until the take, then the take');
+  assert.deepEqual(kartaFor([],ms(37),4,{idle}),[['idle1',37,2],['idle2',0,2]],'the chain joins at its boundary');
+  const end=1000+ms(120)+80;
+  assert.deepEqual(kartaFor(steps,end,3,{idle:[{take:'idle3',startAt:end,endAt:end+ms(39),frames:39}]}),[['idle3',0,3]],'after a take that ends at rest, the chain');
+  assert.deepEqual(kartaFor(steps,end,3),[['vila',0,3]],'without a chain, his still as before');
+  const redo=[{kind:'deal',clip:{url:'/media/deal/pos4.mp4'},variant:'',startAt:1000,endAt:1000+ms(39)}];
+  assert.deepEqual(kartaFor(redo,1000+ms(39),2,{idle:[{take:'idle1',startAt:1000,endAt:1000+ms(78),frames:39}]}),[['pos4',38,1],['pos4',38,1]],'a take that ends in REDO holds its last frame, no idle under it');
+});
+
+test("a talk at rest gets its idle from its first frame; after a take under it that ends at rest, from that take's end; none while he holds a pose", () => {
+  const ms=f=>f*1000/24,talk={kartaStart:2000,startAt:2220,endAt:5000};
+  assert.equal(idleFrom([],talk),2000);
+  const u={kind:'deal',clip:{url:'/media/deal/pos2.mp4'},variant:'u',startAt:1500,endAt:1500+ms(60)};
+  assert.equal(idleFrom([u],talk),u.endAt,'from the end of the take he returns to rest with');
+  assert.equal(idleFrom([{...u,variant:''}],talk),null,'a take that ends in REDO: he holds it');
+  assert.equal(idleFrom([{...u,startAt:0,endAt:1500}],talk),2000,'a take long over: from the first frame');
+  assert.equal(idleFrom([{...u,variant:'',startAt:0,endAt:1500}],talk),null,'still in REDO from before: no idle');
+  const hole={kind:'reveal',clip:{url:'/media/deal/hole.mp4'},variant:'',track:'hole',startAt:1500,endAt:1500+ms(39)};
+  assert.equal(idleFrom([hole],talk,{restEnd:['hole','flip']}),hole.endAt,'a take filmed back to rest counts as rest');
+  assert.equal(idleFrom([{...u,startAt:5500,endAt:5500+ms(60)}],talk),2000,'a take after the talk does not matter');
+  assert.equal(idleFrom([{...u,startAt:4000,endAt:5200}],talk),null,'a take that ends with the talk leaves no room');
+});
+
+test('between rounds an answer runs over his idle takes, the same chain for every viewer and the worker; mid-round he waits in his pose as before', () => {
+  const idle=[{take:'idle1',frames:39},{take:'idle2',frames:39}];
+  const t=talkTable({idle});
+  try{
+    t.send('paow','join',{name:'Kevin',seats:[3]});
+    const a=t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2});
+    assert.ok(a.talk.idle?.length>=2,'between rounds the answer carries his idle chain');
+    assert.equal(a.talk.idle[0].startAt,a.talk.kartaStart,'from its first frame');
+    assert.ok(a.talk.idle.at(-1).endAt>=a.talk.endAt+600,'past its end, where the last patches land');
+    assert.equal(t.st('paow').talk.at(-1).idle.length,a.talk.idle.length,'every viewer sees the chain');
+    const k=kartaFor(a.steg,a.talk.kartaStart,10,{restEnd:a.ready.restEnd,idle:a.talk.idle});
+    assert.deepEqual(k,[[a.talk.idle[0].take,0,10]],"the worker's map starts on the chain's first take");
+    t.box.time=a.talk.endAt+1000;
+    t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
+    const view=t.st('paow'),luck=view.talk.find(x=>x.event==='goodluck');
+    assert.ok(luck&&!luck.idle,'a line over the cards mid-round has no idle chain');
+    t.box.time=view.plan.endAt+10;
+    const mid=t.s.addTalk('paow',{text:'Jaha',lang:'sv',dur:1});
+    assert.ok(!mid.talk.idle,'mid-round an answer has none either: he holds his pose for the next card');
+  }finally{t.close();}
+});
+
+test('without idle takes nothing changes: no chain on any talk', () => {
+  const t=talkTable();
+  try{
+    t.send('paow','join',{name:'Kevin',seats:[3]});
+    assert.ok(!t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2}).talk.idle);
+  }finally{t.close();}
 });
