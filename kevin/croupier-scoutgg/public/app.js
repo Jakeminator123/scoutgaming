@@ -106,6 +106,20 @@ function pickIdle() {
   return pool[0];
 }
 
+const chainItem = c => ({ url: dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime });
+// The idle to play after the one on screen, prepared in the hidden video while this one plays (e2e 20 Oct: setting src
+// after 'ended' took 40–200 ms per switch, a stop in VILA of up to 5 frames, twice as often with 1.6 s takes). The next
+// clip of a chain, else the next random idle. A deal or line that comes first simply takes the element instead.
+let nextIdle = null;
+function prepareNextIdle(item) {
+  const other = cur === A ? B : A;
+  let n = null;
+  if (item.chain) { const c = gameTable?.idleChain; if (c?.next && c.talk === item.chain) n = chainItem(c.next); }
+  if (!n && manifest.idle.length && !(dealer.ready && gameTable?.playing)) n = { url: pickIdle().url, sound: false, kind: "idle" };
+  nextIdle = n ? { item: n, video: other } : null;
+  if (n) videoPreloader.prepare(other, n.url).catch(() => { if (nextIdle?.item === n) nextIdle = null; });
+}
+
 function next() {
   if (loading) return;
   if(gameTable?.busy) { running=false; return; }
@@ -123,11 +137,13 @@ function next() {
     // Kevin 20 Oct: while he speaks at rest the table names the idle take on screen (gameTable.idleChain, the same for
     // every viewer and the lip-sync worker): that take plays on the table clock instead of a random idle or his still.
     const c = dealer.ready ? gameTable?.idleChain : null;
-    if (c) item = { url: dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, dur: c.frames / 24, timelineTime: c.timelineTime };
+    // the idle prepared in the hidden video while the last one played (prepareNextIdle): used when it is still the right one
+    const prepared = nextIdle && nextIdle.video === (cur === A ? B : A) && nextIdle.video.dataset.source === nextIdle.item.url ? nextIdle.item : null;
+    nextIdle = null;
+    if (c) item = prepared?.chain === c.talk && prepared.startAt === c.startAt ? prepared : chainItem(c);
     else {
       if (!manifest.idle.length || Date.now() < holdUntil || (dealer.ready && gameTable?.playing)) { running = false; return; }   // står på stillbilden
-      const r = pickIdle();
-      item = { url: r.url, sound: false, kind: "idle" };
+      item = prepared && !prepared.chain ? prepared : { url: pickIdle().url, sound: false, kind: "idle" };
     }
   }
   running = true;
@@ -164,9 +180,12 @@ async function play(item) {
       if(!v.seeking&&Math.abs(v.currentTime-target)>.4){v.currentTime=target;}
     }
     if(!v.seeking)item.onFrame?.(frame?.mediaTime ?? v.currentTime, Number.isFinite(v.duration) ? v.duration : item.dur);
+    // An idle with its successor prepared hands over on its last frame (VILA, the successor's first frame too), not on
+    // 'ended': the event and the timeout after it left a window with no playing video on a busy main thread (e2e 20 Oct).
+    if (item.kind === 'idle' && nextIdle?.video === (v === A ? B : A) && nextIdle.video.readyState >= 3 && frame && Number.isFinite(v.duration) && frame.mediaTime >= v.duration - 1.5 / 24) { finish(true, { handover: true }); return; }
     if (v.requestVideoFrameCallback) frameId = v.requestVideoFrameCallback(tick);
   };
-  const finish = (ok = true) => {
+  const finish = (ok = true, { handover = false } = {}) => {
     if (done || token !== playToken) return;
     done = true; loading = false; running = false;
     clearTimeout(loadTimeout);
@@ -175,6 +194,9 @@ async function play(item) {
     finishCurrent = null;
     if (Date.now() >= captionUntil) showCaption(null); audio.speech(false);
     item.complete?.(ok);
+    // An idle handing over to its prepared successor starts it in this same task (before its own 'ended', while its last
+    // frame is on screen): a timeout here waited behind the next draw on a busy main thread, a window with no playing video.
+    if (handover) { next(); return; }
     // Give the game sequencer a microtask to queue the next draw before idle.
     setTimeout(() => { if (!running && !loading) next(); }, 0);
   };
@@ -207,7 +229,7 @@ async function play(item) {
       v.classList.add("on");
       if (cur && cur !== v) { cur.classList.remove("on"); cur.pause(); }
       cur = v; currentItem = item; loading = false; audio.speech(Boolean(item.sound) || voiceOvers.size > 0); if (playing?.item === item) playing.started = true;
-      if(item.kind==='idle')warmIdle();
+      if(item.kind==='idle'){warmIdle();prepareNextIdle(item);}
       document.querySelector('#stage').dataset.clip = item.id ?? item.kind; document.querySelector('#stage').dataset.chain = item.chain ?? '';   // chain: the talk whose idle chain this clip belongs to (QA)
       // A dealer with a voice is heard, not captioned over the table (Kevin 10 Oct); Mårten (no voice yet) keeps his words.
       playbackFeedback(); tableBoxes?.setActive(item.id); if (item.text || Date.now() >= captionUntil) showCaption(isAlternative && !dealer.lines ? item.text : null);
@@ -475,7 +497,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
   gameTable = createSharedGameTable({ manifest: m, boxes: tableBoxes, unlock, audio,
     // A ready dealer's takes come in four run variants (dealers.js); all are fetched before the table opens,
     // with the dealer's own lines (not Astrid's) so none has to download mid-round.
-    prepareMedia:async(seats,onProgress,language)=>{await videoBuffer.prepare(tableVideoSources(m,seats,language).filter(url=>!unusedLine(url)).map(url=>dealerLineUrl(url,language)??url).flatMap(dealerClipVariants),onProgress);tableMediaReady=true;warmIdle();},
+    prepareMedia:async(seats,onProgress,language)=>{await videoBuffer.prepare(tableVideoSources(m,seats,language).filter(url=>!unusedLine(url)).map(url=>dealerLineUrl(url,language)??url).flatMap(dealerClipVariants),onProgress);tableMediaReady=true;warmIdle();for(const c of manifest.idle)videoBuffer.load(c.url,10).catch(()=>{});},   // all his idles follow at low priority (nine short takes, Kevin 20 Oct): the whole pool to pick from, no clip fetched at its switch
     preloadNext:clip=>{if(loading||!cur||unusedLine(clip.url))return;videoPreloader.prepare(cur===A?B:A,dealerLineUrl(clip.url,$('#dealerLanguage').value)??dealerClipUrl(clip.url,clip.variant)).catch(()=>{});},
     warmPlan:plan=>{for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
     playNow:item=>{yieldAnswer();if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
