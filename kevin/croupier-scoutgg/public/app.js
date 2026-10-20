@@ -106,7 +106,8 @@ function pickIdle() {
   return pool[0];
 }
 
-const chainItem = c => ({ url: dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime });
+// a chain clip is one of the dealer's own idles (dealers.js: Dragan's in v2/, Astrid 2.0's in idle-v2/), by its take name
+const chainItem = c => ({ url: dealer.idles?.find(i => i.id === c.take)?.url ?? dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime });
 // The idle to play after the one on screen, prepared in the hidden video while this one plays (e2e 20 Oct: setting src
 // after 'ended' took 40–200 ms per switch, a stop in VILA of up to 5 frames, twice as often with 1.6 s takes). The next
 // clip of a chain, else the next random idle. A deal or line that comes first simply takes the element instead.
@@ -526,7 +527,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       return t.kind==='answer'||t.kind==='cheer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
     },
     // the idle takes a talk at rest runs over (gameTable.idleChain): fetched when the talk is known, before it starts
-    warmTakes:takes=>{for(const t of takes)videoBuffer.load(dealerClipUrl(`/media/deal/${t}.mp4`),0).catch(()=>{});},
+    warmTakes:takes=>{for(const t of takes)videoBuffer.load(dealer.idles?.find(i=>i.id===t)?.url??dealerClipUrl(`/media/deal/${t}.mp4`),0).catch(()=>{});},
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),
     onEnter:name=>{me=name;who.value=name;store.set('astrid.name',name);if(ws?.readyState===1)ws.send(JSON.stringify({t:'name',name}));if(!greeted){greeted=true;remarkNow(greetingFor(name));}},
