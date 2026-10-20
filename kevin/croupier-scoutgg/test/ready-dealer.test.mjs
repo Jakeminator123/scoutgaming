@@ -101,3 +101,11 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
   for (const f of [a.keyed.still, a.face, '/studio/assets/astrid2.jpg', '/studio/assets/cut-astrid2.png', '/studio/assets/felt-mask-astrid2-v2.png'])
     assert.ok(existsSync(new URL(`../public${f.split('?')[0]}`, import.meta.url)), f);
 });
+
+test('Dragan idles on the nine H3 takes in his own take folder (Kevin 20 Oct): rest to rest, weighted like Astrid 2.0, so a line he says at rest can run over a chain of them', () => {
+  const d = DEALERS.dragge;
+  assert.deepEqual(d.idles.map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'blickhoger', 'blickhogerb', 'huvud', 'huvudb', 'fingrar']);
+  for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/dragge/v2/'), idle.id); assert.equal(idle.dur, 3.04); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
+  assert.deepEqual(d.idles.map(i => i.vikt), DEALERS.astrid2.idles.map(i => i.vikt));
+  assert.ok(d.idles[0].vikt >= 10);
+});

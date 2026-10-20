@@ -79,14 +79,18 @@ export function kartaFor(steps, t0, n, { restEnd = [], idle = [] } = {}) {
  * plays under the talk; after the last take under it ends, when that take ends at rest (-u, -v, hole, flip). A take that
  * ends in REDO (more cards to come) holds its last frame as before: an idle there would snap him back to rest.
  */
-export function idleFrom(steps, talk, { restEnd = [] } = {}) {
+export function idleFrom(steps, talk, { restEnd = [], minMs = 500 } = {}) {
   const from = talk.kartaStart, to = talk.endAt;
-  const takes = (steps ?? []).filter(s => takeOf(s) && Number.isFinite(s.startAt) && s.endAt > s.startAt && s.startAt < to);
+  const all = (steps ?? []).filter(s => takeOf(s) && Number.isFinite(s.startAt) && s.endAt > s.startAt);
+  const takes = all.filter(s => s.startAt < to);
   const atRest = s => /[uv]/.test(s.variant ?? '') || restEnd.includes(s.track ?? s.seat);
   const last = takes.sort((a, b) => a.endAt - b.endAt).at(-1);
   if (!last) return from;
   if (!atRest(last)) return null;
   const start = Math.max(from, last.endAt);
+  // a take that follows within minMs (the 80 ms gap between the hole card and its turn, say) leaves no room for an idle:
+  // a clip of a frame or two would only cost a switch
+  if (all.some(s => s.startAt >= start && s.startAt < start + minMs)) return null;
   return start < to ? start : null;
 }
 
@@ -95,10 +99,11 @@ export function idleFrom(steps, talk, { restEnd = [] } = {}) {
  * line or answer said while he rests runs over a moving body instead of his still: [{take, startAt, endAt, frames}].
  * Every idle take starts and ends on VILA (the one picture he returns to), so the chain joins without a seam, any take
  * can follow it and it ends on his still. Deterministic from the seed (the talk id): the worker's map, every viewer and
- * a remap all lay the same chain. Never the same take twice in a row when he has more than one.
+ * a remap all lay the same chain. Weighted like his random idles (vikt), never the same take twice in a row when he has
+ * more than one.
  */
 export function idleChain(idles, from, to, seed = '') {
-  const takes = (idles ?? []).filter(i => i?.take && i.frames > 0);
+  const takes = (idles ?? []).filter(i => i?.take && i.frames > 0).map(i => ({ ...i, vikt: i.vikt > 0 ? i.vikt : 1 }));
   if (!takes.length || !(to > from)) return [];
   let h = 2166136261;
   for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
@@ -107,7 +112,8 @@ export function idleChain(idles, from, to, seed = '') {
   let at = from, last = null;
   while (at < to && out.length < 64) {
     const pool = takes.length > 1 ? takes.filter(t => t.take !== last) : takes;
-    const t = pool[Math.floor(rnd() * pool.length)];
+    let r = rnd() * pool.reduce((n, t) => n + t.vikt, 0), t = pool[pool.length - 1];
+    for (const c of pool) if ((r -= c.vikt) < 0) { t = c; break; }
     const endAt = at + t.frames * 1000 / FPS;
     out.push({ take: t.take, startAt: Math.round(at * 10) / 10, endAt: Math.round(endAt * 10) / 10, frames: t.frames });
     last = t.take; at = endAt;

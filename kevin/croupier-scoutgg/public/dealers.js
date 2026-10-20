@@ -30,11 +30,15 @@ const PAOW_READY = { in: 21, land: { 1: 28, 2: 33, 3: 27, 4: 27, 5: 26, 6: 27, 7
 // (KLARA_ASTRID, metodik/videoklipp/skript/greenscreen/bygg-spelklipp.py). land = build-tracks.py's printout.
 const ASTRID2_READY = { in: 24, land: { 1: 27, 2: 31, 3: 28, 4: 27, 5: 26, 6: 26, 7: 23, dealer: 24, hole: 37, flip: 25, '1v': 26, '2v': 26, '3v': 23, '4v': 24, '5v': 25, '6v': 23, '7v': 22, dealerv: 37 }, card: [79, 106] };
 // Her idles are H3 takes from rest to rest (3 s, kor-idle.sh): breathing plus at most one small thing each.
-const ASTRID2_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], ['djupandetag', 8, 'ett djupare andetag'],
+// Dragan gets the same nine (Kevin 20 Oct, e2e's H3 takes), in his take folder v2/: there they are takes the lip-sync
+// worker can map, so a line he says at rest runs over a chain of them (server/shared-table.mjs withIdle) and his random
+// idles and that chain are the same clips, every one starting and ending on VILA.
+const H3_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], ['djupandetag', 8, 'ett djupare andetag'],
   ['blickvanster', 6, 'blicken mot spelarna till vänster'], ['blickhoger', 4, 'blicken mot spelarna till höger'],
   ['blickhogerb', 4, 'blicken mot spelarna till höger'], ['huvud', 3, 'lutar huvudet lite'], ['huvudb', 3, 'lutar huvudet lite'],
-  ['fingrar', 4, 'fingrarna rör sig lätt']]
-  .map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/astrid2/idle-v2/${k}.mp4${V}`, vikt, beskrivning, dur: 3.04 }));
+  ['fingrar', 4, 'fingrarna rör sig lätt']];
+const h3IdlesFor = (id, dir = 'idle-v2') => H3_IDLES.map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur: 3.04 }));
+const ASTRID2_IDLES = h3IdlesFor('astrid2');
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
 export const DEALERS = {
@@ -42,7 +46,7 @@ export const DEALERS = {
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: h3IdlesFor('dragge', 'v2'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,

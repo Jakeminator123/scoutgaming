@@ -37,6 +37,7 @@ import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
 import { RorligLipsync, kartaFor, mp4Duration } from './rorlig-lipsync.mjs';
+import { DEALERS } from '../public/dealers.js';   // the dealers' idle lists (which takes a chain at rest is laid from)
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
@@ -72,11 +73,12 @@ const apiLimit=createRateLimit({limit:20});
 const demoGate=createDemoGate(), demoLimit=createRateLimit({limit:10});   // Play demo password: see demo-gate.mjs
 const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // Take lengths of the ready dealers (built by croupier-dealer-dragge/build_ready_dealer.py); a studio table with one of them deals on his own timing.
-// His moving idles (Kevin 20 Oct): v2/idle1.mp4, idle2.mp4 … are short takes from VILA to VILA (H3, like the deals). A
-// line or answer he says at rest runs over a chain of them instead of his still (shared-table.mjs withIdle, rorlig-
-// lipsync.mjs idleChain). Frames are read from the file itself; without such files he rests on his still as before.
-const idleTakes=dir=>{try{return readdirSync(dir).filter(f=>/^idle\d+\.mp4$/.test(f)).sort().map(f=>({take:f.slice(0,-4),frames:Math.round((mp4Duration(readFileSync(path.join(dir,f)))??0)*24)})).filter(x=>x.frames>0);}catch{return [];}};
-const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(dir)}];}catch{return [id,null];}}));
+// His moving idles (Kevin 20 Oct): the dealer's idles in dealers.js that lie in his take folder v2/ (H3 takes from VILA to
+// VILA, like the deals) are takes the lip-sync worker can map, so a line or answer he says at rest runs over a chain of
+// them instead of his still (shared-table.mjs withIdle, rorlig-lipsync.mjs idleChain). Frames are read from each file;
+// a dealer whose idles lie elsewhere (Kling loops in idle-v2/) or whose files are missing rests on his still as before.
+const idleTakes=(id,dir)=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/v2/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m)return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(dir,m[1]+'.mp4')))??0)*24);return frames>0?[{take:m[1],frames,vikt:i.vikt??1}]:[];}catch{return [];}});
+const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(id,dir)}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";

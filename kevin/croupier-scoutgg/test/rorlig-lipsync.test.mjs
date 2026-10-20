@@ -344,6 +344,9 @@ test('his idle takes chain from VILA to VILA under a talk at rest: the same chai
   assert.deepEqual(idleChain([],1000,5000,'x'),[],'no idle takes: no chain');
   assert.deepEqual(idleChain([{take:'idle1',frames:39}],0,100,'x').map(c=>c.take),['idle1'],'one take repeats');
   assert.deepEqual(idleChain(idles,5000,1000,'x'),[]);
+  const weighted=[{take:'andas',frames:73,vikt:20},{take:'huvud',frames:73,vikt:1}];
+  const n=Array.from({length:40},(_,i)=>idleChain(weighted,0,100000,`t${i}`)).flat().filter(c=>c.take==='andas').length;
+  assert.ok(n>40*33*.5,'the weights count: breathing far more often than the rare gesture');
 });
 
 test('the frame map runs over the idle chain where he would rest: under the takes, and never over a held pose', () => {
@@ -372,6 +375,8 @@ test("a talk at rest gets its idle from its first frame; after a take under it t
   assert.equal(idleFrom([hole],talk,{restEnd:['hole','flip']}),hole.endAt,'a take filmed back to rest counts as rest');
   assert.equal(idleFrom([{...u,startAt:5500,endAt:5500+ms(60)}],talk),2000,'a take after the talk does not matter');
   assert.equal(idleFrom([{...u,startAt:4000,endAt:5200}],talk),null,'a take that ends with the talk leaves no room');
+  const hole2={...hole,startAt:4980-ms(39),endAt:4980},flip={kind:'reveal',clip:{url:'/media/deal/flip.mp4'},variant:'',track:'flip',startAt:5060,endAt:5060+ms(39)};
+  assert.equal(idleFrom([hole2,flip],talk,{restEnd:['hole','flip']}),null,'the 80 ms before the next take is no room for an idle, also when that take starts after the talk');
 });
 
 test('between rounds an answer runs over his idle takes, the same chain for every viewer and the worker; mid-round he waits in his pose as before', () => {

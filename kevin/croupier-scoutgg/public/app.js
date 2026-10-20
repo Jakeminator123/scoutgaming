@@ -208,7 +208,7 @@ async function play(item) {
       if (cur && cur !== v) { cur.classList.remove("on"); cur.pause(); }
       cur = v; currentItem = item; loading = false; audio.speech(Boolean(item.sound) || voiceOvers.size > 0); if (playing?.item === item) playing.started = true;
       if(item.kind==='idle')warmIdle();
-      document.querySelector('#stage').dataset.clip = item.id ?? item.kind;
+      document.querySelector('#stage').dataset.clip = item.id ?? item.kind; document.querySelector('#stage').dataset.chain = item.chain ?? '';   // chain: the talk whose idle chain this clip belongs to (QA)
       // A dealer with a voice is heard, not captioned over the table (Kevin 10 Oct); Mårten (no voice yet) keeps his words.
       playbackFeedback(); tableBoxes?.setActive(item.id); if (item.text || Date.now() >= captionUntil) showCaption(isAlternative && !dealer.lines ? item.text : null);
       gameTable?.sourceStarted(item.id);

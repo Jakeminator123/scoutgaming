@@ -132,7 +132,9 @@ export function createLipTracks() {
         if (!t.lips || n < t.kartaStart || n >= t.endAt + 600) continue;
         const k = Math.floor((n - t.kartaStart) * FPS / 1000);
         let best = -1;
-        for (const key of rest ? [`${take}:${frame}`, 'vila'] : [`${take}:${frame}`])
+        // at rest on a clip's last frame the layer may count one frame past the map (floor of its end time): that frame's
+        // patch is for the same VILA pose
+        for (const key of rest ? [`${take}:${frame}`, `${take}:${frame - 1}`, 'vila'] : [`${take}:${frame}`])
           for (const j of t.index.get(key) ?? []) if (Math.abs(j - k) <= REACH && (best < 0 || Math.abs(j - k) < Math.abs(best - k))) best = j;
         if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}` }; }
       }
