@@ -49,7 +49,7 @@ export const DEALERS = {
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: h3IdlesFor('dragge', 'v2', 1.625), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvud', 'huvudb', 'fingrar']), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
