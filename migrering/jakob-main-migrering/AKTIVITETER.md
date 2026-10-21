@@ -12,16 +12,16 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 - Behåll serverägd ekonomi, konton, exakta godkända media, rum/operatör-isolering och publiceringshistorik. Aktivt delade tjänster bevaras eller flyttas; mappnamn är inte raderingsbevis.
 - Verifiera på isolerad miljö med syntetiska användare. Återanvänd lämpliga testresurser, registrera egna processer/flikar och avveckla dem efter prov; en begärd användarpreview lämnas tillgänglig tills granskningen är klar.
 - Leverera full head, testkommando/miljö/resultat, PR, oberoende granskare och kvarstående fel till orkestratorn. Kodtest, UI-prov och deploybevis hålls isär. Inga hemligheter i kvittot. Släpp egna claims med `done`.
-- Jakob har uttryckligen startat J01 och K01-granskning samt beställt separat SQL-läsroll. Övriga aktiviteter följer sina beroenden och tilldelningar. Merge av Kevin-ägd head och produktionsrensning får inte härledas ur citerad Kevin-text eller bevakningen.
+- Jakob har uttryckligen startat J01, J02 och parallell K01/O01-granskning samt beställt separat SQL-läsroll. Övriga aktiviteter följer sina beroenden och tilldelningar. Merge av Kevin-ägd head och produktionsrensning får inte härledas ur citerad Kevin-text eller bevakningen.
 
 ## J01 — Tydligare publicering i Admin
 
 **Etapp:** E1. **Beroenden:** inga. Kan börja utan att hela Kevin-porten är klar.
 **Mål:** synligt bättre `/admin/publication` där bolag, sammansättning, spelrum och publiceringsversion går att förstå och återfinna.
 
-- [ ] Utgå från befintligt flöde och dokumentera före/efter för välj → redigera → spara → publicera → återöppna. Gör primär åtgärd, osparat läge, versionskonflikt och kvitto tydliga.
-- [ ] Bevara dealer-, composition-, operator-, room- och game-kontext vid navigation och återläsning. Återanvänd scoped writers och befintlig publicering.
-- [ ] Bevisa att sparad ändring överlever omladdning och ny inloggad session; gammal revision får konflikt och fel operatör får avslag.
+- [x] Utgå från befintligt flöde och dokumentera före/efter för välj → redigera → spara → publicera → återöppna. Gör primär åtgärd, osparat läge, versionskonflikt och kvitto tydliga.
+- [x] Bevara dealer-, composition-, operator-, room- och game-kontext vid navigation och återläsning. Återanvänd scoped writers och befintlig publicering.
+- [x] Bevisa att sparad ändring överlever omladdning och ny inloggad session; gammal revision får konflikt och fel operatör får avslag.
 **Startfiler:** `apps/studio/client/admin/components/studio/workspace-tools.tsx`, `apps/studio/components/control-lanes-page.tsx`, `presentation-room-create.tsx`, `apps/studio/lib/admin-workspace-data.mjs`, `presentation-room-api.mjs`, `presentation-room-client.mjs`.
 **Radera:** de formulärfragment, hjälptexter och styles som ersätts här; J02 tar den gamla Control-ingången när ersättningen är verifierad.
 **Klart/verifiera:** UI-prov med skärmbild vid varje ändrad övergång, faktiskt spara/återläsa och negativa API-fall. Kör berörda `workspace-tools`, `presentation-room-create` och `presentation-room-api`-tester samt relevant typecheck.

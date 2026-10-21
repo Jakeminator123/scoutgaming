@@ -26,6 +26,14 @@ J01 är VERIFIED och bidrar med 5 procentenheter. Tillsammans med K01 är
 Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
 Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 
+J02 är nu uttryckligen startad med implementerare och oberoende granskare på
+codex/admin-control-publication-j02 från J01-head ovan. Control-publiceringens
+aktiva komponenter/länkar flyttas till Admin; gamla bokmärkesmål ska provas
+med och utan nativeStudio samt /studio-prefix. Ingen J02-verifiering ännu.
+O01:s main-skrivvägar/lås granskas parallellt. Orkestratorn har kört 9/9
+befintliga isolerade transaktionsprov utan DB-anslutning, 0 skip; det bevisar
+nuvarande mockade kontrakt, inte framtida flerbordssamtidighet i Postgres.
+
 [Masterplan](../migrering/MASTERPLAN.md) och [beräknad status](../migrering/STATUS.md)
 följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
 Kevin-källan är fortsatt kevin-merge-admin /
@@ -50,7 +58,10 @@ och orkestratorn. Förslaget preciserar fönster-/turidentitet, konfiguration fr
 före insatsfönstret och verifierad frame-/audioidentitet. Kodgranskningen fann
 advance före idempotens, onPlan före commit och gamla patchindex; inga nya
 runtimeprov har körts. Kevin rättar beskrivningarna och stämmer av förslaget.
-O01 inventerar även mains skrivvägar/lås; J07 verifierar senare implementationen.
+O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
+partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
+Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
+valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
 Det startar ingen runtimeport, DDL eller mediaimport och ger inga poäng.
 Testloggar är lästa, inte omkörda;
 GPU-server-SHA/latensorsak är obestyrkta och mediaurval ännu inte beslutat.

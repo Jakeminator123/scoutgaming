@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01:s inventering är verifierad i PR #314 på 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33. J01 och K01 ger tillsammans 10% verifierat. O01 förbereds som kontraktsförslag. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
+Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01:s inventering är verifierad i PR #314 på 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33. J01 och K01 ger tillsammans 10% verifierat. Jakob har nu uttryckligen startat J02 med underagenter; O01:s main-skrivvägar kartläggs parallellt. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
 
 ## Frysta utgångspunkter
 
@@ -110,15 +110,45 @@ Kodriskerna är läsverifierade, inte observerade i en ny körning. SQLite-skriv
 gäller databasfilen även mellan processer; dess serialisering får inte antas gälla
 automatiskt när lagringen flyttas till Postgres.
 
+**Mains skrivvägar — läsverifierad bas på 15988f32:**
+
+G är befintligt advisory-lås 1129467984, P spelarens radlås, S Studio-scope.
+A nedan är ett föreslaget separat spel-auditlås; ingen DDL är utförd.
+
+| Skrivväg | Befintlig transaktion/auktoritet | Samordning före J07-port |
+| --- | --- | --- |
+| /api/table → services/game/postgres-native-table.mjs:14 | P; blackjackstate per spelare, saldo, ledger och senaste presentationskvitto i samma commit. | Bevara gemensamt spelarlås; besluta beständig återspelningshorisont. |
+| /api/roulette/table → services/game/games/roulette/storage.mjs:44 | P; roulette-state/ledger och senaste 20 kvitton. Publiceringskontroll använder samma klient men tar inget publiceringslås. | Rouletteägaren måste samordna reserveringar och versionsgräns. |
+| /api/deposit och /api/currency → services/game/server.mjs:265 | G → P → ledger; ingen kommandoidempotens. Valutaspärren läser bara gamla blackjackstate. | Valuta och tillgängligt saldo måste ta hänsyn till samtliga aktiva bord/insatsreservationer. |
+| Partner-table/demo-credit/Studio-credit → services/game/storage/async-partner-api.mjs:95 | G → P. Partner-replay jämför spelare/op, inte hela input; Studio använder kortlivad nonce. Externa wallets är spärrade. | Beständigt kommandoresultat och full inputfingerprint; inga kopierade externa wallets. |
+| Admin konto/status/lösenord och relaterade sessioner → packages/storage/server/player-administration.mjs:23 | G → P → konto/session/adminaudit. Kontostängning kontrollerar gamla blackjackstate. | Admin/auth måste känna till delade händer, reserveringar och avräkning. |
+| Admin rum/publicering → apps/studio/lib/studio-native-runtime.mjs:132 | G → S → operatörslås; Studio-/operatörsaudit, ingen spelhashkedja. | J08/publiceringsägaren samordnar configVersion; Studio-audit ersätter inte spel-audit. |
+
+Fasadens AsyncLocalStorage delar endast arbete inom samma pool/transaktionskontext.
+Råa gamePool-transaktioner deltar inte automatiskt: injicera den redan låsta SQL-klienten
+i alla berörda adapters. Se packages/storage/server/postgres-store.mjs:70–107.
+Återanvänd inte G som auditlås efter P: befintligt G → P skulle då få motsatt
+låsordning. Om G behövs i ett flöde tas det först, följt av deklarerade berörda rum
+i sorterad ordning → sorterade spelare → separat A. Ingen senare låsutvidgning.
+Studio-/operatörslås ska inte hämtas efter spelar-/auditlås på en ny anslutning.
+Den slutliga ordningen och publiceringskontrollen måste stämmas av med alla skrivägare.
+
+Orkestratorns 9/9 befintliga isolerade prov, 0 skip, verifierar mockade kontrakt för
+G → S, nekad låseskalering, gemensam klient, rollback och wallet/state/ledger/kvitto.
+Kommando och logg finns i status.json. Detta är inte ett faktiskt Postgres-raceprov
+och godkänner inte den föreslagna flerbordsordningen. Spelhashkedjans omfattning
+återstår: bara spelkommandon eller även övriga walletwriters; mains ledger är inte
+en sådan hashkedja.
+
 **Gemensamma gränser och kvarvarande beslut:**
 
 - Mains auth bestämmer actor, operatör och tillåtet rum. Kommandot bär roomId,
   commandId, configVersion samt relevant fönster-/turidentitet. Detaljer för
   expectedVersion och state-/tick-transaktioner måste avtalas med båda ägarna.
 - Behåll mains globala saldo. Rum, saldo, avräkning, kvitto, idempotens och audit
-  committas atomiskt. Föreslagen låsordning är rum → sorterade spelar-ID → global
-  auditkedja; O01 inventerar alla skrivvägar med J07:s ägare innan beslut.
-  J07 verifierar implementationen. Dolda kort och utfall förblir serverägda.
+  committas atomiskt. Mains skrivvägar ovan kräver separat auditlås och G först
+  där G behövs; slutlig ordning stäms av med berörda ägare. J07 verifierar
+  implementationen. Dolda kort och utfall förblir serverägda.
 - Rumsstate inklusive shoe proof, auditpayload och separat proof bevaras som text.
   Nyckelordning/numeriska typer kräver kompatibilitetsprov; rowid ersätts uttryckligen.
   Studio-audit ersätter inte spelhashkedjan.

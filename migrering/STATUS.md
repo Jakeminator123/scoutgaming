@@ -23,7 +23,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | ID | Aktivitet | Ansvar | Status |
 | --- | --- | --- | --- |
 | J01 | Tydligare publicering i Admin | jakob | VERIFIED |
-| J02 | Avveckla ersatt Control-publicering | jakob | TODO |
+| J02 | Avveckla ersatt Control-publicering | jakob | IN_PROGRESS |
 | K01 | Inventera den rensade Kevin-modulen | kevin | VERIFIED |
 | O01 | Lås kontrakt och funktionsansvar | orkestrator | IN_PROGRESS |
 | J03 | Avveckla resterande Control-ytor | jakob | TODO |
