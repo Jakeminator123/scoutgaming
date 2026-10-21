@@ -1275,9 +1275,13 @@ Konfiguration: [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 
 ## Bandbredd för publicerade presentationsmedia — 21 oktober 2026
 
-`croupier-v2` skickade samma Dragan-bakgrund upprepade gånger. I ett avgränsat
-urval av 100 HTTP 206-svar stod dess spel- och rums-previewadresser för cirka
-94,6 procent av bytesen; urvalet är inte hela månadens trafik.
+PR #321 är mergad som `644b5653936ed890d11c35a8ffb8780161b0a744` och Render
+rapporterar den som live i `dep-dbcgqc9srm7s73cvqqu0`. Loggkartläggningen
+8–21 oktober omfattar 3 754 lyckade GET och 8,30 GB loggade responseBytes:
+Lounge varm 1,86 GB, Casino/bakground 1,67 GB (två ID:n, identisk SHA),
+historisk Johanna-video 0,84 GB, Dragan/Kevin V2 andning 0,49 GB och Oak-bord
+0,26 GB. Detta är ett avgränsat loggurval, inte hela månadsfakturan; äldre
+PNG-täckning är partiell och vissa historiska filnamn/hasher saknas.
 
 De två mediarouterna tillåter nu privat webbläsarcache med obligatorisk
 revalidering, först efter färsk kontroll av publicering och exakt SHA-ETag.
@@ -1292,5 +1296,23 @@ med revalidering: 16 753 820 respektive 3 350 764 överförda body-bytes,
 80 procent mindre i detta prov. Båda alternativen gjorde fem färska
 publiceringskontroller; avpublicering gav 404 även efter uppvärmd cache.
 Första hämtningen kostar lika mycket och återanvändning inom samma sida
-fungerade redan i Chrome. Faktisk månadsbesparing återstår att mäta efter
-integration. Ingen merge, databasändring eller produktionsdriftsättning ingår.
+fungerade redan i Chrome. Faktisk månadsbesparing återstår att mäta.
+
+Uppföljningen på `codex/render-avatar-bandwidth` utökar privat revalidering
+till registered-idle/registered-video, äldre presentation/videos och Studio
+previewmedia. Färska auth-, rums-, paket-, ursprungs- och sessionskontroller
+ligger kvar före återanvändning; stängda/utgångna previews och ändrade bytes
+stoppas även med varm cache. En 304 utan verifierad SHA får inte återuppliva
+gamla bytes. Inga ljud, video, bildrutor, kalibreringar eller godkännanden
+ändras och ingen DDL eller publicering införs.
+
+69 riktade avatar-/transportprov passerar. Ett separat isolerat Chrome-prov
+mot den riktiga registered-idle-routern ger samma 80 procents minskning vid
+fem sidöppningar: 16 753 820 till 3 350 764 body-bytes, fem färska kontroller
+i båda fallen och 404 efter indragning. SHA för hämtade bytes är identisk.
+PR #321:s adresser stod för 77,1 procent av loggurvalet; med uppföljningens
+adresser omfattas 99,1 procent. Detta mäter adressernas trafiktäckning, inte
+besparing. Uppföljningen levereras i separat PR utan merge eller deploy;
+migreringsagenten är informerad och dess kodfiler/egen handoffsektion lämnas
+orörda. Bildkomprimering har lägre prioritet; byte av medieadresser och första
+hämtningar kan fortfarande vara betydande och ska bedömas från nya driftdata.

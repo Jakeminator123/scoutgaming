@@ -49,9 +49,28 @@ function serviceFor(presentation) {
   const served = [];
   return {saved,served,service:createFrozenDealerPresentationContext({readCurrentContext:async () => structuredClone(saved),
     readPresentation:pack => validatePresentationPackage(pack.frozen),
-    privateMedia:async (row,request) => {served.push(row);return new Response(request.method==='HEAD'?null:'bytes',{status:request.headers.has('range')?206:200});}})};
+    privateMedia:async (row,request) => {served.push(row);return new Response(request.method==='HEAD'?null:'bytes',{status:request.headers.has('range')?206:200,headers:{ETag:`"sha256-${row.sha256}"`}});}})};
 }
 const context = {operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
+
+test('schema3 idle and exact event URLs revalidate original bytes without altering frozen speech metadata',async()=>{
+  const presentation=captureFrozenPresentation(fixture()).presentation, before=structuredClone(presentation);
+  const f=serviceFor(presentation);
+  const config=await f.service.configuration(context);
+  for(const descriptor of [config.dealerIdle.linnea,...config.inventory.videos]) {
+    const url='https://game.invalid'+descriptor.src;
+    const first=await f.service.response(new Request(url,{headers:{range:'bytes=0-4'}}));
+    assert.equal(first.status,206); assert.equal(await first.text(),'bytes');
+    assert.equal(first.headers.get('cache-control'),'private, no-cache, must-revalidate');
+    const repeated=await f.service.response(new Request(url,{headers:{'if-none-match':first.headers.get('etag')}}));
+    assert.equal(repeated.status,304); assert.equal(await repeated.text(),'');
+  }
+  assert.deepEqual(presentation,before);
+  const served=f.served.length;f.saved.administration.rooms[0].state='preview';
+  const withdrawn=await f.service.response(new Request('https://game.invalid'+config.inventory.videos[0].src,
+    {headers:{'if-none-match':`"sha256-${config.inventory.videos[0].sha256}"`}}));
+  assert.equal(withdrawn.status,404);assert.equal(f.served.length,served);
+});
 
 function pendingRecording(row, exactText = 'Lycka till.') {
   return {schemaVersion:1,dealerId:row.classification.dealerId,lineId:row.classification.situation,

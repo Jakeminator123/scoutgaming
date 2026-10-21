@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
 import { createLocalProjectReader } from '../../packages/studio-registry/server/local-project-reader.mjs';
+import {revalidatePrivateMedia} from '../../packages/studio-registry/server/private-media-revalidation.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from './storage/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { prepareDecision } from '../../packages/director/engine.mjs';
@@ -100,9 +101,11 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         const trustedProxyOrigin = publicOrigin && exactHttpsOrigin(frontendOrigin)
           && [new URL(publicOrigin).host, new URL(frontendOrigin).host].includes(req.headers.host)
           ? frontendOrigin : null;
-        const response = await (videoResponse || ((videoId, request) => getVideoResponse(videoId, request, { ...registryOptions, trustedProxyOrigin })))(id,
-          new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers }),
-        );
+        const request = new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers });
+        const media = await (videoResponse || ((videoId, request) => getVideoResponse(videoId, request, { ...registryOptions, trustedProxyOrigin })))(id, request);
+        // The registry reader has just rechecked availability, origin and bytes.
+        const verifiedHash = /^"sha256-([a-f0-9]{64})"$/.exec(media.headers.get('etag') ?? '')?.[1];
+        const response = await revalidatePrivateMedia(media, request, verifiedHash);
         res.writeHead(response.status, Object.fromEntries(response.headers));
         if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
         return true;
