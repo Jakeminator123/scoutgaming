@@ -198,6 +198,13 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   assert.match(otherVariant,/Koppla till utkast/);assert.doesNotMatch(otherVariant,/Kopplat i sparat utkast/);
   const exactVariant=render({...explicit,selectedId:'bound'});
   assert.match(exactVariant,/Kopplat i sparat utkast/);assert.doesNotMatch(exactVariant,/Koppla till utkast/);
+  for(const direction of ['to-shoe','from-shoe']){
+    const shoe=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.id===`transition.shoe/${direction}`);
+    const shoeData={slot:shoe,group:groupSlots([shoe])[0]};
+    assert.match(render(shoeData),/Lägg till som variant/);
+    assert.doesNotMatch(render({...shoeData,boundId:''}),/Lägg till som variant/);
+    assert.doesNotMatch(render({...shoeData,boundIds:['bound','selected']}),/Lägg till som variant/);
+  }
   const renderCompact=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,...explicit,...patch,onOpen(){}}}));
   assert.match(renderCompact({}),/Valt för prov · ej kopplat till vald variant/);
   assert.doesNotMatch(renderCompact({}),/Kopplat i sparat utkast/);

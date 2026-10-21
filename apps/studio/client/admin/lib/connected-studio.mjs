@@ -1,7 +1,7 @@
 import { videoFitsLine, validateVideoMetadata, kindForEvent, situationsForEvent, MAX_VIDEO_BYTES } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { upsertMediaVariantPolicy, mediaVariantPolicy } from '../../../../../packages/presentation/runtime/media-family-policy.mjs';
 import { createRegisteredIdlePolicy } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { uploadNativeVideo } from '../../../lib/upload-native-video.mjs';
 import { materialForAsset } from '../../../../../packages/presentation/contracts/material-catalog.mjs';
 import { defaultCompositionSettings } from '../../../../../packages/presentation/contracts/composition-settings.mjs';
@@ -126,7 +126,7 @@ export function configuredClipIds(project, dealerId, slot, variantId, inventory)
 
 // The existing server still validates exact media bindings, role, scope, current
 // session and expected revision. A local edit neither publishes nor creates a room.
-export function bindClip(project, inventory, dealerId, slot, videoId, { variantId, durationMs } = {}) {
+export function bindClip(project, inventory, dealerId, slot, videoId, { variantId, durationMs, asAlternative = false } = {}) {
   validateProject(project);
   if(slot.game==='roulette')return validateProject(bindRouletteClip(project,inventory,dealerId,slot,videoId));
   const registeredSlot=clipSlots(project,inventory,dealerId).find(row=>row.id===slot.id);
@@ -134,6 +134,15 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
     || registeredSlot.sourceType!==slot.sourceType || registeredSlot.family?.id!==slot.family?.id) throw Error('Kortplatsen har ändrats. Välj den registrerade platsen igen.');
   const video = clipsForSlot(inventory, dealerId, slot).find(row => row.id === videoId);
   if (!video || !project.dealers.some(row => row.id === dealerId)) throw Error('Klippet passar inte denna dealer och kortplats.');
+  if (asAlternative) {
+    if (slot.family || slot.eventId !== 'transition.shoe' || !currentClipId(project, dealerId, slot, undefined, inventory)) {
+      throw Error('Koppla först ett standardklipp i detta skonfack.');
+    }
+    if (configuredClipIds(project, dealerId, slot, undefined, inventory).includes(videoId)) throw Error('Klippet är redan kopplat i detta fack.');
+    const next = addVariant(project, dealerId, slot.eventId, video.label.slice(0, 80));
+    const alternativeId = next.lines.find(row => row.dealerId === dealerId && row.eventId === slot.eventId).variants.at(-1).id;
+    return bindClip(next, inventory, dealerId, slot, videoId, { variantId: alternativeId });
+  }
   const draft = structuredClone(project);
   const line = draft.lines.find(row => row.dealerId === dealerId && row.eventId === slot.eventId);
   if (!line) throw Error('Den registrerade klipplinjen saknas.');
@@ -153,6 +162,29 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
     const policy = mediaVariantPolicy(draft, slot.family, videoId);
     if (Object.hasOwn(policy, 'frequencyPercent')) throw Error('Denna kortplats använder frekvensstyrning. Ändra frekvensen i den befintliga klippeditorn.');
     draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, slot.family.id, { ...policy, selection: { ...policy.selection, rules: true } });
+  } else if (slot.eventId === 'transition.shoe') {
+    // These are saved presentation choices, not published game events. Keep
+    // each direction separate without inventing a server predicate or enabling
+    // automatic playback. Existing exact alternatives retain their own rules.
+    const id = slotVariantId(dealerId, slot);
+    const explicit = variantId && variantId !== line.baselineVariantId && variantId !== id;
+    if (explicit && variantId.startsWith(`${dealerId}.${slot.eventId}.slot.`)) throw Error('Den valda varianten tillhör ett annat exakt fack.');
+    let variant = explicit ? line.variants.find(row => row.id === variantId)
+      : line.variants.find(row => row.id === id)
+        ?? exactSlotVariants(draft, inventory, dealerId, slot, line).find(row => row.id === line.baselineVariantId);
+    if (variantId && !line.variants.some(row => row.id === variantId)) throw Error('Välj en registrerad variant.');
+    if (variant?.videoGenerationId && !clipsForSlot(inventory, dealerId, slot).some(row => row.id === variant.videoGenerationId)) {
+      throw Error('Den valda varianten tillhör ett annat exakt fack. Välj fackets egen variant.');
+    }
+    if (!variant) {
+      if (line.variants.length >= MAX_ALTERNATIVES + 1) throw Error('Högst fyra alternativ per eventgrupp. Frigör en variant innan du kopplar ett nytt fack.');
+      const baseline = line.variants.find(row => row.id === line.baselineVariantId);
+      variant = { id, label: slot.situation === 'to-shoe' ? 'Till skon' : 'Från skon', priority: 0,
+        triggerIds: [], assetId: baseline.assetId, videoGenerationId: null,
+        selection: { rules: false, model: false, random: false } };
+      line.variants.push(variant);
+    }
+    variant.videoGenerationId = videoId;
   } else if (slot.sourceType==='speak') {
     if(!speechSlotVideoFits(video,{dealerId,eventId:slot.eventId,situation:slot.situation,requireRecordedSpeech:slot.eventId==='speak.other'}))
       throw Error('Talfacket kräver en tillgänglig film med exakt dealer, replik och inspelningsidentitet.');
