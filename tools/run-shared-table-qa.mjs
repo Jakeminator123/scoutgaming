@@ -26,7 +26,8 @@ async function freePort() {
   const server = createServer(); await new Promise((yes, no) => { server.once('error', no); server.listen(0, '127.0.0.1', yes); });
   const port = server.address().port; await new Promise(yes => server.close(yes)); return port;
 }
-export async function runSharedTableQa({ postgresBin, downloadPostgres = false } = {}) {
+export async function runSharedTableQa({ postgresBin, downloadPostgres = false, runChecks = null } = {}) {
+  if (runChecks !== null && typeof runChecks !== 'function') throw new TypeError('Explicit SQL check callback required');
   if (process.platform !== 'linux' || process.getuid?.() === 0) throw Error('shared_table_qa_requires_nonroot_linux');
   if (downloadPostgres && postgresBin) throw Error('choose_download_or_existing_binaries');
   if (!downloadPostgres && (!postgresBin || !postgresBin.startsWith('/'))) throw Error('explicit_postgres_bin_required');
@@ -85,16 +86,21 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false }
     await start(); let pool = createPool();
     const restart = async () => { await closePools(); await stop(); await start(); return createPool(); };
     console.log(JSON.stringify({ node: process.version, postgres: version, target: 'owned-loopback-cluster', port: pgPort }));
-    const { checkPostgresSharedTableGuards, runPostgresSharedTableChecks } = await import('../test/postgres-shared-table.mjs');
-    const guards = await checkPostgresSharedTableGuards({ pool });
-    for (const file of ['product-schema.sql', '008-shared-wallet.sql', '009-shared-blackjack.sql'])
-      await pool.query(await readFile(join(repository, 'ops/neon-game', file), 'utf8'));
-    const { runSharedWalletSqlChecks } = await import('../test/fixtures/shared-wallet-sql-checks.mjs');
-    const wallet = await runSharedWalletSqlChecks({ pool, createPool });
-    const table = await runPostgresSharedTableChecks({ pool, createPool, restart }); pool = table.pool;
+    let checks;
+    if (runChecks) {
+      ({ checks } = await runChecks({ pool, createPool, restart }));
+    } else {
+      const { checkPostgresSharedTableGuards, runPostgresSharedTableChecks } = await import('../test/postgres-shared-table.mjs');
+      const guards = await checkPostgresSharedTableGuards({ pool });
+      for (const file of ['product-schema.sql', '008-shared-wallet.sql', '009-shared-blackjack.sql'])
+        await pool.query(await readFile(join(repository, 'ops/neon-game', file), 'utf8'));
+      const { runSharedWalletSqlChecks } = await import('../test/fixtures/shared-wallet-sql-checks.mjs');
+      const wallet = await runSharedWalletSqlChecks({ pool, createPool });
+      const table = await runPostgresSharedTableChecks({ pool, createPool, restart }); pool = table.pool;
+      checks = [...guards.checks, ...wallet.checks, ...table.checks];
+    }
     await closePools(); await stop();
-    const checks = [...guards.checks, ...wallet.checks, ...table.checks];
-    console.log(JSON.stringify({ acceptance: 'isolated-shared-table-sql-two-client-process-restart', checks, count: checks.length, clusterStopped: true }));
+    console.log(JSON.stringify({ acceptance: runChecks ? 'isolated-injected-sql-checks' : 'isolated-shared-table-sql-two-client-process-restart', checks, count: checks.length, clusterStopped: true }));
     return { checks };
   } finally {
     try { await closePools(); } finally { if (stop) await stop(); }

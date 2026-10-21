@@ -4,7 +4,7 @@
 
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
 `4852f92f11635e20edd974c3261e0fc179ab7d1b`, med samlad Admin och J07 integrerade.
-Aktiviteten är inte VERIFIED och ändrar inte planens 40% (8/20).
+Aktiviteten är inte VERIFIED; delverifieringen ger ingen ny färdigbock.
 
 - N1 kan läsa och spara språk `en/sv` och limitprofil `casual/prive/high` för
   ett befintligt publicerat blackjackrum. Runtiderna är skrivskyddade 20s/15s.
@@ -27,15 +27,31 @@ språkbunden mediaselektion. O01 äger dessa tider hos K04; 700/500-fixturvärde
 får inte användas. Native publicering är därför avsiktligt nekad utan resolvern.
 K04-import, live transport-/spelinkoppling och produktions-DDL är inte utförda.
 
-**Verifiering:** serveragentens 73/73 fokuserade routing/auth/lifecycle-prov,
-senare 27/27 API/HTTP-prov inklusive åtta J08-fall. UI-agenten rapporterade
-162/162 fokusprov och Studio `tsc` exit 0. Root verifierade 7/7 proof-prov.
-Timestampfelet reproducerades med verkligt numeriskt format och rättades;
-slutkörningen gav 12/12 UI/server-proof-prov, 0 skips. Körningar överlappar och
-summeras inte. Syntetiska API-/minnes-SQL-fixturer bevisar inte J08 på riktig
-PostgreSQL, flerprocesslås, browser, live-media eller drift; ingen sådan
-acceptans påstås. Nästa steg är rootreview och materialkoppling efter granskad
-K04-producent, därefter faktisk publiceringsverifiering.
+**Verifiering:** tidigare serverprov 73/73 och senare 27/27 API/HTTP-prov,
+UI-agentens 162/162 fokusprov och Studio `tsc`, rootens 7/7 proof-prov samt
+12/12 UI/server-proof-prov efter numerisk timestampfix. Körningar överlappar.
+PR334/head `61144fdac28832238130e2c24d10a21bf2badb61` hade normal hook249/249.
+
+Nu även **9/9 riktiga PostgreSQL-grupper**, Node24.21.0/PostgreSQL16.15 i ägt
+tillfälligt WSL-loopbackkluster. Två fysiska klienter verifierar sparning/återläsning,
+stale administrations-/paket-/utkastrevision och en enda vinnande dubbelpublicering.
+Felinjektion med riktig SQL-trigger vid sista auditsteget återställer dokument,
+historik, paket, immutable config, head och audit tillsammans. J07:s fysiska R-lås
+stoppar J08-publicering med befintligt 423-svar utan delskrivning. Publicerad config
+behålls genom fönster, runda, settlement och rekonstruerad koordinator; först nästa
+fönster tar den nya versionen. Riktigt lagrat skobevis skyddar öppen sko, bevarar
+stängt proof-JSON inklusive epoch0 och nekar manipulerade drag. Fysisk PG-omstart
+bevarar paket/config/utkast och proofbytes. Logg: `arkiv/2026-10-22/j08/pg-verification.log`.
+
+Detta använder uttryckligt injicerad **testmaterialplanering**; verklig K04-producent,
+aktiverad native publicering, HTTP/readiness mot verkligt mål, browser/live-media,
+production och deploy är fortfarande overifierade. Native publicering utan resolver
+nekas även efter omstart. Inga produktwriters ändrades av testleveransen. J08-runnern
+återanvänder J07:s isolerade klusterlivscykel och är registrerad i CI som
+`database/room-game-config`; ingen ny grön GitHub-CI påstås. Egna kluster, tillfälliga
+Node-runtime och portar är stängda/borttagna (`pg-cleanup.log`). Nästa steg är
+materialkoppling efter granskad K04-producent. Oberoende j04_resume har läst samtliga fem PG-deltafiler samt körnings-/städloggar: inga blockerande fynd. Root har läst samma kod och bevis; ingen ny omkörning av oförändrat prov behövdes.
+
 ## J07 — delat blackjackbord på mains PostgreSQL — 22 oktober 2026
 
 J07 är nu implementerad på `codex/postgres-shared-table-j07` från main
