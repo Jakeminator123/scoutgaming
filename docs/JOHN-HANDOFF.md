@@ -74,7 +74,7 @@ O01-spec551b2e820664a4e6916d64eda4527d5d07366261 är läsgranskad av
 underagent och root: demoavgränsning, generationsnamn och blocked-outcome är
 preciserade. Root väljer savepoint i samma yttre transaktion med hela låsplanen
 före savepoint; nekade effekter återställs, blocked-kvitto/audit committas.
-Root har läst enda dokumentdeltat 362ad392acd70f49d7a6198f91e2f61c02ebd572: formuleringen följer savepointbeslutet, inklusive full rollback vid persistensfel. Sent första pause är fortfarande öppet.
+Root har läst enda dokumentdeltat 362ad392acd70f49d7a6198f91e2f61c02ebd572: formuleringen följer savepointbeslutet, inklusive full rollback vid persistensfel. Det då öppna pausbeslutet ersätts av cfe7037 nedan.
 Detta är specifikationsgranskning, ingen PostgreSQL-/runtimeacceptans.
 Jakob har beslutat **demo först; förbered gränsen för aggregatorn**. K02 äger
 inget saldo/I/O; K03:s walletport binds i J07 till mains serverägda demowallet.
@@ -83,6 +83,19 @@ för extern wallet behålls, ingen SQLite-/demofallback. Root och underagent har
 kodverifierat skillnaden på main15988, inte någon driftsatt integration.
 Kevins retrygodkännande är vidarebefordrat av Jakob. [Beslut i #312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403).
 O01 är IN_PROGRESS; inget schema/runtime/GPU eller migrationspoäng ändrat.
+Ny O01-leverans cfe703718d124a5cec008f1c07125fac551aba9c: root och kevin_plan läsgranskade
+sen första pause alltid24h/MAX, identisk replay utan förlängning och
+medlemsomplanering utan stale-avvisning. Inga kontraktsmotsägelser; root
+accepterar inriktningen. Ägarvalet är rapporterat via Kevinagenten.
+PR323/9b066769b8a0595d0e62e997285ac84460bb2ef9 testar pausspärr och sekventiell bet-replay;
+inte sen paus/replay/medlemsrace. Fryst legacy advance sker före kvittokontroll.
+K02-draft PR325/10dd2323ec7011583c9b1c1e2c2100414a3a9593 läsgranskad av plan_review; root
+bekräftar budgetmotsägelsen mot O01available vid reserverad consume.
+Ingen aktiv caller flyttad. Testernas negativa turfall är villkorliga.
+Rättning/riktade prov/CI och samlad O01-acceptans återstår; K02 IN_PROGRESS.
+Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,
+tagningsmappning och raderingsförslag är rapporterade; rot-repliker och
+Astrid-fallback är kodverifierade på5aa7ed10. Inget import-/raderingsbeslut.
 J03-delen Guide/Videor är levererad i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318),
 codex/admin-control-tools-j03 / 314639b54019d02606d7d2e0b1cac19f9c72b24a,
 från verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Två SSR-sidor

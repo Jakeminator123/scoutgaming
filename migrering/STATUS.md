@@ -30,7 +30,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J04 | En spelkatalog via lobby | jakob | TODO |
 | J05 | Förenkla runtime och byggkedja | jakob | TODO |
 | J06 | Rensa testlås och rikta CI | jakob | TODO |
-| K02 | Ren regelkärna med explicit slump | kevin | TODO |
+| K02 | Ren regelkärna med explicit slump | kevin | IN_PROGRESS |
 | K03 | Delat bord utan SQL- och videokoppling | kevin | TODO |
 | J07 | Postgres-adapter för delat bord | jakob | TODO |
 | K04 | Spelklient och presentation från händelser | kevin | TODO |

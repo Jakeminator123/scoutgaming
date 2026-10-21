@@ -41,7 +41,11 @@ Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna
 **Klart när:** O01 har en komplett avgränsad urvals- och beroendematris med testbara krav och öppna frågor; en kodläsning får inte anges som ett godkänt runtimeprov.
 **Verifiering/bevis:** matrisrader `beteende → K-fil:rad → M-konsument → beslut → kontrakt → testfall`; bifoga frysta SHA, lästa metadata, fullständighet/luckor och eventuell befintlig testutskrift med miljö. Lägg besluten i befintlig kanonisk dokumentation, med länk i status.json.
 
+Kompletterande medieinventering53f6693610acc44fb45295da76a67d940a989125 gäller staging238d6dd6/worker, inte fryst5aa7ed10. Dess storlekar, tagningar och borttagningsförslag är rapporterade; ingen import/radering godkänd. Rotens repliker och Astrid-fallback har däremot kodverifierats även på fryst5aa7ed10. K04 behöver versions-/hashmappning och återställningsberoenden före urval.
+
 ## K02 — Ren regelkärna med explicit slump
+
+**Mottagen draft, inte VERIFIED:** [PR325](https://github.com/Jakeminator123/scoutgaming/pull/325), codex/kevin-k02-regelkarna / 10dd2323ec7011583c9b1c1e2c2100414a3a9593. Ingen konsument flyttad. Oberoende läsreview och root bekräftar kontraktsfrågan: start/insurance använder inputs.available för redan reserverad consume; O01 definierar available som fri balans efter reservationer. Skilj finansiering per kommando från fri balans och prova saldo100/reserverat100 samt försäkringsreservation och nya double/split-belopp. Negativa turprov ska säkert nå beslutsfasen. Rapporter13/13 och29/29 är Kevins körningar; sista hook31/33/no-verify är inte godkänd här. CI39658282127 pågår. Detaljer i status.json[K02]; status IN_PROGRESS.
 
 **Etapp/beroenden:** E3; O01.
 **Mål:** samma tillstånd, kommando, konfiguration och explicita slump-/tid-/ID-indata ger samma resultat och spelhändelser.
