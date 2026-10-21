@@ -93,14 +93,13 @@ K02-rättning PR325/0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är läsgranskad av
 Tidigare reservations-/budgetfynd och villkorliga turprov är rättade; CI39660600012
 är success på exakt samma head. Inga egna runtimeprov; K02 förblir IN_PROGRESS
 i väntan på samlad O01/full aktivitetacceptans.
-K03-draft PR327/b1c94dee2eae6db25be70f94cf0cb7baf84d1be7 är läsgranskad av kevin_plan och root.
-Fem grundfunktionsfynd: kolliderande frånvarotick, next som tappar utträde,
-READY som hindrar clear-återhämtning, obunden outboxversionsspärr och saknad
-memberGen efter leave. Kevin rättar enligt [granskning6324882125](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125).
-Clear före start får häva ready/frigöra egen reservation även efter deadline;
-undo efter deadline behöver inte öppnas för första demon. Ingen ny ägarfråga.
-19/19 och hook52 är Kevinrapporterade; ingen CI-/PG-/runtimeacceptans för K03.
-K03 är IN_PROGRESS. Total15% är oförändrat; inga aktiva callers eller drift ändrade.
+K03-rättning PR327/d20792ba50550ee7d73237e6dd82c4d575b756dc är läsgranskad av kevin_plan/root.
+Fem tidigare fynd är rättade i kod/portkontrakt; en reservationsvägran blir
+fortfarande permanent rejected i stället för blocked. Saknad reservationsgeneration
+behöver samma null-normalisering. Kevin rättar enligt [6325246491](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325246491).
+24/24 och21/21 är Kevinrapporterade; inga egna runtimeprov/PG-acceptans.
+Clear före start får häva ready/frigöra reservation även efter deadline; undo kan vänta.
+K03 IN_PROGRESS,total15%; inga aktiva callers eller drift ändrade.
 Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,
 tagningsmappning och raderingsförslag är rapporterade; rot-repliker och
 Astrid-fallback är kodverifierade på5aa7ed10. Inget import-/raderingsbeslut.
@@ -136,7 +135,7 @@ Studio-build/alla typer, orphan532/0 och oberoende slutreview utan blockerare.
 Syntetiska API-svar, avgränsad playback, lokalt junctionbygge; inget deploybevis.
 CI39657917855 föll på förbrukat activity-tvåhoppstest. Rättning b69f8840d5f7e91ca27224e6d1abce9a50b83cfb
 ändrar test/handoff, passerar105unika lokala CI-gruppfall över separata körningar,
-hook27/27,0skip och oberoende review. Ny CI39661754986 pågår.
+hook27/27,0skip och oberoende review. GitHub CI39661754986 är verifierat success på samma rättningshead.
 Aktuell main644b565 är separat läst,
 ingen konflikt rapporteras men den är inte integrerad i denna leverans.
 Agentmodeller/Dealerchatt är levererad i PR326, codex/admin-control-ai-j03 /
@@ -146,7 +145,13 @@ Global modell-PATCH/baseHash/fallbacks/kvittoläsning behålls. Hook188/188,
 browser5/5, UI23/23, API/auth39/39, middleware27/27,0skip och riktade routeprov;
 build/alla typer/orphan533/0 samt oberoende slutreview gröna. Syntetiska API-svar,
 lokala junctions; inga verkliga provider-/Gatewayanrop eller deployacceptans.
-GitGuardian success; CI39661793088 pågår. Samma activity-testfix ingår.
+GitGuardian success på produktheaden; CI39661793088 föll på gammal React-testharness.
+Test/handoff rättade i ba697260751eb692df09ebe85af6f3ae73489f46:27/27,hook4/4,0skip.
+Ny CI39665285361 är verifierat success på samma ba697-head. Samma activity-testfix ingår.
+Clips PR329/headb81d858367254a6572a67df02f1a7ee4dcaae585 är lokalt verifierad:
+wrapper/exklusiv loader borta, Adminkontext/utkastskydd, hook241/241 inklusive7browser,
+0skip och oberoende slutreview. /studio-build/alla typer,orphan534/0,traces67/44.
+Syntetiska API-svar och isolerade media; ingen deployacceptans. GitGuardian success; Clips-CI39666861547 pågår.
 Jakobs mandat för mindre egna beslut och frågepott finns i MASTERPLAN:
 prioritera fungerande grundkedja; framtida integrationer får vänta, verkliga
 kontrakts-/auth-/datakorrekthetsfrågor löses före berörd inkoppling.
