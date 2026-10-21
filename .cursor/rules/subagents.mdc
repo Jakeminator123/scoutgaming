@@ -12,9 +12,11 @@ alwaysApply: true
 - Give each subagent a short, complete scope: objective, owned paths,
   relevant context, constraints and required verification. Preserve essential
   evidence and approval boundaries; avoid unrelated history.
-- The root agent owns Git operations, integration and delivery. Subagents do
-  not commit, push, create branches, run migrations or touch production.
-  Merge ownership and deployment authorization remain governed by AGENTS.md.
+- The root agent owns shared integration and push. It may assign task-owned
+  commits to a subagent in a separate worktree; a shared index requires an
+  explicit handoff and agent-talk claim. Branch/worktree setup remains with
+  the orchestrator unless explicitly assigned. Delegation grants no authority
+  for merge, migrations, production or paid operations; follow AGENTS.md.
 - Target 200 words per report plus evidence references. Include all actionable
   failures and uncertainty; do not repeat completed reports without new facts.
 - Preserve authorization, drafts, saved data and behavior that remains in scope.

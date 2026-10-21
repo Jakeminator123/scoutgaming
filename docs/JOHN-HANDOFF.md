@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Förenklade agentinstruktioner — 21 oktober 2026
+
+På Jakobs begäran förenklas AGENTS i PR #311: masterplanen erkänns,
+Control ska avvecklas enligt aktiviteterna, sakdetaljer hänvisas till sina
+befintliga guider och rena läsfrågor behöver inte extra samordnings-/molnrundor.
+Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap kvarstår.
+Orkestratorn kan tilldela commits i separat worktree; Cursor-reglerna följer
+samma gräns. Studio begränsar Next-läskravet utanför det oförändrade genererade
+blocket. Installerad Next-generator känner fortsatt igen blocket; statusvalidering
+och diffkontroll passerar. Oberoende regelgranskning har inga blockerande fynd.
+Slutlig head följs i PR:en; inga produktändringar eller ändrade CI-/branchskydd ingår.
+
 ## Masterplan för Admin och Kevin-modulen — 21 oktober 2026
 
 J01 finns i [PR #313](https://github.com/Jakeminator123/scoutgaming/pull/313),
