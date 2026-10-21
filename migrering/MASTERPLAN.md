@@ -140,46 +140,41 @@ och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
 spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
 egna händelser; övriga walletwriters behåller mains ledger/audit.
 
-**O01-avstämning 6320082148 — läsgranskad, fortsatt olåst:**
+**O01-avstämning aa5b607 — konsoliderad läsgranskning, fortsatt olåst:**
 
-Kevin föreslår i [#312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6320082148)
-att K03-portarna tar den redan låsta SQL-klienten utan egna transaktioner/lås.
-Det är en gemensam arbetsriktning, ännu inte implementerat. J07 binder rå
-SQL-klient till adapters; K02/K03 använder avgränsade portar utan SQL, pool
-eller egen transaktionshantering. Klientinjektion får inte läcka databas-API
-in i den rena regelkärnan. Separat tick före varje kommando är däremot otillräckligt: kvittoåterspelning ska kunna avslutas
-utan att driva tick. Tick får egen beständig deadline-/händelseidentitet och
-oberoende körning; aktuell snapshot och kommandoresultat hålls åtskilda.
+Kevins [kompletterade specifikation](https://github.com/Jakeminator123/scoutgaming/blob/aa5b607ce9adf8c876d69b2de466e7225d38783a/migrering/kevin-ks-migrering/K01/O01-svar.md#L113)
+i PR314 är endast dokumentation; produktkällan är oförändrad5aa7ed10.
+Två oberoende underagenter och orkestratorn har läst specifikationen och relevanta
+källor. Den täcker nu full kommandolista, windowId/roundId/turnSeq, plats- och
+medlemskapsgeneration, skrivskyddad state, atomiska ledgerreferenser samt global
+audit. Dessa beskrivningsluckor är stängda; ingen implementation är verifierad.
 
-| Kommandofamilj | Föreslagen giltighetsidentitet utöver actor/room/commandId och full inputfingerprint |
+| Kvar att fastställa före kontraktslåsning | Rekommenderad konkret gräns |
 | --- | --- |
-| bet, clear, undo, ready, doubleBets, allSeats, repeat | windowId; de tre sista saknades i Kevins lista. |
-| insurance | roundId och fas; engångsbeslut per spelare. |
-| act | roundId, turnSeq, box, handIndex; turnSeq byts vid varje beslutspunkt, även hit/split. |
-| next | roundId och verifierat avslutad presentation. |
-| join, leave | Medlemskaps-/platsgeneration så att en fördröjd första leverans inte påverkar ett senare platsinnehav. |
-| pause | Global kontoeffekt, uttrycklig giltighet och fullständig mängd berörda rum/spelare före låsning; inte sent upptäckta lås efter A. |
-| refill | Mains demo-credit-policy, beständigt kvitto och intern walletport på samma klient; inget anrop som öppnar ny main-transaktion efter rum/P/A. |
-| language, state | Bordsspråk ägs av Admin enligt Jakobs mål. Eventuell privat UI-lokalisering är separat; poll/presence/tick behöver eget kontrakt och får inte skriva bordets språk. |
+| Samtidiga kopior missar båda kvittot före first-caller-ticks, svar.md:124–125 | Välj endast självständig scheduler för ticks, eller exklusiv kommandoadmission före first-caller-ticks. Kvittot kontrolleras åter under lås. Replay får varken tick, presence eller ny audit; lagrat resultat hålls skilt från aktuell snapshot. |
+| Reservationer, :131–163/179 | Alla saldo-writers respekterar samma reservationer. Varje väg anger atomisk reserve→consume/release under P: leave, frånvarosläpp, pause, rundstart och tidigt insurance-ja. Capture får inte debitera utan att förbruka motsvarande reservation. Rensning av tidigare accepterade insatser vid nekad start är inte ett beslutat beteende. |
+| Global pause och medlemskap, :163/168 | 24h från commit är pauslängd, inte giltighet för fördröjd första leverans. Besluta mottagningsfrist eller uttryckligen accepterad sen effekt. Join/leave och pause måste dela medlemskapsspärr; en omläsning under P skyddar inte mot join som saknar samma spärr. Låsmängden fastställs före A; ändrad mängd ger rollback och nytt försök. |
+| Idempotensnycklar, :183/190 | Ledgernyckeln måste ha samma scope som kvittot: entydig tuple med command/tick-namespace, rum, aktör, identitet, berörd spelare och effekt. Naket commandId+playerId+kind kan kollidera mellan rum. Avvisa ändrad input. |
+| Ren regelkärna, :175–190 | K02 är ren tillstånds-/händelsefunktion. I/O-portar hör till K03 och binds till rå SQL-klient i J07. Resurs-/låsplanering ägs av koordinatorn, inte regelkärnan. Även SQL-fria portar är I/O. |
+| Outbox och omstart, :102/187 | Direkt leverans efter commit kan vara snabbväg. Beständiga ej kvitterade poster måste återupptas efter krasch; lagrat talk-id/version återanvänds, gammal plan spärras. Nuvarande speak() ökar minneslagrad ver vid varje anrop och ger inte hållbar idempotens. |
+| Speech-audit, :203 | Behåll tills vidare befintlig korrelation i spelkedjan genom gemensam atomisk A-writer. Flytt till tal-/säkerhetslogg är ett separat designval, inte nödvändig lösning. Säkerhetsloggen gallras efter30dagar, saknar room/round/parent och täcker inte verktygsgrenen ensam. Ingen tyst förlust av talbeslut eller historik. |
 
-Refill/kreditbelopp, ledger-id och kvitto måste committas tillsammans; mains
-befintliga server.logTx returnerar inget ledger-id via SQL RETURNING och är
-inte i sig den färdiga porten. För spelavräkning används samma interna writer
-utan en konkurrerande ledger; audit refererar det faktiskt committade ledger-id:t.
+Audit-headläsning/INSERT är idag synkrona separata autocommit-satser utan await.
+Förgrening är en risk vid konkurrerande skrivare, inte ett nyverifierat driftfel
+i en ensam synkron process. Global kedjeverifiering måste läsa hela sekvensen;
+filtrerad rumsvy är inget kontinuitetsbevis. Shoe proof gäller hela stängda skon.
+Källor: Kevin game-audit.mjs:19, rorlig-lipsync.mjs:242, safety-audit.mjs:5 och
+server.mjs:199; main server.mjs:209 saknar ännu ledger-id via SQL RETURNING.
 
-Befintlig Kevin-audit länkar globalt föregående hash, inte per rum. Filtrerade
-rums-/rundrader bevisar inte hela kedjans kontinuitet; shoe proof gäller hela
-stängda skon. Bevara/definiera global verifiering och eventuell filtrerad vy
-separat. Ingen certifiering härleds av dessa kodprov. Påståendet varje
-spelarkommando måste preciseras: state, replay och avvisade kommandon skapar
-inte egna beständiga player.*-rader. Befintliga presentation.*-händelser får
-inte försvinna tyst när framtida auditomfattning bestäms.
-
-Underagent och orkestrator har läst fryst kod: Kevin server/shared-table.mjs:329,
-server/game-audit.mjs:19 och main services/game/server.mjs:209. Ingen ny runtime,
-DDL eller samtidighetskörning. Kevin kompletterar kommando-/tick-/auditmatrisen;
-root sammanväger mains fält/writers. K03/J07 behöver riktade negativa prov för
-sen första leverans, retry över deadline, atomisk refill och global auditkedja.
+Bordsspråk ägs av Admin enligt Jakobs mål; privat UI-lokalisering är separat och
+får inte byta bordets media/ljud. Språkets publiceringsgräns följer fryst configVersion.
+Kevin konsoliderar nu specifikationen i stället för fler motstridiga tillägg:
+svar.md:100/111 beskriver äldre tick-/identitetsförslag som avsnitt113+ ersätter.
+Root äger mains wallet-/adaptergräns. Negativa prov före implementationens
+acceptans: två samtidiga identiska kommandon över deadline, reservationslivscykel
+över flera bord, medlemskapsrace vid pause, nycklar i två rum, atomisk wallet/audit,
+konkurrerande append samt krasch efter commit/före outboxkvittens utan ny version.
+Ingen runtime, DDL eller GPU-körning har gjorts i denna granskning.
 
 **Adminfält på main — O01/J08:s läsverifierade återanvändningskarta:**
 

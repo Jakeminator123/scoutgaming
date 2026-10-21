@@ -70,11 +70,14 @@ O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
 partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
 Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
 valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
-Kevin-avstämning6320082148 är läsgranskad: injicerad SQL-klient är gemensam
-arbetsriktning. Kvar att precisera: tick utan replayeffekter, full
-kommando-/platsgeneration, atomisk refill och faktisk global auditverifiering.
-Den befintliga hashkedjan är global; filtrerad rumsdata räcker inte som bevis.
-Mains logTx behöver explicit ledger-id-kontrakt för porten. Inga nya runtimeprov.
+Kevin-spec aa5b607ce9adf8c876d69b2de466e7225d38783a i PR314 är nu
+läsgranskad av två underagenter och orkestrator. Kommandomatris/generationer,
+skrivskyddad state, ledgerreferenser och global audit är preciserade.
+Kvar före låsning: samtidiga retry/ticks, reservationers hela livscykel,
+pause/medlemskapsspärr, scoperade ledgernycklar och hållbar outboxåterleverans.
+K02 förblir utan I/O. Speech-audit behöver atomisk writer; föreslagen loggflytt
+är inte nödvändig och riskerar att tappa korrelation/historik. Ingen ny körning.
+O01 fortsatt IN_PROGRESS,15% oförändrat; Kevin konsoliderar specifikationen.
 Nio Admin-kandidater är läskartlagda: scoped publicering, driftprofiler och
 rumslänkar kan återanvändas; språk/limit/timer/logo/proof behöver nya avtalade
 fält. Walletåterföring är ingen befintlig funktion. Ingen kandidat är automatiskt godkänd.
