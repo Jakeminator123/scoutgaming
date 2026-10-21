@@ -18,14 +18,17 @@ PR [#304](https://github.com/Jakeminator123/scoutgaming/pull/304) är mergad
 som `3c3f27e19e8cdaa38b65d2ce4cf0883d7fa34e98`: full PR-CI grön och
 automatisk kodgranskning utan fynd. Vercel-produktion
 `dpl_B77rPVKWdtSM9mNf9RtAFbV1euRY` är READY på samma SHA och har
-`www.scoutgaming.tech` som aktiv alias. Skarp sparning väntar på förnyad
-Admin-inloggning efter omladdning. Automatisk infogning av övergångarna i
-spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
+`www.scoutgaming.tech` som aktiv alias. Till skon har därefter kopplats och
+sparats genom Admin med ny serverrevision. Efter full omladdning visar båda
+riktningarna **Kopplat i sparat utkast**. Automatisk infogning av övergångarna
+i spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
 
-Skarpt läst 21 oktober: `in_vila_till_redo`
-(`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) finns och visades VILA → REDO,
-men kunde inte kopplas. `ut_redo_till_vila`
-(`9c2c2285-e80b-42c3-acee-8682276e47d7`) är redan kopplad och ska bevaras.
+Skarpt verifierat 21 oktober: `in_vila_till_redo`
+(`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) är standard i Till skon och visades
+VILA → REDO. `ut_redo_till_vila`
+(`9c2c2285-e80b-42c3-acee-8682276e47d7`) behålls som standard i Från skon.
+Ingen film laddades upp eller ersattes. Publicerade rumsversioner behölls;
+ändringen gäller det sparade projektutkastet.
 
 ## Dragan: varför svaret visas som text — läsdiagnos 19 oktober 2026
 
