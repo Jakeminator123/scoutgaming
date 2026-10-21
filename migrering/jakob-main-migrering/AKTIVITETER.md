@@ -36,7 +36,7 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 - [x] Kartlägg konsumenter till `/control/rooms`, `/control/companies` och publiceringsdelarna i Control. Flytta aktuella länkar och återhämtningslänkar till rätt Admin-kontext.
 - [x] Separera gemensamma tjänster från det pensionerade skalet. Kontrollera särskilt att Admin fortfarande använder delar av `ControlLanesPage`; flytta nyttig kod innan dess gamla fil tas bort.
 - [x] Lista berörda bokmärken och deras beslutade destination. En eventuell redirect ska vara explicit och får inte montera den gamla UI-ytan.
-**Lokal acceptans:** granskad på `6748838e9194e0554fda060e869785599b890ac4`, [PR317](https://github.com/Jakeminator123/scoutgaming/pull/317). Punkterna ovan är verifierade; aktiviteten är IN_REVIEW tills GitHub CI passerar. Ingen merge eller produktionsacceptans.
+**Lokal acceptans:** granskad på `6748838e9194e0554fda060e869785599b890ac4`, [PR317](https://github.com/Jakeminator123/scoutgaming/pull/317). Punkterna ovan, oberoende granskning och [GitHub CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991) är verifierade på samma head. J02 är VERIFIED. Ingen merge eller produktionsacceptans.
 
 **Startfiler:** `apps/studio/app/control/rooms/page.tsx`, `companies/page.tsx`, `operator-page.tsx`, `apps/studio/components/control-lanes-page.tsx`, `presentation-room-create.tsx`, `packages/navigation/admin-workspace-routes.mjs`.
 **Radera:** ersatta Control-routes/komponentdelar, deras exklusiva CSS och tester som enbart låser den gamla publiceringslayouten; ta bort motsvarande build- och dokumentreferenser.

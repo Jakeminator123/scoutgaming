@@ -21,8 +21,8 @@ Isolerad UI/API-acceptans är oberoende godkänd: spara/publicera/återöppna,
 ny distinkt signerad N1-session, konflikt och negativa behörighetsfall.
 Produktändringen passerade 160/160 prov, typer och klientbygge; den efterföljande
 sessionskompletteringen 23/23 berörda prov. CI på samma slutliga head passerar.
-J01 är VERIFIED och bidrar med 5 procentenheter. Tillsammans med K01 är
-10% av planen och 50% av E1 verifierat. PR:en är inte mergad.
+J01 är VERIFIED och bidrar med 5 procentenheter. Tillsammans med K01 och J02 är
+15% av planen och 75% av E1 verifierat. PR:en är inte mergad.
 Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
 Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 
@@ -35,7 +35,8 @@ med och utan native/unified samt /studio-prefix; skrivningar omdirigeras inte.
 Implementerarens 383 fokuserade prov och 303 överlappande commitprov passerar,
 liksom browserflöde utan skips, Studio-typer/build och orphancheck. Oberoende
 granskning av fryst head: inga blockerande fynd. Loggar är lästa, inte omkörda.
-J02 är IN_REVIEW: GitHub CI återstår; 10% totalt och E1 50% gäller fortsatt.
+J02 är VERIFIED: [GitHub CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991)
+passerar på samma frysta head; 15% totalt och E1 75% är verifierat.
 Ingen merge eller produktionsacceptans. Kvitto/kommandon: status.json[J02].
 O01:s main-karta är separat läsgranskad; orkestratorns 9/9 befintliga isolerade
 transaktionsprov utan DB-anslutning, 0 skip, styrker mockade kontrakt,

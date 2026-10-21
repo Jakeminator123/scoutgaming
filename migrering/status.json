@@ -60,7 +60,7 @@
       "stage": "E1",
       "title": "Avveckla ersatt Control-publicering",
       "weight": 5,
-      "status": "IN_REVIEW",
+      "status": "VERIFIED",
       "dependsOn": [
         "J01"
       ],
@@ -72,7 +72,8 @@
         "Från verifierade J01 ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868. 38 J02-filer +155/-145: rooms/companies/operator SSR-filer borttagna; aktiv komponent/CSS/test flyttade till AdminPublicationPage; aktuella länkar och byggreferenser uppdaterade. Inga aktiva importer av de borttagna modulerna kvar enligt implementerarens, granskarens och orkestratorns sökningar.",
         "Implementerarens Node24.21.0-körningar: 383 unika fokuserade fall gröna efter smala omkörningar; ordinarie hook303/303,0skip (överlappande). Studio-typkontroll och komplett build inklusive klienttyper passerar;78 byggspår;0orphan av530. Kommandon och loggar i J02-worktreens arkiv/2026-10-21/j02-ui/reproduce.txt, routing-publication.log, preview-final.log, next-navigation-final.log, commit.log och studio-build.log.",
         "J01-browserflöde via /control/rooms och /studio/control/lanes utan skips: spara/publicera/återöppna, ny distinkt signerad N1-session, konflikt och mobil. GET/HEAD-kontext provad med native/unified av/på och /studio; skrivningar/next-action omdirigeras inte. Syntetiska konton/minneslagring, inte lösenordslogin, PostgreSQL-durabilitet eller produktion.",
-        "Oberoende slutgranskning av plan_review på exakt6748838e9194e0554fda060e869785599b890ac4: inga blockerande fynd; isolerad J02-acceptans styrkt av diff och slutloggar. Granskaren har inte kört om testerna. Orkestratorn har själv läst ändrad routing/aktiva konsumenter och slutloggar. GitHub CI återstår: https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991. Ingen merge; PR317 innehåller också J01 tills PR313 integreras."
+        "Oberoende slutgranskning av plan_review på exakt6748838e9194e0554fda060e869785599b890ac4: inga blockerande fynd; isolerad J02-acceptans styrkt av diff och slutloggar. Granskaren har inte kört om testerna. Orkestratorn har själv läst ändrad routing/aktiva konsumenter och slutloggar. GitHub CI återstår: https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991. Ingen merge; PR317 innehåller också J01 tills PR313 integreras.",
+        "GitHub CI success på oförändrad head6748838e9194e0554fda060e869785599b890ac4, verifierat21oktober2026: https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991. PR317 head/källrepo/författare färskt kontrollerade. J02 VERIFIED som isolerad leverans; ingen merge eller produktionsacceptans."
       ],
       "blocker": null
     },
