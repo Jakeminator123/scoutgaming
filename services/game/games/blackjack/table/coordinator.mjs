@@ -205,6 +205,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const players = [actorId];
     if (r && input.op === 'ready') players.push(...r.owners.filter((p, i) => p && sum(r.bets[i]) > 0));
     if (r && input.op === 'insurance') players.push(...r.owners);
+    if (r && input.op === 'next') players.push(...r.leaving);   // next carries out pending exits
     const rooms = input.op === 'pause' ? [input.roomId, ...await store.read.memberRooms(actorId)] : [input.roomId];
     return { global: false, rooms: sorted(rooms), players: sorted(players) };
   }
@@ -261,7 +262,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const own = owned(r, actorId);
     if (op === 'join') {
       if (me?.active && r.leaving.includes(actorId)) fail('LEAVING', 'Your current hand is finishing before you leave');
-      if (me?.active ? input.memberGen !== me.memberGen : input.memberGen != null && input.memberGen !== (me?.memberGen ?? 0)) fail('STALE_COMMAND', 'Your seat changed. Reload the table');
+      // Always compared with the stored generation (0 before the first join), also when inactive.
+      if (input.memberGen !== (me?.memberGen ?? 0)) fail('STALE_COMMAND', 'Your seat changed. Reload the table');
       const seats = input.seats;
       if (!Array.isArray(seats) || !seats.length || seats.length > 7 || new Set(seats).size !== seats.length || seats.some(i => !Number.isInteger(i) || i < 0 || i > 6)) fail('INVALID_SEATS', 'Choose one or more boxes');
       for (const i of seats) {
@@ -295,7 +297,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (input.windowId !== r.windowId) fail('STALE_COMMAND', 'This betting window has closed');
         // After the deadline the window.close tick owns the start; only clearing stays open (O01 2.5 retry).
         if (r.deadline && t >= r.deadline && op !== 'clear') fail('BETTING_CLOSED', 'Betting is closed');
-        if (r.ready.includes(actorId)) fail('READY', 'You are ready for this round');
+        // Until the round starts, clear also withdraws `ready` and releases the own stake
+        // reservation (e.g. after a refused consume); every other bet change waits on READY.
+        if (r.ready.includes(actorId) && op !== 'clear') fail('READY', 'You are ready for this round');
+        if (op === 'clear') r.ready = r.ready.filter(x => x !== actorId);
         const prior = structuredClone(r.bets), next = structuredClone(r.bets), mine = [...own];
         if (op === 'bet') {
           // :393 a seated player opens a free box with a main bet
@@ -376,7 +381,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       } else if (op === 'next') {
         if (r.phase !== 'settled' || t < r.plan.endAt) fail('ROUND_IN_PROGRESS', 'The round is still in progress');
         if (input.roundId !== r.roundId) fail('STALE_COMMAND', 'Command belongs to another round');
-        await resetRound(tx, r);
+        // A pending exit (leave or seat.absent) is carried out here, before the reset clears
+        // `leaving`; the leavers are in the lock plan. Its seat.release tick is then superseded.
+        for (const p of [...r.leaving]) await releaseSeats(tx, r, p);
+        if (r.phase === 'settled') await resetRound(tx, r);
       }
     }
     r.version++;
@@ -411,15 +419,16 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   function candidates(r, members, seenOf) {
     const out = [], add = (kind, anchor, scheduledAt, extra = {}) =>
       out.push({ tickId: tickIdOf(r.roomId, kind, anchor, scheduledAt), roomId: r.roomId, kind, anchor, scheduledAt, ...extra });
-    if (r.phase === 'bets' && r.deadline) add('window.close', r.windowId, r.deadline);
-    if (r.phase === 'round' && r.roundPhase === 'insurance') add('insurance.timeout', r.roundId, r.actionDeadline);
-    if (r.phase === 'round' && r.roundPhase === 'decisions') add('turn.autostand', `${r.roundId}:${publicView(r.game).turnSeq}`, r.actionDeadline);
-    if (r.phase === 'round' && r.roundPhase === 'settled') add('round.settle', r.roundId, r.plan.endAt);
-    if (r.phase === 'settled') for (const p of r.leaving) add('seat.release', `${r.roundId}:${p}`, r.settledAt, { playerId: p });
+    // Anchors are part lists, encoded by tickIdOf (ports.mjs); per-player ticks carry the actor.
+    if (r.phase === 'bets' && r.deadline) add('window.close', [r.windowId], r.deadline);
+    if (r.phase === 'round' && r.roundPhase === 'insurance') add('insurance.timeout', [r.roundId], r.actionDeadline);
+    if (r.phase === 'round' && r.roundPhase === 'decisions') add('turn.autostand', [r.roundId, publicView(r.game).turnSeq], r.actionDeadline);
+    if (r.phase === 'round' && r.roundPhase === 'settled') add('round.settle', [r.roundId], r.plan.endAt);
+    if (r.phase === 'settled') for (const p of r.leaving) add('seat.release', ['leave', r.roundId, p], r.settledAt, { playerId: p });
     for (const m of members) {
       if (!m.active || !owned(r, m.actorId).length || r.leaving.includes(m.actorId)) continue;
       const at = Math.max(seenOf(m.actorId) ?? -Infinity, m.joinedAt) + absentMs;
-      add(r.phase === 'round' ? 'seat.absent' : 'seat.release', m.memberGen, at, { playerId: m.actorId });
+      add(r.phase === 'round' ? 'seat.absent' : 'seat.release', ['absent', m.actorId, m.memberGen], at, { playerId: m.actorId });
     }
     return out;
   }
@@ -550,16 +559,22 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       players, serverNow: t, me };
   }
 
-  // Delivery after COMMIT with the stored talkId/ver; an older plan version than one already
-  // delivered for the room is never sent (O01 2.9). Failures leave the row for a later attempt.
+  // Delivery after COMMIT with the stored talkId/ver (O01 2.9). deliveredVer only skips rows
+  // already known to be old; the ordering guarantee is the receiver's atomic version check
+  // (sink contract in ports.mjs): a row it answers 'stale' was never applied and is superseded.
+  // Failures leave the row for a later attempt.
   async function deliverOutbox(sink) {
-    const delivered = [], failed = [];
+    const delivered = [], superseded = [], failed = [];
     for (const row of await store.outbox.pending()) {
-      if (row.ver < (await store.outbox.deliveredVer(row.roomId))) { await store.outbox.ack(row, 'superseded'); continue; }
-      try { await sink(row); await store.outbox.ack(row, 'delivered'); delivered.push(row); }
-      catch (error) { failed.push({ row, error }); }
+      if (row.ver < (await store.outbox.deliveredVer(row.roomId))) { await store.outbox.ack(row, 'superseded'); superseded.push(row); continue; }
+      try {
+        const status = await sink(row);
+        if (status === 'applied') { await store.outbox.ack(row, 'delivered'); delivered.push(row); }
+        else if (status === 'stale') { await store.outbox.ack(row, 'superseded'); superseded.push(row); }
+        else throw new TypeError(`presentation sink must answer 'applied' or 'stale', got ${status}`);
+      } catch (error) { failed.push({ row, error }); }
     }
-    return { delivered, failed };
+    return { delivered, superseded, failed };
   }
 
   return { command, tick, dueTicks, snapshot, deliverOutbox,

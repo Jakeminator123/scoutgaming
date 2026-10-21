@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-chain.mjs';
+import { createPresentationGate, tickIdOf } from '../services/game/games/blackjack/table/ports.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 
@@ -24,7 +25,7 @@ function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
     async join(who, seats, room = 'party') {
       const s = await t.snap(who, room);
       const seatGens = Object.fromEntries(seats.map(i => [i, s?.seatGen[i] ?? 0]));
-      return t.send(who, 'join', { seats, seatGens, memberGen: s?.me.active ? s.me.memberGen : undefined }, room);
+      return t.send(who, 'join', { seats, seatGens, memberGen: s?.me.memberGen ?? 0 }, room);
     },
     async bet(who, seat, chip, room = 'party', field = 'main') { return t.send(who, 'bet', { seat, field, chip, windowId: (await t.snap(who, room)).windowId }, room); },
     async ready(who, room = 'party') { return t.send(who, 'ready', { windowId: (await t.snap(who, room)).windowId }, room); },
@@ -88,7 +89,7 @@ test('concurrent seat claims: one wins, the other is refused; stale seat generat
   const t = setup();
   await t.join('ana', [0]);
   const [a, b] = await Promise.allSettled([
-    t.send('kevin', 'join', { seats: [3], seatGens: { 3: 0 } }), t.send('john', 'join', { seats: [3], seatGens: { 3: 0 } })]);
+    t.send('kevin', 'join', { seats: [3], seatGens: { 3: 0 }, memberGen: 0 }), t.send('john', 'join', { seats: [3], seatGens: { 3: 0 }, memberGen: 0 })]);
   assert.deepEqual([a.status, b.status].sort(), ['fulfilled', 'rejected']);
   assert.equal([a, b].find(x => x.status === 'rejected').reason.code, 'SEAT_TAKEN');
   const s = await t.snap('ana');
@@ -312,7 +313,7 @@ test('presentation outbox: delivery failure changes no outcome and never debits 
   const [pending] = await t.store.outbox.pending();
   t.restart();
   const seen = [];
-  const ok = await t.table.deliverOutbox(async row => { seen.push([row.talkId, row.ver]); });
+  const ok = await t.table.deliverOutbox(async row => { seen.push([row.talkId, row.ver]); return 'applied'; });
   assert.deepEqual(seen, [[pending.talkId, pending.ver]]); assert.equal(ok.delivered.length, 1);
   assert.deepEqual(t.store.test.ledger(), ledger, 'no second debit');
   // Two newer plans; once the newest is delivered, the older one is never sent.
@@ -324,6 +325,130 @@ test('presentation outbox: delivery failure changes no outcome and never debits 
   const none = await t.table.deliverOutbox(async () => assert.fail('an older plan version must not be delivered'));
   assert.equal(none.delivered.length, 0);
   assert.equal(t.store.test.outbox().find(r => r.ver === rows[0].ver).status, 'superseded');
+});
+
+test('presentation ordering: parallel delayed deliveries never apply an older plan after a newer one', async () => {
+  const t = setup();
+  await t.join('kevin', [3]); await t.bet('kevin', 3, 25);
+  t.setShoe('party', ['10', '9', '10', '7']);
+  await t.ready('kevin');
+  // A controllable network: every send waits until the test lets it arrive (or fail) at the
+  // receiver, which applies through the atomic version gate. No store lock is involved.
+  const gate = createPresentationGate(), applied = [], held = [];
+  const sink = row => new Promise((resolve, reject) => held.push({ ver: row.ver,
+    arrive: () => { const g = gate.accept(row); if (g === 'new') applied.push(row.ver); resolve(g === 'stale' ? 'stale' : 'applied'); },
+    fail: () => reject(new Error('connection reset')) }));
+  const until = async n => { for (let i = 0; i < 1000 && held.length < n; i++) await new Promise(r => setImmediate(r)); assert.equal(held.length, n); };
+  const a = t.table.deliverOutbox(sink);                 // deliverer A sends ver 1 and stalls
+  await until(1);
+  const v1 = held[0].ver;
+  await t.act('kevin', 'stand');                         // a newer plan is committed meanwhile
+  const b = t.table.deliverOutbox(sink);                 // deliverer B also sees ver 1 pending
+  await until(2);
+  assert.equal(held[1].ver, v1); held[1].fail();         // B's copy of ver 1 is lost
+  await until(3);
+  assert.equal(held[2].ver, v1 + 1); held[2].arrive();   // B's ver 2 arrives first
+  const rb = await b;
+  held[0].arrive();                                      // A's ver 1 arrives after ver 2
+  const ra = await a;
+  assert.deepEqual(applied, [v1 + 1], 'ver 1 is never applied after ver 2');
+  assert.equal(gate.lastAccepted('party'), v1 + 1);
+  assert.deepEqual(rb.delivered.map(r => r.ver), [v1 + 1]); assert.deepEqual(ra.superseded.map(r => r.ver), [v1]);
+  assert.deepEqual(t.store.test.outbox().map(r => [r.ver, r.status]), [[v1, 'superseded'], [v1 + 1, 'delivered']]);
+  // An ack lost after applying: the same ver again is not applied twice but counts as delivered.
+  assert.equal(gate.accept({ roomId: 'party', ver: v1 + 1 }), 'duplicate');
+  // A sink outside the contract is a failed delivery, never an ack.
+  await t.finish(); await t.send('kevin', 'next', { roundId: (await t.snap()).roundId });
+  await t.bet('kevin', 3, 25); await t.ready('kevin');
+  const bad = await t.table.deliverOutbox(async () => undefined);
+  assert.ok(bad.failed.length > 0 && bad.delivered.length === 0);
+});
+
+test('absence ticks carry the actor: two players absent at the same time are both released', async () => {
+  const t = setup();
+  await t.join('kevin', [3]); await t.join('john', [4]);  // same joinedAt, same memberGen, same last seen
+  t.time = 100000 + 120000;
+  const due = await t.table.dueTicks();
+  assert.equal(due.length, 2); assert.notEqual(due[0].tickId, due[1].tickId);
+  const ran = await t.drain();
+  assert.deepEqual(ran.map(r => [r.kind, r.outcome]), [['seat.release', 'applied'], ['seat.release', 'applied']]);
+  const s = await t.snap();
+  assert.equal(s.owners[3], null); assert.equal(s.owners[4], null);
+  for (const p of ['kevin', 'john']) assert.equal((await t.snap(p)).me.active, false, p);
+  // The anchor encoding is unambiguous whatever the actor id contains.
+  assert.notEqual(tickIdOf('party', 'seat.release', ['absent', 'a,b', 1], 5), tickIdOf('party', 'seat.release', ['absent', 'a', 'b,1'], 5));
+  assert.notEqual(tickIdOf('party', 'seat.release', ['absent', 'a:1', 2], 5), tickIdOf('party', 'seat.release', ['absent', 'a', '1:2'], 5));
+});
+
+test('next after settlement still carries out a pending leave before the release tick', async () => {
+  const t = setup();
+  await t.join('kevin', [3]); await t.join('john', [4]);
+  await t.bet('kevin', 3, 25); await t.bet('john', 4, 25);
+  t.setShoe('party', ['10', '10', '9', '10', '10', '7']);
+  await t.ready('kevin'); await t.ready('john');
+  const turn = async () => { const s = await t.snap(); return s.owners[s.round.hands[s.round.active].box]; };
+  const A = await turn(), B = A === 'kevin' ? 'john' : 'kevin', boxA = A === 'kevin' ? 3 : 4, boxB = 7 - boxA;
+  await t.act(A, 'stand');
+  await t.send(A, 'leave', { memberGen: (await t.snap(A)).me.memberGen });
+  assert.ok((await t.snap()).players.find(p => p.id === A).leaving);
+  assert.equal(await turn(), B); await t.act(B, 'stand');
+  t.time = (await t.snap()).plan.endAt;
+  const settle = (await t.table.dueTicks()).find(d => d.kind === 'round.settle');
+  assert.equal((await t.table.tick(settle)).outcome, 'applied');
+  const settled = await t.snap(B);
+  assert.equal(settled.phase, 'settled');
+  assert.ok((await t.table.dueTicks()).some(d => d.kind === 'seat.release' && d.playerId === A), 'release tick is due but not run');
+  await t.send(B, 'next', { roundId: settled.roundId });         // B moves on first
+  const after = await t.snap(A);
+  assert.equal(after.phase, 'bets'); assert.equal(after.owners[boxA], null, 'A left'); assert.equal(after.owners[boxB], B);
+  assert.equal(after.me.active, false); assert.equal(after.me.memberGen, 2);
+  assert.deepEqual(after.players.map(p => p.id), [B]);
+  assert.ok(after.me.lastSettlement, 'A keeps the settlement receipt');
+  const ran = await t.drain();
+  assert.ok(ran.every(r => r.outcome !== 'applied' || r.kind !== 'seat.release'), 'nothing left to release');
+  await t.bet(B, boxB, 25);
+  assert.equal((await t.snap(B)).bets[boxB].main, 25, 'the table keeps working');
+});
+
+test('clear withdraws ready and releases the own stake after a refused consume, also past the deadline', async () => {
+  const t = setup({ funds: { kevin: 100, john: 100 } });
+  await t.join('kevin', [3]); await t.join('john', [4]);
+  await t.bet('kevin', 3, 100); await t.bet('john', 4, 100);
+  t.store.test.uncoveredDebit('john', 50);
+  assert.equal((await t.ready('kevin')).result.started, false);
+  const refused = await t.ready('john');
+  assert.equal(refused.result.started, false); assert.equal(refused.result.waitingOn, 'john');
+  assert.equal(refused.snapshot.players.find(p => p.id === 'john').ready, true, 'ready stays after the refused consume');
+  const windowId = refused.snapshot.windowId;
+  t.time = refused.snapshot.deadline;
+  const [blocked] = await t.drain();
+  assert.equal(blocked.kind, 'window.close'); assert.equal(blocked.outcome, 'blocked');
+  await rejects(t.send('john', 'bet', { seat: 4, field: 'main', chip: 5, windowId }), 'BETTING_CLOSED');
+  await rejects(t.send('john', 'undo', { windowId }), 'BETTING_CLOSED');   // undo stays closed after the deadline
+  const cleared = await t.send('john', 'clear', { windowId });
+  assert.equal(cleared.result.reserved, 0);
+  assert.equal(cleared.snapshot.players.find(p => p.id === 'john').ready, false);
+  assert.equal(cleared.snapshot.bets[4].main, 0); assert.equal(cleared.snapshot.me.available, 50);
+  assert.ok(!Object.keys(t.store.test.reservations()).some(id => id.includes(':john:')), 'own stake released');
+  const [retry] = await t.drain();
+  assert.equal(retry.tickId, `${blocked.tickId}:retry:1`); assert.equal(retry.outcome, 'applied');
+  const s = await t.snap();
+  assert.equal(s.phase, 'round'); assert.deepEqual(s.round.hands.map(h => h.box), [3]);
+  assert.equal(t.store.test.balance('kevin'), 0); assert.equal(t.store.test.balance('john'), 50);
+});
+
+test('join compares memberGen with the stored generation, also for a late first join after leave', async () => {
+  const t = setup();
+  await rejects(t.send('john', 'join', { seats: [6], seatGens: { 6: 0 } }), 'STALE_COMMAND');      // missing, stored 0
+  await t.send('john', 'join', { seats: [6], seatGens: { 6: 0 }, memberGen: 0 });
+  await t.join('kevin', [3]);
+  await t.send('kevin', 'leave', { memberGen: 1 });
+  assert.deepEqual([(await t.snap('kevin')).me.active, (await t.snap('kevin')).me.memberGen], [false, 2]);
+  assert.equal((await t.snap()).seatGen[5], 0, 'box 5 was never used');
+  await rejects(t.send('kevin', 'join', { seats: [5], seatGens: { 5: 0 } }), 'STALE_COMMAND');     // missing
+  await rejects(t.send('kevin', 'join', { seats: [5], seatGens: { 5: 0 }, memberGen: 1 }), 'STALE_COMMAND'); // stale
+  const ok = await t.send('kevin', 'join', { seats: [5], seatGens: { 5: 0 }, memberGen: 2 });
+  assert.equal(ok.result.memberGen, 3); assert.deepEqual(ok.snapshot.me.seats, [5]);
 });
 
 test('ledger keys are scoped per room: the same commandId in two rooms gives two rows; replay gives none', async () => {

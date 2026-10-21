@@ -33,7 +33,17 @@
 // Outside a unit of work (no game state written):
 //   store.read.{room, rooms, members, memberRooms, presence, tick, walletGen, reservation, available, pausedUntil}
 //   store.presence.touch(roomId, actorId, at)   separate presence write (O01 2.2 `seen`)
-//   store.outbox.{pending(), ack(row, status)}  delivery after COMMIT
+//   store.outbox.{pending(), deliveredVer(roomId), ack(row, status)}  delivery after COMMIT.
+//     deliveredVer(roomId) is the highest ver acked 'delivered' for the room. It only lets a
+//     deliverer skip rows that are already known to be old; it is no ordering guarantee, since
+//     two deliverers can both read it before either acks.
+//   sink(row) -> 'applied' | 'stale'  the presentation receiver. Ordering is guaranteed there:
+//     it applies a row only if row.ver > the last ver it accepted for row.roomId, as one atomic
+//     check-and-set at the moment of applying (see createPresentationGate). It answers 'applied'
+//     for that and for a redelivery of exactly the last accepted ver (ack lost; not applied
+//     twice), and 'stale' for any older ver. So an older plan that arrives after a newer one
+//     (parallel or retried delivery) is never applied. Anything else (throw, other value) is a
+//     failed delivery and the row stays pending.
 //   store.audit.verifyChain(fromSeq, toSeq)     global chain, never a per-room view
 import { createHash } from 'node:crypto';
 
@@ -65,6 +75,30 @@ export const ledgerKey = ({ namespace, roomId, actorId, identity, playerId, effe
   JSON.stringify([namespace, roomId, actorId, identity, playerId, effect]);
 
 // tickId = roomId : kind : anchor : scheduledAt, scheduledAt being the stored deadline (O01 2.3).
-export const tickIdOf = (roomId, kind, anchor, scheduledAt) => `${roomId}:${kind}:${anchor}:${scheduledAt}`;
+// The anchor is a list of identity parts (e.g. actor id and member generation). Each part is
+// percent-encoded and the parts are joined by ',', so the anchor contains neither ':' nor an
+// unescaped ',' and two different part lists (actor ids may contain anything) never give the
+// same tickId.
+export const tickAnchor = parts => parts.map(p => encodeURIComponent(String(p))).join(',');
+export const tickIdOf = (roomId, kind, anchor, scheduledAt) => `${roomId}:${kind}:${tickAnchor(anchor)}:${scheduledAt}`;
+
+// Reference receiver-side guard for the presentation sink (contract above). The check and the
+// update of the last accepted ver happen in one synchronous step, so concurrent deliveries
+// cannot interleave between them. A real receiver keeps lastAccepted durable and does the same
+// as one compare-and-set.
+// accept(row) -> 'new' (apply it now) | 'duplicate' (already applied) | 'stale' (never apply).
+export function createPresentationGate() {
+  const last = new Map();
+  return {
+    accept(row) {
+      const prev = last.get(row.roomId) ?? 0;
+      if (row.ver === prev) return 'duplicate';
+      if (!(row.ver > prev)) return 'stale';
+      last.set(row.roomId, row.ver);
+      return 'new';
+    },
+    lastAccepted: roomId => last.get(roomId) ?? 0,
+  };
+}
 
 export const TICK_OUTCOMES = Object.freeze(['applied', 'superseded', 'rejected', 'blocked']);
