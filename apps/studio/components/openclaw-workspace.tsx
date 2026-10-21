@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { openClawDashboardUrl } from '../lib/openclaw-dashboard.mjs';
+import { studioHistory } from '../lib/studio-history.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import type { OpenClawAdminModel, OpenClawAdminSnapshot, OpenClawAdminReceipt } from '../lib/openclaw-admin.mjs';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
@@ -65,8 +66,8 @@ async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, bo
 
 function OpenClawModelTabs({navigation}:{navigation?:{models:string;chat:string;studio:string}}) {
   return <>
-    <a href={navigation?.models??labUrl('/control/openclaw')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
-    <a href={navigation?.chat??labUrl('/control/openclaw?tab=chat')}>{navigation ? 'Dealerns agent' : 'Chatt'}</a>
+    <a href={navigation?.models??labUrl('/admin/ai/models')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
+    <a href={navigation?.chat??labUrl('/admin/dealer-agent')}>{navigation ? 'Dealerns agent' : 'Chatt'}</a>
   </>;
 }
 
@@ -130,12 +131,20 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
 
   const changedAgents = data?.agents.filter(agent => (drafts[agent.id] ?? agent.model.primary) !== agent.model.primary) ?? [];
   const dirty = changedAgents.length > 0 || Object.keys(drafts).some(id => !data?.agents.some(agent => agent.id === id));
+  const unsaved=useRef(false);unsaved.current=dirty;
+  useEffect(()=>{
+    const owner=studioHistory(window),canLeave=()=>!unsaved.current&&!controller.current;
+    const release=owner.guardTraversal(canLeave);
+    const guard=(event:Event)=>{if(!canLeave())event.preventDefault();};
+    window.addEventListener('studio:before-navigate',guard);
+    return()=>{release();window.removeEventListener('studio:before-navigate',guard);};
+  },[]);
   useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    if (!dirty&&!busy) return;
+    const warn = (event: BeforeUnloadEvent) => {if(unsaved.current||controller.current){event.preventDefault();event.returnValue='';}};
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
+  }, [dirty,busy]);
   useEffect(() => {
     if (!data) { publishShellStatus(null); return; }
     publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
@@ -192,7 +201,10 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
         || fragment.size !== 3 || fragment.get('bootstrapProfile') !== 'owner'
         || fragment.get('gatewayUrl') !== url.replace('https:','wss:').replace(/\/$/,'')
         || !/^[a-zA-Z0-9_-]{32,256}$/.test(fragment.get('bootstrapToken') || '')) throw failure();
-      if (alive.current && !active.signal.aborted) window.location.assign(target.href);
+      if (alive.current && !active.signal.aborted) {
+        // The verified handoff may leave a clean page; unsaved model drafts still warn.
+        controller.current=null;setBusy(null);window.location.assign(target.href);
+      }
     } catch(cause) { if(alive.current && !active.signal.aborted) setError((cause as Error).message); }
     finally { if(controller.current===active) { controller.current=null; if(alive.current)setBusy(null); } }
   }
@@ -266,7 +278,7 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
       <div><h2 id="openclaw-advanced">Fler inställningar</h2><p>Agentchatt, sessioner och avancerade inställningar finns i OpenClaws egen dashboard.</p></div>
       {url ? <button type="button" className={styles.secondary} disabled={!!busy || dirty} onClick={() => void openDashboard()}>Öppna OpenClaws egen dashboard ↗</button>
         : <p role="alert">Dashboardadressen är ogiltig.</p>}
-      <p className={styles.advancedNote}>Din nivå 1-inloggning öppnar dashboarden utan lösenord eller terminalkommando. OpenClaw skapar en egen webbläsarsession som finns kvar när du loggar ut från sajten. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/')}>Studio</a>.</p>
+      <p className={styles.advancedNote}>Din nivå 1-inloggning öppnar dashboarden utan lösenord eller terminalkommando. OpenClaw skapar en egen webbläsarsession som finns kvar när du loggar ut från sajten. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/admin/clips')}>Studio</a>.</p>
     </section>
     {changedAgents.length > 0 && <div className="sg-unsaved" role="status">
       <p>Osparade modellval: {changedAgents.length}. Spara varje agent på dess rad.</p>

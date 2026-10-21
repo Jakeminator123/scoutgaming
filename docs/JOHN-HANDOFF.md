@@ -625,6 +625,122 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
+J03 · 21 oktober 2026. Tidigare delarna PR318/320/322/324/326/329 har
+verifierad grön CI på dokumenterade slutheads. PR330:s första CI39675471027
+föll på ett saknat login-fixtureberoende och en gammal administrationsadress.
+Endast två tester/handoff rättades i 9627cfa26179038ebd7cba5bc78e8a8061669628;
+30/30 fokuserade/hookprov passerar, tre valfria browserfall ej körda där.
+Uppföljande CI39677936564 är verifierat success på oförändrad head9627cfa2.
+
+Senaste del: codex/admin-control-auth-j03 från PR330-produkthead
+b60ecf993b609136b32861b0ae433ca769489ba7, med samma två CI-testfixar.
+Admin har egna /admin/login och /admin/set-password. Control-catchall,
+authwrappers, gamla formulärsidor, navigationsskal, temaomkopplare och
+exklusiv översiktskod är borttagna. Kända bokmärken går till Admin; okända
+Control-ytor och skrivförsök skapar ingen alternativ backoffice-väg.
+Kända gamla hashval får en enda handoff före Admin-mount. Partner och
+zoomkartan behåller egna funktioner och behörighetsgränser.
+
+Login, återställningslänkar, retur-URL och logout använder Adminmålen.
+Gamla t-länkar bevaras; dubbla/ogiltiga tokens nekas, referrer/cache stängs
+för authredirect. Båda mountformerna och separat Studio-värd går genom
+validerad publicOrigin. Host-only cookies, signerade Game/Lab-handoffs,
+atomisk tokenförbrukning, sessioner och serverägd ekonomi är oförändrade.
+Föråldrade Control-/layoutassertioner har ändrats eller raderats; skydd för
+aktiva auth-, rum-, sparnings- och spelbeteenden består.
+
+Verifiering: root middleware/transport27/27 och shell31/31, 0 skips;
+auth89 unika fall över slutkörningar och12 form/Partner/browserfall,0skip.
+Körningar överlappar; exakta kommandon och sista rättningar finns i loggar.
+Ordinarie hook redovisas i PR/status.json.
+Samlat Studio-build med /studio och alla frontendtyper passerar,
+traces63/44; manifest har Admin-auth och Partner, inga Control-pages.
+Lokala beroendejunctions och syntetiska API/sessioner används; inga
+produktions-, databas-, medie- eller deployprov påstås. Loggar finns i
+arkiv/2026-10-21/j03-auth/ i leveransworktreen. Oberoende slutreview inklusive sista logoutdeltat har inga blockerande fynd.
+Slutbygget efter produktfrysning passerar. Egna authfixtureprocesser och
+browserkontexter är stängda; inga produktservrar startades.
+
+O01 är VERIFIED som kontraktsaktivitet på
+4f45a59c763874466986fc1bb3f3e76b12edba53: Adminmatris och44/44 isolerade
+kontraktsprov. Totalt20%, E1 100%; J03:s slutliga CI/aktivitetsacceptans
+återstår. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är integrerad
+konfliktfritt i denna egenbranch/PR331; andra agenters ändringar bevaras.
+CI39680259777 på integrationshead b46e8d1c misslyckades i fyra föråldrade
+test-/fixturekrav. Studio-build/alla frontendtyper och isolerad SQL/restart/HTTPS
+passerade i CI. Fyra testfiler har rättats utan produktändring: gammal
+Control-källsträngskoppling borttagen, preview-authfixture kompletterad och
+två adresskrav flyttade till Admin. Före4/4 reproducerade fel; efter58/58,
+0 skips, på Node24.21.0. Auth-före-dataläsning, hash/ingen bearer, atomisk
+inbjudan och signerad engångshandoff bevarade. Oberoende deltareview av
+kevin_plan och root utan blockerare. Loggar pr331-ci-{before,after,commands}.log.
+CI39682283055 på c7578ede050d21dec3ede098f193fe0276b25027 passerade Studio,
+övriga regressionsgrupper och isolerad SQL/restart/HTTPS, men föll på samma
+föråldrade loginadress i två sync/async-provenancefall i account-credentials.
+En enda testassertion är nu flyttad från /studio/login till /admin/login;
+produkt och kontroller av återkallad epoch, ogiltig provenance och noll nya
+sessioner är oförändrade. Lokal reproduktion: 2/2 fel före; hela berörda
+filen efter rättning: 17/17, 0 skips, Node24.21.0. Exakta kommandon/loggar:
+pr331-epoch-{before,after,commands}.log i samma privata arkiv.
+Ny CI återstår för denna rättning; ingen push, merge till main eller deploy
+påstås av det lokala kvittot.
+
+J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
+`ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
+`admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla
+`app/control/rooms/page.tsx`, `companies/page.tsx` och `operator-page.tsx`
+är borttagna tillsammans med deras tracingposter och renderer-specifika testlås.
+Aktiva UI-/återhämtningslänkar går direkt till Admin. Bokmärken till
+`/control/rooms` och `/control/lanes` går till `/admin/publication`;
+`/control/companies` och `lanes?tab=companies` går till `/admin/companies`.
+Omdirigering gäller GET/HEAD med och utan native/unified-flagga och /studio-mount;
+querykontext, fragment och lane→composition bevaras. Skrivanrop och next-action
+omdirigeras inte. Befintlig N1-auth, Partner, tjänster och scoped writers kvarstår.
+Verifierat: 383 unika fokuserade prov (106 routing/publicering/browser och
+277 konsument/auth); sista riktade omkörningar 36/36 preview och 19/19 Next-navigation.
+J01-browserflödet körs utan skips via gamla rooms- och monterade lanes-bokmärken,
+inklusive ny signerad session, spara/publicera/återöppna, konflikt och mobil.
+Studio-typkontroll och komplett `npm --prefix apps/studio run build` med
+`CROUPIER_LAB_BASE_PATH=/studio` passerar; Admin/lobby-typer ingår. 78 byggspår,
+0 privata filer rensade. Orphan-kontroll: 530 kandidater, 0 orphan-prov.
+Lokala kommandoutfall/bilder: `arkiv/2026-10-21/j02-ui/` (gitignorerat).
+Befintliga CSS-composes-/Next middleware-varningar kvarstår. Proven använder
+syntetiska konton/minneslagring; ingen produktion, DDL eller GPU kontaktad.
+Testresurser stängs av egen cleanup. Kvar: fryst oberoende granskning, PR/CI;
+resterande Control-ytor och lobbyavveckling hör till J03/J04.
+
+
+J01 · 21 oktober 2026, branch `codex/admin-publication-j01` från main
+`15988f32fd572c453d2189502acbe324c4566815`: publicering visar bolag/rum/version,
+redigering och sparning, publiceringsval och bekräftat kvitto som skilda steg.
+Osparat projekt och konflikt blockerar publicering; återöppning läser sparade
+värden och behåller bolag, sammansättning, dealer, rum, spel och fragment.
+Befintliga scoped writers/auth används. Ersatt formulärmarkup och oanvända
+styles är borttagna; avveckling av Control-ingången hör till J02.
+Grundverifiering på 2f3a5b50: 160/160 prov utan skips (control-lanes-page, workspace-tools,
+presentation-room-create, presentation-room-api, studio-session-save och nya
+admin-publication-workspace), Studio-typer och typkontrollerat klientbygge.
+Testupptäckt: 530 kandidater, noll orphan-prov. Browserprovet kör den verkliga
+komponenten och API-handlers med syntetiska konton och minneslagring:
+spara/publicera/omladdning, ny separat signerad N1-session för samma konto/scope,
+konfliktlösning, 390 px utan horisontell överrullning samt 401/409 utan otillåten skrivning.
+Sessionskomplettering: 23/23 prov utan skips med `node --test --test-concurrency=4`
+`apps/studio/test/admin-publication-workspace.test.mjs` och
+`apps/studio/test/studio-native-auth.test.mjs`; samma Chrome/browser-env som grundprovet.
+Fixturen utfärdar en distinkt JWT och den verkliga cookievalidatorn verifierar
+samma N1-konto/scope. Ny cookie i ny browserkontext återläser sparat namn och
+publicerad version 2; API-provet kontrollerar också den sparade projektrevisionen.
+Ingen produkt-auth eller endpoint har ändrats. Produktbygget har inte upprepats.
+Det är inte en verklig ny lösenordsinloggning eller PostgreSQL-durabilitetskontroll.
+Lokala stegvisa bilder och loggar: `arkiv/2026-10-21/j01-ui/` (gitignorerat).
+Fixturservrar och browserkontexter stängs av provens cleanup. Inga prodskrivningar,
+mediaändringar eller deployer. Klientbygget har befintliga CSS-composes-varningar.
+PR [313](https://github.com/Jakeminator123/scoutgaming/pull/313) är draft; ny head
+ska granskas och få CI. Egen hostläsning av main före kompletteringscommit:
+0 öppna/23 ignorerade, sourceBinding verified, aktiv övervakning;
+historik `too_large` och partiell platsmetadata kvarstår.
+
+
 Klippkartans scenreglage i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
 och bredare scenpanel/driftväljare i [PR274](https://github.com/Jakeminator123/scoutgaming/pull/274)
 är publicerade. Föregående UI/UX-agents 92 prov och visuella kontroller är

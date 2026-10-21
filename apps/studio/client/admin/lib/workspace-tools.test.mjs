@@ -15,7 +15,7 @@ const node=(tree,predicate)=>{
   return predicate(tree)?tree:node(tree.props?.children,predicate);
 };
 const marker=name=>Object.defineProperty(()=>null,'name',{value:name});
-const components=Object.fromEntries(['ControlLanesPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlGuidePage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
+const components=Object.fromEntries(['AdminPublicationPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlGuidePage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
 
 function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}},responseStatus=200){
   const slots=[],effects=[],requests=[];let cursor=0,queue=[];
@@ -94,7 +94,7 @@ for(const [query,room] of [
 ])test(`Admin publication passes an explicit room selection without confusing design assets: ${query}`,async()=>{
   const h=harness('../components/studio/workspace-tools.tsx',query);
   h.render(h.exports.WorkspaceTool,{section:'publication'});await h.settle();
-  const publication=node(h.render(h.exports.WorkspaceTool,{section:'publication'}),item=>item.type===components.ControlLanesPage);
+  const publication=node(h.render(h.exports.WorkspaceTool,{section:'publication'}),item=>item.type===components.AdminPublicationPage);
   assert.deepEqual(publication.props.initialRoomId,room);
 });
 
@@ -124,7 +124,7 @@ function publicationWorkspaceHarness(search) {
       fetch:async()=>({ok:true,json:async()=>data}),require:name=>name==='react'?hooks:resolve(name)??localRequire(name)});
     return module.exports;
   }
-  const {ControlLanesPage}=compile('../../../components/control-lanes-page.tsx',name=>{
+  const {AdminPublicationPage}=compile('../../../components/admin-publication-page.tsx',name=>{
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}};
     if(name==='./studio-session')return {useStudioProjectSession:()=>({project,dirty:false,saving:false,conflict:false,savedJson:JSON.stringify(project)})};
     if(name==='./presentation-room-create')return {PresentationRoomCreate:Room};
@@ -134,7 +134,7 @@ function publicationWorkspaceHarness(search) {
     if(name==='./project-conflict')return {ProjectConflict:marker('ProjectConflict')};
   });
   const {WorkspaceTool}=compile('../components/studio/workspace-tools.tsx',name=>{
-    if(name.includes('control-lanes-page'))return {ControlLanesPage};
+    if(name.includes('admin-publication-page'))return {AdminPublicationPage};
     if(name.includes('admin-workspace-routes'))return {ADMIN_WORKSPACE_TOOLS};
     if(name.includes('admin-routing'))return adminRouting;
     if(name.includes('studio-navigation'))return {studioNavigationContextFromQuery:()=>({})};
@@ -146,8 +146,8 @@ function publicationWorkspaceHarness(search) {
       rooms:[{id:'room-evening',operatorId:'north',name:'Kvällsrummet',presentationLaneId:'evening',state:'live',published:true,archivedAt:null}]},
     async settle(){for(let i=0;i<6;i++){
       if(root.pending){root.pending=false;root.cursor=0;active=root;rootTree=WorkspaceTool({section:'publication'});child.pending=true;}
-      const lanes=node(rootTree,item=>item.type===ControlLanesPage);
-      if(lanes&&child.pending){child.pending=false;child.cursor=0;active=child;lanesTree=ControlLanesPage(lanes.props);}
+      const lanes=node(rootTree,item=>item.type===AdminPublicationPage);
+      if(lanes&&child.pending){child.pending=false;child.cursor=0;active=child;lanesTree=AdminPublicationPage(lanes.props);}
       for(const owner of [root,child])while(owner.effects.length)owner.effects.shift()();
       await new Promise(setImmediate);
     }},

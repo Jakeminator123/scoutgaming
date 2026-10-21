@@ -113,7 +113,7 @@ export function backofficeLabAuth({ db, boSession, identity, authEpoch, publicUr
       const flow = (await db.prepare('SELECT 1 FROM bo_lab_handoffs WHERE state_digest=? AND expires>? AND code_digest IS NULL').get(digest(state), Date.now()));
       if (!flow) return staleHandoff(res);
       const claims = (await boSession(req));
-      if (!claims) return reply(res, 303, { Location: `/studio/login?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}` });
+      if (!claims) return reply(res, 303, { Location: `/admin/login?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}` });
       if (!ADMIN_ROLES.has(claims.role)) return reply(res, 403);
       const account = (await identity.find(claims.sub));
       if (!account || account.stamp !== claims.source_stamp || claims.auth_epoch !== (await authEpoch(account.id))) return reply(res, 401);

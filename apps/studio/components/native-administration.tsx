@@ -19,7 +19,7 @@ export function NativeAdministration({ apiBase, availableActions, gameOrigin, in
     if (writing.current) return;
     writing.current = true; setBusy(true); setError(''); setEpoch(value => value+1);
     const authBase = apiBase === '/studio/api/admin' ? '/studio/api/auth' : '/api/auth';
-    try { await createStudioLoginClient({authBase}).request('logout',{}); window.location.assign(apiBase === '/studio/api/admin' ? '/studio/login' : '/login'); }
+    try { await createStudioLoginClient({authBase}).request('logout',{}); window.location.assign('/admin/login'); }
     catch (error) { setError(error instanceof StudioLoginUiError ? error.message : 'Utloggningen kunde inte bekräftas.'); }
     finally { writing.current = false; setBusy(false); }
   }

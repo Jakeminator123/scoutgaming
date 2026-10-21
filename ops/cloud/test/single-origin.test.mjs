@@ -60,7 +60,7 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
     const auth = start.headers.Location;
     const stateCookie = start.headers['Set-Cookie'].split(';')[0];
     assert.equal((await call(auth)).status, 303);
-    assert.match((await call(auth)).headers.Location, /^\/studio\/login\?returnTo=/);
+    assert.match((await call(auth)).headers.Location, /^\/admin\/login\?returnTo=/);
     claims = { sub: '1', role: 'admin', aud: 'backoffice', source_stamp: 'fixture-stamp', auth_epoch: 1, exp: Date.now() / 1000 + 600 };
     const grant = await call(auth);
     assert.equal(grant.status, 303);

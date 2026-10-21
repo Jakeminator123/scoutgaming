@@ -25,7 +25,7 @@ test('native login returnTo preserves current Studio views or one-use BO handoff
     assert.equal(studioLoginDestination(value,'/studio/api/auth'),value);
   }
   for (const value of ['/studio/administration?secret=x','/studio/','//attacker.test','https://attacker.test','/game','/blackjack','/api/bo/game-login',
-    '/studio/login','/studio/set-password','/partner/set-password','/studio/partner/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',
+    '/studio/login','/studio/set-password','/admin/login','/admin/set-password','/studio/admin/login','/studio/admin/set-password','/partner/set-password','/studio/partner/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',
     '/studio/tree/child','/studio/tree/','/studio/Tree','/studio/%74ree','/studio\\tree','/studio//tree','/tree',
     `/api/bo/game-login?state=${'a'.repeat(63)}`,`/api/bo/lab-login?state=${'A'.repeat(64)}`,
     `/api/bo/game-login?state=${'a'.repeat(64)}&token=secret`,'/api/bo/users?state='+ 'a'.repeat(64),null,[],{}]) assert.equal(studioLoginReturnTo(value),'/admin');
@@ -77,8 +77,9 @@ test('Studio permission denial explains the admin boundary without echoing serve
 });
 
 test('dealer workspace returns preserve only bounded view, category and shared context after login', () => {
-  const value='/control/clips?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
+  const value='/admin/dealer-studio?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
   assert.equal(studioLoginReturnTo(value),value);
+  assert.equal(studioLoginReturnTo(value.replace('/admin/dealer-studio','/control/clips')),value);
   for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/admin');
 });
 

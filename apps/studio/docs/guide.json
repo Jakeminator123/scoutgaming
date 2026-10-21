@@ -72,11 +72,11 @@
       "purpose": "Den enda editorn för presentationer: välj, skapa och namnge sammansättningen samt välj dealer, bord, bakgrund och placering. De inaktiva lane-fälten för fasval, probe och idle visas inte; gamla sparade värden bevaras. Aktiva klipp och grundloopscheman finns i Dealers & klipp; AI-småprat har egen sida. Bolagets justeringsrättigheter har egna inställningar. Bord och bakgrund laddas upp här; dealerklipp hanteras i Dealers & klipp. Spara och fortsätt inväntar sparresultat. Klippförhandsvisning och lokala filprov är separata från provspelning i blackjack. Provspela startar uttryckligen ett isolerat blackjackprov efter sparning; alla sparade dealers och lager kan granskas före bolagstilldelning. Startdealern behöver en grundloop och andra ofullständiga dealers kan inte väljas."
     },
     {
-      "name": "Publicering · /control/rooms",
-      "purpose": "Välj bolag och presentationer i partnerpaketet. Återanvänd befintliga spelrum; Skapa spelrum publicerar vald presentation och skapar en ny spelbar ingång atomiskt. Redigering nås via länken till vald sammansättning. Bolag och team hanteras på /control/companies. Dessa äldre editorer fungerar under övergången till /admin."
+      "name": "Publicering · /admin/publication",
+      "purpose": "Välj bolag och presentationer i partnerpaketet. Återanvänd befintliga spelrum; Skapa spelrum publicerar vald presentation och skapar en ny spelbar ingång atomiskt. Redigering nås via länken till vald sammansättning. Bolag och team hanteras på /admin/companies. Äldre publicerings- och bolagsbokmärken omdirigerar till samma Admin-flöden."
     },
     {
-      "name": "Klippbibliotek · /control/videos",
+      "name": "Klippbibliotek · /admin/videos",
       "purpose": "Bläddra, ladda upp och granska klipp i samma exakta familjer som Dealers & klipp och spelet använder. Uppladdade klipp har papperskorg och återställning. Permanent radering har separat kontroll och bekräftelse; ofullständigt verifierade beroenden spärrar åtgärden."
     },
     {

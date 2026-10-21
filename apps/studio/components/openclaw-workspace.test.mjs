@@ -32,8 +32,12 @@ function harness(fetchImpl, globals = {}) {
     useEffect(fn, deps) { const index = cursor++; const old = hooks[index];
       if (!old || deps.some((value, i) => value !== old.deps[i])) pending.push(() => { old?.cleanup?.(); hooks[index] = { deps, cleanup: fn() }; }); },
   };
-  const window = { location:{assign:value=>navigations.push(value)}, addEventListener: (type, fn) => listeners.set(type, fn),
-    removeEventListener: (type, fn) => { if (listeners.get(type) === fn) listeners.delete(type); } };
+  let current=new URL('https://admin.fixture.invalid/admin/ai/models');
+  const window = {crypto:globalThis.crypto,location:{get href(){return current.href;},get pathname(){return current.pathname;},get search(){return current.search;},get hash(){return current.hash;},assign:value=>navigations.push(value)},
+    history:{state:null,replaceState(state,_title,href){this.state=state;if(href)current=new URL(href,current);}},
+    addEventListener:(type,fn)=>listeners.set(type,fn),
+    removeEventListener:(type,fn)=>{if(listeners.get(type)===fn)listeners.delete(type);},
+    dispatchEvent:event=>{listeners.get(event.type)?.(event);return !event.defaultPrevented;}};
   const component = load('./openclaw-workspace.tsx', { react: fakeReact }, { fetch: fetchImpl, window, ...globals }).OpenClawWorkspace;
   return {
     listeners, navigations,
@@ -240,7 +244,7 @@ test('initial render uses existing Studio login, native advanced link and makes 
 test('clip policy remains in Studio and advanced dashboard keeps browser-approval guidance', () => {
   const html = render();
   assert.match(html, /dealerns klipp och regler/);
-  assert.ok(html.includes(`href="${labUrls.labUrl('/')}"`));
+  assert.ok(html.includes(`href="${labUrls.labUrl('/admin/clips')}"`));
   assert.match(html, /utan lösenord eller terminalkommando/);
   assert.match(html, /egen webbläsarsession/);
   assert.doesNotMatch(html, /Starta om|Stoppa Gateway/);
@@ -262,26 +266,6 @@ test('invalid explicit dashboard is not replaced with the default or reflected',
   assert.match(html, /role="alert"/);
   assert.doesNotMatch(html, /Öppna OpenClaws egen dashboard|bad.invalid|token=secret|user:secret/);
 });
-
-test('page authorizes request before rendering and never fetches project or video state', async () => {
-  const incoming = new Headers({ host: 'localhost:4188', cookie: 'existing-session' });
-  let authorized = false;
-  const page = load('../app/control/openclaw/page.tsx', {
-    'next/headers': { headers: async () => incoming },
-    '@/lib/ui-server': { authorizeUiPage: async request => { assert.equal(request.url, 'http://localhost:4188/control/openclaw'); assert.equal(request.headers.get('cookie'), 'existing-session'); authorized = true; } },
-    '@/components/openclaw-workspace': { OpenClawWorkspace },
-  });
-  assert.equal(page.dynamic, 'force-dynamic');
-  await page.default();
-  assert.equal(authorized, true);
-  const denied = load('../app/control/openclaw/page.tsx', {
-    'next/headers': { headers: async () => incoming },
-    '@/lib/ui-server': { authorizeUiPage: async () => { throw new Error('denied'); } },
-    '@/components/openclaw-workspace': { OpenClawWorkspace },
-  });
-  await assert.rejects(denied.default(), /denied/);
-});
-
 
 test('dashboard button obtains a fresh N1 handoff before navigating and never renders the credential',async()=>{
  const bootstrapToken='a'.repeat(48),browserUrl=dashboard.OPENCLAW_DASHBOARD_URL+'#'+new URLSearchParams({bootstrapToken,bootstrapProfile:'owner',gatewayUrl:'wss://croupier-lab-director.onrender.com/openclaw'});

@@ -20,9 +20,21 @@ export function StudioNavigation({ tabHrefs, onNavigate, ...context }: StudioNav
     ...(query?.get('game') ? { game: query.get('game')! } : {}),
     ...Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined)),
   } as typeof context;
-  const crumbs = studioNavigationCrumbs(context);
-  const tabs = studioNavigationTabs(context, tabHrefs);
-  const dealerHref = studioNavigationHref('/control/clips?view=idle', context);
+  // Keep explicit room scope, including ambiguous values, for the destination's
+  // existing validation. Navigation must not turn an invalid selection into one room.
+  const scopeHref = (href: string) => {
+    const url = new URL(href, 'https://studio.invalid');
+    for (const key of ['operator', 'table', 'room']) {
+      const values = query?.getAll(key) ?? [];
+      if (!values.length) continue;
+      url.searchParams.delete(key);
+      for (const value of values) url.searchParams.append(key, value);
+    }
+    return url.pathname + url.search + url.hash;
+  };
+  const crumbs = studioNavigationCrumbs(context).map(crumb => ({...crumb, ...(crumb.href ? {href: scopeHref(crumb.href)} : {})}));
+  const tabs = studioNavigationTabs(context, tabHrefs).map(tab => ({...tab, href: scopeHref(tab.href)}));
+  const dealerHref = scopeHref(studioNavigationHref('/admin/dealer-studio?view=idle', context));
   const navigate = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     // The editor owns its save/conflict guard. Native links preserve beforeunload
     // when no callback is supplied; modified clicks keep normal browser behavior.

@@ -398,12 +398,12 @@ test('room creation accepts the exact v4 capability for frozen event packages',a
 
 test('preflight causes provide distinct recovery without silently creating or republishing', async () => {
   for (const [extra, label, href] of [
-    [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/control/rooms?operator=sg-test&composition=portrait-live'],
-    [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/control/rooms?operator=sg-test&composition=portrait-live'],
-    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/control/compositions?composition=portrait-live'],
-    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/control/compositions?composition=portrait-live'],
+    [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/admin/publication?operator=sg-test&composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/admin/publication?operator=sg-test&composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/admin/compositions?composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/admin/compositions?composition=portrait-live'],
     [{ ready: false, reason: 'presentation_room_environment_required', environment: { kind: 'variable', fixed: false, label: 'Välj en fast bakgrund för rummet' } },
-      'Välj och lås miljön i Sammansättningar', '/control/compositions?composition=portrait-live'],
+      'Välj och lås miljön i Sammansättningar', '/admin/compositions?composition=portrait-live'],
   ]) {
     const h = fixture(), ui = componentHarness(h.controller);
     ui.render(context); h.reply(0, prepared(context, extra)); await tick();
@@ -482,7 +482,7 @@ test('a shared published environment conflict directs to a separate composition 
   h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: 'presentation_room_environment_conflict' }));
   await tick(); const tree = ui.render(context), html = renderToStaticMarkup(tree);
   assert.match(html, /Skapa en separat sammansättning/); assert.match(html, /redan av publicerade rum/);
-  assert.equal(find(tree, 'a').props.href, labBasePath() + '/control/compositions?composition=portrait-live');
+  assert.equal(find(tree, 'a').props.href, labBasePath() + '/admin/compositions?composition=portrait-live');
   find(tree, 'form').props.onSubmit({ preventDefault() {} });
   assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
 });
@@ -504,7 +504,7 @@ test('typed conflicts offer visible explicit recovery while keeping creation blo
     ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: code })); await tick();
     const tree = ui.render(context), html = renderToStaticMarkup(tree), together = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(code);
     assert.equal(h.controller.getSnapshot().status, 'unavailable');
-    assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/control/rooms?operator=sg-test');
+    assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/admin/publication?operator=sg-test');
     assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera spelrummet/);
     if (together) assert.match(html, /publicera alla dessa presentationer tillsammans först.*Behåll befintliga rum och dealers/);
     else assert.doesNotMatch(html, /publicera alla dessa presentationer/);
