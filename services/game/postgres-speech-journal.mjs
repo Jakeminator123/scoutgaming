@@ -8,9 +8,9 @@ import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from '../.
 
 export { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS };
 const MAX_MICRO_USD = 10000000;
-// Raised 20 → 40 USD on 19 October 2026 at Jakob's instruction for the Dragan
-// trial evening; the persisted policy row still bounds the effective value.
-const MAX_DAILY_MICRO_USD = 40000000;
+// Raised 20 → 40 USD on 19 October and 40 → 60 USD on 21 October 2026 at
+// Jakob's instruction; the persisted policy row still bounds the effective value.
+const MAX_DAILY_MICRO_USD = 60000000;
 const resources = new Set(['fullfile-provider', 'stream-session', 'operator-qa']);
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const activeRequests = new Set(['reserved', 'submission_started', 'submission_uncertain']);

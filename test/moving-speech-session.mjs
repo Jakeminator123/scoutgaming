@@ -112,16 +112,16 @@ test('Dragan admission forwards its bounded initial grant independently of techn
   const f=fixture({configuration:MOVING_TRIAL_BUDGET}),attempt=await f.admit();
   assert.equal(f.state.input.budgetId,MOVING_TRIAL_BUDGET.budgetId);
   assert.equal(f.state.input.initialBudgetMicroUsd,13200000);
-  assert.equal(f.state.input.totalBudgetMicroUsd,45000000);
+  assert.equal(f.state.input.totalBudgetMicroUsd,150000000);
   assert.equal(f.state.input.reserveMicroUsd,1200000);
   await attempt.cancel();
 });
 
 test('configuration bounds technical capacity and retains per-job, daily and moving-window limits',()=>{
-  assert.doesNotThrow(()=>fixture({configuration:{totalBudgetMicroUsd:45000000,currentDailyBudgetMicroUsd:40000000}}));
-  for(const configuration of [{totalBudgetMicroUsd:45000001},{totalBudgetMicroUsd:45000000,reserveMicroUsd:5000001},
+  assert.doesNotThrow(()=>fixture({configuration:{totalBudgetMicroUsd:150000000,currentDailyBudgetMicroUsd:60000000}}));
+  for(const configuration of [{totalBudgetMicroUsd:150000001},{totalBudgetMicroUsd:150000000,reserveMicroUsd:5000001},
     {initialBudgetMicroUsd:0},{initialBudgetMicroUsd:5000001},{initialBudgetMicroUsd:'13200000'},
-    {currentDailyBudgetMicroUsd:40000001},{lifetimeMs:480001},{startupMs:450001},
+    {currentDailyBudgetMicroUsd:60000001},{lifetimeMs:480001},{startupMs:450001},
     {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
 });
 

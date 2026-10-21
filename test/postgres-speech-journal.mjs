@@ -130,20 +130,20 @@ test('budget is never implicit; confirmed empty-only bootstrap does not increase
   assert.equal(occupied.pool.state.policies.size, 0);
 });
 
-test('an explicit daily-policy amendment needs its confirmation, an existing policy and the 40 USD code ceiling', async () => {
+test('an explicit daily-policy amendment needs its confirmation, an existing policy and the 60 USD code ceiling', async () => {
   const { journal, pool } = await fixture();
   const amend = (dailyBudgetMicroUsd, confirmation = 'apply-explicit-daily-budget-amendment') => journal.amendBudgetPolicy({ dailyBudgetMicroUsd, confirmation });
   await assert.rejects(amend(30000000), rejection('generated_speech_budget_policy_missing', 409));
   assert.equal(pool.state.policies.size, 0);
   await initPolicy(journal, 20000000);
   await assert.rejects(amend(30000000, 'verified-new-empty-cost-journal'), rejection('generated_speech_budget_amendment_unauthorized', 409));
-  await assert.rejects(amend(40000001), rejection('invalid_generated_speech_budget', 422));
+  await assert.rejects(amend(60000001), rejection('invalid_generated_speech_budget', 422));
   await assert.rejects(amend(0), rejection('invalid_generated_speech_budget', 422));
-  assert.deepEqual(await amend(40000000), { previousDailyBudgetMicroUsd: 20000000, dailyBudgetMicroUsd: 40000000, changed: true });
-  assert.deepEqual(await amend(40000000), { previousDailyBudgetMicroUsd: 40000000, dailyBudgetMicroUsd: 40000000, changed: false });
+  assert.deepEqual(await amend(60000000), { previousDailyBudgetMicroUsd: 20000000, dailyBudgetMicroUsd: 60000000, changed: true });
+  assert.deepEqual(await amend(60000000), { previousDailyBudgetMicroUsd: 60000000, dailyBudgetMicroUsd: 60000000, changed: false });
   // The runtime still applies min(persisted, configured) on every read.
-  assert.deepEqual(await journal.getBudgetPolicy({ currentBudgetMicroUsd: 25000000 }), { dailyBudgetMicroUsd: 25000000, savedBudgetMicroUsd: 40000000 });
-  assert.deepEqual(await journal.getBudgetPolicy({ currentBudgetMicroUsd: 40000000 }), { dailyBudgetMicroUsd: 40000000, savedBudgetMicroUsd: 40000000 });
+  assert.deepEqual(await journal.getBudgetPolicy({ currentBudgetMicroUsd: 25000000 }), { dailyBudgetMicroUsd: 25000000, savedBudgetMicroUsd: 60000000 });
+  assert.deepEqual(await journal.getBudgetPolicy({ currentBudgetMicroUsd: 60000000 }), { dailyBudgetMicroUsd: 60000000, savedBudgetMicroUsd: 60000000 });
 });
 
 test('midnight reserves whole cost on both UTC days, no refund after terminal/cancel; min current/saved budget', async () => {
@@ -418,12 +418,12 @@ test('lost fullfile COMMIT and uncertain/cancelled jobs keep reserved cost after
   assert.equal(f.pool.trace.filter(t=>t==='insert_file_reservation').length,1);
 });
 
- test('the 40 USD daily ceiling retains the environment minimum and 10 USD per-job ceiling', async()=>{
+ test('the 60 USD daily ceiling retains the environment minimum and 10 USD per-job ceiling', async()=>{
    const {journal,pool}=await fixture();
    await initPolicy(journal,20000000);
    const lease=await streamLease(journal);
    await assert.rejects(reserve(journal,lease,sessionId,{reserveMicroUsd:10000001,currentBudgetMicroUsd:20000000}),rejection('invalid_generated_speech_budget',422));
-   await assert.rejects(reserve(journal,lease,sessionId,{currentBudgetMicroUsd:40000001}),rejection('invalid_generated_speech_budget',422));
+   await assert.rejects(reserve(journal,lease,sessionId,{currentBudgetMicroUsd:60000001}),rejection('invalid_generated_speech_budget',422));
    await reserve(journal,lease,sessionId,{reserveMicroUsd:500000,currentBudgetMicroUsd:20000000});
    await journal.markSubmissionStarted({sessionId,lease});
    await journal.attachJob({sessionId,lease,jobId:'job-'+sessionId});
