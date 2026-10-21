@@ -16,15 +16,26 @@ const TWO_BOXES = [{ main: 10, pp: 5, tp: 5 }, { ...EMPTY }, { ...EMPTY }, { mai
 const code = expected => error => error instanceof BlackjackCoreError && error.code === expected;
 const serials = value => JSON.stringify(value).match(/"serial":\d+/g)?.map(s => Number(s.slice(9))) ?? [];
 
+// What K03 would have reserved before this command (O01-svar 2.5): the exact stake per box
+// before start and the exact insurance per accepted box before the insurance decision.
+function reservationsFor(state, command) {
+  const stake = {}, insurance = {};
+  if (command?.op === 'start' && Array.isArray(command.bets)) command.bets.forEach((b, box) => { const n = (b?.main ?? 0) + (b?.pp ?? 0) + (b?.tp ?? 0); if (n > 0) stake[box] = n; });
+  if (command?.op === 'insurance' && state.round) for (const h of state.round.hands) {
+    if (command.takeBoxes ? command.takeBoxes.includes(h.box) : command.take === true) insurance[h.box] = h.stake / 2;
+  }
+  return { stake, insurance };
+}
+
 // Drives the core like a coordinator: explicit inputs, wallet applied from effects,
 // and a check that the caller's state is never mutated.
 function table(seed = 'k02', config = {}) {
   const random = deterministicRandom(seed);
   const opened = newGame({ random });
   const t = { random, config, state: opened.state, log: [...opened.events], publicLog: [...opened.publicEvents], views: [opened.view], wallet: 1000 };
-  t.send = (command, available = t.wallet) => {
+  t.send = (command, funding = { available: t.wallet, reserved: reservationsFor(t.state, command) }) => {
     const before = JSON.stringify(t.state);
-    const out = step(t.state, command, t.config, { random: t.random, available });
+    const out = step(t.state, command, t.config, { random: t.random, funding });
     assert.equal(JSON.stringify(t.state), before, 'input state is not mutated');
     t.state = out.state; t.log.push(...out.events); t.publicLog.push(...out.publicEvents); t.views.push(out.view);
     for (const e of out.effects) t.wallet += e.direction === 'debit' ? -e.amount : e.amount;
@@ -81,8 +92,8 @@ test('valid round: stake, decisions, exactly one settlement', () => {
   const t = table();
   const started = t.send({ op: 'start', bets: TWO_BOXES });
   assert.deepEqual(started.effects, [
-    { kind: 'stake', direction: 'debit', box: 0, amount: 20 },
-    { kind: 'stake', direction: 'debit', box: 3, amount: 27 },
+    { kind: 'stake', direction: 'debit', source: 'reservation', box: 0, amount: 20 },
+    { kind: 'stake', direction: 'debit', source: 'reservation', box: 3, amount: 27 },
   ]);
   assert.equal(t.wallet, 953);
   assert.equal(t.state.turnSeq, 1);
@@ -113,44 +124,88 @@ test('invalid commands are rejected with typed errors and leave state untouched'
   assert.throws(bad([{ main: 5, pp: 0, tp: 0 }, { main: 0, pp: 5, tp: 0 }, ...ONE_BOX.slice(2)]), code('INVALID_STAKE'));
   assert.throws(() => t.send({ op: 'teleport' }), code('UNKNOWN_COMMAND'));
   assert.throws(() => t.send({ op: 'act', action: 'hit' }), code('NO_ACTIVE_ROUND'));
-  assert.throws(() => step({ ...t.state, contract: 'other' }, { op: 'start', bets: ONE_BOX }, {}, { random: t.random, available: 1000 }), code('INVALID_STATE'));
+  assert.throws(() => step({ ...t.state, contract: 'other' }, { op: 'start', bets: ONE_BOX }, {}, { random: t.random, funding: { available: 1000, reserved: { stake: { 0: 5 } } } }), code('INVALID_STATE'));
   // Frozen table config, not the command, sets limits.
   t.config = { limits: { min: 10, max: 100, sideMax: 20 } };
   assert.throws(bad(ONE_BOX), code('INVALID_STAKE'));
   assert.throws(bad([{ main: 10, pp: 21, tp: 0 }, ...ONE_BOX.slice(1)]), code('INVALID_STAKE'));
+  // Fixed shoe top: player 6+5, dealer 9 up, so no insurance and the decision phase is always reached.
+  stack(t, [['6','♠'],['9','♦'],['5','♥'],['7','♣']]);
   t.send({ op: 'start', bets: [{ main: 100, pp: 20, tp: 0 }, ...ONE_BOX.slice(1)] });
   assert.equal(t.state.version, 1);
+  assert.equal(t.state.round.phase, 'decisions');
   assert.throws(() => t.send({ op: 'collect', roundId: 'another-round' }), code('STALE_COMMAND'));
-  if (t.state.round.phase === 'insurance') {
-    assert.throws(() => t.send({ op: 'insurance', takeBoxes: [4], roundId: t.state.roundId }), code('INSURANCE_UNAVAILABLE'));
-    t.send({ op: 'insurance', take: false, roundId: t.state.roundId });
-  } else assert.throws(() => t.send({ op: 'insurance', take: true, roundId: t.state.roundId }), code('INSURANCE_UNAVAILABLE'));
-  if (t.state.round.phase === 'decisions') {
-    const r = t.state.round, base = { op: 'act', action: 'stand', roundId: t.state.roundId, turnSeq: t.state.turnSeq, handIndex: r.active, box: r.hands[r.active].box };
-    assert.throws(() => t.send({ ...base, turnSeq: base.turnSeq - 1 }), code('STALE_COMMAND'), 'late command for an earlier turn');
-    assert.throws(() => t.send({ ...base, box: base.box + 1 }), code('STALE_COMMAND'));
-    assert.throws(() => t.send({ ...base, handIndex: base.handIndex + 1 }), code('STALE_COMMAND'));
-    assert.throws(() => t.send({ ...base, action: 'surrender' }), code('ILLEGAL_ACTION'));
-    assert.throws(() => t.send({ op: 'collect', roundId: t.state.roundId }), code('ROUND_NOT_SETTLED'));
-  }
+  assert.throws(() => t.send({ op: 'insurance', take: true, roundId: t.state.roundId }), code('INSURANCE_UNAVAILABLE'));
+  const r = t.state.round, base = { op: 'act', action: 'stand', roundId: t.state.roundId, turnSeq: t.state.turnSeq, handIndex: r.active, box: r.hands[r.active].box };
+  assert.throws(() => t.send({ ...base, turnSeq: base.turnSeq - 1 }), code('STALE_COMMAND'), 'late command for an earlier turn');
+  assert.throws(() => t.send({ ...base, box: base.box + 1 }), code('STALE_COMMAND'));
+  assert.throws(() => t.send({ ...base, handIndex: base.handIndex + 1 }), code('STALE_COMMAND'));
+  assert.throws(() => t.send({ ...base, action: 'surrender' }), code('ILLEGAL_ACTION'));
+  assert.throws(() => t.send({ op: 'collect', roundId: t.state.roundId }), code('ROUND_NOT_SETTLED'));
+  assert.equal(t.state.version, 1, 'rejected commands leave state untouched');
+  // Fixed shoe top with a dealer ace: insurance for a box without a hand is rejected.
+  const i = table('invalid-insurance');
+  stack(i, [['8','♠'],['A','♦'],['8','♥'],['K','♣']]);
+  i.send({ op: 'start', bets: ONE_BOX });
+  assert.equal(i.state.round.phase, 'insurance');
+  assert.throws(() => i.send({ op: 'insurance', takeBoxes: [4], roundId: i.state.roundId }), code('INSURANCE_UNAVAILABLE'));
+  assert.throws(() => i.send({ op: 'act', action: 'stand', roundId: i.state.roundId, turnSeq: i.state.turnSeq, handIndex: 0, box: 0 }), code('ILLEGAL_ACTION'));
 });
 
-test('balance limit is an explicit server input, never a core-owned balance', () => {
+test('funding: reserved amounts are consumed from reservations, new debits are checked against available', () => {
+  // O01: balance 100 with 100 reserved gives available 0; a fully reserved start must still succeed.
+  const funded = (stake, available = 0, insurance = {}) => ({ available, reserved: { stake, insurance } });
   const t = table();
-  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, 46.99), code('INSUFFICIENT_BALANCE'));
-  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, null), code('AVAILABLE_REQUIRED'));
-  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, '1000'), code('AVAILABLE_REQUIRED'));
+  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, null), code('FUNDING_REQUIRED'));
+  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, { available: 1000 }), code('RESERVATION_REQUIRED'), 'available never funds a stake');
+  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, funded({ 0: 20, 3: 26.99 }, 1000)), code('RESERVATION_INSUFFICIENT'), 'reservation smaller than stake');
+  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, funded({ 0: 20 }, 1000)), code('RESERVATION_INSUFFICIENT'), 'missing reservation for a staked box');
+  assert.throws(() => t.send({ op: 'start', bets: TWO_BOXES }, funded({ 0: 20, 3: '27' })), code('INVALID_INPUT'));
   assert.equal(t.state.version, 0);
-  t.send({ op: 'start', bets: TWO_BOXES }, 47);
-  assert.ok(!('balance' in t.state) && !('wallet' in t.state));
-  // Double needs the stake again; a zero-cost stand needs no balance at all.
-  const s = table('double-limit');
-  stack(s, [['6','♠'],['9','♦'],['5','♥'],['7','♣']]);
-  s.send({ op: 'start', bets: ONE_BOX });
-  assert.equal(s.state.round.phase, 'decisions');
-  const r = s.state.round, base = { op: 'act', roundId: s.state.roundId, turnSeq: s.state.turnSeq, handIndex: r.active, box: 0 };
-  assert.throws(() => s.send({ ...base, action: 'double' }, 4.99), code('INSUFFICIENT_BALANCE'));
-  assert.deepEqual(s.send({ ...base, action: 'stand' }, null).effects, []);
+  const started = t.send({ op: 'start', bets: TWO_BOXES }, funded({ 0: 20, 3: 27 }, 0));
+  assert.ok(started.effects.every(e => e.source === 'reservation'));
+  assert.ok(!('balance' in t.state) && !('wallet' in t.state) && !('funding' in t.state));
+
+  // Insurance: consumed from the insurance reservation with available 0.
+  const ins = table('funding-insurance');
+  stack(ins, [['8','♠'],['A','♦'],['8','♥'],['K','♣']]);
+  ins.send({ op: 'start', bets: ONE_BOX }, funded({ 0: 5 }));
+  const take = { op: 'insurance', takeBoxes: [0], roundId: ins.state.roundId };
+  assert.throws(() => ins.send(take, { available: 1000, reserved: { stake: { 0: 5 } } }), code('RESERVATION_REQUIRED'), 'available never funds insurance');
+  assert.throws(() => ins.send(take, funded({ 0: 5 }, 1000)), code('RESERVATION_INSUFFICIENT'), 'a stake reservation never funds insurance');
+  assert.throws(() => ins.send(take, funded({}, 1000, { 0: 2.49 })), code('RESERVATION_INSUFFICIENT'));
+  assert.deepEqual(ins.send(take, funded({}, 0, { 0: 2.5 })).effects, [{ kind: 'insurance', direction: 'debit', source: 'reservation', box: 0, hand: 0, amount: 2.5 }]);
+  // Declining insurance needs no funding at all.
+  const dec = table('funding-insurance');
+  stack(dec, [['8','♠'],['A','♦'],['8','♥'],['K','♣']]);
+  dec.send({ op: 'start', bets: ONE_BOX }, funded({ 0: 5 }));
+  assert.deepEqual(dec.send({ op: 'insurance', takeBoxes: [], roundId: dec.state.roundId }, null).effects, []);
+
+  // Double: a new debit against available, never against a reservation.
+  const d = table('funding-double');
+  stack(d, [['6','♠'],['9','♦'],['5','♥'],['7','♣']]);
+  d.send({ op: 'start', bets: ONE_BOX }, funded({ 0: 5 }));
+  assert.equal(d.state.round.phase, 'decisions');
+  const dbl = { op: 'act', action: 'double', roundId: d.state.roundId, turnSeq: d.state.turnSeq, handIndex: 0, box: 0 };
+  assert.throws(() => d.send(dbl, null), code('FUNDING_REQUIRED'));
+  assert.throws(() => d.send(dbl, { reserved: { stake: { 0: 5 } } }), code('AVAILABLE_REQUIRED'), 'a reservation never funds a double');
+  assert.throws(() => d.send(dbl, funded({ 0: 1000 }, 4.99)), code('INSUFFICIENT_BALANCE'));
+  assert.throws(() => d.send(dbl, funded({}, '1000')), code('AVAILABLE_REQUIRED'));
+  assert.deepEqual(d.send(dbl, funded({}, 5)).effects, [{ kind: 'double', direction: 'debit', source: 'available', box: 0, hand: 0, amount: 5 }]);
+
+  // Split: same rule as double.
+  const sp = table('funding-split');
+  stack(sp, [['8','♠'],['6','♦'],['8','♥'],['10','♣'],['3','♦'],['2','♣']]);
+  sp.send({ op: 'start', bets: ONE_BOX }, funded({ 0: 5 }));
+  const split = { op: 'act', action: 'split', roundId: sp.state.roundId, turnSeq: sp.state.turnSeq, handIndex: 0, box: 0 };
+  assert.throws(() => sp.send(split, funded({ 0: 5 }, 4.99)), code('INSUFFICIENT_BALANCE'));
+  assert.deepEqual(sp.send(split, funded({}, 5)).effects, [{ kind: 'split', direction: 'debit', source: 'available', box: 0, hand: 0, amount: 5 }]);
+
+  // A zero-cost stand needs no funding.
+  const st = table('funding-stand');
+  stack(st, [['6','♠'],['9','♦'],['5','♥'],['7','♣']]);
+  st.send({ op: 'start', bets: ONE_BOX }, funded({ 0: 5 }));
+  assert.deepEqual(st.send({ op: 'act', action: 'stand', roundId: st.state.roundId, turnSeq: st.state.turnSeq, handIndex: 0, box: 0 }, null).effects, []);
 });
 
 test('hidden hole card and future cards never reach the public view or public events', () => {
@@ -251,7 +306,7 @@ test('randomness, ids and nonce come only from explicit inputs; production adapt
   assert.throws(() => newGame({}), code('INPUTS_REQUIRED'));
   assert.throws(() => newGame(), code('INPUTS_REQUIRED'));
   const g = table();
-  assert.throws(() => step(g.state, { op: 'start', bets: ONE_BOX }, {}, { available: 1000 }), code('INPUTS_REQUIRED'));
+  assert.throws(() => step(g.state, { op: 'start', bets: ONE_BOX }, {}, { funding: { available: 1000, reserved: { stake: { 0: 5 } } } }), code('INPUTS_REQUIRED'));
   const broken = { ...deterministicRandom('x'), uint32: () => 2 ** 32 };
   assert.throws(() => newGame({ random: broken }), code('INVALID_INPUT'));
   assert.throws(() => newGame({ random: { ...deterministicRandom('x'), uint32: () => 0xFFFFFFFF } }), code('INVALID_INPUT'), 'a stuck source cannot loop forever');
@@ -274,10 +329,10 @@ test('split, double and insurance effects match Kevin engine amounts', () => {
   stack(t, [['8','♠'],['6','♦'],['8','♥'],['10','♣'],['3','♦'],['2','♣'],['9','♦'],['K','♥'],['5','♠']]);
   t.send({ op: 'start', bets: ONE_BOX });
   assert.equal(t.wallet, 995);
-  assert.deepEqual(t.act('split').effects, [{ kind: 'split', direction: 'debit', box: 0, hand: 0, amount: 5 }]);
+  assert.deepEqual(t.act('split').effects, [{ kind: 'split', direction: 'debit', source: 'available', box: 0, hand: 0, amount: 5 }]);
   assert.equal(t.state.shoe.dealt, 7); assert.equal(t.wallet, 990); assert.equal(t.state.round.hands.length, 2);
   t.act('hit'); t.act('stand');
-  assert.deepEqual(t.act('double').effects, [{ kind: 'double', direction: 'debit', box: 0, hand: 0, amount: 5 }]);
+  assert.deepEqual(t.act('double').effects, [{ kind: 'double', direction: 'debit', source: 'available', box: 0, hand: 0, amount: 5 }]);
   assert.equal(t.state.shoe.dealt, 10); assert.equal(t.wallet, 985); assert.equal(t.state.round.phase, 'settled');
   t.send({ op: 'collect', roundId: t.state.roundId });
   assert.equal(t.state.round.boxes[0].sideReturn, t.state.round.hands[0].sideReturn);
@@ -286,7 +341,7 @@ test('split, double and insurance effects match Kevin engine amounts', () => {
   stack(i, [['8','♠'],['A','♦'],['8','♥'],['K','♣']]);
   const started = i.send({ op: 'start', bets: ONE_BOX });
   assert.equal(started.view.round.dealer.length, 1);
-  assert.deepEqual(i.send({ op: 'insurance', takeBoxes: [0], roundId: i.state.roundId }).effects, [{ kind: 'insurance', direction: 'debit', box: 0, hand: 0, amount: 2.5 }]);
+  assert.deepEqual(i.send({ op: 'insurance', takeBoxes: [0], roundId: i.state.roundId }).effects, [{ kind: 'insurance', direction: 'debit', source: 'reservation', box: 0, hand: 0, amount: 2.5 }]);
   assert.equal(i.wallet, 992.5); assert.equal(i.state.round.dealer.length, 2);
   i.send({ op: 'collect', roundId: i.state.roundId });
   assert.equal(i.wallet, 1000);
@@ -328,7 +383,8 @@ test("compatibility: Kevin's frozen engine and the core stay byte-identical; pro
   let core = newGame({ random: mirror(true) });
   let state = core.state; const log = [...core.events], closed = [];
   const send = (command, shuffling = false) => {
-    const out = step(state, command, {}, { random: mirror(shuffling), available: Number.MAX_SAFE_INTEGER });
+    // Exact reservations for start/insurance, unlimited available for double/split (Kevin's engine ran with MAX_SAFE_INTEGER).
+    const out = step(state, command, {}, { random: mirror(shuffling), funding: { available: Number.MAX_SAFE_INTEGER, reserved: reservationsFor(state, command) } });
     state = out.state; log.push(...out.events); closed.push(...out.events.filter(e => e.type === 'shoe.closed').map(e => e.payload.proof));
     return out;
   };

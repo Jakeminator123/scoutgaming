@@ -131,13 +131,39 @@ function load(state) {
   return JSON.parse(JSON.stringify(state));
 }
 
-function charge(inputs, effects) {
-  const debit = effects.reduce((n, e) => n + (e.direction === 'debit' ? e.amount : 0), 0);
-  if (!debit) return;
-  const available = inputs?.available;
-  // The caller reads this from its server-side wallet; client balances are never input.
-  if (typeof available !== 'number' || !Number.isFinite(available)) fail('AVAILABLE_REQUIRED', 'Server-side available balance is required');
-  if (available - debit < 0) fail('INSUFFICIENT_BALANCE', 'Insufficient balance');
+// Command funding (O01-svar 2.5). The caller (K03) reads it server-side from its WalletPort;
+// client balances are never input and the core never stores or changes a balance.
+//   inputs.funding = {
+//     available,                         // balance - open reservations; funds NEW debits only
+//     reserved: { stake: { [box]: n },   // open stake reservation per box, consumed at round start
+//                 insurance: { [box]: n } } // open insurance reservation per box, consumed at insurance resolution
+//   }
+// Effects carry `source`: 'reservation' (K03 consumes that reservation) or 'available'
+// (K03 debits against available). A pre-reserved amount is never checked against available.
+function fund(inputs, effects) {
+  const funding = inputs?.funding;
+  const needed = {};
+  for (const e of effects) if (e.direction === 'debit') {
+    if (e.source === 'reservation') (needed[e.kind] ??= {})[e.box] = (needed[e.kind]?.[e.box] ?? 0) + e.amount;
+    else needed.available = (needed.available ?? 0) + e.amount;
+  }
+  if (!Object.keys(needed).length) return;
+  if (!funding || typeof funding !== 'object') fail('FUNDING_REQUIRED', 'Server-side command funding is required');
+  for (const kind of ['stake', 'insurance']) {
+    if (!needed[kind]) continue;
+    const reserved = funding.reserved?.[kind];
+    if (!reserved || typeof reserved !== 'object') fail('RESERVATION_REQUIRED', `Server-side ${kind} reservations are required`);
+    for (const [box, amount] of Object.entries(needed[kind])) {
+      const have = reserved[box] ?? 0;
+      if (typeof have !== 'number' || !Number.isFinite(have) || have < 0) fail('INVALID_INPUT', `Invalid ${kind} reservation for box ${box}`);
+      if (have < amount) fail('RESERVATION_INSUFFICIENT', `The ${kind} reservation for box ${box} does not cover ${amount}`);
+    }
+  }
+  if (needed.available) {
+    const available = funding.available;
+    if (typeof available !== 'number' || !Number.isFinite(available)) fail('AVAILABLE_REQUIRED', 'Server-side available balance is required');
+    if (available - needed.available < 0) fail('INSUFFICIENT_BALANCE', 'Insufficient balance');
+  }
 }
 
 // Creates a game and opens (commits) its first shoe before any bet or draw.
@@ -165,8 +191,8 @@ export function step(state, command, config, inputs) {
       if ((x.main > 0 && x.main < limits.min) || (!x.main && (x.pp || x.tp))) fail('INVALID_STAKE', `Side bets require a main bet of at least ${limits.min}`);
     }
     const bets = b.map(x => ({ main: x.main, pp: x.pp, tp: x.tp }));
-    bets.forEach((x, box) => { const amount = x.main + x.pp + x.tp; if (amount) effects.push({ kind: 'stake', direction: 'debit', box, amount }); });
-    charge(inputs, effects);
+    bets.forEach((x, box) => { const amount = x.main + x.pp + x.tp; if (amount) effects.push({ kind: 'stake', direction: 'debit', source: 'reservation', box, amount }); });
+    fund(inputs, effects);
     const rnd = randomPort(inputs?.random);
     if (!g.shoe) shuffle(g, rnd, events);
     else if (g.shoe.cutReached) { shuffle(g, rnd, events); shuffled = true; }
@@ -184,16 +210,16 @@ export function step(state, command, config, inputs) {
       const hand = r.live()[r.active];
       if (command.turnSeq !== g.turnSeq || command.handIndex !== r.active || command.box !== hand.box) fail('STALE_COMMAND', 'Turn changed; reload to resume');
       if (!r.legal().includes(command.action)) fail('ILLEGAL_ACTION', 'Illegal action');
-      if (['double','split'].includes(command.action)) effects.push({ kind: command.action, direction: 'debit', box: hand.box, hand: r.active, amount: hand.stake });
-      charge(inputs, effects);
+      if (['double','split'].includes(command.action)) effects.push({ kind: command.action, direction: 'debit', source: 'available', box: hand.box, hand: r.active, amount: hand.stake });
+      fund(inputs, effects);
       r.act(command.action);
       params = { action: command.action };
     } else if (command.op === 'insurance') {
       const boxes = command.takeBoxes;
       if (r.phase !== 'insurance' || (boxes == null ? typeof command.take !== 'boolean' : !Array.isArray(boxes) || boxes.some(i => !Number.isInteger(i) || !r.live().some(h => h.box === i)))) fail('INSURANCE_UNAVAILABLE', 'Insurance is not available');
       const choices = r.live().map(h => boxes == null ? command.take : boxes.includes(h.box));
-      r.live().forEach((h, i) => { if (choices[i]) effects.push({ kind: 'insurance', direction: 'debit', box: h.box, hand: i, amount: h.stake / 2 }); });
-      charge(inputs, effects);
+      r.live().forEach((h, i) => { if (choices[i]) effects.push({ kind: 'insurance', direction: 'debit', source: 'reservation', box: h.box, hand: i, amount: h.stake / 2 }); });
+      fund(inputs, effects);
       r.resolveInsurance(choices);
       params = boxes == null ? { take: command.take } : { takeBoxes: [...boxes] };
     } else {
