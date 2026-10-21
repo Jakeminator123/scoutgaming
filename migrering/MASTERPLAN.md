@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 pågår; K01 behöver komplettering. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
+Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01 behöver två rättelser; O01 förbereds som kontraktsförslag. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
 
 ## Frysta utgångspunkter
 
@@ -85,6 +85,41 @@ Beroende: K01. Kan förberedas samtidigt som J01.
 - [ ] Bekräfta kontrakten med båda ägarna och placera dem i befintliga kanoniska kontrakt/docs, med ändrade beteendetester. Inga nya parallella register eller regelböcker.
 
 Klart: Kevin och Jakob kan implementera sina sidor utan att behöva kopiera varandras runtime eller gissa schemasemantik. Bevis och granskad SHA förs till status.json.
+
+#### O01: kontraktsförslag för avstämning — ännu inte låst
+
+Utgår från main `15988f32fd572c453d2189502acbe324c4566815`, Kevin-kod
+`5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` och K01-underlag
+`bcd9273432c686c3e140892b5b00b2e69065dfcb`. K01:s två rättelser kvarstår.
+Detta är förberedelse, inte startbesked för runtimeport, DDL eller mediaimport.
+
+- Mains auth bestämmer spelare, operatör och tillåtet rum. Admin publicerar
+  versionsbunden konfiguration; bordstjänsten och regelkärnan äger kort/utfall.
+- Kommando: `roomId`, `commandId`, `expectedVersion`, `configVersion`, operation
+  och payload. Actor hämtas från auth. Föreslagen beständig idempotensnyckel är
+  `(roomId, actorId, commandId)`; samma nyckel med annat innehåll avvisas.
+  Pröva idempotens före versionskonflikt. Repris återger lagrat kommandoresultat;
+  aktuell snapshot är separat. Regler för samtidiga insatser är fortfarande öppna.
+- Behåll mains globala spelarsaldo. Rum, berörda saldon, avräkning, kvitto,
+  idempotens och audit ska committas atomiskt. Föreslagen låsordning är rum →
+  sorterade spelar-ID → global auditkedja, utan nya resurslås därefter. O01 ska
+  inventera alla berörda skrivvägar, även mains, tillsammans med J07:s ägare
+  innan ordningen beslutas. J07 verifierar sedan implementationen.
+- Bevara rumsstate inklusive shoe proof, auditpayload och separat proof som text.
+  Nyckelordning och numeriska typer får inte ändras utan verifierad kompatibilitet.
+  `rowid` ersätts uttryckligen. Studio-audit är inte spelhashkedjans ersättning.
+- Konfiguration ska vara gemensam för alla spelare vid samma bord och fryst över
+  en aktiv hand, även vid omstart. Föreslagen bordssession och dess bytesgräns
+  måste definieras; en spelares nya inloggning får inte ge bordet en annan version.
+- Offentliga händelser publiceras först efter commit med återläsbar sekvens.
+  Dolda kort stannar serverägda. Presentation använder exakt publicerat material;
+  tal-/video-/workerfel får inte påverka saldo eller utfall. Medielistan är kandidater.
+
+Kevin behöver precisera vilka insatsoperationer som måste accepteras samtidigt,
+vilken gemensam rund-/sko-/sessionsgräns som kan byta konfiguration och vilka
+idle-/moving-lipsync-förlopp samt fallbackbeteenden som måste bevaras. Orkestratorn
+sammanför svaren med mains kontrakt. O01 blir inte VERIFIED innan K01 är klar,
+båda ägare har stämt av kontrakten och nödvändiga beteendeprov finns.
 
 ### O02 — Oberoende samprov
 

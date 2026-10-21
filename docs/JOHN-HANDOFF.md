@@ -34,7 +34,13 @@ Matris och 1267 spårade mediekandidater är läsgranskade. Två K01-rättelser
 återstår: state/JSONB-förslaget kan bryta shoe proof och auditverktygets
 publicerade import pekar fel. Kevin äger rättelserna och dokument-PR;
 [granskning och nästa steg](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
-Schema-/låsbeslut hör till O01. Testloggar är lästa, inte omkörda;
+O01 förbereds med ett uttryckligt ej låst kontraktsförslag i masterplanen:
+main-global wallet, beständig idempotens, gemensam bordskonfiguration,
+textbevarat shoe proof och händelser efter commit. Kevin behöver precisera
+samtidiga insatser, versionsbytesgräns och idle/lipsync-fallback. O01 inventerar
+skrivvägar/lås före kontraktsbeslut; J07 verifierar senare implementationen.
+Det startar ingen runtimeport, DDL eller mediaimport och ger inga poäng.
+Testloggar är lästa, inte omkörda;
 GPU-server-SHA/latensorsak är obestyrkta och mediaurval ännu inte beslutat.
 Befintlig femminutersbevakning av #312 är aktiv; inga kvittensloopar.
 Inga migrationspoäng ges för planering, start eller åtkomst.

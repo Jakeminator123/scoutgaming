@@ -101,16 +101,18 @@
       "stage": "E1",
       "title": "Lås kontrakt och funktionsansvar",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "K01"
       ],
-      "branch": null,
+      "branch": "codex/migrering-masterplan",
       "head": null,
-      "pr": null,
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/311",
       "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "evidence": [
+        "Förberedande, ej låst kontraktsförslag i MASTERPLAN.md: auktoritet, kommando/idempotens/version, main-global wallet, föreslagen transaktion/låsordning, textbevarat shoe proof och committade presentationsevent. Underlag main 15988f32fd572c453d2189502acbe324c4566815 och Kevin 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; ingen implementation eller runtimeacceptans."
+      ],
+      "blocker": "K01:s två rättelser och Kevins svar om samtidiga insatser, gemensam konfigurationsgräns samt idle/lipsync-fallback återstår. Inga kontrakt låsta och inga poäng tilldelade."
     },
     {
       "id": "J03",
