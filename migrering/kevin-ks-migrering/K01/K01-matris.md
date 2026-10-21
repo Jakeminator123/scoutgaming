@@ -19,7 +19,7 @@
 | `test-400-deterministic.patch` | fix för den tidiga returen; ej applicerad |
 | `media-runtime.tsv` | 1 267 rader: dealer, syfte, sökväg, bytes, sha256, referens, git-blob |
 | `media-summary.md` | upplösningsregler och listor över orefererade filer |
-| `instr/tools/verify-audit-chain.mjs` | omräkning av hashkedjan |
+| `tools/verify-audit-chain.mjs` | omräkning av hashkedjan |
 | `instr/runs.log` | 200 instrumenterade körningar |
 
 ## 1. Matris: beteende → K fil:rad → M-konsument → beslut → kontrakt → test
@@ -156,7 +156,7 @@ Den passar inte, av fem skäl:
 - **`previous`:** hashen på tabellens globalt senaste rad (`game-audit.mjs:20`, `ORDER BY seq DESC LIMIT 1`, utan rumsfilter), annars `'genesis'`. Det finns alltså **en kedja över alla rum**.
 - **Ingen verifiering av kedjan i koden:** ingen kod räknar om kedjan. Endast `chainHead` exponeras (`game-audit.mjs:69`).
 
-**Empiriskt prov** (`instr/tools/verify-audit-chain.mjs`; två rum, 24 händelser):
+**Empiriskt prov** (`tools/verify-audit-chain.mjs`; två rum, 24 händelser):
 - Alla 24 hashar och `previous_hash`-länkar räknades om korrekt (`ok: 24, bad: 0`), och rummen `a` och `b` delar kedja.
 - Med payloadens nycklar sorterade (som jsonb gör) blir hashen ogiltig.
 - Med `at` som sträng blir hashen ogiltig.
@@ -170,7 +170,8 @@ Den passar inte, av fem skäl:
    - `verifyShoe` jämför `JSON.stringify(proof.rules)` med en literal i fast nyckelordning (`shoe-proof.mjs:29`).
    - Den jämför också `JSON.stringify(proof.commandDraws)` med `drawn` (`:38`). `commandDraws` parsas ur payload-*texten* (`game-audit.mjs:28`).
    - Commitment är `sha256(JSON.stringify({version, shoeId, rules{decks, cutAfter, total, burn}, nonce, samples}))` (`shoe-proof.mjs:5,8`).
-6. **Övriga JSON-kolumner:** `shared_rooms.state`, `shared_settlements.receipt`, `dealer_memory.notes/lines` och `safety_audit.detail` ingår inte i någon hash och kan bli `jsonb`. Kvittot hashas dock separat som en del av payloaden i `wallet.settlement` (`shared-table.mjs:281`).
+6. **Övriga JSON-kolumner:** `shared_settlements.receipt`, `dealer_memory.notes/lines` och `safety_audit.detail` ingår inte i någon hash och kan bli `jsonb`. Kvittot hashas dock separat som en del av payloaden i `wallet.settlement` (`shared-table.mjs:281`).
+   - **`shared_rooms.state` ska vara `TEXT`, inte `jsonb` (rättat efter granskning 21/10).** Rumsstate innehåller `game.shoe.proof`, och proof-reglernas och `commandDraws` nyckelordning används vid commitment och verifiering efter återläsning (`shoe-proof.mjs:5,8,29,38`). `jsonb` får inte användas för state förrän en explicit normalisering har provats med bibehållen verifiering.
 7. **Migrering:** rader kopieras ordagrant, med `seq`, `previous_hash` och `hash`. Kör sedan omräkningsskriptet mot Postgres-exporten som acceptanstest.
 
 ## 3. Medieurval med exakta identiteter

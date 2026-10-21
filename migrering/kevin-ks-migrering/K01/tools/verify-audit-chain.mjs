@@ -1,8 +1,12 @@
 // Recompute audit_events hash chain exactly as server/game-audit.mjs:19-23 + vendor/croupier/shoe-proof.mjs:2 do.
+// Usage: KEVIN_SRC=<checkout>/kevin/croupier-scoutgg node tools/verify-audit-chain.mjs [existing.sqlite]
+// KEVIN_SRC must point at the croupier-scoutgg directory of kevin-merge-admin (frozen 5aa7ed1).
 import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
-import {mkdtempSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
-import {createSharedTable} from '../server/shared-table.mjs';
+import {mkdtempSync,existsSync} from 'node:fs';import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';import {pathToFileURL} from 'node:url';
+const SRC=process.env.KEVIN_SRC&&resolve(process.env.KEVIN_SRC);
+if(!SRC||!existsSync(join(SRC,'server','shared-table.mjs'))){console.error('Set KEVIN_SRC to <checkout>/kevin/croupier-scoutgg (kevin-merge-admin)');process.exit(2);}
+const {createSharedTable}=await import(pathToFileURL(join(SRC,'server','shared-table.mjs')).href);
 const digest=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const file=process.argv[2]??join(mkdtempSync(join(tmpdir(),'chain-')),'t.sqlite');
 if(!process.argv[2]){
