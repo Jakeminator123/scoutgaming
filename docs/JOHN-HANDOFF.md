@@ -14,8 +14,13 @@ Lokalt verifierat: båda riktningarna genom sparning/återläsning och serverns
 mediekontroll, separata alternativ, byte av ett standardval utan grannändring
 och avvisning av fel fack: 59 fokuserade tester gröna, inklusive Admin-knappen.
 Admin- och Studio-typkontroll passerar. Ingen databasmigrering eller medieuppladdning krävs.
-Driftsättning och skarp sparning återstår. Automatisk infogning av övergångarna
-i spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
+PR [#304](https://github.com/Jakeminator123/scoutgaming/pull/304) är mergad
+som `3c3f27e19e8cdaa38b65d2ce4cf0883d7fa34e98`: full PR-CI grön och
+automatisk kodgranskning utan fynd. Vercel-produktion
+`dpl_B77rPVKWdtSM9mNf9RtAFbV1euRY` är READY på samma SHA och har
+`www.scoutgaming.tech` som aktiv alias. Skarp sparning väntar på förnyad
+Admin-inloggning efter omladdning. Automatisk infogning av övergångarna i
+spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
 
 Skarpt läst 21 oktober: `in_vila_till_redo`
 (`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) finns och visades VILA → REDO,
