@@ -60,7 +60,14 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 
 **Parallell delstart 21 oktober:** Jakob har bett oss utföra oberoende arbete medan O01 färdigställs. Guide/Videor startas från J02 6748838e9194e0554fda060e869785599b890ac4 på codex/admin-control-tools-j03. Endast deras gamla SSR-wrappers, callers, GET/HEAD-redirects, exklusiv tracing och berörda tester ingår. Delade komponenter/API:er och auth bevaras. Ingen ny spel-, saldo- eller mediesemantik; därför behövs inget O01-kontrakt för denna del. Hela J03 kräver fortfarande full route-/authacceptans och O01 innan VERIFIED.
 
-**Avgränsad leverans:** [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318), head 1cfe36e32c2c89b165c5c998cd2126325431dc5b. Två gamla SSR-wrappers/tracingposter borttagna, callers uppdaterade och redirects verifierade. Implementerarens 108/108 + riktade 44/44 och överlappande commit138/138, 0 skip; Studio-build/typer och orphan530/0 passerar. Oberoende granskning av exakt head: inga blockerande fynd. Lokalt bygge med återanvända beroenden; fristående deployartefakt/GitHub CI ännu inte verifierade. Återstående fulla J03-kriterier kvarstår: J03 är IN_PROGRESS, inga nya procentenheter.
+**Avgränsad leverans:** [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318), head 314639b54019d02606d7d2e0b1cac19f9c72b24a. Två gamla SSR-wrappers/tracingposter borttagna, callers uppdaterade och redirects verifierade. Implementerarens 108/108 + riktade 44/44 och överlappande commit138/138, 0 skip; Studio-build/typer och orphan530/0 passerar. Oberoende granskning av exakt head: inga blockerande fynd. CI hittade först en gammal testreferens till raderad Control-sida; rättningen passerar 53/53 fokuserade och 21/21 hookprov, 0 skips, samt oberoende deltareview. GitHub CI39641756885 passerar på samma sluthead. Lokalt bygge med återanvända beroenden; fristående deployartefakt/produktion är inte verifierade. Återstående fulla J03-kriterier kvarstår: J03 är IN_PROGRESS, inga nya procentenheter.
+
+**Nästa avgränsade leverans:** [PR320](https://github.com/Jakeminator123/scoutgaming/pull/320), `codex/admin-control-replies-probe-j03` / `db96200a4aa8556c1ff456b70031501407e2935c`, ovanpå PR318. Probe-/Replies-wrappers och exklusiv tracing är borttagna; aktiva länkar/filterhistorik går till befintlig Admin. Gamla dokumentlänkar bevarar kontext, mutationer omdirigeras inte. API/auth/sparning oförändrade. Oberoende granskning utan blockerande fynd; 180/180 hookprov utan skips, 13/13 Replies-komponentprov och 10/10 faktisk Admin-browserhistorik, root15/15 API/query; Studio-build och samtliga frontendtyper gröna. Körningarna överlappar. GitGuardian success; CI köad, ingen merge/produktion/deployacceptans. Detaljer och lokala byggbegränsningar i status.json[J03].
+
+- [x] Guide/Videor: wrappers/callers och CI verifierade i PR318.
+- [x] Probe/Replies: wrappers/callers, kontext, authgränser och Admin-historik verifierade lokalt i PR320.
+- [ ] Probe/Replies: slutlig GitHub CI på oförändrad head.
+- [ ] Resterande Control-/authytor och full J03-acceptans.
 
 Läsinventering på samma J02-head av plan_review, med centrala destinationer och Guide/Videor-wrappers kontrollerade av orkestratorn. Detta är en arbetskarta, inte runtimeacceptans:
 
@@ -70,13 +77,13 @@ Läsinventering på samma J02-head av plan_review, med centrala destinationer oc
 | compositions | /admin/compositions | Delad preview/publicering bevaras |
 | rehearsal | /admin/rehearsal | Aktivitet och rumspresentation bevaras |
 | events, tree | /admin/events | Events/Tree och beslutssimulering bevaras |
-| videos, replies, probe, guide | respektive /admin/<route> | Delade registry-/reply-/projektfunktioner bevaras; Guide/Videor är första del |
+| videos, replies, probe, guide | respektive /admin/<route> | SSR-wrappers avvecklade i PR318/320; delade registry-/reply-/projektfunktioner bevaras |
 | openclaw, operator-chat | /admin/ai/models, /admin/dealer-agent | tab=chat och skyddade API:er följs före wrapperradering |
 | administration | tabstyrda Admin-drift/konto/ekonomi/API/media-review | NativeAdministration och betalningspanelen behålls |
 | [[...path]] | /admin och deklarerade verktyg | Partner-grenen i WorkspaceSurfacePage behålls; ui-server används av Admin |
 | login, set-password | Admin-authhemvist saknas ännu | Flytta token/returnTo/logout/public origin/basePath tillsammans före avveckling |
 
-Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Control-URL:er skrivs även via history.replaceState, exempel control-events-page.tsx:179. Dessa kvarvarande delar är inte avvecklade av Guide/Videor-leveransen.
+Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Control-URL:er skrivs även via history.replaceState, exempel control-events-page.tsx:179. Övriga kvarvarande delar är inte avvecklade av Guide/Videor- och Probe/Replies-leveranserna.
 
 
 ## J04 — En spelkatalog via lobby

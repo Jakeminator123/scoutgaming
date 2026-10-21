@@ -70,10 +70,12 @@ O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
 partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
 Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
 valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
-O01-spec713c03e10003dc9c2ee15494c335ad76fa99533d är läsgranskad av
-underagent och root: bindande insurance-ja och pause-generationens avsikt
-är rättade. Kvar är konsekventa generationsnamn, blocked-outcome och dess
-beständiga transaktionsgräns samt hantering av sent första pause.
+O01-spec551b2e820664a4e6916d64eda4527d5d07366261 är läsgranskad av
+underagent och root: demoavgränsning, generationsnamn och blocked-outcome är
+preciserade. Root väljer savepoint i samma yttre transaktion med hela låsplanen
+före savepoint; nekade effekter återställs, blocked-kvitto/audit committas.
+Root har läst enda dokumentdeltat 362ad392acd70f49d7a6198f91e2f61c02ebd572: formuleringen följer savepointbeslutet, inklusive full rollback vid persistensfel. Sent första pause är fortfarande öppet.
+Detta är specifikationsgranskning, ingen PostgreSQL-/runtimeacceptans.
 Jakob har beslutat **demo först; förbered gränsen för aggregatorn**. K02 äger
 inget saldo/I/O; K03:s walletport binds i J07 till mains serverägda demowallet.
 Faktisk aggregatorintegration ligger senare; PostgreSQL-vägens explicita spärr
@@ -88,7 +90,15 @@ från verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Två SSR-sidor
 Exakta kommandon/bevisgränser finns i status.json[J03]. CI39638533490 hittade ett
 föråldrat test som läste den raderade Control/Videor-filen. Den avgränsade
 testrättningen passerar 53 fokuserade och 21 hookprov, 0 skips; oberoende
-deltareview utan blockerande fynd. Uppföljande CI39641756885 pågår.
+deltareview utan blockerande fynd. Uppföljande CI39641756885 passerar på exakt head314639b5;
+dealer-regression, lipsync-worker och slutgrinden CI lyckades.
+Probe/Replies fortsätter i [PR320](https://github.com/Jakeminator123/scoutgaming/pull/320),
+codex/admin-control-replies-probe-j03 / db96200a4aa8556c1ff456b70031501407e2935c.
+Ytterligare två SSR-sidor/tracingposter borta; callers och filterhistorik går till Admin.
+180/180 hookprov, 13/13 komponent och 10/10 faktisk Admin-browserhistorik,
+root15/15 API/query, build/typer och oberoende granskning passerar.
+Körningarna överlappar; syntetiska API-svar och lokalt byggbevis med junctions,
+inte fristående deployacceptans. GitGuardian success; ny CI köad.
 Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
 och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
 inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.

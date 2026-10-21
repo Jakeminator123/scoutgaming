@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag fortsätter nu en avgränsad J03-del (Guide/Videor) från verifierad J02, medan O01 slutförs och J04 läskartläggs. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
+Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag har J03-delarna Guide/Videor (PR318, grön CI) och Probe/Replies (PR320, lokalt verifierad och CI köad) levererats ovanpå J02. O01 slutförs och J04 är läskartlagd. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
 
 ## Frysta utgångspunkter
 
@@ -123,7 +123,7 @@ Skydd mot dubbla insatser och förlorade svar krävs även med extern wallet.
 Kevins retrygodkännande, vidarebefordrat av Jakob, accepterar riktningen för
 nekad consume: återställ startens spel-/walleteffekter, bevara accepterade val
 och reservationer och ompröva först efter relevant tillståndsändring. Beständig
-blocked-markering måste fortfarande få en entydig transaktions-/låsgräns.
+blocked-markering sparas enligt den valda savepointmekaniken nedan.
 Databasmappning och isolerad verifiering följer J07/J09; root kopplar in Kevin
 när en konkret schemamappning behöver hans hjälp. Beslutet är inte DDL-mandat.
 
@@ -173,26 +173,26 @@ och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
 spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
 egna händelser; övriga walletwriters behåller mains ledger/audit.
 
-**O01-avstämning 713c03e — konsoliderad läsgranskning, fortsatt olåst:**
+**O01-avstämning 362ad39 — konsoliderad läsgranskning, fortsatt olåst:**
 
-Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/713c03e10003dc9c2ee15494c335ad76fa99533d/migrering/kevin-ks-migrering/K01/O01-svar.md#L80)
+Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/362ad392acd70f49d7a6198f91e2f61c02ebd572/migrering/kevin-ks-migrering/K01/O01-svar.md#L80)
 i PR314 är dokumentation; produktkällan är oförändrad5aa7ed10.
-Underagent och root har läst ändringen mot föregående fynd. K02 utan I/O,
+Underagent och root granskade 551b2e8. Root har nu även läst dess enda efterföljande dokumentdelta 362ad39: savepointtexten följer beslutet i6322089912. K02 utan I/O,
 scoperade ledgernycklar, beständig outbox och speech_choice i global audit är
 preciserade. Accepterat insurance-ja är nu bindande även vid pause/leave/frånvaro;
 kontogeneration fångar leave→rejoin. Scheduler utan first-caller och ingen
 kvittogallring under migreringen är införda. Det är specifikationsgranskning,
 inte implementerad funktion eller utförda samtidighets-/recoveryprov.
 
-| Återstående kontraktspunkt | Ägare och nästa steg |
+| Kontraktspunkt | Ägare och nästa steg |
 | --- | --- |
-| Demo-/aggregatorgräns | Jakobs demo-först-beslut ovan gäller. Kevin konsoliderar O01/K03; root äger mains demoadapter och reservationswriters i J07. Extern aggregatorimplementation ligger utanför denna migrering. |
-| Medlemsidentitet | Skilj rums-/aktörs-memberGen i2.4 från kontogenerationen för pause i2.6, exempelvis accountMembershipGen. Avsikten är accepterad, namngivningen är ännu tvetydig. |
-| Beständig blockering efter nekad consume | Lägg blocked i tickens outcome-enum. Separera återställning av spel/wallet från den transaktion som sparar blocked-resultatet under angivna lås. Ett totalt rollback kan inte samtidigt spara kvittot. |
+| Demo-/aggregatorgräns | Jakobs demo-först-beslut ovan gäller. Omfattningen är nu explicit i551b2e8; root äger mains demoadapter och reservationswriters i J07. Extern aggregatorimplementation ligger utanför denna migrering. |
+| Medlemsidentitet | Rättad i551b2e8: accountMembershipGen gäller kontot, memberGen gäller (rum, aktör). |
+| Beständig blockering efter nekad consume | blocked finns i outcome-enum. Root väljer inom J07 samma klient och yttre transaktion: hela G/R/P/A-låsplanen före savepoint; återställ nekade försökets spel/wallet/ledger/outbox, behåll låsen och skriv blocked-kvitto samt audit före yttre COMMIT. Misslyckad persistens ger full rollback. Formuleringen är verifierad i362ad39; två fulla transaktioner används inte. Verkliga samtidighets-/kraschprov återstår. |
 | Omprövning | Riktningen är godkänd via Kevins besked, vidarebefordrat av Jakob: inga accepterade insatser rensas automatiskt; nytt försök först efter relevant ändring. K03/J07 provar att omstart behåller blockeringen och att samma tillstånd inte ger retry-loop. |
 | Pausepolicy | 24h från commit är varaktighet. Behandling av ett sent första kommando är fortfarande en kontraktspunkt att fastställa, skild från accepterat kommandos idempotenta replay. |
 
-[Granskningsbesked](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321651183)
+[Granskningsbesked](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6322089912)
 och [walletavgränsning](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403)
 ersätter tidigare öppna antaganden om redan fungerande aggregatorintegration.
 Bordsspråk ägs av Admin enligt Jakobs mål; privat UI-lokalisering får inte byta
