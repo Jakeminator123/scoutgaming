@@ -53,6 +53,7 @@ const legacyPaths = new Map([
   ['/control/backgrounds', '/control/compositions'],
   ['/events', '/control/clips'],
   ['/control/events', '/control/clips'],
+  ['/admin/events', '/control/clips'],
   ['/probe', '/control/clips'],
   ['/control/probe', '/control/clips'],
   ['/admin/probe', '/control/clips'],

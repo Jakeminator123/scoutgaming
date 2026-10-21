@@ -100,7 +100,7 @@ test('available original is explicitly not a visual approval', () => {
 });
 
 test('history route mapping includes tree without matching unrelated prefixes', () => {
-  assert.equal(viewPaths.tree, '/control/tree');
+  assert.equal(viewPaths.tree, '/admin/events');
   assert.equal(studioViewForPath('/control/tree'), 'tree');
   assert.equal(studioViewForPath('/tree'), 'tree');
   assert.equal(studioViewForPath('/tree/'), 'tree');

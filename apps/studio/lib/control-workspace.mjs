@@ -8,7 +8,7 @@ const tools = Object.freeze({
   api: '/control/administration?tab=partners', bj: '/control/administration?tab=tables', dealers: '/control/administration?tab=tables',
   shoes: '/control/administration?tab=operations', tables: '/control/administration?tab=tables',
   background: '/control/compositions', voice: '/control/clips#clips', clips: '/control/clips#deal',
-  media: '/admin/videos', archive: '/admin/videos', tree: '/control/events',
+  media: '/admin/videos', archive: '/admin/videos', tree: '/admin/events',
 });
 
 export function controlToolPath(view) {

@@ -605,37 +605,46 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
-J03 · 21 oktober 2026. Guide/Videor-delen i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318)
-på `314639b54019d02606d7d2e0b1cac19f9c72b24a` passerar
-[CI39641756885](https://github.com/Jakeminator123/scoutgaming/actions/runs/39641756885).
-Tidigare testfel var en kvarvarande läsning av raderad Control-sida, rättad med
-bevarade negativa auth-/API-prov. Ingen merge eller produktionsacceptans.
+J03 · 21 oktober 2026. Guide/Videor i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318)
+på `314639b54019d02606d7d2e0b1cac19f9c72b24a` och Probe/Replies i
+[PR320](https://github.com/Jakeminator123/scoutgaming/pull/320) på
+`db96200a4aa8556c1ff456b70031501407e2935c` har grön GitHub CI:
+39641756885 respektive 39646187160. Ingen merge eller produktionsacceptans.
 
-Fortsättning `codex/admin-control-replies-probe-j03` från samma frysta head:
-Controls Probe- och Replies-SSR-wrappers och deras exklusiva tracing tas bort.
-Aktiva länkar och Svarsbibliotekets filter/dealerhistorik använder befintliga
-`/admin/probe` och `/admin/replies`. Gemensamma komponenter, API:er, revisioner,
-N1-auth och sparlogik behålls. Gamla bokmärken leder till Admin enbart för
-GET/HEAD, med kontext och lane→composition även med native/unified avstängt
-och under /studio. Mutationer/server actions omdirigeras inte. Äldre /probe
-följer samma tillåtna dokumentkontext; tokenparametrar vidarebefordras inte.
+Fortsättning `codex/admin-control-events-j03` från PR320:s frysta head:
+Controls Events-/Tree-SSR-wrappers och deras exklusiva tracing är borttagna.
+Aktiva callers går till `/admin/events`; utan event visas översikten, med event
+editorn. Gamla `/control/events`, `/control/tree`, `/events` och `/tree` leder
+till Admin för GET/HEAD med kontext, native/unified på/av och `/studio`.
+Mutationer/server actions omdirigeras inte. N1-auth, API:er och writers behålls.
 
-Implementerarens Probe-/route-/callerprov passerar 81/81, 68/68, 36/36 och 4/4,
-alla utan skips; körningarna överlappar och summeras inte. Root har kört
-`node --test --test-concurrency=4 apps/studio/test/studio-replies-api.test.mjs
-apps/studio/test/studio-replies-query.test.mjs`: 15/15, 0 skips.
-Replies-implementeraren: 13/13 komponentprov och slutligt 10/10 browserhistorikprov, 0 skips. Verklig WorkspaceTool och Admin-navigation provar dirty/pågående skrivning, beforeunload, Back/Forward/flersteg, kategori, dealer/API-koppling och reload. API-svaren är syntetiska; serverauth täcks separat ovan. Oberoende slutgranskning av kevin_plan: inga blockerande fynd i produkt-/testdiff, loggar och byggmanifest; inga egna omkörningar.
+Events/Tree använder befintlig Admin-historikägare. Dealer/event/variant/tab/
+situation och composition/operator/table/game/room bevaras, liksom främmande
+history.state. Dirty/pågående sparning/sociala utkast skyddas. Delad sessions-
+writer ersätter inte längre historikmetadata med null. Browserprovet hittade
+att WorkspaceTool återmonterade gamla projektdata efter spara→Tree→Events;
+nu återläses data bara vid editor/översiktsgränsen, med vymärkning och avbrutna
+hämtningar. Urvalsändringar inom editorn behåller utkastet.
 
-Root: `npm --prefix apps/studio run build` och
-`npm --prefix apps/studio/client run typecheck` passerar på frysta produktfiler.
-Volta Node24.21.0, fyra Windows-buildworkers; lokal build utan basePath,
-medan riktiga middlewareprov täcker båda mountlägena. Studio/Admin/Lobby-typer
-passerar. Manifestet saknar de fyra avvecklade SSR-sidorna och behåller Admin
-samt Replies-API. `node tools/check-orphan-tests.mjs`: 530 kandidater, 0 orphan.
-Beroenden i Studio/game återanvänds via egna junctions till J02; client-build
-installerade sin låsta lokala verktygskedja. Tracesanering: 74 kontrollerade,
-44 borttagna poster. Detta är lokal byggverifiering, ingen fristående
-deployartefakt. Loggar: `arkiv/2026-10-21/j03-speech-tools/`.
+Verifiering: routing/auth57/57. Konsumentprov125/128 följdes av riktade46/46
+efter tre föråldrade fixturkrav; sista selectorförstärkningen32/32. Events,
+studio-session-save och verklig Clips/Replies-historik30/30; slutligt verklig
+Admin-browser3/3 (samlad slutkörning33/33), alla0skip. Browsern använder faktisk entry/WorkspaceTool,
+Tree/katalog/inspektör och navigation, med syntetiska API-svar och isolerad
+uppspelning. Den provar sparning/återläsning, Back/Forward/flersteg, olika
+urval, dirty/pågående skrivning och omkastade workspace-svar. Överlappande körningar summeras inte.
+Oberoende granskare kevin_plan läste produkt-/testdiff och loggar: inga
+blockerande fynd; inga egna omkörningar. Root läste diffar och bevis samt
+körde build, orphan och diffkontroll.
+
+Slutligt `npm --prefix apps/studio run build` med `/studio` passerar efter
+återläsningsfixen, inklusive Studio/Admin/Lobby-typer. Volta Node24.21.0,
+fyra Windows-buildworkers. Manifestet saknar alla sex nu avvecklade
+verktygswrappers och behåller Admin, workspace- och projekt-API. Orphan:
+531 testkandidater, 0 orphan. Beroenden återanvänds via egna junctions till
+J02/PR320; tracesanering72 kontrollerade/44 borttagna poster. Detta är lokalt
+byggbevis, ingen fristående deployartefakt. Loggar:
+`arkiv/2026-10-21/j03-events/`. GitHub CI för denna nya leverans redovisas i PR.
 Full Control-/authavveckling och O01 återstår. Hela J03 är IN_PROGRESS,
 15% totalt; ingen runtimeport, DB-/mediaändring eller automatisk merge.
 

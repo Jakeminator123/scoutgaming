@@ -200,13 +200,14 @@ function navigationHarness() {
   h.render(p);h.flushEffects();
   const draft=structuredClone(h.values[0]);draft.clipLabels={'named-clip':'Ej sparat'};h.values[0]=draft;
   const tree=h.render(p);h.flushEffects();
-  const links=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('/control/'));
+  const links=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/')&&typeof node.props.onClick==='function');
   return {h,p,draft,links,assigned,requests,finish:()=>finish};
 }
 const click=link=>link.props.onClick({preventDefault(){}});
 
 test('save and continue waits for the clean render to replace the old beforeunload guard and ignores double clicks',async()=>{
   const n=navigationHarness();
+  assert.ok(n.links.length >= 2, 'real guarded content links are present');
   click(n.links[0]);click(n.links[1]);
   assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
   n.h.render(n.p);n.h.flushEffects();assert.deepEqual(n.assigned,[]);
@@ -239,13 +240,13 @@ test('pending content navigation is cancelled by newer edits, upload or conflict
 test('content links refuse navigation during a save and after a failed CAS request',async()=>{
   const n=navigationHarness();click(n.links[0]);
   const tree=n.h.render(n.p);n.h.flushEffects();
-  click(nodes(tree,node=>node.type==='a'&&node.props.href?.includes('/control/'))[1]);
+  click(nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/')&&typeof node.props.onClick==='function')[1]);
   assert.equal(n.requests.length,1);
   n.finish().reject(Object.assign(new Error('revision conflict'),{statusCode:409}));
   await new Promise(resolve=>setImmediate(resolve));
   const failedTree=n.h.render(n.p);n.h.flushEffects();
   assert.equal(n.h.state('conflict'),true);assert.deepEqual(n.assigned,[]);
-  click(nodes(failedTree,node=>node.type==='a'&&node.props.href?.includes('/control/'))[1]);assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
+  click(nodes(failedTree,node=>node.type==='a'&&node.props.href?.startsWith('/')&&typeof node.props.onClick==='function')[1]);assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
 });
 
 test('own idle changes update only selected dealer policy and baseline atomically; metadata locks saving and removal',()=>{
@@ -441,7 +442,7 @@ test('unapplied actual speech edits protect dealer and route exits, remain acros
 test('exact selected variants remain in outgoing navigation and both editor tab links',()=>{
   const p=props(),h=harness('./lab-studio.tsx');let tree=h.render(p);nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('deal.player.centre','box4');h.state('variantId','astrid.deal.player.centre.alt-2');tree=h.render(p);
   const nav=nodes(tree,node=>typeof node.props?.onNavigate==='function')[0];assert.equal(nav.props.variantId,'astrid.deal.player.centre.alt-2');
-  const editors=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/events'));assert.equal(editors.length,2);
+  const editors=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/admin/events'));assert.equal(editors.length,2);
   for(const link of editors){const params=new URL(link.props.href,'https://test.invalid').searchParams;assert.equal(params.get('variant'),'astrid.deal.player.centre.alt-2');assert.equal(params.get('situation'),'box4');assert.ok(['variants','triggers'].includes(params.get('tab')));}
 });
 
@@ -476,8 +477,8 @@ test('clips route and dealer management preserve composition operator and room t
   const lifecycle=nodes(tree,node=>typeof node.props?.onApplied==='function')[0];assert.equal(lifecycle.props.laneId,'mobile-phone');assert.equal(lifecycle.props.operatorId,'operator-42');assert.equal(lifecycle.props.tableId,'room-7');
   const currentUrl=new URL(runtimeWindow.location.href);assert.equal(currentUrl.searchParams.get('operator'),'operator-42');assert.equal(currentUrl.searchParams.get('table'),'room-7');
   nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('speak.goodluck','goodluck');tree=h.render(page.props);
-  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/control\/(?:events|administration|compositions|rehearsal)/.test(node.props.href??''));
-  assert.equal(outgoing.some(link=>link.props.href.startsWith('/control/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
+  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/(?:admin\/events|control\/(?:administration|compositions|rehearsal))/.test(node.props.href??''));
+  assert.equal(outgoing.some(link=>link.props.href.startsWith('/admin/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
   for(const link of outgoing){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('composition'),'mobile-phone');assert.equal(query.get('operator'),'operator-42');assert.equal(query.get('table'),'room-7');}
   pressDealer(tree,'Saga');tree=h.render(page.props);assertTabs('saga','mobile-phone','operator-42','room-7');
   for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}

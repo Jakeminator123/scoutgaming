@@ -59,7 +59,7 @@ test('clip library keeps dedicated roulette media slots without old sidebar or c
   assert.match(html, /<h1>Dealerns media<\/h1>/);
   assert.match(html, /\/\/ STUDIO/);
   assert.match(html, /<button[^>]*>Spara projekt<\/button>/);
-  assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
+  assert.match(html, /href="\/admin\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
   assert.match(html, /aria-label="Klipp och situationer"/);
   assert.doesNotMatch(html, /Koppling för:/);
   assert.doesNotMatch(html, /Dina videor\. Ordning från början/);
@@ -89,7 +89,7 @@ test('unmanaged dealers keep the video library, binding row and exact variant', 
   assert.match(html, /Händelse[\s\S]{0,120}<select/);
   assert.match(html, /Variant[\s\S]{0,120}<select/);
   assert.match(html, /<option value="elin\.speak\.goodluck\.extra" selected="">Kvällshälsning<\/option>/);
-  assert.match(html, /href="\/control\/events\?dealer=elin&amp;event=speak\.goodluck"/);
+  assert.match(html, /href="\/admin\/events\?dealer=elin&amp;event=speak\.goodluck"/);
   assert.match(html, /videokopplingar behöver kategoriseras eller kopplas loss/);
   assert.doesNotMatch(html, /Granska i Videobanken/);
   assert.doesNotMatch(html, /Dina videomappar/);

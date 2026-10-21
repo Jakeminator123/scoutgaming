@@ -33,6 +33,7 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/control/zones', 'Sammansättningar');
   expectLabel('/events', 'Dealers & klipp');
   expectLabel('/control/events', 'Dealers & klipp');
+  expectLabel('/admin/events', 'Dealers & klipp');
   expectLabel('/probe', 'Dealers & klipp');
   expectLabel('/control/probe', 'Dealers & klipp');
   expectLabel('/admin/probe', 'Dealers & klipp');
@@ -259,6 +260,9 @@ test('both real page guards protect dirty project drafts on native leave and cle
     for (const dirty of [false, true]) {
       const project = createSeedProject(), before = JSON.stringify(project), effects = [];
       const browser = new EventTarget();
+      browser.location = new URL(name === 'ControlEventsPage' ? 'https://studio.fixture.invalid/admin/events?dealer=astrid&event=idle.ready' : 'https://studio.fixture.invalid/control/clips?dealer=astrid');
+      let historyState = {foreign:'keep'};
+      browser.history = {get state(){return historyState;},replaceState(state,_title,href){historyState=state;if(href!==undefined)browser.location.href=new URL(href,browser.location).href;}};
       const hooks = { ...React,
         useState: initial => {
           const value = typeof initial === 'function' ? initial() : initial;
@@ -270,8 +274,8 @@ test('both real page guards protect dirty project drafts on native leave and cle
       const component = loadComponent(file, { react: hooks }, browser)[name];
       const tree = mountSelectedPage(component, { initialProject: project, initialDealerId: 'astrid', initialVideos: { videos: [] }, initialStatus: {}, connectedLane: true });
       const guardEffects = effects.filter(effect => effect.toString().includes('beforeunload') && effect.toString().includes('addEventListener'));
-      assert.equal(guardEffects.length, 1);
-      const release = guardEffects[0]();
+      assert.ok(guardEffects.length > 0, 'the real page installs navigation protection');
+      const releases = guardEffects.map(effect => effect());
       assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), !dirty);
       if (name === 'ControlEventsPage' && !dirty) {
         let social;
@@ -282,7 +286,7 @@ test('both real page guards protect dirty project drafts on native leave and cle
         social.current.draft = { ...social.current.status.policy };
         assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), true);
       }
-      release();
+      for (const release of releases.reverse()) release();
       assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), true);
       assert.equal(JSON.stringify(project), before);
     }

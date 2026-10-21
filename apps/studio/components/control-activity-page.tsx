@@ -81,7 +81,7 @@ export function ControlActivityPage({ initialProject: project, initialVideos: vi
           onOpenEvent: (id, step) => {
             if (step.blocked || !step.eventId) return;
             saveObservedStep(step);
-            window.location.assign(studioNavigationHref('/control/events', { ...context, dealerId, eventId: id }));
+            window.location.assign(studioNavigationHref('/admin/events', { ...context, dealerId, eventId: id }));
           },
         } : undefined}
       />}

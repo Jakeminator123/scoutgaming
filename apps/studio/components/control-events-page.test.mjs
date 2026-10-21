@@ -21,7 +21,7 @@ function loadTs(fileUrl) {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
-      if (name === 'next/navigation') return { usePathname: () => '/control/events', useSearchParams: () => new URLSearchParams() };
+      if (name === 'next/navigation') return { usePathname: () => '/admin/events', useSearchParams: () => new URLSearchParams() };
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
       if (name.startsWith('./') || name.startsWith('../')) {

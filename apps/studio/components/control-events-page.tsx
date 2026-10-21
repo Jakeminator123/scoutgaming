@@ -10,6 +10,8 @@ import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible } from '../../../packages/presentation/contracts/studio-model.mjs';
 import type { DealerId, StudioAsset, StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { videoFitsLine, situationsForEvent } from '../../../packages/presentation/contracts/video-intake.mjs';
+import { studioHistory } from '../lib/studio-history.mjs';
+import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
 import { EventsCatalog } from './events-catalog';
@@ -23,6 +25,14 @@ import { StudioMessages, useStudioSession } from './studio-session';
 import { neutralContext } from './test-context';
 import { activeStudioDealers, resolveStudioDealerId, previewVideoIdFor, requestJson, studioHref, type ConnectionStatus, type DirectorMode, type SimulationResult, type TestContext } from './studio-types';
 import type { VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
+
+function eventSelectionHref(selection: Parameters<typeof studioHref>[1]) {
+  const query = new URLSearchParams(typeof window === 'undefined' ? '' : window.location?.search);
+  const { laneId, operatorId, tableId, game } = studioNavigationContextFromQuery(query);
+  const url = new URL(studioNavigationHref(studioHref('/admin/events', selection), { laneId, operatorId, tableId, game }), 'https://studio.invalid');
+  if (query.get('room')) url.searchParams.set('room', query.get('room')!);
+  return url.pathname + url.search + url.hash;
+}
 
 function readObservedStep(): PresentationStep | null {
   const step = takeObservedStep() as PresentationStep | null;
@@ -91,6 +101,35 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
     dealerId, selectDealer, eventId, selectEvent: selectStoredEvent, setVariantId, selectVariant, assignSelection,
     mode, changeMode, event, observedEvent, line, variant, media, dealer, recordActivity,
   } = session;
+  const navigationSession = useRef(session);
+  navigationSession.current = session;
+  useEffect(() => {
+    const history = studioHistory(window);
+    const canLeave = () => {
+      const current = navigationSession.current, social = socialDraftCache.current;
+      if (!current.dirty && !current.saving && !(social && JSON.stringify(social.draft) !== JSON.stringify(social.status.policy))) return true;
+      current.setNotice('Spara ändringarna och vänta tills sparandet är klart innan du lämnar editorn.');
+      return false;
+    };
+    const releaseGuard = history.guardTraversal(canLeave);
+    const beforeNavigate = (event: Event) => { if (!canLeave()) event.preventDefault(); };
+    const beforeUnload = (event: BeforeUnloadEvent) => { if (!canLeave()) { event.preventDefault(); event.returnValue = ''; } };
+    const unsubscribe = history.subscribe(event => {
+      if (!event) return;
+      const query = new URLSearchParams(window.location.search), current = navigationSession.current;
+      const definition = current.project.events.find(item => item.id === query.get('event'));
+      // A query without an event belongs to the overview, which Admin mounts next.
+      if (!definition || !resolveStudioDealerId(current.project, query.get('dealer') ?? '')) return;
+      const situation = query.get('situation') ?? '';
+      setObservedStep(null);
+      setExampleSituation(situationsForEvent(definition).includes(situation) ? situation : '');
+      setEditorTab(eventsEditorTab(query.get('tab') ?? undefined));
+      current.assignSelection({ dealerId: query.get('dealer')!, eventId: definition.id, variantId: query.get('variant') ?? '' });
+    });
+    window.addEventListener('studio:before-navigate', beforeNavigate);
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => { unsubscribe(); releaseGuard(); window.removeEventListener('studio:before-navigate', beforeNavigate); window.removeEventListener('beforeunload', beforeUnload); };
+  }, []);
   const recordSocial = useCallback((entry: SocialActivity) => { recordActivity(describeSocialActivity(entry)); }, [recordActivity]);
   const selectedAsset = project.assets.find(item => item.id === variant.assetId);
   const currentAsset = socialAsset ?? result?.asset ?? selectedAsset;
@@ -112,13 +151,13 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
   function chooseTab(tab: EventsEditorTab, selection?: { dealerId: string; eventId: string; variantId: string }) {
     setEditorTab(tab);
     if (typeof window === 'undefined' || !window.history?.replaceState) return;
-    const href = studioHref('/control/events', {
+    const href = eventSelectionHref({
       dealerId: selection?.dealerId ?? dealerId,
       eventId: selection?.eventId ?? event.id,
       variantId: selection?.variantId ?? variant.id,
       tab, situation: exampleSituation || undefined,
     });
-    window.history.replaceState(null, '', href);
+    studioHistory(window).push(href, true);
   }
   function openFirstIncompatibleBinding() {
     const first = incompatibleBindings[0];
@@ -176,12 +215,12 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
     setObservedStep(null);
     setExampleSituation(situation);
     selectStoredEvent(id);
-    if (window.history?.replaceState) window.history.replaceState(null, '', studioHref('/control/events', { dealerId, eventId: id, situation: situation || undefined, tab: editorTab }));
+    studioHistory(window).push(eventSelectionHref({ dealerId, eventId: id, situation: situation || undefined, tab: editorTab }), true);
   }
   function chooseSituation(situation: string) {
     if (!situationsForEvent(event).includes(situation)) return;
     setExampleSituation(situation); setVariantId(''); invalidateSimulation();
-    if (window.history?.replaceState) window.history.replaceState(null, '', studioHref('/control/events', { dealerId, eventId: event.id, situation, tab: editorTab }));
+    studioHistory(window).push(eventSelectionHref({ dealerId, eventId: event.id, situation, tab: editorTab }), true);
   }
   function changeTestContext(next: TestContext) { setContext(next); invalidateSimulation(); }
   async function simulate() {
@@ -253,8 +292,6 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
       ? 'låter OpenClaw välja; ett modellanrop kan göras när du trycker.'
       : `kör jämförelseläget ${mode === 'off' ? 'Bara standard' : mode === 'shadow' ? 'Skuggläge' : mode === 'rules' ? 'Regler' : 'Slumpvariation'}.`;
   const videoHref = studioHref('/admin/videos', { dealerId, eventId: event.id, variantId: variant.id });
-  const eventHref = studioHref('/control/events', { dealerId, eventId: event.id, variantId: variant.id, tab: editorTab });
-  const overviewHref = studioHref('/control/events', { dealerId });
 
   return <PageTemplate
     eyebrow="// STUDIO"

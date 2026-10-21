@@ -175,8 +175,8 @@ test('bibliotek and upload consume the exact situation from a dealer deep link',
 test('display naming is separate from file identity and situation URL survives variant changes', () => {
   const { studioHref, selectionHref } = load('./studio-types.ts');
   assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), '/admin/videos?dealer=nora&event=deal.dealer&situation=dealer-hole');
-  assert.match(selectionHref('/control/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.player.left', 'same-variant'), /situation=box1/);
-  assert.doesNotMatch(selectionHref('/control/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.dealer'), /situation=/);
+  assert.match(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.player.left', 'same-variant'), /situation=box1/);
+  assert.doesNotMatch(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.dealer'), /situation=/);
 });
 
 

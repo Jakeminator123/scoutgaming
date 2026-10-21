@@ -103,7 +103,7 @@ test('retired dealer links and active pickers are rejected without deleting save
   const {activeStudioDealers,resolveStudioDealerId}=loadTs(new URL('./studio-types.ts',import.meta.url));
   assert.equal(resolveStudioDealerId(project,'amira'),'');
   assert.equal(activeStudioDealers(project).some(row=>row.id==='amira'),false);
-  const overrides={'next/navigation':{usePathname:()=>'/control/events',useSearchParams:()=>new URLSearchParams('dealer=amira')},
+  const overrides={'next/navigation':{usePathname:()=>'/admin/events',useSearchParams:()=>new URLSearchParams('dealer=amira')},
     './studio-session':{useStudioSession:()=>assert.fail('retired selection cannot enter a dealer editor')}};
   for(const [file,name] of [['control-events-page','ControlEventsPage'],['control-tree-page','ControlTreePage'],['control-probe-page','ControlProbePage'],['control-videos-page','ControlVideosPage'],['control-openclaw-chat','ControlOpenClawChat'],['control-activity-page','ControlActivityPage']]){
     const Component=loadTs(new URL('./'+file+'.tsx',import.meta.url),overrides)[name];

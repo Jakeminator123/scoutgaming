@@ -16,7 +16,7 @@ const empty = () => null;
 let activityProps;
 const navigationUrls = [];
 const mocks = {
-  'next/navigation': { usePathname: () => '/control/events', useSearchParams: () => new URLSearchParams() },
+  'next/navigation': { usePathname: () => '/admin/events', useSearchParams: () => new URLSearchParams() },
   './studio-guide': { StudioGuide: empty },
   './event-tree': { EventTree: empty },
   './activity-log': { ActivityLog: props => { activityProps = props; return null; } },
@@ -143,7 +143,7 @@ test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
       assert.equal(activityProps.streamView.dealerId, 'astrid');
       navigationUrls.length = 0;
       activityProps.streamView.onOpenEvent('speak.goodluck', { eventId: 'speak.goodluck', blocked: false });
-      assert.deepEqual(navigationUrls, ['/control/events?dealer=astrid&event=speak.goodluck']);
+      assert.deepEqual(navigationUrls, ['/admin/events?dealer=astrid&event=speak.goodluck']);
     }
   }
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');

@@ -19,6 +19,11 @@ export function middleware(request: NextRequest) {
   if (process.env.CROUPIER_VERCEL_UNIFIED_UI !== '1') return legacyDocumentRedirect(request) ?? NextResponse.next();
   const config = platformConfiguration();
   if (!config?.unifiedUi) return new NextResponse(null, { status: 503 });
+  // These retired top-level documents precede the generic frontend rejection.
+  if (/^\/(?:studio\/)?(?:events|tree)$/.test(new URL(request.url).pathname)) {
+    const legacyRedirect = legacyDocumentRedirect(request, config.publicOrigin);
+    if (legacyRedirect) return legacyRedirect;
+  }
   const route = platformRoute(new URL(request.url), config, request);
   if (route.kind === 'reject') return new NextResponse(null, { status: 400 });
   if (route.kind === 'frontend' || route.kind === 'socket') return new NextResponse(null, { status: 404 });

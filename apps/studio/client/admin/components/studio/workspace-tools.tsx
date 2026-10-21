@@ -39,18 +39,22 @@ export function WorkspaceToolsHome(){return <section className="admin-system-pag
 
 export function WorkspaceTool({section}:{section:string}){
   const [,refreshContext]=useState(0);
-  const [data,setData]=useState<Workspace|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
+  // Refresh only when Events crosses the overview/editor boundary. Local editor
+  // selections must retain their draft; the existing history guard accepts exits first.
+  const eventsEditor=section==='events'&&Boolean(new URLSearchParams(location.search).get('event'));
+  const [loaded,setLoaded]=useState<{data:Workspace;eventsEditor:boolean}|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
+  const data=loaded?.eventsEditor===eventsEditor?loaded.data:null;
   useEffect(()=>{
-    const controller=new AbortController();setData(null);setError('');
+    const controller=new AbortController();setLoaded(null);setError('');
     void (async()=>{try{
       const response=await fetch(labUrl('/api/admin/workspace/'+encodeURIComponent(section)),{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
       if(!response.ok)throw Error([401,403].includes(response.status)?'Logga in som nivå 1 för att öppna verktyget.':'Registret kunde inte läsas. Dina sparade uppgifter är kvar.');
       const value=await response.json();
       if(!value.project?.revision||!Array.isArray(value.project.dealers)||!Array.isArray(value.videos?.videos)||value.status?.configured!==true)throw Error('Serverns svar kunde inte verifieras.');
-      if(!controller.signal.aborted)setData(value);
+      if(!controller.signal.aborted)setLoaded({data:value,eventsEditor});
     }catch(cause){if(!controller.signal.aborted)setError((cause as Error).message);}})();
     return()=>controller.abort();
-  },[section,attempt]);
+  },[section,attempt,eventsEditor]);
   if(error)return <section className="admin-system-page" role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setAttempt(value=>value+1)}>Försök igen</button></section>;
   if(!data)return <p role="status" className="admin-system-page">Läser sparade uppgifter…</p>;
   const q=new URLSearchParams(location.search),get=(key:string)=>q.get(key)||undefined;

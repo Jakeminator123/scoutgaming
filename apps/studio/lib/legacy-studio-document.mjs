@@ -10,7 +10,7 @@ const studioAliases = Object.freeze({
 const controlAliases = new Set(['/control/rooms','/control/companies','/control/lanes','/control/library','/control/preview','/control/zones']);
 const contextKeys = new Set(['dealer','dealerId','operator','room','table','game','composition','lane','tab','role','event','variant','situation','view','category']);
 
-// These exact, unauthenticated page shells used to redirect before loading data.
+// Exact compatibility entries redirect before the destination authorizes data access.
 // Preserve their distinct query policies; native Control-to-Admin routing runs first.
 export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   if (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action')) return null;
@@ -20,8 +20,8 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   const path = url.pathname.slice(basePath.length);
   // These retired tools preserve navigation context at both historical entries.
   const tool = path.startsWith('/control/')
-    ? path.match(/^\/control\/(guide|videos|probe|replies)$/)?.[1]
-    : path.match(/^\/(guide|videos|probe)$/)?.[1];
+    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree)$/)?.[1]
+    : path.match(/^\/(guide|videos|probe|events|tree)$/)?.[1];
   if (tool) {
     const query = new URLSearchParams();
     for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);

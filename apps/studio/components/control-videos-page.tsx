@@ -43,7 +43,7 @@ function SelectedControlVideosPage({
   const invalidVideoBindings = project.lines.filter(l => !videos.families?.some(f => f.dealerId === l.dealerId)).flatMap(l => l.variants.filter(v => v.videoGenerationId && !videoFitsLine(videos.videos.find(f => f.id === v.videoGenerationId), l.dealerId, l.eventId)));
   const incompatibleBindings = project.lines.flatMap(item => item.variants.filter(candidate => !isAssetCompatible(project.events.find(entry => entry.id === item.eventId), project.assets.find(asset => asset.id === candidate.assetId))).map(candidate => ({ dealerId: item.dealerId, eventId: item.eventId, variantId: candidate.id })));
   const firstBinding = incompatibleBindings[0];
-  const eventHref = studioHref('/control/events', { dealerId, eventId: event.id });
+  const eventHref = studioHref('/admin/events', { dealerId, eventId: event.id });
   const [intakePending, setIntakePending] = useState(false);
   const [deleting, setDeleting] = useState(false);
   useEffect(()=>{if(!deleting)return;const guard=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);},[deleting]);
@@ -83,7 +83,7 @@ function SelectedControlVideosPage({
   }
 
   function openEvent(id: string, situation?: string) {
-    const href = studioHref('/control/events', { dealerId, eventId: id });
+    const href = studioHref('/admin/events', { dealerId, eventId: id });
     window.location.assign(situation ? `${href}&situation=${encodeURIComponent(situation)}` : href);
   }
 
@@ -95,13 +95,13 @@ function SelectedControlVideosPage({
       primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || intakePending} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
     >
       <div className="sg-page-body"><fieldset style={{border:0,padding:0,margin:0,minWidth:0}} disabled={deleting} onClickCapture={event=>{if(deleting){event.preventDefault();event.stopPropagation();}}}>
-      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/control/events','Händelser'],['/admin/probe','AI-småprat vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
+      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/admin/events','Händelser'],['/admin/probe','AI-småprat vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
       <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
       {incompatibleBindings.length ? (
         <div className="feedback error" role="alert">
           <span><strong>{incompatibleBindings.length} animationskopplingar behöver rättas.</strong> Projektet innehåller äldre val som inte matchar spelhändelsen. Inget har ändrats automatiskt. Välj en kompatibel labbanimation för varje markerad variant innan du sparar eller testar.</span>
-          {firstBinding ? <a className="primary-button" href={studioHref('/control/events', { dealerId: firstBinding.dealerId, eventId: firstBinding.eventId, variantId: firstBinding.variantId, tab: 'variants' })}>Rätta första kopplingen →</a> : null}
+          {firstBinding ? <a className="primary-button" href={studioHref('/admin/events', { dealerId: firstBinding.dealerId, eventId: firstBinding.eventId, variantId: firstBinding.variantId, tab: 'variants' })}>Rätta första kopplingen →</a> : null}
         </div>
       ) : null}
       {invalidVideoBindings.length ? (
