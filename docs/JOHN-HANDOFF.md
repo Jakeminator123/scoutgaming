@@ -1272,3 +1272,25 @@ Begrepp: [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
 Teknisk verklighet: [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md).
 Konfiguration: [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 Återställning: [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md).
+
+## Bandbredd för publicerade presentationsmedia — 21 oktober 2026
+
+`croupier-v2` skickade samma Dragan-bakgrund upprepade gånger. I ett avgränsat
+urval av 100 HTTP 206-svar stod dess spel- och rums-previewadresser för cirka
+94,6 procent av bytesen; urvalet är inte hela månadens trafik.
+
+De två mediarouterna tillåter nu privat webbläsarcache med obligatorisk
+revalidering, först efter färsk kontroll av publicering och exakt SHA-ETag.
+Oförändrade bytes kan besvaras med 304. Avpublicering, fel rum/revision och
+felaktiga eller overifierade svar får fortfarande inte återanvändas.
+Blob-token, privata lagringsadresser, medieidentiteter och spel/auth är
+oförändrade. Ingen delad CDN-cache eller ny publicering av media införs.
+
+75 riktade tester passerar utan överhopp. Ett isolerat Chrome-prov med samma
+syntetiska 3 350 764-bytevideo och fem sidöppningar jämförde tidigare no-store
+med revalidering: 16 753 820 respektive 3 350 764 överförda body-bytes,
+80 procent mindre i detta prov. Båda alternativen gjorde fem färska
+publiceringskontroller; avpublicering gav 404 även efter uppvärmd cache.
+Första hämtningen kostar lika mycket och återanvändning inom samma sida
+fungerade redan i Chrome. Faktisk månadsbesparing återstår att mäta efter
+integration. Ingen merge, databasändring eller produktionsdriftsättning ingår.
