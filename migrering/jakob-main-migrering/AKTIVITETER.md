@@ -62,11 +62,15 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 
 **Avgränsad leverans:** [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318), head 314639b54019d02606d7d2e0b1cac19f9c72b24a. Två gamla SSR-wrappers/tracingposter borttagna, callers uppdaterade och redirects verifierade. Implementerarens 108/108 + riktade 44/44 och överlappande commit138/138, 0 skip; Studio-build/typer och orphan530/0 passerar. Oberoende granskning av exakt head: inga blockerande fynd. CI hittade först en gammal testreferens till raderad Control-sida; rättningen passerar 53/53 fokuserade och 21/21 hookprov, 0 skips, samt oberoende deltareview. GitHub CI39641756885 passerar på samma sluthead. Lokalt bygge med återanvända beroenden; fristående deployartefakt/produktion är inte verifierade. Återstående fulla J03-kriterier kvarstår: J03 är IN_PROGRESS, inga nya procentenheter.
 
-**Nästa avgränsade leverans:** [PR320](https://github.com/Jakeminator123/scoutgaming/pull/320), `codex/admin-control-replies-probe-j03` / `db96200a4aa8556c1ff456b70031501407e2935c`, ovanpå PR318. Probe-/Replies-wrappers och exklusiv tracing är borttagna; aktiva länkar/filterhistorik går till befintlig Admin. Gamla dokumentlänkar bevarar kontext, mutationer omdirigeras inte. API/auth/sparning oförändrade. Oberoende granskning utan blockerande fynd; 180/180 hookprov utan skips, 13/13 Replies-komponentprov och 10/10 faktisk Admin-browserhistorik, root15/15 API/query; Studio-build och samtliga frontendtyper gröna. Körningarna överlappar. GitGuardian success; CI köad, ingen merge/produktion/deployacceptans. Detaljer och lokala byggbegränsningar i status.json[J03].
+**Nästa avgränsade leverans:** [PR320](https://github.com/Jakeminator123/scoutgaming/pull/320), `codex/admin-control-replies-probe-j03` / `db96200a4aa8556c1ff456b70031501407e2935c`, ovanpå PR318. Probe-/Replies-wrappers och exklusiv tracing är borttagna; aktiva länkar/filterhistorik går till befintlig Admin. Gamla dokumentlänkar bevarar kontext, mutationer omdirigeras inte. API/auth/sparning oförändrade. Oberoende granskning utan blockerande fynd; 180/180 hookprov utan skips, 13/13 Replies-komponentprov och 10/10 faktisk Admin-browserhistorik, root15/15 API/query; Studio-build och samtliga frontendtyper gröna. Körningarna överlappar. GitGuardian och CI39646187160 success på oförändrad head; ingen merge/produktion/deployacceptans. Detaljer och lokala byggbegränsningar i status.json[J03].
+
+**Events/Tree levererad:** [PR322](https://github.com/Jakeminator123/scoutgaming/pull/322), `codex/admin-control-events-j03` / `2ea99899228b9574bbf142ae80f3e7a776af0a5b`, ovanpå PR320. Två SSR-wrappers/tracingposter borttagna; Admin äger översikt/editor och historik. Verkligt browserprov hittade och verifierade rättning av gammal projektkopia efter sparning och vybyte. 33/33 fokuserade inklusive 3 browserprov, 202/202 ordinarie hookprov, 0 skips; Studio-build med /studio och alla frontendtyper, orphan531/0 samt oberoende granskning passerar. Route/auth57/57 och riktade konsumentprov passerar; körningarna överlappar. Syntetiska API-svar, lokal build med junctions. Ny CI är ännu inte accepterad. Ingen merge/deployacceptans; hela J03 är IN_PROGRESS och totalen15%.
 
 - [x] Guide/Videor: wrappers/callers och CI verifierade i PR318.
 - [x] Probe/Replies: wrappers/callers, kontext, authgränser och Admin-historik verifierade lokalt i PR320.
-- [ ] Probe/Replies: slutlig GitHub CI på oförändrad head.
+- [x] Probe/Replies: slutlig GitHub CI39646187160 på oförändrad head db96200a4aa8556c1ff456b70031501407e2935c.
+- [x] Events/Tree: wrappers/callers, Admin-historik, sparning/återläsning, skydd och lokal build verifierade i PR322.
+- [ ] Events/Tree: slutlig GitHub CI på oförändrad PR322-head.
 - [ ] Resterande Control-/authytor och full J03-acceptans.
 
 Läsinventering på samma J02-head av plan_review, med centrala destinationer och Guide/Videor-wrappers kontrollerade av orkestratorn. Detta är en arbetskarta, inte runtimeacceptans:
@@ -76,14 +80,14 @@ Läsinventering på samma J02-head av plan_review, med centrala destinationer oc
 | clips | /admin/dealer-studio | LabStudio och projekt-/video-/dealer-API bevaras |
 | compositions | /admin/compositions | Delad preview/publicering bevaras |
 | rehearsal | /admin/rehearsal | Aktivitet och rumspresentation bevaras |
-| events, tree | /admin/events | Events/Tree och beslutssimulering bevaras |
+| events, tree | /admin/events | SSR-wrappers avvecklade i PR322; delad Events/Tree, beslutssimulering och projekt-API bevaras |
 | videos, replies, probe, guide | respektive /admin/<route> | SSR-wrappers avvecklade i PR318/320; delade registry-/reply-/projektfunktioner bevaras |
 | openclaw, operator-chat | /admin/ai/models, /admin/dealer-agent | tab=chat och skyddade API:er följs före wrapperradering |
 | administration | tabstyrda Admin-drift/konto/ekonomi/API/media-review | NativeAdministration och betalningspanelen behålls |
 | [[...path]] | /admin och deklarerade verktyg | Partner-grenen i WorkspaceSurfacePage behålls; ui-server används av Admin |
 | login, set-password | Admin-authhemvist saknas ännu | Flytta token/returnTo/logout/public origin/basePath tillsammans före avveckling |
 
-Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Control-URL:er skrivs även via history.replaceState, exempel control-events-page.tsx:179. Övriga kvarvarande delar är inte avvecklade av Guide/Videor- och Probe/Replies-leveranserna.
+Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Events/Tree använder efter PR322 Admin-historikägaren; äldre history.replaceState i den kedjan är ersatt. Övriga kvarvarande delar är inte avvecklade av de tre leveranserna.
 
 
 ## J04 — En spelkatalog via lobby

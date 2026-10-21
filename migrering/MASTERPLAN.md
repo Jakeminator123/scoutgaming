@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag har J03-delarna Guide/Videor (PR318, grön CI) och Probe/Replies (PR320, lokalt verifierad och CI köad) levererats ovanpå J02. O01 slutförs och J04 är läskartlagd. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
+Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag har J03-delarna Guide/Videor (PR318, grön CI) och Probe/Replies (PR320, grön CI) levererats ovanpå J02. Events/Tree är nu lokalt verifierad i PR322/head 2ea99899228b9574bbf142ae80f3e7a776af0a5b ovanpå PR320; ny GitHub CI redovisas separat. Tre underagenter, inklusive oberoende granskning, deltog. O01 slutförs och J04 är läskartlagd. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
 
 ## Frysta utgångspunkter
 

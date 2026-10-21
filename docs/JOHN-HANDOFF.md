@@ -98,7 +98,14 @@ Ytterligare två SSR-sidor/tracingposter borta; callers och filterhistorik går 
 180/180 hookprov, 13/13 komponent och 10/10 faktisk Admin-browserhistorik,
 root15/15 API/query, build/typer och oberoende granskning passerar.
 Körningarna överlappar; syntetiska API-svar och lokalt byggbevis med junctions,
-inte fristående deployacceptans. GitGuardian success; ny CI köad.
+inte fristående deployacceptans. GitGuardian och CI39646187160 success på oförändrad head db96200a4.
+Events/Tree är lokalt verifierad i [PR322](https://github.com/Jakeminator123/scoutgaming/pull/322),
+codex/admin-control-events-j03 / 2ea99899228b9574bbf142ae80f3e7a776af0a5b.
+Två ytterligare SSR-wrappers/tracingposter borta; Admin-historik och
+spara→Tree→Events återläser rätt data. 33/33 fokuserade inklusive3 browser,
+202/202 hook,0skip; /studio-build/alla typer, orphan531/0 och oberoende review
+passerar. API-svar/uppspelning isolerade; junctionbuild är inget deploybevis.
+Ny GitHub CI ännu inte accepterad. Alla detaljer i status.json[J03].
 Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
 och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
 inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.
