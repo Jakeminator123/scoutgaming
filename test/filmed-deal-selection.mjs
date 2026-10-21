@@ -42,9 +42,31 @@ function fixture(){
   return {project:normalizeProject(project),media,inventory:{videos,families:[],summary:{}}};
 }
 function choose(f,published,sourceEvent=published[0],dealerId='dragan'){
-  return filmedDealSelection({...f,published,sourceEvent,dealerId});
+  return filmedDealSelection({...f,published,sourceEvent,dealerId,shoeTransitions:true});
 }
 const takeVideo=(f,key)=>f.inventory.videos.find(video=>video.sha256===profile.takes.find(take=>take.key===key).sha256);
+
+function bindShoe(f){
+  const line=f.project.lines.find(row=>row.dealerId==='dragan'&&row.eventId==='transition.shoe');
+  for(const [i,situation] of ['to-shoe','from-shoe'].entries()){
+    const video={id:uuid(200+i),sha256:String(i+1).repeat(64),fileName:situation+'.mp4',available:true,bytes:1000,
+      dealer:'dragan',classification:{dealerId:'dragan',eventId:'transition.shoe',situation,kind:'action',role:'standard',label:situation,notes:''}};
+    f.inventory.videos.push(video);
+    f.media.push({id:video.id,sha256:video.sha256,size:1000,contentType:'video/mp4',classification:video.classification,pathname:`croupier/media/dealers/dragan/review/uploads/${video.id}/${video.sha256}.mp4`});
+    line.variants.push({...structuredClone(line.variants[0]),id:`dragan.transition.shoe.slot.${situation}`,videoGenerationId:video.id});
+  }
+}
+
+test('saved directional standards supply transitions, never foreign or library-only alternatives',()=>{
+  const f=fixture(),event=box(2);bindShoe(f);
+  const chosen=choose(f,[event]);
+  assert.equal(chosen.filmedTake.takeKey,'1:base');
+  assert.equal(chosen.transitions.before.id,uuid(200));assert.equal(chosen.transitions.after.id,uuid(201));
+  f.inventory.videos.find(v=>v.id===uuid(200)).classification.dealerId='astrid';
+  assert.equal(choose(f,[event]).filmedTake.takeKey,'1:i');
+  f.project.lines.find(row=>row.dealerId==='dragan'&&row.eventId==='transition.shoe').variants.splice(1);
+  assert.equal(choose(f,[event]).filmedTake.takeKey,'1:iv');
+});
 
 test('only explicit own project references opt in; foreign dealers and library-only media do not',()=>{
   const f=fixture(),event=box(2);
@@ -91,8 +113,9 @@ test('the canonical committed event owns card, faceDown and target before profil
   assert.throws(()=>presentationInput({type:'reveal',to:'dealer',shoeDraw:8},published),/committed/);
 });
 
-async function serverFixture(t,{frozen=false}={}){
+async function serverFixture(t,{frozen=false,shoe=false}={}){
   const f=fixture(),db=new DatabaseSync(':memory:');
+  if(shoe)bindShoe(f);
   db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
   const published=[box(2),hole(3)];
   db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('qa',7,JSON.stringify(published));
@@ -108,7 +131,7 @@ async function serverFixture(t,{frozen=false}={}){
     administrationDocument:{kind:'administration',revision:'admin-1',value:{rooms:[]}},mediaRows:f.media.map(row=>({...row,revision:'media-1'}))},
     inventory:f.inventory,selectedLaneIds:['fixture-lane'],requiredIdleDealerIds:['dragan']});
   const presentation=decodePresentationPackage(encodePresentationPackage(captured.presentation));
-  assert.equal(presentation.playback.media.length,36);
+  assert.equal(presentation.playback.media.length,shoe?38:36);
   const saved={operator:{id:'fixture-operator',slug:context.operatorSlug,status:'active'},
     package:{operatorId:'fixture-operator',revision:4,lanes:['fixture-lane'],tables:[context.roomId],frozen:presentation},
     administration:{rooms:[{schemaVersion:2,id:context.roomId,name:'Fixture',operatorId:'fixture-operator',presentationLaneId:'fixture-lane',gameLaneId:'fixture-game',state:'live'}],
@@ -122,11 +145,26 @@ async function serverFixture(t,{frozen=false}={}){
   server.listen(0,'127.0.0.1');await once(server,'listening');
   t.after(()=>{server.closeAllConnections();server.close();db.close();});
   const post=(event,patch={},headers={})=>fetch(`http://127.0.0.1:${server.address().port}/api/presentation/select`,{
-    method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify({dealerId:'dragan',version:7,mode:'off',event,
+    method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify({dealerId:'dragan',version:7,mode:'off',event,shoeTransitions:true,
       ...(frozen?{presentationContext:context}:{}),...patch})});
   const setPublished=events=>db.prepare('UPDATE native_presentations SET payload=? WHERE player_id=? AND version=?').run(JSON.stringify(events),'qa',7);
   return {...f,published,post,setPublished,counts:()=>({fallbackCalls,resolveCalls})};
 }
+
+for(const frozen of [false,true])test(`${frozen?'frozen':'native'} API keeps shoe media exact and scoped after save and publication`,async t=>{
+  const f=await serverFixture(t,{frozen,shoe:true});f.setPublished([box(2)]);
+  let response=await f.post(box(2));assert.equal(response.status,200,await response.clone().text());
+  let result=await response.json();assert.equal(result.video.filmedTake.takeKey,'1:base');
+  assert.equal(result.transitions.before.id,uuid(200));assert.equal(result.transitions.after.id,uuid(201));
+  const oldClient=await (await f.post(box(2),{shoeTransitions:undefined})).json();
+  assert.equal(oldClient.video.filmedTake.takeKey,'1:iv');assert.equal(oldClient.transitions.before,null);
+  if(frozen)assert.match(result.transitions.before.src,/registered-video\/swedish-games\/fixture-room\/4\/dragan\//);
+  f.inventory.videos.find(v=>v.id===uuid(200)).available=false;
+  result=await (await f.post(box(2))).json();
+  assert.equal(result.video.filmedTake.takeKey,frozen?'1:base':'1:i');
+  assert.equal(result.transitions.before?.id??null,frozen?uuid(200):null);
+  assert.equal((await f.post(box(2),{version:6})).status,409);
+});
 
 for(const frozen of [false,true])test(`${frozen?'frozen':'native'} selects every one of the 35 exact films after native save and package roundtrip`,async t=>{
   const f=await serverFixture(t,{frozen});

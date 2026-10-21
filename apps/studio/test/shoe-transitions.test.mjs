@@ -97,9 +97,17 @@ test('the resolver returns available shoe clips and the director still ignores t
   assert.deepEqual(empty, { toShoe: null, fromShoe: null });
   const toShoe = video('to-shoe');
   const fromShoe = video('from-shoe', { classification: metadata('from-shoe', 'alternative') });
-  const picked = transitionClipsForDealer(project, { videos: [video('to-shoe', { available: false }), { ...toShoe, classification: { ...toShoe.classification, archived: true } }, toShoe, fromShoe, video('to-shoe', { classification: { ...metadata('to-shoe'), dealerId: 'vera' } })] }, 'astrid');
+  const line = project.lines.find(row => row.dealerId === 'astrid' && row.eventId === 'transition.shoe');
+  assert.deepEqual(transitionClipsForDealer(project, { videos: [toShoe, fromShoe] }, 'astrid'), empty, 'library-only clips do not opt into playback');
+  line.variants[0].videoGenerationId = fromShoe.id;
+  line.variants.push({ ...structuredClone(line.variants[0]), id: 'astrid.transition.shoe.slot.to-shoe', videoGenerationId: toShoe.id });
+  const picked = transitionClipsForDealer(project, { videos: [video('to-shoe', { id:'unavailable',available: false }), { ...toShoe, id:'archived',classification: { ...toShoe.classification, archived: true } }, toShoe, fromShoe, video('to-shoe', { id:'foreign',classification: { ...metadata('to-shoe'), dealerId: 'vera' } })] }, 'astrid');
   assert.equal(picked.toShoe.id, 'to-shoe');
   assert.equal(picked.fromShoe.classification.situation, 'from-shoe');
+});
+
+test('shoe timing stays outside ordinary director events', async () => {
+  const project = createSeedProject();
   const catalog = buildRuntimeCatalog(project, 'astrid');
   assert.equal(validateCatalog(catalog).valid, true);
   assert.equal(catalog.events.some(event => event.id === 'transition.shoe'), false);

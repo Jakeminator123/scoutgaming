@@ -150,7 +150,7 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
   const configured = scope.family ? configuredClipIds(project,dealerId,slot,variantId,inventory).includes(videoId) || Boolean(familyPolicy)
     : scope.line.variants.some(row=>row.videoGenerationId===videoId);
   if (!configured) return result(false, ['Vald för prov; inte kopplad i projektutkastet.']);
-  if (slot.eventId === 'transition.shoe') return result(true, ['Sparad koppling för denna riktning. Automatisk uppspelning av skonövergångar är ännu inte inkopplad.']);
+  if (slot.eventId === 'transition.shoe') return result(true, ['Det publicerade standardklippet används i filmsekvenser med känd poskedja när rörelsen behövs. Sparade alternativ väljs inte automatiskt.']);
   const exactVariant=scope.line.variants.find(row=>row.id===variantId&&row.videoGenerationId===videoId);
   const standard = scope.family ? scope.family.standardIds[0] === videoId
     : (!exactVariant||exactVariant.id===scope.line.baselineVariantId) && (slot.sourceType==='speak'?currentClipId(project,dealerId,slot,scope.line.baselineVariantId,inventory):scope.line.variants.find(row=>row.id===scope.line.baselineVariantId)?.videoGenerationId) === videoId;

@@ -20,8 +20,16 @@ automatisk kodgranskning utan fynd. Vercel-produktion
 `dpl_B77rPVKWdtSM9mNf9RtAFbV1euRY` är READY på samma SHA och har
 `www.scoutgaming.tech` som aktiv alias. Till skon har därefter kopplats och
 sparats genom Admin med ny serverrevision. Efter full omladdning visar båda
-riktningarna **Kopplat i sparat utkast**. Automatisk infogning av övergångarna
-i spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
+riktningarna **Kopplat i sparat utkast**.
+
+På Jakobs begäran är nästa steg nu implementerat lokalt: filmplaneraren väljer
+de sparade skonstandarderna vid VILA/REDO-gränser och behåller inbakade
+returer. Fryst publicering och vanlig förhandsvisning använder samma urval;
+spelaren håller övergång och kortfilm under samma avbrytbara ägare utan att
+ge övergången kortspår. 125 fokuserade tester passerar, inklusive publicering,
+medieisolering, posegränser och avbrott. Runtimeändringen inväntar PR-CI,
+driftsättning på Render/Vercel och publicering av Dragan-rummets nya paket.
+Genererad talutdelning och automatisk variantrotation ingår inte.
 
 Skarpt verifierat 21 oktober: `in_vila_till_redo`
 (`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) är standard i Till skon och visades

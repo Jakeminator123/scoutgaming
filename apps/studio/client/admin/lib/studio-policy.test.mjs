@@ -143,14 +143,15 @@ test('usage reports actual predicates and priority even when the default display
   assert.match(exact.rules.join(' '),/Prioritet 38/);assert.doesNotMatch(exact.rules.join(' '),/Standard\/reserv/);
 });
 
-test('saved shoe choices do not claim automatic playback for either direction',()=>{
+test('saved shoe choices explain publication and the standard-only pose sequence',()=>{
   for(const situation of ['to-shoe','from-shoe']){
     const f=fixture('transition.shoe',situation,false);
     const line=f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===f.slot.eventId);
     line.variants[0].videoGenerationId=ids[0];
     const usage=studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[0]);
     assert.equal(usage.configured,true);
-    assert.match(usage.rules.join(' '),/Automatisk uppspelning.*ännu inte inkopplad/);
+    assert.match(usage.rules.join(' '),/publicerade standardklippet.*känd poskedja/);
+    assert.match(usage.rules.join(' '),/alternativ väljs inte automatiskt/);
     assert.equal(studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[1]).configured,false);
   }
 });

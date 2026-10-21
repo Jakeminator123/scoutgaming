@@ -203,7 +203,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     let result;
     try {
       const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode, version: requestVersion, event, ...(context ? {presentationContext:context} : {}) }) });
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
       if (selected.status === 409 && context) {
         const failure = await selected.json().catch(() => null);
         if (failure?.code === 'studio_presentation_idle_package_changed') throw packageError();
@@ -253,10 +253,19 @@ export async function createLocalPresentation({ player, host, dealerId, version,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
         } finally { if (current === attempt) ++attempt; }
       };
+      const transition = async (video, direction) => {
+        if (!video) return;
+        if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
+        await film(video, { kind: 'transition', signal, details: { direction, shoeDraw: event.shoeDraw,
+          requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource } });
+        if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
+      };
+      await transition(result.transitions?.before, 'to-shoe');
       try { await play(result.video); }
       catch (error) { if (error.code === 'local_film_stalled' || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }
+      await transition(result.transitions?.after, 'from-shoe');
       const current = token === serial && requestVersion === version() && !signal?.aborted;
       if (current) retainRule(result, requestVersion);
       return current;

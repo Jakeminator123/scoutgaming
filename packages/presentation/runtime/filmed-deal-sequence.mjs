@@ -26,7 +26,7 @@ export function orderFilmedPresentationEvents(published) {
 
 // Call only with the complete, server-committed presentation instructions for
 // one command. This is presentation selection, never a source of cards/rules.
-export function planFilmedDealSequence({profile,events,inventory,dealerId}={}) {
+export function planFilmedDealSequence({profile,events,inventory,dealerId,transitions={}}={}) {
   const unavailable=reason=>({profileId:profile?.id??null,complete:false,reason,steps:[]});
   if (!profile) return unavailable('profile_missing');
   try { validateFilmedDealProfile(profile); } catch { return unavailable('profile_invalid'); }
@@ -49,11 +49,13 @@ export function planFilmedDealSequence({profile,events,inventory,dealerId}={}) {
     const target=targets[i];
     if (!target) continue;
     const standard=base(target),before=joins(targets[i-1],target),after=joins(target,targets[i+1]);
-    let variant=(before||standard.startPose==='VILA'?'':'i')+(after||standard.endPose==='VILA'?'':'u');
+    const enter=!before&&standard.startPose==='REDO'&&transitions.toShoe;
+    const leave=!after&&standard.endPose==='REDO'&&transitions.fromShoe;
+    let variant=(before||enter||standard.startPose==='VILA'?'':'i')+(after||leave||standard.endPose==='VILA'?'':'u');
     if (variant.endsWith('u')&&profile.takes.some(take=>take.key===`${target}:${variant.slice(0,-1)}v`)) variant=variant.slice(0,-1)+'v';
     const take=profile.takes.find(row=>row.target===target&&row.variant===variant);
     if (!take) return unavailable('pose_variant_missing');
-    if (take.startPose!==(before?'REDO':'VILA')||take.endPose!==(after?'REDO':'VILA')) return unavailable('pose_chain_invalid');
+    if (take.startPose!==((before||enter)?'REDO':'VILA')||take.endPose!==((after||leave)?'REDO':'VILA')) return unavailable('pose_chain_invalid');
     const matches=videos.filter(video=>video.available===true&&video.sha256===take.sha256&&typeof video.id==='string'&&video.id
       &&video.classification?.dealerId===dealerId&&video.classification.archived!==true
       &&video.classification.game!=='roulette'&&!['audio','image'].includes(video.classification.mediaType));
@@ -63,7 +65,8 @@ export function planFilmedDealSequence({profile,events,inventory,dealerId}={}) {
     if (!video) return unavailable('exact_video_missing');
     const event=events[i];
     steps.push({eventIndex:i,shoeDraw:event.shoeDraw,type:event.type,to:event.to,box:event.to==='box'?event.box:null,
-      takeKey:take.key,videoId:video.id,sha256:take.sha256});
+      takeKey:take.key,videoId:video.id,sha256:take.sha256,
+      ...(enter?{beforeVideoId:enter.id}:{}),...(leave?{afterVideoId:leave.id}:{})});
   }
   return {profileId:profile.id,complete:true,reason:null,steps};
 }

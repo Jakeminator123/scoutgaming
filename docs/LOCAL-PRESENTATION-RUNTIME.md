@@ -1240,6 +1240,29 @@ inte på gamla defaults eller migrerar sparade data.
 
 ## Dealerimport och samtalskontroll, 13 oktober 2026
 
+### Skonövergångar i filmsekvensen, 21 oktober 2026
+
+`transitionClipsForDealer` läser varje riktnings exakta sparade standardval
+(eget fack-ID eller äldre baseline). Biblioteksklipp och alternativ väljs inte
+automatiskt. `filmedDealSelection` använder den redan auktoriserade inventeringen:
+i ett publicerat rum kommer både valen och filmhasharna från det frysta paketet.
+Klippändringen behöver därför publiceras i rummet efter sparning.
+Klienten annonserar `shoeTransitions:true`; äldre flikar behåller sina
+sammanhängande i/v/iv-klipp även när servern redan har uppdaterats.
+
+Planeraren lägger Till skon före en REDO-start och Från skon efter ett REDO-slut
+vid filmsekvensens gränser. Mellan REDO-klipp spelas ingen extra övergång.
+Dolt kort och vändning behåller sina inbakade VILA-rörelser. Utan sparad
+övergång behålls profilens tidigare i/v/iv-tagningar. Stödet gäller den
+registrerade filmprofilen; det ändrar inte genererad talutdelning eller dealers
+utan sådan profil. Inget nytt spel-/Director-event eller databasschema krävs.
+
+Spelaren använder samma hashkontrollerade filmägare för övergång och kortfilm,
+men bara kortfilmen får kortspårets callbacks. Avbrott stoppar hela kedjan;
+sen chattstädning får inte avbryta pågående övergång. Serverkort och saldo
+förblir oförändrade. Fokuserade prov täcker fryst publicering, båda riktningar,
+inbakade rörelser, saknade/obundna klipp och avbruten uppspelning.
+
 ### Klippnamn och deklarerad poskedja, 19 oktober 2026
 
 `packages/presentation/contracts/clip-naming.mjs` är den enda tolkningen av

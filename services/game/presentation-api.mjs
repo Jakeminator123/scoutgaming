@@ -163,11 +163,12 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
         if (frozen.project) {
           const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,
-            published:receipt?.version===body.version?JSON.parse(receipt.payload):[]});
+            published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
           if(filmed){
             await frozenDealerContext.resolve(body.presentationContext);
             const video=filmed.video?{...frozenDealerContext.publicVideo(frozen,filmed.video.id),filmedTake:filmed.filmedTake}:null;
-            json(200,{...filmed.result,owner:'web',projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource,video,standard:video});return true;
+            const transitions=Object.fromEntries(Object.entries(filmed.transitions??{}).map(([key,clip])=>[key,clip?frozenDealerContext.publicVideo(frozen,clip.id):null]));
+            json(200,{...filmed.result,owner:'web',projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource,video,standard:video,transitions});return true;
           }
           const eventId = prepareDecision(buildRuntimeCatalog(frozen.project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
           const controller = new AbortController();
@@ -216,10 +217,11 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
       const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,
-        published:receipt?.version===body.version?JSON.parse(receipt.payload):[]});
+        published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
       if(filmed){
         const video=filmed.video?{...publicVideo(filmed.video),filmedTake:filmed.filmedTake}:null;
-        json(200,{...filmed.result,owner:'web',projectRevision:project.revision,configurationSource,video,standard:video});return true;
+        const transitions=Object.fromEntries(Object.entries(filmed.transitions??{}).map(([key,clip])=>[key,clip?publicVideo(clip):null]));
+        json(200,{...filmed.result,owner:'web',projectRevision:project.revision,configurationSource,video,standard:video,transitions});return true;
       }
       const eventId = prepareDecision(buildRuntimeCatalog(project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
       const key = JSON.stringify([playerId, body.dealerId, body.version, sourceEvent, body.mode, project.revision]);
