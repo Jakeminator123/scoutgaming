@@ -93,13 +93,14 @@ K02-rättning PR325/0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är läsgranskad av
 Tidigare reservations-/budgetfynd och villkorliga turprov är rättade; CI39660600012
 är success på exakt samma head. Inga egna runtimeprov; K02 förblir IN_PROGRESS
 i väntan på samlad O01/full aktivitetacceptans.
-K03-rättning PR327/3528c3f2632f94076ffbbc63413d02a15f6bb678 är läsgranskad av kevin_plan/root.
-Fem tidigare fynd samt stake-retry/null-normalisering är stängda i kod.
-Insurance.timeout behöver motsvarande reservationsklassificering, blocked/savepoint
-och generationsstyrd retry även vid consume-vägran. Tidigare accepterat ja består;
-sista insurance-kommandot får nekas atomiskt. Infrastrukturfel kräver full rollback.
-Kevin rättar enligt [6325459694](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325459694).
-27/27 och hooks utan bypass är Kevinrapporterade; inga egna runtimeprov/CI-/PG-acceptans.
+K03-rättning PR327/b8e1c957c99c5a16ee861f9767ec28041b2270dd är läsgranskad av kevin_plan/root.
+Tidigare fem fynd samt stake/insurance-återhämtningen är stängda i kodgranskningen.
+Insurance.timeout hanterar reservations-/consume-vägran med savepoint, blocked och
+generationsstyrd retry. Sista insurance-kommandot nekas atomärt utan kvitto;
+tidigare accepterat ja består. Infrastrukturfel kräver full rollback.
+[Granskning6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578): inga blockerande fynd i deltat.
+30/30 och52/52 är Kevinrapporterade; inga egna runtimeprov/CI-/PG-acceptans.
+Kevin konsoliderar redan beslutade O01-punkter; root gör samlad avstämning.
 Clear före start får häva ready/frigöra reservation även efter deadline; undo kan vänta.
 K03 IN_PROGRESS,total15%; inga aktiva callers eller drift ändrade.
 Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,

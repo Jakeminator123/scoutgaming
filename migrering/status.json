@@ -273,7 +273,7 @@
         "K02"
       ],
       "branch": "codex/kevin-k03-bord",
-      "head": "3528c3f2632f94076ffbbc63413d02a15f6bb678",
+      "head": "b8e1c957c99c5a16ee861f9767ec28041b2270dd",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/327",
       "reviewer": "kevin_plan och root (skrivskyddad kontrakts-/kodgranskning)",
       "evidence": [
@@ -283,9 +283,9 @@
         "Kevinrapporterat19/19 och hook52/52 samt upprepade Node22/24-prov; inte omkört här. Connectorns PR-workflowavläsning gav inga körningar för denna head. Minnesfixturens globala mutex bevisar inte PG-lås, flerprocessleverans eller verklig kraschpersistens. Ingen CI-/runtimeacceptans.",
         "Rättning d20792ba50550ee7d73237e6dd82c4d575b756dc från b1c94dee läsgranskad av kevin_plan och root. Fem tidigare fynd stängda i kod/portkontrakt: aktörsunik tick, next verkställer leaving under planerade lås, clear återhämtar READY, obligatorisk memberGen och atomisk mottagarversion med applied/stale. Nya regressioner lästa. PR327 head/författare/källrepo verifierade. 24/24 och 21/21 fortsatt Kevinrapporterade; ingen egen exekvering eller PG-/mottagarpersistensacceptans.",
         "Rättning 3528c3f2632f94076ffbbc63413d02a15f6bb678 från d20792ba läsgranskad av kevin_plan och root: stake-reservationsvägran klassificeras som WalletDenied före kärnan, saknad reservationsgeneration normaliseras till null. Tidigare stake/retry-fynd stängt i kod. Nya prov för saknad/för liten reservation, oförändrad frånvaro, återställning och injicerat infrastrukturfel lästa. PR-head/författare/källrepo verifierade. 27/27 på Node22/24 och hooks utan bypass är Kevinrapporterade; inga egna runtimeprov eller ny CI-/PG-acceptans.",
-        "Återstående insurance-fynd: reservedFunding klassificerar endast stake som WalletDenied och tick-catch hanterar endast window.close. Saknad/för liten insurance-reservation kan bli permanent rejected; consume-WalletDenied vid insurance.timeout kan erbjudas på nytt utan generationsspärr. Kevin rättar samma avgränsade blocked/savepoint/retry-kontrakt. Bindande tidigare insurance-ja består; ett sista insurance-kommando får fortfarande nekas atomiskt, utan fabricerat accepted-kvitto. Infrastrukturfel kräver full rollback. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325459694"
+        "Insurance-rättning b8e1c957c99c5a16ee861f9767ec28041b2270dd från3528c3f2 läsgranskad av kevin_plan och root; inga blockerande fynd i deltat. WalletDenied före kärnan och från consume hanteras av insurance.timeout genom samma savepoint/blocked/generationsstyrda retry. Sista insurance-kommandot nekas atomärt med INSURANCE_NOT_FUNDED utan kvitto; tidigare accepterade ja och åtaganden består. Infrastrukturfel kräver full rollback. Regressioner för saknad/för liten reservation, nekad consume, oförändrad generation/omstart, återställd finansiering, bindande ja vid pause/leave och felinjektion är lästa. 30/30 och52/52 samt hooks utan bypass är Kevinrapporterade; ingen egen exekvering, CI- eller PG-/flerprocess-/kraschpersistensacceptans. PR-head/source/author verifierade. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578"
       ],
-      "blocker": "Kevin rättar insurance-reservationsvägran och insurance.timeout-återhämtning enligt6325459694. Tidigare stake-fynd och null-normalisering stängda i läsreview på3528c3f2. K02/O01-acceptans och J07:s faktiska adapter-/PG-verifiering återstår; inga aktiva callers eller nya runtimeprov."
+      "blocker": "Inga kvarstående blockerande fynd i de granskade rättningsdeltana tillb8e1c957. Samlad O01- och full K02/K03-acceptans mot aktivitetskriterier återstår; faktisk adapter-/PG-verifiering hör till J07. Ingen aktiv runtimeinkoppling eller merge."
     },
     {
       "id": "J07",
