@@ -49,7 +49,7 @@ Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna
 
 - [ ] Porta endast O01:s godkända regelbeteenden och sko-/auditdata. Definiera validerade kommandon, fel, tillståndsversion, spelhändelser och publik vy; dölj skoordning, burn och ännu dolda kort.
 - [ ] Flytta slump, UUID och eventuell tid till uttryckliga indataportar. Produktionsadaptern ska behålla säker slump; reproducerbara testsekvenser får aldrig bli produktionsfallback.
-- [ ] Låt kärnan returnera nödvändiga saldoändringar till den serverägda transaktionen. Klientens saldo, kort, regler eller insatsgränser får inte bli betrodda indata.
+- [ ] Låt kärnan returnera nödvändiga ekonomiska effekter till koordinatorn; kärnan äger inget saldo och anropar ingen wallet. I denna migrering utför J07:s separata demoadapter effekterna i den serverägda transaktionen. Klientens saldo, kort, regler eller insatsgränser får inte bli betrodda indata.
 - [ ] Behåll sko, cut/burn, försäkring, split/double, sidospel och avräkning enligt O01. Bevara shoe proof commit/reveal: bind öppningscommitment till exakt sko/runda, exponera fullständigt bevis först efter godkänd skostängning och verifiera draws/återstående kort. Dokumentera regelskillnader; framtida kort får inte läcka.
 
 **Raderas/importeras inte:** SQL, filåtkomst, HTTP/WS, UI, videoval, lipsync och interna timers i kärnan; duplicerad gammal regelimplementation först när alla konsumenter använder den verifierade ersättningen.
@@ -59,10 +59,11 @@ Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna
 ## K03 — Delat bord utan SQL- och videokoppling
 
 **Etapp/beroenden:** E3; K02. Lagringskontraktet överlämnas till J07.
-**Mål:** servern samordnar rum, spelare, platser, deadlines och återanslutning genom O01:s portar.
+**Mål:** servern samordnar rum, spelare, platser, deadlines och återanslutning genom O01:s portar. Jakobs beslut: demo först med förberedd aggregatorgräns. WalletPort binds av J07 till mains demowallet; faktisk extern walletintegration är en senare leverans.
 **Startfiler:** K `server/shared-table.mjs`, `server/transactions.mjs`, `server/game-audit.mjs`, `public/shared-table.js`, `public/round-clock.js`, `test/shared-table.test.mjs`; M `packages/storage/server/postgres-store.mjs` läses som J07:s integrationsgräns.
 
 - [ ] Separera bordets tillståndsövergångar från SQL, auth, saldoimplementation, manifest och lipsync. Använd mains verifierade spelar-/rumskontext och versionsbundna konfiguration.
+- [ ] Håll walletportens kontrakt skilt från saldoimplementation och HTTP. Föreskriv inte att en framtida aggregator delar Postgres-rollback; dess osäkra svar och avstämning kräver separat verifierat API-kontrakt. Ingen extern adapter aktiveras i denna aktivitet.
 - [ ] Definiera port för atomisk läsning/ändring av rum, berörda spelare, sko, kvitto och kommandonyckel; J07 implementerar Postgres-transaktion/lås. Ingen lokal SQLite-fallback i drift.
 - [ ] Gör countdown och timeout serverägda med explicit klocka och beständiga deadlines. Lås O01:s policy för återanslutning, tom plats, avhopp, sena kommandon och samtidiga beslut.
 - [ ] Definiera varaktig idempotens, versionskonflikt och snapshot/händelsesekvens. Samma nyckel med annat innehåll avvisas; replay efter annan åtgärd eller omstart får inte debitera på nytt.

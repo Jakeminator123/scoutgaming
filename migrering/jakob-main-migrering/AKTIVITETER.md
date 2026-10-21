@@ -137,11 +137,12 @@ Aktiva callers: presentation-room-create.tsx:93, control-workspace.tsx:34, scout
 ## J07 — Postgres-adapter för delat bord
 
 **Etapp:** E3. **Beroenden:** K03. Dess kontrakt bygger på K02/O01.
-**Mål:** Kevins bordstjänst använder mains Postgres utan egen SQLite-, wallet- eller identitetsprodukt.
+**Mål:** Kevins bordstjänst använder mains Postgres utan egen SQLite-, wallet- eller identitetsprodukt. Jakobs beslut är demo först: J07 binder K03:s walletport till mains serverägda demowallet; gränsen förbereds för en senare aggregatorintegration.
 
 - [ ] Implementera O01/K03:s lagringsport med explicit transaktionsgräns, låsordning för bord/rum och berörda spelare, idempotensnycklar och sparad konfigurationsversion.
-- [ ] Gör insats, saldo, bord/sko, resultat och journal atomiska. Skicka presentationshändelser först för committat utfall; retry, förlorat svar eller omstart får inte ge dubbla ekonomiska effekter.
+- [ ] Gör insats, demosaldo/reservationer, bord/sko, resultat och journal atomiska inom demoadaptern. Skicka presentationshändelser först för committat utfall; retry, förlorat svar eller omstart får inte ge dubbla ekonomiska effekter.
 - [ ] Bestäm och prova återstart/recovery och konfliktbeteende med samma kommando-ID samt med ändrad payload. Rum och operatörer får inte dela tillstånd genom fel nyckel.
+- [ ] Håll walletimplementationen utanför spelkärnan och API-transport utanför koordinatorns spelregler. Behåll extern-wallet-spärren; ingen SQLite-genväg eller tyst demofallback vid extern konfiguration. Dokumentera framtida aggregators idempotens-/status-/återhämtningsgräns utan att bygga en overifierad HTTP-adapter.
 **Startfiler:** `services/game/postgres-native-table.mjs`, `native-table.mjs`, `storage/postgres-store.mjs`, `packages/storage/server/postgres-store.mjs`, `ops/neon-game/`. Källjämförelse efter K01: `kevin/croupier-scoutgg/server/shared-table.mjs` och `transactions.mjs` på fryst Kevin-SHA.
 **Radera:** ersatta SQLite-kopplingar och dubbla wallet-/transaktionsvägar ur den portade produktkedjan; lämna inte en tyst SQLite-fallback.
 **Klart/verifiera:** isolerade PostgreSQL-prov med två samtidiga klienter: samma rum, olika rum, samma spelare, dubbelkommando, timeout, rollback och processomstart. Kontrollera exakt saldo/journal, inga dubbla utbetalningar och samma sparade bord efter återläsning.

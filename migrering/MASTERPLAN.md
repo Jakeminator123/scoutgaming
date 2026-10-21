@@ -94,6 +94,39 @@ Utgår från main 15988f32fd572c453d2189502acbe324c4566815 och Kevin-kod
 och inventeringen är VERIFIED i PR #314. Inga kontrakt är låsta och detta
 startar ingen runtimeport, DDL eller mediaimport.
 
+**Fastställt av Jakob 21 oktober: demo först, aggregatorgräns förbereds.**
+
+Beslutet är lämnat direkt i denna chatt och [förmedlat till Kevin](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403).
+K02 äger inga pengar eller saldo och gör inga I/O-anrop. K03 samordnar via en
+explicit WalletPort; J07 binder den till mains serverägda demowallet och
+Postgres-transaktioner. Reservation, konsumtion/frisläppning, ledger, kvitto,
+rumsstate och audit får den avtalade atomiska gränsen i denna demoadapter.
+Alla berörda main-writers ska respektera samma reservationer.
+
+En verklig aggregator äger saldo och betalningar i en senare separat integration.
+Denna migrering förbereder adaptergränsen men implementerar eller aktiverar ingen
+extern betalningskoppling. En sådan adapter får inte antas vara ett direkt byte
+av SQL-klient: HTTP-effekter delar inte lokal rollback. Framtida API-underlag
+måste specificera stödda reservationer/bet/win/reversal, valuta, idempotens,
+statuskontroll, osäkra svar och avstämning innan extern acceptans kan göras.
+
+Kodverifierat på main15988f32 av root och underagent: server.mjs:155 väljer
+storage/async-partner-api.mjs, som på rad137 blockerar extern wallet med503.
+Callbacken i services/game/partner-api.mjs:97/161 hör till SQLite-spåret och
+anropar HTTP före lokal transaktion; den återinförs inte. Befintlig extern-wallet-
+spärr behålls tills en separat integration är verifierad. Extern konfiguration
+får inte tyst falla tillbaka till demopengar. Demo betyder syntetiska pengar,
+inte en ny lokal produktdatabas. Ingen drift- eller aggregatoranslutning är
+verifierad av denna läsgranskning.
+
+Skydd mot dubbla insatser och förlorade svar krävs även med extern wallet.
+Kevins retrygodkännande, vidarebefordrat av Jakob, accepterar riktningen för
+nekad consume: återställ startens spel-/walleteffekter, bevara accepterade val
+och reservationer och ompröva först efter relevant tillståndsändring. Beständig
+blocked-markering måste fortfarande få en entydig transaktions-/låsgräns.
+Databasmappning och isolerad verifiering följer J07/J09; root kopplar in Kevin
+när en konkret schemamappning behöver hans hjälp. Beslutet är inte DDL-mandat.
+
 **Verifierade skillnader som portningen måste hantera:**
 
 | Nuvarande Kevin-beteende | Föreslagen kontraktsriktning |
@@ -140,28 +173,28 @@ och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
 spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
 egna händelser; övriga walletwriters behåller mains ledger/audit.
 
-**O01-avstämning 31ef23e — konsoliderad läsgranskning, fortsatt olåst:**
+**O01-avstämning 713c03e — konsoliderad läsgranskning, fortsatt olåst:**
 
-Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/31ef23e95896b661c5517b755a6c76b06075327c/migrering/kevin-ks-migrering/K01/O01-svar.md#L70)
-i PR314 är dokumentation; produktkällan är oförändrad 5aa7ed10.
-En underagent och orkestratorn har läst den nya versionen mot föregående fynd.
-K02 är ren och I/O/låsplanering ligger i K03/J07. Specifikationen täcker nu
-kvittoreplay, scoperade ledgernycklar, reservation→consume/release under P,
-medlemskapsspärr, beständig outbox med samma talkId/ver och speech_choice
-kvar i global audit genom A. Dessa tidigare beskrivningsluckor är stängda;
-implementation och de föreskrivna samtidighets-/recoveryproven är inte utförda.
+Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/713c03e10003dc9c2ee15494c335ad76fa99533d/migrering/kevin-ks-migrering/K01/O01-svar.md#L80)
+i PR314 är dokumentation; produktkällan är oförändrad5aa7ed10.
+Underagent och root har läst ändringen mot föregående fynd. K02 utan I/O,
+scoperade ledgernycklar, beständig outbox och speech_choice i global audit är
+preciserade. Accepterat insurance-ja är nu bindande även vid pause/leave/frånvaro;
+kontogeneration fångar leave→rejoin. Scheduler utan first-caller och ingen
+kvittogallring under migreringen är införda. Det är specifikationsgranskning,
+inte implementerad funktion eller utförda samtidighets-/recoveryprov.
 
-| Ägarsvar eller kvarstående precisering | Beslut och nästa ansvarig |
+| Återstående kontraktspunkt | Ägare och nästa steg |
 | --- | --- |
-| Alla mains walletwriters | Root tar J07-ansvaret för gemensam available/reservationskontroll, valuta-/kontoövergångar och samma injicerade klient. Kevin behöver bekräfta att per-rum-saldo/opening_credit ersätts. Det är leveransansvar, inte genomförd migration. |
-| Tickdrivning | Root väljer självständig scheduler för målkontraktet; first-caller tas bort. En request/retry driver inte tiden. Kevin konsoliderar detta i K03-kontraktet. |
-| Replayhorisont | Ingen automatisk gallring av kvitton/idempotensnycklar under migreringen. Senare retentionbeslut får inte tillåta upprepad ekonomisk effekt. |
-| Insurance-ja vid pause/leave/frånvaro, svar.md:133–136/150 | Kevin skiljer bets-release från redan accepterat insurance-ja. Om valet ska debiteras måste reservationen finnas kvar till consume; ingen release följd av oskyddad debet. |
-| Medlemsidentitet vid pause, :147–149 | Inkludera memberGen eller generation som ändras vid varje medlemsändring. Leave→rejoin i samma rum får inte göra gammalt kommando giltigt. |
-| Oväntad consume-failure, :185 | Roots förslag: rollback av starten, bevara accepterade val/reservationer tills uttrycklig återhämtning/clear. Kevin bekräftar utfallet och beskriver ny prövning efter relevant tillståndsändring utan deadline-retry-loop. Ingen automatisk rensning är beslutad. |
-| Pausepolicy, :146/186 | 24h från commit är varaktighet. Sen första leverans i oförändrad generation och pause-konsekvenser är ett öppet produktbeslut, inte förtäckt i en teknisk timeout. |
+| Demo-/aggregatorgräns | Jakobs demo-först-beslut ovan gäller. Kevin konsoliderar O01/K03; root äger mains demoadapter och reservationswriters i J07. Extern aggregatorimplementation ligger utanför denna migrering. |
+| Medlemsidentitet | Skilj rums-/aktörs-memberGen i2.4 från kontogenerationen för pause i2.6, exempelvis accountMembershipGen. Avsikten är accepterad, namngivningen är ännu tvetydig. |
+| Beständig blockering efter nekad consume | Lägg blocked i tickens outcome-enum. Separera återställning av spel/wallet från den transaktion som sparar blocked-resultatet under angivna lås. Ett totalt rollback kan inte samtidigt spara kvittot. |
+| Omprövning | Riktningen är godkänd via Kevins besked, vidarebefordrat av Jakob: inga accepterade insatser rensas automatiskt; nytt försök först efter relevant ändring. K03/J07 provar att omstart behåller blockeringen och att samma tillstånd inte ger retry-loop. |
+| Pausepolicy | 24h från commit är varaktighet. Behandling av ett sent första kommando är fortfarande en kontraktspunkt att fastställa, skild från accepterat kommandos idempotenta replay. |
 
-Ägarsvaren är skickade i [#312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321288941).
+[Granskningsbesked](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321651183)
+och [walletavgränsning](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403)
+ersätter tidigare öppna antaganden om redan fungerande aggregatorintegration.
 Bordsspråk ägs av Admin enligt Jakobs mål; privat UI-lokalisering får inte byta
 bordets media/ljud. Språkets publiceringsgräns följer fryst configVersion.
 Exakt dealer/take/frame/ljud/planversion är mediegränsen. Deklarerade sista-frame-

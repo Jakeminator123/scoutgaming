@@ -127,9 +127,10 @@
         "Läsverifierad karta över mains aktiva skrivvägar på 15988f32: native blackjack/roulette använder spelar-radlås; deposit/currency/partner/admin använder globalt G→spelare; Studio publicering G→Studio→operatör. Separat auditlås krävs för att undvika föreslagen P→G-inversion; råa gamePool-transaktioner delar inte automatiskt fasadens AsyncLocalStorage. Kartan och öppna valuta-/konto-/idempotens-/auditgränser finns i MASTERPLAN.md. Ingen verklig deadlock eller Postgres-race har körts.",
         "Kevin-avstämning6320082148 om injicerad SQL-klient och spelavgränsad audit läsgranskad av kevin_plan och orkestrator mot frysta källor. O01 preciserar självständig idempotent tick, full kommando-/generationsmatris, refill på samma klient/ledger-id och global hashkedja. Befintlig kedja kan inte fullt verifieras med bara filtrerade rumsrader; hela stängda skon krävs för shoe proof. Förslag, inte implementation, runtimeacceptans eller låst kontrakt. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6320082148",
         "Nio Admin-kandidater kartlagda mot oförändrad main15988f32 av jakob_plan; centrala kontrakt/writers lästa av orkestratorn. MASTERPLAN skiljer befintliga scoped publicerings-/drift-/profil-/launchkontrakt från nya språk/limit/timer/logo/proof-fält och saknad produktfunktion för walletåterföring. Inga nya kontrakt godkända och ingen implementation eller runtimekörning; O01 fortsatt IN_PROGRESS.",
-        "Specifikation 31ef23e95896b661c5517b755a6c76b06075327c läsgranskad av kevin_plan och orkestrator mot föregående fynd. Tidigare luckor om K02 utan I/O, scoped ledger, medlemskapsspärr, hållbar outbox och speech-audit är stängda i beskrivningen. Root tar alla main-writers i J07, väljer självständig scheduler och ingen automatisk kvittogallring under migreringen. Två preciseringar (insurance-ja/livscykel och memberGen vid pause) samt ägar-/produktbeslut återstår. Ingen implementation eller runtimeacceptans. Ägarsvar: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321288941"
+        "Specifikation713c03e10003dc9c2ee15494c335ad76fa99533d läsgranskad av kevin_plan och root: bindande insurance-ja samt kontogeneration vid medlemsändring rättar tidigare sakluckor. Scheduler och ingen kvittogallring införda. Kvar: skilda namn för konto-/rums-memberGen, blocked i outcome-enum och explicit transaktions-/låsgräns som sparar blockering utan committade spel/walleteffekter. Ingen implementation/runtime. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321651183",
+        "Jakob beslutade direkt i chatten21oktober: Demo först; förbered gränsen för aggregatorn. Han vidarebefordrade också Kevins godkännande av retryförslaget. K02 äger inget saldo/I/O; K03 använder walletport; J07 binder main-demowallet med gemensamma reservationer/SQL-transaktion. Extern aggregatorintegration är separat senare omfattning. Spärren i async-partner-api.mjs:137 behålls, ingen SQLite- eller tyst demofallback. Faktisk kodgranskning av root+jakob_plan på main15988: extern callback finns i legacyspåret, inte aktiverad PostgreSQL-integration. Beslut: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403"
       ],
-      "blocker": "Kevin bekräftar reservationsmodellen, utfallet vid oväntad consume-failure och konsoliderar scheduler-/replayval. Insurance-ja vid pause/leave/frånvaro samt medlemsidentitetens generation behöver preciseras. Pausepolicy inklusive sen första leverans är ett öppet produktbeslut."
+      "blocker": "Kevin konsoliderar O01 med Jakobs demo-först-beslut. Precisa konto-/rumsgenerationer, blocked-outcome och beständig transaktions-/låsgräns kvarstår. Behandling av sent första pause-kommando behöver fastställas. Ingen extern aggregatoranslutning krävs för denna migration."
     },
     {
       "id": "J03",
@@ -143,14 +144,16 @@
         "O01"
       ],
       "branch": "codex/admin-control-tools-j03",
-      "head": "1cfe36e32c2c89b165c5c998cd2126325431dc5b",
+      "head": "314639b54019d02606d7d2e0b1cac19f9c72b24a",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/318",
       "reviewer": "kevin_plan (oberoende slutgranskning av Guide/Videor-delen)",
       "evidence": [
         "Jakob startade oberoende parallellarbete 21 oktober. Guide/Videor-delen bygger på verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Routekarta läst av plan_review; orkestrator kontrollerade centrala destinationer och de två wrappers. Övrig Control/auth och full O01-grind kvar. Se AKTIVITETER.md[J03].",
         "Delaktivitet Guide/Videor levererad i PR318/head1cfe36e32c2c89b165c5c998cd2126325431dc5b. Två SSR-wrappers raderade med tracing och rendererkrav; callers och gamla GET/HEAD-bokmärken går till befintlig Admin med kontext, native/unified på/av och /studio. Mutations/server actions omdirigeras inte. Delade funktioner och N1-auth bevaras. Inga blockerande fynd i oberoende slutgranskning av kevin_plan på exakt head; root läste centrala diffar och loggar.",
         "Implementerarens Volta24.21.0-prov med max4 workers: 108/108 fokuserade, 44/44 riktade efter rättade gamla adresskrav, ordinarie hook138/138; 0skip. Överlappande körningar summeras inte. Riktiga middleware-/Admin-handlers med syntetisk N1 och anonym negativ kontroll. Studio-build inklusive Studio/Admin/Lobby-typer passerar; orphan530/0, borttagna sidor saknas i manifestet. Loggar i J03-worktree arkiv/2026-10-21/j03-tools/{focused,build,orphan,commit}.log; handoff docs/JOHN-HANDOFF.md:608. Granskare läste, körde inte om.",
-        "Bygget återanvände J02-beroenden via junctions; tracesanering76 kontrollerade/44 borttagna poster, deras individuella sökvägar loggades inte. Endast lokalt byggbevis, inte fristående deployartefakt. GitHub CI ännu inte verifierad. Ingen merge/produktion/DDL/GPU eller egen kvarvarande testserver. J03 förblir IN_PROGRESS och totalen15%, eftersom fulla aktiviteten inte är klar."
+        "Bygget återanvände J02-beroenden via junctions; tracesanering76 kontrollerade/44 borttagna poster, deras individuella sökvägar loggades inte. Endast lokalt byggbevis, inte fristående deployartefakt. Aktuell GitHub CI redovisas separat nedan. Ingen merge/produktion/DDL/GPU eller egen kvarvarande testserver. J03 förblir IN_PROGRESS och totalen15%, eftersom fulla aktiviteten inte är klar.",
+        "GitHub CI-run39638533490 på head1cfe36e32c2c89b165c5c998cd2126325431dc5b underkändes i Studio-gruppen: http-guard.test.mjs:88 läser raderade control/videos/page.tsx (ENOENT). Riktigt Studio-build och övriga körda regressiongrupper inklusive isolated SQL/restart/HTTPS passerade; slutgrinden underkänd. Felet rättas av den avgränsade testkorrigeringen nedan; inga gates ändras.",
+        "CI-rättningen i 314639b54019d02606d7d2e0b1cac19f9c72b24a ersätter enbart testets två raderade Control-sidor med aktiva loaderkonsumenter samt uppdaterar handoff. Negativa auth/API-prov bevaras. Implementerarloggar: 53/53 fokuserade och 21/21 hook, 0 skips. Oberoende deltareview av kevin_plan utan blockerande fynd; root kontrollerade diff och loggar. Ingen produktändring eller ny build behövdes. GitHub verifierade push; CI-run39641756885 är pågående, inte godkänd."
       ],
       "blocker": "Hela J03 kräver resterande Control-/authavveckling och O01. Den startade Guide/Videor-delen är oberoende av nya spelkontrakt."
     },
@@ -258,7 +261,9 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
+      "evidence": [
+        "Omfattning fastställd av Jakob21oktober: demowallet utanför spelkärnan först, explicit adaptergräns för senare aggregator. Ingen extern HTTP-wallet eller liveDDL startad; J07 fortsatt TODO tills K03 är klar."
+      ],
       "blocker": null
     },
     {

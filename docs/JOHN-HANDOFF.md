@@ -70,19 +70,25 @@ O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
 partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
 Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
 valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
-Kevin-spec 31ef23e95896b661c5517b755a6c76b06075327c i PR314 är läsgranskad
-av underagent och orkestrator. Tidigare luckor i kvitto/nycklar, K02 utan I/O,
-medlemskapsspärr, outbox och speech-audit är stängda på specifikationsnivå.
-Root tar alla main-writers i J07, väljer självständig scheduler och ingen
-automatisk gallring av idempotensnycklar under migreringen. Insurance-ja och
-pause/memberGen behöver preciseras; felutfall vid consume och pausepolicy
-återstår som ägar-/produktbeslut. [Ägarsvar i #312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321288941).
-O01 är IN_PROGRESS; inga nya runtime-/PG-/GPU-prov eller poäng.
+O01-spec713c03e10003dc9c2ee15494c335ad76fa99533d är läsgranskad av
+underagent och root: bindande insurance-ja och pause-generationens avsikt
+är rättade. Kvar är konsekventa generationsnamn, blocked-outcome och dess
+beständiga transaktionsgräns samt hantering av sent första pause.
+Jakob har beslutat **demo först; förbered gränsen för aggregatorn**. K02 äger
+inget saldo/I/O; K03:s walletport binds i J07 till mains serverägda demowallet.
+Faktisk aggregatorintegration ligger senare; PostgreSQL-vägens explicita spärr
+för extern wallet behålls, ingen SQLite-/demofallback. Root och underagent har
+kodverifierat skillnaden på main15988, inte någon driftsatt integration.
+Kevins retrygodkännande är vidarebefordrat av Jakob. [Beslut i #312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403).
+O01 är IN_PROGRESS; inget schema/runtime/GPU eller migrationspoäng ändrat.
 J03-delen Guide/Videor är levererad i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318),
-codex/admin-control-tools-j03 / 1cfe36e32c2c89b165c5c998cd2126325431dc5b,
+codex/admin-control-tools-j03 / 314639b54019d02606d7d2e0b1cac19f9c72b24a,
 från verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Två SSR-sidor
 är raderade; lokala beteendeprov, build/typer och oberoende granskning passerar.
-Exakta kommandon/bevisgränser finns i status.json[J03]; GitHub CI ännu inte verifierad.
+Exakta kommandon/bevisgränser finns i status.json[J03]. CI39638533490 hittade ett
+föråldrat test som läste den raderade Control/Videor-filen. Den avgränsade
+testrättningen passerar 53 fokuserade och 21 hookprov, 0 skips; oberoende
+deltareview utan blockerande fynd. Uppföljande CI39641756885 pågår.
 Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
 och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
 inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.
