@@ -44,7 +44,7 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
 // tab on /control/openclaw. Model settings stay on that path without the tab.
 export const viewPaths: Record<StudioView, string> = {
   tree: '/control/tree', lab: '/control/events', videos: '/admin/videos', activity: '/control/activity',
-  openclaw: '/control/openclaw?tab=chat', guide: '/admin/guide', probe: '/control/probe',
+  openclaw: '/control/openclaw?tab=chat', guide: '/admin/guide', probe: '/admin/probe',
 };
 
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);

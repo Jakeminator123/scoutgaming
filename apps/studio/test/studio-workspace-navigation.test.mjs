@@ -53,7 +53,7 @@ test('switching dealer tabs keeps the selected event, variant, situation and com
 
 test('custom tab destinations keep their own query and hash while encoding selection safely', () => {
   const href = studioNavigationTabs({ ...selection, dealerId: 'dealer & two' }, {
-    speech: '/control/probe?mode=recorded#settings',
+    speech: '/admin/probe?mode=recorded#settings',
   }).find(tab => tab.id === 'speech').href;
   assert.equal(query(href).get('dealer'), 'dealer & two');
   assert.equal(query(href).get('mode'), 'recorded');
@@ -61,12 +61,12 @@ test('custom tab destinations keep their own query and hash while encoding selec
   assert.equal(query(studioNavigationHref('/control/clips', { ...selection, tab: 'triggers', token: 'not-a-context-value' })).has('token'), false);
 });
 
-test('public Studio routes stay under control with either lab base path', () => {
+test('public Studio tabs use their active destinations with either lab base path', () => {
   const before = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
   try {
     for (const base of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = base;
-      for (const tab of studioNavigationTabs(selection)) assert.ok(tab.href.startsWith('/control/'), tab.href);
+      for (const tab of studioNavigationTabs(selection)) assert.ok(tab.href.startsWith(tab.id === 'replies' ? '/admin/replies?' : '/control/'), tab.href);
       assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/control/clips?view=idle&dealer=paow');
     }
   } finally {

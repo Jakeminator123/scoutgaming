@@ -6,7 +6,7 @@ export const STUDIO_DEALER_TABS = Object.freeze([
   { id: 'clips', label: 'Klipp', href: '/control/clips?view=clips' },
   { id: 'generate', label: 'Skapa material', href: '/control/clips?view=generate' },
   { id: 'speech', label: 'Tal & automatik', href: '/control/clips?view=speech' },
-  { id: 'replies', label: 'Svarsbibliotek', href: '/control/replies' },
+  { id: 'replies', label: 'Svarsbibliotek', href: '/admin/replies' },
   { id: 'playback', label: 'Provspelning & logg', href: '/control/rehearsal' },
   { id: 'settings', label: 'Inställningar', href: '/control/clips?view=settings' },
 ].map(tab => Object.freeze(tab)));

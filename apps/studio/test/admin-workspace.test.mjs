@@ -121,12 +121,12 @@ test('retired publication bookmark mapping preserves fragments and rejects docum
   }
 });
 
-test('retired guide and video bookmarks retain exact context and never redirect mutations',()=>{
-  for(const section of ['guide','videos'])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+test('retired tool bookmarks retain exact context and never redirect mutations',()=>{
+  for(const section of ['guide','videos','probe','replies'])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
-    const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole#selected');
+    const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,
-      'https://site.invalid/admin/'+section+'?operator=north&table=room-1&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&composition=portrait#selected');
+      'https://site.invalid/admin/'+section+'?operator=north&table=room-1&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting&composition=portrait#selected');
     for(const options of [{method:'POST',body:'fixture'},{method:'PUT',body:'fixture'},{method:'DELETE'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
   }
 });

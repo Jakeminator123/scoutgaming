@@ -180,6 +180,20 @@ test('display naming is separate from file identity and situation URL survives v
 });
 
 
+test('Probe selection stays in Admin and preserves room context under either mount', () => {
+  const { selectionHref } = load('./studio-types.ts');
+  const previous = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+  try {
+    for (const basePath of ['', '/studio']) {
+      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
+      const href = selectionHref(basePath + '/admin/probe', '?dealer=astrid&event=idle.ready&operator=north&table=room-1&lane=portrait&token=private', 'saga', 'idle.ready');
+      assert.equal(href, '/admin/probe?dealer=saga&event=idle.ready&composition=portrait&operator=north&table=room-1');
+    }
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH; else process.env.NEXT_PUBLIC_LAB_BASE_PATH = previous;
+  }
+});
+
 test('dealerlocked preview upload verifies receipt, reports busy and never returns a runtime binding', async () => {
   const project = addDealer(createSeedProject(), 'nora', 'Nora');
   const metadata = { label:'Nora kort',dealerId:'nora',eventId:'deal.player.left',kind:'action',role:'standard',situation:'box1',playback:'once',notes:'' };

@@ -7,7 +7,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {REPLY_CATEGORIES,validateReplyCategories} from '../../../packages/presentation/contracts/speech-reply-library.mjs';
 import {parseStudioRepliesRequest} from '../lib/studio-replies-query.mjs';
-import {studioNavigationHref} from '../lib/studio-navigation.mjs';
+import {studioNavigationContextFromQuery,studioNavigationHref} from '../lib/studio-navigation.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 const source=readFileSync(new URL('./control-replies-page.tsx',import.meta.url),'utf8');
@@ -26,7 +26,7 @@ const props={dealers:[{id:'astrid',label:'Astrid'},{id:'elin',label:'Elin'}],ini
 const sample=(patch={})=>({id:'11111111-1111-4111-8111-111111111111',dealerId:'astrid',exactText:'Hej! Vad roligt att se dig.',language:'sv',createdAt:'2026-10-12T10:20:00.000Z',profileRevision:'a'.repeat(64),revision:1,categories:['player-greeting'],reviewStatus:'pending',media:{audio:{available:true,sha256:'b'.repeat(64),contentType:'audio/wav',size:100},video:{available:true,sha256:'c'.repeat(64),contentType:'video/mp4',size:200}},...patch});
 function harness(requestJson,p=props){
   const values=[],refs=[],effects=[],listeners=new Map(),calls=[];let cursor=0,refCursor=0,effectCursor=0;
-  const initialUrl=new URL(studioNavigationHref('/control/replies',{...p.initialNavigationContext,dealerId:p.initialDealerId}),'https://local.test');if(p.initialCategory)initialUrl.searchParams.set('category',p.initialCategory);
+  const initialUrl=new URL(studioNavigationHref('/admin/replies',{...p.initialNavigationContext,dealerId:p.initialDealerId}),'https://local.test');if(p.initialCategory)initialUrl.searchParams.set('category',p.initialCategory);
   let historyState=null;
   const writeHistory=(value,_title,url)=>{historyState=structuredClone(value);if(url!==undefined)initialUrl.href=new URL(url,initialUrl).href;};
   const runtimeWindow={location:initialUrl,history:{get state(){return historyState;},pushState:writeHistory,replaceState:writeHistory},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);},dispatchEvent(event){listeners.get(event.type)?.(event);return !event.defaultPrevented;}};
@@ -100,11 +100,6 @@ test('foreign dealer rows or wrong reconciliation identities fail closed; failed
   const h=await loaded();let tree=h.render();nodes(tree,node=>node.type===DealerClipPreview)[0].props.onError();tree=h.render();assert.equal(nodes(tree,node=>node.type===DealerClipPreview).length,0);assert.match(renderToStaticMarkup(tree),/Videon är inte tillgänglig/);assert.equal(nodes(tree,node=>node.type==='audio').length,1);
 });
 
-test('page gets authorized dealers without serializing project, inventory or reply content into initial props',()=>{
-  const page=readFileSync(new URL('../app/control/replies/page.tsx',import.meta.url),'utf8');assert.match(page,/studioUiInitialData\(new Request/);assert.match(page,/data\.project\.dealers\.map/);assert.doesNotMatch(page,/initialVideos|initialProject|initialReplies|\.exactText/);assert.match(page,/force-dynamic/);
-});
-
-
 test('filtered drafts stay reachable when CAS refresh removes the active category',async()=>{
   const h=await loaded(async(url,init)=>{if(init.method==='PATCH')throw Object.assign(Error('conflict'),{statusCode:409});return url.includes(sample().id)?{item:sample({categories:['game-win'],revision:4})}:{items:[sample()],nextCursor:null};},{...props,initialCategory:'player-greeting'});
   let tree=h.render();category(tree,'Vänlig spelare').props.onChange();tree=h.render();button(tree,'Spara kategorier').props.onClick();await settle();tree=h.render();button(tree,'Hämta senaste versionen').props.onClick();await settle();tree=h.render();
@@ -122,19 +117,17 @@ test('a mismatched reconciliation item never replaces the original reply or clea
 });
 
 
-test('authorized replies route preserves exact Studio context through real navigation, filtering, dealer changes and history',async()=>{
-  const pageSource=readFileSync(new URL('../app/control/replies/page.tsx',import.meta.url),'utf8'),pageOutput=transformSync(pageSource,{filename:'replies-page.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
-  let authorizedRequest;const pageModule={exports:{}};vm.runInNewContext(pageOutput.code,{module:pageModule,exports:pageModule.exports,Request,URLSearchParams,require:name=>name==='next/headers'?{headers:async()=>new Headers({host:'local.test'})}:name==='@/components/control-replies-page'?{ControlRepliesPage:()=>null}:name==='@/components/studio-types'?{firstQueryValue:value=>Array.isArray(value)?value[0]:value}:name==='@/lib/ui-server'?{studioUiInitialData:async request=>{authorizedRequest=request;return{project:{dealers:props.dealers}};}}:name==='@/lib/studio-navigation.mjs'?require('../lib/studio-navigation.mjs'):require(name)});
-  const query={dealer:'astrid',event:'speak.goodluck',variant:'astrid.goodluck.alt-2',situation:'goodluck',lane:'studio/main',category:'player-question',token:'never-forward',tab:'private'};
-  const page=await pageModule.exports.default({searchParams:Promise.resolve(query)}),p=page.props;
-  assert.deepEqual(p.initialNavigationContext,{dealerId:'astrid',eventId:query.event,variantId:query.variant,situation:query.situation,laneId:query.lane});assert.equal(new URL(authorizedRequest.url).searchParams.has('token'),false);assert.equal(new URL(authorizedRequest.url).searchParams.get('variant'),query.variant);
+test('Admin replies component preserves exact Studio context through real navigation, filtering, dealer changes and history',async()=>{
+  const query={dealer:'astrid',event:'speak.goodluck',variant:'astrid.goodluck.alt-2',situation:'goodluck',lane:'studio/main',operator:'fixture-operator',table:'fixture-room',game:'roulette',category:'player-question',token:'never-forward',tab:'private'};
+  const p={...props,initialCategory:query.category,initialNavigationContext:studioNavigationContextFromQuery(new URLSearchParams(query))};
+  assert.deepEqual(p.initialNavigationContext,{dealerId:'astrid',eventId:query.event,variantId:query.variant,situation:query.situation,laneId:query.lane,operatorId:query.operator,tableId:query.table,game:query.game});
   const h=await loaded(async()=>({items:[],nextCursor:null}),p);
   const links=()=>{const nav=nodes(h.render(),node=>node.props?.active==='replies')[0];return nodes(nav.type(nav.props),node=>node.type==='a');};
   const clips=()=>links().find(link=>link.props.children==='Klipp');
-  assert.equal(links().some(link=>link.props.href.startsWith('/control/compositions')),false);assert.equal(clips().props.href,'/control/clips?view=clips&dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain');
+  assert.equal(links().some(link=>link.props.href.startsWith('/control/compositions')),false);assert.equal(clips().props.href,'/control/clips?view=clips&dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain&operator=fixture-operator&table=fixture-room&game=roulette');
   const event={button:0,preventDefault(){this.blocked=true;}};clips().props.onClick(event);assert.equal(event.blocked,undefined);
-  select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();assert.equal(new URL(h.window.location.href).searchParams.get('variant'),query.variant);assert.equal(new URL(h.window.location.href).searchParams.get('composition'),query.lane);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');const previousHref=h.window.location.href;
-  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=elin&composition=studio%2Fmain');for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');
-  h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain');assert.equal(h.state('category'),'game-win');
+  select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();assert.equal(new URL(h.window.location.href).searchParams.get('variant'),query.variant);assert.equal(new URL(h.window.location.href).searchParams.get('composition'),query.lane);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');const previousHref=h.window.location.href;assert.equal(new URL(previousHref).pathname,'/admin/replies');assert.equal(new URL(previousHref).searchParams.get('category'),'game-win');
+  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=elin&composition=studio%2Fmain&operator=fixture-operator&table=fixture-room&game=roulette');for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');assert.equal(h.window.location.pathname,'/admin/replies');for(const key of ['operator','table','game'])assert.equal(h.window.location.searchParams.get(key),query[key]);
+  h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain&operator=fixture-operator&table=fixture-room&game=roulette');assert.equal(h.state('category'),'game-win');
   for(const[url,init]of h.calls){assert.equal(parseStudioRepliesRequest(init.method??'GET',new URL(url,'https://local.test')).kind,'list');assert.deepEqual([...new URL(url,'https://local.test').searchParams.keys()],['dealer','category']);}
 });

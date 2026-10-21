@@ -59,7 +59,7 @@ test('active item resolves public and native paths with content aliases and the 
       ['/control', 'Översikt'], ['/control/clips', 'Dealers & klipp'], ['/activity', 'Dealers & klipp'],
       ['/control/administration', 'Spelstatus & integritet'], ['/control/zones', 'Sammansättningar'],
       ['/control/backgrounds', 'Sammansättningar'], ['/control/events', 'Dealers & klipp'],
-      ['/control/replies', 'Dealers & klipp'],
+      ['/control/replies', 'Dealers & klipp'], ['/admin/replies', 'Dealers & klipp'], ['/admin/probe', 'Dealers & klipp'],
       ['/control/administration?tab=not-a-group', 'Spelstatus & integritet'],
       ['/control/administration?tab=media-review', 'Dealers & klipp'],
     ]) {

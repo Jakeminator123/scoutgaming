@@ -129,7 +129,7 @@ test('dealer workspace has visible breadcrumbs tabs and in-category settings wit
   assert.match(html, /Tal &amp; automatik/);
   assert.match(html, /Inställningar/);
   assert.equal(nodes(tree, node=>node.type==='details').length,0,'common workspace sections are not collapsed');
-  assert.match(html, /href="\/control\/probe\?dealer=astrid"/);
+  assert.match(html, /href="\/admin\/probe\?dealer=astrid"/);
   assert.match(html, /Inställningar för AI-småprat/);
   assert.match(html, /href="\/control\/rehearsal\?dealer=astrid"/);
   assert.match(html, /Provspelning &amp; logg/);
@@ -177,7 +177,7 @@ test('another dealer keeps idle tools and the draft without a probe tab', () => 
   assert.equal(nodes(tree, node => typeof node.props?.onDetach === 'function')[0].props.dealerId, 'elin');
   assert.equal(nodes(tree, node => node.props?.section === 'idle').length, 0, 'own idle editor replaces historical clip controls');
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
-  assert.doesNotMatch(renderToStaticMarkup(tree), /href="\/control\/probe\?dealer=elin"/);
+  assert.doesNotMatch(renderToStaticMarkup(tree), /href="\/admin\/probe\?dealer=elin"/);
   assert.match(renderToStaticMarkup(tree), /stöds för närvarande endast av Astrid/);
   assert.equal(h.values[0], draft);
 });

@@ -605,39 +605,39 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
-J03 delaktivitet Guide/Videor · 21 oktober 2026, `codex/admin-control-tools-j03`,
-från J02 `6748838e9194e0554fda060e869785599b890ac4`: endast de två gamla
-`app/control/guide/page.tsx` och `app/control/videos/page.tsx` är borttagna,
-med exklusiva tracingposter och gamla SSR-förväntningar. Guide/Videor och deras
-aktiva återhämtnings-/navigationslänkar använder befintliga `/admin/guide` och
-`/admin/videos`. Delade komponenter, API:er, N1-auth och Partner är kvar.
-Gamla Control-bokmärken omdirigeras enbart för GET/HEAD, även med native/unified
-avstängt och med /studio-mount. Dealer/event/variant/situation, bolag/rum,
-spel och lane→composition följer med. Äldre /guide och /videos går direkt till
-Admin med allowlistad navigationskontext; tokenparametrar släpps inte igenom.
-Fokuserat: 108/108, 0 skips. Kommandot var `node --test --test-concurrency=4`
-med `apps/studio/test/{next-page-navigation,admin-workspace,lab-url,scout-navigation,studio-navigation,workspace-surface-pages,control-workspace}.test.mjs`
-och `apps/studio/components/{control-pages,control-videos-page,studio-content}.test.mjs`
-(bracelistan betecknar de tio uttryckliga filargumenten). Proven kör riktiga
-middleware-/Admin-handlers med syntetisk N1 och anonym nekad åtkomst, samt de
-befintliga komponenternas beteende. Ingen produktionsinloggning eller molndata.
-`CROUPIER_LAB_BASE_PATH=/studio npm --prefix apps/studio run build` passerar,
-inklusive Studio/Admin/Lobby-typkontroll och fyra Windows-workers. De två
-raderade sidorna saknas i byggmanifestet. Orphan-kontroll: 530 kandidater, 0 orphan.
-Lokala loggar: `arkiv/2026-10-21/j03-tools/{focused,build,orphan,commit}.log`.
-Beroenden läses via egna junctions till J02-ägarens färdiga installationer;
-byggoutput ligger här. Tracesanering: 76 kontrollerade, 44 borttagna poster;
-ingen fristående deployartefakt verifierad. Befintliga CSS-/middleware-varningar.
-CI-uppföljning för PR #318: `http-guard.test.mjs` provar kvarvarande
-`clips`/`compositions` som loaderkonsumenter i stället för raderade Guide/Videor.
-Negativa auth-/API-prov är kvar. Snäv sökning av direkta och dynamiska sidläsningar
-hittade inga fler testreferenser till de två raderade filerna. `node --test
---test-concurrency=4 apps/studio/test/http-guard.test.mjs
-apps/studio/test/next-page-navigation.test.mjs apps/studio/test/admin-workspace.test.mjs`
-passerar 53/53, 0 skips; logg `arkiv/2026-10-21/j03-tools/ci-fix-focused.log`.
-Endast test/handoff ändras; det tidigare bygget har inte körts om.
-Ingen egen verifieringsserver lämnas kvar. Kvar: uppföljande PR #318-CI och
-resterande J03; denna del innebär inte att hela J03 är VERIFIED.
+J03 · 21 oktober 2026. Guide/Videor-delen i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318)
+på `314639b54019d02606d7d2e0b1cac19f9c72b24a` passerar
+[CI39641756885](https://github.com/Jakeminator123/scoutgaming/actions/runs/39641756885).
+Tidigare testfel var en kvarvarande läsning av raderad Control-sida, rättad med
+bevarade negativa auth-/API-prov. Ingen merge eller produktionsacceptans.
+
+Fortsättning `codex/admin-control-replies-probe-j03` från samma frysta head:
+Controls Probe- och Replies-SSR-wrappers och deras exklusiva tracing tas bort.
+Aktiva länkar och Svarsbibliotekets filter/dealerhistorik använder befintliga
+`/admin/probe` och `/admin/replies`. Gemensamma komponenter, API:er, revisioner,
+N1-auth och sparlogik behålls. Gamla bokmärken leder till Admin enbart för
+GET/HEAD, med kontext och lane→composition även med native/unified avstängt
+och under /studio. Mutationer/server actions omdirigeras inte. Äldre /probe
+följer samma tillåtna dokumentkontext; tokenparametrar vidarebefordras inte.
+
+Implementerarens Probe-/route-/callerprov passerar 81/81, 68/68, 36/36 och 4/4,
+alla utan skips; körningarna överlappar och summeras inte. Root har kört
+`node --test --test-concurrency=4 apps/studio/test/studio-replies-api.test.mjs
+apps/studio/test/studio-replies-query.test.mjs`: 15/15, 0 skips.
+Replies-implementeraren: 13/13 komponentprov och slutligt 10/10 browserhistorikprov, 0 skips. Verklig WorkspaceTool och Admin-navigation provar dirty/pågående skrivning, beforeunload, Back/Forward/flersteg, kategori, dealer/API-koppling och reload. API-svaren är syntetiska; serverauth täcks separat ovan. Oberoende slutgranskning av kevin_plan: inga blockerande fynd i produkt-/testdiff, loggar och byggmanifest; inga egna omkörningar.
+
+Root: `npm --prefix apps/studio run build` och
+`npm --prefix apps/studio/client run typecheck` passerar på frysta produktfiler.
+Volta Node24.21.0, fyra Windows-buildworkers; lokal build utan basePath,
+medan riktiga middlewareprov täcker båda mountlägena. Studio/Admin/Lobby-typer
+passerar. Manifestet saknar de fyra avvecklade SSR-sidorna och behåller Admin
+samt Replies-API. `node tools/check-orphan-tests.mjs`: 530 kandidater, 0 orphan.
+Beroenden i Studio/game återanvänds via egna junctions till J02; client-build
+installerade sin låsta lokala verktygskedja. Tracesanering: 74 kontrollerade,
+44 borttagna poster. Detta är lokal byggverifiering, ingen fristående
+deployartefakt. Loggar: `arkiv/2026-10-21/j03-speech-tools/`.
+Full Control-/authavveckling och O01 återstår. Hela J03 är IN_PROGRESS,
+15% totalt; ingen runtimeport, DB-/mediaändring eller automatisk merge.
 
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu

@@ -111,6 +111,6 @@ test('the inactive-speech link preserves the selected dealer', () => {
     initialProject: addDealer(createSeedProject(), 'elin', 'Elin'),
     initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'elin',
   }));
-  assert.match(html, /href="\/control\/probe\?dealer=elin"/);
-  assert.doesNotMatch(html, /href="\/control\/probe"/);
+  assert.match(html, /href="\/admin\/probe\?dealer=elin"/);
+  assert.doesNotMatch(html, /href="\/admin\/probe"/);
 });

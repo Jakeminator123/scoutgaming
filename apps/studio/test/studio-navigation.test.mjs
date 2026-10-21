@@ -35,6 +35,8 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/control/events', 'Dealers & klipp');
   expectLabel('/probe', 'Dealers & klipp');
   expectLabel('/control/probe', 'Dealers & klipp');
+  expectLabel('/admin/probe', 'Dealers & klipp');
+  expectLabel('/admin/replies', 'Dealers & klipp');
   expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Spelstatus & integritet');
   expectLabel('/openclaw', 'Agentmodeller');
