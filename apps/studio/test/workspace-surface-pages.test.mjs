@@ -213,7 +213,6 @@ test('control shows the overview and disconnected preview addresses are not foun
   assert.equal(element.props.operatorStatus, 'demo');
   assert.equal(JSON.stringify(element.props).includes('never-pass'), false, 'private operator fields stay server-side');
   assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), [{ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }]);
-  // 'preview' left this list in 1f1c14d6: /control/preview is the staff layer-preview page (its own route wins).
   for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['statistics']]) {
     await assert.rejects(renderPage(loaded.control, path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   }
@@ -314,7 +313,7 @@ test('old internal tool documents authorize then lead to the real tool with one 
   let reads = 0;
   const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
   for (const [section, destination] of [['voice', '/control/clips#clips'], ['clips', '/control/clips#deal'], ['lanes', '/control/administration?tab=tables'],
-    ['media', '/admin/videos'], ['presentation-events', '/admin/events'], ['team', '/control/administration?tab=accounts'], ['backgrounds', '/control/compositions']]) {
+    ['media', '/admin/videos'], ['presentation-events', '/admin/events'], ['team', '/control/administration?tab=accounts'], ['backgrounds', '/admin/compositions']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
         assert.equal(canonicalControlPath(error, basePath), destination);

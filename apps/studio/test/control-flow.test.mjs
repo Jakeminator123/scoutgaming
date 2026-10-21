@@ -5,8 +5,8 @@ import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/s
 
 test('older workspace links keep company and room context', () => {
   assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/admin/companies?operator=op-one#team');
-  assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), '/control/rehearsal?dealer=paow&operator=north&table=room-one');
-  assert.equal(canonicalControlHref('/control/preview?composition=current'), '/control/compositions?composition=current');
+  assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), '/admin/rehearsal?dealer=paow&operator=north&table=room-one');
+  assert.equal(canonicalControlHref('/control/preview?composition=current'), '/admin/compositions?composition=current');
 });
 
 test('ambiguous or external document paths never become a navigation destination', () => {
@@ -15,7 +15,7 @@ test('ambiguous or external document paths never become a navigation destination
 
 test('navigation keeps company and real room identity but never copies auth or diagnostic query', () => {
   const context=studioNavigationContextFromQuery(new URLSearchParams('operator=north&table=room-one&composition=scene-a&dealer=paow&token=private&debug=1'));
-  const link=new URL(studioNavigationHref('/control/rehearsal', context),'https://studio.invalid');
+  const link=new URL(studioNavigationHref('/admin/rehearsal', context),'https://studio.invalid');
   assert.equal(link.searchParams.get('operator'),'north');
   assert.equal(link.searchParams.get('table'),'room-one');
   assert.equal(link.searchParams.get('composition'),'scene-a');

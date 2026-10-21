@@ -6,7 +6,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'studio', label: 'Studio', items: [
     { href: '/control/clips', label: 'Dealers & klipp' },
     { href: '/control/library', label: 'Bord & bakgrunder' },
-    { href: '/control/compositions', label: 'Sammansättningar' },
+    { href: '/admin/compositions', label: 'Sammansättningar' },
   ] },
   { id: 'companies', label: 'Spelbolag', items: [
     { href: '/admin/companies', label: 'Bolag & team' },
@@ -48,9 +48,9 @@ const legacyPaths = new Map([
   ['/admin/videos', '/control/clips'],
   ['/control/replies', '/control/clips'],
   ['/admin/replies', '/control/clips'],
-  ['/zones', '/control/compositions'],
-  ['/control/zones', '/control/compositions'],
-  ['/control/backgrounds', '/control/compositions'],
+  ['/zones', '/admin/compositions'],
+  ['/control/zones', '/admin/compositions'],
+  ['/control/backgrounds', '/admin/compositions'],
   ['/events', '/control/clips'],
   ['/control/events', '/control/clips'],
   ['/admin/events', '/control/clips'],
@@ -64,7 +64,7 @@ const legacyPaths = new Map([
   ['/tree', '/control/clips'],
   ['/control/tree', '/control/clips'],
   ['/activity', '/control/clips'],
-  ['/control/rehearsal', '/control/clips'],
+  ['/admin/rehearsal', '/control/clips'],
   ['/guide', '/admin/guide'],
 ]);
 

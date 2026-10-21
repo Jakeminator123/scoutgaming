@@ -48,7 +48,7 @@ test('switching dealer tabs keeps the selected event, variant, situation and com
     assert.equal(params.get('composition'), selection.laneId);
     assert.equal(params.get('view'), ['scene','replies','playback'].includes(tab.id) ? null : tab.id);
   }
-  assert.equal(tabs.some(tab => tab.href.startsWith('/control/compositions')), false);
+  assert.equal(tabs.some(tab => tab.href.startsWith('/admin/compositions')), false);
 });
 
 test('custom tab destinations keep their own query and hash while encoding selection safely', () => {
@@ -66,7 +66,10 @@ test('public Studio tabs use their active destinations with either lab base path
   try {
     for (const base of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = base;
-      for (const tab of studioNavigationTabs(selection)) assert.ok(tab.href.startsWith(tab.id === 'replies' ? '/admin/replies?' : '/control/'), tab.href);
+      for (const tab of studioNavigationTabs(selection)) {
+        const target = {replies:'/admin/replies?',playback:'/admin/rehearsal?'}[tab.id] ?? '/control/';
+        assert.ok(tab.href.startsWith(target), tab.href);
+      }
       assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/control/clips?view=idle&dealer=paow');
     }
   } finally {

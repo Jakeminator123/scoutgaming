@@ -128,7 +128,7 @@ test('rehearsal requires an explicit dealer or room and never starts a default o
  for(const initialDealerId of [undefined,'','unknown','amira']) {
   const html=renderPage('control-activity-page.tsx',{initialDealerId,initialOperatorSlug:'operator-42',initialLaneId:'mobile-phone'});
   assert.match(html,/Välj en dealer att provspela/);assert.doesNotMatch(html,/Anslut &amp; följ|Klippförhandsvisning och provspelning|Dealerprov/);
-  for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes('/control/rehearsal?dealer='+dealer.id+'&amp;composition=mobile-phone&amp;operator=operator-42'));
+  for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes('/admin/rehearsal?dealer='+dealer.id+'&amp;composition=mobile-phone&amp;operator=operator-42'));
  }
  const room=renderPage('control-activity-page.tsx',{initialDealerId:undefined,initialOperatorSlug:'operator-42',initialTableId:'room-7'});
  assert.match(room,/Spelrummets publicerade dealer/);assert.match(room,/<h2>Valt spelrum<\/h2>/);assert.match(room,/Spelbolag: Valt spelbolag/);assert.doesNotMatch(room,/<h2>room-7<\/h2>|Spelbolag: operator-42/);assert.doesNotMatch(room,/Välj en dealer att provspela|Separat Lab-preview/);

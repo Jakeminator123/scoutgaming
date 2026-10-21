@@ -196,7 +196,7 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(html, /Urvalsläge för eventtest/);
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
   assert.doesNotMatch(html, /studio-chat-shortcuts|Spelarchatt vid bordet →|Fråga OpenClaw om labbet →/);
-  assert.equal(loadComponent('./studio-types.ts').viewPaths.activity, '/control/activity');
+  assert.equal(loadComponent('./studio-types.ts').viewPaths.activity, '/admin/rehearsal');
   assert.equal(loadComponent('./studio-types.ts').viewPaths.openclaw, '/control/openclaw?tab=chat');
   assert.match(html, /<option value="off" selected="">Standard/);
   assert.match(html, /kör jämförelseläget Bara standard/);

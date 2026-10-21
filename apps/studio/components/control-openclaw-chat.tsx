@@ -35,7 +35,7 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
     tabs={<OpenClawTabLinks active="chat" />}
   >
     <div className="sg-page-body">
-      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { window.location.assign(studioNavigationHref('/control/rehearsal', { ...studioNavigationContextFromQuery(new URLSearchParams(window.location.search)), dealerId })); }} />
+      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { window.location.assign(studioNavigationHref('/admin/rehearsal', { ...studioNavigationContextFromQuery(new URLSearchParams(window.location.search)), dealerId })); }} />
     </div>
   </PageTemplate>;
 }

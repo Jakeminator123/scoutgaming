@@ -43,9 +43,6 @@ function loadTs(fileUrl,overrides={}) {
 }
 
 test('Sammansättning edits three saved lane choices and keeps the separated dealer trial available', () => {
-  const pageSource = readFileSync(new URL('../app/control/compositions/page.tsx', import.meta.url), 'utf8');
-  assert.match(pageSource, /title: 'Sammansättningar · Croupier Studio'/);
-  assert.match(pageSource, /loadControlStudio\(/);
   const { ControlPreviewPage } = loadTs(new URL('../components/control-preview-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlPreviewPage,{
     initialProject:createSeedProject(),initialVideos:{videos:[]},initialStatus:{configured:false},
@@ -76,14 +73,14 @@ test('shared preview data authorization rejects unauthenticated and partner acce
     './studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>native},
     './studio-native-request.mjs':{normalizeNativeStudioPageRequest:request=>request},
   });
-  const request=new Request('https://studio.example.invalid/control/preview');
+  const request=new Request('https://studio.example.invalid/admin/compositions');
   await assert.rejects(shared.studioUiInitialData(request),error=>error.statusCode===403);
   assert.equal(reads,0);
   unauthenticated=true;
   await assert.rejects(shared.studioUiInitialData(request),error=>{
     if(typeof error.redirect!=='string')return false;
     const target=new URL(error.redirect,'https://studio.example.invalid');
-    return target.pathname==='/login'&&target.searchParams.get('returnTo')==='/control/preview';
+    return target.pathname==='/login'&&target.searchParams.get('returnTo')==='/admin/compositions';
   });
   assert.equal(reads,0);
   role='admin';unauthenticated=false;
@@ -121,9 +118,11 @@ test('a requested second lane keeps its dealer and its lane id when continuing t
   const html=render(nora.id);
   assert.match(html,/<option value="nora-evening" selected="">Nora kväll<\/option>/);
   assert.match(html,/<option value="nora" selected="">Nora<\/option>/);
-  assert.match(html,/href="[^"]*\/admin\/publication\?composition=nora-evening"/);
+  const publication=markup=>new URL(markup.match(/href="([^"]*\/admin\/publication\?[^"]*)"/)[1].replaceAll('&amp;','&'),'https://studio.invalid');
+  assert.equal(publication(html).searchParams.get('composition'),'nora-evening');
+  assert.equal(publication(html).searchParams.get('dealer'),'nora');
   assert.doesNotMatch(html,/control\/zones|Bakgrundszoner/);
-  assert.match(render('unknown-lane'),/href="[^"]*\/admin\/publication\?composition=mobile-phone"/);
+  assert.equal(publication(render('unknown-lane')).searchParams.get('composition'),'mobile-phone');
 });
 
 test('unsaved composition invokes guarded save before the next-step navigation',async()=>{
@@ -133,7 +132,7 @@ test('unsaved composition invokes guarded save before the next-step navigation',
     './studio-session':{useStudioProjectSession:()=>({project,projectRef:{current:project},videos:{videos:[]},dirty:true,saving:false,conflict:false,save:async()=>{saves++;return false;}})},
   });
   const tree=ControlPreviewPage({initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false}});
-  function find(node){if(!node||typeof node!=='object')return null;if(node.type==='a'&&node.props.href?.includes('/admin/publication?composition='))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
+  function find(node){if(!node||typeof node!=='object')return null;if(node.type==='a'&&node.props.href?.includes('/admin/publication?'))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
   const next=find(tree);assert.ok(next);assert.equal(next.props['aria-disabled'],false);assert.equal(next.props.children,'Spara och fortsätt');
   let prevented=false;next.props.onClick({preventDefault(){prevented=true;}});await Promise.resolve();assert.equal(prevented,true);assert.equal(saves,1);
 });
@@ -205,22 +204,6 @@ test('anchored geometry uses the parent save guard before opening Admin and stay
   }finally{delete globalThis.window;}
 });
 
-test('composition entry forwards room and game context through loading into the preview',async()=>{
-  const requested=[],data={project:createSeedProject(),videos:{videos:[]},status:{provider:'neon'}};
-  const {default:Page}=loadTs(new URL('../app/control/compositions/page.tsx',import.meta.url),{
-    '@/components/studio-types':{firstQueryValue:value=>Array.isArray(value)?value[0]:value},
-    '@/components/control-preview-page':{ControlPreviewPage:()=>null},
-    '../../control-studio-data':{loadControlStudio:async href=>{requested.push(href);return data;}},
-  });
-  const query={composition:'scene-2',dealer:'nora',operator:'operator-1',table:['room-7','ignored'],game:['roulette','ignored']};
-  const page=await Page({searchParams:Promise.resolve(query)});
-  assert.deepEqual(Object.fromEntries(new URL(requested[0],'https://site.invalid').searchParams),{composition:'scene-2',dealer:'nora',operator:'operator-1',table:'room-7',game:'roulette'});
-  assert.equal(page.props.initialLaneId,'scene-2');assert.equal(page.props.initialDealerId,'nora');assert.equal(page.props.initialOperatorId,'operator-1');
-  assert.equal(page.props.initialRoomId,'room-7');assert.equal(page.props.initialGame,'roulette');
-  const fallback=await Page({searchParams:Promise.resolve({lane:'scene-old',game:'invalid'})});
-  assert.equal(fallback.props.initialLaneId,'scene-old');assert.equal(fallback.props.initialGame,'blackjack');assert.equal(fallback.props.initialRoomId,undefined);
-});
-
 test('table editor saves only its selected composition and exact asset, with independent formats and removable draft geometry',()=>{
   const project=createSeedProject(),lane=project.lanes[0],asset={schemaVersion:1,id:'10000000-0000-4000-8000-000000000001',role:'table',label:'Board',sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1672,height:941};
   asset.pathname=layerAssetPath(asset);project.layerAssets=[asset];lane.layers.table={enabled:true,default:asset.id,allowed:[asset.id]};
@@ -282,11 +265,11 @@ test('save and continue navigates only after a clean rendered save, and repeated
   const harness=previewHarness(),navigations=[];
   globalThis.window={location:{assign:href=>navigations.push(href)}};
   try {
-    const tree=harness.render(),next=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition='));
+    const tree=harness.render(),next=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?'));
     const event={preventDefault(){}};next.props.onClick(event);next.props.onClick(event);
     assert.equal(harness.saves(),1);assert.deepEqual(navigations,[]);
     await new Promise(setImmediate);harness.render();harness.effects[1]();
-    assert.deepEqual(navigations,['/admin/publication?composition=mobile-phone']);
+    assert.deepEqual(navigations,[next.props.href]);assert.equal(new URL(navigations[0],'https://studio.invalid').searchParams.get('composition'),'mobile-phone');
   }finally{delete globalThis.window;}
 });
 
@@ -296,7 +279,7 @@ test('failed save, revision conflict and active upload all preserve the draft an
     for(const option of [{saveResult:false},{conflict:true},{upload:true}]) {
       const harness=previewHarness(option),tree=harness.render();
       if(option.upload)harness.find(tree,node=>node.type?.name==='LayerLibrary').props.onBusyChange(true);
-      harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition=')).props.onClick({preventDefault(){}});
+      harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?')).props.onClick({preventDefault(){}});
       await new Promise(setImmediate);harness.render();harness.effects[1]();
       assert.equal(harness.session.dirty,true);assert.equal(harness.saves(),option.saveResult===false?1:0);
     }
@@ -319,11 +302,11 @@ test('composition links own dealer upload and sequencing to Dealers and clips wi
   const project=addDealer(createSeedProject(),'nora','Nora');project.lanes[0].dealers.push('nora');project.lanes[0].layers.dealer.allowed.push('nora');project.lanes[0].layers.dealer.default='nora';
   const harness=previewHarness({project}),tree=harness.render(),original=structuredClone(project),navigations=[];
   assert.equal(harness.find(tree,node=>['VideoUpload','FamilyVideoUpload'].includes(node.type?.name)),null);
-  const link=harness.find(tree,node=>node.type==='a'&&node.props.href==='/control/clips?dealer=nora&composition=mobile-phone');
+  const link=harness.find(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/clips?')&&new URL(node.props.href,'https://studio.invalid').searchParams.get('dealer')==='nora');
   assert.ok(link);globalThis.window={location:{assign:href=>navigations.push(href)}};
   try {
     link.props.onClick({preventDefault(){}});await new Promise(setImmediate);harness.render();harness.effects[1]();
-    assert.equal(harness.saves(),1);assert.deepEqual(navigations,['/control/clips?dealer=nora&composition=mobile-phone']);
+    assert.equal(harness.saves(),1);assert.deepEqual(navigations,[link.props.href]);assert.equal(new URL(navigations[0],'https://studio.invalid').searchParams.get('composition'),'mobile-phone');
     assert.deepEqual(harness.session.project,original);
   } finally {delete globalThis.window;}
 });
@@ -499,7 +482,7 @@ test('switching layers preserves mounted upload controls and its receipt while t
   uploaded.props.onRegistered(remote,asset.id);
   tree=harness.render();
   assert.equal(harness.session.project.lanes[0].layers.table.default,asset.id);
-  harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition=')).props.onClick({preventDefault(){}});
+  harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?')).props.onClick({preventDefault(){}});
   await Promise.resolve();assert.equal(harness.saves(),0);
   uploaded.props.onBusyChange(false);tree=harness.render();
   assert.equal(library().props.disabled,false);
@@ -544,8 +527,6 @@ test('dealer context opens an existing matching presentation without changing al
   assert.match(html,/<option value="linnea-room" selected="">Linneas miljö<\/option>/);
   assert.match(html,/<option value="linnea" selected="">Linnea<\/option>/);
   assert.equal(JSON.stringify(project),before);
-  const page=readFileSync(new URL('../app/control/compositions/page.tsx',import.meta.url),'utf8');
-  assert.match(page,/initialDealerId=\{firstQueryValue\(query.dealer\)\}/);
 });
 
 test('a library dealer outside the selected presentation has an explicit inclusion action',()=>{
@@ -731,7 +712,7 @@ test('a saved retired dealer remains invalid until explicit replacement and remo
   assert.equal(h.find(dealerSelect(),node=>node.type==='option'&&node.props.value==='amira'),null);
   assert.equal(h.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer,null);
   assert.equal(preview().props.disabled,true);preview().props.onClick();assert.equal(requests,0);
-  const next=h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition='));
+  const next=h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?'));
   assert.equal(next.props['aria-disabled'],true);next.props.onClick({preventDefault(){}});assert.equal(h.saves(),0);
   assert.deepEqual(h.session.project,original);assert.equal(h.session.dirty,false);
   dealerSelect().props.onChange({target:{value:'amira'}});assert.deepEqual(h.session.project,original);

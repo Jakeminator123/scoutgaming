@@ -7,7 +7,7 @@ export const STUDIO_DEALER_TABS = Object.freeze([
   { id: 'generate', label: 'Skapa material', href: '/control/clips?view=generate' },
   { id: 'speech', label: 'Tal & automatik', href: '/control/clips?view=speech' },
   { id: 'replies', label: 'Svarsbibliotek', href: '/admin/replies' },
-  { id: 'playback', label: 'Provspelning & logg', href: '/control/rehearsal' },
+  { id: 'playback', label: 'Provspelning & logg', href: '/admin/rehearsal' },
   { id: 'settings', label: 'Inställningar', href: '/control/clips?view=settings' },
 ].map(tab => Object.freeze(tab)));
 
@@ -48,7 +48,7 @@ export function studioNavigationCrumbs({ dealerId, dealerLabel, active, crumbs =
   const selection = { ...context, dealerId };
   const result = [{ label: 'Studio', href: studioNavigationHref('/control/clips', selection) }];
   if (active === 'scene') {
-    result.push({ label: 'Sammansättningar', href: studioNavigationHref('/control/compositions', selection) });
+    result.push({ label: 'Sammansättningar', href: studioNavigationHref('/admin/compositions', selection) });
   } else {
     result.push({ label: 'Dealers', href: studioNavigationHref('/control/clips', selection) });
     if (dealerId) result.push({ label: dealerLabel || dealerId, href: studioNavigationHref('/control/clips?view=idle', selection) });

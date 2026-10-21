@@ -71,7 +71,7 @@ test('chat panel receives the studio session props and opens playback with a ful
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
-  assert.deepEqual(assigned, [labUrl('/control/rehearsal?dealer=elin')]);
+  assert.deepEqual(assigned, [labUrl('/admin/rehearsal?dealer=elin')]);
 });
 
 // Explicit active dealers used by this isolated component fixture.

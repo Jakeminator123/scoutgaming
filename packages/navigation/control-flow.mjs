@@ -33,5 +33,20 @@ export function canonicalControlHref(value) {
   if (url.pathname === '/control/companies') url.pathname = '/admin/companies';
   if (url.pathname === '/control/guide') url.pathname = '/admin/guide';
   if (url.pathname === '/control/videos') url.pathname = '/admin/videos';
+  if (url.pathname === '/control/compositions') url.pathname = '/admin/compositions';
+  if (url.pathname === '/control/rehearsal') url.pathname = '/admin/rehearsal';
   return url.pathname + url.search + url.hash;
+}
+
+// Activity bookmarks accept only one value for each observation identity.
+export function legacyActivityDocumentHref(value) {
+  const url = new URL(value, 'https://studio.invalid');
+  const query = new URLSearchParams();
+  for (const key of ['dealer','operator','table','room','game','composition']) {
+    const values = url.searchParams.getAll(key);
+    if (values.length === 1 && values[0]) query.set(key, values[0]);
+  }
+  const lanes = url.searchParams.getAll('lane');
+  if (!query.has('composition') && lanes.length === 1 && lanes[0]) query.set('composition', lanes[0]);
+  return '/admin/rehearsal' + (query.size ? '?' + query : '') + url.hash;
 }

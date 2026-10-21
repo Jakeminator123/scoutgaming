@@ -250,8 +250,8 @@ test('mobile menu starts collapsed and closes with Escape or its native button w
 
 test('current document does not reload a draft and contextual tools still link back to their workspace', () => {
   const { ItemLink } = loadNavigation('/control/preview');
-  const composition = sidebar.find(item => item.href === '/control/compositions'), content = sidebar.find(item => item.href === '/control/clips');
-  for (const routeKey of ['/control/compositions?composition=saved', '/studio/control/compositions?composition=saved']) {
+  const composition = sidebar.find(item => item.href === '/admin/compositions'), content = sidebar.find(item => item.href === '/control/clips');
+  for (const routeKey of ['/admin/compositions?composition=saved', '/studio/admin/compositions?composition=saved']) {
     const current = ItemLink({ item: composition, active: true, routeKey });
     assert.equal(current.type, 'span');
     assert.equal(current.props['aria-current'], 'page');

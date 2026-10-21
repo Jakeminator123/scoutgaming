@@ -133,7 +133,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const navigationContext = studioNavigationContextFromQuery(new URLSearchParams(typeof window==='undefined'?'':window.location?.search??''));
   const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id, tableId:selectedRoom?.id,
     dealerId:selectedLane?.dealers.includes(navigationContext.dealerId??'')?navigationContext.dealerId:undefined};
-  const compositionHref = studioNavigationHref('/control/compositions', editorContext);
+  const compositionHref = studioNavigationHref('/admin/compositions', editorContext);
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
   const setPublishError = (value: string) => updatePackage(operatorId, current => ({ ...current, error: value }));
   const companyHref = studioNavigationHref('/admin/companies', editorContext);

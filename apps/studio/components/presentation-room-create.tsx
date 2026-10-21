@@ -71,7 +71,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const needsEnvironment = current && !unresolved && state.preflight?.reason === 'presentation_room_environment_required';
   const needsComposition = current && !unresolved && ['presentation_lane_incompatible', 'presentation_package_too_large', 'presentation_room_environment_required'].includes(state.preflight?.reason ?? '');
   const reloadHref = labUrl('/admin/publication?' + new URLSearchParams({ operator: operator?.id ?? '', composition: presentation?.id ?? '' }));
-  const compositionHref = labUrl('/control/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
+  const compositionHref = labUrl('/admin/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
   const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
     ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }

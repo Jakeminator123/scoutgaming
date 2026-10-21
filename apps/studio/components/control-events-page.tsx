@@ -330,7 +330,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
           onOpenSpeech={() => { openEvent('speak.other', 'placebets'); setExampleSpeechLine('placebets'); }}
           observedStep={observedStep}
           onClearObserved={() => { setObservedStep(null); invalidateSimulation(); }}
-          activityHref={studioHref('/control/activity', { dealerId, eventId: event.id })}
+          activityHref={studioHref('/admin/rehearsal', { dealerId, eventId: event.id })}
           showStage={!isIdleEditor || previewKind === 'social'}
           stage={{
             asset: currentAsset,

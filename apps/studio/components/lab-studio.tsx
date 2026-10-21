@@ -339,7 +339,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
         <DealerRegistration expanded showSpeechSettings={false} project={project} dealerId={dealerId} inventory={videos} disabled={!connectedLane||saving||uploading||intakePending||speechDraft||generationStatus.dirty||generationStatus.busy} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
         {saveButton}
       </section>
-      {dealer ? <nav className={styles.contentNav} aria-label="Fortsätt med dealern"><a href={contentLink('/control/rehearsal')} onClick={event=>void continueTo(event,contentLink('/control/rehearsal'))}>Provspelning &amp; logg</a></nav> : null}
+      {dealer ? <nav className={styles.contentNav} aria-label="Fortsätt med dealern"><a href={contentLink('/admin/rehearsal')} onClick={event=>void continueTo(event,contentLink('/admin/rehearsal'))}>Provspelning &amp; logg</a></nav> : null}
     </fieldset></main>
     </PageTemplate>
   </div>;

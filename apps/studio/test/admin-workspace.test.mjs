@@ -122,7 +122,7 @@ test('retired publication bookmark mapping preserves fragments and rejects docum
 });
 
 test('retired tool bookmarks retain exact context and never redirect mutations',()=>{
-  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,

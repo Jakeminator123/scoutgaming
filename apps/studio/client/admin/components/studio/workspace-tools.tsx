@@ -63,12 +63,16 @@ export function WorkspaceTool({section}:{section:string}){
     initialEventId:get('event'),initialVariantId:get('variant'),initialSituation:get('situation'),connectedLane:data.connectedLane};
   const roomValues=q.getAll(q.has('room')?'room':'table');
   const initialRoomId=roomValues.length>1?roomValues:roomValues[0];
+  const explicitRooms=q.getAll('room'),explicitTables=q.getAll('table');
+  const scopedRooms=explicitRooms.length===1&&explicitTables.length===1&&explicitRooms[0]===explicitTables[0]
+    ?explicitRooms:[...explicitRooms,...explicitTables];
+  const scopedRoomId=scopedRooms.length>1?scopedRooms:scopedRooms[0];
   let content;
   switch(section){
     case 'companies':case 'publication':content=<AdminPublicationPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
-    case 'compositions':content=<ControlPreviewPage {...common} initialGame={get('game')==='roulette'?'roulette':'blackjack'}/>;break;
+    case 'compositions':content=<ControlPreviewPage {...common} initialRoomId={scopedRoomId} initialGame={get('game')==='roulette'?'roulette':'blackjack'}/>;break;
     case 'dealer-studio':content=<LabStudio {...common} initialView={get('view')} initialCategory={get('category')}/>;break;
-    case 'rehearsal':content=<ControlActivityPage {...common} initialOperatorSlug={get('operator')}/>;break;
+    case 'rehearsal':content=<ControlActivityPage {...common} initialOperatorSlug={get('operator')} initialRoomId={scopedRoomId} initialGame={get('game')}/>;break;
     case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
     case 'videos':content=<ControlVideosPage {...common}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;

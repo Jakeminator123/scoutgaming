@@ -148,7 +148,7 @@ export function DealerRemoval({project, inventory, dealerId, laneId, operatorId,
         {impact ? <>
           <p>{impact.speechEnabled ? 'AI-tal stängs av automatiskt.' : 'AI-tal är redan avstängt.'} {impact.mediaCount} klipp och mediefiler arkiveras. Inga filer raderas.</p>
           {impact.compositions.length ? <><p>Sammansättningar som arkiveras:</p><ul className={styles.references}>{impact.compositions.map(composition => {
-            const href = studioNavigationHref('/control/compositions', {...context, laneId: composition.id});
+            const href = studioNavigationHref('/admin/compositions', {...context, laneId: composition.id});
             return <li key={composition.id}><a href={href} onClick={event => navigate(event, href)}>{compositionLabel(composition.label)}</a></li>;
           })}</ul></> : null}
           {impact.rooms.length ? <><p>Rum som stoppas:</p><ul className={styles.references}>{impact.rooms.map(room => {

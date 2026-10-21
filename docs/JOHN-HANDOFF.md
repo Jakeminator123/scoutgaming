@@ -605,48 +605,49 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
-J03 · 21 oktober 2026. Guide/Videor i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318)
-på `314639b54019d02606d7d2e0b1cac19f9c72b24a` och Probe/Replies i
-[PR320](https://github.com/Jakeminator123/scoutgaming/pull/320) på
-`db96200a4aa8556c1ff456b70031501407e2935c` har grön GitHub CI:
-39641756885 respektive 39646187160. Ingen merge eller produktionsacceptans.
+J03 · 21 oktober 2026. Guide/Videor i PR318/head
+`314639b54019d02606d7d2e0b1cac19f9c72b24a`, Probe/Replies i PR320/head
+`db96200a4aa8556c1ff456b70031501407e2935c` och Events/Tree i PR322/head
+`2ea99899228b9574bbf142ae80f3e7a776af0a5b` har grön GitHub CI:
+39641756885, 39646187160 respektive 39649419165. Ingen merge eller
+produktionsacceptans av dessa J03-leveranser.
 
-Fortsättning `codex/admin-control-events-j03` från PR320:s frysta head:
-Controls Events-/Tree-SSR-wrappers och deras exklusiva tracing är borttagna.
-Aktiva callers går till `/admin/events`; utan event visas översikten, med event
-editorn. Gamla `/control/events`, `/control/tree`, `/events` och `/tree` leder
-till Admin för GET/HEAD med kontext, native/unified på/av och `/studio`.
-Mutationer/server actions omdirigeras inte. N1-auth, API:er och writers behålls.
+Fortsättning `codex/admin-control-rehearsal-j03` från PR322:s frysta head:
+Controls Compositions-/Rehearsal-SSR-wrappers och exklusiv tracing är borttagna,
+liksom överblivna preview/activity/zones-tracingposter. Aktiva callers går till
+`/admin/compositions` och `/admin/rehearsal`. Gamla bokmärken, inklusive
+preview/activity/zones-alias, går direkt till Admin med kontext för GET/HEAD,
+med native/unified på/av och /studio. Mutationer/server actions omdirigeras
+inte. Delade API:er, N1-auth, revisionskontroller och writers behålls.
 
-Events/Tree använder befintlig Admin-historikägare. Dealer/event/variant/tab/
-situation och composition/operator/table/game/room bevaras, liksom främmande
-history.state. Dirty/pågående sparning/sociala utkast skyddas. Delad sessions-
-writer ersätter inte längre historikmetadata med null. Browserprovet hittade
-att WorkspaceTool återmonterade gamla projektdata efter spara→Tree→Events;
-nu återläses data bara vid editor/översiktsgränsen, med vymärkning och avbrutna
-hämtningar. Urvalsändringar inom editorn behåller utkastet.
+WorkspaceTool skickar nu uttrycklig rumskontext till båda verktygen, inklusive
+rehearsals spelval. Tvetydiga room/table-värden behålls som tvetydiga och
+blockerar rumsfortsättning/observation. Sammansättning och spel följer Admins
+befintliga historikägare; främmande history.state och övrig kontext bevaras.
+Dirty, pågående sparning, konflikt, lokala filer, upload och preview skyddas
+vid navigation. Endast det egna validerade preview-anropet frigör sitt skydd
+före godkänd fortsättning. Shared project-CAS förblir en gemensam projektskrivning;
+vald rumskontext gör den inte till en roomOverrides-writer.
 
-Verifiering: routing/auth57/57. Konsumentprov125/128 följdes av riktade46/46
-efter tre föråldrade fixturkrav; sista selectorförstärkningen32/32. Events,
-studio-session-save och verklig Clips/Replies-historik30/30; slutligt verklig
-Admin-browser3/3 (samlad slutkörning33/33), alla0skip. Browsern använder faktisk entry/WorkspaceTool,
-Tree/katalog/inspektör och navigation, med syntetiska API-svar och isolerad
-uppspelning. Den provar sparning/återläsning, Back/Forward/flersteg, olika
-urval, dirty/pågående skrivning och omkastade workspace-svar. Överlappande körningar summeras inte.
-Oberoende granskare kevin_plan läste produkt-/testdiff och loggar: inga
-blockerande fynd; inga egna omkörningar. Root läste diffar och bevis samt
-körde build, orphan och diffkontroll.
+Verifiering: riktade route/caller/lifecycleprov efter rättade gamla adresskrav;
+root auth/room-API72/72; preview/CAS35/35; slutliga faktiska Admin-browser5/5,
+alla0skip. Browserproven kör verklig entry, WorkspaceTool, kontroller och
+history/navigation: save/readback/reload, Back/Forward/flersteg, dirty/request-
+skydd, preview-kvitto/fortsättning och ogiltig rumskontext. API-svar är syntetiska,
+playback är avgränsad; ingen faktisk spel- eller medieuppspelning verifieras.
+Överlappande körningar summeras inte. Oberoende produkt- och slutlig testgranskning av kevin_plan: inga blockerande
+fynd, inga egna omkörningar. Ordinarie commitkontroll redovisas i PR/status.json.
 
-Slutligt `npm --prefix apps/studio run build` med `/studio` passerar efter
-återläsningsfixen, inklusive Studio/Admin/Lobby-typer. Volta Node24.21.0,
-fyra Windows-buildworkers. Manifestet saknar alla sex nu avvecklade
-verktygswrappers och behåller Admin, workspace- och projekt-API. Orphan:
-531 testkandidater, 0 orphan. Beroenden återanvänds via egna junctions till
-J02/PR320; tracesanering72 kontrollerade/44 borttagna poster. Detta är lokalt
-byggbevis, ingen fristående deployartefakt. Loggar:
-`arkiv/2026-10-21/j03-events/`. GitHub CI för denna nya leverans redovisas i PR.
-Full Control-/authavveckling och O01 återstår. Hela J03 är IN_PROGRESS,
-15% totalt; ingen runtimeport, DB-/mediaändring eller automatisk merge.
+Root körde slutligt `npm --prefix apps/studio run build` med /studio efter
+sista produktändringen, inklusive Studio/Admin/Lobby-typer. Volta Node24.21.0,
+max4workers. Manifestet saknar alla åtta avvecklade J03-verktygswrappers och
+behåller Admin samt workspace-/projekt-API. Orphan532/0 och diffkontroll gröna.
+Beroenden via egna junctions till J02/PR320; traces70/44. Detta är lokalt
+byggbevis, ingen fristående deployartefakt. Loggar i leveransworktreens
+`arkiv/2026-10-21/j03-rehearsal/`. Fixturekontexter och browsers stängda.
+GitHub CI för denna nya leverans redovisas separat i PR/status.json.
+Full Control-/authavveckling och O01 återstår. J03 är IN_PROGRESS, total15%.
+Ingen runtimeport, DB-/mediaändring, deploy eller automatisk merge ingår.
 
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu

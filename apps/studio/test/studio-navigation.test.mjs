@@ -46,6 +46,10 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/tree', 'Dealers & klipp');
   expectLabel('/control/tree', 'Dealers & klipp');
   expectLabel('/activity', 'Dealers & klipp');
+  expectLabel('/admin/rehearsal', 'Dealers & klipp');
+  expectLabel('/control/rehearsal', 'Dealers & klipp');
+  expectLabel('/admin/compositions', 'Sammansättningar');
+  expectLabel('/control/compositions', 'Sammansättningar');
   expectLabel('/guide', 'Guide & hjälp');
 });
 

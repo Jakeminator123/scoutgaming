@@ -43,7 +43,7 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
 // Staff editor views use their active public document addresses. OpenClaw chat is the
 // tab on /control/openclaw. Model settings stay on that path without the tab.
 export const viewPaths: Record<StudioView, string> = {
-  tree: '/admin/events', lab: '/admin/events', videos: '/admin/videos', activity: '/control/activity',
+  tree: '/admin/events', lab: '/admin/events', videos: '/admin/videos', activity: '/admin/rehearsal',
   openclaw: '/control/openclaw?tab=chat', guide: '/admin/guide', probe: '/admin/probe',
 };
 

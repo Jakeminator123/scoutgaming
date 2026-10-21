@@ -1,5 +1,5 @@
 import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
-import {canonicalControlHref} from '../../../packages/navigation/control-flow.mjs';
+import {canonicalControlHref, legacyActivityDocumentHref} from '../../../packages/navigation/control-flow.mjs';
 
 const studioAliases = Object.freeze({
   activity:'/control/activity', administration:'/control/administration', events:'/control/events',
@@ -20,29 +20,20 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   const path = url.pathname.slice(basePath.length);
   // These retired tools preserve navigation context at both historical entries.
   const tool = path.startsWith('/control/')
-    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree)$/)?.[1]
-    : path.match(/^\/(guide|videos|probe|events|tree)$/)?.[1];
+    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones)$/)?.[1]
+    : path.match(/^\/(guide|videos|probe|events|tree|compositions|rehearsal|preview|zones)$/)?.[1];
   if (tool) {
     const query = new URLSearchParams();
     for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);
     return adminDocumentHref('/control/'+tool + (query.size ? '?'+query : '') + url.hash);
   }
+  if (path === '/control/activity' || path === '/activity') return legacyActivityDocumentHref(url.href);
   const alias = path.slice(1);
   if (Object.hasOwn(studioAliases, alias)) return studioAliases[alias]; // Historical top-level links discard query.
   if (controlAliases.has(path)) {
     const query = new URLSearchParams();
     for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);
     return adminDocumentHref(path + (query.size ? '?'+query : ''));
-  }
-  if (path === '/control/activity') {
-    const query = new URLSearchParams();
-    for (const key of ['dealer','operator','table','composition']) {
-      const values = url.searchParams.getAll(key);
-      if (values.length === 1 && values[0]) query.set(key,values[0]);
-    }
-    const lanes = url.searchParams.getAll('lane');
-    if (!query.has('composition') && lanes.length === 1 && lanes[0]) query.set('composition',lanes[0]);
-    return '/control/rehearsal' + (query.size ? '?'+query : '');
   }
   if (path === '/control/dealer-forge') {
     const query = new URLSearchParams();

@@ -125,13 +125,13 @@ test('dealer workspace has visible breadcrumbs tabs and in-category settings wit
   assert.equal(nodes(tree, node => node.props?.onConfigureSlot).length,1);
   assert.equal(nodes(tree, node => node.type === 'nav' && node.props['aria-label']==='Dealerns klippkategorier').length,0);
   assert.match(html,/Standard och varianter/);
-  assert.doesNotMatch(html, /href="\/control\/compositions/);
+  assert.doesNotMatch(html, /href="\/admin\/compositions/);
   assert.match(html, /Tal &amp; automatik/);
   assert.match(html, /Inställningar/);
   assert.equal(nodes(tree, node=>node.type==='details').length,0,'common workspace sections are not collapsed');
   assert.match(html, /href="\/admin\/probe\?dealer=astrid"/);
   assert.match(html, /Inställningar för AI-småprat/);
-  assert.match(html, /href="\/control\/rehearsal\?dealer=astrid"/);
+  assert.match(html, /href="\/admin\/rehearsal\?dealer=astrid"/);
   assert.match(html, /Provspelning &amp; logg/);
   assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab|aria-label="Dealer"|Granska i spel|sg-pill|Förhandsvisa bakgrundszoner/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0, 'playback log is a link, not an embed');
@@ -152,8 +152,8 @@ test('draft survives dealer chip and category changes', () => {
   assert.equal(nodes(tree, node => node.props?.inventory && (node.props?.family || node.props?.policy)).length, 0, 'Astrid family tools not rendered for Elin');
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
-  assert.doesNotMatch(html, /href="\/control\/compositions/);
-  assert.match(html, /href="\/control\/rehearsal\?dealer=elin"/);
+  assert.doesNotMatch(html, /href="\/admin\/compositions/);
+  assert.match(html, /href="\/admin\/rehearsal\?dealer=elin"/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0);
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'E Elin');
 });
@@ -428,7 +428,7 @@ test('unapplied actual speech edits protect dealer and route exits, remain acros
   input('Röstens ID, ingen API-nyckel').props.onChange({target:{value:'studio-qa-unsaved'}});render();assert.equal(h.state('speechDraft'),true);
   const guard={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(guard);assert.equal(guard.blocked,true);
   nodes(tree,node=>typeof node.props?.onNavigate==='function')[0].props.onNavigate({preventDefault(){}},'/control/clips?dealer=elin&view=clips');render();assert.equal(h.state('workspaceView'),'clips');assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'studio-qa-unsaved');
-  const route=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/rehearsal'))[0];route.props.onClick({preventDefault(){}});render();assert.equal(h.state('workspaceView'),'speech');assert.deepEqual(assigned,[]);assert.match(h.state('notice'),/ångra/);
+  const route=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/admin/rehearsal'))[0];route.props.onClick({preventDefault(){}});render();assert.equal(h.state('workspaceView'),'speech');assert.deepEqual(assigned,[]);assert.match(h.state('notice'),/ångra/);
   pressDealer(tree,'Saga');render();assert.equal(h.state('dealerId'),'elin');assert.match(h.state('notice'),/talformuläret/);
   nodes(form,node=>node.type==='button'&&node.props.children==='Ångra ändringar i talformuläret')[0].props.onClick();render();assert.equal(h.state('speechDraft'),false);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'');
   const clean={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(clean);assert.equal(clean.blocked,undefined);
@@ -477,7 +477,7 @@ test('clips route and dealer management preserve composition operator and room t
   const lifecycle=nodes(tree,node=>typeof node.props?.onApplied==='function')[0];assert.equal(lifecycle.props.laneId,'mobile-phone');assert.equal(lifecycle.props.operatorId,'operator-42');assert.equal(lifecycle.props.tableId,'room-7');
   const currentUrl=new URL(runtimeWindow.location.href);assert.equal(currentUrl.searchParams.get('operator'),'operator-42');assert.equal(currentUrl.searchParams.get('table'),'room-7');
   nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('speak.goodluck','goodluck');tree=h.render(page.props);
-  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/(?:admin\/events|control\/(?:administration|compositions|rehearsal))/.test(node.props.href??''));
+  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/(?:admin\/(?:events|compositions|rehearsal)|control\/administration)/.test(node.props.href??''));
   assert.equal(outgoing.some(link=>link.props.href.startsWith('/admin/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
   for(const link of outgoing){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('composition'),'mobile-phone');assert.equal(query.get('operator'),'operator-42');assert.equal(query.get('table'),'room-7');}
   pressDealer(tree,'Saga');tree=h.render(page.props);assertTabs('saga','mobile-phone','operator-42','room-7');

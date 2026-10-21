@@ -33,9 +33,9 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
   const companyHref = labUrl('/admin/companies' + query);
   const playerHref = selected && live ? '/play?operator=' + encodeURIComponent(selected.slug) : '/play';
   const partnerHref = selected ? workspaceSurfacePath('partner', 'ops', selected.slug) ?? '/partner' : '/partner';
-  const nextHref = ({ studio: labUrl('/control/clips'), composition: labUrl('/control/compositions' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];
+  const nextHref = ({ studio: labUrl('/control/clips'), composition: labUrl('/admin/compositions' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];
   const firstPublished = confirmed?.rooms[0];
-  const compositionHref = labUrl('/control/compositions?' + new URLSearchParams({ ...(selected && live ? { operator: selected.id } : {}), ...(firstPublished ? { composition: firstPublished.presentation.id } : {}) }));
+  const compositionHref = labUrl('/admin/compositions?' + new URLSearchParams({ ...(selected && live ? { operator: selected.id } : {}), ...(firstPublished ? { composition: firstPublished.presentation.id } : {}) }));
 
   useEffect(() => {
     const sync = () => setChoice(new URLSearchParams(window.location.search).get('operator'));

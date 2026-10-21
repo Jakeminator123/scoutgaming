@@ -98,7 +98,7 @@ test('a composition link does not silently add the selected composition to the p
   assert.equal(h.checkbox('mobile-phone').props.checked,true);
   const link=h.nodes(node=>node.type==='a'&&String(node.props.children).startsWith('Redigera dealer'))[0];
   const target=new URL(link.props.href,'https://test.invalid');
-  assert.equal(target.pathname,'/control/compositions');
+  assert.equal(target.pathname,'/admin/compositions');
   assert.equal(target.searchParams.get('operator'),'north');
   assert.equal(target.searchParams.get('composition'),'evening');
 });

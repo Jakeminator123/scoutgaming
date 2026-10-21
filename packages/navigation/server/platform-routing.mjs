@@ -1,6 +1,7 @@
 import { presentationPublicSource } from '../../presentation/public-modules.mjs';
 import { gameEntryRedirect, approvedGameQuery } from '../game-entry.mjs';
 import {adminDocumentHref} from '../admin-workspace-routes.mjs';
+import {legacyActivityDocumentHref} from '../control-flow.mjs';
 import { requestedOperator } from '../operator-entry.mjs';
 import { resolveWorkspaceSurfacePath } from '../workspace-surfaces.mjs';
 import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '../../server-transport/paths.mjs';
@@ -93,10 +94,10 @@ export function blackjackLobbyDestination(url, config) {
 }
 
 export function platformRoute(url, config, request) {
-  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos|probe|replies|events|tree)$/.test(url.pathname);
+  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|activity)$/.test(url.pathname);
   if((config.nativeStudio||retiredDocument)&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
     const documentHref=url.pathname+url.search+url.hash;
-    const destination=adminDocumentHref(documentHref);
+    const destination=/^\/(?:studio\/)?control\/activity$/.test(url.pathname) ? legacyActivityDocumentHref(documentHref) : adminDocumentHref(documentHref);
     if(destination!==documentHref)return {kind:'redirect',destination:config.publicOrigin+destination};
   }
   // Next encodes the literal catch-all folder in these two generated chunks.
