@@ -95,3 +95,13 @@ export function waitClipAt(waits, now, talks = []) {
   }
   return null;
 }
+
+/**
+ * The idles a dealer rests on when nobody speaks (Kevin 21 Oct: all waiting is calm: the betting countdown, between rounds,
+ * hit or stand): the calm takes only (dealers.js calm). A dealer without calm takes keeps all of his. The lively takes
+ * (turns of the head, glances, nods, leaning) play only in a chain under speech, where they look natural.
+ */
+export function restingPool(idles) {
+  const calm = (idles ?? []).filter(i => i.calm);
+  return calm.length ? calm : (idles ?? []);
+}

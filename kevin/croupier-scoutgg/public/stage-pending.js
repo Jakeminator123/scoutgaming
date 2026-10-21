@@ -5,7 +5,7 @@
   // The still has no src in the HTML: a browser may paint while this file loads, and it must not paint Astrid then.
   // Same choice as dealers.js pick() and savedRoom(): ?dealer / ?room first, then the viewer's saved one. Keep V and the
   // lists in step with dealers.js.
-  var V = '?v=20261011a', KEYED = ['dragge', 'paow', 'marten', 'astrid2'], ROOMS = ['darkhall', 'mahogany', 'golden', 'azure'];
+  var V = '?v=20261021a', KEYED = ['dragge', 'paow', 'marten', 'astrid2'], ROOMS = ['darkhall', 'mahogany', 'golden', 'azure'];
   var st = document.getElementById('stage'), im = st && st.querySelector('.still');
   if (!st || !im) return;
   var d = 'astrid', room = 'darkhall';

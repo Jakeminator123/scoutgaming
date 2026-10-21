@@ -14,7 +14,7 @@ import { ASTRID2_FACE_TRACKS } from './dealer-card-tracks-astrid2.js';
 //   pos4.mp4 REDO -> card   pos4-i.mp4 VILA -> in -> card   pos4-u.mp4 card -> ut -> VILA   pos4-iu.mp4 both
 // Built by croupier-dealer-dragge/build_ready_dealer.py (meta.json next to the clips).
 // Media is cached for a day (server.mjs), so rebuilt files get a new version here.
-const V = '?v=20261011a';
+const V = '?v=20261021a';   // bumped 21 Oct: huvud/huvudb were re-rendered under the same names, and the new takes arrived; a phone with a day-old cache fetches them anew
 
 // Frame of the deal take (without the in-transition) from which the filmed card no longer moves (its planar track,
 // review/2026-10-10-card-tracking); until then the game's card follows the track, from there it rests on its seat.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chainClipAt, LEAD, layChain, waitClips, waitBoundary, waitClipAt, pickWeighted } from '../public/idle-chain.js';
+import { chainClipAt, LEAD, layChain, waitClips, waitBoundary, waitClipAt, pickWeighted, restingPool } from '../public/idle-chain.js';
 
 // 20 Oct: which clip of a talk's idle chain the table shows now must be gapless, or the handover on a clip's last frame
 // (1.5 frames = 62 ms before its end) finds nothing, drops the prepared clip and lets a random idle start under the line.
@@ -76,4 +76,14 @@ test('the weighted pick never returns the clip last picked, even one that outwei
   assert.equal(pickWeighted([{ id: 'a', vikt: 5 }, { id: 'b', vikt: 1 }], 'a', () => 0.99).id, 'b', 'a lone candidate is taken whatever the draw');
   const chain = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'nick6101', frames: 39, vikt: 6 }], 0, 60000, 'seed');
   for (let i = 1; i < chain.length; i++) assert.notEqual(chain[i].take, chain[i - 1].take, 'a chain never repeats either');
+});
+
+test('at rest he draws from the calm takes only; the lively ones are left for a chain under speech; a dealer without calm takes keeps all of his', () => {
+  const idles = [{ id: 'andas', vikt: 20, calm: true }, { id: 'vikt6101', vikt: 6, calm: true }, { id: 'nick6101', vikt: 6, calm: false }, { id: 'huvud', vikt: 3, calm: false }];
+  assert.deepEqual(restingPool(idles).map(i => i.id), ['andas', 'vikt6101']);
+  let last = null; for (let i = 0; i < 100; i++) { const c = pickWeighted(restingPool(idles), last); assert.ok(c.calm, c.id); assert.notEqual(c.id, last); last = c.id; }
+  assert.deepEqual(restingPool([{ id: 'breath' }, { id: 'glance' }]).map(i => i.id), ['breath', 'glance'], 'Kling loops without the flag: all of them');
+  assert.deepEqual(restingPool([]), []);
+  const talk = layChain(idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt })), 0, 40000, 'answer');
+  assert.ok(talk.some(c => c.take === 'nick6101' || c.take === 'huvud'), 'a chain under speech still uses the lively takes');
 });

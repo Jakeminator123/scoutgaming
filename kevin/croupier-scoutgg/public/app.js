@@ -1,4 +1,4 @@
-import { pickWeighted } from "./idle-chain.js";
+import { pickWeighted, restingPool } from "./idle-chain.js";
 import { createVoicePool } from "./voice-pool.js";
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
@@ -66,7 +66,7 @@ const mediaFetch=createMediaFetch(mediaUrl,()=>{if(mediaBase)console.warn('clip 
 const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:mediaFetch});
 const videoPreloader=createVideoPreloader(videoBuffer);
 let tableMediaReady=false;
-function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const next=manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}
+function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const next=restingPool(manifest.idle).find(c=>!videoBuffer.has(c.url))??manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}   // the calm ones first: they are what he rests on
 
 const audio = createGameAudio({onChange: settings => {
   for(const v of [A,B]) {v.muted=!(v===cur && currentItem?.sound && unlocked && settings.enabled);v.volume=settings.voice;}
@@ -101,9 +101,11 @@ function playbackFeedback() {
 }
 
 function pickIdle() {
-  const cached = manifest.idle.filter(c=>videoBuffer.has(c.url));
+  // Kevin 21 Oct: all waiting is calm (the betting countdown, between rounds, hit or stand): the random idles come from the
+  // calm takes only; the lively ones play only in a chain under speech (restingPool)
+  const pool = restingPool(manifest.idle), cached = pool.filter(c=>videoBuffer.has(c.url));
   // never the same gesture twice in a row, whatever its weight (Kevin 21 Oct; before, a heavy one could repeat)
-  const c = pickWeighted(cached.length ? cached : manifest.idle.slice(0, 1), lastIdle);
+  const c = pickWeighted(cached.length ? cached : pool.slice(0, 1), lastIdle);
   lastIdle = c.id; return c;
 }
 
