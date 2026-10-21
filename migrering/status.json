@@ -131,9 +131,10 @@
         "Specifikation551b2e820664a4e6916d64eda4527d5d07366261 läsgranskad av kevin_plan och root mot713c03e: endast O01-svar.md ändras. Demoavgränsning, blocked-outcome och accountMembershipGen skild från rums-memberGen är tydliga. Root har valt en savepoint i samma yttre transaktion för J07; alla planerade lås före savepoint, återställ försökets effekter, skriv blocked-kvitto/audit och committa utan låsglapp. Persistens-/anslutningsfel ger full rollback. Root har därefter läst enda dokumentdeltat362ad392acd70f49d7a6198f91e2f61c02ebd572 från551b2e8: samma yttre transaktion efter ROLLBACK TO SAVEPOINT, lås före savepoint, full rollback vid kvittofel och aldrig blocked-kvitto för anslutnings-/transaktionsfel är nu konsoliderat. Ingen runtime-/samtidighetsacceptans. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6322089912",
         "Jakob beslutade direkt i chatten21oktober: Demo först; förbered gränsen för aggregatorn. Han vidarebefordrade också Kevins godkännande av retryförslaget. K02 äger inget saldo/I/O; K03 använder walletport; J07 binder main-demowallet med gemensamma reservationer/SQL-transaktion. Extern aggregatorintegration är separat senare omfattning. Spärren i async-partner-api.mjs:137 behålls, ingen SQLite- eller tyst demofallback. Faktisk kodgranskning av root+jakob_plan på main15988: extern callback finns i legacyspåret, inte aktiverad PostgreSQL-integration. Beslut: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403",
         "Kevinagentens besked6324011274 rapporterar ägarval(a). Root och kevin_plan läste O01-deltat362ad392acd70f49d7a6198f91e2f61c02ebd572→cfe703718d124a5cec008f1c07125fac551aba9c: första pause avvisas inte som stale, gäller24h från commit/MAX över kontots rum; identisk replay förlänger inte pausen. Generation styr låsmängdens omläsning/omplanering, inte avvisning. Inga blockerande motsägelser med samma yttre transaktions savepointmodell. Root accepterar detta som O01:s kontraktsinriktning. Ingen ny fråga om sen första pause behövs. Ägaruppgiften är rapporterad via Kevins agent, inte separat mänskligt verifierad.",
-        "PR323 9b066769b8a0595d0e62e997285ac84460bb2ef9 är fryst och läsgranskad: endast kevin/croupier-scoutgg/test/shared-table.test.mjs,+25 rader. Provar insurance-/handlingsspärr under paus, sekventiell bet-upprepning, inputkonflikt och aktörsscope. Rapport287/287 är Kevins körning, inte vår. Den provar inte sen första paus, pausreplay, medlemsrace eller PG-lås. Befintlig shared-table.mjs:329-341 kör advance före requestkontroll och returnerar aktuell snapshot; oförändrad testklocka bevisar inte lagrat svar över deadline/omstart. Detta är känt legacybeteende, inte accepterad K03-replay."
+        "PR323 9b066769b8a0595d0e62e997285ac84460bb2ef9 är fryst och läsgranskad: endast kevin/croupier-scoutgg/test/shared-table.test.mjs,+25 rader. Provar insurance-/handlingsspärr under paus, sekventiell bet-upprepning, inputkonflikt och aktörsscope. Rapport287/287 är Kevins körning, inte vår. Den provar inte sen första paus, pausreplay, medlemsrace eller PG-lås. Befintlig shared-table.mjs:329-341 kör advance före requestkontroll och returnerar aktuell snapshot; oförändrad testklocka bevisar inte lagrat svar över deadline/omstart. Detta är känt legacybeteende, inte accepterad K03-replay.",
+        "K02-delta10dd2323→0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 läsgranskat av plan_review och root: reservation per box finansierar start/insurance, available endast nya double/split-debiteringar. Finansieringsmotsägelsen är stängd. K03-draftb1c94dee är läsgranskad mot O01 med fem konkreta återhämtnings-/identitets-/leveransfynd. Root preciserar spelaridentitet i frånvarotick, obligatorisk memberGen och clear som återhämtning före start även efter deadline; undo efter deadline krävs inte för första demoetappen. Ingen ny produkt-/ägarefråga behövs för dessa preciseringar. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125"
       ],
-      "blocker": "Pausregelns dokumentdelta cfe7037 är läsgranskat utan motsägelser; väntan på detta besked är avslutad. Samlad kontraktsacceptans återstår, inklusive K02:s budget för consume av reservationer kontra nya debiteringar. O01 är IN_PROGRESS; samtidighets-/recoveryacceptans hör till K03/J07. Ingen extern aggregatoranslutning ingår."
+      "blocker": "Samlad kontraktsacceptans återstår; tidigare pausväntan och K02-finansieringsmotsägelse är avslutade. Konsolidera K03:s tickidentitet, clear-återhämtning och leveransportens versionsspärr enligt granskning6324882125. Rättning av K03-kod och verklig PG-samtidighetsverifiering är egna leveranskrav, inte villkor för själva kontraktsöverenskommelsen. Extern aggregator ingår inte."
     },
     {
       "id": "J03",
@@ -244,15 +245,16 @@
         "O01"
       ],
       "branch": "codex/kevin-k02-regelkarna",
-      "head": "10dd2323ec7011583c9b1c1e2c2100414a3a9593",
+      "head": "0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/325",
-      "reviewer": "plan_review (avgränsad skrivskyddad kontraktsgranskning); root verifierade fyndets kod/spec/test",
+      "reviewer": "plan_review och root (oberoende läsgranskning av rättningsdeltat)",
       "evidence": [
-        "Mottagen draft PR325, invoicesolv/codex/kevin-k02-regelkarna/head10dd2323ec7011583c9b1c1e2c2100414a3a9593, från main15988f32fd572c453d2189502acbe324c4566815, fryst Kevin-källa5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. GitHub-head/källrepo/författare verifierade. Ingen aktiv konsument flyttad; ingen DDL/drift. CI39658282127 pågår vid avläsning.",
-        "Avgränsad läsreview: explicit slump, privat sko/hålkort, rund-/turkontroll och isolerade exports ser konsekventa ut. Kontraktsblocker i core.mjs:134-140/start169/insurance196: O01available=balance−alla öppna reservationer, men samma available används för consume av redan reserverade insatser. Saldo100/reserverat100 ger0 och nekar giltig start om kontraktets värde matas in. Kommandobudgeten måste uttryckligen skiljas från fri balans; ingen aktiv caller drabbas ännu. Negativa turprov i test/blackjack-core.mjs:128 är villkorliga, behöver säker beslutsfas.",
-        "Kevin rapporterar13/13 coreprov,29/29 grupp,orphan530/0 och kompatibilitet över två skobyten. Inte omkört här. Sista hook31/33 och no-verify rapporteras med FFmpeg/macOS-baslinjefel; inga gates är godkända genom rapporten. Ingen RNG-certifiering, runtimeacceptans eller VERIFIED."
+        "PR325 invoicesolv/codex/kevin-k02-regelkarna/head0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är färskt head-/källrepo-/författarverifierad. Fast-forward från tidigare granskad10dd2323; ingen aktiv konsument flyttad och ingen DDL/drift.",
+        "plan_review och root har läst rättningsdeltat i services/game/games/blackjack/core.mjs och test/blackjack-core.mjs: reservationer kontrolleras per typ/box för start/insurance; nya double/split-belopp prövas mot available. Effekter anger source. Negativa turfall når ovillkorligt besluts-/insurancefas via fast sko. Det tidigare finansieringsfyndet och de villkorliga turproven är rättade; inga blockerande fynd i detta delta. Ingen ny runtimekörning här. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125",
+        "GitHub CI39660600012 är completed/success, och runmetadata binder den till exakt0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. https://github.com/Jakeminator123/scoutgaming/actions/runs/39660600012",
+        "Kevin rapporterar13/13 coreprov,3/3 fler-sko-/splitprov och hook utan bypass på rättad head. Rapporten ersätter inte egna körningar. Tidigare hook31/33/no-verify på10dd2323 är historik, inte aktuell acceptans. Full K02/O01-acceptans, RNG-certifiering och integrerad runtimeacceptans påstås inte."
       ],
-      "blocker": "Kontraktsblocker före inkoppling: start och insurance prövar reserverad consume mot O01:s fria available. Definiera kommandobudget/reserverad finansiering separat från nya double/split-debiteringar och prova saldo100/reserverat100. Gör negativa turprov ovillkorliga. Riktade prov och obligatoriska kontroller på rättad head samt samlad O01-avstämning återstår."
+      "blocker": "Tidigare finansierings-/testfynd stängda i oberoende läsreview; exakt head har grön GitHub CI. Samlad O01-avstämning och full K02-acceptans mot aktivitetens kriterier återstår; K02 är IN_PROGRESS."
     },
     {
       "id": "K03",
@@ -260,16 +262,21 @@
       "stage": "E3",
       "title": "Delat bord utan SQL- och videokoppling",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "K02"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/kevin-k03-bord",
+      "head": "b1c94dee2eae6db25be70f94cf0cb7baf84d1be7",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/327",
+      "reviewer": "kevin_plan och root (skrivskyddad kontrakts-/kodgranskning)",
+      "evidence": [
+        "Mottagen draft PR327, invoicesolv/codex/kevin-k03-bord/headb1c94dee2eae6db25be70f94cf0cb7baf84d1be7, från K02/head0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. GitHub-head/källrepo/författare verifierade. Portar, bordssamordnare, audit och minnesfixtur; inga aktiva callers, SQL/DDL eller drift ändrade.",
+        "Oberoende läsreview mot O01cfe7037: fem konkreta fynd i coordinator.mjs. 421–422 frånvarotick saknar aktör och kolliderar;119–122/376–379 next tömmer väntande leaving;297–298/334–342 READY blockerar clear efter nekat consume;557–559 parallella outboxleveranser saknar bindande versionsspärr;264 inaktivt medlemskap accepterar saknad memberGen. Root har verifierat kodmekanismer och relevant port-/testtäckning. Ingen körd repro eller produktionsbugg påstås. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125",
+        "Root preciserar minsta demoåterhämtning: clear får häva ready och frigöra egen insatsreservation före rundstart även efter deadline; undo efter deadline är ingen blockerare. Spelaridentitet ska ingå entydigt i frånvarotick och join måste jämföra memberGen. Versionsspärren ska bindas till store/sink-kontrakt; faktisk worker/PG-integration kommer i K04/J07.",
+        "Kevinrapporterat19/19 och hook52/52 samt upprepade Node22/24-prov; inte omkört här. Connectorns PR-workflowavläsning gav inga körningar för denna head. Minnesfixturens globala mutex bevisar inte PG-lås, flerprocessleverans eller verklig kraschpersistens. Ingen CI-/runtimeacceptans."
+      ],
+      "blocker": "Kevin rättar de fem konkreta fynden i granskning6324882125 och levererar ny frozen head med riktade prov. Ingen aktiv integration innan fynden är stängda. K02/O01 slutacceptans och J07:s faktiska adapter-/PG-verifiering återstår."
     },
     {
       "id": "J07",

@@ -45,7 +45,7 @@ Kompletterande medieinventering53f6693610acc44fb45295da76a67d940a989125 gäller 
 
 ## K02 — Ren regelkärna med explicit slump
 
-**Mottagen draft, inte VERIFIED:** [PR325](https://github.com/Jakeminator123/scoutgaming/pull/325), codex/kevin-k02-regelkarna / 10dd2323ec7011583c9b1c1e2c2100414a3a9593. Ingen konsument flyttad. Oberoende läsreview och root bekräftar kontraktsfrågan: start/insurance använder inputs.available för redan reserverad consume; O01 definierar available som fri balans efter reservationer. Skilj finansiering per kommando från fri balans och prova saldo100/reserverat100 samt försäkringsreservation och nya double/split-belopp. Negativa turprov ska säkert nå beslutsfasen. Rapporter13/13 och29/29 är Kevins körningar; sista hook31/33/no-verify är inte godkänd här. CI39658282127 pågår. Detaljer i status.json[K02]; status IN_PROGRESS.
+**Granskad rättning, inte VERIFIED:** [PR325](https://github.com/Jakeminator123/scoutgaming/pull/325), codex/kevin-k02-regelkarna / 0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. plan_review och root har stängt tidigare finansieringsfynd: start/insurance använder reservation per box; double/split använder fri available. Negativa turprov är ovillkorliga. GitHub CI39660600012 är success på exakt denna head. Kevins 13/13 coreprov, 3/3 fler-skoprov och hook utan bypass är rapporterade; inga egna runtimeprov i granskningen. Ingen caller flyttad. Samlad O01/full K02-acceptans återstår; status IN_PROGRESS. [Samlad review](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125).
 
 **Etapp/beroenden:** E3; O01.
 **Mål:** samma tillstånd, kommando, konfiguration och explicita slump-/tid-/ID-indata ger samma resultat och spelhändelser.
@@ -61,6 +61,8 @@ Kompletterande medieinventering53f6693610acc44fb45295da76a67d940a989125 gäller 
 **Verifiering/bevis:** regeltester för giltiga/ogiltiga drag, saldogräns, dolt kort, skoövergång och exakt en avräkning; reproduktion med samma indata och variation med annan slump. Prova commitment före första draw, ingen förtida reveal samt att ändrad nonce, draw eller återstående sko underkänns. Ange testnamn, kommandon, exitkod, SHA och kontraktsversion; kalla inte detta RNG-certifiering.
 
 ## K03 — Delat bord utan SQL- och videokoppling
+
+**Mottagen och läsgranskad draft:** [PR327](https://github.com/Jakeminator123/scoutgaming/pull/327), codex/kevin-k03-bord / b1c94dee2eae6db25be70f94cf0cb7baf84d1be7 från K02/0493af3e. Fem rättningar före inkoppling: unik spelaridentitet i frånvarotick; next ska bevara/verkställa väntande utträden; clear ska återhämta ready efter nekat consume; bindande versionsspärr vid parallell outboxleverans; obligatorisk memberGen även efter leave. [Exakta kodreferenser och provfall](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125). Kevin äger rättning/nya prov. 19/19 och hook52 är Kevinrapporterade, ingen CI-/PG-/runtimeacceptans här. Status IN_PROGRESS, ingen migrationspoäng.
 
 **Etapp/beroenden:** E3; K02. Lagringskontraktet överlämnas till J07.
 **Mål:** servern samordnar rum, spelare, platser, deadlines och återanslutning genom O01:s portar. Jakobs beslut: demo först med förberedd aggregatorgräns. WalletPort binds av J07 till mains demowallet; faktisk extern walletintegration är en senare leverans.

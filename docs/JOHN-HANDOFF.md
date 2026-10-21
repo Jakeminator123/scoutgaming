@@ -89,10 +89,18 @@ medlemsomplanering utan stale-avvisning. Inga kontraktsmotsägelser; root
 accepterar inriktningen. Ägarvalet är rapporterat via Kevinagenten.
 PR323/9b066769b8a0595d0e62e997285ac84460bb2ef9 testar pausspärr och sekventiell bet-replay;
 inte sen paus/replay/medlemsrace. Fryst legacy advance sker före kvittokontroll.
-K02-draft PR325/10dd2323ec7011583c9b1c1e2c2100414a3a9593 läsgranskad av plan_review; root
-bekräftar budgetmotsägelsen mot O01available vid reserverad consume.
-Ingen aktiv caller flyttad. Testernas negativa turfall är villkorliga.
-Rättning/riktade prov/CI och samlad O01-acceptans återstår; K02 IN_PROGRESS.
+K02-rättning PR325/0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är läsgranskad av plan_review och root.
+Tidigare reservations-/budgetfynd och villkorliga turprov är rättade; CI39660600012
+är success på exakt samma head. Inga egna runtimeprov; K02 förblir IN_PROGRESS
+i väntan på samlad O01/full aktivitetacceptans.
+K03-draft PR327/b1c94dee2eae6db25be70f94cf0cb7baf84d1be7 är läsgranskad av kevin_plan och root.
+Fem grundfunktionsfynd: kolliderande frånvarotick, next som tappar utträde,
+READY som hindrar clear-återhämtning, obunden outboxversionsspärr och saknad
+memberGen efter leave. Kevin rättar enligt [granskning6324882125](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125).
+Clear före start får häva ready/frigöra egen reservation även efter deadline;
+undo efter deadline behöver inte öppnas för första demon. Ingen ny ägarfråga.
+19/19 och hook52 är Kevinrapporterade; ingen CI-/PG-/runtimeacceptans för K03.
+K03 är IN_PROGRESS. Total15% är oförändrat; inga aktiva callers eller drift ändrade.
 Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,
 tagningsmappning och raderingsförslag är rapporterade; rot-repliker och
 Astrid-fallback är kodverifierade på5aa7ed10. Inget import-/raderingsbeslut.
