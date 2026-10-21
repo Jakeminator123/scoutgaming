@@ -87,6 +87,7 @@ granskning. Gemensamma kontrakt, samma skrivvägar/index och beroendeintegration
 hanteras sekventiellt. En verklig osäkerhet om auth, reservation/debitering,
 spelutfall eller dataförlust löses före berörd inkoppling; den stoppar inte
 oberoende Admin-städning. Befintliga ägarskaps- och produktionsgränser gäller.
+Tester för avvecklat beteende ändras eller raderas; verifieringen fokuseras på den aktuella produktens beteende och berörda risker.
 
 | Frågepott | Hantering | Blockerar grundmigreringen? |
 | --- | --- | --- |
@@ -95,6 +96,7 @@ oberoende Admin-städning. Befintliga ägarskaps- och produktionsgränser gälle
 | K02:s reserverad konsumtion kontra ny fri insats | Avslutad sakfråga: rättningsdelta0493af3e läsgranskat, exakt head har grön CI39660600012; full aktivitetacceptans återstår | Finansieringsfyndet blockerar inte längre |
 | K03:s reservationsåterhämtning | Stake/insurance-fynd stängda i läsreview påb8e1c957; full aktivitet och faktisk adapterverifiering återstår | Ingen kvarstående blockerare i rättningsdeltat; ingen runtimeacceptans |
 | Undo efter passerad insatsdeadline | Första demoetappen använder clear för återhämtning före start; senare utökning får bedömas separat | Nej |
+| Logo/placering, återföring av avslutade spel, fler bordsspråk och fria timerprofiler | Ingår inte i första demon. Återanvänd befintliga språk en/sv, exakta mediereferenser och standardtider; pröva utökning när ett konkret behov finns. SQL-rollback och demo-credit är inte ekonomisk återföring. | Nej |
 
 Frågepotten flyttar inte bort avtalade krav på klippkarta, sparning, behörighet,
 publicering, korrekta spelregler eller exakt mediaidentitet. Status uppdateras
@@ -103,15 +105,15 @@ vid verifierad leverans; en beslutad förenkling ger inte i sig färdigprocent.
 
 Beroende: K01. Kan förberedas samtidigt som J01.
 
-- [ ] Jämför main och exakt Kevin-SHA i en funktionsmatris: behåll, porta, ersätt eller radera, med konsument och testfall.
-- [ ] Bestäm vilka spelbeteenden som faktiskt omfattas: regler, seats, countdown, reconnect, saldo, sko, idle, tal, kort och tillgänglighet. ”Bäst” måste få observerbara acceptanskriterier.
-- [ ] Lås kontrakt för kommandon, händelser, lagring och presentation samt configversion/rum/paket.
-- [ ] Ange varje Admin-inställnings ägare, tillåtna värden, skrivmål, publiceringsgräns och verkan i aktiva/nya sessioner.
-- [ ] Bekräfta kontrakten med båda ägarna och placera dem i befintliga kanoniska kontrakt/docs, med ändrade beteendetester. Inga nya parallella register eller regelböcker.
+- [x] Jämför main och exakt Kevin-SHA i en funktionsmatris: behåll, porta, ersätt eller radera, med konsument och testfall.
+- [x] Bestäm vilka spelbeteenden som faktiskt omfattas: regler, seats, countdown, reconnect, saldo, sko, idle, tal, kort och tillgänglighet. ”Bäst” måste få observerbara acceptanskriterier.
+- [x] Lås kontrakt för kommandon, händelser, lagring och presentation samt configversion/rum/paket.
+- [x] Ange varje Admin-inställnings ägare, tillåtna värden, skrivmål, publiceringsgräns och verkan i aktiva/nya sessioner.
+- [x] Bekräfta kontrakten med båda ägarna och placera dem i befintliga kanoniska kontrakt/docs, med ändrade beteendetester. Inga nya parallella register eller regelböcker.
 
 Klart: Kevin och Jakob kan implementera sina sidor utan att behöva kopiera varandras runtime eller gissa schemasemantik. Bevis och granskad SHA förs till status.json.
 
-#### O01: backendkontrakt delaccepterade — Adminurval och provspårning återstår
+#### O01: kontrakt, Adminurval och provspårning verifierade
 
 Utgår från main15988f32fd572c453d2189502acbe324c4566815 och Kevin-kod
 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Root accepterar backenddelen i
@@ -125,11 +127,11 @@ Följande preciseringar gäller tillsammans med specifikationen:
 - Mottagaren applicerar endast högre planversion. Identisk senast accepterad
   version kvitteras applied utan ny applicering; lägre version ger stale.
 
-K01 är VERIFIED. Hela O01 är fortsatt IN_PROGRESS: root fastställer Adminfältens
-urval, tillåtna värden, writer och publiceringsgräns samt samlar beteendeprov
-mot kontrakten. Detta väntar inte på nytt Kevin-underlag. Kodläsning ersätter
-inte full K02/K03-acceptans eller J07:s faktiska PostgreSQL-prov. Ingen runtimeport,
-DDL eller mediaimport startas genom denna delacceptans.
+K01 och O01 är VERIFIED. Backendöverenskommelsen på9c669e67, Adminmatrisen
+nedan och 44/44 faktiskt körda isolerade kontraktsprov är granskade av root
+och plan_review utan blockerande fynd. Jakobs mandat omfattar detta avgränsade
+demourval. Framtida J07/J08-writers, PG-durabilitet och full K02/K03-acceptans
+är separata leveranser. Ingen runtimeinkoppling, DDL eller mediaimport görs här.
 
 **Fastställt av Jakob 21 oktober: demo först, aggregatorgräns förbereds.**
 
@@ -210,74 +212,66 @@ och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
 spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
 egna händelser; övriga walletwriters behåller mains ledger/audit.
 
-**Tidigare O01-avstämning 362ad39 — bakgrund till delacceptansen ovan:**
+Tidigare rättningsfynd och deras beslut finns i status.json[O01/K02/K03] och
+[GitHub-tråden](https://github.com/Jakeminator123/scoutgaming/issues/312).
+Aktuellt bevis: plan_review körde13/13 K02,30/30 K03 och1/1 kompletterande
+språkprov på blobhashverifierade källor; root läste loggar och språkprovet.
+52/52 och tidigare hookkörningar på Kevins sida är fortsatt rapporterade.
+[Provmappning och kommandon](kevin-ks-migrering/AKTIVITETER.md#o01--faktiskt-körda-isolerade-kontraktsprov-21-oktober).
 
-Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/362ad392acd70f49d7a6198f91e2f61c02ebd572/migrering/kevin-ks-migrering/K01/O01-svar.md#L80)
-i PR314 är dokumentation; produktkällan är oförändrad5aa7ed10.
-Underagent och root granskade 551b2e8. Root har nu även läst dess enda efterföljande dokumentdelta 362ad39: savepointtexten följer beslutet i6322089912. K02 utan I/O,
-scoperade ledgernycklar, beständig outbox och speech_choice i global audit är
-preciserade. Accepterat insurance-ja är nu bindande även vid pause/leave/frånvaro;
-kontogeneration fångar leave→rejoin. Scheduler utan first-caller och ingen
-kvittogallring under migreringen är införda. Det är specifikationsgranskning,
-inte implementerad funktion eller utförda samtidighets-/recoveryprov.
+**Adminfält — fastställd minimiomfattning för O01/J08:**
 
-| Kontraktspunkt | Ägare och nästa steg |
-| --- | --- |
-| Demo-/aggregatorgräns | Jakobs demo-först-beslut ovan gäller. Omfattningen är nu explicit i551b2e8; root äger mains demoadapter och reservationswriters i J07. Extern aggregatorimplementation ligger utanför denna migrering. |
-| Medlemsidentitet | Rättad i551b2e8: accountMembershipGen gäller kontot, memberGen gäller (rum, aktör). |
-| Beständig blockering efter nekad consume | blocked finns i outcome-enum. Root väljer inom J07 samma klient och yttre transaktion: hela G/R/P/A-låsplanen före savepoint; återställ nekade försökets spel/wallet/ledger/outbox, behåll låsen och skriv blocked-kvitto samt audit före yttre COMMIT. Misslyckad persistens ger full rollback. Formuleringen är verifierad i362ad39; två fulla transaktioner används inte. Verkliga samtidighets-/kraschprov återstår. |
-| Omprövning | Riktningen är godkänd via Kevins besked, vidarebefordrat av Jakob: inga accepterade insatser rensas automatiskt; nytt försök först efter relevant ändring. K03/J07 provar att omstart behåller blockeringen och att samma tillstånd inte ger retry-loop. |
-| Pausepolicy | Kontraktsinriktning accepterad efter läsreview av cfe703718d124a5cec008f1c07125fac551aba9c och Kevinagentens ägarbesked6324011274: sen första pause gäller alltid24h från commit/MAX över kontots rum; identisk replay förlänger inte. Medlemsändring kräver låsomplanering, inte avvisad paus. Tester för nya K03/J07-beteendet återstår. |
+Urvalet nedan gäller första demon inom Jakobs mandat. Kodunderlag: main
+15988f32, Kevin 5aa7ed10, K03 b8e1c957 och O01-spec 9c669e67. **Befintlig**
+betyder läst writer/validator på main. **Mål J08/J07** betyder beställd
+koppling, inte implementerad Adminfunktion eller verifierad PostgreSQL-adapter.
+Spelaren får inte skriva bordskonfiguration via join, poll, språkval eller URL.
 
-[Granskningsbesked](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6322089912)
-och [walletavgränsning](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403)
-ersätter tidigare öppna antaganden om redan fungerande aggregatorintegration.
-Bordsspråk ägs av Admin enligt Jakobs mål; privat UI-lokalisering får inte byta
-bordets media/ljud. Språkets publiceringsgräns följer fryst configVersion.
-Exakt dealer/take/frame/ljud/planversion är mediegränsen. Deklarerade sista-frame-
-och vila-ekvivalenser samt ±48-tolerans är ännu inte verifierad läppsynk eller
-acceptans att importera media. K04 måste pröva kompatibiliteten separat.
+| Fält och ägare | Tillåtet värde / validator | Writer | Publiceringsgräns | Konsument |
+| --- | --- | --- | --- | --- |
+| Rumsnamn, företag, komposition och spel — N1 | name 1–100 tecken utan kontrolltecken; registrerat operatorId/presentationLaneId. Kevin-modulen omfattar blackjack; befintlig roulette behåller sin väg. | Befintlig presentation-room-api med idempotencyKey och projekt-/admin-/paket-CAS | Atomisk rum/paket-publicering; autentiserad ägar- och mediebindning kontrolleras igen. Mål J08/J07 binder spelconfig till samma publicerade rum/paket. | Lobby, roomPlayPath, mains game-entry-selector, K03-rumsadapter |
+| Insatsprofil — N1 | limitPreset = casual/prive/high, standard prive; hela limits/chips/refill-paketet i tabellen nedan. Inga fria belopp eller rå JSON i första demon. | Mål J08: validerat rumsutkast och publicering genom befintlig rum/paket-writer; J07 ConfigPort.latest/frozen | Ny configVersion; samma profil fryses för ett fönster och dess runda. Publicering ändrar inte lagda insatser. | K03 bet/ready/refill, K02 step med limits; refill går via mains globala demo-wallet/ledger |
+| Bordsspråk — N1 | language = en/sv. Valet kräver motsvarande exakta tal-/mediabindning i valt paket; saknat stöd nekas vid publicering, ingen tyst språkfallback. Privat UI-lokalisering är separat. | Mål J08/J07: samma configpublicering som insatsprofil | Språk binds till configVersion/windowId och gäller även återanslutning/omstart. Join/poll ändrar inget. | K03 presentation.plan/outbox.language; K04 väljer exakt inspelning/tal för publicerad dealer |
+| Rundtider — N1, standardprofil i första demon | betMs=20000 och actionMs=15000, befintliga Kevin-standardvärden. Visas i Admin; fria timerfält ingår inte i första demon. | Mål J08/J07: värdena sparas i samma publicerade configVersion | Servern lagrar deadlines; klientnedräkning får inte styra start eller ändra ett öppet fönster. | K03 första insats, action/insurance-deadline och självständig scheduler |
+| Rummets bord, bakgrund, dealer och färg — N1; partner endast enligt befintlig grant | roomOverrides[roomId].table/background/dealer från publicerade tillåtelselistor; color enligt /^#[a-f0-9]{6}$/ och tillåten palett. Rätt rum/företag/dealer krävs. | Befintlig partner-branding-api save-draft/review/publish med draft-/paket-CAS och reviewToken | RoomOverrides för rätt rum; delad mall är inte rumswrite. Mål J08/K04 binder det valda paketet till configVersion så pågående runda behåller sitt material. | Mains paketresolver, därefter K04:s presentation |
+| Dealer, klipp, grundloop och talunderlag — N1 | Registrerade dealer-/media-ID:n och exakt hash. Idle: validateRegisteredIdlePolicies/validateIdlePolicy, samma dealers baseline. Talprofil: normalizeDealerSpeechProfile + validateDealerSpeechReference; state preparation/enabled, egen röst och egen video/hash/offset. Enabled är inte i sig drift- eller kvalitetsgodkännande. | Befintlig saveProject med expectedRevision och paketpublicering; ingen ny person-/mediekatalog | Exakt paket/playbackrevision fryses. Mål K04/K05 mappar Kevins take/frame/audio till godkänd identitet; ingen återimport av bortvald V1. | Gemensam presentation, lugn idle, K04-tal/kort/lipsync; K02 förblir utan media |
+| Lipsync-drift — N1, miljöscopad | Befintligt mode off/saving/warm, validerad profileId; warm durationSeconds 1800/7200/86400; expectedRevision och commandId. Inga råa worker-URL:er eller hemligheter som rumsfält. | Befintlig moving-drift-admin/controller; miljögrind krävs | Egen driftrevision, inte configVersion. Ändrar inte spelutfall eller publicerad medieidentitet. Ingen ny providerstart/GPU-körning beställs här. | Tal-/moving-kopplingen efter befintlig sessionsverifiering; utan worker gäller avtalade inspelade steg/idle |
+| Djuplänk till rum/spel/dealer — härledd, skrivskyddad | Befintlig roomPlayPath och serverkontrollerat rum/paket/spel/dealer; query är aldrig konfigurationsauktoritet | Ingen ny writer | Länken pekar på publicerat rum; launch revaliderar session, ägare och paket | Lobby och mains launch/game-entry-selector |
+| Shoe-proof/auditrapport — N1-läsning | commitment för öppen sko, full proof först efter stängning; råtext/nyckelordning bevaras och global auditsekvens verifieras | K03 AuditPort skriver i speltransaktionen; mål J08 visar läsvy. Befintlig skostatistik är inte detta bevis. | Ingen Admininställning för RNG, kort eller utfall; config-/rund-/skoreferens följer beviset | K02 verifyShoe och global verifyChain; ingen certifierings- eller lipsyncacceptans påstås |
 
-Audit-headläsning/INSERT i fryst Kevin-kod är synkrona separata autocommit-satser
-utan await. Förgrening är en risk vid konkurrerande skrivare, inte ett nytt
-verifierat driftfel i en ensam synkron process. Global verifiering läser hela
-sekvensen; filtrerad rumsvy är inget kontinuitetsbevis. Shoe proof gäller hela
-stängda skon. Main server.mjs:209 saknar ännu ledger-id via SQL RETURNING.
+Profilerna är exakt Kevins befintliga LIMIT_PRESETS, inte mains tidigare
+hårdkodade sololimiter. Beloppen är demoenheter. refill är beloppet för ett
+uttryckligt idempotent refill-kommando; join skapar ingen lokal startplånbok.
 
-Acceptans i K03/J07 omfattar samtidiga identiska kommandon över deadline,
-reservationer över flera bord och annan writer, insurance-ja/livscykel,
-pause med medlemskapsrace och leave/rejoin, nycklar i två rum, atomisk
-wallet/audit, konkurrerande append samt krasch efter commit/före kvittens
-utan ny outboxversion. O01 är IN_PROGRESS. Ingen runtime, DDL eller GPU-körning
-gjordes i denna läsgranskning.
+| limitPreset | min / max / sideMax | chips | refill |
+| --- | --- | --- | --- |
+| casual | 1 / 500 / 50 | 1, 5, 10, 25, 50, 100 | 500 |
+| prive (standard) | 5 / 2000 / 200 | 5, 10, 25, 50, 100, 500 | 1000 |
+| high | 100 / 25000 / 1000 | 100, 500, 1000, 5000, 10000, 25000 | 50000 |
 
-**Konsoliderad granskning6324882125:** Pausregeln i cfe7037 ersätter den tidigare öppna frågan. PR323/head9b066769b8a0595d0e62e997285ac84460bb2ef9 provar pausspärrar och sekventiell insatsupprepning, inte lagrad pausreplay eller deadline-/omstartsfallet; detta har Kevin nu preciserat. Legacy advance före requestkontroll är ingen accepterad K03-mekanism. K02-rättning0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 skiljer reservationer per box från available för nya debiteringar; tidigare fynd och villkorliga turprov är stängda i oberoende läsreview och exakt head har grön CI39660600012. K03-rättningd20792ba50550ee7d73237e6dd82c4d575b756dc stänger de fem tidigare fynden i oberoende kod-/portreview. Uppföljning 3528c3f2632f94076ffbbc63413d02a15f6bb678 stänger stake/retry-fyndet och null-normaliseringen i oberoende läsreview. Insurance-rättning b8e1c957c99c5a16ee861f9767ec28041b2270dd stänger motsvarande fynd: reservations-/consume-vägran blir blocked efter savepoint-återställning, med retry först efter relevant generationsändring. Tidigare accepterat ja består vid paus/leave; sista insurance-kommandot nekas atomärt utan kvitto när avgörandet misslyckas. Infrastrukturfel ger full rollback. Root/kevin_plan har läst hela deltat och regressionerna utan blockerande fynd enligt [6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). 30/30 och52/52 är Kevinrapporterade; inga egna runtimeprov. Kevin har konsoliderat punkterna i9c669e67. Root har delaccepterat backendkontrakten enligt [6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074); Adminurval och samlad provspårning återstår på vår sida. Root preciserar spelarunik frånvarotick, obligatorisk medlemsgeneration och clear som återhämtning före start även efter deadline. Undo efter deadline är ingen blockerare för första demon. Samlad O01/full aktivitetacceptans återstår; inga nya runtimeprov eller migrationspoäng.
+**Gemensamt målkontrakt för publicering:** Spara skapar endast utkast.
+Mål J08: de befintliga revisions- och behörighetskontrollerna omfattar alla nya
+fält; publicering gör paketbindningen och en oföränderlig configVersion
+tillgängliga atomiskt. J07:s ConfigPort läser den publicerade versionen på
+den redan låsta SQL-klienten. Ett nytt fönster binder den senaste versionen
+och behåller den genom avräkning och omstart. Endast tomt bord utan main
+och deadline får genom ett uttryckligt serversteg skapa nytt windowId med
+ny version; snapshot/replay gör aldrig detta. Ogiltiga fält, fel ägare och
+inaktuell revision nekas utan delvis publicering. Befintlig paketrevision
+ersätter inte denna fönsterbindning.
 
-**Adminfält på main — O01/J08:s läsverifierade återanvändningskarta:**
+Presentationens leadMs/cardMs är K04:s serverägda planering, inte fria
+operatörsfält. K03-fixturens 700/500 ms är testdata, inte accepterad timing för
+ett visst klipp. K04 binder verklig planering till exakt publicerat material;
+regeln om kropp/ljud utan giltig munpatch gäller fortsatt.
 
-Granskad på main15988f32 av jakob_plan; orkestratorn har kontrollerat centrala
-kontrakt/writers. Detta är inventering, inte accepterat funktionsurval eller
-implementerad rundbunden configVersion. Befintlig paketrevision räcker inte
-ensam för att bestämma när nya värden börjar gälla i ett pågående spel.
+Läsbevis för matrisen:
 
-| Kandidat | Faktiskt stöd och införandebeslut |
-| --- | --- |
-| Språk per bord | Nytt rums-/publiceringsfält. Befintlig en/sv-validering i apps/studio/lib/studio-admin-accounts.mjs:117 gäller launch-JWT, inte bordsspråk. Admin ska äga gemensamt språk; klientlokalisering hålls separat. |
-| Logga/placering | Ingen aktiv motsvarighet funnen i granskade Admin-writers. packages/operators/contracts/branding.mjs:2 tillåter bara table/background/dealer/color i roomOverrides. Nytt fält kräver validator och konsument, inte extra rå-JSON. |
-| Insatsnivåer | Ny Admin/publiceringskoppling. services/game/shoe-game.mjs:52 och games/roulette/rules.mjs:5 använder hårdkodade validatorer. Tillåtna värden och verkan per insatsfönster behöver avtalas. |
-| Rundtimers | Nytt kontrakt; presentation-room.mjs:5 saknar timerfält. Timer/deadline måste vara serverägd och beständig, inte en fristående UI-nedräkning. |
-| Lipsync-worker och nyckelreferenser | Återanvänd miljöscopad moving-drift: off/saving/warm, profileId, expectedRevision och commandId; kontrakt moving-drift.mjs:9, writer moving-drift-admin.mjs:42. Detta är inte en färdig per-rums-knapp och ger inget mandat till betald drift. |
-| RNG shoe-proof-rapport | Ny port av skobeviset; befintlig studio-admin-readouts.mjs:20 ger skostatistik och certificationVerified:false. Visa bara tillåtna bevis efter stängd sko, bevara råtext och global auditgräns. |
-| Wallet rollback | Saknar motsvarande produktfunktion. Positiv demo-credit och SQL-rollback vid misslyckad transaktion är inte återföring av genomfört spel. Föreslås ligga senare och kräva uttryckligt produkt-/bokföringskontrakt. |
-| Dealer till avatarpaket/workerURL | Återanvänd exakt profil/video/hash/offset och bank-/profilrevision, studio-speech-panel.tsx:95 och dealer-speech-runtime.mjs:95. Fritt avatarpaket eller rå workerURL saknar likvärdigt kontrakt; använd validerad profilreferens. |
-| Djuplänk dealer/bord | Befintlig roomPlayPath i presentation-room.mjs:7 och serverval i game-entry-selector.mjs:76. Behåll autentiserad rum/paket/spel/dealer-validering; länken skriver ingen konfiguration. |
-
-Återanvänd scoped draft/review/publicering med revisionskontroll i
-apps/studio/lib/partner-branding-api.mjs:259 och atomisk rum/paket-writer i
-presentation-room-api.mjs:306. Gemensam mall får inte ersätta roomOverrides.
-J08 behöver explicit fält→validator→writer→fryst configVersion→spelkonsument;
-nya språk/limit/timer/logofält och ekonomisk återföring blir inte automatiskt
-accepterade bara för att de finns bland Kevins kandidater.
+- main: packages/presentation/contracts/presentation-room.mjs:5 och apps/studio/lib/presentation-room-api.mjs:286–320 (rum, CAS, atomisk publicering); partner-branding-api.mjs:164–215,259–291 (allowlist, roomOverrides, review/publicering).
+- main: packages/presentation/server/saved-game-policy.mjs:145–173 (projektwriter); contracts/dealer-speech-profile.mjs:8–42,82–87 och runtime/registered-idle-policy.mjs:22–35 (exakt profil/idle); contracts/frozen-dealer-playback.mjs:51–95 (paketets mediebindningar). Sökvägarna under contracts/runtime avser packages/presentation/.
+- main: packages/presentation/contracts/studio-speech.mjs:39 (en/sv); contracts/moving-drift.mjs:3–22 och apps/studio/lib/moving-drift-admin.mjs:42–49 (drift); services/game/storage/async-partner-api.mjs:198–200 (demo-credit, inte spelåterföring).
+- Kevin 5aa7ed10: kevin/croupier-scoutgg/server/studio-tables.mjs:8–14,38–43 (profiler; standardvalet prive fastställs här); server/shared-table.mjs:42 (20s/15s). K03 b8e1c957: services/game/games/blackjack/table/ports.mjs:30 och coordinator.mjs:101–135,297–343 (config, språk, refill, limits, deadlines).
+- Spårbara kontraktsprov:13/13 K02,30/30 K03 och1/1 språk, inga skips; se provmappningen ovan. Dessa verifierar inte framtida Adminvalidatorer, HTTP-auth, media, PostgreSQL eller K06:s hela spara→publicera→spel-flöde.
 
 **Gemensamma gränser och kvarvarande beslut:**
 
@@ -304,10 +298,10 @@ accepterade bara för att de finns bland Kevins kandidater.
   Riktade isolerade prov räcker för kontraktsarbete; visuell läppsynk kräver separat
   acceptans och inga nya GPU-prov är beställda här.
 
-Kevins samlade backendunderlag är levererat och delaccepterat. Root slutför
-Adminfältens funktionsurval/värden/skrivmål/publiceringsgräns och spårningen av
-nödvändiga beteendeprov innan hela O01 blir VERIFIED. Faktiska PG-/GPU-/produktionsprov
-är separata aktivitetskrav. Media är fortsatt kandidater, inte importgodkända.
+O01 är verifierad som kontraktsaktivitet efter oberoende slutreview av
+Adminurvalet och provspårningen. Detta godkänner inte framtida writers eller
+full K02/K03-integration. Faktiska PG-/GPU-/produktionsprov följer egna
+aktiviteter; media är fortsatt kandidater, inte importgodkända.
 
 ### O02 — Oberoende samprov
 

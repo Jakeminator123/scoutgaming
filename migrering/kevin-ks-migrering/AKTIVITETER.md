@@ -22,7 +22,7 @@ Verifierat genom avgränsad kodläsning 21 oktober 2026:
 - K `server/studio-tables.mjs` har filbaserad JSON-sparning och val för dealer, rum, språk, filt, insatsprofil, logotyp och layout. Valen är referensbeteenden, inte en ny auktoritativ datakälla.
 - M `services/game/public/card-presentation/README.md` beskriver redan portad buffring/förladdning i `verified-video-buffer.mjs` och `performance-player.mjs`. Dessa ska jämföras och återanvändas.
 
-Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna planleverans. Commitens uppgift om borttagna oanvända V1-klipp ska verifieras i K01; den bevisar inte att branchen saknar kvarvarande media eller plattformskopplingar.
+K01-inventeringen ovan omfattar ingen spelkörning, visuell acceptans eller full medieinventering. Senare isolerade kontraktsprov redovisas separat nedan. Commitens uppgift om borttagna oanvända V1-klipp ska verifieras i K01; den bevisar inte att branchen saknar kvarvarande media eller plattformskopplingar.
 
 ## K01 — Inventera den rensade Kevin-modulen
 
@@ -43,9 +43,26 @@ Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna
 
 Kompletterande medieinventering53f6693610acc44fb45295da76a67d940a989125 gäller staging238d6dd6/worker, inte fryst5aa7ed10. Dess storlekar, tagningar och borttagningsförslag är rapporterade; ingen import/radering godkänd. Rotens repliker och Astrid-fallback har däremot kodverifierats även på fryst5aa7ed10. K04 behöver versions-/hashmappning och återställningsberoenden före urval.
 
+## O01 — faktiskt körda isolerade kontraktsprov, 21 oktober
+
+plan_review körde K02 på `0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1` och K03 på `b8e1c957c99c5a16ee861f9767ec28041b2270dd`: **13/13 + 30/30**, samt **1/1** avgränsat språkprov; alla exit0, inga skips. Volta Node24.21.0 uppfyller frysta engines (game>=22.16; Studio24.x/pin24.21.0), max4 workers. Endast provens modulslutning hämtades från GitHub; samtliga24 filer verifierades bytevis mot källornas Git-blobhashar. Inga installationer eller produktändringar.
+
+| O01-gräns | Faktiskt prov på fryst källa |
+| --- | --- |
+| Regler, saldoeffekter, dolda kort och proof | `test/blackjack-core.mjs:91,114,155,211,232,264,327`: giltigt/ogiltigt drag, reserverad/fri finansiering, exakt en avräkning, dolt kort, skoövergång och manipulerat proof |
+| Determinism och explicit slump | Samma fil:288,305,359: `same explicit inputs reproduce outcome and public events`, ambient slump spärrad och jämförelse mot byteverifierad Kevin-fixtur |
+| Replay utan extra effekter och stabil identitet | `test/blackjack-table.mjs:104,140,187,201,512,528,585,599`: samtidiga dubletter över deadline, lagrat resultat, inga nya tick/auditrader, fönster/runda/tur/medlemskap, spelarunik frånvarotick och rumsscoperad ledger |
+| Blockering, paus och rollback | Samma fil:214,244,281,298,343,382,424,558,609,639: stake/insurance, ändringsstyrd retry, bindande ja, sen paus/replay, medlemsrace, clear och injicerade wallet-/auditfel |
+| Konfigurationsfrysning och språk | Samma fil:651 fryser limits till nästa fönster. `o01-language.test.mjs` provar en→sv via verklig outboxpayload: spelarinput vid join och language-op ändrar inte bordsspråket; snapshot skriver inget; gammal version består över koordinatorrekonstruktion; nästa fönster använder sv för båda spelarna |
+| Outbox och återläsning | Samma fil:161,447,475: rekonstruerad snapshot/deadline, nekad leverans utan ny debitering, samma talkId/ver vid återleverans, äldre version avvisas och identisk accepterad version appliceras inte igen |
+
+**Reproduktion/bevis:** i primary `C:\Users\jakem\Projects\croupier\arkiv\2026-10-21\o01-contract-verification` finns `source-manifest.json`, `source-verification.log`, `k02.log`, `k03.log`, `language.log` och det kompletterande språkprovet. Kör `node --test --test-concurrency=4 --test-reporter=tap test/blackjack-core.mjs` från `k02/`, motsvarande `test/blackjack-table.mjs` från `k03/`, samt `o01-language.test.mjs` från bevisroten. Språkfixturens två första körningar saknade insats/ready för båda sittande spelare; bara fixturen rättades och felloggarna behölls.
+
+**Bevisgräns:** referensadaptern använder en global minnesmutex och omstart betyder ny koordinator med samma minnesstore. Ingen processkrasch, PG-durabilitet/flerprocesslås, faktisk mottagarpersistens, Adminvalidator/publicerings-UI, HTTP-auth eller media har verifierats. Det nya språkprovet ligger i privat bevisarkiv, inte i CI. O01 får spårbara kontraktsbevis; full K02/K03-acceptans och J07/J08:s implementation/verifiering avgörs separat. Inga status-/procentändringar görs här.
+
 ## K02 — Ren regelkärna med explicit slump
 
-**Granskad rättning, inte VERIFIED:** [PR325](https://github.com/Jakeminator123/scoutgaming/pull/325), codex/kevin-k02-regelkarna / 0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. plan_review och root har stängt tidigare finansieringsfynd: start/insurance använder reservation per box; double/split använder fri available. Negativa turprov är ovillkorliga. GitHub CI39660600012 är success på exakt denna head. Kevins 13/13 coreprov, 3/3 fler-skoprov och hook utan bypass är rapporterade; inga egna runtimeprov i granskningen. Ingen caller flyttad. Samlad O01/full K02-acceptans återstår; status IN_PROGRESS. [Samlad review](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125).
+**Granskad rättning, inte VERIFIED:** [PR325](https://github.com/Jakeminator123/scoutgaming/pull/325), codex/kevin-k02-regelkarna / 0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. plan_review och root har stängt tidigare finansieringsfynd: start/insurance använder reservation per box; double/split använder fri available. Negativa turprov är ovillkorliga. GitHub CI39660600012 är success på exakt denna head. plan_review har nu själv kört13/13 coreprov på exakt head; se O01-bevismappningen ovan. Kevins separata3/3 fler-skoprov och hook utan bypass är fortsatt rapporterade. Ingen caller flyttad. O01-kontraktet är accepterat; full K02-acceptans återstår; status IN_PROGRESS. [Samlad review](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125).
 
 **Etapp/beroenden:** E3; O01.
 **Mål:** samma tillstånd, kommando, konfiguration och explicita slump-/tid-/ID-indata ger samma resultat och spelhändelser.
@@ -62,7 +79,7 @@ Kompletterande medieinventering53f6693610acc44fb45295da76a67d940a989125 gäller 
 
 ## K03 — Delat bord utan SQL- och videokoppling
 
-**Läsgranskad rättning, inte VERIFIED:** [PR327](https://github.com/Jakeminator123/scoutgaming/pull/327), codex/kevin-k03-bord / b8e1c957c99c5a16ee861f9767ec28041b2270dd. Tidigare fem fynd och stake/insurance-återhämtningen är stängda i oberoende kod-/portgranskning. Insurance.timeout sparar blocked efter savepoint och använder generationsstyrd retry även vid consume-vägran. Tidigare bindande ja består; sista insurance-kommandot nekas atomärt utan kvitto vid finansieringsfel. [Granskning6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). 30/30 och52/52 samt hooks utan bypass är Kevinrapporterade, inga egna runtimeprov eller CI-/PG-/flerprocessacceptans. Fryst O01-spec9c669e67 är delaccepterad av root med tre textpreciseringar i MASTERPLAN ([6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074)). Root äger återstående Adminurval/provspårning och full aktivitetsavstämning; inget nytt Kevin-underlag efterfrågas för dessa punkter. Status IN_PROGRESS, inga migrationspoäng.
+**Läsgranskad rättning, inte VERIFIED:** [PR327](https://github.com/Jakeminator123/scoutgaming/pull/327), codex/kevin-k03-bord / b8e1c957c99c5a16ee861f9767ec28041b2270dd. Tidigare fem fynd och stake/insurance-återhämtningen är stängda i oberoende kod-/portgranskning. Insurance.timeout sparar blocked efter savepoint och använder generationsstyrd retry även vid consume-vägran. Tidigare bindande ja består; sista insurance-kommandot nekas atomärt utan kvitto vid finansieringsfel. [Granskning6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). plan_review har nu själv kört30/30 kontraktsprov på exakt head samt1/1 kompletterande språkprov; se O01-bevismappningen ovan.52/52 och hooks utan bypass är fortsatt Kevinrapporterade. Ingen CI-/PG-/flerprocessacceptans. Fryst O01-spec9c669e67 är delaccepterad av root med tre textpreciseringar i MASTERPLAN ([6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074)). Root har accepterat O01:s Adminurval/provspårning; full K03-aktivitetsavstämning återstår. Inget nytt Kevin-underlag efterfrågas för de avslutade O01-punkterna. Status IN_PROGRESS, inga migrationspoäng.
 
 **Etapp/beroenden:** E3; K02. Lagringskontraktet överlämnas till J07.
 **Mål:** servern samordnar rum, spelare, platser, deadlines och återanslutning genom O01:s portar. Jakobs beslut: demo först med förberedd aggregatorgräns. WalletPort binds av J07 till mains demowallet; faktisk extern walletintegration är en senare leverans.
