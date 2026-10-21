@@ -1,0 +1,245 @@
+DRAGANS RÖST OCH LÄPPSYNK I PRODUKTION – VAD SOM VAR FEL, VAD SOM GJORDES, VAD VI HAR NU
+Skrivet 21 oktober 2026 efter arbetspasset 19 oktober. Enkel förklaring först,
+detaljer längre ner. Tekniska källor: docs/JOHN-HANDOFF.md (avsnitten för
+19 oktober), docs/LOCAL-PRESENTATION-RUNTIME.md, docs/CLOUD-MIGRATION.md.
+
+====================================================================
+1. KORT SVAR
+====================================================================
+
+Det fungerar. Kvällen 19 oktober spelades fem repliker i följd i den
+publicerade spelvyn (www.scoutgaming.tech/play/blackjack, operatör
+dragan-test), alla med genererad röst och läppsynk, utan ett enda avslag i
+serverloggen. Den första repliken tog 116 s (kallstart av GPU-arbetaren), de
+följande 45–60 s när arbetaren var varm.
+
+Det var inte ett enda fel som stoppade oss i tre dagar. Det var sex olika
+spärrar som satt i rad; varje gång en togs bort syntes nästa. Ingen av dem
+hade med Kevins grenar att göra. Render-spelmotorn och Vercel kör båda
+exakt det som ligger på GitHub-grenen main.
+
+Allt kod- och dokumentationsarbete är sparat, mergat till main och pushat
+(PR #292–#302). Render kör samma version som main. Se avsnitt 6.
+
+====================================================================
+2. DE SEX SPÄRRARNA – ENKELT FÖRKLARAT
+====================================================================
+
+Spärr 1: "Dragans röstvideo saknas. Svaret visas som text."
+  Vad du såg:  Svar i text, ingen röst.
+  Vad det var: Genererat tal var helt enkelt inte påslaget. Det finns tre
+               strömbrytare och alla tre måste vara på:
+                 a) Dragans talprofil i Studio (speechProfile = enabled)
+                 b) Render-variabeln CROUPIER_MOVING_SPEECH_ENABLED = 1
+                 c) Admin > Drift: Sparläge med Basprofil aktiv (driftvakten)
+               Texten i chatten var dessutom missvisande – den lät som ett
+               fel när det bara var en avstängd funktion.
+  Åtgärd:      Alla tre på. Texten ändrad till "Genererat tal är inte
+               aktiverat för Dragan just nu."
+
+Spärr 2: GPU-arbetaren fick inte hämta dealerns bildbank (HTTP 403)
+  Vad du såg:  "Rösten eller läppsynken kunde inte skapas."
+  Vad det var: Driftvakten jämför två rapporter från RunPod (pod-listan och
+               hälsoräknarna). När ett jobb hamnade i en cachad, halvvarm
+               arbetare säger pod-listan "kör" i ungefär tolv sekunder innan
+               hälsoräknarna hinner ikapp. Vakten tolkade skillnaden som en
+               motsägelse, ogiltigförklarade sin observation, och nekade då
+               arbetaren att hämta bilderna. Kallstarter klarade sig av en
+               slump (hälsan hann ikapp).
+  Åtgärd:      PR #294 – en pod som hälsan ännu inte räknar får förklaras av
+               den cachade platsen. Verifierat i produktion 19 okt 15:02 UTC.
+
+Spärr 3: Provbudgeten (granten) tog slut
+  Vad du såg:  Samma generiska feltext som ovan.
+  Vad det var: Varje försök reserverar 1,20 USD, även försök som misslyckas.
+               Granten "dragan-test-20261017" var 30 USD och var full.
+               Chatten skilde inte på "slut budget" och "tekniskt fel".
+  Åtgärd:      Granten höjd 30 → 45 USD med en bokförd amendment.
+               PR #296 visar nu "Provbudgeten för läppsynk är slut."
+
+Spärr 4: Spegelfördröjning när arbetaren stängs av
+  Vad du såg:  En fråga skickad cirka 60–80 s efter föregående svar
+               nekades direkt ("kunde inte slutföras").
+  Vad det var: Arbetaren stänger av sig 60 s efter sista jobbet. I ungefär
+               20 s därefter säger pod-listan "borta" medan hälsoräknarna
+               fortfarande säger "en kör". Vakten såg återigen en motsägelse
+               och nekade allt i det fönstret.
+  Åtgärd:      PR #297 – observationen godkänns och arbetaren räknas som
+               upptagen under fönstret. Kvar (se rekommendation R3): vakten
+               svarar nu "upptagen" i stället för att låta frågan vänta de
+               sekunderna.
+
+Spärr 5: "Svar klart · väntar på ledigt bord" i flera minuter
+  Vad du såg:  Texten dök upp och sedan hände inget.
+  Vad det var: "Bord" betyder här dealerns bildyta, inte Dragan själv.
+               Servern var klar (ofta efter 25–30 s), men klienten släpper
+               bara fram talet när dealerns grundloop (tomgångsvideon) har
+               visat en bildruta. När spelfliken låg bakom en annan flik
+               pausade Chrome grundloopen för att spara ström. Klientkoden
+               tolkade det som ett trasigt klipp och svartlistade grund-
+               loopen permanent. Ingen bildruta → grinden öppnades aldrig →
+               bara omladdning hjälpte. Detta hände tre gånger samma kväll.
+  Åtgärd:      PR #300 – ett sådant avbrott gör om försöket och återupptar
+               när fliken blir synlig igen. Svartlistning sker bara för
+               riktigt trasiga klipp.
+
+Spärr 6: "Dagens budget för läppsynk är nådd."
+  Vad du såg:  Texten efter ungefär 16 försök samma dag.
+  Vad det var: Utöver granten finns ett dygnstak (UTC-dygn, nollställs
+               02:00 svensk tid). Det var 20 USD och satt i tre lager:
+               i koden, i en policyrad i databasen och som en hård regel
+               (CHECK-constraint) i databasschemat.
+  Åtgärd:      Höjt till 40 USD i alla tre lager: PR #299 (kod + en
+               bekräftad ändringsfunktion), PR #301 (schemamigration 018,
+               applicerad i produktion 19 okt 19:04 UTC) och policyraden.
+
+Inte fel, men värt att veta:
+  * "moving_bank_rejected stale_round_revision" i loggen betyder att ett svar
+    avbröts för att rundan ändrades medan det förbereddes. Avsiktligt.
+    Vill du ha tal under utdelning: använd "Svara under nästa utdelning".
+  * OpenClaw svarade ibland på engelska på svenska frågor och gav fel fakta
+    ("vet inte hur många kortlekar", skon har åtta). Det är modellen, inte
+    transporten.
+
+====================================================================
+3. PÅVERKADE KEVINS GRENAR SPELMOTORN? NEJ.
+====================================================================
+
+  * Render-tjänsten croupier-v2 bygger bara grenen main, efter grön CI, och
+    har inga PR-förhandsvisningar.
+  * Vercel-produktion bygger bara main. Förhandsvisningar byggdes tidigare
+    även för kevin-staging, roulette-on-kevin-staging, emil, john och
+    jakob-export (bara exakt "kevin" hoppades över). Det är nu ändrat så att
+    bara main, jakob/*, codex/* och cursor/* byggs.
+  * Kvarvarande risk: Vercels Preview-miljö pekar på samma backend
+    (CROUPIER_BACKEND_ORIGIN = croupier-v2) som produktion. Se R6.
+  * Miljövariabler: alla sju obligatoriska för Render-spelmotorn finns.
+    Kevins variabler (RORLIG, RORLIG_ENDPOINT_ID, DRAGGE_LIPSYNC_ENDPOINT,
+    LIPSYNC_POD_*, GEMINI_*, CARTESIA_VOICE, TABLE_DB …) hör till hans egen
+    server under kevin/croupier-scoutgg/ och läses aldrig av main. Att lägga
+    dem på RunPod eller Render påverkar ingenting.
+
+====================================================================
+4. INSTÄLLNINGAR VI HAR NU (19 oktober, kväll)
+====================================================================
+
+Render croupier-v2 (spelmotorn)
+  CROUPIER_MOVING_SPEECH_ENABLED        = 1
+  CROUPIER_MOVING_SPEECH_ENDPOINT_ID    = Jakobs RunPod-endpoint
+                                          "scoutgaming-dragan-prod"
+                                          (48 GB GPU, max 1 arbetare,
+                                          idle-timeout 60 s, CA-MTL-1)
+  CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY = satt (Jakobs konto)
+  CROUPIER_MOVING_SPEECH_IMAGE          = exakt godkänd worker-image (hash)
+  CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES = satta (driftvakten)
+  Autodeploy: main efter grön CI. PR-previews: av.
+
+Studio/Admin
+  Dragan: speechProfile enabled. Drift: Sparläge, Basprofil.
+  Rum dragan-test publicerat, win_1 bundet (paket v5).
+
+Budget (alla värden i USD)
+  Reservation per försök ................ 1,20 (dras även vid misslyckande)
+  Grant dragan-test-20261017 ............ 45 (journalens maxtak)
+      använt efter serien 19 okt ........ 35 reservationer / 42,00
+      => cirka TRE försök kvar
+  Dygnstak (UTC-dygn) ................... 40 (kod + policyrad + schema 018)
+      använt 19 okt ..................... 21 reservationer / 25,20
+  Provider-tak (teknisk kapacitet) ...... 75
+
+Vercel scoutgaming
+  Produktion: main. Previews byggs bara för main, jakob/*, codex/*, cursor/*.
+  Preview-miljön delar backend-origin med produktion.
+
+Klienten (spelvyn)
+  Klippval: OpenClaw. "Svara under nästa utdelning": på.
+  Mute Dragan playback-knappen med pausikonen = uppspelning PÅ.
+
+====================================================================
+5. REKOMMENDATIONER
+====================================================================
+
+R1  Budget före nästa demo. Granten har cirka tre försök kvar. 45 USD är
+    journalens maxtak, så nästa höjning kräver en kodändring (samma mönster
+    som PR #299/#301: kodtak, amendment, ev. migration). Bestäm ett tak för
+    en hel demo-kväll (t.ex. 30 försök = 36 USD) i stället för att höja
+    stegvis under pågående prov.
+
+R2  Behåll idle-timeout 60 s på endpointen tills vidare. Längre timeout
+    skulle minska kallstarter mellan repliker, men driftvakten kräver i dag
+    högst 60 s – ändra inte i RunPod utan motsvarande kodändring.
+
+R3  Låt vakten vänta i stället för att neka. En fråga som kommer 60–80 s
+    efter föregående svar får i dag "upptagen". Guard-fasen bör vänta på
+    nästa observation (några sekunder) innan den ger upp. Liten ändring i
+    services/game/moving-drift-executor.mjs (pin) + test.
+
+R4  Demoteknik tills R3 är gjord: ställ nästa fråga direkt när föregående
+    svar spelats klart (arbetaren varm, 45–60 s per replik), eller vänta
+    minst 90 s. Håll spelfliken synlig; efter PR #300 återhämtar sig
+    grundloopen själv, men dold flik pausar fortfarande uppspelningen.
+
+R5  Mänsklig granskning av röst och läppsynk saknas fortfarande
+    (reviewStatus pending på alla kvitton). Inga tester bevisar munsynk.
+
+R6  Vercel Preview: sätt antingen CROUPIER_BACKEND_ORIGIN för Preview till
+    en separat testmotor, eller stäng av previews helt. I dag kan en
+    preview-sida prata med produktionsmotorn.
+
+R7  Rotera nycklar som låg i klartext i Slack-transkriptet (RunPod API-nyckel
+    och Director-Bearer för Kevin/Emils miljö). GitGuardian-incident 38406810
+    är en falsk positiv från en testfixtur och kan avfärdas.
+
+R8  OpenClaw: tvinga svenska när frågan är svensk och ge modellen bordsfakta
+    (åtta kortlekar m.m.) i systemprompten.
+
+R9  Lokal checkout: .cursorignore har en lokal, okommittad ändring som tar
+    bort fyra privata ignore-rader (web/data, lab/data, lissabon/data,
+    jakob-log-files). Återställ den (git checkout -- .cursorignore) om det
+    inte var avsiktligt; reglerna säger att de katalogerna ska vara dolda.
+
+====================================================================
+6. ÄR ALLT SPARAT OCH PUSHAT? JA.
+====================================================================
+
+Mergat till main på GitHub (Jakeminator123/scoutgaming) 19 oktober:
+  #292 klippnamn/poskedja, barndiagnostik, flaggor
+  #293 diagnostik från stderr
+  #294 observatör: cachad slot (bank-403)
+  #295 handoff
+  #296 budgettext i chatten
+  #297 observatör: spegelfördröjning vid nedstängning
+  #298 handoff kväll
+  #299 dygnstak 40 USD i kod + amendBudgetPolicy
+  #300 grundloop: Chrome power-save
+  #301 migration 018 (dygnstak 40 USD i schemat)
+  #302 handoff: fem repliker
+
+Lokal main = origin/main = 0e9249a4. Render croupier-v2 kör 0e9249a4 (live
+19 okt 19:35 UTC). Produktionsdatabasen har migration 001–018 verifierade.
+
+Utanför Git, avsiktligt:
+  * Tre bevis-JSON för budgetändringarna ligger i Jakobs %TEMP%
+    (dragan-budget-amendment-*.json, dragan-daily-policy-amendment-*.json).
+    Flytta dem till en säker plats om de ska sparas; %TEMP% rensas.
+  * Lokala editorfiler i checkouten är okommittade och ska inte in i repot:
+    .codex/config.toml, .cursor/settings.json, .agents/skills/source-command-ping/,
+    samt .cursorignore-ändringen i R9.
+  * Kevins/Emils RunPod-konto och Emils privata worker-repo rördes inte.
+    Emils zip på skrivbordet öppnades inte – behövdes inte.
+
+====================================================================
+7. SÅ TESTAR DU SJÄLV
+====================================================================
+
+  1. Öppna www.scoutgaming.tech/play/blackjack?operator=dragan-test i en
+     flik som får ligga synlig. Logga in.
+  2. Klippval: OpenClaw. Se att uppspelningsknappen visar pausikonen (= på).
+  3. Skriv en kort fråga i chatten. Förväntat: "Förbereder röst och
+     läppsynk…" i 25–100 s (kall första gång), sedan "Dragan svarar" och
+     video med läppsynk i 2–5 s.
+  4. Ställ nästa fråga direkt efter svaret för varm arbetare (45–60 s).
+  5. Om "Svar klart · väntar på ledigt bord" står i mer än 30 s: fliken har
+     varit dold; klicka i fliken, vänta några sekunder, annars ladda om.
+  6. "Provbudgeten för läppsynk är slut" = granten behöver höjas (R1).
+     "Dagens budget … nådd" = dygnstaket; nollställs 02:00 svensk tid.
