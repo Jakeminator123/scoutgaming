@@ -14,8 +14,11 @@ väljer tysta beteenden endast från serverns committade händelser, med paket-/
 versionskontroll och väntan på kort, tal och klippgräns. Inställningarna kräver
 sparning, rumspublicering och klippval **Regler**; inga befintliga beteenden
 aktiveras som bieffekt. Lokalt 149 fokuserade tester samt 137 tester i den
-utökade kontrollen gröna (delvis överlappande). Studio- och Admin-typkontroll
-passerar. PR-CI och driftsättning återstår vid denna arbetsrevision. Ingen
+utökade kontrollen gröna (delvis överlappande), därefter 230 tester i
+commitkontrollen. Studio- och Admin-typkontroll passerar. Materialskaparen
+följer samma indelning; äldre tester som krävde sex reaktionsfack är ersatta
+med kontroll att sådana fack inte skapar betalda jobb. Leveransstatus och
+CI för denna ändring följs i [PR #310](https://github.com/Jakeminator123/scoutgaming/pull/310). Ingen
 databasmigrering krävs.
 
 ## Dragan: separata skonfack och automatisk filmövergång — 21 oktober 2026

@@ -57,7 +57,8 @@ test('Dealer Forge page renders the full matrix server-side: groups, every slot,
   const { index, state } = await realisticState();
   const html = renderToStaticMarkup(React.createElement(DealerMaterialCreator, { dealerId: 'paow', initialIndex: index, initialState: state }));
   assert.match(html, /Skapa material/);
-  for (const group of ['Idle', 'Övergångar', 'Givning', 'Repliker', 'Reaktioner', 'Bord &amp; bakgrund']) assert.match(html, new RegExp(group), group);
+  assert.match(html, /Vila \/ Idle/); assert.match(html, /Talade repliker/);
+  assert.doesNotMatch(html, /turn\.player|settle\./, 'game conditions must not ask for separate reaction media');
   for (const slot of state.slots.filter(row => row.group !== 'pose')) assert.ok(html.includes(slot.id), `slot row ${slot.id}`);
   assert.equal((html.match(/class="pill ready"/g) ?? []).length, state.slots.filter(row => row.status.level === 'ready').length + 0);
   assert.match(html, /Ge kort · plats 4/); assert.match(html, /1 klipp/);
