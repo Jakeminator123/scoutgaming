@@ -109,6 +109,8 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 **Auth och sista skalet levererat:** [PR331](https://github.com/Jakeminator123/scoutgaming/pull/331), `codex/admin-control-auth-j03` / `c7578ede050d21dec3ede098f193fe0276b25027`. Eget delta61filer,+440/-1477. Gamla layouttester har ändrats/raderats. Auth89 unika +12 form/Partner/browserfall över separata slutkörningar (4 faktiska Chrome), shell31/31, middleware27/27,0skip i dessa fokuserade grupper. Ordinariehook185pass/0fail/6 valfria browserskips;4 körda separat ovan,2 oförändrade Replies-fall återanvänder tidigare bevis. Körningar överlappar. Slutbuild /studio/alla frontendtyper och oberoende review utan blockerare. Syntetiska API/sessioner och lokala junctions, ingen live-mail/PG/media/deployacceptans. Fixturer stängda. Authproduktbevis hör till99231001, följt av handoffrättningfd5e6c34. Samlad headb46e8d1c integrerar aktuell main95ac konfliktfritt och bevarar andra agenters ändringar; integrationshook252/252,0skip. CI39680259777 passerade faktiskt Studio-build/alla frontendtyper och isolerad SQL/restart/HTTPS men föll på fyra gamla test-/fixturekrav. Enbart fyra testfiler/handoff rättade i c7578ede: före4/4fel, efter58/58 och normalhook58/58,0skip. Oberoende deltareview utan blockerare. GitGuardian success; CI39682283055 pågår, J03 fortfarande IN_PROGRESS. Total30% genom separat fullacceptans av K02/K03. PR331 är nu den samlade J01/J02/J03-kandidaten.
 
+**Slutacceptans22oktober:** J03 VERIFIED på PR331/head471549a8f02f9165be39c7077afef98f37a67ad0 efter grön samlad CI39684376735. Alla inventerade routes, auth/password, kontext, navigation och negativa scopes har tidigare verifierade utfall; de sista CI-rättningarna ändrar bara förbrukade testförväntningar. Main95ac är integrerad. Ingen merge eller deployacceptans.
+
 ## J04 — En spelkatalog via lobby
 
 **Etapp:** E2. **Beroenden:** O01.
@@ -169,16 +171,18 @@ Aktiva callers: presentation-room-create.tsx:93, control-workspace.tsx:34, scout
 **Etapp:** E3. **Beroenden:** K03. Dess kontrakt bygger på K02/O01.
 **Mål:** Kevins bordstjänst använder mains Postgres utan egen SQLite-, wallet- eller identitetsprodukt. Jakobs beslut är demo först: J07 binder K03:s walletport till mains serverägda demowallet; gränsen förbereds för en senare aggregatorintegration.
 
-- [ ] Implementera O01/K03:s lagringsport med explicit transaktionsgräns, låsordning för bord/rum och berörda spelare, idempotensnycklar och sparad konfigurationsversion.
-- [ ] Gör insats, demosaldo/reservationer, bord/sko, resultat och journal atomiska inom demoadaptern. Skicka presentationshändelser först för committat utfall; retry, förlorat svar eller omstart får inte ge dubbla ekonomiska effekter.
-- [ ] Bestäm och prova återstart/recovery och konfliktbeteende med samma kommando-ID samt med ändrad payload. Rum och operatörer får inte dela tillstånd genom fel nyckel.
-- [ ] Håll walletimplementationen utanför spelkärnan och API-transport utanför koordinatorns spelregler. Behåll extern-wallet-spärren; ingen SQLite-genväg eller tyst demofallback vid extern konfiguration. Dokumentera framtida aggregators idempotens-/status-/återhämtningsgräns utan att bygga en overifierad HTTP-adapter.
+- [x] Implementera O01/K03:s lagringsport med explicit transaktionsgräns, låsordning för bord/rum och berörda spelare, idempotensnycklar och sparad konfigurationsversion.
+- [x] Gör insats, demosaldo/reservationer, bord/sko, resultat och journal atomiska inom demoadaptern. Skicka presentationshändelser först för committat utfall; retry, förlorat svar eller omstart får inte ge dubbla ekonomiska effekter.
+- [x] Bestäm och prova återstart/recovery och konfliktbeteende med samma kommando-ID samt med ändrad payload. Rum och operatörer får inte dela tillstånd genom fel nyckel.
+- [x] Håll walletimplementationen utanför spelkärnan och API-transport utanför koordinatorns spelregler. Behåll extern-wallet-spärren; ingen SQLite-genväg eller tyst demofallback vid extern konfiguration. Dokumentera framtida aggregators idempotens-/status-/återhämtningsgräns utan att bygga en overifierad HTTP-adapter.
 **Startfiler:** `services/game/postgres-native-table.mjs`, `native-table.mjs`, `storage/postgres-store.mjs`, `packages/storage/server/postgres-store.mjs`, `ops/neon-game/`. Källjämförelse efter K01: `kevin/croupier-scoutgg/server/shared-table.mjs` och `transactions.mjs` på fryst Kevin-SHA.
 **Radera:** ersatta SQLite-kopplingar och dubbla wallet-/transaktionsvägar ur den portade produktkedjan; lämna inte en tyst SQLite-fallback.
 **Klart/verifiera:** isolerade PostgreSQL-prov med två samtidiga klienter: samma rum, olika rum, samma spelare, dubbelkommando, timeout, rollback och processomstart. Kontrollera exakt saldo/journal, inga dubbla utbetalningar och samma sparade bord efter återläsning.
 **Tester:** utgå från `test/postgres-native-table.mjs`, `test/postgres-persistence.mjs` och K03:s adapterkontrakt; lägg bara till beteendeprov för de nya samtidighets- och recoveryfallen.
 **Risk:** nuvarande spelarbaserade lås räcker inte automatiskt för ett delat bord; verifiera deadlock/retry och transaktionsägarskap. Krävd schemaversion följer migrations-readiness före merge.
 **Bevis till status.json[J07]:** `head=<SHA>; schema=<version>; PG-prov=<isolerad miljö/utfall>; PR=<URL>; review=<granskare>`.
+
+**Isolerad acceptans22oktober:** VERIFIED i [PR332](https://github.com/Jakeminator123/scoutgaming/pull/332), codex/postgres-shared-table-j07/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0.20/20 verkliga PG-kontrollgrupper med två klienter, processavbrott/PG-omstart och begränsad outboxack;88/88 normal hook,0skip och oberoende slutreview. Schema008/009 endast levererade, ingen produktions-DDL/merge/deploy. Aktiva auth/HTTP/publiceringskopplingar och K04:s beständiga mottagare är ännu inte inkopplade. Se status.json för exakta bevis och gränser.
 
 ## J08 — Admin styr versionerad spelkonfiguration
 

@@ -1,22 +1,22 @@
 # Migrationsstatus
 
-Genererad från [status.json](status.json). Uppdaterad 2026-10-21.
+Genererad från [status.json](status.json). Uppdaterad 2026-10-22.
 
-**Verifierad migrering: 30% (6/20 aktiviteter).**
+**Verifierad migrering: 40% (8/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
 | Etapp | Verifierat inom etappen | Kumulativt etappmål | Grind |
 | --- | ---: | ---: | --- |
 | E1 Kontrakt och första Adminleverans | 100% | 20% | Godkänd |
-| E2 En produktväg | 0% | 40% | Ej godkänd |
-| E3 Kevinmodul med mains lagring | 50% | 60% | Ej godkänd |
+| E2 En produktväg | 25% | 40% | Ej godkänd |
+| E3 Kevinmodul med mains lagring | 75% | 60% | Ej godkänd |
 | E4 Adminstyrning och datamigrering | 0% | 80% | Ej godkänd |
 | E5 Verifierad leverans | 0% | 100% | Ej godkänd |
 
 | Ansvar | Verifierat inom ansvaret |
 | --- | ---: |
-| jakob | 20% |
+| jakob | 40% |
 | kevin | 43% |
 | orkestrator | 33% |
 
@@ -26,14 +26,14 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J02 | Avveckla ersatt Control-publicering | jakob | VERIFIED |
 | K01 | Inventera den rensade Kevin-modulen | kevin | VERIFIED |
 | O01 | Lås kontrakt och funktionsansvar | orkestrator | VERIFIED |
-| J03 | Avveckla resterande Control-ytor | jakob | IN_PROGRESS |
+| J03 | Avveckla resterande Control-ytor | jakob | VERIFIED |
 | J04 | En spelkatalog via lobby | jakob | TODO |
 | J05 | Förenkla runtime och byggkedja | jakob | TODO |
 | J06 | Rensa testlås och rikta CI | jakob | TODO |
 | K02 | Ren regelkärna med explicit slump | kevin | VERIFIED |
 | K03 | Delat bord utan SQL- och videokoppling | kevin | VERIFIED |
-| J07 | Postgres-adapter för delat bord | jakob | TODO |
-| K04 | Spelklient och presentation från händelser | kevin | TODO |
+| J07 | Postgres-adapter för delat bord | jakob | VERIFIED |
+| K04 | Spelklient och presentation från händelser | kevin | IN_PROGRESS |
 | J08 | Admin styr versionerad spelkonfiguration | jakob | TODO |
 | K05 | Exakt mediakoppling till Neon och Blob | kevin | TODO |
 | J09 | Förbered avveckling av oanvända databaskontrakt | jakob | TODO |

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-21",
+  "updatedAt": "2026-10-22",
   "scope": "Admin-förenkling och selektiv Kevin-migrering",
   "baseline": {
     "main": "15988f32fd572c453d2189502acbe324c4566815",
@@ -146,13 +146,13 @@
       "stage": "E2",
       "title": "Avveckla resterande Control-ytor",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "VERIFIED",
       "dependsOn": [
         "J02",
         "O01"
       ],
       "branch": "codex/admin-control-auth-j03",
-      "head": "c7578ede050d21dec3ede098f193fe0276b25027",
+      "head": "471549a8f02f9165be39c7077afef98f37a67ad0",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/331",
       "reviewer": "plan_review: full produkt-/authreview; kevin_plan: oberoende CI-testdelta; root: integration, kod/loggar och fjärrkontroll",
       "evidence": [
@@ -195,9 +195,11 @@
         "Efter Jakobs fråga om branch/main samlas J01/J02/J03 i befintlig PR331 i stället för fler del-PR:ar. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d (3 commits sedan basen) integrerad konfliktfritt på b46e8d1c441fe53572e2d31d38974bbaa77d31a0. plan_review/root såg endast överlapp i handoffens separata textblock; samtliga importerade main-produktfiler kontrollerades identiska med main. Båda handoffdelarna bevarade. Normal integrationshook252/252,0skip; ingen extra fullsvit eller ombyggnad lokalt, tidigare authbuildbevis föregår integrationen. CI39680259777 pending vid leverans, ingen slutlig integrations-/deployacceptans. Samlad diff mot aktuell main163filer,+2691/-2805. Branchens aktuella namn codex/admin-control-auth-j03 behålls för kontinuitet; PRtiteln anger samlad publicering/Control/inloggning. Ingen force-push eller merge till main.",
         "CI39680259777 påb46e8d1c441fe53572e2d31d38974bbaa77d31a0 avslutades failure: control-operator-directory hade två förbrukade källsträngsassertioner, preview-page saknade obligatorisk originconfig, studio-admin-accounts och single-origin förväntade gamla login/resetadresser. Faktiskt CI-Studio-build/alla frontendtyper samt isolerad SQL/restart/HTTPS passerade på mainintegrationen; ingen produktdefekt påvisad.",
         "Rättningsheadc7578ede050d21dec3ede098f193fe0276b25027 ändrar enbart fyra testfiler och befintlig handoff. Före4/4 reproducerade fel; efter58/58 och normal hook58/58,0skip,Node24.21.0,max4workers. Auth-före-dataläsning, hash/ingen bearer, atomisk invite, roll/state/engång/liveidentity kvar. Root och kevin_plan läste hela deltat/loggar: inga blockerande fynd. Ingen ytterligare lokal build behövdes eftersom produkt oförändrad och CI-build redan passerat. Loggar authworktree arkiv/2026-10-21/j03-auth/pr331-ci-{commands,before,after,commit,push}.log.",
-        "Fjärrhead/författare Jakeminator123/källrepo Jakeminator123/scoutgaming verifierade efter push. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d fortfarande integrerad; GitGuardian success påc7578ede. Uppföljande CI39682283055 in_progress vid leverans, ingen samlad CI-/J03-/deployacceptans."
+        "Fjärrhead/författare Jakeminator123/källrepo Jakeminator123/scoutgaming verifierade efter push. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d fortfarande integrerad; GitGuardian success påc7578ede. Uppföljande CI39682283055 in_progress vid leverans, ingen samlad CI-/J03-/deployacceptans.",
+        "Slutlig CI-rättning471549a8f02f9165be39c7077afef98f37a67ad0 ändrar enbart test/account-credentials.mjs och handoff: två epoch-handofffall väntade gammal /studio/login. Före2/2 fel, efter17/17 fokuserade och ordinarie hook17/17,0skip, Node24.21.0. Root läste diff/loggar: provenance/epoch och inga nya sessioner är fortsatt testade. Ingen produktändring.",
+        "Samlad GitHub CI39684376735 completed/success på exakt471549a8f02f9165be39c7077afef98f37a67ad0; färsk PR331 authorJakeminator123/sourceJakeminator123/scoutgaming/head verifierade. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d är oförändrad och integrerad. Tidigare full route/auth/browser/build-acceptans samt nu grön samlad CI uppfyller hela J03. J03 VERIFIED som kodleverans; ingen merge, live-mail eller produktions-/deployacceptans. https://github.com/Jakeminator123/scoutgaming/actions/runs/39684376735"
       ],
-      "blocker": "Ny samlad CI39682283055 på rättningsheadc7578ede pågår. Fyra gamla test-/fixturefel från39680259777 är rättade och lokalt verifierade58/58,0skip. Full J03-acceptans väntar på denna CI; ingen merge/deploy."
+      "blocker": null
     },
     {
       "id": "J04",
@@ -313,16 +315,21 @@
       "stage": "E3",
       "title": "Postgres-adapter för delat bord",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "K03"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "branch": "codex/postgres-shared-table-j07",
+      "head": "2dd4e43695acb855dd21b19a674b6ea0d34bb0c0",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/332",
+      "reviewer": "jakob_plan: store/wallet-review och timeoutfix; kevin_plan: oberoende store/timeout/handoff-slutreview; plan_review: faktisk PG-verifiering och full kriterieavstämning; root: kod/loggar/proveniens/integration",
       "evidence": [
-        "Omfattning fastställd av Jakob21oktober: demowallet utanför spelkärnan först, explicit adaptergräns för senare aggregator. Ingen extern HTTP-wallet eller liveDDL startad; J07 fortsatt TODO tills K03 är klar."
+        "J07 var tidigare endast angivet som nästa steg; faktisk implementation startades22oktober efter Jakobs fråga om väntan. PR332/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 utgår från aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d i egen arbetskopia. K02/K03-modulslutning importerad från accepteradb8e1c957c99c5a16ee861f9767ec28041b2270dd; enda ändrade importerade produktkod är rum-ID-gräns40 till128 för mains room-UUID. Gitblob-jämförelse verifierad. Gamla lokala wallet-/SQLite-/identitetsvägar importeras inte.",
+        "PostgresStore på samma applikationsägda pool/klient implementerar G/R/P/A-lås före savepoint, lagrade kvitton, fryst konfiguration, journal/sko och commitbunden outbox. Textlagrad JSON bevarar ordnade skobevis. PostgresWallet använder mains players.balance och transactions med stabila idempotensnycklar/fingerprints; globala reservationer och öppna händer skyddar befintliga writers genom triggers. Fristående scheduler drivs utan pollskrivningar, explicit start/stopp och valfri versionsmedveten sink. Saknat schema/extern wallet nekas, ingen fallback/startup-DDL.",
+        "plan_review körde faktiskt slutlig PostgreSQL16.15 på ägt temporärt loopbackkluster i Ubuntu, Node22.22.0 som uppfyller game>=22.16:20/20 kontrollgrupper,exit0. Två klienter/samma och olika rum/samma spelare, dubbelkommando och ändrad payload, exakta saldo/ledger, rollback, savepoint med fysiskt kvarhållet P-lås, generationsstyrd retry, processavbrott före COMMIT och efter COMMIT före svar, återspelning och fysisk PG-omstart. Nytt outboxprov utan driverquery_timeout bevisar begränsat SQL-fel på låst rad, oförändrat pending och lyckad återhämtning. Root läste testkod och slutlogg.",
+        "Runtime9/9 och normal commitkontroll88/88,0skip på VoltaNode24.21.0; importens core/table ingår, körningar överlappar. Hook stoppade först tre extra slutrader, endast whitespace rättades innan88/88. Oberoende review hittade fristående outboxfråga utan timeout; gemensam bounded transaction/query-väg rättar det utan ändrad låsordning. Slutreview och full J07-kriterieavstämning utan blockerare. Loggar i J07-worktree arkiv/2026-10-22/j07/{plan-review-sql,commit,push}.log. Egna PG/barnprocesser/port/tempdata verifierat avslutade.",
+        "J07 VERIFIED avser isolerad adaptermodul mot riktig PostgreSQL. PR332 är draft; CI ännu inte accepterad. Schema008-shared-wallet och009-shared-blackjack är enbart levererade, inte applicerade i produktion. Krävd målidentitet/godkänd DDL/readiness kvar före merge/aktivering. Inga aktiva HTTP/auth/launch/publiceringsvägar har bytts. K04 äger presentation/beständig mottagarversion; J08 äger godkänd publiceringskoppling. Framtida aggregator kräver egen extern idempotens/status/reconciliation, dokumenterat i befintlig handoff. Ingen merge/deploy/produktion/mediaimport.",
+        "Färsk PR332 authorJakeminator123/sourceJakeminator123/scoutgaming/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 verifierad; mergeable true och draft. GitGuardian Security Checks success. CI39685636720 in_progress vid leverans, ingen CI-/merge-/deployacceptans. Main95ac98dc fortfarande oförändrad."
       ],
       "blocker": null
     },
@@ -332,7 +339,7 @@
       "stage": "E3",
       "title": "Spelklient och presentation från händelser",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "K03",
         "J07"
@@ -341,7 +348,9 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
+      "evidence": [
+        "Jakob vidarebefordrade22oktober Kevins agentbesked: dokumenterad händelse-/presentations-/exakt mediemappning förbereds i PR314. Detta är rapporterat, inte läsverifierat i denna leverans. J07-adaptern är nu fryst i PR332/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0; Kevin får underlaget för K04-implementation. Ingen aktiv K04-koppling eller verifierad leverans påstås."
+      ],
       "blocker": null
     },
     {
