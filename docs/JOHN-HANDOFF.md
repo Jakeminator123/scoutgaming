@@ -126,8 +126,22 @@ rum och Admin-historik/utkastskydd verifierade. Hook350/350, preview/CAS35/35,
 slutlig faktisk Admin-browser5/5, root auth/room-API72/72,0skip; prov överlappar.
 Studio-build/alla typer, orphan532/0 och oberoende slutreview utan blockerare.
 Syntetiska API-svar, avgränsad playback, lokalt junctionbygge; inget deploybevis.
-GitGuardian success; CI39657917855 pågår. Aktuell main644b565 är separat läst,
+CI39657917855 föll på förbrukat activity-tvåhoppstest. Rättning b69f8840d5f7e91ca27224e6d1abce9a50b83cfb
+ändrar test/handoff, passerar105unika lokala CI-gruppfall över separata körningar,
+hook27/27,0skip och oberoende review. Ny CI39661754986 pågår.
+Aktuell main644b565 är separat läst,
 ingen konflikt rapporteras men den är inte integrerad i denna leverans.
+Agentmodeller/Dealerchatt är levererad i PR326, codex/admin-control-ai-j03 /
+58133210804b001b6100474bd6833d320c5da3eb. Två SSR-wrappers/tracingposter borta,
+Adminmål med kontext, separata dealersamtal och utkast-/request-/historikskydd.
+Global modell-PATCH/baseHash/fallbacks/kvittoläsning behålls. Hook188/188,
+browser5/5, UI23/23, API/auth39/39, middleware27/27,0skip och riktade routeprov;
+build/alla typer/orphan533/0 samt oberoende slutreview gröna. Syntetiska API-svar,
+lokala junctions; inga verkliga provider-/Gatewayanrop eller deployacceptans.
+GitGuardian success; CI39661793088 pågår. Samma activity-testfix ingår.
+Jakobs mandat för mindre egna beslut och frågepott finns i MASTERPLAN:
+prioritera fungerande grundkedja; framtida integrationer får vänta, verkliga
+kontrakts-/auth-/datakorrekthetsfrågor löses före berörd inkoppling.
 Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
 och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
 inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.

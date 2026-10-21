@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag har J03-delarna Guide/Videor (PR318, grön CI) och Probe/Replies (PR320, grön CI) levererats ovanpå J02. Events/Tree är nu lokalt verifierad i PR322/head 2ea99899228b9574bbf142ae80f3e7a776af0a5b ovanpå PR320; GitHub CI39649419165 är success på samma head. Compositions/Rehearsal är lokalt verifierad i PR324/head 43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee ovanpå PR322: två ytterligare wrappers borta, rumskontext och navigeringsskydd rättade. Ordinarie hook350/350,0skip, build/typer och oberoende review passerar; CI39657917855 pågår. Tre underagenter, inklusive oberoende granskning, deltog. Aktuell main644b565 är separat läst men inte integrerad i leveransen. O01 är fortfarande olåst och J04 är läskartlagd. Pausregelns nya dokumentdelta cfe7037 är läsgranskat; väntan på beskedet är avslutad. K02-draft PR325/head10dd2323 är mottagen med en konkret budget-/reservationsfråga före inkoppling. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
+Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag har J03-delarna Guide/Videor (PR318, grön CI) och Probe/Replies (PR320, grön CI) levererats ovanpå J02. Events/Tree är nu lokalt verifierad i PR322/head 2ea99899228b9574bbf142ae80f3e7a776af0a5b ovanpå PR320; GitHub CI39649419165 är success på samma head. Compositions/Rehearsal är lokalt verifierad i PR324/head 43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee ovanpå PR322: två ytterligare wrappers borta, rumskontext och navigeringsskydd rättade. Ordinarie hook350/350,0skip, build/typer och oberoende review passerar; CI39657917855 hittade ett gammalt activity-tvåhoppstest; rättning b69f8840d5f7e91ca27224e6d1abce9a50b83cfb passerar105unika lokala CI-gruppfall över separata körningar och hook27/27. Ny CI39661754986 pågår. Nästa del, agentmodeller/dealerchatt, är levererad i PR326/head58133210804b001b6100474bd6833d320c5da3eb: två ytterligare wrappers borta, kontext/utkast/dealerisolering verifierade, hook188/188,0skip, build/typer och oberoende review gröna. CI39661793088 pågår. Tre underagenter, inklusive oberoende granskning, deltog. Aktuell main644b565 är separat läst men inte integrerad i leveransen. O01 är fortfarande olåst och J04 är läskartlagd. Pausregelns nya dokumentdelta cfe7037 är läsgranskat; väntan på beskedet är avslutad. K02-draft PR325/head10dd2323 är mottagen med en konkret budget-/reservationsfråga före inkoppling. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
 
 ## Frysta utgångspunkter
 
@@ -74,6 +74,29 @@ Varje godkänd aktivitet väger 5 procentenheter. Etappernas mål är kumulativa
 - [Kevin: K01–K07](kevin-ks-migrering/AKTIVITETER.md): spelregler, delat bord, spelklient och mediakontrakt.
 - Orkestratorn äger O01–O03, integration, beroenden och status. En agent implementerar, en annan granskar samma SHA. Högst ett avgränsat uppdrag per agent åt gången.
 
+### Beslutsmandat och frågepott
+
+Jakob gav 21 oktober orkestratorn mandat att avgöra mindre frågor inom den
+beställda migreringen. Reversibla val för UI, navigation, filstruktur och
+implementation behöver inte invänta Kevin. Grundkedjan prioriteras: Admin
+sparar och publicerar, lobby väljer rätt rum, autentiserad launch startar
+demospelet och återanslutning återläser rätt tillstånd.
+
+Oberoende ändringar genomförs parallellt med tydligt filägarskap och separat
+granskning. Gemensamma kontrakt, samma skrivvägar/index och beroendeintegration
+hanteras sekventiellt. En verklig osäkerhet om auth, reservation/debitering,
+spelutfall eller dataförlust löses före berörd inkoppling; den stoppar inte
+oberoende Admin-städning. Befintliga ägarskaps- och produktionsgränser gäller.
+
+| Frågepott | Hantering | Blockerar grundmigreringen? |
+| --- | --- | --- |
+| Verklig aggregator och dess API | Separat senare integration; demo och explicit walletgräns är redan beslutade | Nej |
+| Ytterligare externa tjänster eller fördjupad rapportering utöver överenskommen grundfunktion | Dokumentera konkret behov här när det uppstår; ingen parallell implementation utan behov | Nej |
+| K02:s reserverad konsumtion kontra ny fri insats | Kontraktsrättning och deterministiska prov före K02/K03/J07-inkoppling | Ja, den berörda inkopplingen; inte Control-städningen |
+
+Frågepotten flyttar inte bort avtalade krav på klippkarta, sparning, behörighet,
+publicering, korrekta spelregler eller exakt mediaidentitet. Status uppdateras
+vid verifierad leverans; en beslutad förenkling ger inte i sig färdigprocent.
 ### O01 — Lås kontrakt och funktionsansvar
 
 Beroende: K01. Kan förberedas samtidigt som J01.
