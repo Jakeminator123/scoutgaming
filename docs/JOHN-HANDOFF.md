@@ -628,7 +628,15 @@ Lokala loggar: `arkiv/2026-10-21/j03-tools/{focused,build,orphan,commit}.log`.
 Beroenden läses via egna junctions till J02-ägarens färdiga installationer;
 byggoutput ligger här. Tracesanering: 76 kontrollerade, 44 borttagna poster;
 ingen fristående deployartefakt verifierad. Befintliga CSS-/middleware-varningar.
-Ingen egen verifieringsserver lämnas kvar. Kvar: oberoende granskning, PR/CI och
+CI-uppföljning för PR #318: `http-guard.test.mjs` provar kvarvarande
+`clips`/`compositions` som loaderkonsumenter i stället för raderade Guide/Videor.
+Negativa auth-/API-prov är kvar. Snäv sökning av direkta och dynamiska sidläsningar
+hittade inga fler testreferenser till de två raderade filerna. `node --test
+--test-concurrency=4 apps/studio/test/http-guard.test.mjs
+apps/studio/test/next-page-navigation.test.mjs apps/studio/test/admin-workspace.test.mjs`
+passerar 53/53, 0 skips; logg `arkiv/2026-10-21/j03-tools/ci-fix-focused.log`.
+Endast test/handoff ändras; det tidigare bygget har inte körts om.
+Ingen egen verifieringsserver lämnas kvar. Kvar: uppföljande PR #318-CI och
 resterande J03; denna del innebär inte att hela J03 är VERIFIED.
 
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
