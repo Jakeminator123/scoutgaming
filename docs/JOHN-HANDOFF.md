@@ -93,11 +93,13 @@ K02-rättning PR325/0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är läsgranskad av
 Tidigare reservations-/budgetfynd och villkorliga turprov är rättade; CI39660600012
 är success på exakt samma head. Inga egna runtimeprov; K02 förblir IN_PROGRESS
 i väntan på samlad O01/full aktivitetacceptans.
-K03-rättning PR327/d20792ba50550ee7d73237e6dd82c4d575b756dc är läsgranskad av kevin_plan/root.
-Fem tidigare fynd är rättade i kod/portkontrakt; en reservationsvägran blir
-fortfarande permanent rejected i stället för blocked. Saknad reservationsgeneration
-behöver samma null-normalisering. Kevin rättar enligt [6325246491](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325246491).
-24/24 och21/21 är Kevinrapporterade; inga egna runtimeprov/PG-acceptans.
+K03-rättning PR327/3528c3f2632f94076ffbbc63413d02a15f6bb678 är läsgranskad av kevin_plan/root.
+Fem tidigare fynd samt stake-retry/null-normalisering är stängda i kod.
+Insurance.timeout behöver motsvarande reservationsklassificering, blocked/savepoint
+och generationsstyrd retry även vid consume-vägran. Tidigare accepterat ja består;
+sista insurance-kommandot får nekas atomiskt. Infrastrukturfel kräver full rollback.
+Kevin rättar enligt [6325459694](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325459694).
+27/27 och hooks utan bypass är Kevinrapporterade; inga egna runtimeprov/CI-/PG-acceptans.
 Clear före start får häva ready/frigöra reservation även efter deadline; undo kan vänta.
 K03 IN_PROGRESS,total15%; inga aktiva callers eller drift ändrade.
 Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,
