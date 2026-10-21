@@ -2,7 +2,7 @@
 
 Genererad från [status.json](status.json). Uppdaterad 2026-10-21.
 
-**Verifierad migrering: 20% (4/20 aktiviteter).**
+**Verifierad migrering: 30% (6/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
@@ -10,14 +10,14 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | --- | ---: | ---: | --- |
 | E1 Kontrakt och första Adminleverans | 100% | 20% | Godkänd |
 | E2 En produktväg | 0% | 40% | Ej godkänd |
-| E3 Kevinmodul med mains lagring | 0% | 60% | Ej godkänd |
+| E3 Kevinmodul med mains lagring | 50% | 60% | Ej godkänd |
 | E4 Adminstyrning och datamigrering | 0% | 80% | Ej godkänd |
 | E5 Verifierad leverans | 0% | 100% | Ej godkänd |
 
 | Ansvar | Verifierat inom ansvaret |
 | --- | ---: |
 | jakob | 20% |
-| kevin | 14% |
+| kevin | 43% |
 | orkestrator | 33% |
 
 | ID | Aktivitet | Ansvar | Status |
@@ -30,8 +30,8 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J04 | En spelkatalog via lobby | jakob | TODO |
 | J05 | Förenkla runtime och byggkedja | jakob | TODO |
 | J06 | Rensa testlås och rikta CI | jakob | TODO |
-| K02 | Ren regelkärna med explicit slump | kevin | IN_PROGRESS |
-| K03 | Delat bord utan SQL- och videokoppling | kevin | IN_PROGRESS |
+| K02 | Ren regelkärna med explicit slump | kevin | VERIFIED |
+| K03 | Delat bord utan SQL- och videokoppling | kevin | VERIFIED |
 | J07 | Postgres-adapter för delat bord | jakob | TODO |
 | K04 | Spelklient och presentation från händelser | kevin | TODO |
 | J08 | Admin styr versionerad spelkonfiguration | jakob | TODO |

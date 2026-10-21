@@ -16,11 +16,13 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har startat arbetet med underagenter. J01, J02, K01 och O01 är VERIFIED: totalt **20%**, E1 **100%**. O01:s backendkontrakt och Adminfältmatris är fastställda, med 44/44 isolerade prov; framtida writers och PostgreSQL-integration är separata leveranser. J03:s tidigare delar PR318/320/322/324/326/329/330 har grön CI på dokumenterade slutheads. Sista delen, [auth och Control-skal PR331](https://github.com/Jakeminator123/scoutgaming/pull/331), headb46e8d1c441fe53572e2d31d38974bbaa77d31a0, är lokalt verifierad och oberoende granskad: Admin-inloggning/lösenord, kontext och gammalt skal avvecklat. Slutlig CI för331 återstår; hela J03 är IN_PROGRESS. K02/K03 är levererade av Kevin och har granskade rättningar samt våra isolerade prov; full aktivitetsacceptans ligger hos root. J04 är endast läskartlagd. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är nu konfliktfritt integrerad i samma PR331; integrationshook252/252 passerar, slutlig CI39680259777 återstår. Inga migrationsleveranser är här mergade eller produktionsverifierade. Fullständiga bevis och avgränsningar finns i status.json; delstarter ger inga migrationspoäng.
+J01, J02, K01, O01, K02 och K03 är VERIFIED: totalt **30% (6/20 aktiviteter)**, E1 **100%**, E3 **50%**. K02/K03 är fullt accepterade som isolerade moduler på0493af3e respektiveb8e1c957; deras Postgres-/mainintegration återstår i J07. J03:s samlade Admin-kandidat [PR331](https://github.com/Jakeminator123/scoutgaming/pull/331) har aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d integrerad. CI39680259777 passerade Studio-build och isolerad SQL/restart/HTTPS men föll på fyra gamla test-/fixturekrav; rättningen passerar58/58,0skip och oberoende deltareview utan produktändring. Rättningsheadc7578ede050d21dec3ede098f193fe0276b25027 har GitGuardian success; ny samlad CI39682283055 pågår och avläses före J03-acceptans. J04 är endast läskartlagd. Inga migrationsleveranser är här mergade eller produktionsverifierade. Fullständiga bevis finns i status.json.
 
 ## Nästa samlade leverans
 
-Orkestratorn fortsätter i denna chatt. PR331 samlar J01/J02/J03 mot aktuell main; äldre del-PR:ar är granskningshistorik och ska inte mergas var för sig utan en samlad integrationsavstämning. Nästa grind är dess slutliga CI och J03-acceptans. Därefter gör root full aktivitetsavstämning av Kevins redan levererade K02/K03 och fortsätter med mains J07-adapter när beroendena är verifierade. Kevin äger fortsatt spelmodulen och dess presentation enligt K02–K05; inget ytterligare O01-underlag efterfrågas. Oberoende lobbyarbete kan ske parallellt; gemensamma runtime-/walletskrivvägar samordnas sekventiellt. Jakob behöver inte flytta brancher manuellt. **20% avser fyra helt verifierade aktiviteter av tjugo, inte färdig kod eller förbrukad tid.**
+Orkestratorn fortsätter i denna chatt. **Nästa steg hos root är J07: Postgres-adaptern med mains serverägda demowallet**, mot verifierade O01/K02/K03. PR331 samlar J01/J02/J03; dess sista CI och J03-acceptans hanteras parallellt. Kevin har levererat K02/K03 och väntar på J07 för K04; han kan förbereda händelse-/presentationsmappningen inom K04 utan aktiv runtimekoppling. Oberoende lobbyarbete kan ske parallellt; gemensamma runtime-/walletskrivvägar samordnas sekventiellt. Inget mer O01-underlag efterfrågas. **30% mäter sex helt verifierade aktiviteter av tjugo, inte kodmängd eller tid.**
+
+**Mergeordning:** rekommendationen är sammanhängande etapper, med PR331 som nästa Admin-kandidat efter grön CI och slutlig kontroll mot aktuell main. Äldre del-PR:ar är granskningshistorik och ska inte mergas separat. Kevin-modulerna integreras som avgränsade granskade delta för J07; hans PR:ar kräver separat uttryckligt mänskligt mergegodkännande för exakt PR/ägare/head enligt AGENTS. Denna rekommendation är ingen mergeorder. Ingen behöver vänta tills hela migreringen är färdig för en godkänd etappmerge.
 
 ## Frysta utgångspunkter
 
@@ -97,8 +99,8 @@ Tester för avvecklat beteende ändras eller raderas; verifieringen fokuseras p�
 | --- | --- | --- |
 | Verklig aggregator och dess API | Separat senare integration; demo och explicit walletgräns är redan beslutade | Nej |
 | Ytterligare externa tjänster eller fördjupad rapportering utöver överenskommen grundfunktion | Dokumentera konkret behov här när det uppstår; ingen parallell implementation utan behov | Nej |
-| K02:s reserverad konsumtion kontra ny fri insats | Avslutad sakfråga: rättningsdelta0493af3e läsgranskat, exakt head har grön CI39660600012; full aktivitetacceptans återstår | Finansieringsfyndet blockerar inte längre |
-| K03:s reservationsåterhämtning | Stake/insurance-fynd stängda i läsreview påb8e1c957; full aktivitet och faktisk adapterverifiering återstår | Ingen kvarstående blockerare i rättningsdeltat; ingen runtimeacceptans |
+| K02:s reserverad konsumtion kontra ny fri insats | Avslutad sakfråga: rättningsdelta0493af3e läsgranskat, exakt head har grön CI39660600012; K02 är VERIFIED | Finansieringsfyndet blockerar inte längre |
+| K03:s reservationsåterhämtning | K03 är VERIFIED som isolerad port påb8e1c957; faktisk adapterverifiering återstår i J07 | Ingen kvarstående blockerare i rättningsdeltat; ingen runtimeacceptans |
 | Undo efter passerad insatsdeadline | Första demoetappen använder clear för återhämtning före start; senare utökning får bedömas separat | Nej |
 | Logo/placering, återföring av avslutade spel, fler bordsspråk och fria timerprofiler | Ingår inte i första demon. Återanvänd befintliga språk en/sv, exakta mediereferenser och standardtider; pröva utökning när ett konkret behov finns. SQL-rollback och demo-credit är inte ekonomisk återföring. | Nej |
 
@@ -134,7 +136,7 @@ Följande preciseringar gäller tillsammans med specifikationen:
 K01 och O01 är VERIFIED. Backendöverenskommelsen på9c669e67, Adminmatrisen
 nedan och 44/44 faktiskt körda isolerade kontraktsprov är granskade av root
 och plan_review utan blockerande fynd. Jakobs mandat omfattar detta avgränsade
-demourval. Framtida J07/J08-writers, PG-durabilitet och full K02/K03-acceptans
+demourval. Framtida J07/J08-writers och PG-durabilitet
 är separata leveranser. Ingen runtimeinkoppling, DDL eller mediaimport görs här.
 
 **Fastställt av Jakob 21 oktober: demo först, aggregatorgräns förbereds.**
