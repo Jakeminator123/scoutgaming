@@ -37,6 +37,12 @@ Spelingången är /play/blackjack med operator, table och vid behov dealer i lä
 
 Rum utan uttryckligt game-fält läses som blackjack. Ett rum har en speltyp och kopplar operatör, presentationLaneId och gameLaneId. Dealer, bord och bakgrund tas från bolagets publicerade paket. Delat presentationspaket gör inte blackjackens korthandlingar till roulettehändelser.
 
+## Ren regelkärna (K02, utkast)
+
+[services/game/games/blackjack/core.mjs](../../../services/game/games/blackjack/core.mjs) är en isolerad port av Kevins motor (`vendor/croupier/shoe-game.mjs`, `shoe-proof.mjs`, `public/blackjack.mjs` @ `5aa7ed10`) enligt O01-svar 2.1/2.4/2.5. `newGame({random})` och `step(state, command, config, {random, available})` returnerar `{state, events, publicEvents, effects, view}` utan SQL, fil, nätverk, timers, wallet, video eller klocka. Slump, sko-id, rund-id och nonce kommer bara från `random` (`uint32`, `nonce`, `uuid`); produktionsadaptern är [secure-random.mjs](../../../services/game/games/blackjack/secure-random.mjs) och den reproducerbara källan finns bara som testfixtur. Ingen konsument använder kärnan ännu; `shoe-game.mjs` och `public/blackjack.mjs` ligger kvar tills K03/J07 flyttar konsumenterna.
+
+Regelskillnader mot Kevins motor: oförändrade regler, sidospel, försäkring per box (`takeBoxes`), sko/cut/burn och shoe proof (samma nyckelordning; stängt bevis kommer som händelsen `shoe.closed`). Kärnan äger inget saldo: insats, försäkring, double/split och utbetalning returneras som `effects` per box, och saldogränsen prövas mot serverns `available`. Kommandokvitto/requestId och global versionskontroll ligger hos koordinatorn; kärnan prövar i stället `roundId`, `turnSeq`, `box` och `handIndex`. Första skon öppnas i `newGame` i stället för vid första `state`. Mot mains `shoe-game.mjs` tillkommer dessutom försäkring per box, `sideResults`, bordsgränser ur fryst konfiguration och skobevis. Detta är ingen RNG-certifiering.
+
 ## Verifiering och gränser
 
 Relevanta regressioner: [shoe-game](../../../test/shoe-game.mjs), [split-rules](../../../test/split-rules.mjs), [fuzz-blackjack](../../../test/fuzz-blackjack.mjs), [table-http](../../../test/table-http.mjs), [postgres-native-table](../../../test/postgres-native-table.mjs) och [local-presentation](../../../test/local-presentation.mjs). Använd Volta Node 24.21.0 och fyra testworkers där stödet finns. Databas- och browseracceptans ska köras isolerat; denna dokumentändring kör inga produktionstransaktioner.
