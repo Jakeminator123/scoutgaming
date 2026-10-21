@@ -674,7 +674,16 @@ två adresskrav flyttade till Admin. Före4/4 reproducerade fel; efter58/58,
 0 skips, på Node24.21.0. Auth-före-dataläsning, hash/ingen bearer, atomisk
 inbjudan och signerad engångshandoff bevarade. Oberoende deltareview av
 kevin_plan och root utan blockerare. Loggar pr331-ci-{before,after,commands}.log.
-Ny samlad CI måste verifiera rättningsheaden; ingen merge till main eller deploy.
+CI39682283055 på c7578ede050d21dec3ede098f193fe0276b25027 passerade Studio,
+övriga regressionsgrupper och isolerad SQL/restart/HTTPS, men föll på samma
+föråldrade loginadress i två sync/async-provenancefall i account-credentials.
+En enda testassertion är nu flyttad från /studio/login till /admin/login;
+produkt och kontroller av återkallad epoch, ogiltig provenance och noll nya
+sessioner är oförändrade. Lokal reproduktion: 2/2 fel före; hela berörda
+filen efter rättning: 17/17, 0 skips, Node24.21.0. Exakta kommandon/loggar:
+pr331-epoch-{before,after,commands}.log i samma privata arkiv.
+Ny CI återstår för denna rättning; ingen push, merge till main eller deploy
+påstås av det lokala kvittot.
 
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
