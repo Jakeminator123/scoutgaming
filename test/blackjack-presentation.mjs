@@ -305,6 +305,26 @@ test('a late mouth patch never draws after its line ended, after the next line, 
     assert.equal(speech.offer({ lineId: C, revision: 0, layer: layer('late-C0') }), false);
     assert.equal(tracker.check({ lineId: C, revision: 0 }), 'ended');
     assert.deepEqual(calls, ['A0', 'B0', null, 'D0']); assert.deepEqual(closed, ['late-A0', 'later-A0', 'late-C0']); }
+  // Root's sequence: B drew and ended (or expired); an earlier A that never drew may not start on the empty screen.
+  { const { tracker, speech, calls, closed, layer } = rig();
+    tracker.open(A); tracker.open(B);
+    assert.equal(speech.offer({ lineId: B, revision: 0, layer: layer('B0') }), true);
+    assert.equal(speech.end(B), true); assert.equal(speech.owner(), null);
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('late-A0') }), false);
+    assert.equal(tracker.check({ lineId: A, revision: 0 }), 'ended');
+    assert.deepEqual(calls, ['B0', null]); assert.deepEqual(closed, ['late-A0']); }
+  { let clock = 0; const tracker = createLineMediaTracker(), calls = [], closed = [];
+    const speech = bindMovingSpeech({ composition: { setMovingSpeechLayer: layer => calls.push(layer?.id ?? null) }, tracker, now: () => clock });
+    const layer = id => ({ id, paint() {}, close() { closed.push(id); } });
+    tracker.open(A, { startAt: 0, endAt: 9000 }); tracker.open(B, { startAt: 0, endAt: 1000 });
+    clock = 500; assert.equal(speech.offer({ lineId: B, revision: 0, layer: layer('B0') }), true);
+    clock = 1000 + LINE_GRACE_MS; assert.equal(speech.expire(), true); assert.equal(speech.owner(), null);
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('late-A0') }), false, 'A is inside its own window, still earlier than B');
+    assert.equal(tracker.check({ lineId: A, revision: 0 }, clock), 'ended');
+    // A later line still takes over after the expiry.
+    const E = lineIdOf('party', 'plan-5', 0, 'win'); tracker.open(E, { startAt: 0, endAt: 9000 });
+    assert.equal(speech.offer({ lineId: E, revision: 0, layer: layer('E0') }), true);
+    assert.deepEqual(calls, ['B0', null, 'E0']); assert.deepEqual(closed, ['late-A0']); }
   // Re-delivery and re-open: the same patch twice draws once; a redelivered row after end, or a
   // close/open, keeps the line ended (no revision 0 again); replay of an active line stays idempotent.
   { const { tracker, speech, calls, closed, layer } = rig();
@@ -431,6 +451,36 @@ test("main's live-idle 'server-chain' mode follows the room chain over the whole
   assert.equal(idle.follow({ ver: row.ver, startAt: latest.startAt - 1625, endAt: latest.startAt, videoId: latest.videoId }), false);
   assert.equal(idle.follow({ ver: row.ver + 1, startAt: 1, endAt: 2, videoId: 'not-in-family' }), false);
   assert.throws(() => serverChainEntry(row.ver, wait, wait.from + 100, () => undefined), /No inventory video/);
+});
+
+test("server-chain: a block (hidden, speech, action) takes the clip; the same current entry re-attaches, older or changed ones do not", () => {
+  const uuid = i => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, familyId = 'astrid/idle.ready/ready';
+  const policy = { schemaVersion: 1, familyId, base: [{ videoId: uuid(1), weight: 100, durationMs: 1625 }], variants: [] };
+  const inventory = { families: [{ id: familyId, dealerId: 'astrid', playbackType: 'idle-pool', standardIds: [uuid(1)], variantIds: [uuid(2)] }],
+    videos: [uuid(1), uuid(2)].map((id, i) => ({ id, familyId, role: i ? 'variant' : 'standard', available: true })) };
+  const entry = { ver: 7, startAt: 1000, endAt: 2625, videoId: uuid(2) };
+  for (const [name, on, off] of [['hidden', { visible: false }, { visible: true }], ['speech', { speechPlaying: true }, { speechPlaying: false }],
+    ['actionBusy', { actionBusy: true }, { actionBusy: false }]]) {
+    let clock = 0;
+    const idle = createLiveIdleController({ policy, inventory, mode: 'server-chain', now: () => clock, initialScene: { active: true } });
+    assert.equal(idle.follow(entry), true); const first = idle.snapshot().clip.playId; idle.presented(first);
+    assert.equal(idle.follow({ ...entry }), false, `${name}: replay while attached stays a no-op`);
+    clock = 100; assert.equal(idle.updateScene(on).clip, null, `${name}: the block takes the clip`);
+    assert.equal(idle.follow({ ...entry }), false, `${name}: nothing follows while blocked`);
+    clock = 200; idle.updateScene(off);
+    assert.equal(idle.follow({ ...entry, videoId: uuid(1) }), false, `${name}: changed content at the same ver/startAt`);
+    assert.equal(idle.follow({ ...entry, endAt: entry.endAt + 1 }), false, `${name}: changed endAt`);
+    assert.equal(idle.follow({ ...entry, ver: entry.ver - 1 }), false, `${name}: older ver`);
+    assert.equal(idle.follow({ ...entry, startAt: entry.startAt - 1 }), false, `${name}: older startAt`);
+    assert.equal(idle.follow({ ...entry }), true, `${name}: the same current entry resumes`);
+    const resumed = idle.snapshot().clip;
+    assert.equal(resumed.videoId, entry.videoId); assert.equal(resumed.startAt, entry.startAt); assert.ok(resumed.playId > first);
+    assert.equal(idle.follow({ ...entry }), false, `${name}: replay after resume stays a no-op`);
+    // A clip that completed is not brought back by a replay of its entry.
+    idle.presented(resumed.playId); idle.completed(resumed.playId); assert.equal(idle.snapshot().clip, null);
+    assert.equal(idle.follow({ ...entry }), false, `${name}: a completed entry is not replayed`);
+    assert.equal(idle.follow({ ...entry, startAt: entry.endAt, endAt: entry.endAt + 1625 }), true, `${name}: the next entry follows`);
+  }
 });
 
 test('planning/material revision: leadMs/cardMs + revision per exact dealer, language and media set; no binding, no publication', () => {

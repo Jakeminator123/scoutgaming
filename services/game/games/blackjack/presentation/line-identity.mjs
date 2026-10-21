@@ -58,10 +58,12 @@ export function createLineMediaTracker() {
 // late/stale patch no layer is set: body and recorded audio play without a mouth.
 // Acceptance is bound to the active line: a patch for another line than the one speaking now is
 // accepted only as the start of a line opened later, which ends the previous one (its generation closes
-// in the tracker). Every rejected layer is closed.
+// in the tracker). The latest line that drew stays the boundary after its end or expiry, so an earlier
+// line that never drew can not start once the screen is empty. Every rejected layer is closed.
 export function bindMovingSpeech({ composition, tracker, now = () => NaN }) {
   if (typeof composition?.setMovingSpeechLayer !== 'function' || !tracker || typeof now !== 'function') throw new TypeError('composition and tracker required');
   let owner = null; // { lineId, revision, layer }
+  let boundary = null; // lineId of the latest line that drew; kept when owner becomes null
   const reject = layer => { layer?.close?.(); return false; };
   return {
     offer({ lineId, revision, layer }) {
@@ -71,12 +73,12 @@ export function bindMovingSpeech({ composition, tracker, now = () => NaN }) {
         if (layer !== owner.layer) layer?.close?.();
         return true;
       }
-      if (owner && owner.lineId !== lineId) {
+      if (boundary !== null && boundary !== lineId) {
         // Only a later line takes over; an earlier one that never drew is over as well.
-        if (!tracker.newer(lineId, owner.lineId)) { tracker.close(lineId); return reject(layer); }
-        tracker.close(owner.lineId); // the next line ends this one
+        if (!tracker.newer(lineId, boundary)) { tracker.close(lineId); return reject(layer); }
+        if (owner) tracker.close(owner.lineId); // the next line ends this one
       }
-      composition.setMovingSpeechLayer(layer); owner = { lineId, revision, layer }; return true;
+      composition.setMovingSpeechLayer(layer); owner = { lineId, revision, layer }; boundary = lineId; return true;
     },
     // The line ended or was cancelled: remove its mouth and end its generation, so a late patch,
     // a redelivered row or a re-open of it can never draw again. A re-plan is `tracker.replan`.

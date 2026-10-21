@@ -59,8 +59,12 @@ function createServerChainIdle({ policy, inventory, dealerId, now, initialScene 
       if (closed || blocked(scene) || !entry || typeof entry !== 'object' || !Number.isSafeInteger(entry.ver) || entry.ver < 1
         || !Number.isFinite(entry.startAt) || !Number.isFinite(entry.endAt) || entry.endAt <= entry.startAt
         || typeof entry.videoId !== 'string' || !allowed.has(entry.videoId) || failedIds.has(entry.videoId)) return false;
-      if (last && (entry.ver < last.ver || (entry.ver === last.ver && entry.startAt <= last.startAt))) return false;
-      last = { ver: entry.ver, startAt: entry.startAt };
+      // The current entry again re-attaches only after a block (hidden, speech, action) took its clip;
+      // a completed one, an older one or the same ver/startAt with other content stays refused.
+      const resume = last?.detached && entry.ver === last.ver && entry.startAt === last.startAt
+        && entry.endAt === last.endAt && entry.videoId === last.videoId;
+      if (!resume && last && (entry.ver < last.ver || (entry.ver === last.ver && entry.startAt <= last.startAt))) return false;
+      last = { ver: entry.ver, startAt: entry.startAt, endAt: entry.endAt, videoId: entry.videoId, detached: false };
       clip = { playId: ++serial, videoId: entry.videoId, ver: entry.ver, startAt: entry.startAt, endAt: entry.endAt, started: false, presented: false };
       return true;
     },
@@ -68,7 +72,7 @@ function createServerChainIdle({ policy, inventory, dealerId, now, initialScene 
       time(); if (closed) return snapshot();
       const previous = scene; scene = sceneValue({ ...scene, ...patch });
       if (scene.identity !== previous.identity) { failedIds.clear(); last = null; clip = null; }
-      if (blocked(scene)) clip = null;
+      if (blocked(scene) && clip) { clip = null; last.detached = true; }
       return snapshot();
     },
     updatePolicy(nextPolicy, nextInventory) { time(); if (!closed) configure(nextPolicy, nextInventory); return snapshot(); },
