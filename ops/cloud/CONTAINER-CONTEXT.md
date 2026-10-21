@@ -6,11 +6,21 @@
 docker build -f ops/cloud/Dockerfile .
 ```
 
-Dockerfilen kopierar kontexten efter `.dockerignore`, installerar beroenden
-för Web, Lab och talreläet, och bygger Lab med `/studio` som `basePath` som
-standard. `container-entry.mjs` startar sedan runtime i `start.mjs` efter
+Dockerfilen kopierar först manifest och låsfiler för spelmotorn, Studio och
+talreläet och installerar deras låsta beroenden. Först därefter kopieras resten
+av kontexten efter `.dockerignore` och Studio byggs med `/studio` som `basePath`
+som standard. En vanlig källändring kan därför återanvända beroendelagret;
+ändrade manifest eller låsfiler installerar fortfarande om beroendena.
+`container-entry.mjs` startar sedan runtime i `start.mjs` efter
 lagringskontroller och byte till användaren `node`. `apps/studio/` är Studios
 källmapp; Lissabon är ingen separat produkt eller image.
+
+CI-kontrollen `Product container cache check` körs för ändringar i Dockerfil,
+byggkontextfilter och de berörda manifesten/låsfilerna, samt manuellt. Den
+bygger imagen två gånger med en isolerad källändring mellan byggena och
+kräver cacheträff för den låsta installationen. En nätverkslös container
+kontrollerar därefter paketupplösning, Studio-bygge och UID/rättigheter för
+den privata bootstrap-mappen. Inga imager publiceras eller driftsätts.
 
 | Innehåll som kontexten behåller | Nuvarande roll |
 | --- | --- |
