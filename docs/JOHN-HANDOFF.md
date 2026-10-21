@@ -635,6 +635,16 @@ Browsern använder verklig Admin-entry/adapter/UI med syntetiska API-svar och
 interceptad dashboarddestination; ingen verklig Gateway-, provider-, spel-
 eller medieuppspelning verifieras. Fixturekontexter/browsers är stängda.
 
+PR326:s CI39661793088 hittade ett äldre Gateway-test som anropade komponenten
+utanför React och bara ersatte useState; nya useRef saknade renderingskontext.
+Testet använder nu Reacts renderToStaticMarkup, med bevarade kontroller av
+operatörschatten och serverns röstflagga (utelämnad/false/true), utan anrop vid
+rendering. Endast testharness ändrad, ingen produktkod. Egen lokal reproduktion:
+3/4 passerade före (samma useRef-fel), 27/27 röst-/chatt-/modellkomponentprov
+passerar efter, 0skip, Volta Node24.21.0 och högst fyra arbetare. Bevis:
+`arkiv/2026-10-21/j03-ai/voice-preview-ci-before.log` och `voice-preview-ci-after.log`.
+Ny fjärr-CI för rättningen återstår.
+
 Root byggde fryst produkt med /studio, Studio/Admin/Lobby-typer och Volta
 Node24.21.0. Manifestet saknar alla tio avvecklade J03-verktygswrappers och
 behåller Admin/API; orphan533/0. Lokala beroendejunctions: traces68/44,

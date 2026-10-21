@@ -92,18 +92,21 @@ test('revoked availability hides generation even after configured status, aborti
 });
 
 test('Gateway preserves operator chat while forwarding the server voice capability unchanged', () => {
-  const hooks = {...React, useState: initial => [initial, () => {}]};
-  function VoicePreviewPanel() { return null; }
+  const voiceProps = [];
+  function VoicePreviewPanel(props) { voiceProps.push(props); return null; }
   const {GatewayPanel} = load('./gateway-panel.tsx', {
-    react: hooks, './studio-types': {requestJson() {assert.fail('render cannot send chat or voice');}},
+    './studio-types': {requestJson() {assert.fail('render cannot send chat or voice');}},
     './voice-preview-panel': {VoicePreviewPanel}, './openclaw-sources': {OpenClawSources() {return null;}},
   });
   for (const available of [undefined, false, true]) {
-    const tree = GatewayPanel({status: {configured: true}, mode: 'off', onModeChange() {}, dealerId: 'astrid', dirty: false,
-      onPlayerChat() {}, ...(available === undefined ? {} : {standaloneVoicePreviewAvailable: available})});
-    const voice = nodes(tree, node => node.type === VoicePreviewPanel)[0];
-    assert.equal(voice.props.available, available === undefined ? true : available);
-    assert.equal(nodes(tree, node => node.type === 'form').length, 1, 'operator chat stays available');
-    assert.equal(nodes(tree, node => node.props?.id === 'operator-message').length, 1);
+    voiceProps.length = 0;
+    const html = renderToStaticMarkup(React.createElement(GatewayPanel, {
+      status: {configured: true}, mode: 'off', onModeChange() {}, dealerId: 'astrid', dirty: false,
+      onPlayerChat() {}, ...(available === undefined ? {} : {standaloneVoicePreviewAvailable: available}),
+    }));
+    assert.equal(voiceProps.length, 1, 'voice capability reaches the preview once');
+    assert.equal(voiceProps[0].available, available === undefined ? true : available);
+    assert.equal((html.match(/<form(?:\s|>)/g) ?? []).length, 1, 'operator chat stays available');
+    assert.match(html, /<textarea\b[^>]*\bid="operator-message"/);
   }
 });
