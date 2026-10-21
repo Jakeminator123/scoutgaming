@@ -99,6 +99,8 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K04 — Spelklient och presentation från händelser
 
+**IN_PROGRESS 22 oktober:** PR333/head9e62923be61d203640276f1f28a37eb65e0d2200 är läsgranskad. Root6328762858 redovisar eget Node24.21-repro av stale mouth efter end/B/reopen, läsfynd om obundna PG-read-timeouts samt begärd exakt materialplaneringsproducent för J08 (språk/dealer, revision/media-ID/hash och verkliga leadMs/cardMs). Kevin rättar och lämnar frozen head; hans rapporterade testresultat är skilda från roots reproduktion. Ingen full K04-acceptans, visuell/lipsync-/PG-runtimeacceptans eller ny färdigbock.
+
 **Etapp/beroenden:** E3; K03 och J07.
 **Mål:** utvalda förbättringar av idle, tal, kort och layout återger committade spelhändelser utan att styra spelutfallet.
 **Startfiler:** K `public/shared-table.js`, `public/game-events.js`, `public/game-presentation.js`, `public/game-cards.js`, `public/idle-chain.js`, `public/dealer-layer.js`, `public/lip-layer.js`, `public/table-layout.js`, `public/phone-dock-fit.js`; M `services/game/public/performance-player.mjs`, `services/game/public/verified-video-buffer.mjs`, `packages/presentation/runtime/`.

@@ -113,30 +113,21 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J04 — En spelkatalog via lobby
 
+**VERIFIED 22 oktober:** [PR335](https://github.com/Jakeminator123/scoutgaming/pull/335), codex/player-lobby-j04/headf442fdf4d05bf8ec77bc7006769de10eb2ada4cb. Oberoende produkt-/returreview och rootavstämning utan kvarvarande blockerare.189/189 normal hook, fokuserade auth/rum/paket/katalog/konto-prov samt faktiskt Chrome-flöde; lobby/web tsc gröna. Ingen fjärr-CI-, merge- eller produktionsacceptans.
+
 **Etapp:** E2. **Beroenden:** O01.
 **Mål:** `/lobby` är enda katalogingång; `/play/{game}` fortsätter vara det autentiserade launchkontraktet.
 
-- [ ] Flytta aktuella kataloglänkar, operator-val och publiceringskvitton till lobby. Ange en tydlig, nåbar hemvist för profil och historik innan äldre sidor tas bort.
-- [ ] Kartlägg och avveckla `/game` samt gamla `/play`-lobbyn med O01:s beslutade redirect/returutfall; behåll inte en andra spelkatalog.
-- [ ] Skydda launch med befintlig session, operatör/rum, rätt publicerat paket och aktuell ägarstatus. Klienten får inte sätta saldo eller välja ett obehörigt rum.
+- [x] Flytta aktuella kataloglänkar, operator-val och publiceringskvitton till lobby. Ange en tydlig, nåbar hemvist för profil och historik innan äldre sidor tas bort.
+- [x] Kartlägg och avveckla `/game` samt gamla `/play`-lobbyn med O01:s beslutade redirect/returutfall; behåll inte en andra spelkatalog.
+- [x] Skydda launch med befintlig session, operatör/rum, rätt publicerat paket och aktuell ägarstatus. Klienten får inte sätta saldo eller välja ett obehörigt rum.
 **Startfiler:** `apps/studio/client/lobby/`, `apps/studio/app/lobby/[[...path]]/route.ts`, `apps/web/app/game/route.ts`, `apps/web/app/play/`, `apps/web/lib/player-area.mjs`, `player-lobby.mjs`, `server-ui.mjs`, `services/game/player-profile.mjs`.
 **Radera:** gamla katalogkomponenter och entrypoints, förbrukade länkar och deras exklusiva layouttester. Behåll kontrakt/tester för aktiva game-launches, profil, historik och serverägd ekonomi.
 **Klart/verifiera:** lobby → korrekt rum → launch → tillbaka samt profil/historik fungerar med reload; fel rum, stängt rum, obehörig operatör, saknad session och inaktuellt paket nekas. Kör relevanta `game-entry`, `player-lobby`, `player-area`, `player-profile` och profil-API-tester.
 **Risk:** URL-radering kan annars bryta sparade länkar eller av misstag ta bort launchens serverskydd.
 **Bevis till status.json[J04]:** `head=<SHA>; routes=<gammal → ny/avvecklad>; test=<flöde + negativa fall>; PR=<URL>; review=<granskare>`.
 
-**Förberedande läskarta 21 oktober:** jakob_plan har kartlagt J02-head 6748838e9194e0554fda060e869785599b890ac4. Ingen implementation eller provkörning ingår; J04 är TODO.
-
-| Nuvarande ingång | Föreslaget utfall att fastställa i O01 |
-| --- | --- |
-| /play-katalog, /demo, /casino.html, bar Blackjack-adress | /lobby med operator-kontext |
-| /game utan spelkontext | /lobby |
-| /game med dealer/table/launch/rehearsal | Kontextbevarande väg till /play/blackjack, med befintlig token-/queryvalidering |
-| /play/blackjack och /play/roulette | Behåll autentiserad game-launch; detta är inte en andra katalog |
-| /play/profil och /play/historik | Behåll som kontosidor nåbara från lobbyn; historikens retur går till lobby |
-
-Aktiva callers: presentation-room-create.tsx:93, control-workspace.tsx:34, scout-navigation.mjs:38, studio-native-mail.mjs:40, partner-reference.tsx:137, spelens returlänkar och loginfallback/player-ui-build.mjs:73. Gamla katalogens bord-/bakgrundsval och rumspreview i player-lobby-operator.tsx:95 behöver en beslutad hemvist eller uttrycklig avveckling; delade player-catalog/player-choices är inte raderingskandidater enbart för att katalogen försvinner. Bevara profilens Origin-skydd, serverägt saldo och game-entrys session/operatör/rum/paketkontroller. Nya timers/shared-table blockerar inte denna katalogavveckling när route-/funktionsbesluten är fastställda.
-
+**Levererade routeutfall:** /play-katalog, /demo, /casino.html och kontextlösa spelalias går till /lobby med bevarade katalogval. Riktiga /play/blackjack och /play/roulette behåller autentiserad launch. Profil/historik finns kvar under /play och nås från lobbyn. Publiceringskvittot går till /lobby. Dubbla/ogiltiga selectors väljer inte ett annat rum; mutationer och next-action omdirigeras inte. Verklig retur från blackjack/roulette, reload och lagrade tillåtna miljöval är rättade och verifierade. Se status.json för full bevismappning.
 
 ## J05 — Förenkla runtime och byggkedja
 
@@ -184,7 +175,11 @@ Aktiva callers: presentation-room-create.tsx:93, control-workspace.tsx:34, scout
 
 **Isolerad acceptans22oktober:** VERIFIED i [PR332](https://github.com/Jakeminator123/scoutgaming/pull/332), codex/postgres-shared-table-j07/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0.20/20 verkliga PG-kontrollgrupper med två klienter, processavbrott/PG-omstart och begränsad outboxack;88/88 normal hook,0skip och oberoende slutreview. Schema008/009 endast levererade, ingen produktions-DDL/merge/deploy. Aktiva auth/HTTP/publiceringskopplingar och K04:s beständiga mottagare är ännu inte inkopplade. Se status.json för exakta bevis och gränser.
 
+**J07 CI-läge 22 oktober:** senaste PR332-head991ef0c571aef02cd5f475a106da5b010987b6c5 är endast testregistrering/handoff. CI39689146140 startade inga jobb på grund av GitHubs betalning/spendinglimit (jobannotation119530686477). Produktacceptansen på2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 kvarstår; ingen ny CI-acceptans.
+
 ## J08 — Admin styr versionerad spelkonfiguration
+
+**IN_PROGRESS 22 oktober:** faktiska room-game-config-utkast och UI, revisions-/rum-/N1-skydd, atomiskt package/config-skrivsteg samt scoped sko-/auditläsning finns i codex/admin-room-config-j08. Serveragent:73/73 fokusprov och senare27/27 API/HTTP; UI-agent:162/162 och Studio tsc exit0; root:7/7 proof; numeriskt closedAt/epoch0-rättning:12/12 UI/server-proof. Överlapp summeras inte. SQL-fixturer är inte faktisk J08-PG-/flerprocess-/liveacceptans. Exakt K04-materialplaneringsproducent saknas, så native publish nekar; inga 700/500-fallbacks. Oberoende server/proof-review och root UI/slutreview klara. Delleverans PR334/head61144fdac28832238130e2c24d10a21bf2badb61,25filer,+928/-26, normal hook249/249,0skip. Full J08 förblir IN_PROGRESS utan nya färdigbockar.
 
 **Etapp:** E4. **Beroenden:** J07, O01.
 **Mål:** varje överenskommen spelinställning har en tydlig Admin-kontroll, validerad sparning och bestämd verkan i spelet.

@@ -154,7 +154,7 @@
       "branch": "codex/admin-control-auth-j03",
       "head": "471549a8f02f9165be39c7077afef98f37a67ad0",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/331",
-      "reviewer": "plan_review: full produkt-/authreview; kevin_plan: oberoende CI-testdelta; root: integration, kod/loggar och fjärrkontroll",
+      "reviewer": "plan_review: full produkt-/authreview; kevin_plan: oberoende CI-testdelta; root: integration, kod/loggar och fjärrkontroll; j04_resume: oberoende exakt-head kedje/slutreview",
       "evidence": [
         "Jakob startade oberoende parallellarbete 21 oktober. Guide/Videor-delen bygger på verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Routekarta läst av plan_review; orkestrator kontrollerade centrala destinationer och de två wrappers. Övrig Control/auth och full O01-grind kvar. Se AKTIVITETER.md[J03].",
         "Delaktivitet Guide/Videor levererad i PR318/head1cfe36e32c2c89b165c5c998cd2126325431dc5b. Två SSR-wrappers raderade med tracing och rendererkrav; callers och gamla GET/HEAD-bokmärken går till befintlig Admin med kontext, native/unified på/av och /studio. Mutations/server actions omdirigeras inte. Delade funktioner och N1-auth bevaras. Inga blockerande fynd i oberoende slutgranskning av kevin_plan på exakt head; root läste centrala diffar och loggar.",
@@ -197,7 +197,8 @@
         "Rättningsheadc7578ede050d21dec3ede098f193fe0276b25027 ändrar enbart fyra testfiler och befintlig handoff. Före4/4 reproducerade fel; efter58/58 och normal hook58/58,0skip,Node24.21.0,max4workers. Auth-före-dataläsning, hash/ingen bearer, atomisk invite, roll/state/engång/liveidentity kvar. Root och kevin_plan läste hela deltat/loggar: inga blockerande fynd. Ingen ytterligare lokal build behövdes eftersom produkt oförändrad och CI-build redan passerat. Loggar authworktree arkiv/2026-10-21/j03-auth/pr331-ci-{commands,before,after,commit,push}.log.",
         "Fjärrhead/författare Jakeminator123/källrepo Jakeminator123/scoutgaming verifierade efter push. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d fortfarande integrerad; GitGuardian success påc7578ede. Uppföljande CI39682283055 in_progress vid leverans, ingen samlad CI-/J03-/deployacceptans.",
         "Slutlig CI-rättning471549a8f02f9165be39c7077afef98f37a67ad0 ändrar enbart test/account-credentials.mjs och handoff: två epoch-handofffall väntade gammal /studio/login. Före2/2 fel, efter17/17 fokuserade och ordinarie hook17/17,0skip, Node24.21.0. Root läste diff/loggar: provenance/epoch och inga nya sessioner är fortsatt testade. Ingen produktändring.",
-        "Samlad GitHub CI39684376735 completed/success på exakt471549a8f02f9165be39c7077afef98f37a67ad0; färsk PR331 authorJakeminator123/sourceJakeminator123/scoutgaming/head verifierade. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d är oförändrad och integrerad. Tidigare full route/auth/browser/build-acceptans samt nu grön samlad CI uppfyller hela J03. J03 VERIFIED som kodleverans; ingen merge, live-mail eller produktions-/deployacceptans. https://github.com/Jakeminator123/scoutgaming/actions/runs/39684376735"
+        "Samlad GitHub CI39684376735 completed/success på exakt471549a8f02f9165be39c7077afef98f37a67ad0; färsk PR331 authorJakeminator123/sourceJakeminator123/scoutgaming/head verifierade. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d är oförändrad och integrerad. Tidigare full route/auth/browser/build-acceptans samt nu grön samlad CI uppfyller hela J03. J03 VERIFIED som kodleverans; ingen merge, live-mail eller produktions-/deployacceptans. https://github.com/Jakeminator123/scoutgaming/actions/runs/39684376735",
+        "22 oktober inför etappmerge: j04_resume läste oberoende hela kedjan produkt9923100173e1d245f5cedeed8143f324cd6eaa26 till sluthead471549a8f02f9165be39c7077afef98f37a67ad0, inklusive mainintegrationb46 och senare test/handoffdelta. Alla20 importerade mainfiler utom handoff är byte-identiska med main95ac; produkten oförändrad efter integrationen. Origin/host, returnTo, reset/token, atomisk lösenordsändring, sessionsåterkallelse och rum/auth före dataläsning lästa. Inga blockerande fynd; befintliga loggar återlästa, inga nya prov. Root återläste exakt-head CI/GitGuardian success och ägarkartan på betrodd main; incident-API-täckning inte verifierad. Ingen merge utförd."
       ],
       "blocker": null
     },
@@ -207,16 +208,21 @@
       "stage": "E2",
       "title": "En spelkatalog via lobby",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "O01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "branch": "codex/player-lobby-j04",
+      "head": "f442fdf4d05bf8ec77bc7006769de10eb2ada4cb",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/335",
+      "reviewer": "j08_ui: oberoende produkt-/returreview; root: produktdelta, kontrakt och verifieringsloggar",
       "evidence": [
-        "Förberedande läsinventering av jakob_plan på 6748838e9194e0554fda060e869785599b890ac4: /play är parallell katalog, /game är också launchalias, profil/historik har egen hemvist. Route-/caller- och funktionskarta i AKTIVITETER.md[J04]; inga filer ändrade eller runtimeprov körda. Katalogens bord/bakgrundsval och preview behöver beslutad hemvist före borttagning. TODO och 0 procentenheter för denna förberedelse."
+        "J04 återupptagen i befintlig arbetskopia från PR331/471549a8f02f9165be39c7077afef98f37a67ad0. Eget delta49filer,+366/-941. /lobby är enda katalog med publicerade bolag/rum/dealer och tillåtna bord/bakgrundsval; gamla /play-katalogen och exklusiva previewkomponenter borttagna. /play/{game}, profil/historik och serverägt saldo/auth/room/package kvar.",
+        "j04_resume körde på VoltaNode24.21:117/117 fokuserade inklusive verkligt Chrome-lobbyflöde,42/42 route/registry,24/24 efter returrättning och40/40 publiceringscaller. Normal commit-hook189/189,0skip. Körningar överlappar. Lobby och web tsc godkända. Loggar i J04-worktree arkiv/2026-10-22/j04/{final-focused,final-route-registry,return-review,publication-caller,commit,push}.log.",
+        "Oberoende review hittade att browserfixturens retur innehöll dealer medan verklig blackjack bara returnerar operator+room. Rättat och omprovat: endast fortfarande tillåten lagrad dealer inom exakt rum återläses när URL-dealer saknas; explicit ogiltig/dubblerad dealer får ingen fallback. Rouletteretur använder serverauktoriserad rumskontext. Ingen kvarvarande blockerare efter slutreview.",
+        "Full J04-kriterieavstämning: katalogcallers/publiceringskvitto flyttade, kontosidor nåbara, GET/HEAD-kontext och nekade mutationer, reload/val/dialog/launch/retur samt negativa auth/rum/operatör/paketfall verifierade. Browserns launchmottagare och sessioner är syntetiska; ingen produktionsgameplay, deploy eller ny ekonomimotor påstås.",
+        "PR335 authorJakeminator123/sourceJakeminator123/scoutgaming/headf442fdf4d05bf8ec77bc7006769de10eb2ada4cb verifierade vid skapande, push återläst. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d ingår redan. GitHub CI är ännu inte accepterad; kontots betalnings-/spendinglimit har stoppat jobbstarter. Ingen merge. Browserfixturer stängda, egna claims frigjorda och arbetskopia bevarad.",
+        "22 oktober inför etappmerge: oberoende j08_ui slutgranskade exakt committad headf442fdf4d05bf8ec77bc7006769de10eb2ada4cb mot bas471549a8f02f9165be39c7077afef98f37a67ad0. Tidigare full produktreview plus publiceringscaller/retur/slutdelta och49-filernas hygien avstämda. Inga privata arkiv/junctions/lokalconfig eller blockerande fynd. Läste40/40 callerprov och189/189 hook, inga egna omkörningar. Ren arbetskopia; aktuell fjärr-CI och senare mainintegration är separata mergekrav."
       ],
       "blocker": null
     },
@@ -320,7 +326,7 @@
         "K03"
       ],
       "branch": "codex/postgres-shared-table-j07",
-      "head": "2dd4e43695acb855dd21b19a674b6ea0d34bb0c0",
+      "head": "991ef0c571aef02cd5f475a106da5b010987b6c5",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/332",
       "reviewer": "jakob_plan: store/wallet-review och timeoutfix; kevin_plan: oberoende store/timeout/handoff-slutreview; plan_review: faktisk PG-verifiering och full kriterieavstämning; root: kod/loggar/proveniens/integration",
       "evidence": [
@@ -329,7 +335,7 @@
         "plan_review körde faktiskt slutlig PostgreSQL16.15 på ägt temporärt loopbackkluster i Ubuntu, Node22.22.0 som uppfyller game>=22.16:20/20 kontrollgrupper,exit0. Två klienter/samma och olika rum/samma spelare, dubbelkommando och ändrad payload, exakta saldo/ledger, rollback, savepoint med fysiskt kvarhållet P-lås, generationsstyrd retry, processavbrott före COMMIT och efter COMMIT före svar, återspelning och fysisk PG-omstart. Nytt outboxprov utan driverquery_timeout bevisar begränsat SQL-fel på låst rad, oförändrat pending och lyckad återhämtning. Root läste testkod och slutlogg.",
         "Runtime9/9 och normal commitkontroll88/88,0skip på VoltaNode24.21.0; importens core/table ingår, körningar överlappar. Hook stoppade först tre extra slutrader, endast whitespace rättades innan88/88. Oberoende review hittade fristående outboxfråga utan timeout; gemensam bounded transaction/query-väg rättar det utan ändrad låsordning. Slutreview och full J07-kriterieavstämning utan blockerare. Loggar i J07-worktree arkiv/2026-10-22/j07/{plan-review-sql,commit,push}.log. Egna PG/barnprocesser/port/tempdata verifierat avslutade.",
         "J07 VERIFIED avser isolerad adaptermodul mot riktig PostgreSQL. PR332 är draft; CI ännu inte accepterad. Schema008-shared-wallet och009-shared-blackjack är enbart levererade, inte applicerade i produktion. Krävd målidentitet/godkänd DDL/readiness kvar före merge/aktivering. Inga aktiva HTTP/auth/launch/publiceringsvägar har bytts. K04 äger presentation/beständig mottagarversion; J08 äger godkänd publiceringskoppling. Framtida aggregator kräver egen extern idempotens/status/reconciliation, dokumenterat i befintlig handoff. Ingen merge/deploy/produktion/mediaimport.",
-        "Färsk PR332 authorJakeminator123/sourceJakeminator123/scoutgaming/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 verifierad; mergeable true och draft. GitGuardian Security Checks success. CI39685636720 in_progress vid leverans, ingen CI-/merge-/deployacceptans. Main95ac98dc fortfarande oförändrad."
+        "Senaste PR332-head991ef0c571aef02cd5f475a106da5b010987b6c5 ändrar bara testregistrering och handoff efter CI39685636720:s fyra orphanfiler; produktacceptansen på2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 gäller oförändrad produktkod. Orphan534/0 och56/56 fokuserade register-/modulprov,0skip. Ny CI39689146140 startade inga jobb på grund av GitHubs betalnings-/spendinglimit; root verifierade jobannotation119530686477. Detta är en extern CI-blockering, inte ett nytt kodfynd eller grön CI. Ingen merge/deploy/produktion eller förändring av isolerad J07-acceptans."
       ],
       "blocker": null
     },
@@ -345,11 +351,13 @@
         "J07"
       ],
       "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "head": "9e62923be61d203640276f1f28a37eb65e0d2200",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/333",
+      "reviewer": "root: läsgranskning och separat Node24.21-reproduktion; rättningar och full acceptans återstår",
       "evidence": [
-        "Jakob vidarebefordrade22oktober Kevins agentbesked: dokumenterad händelse-/presentations-/exakt mediemappning förbereds i PR314. Detta är rapporterat, inte läsverifierat i denna leverans. J07-adaptern är nu fryst i PR332/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0; Kevin får underlaget för K04-implementation. Ingen aktiv K04-koppling eller verifierad leverans påstås."
+        "Dokumentunderlag PR314/head6bd92d05b0d52032675148519e001b8386110dec läsgranskat:1293 unika TSV-paths,1267 runtimeposter matchar K01:s path/bytes/hash och26 databeroenden. Metadatajämförelse är inte egen binärhashning, Neon/Blob- eller visuell acceptans. Beslut6328064364 anger K04:s beständiga presentationssink, sanerade publicViews och exakt materialbindning; root äger auth/HTTP och J08 publicering.",
+        "K04-kod levererad i PR333/head9e62923be61d203640276f1f28a37eb65e0d2200 och läsgranskad av root. Root körde eget Node24.21-repro som visar att stale mouth kan återkomma efter end, klipp B eller reopen; dessutom läsfynd om obundna PostgreSQL-read-timeouts. Beslut/återkoppling i6328762858. Kevin ska rätta och lämna fryst head; inga fynd stängs av hans testkvittens.",
+        "J08 behöver en verifierbar serverproducent för exakt språk/dealer, materialrevision/media-ID/hash och leadMs/cardMs bundna till publicerat material. Befintliga paket saknar full sådan planeringsbindning;700/500-fixturtider får inte ersätta den. Begäran till Kevin ingår i6328762858. Kevinrapporterade testresultat hålls skilda från roots egna kodläsning och reproduktion. K04 fortfarande IN_PROGRESS; ingen aktiv inkoppling, PG-runtime-, media-/lipsync-/produktacceptans eller merge."
       ],
       "blocker": null
     },
@@ -359,16 +367,22 @@
       "stage": "E4",
       "title": "Admin styr versionerad spelkonfiguration",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "J07",
         "O01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
+      "branch": "codex/admin-room-config-j08",
+      "head": "61144fdac28832238130e2c24d10a21bf2badb61",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/334",
+      "reviewer": "j04_resume: oberoende server/proof-läsreview; root: UI/server/integration/slutdelta",
+      "evidence": [
+        "Faktisk delimplementation22oktober i bevarad arbetskopia codex/admin-room-config-j08, bas4852f92f11635e20edd974c3261e0fc179ab7d1b med samlad Admin och J07 integrerade. N1 sparar/återläser room-game-config-utkast med språk en/sv och limitPreset casual/prive/high;20s/15s är skrivskyddade. Publiceringssteget använder samma Studio-transaktion/PG-klient för paket-CAS, immutable config och versionspekare, med J07 R-lås och befintlig readiness. Join/poll ändras inte.",
+        "Admin UI har sparat utkast, uttrycklig publicering, konflikt/omläsning och rumskopplad sko-/auditläsning. Rootens readout skyddar öppen skos privata bevis och verifierar global audit samt drag. Numeriskt closedAt verifierat mot coordinator/Postgres-lagring; UI rättat efter reproduktion, epoch0 är stängd och ogiltiga tider nekas.",
+        "Serveragenten körde73/73 fokuserade routing/auth/lifecycle-prov och senare27/27 API/HTTP-prov inklusive8 J08-fall. UI-agentens delrapport anger162/162 fokuserade prov och Studio tsc exit0. Root körde7/7 proofprov; timestampens slutdelta kördes12/12 UI/server-proof,0skip. Körningar överlappar. SQL/minnesfixturer bevisar inte J08 på riktig PostgreSQL, flerprocesslås, browser, live-media eller drift.",
+        "Kvarvarande faktisk materialproducent saknar verifierad K04-planeringsrevision/leadMs/cardMs och komplett exakt språkbunden media. Native publicering nekar utan resolver; ingen fixturefallback. Oberoende delreview och PR334 är levererade; full J08-publiceringsverifiering på riktig PostgreSQL och materialkopplingen återstår. J08 IN_PROGRESS, inga färdigbockar eller procentenheter; ingen merge/DDL/deploy.",
+        "Fryst delleverans PR334/head61144fdac28832238130e2c24d10a21bf2badb61 från integrerad Admin/J07-bas4852f92f11635e20edd974c3261e0fc179ab7d1b.25egna filer,+928/-26. Normal hook249/249,0skip; produkt-/proof/UI-review utan kvarvarande blockerare i levererad del. Timestampkontraktet rättat från string till faktiskt lagrat number inklusive epoch0. PR-author/source/head och push verifierade. Ingen full J08-acceptans, faktisk J08-PG-körning, CI-, merge- eller deployacceptans. Saknad K04-materialproducent lämnar native publicering stängd; ingen fixturefallback."
+      ],
       "blocker": null
     },
     {
