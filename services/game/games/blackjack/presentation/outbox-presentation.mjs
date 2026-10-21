@@ -46,3 +46,18 @@ export function presentationForRow(row) {
   return { ...base, kind: p.kind, status: 'ready', windowId: p.windowId, configVersion: p.configVersion,
     language: row.payload.language, startAt: row.payload.startAt, endAt: row.payload.endAt, events, lines };
 }
+
+// Reconnect (#312 decision: current(roomId) + root's authoritative room snapshot + version check).
+// The receiver's current presentation is applied only when it is the presentation of exactly the
+// snapshot's committed state: an older one (its newer row is not yet accepted) is never applied
+// over newer game state; a newer one means the snapshot is the older read and is re-read. A viewer
+// also never goes back below the ver it already applied.
+export function reconnectPresentation(snapshot, presentation, { appliedVer = 0 } = {}) {
+  if (!snapshot || !Number.isSafeInteger(snapshot.presentationVer)) return { apply: false, reason: 'snapshot_without_presentation_version' };
+  if (!presentation) return { apply: false, reason: snapshot.presentationVer === 0 ? 'none' : 'stale_presentation' };
+  if (presentation.roomId !== snapshot.roomId) throw new Error('Presentation of another room');
+  if (presentation.ver < snapshot.presentationVer) return { apply: false, reason: 'stale_presentation' };
+  if (presentation.ver > snapshot.presentationVer) return { apply: false, reason: 'stale_snapshot' };
+  if (presentation.ver <= appliedVer) return { apply: false, reason: 'already_applied' };
+  return { apply: true, presentation };
+}

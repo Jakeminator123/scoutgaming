@@ -596,7 +596,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     return { contract: TABLE_CONTRACT, roomId, version: r.version, configVersion: r.configVersion, windowId: r.windowId,
       phase: r.phase, roundId: r.roundId, turnSeq: view.turnSeq, owners: r.owners, seatGen: r.seatGen, bets: r.bets,
       deadline: r.deadline, actionDeadline: r.actionDeadline, plan: r.plan, round: view.round, shoe: view.shoe,
-      players, serverNow: t, me };
+      // K04: the outbox version of the room's latest committed presentation (reconnect check only).
+      presentationVer: r.presentationVer, players, serverNow: t, me };
   }
 
   // Delivery after COMMIT with the stored talkId/ver (O01 2.9). deliveredVer only skips rows

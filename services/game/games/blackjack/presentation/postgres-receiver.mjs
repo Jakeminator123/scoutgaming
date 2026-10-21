@@ -19,11 +19,11 @@ export function createPostgresPresentationReceiver({ pool, lockTimeoutMs = 5000,
   if (!pool?.connect || !pool?.query) throw new TypeError('PostgreSQL pool required');
   for (const timeout of [lockTimeoutMs, statementTimeoutMs]) if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000) throw new TypeError('Invalid SQL timeout');
   // Same transaction discipline as the J07 store: transaction-local timeouts, one client, no nesting.
-  async function transaction(work) {
+  async function transaction(work, { readOnly = false } = {}) {
     const client = await pool.connect();
     let releaseError;
     try {
-      await client.query('BEGIN');
+      await client.query(readOnly ? 'BEGIN READ ONLY' : 'BEGIN');
       await client.query("SELECT set_config('lock_timeout',$1,true),set_config('statement_timeout',$2,true)", [`${lockTimeoutMs}ms`, `${statementTimeoutMs}ms`]);
       const value = await work(client);
       const result = await client.query('COMMIT');
@@ -53,15 +53,19 @@ export function createPostgresPresentationReceiver({ pool, lockTimeoutMs = 5000,
     });
   }
 
+  // Reads use the same bounded discipline (review 6328762858 finding 2): one client, a read-only
+  // transaction with the transaction-local lock/statement timeouts, never a bare pool.query.
+  const read = (sql, args) => transaction(async client => (await client.query(sql, args)).rows[0], { readOnly: true });
+
   return {
     sink,
     async assertInstalled() {
-      if ((await pool.query('SELECT to_regclass($1) AS name', [table])).rows[0].name === null) throw new Error('Presentation receiver schema is not installed');
+      if ((await read('SELECT to_regclass($1) AS name', [table])).name === null) throw new Error('Presentation receiver schema is not installed');
     },
-    lastAccepted: async roomId => Number((await pool.query(`SELECT ver FROM ${table} WHERE room_id=$1`, [roomId])).rows[0]?.ver ?? 0),
+    lastAccepted: async roomId => Number((await read(`SELECT ver FROM ${table} WHERE room_id=$1`, [roomId]))?.ver ?? 0),
     // The room's current accepted presentation (reconnect and transport read this; no game read).
     async current(roomId) {
-      const value = (await pool.query(`SELECT body FROM ${table} WHERE room_id=$1`, [roomId])).rows[0];
+      const value = await read(`SELECT body FROM ${table} WHERE room_id=$1`, [roomId]);
       return value ? JSON.parse(value.body).presentation : null;
     },
   };

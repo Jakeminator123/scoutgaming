@@ -6,8 +6,9 @@ export interface LiveIdleInventory {
 }
 export interface LiveIdleScene { active: boolean; visible: boolean; actionBusy: boolean; speechReady: boolean; speechPlaying: boolean; identity: string; revision: string }
 export interface LiveIdleClip {
-  playId: number; kind: 'base' | 'variant'; videoId: string;
-  reason: 'weighted-base' | 'scheduled' | 'speech-ready' | 'base-resumed' | 'openclaw' | 'rules';
+  playId: number; kind: 'base' | 'variant' | 'server'; videoId: string;
+  reason: 'weighted-base' | 'scheduled' | 'speech-ready' | 'base-resumed' | 'openclaw' | 'rules' | 'server-chain';
+  ver?: number; startAt?: number; endAt?: number;
   requestId?: string;
   repeat: boolean; standardBase: boolean;
 }
@@ -23,7 +24,11 @@ export interface LiveIdleController {
   completed(playId: number): LiveIdleSnapshot;
   failed(playId: number): LiveIdleSnapshot;
   close(): LiveIdleSnapshot;
+  /** Only in mode 'server-chain': follow the server-laid room chain entry. */
+  follow?(entry: { ver: number; startAt: number; endAt: number; videoId: string }): boolean;
+  mode?: 'server-chain';
 }
 export function createLiveIdleController(options: {
   policy: IdlePolicy; inventory: LiveIdleInventory; dealerId?: string; seed?: number; now?: () => number; initialScene?: Partial<LiveIdleScene>;
+  mode?: 'own' | 'server-chain';
 }): LiveIdleController;

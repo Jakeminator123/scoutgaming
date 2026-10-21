@@ -11,11 +11,14 @@ import { createTableCoordinator } from '../services/game/games/blackjack/table/c
 import { createPresentationGate } from '../services/game/games/blackjack/table/ports.mjs';
 import { presentationEvents } from '../services/game/partner-presentation.mjs';
 import { orderFilmedPresentationEvents } from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
-import { presentationForRow, lineIdOf } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
+import { presentationForRow, lineIdOf, reconnectPresentation } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
+import { MATERIAL_REVISION_CONTRACT, PlanningRefused, assertPublishable, planningRevision, requirePlanningRevision, timingSourceOf }
+  from '../services/game/games/blackjack/presentation/material-revision.mjs';
+import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
 import { CATALOGUE_SOURCE, READY_CONTACT, activationSet, bindDeal, bindIdle, bindLine, contactFrame, loadCatalogue, trackFor, variantFrames, verifyActivation }
   from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
-import { endWait, layChain, roomWait, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
+import { endWait, layChain, roomWait, serverChainEntry, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 import { planDraws, outcomeSpeech } from './fixtures/kevin-5aa7ed1/public/game-events.js';
@@ -258,8 +261,8 @@ test('line identity is stable per committed row; media re-plans are revisions; s
   const layer = id => ({ id, paint() {}, close() { closed.push(id); } });
   const speech = bindMovingSpeech({ composition, tracker });
   const id = lineIdOf('party', 'plan-1', 0, 'goodluck');
-  assert.deepEqual(tracker.open(id), { lineId: id, revision: 0 });
-  assert.deepEqual(tracker.open(id), { lineId: id, revision: 0 }, 'redelivery does not re-plan');
+  assert.deepEqual(tracker.open(id), { lineId: id, revision: 0, ended: false });
+  assert.deepEqual(tracker.open(id), { lineId: id, revision: 0, ended: false }, 'redelivery does not re-plan');
   assert.equal(speech.offer({ lineId: id, revision: 0, layer: layer('r0') }), true);
   assert.deepEqual(tracker.replan(id), { lineId: id, revision: 1 });
   assert.equal(speech.offer({ lineId: id, revision: 0, layer: layer('late-r0') }), false, 'a late patch of the old revision');
@@ -267,6 +270,55 @@ test('line identity is stable per committed row; media re-plans are revisions; s
   assert.equal(speech.end(id), true); assert.equal(speech.end(id), false);
   assert.deepEqual(calls, ['r0', 'r1', null]); assert.deepEqual(closed, ['late-r0']);
   assert.equal(tracker.check({ lineId: 'missing', revision: 0 }), 'unknown');
+});
+
+// Review 6328762858 finding 1: open(A) > offer(A,0) > end(A) > late offer(A,0) returned true; after
+// offer(B,0) a late A replaced B; close/open(A) made revision 0 current again.
+test('a late mouth patch never draws after its line ended, after the next line, or after re-delivery/re-open', () => {
+  const rig = () => {
+    const tracker = createLineMediaTracker(), calls = [], closed = [];
+    const speech = bindMovingSpeech({ composition: { setMovingSpeechLayer: layer => calls.push(layer?.id ?? null) }, tracker });
+    return { tracker, speech, calls, closed, layer: id => ({ id, paint() {}, close() { closed.push(id); } }) };
+  };
+  const A = lineIdOf('party', 'plan-1', 0, 'goodluck'), B = lineIdOf('party', 'plan-2', 0, 'bust'), C = lineIdOf('party', 'plan-3', 0, 'win');
+  // End: a late patch of the ended line is closed, not drawn.
+  { const { tracker, speech, calls, closed, layer } = rig();
+    tracker.open(A); assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('A0') }), true);
+    assert.equal(speech.end(A), true);
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('late-A0') }), false);
+    assert.equal(tracker.check({ lineId: A, revision: 0 }), 'ended');
+    assert.throws(() => tracker.replan(A), /ended/);
+    assert.deepEqual(calls, ['A0', null]); assert.deepEqual(closed, ['late-A0']); assert.equal(speech.owner(), null); }
+  // New line: B takes over from A without end(A); a late A can never replace B, before or after end(B).
+  { const { tracker, speech, calls, closed, layer } = rig();
+    tracker.open(A); tracker.open(B);
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('A0') }), true);
+    assert.equal(speech.offer({ lineId: B, revision: 0, layer: layer('B0') }), true);
+    assert.equal(tracker.check({ lineId: A, revision: 0 }), 'ended', 'the next line ends the previous generation');
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('late-A0') }), false);
+    assert.deepEqual(speech.owner(), { lineId: B, revision: 0 });
+    assert.equal(speech.end(B), true);
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('later-A0') }), false);
+    // An earlier line that never drew cannot displace a later active one either.
+    tracker.open(C); const D = lineIdOf('party', 'plan-4', 0, 'push'); tracker.open(D);
+    assert.equal(speech.offer({ lineId: D, revision: 0, layer: layer('D0') }), true);
+    assert.equal(speech.offer({ lineId: C, revision: 0, layer: layer('late-C0') }), false);
+    assert.equal(tracker.check({ lineId: C, revision: 0 }), 'ended');
+    assert.deepEqual(calls, ['A0', 'B0', null, 'D0']); assert.deepEqual(closed, ['late-A0', 'later-A0', 'late-C0']); }
+  // Re-delivery and re-open: the same patch twice draws once; a redelivered row after end, or a
+  // close/open, keeps the line ended (no revision 0 again); replay of an active line stays idempotent.
+  { const { tracker, speech, calls, closed, layer } = rig();
+    tracker.open(A); const a0 = layer('A0');
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: a0 }), true);
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: a0 }), true, 'the same layer again is a no-op');
+    assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('dup-A0') }), true, 'a re-delivered patch is acknowledged');
+    assert.deepEqual(tracker.open(A), { lineId: A, revision: 0, ended: false }, 'replay of the row while active');
+    tracker.replan(A); assert.equal(speech.offer({ lineId: A, revision: 1, layer: layer('A1') }), true);
+    speech.end(A);
+    assert.deepEqual(tracker.open(A), { lineId: A, revision: 1, ended: true }, 'a redelivered row does not revive the line');
+    tracker.close(A); tracker.open(A);
+    for (const revision of [0, 1, 2]) assert.equal(speech.offer({ lineId: A, revision, layer: layer(`re-A${revision}`) }), false);
+    assert.deepEqual(calls, ['A0', 'A1', null]); assert.deepEqual(closed, ['dup-A0', 're-A0', 're-A1', 're-A2']); }
 });
 
 test('room idle chain equals Kevin idle-chain.js and is laid from the accepted plan row', async () => {
@@ -288,4 +340,127 @@ test('room idle chain equals Kevin idle-chain.js and is laid from the accepted p
   assert.ok(ended.until >= wait.from + 2000 && waitClipAt(ended, ended.until) === null);
   await t.act('kevin', 'stand');
   assert.equal(roomWait(t.rows().at(-1), takes), null, 'a settled plan opens no wait');
+});
+
+// Decision (#312 / review 6328762858): current(roomId) + root's snapshot + version check.
+test('reconnect never applies an older presentation over newer game state', async () => {
+  const t = setup(), accepted = new Map();
+  const gate = createPresentationGate();
+  const sink = async row => { const a = gate.accept(row); if (a === 'new') accepted.set(row.roomId, presentationForRow(row)); return a === 'stale' ? 'stale' : 'applied'; };
+  const current = roomId => accepted.get(roomId) ?? null;
+  await t.join('kevin', [3]);
+  assert.deepEqual(reconnectPresentation(await t.snap(), current('party')), { apply: false, reason: 'none' }, 'a new room has presented nothing');
+  await t.bet('kevin', 3, 10); t.setShoe(['10', '6', '9', '10', '5']); await t.ready('kevin');
+  await t.table.deliverOutbox(sink);
+  const early = await t.snap();
+  const ok = reconnectPresentation(early, current('party'));
+  assert.equal(ok.apply, true); assert.equal(ok.presentation.ver, early.presentationVer);
+  assert.equal(ok.presentation.talkId, early.plan.id);
+  assert.equal(reconnectPresentation(early, current('party'), { appliedVer: early.presentationVer }).reason, 'already_applied');
+  // A newer committed step whose row is not yet accepted: the older presentation is refused.
+  await t.act('kevin', 'stand');
+  const later = await t.snap();
+  assert.ok(later.presentationVer > early.presentationVer);
+  assert.deepEqual(reconnectPresentation(later, current('party')), { apply: false, reason: 'stale_presentation' });
+  await t.table.deliverOutbox(sink);
+  // The receiver moved on but the viewer holds the older snapshot: re-read it, never mix.
+  assert.deepEqual(reconnectPresentation(early, current('party')), { apply: false, reason: 'stale_snapshot' });
+  const fresh = reconnectPresentation(later, current('party'));
+  assert.equal(fresh.apply, true); assert.equal(fresh.presentation.talkId, later.plan.id);
+  assert.throws(() => reconnectPresentation({ ...later, roomId: 'other' }, current('party')), /another room/);
+  assert.equal(reconnectPresentation({ ...later, presentationVer: undefined }, current('party')).apply, false);
+});
+
+test("main's live-idle 'server-chain' mode follows the room chain over the whole calm pool; 'own' mode unchanged", async () => {
+  // Dragan's 21 idle takes from the catalogue (11 calm): more than the policy's four base loops.
+  const takes = catalogue.filter(r => r.dealer === 'dragge' && r.source === 'idle-tagning').map(r => ({ take: r.path.split('/').at(-1).slice(0, -4), frames: 39, vikt: 6, calm: r.note === 'lugn' }));
+  assert.equal(takes.length, 21); assert.equal(takes.filter(x => x.calm).length, 11);
+  const uuid = i => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
+  const idOf = new Map(takes.map((x, i) => [x.take, uuid(i + 1)]));
+  const familyId = 'astrid/idle.ready/ready';
+  const policy = { schemaVersion: 1, familyId, base: [{ videoId: uuid(1), weight: 100, durationMs: 1625 }], variants: [] };
+  const inventory = { families: [{ id: familyId, dealerId: 'astrid', playbackType: 'idle-pool', standardIds: [uuid(1)], variantIds: [...idOf.values()].slice(1) }],
+    videos: [...idOf.values()].map((id, i) => ({ id, familyId, role: i ? 'variant' : 'standard', available: true })) };
+  let clock = 0;
+  const own = createLiveIdleController({ policy, inventory, now: () => clock, initialScene: { active: true } });
+  assert.equal(own.follow, undefined); assert.equal(own.snapshot().clip.kind, 'base');
+  assert.throws(() => createLiveIdleController({ policy, inventory, mode: 'random' }), /mode/);
+  const idle = createLiveIdleController({ policy, inventory, mode: 'server-chain', now: () => clock, initialScene: { active: true } });
+  assert.equal(idle.snapshot().state, 'unavailable', 'nothing of its own until the server chain says');
+  assert.equal(idle.offerVariant({ videoId: uuid(2), requestId: 'r1', expiresAt: 1000 }), false);
+  const t = setup();
+  await startRound(t, ['10', '6', '9', '10', '5']);
+  const row = t.rows().at(-1), wait = roomWait(row, takes), seen = new Set();
+  for (let now = wait.from; now < wait.from + 60000; now += 250) {
+    const entry = serverChainEntry(row.ver, wait, now, take => idOf.get(take));
+    if (!entry) continue;
+    const before = idle.snapshot().clip;
+    const took = idle.follow(entry);
+    if (took) { const c = idle.snapshot().clip; assert.equal(c.videoId, entry.videoId); assert.equal(c.reason, 'server-chain'); seen.add(entry.videoId); idle.presented(c.playId); assert.equal(idle.snapshot().idleReady, true); }
+    else assert.equal(before?.startAt, entry.startAt, 'only the same clip again is refused');
+  }
+  const calmIds = new Set(takes.filter(x => x.calm).map(x => idOf.get(x.take)));
+  assert.ok(seen.size > 4, `followed ${seen.size} distinct takes, not trimmed to four`);
+  assert.ok([...seen].every(id => calmIds.has(id)), 'only calm takes while waiting');
+  // An older presentation's chain or an earlier clip is never followed after a newer one.
+  const latest = idle.snapshot().clip;
+  assert.equal(idle.follow({ ver: row.ver - 1, startAt: latest.startAt + 5000, endAt: latest.startAt + 6625, videoId: latest.videoId }), false);
+  assert.equal(idle.follow({ ver: row.ver, startAt: latest.startAt - 1625, endAt: latest.startAt, videoId: latest.videoId }), false);
+  assert.equal(idle.follow({ ver: row.ver + 1, startAt: 1, endAt: 2, videoId: 'not-in-family' }), false);
+  assert.throws(() => serverChainEntry(row.ver, wait, wait.from + 100, () => undefined), /No inventory video/);
+});
+
+test('planning/material revision: leadMs/cardMs + revision per exact dealer, language and media set; no binding, no publication', () => {
+  const observed = new Map(catalogue.map(r => [r.path, r.sha256]));
+  const docs = dealer => new Map(timingSourceOf(dealer) ? [[timingSourceOf(dealer), fixture(`public/${timingSourceOf(dealer)}`)]] : []);
+  const plan = (dealer, language, extra = {}) => planningRevision({ catalogue, dealer, language, observed, documents: docs(dealer), ...extra });
+  // The timing documents are Kevin's bytes, verified against the catalogue rows before use.
+  for (const dealer of ['dragge', 'paow', 'astrid2', 'marten', 'astrid'])
+    assert.equal(sha256(fixture(`public/${timingSourceOf(dealer)}`)), catalogue.find(r => r.path === timingSourceOf(dealer)).sha256, dealer);
+  const expected = { dragge: [3205, 3539, 83, 39], paow: [3914, 3455, 81, 56], astrid2: [3205, 3705, 87, 39], marten: [3205, 3539, 83, 39] };
+  for (const [dealer, [leadMs, cardMs, cardFrames, flipFrames]] of Object.entries(expected)) {
+    const r = plan(dealer, 'en');
+    assert.equal(r.ok, true, dealer); assert.equal(r.contract, MATERIAL_REVISION_CONTRACT);
+    assert.deepEqual([r.leadMs, r.cardMs, r.timing.cardFrames, r.timing.flipFrames], [leadMs, cardMs, cardFrames, flipFrames], dealer);
+    // Upper bound: every deal take of the set fits in cardMs (incl. the 80 ms gap), the flip in leadMs.
+    const meta = JSON.parse(fixture(`public/${timingSourceOf(dealer)}`));
+    for (const [track, frames] of Object.entries(meta.frames)) for (const n of Object.values(frames))
+      assert.ok(n * 1000 / 24 + 80 <= (track === 'flip' ? r.leadMs - 1500 : r.cardMs), `${dealer} ${track}`);
+    assert.match(r.revision, /^[a-f0-9]{64}$/);
+    assert.deepEqual(plan(dealer, 'en'), r, 'deterministic');
+    assert.ok(r.media.every(([path]) => observed.has(path)) && r.media.some(([path]) => path === timingSourceOf(dealer)));
+    assert.ok(!r.media.some(([path]) => /\/repliker\/(sv|pt|ko|es)\//.test(path)), 'only the chosen language');
+  }
+  const classic = plan('astrid', 'en');
+  assert.deepEqual([classic.leadMs, classic.cardMs, classic.timing.cardSeconds, classic.timing.flipSeconds], [3910, 3580, 3.5, 2.33]);
+  // Language is part of the material: same timing, different identity.
+  const sv = plan('dragge', 'sv'), en = plan('dragge', 'en');
+  assert.deepEqual([sv.leadMs, sv.cardMs], [en.leadMs, en.cardMs]); assert.notEqual(sv.revision, en.revision);
+  assert.ok(sv.media.some(([path]) => path.includes('/repliker/sv/')));
+  // Refusals, never a default.
+  assert.equal(plan('dragge', 'pt').reason, 'language_outside_en_sv');
+  assert.equal(plan('astrid2', 'sv').reason, 'no_recorded_lines_in_language');
+  assert.equal(plan('astrid', 'sv').reason, 'no_recorded_lines_in_language');
+  assert.equal(plan('nobody', 'en').reason, 'unknown_dealer');
+  const take = 'media/dealers/dragge/v2/pos1-u.mp4';
+  const without = new Map(observed); without.delete(take);
+  assert.deepEqual(plan('dragge', 'en', { observed: without }).missing, [take]);
+  const tampered = new Map(observed); tampered.set(take, '0'.repeat(64));
+  assert.deepEqual(plan('dragge', 'en', { observed: tampered }).mismatched, [take]);
+  assert.equal(plan('dragge', 'en', { documents: new Map() }).reason, 'timing_document_missing');
+  const edited = Buffer.from(fixture('public/media/dealers/dragge/v2/meta.json').toString('utf8').replace('"-iu":83', '"-iu":40'));
+  assert.equal(plan('dragge', 'en', { documents: new Map([[timingSourceOf('dragge'), edited]]) }).reason, 'timing_document_mismatch');
+  assert.equal(planningRevision({ catalogue: [], dealer: 'dragge', language: 'en', observed, documents: docs('dragge') }).reason, 'no_catalogue');
+  assert.throws(() => requirePlanningRevision({ catalogue, dealer: 'dragge', language: 'en', observed: without, documents: docs('dragge') }),
+    e => e instanceof PlanningRefused && e.code === 'planning_refused' && e.refusal.reason === 'media_set_not_verified');
+  // J08 publication gate.
+  const pub = { dealer: 'dragge', language: 'en', leadMs: en.leadMs, cardMs: en.cardMs };
+  assert.equal(assertPublishable({ binding: en, ...pub }), en.revision);
+  assert.equal(assertPublishable({ binding: en, ...pub, revision: en.revision }), en.revision);
+  const refused = (args, reason) => assert.throws(() => assertPublishable(args), e => e instanceof PlanningRefused && e.refusal.reason === reason);
+  refused({ ...pub }, 'planning_binding_missing');
+  refused({ binding: plan('dragge', 'pt'), ...pub }, 'language_outside_en_sv');
+  refused({ binding: sv, ...pub }, 'planning_binding_other_material');
+  refused({ binding: en, ...pub, leadMs: 700, cardMs: 500 }, 'planning_timing_not_from_binding');
+  refused({ binding: en, ...pub, revision: sv.revision }, 'planning_revision_mismatch');
 });

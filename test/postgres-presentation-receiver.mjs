@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createPostgresPresentationReceiver } from '../services/game/games/blackjack/presentation/postgres-receiver.mjs';
+import { reconnectPresentation } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
 import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 
@@ -84,11 +85,45 @@ export async function runPostgresPresentationReceiverChecks({ pool, createPool, 
     const fresh = await pending(room);
     assert.deepEqual(fresh.map(r => r.payload.presentation.kind), ['collect', 'window']);
     assert.ok(fresh.every(r => r.ver > held.at(-1).ver));
+    // Reconnect before delivery: the receiver still holds the older plan; never applied over the new window.
+    assert.deepEqual(reconnectPresentation(await snap(), await first.current(room)), { apply: false, reason: 'stale_presentation' });
     const delivered = await other.deliverOutbox(second.sink);
     assert.deepEqual(delivered.failed, []); assert.equal(delivered.delivered.length, 2);
     const current = await first.current(room);
     assert.equal(current.kind, 'window');
     assert.deepEqual(current.events.map(e => e.family), ['speak.other/placebets', 'idle.ready/ready']);
+    const resumed = reconnectPresentation(await snap(), current);
+    assert.equal(resumed.apply, true); assert.equal(resumed.presentation.ver, fresh.at(-1).ver);
+  });
+  // Review 6328762858 finding 2: reads go through the bounded transaction, not a bare pool.query.
+  await check('presentation-receiver-reads-bounded-by-sql-timeouts-blocked-read-and-recovery', async () => {
+    const untimedPool = createPool({ queryTimeoutMs: null });
+    assert.equal(untimedPool.options.query_timeout, undefined);
+    assert.equal((await untimedPool.query('SHOW lock_timeout')).rows[0].lock_timeout, '0');
+    assert.equal((await untimedPool.query('SHOW statement_timeout')).rows[0].statement_timeout, '0');
+    const byLock = createPostgresPresentationReceiver({ pool: untimedPool, lockTimeoutMs: 100, statementTimeoutMs: 60000 });
+    const byStatement = createPostgresPresentationReceiver({ pool: untimedPool, lockTimeoutMs: 60000, statementTimeoutMs: 250 });
+    const expectedVer = await first.lastAccepted(room), expected = await first.current(room);
+    // This watchdog only fails the test; it does not cancel the SQL or supply its timeout.
+    const watchdog = work => { let timer; return Promise.race([work, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(Error('receiver_read_sql_timeout_missing')), 3000); })]).finally(() => clearTimeout(timer)); };
+    const holder = await secondPool.connect();
+    try {
+      await holder.query('BEGIN');
+      await holder.query('LOCK TABLE croupier_game.shared_table_presentation_receiver IN ACCESS EXCLUSIVE MODE');
+      for (const [receiver, code] of [[byLock, '55P03'], [byStatement, '57014']]) {
+        await assert.rejects(watchdog(receiver.lastAccepted(room)), error => error.code === code);
+        await assert.rejects(watchdog(receiver.current(room)), error => error.code === code);
+      }
+      await watchdog(byLock.assertInstalled());
+    } finally {
+      try { await holder.query('ROLLBACK'); } finally { holder.release(); }
+    }
+    assert.equal(await byLock.lastAccepted(room), expectedVer);
+    assert.deepEqual(await byStatement.current(room), expected);
+    assert.equal(untimedPool.waitingCount, 0);
+    assert.equal(untimedPool.idleCount, untimedPool.totalCount, 'every read client went back to the pool');
+    assert.equal((await untimedPool.query('SHOW lock_timeout')).rows[0].lock_timeout, '0', 'timeouts stayed transaction-local');
   });
   return { pool, checks };
 }

@@ -17,11 +17,83 @@ function randomSource(seed) {
     next ^= next + Math.imul(next ^ next >>> 7, next | 61); return ((next ^ next >>> 14) >>> 0) / 4294967296; };
 }
 
+function familyIds(policy, inventory, dealerId) {
+  const family = inventory?.families?.find(item => item.id === policy.familyId && item.dealerId === dealerId && item.playbackType === 'idle-pool');
+  const items = new Map((inventory?.videos ?? []).map(item => [item.id, item]));
+  const ids = new Set();
+  for (const [list, role] of [[family?.standardIds ?? [], 'standard'], [family?.variantIds ?? [], 'variant']]) {
+    for (const id of list) { const item = items.get(id); if (item?.available === true && item.familyId === family.id && item.role === role) ids.add(id); }
+  }
+  return ids;
+}
+
+/** Explicit 'server-chain' mode: a shared room's idle chain is laid by the server, the same for
+ * every viewer (K04 services/game/games/blackjack/presentation/room-idle.mjs serverChainEntry); this
+ * controller only follows it. No random pick, no automatic variants, no offers. Every available
+ * take of the dealer's idle family may be followed: the policy's 1-4 base loops are not a limit here
+ * (the policy names the family only). Entries are ordered by (presentation ver, startAt); an older
+ * or repeated one is refused, so a late or reconnect delivery never steps the chain back. */
+function createServerChainIdle({ policy, inventory, dealerId, now, initialScene }) {
+  let scene = sceneValue({ ...sceneDefaults, ...initialScene }), allowed = new Set(), clip = null, serial = 0, closed = false, lastTime = -Infinity, last = null;
+  const failedIds = new Set();
+  function time() {
+    const value = now();
+    if (!Number.isFinite(value) || value < 0 || value < lastTime) throw Error('Live idle clock must be monotonic');
+    lastTime = value; return value;
+  }
+  function configure(nextPolicy, nextInventory) {
+    allowed = familyIds(clone(validateIdlePolicy(nextPolicy)), nextInventory, dealerId); failedIds.clear();
+    if (clip && !allowed.has(clip.videoId)) clip = null;
+  }
+  function snapshot() {
+    const publicClip = clip ? { playId: clip.playId, kind: 'server', videoId: clip.videoId, reason: 'server-chain', repeat: false, standardBase: false,
+      ver: clip.ver, startAt: clip.startAt, endAt: clip.endAt } : null;
+    return { clip: publicClip, idleReady: Boolean(clip?.presented && !blocked(scene) && !closed),
+      state: closed ? 'closed' : blocked(scene) ? 'blocked' : clip ? 'idle' : 'unavailable' };
+  }
+  const own = playId => clip && clip.playId === playId && !blocked(scene) && !closed;
+  configure(policy, inventory); time();
+  return Object.freeze({ mode: 'server-chain', snapshot,
+    follow(entry) {
+      time();
+      if (closed || blocked(scene) || !entry || typeof entry !== 'object' || !Number.isSafeInteger(entry.ver) || entry.ver < 1
+        || !Number.isFinite(entry.startAt) || !Number.isFinite(entry.endAt) || entry.endAt <= entry.startAt
+        || typeof entry.videoId !== 'string' || !allowed.has(entry.videoId) || failedIds.has(entry.videoId)) return false;
+      if (last && (entry.ver < last.ver || (entry.ver === last.ver && entry.startAt <= last.startAt))) return false;
+      last = { ver: entry.ver, startAt: entry.startAt };
+      clip = { playId: ++serial, videoId: entry.videoId, ver: entry.ver, startAt: entry.startAt, endAt: entry.endAt, started: false, presented: false };
+      return true;
+    },
+    updateScene(patch) {
+      time(); if (closed) return snapshot();
+      const previous = scene; scene = sceneValue({ ...scene, ...patch });
+      if (scene.identity !== previous.identity) { failedIds.clear(); last = null; clip = null; }
+      if (blocked(scene)) clip = null;
+      return snapshot();
+    },
+    updatePolicy(nextPolicy, nextInventory) { time(); if (!closed) configure(nextPolicy, nextInventory); return snapshot(); },
+    clearOffers() { time(); return snapshot(); },
+    offerVariant() { time(); return false; },
+    started(playId) { time(); if (own(playId)) clip.started = true; return snapshot(); },
+    presented(playId) { time(); if (own(playId)) { clip.started = true; clip.presented = true; } return snapshot(); },
+    completed(playId) { time(); if (own(playId) && clip.started) clip = null; return snapshot(); },
+    failed(playId) { time(); if (own(playId)) { failedIds.add(clip.videoId); clip = null; } return snapshot(); },
+    close() { closed = true; clip = null; return snapshot(); },
+  });
+}
+
 /** A timer-free, renderer-driven idle controller. Selection is not playback:
  * started accounts for real starts; only presented proves standard position.
- * No promise here can delay the independent game or speech action queues. */
+ * No promise here can delay the independent game or speech action queues.
+ * mode 'own' (default, every existing caller) keeps the per-viewer weighted base; 'server-chain'
+ * follows a server-laid room chain (see createServerChainIdle). */
 export function createLiveIdleController({ policy, inventory, dealerId = 'astrid', seed = 1,
-  now = () => performance.now(), initialScene = {} } = {}) {
+  now = () => performance.now(), initialScene = {}, mode = 'own' } = {}) {
+  if (mode === 'server-chain') {
+    if (typeof now !== 'function') throw Error('Invalid live idle clock or seed');
+    return createServerChainIdle({ policy, inventory, dealerId, now, initialScene });
+  }
+  if (mode !== 'own') throw Error('Invalid live idle mode');
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff || typeof now !== 'function') throw Error('Invalid live idle clock or seed');
   const random = randomSource(seed);
   let currentPolicy, allowed = new Set(), signature, scene = sceneValue({ ...sceneDefaults, ...initialScene });

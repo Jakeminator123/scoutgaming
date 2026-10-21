@@ -2,9 +2,11 @@
 // accepted presentation row), the same for every viewer. Port of Kevin's public/idle-chain.js
 // @ 5aa7ed10 (pickWeighted, layChain, waitClips, waitBoundary, restingPool); the deterministic
 // sequence is byte-for-byte the same function so viewers and Kevin's worker map agree.
-// Main's live-idle controller keeps its own per-viewer random base (max 4 entries); this module is
-// the adapter input for a "follow the server's chain" mode (mapping gap I2), with each clip bound
-// to its exact catalogue file through media-catalogue.mjs bindIdle.
+// Main's live-idle controller keeps its own per-viewer random base (policy base 1-4) for every
+// existing caller; shared rooms use its explicit mode 'server-chain' (packages/presentation/runtime/
+// live-idle.mjs), fed by serverChainEntry below (mapping gap I2), with each clip bound to its exact
+// catalogue file through media-catalogue.mjs bindIdle. The dealer's whole calm pool is followed;
+// nothing is trimmed to four.
 const FPS = 24, WAIT_MAX = 400, LEAD = 100;
 
 export function pickWeighted(pool, last, rnd, idOf = x => x.id) {
@@ -71,4 +73,16 @@ export function waitClipAt(wait, now) {
   let i = -1;
   for (let k = 0; k < clips.length; k++) if (now >= clips[k].startAt - LEAD) i = k;
   return i < 0 || now >= clips[i].endAt + 40 ? null : { clip: clips[i], next: clips[i + 1] ?? null };
+}
+
+// Adapter input for main's live-idle 'server-chain' mode: the wait clip on the table at `now` as
+// {ver, startAt, endAt, videoId}. `ver` is the accepted presentation's outbox ver (the chain's
+// order key with startAt); videoIdOf maps Kevin's take name to the room inventory's video id of
+// that exact catalogue file. No clip on the table: null. An unmapped take refuses (no fallback).
+export function serverChainEntry(ver, wait, now, videoIdOf) {
+  const at = waitClipAt(wait, now);
+  if (!at) return null;
+  const videoId = videoIdOf(at.clip.take);
+  if (typeof videoId !== 'string' || !videoId) throw new Error(`No inventory video for idle take ${at.clip.take}`);
+  return { ver, startAt: at.clip.startAt, endAt: at.clip.endAt, videoId };
 }
