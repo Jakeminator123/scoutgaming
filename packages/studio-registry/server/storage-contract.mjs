@@ -1,6 +1,7 @@
 import { StudioStorageError, validateStudioScope } from '../../studio-access/studio-scope.mjs';
 export { StudioStorageError, validateStudioEnvironmentId, validateStudioScope } from '../../studio-access/studio-scope.mjs';
 import { createHash } from 'node:crypto';
+import { validateRoomGameDrafts } from '../../presentation/contracts/room-game-config.mjs';
 import { validateManagedStudioMedia } from './managed-media-contract.mjs';
 
 export const STUDIO_DOCUMENT_KINDS = Object.freeze(['project', 'social-policy', 'administration']);
@@ -11,7 +12,7 @@ const kinds = new Set(STUDIO_DOCUMENT_KINDS);
 const id = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const sha = /^[a-f0-9]{64}$/;
-const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings', 'legacyClipReview', 'gameLane', 'gameLanes']);
+const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings', 'legacyClipReview', 'gameLane', 'gameLanes', 'roomGameConfigs']);
 
 export function studioStorageFailure(error) {
   if (error instanceof StudioStorageError) return error;
@@ -148,6 +149,7 @@ export function createStudioDocumentContract({validateProject,validateSocialPoli
       if (kind === 'social-policy') return validateSocialPolicy({ ...copy, revision });
       if (Object.keys(copy).some(key => !adminKeys.has(key))) throw new Error('unsupported administration field');
       gameLaneConfiguration(copy);
+      if (Object.hasOwn(copy, 'roomGameConfigs')) validateRoomGameDrafts(copy.roomGameConfigs, copy.rooms);
       return copy;
     } catch { throw new StudioStorageError('studio_invalid_document', 422); }
   }

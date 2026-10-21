@@ -1,5 +1,41 @@
 # Aktuell handoff — Scoutgaming
 
+## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
+
+**IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
+`4852f92f11635e20edd974c3261e0fc179ab7d1b`, med samlad Admin och J07 integrerade.
+Aktiviteten är inte VERIFIED och ändrar inte planens 40% (8/20).
+
+- N1 kan läsa och spara språk `en/sv` och limitprofil `casual/prive/high` för
+  ett befintligt publicerat blackjackrum. Runtiderna är skrivskyddade 20s/15s.
+  Separata utkast skyddas av administrationsrevision, paketrevision, ägarskap
+  och rumskontroll. Konflikt kräver omläsning och nytt sparande före publicering.
+- Publiceringssteget använder samma Studio-transaktion/PG-klient för befintlig
+  paketwriter, ny oföränderlig J07-config och senaste versionspekare. J07:s
+  R-lås, paket-CAS och befintlig runtime-readiness behålls. Inget join/poll-flöde
+  skriver konfiguration och inget nytt schema installeras här.
+- Native N1-läsning av skobevis verifierar rum/företag/paket före bounded SQL.
+  Öppen sko visar endast commitment; stängd sko kan lämna exakt proof-JSON.
+  Global auditkedja och persistenta drag jämförs, ofullständigt/felaktigt bevis
+  visas inte som verifierat. UI håller svar bundna till valt rum och avbryter
+  gamla läsningar. `closedAt` följer lagrad numerisk millisekundtid; även epoch
+  noll betyder stängd, medan ogiltiga tider nekas.
+
+**Återstår:** verklig fryst materialproducent. Paketet har exakta media-ID/hash
+men ingen bindande K04-planeringsrevision med `leadMs/cardMs` och komplett
+språkbunden mediaselektion. O01 äger dessa tider hos K04; 700/500-fixturvärden
+får inte användas. Native publicering är därför avsiktligt nekad utan resolvern.
+K04-import, live transport-/spelinkoppling och produktions-DDL är inte utförda.
+
+**Verifiering:** serveragentens 73/73 fokuserade routing/auth/lifecycle-prov,
+senare 27/27 API/HTTP-prov inklusive åtta J08-fall. UI-agenten rapporterade
+162/162 fokusprov och Studio `tsc` exit 0. Root verifierade 7/7 proof-prov.
+Timestampfelet reproducerades med verkligt numeriskt format och rättades;
+slutkörningen gav 12/12 UI/server-proof-prov, 0 skips. Körningar överlappar och
+summeras inte. Syntetiska API-/minnes-SQL-fixturer bevisar inte J08 på riktig
+PostgreSQL, flerprocesslås, browser, live-media eller drift; ingen sådan
+acceptans påstås. Nästa steg är rootreview och materialkoppling efter granskad
+K04-producent, därefter faktisk publiceringsverifiering.
 ## J07 — delat blackjackbord på mains PostgreSQL — 22 oktober 2026
 
 J07 är nu implementerad på `codex/postgres-shared-table-j07` från main

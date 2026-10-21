@@ -62,11 +62,11 @@ function harness(options={}) {
     const url=new URL(href,window.location.href);Object.assign(window.location,{pathname:url.pathname,search:url.search,hash:url.hash,href:url.href});
   }},confirm:()=>false,
     addEventListener:(name,cb)=>events.set(name,cb),removeEventListener:(name)=>events.delete(name)};
-  const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null;let merged,saved;
+  const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null,GameConfig=()=>null;let merged,saved;
   const {AdminPublicationPage}=loadTs(sourceUrl,{react,window,
     './studio-session':{useStudioProjectSession:()=>({project,dirty:options.dirty??false,saving:options.saving??false,conflict:options.conflict??false,
       savedJson:JSON.stringify(options.savedProject??project),setError(){},setNotice(){},setConflict(){},setProject:value=>merged=value,setSavedJson:value=>saved=value})},
-    './presentation-room-create':{PresentationRoomCreate:Room},'./control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle},
+    './room-game-config':{RoomGameConfig:GameConfig},'./presentation-room-create':{PresentationRoomCreate:Room},'./control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle},
     './control-operator-directory':{ControlOperatorDirectory:Directory},'./project-conflict':{ProjectConflict:Conflict},
     fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve}))});
   const render=()=>{cursor=0;effects.length=0;return AdminPublicationPage(props);};
@@ -76,7 +76,7 @@ function harness(options={}) {
     operator:()=>nodes(node=>node.type==='select')[0],composition:()=>nodes(node=>node.type==='select')[1],
     checkbox:id=>nodes(node=>node.type==='input'&&node.props.value===id)[0],
     submit:()=>nodes(node=>node.type==='form')[0].props.onSubmit({preventDefault(){}}),
-    room:()=>nodes(node=>node.type===Room)[0],lifecycle:()=>nodes(node=>node.type===Lifecycle)[0],directory:()=>nodes(node=>node.type===Directory)[0],
+    gameConfig:()=>nodes(node=>node.type===GameConfig)[0],room:()=>nodes(node=>node.type===Room)[0],lifecycle:()=>nodes(node=>node.type===Lifecycle)[0],directory:()=>nodes(node=>node.type===Directory)[0],
     conflict:()=>nodes(node=>node.type===Conflict)[0],get merge(){return merged;},get saved(){return saved;},
     async reply(index,payload,status=200){requests[index].resolve(Response.json(payload,{status}));await new Promise(resolve=>setImmediate(resolve));}};
 }
@@ -400,4 +400,25 @@ test('a newer package readback clears the previous publication confirmation',asy
   h.lifecycle().props.onChanged(snapshot(refreshed));
   assert.doesNotMatch(h.html(),/Publiceringen är bekräftad/,'a different revision is not this action receipt');
   assert.match(h.html(),/Senast publicerat · version 6/);
+});
+
+test('room game drafts protect context navigation and their writes lock sibling room actions',()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',search:'?operator=north&room=room-evening&composition=evening'});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  h.gameConfig().props.onDirtyChange(true);
+  h.composition().props.onChange({target:{value:'mobile-phone'}});
+  assert.equal(h.composition().props.value,'evening');
+  assert.equal(h.gameConfig().props.roomId,'room-evening');
+  h.operator().props.onChange({target:{value:'south'}});
+  assert.equal(h.operator().props.value,'north');
+  assert.equal(h.nodes(node=>node.type==='button'&&node.props.children==='Återöppna sparat läge')[0].props.disabled,true);
+  h.gameConfig().props.onBusyChange(true);
+  assert.equal(h.room().props.interactionDisabled,true);
+  assert.equal(h.lifecycle().props.disabled,true);
+  assert.equal(h.gameConfig().props.disabled,false,'the active editor must finish its own request');
+  h.gameConfig().props.onBusyChange(false);
+  h.window.confirm=()=>true;
+  h.composition().props.onChange({target:{value:'mobile-phone'}});
+  assert.equal(h.composition().props.value,'mobile-phone');
+  assert.equal(h.gameConfig(),undefined);
 });
