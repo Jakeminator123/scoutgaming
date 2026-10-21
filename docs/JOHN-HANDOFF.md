@@ -21,11 +21,23 @@ Aktiviteten är inte VERIFIED; delverifieringen ger ingen ny färdigbock.
   gamla läsningar. `closedAt` följer lagrad numerisk millisekundtid; även epoch
   noll betyder stängd, medan ogiltiga tider nekas.
 
-**Återstår:** verklig fryst materialproducent. Paketet har exakta media-ID/hash
-men ingen bindande K04-planeringsrevision med `leadMs/cardMs` och komplett
-språkbunden mediaselektion. O01 äger dessa tider hos K04; 700/500-fixturvärden
-får inte användas. Native publicering är därför avsiktligt nekad utan resolvern.
-K04-import, live transport-/spelinkoppling och produktions-DDL är inte utförda.
+**Återstår:** exakt register-/paketbindning och inkoppling av K04-producenten.
+K04 har nu en planeringsproducent på `d226f53370e4355267d8875bc9168e91357f41ba`.
+Den nya rena adaptern `room-game-material.mjs` kräver explicit identitetsmappning
+för operator/paketversion/rum/dealer och källans sökväg, variant och tal-tagning.
+Hashar och timingbytes hämtas från validerad fångad runtimekatalog, med medie-ID/hash
+i det frysta paketet och verifierad/godkänd talidentitet för rätt språk. K04:s egna
+katalogpåståenden får aldrig ersätta saknade registeridentiteter.
+
+Adaptern har 5/5 fokuserade provgrupper på Volta Node24.21.0,0skip. j04_resume har
+oberoende läst båda filerna och berörda kontrakt utan blockerande fynd; root har
+läst modul/prov. Proven använder injicerad producentstub och isolerade data.
+Det är inte faktisk K04-/Blob- eller visuell acceptans. Adaptern är registrerad i
+CI:s befintliga presentationsgrupp. Anroparen måste återkontrollera snapshot-
+revisionerna inom publiceringstransaktionen. Den verkliga K05-identitetsmappningen,
+scopade snapshots och nativebindningen återstår. Saknad mappning/producent/timing
+nekas; inga 700/500-fallbacks. Native publicering är fortsatt nekad utan resolvern.
+Ingen K04-import, live transport-/spelinkoppling eller produktions-DDL har utförts.
 
 **Verifiering:** tidigare serverprov 73/73 och senare 27/27 API/HTTP-prov,
 UI-agentens 162/162 fokusprov och Studio `tsc`, rootens 7/7 proof-prov samt
