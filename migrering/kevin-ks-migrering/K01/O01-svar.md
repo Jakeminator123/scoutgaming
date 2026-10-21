@@ -87,18 +87,18 @@ Portar (K03, bundna i J07): `WalletPort` (`available`, `reserve`, `consume`, `re
 ### 2.3 Ticks
 
 - **Beslutat (6321288941):** en självständig scheduler driver alla tidsdrivna övergångar som egna transaktioner. Kommandon, requests och retries driver aldrig spelets tid. First-caller-alternativet är borttaget ur målkontraktet.
-- `tickId = roomId : kind : anchor : scheduledAt`, där `scheduledAt` är den lagrade deadlinen (aldrig `now()`). Resultat i `table_ticks(tick_id PK, room, kind, outcome, result, committed_at)` i samma transaktion som effekterna; `outcome` ∈ `applied | superseded | rejected | blocked`; samma tickId körs aldrig två gånger.
+- `tickId = roomId : kind : tickAnchor(parts) : scheduledAt`. `tickAnchor` procentkodar varje del och fogar ihop med `,`, så att olika aktör-id:n aldrig kan ge samma tickId (K03 `ports.mjs:82`). `scheduledAt` är den lagrade deadlinen (aldrig `now()`). Resultat i `table_ticks(tick_id PK, room, kind, outcome, result, committed_at)` i samma transaktion som effekterna; `outcome` ∈ `applied | superseded | rejected | blocked`; samma tickId körs aldrig två gånger.
 - Auditrad `table.tick {tickId, kind, scheduledAt}` blir parent till följande `engine.*`.
 
 | Rad i `advance()` idag | Tick-kind | anchor | scheduledAt | Lås |
 |---|---|---|---|---|
-| `:262-263` frånvaro > 120 s i runda | `seat.absent` | `memberGen` | `seen + 120000` | R → P(spelaren) → A |
-| `:264` frånvaro utanför runda, `releaseSeats` | `seat.release` | `memberGen` | `seen + 120000` | R → P(spelaren) → A |
+| `:262-263` frånvaro > 120 s i runda | `seat.absent` | `['absent', actorId, memberGen]` (spelarunik) | `seen + 120000` | R → P(spelaren) → A |
+| `:264` frånvaro utanför runda, `releaseSeats` | `seat.release` | `['absent', actorId, memberGen]` (spelarunik) | `seen + 120000` | R → P(spelaren) → A |
 | `:271` deadline nådd, `start()` | `window.close` | `windowId` | `r.deadline` | R → P(alla med insats) → A |
 | `:285-288` insurance-timeout eller lämnande | `insurance.timeout` | `roundId` | `actionDeadline` | R → P(alla tagare) → A |
 | `:289` beslutstimeout, auto-stand | `turn.autostand` | `roundId:turnSeq` | `actionDeadline` | R → A |
 | `:272-284` avräkning | `round.settle` | `roundId` | `plan.endAt` | R → P(alla med hand) → A |
-| `:291` `leaving` släpps efter rundan | `seat.release` | `roundId:playerId` | settle-commit | R → P(spelaren) → A |
+| `:291` `leaving` släpps efter rundan | `seat.release` | `['leave', roundId, playerId]`. `next` låser även lämnande spelare och verkställer utträdet före rundreset, så väntande release blir superseded. | settle-commit | R → P(spelaren) → A |
 
 `:266-268` (paus rensar) görs av `pause`; `:258`, `:270` (deadline utan main) blir invariant i insatskommandona.
 
@@ -109,7 +109,7 @@ Portar (K03, bundna i J07): `WalletPort` (`available`, `reserve`, `consume`, `re
 | Op (kod idag) | Identitet utöver commandId | Lås | Wallet | Audit |
 |---|---|---|---|---|
 | `bet`, `doubleBets`, `allSeats`, `repeat` (`:391-402`, `:407-408`) | `windowId` | R → P(aktör) | `reserve` mot `available` | `player.<op>` |
-| `undo`, `clear` (`:403-406`) | `windowId` | R → P(aktör) | `reserve` (justera) / `release` | `player.<op>` |
+| `undo`, `clear` (`:403-406`) | `windowId` | R → P(aktör) | `reserve` (justera) / `release` | `player.<op>`. **`clear` tillåts även efter deadline så länge rundan inte startat.** Den häver ready och släpper aktörens insatsreservation, så att ett blockerat bord kan gå vidare. `undo` efter deadline är fortsatt stängd (senare fråga). |
 | `ready` (`:415-419`) | `windowId` | R → P(alla med insats) | sista ready: `consume` per spelare | `player.ready`; vid start `round.started`, `engine.start`, `presentation.plan` |
 | `insurance` (`:425-429`) | `roundId` + `phase:'insurance'` | R → P(aktör; vid sista beslutet alla tagare) | ja: `reserve`; sista beslutet: `consume` per tagare | `player.insurance`, ev. `engine.insurance` |
 | `act` hit/stand / double/split (`:420-424`) | `roundId` + `turnSeq` + `box` + `handIndex` | R / R → P(aktör) | double/split: `debit` mot `available` | `player.act`, `engine.act` (+ ledger-id) |
@@ -145,6 +145,8 @@ Demowalletens saldo är mains globala; `available = balance − öppna reservati
   - Detta gäller bara ett **domänmässigt** nekat consume. Anslutnings- eller transaktionsfel ger aldrig ett blocked-kvitto. Två fulla transaktioner används inte.
   - En omstart efter blockering läser samma kvitto och ser samma stopp och samma ändringsvillkor.
   - **Omprövning utan oändlig loop:** schedulern kör inte samma passerade deadline igen förrän något i `blockedOn` har ändrats. Det gäller nytt `walletGen` för spelaren (insättning eller annan writer), att reservationen släppts eller ändrats (`clear`, `undo`, `leave`, `seat.release`, `pause`) eller en uttrycklig återhämtning från Admin. Varje omprövning får ett nytt `tickId` (`…:retry:<n>` med ändrings-generationen som ankare), så samma tillstånd prövas aldrig två gånger.
+  - **Stake och insurance via samma väg (K03):** en saknad eller otillräcklig insats- eller insurance-reservation klassas som `WalletDenied` **före** kärnsteget och ger aldrig nollfinansiering. Detsamma gäller faktisk `WalletDenied` från `consume`. Både `window.close` och `insurance.timeout` ger `blocked` med `blockedOn = {playerId, reservationId, walletGen, reservationGen}`, där saknad generation normaliseras till `null` i kvitto och jämförelse. Omprövning sker exakt en gång efter ändrad generation, utan loop, även efter omstart.
+  - **Sista insurance-kommandot** avvisas atomärt utan kvitto (`INSURANCE_NOT_FUNDED`) om avgörandet nekas. Tidigare accepterade ja och deras reservationer består, även genom pause och leave. Timeout-ticken återhämtar läget. Infrastrukturfel ger full rollback och aldrig ett blocked-kvitto.
   - Under blockering står fönstret stängt för nya insatser från andra. Bordet visar att det väntar på en spelare.
 
 ### 2.6 Pause, join och leave
@@ -169,6 +171,8 @@ Admin äger bordets språk som del av `configVersion` (issue #312, kommentar 632
 
 - Outboxraden `{roomId, auditSeq, talkId, ver, payload}` skrivs i samma transaktion som kommandot/ticken, med **lagrat** `ver` (ersätter `onPlan` före COMMIT, `:217`).
 - Leverans direkt efter COMMIT är snabbvägen (budget: plan startar 700-1500 ms efter kommandot, första patch tar 1,15-1,3 s, `:150`, `:452-453`). Ej kvitterade rader återupptas efter krasch eller omstart med **samma** `talkId`/`ver`; äldre planversioner spärras. Workerns dubblettnyckel är `talkId + ver` från outboxen, inte `speak()`s minnesräknare (1.3).
+
+- **Bindande mottagarversion (K03):** ordningsgarantin ligger hos mottagaren. `sink(row)` svarar `'applied'` eller `'stale'` efter en atomisk versionskontroll per rum (avvisar `ver <= lastAccepted`). Allt annat räknas som misslyckad leverans och återupptas. `deliveredVer` är bara en hint för att hoppa över. En fördröjd ver1 appliceras aldrig efter ver2. Att versionsspärren är varaktig över omstart och flera processer verifieras i J07/K04.
 
 ### 2.10 Lipsync-identitet
 
