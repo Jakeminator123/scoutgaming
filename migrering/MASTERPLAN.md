@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01:s inventering är verifierad i PR #314 på 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33. J01 och K01 ger tillsammans 10% verifierat. Jakob har nu uttryckligen startat J02 med underagenter; O01:s main-skrivvägar kartläggs parallellt. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
+Jakob har uttryckligen startat J01/J02 med underagenter, parallell K01/O01-granskning och separat SQL-läsroll. J01, J02 och K01 är verifierade; aktuell färdiggrad är 15% enligt status.json. Leveranserna är ännu inte mergade. På Jakobs uppdrag fortsätter nu en avgränsad J03-del (Guide/Videor) från verifierad J02, medan O01 slutförs och J04 läskartläggs. Ren dokumentrouting kräver inte nya spelkontrakt; hela J03 behåller O01 som slutberoende. Förarbete och start ger inga migrationspoäng.
 
 ## Frysta utgångspunkter
 
@@ -140,41 +140,46 @@ och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
 spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
 egna händelser; övriga walletwriters behåller mains ledger/audit.
 
-**O01-avstämning aa5b607 — konsoliderad läsgranskning, fortsatt olåst:**
+**O01-avstämning 31ef23e — konsoliderad läsgranskning, fortsatt olåst:**
 
-Kevins [kompletterade specifikation](https://github.com/Jakeminator123/scoutgaming/blob/aa5b607ce9adf8c876d69b2de466e7225d38783a/migrering/kevin-ks-migrering/K01/O01-svar.md#L113)
-i PR314 är endast dokumentation; produktkällan är oförändrad5aa7ed10.
-Två oberoende underagenter och orkestratorn har läst specifikationen och relevanta
-källor. Den täcker nu full kommandolista, windowId/roundId/turnSeq, plats- och
-medlemskapsgeneration, skrivskyddad state, atomiska ledgerreferenser samt global
-audit. Dessa beskrivningsluckor är stängda; ingen implementation är verifierad.
+Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/31ef23e95896b661c5517b755a6c76b06075327c/migrering/kevin-ks-migrering/K01/O01-svar.md#L70)
+i PR314 är dokumentation; produktkällan är oförändrad 5aa7ed10.
+En underagent och orkestratorn har läst den nya versionen mot föregående fynd.
+K02 är ren och I/O/låsplanering ligger i K03/J07. Specifikationen täcker nu
+kvittoreplay, scoperade ledgernycklar, reservation→consume/release under P,
+medlemskapsspärr, beständig outbox med samma talkId/ver och speech_choice
+kvar i global audit genom A. Dessa tidigare beskrivningsluckor är stängda;
+implementation och de föreskrivna samtidighets-/recoveryproven är inte utförda.
 
-| Kvar att fastställa före kontraktslåsning | Rekommenderad konkret gräns |
+| Ägarsvar eller kvarstående precisering | Beslut och nästa ansvarig |
 | --- | --- |
-| Samtidiga kopior missar båda kvittot före first-caller-ticks, svar.md:124–125 | Välj endast självständig scheduler för ticks, eller exklusiv kommandoadmission före first-caller-ticks. Kvittot kontrolleras åter under lås. Replay får varken tick, presence eller ny audit; lagrat resultat hålls skilt från aktuell snapshot. |
-| Reservationer, :131–163/179 | Alla saldo-writers respekterar samma reservationer. Varje väg anger atomisk reserve→consume/release under P: leave, frånvarosläpp, pause, rundstart och tidigt insurance-ja. Capture får inte debitera utan att förbruka motsvarande reservation. Rensning av tidigare accepterade insatser vid nekad start är inte ett beslutat beteende. |
-| Global pause och medlemskap, :163/168 | 24h från commit är pauslängd, inte giltighet för fördröjd första leverans. Besluta mottagningsfrist eller uttryckligen accepterad sen effekt. Join/leave och pause måste dela medlemskapsspärr; en omläsning under P skyddar inte mot join som saknar samma spärr. Låsmängden fastställs före A; ändrad mängd ger rollback och nytt försök. |
-| Idempotensnycklar, :183/190 | Ledgernyckeln måste ha samma scope som kvittot: entydig tuple med command/tick-namespace, rum, aktör, identitet, berörd spelare och effekt. Naket commandId+playerId+kind kan kollidera mellan rum. Avvisa ändrad input. |
-| Ren regelkärna, :175–190 | K02 är ren tillstånds-/händelsefunktion. I/O-portar hör till K03 och binds till rå SQL-klient i J07. Resurs-/låsplanering ägs av koordinatorn, inte regelkärnan. Även SQL-fria portar är I/O. |
-| Outbox och omstart, :102/187 | Direkt leverans efter commit kan vara snabbväg. Beständiga ej kvitterade poster måste återupptas efter krasch; lagrat talk-id/version återanvänds, gammal plan spärras. Nuvarande speak() ökar minneslagrad ver vid varje anrop och ger inte hållbar idempotens. |
-| Speech-audit, :203 | Behåll tills vidare befintlig korrelation i spelkedjan genom gemensam atomisk A-writer. Flytt till tal-/säkerhetslogg är ett separat designval, inte nödvändig lösning. Säkerhetsloggen gallras efter30dagar, saknar room/round/parent och täcker inte verktygsgrenen ensam. Ingen tyst förlust av talbeslut eller historik. |
+| Alla mains walletwriters | Root tar J07-ansvaret för gemensam available/reservationskontroll, valuta-/kontoövergångar och samma injicerade klient. Kevin behöver bekräfta att per-rum-saldo/opening_credit ersätts. Det är leveransansvar, inte genomförd migration. |
+| Tickdrivning | Root väljer självständig scheduler för målkontraktet; first-caller tas bort. En request/retry driver inte tiden. Kevin konsoliderar detta i K03-kontraktet. |
+| Replayhorisont | Ingen automatisk gallring av kvitton/idempotensnycklar under migreringen. Senare retentionbeslut får inte tillåta upprepad ekonomisk effekt. |
+| Insurance-ja vid pause/leave/frånvaro, svar.md:133–136/150 | Kevin skiljer bets-release från redan accepterat insurance-ja. Om valet ska debiteras måste reservationen finnas kvar till consume; ingen release följd av oskyddad debet. |
+| Medlemsidentitet vid pause, :147–149 | Inkludera memberGen eller generation som ändras vid varje medlemsändring. Leave→rejoin i samma rum får inte göra gammalt kommando giltigt. |
+| Oväntad consume-failure, :185 | Roots förslag: rollback av starten, bevara accepterade val/reservationer tills uttrycklig återhämtning/clear. Kevin bekräftar utfallet och beskriver ny prövning efter relevant tillståndsändring utan deadline-retry-loop. Ingen automatisk rensning är beslutad. |
+| Pausepolicy, :146/186 | 24h från commit är varaktighet. Sen första leverans i oförändrad generation och pause-konsekvenser är ett öppet produktbeslut, inte förtäckt i en teknisk timeout. |
 
-Audit-headläsning/INSERT är idag synkrona separata autocommit-satser utan await.
-Förgrening är en risk vid konkurrerande skrivare, inte ett nyverifierat driftfel
-i en ensam synkron process. Global kedjeverifiering måste läsa hela sekvensen;
-filtrerad rumsvy är inget kontinuitetsbevis. Shoe proof gäller hela stängda skon.
-Källor: Kevin game-audit.mjs:19, rorlig-lipsync.mjs:242, safety-audit.mjs:5 och
-server.mjs:199; main server.mjs:209 saknar ännu ledger-id via SQL RETURNING.
+Ägarsvaren är skickade i [#312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321288941).
+Bordsspråk ägs av Admin enligt Jakobs mål; privat UI-lokalisering får inte byta
+bordets media/ljud. Språkets publiceringsgräns följer fryst configVersion.
+Exakt dealer/take/frame/ljud/planversion är mediegränsen. Deklarerade sista-frame-
+och vila-ekvivalenser samt ±48-tolerans är ännu inte verifierad läppsynk eller
+acceptans att importera media. K04 måste pröva kompatibiliteten separat.
 
-Bordsspråk ägs av Admin enligt Jakobs mål; privat UI-lokalisering är separat och
-får inte byta bordets media/ljud. Språkets publiceringsgräns följer fryst configVersion.
-Kevin konsoliderar nu specifikationen i stället för fler motstridiga tillägg:
-svar.md:100/111 beskriver äldre tick-/identitetsförslag som avsnitt113+ ersätter.
-Root äger mains wallet-/adaptergräns. Negativa prov före implementationens
-acceptans: två samtidiga identiska kommandon över deadline, reservationslivscykel
-över flera bord, medlemskapsrace vid pause, nycklar i två rum, atomisk wallet/audit,
-konkurrerande append samt krasch efter commit/före outboxkvittens utan ny version.
-Ingen runtime, DDL eller GPU-körning har gjorts i denna granskning.
+Audit-headläsning/INSERT i fryst Kevin-kod är synkrona separata autocommit-satser
+utan await. Förgrening är en risk vid konkurrerande skrivare, inte ett nytt
+verifierat driftfel i en ensam synkron process. Global verifiering läser hela
+sekvensen; filtrerad rumsvy är inget kontinuitetsbevis. Shoe proof gäller hela
+stängda skon. Main server.mjs:209 saknar ännu ledger-id via SQL RETURNING.
+
+Acceptans i K03/J07 omfattar samtidiga identiska kommandon över deadline,
+reservationer över flera bord och annan writer, insurance-ja/livscykel,
+pause med medlemskapsrace och leave/rejoin, nycklar i två rum, atomisk
+wallet/audit, konkurrerande append samt krasch efter commit/före kvittens
+utan ny outboxversion. O01 är IN_PROGRESS. Ingen runtime, DDL eller GPU-körning
+gjordes i denna läsgranskning.
 
 **Adminfält på main — O01/J08:s läsverifierade återanvändningskarta:**
 

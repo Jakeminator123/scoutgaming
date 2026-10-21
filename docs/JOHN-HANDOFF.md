@@ -70,14 +70,22 @@ O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
 partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
 Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
 valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
-Kevin-spec aa5b607ce9adf8c876d69b2de466e7225d38783a i PR314 är nu
-läsgranskad av två underagenter och orkestrator. Kommandomatris/generationer,
-skrivskyddad state, ledgerreferenser och global audit är preciserade.
-Kvar före låsning: samtidiga retry/ticks, reservationers hela livscykel,
-pause/medlemskapsspärr, scoperade ledgernycklar och hållbar outboxåterleverans.
-K02 förblir utan I/O. Speech-audit behöver atomisk writer; föreslagen loggflytt
-är inte nödvändig och riskerar att tappa korrelation/historik. Ingen ny körning.
-O01 fortsatt IN_PROGRESS,15% oförändrat; Kevin konsoliderar specifikationen.
+Kevin-spec 31ef23e95896b661c5517b755a6c76b06075327c i PR314 är läsgranskad
+av underagent och orkestrator. Tidigare luckor i kvitto/nycklar, K02 utan I/O,
+medlemskapsspärr, outbox och speech-audit är stängda på specifikationsnivå.
+Root tar alla main-writers i J07, väljer självständig scheduler och ingen
+automatisk gallring av idempotensnycklar under migreringen. Insurance-ja och
+pause/memberGen behöver preciseras; felutfall vid consume och pausepolicy
+återstår som ägar-/produktbeslut. [Ägarsvar i #312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321288941).
+O01 är IN_PROGRESS; inga nya runtime-/PG-/GPU-prov eller poäng.
+J03-delen Guide/Videor är levererad i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318),
+codex/admin-control-tools-j03 / 1cfe36e32c2c89b165c5c998cd2126325431dc5b,
+från verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Två SSR-sidor
+är raderade; lokala beteendeprov, build/typer och oberoende granskning passerar.
+Exakta kommandon/bevisgränser finns i status.json[J03]; GitHub CI ännu inte verifierad.
+Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
+och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
+inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.
 Nio Admin-kandidater är läskartlagda: scoped publicering, driftprofiler och
 rumslänkar kan återanvändas; språk/limit/timer/logo/proof behöver nya avtalade
 fält. Walletåterföring är ingen befintlig funktion. Ingen kandidat är automatiskt godkänd.

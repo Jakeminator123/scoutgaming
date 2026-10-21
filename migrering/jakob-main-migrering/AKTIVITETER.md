@@ -58,6 +58,27 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 **Risk:** sökträffar räcker inte för dynamiska retur-URL:er eller serverbyggda länkar; prova dem genom riktiga requestflöden.
 **Bevis till status.json[J03]:** `head=<SHA>; routes=<inventering/utfall>; test=<auth + kontext + navigation>; PR=<URL>; review=<granskare>`.
 
+**Parallell delstart 21 oktober:** Jakob har bett oss utföra oberoende arbete medan O01 färdigställs. Guide/Videor startas från J02 6748838e9194e0554fda060e869785599b890ac4 på codex/admin-control-tools-j03. Endast deras gamla SSR-wrappers, callers, GET/HEAD-redirects, exklusiv tracing och berörda tester ingår. Delade komponenter/API:er och auth bevaras. Ingen ny spel-, saldo- eller mediesemantik; därför behövs inget O01-kontrakt för denna del. Hela J03 kräver fortfarande full route-/authacceptans och O01 innan VERIFIED.
+
+**Avgränsad leverans:** [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318), head 1cfe36e32c2c89b165c5c998cd2126325431dc5b. Två gamla SSR-wrappers/tracingposter borttagna, callers uppdaterade och redirects verifierade. Implementerarens 108/108 + riktade 44/44 och överlappande commit138/138, 0 skip; Studio-build/typer och orphan530/0 passerar. Oberoende granskning av exakt head: inga blockerande fynd. Lokalt bygge med återanvända beroenden; fristående deployartefakt/GitHub CI ännu inte verifierade. Återstående fulla J03-kriterier kvarstår: J03 är IN_PROGRESS, inga nya procentenheter.
+
+Läsinventering på samma J02-head av plan_review, med centrala destinationer och Guide/Videor-wrappers kontrollerade av orkestratorn. Detta är en arbetskarta, inte runtimeacceptans:
+
+| Control-route | Admin-destination | Kvarvarande ansvar |
+| --- | --- | --- |
+| clips | /admin/dealer-studio | LabStudio och projekt-/video-/dealer-API bevaras |
+| compositions | /admin/compositions | Delad preview/publicering bevaras |
+| rehearsal | /admin/rehearsal | Aktivitet och rumspresentation bevaras |
+| events, tree | /admin/events | Events/Tree och beslutssimulering bevaras |
+| videos, replies, probe, guide | respektive /admin/<route> | Delade registry-/reply-/projektfunktioner bevaras; Guide/Videor är första del |
+| openclaw, operator-chat | /admin/ai/models, /admin/dealer-agent | tab=chat och skyddade API:er följs före wrapperradering |
+| administration | tabstyrda Admin-drift/konto/ekonomi/API/media-review | NativeAdministration och betalningspanelen behålls |
+| [[...path]] | /admin och deklarerade verktyg | Partner-grenen i WorkspaceSurfacePage behålls; ui-server används av Admin |
+| login, set-password | Admin-authhemvist saknas ännu | Flytta token/returnTo/logout/public origin/basePath tillsammans före avveckling |
+
+Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Control-URL:er skrivs även via history.replaceState, exempel control-events-page.tsx:179. Dessa kvarvarande delar är inte avvecklade av Guide/Videor-leveransen.
+
+
 ## J04 — En spelkatalog via lobby
 
 **Etapp:** E2. **Beroenden:** O01.
@@ -71,6 +92,19 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 **Klart/verifiera:** lobby → korrekt rum → launch → tillbaka samt profil/historik fungerar med reload; fel rum, stängt rum, obehörig operatör, saknad session och inaktuellt paket nekas. Kör relevanta `game-entry`, `player-lobby`, `player-area`, `player-profile` och profil-API-tester.
 **Risk:** URL-radering kan annars bryta sparade länkar eller av misstag ta bort launchens serverskydd.
 **Bevis till status.json[J04]:** `head=<SHA>; routes=<gammal → ny/avvecklad>; test=<flöde + negativa fall>; PR=<URL>; review=<granskare>`.
+
+**Förberedande läskarta 21 oktober:** jakob_plan har kartlagt J02-head 6748838e9194e0554fda060e869785599b890ac4. Ingen implementation eller provkörning ingår; J04 är TODO.
+
+| Nuvarande ingång | Föreslaget utfall att fastställa i O01 |
+| --- | --- |
+| /play-katalog, /demo, /casino.html, bar Blackjack-adress | /lobby med operator-kontext |
+| /game utan spelkontext | /lobby |
+| /game med dealer/table/launch/rehearsal | Kontextbevarande väg till /play/blackjack, med befintlig token-/queryvalidering |
+| /play/blackjack och /play/roulette | Behåll autentiserad game-launch; detta är inte en andra katalog |
+| /play/profil och /play/historik | Behåll som kontosidor nåbara från lobbyn; historikens retur går till lobby |
+
+Aktiva callers: presentation-room-create.tsx:93, control-workspace.tsx:34, scout-navigation.mjs:38, studio-native-mail.mjs:40, partner-reference.tsx:137, spelens returlänkar och loginfallback/player-ui-build.mjs:73. Gamla katalogens bord-/bakgrundsval och rumspreview i player-lobby-operator.tsx:95 behöver en beslutad hemvist eller uttrycklig avveckling; delade player-catalog/player-choices är inte raderingskandidater enbart för att katalogen försvinner. Bevara profilens Origin-skydd, serverägt saldo och game-entrys session/operatör/rum/paketkontroller. Nya timers/shared-table blockerar inte denna katalogavveckling när route-/funktionsbesluten är fastställda.
+
 
 ## J05 — Förenkla runtime och byggkedja
 

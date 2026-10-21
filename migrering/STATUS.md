@@ -26,7 +26,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J02 | Avveckla ersatt Control-publicering | jakob | VERIFIED |
 | K01 | Inventera den rensade Kevin-modulen | kevin | VERIFIED |
 | O01 | Lås kontrakt och funktionsansvar | orkestrator | IN_PROGRESS |
-| J03 | Avveckla resterande Control-ytor | jakob | TODO |
+| J03 | Avveckla resterande Control-ytor | jakob | IN_PROGRESS |
 | J04 | En spelkatalog via lobby | jakob | TODO |
 | J05 | Förenkla runtime och byggkedja | jakob | TODO |
 | J06 | Rensa testlås och rikta CI | jakob | TODO |
