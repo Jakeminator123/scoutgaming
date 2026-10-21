@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01 behöver två rättelser; O01 förbereds som kontraktsförslag. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
+Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01:s audit-import är rättad och verifierad; en motsägelse om state/JSONB återstår i PR #314. O01 förbereds som kontraktsförslag. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
 
 ## Frysta utgångspunkter
 

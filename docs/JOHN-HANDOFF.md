@@ -29,11 +29,19 @@ Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
 Kevin-källan är fortsatt kevin-merge-admin /
 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; underlag på
-codex/kevin-k01-underlag / bcd9273432c686c3e140892b5b00b2e69065dfcb.
-Matris och 1267 spårade mediekandidater är läsgranskade. Två K01-rättelser
-återstår: state/JSONB-förslaget kan bryta shoe proof och auditverktygets
-publicerade import pekar fel. Kevin äger rättelserna och dokument-PR;
-[granskning och nästa steg](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
+codex/kevin-k01-underlag / 38a297f7915913fdd8b197ac24a93902918f8580,
+[PR #314](https://github.com/Jakeminator123/scoutgaming/pull/314).
+Matris och 1267 spårade mediekandidater är läsgranskade. Auditverktygets
+KEVIN_SRC-import är verifierat rättad. K01-matrisens rad174 kräver korrekt TEXT,
+men rad107 tillåter fortfarande jsonb för ordningskänsligt shoe-proof-state.
+Kevin äger denna sista dokumenträttelse; K01 förblir IN_REVIEW och totalen 5%.
+Den tidigare inlämnade [rättelseleveransen](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318788990)
+hade förbisetts i förra sammanställningen. Oberoende deltagranskning är nu klar.
+[PR #315](https://github.com/Jakeminator123/scoutgaming/pull/315), head
+f29adaf942acace6593b0c9bb5677bf412fa0763, har inga blockerande kodfynd:
+fast sko ersätter båda tysta testreturerna. Ingen funktionell GitHub-CI finns;
+285/285 och 30/30 samt auditverktygets 21/21 är Kevins rapporter, inte egna prov.
+Ingen av Kevins PR:er är mergad.
 O01 förbereds med ett uttryckligt ej låst kontraktsförslag i masterplanen:
 main-global wallet, beständig idempotens, gemensam bordskonfiguration,
 textbevarat shoe proof och händelser efter commit. Kevin behöver precisera

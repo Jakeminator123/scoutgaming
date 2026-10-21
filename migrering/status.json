@@ -79,10 +79,10 @@
       "weight": 5,
       "status": "IN_REVIEW",
       "dependsOn": [],
-      "branch": "kevin-merge-admin",
-      "head": "5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc",
-      "pr": null,
-      "reviewer": "Codex-underagent kevin_plan (oberoende läsgranskning)",
+      "branch": "codex/kevin-k01-underlag",
+      "head": "38a297f7915913fdd8b197ac24a93902918f8580",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/314",
+      "reviewer": "Codex-underagent kevin_plan och orkestrator (oberoende läsgranskning)",
       "evidence": [
         "Kevin-underlag, rapporterade test/GPU-resultat: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6317942648",
         "Oberoende granskning: fyra klientfiler och två tester efter c4818f5; sju DDL-filer, 13 tabeller, sex triggrar, tre SQLite-standardfiler och minst nio SQL-konsumenter. 28 V1-raderingar verifierade; 1790 ljud-/videofiler kvar i trädet.",
@@ -91,9 +91,12 @@
         "Verifierad kontraktsgräns: Studio-audit har dokument/medieansvar och ersätter inte direkt Kevins spelhashkedja: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318445589",
         "Kompletterande inventering på codex/kevin-k01-underlag@bcd9273432c686c3e140892b5b00b2e69065dfcb: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318486389. Kodkällan är fortsatt 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc.",
         "Oberoende läsgranskning verifierar matrisens SQL-konsumenter, rowid, global wallet och auditserialisering samt 1267/1267 TSV-sökvägar/storlekar/Git-blobbar mot fryst kodträd. SHA256-värden ej omräknade mot binärer. Medier är statiska kandidater, inte godkänt importurval. TAP-loggens 285 pass lästa, ingen egen körning; GPU-server-SHA/latensorsak fortsatt obestyrkta.",
-        "Två avgränsade K01-rättelser och nästa ansvarig: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653. O01 äger kvarvarande schema-/lås-/replaybeslut; inga nya GPU-prov krävs för inventeringen."
+        "Två avgränsade K01-rättelser och nästa ansvarig: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653. O01 äger kvarvarande schema-/lås-/replaybeslut; inga nya GPU-prov krävs för inventeringen.",
+        "PR314 på 38a297f7915913fdd8b197ac24a93902918f8580, fryst produktkälla fortsatt 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318788990. Den tidigare inlämnade kommentaren hade förbisetts i orkestratorns förra sammanställning.",
+        "Oberoende delta-granskning verifierar KEVIN_SRC-importen och hashberäkningen mot fryst källa; audit-importblockeraren är stängd. Verktygets 21/21-rader är Kevins körningsrapport, inte vår egen körning. TEXT-rättelsen på rad174 är korrekt men matrisraden107 tillåter fortfarande jsonb och måste rättas.",
+        "PR315, codex/kevin-test-deterministic@f29adaf942acace6593b0c9bb5677bf412fa0763: oberoende läsgranskning utan blockerande kodfynd. Bara testfilen ändras; fast sko och obligatoriska assertions ersätter båda tidiga returerna. GitGuardian success men ingen funktionell CI-körning; 285/285 och 30/30 är Kevins rapporter. Ingen merge eller självständig runtimeacceptans."
       ],
-      "blocker": "Kevin ska rätta matrisens JSONB-förslag för rumsstate som innehåller ordningskänsligt shoe proof, och auditverktygets brutna import samt leverera körkommando/resultat från publicerad version. Dokument-PR/full head inväntas. Separat deterministisk testfix tillstyrkt; runtime/DDL ingår inte."
+      "blocker": "Kevin rättar K01-matris.md rad107: shared_rooms.state ska vara TEXT eftersom det innehåller ordningskänsligt shoe proof; raden motsäger avsnitt2.6/rad174. Audit-importblockeraren är verifierat stängd. Efter konsekvent dokumenträttelse kan K01 slutgranskas som inventering; inga nya GPU-prov eller fullsviter krävs."
     },
     {
       "id": "O01",
@@ -112,7 +115,7 @@
       "evidence": [
         "Förberedande, ej låst kontraktsförslag i MASTERPLAN.md: auktoritet, kommando/idempotens/version, main-global wallet, föreslagen transaktion/låsordning, textbevarat shoe proof och committade presentationsevent. Underlag main 15988f32fd572c453d2189502acbe324c4566815 och Kevin 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; ingen implementation eller runtimeacceptans."
       ],
-      "blocker": "K01:s två rättelser och Kevins svar om samtidiga insatser, gemensam konfigurationsgräns samt idle/lipsync-fallback återstår. Inga kontrakt låsta och inga poäng tilldelade."
+      "blocker": "K01:s kvarvarande motsägelse på matrisrad107 samt Kevins svar om samtidiga insatser, gemensam konfigurationsgräns och idle/lipsync-fallback återstår. Inga kontrakt låsta och inga poäng tilldelade."
     },
     {
       "id": "J03",
