@@ -197,18 +197,19 @@ test('preview labels match canonical supplied material while byte paths remain p
   assert.deepEqual(f.saved,before);
 });
 
-test('GET/HEAD forward Range and exact immutable storage tuple; every media read is fresh and uncached',async()=>{
+test('GET/HEAD forward Range and exact immutable storage tuple; every media reuse validates the current publication',async()=>{
   const f=fixture(),value=await body(f);
   for(const src of [value.media.dealer.src,value.media.tables[0].src,value.media.backgrounds[0].src]) {
     const response=await request(f,src,{headers:{range:'bytes=0-15'}});
     assert.equal(response.status,206);assert.equal(await response.text(),'published-media');
-    assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.has('x-private-path'),false);
+    assert.equal(response.headers.get('cache-control'),'private, no-cache, must-revalidate');assert.equal(response.headers.has('x-private-path'),false);
     assert.equal(response.headers.get('accept-ranges'),'bytes');
     const head=await request(f,src,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');
   }
   assert.equal(f.reads.length,7);assert.equal(f.served.length,6);
   assert.deepEqual(f.served[0],{record:{provider:'vercel-blob',pathname:f.mediaRows[0].pathname,sha256:f.mediaRows[0].sha256,size:4096,contentType:'video/mp4'},method:'GET',range:'bytes=0-15'});
   const head=await request(f,descriptor,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');assert.equal(f.served.length,6);
+  assert.equal(head.headers.get('cache-control'),'private, no-store');
 });
 test('stale revision and withdrawn room/operator/package are rejected before Blob I/O, even conditional requests',async()=>{
   const changes=[
@@ -309,9 +310,10 @@ test('underlying failures and integrity mismatch expose no provider body, secret
 test('authorized conditional and unsatisfiable Range responses retain safe semantics',async()=>{
   const f=fixture(),src=previewMediaPath(context,'dealer',f.mediaRows[0].id);
   const cached=await request(f,src,{headers:{'if-none-match':'"sha256-'+f.mediaRows[0].sha256+'"'}});
-  assert.equal(cached.status,304);assert.equal(await cached.text(),'');assert.equal(cached.headers.get('cache-control'),'private, no-store');
+  assert.equal(cached.status,304);assert.equal(await cached.text(),'');assert.equal(cached.headers.get('cache-control'),'private, no-cache, must-revalidate');
   const invalid=await request(f,src,{headers:{range:'bytes=999999-'}});
   assert.equal(invalid.status,416);assert.equal(await invalid.text(),'');assert.equal(invalid.headers.has('content-length'),false);
+  assert.equal(invalid.headers.get('cache-control'),'private, no-store');
   assert.equal(f.reads.length,2);
 });
 test('client contract rejects foreign URLs, contexts, extra fields and hidden storage data',async()=>{
