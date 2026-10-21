@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-21",
+  "scope": "Admin-förenkling och selektiv Kevin-migrering",
+  "baseline": {
+    "main": "15988f32fd572c453d2189502acbe324c4566815",
+    "backupBranch": "jakob-gren",
+    "kevinBranch": "kevin-merge-admin",
+    "kevin": "c4818f51dab1b003811905fafb65ba59ad81ed4a"
+  },
+  "stages": [
+    {
+      "id": "E1",
+      "name": "Kontrakt och första Adminleverans"
+    },
+    {
+      "id": "E2",
+      "name": "En produktväg"
+    },
+    {
+      "id": "E3",
+      "name": "Kevinmodul med mains lagring"
+    },
+    {
+      "id": "E4",
+      "name": "Adminstyrning och datamigrering"
+    },
+    {
+      "id": "E5",
+      "name": "Verifierad leverans"
+    }
+  ],
+  "activities": [
+    {
+      "id": "J01",
+      "owner": "jakob",
+      "stage": "E1",
+      "title": "Tydligare publicering i Admin",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J02",
+      "owner": "jakob",
+      "stage": "E1",
+      "title": "Avveckla ersatt Control-publicering",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J01"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K01",
+      "owner": "kevin",
+      "stage": "E1",
+      "title": "Inventera den rensade Kevin-modulen",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "O01",
+      "owner": "orkestrator",
+      "stage": "E1",
+      "title": "Lås kontrakt och funktionsansvar",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K01"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J03",
+      "owner": "jakob",
+      "stage": "E2",
+      "title": "Avveckla resterande Control-ytor",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J02",
+        "O01"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J04",
+      "owner": "jakob",
+      "stage": "E2",
+      "title": "En spelkatalog via lobby",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "O01"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J05",
+      "owner": "jakob",
+      "stage": "E2",
+      "title": "Förenkla runtime och byggkedja",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J03",
+        "J04"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J06",
+      "owner": "jakob",
+      "stage": "E2",
+      "title": "Rensa testlås och rikta CI",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J03",
+        "J04",
+        "J05"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K02",
+      "owner": "kevin",
+      "stage": "E3",
+      "title": "Ren regelkärna med explicit slump",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "O01"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K03",
+      "owner": "kevin",
+      "stage": "E3",
+      "title": "Delat bord utan SQL- och videokoppling",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K02"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J07",
+      "owner": "jakob",
+      "stage": "E3",
+      "title": "Postgres-adapter för delat bord",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K03"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K04",
+      "owner": "kevin",
+      "stage": "E3",
+      "title": "Spelklient och presentation från händelser",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K03",
+        "J07"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J08",
+      "owner": "jakob",
+      "stage": "E4",
+      "title": "Admin styr versionerad spelkonfiguration",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J07",
+        "O01"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K05",
+      "owner": "kevin",
+      "stage": "E4",
+      "title": "Exakt mediakoppling till Neon och Blob",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K01",
+        "K04"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J09",
+      "owner": "jakob",
+      "stage": "E4",
+      "title": "Förbered avveckling av oanvända databaskontrakt",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J05",
+        "J07",
+        "J08",
+        "K05"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K06",
+      "owner": "kevin",
+      "stage": "E4",
+      "title": "Verifiera Admin till spel efter omstart",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J08",
+        "K05"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "K07",
+      "owner": "kevin",
+      "stage": "E5",
+      "title": "Verifiera spelbeteenden och samtidighet",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K04",
+        "K06"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "J10",
+      "owner": "jakob",
+      "stage": "E5",
+      "title": "Ren klon, start och återställning",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "J06",
+        "J09",
+        "K06"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "O02",
+      "owner": "orkestrator",
+      "stage": "E5",
+      "title": "Oberoende integrerad granskning",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "K07",
+        "J10"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    },
+    {
+      "id": "O03",
+      "owner": "orkestrator",
+      "stage": "E5",
+      "title": "Godkänd integration och verifierad drift",
+      "weight": 5,
+      "status": "TODO",
+      "dependsOn": [
+        "O02"
+      ],
+      "branch": null,
+      "head": null,
+      "pr": null,
+      "reviewer": null,
+      "evidence": [],
+      "blocker": null
+    }
+  ]
+}

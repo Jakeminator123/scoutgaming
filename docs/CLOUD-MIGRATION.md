@@ -1,9 +1,19 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
-Uppdaterad 19 oktober 2026. Detta är den enda migrationsöversikten.
+Uppdaterad 21 oktober 2026. Detta är produktens övergripande migrationsöversikt.
 Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
+
+## Beställd Admin- och Kevin-integration — 21 oktober 2026
+
+Jakob har beställt en [Masterplan](../migrering/MASTERPLAN.md) med separata
+aktiviteter för Jakob och Kevin. Main är bas, `kevin-merge-admin` är källa
+för selektiv portning; `jakob-gren` bevarar utgångsläget. Planen kombinerar
+synlig Admin-förbättring med avveckling av ersatt kod och därefter spelmodulen.
+[Utförandestatus](../migrering/STATUS.md) genereras från en enda status.json;
+planfiler räknas inte som genomförd produktmigrering. Den avslutade tekniska
+Neon-/Blob-flytten nedan ändras inte av detta nya produktarbete.
 
 ## Aktuellt flöde på main — 19 oktober 2026
 

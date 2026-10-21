@@ -1,5 +1,18 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Beställd migrationsorkestrering — 21 oktober 2026
+
+Jakob har uttryckligen beställt [migrering/Masterplan](../../migrering/MASTERPLAN.md)
+med ägda Jakob-/Kevin-aktiviteter. Denna avgränsade utförandeplan är ett undantag
+till tidigare paus för nya planrapporter; produktens övergripande läge stannar
+i CLOUD-MIGRATION och tekniska kontrakt i befintliga kanoniska guider.
+Orkestratorn äger status.json och integration, underagenter får avgränsade
+aktiviteter och oberoende granskare kontrollerar samma fulla head.
+[Samarbetsguiden](../../migrering/SAMARBETE-OCH-ATKOMST.md) beskriver Slack i
+Impactwin, Kevins Claude Code och kanaltrådar per aktivitet. Ingen tät pollning,
+automatisk agentväckning, produktionsändring eller behörighetsändring ingår i
+att skriva planen. Tidigare leveransroller nedan är historisk status för sina datum.
+
 ## Leverans och städning på main — 19 oktober 2026
 
 MERGE4 samordnar aktuell review/CI/merge, UI/UX2 Admin-flödet, HUVUDAGENT6

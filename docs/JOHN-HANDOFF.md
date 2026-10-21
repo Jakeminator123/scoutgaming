@@ -1,5 +1,27 @@
 # Aktuell handoff — Scoutgaming
 
+## Masterplan för Admin och Kevin-modulen — 21 oktober 2026
+
+På Jakobs uttryckliga beställning finns [Masterplan](../migrering/MASTERPLAN.md),
+ägda aktivitetslistor, beroenden och [beräknad status](../migrering/STATUS.md).
+Bas är main `15988f32fd572c453d2189502acbe324c4566815`; Kevins källa är
+`kevin-merge-admin` på `c4818f51dab1b003811905fafb65ba59ad81ed4a`.
+Planeringen görs i `codex/migrering-masterplan`, i separat worktree; den
+ursprungliga checkoutens pågående ändringar bevaras. Ingen produktkod,
+produktionsdata eller åtkomst ändras av planleveransen.
+
+Första implementationsuppdrag är J01 och K01. Alla leveransaktiviteter startar
+som TODO. Procentsiffran mäter verifierade leveranser, inte skapade dokument.
+[Slack-/åtkomstguiden](../migrering/SAMARBETE-OCH-ATKOMST.md) skiljer anslutning,
+agentväckning, GitHub-rättigheter och SQL-läsning. Impactwin är vald arbetsyta;
+webbläsaren har skapat kanalen och bjudit in verifierad Kevin efter Jakobs bekräftelse. Startmeddelande är skickat; agentanslutning och kontobehörigheter återstår.
+
+Planen har oberoende läsgranskats utan kvarvarande blockerande fynd. Status-
+verktygets 0/5/100-procentsfall, saknade bevis, beroenden och cykeldetektion
+är kontrollerade; inget produktprov har körts. Main-SHA:ns GitHub Actions
+är gröna, men GitGuardian API:s incident-/platstäckning kunde inte läsas och
+ska inte rapporteras som säkerhetsklar.
+
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
 
 På Jakobs beslut samlas tal under **Talade repliker** och tysta beteenden

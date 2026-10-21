@@ -1,0 +1,137 @@
+# Kevin: spelmodulen K01–K07
+
+**Leveransmål:** de valda Kevin-beteendena kör som en avgränsad spelmodul på mains plattform och styrs av publicerad Admin-konfiguration. Ingen helmerge av Kevins plattform ingår.
+
+- Ägare: Kevin eller hans uttryckligen utsedda implementerare. Samma instruktioner gäller i Claude Code och Codex, oberoende av Slack-klient.
+- Beroenden och utförandestatus ägs av [status.json](../status.json). Varje godkänd aktivitet ger 5 procentenheter av hela planen; K01–K07 omfattar 35 procentenheter. Checklistorna här är acceptanskriterier, ingen separat statusräknare.
+- Gemensamma kontrakt och integration ägs av O01–O03 i [masterplanen](../MASTERPLAN.md). J07 äger Postgres-adapter, transaktioner och lås; J08 äger Admin-konfigurationen.
+- Planfilen ger inte tillstånd till produktionsmigrering, molnändring eller merge. Kevins långlivade branch behåller sitt ägarskap; GitHub-identitet ska verifieras, inte antas från namn eller `github: null` i personregistret.
+
+## Fryst källunderlag och läsgräns
+
+| Beteckning | Källa och omfattning |
+| --- | --- |
+| K | [kevin-merge-admin vid c4818f51dab1b003811905fafb65ba59ad81ed4a](https://github.com/Jakeminator123/scoutgaming/tree/c4818f51dab1b003811905fafb65ba59ad81ed4a/kevin/croupier-scoutgg); alla K-sökvägar nedan är relativa till `kevin/croupier-scoutgg/` |
+| M | Main vid `15988f32fd572c453d2189502acbe324c4566815`; M-sökvägar är relativa till reporoten |
+| Historik | `kevin-staging` är äldre analysunderlag, inte portningskälla. Mappnamnet `kevin-ks-migrering` ändrar inte detta. |
+
+Verifierat genom avgränsad kodläsning 21 oktober 2026:
+
+- K `vendor/croupier/shoe-game.mjs` skiljer regler från servern men skapar sko-ID via `crypto.randomUUID()` och anropar shuffle; `shoe-proof.mjs` skapar nonce via `randomBytes`. Reproducerbarhet kräver uttryckliga slump-/ID-indata. Proof-koden verifierar inspelad sko, inte oberoende RNG-certifiering.
+- K `server/shared-table.mjs` importerar SQLite, transaktioner, backoffice, spelhändelser och lipsync. `createSharedTable` blandar databas, saldo, bordstider, manifest och videoplan; detta är ett utgångsmaterial för uppdelning.
+- K `server/studio-tables.mjs` har filbaserad JSON-sparning och val för dealer, rum, språk, filt, insatsprofil, logotyp och layout. Valen är referensbeteenden, inte en ny auktoritativ datakälla.
+- M `services/game/public/card-presentation/README.md` beskriver redan portad buffring/förladdning i `verified-video-buffer.mjs` och `performance-player.mjs`. Dessa ska jämföras och återanvändas.
+
+Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna planleverans. Commitens uppgift om borttagna oanvända V1-klipp ska verifieras i K01; den bevisar inte att branchen saknar kvarvarande media eller plattformskopplingar.
+
+## K01 — Inventera den rensade Kevin-modulen
+
+**Etapp/beroenden:** E1; inga. Levererar underlag till O01.
+**Mål:** en provbar urvalslista där varje beteende har ägare, kontraktsgräns, konsument och acceptanstest.
+**Startfiler:** K `server/shared-table.mjs`, `server/studio-tables.mjs`, `server/media-registry.mjs`, `vendor/croupier/shoe-game.mjs`, `public/game-presentation.js`, `public/idle-chain.js`, `test/shared-table.test.mjs`; M `services/game/shoe-game.mjs` och `services/game/public/card-presentation/README.md`.
+
+- [ ] Frys käll-SHA och inventera regler, platser, countdown, återanslutning, idempotens, tal/idle, kort och responsivitet. Prioritera delat bord, moving lipsync och idleklipp enligt Kevins DM-uppgifter; verifiera dem i K01/O01 och märk oprövade förbättringar som kandidater.
+- [ ] Följ varje kandidat till SQL, filer, auth, wallet, media, timers och externa tjänster. Kartlägg `createSharedTable`-callbackarna `talk`, `readyFor`, `onPlan` och `winners`, samt gränsen mellan `vendor/croupier/shoe-game.mjs` och `public/game-events.js`. Föreslå kommando-, händelse-, lagrings- och presentationsportar till O01; nuvarande callbackar bevisar inte färdig separation.
+- [ ] Inventera mediereferenser och borttagna V1-poster via spårade manifest/metadata och ändringslista. Notera kvarvarande referenser, okänd identitet och saknade filer; ladda inte ned binärmassor för inventeringen.
+- [ ] Klassificera varje del: porta, återanvänd från main, ersätt/radera eller utred. Bevara mains konto/rum/auth, Neon/Blob, Render och OpenClaw; jämför redan portade preloads innan ny kod planeras.
+
+**Raderas/importeras inte:** inga produktfiler i K01; markera Kevins SQLite-/JSON-register, demoidentiteter, egen wallet, alternativa backoffice/serverstarter och bortvalda V1-media som ej avsedda för import. Specificera undantag som O01 måste avgöra.
+**Klart när:** O01 har en komplett avgränsad urvals- och beroendematris med testbara krav och öppna frågor; en kodläsning får inte anges som ett godkänt runtimeprov.
+**Verifiering/bevis:** matrisrader `beteende → K-fil:rad → M-konsument → beslut → kontrakt → testfall`; bifoga frysta SHA, lästa metadata, fullständighet/luckor och eventuell befintlig testutskrift med miljö. Lägg besluten i befintlig kanonisk dokumentation, med länk i status.json.
+
+## K02 — Ren regelkärna med explicit slump
+
+**Etapp/beroenden:** E3; O01.
+**Mål:** samma tillstånd, kommando, konfiguration och explicita slump-/tid-/ID-indata ger samma resultat och spelhändelser.
+**Startfiler:** K `vendor/croupier/shoe-game.mjs`, `vendor/croupier/public/blackjack.mjs`, `vendor/croupier/shoe-proof.mjs`, `server/game-audit.mjs`, `test/croupier-shoe.test.mjs`; M `services/game/shoe-game.mjs`, `services/game/public/blackjack.mjs`, `packages/shared/blackjack-shoe-rules.mjs`, `test/shoe-game.mjs`.
+
+- [ ] Porta endast O01:s godkända regelbeteenden och sko-/auditdata. Definiera validerade kommandon, fel, tillståndsversion, spelhändelser och publik vy; dölj skoordning, burn och ännu dolda kort.
+- [ ] Flytta slump, UUID och eventuell tid till uttryckliga indataportar. Produktionsadaptern ska behålla säker slump; reproducerbara testsekvenser får aldrig bli produktionsfallback.
+- [ ] Låt kärnan returnera nödvändiga saldoändringar till den serverägda transaktionen. Klientens saldo, kort, regler eller insatsgränser får inte bli betrodda indata.
+- [ ] Behåll sko, cut/burn, försäkring, split/double, sidospel och avräkning enligt O01. Bevara shoe proof commit/reveal: bind öppningscommitment till exakt sko/runda, exponera fullständigt bevis först efter godkänd skostängning och verifiera draws/återstående kort. Dokumentera regelskillnader; framtida kort får inte läcka.
+
+**Raderas/importeras inte:** SQL, filåtkomst, HTTP/WS, UI, videoval, lipsync och interna timers i kärnan; duplicerad gammal regelimplementation först när alla konsumenter använder den verifierade ersättningen.
+**Klart när:** kärnan kör isolerat utan lagring/nätverk; samma explicita indata reproducerar utfallet och motsvarande offentliga händelser. Produktionsslumpen är oförsvagad.
+**Verifiering/bevis:** regeltester för giltiga/ogiltiga drag, saldogräns, dolt kort, skoövergång och exakt en avräkning; reproduktion med samma indata och variation med annan slump. Prova commitment före första draw, ingen förtida reveal samt att ändrad nonce, draw eller återstående sko underkänns. Ange testnamn, kommandon, exitkod, SHA och kontraktsversion; kalla inte detta RNG-certifiering.
+
+## K03 — Delat bord utan SQL- och videokoppling
+
+**Etapp/beroenden:** E3; K02. Lagringskontraktet överlämnas till J07.
+**Mål:** servern samordnar rum, spelare, platser, deadlines och återanslutning genom O01:s portar.
+**Startfiler:** K `server/shared-table.mjs`, `server/transactions.mjs`, `server/game-audit.mjs`, `public/shared-table.js`, `public/round-clock.js`, `test/shared-table.test.mjs`; M `packages/storage/server/postgres-store.mjs` läses som J07:s integrationsgräns.
+
+- [ ] Separera bordets tillståndsövergångar från SQL, auth, saldoimplementation, manifest och lipsync. Använd mains verifierade spelar-/rumskontext och versionsbundna konfiguration.
+- [ ] Definiera port för atomisk läsning/ändring av rum, berörda spelare, sko, kvitto och kommandonyckel; J07 implementerar Postgres-transaktion/lås. Ingen lokal SQLite-fallback i drift.
+- [ ] Gör countdown och timeout serverägda med explicit klocka och beständiga deadlines. Lås O01:s policy för återanslutning, tom plats, avhopp, sena kommandon och samtidiga beslut.
+- [ ] Definiera varaktig idempotens, versionskonflikt och snapshot/händelsesekvens. Samma nyckel med annat innehåll avvisas; replay efter annan åtgärd eller omstart får inte debitera på nytt.
+
+**Raderas/importeras inte:** `DatabaseSync`/DDL, filregister, demo-refill/tokenidentitet, hårdkodade media-URL:er och lipsyncanrop ur bordstjänsten. Behåll nödvändiga tidsregler som uttryckliga serverregler, inte som klient- eller videokvittens.
+**Klart när:** bordstjänsten klarar kontraktstester mot en isolerad adapter och lämnar ett entydigt avtal för J07; mediefel kan inte ändra utfall eller skapa en ny debitering.
+**Verifiering/bevis:** två spelare/två rum, samtidiga platsanspråk, sena/dubbla kommandon, frånkoppling och rekonstruerad snapshot/deadline. Redovisa händelsesekvens, versioner och förväntad ledger utan persondata; verklig Postgres-atomicitet verifieras av J07 och samprovas i K07.
+
+## K04 — Spelklient och presentation från händelser
+
+**Etapp/beroenden:** E3; K03 och J07.
+**Mål:** utvalda förbättringar av idle, tal, kort och layout återger committade spelhändelser utan att styra spelutfallet.
+**Startfiler:** K `public/shared-table.js`, `public/game-events.js`, `public/game-presentation.js`, `public/game-cards.js`, `public/idle-chain.js`, `public/dealer-layer.js`, `public/lip-layer.js`, `public/table-layout.js`, `public/phone-dock-fit.js`; M `services/game/public/performance-player.mjs`, `services/game/public/verified-video-buffer.mjs`, `packages/presentation/runtime/`.
+
+- [ ] Mappa O01:s offentliga händelser till befintliga presentationskontrakt och publicerat paket. Kort avslöjas först av committad serverhändelse; klienten gissar inte nästa kort eller handlingsrätt.
+- [ ] Porta accepterad lugn idle, moving lipsync, övergångar, tal och kortplacering. Prova tal under idle, vänteläge och kortövergång samt när lipsyncworker saknas eller svarar sent. Bevara exakt dealer-/källframe-/audio-/bankkoppling; ingen fristående munanimation eller återdebitering vid återställning.
+- [ ] Återanvänd verifierad buffring och förladdning. Lägg till kod endast för ett dokumenterat gap; skilj spelhändelse, presentationstid och klientens laddningsfel.
+- [ ] Kontrollera pekare/touch, tangentbord, läsbara fel och relevant mobil-/datorlayout. Definiera beteendet vid saknat media, avbrutet tal, långsam laddning och återanslutning.
+
+**Raderas/importeras inte:** alternativ klientägd spelmotor, hårdkodade dealer-/rumregister, egna wallet-anrop, duplicerade preloadspår och ersatta renderare med deras enda layouttester. Radera först efter konsumentkontroll.
+**Klart när:** O01:s valda UI-beteenden fungerar genom J07-adaptern; laddning, talfel och replay påverkar inte serverns saldo, sko eller utfall.
+**Verifiering/bevis:** isolerat flöde insats → utdelning → beslut → resultat → återanslutning på mobil och dator; skärmbild per kontrollerad övergång, händelse-ID/configversion och korta observationer. Hashar och tester redovisas separat från faktisk visuell granskning/lipsyncacceptans.
+
+## K05 — Exakt mediakoppling till Neon och Blob
+
+**Etapp/beroenden:** E4; K01 och K04.
+**Mål:** varje accepterat mediaobjekt har exakt identitet och koppling till befintligt register, Blob-objekt och publicerat paket.
+**Startfiler:** K `server/media-registry.mjs`, `public/dealers.js`, `public/runtime-event-links.js`, `public/media_omkodad_crf20_2026-09-25/manifest.json`; M `packages/presentation/contracts/material-catalog.mjs`, `packages/presentation/server/package-rooms.mjs`, `docs/LOCAL-PRESENTATION-RUNTIME.md`.
+
+- [ ] Slutför K01:s urval med dealer, händelse, språk, take, exakt SHA-256, källa, ljud/video/frameindex/kalibrering och befintlig acceptans. Okända eller ändrade hashar förblir oaccepterade.
+- [ ] Mappa varje post till befintligt Neon-ID/Blob-objekt eller en uttryckligt planerad ny post. Skilj design-ID, uppladdad layer-UUID, dealer, rum och fryst paket; ingen namn- eller längdmatchning som identitetsbevis.
+- [ ] Prova manifestvalidering och paketupplösning isolerat; avvisa saknad/mismatched identitet och bortvalda V1-referenser. Bevara historiskt refererade main-media och Astrids märkta legacyreferens.
+- [ ] Leverera granskbar registrerings-/importordning till plattformsägaren. Eventuell faktisk molnimport kräver rätt auktorisation och separat kvitto; planen eller Kevins meddelande godkänner den inte.
+
+**Raderas/importeras inte:** bortvalda V1-klipp, oregistrerade träningskopior, parallella lokala produktkataloger och ungefärligt matchade ersättningar. Ingen generell radering av historiska main-media.
+**Klart när:** samtliga valda runtimeposter löses till exakt accepterat material; avvisade/okända poster kan inte väljas. Visuell acceptans gäller endast oförändrade godkända bytes och sammanhang.
+**Verifiering/bevis:** manifestmatris `käll-SHA/sökväg → hash → Neon-ID → Blob-identitet → paket/händelse → acceptans`; valideringsresultat och negativa fall. Registreringsbevis, mediehämtning och visuell granskning hålls åtskilda.
+
+## K06 — Verifiera Admin till spel efter omstart
+
+**Etapp/beroenden:** E4; J08 och K05.
+**Mål:** bevisa att varje överenskommen Admin-inställning når rätt spelversion genom sparning, publicering, launch och omstart.
+**Startfiler:** K `server/studio-tables.mjs`, `server/shared-table.mjs`, `public/shared-table.js` som beteendereferenser; M `apps/studio/lib/presentation-room-api.mjs`, `packages/presentation/contracts/operator-rooms-contract.mjs`, `packages/presentation/server/package-rooms.mjs` samt J08:s faktiska Admin-writer och versionskontrakt.
+
+- [ ] Skapa en testmatris från O01: insatsgränser/chips, deadlines, dealer, tal/idle, språk och tillåtna utseendeval som faktiskt ingår. Varje fält får skrivmål, publiceringspunkt, läsväg och observerbart spelresultat.
+- [ ] Prova spara → återläs → publicera → lobby → auktoriserad launch → ny session → serveromstart → återläsning, i isolerad miljö. Visa rätt rum, paket och configversion i varje led.
+- [ ] Prova O01:s policy för en redan aktiv hand/session: ändringar blir aldrig halvt tillämpade. Rumsutseende skrivs genom scoped `roomOverrides`; ett valt rum får inte ändra delad mall av misstag.
+- [ ] Avvisa fel roll/ägare/rum, gammal revision, ogiltiga värden och media från fel paket. Förfalskade klientval får inte överstyra serverns regler eller publiceringsbeslut.
+
+**Raderas/importeras inte:** Kevins JSON-bordsregister, egna backoffice-sidor, klientlagrade auktoritativa inställningar och defaults som döljer ett saknat publicerat värde. J08 äger nödvändiga Admin-kodändringar.
+**Klart när:** varje godkänt fält har ett positivt flödesbevis och relevant negativt test; omstart behåller rätt tillstånd/version utan lokal produktfallback.
+**Verifiering/bevis:** tabell `Admin-fält → writer → lagrad revision → publicerat paket → runtimevärde → effekt efter omstart`; skärmbilder för flödets kontrollerade steg, API-resultat och serverbevis utan hemligheter. Brister lämnas som blockerare till J08 eller berörd K-aktivitet.
+
+## K07 — Verifiera spelbeteenden och samtidighet
+
+**Etapp/beroenden:** E5; K04 och K06. Levererar till O02; den ersätter inte O02:s oberoende samprov.
+**Mål:** den integrerade porten har verifierad regel-/saldo-/rumsintegritet och motiverade förbättringar jämfört med main.
+**Startfiler:** K `test/shared-table.test.mjs`, `test/game-integration.test.mjs`, `test/table-limits.test.mjs`, `test/idle-chain.test.mjs`, `test/game-cards-fixed.test.mjs`; M `test/shoe-game.mjs`, berörda beteendetester samt J07/J08:s nya integrationstester.
+
+- [ ] Porta relevanta beteendetester och kör dem på den integrerade kandidaten med högst fyra arbetare där verktyget stöder det. Bevara CI:s obligatoriska fullregression; upprepa inte tunga gröna körningar utan ändrad grund.
+- [ ] Verifiera samtidiga spelare/rum, parallella kommandon mot samma saldo, upprepade request-ID, konflikt, krasch/omstart och återanslutning. Förväntningen är exakt en giltig debitering/avräkning och inga rumsläckor.
+- [ ] Jämför main och kandidat i samma isolerade miljö med samma testindata och scenarier. För varje vald förbättring redovisas observerat före/efter, exempelvis idleövergång, kortpresentation, återanslutning eller responsivitet.
+- [ ] Om prestanda åberopas: ange enhet, nätverk, antal mätningar och mätvärden; redovisa osäkerhet. Befintliga portade preloads räknas som återanvändning, inte en ny förbättring.
+
+**Raderas/importeras inte:** obsolete källsträng-/CSS-/layoutlås, dubbla tester utan egen beteenderisk och tillfälliga alternativa produktvägar som portningen ersatt. Bevara auth, spelregler, idempotens, persistens och rumsisolering.
+**Klart när:** kandidatens relevanta tester passerar, jämförelsen belägger O01:s accepterade förbättringar och alla kvarvarande brister är uttryckligt klassificerade. Ingen uppmätt förbättring påstås utifrån enbart kodläsning.
+**Verifiering/bevis:** full kandidat-SHA, jämförelse-SHA, miljö/schema, kontrakt/configversion, kommandon/exitkoder, relevanta loggar och visuella observationer. Leverera en kompakt kvittens till O02; orkestratorn uppdaterar status.json och avgör godkänd aktivitet.
+
+## Gemensam arbets- och leveransordning
+
+- Läs AGENTS, agent-talk och relevanta kanoniska guider före implementation; gameplay/media kräver även JOHN-HANDOFF och ENVIRONMENT-RESTORATION. Verifiera Node-version och paketets krav.
+- Arbeta i egen avgränsad featurebranch från aktuell main; dokumentera accepterat delta när käll-/bas-SHA ändras. Respektera filanspråk och låt orkestratorn äga gemensamt Git-index/integration.
+- En leveranskvittens innehåller aktivitet, full head, ändring/radering, testmiljö, körda kontroller, bevislänkar, granskare och återstående blockerare. Ett meddelande är information, ingen merge-/DDL-behörighet.
+- Begär saknat kontrakt eller beslut hos dess ägare. Skapa inte en permanent fallback för att komma runt en blockerare. Släpp egna claims när leveransen är klar; inga återkommande statuspingar behövs.
