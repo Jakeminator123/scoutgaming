@@ -2,13 +2,13 @@
 
 Genererad från [status.json](status.json). Uppdaterad 2026-10-21.
 
-**Verifierad migrering: 0% (0/20 aktiviteter).**
+**Verifierad migrering: 5% (1/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
 | Etapp | Verifierat inom etappen | Kumulativt etappmål | Grind |
 | --- | ---: | ---: | --- |
-| E1 Kontrakt och första Adminleverans | 0% | 20% | Ej godkänd |
+| E1 Kontrakt och första Adminleverans | 25% | 20% | Ej godkänd |
 | E2 En produktväg | 0% | 40% | Ej godkänd |
 | E3 Kevinmodul med mains lagring | 0% | 60% | Ej godkänd |
 | E4 Adminstyrning och datamigrering | 0% | 80% | Ej godkänd |
@@ -16,13 +16,13 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 
 | Ansvar | Verifierat inom ansvaret |
 | --- | ---: |
-| jakob | 0% |
+| jakob | 10% |
 | kevin | 0% |
 | orkestrator | 0% |
 
 | ID | Aktivitet | Ansvar | Status |
 | --- | --- | --- | --- |
-| J01 | Tydligare publicering i Admin | jakob | IN_REVIEW |
+| J01 | Tydligare publicering i Admin | jakob | VERIFIED |
 | J02 | Avveckla ersatt Control-publicering | jakob | TODO |
 | K01 | Inventera den rensade Kevin-modulen | kevin | IN_REVIEW |
 | O01 | Lås kontrakt och funktionsansvar | orkestrator | TODO |

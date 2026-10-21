@@ -11,7 +11,7 @@ Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123
 | Orkestrator | Beroenden, SQL-läsroll, integration och status | codex/migrering-masterplan och GitHub #312 |
 | Oberoende granskare | Granska fryst K01 och därefter levererad J01 | Fynd och verifiering; ingen självattest av egen kod |
 
-Jakob har uttryckligen startat J01 med underagenter och parallell granskning av Kevin-underlaget. J01 väntar inte på Kevin-porten eller SQL-inloggningen. J01:s isolerade acceptans är granskad i PR #313; CI återstår. K01:s komplettering är granskad men två rättelser krävs; [fynd och nästa leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
+Jakob har uttryckligen startat J01 med underagenter och parallell granskning av Kevin-underlaget. J01 väntar inte på Kevin-porten eller SQL-inloggningen. J01:s isolerade acceptans och CI är verifierade i PR #313; aktiviteten är VERIFIED (5% av planen), ännu inte mergad. K01:s komplettering är granskad men två rättelser krävs; [fynd och nästa leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
 
 ## Jakobs småändringar parallellt
 

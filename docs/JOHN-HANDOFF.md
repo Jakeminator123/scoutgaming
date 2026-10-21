@@ -8,7 +8,8 @@ ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868 från main 15988f32.
 Isolerad UI/API-acceptans är oberoende godkänd: spara/publicera/återöppna,
 ny distinkt signerad N1-session, konflikt och negativa behörighetsfall.
 Produktändringen passerade 160/160 prov, typer och klientbygge; den efterföljande
-sessionskompletteringen 23/23 berörda prov. CI på slutlig head återstår.
+sessionskompletteringen 23/23 berörda prov. CI på samma slutliga head passerar.
+J01 är VERIFIED: 5% av planen, 25% av E1. PR:en är inte mergad.
 Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
 Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 
