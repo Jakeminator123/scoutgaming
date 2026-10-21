@@ -50,7 +50,7 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
   for(const path of ['/administration','/administration/'])assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/control/administration'});
+    {kind:'redirect',destination:unified.publicOrigin+'/admin/drift'});
   assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));

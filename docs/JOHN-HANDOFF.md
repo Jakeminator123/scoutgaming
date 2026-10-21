@@ -634,6 +634,12 @@ uppladdning, databas, provider eller deploy verifieras. Root läste loggarna.
 Oberoende produkt- och testreview av kevin_plan: inga blockerande fynd.
 Studio-build med /studio och alla frontendtyper passerar, traces66/44. Lokala beroendejunctions används; detta är inte deployacceptans. Ordinarie hook redovisas i PR/status.json.
 Loggar finns i arkiv/2026-10-21/j03-administration/ i denna worktree.
+Första CI39675471027 föll på två testantaganden: login-browserfixturen
+saknade nytt delat routeberoende och platform-ui väntade på pensionerad
+/control/administration. Endast dessa två testfiler rättas; båda felen
+reproducerade före fix, sedan 30 pass/0 fail med Node24.21.0. Tre frivilliga
+browserfall kördes inte i denna smala rättning. Inget produktdelta.
+Rättningslogg: arkiv/2026-10-21/j03-administration-ci-fix/focused.log.
 Browserfixturer stängde sina kontexter och Chromium; inga servrar startades.
 
 O01 är verifierad som kontraktsaktivitet i plan-PR311 på

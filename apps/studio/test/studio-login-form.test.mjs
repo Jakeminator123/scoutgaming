@@ -63,6 +63,7 @@ function browserSources() {
       ['./' + name + '.mjs', compile(readFileSync(new URL('../lib/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
     ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'admin-workspace-routes'].map(name =>
       ['../../../packages/navigation/' + name + '.mjs', compile(readFileSync(new URL('../../../packages/navigation/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
+    './admin-workspace-routes.mjs': compile(readFileSync(new URL('../../../packages/navigation/admin-workspace-routes.mjs', import.meta.url), 'utf8'), 'admin-workspace-routes.mjs'),
     './operator-slug.mjs': compile(readFileSync(new URL('../../../packages/navigation/operator-slug.mjs', import.meta.url), 'utf8'), 'operator-slug.mjs'),
     './studio-login.module.css': 'module.exports={__esModule:true,default:{}};',
     component: compiled,
@@ -110,7 +111,8 @@ test('browser fixture loads the real login component and every return-path depen
   const load = fixtureRequire(browserSources()), client = load('../lib/studio-login-client.mjs');
   assert.equal(typeof load('component').StudioLogin, 'function');
   for (const target of ['/admin/clips?operator=north&table=room-7&composition=scene-7&dealer=vera&game=roulette',
-    '/control/preview?operator=north&lane=scene-7', '/partner/north/rooms?room=vip-room']) {
+    '/control/preview?operator=north&lane=scene-7', '/control/administration?tab=operations&operator=north&room=room-7#status',
+    '/partner/north/rooms?room=vip-room']) {
     assert.equal(client.studioLoginReturnTo(target), login.studioLoginReturnTo(target));
     assert.equal(client.studioLoginDestination(target), login.studioLoginDestination(target));
   }
