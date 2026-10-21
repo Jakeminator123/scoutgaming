@@ -1,6 +1,12 @@
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,dirname,resolve,basename} from 'node:path';
+import {createBlobMediaStore} from '../packages/studio-registry/server/blob-reader.mjs';
+import {platformBackendHeaders} from '../packages/navigation/server/platform-routing.mjs';
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
@@ -88,6 +94,52 @@ test('published private asset access is limited to that operator; a library-only
   assert.equal((await handler(new Request(`https://example.com/api/presentation/layers/north/${presentation.assets[0].id}`))).status,200);
   for(const slug of ['south','north'])assert.equal((await handler(new Request(`https://example.com/api/presentation/layers/${slug}/${asset('background',3).id}`))).status,404);
   assert.equal(reads,1);
+});
+
+test('published bytes revalidate without retransmission; withdrawn assets cannot reuse a cached ETag',async t=>{
+  const {pack,presentation}=fixture(),bytes=Buffer.alloc(64*1024,42);
+  const asset=presentation.assets[0];Object.assign(asset,{sha256:createHash('sha256').update(bytes).digest('hex'),size:bytes.length});
+  asset.pathname=layerAssetPath(asset);pack.branding=withPackagePresentation({},presentation);
+  const cacheDir=await mkdtemp(join(tmpdir(),'croupier-media-revalidation-'));
+  t.after(()=>{assert.equal(dirname(resolve(cacheDir)),resolve(tmpdir()));assert.match(basename(cacheDir),/^croupier-media-revalidation-/);return rm(cacheDir,{recursive:true,force:true});});
+  let active=true,resolves=0,downloads=0,reads=0;
+  const store=createBlobMediaStore({defaultCacheDir:cacheDir,clientFactory:async()=>({get:async pathname=>{
+    downloads++;return {statusCode:200,stream:new Response(bytes).body,
+      blob:{pathname,url:`https://fixture.private.blob.vercel-storage.com/${pathname}`,contentType:asset.contentType,size:bytes.length}};
+  }})});
+  const handle=createPublishedLayerAssets({packages:{resolve:async()=>{resolves++;return active?{operator:{id:'north'},package:pack}:null;}},
+    privateMedia:(record,request)=>{reads++;return store.getPrivateMedia(record,request,{env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-only'}});}});
+  const url=`https://example.test/api/presentation/layers/north/${asset.id}`;
+  const request=(headers={},method='GET')=>handle(new Request(url,{headers,method}));
+  const first=await request();assert.equal(first.status,200);assert.deepEqual(Buffer.from(await first.arrayBuffer()),bytes);
+  assert.equal(first.headers.get('cache-control'),'private, no-cache, must-revalidate');const etag=first.headers.get('etag');
+  for(let i=0;i<3;i++){
+    const cached=await request({'if-none-match':etag});assert.equal(cached.status,304);assert.equal(cached.body,null);
+    assert.equal(cached.headers.get('cache-control'),'private, no-cache, must-revalidate');
+  }
+  const range=await request({range:'bytes=10-13','if-range':etag});assert.equal(range.status,206);
+  assert.equal(range.headers.get('content-range'),`bytes 10-13/${bytes.length}`);assert.deepEqual(Buffer.from(await range.arrayBuffer()),bytes.subarray(10,14));
+  const changed=await request({range:'bytes=10-13','if-range':'"old-version"'});assert.equal(changed.status,200);
+  assert.deepEqual(Buffer.from(await changed.arrayBuffer()),bytes);
+  const head=await request({},'HEAD');assert.equal(head.status,200);assert.equal(head.body,null);assert.equal(head.headers.get('content-length'),String(bytes.length));
+  assert.equal(resolves,7);assert.equal(downloads,1);assert.equal(reads,7);
+  const denied=await request({'sec-fetch-site':'cross-site','if-none-match':etag});assert.equal(denied.status,403);
+  assert.equal(denied.headers.get('cache-control'),'private, no-store');
+  active=false;
+  const withdrawn=await request({'if-none-match':etag,range:'bytes=0-'});assert.equal(withdrawn.status,404);
+  assert.equal(withdrawn.headers.get('cache-control'),'private, no-store');assert.equal(reads,8);assert.equal(resolves,9);
+});
+
+test('unverified responses remain uncacheable and frontend ingress preserves byte validators',async()=>{
+  const {pack,presentation}=fixture();
+  for(const [status,headers] of [[200,{}],[200,{ETag:'"wrong"'}],[503,{ETag:'"sha256-'+presentation.assets[0].sha256+'"'}]]) {
+    const handle=createPublishedLayerAssets({packages:{resolve:async()=>({operator:{id:'north'},package:pack})},privateMedia:async()=>new Response('unavailable',{status,headers})});
+    const response=await handle(new Request(`https://example.test/api/presentation/layers/north/${presentation.assets[0].id}`));
+    assert.equal(response.status,status);assert.equal(response.headers.get('cache-control'),'private, no-store');
+  }
+  const input=new Headers({'if-none-match':'"version"','if-range':'"version"',range:'bytes=10-13',cookie:'session=fixture'});
+  const forwarded=platformBackendHeaders(input,{secret:'fixture-server-only',publicOrigin:'https://example.test'});
+  for(const name of ['if-none-match','if-range','range','cookie'])assert.equal(forwarded.get(name),input.get(name));
 });
 test('game entry uses the published snapshot after Studio is edited and keeps authority separate',async()=>{
   const {pack,project,presentation}=fixture();project.lanes[0].layers.table.colors=['#ffffff'];
