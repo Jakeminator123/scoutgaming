@@ -178,6 +178,22 @@ Kontroll mot main:
 
 ## 4. Öppna frågor och vad som väntar på J07
 
+> **Uppdaterat 22/10 efter J07 (#332 @ `2dd4e436`) och K04-beslutet i #312 (6328064364).** Implementationen finns i K04 PR #333 @ `9e62923b`.
+>
+> **Levererat:**
+> - **J07:** outboxleverans, rumslagring, snapshotläsning, fryst config och scheduler.
+> - **K04-mottagaren** (`presentation/postgres-receiver.mjs` + `ops/neon-game/010-presentation-receiver.sql`, inte applicerad): beständig senast accepterad version per rum och presentationslagring på rumsnivå, inte i `native_presentations`.
+> - **Löst i K04:** G1, G8 och G4/G6.
+>
+> **Väntar fortfarande:**
+> - Rumstransport och auth (root).
+> - Config- och Admin-värdena (J08).
+>
+> Texten nedan är den ursprungliga mappningen från 21/10 och bevaras som underlag.
+
+### Ursprunglig lista (21/10)
+
+
 **Väntar på J07** (Postgres-adapter, transaktioner, lås):
 
 - Bindning av `tx.outbox.put`, `store.outbox.{pending, deliveredVer, ack}` och varaktig `lastAccepted` per rum (C `ports.mjs:29,36-46`). Var mottagaren/sinken körs.
