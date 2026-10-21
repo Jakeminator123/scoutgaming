@@ -666,7 +666,15 @@ O01 är VERIFIED som kontraktsaktivitet på
 kontraktsprov. Totalt20%, E1 100%; J03:s slutliga CI/aktivitetsacceptans
 återstår. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är integrerad
 konfliktfritt i denna egenbranch/PR331; andra agenters ändringar bevaras.
-Samlad CI återstår efter integrationen. Ingen merge till main eller deploy.
+CI39680259777 på integrationshead b46e8d1c misslyckades i fyra föråldrade
+test-/fixturekrav. Studio-build/alla frontendtyper och isolerad SQL/restart/HTTPS
+passerade i CI. Fyra testfiler har rättats utan produktändring: gammal
+Control-källsträngskoppling borttagen, preview-authfixture kompletterad och
+två adresskrav flyttade till Admin. Före4/4 reproducerade fel; efter58/58,
+0 skips, på Node24.21.0. Auth-före-dataläsning, hash/ingen bearer, atomisk
+inbjudan och signerad engångshandoff bevarade. Oberoende deltareview av
+kevin_plan och root utan blockerare. Loggar pr331-ci-{before,after,commands}.log.
+Ny samlad CI måste verifiera rättningsheaden; ingen merge till main eller deploy.
 
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu

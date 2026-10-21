@@ -61,7 +61,9 @@ test('Sammansättning edits three saved lane choices and keeps the separated dea
 
 test('shared preview data authorization rejects unauthenticated and partner access before reading any Studio data',async()=>{
   let role='partner',unauthenticated=false,reads=0;
-  const config={apiBase:'/studio/api/admin',publicOrigin:'https://studio.example.invalid'};
+  const config={apiBase:'/studio/api/admin',authBase:'/studio/api/auth',
+    allowedOrigins:['https://public.example.invalid','https://studio.example.invalid'],
+    publicHosts:['public.example.invalid','studio.example.invalid']};
   const native={authorize:async()=>{if(unauthenticated)throw Object.assign(Error('unauthenticated'),{statusCode:401});return {role};},
     gamePolicy:{readSaved:async()=>{reads++;return {project:createSeedProject()};}},
     videoRegistry:async()=>{reads++;return {videos:[]};}};
@@ -79,8 +81,9 @@ test('shared preview data authorization rejects unauthenticated and partner acce
   unauthenticated=true;
   await assert.rejects(shared.studioUiInitialData(request),error=>{
     if(typeof error.redirect!=='string')return false;
-    const target=new URL(error.redirect,'https://studio.example.invalid');
-    return target.pathname==='/login'&&target.searchParams.get('returnTo')==='/admin/compositions';
+    const target=new URL(error.redirect);
+    return target.origin===config.allowedOrigins[0]&&target.pathname==='/admin/login'
+      &&target.searchParams.get('returnTo')==='/admin/compositions';
   });
   assert.equal(reads,0);
   role='admin';unauthenticated=false;
