@@ -34,7 +34,7 @@ function message({ to, kind, role, link, operatorName, roleLabel }, origin) {
     : 'Behörighet: nivå 3 (spelarlobbyn och spelen).';
   const action = invite ? 'Aktivera kontot och välj lösenord' : 'Välj nytt lösenord';
   const expiry = `Länken gäller i ${invite ? '72' : '2'} timmar och kan användas en gång. Vid behov kan en administratör skicka en ny länk.`;
-  const login = partner ? `${origin}/partner/login` : admin ? `${origin}/studio/login?returnTo=%2Fcontrol` : `${origin}/player-login`;
+  const login = partner ? `${origin}/partner/login` : admin ? `${origin}/admin/login` : `${origin}/player-login`;
   const safety = 'Lösenord skickas aldrig via e-post. Dela inte aktiverings- eller återställningslänken. Om du inte känner igen detta mejl kan du bortse från det.';
   const text = [`ScoutGamingGroup: ${heading}`, introduction, access, `Inloggningsadress: ${to}`,
     `${action}: ${link}`, expiry, `Logga in efteråt: ${login}`, ...(partner ? [] : [`Spelarlobby: ${origin}/play`]), safety].join('\n\n');
@@ -55,7 +55,7 @@ export function createNativeStudioMail({ env = process.env, fetchImpl = fetch } 
   return Object.freeze({ async send({ to, kind, role, link, operatorName, roleLabel }) {
     let url;
     try { url = new URL(link); } catch { return { sent: false }; }
-    const studioPath = !!effectiveAccountRole(role) && url.pathname === '/studio/set-password';
+    const studioPath = !!effectiveAccountRole(role) && url.pathname === '/admin/set-password';
     const partnerPath = role === 'partner' && url.pathname === '/partner/set-password';
     if (!mailbox(to) || !['invite','reset'].includes(kind) || (!studioPath && !partnerPath) || url.origin !== origin.origin
       || url.username || url.password || url.hash

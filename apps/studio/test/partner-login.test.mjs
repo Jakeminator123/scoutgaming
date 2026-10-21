@@ -12,7 +12,6 @@ import { handlePartnerAuth, internalSessionPresent } from '../lib/partner-sessio
 import { partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
 import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
-import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 
 const require = createRequire(import.meta.url);
@@ -93,7 +92,7 @@ test('the real login page and N1 link preserve safe return context and reject un
       const tree=await Page({searchParams:Promise.resolve({returnTo:input})});
       assert.equal(tree.props.authBase,authBase);assert.equal(tree.props.returnTo,expected);
       const login=new URL(internalLoginHref(authBase,input),'https://fixture.invalid');
-      assert.equal(login.pathname,authBase.startsWith('/studio/')?'/studio/login':'/login');
+      assert.equal(login.pathname,'/admin/login');
       assert.equal(login.searchParams.get('returnTo'),expected);assert.equal(login.searchParams.size,1);
       assert.equal(studioLoginReturnTo(login.searchParams.get('returnTo')),expected);
     }
@@ -101,8 +100,8 @@ test('the real login page and N1 link preserve safe return context and reject un
 });
 
 test('internal administrators are sent to the N1 login with a return to /partner', () => {
-  assert.equal(internalLoginHref('/studio/api/partner'), '/studio/login?returnTo=%2Fpartner');
-  assert.equal(internalLoginHref('/api/partner'), '/login?returnTo=%2Fpartner');
+  assert.equal(internalLoginHref('/studio/api/partner'), '/admin/login?returnTo=%2Fpartner');
+  assert.equal(internalLoginHref('/api/partner'), '/admin/login?returnTo=%2Fpartner');
   for (const authBase of ['/studio/api/partner', '/api/partner']) {
     const html = renderToStaticMarkup(React.createElement(PartnerLogin, { authBase }));
     assert.ok(html.includes(`href="${internalLoginHref(authBase).replace(/&/g, '&amp;')}"`), html);
@@ -204,16 +203,16 @@ test('actual browser partner login returns to the authorized operator and room w
           const overrides={
             'next/headers':{headers:async()=>request.headers},'next/navigation':navigation,
             '@/components/kevin-bo/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
-            '@/components/control-workspace':{ControlWorkspace:unused},'@/components/partner-workspace':{PartnerWorkspace:()=>null},
+            '@/components/partner-workspace':{PartnerWorkspace:()=>null},
             '@/lib/partner-data.mjs':{partnerWorkspaceInitialData:(req,options)=>partnerWorkspaceInitialData(req,{...options,config,store})},
-            '@/lib/partner-preview.mjs':{partnerPreviewInitialData:unused},
-            '../lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>false,studioNativeRuntime:unused},
-            '@/lib/control-workspace.mjs':{controlToolPath},'@/lib/lab-url.mjs':{publicAbsoluteUrl},
+
+
+            '@/lib/lab-url.mjs':{publicAbsoluteUrl},
             '@/lib/partner-session.mjs':{internalSessionPresent},'@/lib/partner-login-return.mjs':{partnerLoginReturnTo},
             '@/lib/next-page-navigation.mjs':{nextStudioLoginRedirect},'../../../packages/navigation/workspace-surfaces.mjs':{resolveWorkspaceSurfacePath},
           };
           const localRequire=createRequire(surfaceSource);
-          vm.runInNewContext(surfaceCode,{module,exports:module.exports,Request,require:name=>Object.hasOwn(overrides,name)?overrides[name]:localRequire(name)});
+          vm.runInNewContext(surfaceCode,{module,exports:module.exports,Request,URL,require:name=>Object.hasOwn(overrides,name)?overrides[name]:localRequire(name)});
           const path=url.pathname.replace(/^\/studio(?=\/)/,'').split('/').slice(2);
           const tree=await module.exports.WorkspaceSurfacePage({surface:'partner',path,
             ...(url.searchParams.has('room')?{initialRoomId:url.searchParams.get('room')}:{})});
@@ -273,7 +272,7 @@ test('actual browser partner login returns to the authorized operator and room w
         // Both deployed login document addresses consume the same safe return.
         await page.goto(origin+prefix+'/partner/login?returnTo='+encodeURIComponent(prefix+target));
         const internal=page.getByRole('link',{name:'Logga in som intern administratör'});
-        assert.equal(await internal.getAttribute('href'),prefix+'/login?returnTo='+encodeURIComponent(target));
+        assert.equal(await internal.getAttribute('href'),'/admin/login?returnTo='+encodeURIComponent(target));
         await page.getByLabel('Användarnamn eller e-post').fill('north-staff');await page.getByLabel('Lösenord').fill(password);
         await page.getByRole('button',{name:'Logga in',exact:true}).click();await page.waitForURL(origin+target);
         assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'bj'});
@@ -282,7 +281,7 @@ test('actual browser partner login returns to the authorized operator and room w
         assert.equal(cookies[0].name,'partner_session');assert.equal(cookies[0].httpOnly,true);assert.equal(cookies[0].secure,true);assert.equal(cookies[0].sameSite,'Lax');
         assert.equal((await page.goto(origin+'/partner/south/rooms?room=room-7')).status(),403);
         await page.goto(origin+prefix+'/partner/login?returnTo='+encodeURIComponent('%2F%2Foutside.invalid'));
-        assert.equal(await internal.getAttribute('href'),prefix+'/login?returnTo=%2Fpartner');
+        assert.equal(await internal.getAttribute('href'),'/admin/login?returnTo=%2Fpartner');
         await page.getByLabel('Användarnamn eller e-post').fill('north-staff');await page.getByLabel('Lösenord').fill(password);
         await page.getByRole('button',{name:'Logga in',exact:true}).click();await page.waitForURL(origin+'/partner');
         assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:null,room:null,view:null});

@@ -1,5 +1,6 @@
 import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {canonicalControlHref, legacyActivityDocumentHref} from '../../../packages/navigation/control-flow.mjs';
+import {studioLoginReturnTo, studioPasswordToken} from './studio-login-client.mjs';
 
 const studioAliases = Object.freeze({
   activity:'/control/activity', events:'/control/events',
@@ -15,8 +16,20 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   if (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action')) return null;
   const url = new URL(request.url);
   if (basePath !== '' && basePath !== '/studio') return null;
-  if (basePath && !url.pathname.startsWith(basePath+'/')) return null;
-  const path = url.pathname.slice(basePath.length);
+  const mounted = !basePath || url.pathname.startsWith(basePath+'/');
+  const path = mounted ? url.pathname.slice(basePath.length) : url.pathname;
+  const auth = path.match(/^\/(?:studio\/)?(?:control\/)?(login|set-password)\/?$/);
+  if (auth) {
+    const mode = auth[1], query = new URLSearchParams();
+    if (mode === 'login') query.set('returnTo', studioLoginReturnTo(url.searchParams.getAll('returnTo').length === 1 ? url.searchParams.get('returnTo') : null));
+    else {
+      const candidates = [...url.searchParams.getAll('t'), ...url.searchParams.getAll('token')];
+      const token = candidates.length === 1 ? studioPasswordToken(candidates[0]) : null;
+      if (token) query.set('t', token);
+    }
+    return '/admin/'+mode+(query.size ? '?'+query : '');
+  }
+  if (!mounted) return null;
   // These retired tools preserve navigation context at both historical entries.
   const tool = path.startsWith('/control/')
     ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat|ops|clips|administration)$/)?.[1]
@@ -41,6 +54,13 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
       if (value && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value)) query.set(key,value);
     }
     return canonicalControlHref(path + (query.size ? '?'+query : ''));
+  }
+  if (/^\/control(?:\/|$)/.test(path)) {
+    const query = new URLSearchParams();
+    for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);
+    const original = path+(query.size ? '?'+query : '')+url.hash;
+    const destination = adminDocumentHref(original);
+    if (destination !== original) return destination;
   }
   return null;
 }

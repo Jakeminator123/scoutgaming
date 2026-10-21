@@ -6,7 +6,6 @@ import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { internalSessionPresent } from '../lib/partner-session.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
-import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 
@@ -22,34 +21,28 @@ function load(file, overrides) {
   const { code } = transformSync(readFileSync(url, 'utf8'), { filename: file,
     jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} }, localRequire = createRequire(url);
-  vm.runInNewContext(code, { module, exports: module.exports, Request,
+  vm.runInNewContext(code, { module, exports: module.exports, Request, URL,
     require: name => Object.hasOwn(overrides, name) ? overrides[name] : localRequire(name) }, { filename: file });
   return module.exports;
 }
 
-function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = initialData, nativeRuntime = { nativeStudioAdminEnabled: () => false }) {
+function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = initialData) {
   function PartnerOperatorWorkspace() { assert.fail('SSR returns the client element without executing its client work'); }
-  function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
   const shared = load('../components/workspace-surface-page.tsx', {
-    '../lib/studio-native-runtime.mjs': nativeRuntime,
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
     '@/components/kevin-bo/partner-operator-workspace': { PartnerOperatorWorkspace },
-    '@/components/control-workspace': { ControlWorkspace },
     '@/components/partner-workspace': { PartnerWorkspace },
-    '@/lib/control-workspace.mjs': { controlToolPath },
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
-    '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },
     '@/lib/partner-session.mjs': { internalSessionPresent },
     '@/lib/partner-login-return.mjs': { partnerLoginReturnTo },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '../../../packages/navigation/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
-  const control = load('../app/control/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
   const partner = load('../app/partner/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
-  return { ...shared, PartnerOperatorWorkspace, ControlWorkspace, PartnerWorkspace, control, partner };
+  return { ...shared, PartnerOperatorWorkspace, PartnerWorkspace, partner };
 }
 
 async function renderPage(page, path, query) {
@@ -62,35 +55,13 @@ function redirectLocation(error, basePath) {
   return addPathPrefix(redirects.getURLFromRedirectError(error), basePath);
 }
 
-function canonicalControlPath(error, basePath) {
-  const location = redirectLocation(error, basePath);
-  const url = new URL(location);
-  assert.equal(url.pathname.startsWith('/studio'), false);
-  return url.pathname + url.search + url.hash;
-}
 
-test('real catch-all pages use exact public login returns and one Next basePath after authorization 401', async () => {
+test('the Partner catch-all uses exact public login returns outside the technical basePath after authorization 401', async () => {
   const authorized = [];
   const loaded = pages(async (request, options) => {
     authorized.push({ request, options });
     throw Object.assign(new Error('fixture login required'), { statusCode: 401 });
   });
-  for (const [path, expected] of [[undefined, '/control'], [['voice'], '/control/voice']]) {
-    for (const basePath of ['', '/studio']) {
-      await assert.rejects(renderPage(loaded.control, path), error => {
-        const login = new URL(redirectLocation(error, basePath), 'https://game.fixture.invalid');
-        assert.equal(login.pathname, basePath + '/login');
-        assert.equal(login.searchParams.get('returnTo'), expected);
-        assert.equal(login.searchParams.size, 1);
-        return true;
-      });
-      const call = authorized.at(-1);
-      assert.equal(new URL(call.request.url).pathname, '/studio' + expected);
-      assert.equal(call.request.headers.get('cookie'), 'bo_session=isolated-fixture');
-      assert.equal(call.request.headers.get('x-forwarded-host'), 'game.fixture.invalid');
-      assert.equal(call.options.operatorSlug, undefined);
-    }
-  }
   for (const [path, expected, returnTo = expected] of [[undefined, '/partner'], [['demo-north', 'overview'], '/partner/demo-north/overview', '/partner/demo-north'],
     [['demo-south', 'team'], '/partner/demo-south/team']]) {
     for (const basePath of ['', '/studio']) {
@@ -111,10 +82,10 @@ test('real catch-all pages use exact public login returns and one Next basePath 
   }
 });
 
-test('real catch-all pages reject unknown paths before loading and unknown operators before rendering', async () => {
+test('the Partner catch-all rejects unknown paths before loading and unknown operators before rendering', async () => {
   let reads = 0;
   const loaded = pages(async () => { reads++; throw Object.assign(new Error('unknown operator'), { statusCode: 404 }); });
-  for (const [surface, path] of [['control', ['unknown']], ['control', ['api', 'admin']], ['partner', ['api', 'admin']],
+  for (const [surface, path] of [['partner', ['api', 'admin']],
     ['partner', ['login']], ['partner', ['demo-north', 'voice']], ['partner', ['demo-north', 'team', 'users']],
     ['partner', ['demo-north', '%74eam']]]) {
     await assert.rejects(renderPage(loaded[surface], path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
@@ -128,7 +99,7 @@ test('permission, configuration and unexpected failures propagate without an una
   for (const statusCode of [403, 503, 500]) {
     const failure = Object.assign(new Error('fixture failure'), { statusCode });
     const loaded = pages(async () => { throw failure; });
-    for (const surface of ['control', 'partner']) await assert.rejects(renderPage(loaded[surface]), error => error === failure);
+    await assert.rejects(renderPage(loaded.partner), error => error === failure);
   }
 });
 
@@ -167,7 +138,7 @@ test('expired N1 session keeps a safe exact room link through login recovery',as
   const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid',cookie:'bo_jwt=expired'}));
   await assert.rejects(renderPage(loaded.partner,['north-casino','rooms'],{room:'vip-room'}),error=>{
     const login=new URL(redirectLocation(error,''),'https://studio.fixture.invalid');
-    assert.equal(login.pathname,'/login');assert.equal(login.searchParams.get('returnTo'),'/partner/north-casino/rooms?room=vip-room');return true;
+    assert.equal(login.pathname,'/admin/login');assert.equal(login.searchParams.get('returnTo'),'/partner/north-casino/rooms?room=vip-room');return true;
   });
 });
 
@@ -178,7 +149,7 @@ test('expired partner session keeps the actual room while N1 cookies retain logi
       await assert.rejects(renderPage(loaded.partner,['north-casino','rooms'],{room:'vip-room'}),error=>{
         const login=new URL(redirectLocation(error,basePath),'https://game.fixture.invalid');
         assert.equal(login.origin,'https://game.fixture.invalid');
-        assert.equal(login.pathname,cookie.startsWith('bo_jwt')?basePath+'/login':'/partner/login');
+        assert.equal(login.pathname,cookie.startsWith('bo_jwt')?'/admin/login':'/partner/login');
         assert.equal(login.searchParams.get('returnTo'),'/partner/north-casino/rooms?room=vip-room');
         assert.equal(login.searchParams.size,1);return true;
       });
@@ -194,7 +165,7 @@ test('expired N1 session sends malformed explicit room links to admin instead of
     for(const basePath of ['','/studio']){
       await assert.rejects(renderPage(loaded.partner,['north-casino','rooms'],query),error=>{
         const login=new URL(redirectLocation(error,basePath),'https://studio.fixture.invalid');
-        assert.equal(login.pathname,basePath+'/login');
+        assert.equal(login.pathname,'/admin/login');
         assert.equal(login.searchParams.get('returnTo'),expected);
         assert.equal(login.searchParams.size,1);return true;
       });
@@ -202,21 +173,6 @@ test('expired N1 session sends malformed explicit room links to admin instead of
   }
 });
 
-test('control shows the overview and disconnected preview addresses are not found', async () => {
-  const loaded = pages(async () => ({ snapshot: { privateFixture: true, operators: [
-    { id: 'sg-test', slug: 'sg-test', name: 'SG test game provider', privateField: 'never-pass' },
-  ] }, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin' } }));
-  const element = await renderPage(loaded.control, undefined);
-  assert.equal(element.type, loaded.ControlWorkspace);
-  assert.equal(element.props.user, 'fixture-admin');
-  assert.equal(element.props.initialView, 'ops');
-  assert.equal(element.props.operatorStatus, 'demo');
-  assert.equal(JSON.stringify(element.props).includes('never-pass'), false, 'private operator fields stay server-side');
-  assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), [{ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }]);
-  for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['statistics']]) {
-    await assert.rejects(renderPage(loaded.control, path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
-  }
-});
 
 test('level-two entrance exposes the real directory without private records or automatic operator selection', async () => {
   let reads = 0;
@@ -257,17 +213,15 @@ test('an admin cookie alone loads real partners and never invokes the fixture ad
     const failure = Object.assign(new Error('live partner unavailable'), { statusCode });
     const failed = pages(fixture, adminHeaders, async () => { throw failure; });
     await assert.rejects(renderPage(failed.partner), error => statusCode === 401
-      ? redirects.getURLFromRedirectError(error) === '/login?returnTo=%2Fpartner'
+      ? redirects.getURLFromRedirectError(error) === 'https://game.fixture.invalid/admin/login?returnTo=%2Fpartner'
       : statusCode === 404 ? error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404' : error === failure);
   }
 });
 
-test('neither workspace renders a missing identity even if the adapter returns a session shell', async () => {
+test('Partner never renders a missing identity even if the adapter returns a session shell', async () => {
   for (const user of ['', undefined, null]) {
     const loaded = pages(async () => ({ session: { user } }));
-    for (const surface of ['control', 'partner']) {
-      await assert.rejects(renderPage(loaded[surface]), /workspace_identity_unavailable/);
-    }
+    await assert.rejects(renderPage(loaded.partner), /workspace_identity_unavailable/);
   }
 });
 
@@ -284,7 +238,7 @@ test('expired or invalid N1 credentials recover through N1 login with the exact 
       for (const basePath of ['', '/studio']) {
         await assert.rejects(renderPage(loaded.partner, path), error => {
           const login = new URL(redirectLocation(error, basePath), 'https://game.fixture.invalid');
-          assert.equal(login.pathname, basePath + '/login');
+          assert.equal(login.pathname, '/admin/login');
           assert.equal(login.searchParams.get('returnTo'), expected);
           assert.equal(login.searchParams.size, 1);
           return true;
@@ -309,99 +263,7 @@ test('missing, expired or invalid partner credentials still recover through part
   }
 });
 
-test('old internal tool documents authorize then lead to the real tool with one basePath', async () => {
-  let reads = 0;
-  const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
-  for (const [section, destination] of [['voice', '/admin/dealer-studio#clips'], ['clips', '/admin/dealer-studio#deal'], ['lanes', '/admin/publication'],
-    ['media', '/admin/videos'], ['presentation-events', '/admin/events'], ['team', '/admin/admin/accounts'], ['backgrounds', '/admin/compositions']]) {
-    for (const basePath of ['', '/studio']) {
-      await assert.rejects(renderPage(loaded.control, [section]), error => {
-        assert.equal(canonicalControlPath(error, basePath), destination);
-        return true;
-      });
-    }
-  }
-  assert.equal(reads, 14);
-});
 
-test('a partner cookie never authorizes control and a partner session skips the fixture preview', async () => {
-  let previews = 0;
-  let partners = 0;
-  const partnerHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: `partner_session=${'ab'.repeat(32)}` });
-  const snapshot = { preview: false, operator: { id: 'operator-demo-north', slug: 'demo-north', name: 'Demo North' }, operators: [{ id: 'operator-demo-north', slug: 'demo-north', name: 'Demo North' }] };
-  const loaded = pages(async () => { previews++; throw Object.assign(new Error('admin login required'), { statusCode: 401 }); }, partnerHeaders, async () => {
-    partners++;
-    return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'north-partner', role: 'partner', accessClass: 'partner' } };
-  });
-  for (const basePath of ['', '/studio']) {
-    await assert.rejects(renderPage(loaded.control), error => {
-      const login = new URL(redirectLocation(error, basePath), 'https://game.fixture.invalid');
-      assert.equal(login.pathname, basePath + '/login');
-      assert.equal(login.searchParams.get('returnTo'), '/control');
-      return true;
-    });
-  }
-  assert.equal(partners, 0);
-  assert.equal(previews, 2);
-  const element = await renderPage(loaded.partner, ['demo-north', 'overview']);
-  assert.equal(element.type, loaded.PartnerOperatorWorkspace);
-  assert.equal(element.props.initialSnapshot, snapshot);
-  assert.equal(element.props.initialSnapshot.preview, false);
-  assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
-  assert.equal(element.props.user, 'north-partner');
-  assert.equal(element.props.initialView, 'ops');
-  assert.equal(element.props.surface, 'partner');
-  assert.equal(element.props.session, undefined, 'the session stays server-side');
-  assert.equal(previews, 2);
-  assert.equal(partners, 1);
-  const entrance = await renderPage(loaded.partner);
-  assert.equal(entrance.type, loaded.PartnerWorkspace);
-  assert.equal(entrance.props.accessClass, 'partner');
-  assert.deepEqual(JSON.parse(JSON.stringify(entrance.props.operators)), [{ slug: 'demo-north', name: 'Demo North' }]);
-});
-
-test('legacy control entrances redirect once to canonical public control tools', async () => {
-  const loaded = pages(async () => assert.fail('existing destination retains its own guard; no preview snapshot is loaded'));
-  for (const [section, destination] of [['studio', '/control'], ['admin', '/control/administration'], ['ops', '/admin/ai/models'], ['lab', '/control']]) {
-    for (const basePath of ['', '/studio']) {
-      await assert.rejects(renderPage(loaded.control, [section]), error => {
-        assert.equal(canonicalControlPath(error, basePath), destination);
-        return true;
-      });
-    }
-  }
-});
-
-
-test('live company reads distinguish verified empty stores from failures and never substitute demos', async () => {
-  const demo = { id: 'demo-north', slug: 'demo-north', name: 'Demo North' };
-  const live = { id: 'live-one', slug: 'live-one', name: 'Live One', privateField: 'never-pass' };
-  for (const [listed, expectedStatus, expectedOperators] of [[[], 'live', []], [[live], 'live', [{ id: live.id, slug: live.slug, name: live.name }]], [null, 'unavailable', []], [[{ id: 'invalid' }], 'unavailable', []]]) {
-    const loaded = pages(async () => ({ session: { user: 'fixture-admin' }, snapshot: { operators: [demo] } }), undefined, undefined,
-      { nativeStudioAdminEnabled: () => true, studioNativeRuntime: async () => ({ listLaneOperators: async () => listed }) });
-    const element = await renderPage(loaded.control);
-    assert.equal(element.props.operatorStatus, expectedStatus);
-    assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), expectedOperators);
-  }
-  for (const runtime of [async () => { throw new Error('private failure detail'); }, async () => ({}), async () => ({ listLaneOperators: async () => { throw new Error('private failure detail'); } })]) {
-    const loaded = pages(async () => ({ session: { user: 'fixture-admin' }, snapshot: { operators: [demo] } }), undefined, undefined,
-      { nativeStudioAdminEnabled: () => true, studioNativeRuntime: runtime });
-    const element = await renderPage(loaded.control);
-    assert.equal(element.props.operatorStatus, 'unavailable');
-    assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), []);
-    assert.doesNotMatch(JSON.stringify(element.props), /private failure detail|Demo North/);
-  }
-});
-
-test('retired internal task links select the relevant existing administrative workflow', async () => {
-  const loaded = pages(async () => ({ session: { user: 'fixture-admin' } }));
-  for (const [section, tab] of [['players', 'accounts'], ['team', 'accounts'], ['transactions', 'finance'], ['game-tables', 'tables'], ['lanes', 'tables'], ['shoes', 'operations'], ['legacy-rooms', 'tables'], ['integration', 'partners']]) {
-    await assert.rejects(renderPage(loaded.control, [section]), error => {
-      assert.equal(canonicalControlPath(error, ''), ({accounts:'/admin/admin/accounts',finance:'/admin/ekonomi',tables:'/admin/publication',operations:'/admin/drift',partners:'/admin/admin/api'})[tab]);
-      return true;
-    });
-  }
-});
 
 test('authorized partner menus pass raw room and scope together without masking explicit invalid room values',async()=>{
   const snapshot={preview:false,operator:{id:'north',slug:'north-casino'}},requests=[];
@@ -429,7 +291,7 @@ test('N1 and partner login recovery retain company or exact room context on ever
         for(const basePath of ['','/studio']){
           await assert.rejects(renderPage(loaded.partner,['north-casino',menu],query),error=>{
             const login=new URL(redirectLocation(error,basePath),'https://game.fixture.invalid');
-            assert.equal(login.pathname,cookie.startsWith('bo_jwt')?basePath+'/login':'/partner/login');
+            assert.equal(login.pathname,cookie.startsWith('bo_jwt')?'/admin/login':'/partner/login');
             assert.equal(login.searchParams.get('returnTo'),canonical+'?'+new URLSearchParams(query));return true;
           });
         }
@@ -450,4 +312,26 @@ test('login recovery rejects duplicate, mixed or malformed scope instead of conv
       });
     }
   }
+});
+
+test('a Partner cookie uses live scoped data and never exposes the server session', async () => {
+  let reads = 0;
+  const snapshot = { preview: false, operator: { id: 'north', slug: 'north' }, operators: [{ slug: 'north', name: 'North' }] };
+  const loaded = pages(async () => {
+    reads++;
+    return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'north-member', accessClass: 'partner', privateField: 'never-pass' } };
+  }, new Headers({ host: 'studio.fixture.invalid', cookie: 'partner_session=isolated' }));
+  const workspace = await renderPage(loaded.partner, ['north', 'overview']);
+  assert.equal(workspace.type, loaded.PartnerOperatorWorkspace);
+  assert.equal(workspace.props.initialSnapshot, snapshot);
+  assert.equal(workspace.props.initialView, 'ops');
+  assert.equal(workspace.props.apiBase, '/studio/api/partner/snapshot');
+  assert.equal(workspace.props.user, 'north-member');
+  assert.equal(workspace.props.session, undefined);
+  const entrance = await renderPage(loaded.partner);
+  assert.equal(entrance.type, loaded.PartnerWorkspace);
+  assert.equal(entrance.props.accessClass, 'partner');
+  assert.deepEqual(JSON.parse(JSON.stringify(entrance.props.operators)), [{ slug: 'north', name: 'North' }]);
+  assert.doesNotMatch(JSON.stringify(entrance.props), /privateField|never-pass/);
+  assert.equal(reads, 2);
 });

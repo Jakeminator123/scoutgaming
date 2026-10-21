@@ -48,16 +48,19 @@ const publicLobbyDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
     .replace("connect-src 'self'", "connect-src 'self' https://api.d-id.com")
     .replace("media-src 'self' blob:", "media-src 'self' blob: https://agents-results.d-id.com") });
 
-// Route Handlers do not add Next's basePath to the SSR login destination.
-// Only the known native login redirect is translated; remote handoffs stay intact.
-export function designPreviewAuthRedirect(destination, { basePath = '', resource = false } = {}) {
+// Only the native Admin login redirect is translated. Absolute destinations
+// must match the configured public origin; remote handoffs stay intact.
+export function designPreviewAuthRedirect(destination, { publicOrigin = '', resource = false } = {}) {
   if (resource) return new Response(null, { status: 401, headers: designPreviewHeaders });
-  if (typeof destination !== 'string' || !destination.startsWith('/login?')) return null;
-  const login = new URL(destination, 'https://studio.invalid');
+  if (typeof destination !== 'string') return null;
+  const relative = destination.startsWith('/admin/login?');
+  let login; try { login = new URL(destination, 'https://studio.invalid'); } catch { return null; }
+  if (login.pathname !== '/admin/login' || login.username || login.password || login.hash
+    || !relative && (login.protocol !== 'https:' || login.origin !== publicOrigin)) return null;
   const returnTo = designPreviewReturnTo(login.searchParams.get('returnTo')) ?? '/admin';
-  const prefix = basePath === '/studio' ? '/studio' : '';
   return new Response(null, { status: 307, headers: { ...designPreviewHeaders,
-    Location: `${prefix}/login?returnTo=${encodeURIComponent(returnTo)}` } });
+    'Referrer-Policy': 'no-referrer',
+    Location: `${relative ? '' : login.origin}/admin/login?returnTo=${encodeURIComponent(returnTo)}` } });
 }
 
 // Every document and asset goes through the same server-side staff authorization.

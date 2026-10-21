@@ -61,9 +61,11 @@ test('last consumer release/remount during compensation retains the accepted ent
 test('actual root layout installs the inert history proxy before Next hydration',()=>{
   const source=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8');
   const code=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,module={exports:{}};
-  runInNewContext(code,{module,exports:module.exports,process:{env:{}},require:name=>name==='next/font/local'?()=>({variable:'fixture-font'}):name==='next/script'?()=>null:name==='@/components/workspace-navigation'?{WorkspaceNavigation:()=>null}:name==='@/lib/studio-history.mjs'?{studioHistoryBootstrap}:name.endsWith('.css')?{}:require(name)});
+  runInNewContext(code,{module,exports:module.exports,process:{env:{}},require:name=>name==='next/font/local'?()=>({variable:'fixture-font'}):name==='next/script'?()=>null:name==='@/lib/studio-history.mjs'?{studioHistoryBootstrap}:name.endsWith('.css')?{}:require(name)});
   const all=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(all):[node,...all(node.props?.children)];
-  const script=all(module.exports.default({children:null})).find(node=>node.props?.id==='sg-history');
+  const child={type:'main',props:{children:'current-page'}},tree=all(module.exports.default({children:child}));
+  assert.ok(tree.includes(child),'the root layout keeps the active page directly');
+  const script=tree.find(node=>node.props?.id==='sg-history');
   assert.equal(script?.props.strategy,'beforeInteractive');assert.equal(script?.props.dangerouslySetInnerHTML.__html,studioHistoryBootstrap);
   const window=new EventTarget();let observed=0;
   runInNewContext(studioHistoryBootstrap,{window,Symbol});runInNewContext(studioHistoryBootstrap,{window,Symbol});

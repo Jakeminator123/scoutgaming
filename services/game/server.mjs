@@ -510,13 +510,13 @@ function legacyBackofficeRedirect(req, pathname) {
     destination = '/control/administration';
   } else if (pathname === '/bo/login.html') {
     const returnTo = new URL(req.url, 'http://local').searchParams.get('returnTo');
-    destination = '/control/login';
+    destination = '/admin/login';
     if (returnTo && (LEGACY_STUDIO_RETURNS.has(returnTo) || LEGACY_STUDIO_HANDOFF.test(returnTo))) {
       destination += `?returnTo=${encodeURIComponent(returnTo)}`;
     }
   } else if (pathname === '/bo/set-password.html') {
     const token = new URL(req.url, 'http://local').searchParams.get('t');
-    destination = '/control/set-password';
+    destination = '/admin/set-password';
     if (token && LEGACY_STUDIO_TOKEN.test(token)) destination += `?t=${encodeURIComponent(token)}`;
   }
   if (!destination) return false;
@@ -1063,7 +1063,7 @@ const server = createServer(async (req, res) => {
     res.end('{"error":"not found"}'); return;
   }
   if (pathname.startsWith('/bo/') && !(await boSessionOk(req))) {
-    res.writeHead(302, { Location: '/control/login', 'Cache-Control': 'no-store' });
+    res.writeHead(302, { Location: '/admin/login', 'Cache-Control': 'no-store' });
     res.end(); return;
   }
   if (req.method === 'POST' && req.url === '/chat') {
@@ -1264,7 +1264,7 @@ const server = createServer(async (req, res) => {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
     // the ordinary BO gate above. Windows also ignores directory casing and
     // trailing dots/spaces. None of these aliases may fall through to static files.
-    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/control/login' }); res.end(); return; }
+    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/admin/login' }); res.end(); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
     res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(req.method === 'HEAD' ? undefined : '{"error":"legacy generation catalog retired"}'); return;

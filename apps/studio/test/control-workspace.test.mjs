@@ -1,88 +1,59 @@
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import vm from 'node:vm';
-import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { PARTNER_PREVIEW_OPERATORS } from '../lib/partner-preview-policy.mjs';
+import { legacyControlBookmarkHref } from '../lib/control-workspace.mjs';
 
-const require = createRequire(import.meta.url);
-const { transformSync } = require('next/dist/build/swc');
-
-function loadTs(fileUrl, overrides = {}) {
-  const source = readFileSync(fileUrl, 'utf8');
-  const output = transformSync(source, { filename: fileURLToPath(fileUrl), jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
-  const module = { exports: {} };
-  const localRequire = createRequire(fileUrl);
-  vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, URL, URLSearchParams,
-    window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
-    require: name => {
-      if (Object.hasOwn(overrides, name)) return overrides[name];
-      if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
-      if (name.startsWith('./') || name.startsWith('../')) {
-        for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
-          const candidate = new URL(name + suffix, fileUrl);
-          const path = fileURLToPath(candidate);
-          if (!existsSync(path)) continue;
-          if (path.endsWith('.mjs') || path.endsWith('.js') || path.endsWith('.json')) return localRequire(path);
-          return loadTs(pathToFileURL(path), overrides);
-        }
-      }
-      return localRequire(name);
-    },
-  }, { filename: fileURLToPath(fileUrl) });
-  return module.exports;
-}
-
-const { ControlWorkspace } = loadTs(new URL('../components/control-workspace.tsx', import.meta.url));
-
-function render(props) {
-  return renderToStaticMarkup(React.createElement(ControlWorkspace, props));
-}
-
-test('overview distinguishes shared preparation from company publication and explicit demonstration data', () => {
-  const operators = [...PARTNER_PREVIEW_OPERATORS].reverse().map(item => ({ id:item.id, slug:item.slug, name:item.name, privateField:'never-pass' }));
-  const html = render({ user:'fixture-admin', operators, operatorStatus:'demo' });
-  assert.match(html,/Demonstrationsbolag/); assert.match(html,/Utforska arbetsflödet/);
-  assert.doesNotMatch(html,/never-pass|Hämtad från spellobbyn|href="\/play\?operator=/);
-  for (const title of ['Dealer &amp; klipp','Sammansättning','Bolagets publicering','Spelrum']) assert.match(html,new RegExp('<h3>'+title+'</h3>'));
-  assert.ok(html.indexOf('Demo North')<html.indexOf('Demo South'));
-  assert.match(html,/Kräver partnerinloggning eller en aktiv administratörssession/);
-  assert.match(html,/href="\/admin\/media-review"/);
-});
-test('an unavailable list is not presented as empty or as a demonstration', () => {
-  const html=render({user:'admin',operatorStatus:'unavailable',operators:[{id:'secret',slug:'secret',name:'Private company'}]});
-  assert.match(html,/Bolagslistan kunde inte hämtas/); assert.doesNotMatch(html,/Private company|Inga bolag ännu|Anslutna bolag · 0|<select/);
-  const empty=render({user:'admin',operatorStatus:'live',operators:[]});
-  assert.match(empty,/Börja med ett bolag/);assert.match(empty,/Skapa bolag/);assert.doesNotMatch(empty,/kunde inte hämtas/);
-});
-test('company links use the internal id for publication, the slug for players, and hide stale room data immediately', () => {
-  let selected=null;
-  const oldData={key:'north-slug',status:'ready',data:{packageRevision:3,rooms:[{id:'room-north',name:'North room',presentation:{id:'standard',label:'Standard'},dealers:[],playUrl:'/play/blackjack?operator=north-slug&table=room-north'}]}};
-  const hooks={...React,useEffect(){},useState:initial=>[selected??initial,value=>{selected=value;}],useRef:()=>({current:null}),useSyncExternalStore:()=>oldData};
-  const {ControlWorkspace:Interactive}=loadTs(new URL('../components/control-workspace.tsx',import.meta.url),{react:hooks});
-  const props={user:'admin',operatorStatus:'live',operators:[{id:'north-id',slug:'north-slug',name:'North'},{id:'south-id',slug:'south-slug',name:'South'}]};
-  let select; const visit=node=>{if(!node||typeof node!=='object')return;if(Array.isArray(node))return node.forEach(visit);if(node.type==='select')select=node;visit(node.props?.children);};
-  visit(Interactive(props));
-  let replaced; globalThis.window={location:{search:'?other=keep',pathname:'/control',hash:''},history:{replaceState(_s,_t,url){replaced=url;}}};
-  try {select.props.onChange({target:{value:'south-id'}});}finally{delete globalThis.window;}
-  const html=renderToStaticMarkup(Interactive(props));
-  assert.match(replaced,/operator=south-id/);assert.match(replaced,/other=keep/);
-  assert.match(html,/href="\/admin\/publication\?operator=south-id"/);
-  assert.match(html,/href="\/partner\/south-slug"/);
-  assert.doesNotMatch(html,/North room|room-north|Hämtad från spellobbyn/);
-  assert.match(html,/Hämtar bolagets publicering/);
+test('redirected Control fragments open the corresponding Admin tool once', () => {
+  for (const [fragment, target] of [
+    ['clips', '/admin/dealer-studio#deal'], ['voice', '/admin/dealer-studio?view=speech#clips'],
+    ['speech', '/admin/dealer-studio?view=speech#clips'], ['backgrounds', '/admin/compositions'],
+    ['transactions', '/admin/ekonomi'], ['integration', '/admin/admin/api'],
+    ['game-tables', '/admin/publication'], ['overview', '/admin'],
+  ]) {
+    for (const prefix of ['', '/studio']) assert.equal(legacyControlBookmarkHref(prefix + '/admin#' + fragment), target);
+    assert.equal(legacyControlBookmarkHref(target), null, 'the destination cannot hand off again');
+  }
 });
 
-test('built-in guide describes published company design and the current room publication workflow', () => {
-  const guide = JSON.parse(readFileSync(new URL('../docs/guide.json', import.meta.url), 'utf8'));
-  const publishing = guide.surfaces.find(item => item.name.startsWith('Publicering'));
-  assert.match(publishing.purpose, /Skapa spelrum/);
-  assert.doesNotMatch(publishing.purpose, /JSON-export/);
-  const partner = guide.surfaces.find(item => item.name.startsWith('Partnerportal'));
-  assert.match(partner.purpose, /bord och bakgrunder sparas på servern/);
-  assert.doesNotMatch(partner.purpose, /kort och bord.*lokala prov/);
+test('bookmark handoff keeps exact dealer, composition, operator and room selectors', () => {
+  const href = legacyControlBookmarkHref('/admin?dealer=astrid&dealer=vera&lane=layout-one&operator=north&room=vip&game=blackjack#clips');
+  const target = new URL(href, 'https://fixture.invalid');
+  assert.equal(target.pathname, '/admin/dealer-studio');
+  assert.deepEqual(target.searchParams.getAll('dealer'), ['astrid', 'vera'], 'ambiguous identities remain ambiguous');
+  assert.equal(target.searchParams.get('composition'), 'layout-one');
+  assert.equal(target.searchParams.has('lane'), false);
+  for (const [key, value] of [['operator', 'north'], ['room', 'vip'], ['game', 'blackjack']]) assert.equal(target.searchParams.get(key), value);
+});
+
+test('bookmark handoff ignores other pages, unknown fragments and malformed URLs', () => {
+  for (const href of [null, undefined, {}, '/admin', '/admin#unknown', '/admin#pit', '/admin#%63lips',
+    '/admin/clips#clips', '/admin/dealer-studio#clips', '/partner#clips', '/admin/login#clips',
+    '/control#clips', '//outside.invalid/admin#clips', 'https://outside.invalid/admin#clips', '/admin\\#clips', '/admin\n#clips']) {
+    assert.equal(legacyControlBookmarkHref(href), null, String(href));
+  }
+});
+
+test('the real Admin entry hands off known bookmarks before creating a React root', () => {
+  const require = createRequire(import.meta.url), file = '../client/admin/entry.tsx';
+  const { transformSync } = require('next/dist/build/swc');
+  const { code } = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), {
+    filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' },
+  });
+  for (const [href, expected] of [['/admin?dealer=astrid&room=vip#clips', '/admin/dealer-studio?dealer=astrid&room=vip#deal'],
+    ['/admin/clips?dealer=astrid#clips', null], ['/admin#unknown', null]]) {
+    const calls = [], location = new URL(href, 'https://fixture.invalid'), root = {};
+    location.replace = value => calls.push(['replace', value]);
+    const module = { exports: {} };
+    vm.runInNewContext(code, { module, exports: module.exports, location,
+      document: { getElementById: id => { assert.equal(id, 'root'); return root; } },
+      require: name => name === 'react-dom/client' ? { createRoot: node => {
+        assert.equal(node, root); calls.push(['createRoot']); return { render: () => calls.push(['render']) };
+      } } : name === '../../lib/control-workspace.mjs' ? { legacyControlBookmarkHref }
+        : name === './lib/admin-navigation' ? { adminNavigationGroups: [], adminSystemGroups: [], adminPageLabels: {} }
+        : name === 'react/jsx-runtime' ? require(name) : {},
+    });
+    assert.deepEqual(calls, expected ? [['replace', expected]] : [['createRoot'], ['render']]);
+  }
 });

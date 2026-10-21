@@ -142,13 +142,13 @@ try {
   const anonymous = await start();
   const loginRedirect = await request(anonymous.authorize);
   assert.equal(loginRedirect.status, 303);
-  assert.match(location(loginRedirect), /^\/studio\/login\?returnTo=%2Fapi%2Fbo%2Flab-login%3Fstate%3D[a-f0-9]{64}$/);
+  assert.match(location(loginRedirect), /^\/admin\/login\?returnTo=%2Fapi%2Fbo%2Flab-login%3Fstate%3D[a-f0-9]{64}$/);
 
   const readerRedirect = await request(anonymous.authorize, { cookie: administratorCookie() });
-  assert.match(location(readerRedirect), /^\/studio\/login/, 'reader cannot authorize a Lab handoff');
+  assert.match(location(readerRedirect), /^\/admin\/login/, 'reader cannot authorize a Lab handoff');
   const partner = sign({ sub: 'partner-player', partner: 'partner-key', exp: Date.now() / 1000 + 60 });
   const partnerRedirect = await request(anonymous.authorize, { cookie: `bo_jwt=${partner}` });
-  assert.match(location(partnerRedirect), /^\/studio\/login/, 'Partner JWT is not a BO admin session');
+  assert.match(location(partnerRedirect), /^\/admin\/login/, 'Partner JWT is not a BO admin session');
 
   craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
   const adminCookie = administratorCookie();
@@ -207,7 +207,7 @@ try {
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'role downgrade revokes Lab session');
   craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'old Lab session never revives');
-  assert.match(location(await request((await start()).authorize, { cookie: adminCookie })), /^\/studio\/login/, 'old BO cookie never revives');
+  assert.match(location(await request((await start()).authorize, { cookie: adminCookie })), /^\/admin\/login/, 'old BO cookie never revives');
   const freshAdmin = administratorCookie();
   const beforePassword = await authorize(freshAdmin);
   craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync('Changed-password', 'test-salt', 64).toString('hex'));

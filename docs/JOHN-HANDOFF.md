@@ -605,43 +605,48 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
-J03 · 21 oktober 2026. Guide/Videor PR318, Probe/Replies PR320,
-Events/Tree PR322, Compositions/Rehearsal PR324 och Agentmodeller/Dealerchatt
-PR326 har verifierad grön CI på dokumenterade slutheads.
-Clips PR329:s första CI hittade gamla testadresser och fixturfel; endast
-fem testfiler/handoff rättades på ba983288f1e97e26e728e92329425f16125a1dcb.
-115/115 fokuserade samt överlappande hookprov passerar; uppföljande CI
-39673629390 är success på samma rättningshead. Samma testfixar ingår här.
+J03 · 21 oktober 2026. Tidigare delarna PR318/320/322/324/326/329 har
+verifierad grön CI på dokumenterade slutheads. PR330:s första CI39675471027
+föll på ett saknat login-fixtureberoende och en gammal administrationsadress.
+Endast två tester/handoff rättades i 9627cfa26179038ebd7cba5bc78e8a8061669628;
+30/30 fokuserade/hookprov passerar, tre valfria browserfall ej körda där.
+Uppföljande CI39677936564 är verifierat success på oförändrad head9627cfa2.
 
-Senaste del: codex/admin-control-administration-j03 från Clips-produkthead
-b81d858367254a6572a67df02f1a7ee4dcaae585. Administrationens SSR-wrapper,
-dess exklusiva redirecthjälpare och tracingpost är borttagna. Callers och
-gamla dokumentlänkar går till befintliga Admin-sidor för drift, ekonomi,
-konton, API, publicering och Talgranskning. Kontext och basePath bevaras;
-GET/HEAD-omdirigering får inte bli en skrivväg. Delade API:er, N1-behörighet,
-revisions- och exakt medieidentitetskontroll är kvar.
+Senaste del: codex/admin-control-auth-j03 från PR330-produkthead
+b60ecf993b609136b32861b0ae433ca769489ba7, med samma två CI-testfixar.
+Admin har egna /admin/login och /admin/set-password. Control-catchall,
+authwrappers, gamla formulärsidor, navigationsskal, temaomkopplare och
+exklusiv översiktskod är borttagna. Kända bokmärken går till Admin; okända
+Control-ytor och skrivförsök skapar ingen alternativ backoffice-väg.
+Kända gamla hashval får en enda handoff före Admin-mount. Partner och
+zoomkartan behåller egna funktioner och behörighetsgränser.
 
-Talgranskning följer Admins historikägare: dealerbyte och Back/Forward
-behåller kontext och främmande historikstate. Utkast och pågående skrivning
-hindrar navigation, 409 behåller utkast och återläsning kräver användarval.
-Föråldrade SSR-assertioner är raderade; de har ersatts av kontroller för
-Admin-beteendet. Zoomkartan /admin/clips och registrerade medier bevaras.
+Login, återställningslänkar, retur-URL och logout använder Adminmålen.
+Gamla t-länkar bevaras; dubbla/ogiltiga tokens nekas, referrer/cache stängs
+för authredirect. Båda mountformerna och separat Studio-värd går genom
+validerad publicOrigin. Host-only cookies, signerade Game/Lab-handoffs,
+atomisk tokenförbrukning, sessioner och serverägd ekonomi är oförändrade.
+Föråldrade Control-/layoutassertioner har ändrats eller raderats; skydd för
+aktiva auth-, rum-, sparnings- och spelbeteenden består.
 
-Verifierat lokalt: 224/224 fokuserade auth/routing/komponent/API-prov och
-2/2 faktiska Admin-browserfall, 0 skips. Browsern kör riktig Admin med
-syntetiska API-svar och isolerade medie-/sidytor; ingen medieuppspelning,
-uppladdning, databas, provider eller deploy verifieras. Root läste loggarna.
-Oberoende produkt- och testreview av kevin_plan: inga blockerande fynd.
-Studio-build med /studio och alla frontendtyper passerar, traces66/44. Lokala beroendejunctions används; detta är inte deployacceptans. Ordinarie hook redovisas i PR/status.json.
-Loggar finns i arkiv/2026-10-21/j03-administration/ i denna worktree.
-Browserfixturer stängde sina kontexter och Chromium; inga servrar startades.
+Verifiering: root middleware/transport27/27 och shell31/31, 0 skips;
+auth89 unika fall över slutkörningar och12 form/Partner/browserfall,0skip.
+Körningar överlappar; exakta kommandon och sista rättningar finns i loggar.
+Ordinarie hook redovisas i PR/status.json.
+Samlat Studio-build med /studio och alla frontendtyper passerar,
+traces63/44; manifest har Admin-auth och Partner, inga Control-pages.
+Lokala beroendejunctions och syntetiska API/sessioner används; inga
+produktions-, databas-, medie- eller deployprov påstås. Loggar finns i
+arkiv/2026-10-21/j03-auth/ i leveransworktreen. Oberoende slutreview av plan_review utan blockerande fynd; slutligt
+logoutdelta granskas separat. Egna authfixtureprocesser stängs av sina
+finally-block; inga produktservrar startas.
 
-O01 är verifierad som kontraktsaktivitet i plan-PR311 på
-4f45a59c763874466986fc1bb3f3e76b12edba53: fastställd Adminmatris och
-44/44 isolerade kontraktsprov, oberoende slutreview. Totalt20%, E1 100%.
-Hela J03 är fortfarande IN_PROGRESS: catch-all/root och authflöden återstår.
-Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är läst men inte
-integrerad i stacken; annan agents ändringar bevaras. Ingen merge/deploy.
+O01 är VERIFIED som kontraktsaktivitet på
+4f45a59c763874466986fc1bb3f3e76b12edba53: Adminmatris och44/44 isolerade
+kontraktsprov. Totalt20%, E1 100%; J03:s slutliga CI/aktivitetsacceptans
+återstår. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är läst men
+inte integrerad i stacken; andra agenters arbete bevaras. Ingen merge/deploy.
+
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
 `admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla

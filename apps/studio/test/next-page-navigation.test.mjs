@@ -26,10 +26,10 @@ test('Next SSR emits one basePath while public login returnTo survives unchanged
   for (const basePath of ['', '/studio']) {
     for (const returnTo of studioReturns) {
       let thrown;
-      try { navigation.redirect(nextStudioLoginRedirect(returnTo)); } catch (error) { thrown = error; }
+      try { navigation.redirect(nextStudioLoginRedirect(returnTo, 'https://qa.example.invalid')); } catch (error) { thrown = error; }
       const location = locationFromNext(thrown, basePath);
       const url = new URL(location, 'https://qa.example.invalid');
-      assert.equal(url.pathname, `${basePath}/login`);
+      assert.equal(url.pathname, '/admin/login');
       assert.equal(url.searchParams.get('returnTo'), returnTo);
       assert.equal(studioLoginDestination(returnTo, basePath + '/api/auth'),
         basePath ? returnTo : returnTo.slice('/studio'.length) || '/');
@@ -42,9 +42,9 @@ test('malformed and foreign return targets cannot alter the SSR redirect destina
     'https://attacker.invalid', '//attacker.invalid', '/studio\\login', '/studio/%2f..',
     '/studio/control/lanes?tab=foreign', '/studio/control/lanes?token=private', '/studio/control/lanes?lane=x&lane=y',
     '/studio/control/lanes?lane=https%3A%2F%2Fattacker.invalid', '/studio#secret', '/blackjack', '/studio\r\nLocation: https://attacker.invalid']) {
-    const target = nextStudioLoginRedirect(value);
+    const target = nextStudioLoginRedirect(value, 'https://qa.example.invalid');
     const url = new URL(addPathPrefix(target, '/studio'), 'https://qa.example.invalid');
-    assert.equal(url.pathname, '/studio/login');
+    assert.equal(url.pathname, '/admin/login');
     assert.equal(url.search, '?returnTo=%2Fadmin');
   }
 });
@@ -84,7 +84,7 @@ test('actual Studio SSR guard reaches mounted login after 401 and preserves othe
       './next-page-navigation.mjs': { nextStudioLoginRedirect },
     });
     await assert.rejects(guard.authorizeUiPage(new Request('https://qa.example.invalid/studio')), error => {
-      if (status === 401) assert.equal(locationFromNext(error, '/studio'), '/studio/login?returnTo=%2Fstudio');
+      if (status === 401) assert.equal(locationFromNext(error, '/studio'), 'https://qa.example.invalid/admin/login?returnTo=%2Fstudio');
       else assert.equal(error.statusCode, status);
       return true;
     });
@@ -117,7 +117,7 @@ test('actual native page guard returns every current view after public, standalo
           { headers: {host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'sec-fetch-site': 'cross-site', ...extra} });
         await assert.rejects(guard.authorizeUiPage(request), error => {
           const login = new URL(locationFromNext(error, basePath), config.allowedOrigins[0]);
-          assert.equal(login.pathname, basePath + '/login');
+          assert.equal(login.pathname, '/admin/login');
           const expectedReturn = returnTo === '/studio/control/lanes?tab=companies' ? '/admin/companies' : returnTo === '/studio/control/lanes?lane=evening' ? '/admin/publication?composition=evening' : returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo;
           assert.equal(login.searchParams.get('returnTo'), expectedReturn);
           assert.equal(login.searchParams.size, 1);
@@ -161,7 +161,7 @@ test('retired AI documents reach distinct Admin surfaces across flags and mounts
       assert.equal(legacyStudioDocumentHref(bodyRequest,{basePath}),null);
       assert.equal(middleware(bodyRequest).headers.has('location'),false);
     }
-    for (const section of ['/openclaw/extra','/operator-chat/extra','/api/openclaw/admin','/api/assistant','/control/login']) {
+    for (const section of ['/openclaw/extra','/operator-chat/extra','/api/openclaw/admin','/api/assistant']) {
       assert.equal(middleware(new Request(config.publicOrigin+basePath+section,{headers})).headers.has('location'),false);
     }
   }
@@ -172,7 +172,7 @@ const authEntryConfig = authBase => ({
   publicHosts: ['game.fixture.invalid', 'studio.fixture.invalid'],
   authBase, apiBase: authBase === '/api/auth' ? '/api/admin' : '/studio/api/admin',
 });
-const entryRequest = (host, mode, extra = {}) => new Request('https://' + host + '/' + mode,
+const entryRequest = (host, mode, extra = {}) => new Request('https://' + host + '/admin/' + mode,
   { headers: { host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', ...extra } });
 
 test('standalone auth documents move to configured public Studio before rendering with exact state and token', async () => {
@@ -185,13 +185,13 @@ test('standalone auth documents move to configured public Studio before renderin
       let thrown; try { navigation.redirect(destination); } catch (error) { thrown = error; }
       const actual = new URL(locationFromNext(thrown, authBase === '/api/auth' ? '' : '/studio'));
       assert.equal(actual.origin, config.allowedOrigins[0]);
-      assert.equal(actual.pathname, '/studio/login');
+      assert.equal(actual.pathname, '/admin/login');
       assert.equal(actual.searchParams.get('returnTo'), returnTo);
       assert.equal(actual.searchParams.size, 1);
     }
     const token = 'b'.repeat(43);
     const destination = nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'set-password'), config, { mode: 'set-password', token });
-    assert.equal(destination, config.allowedOrigins[0] + '/studio/set-password?t=' + token);
+    assert.equal(destination, config.allowedOrigins[0] + '/admin/set-password?t=' + token);
     assert.equal(nextStudioAuthEntryRedirect(entryRequest('game.fixture.invalid', 'set-password'), config, { mode: 'set-password', token }), null);
     assert.equal(nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'login', { 'x-forwarded-host': 'game.fixture.invalid', 'x-forwarded-proto': 'https' }), config, { returnTo: '/studio' }), null);
     assert.equal(nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'set-password', { 'x-forwarded-host': 'game.fixture.invalid', 'x-forwarded-proto': 'https' }), config, { mode: 'set-password', token }), null);
@@ -207,7 +207,7 @@ test('auth-entry redirects reject spoofed origins and retain only validated retu
     assert.equal(url.origin, config.allowedOrigins[0]);
   }
   for (const token of [null, ['b'.repeat(43)], 'b'.repeat(129), 'bearer/private']) {
-    assert.equal(nextStudioAuthEntryRedirect(request, config, { mode: 'set-password', token }), config.allowedOrigins[0] + '/studio/set-password');
+    assert.equal(nextStudioAuthEntryRedirect(request, config, { mode: 'set-password', token }), config.allowedOrigins[0] + '/admin/set-password');
   }
   for (const headers of [{host: 'attacker.invalid'}, {host: 'studio.fixture.invalid', 'x-forwarded-host': 'attacker.invalid'}, {host: 'studio.fixture.invalid', origin: 'https://attacker.invalid'}, {host: 'studio.fixture.invalid', 'x-forwarded-proto': 'http'}]) {
     assert.throws(() => nextStudioAuthEntryRedirect(new Request('https://studio.fixture.invalid/login', { headers }), config), error => error.statusCode === 403);
@@ -222,7 +222,7 @@ test('actual login and password SSR routes redirect standalone before any auth f
       ['studio.fixture.invalid', {}, true], ['game.fixture.invalid', {}, false],
       ['studio.fixture.invalid', {'x-forwarded-host': 'game.fixture.invalid'}, false],
     ]) {
-      const page = load('../app/' + mode + '/page.tsx', {
+      const page = load('../app/admin/' + mode + '/page.tsx', {
         'next/headers': { headers: async () => new Headers({host, ...extra}) },
         'next/navigation': navigation,
         '@/components/studio-login': { StudioLogin() { assert.fail('SSR returns an element, never auth work'); } },
@@ -234,7 +234,7 @@ test('actual login and password SSR routes redirect standalone before any auth f
       if (moved) {
         await assert.rejects(page.default(options), error => {
           const destination = new URL(locationFromNext(error, authBase === '/api/auth' ? '' : '/studio'));
-          assert.equal(destination.origin, config.allowedOrigins[0]); assert.equal(destination.pathname, '/studio/' + mode);
+          assert.equal(destination.origin, config.allowedOrigins[0]); assert.equal(destination.pathname, '/admin/' + mode);
           assert.equal(destination.searchParams.get(mode === 'login' ? 'returnTo' : 't'), mode === 'login' ? returnTo : token);
           assert.equal(destination.searchParams.size, 1); return true;
         });
@@ -248,26 +248,19 @@ test('actual login and password SSR routes redirect standalone before any auth f
   }
 });
 
-test('legacy auth aliases retain queries with exactly one configured Next basePath', async () => {
-  const saved = { native: process.env.CROUPIER_STUDIO_NATIVE_ADMIN, base: process.env.CROUPIER_LAB_BASE_PATH };
-  try {
-    const config = (await import('../next.config.mjs')).default;
-    for (const basePath of ['', '/studio']) {
-      process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1'; process.env.CROUPIER_LAB_BASE_PATH = basePath;
-      const rules = await config.redirects();
-      for (const mode of ['login', 'set-password']) {
-        const rule = rules.find(item => item.source === (basePath ? '/' : '/studio/') + mode);
-        assert.equal(rule.basePath, false); assert.equal(rule.permanent, false);
-        assert.equal(rule.destination, (basePath ? '/studio/' : '/') + mode);
-        assert.ok(!rules.some(item => item.source === rule.destination), 'canonical route cannot loop back to the alias');
-      }
-    }
-    process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '0';
-    assert.deepEqual(await config.redirects(), []);
-  } finally {
-    for (const [key, value] of [['CROUPIER_STUDIO_NATIVE_ADMIN', saved.native], ['CROUPIER_LAB_BASE_PATH', saved.base]]) {
-      if (value === undefined) delete process.env[key]; else process.env[key] = value;
-    }
+test('legacy auth bookmarks use the central validator and reject writes or duplicate credentials', () => {
+  for (const basePath of ['', '/studio']) for (const entry of ['/login','/studio/login','/control/login','/studio/control/login']) {
+    const request = (query, options={}) => new Request('https://game.fixture.invalid'+entry+query,options);
+    const target='/admin/publication?operator=north&table=room-one&composition=scene-one';
+    assert.equal(legacyStudioDocumentHref(request('?returnTo='+encodeURIComponent(target)),{basePath}),'/admin/login?returnTo='+encodeURIComponent(target));
+    for(const value of ['//outside.invalid','/admin/login','/admin/set-password']) assert.equal(legacyStudioDocumentHref(request('?returnTo='+encodeURIComponent(value)),{basePath}),'/admin/login?returnTo=%2Fadmin');
+    assert.equal(legacyStudioDocumentHref(request('?returnTo=%2Fadmin&returnTo=%2Fpartner'),{basePath}),'/admin/login?returnTo=%2Fadmin');
+    for(const options of [{method:'POST',body:'secret'}, {headers:{'next-action':'fixture'}}]) assert.equal(legacyStudioDocumentHref(request('',options),{basePath}),null);
+    const password=entry.replace('login','set-password'),token='b'.repeat(43);
+    const reset=query=>new Request('https://game.fixture.invalid'+password+query);
+    assert.equal(legacyStudioDocumentHref(reset('?t='+token),{basePath}),'/admin/set-password?t='+token);
+    assert.equal(legacyStudioDocumentHref(reset('?t='+token+'&t='+token),{basePath}),'/admin/set-password');
+    assert.equal(legacyStudioDocumentHref(reset('?t=invalid&returnTo=https://outside.invalid'),{basePath}),'/admin/set-password');
   }
 });
 
@@ -327,7 +320,7 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
         await assert.rejects(guard.authorizeUiPage(request),error=>{
           assert.match(error.digest ?? '', /^NEXT_REDIRECT;/, error.message);
           const login = new URL(locationFromNext(error,basePath),'https://game.fixture.invalid');
-          assert.equal(login.pathname,basePath+'/login');
+          assert.equal(login.pathname,'/admin/login');
           const destination = new URL(login.searchParams.get('returnTo'),'https://game.fixture.invalid');
           assert.equal(destination.pathname,section.target);
           assert.equal(destination.searchParams.get('dealer'),'vera');assert.equal(destination.searchParams.get('operator'),'operator-42');assert.equal(destination.searchParams.get('table'),'room-7');assert.equal(destination.searchParams.get('composition'),'desktop-wide');
@@ -409,7 +402,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     const anonymous = new Headers(headers);anonymous.delete('cookie');
     const login = await admin.GET(new Request(destination,{headers:anonymous}),{params:Promise.resolve({path:segments})});
     assert.equal(login.status,307,'document normalization never grants a session');
-    assert.match(login.headers.get('location'),/^\/login\?returnTo=/);
+    assert.ok(login.headers.get('location').startsWith(publicOrigin+'/admin/login?returnTo='));
     assert.equal(new URL(login.headers.get('location'),publicOrigin).searchParams.get('returnTo'),path.replace(/^\/studio(?=\/admin)/,''));
   }
 });
@@ -457,7 +450,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     assert.equal(target.pathname,'/admin/assets');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
     assert.equal(target.searchParams.get('composition'),'portrait');
     assert.equal(target.searchParams.has('token'),unified,'native mapping retains its existing query policy');
-    for(const path of ['/api/videos','/preview/compositor.js','/events/extra','/control/login','/control/set-password']) {
+    for(const path of ['/api/videos','/preview/compositor.js','/events/extra']) {
       assert.equal(legacyStudioDocumentHref(request(path),{basePath}),null,path);
       assert.equal(middleware(request(path)).headers.has('location'),false,path);
     }

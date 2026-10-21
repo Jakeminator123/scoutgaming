@@ -1,11 +1,11 @@
 import { labBasePath } from './lab-url.mjs';
 import { canonicalControlHref } from '../../../packages/navigation/control-flow.mjs';
 
-// Staff shell only. A menu href with a query wins over the same path without one.
+// Labels used by the active guide. Query-specific destinations take precedence.
 export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'studio', label: 'Studio', items: [
     { href: '/admin/dealer-studio', label: 'Dealers & klipp' },
-    { href: '/control/library', label: 'Bord & bakgrunder' },
+    { href: '/admin/assets', label: 'Bord & bakgrunder' },
     { href: '/admin/compositions', label: 'Sammansättningar' },
   ] },
   { id: 'companies', label: 'Spelbolag', items: [
@@ -25,23 +25,16 @@ export const SCOUT_NAVIGATION = Object.freeze([
 ].map(group => Object.freeze({...group, items: Object.freeze(group.items.map(item => Object.freeze(item)))})));
 
 export const SCOUT_FOOTER_NAVIGATION = Object.freeze([
-  Object.freeze({ href: '/control', label: 'Översikt' }),
+  Object.freeze({ href: '/admin', label: 'Översikt' }),
   Object.freeze({ href: '/admin/guide', label: 'Guide & hjälp' }),
-]);
-
-// Login and password pages render without the staff menu.
-const authPaths = new Set(['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login', '/partner/set-password']);
-
-export const SCOUT_LEVELS = Object.freeze([
-  Object.freeze({ href: '/control', label: '1 · Admin', id: 'admin' }),
-  Object.freeze({ href: '/partner', label: '2 · Spelbolag', id: 'partner' }),
-  Object.freeze({ href: '/play', label: '3 · Spelare', id: 'player' }),
 ]);
 
 const items = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
 
 // Content tools retain their pages while sharing one menu entry.
 const legacyPaths = new Map([
+  ['/control', '/admin'],
+  ['/control/library', '/admin/assets'],
   ['/', '/admin/dealer-studio'],
   ['/clips', '/admin/dealer-studio'],
   ['/videos', '/admin/dealer-studio'],
@@ -101,17 +94,4 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   });
   matches.sort((left, right) => hrefParts(right.href).query.length - hrefParts(left.href).query.length);
   return matches[0] ?? null;
-}
-
-export function isScoutAuthPath(pathname, basePath = labBasePath()) {
-  const path = shellPath(pathname, basePath);
-  return path != null && authPaths.has(path.replace(/\/+$/, '') || '/');
-}
-
-export function scoutLevel(pathname, basePath = labBasePath()) {
-  const path = shellPath(pathname, basePath);
-  if (path == null) return null;
-  if (path === '/play' || path.startsWith('/play/')) return 'player';
-  if (path === '/partner' || path.startsWith('/partner/')) return 'partner';
-  return 'admin';
 }
