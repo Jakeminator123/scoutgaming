@@ -1,6 +1,6 @@
 # Aktuell handoff — Scoutgaming
 
-## Dragan: separata skonfack i Admin — 21 oktober 2026
+## Dragan: separata skonfack och automatisk filmövergång — 21 oktober 2026
 
 `Till skon` och `Från skon` delar händelsegrupp, men ska behålla separata
 standardklipp och egna alternativ. Den tidigare sparfunktionen vägrade koppla
@@ -22,21 +22,36 @@ automatisk kodgranskning utan fynd. Vercel-produktion
 sparats genom Admin med ny serverrevision. Efter full omladdning visar båda
 riktningarna **Kopplat i sparat utkast**.
 
-På Jakobs begäran är nästa steg nu implementerat lokalt: filmplaneraren väljer
+På Jakobs begäran väljer filmplaneraren nu
 de sparade skonstandarderna vid VILA/REDO-gränser och behåller inbakade
 returer. Fryst publicering och vanlig förhandsvisning använder samma urval;
 spelaren håller övergång och kortfilm under samma avbrytbara ägare utan att
 ge övergången kortspår. 125 fokuserade tester passerar, inklusive publicering,
-medieisolering, posegränser och avbrott. Runtimeändringen inväntar PR-CI,
-driftsättning på Render/Vercel och publicering av Dragan-rummets nya paket.
+medieisolering, posegränser och avbrott. PR
+[#305](https://github.com/Jakeminator123/scoutgaming/pull/305) är mergad som
+`f7c11c48663b090f4ef1bc890520ddc2f23b4b98` efter godkänd obligatorisk CI,
+inklusive migrationskontroll och Studio-typkontroll. Äldre öppna
+GitGuardian-flaggor i `test/moving-speech-budget.mjs` (incident 38406810 och
+38786588) gäller testetiketter från main; de har inte ändrats eller ignorerats.
+Vercel `dpl_6GzXaGAQ8pBszZzuJ8KdbWi9QVzQ` är READY på samma SHA med
+`www.scoutgaming.tech` som alias. Hela main-CI passerar. Render
+`dep-dbc9bm0u01pc73d1akt0` blev live 10:40:14 UTC på samma SHA;
+`/__cloud/version` bekräftar SHA och `/__cloud/health` svarar 200 `ok`.
+Det isolerade visuella scenprovet startade inte: Admin begärde ny inloggning.
+Inget visuellt spelprov på den nya versionen påstås verifierat.
+Redan öppna spelflikar behöver laddas om för att begära de separata klippen;
+äldre klienter fortsätter med sina tidigare kompletta kortfilmer.
 Genererad talutdelning och automatisk variantrotation ingår inte.
 
 Skarpt verifierat 21 oktober: `in_vila_till_redo`
 (`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) är standard i Till skon och visades
 VILA → REDO. `ut_redo_till_vila`
 (`9c2c2285-e80b-42c3-acee-8682276e47d7`) behålls som standard i Från skon.
-Ingen film laddades upp eller ersattes. Publicerade rumsversioner behölls;
-ändringen gäller det sparade projektutkastet.
+Ingen film laddades upp eller ersattes. Dragan tests enda sammansättning
+publicerades genom Admin till **paket 6**, 21 oktober 10:18:00 UTC, för
+`room-8bd056a2-d5c5-a622-2766-faf75dbbcfa2`. Kvittot och versionen verifierades
+efter omladdning samt genom en läsande registerkontroll. Projektkopplingarna
+lästes separat: Till skon har eget slot-ID och Från skon behåller sin baseline.
 
 ## Dragan: varför svaret visas som text — läsdiagnos 19 oktober 2026
 
