@@ -612,19 +612,28 @@ Osparat projekt och konflikt blockerar publicering; återöppning läser sparade
 värden och behåller bolag, sammansättning, dealer, rum, spel och fragment.
 Befintliga scoped writers/auth används. Ersatt formulärmarkup och oanvända
 styles är borttagna; avveckling av Control-ingången hör till J02.
-Egen verifiering: 160/160 prov utan skips (control-lanes-page, workspace-tools,
+Grundverifiering på 2f3a5b50: 160/160 prov utan skips (control-lanes-page, workspace-tools,
 presentation-room-create, presentation-room-api, studio-session-save och nya
 admin-publication-workspace), Studio-typer och typkontrollerat klientbygge.
 Testupptäckt: 530 kandidater, noll orphan-prov. Browserprovet kör den verkliga
 komponenten och API-handlers med syntetiska konton och minneslagring:
-spara/publicera/omladdning, separat autentiserad browserkontext, konfliktlösning,
-390 px utan horisontell överrullning samt 401/409 utan otillåten skrivning.
+spara/publicera/omladdning, ny separat signerad N1-session för samma konto/scope,
+konfliktlösning, 390 px utan horisontell överrullning samt 401/409 utan otillåten skrivning.
+Sessionskomplettering: 23/23 prov utan skips med `node --test --test-concurrency=4`
+`apps/studio/test/admin-publication-workspace.test.mjs` och
+`apps/studio/test/studio-native-auth.test.mjs`; samma Chrome/browser-env som grundprovet.
+Fixturen utfärdar en distinkt JWT och den verkliga cookievalidatorn verifierar
+samma N1-konto/scope. Ny cookie i ny browserkontext återläser sparat namn och
+publicerad version 2; API-provet kontrollerar också den sparade projektrevisionen.
+Ingen produkt-auth eller endpoint har ändrats. Produktbygget har inte upprepats.
 Det är inte en verklig ny lösenordsinloggning eller PostgreSQL-durabilitetskontroll.
 Lokala stegvisa bilder och loggar: `arkiv/2026-10-21/j01-ui/` (gitignorerat).
 Fixturservrar och browserkontexter stängs av provens cleanup. Inga prodskrivningar,
 mediaändringar eller deployer. Klientbygget har befintliga CSS-composes-varningar.
-Kvar: oberoende granskning/PR/CI; säkerhetsläsningen saknar GitHub- och
-GitGuardian-täckning (incident/location not-read, sourceBinding not-verified).
+PR [313](https://github.com/Jakeminator123/scoutgaming/pull/313) är draft; ny head
+ska granskas och få CI. Egen hostläsning av main före kompletteringscommit:
+0 öppna/23 ignorerade, sourceBinding verified, aktiv övervakning;
+historik `too_large` och partiell platsmetadata kvarstår.
 
 
 Klippkartans scenreglage i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)

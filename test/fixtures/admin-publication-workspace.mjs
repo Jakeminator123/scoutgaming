@@ -1,4 +1,5 @@
 import {createServer} from 'node:http';
+import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
@@ -106,6 +107,17 @@ export async function startPublicationWorkspace() {
       if(!receipt)throw Error('Publication fixture room could not be created: '+JSON.stringify(controller.getSnapshot()));
     }finally{controller.cancel();if(previousBase===undefined)delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;else process.env.NEXT_PUBLIC_LAB_BASE_PATH=previousBase;}
     return {origin,chain,requests,errors,room:receipt.room,
+      // A new synthetic signed session for the same account, never a product login endpoint.
+      async newAdminSession(){
+        const account=chain.auth.users[0],issuedAt=Math.floor(chain.config.now()/1000);
+        const signer=await chain.auth.boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
+        const header=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
+        const body=Buffer.from(JSON.stringify({sub:account.username,role:account.role,aud:'backoffice',
+          iat:issuedAt,exp:issuedAt+3600,jti:randomUUID(),auth_epoch:account.epoch,
+          source_stamp:createHash('sha256').update(account.salt+':'+account.hash).digest('hex')})).toString('base64url');
+        const signature=createHmac('sha256',Buffer.from(signer.v,'hex')).update(header+'.'+body).digest('base64url');
+        return 'bo_jwt='+header+'.'+body+'.'+signature;
+      },
       url:origin+'/admin/publication?'+new URLSearchParams({operator:company.id,composition:compositionId,room:receipt.room.id,dealer:'astrid',game:'blackjack'})+'#publication',
       async close(){server.closeIdleConnections();await new Promise((yes,no)=>server.close(error=>error?no(error):yes()));},
       async request(path,{method='GET',body,cookie=chain.auth.admin}={}){

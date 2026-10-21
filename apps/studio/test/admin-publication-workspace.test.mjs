@@ -6,6 +6,17 @@ import {pathToFileURL} from 'node:url';
 import {startPublicationWorkspace} from '../../../test/fixtures/admin-publication-workspace.mjs';
 import {company,otherCompany,compositionId} from '../../../test/fixtures/admin-publication-chain.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {createStudioNativeAuth} from '../../../packages/studio-access/studio-native-auth.mjs';
+
+async function newAuthenticatedAdmin(f){
+  const cookie=await f.newAdminSession();
+  assert.notEqual(cookie,f.chain.auth.admin,'readback must use a newly issued token');
+  const authorize=createStudioNativeAuth(f.chain.config);
+  const identity=cookie=>authorize(new Request(f.origin,{headers:{cookie}}));
+  assert.deepEqual(await identity(cookie),await identity(f.chain.auth.admin),'the real validator must resolve the same N1 account and scope');
+  return cookie;
+}
+
 
 test('publication saves use document CAS and publish only the acknowledged company package',async t=>{
   const f=await startPublicationWorkspace();t.after(()=>f.close());
@@ -23,6 +34,13 @@ test('publication saves use document CAS and publish only the acknowledged compa
   assert.equal(published.status,200,JSON.stringify(await published.clone().json()));
   assert.equal((await published.json()).packageRevision,2);
   assert.equal(readPackagePresentation(await f.chain.store.getCurrentPackage(company.id)).lanes[0].label,'J01 sparat bord');
+  const newSession=await newAuthenticatedAdmin(f);
+  const readback=await f.request('/fixture-workspace',{cookie:newSession});
+  assert.equal(readback.status,200);const reopened=await readback.json();
+  assert.equal(reopened.initialProject.revision,saved.project.revision);
+  assert.equal(reopened.initialProject.lanes[0].label,'J01 sparat bord');
+  assert.equal(reopened.operators.find(operator=>operator.id===company.id).publishedPackage.revision,2);
+
   assert.equal(await f.chain.store.getCurrentPackage(otherCompany.id),null,'another company is unaffected');
   const stalePackage=await f.request('/studio/api/admin/operator-package',{method:'POST',body:{operatorId:company.id,lanes:[compositionId],expectedPackageRevision:1}});
   assert.equal(stalePackage.status,409);
@@ -45,15 +63,15 @@ test('Admin publication edit, save, publish, reopen, conflict and mobile layout 
   browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   const escaped=[],pageErrors=[],shots=process.env.CROUPIER_PUBLICATION_SCREENSHOTS;
   if(shots)await mkdir(shots,{recursive:true});
-  async function authenticatedContext(){
+  async function authenticatedContext(cookie=f.chain.auth.admin){
     const context=await browser.newContext({viewport:{width:1440,height:1050},serviceWorkers:'block'});
     context.setDefaultTimeout(10_000);
     await context.route('**/*',route=>{
       if(new URL(route.request().url()).origin===f.origin)return route.continue();
       escaped.push(route.request().url());return route.abort('blockedbyclient');
     });
-    const split=f.chain.auth.admin.indexOf('=');
-    await context.addCookies([{name:f.chain.auth.admin.slice(0,split),value:f.chain.auth.admin.slice(split+1),url:f.origin}]);
+    const split=cookie.indexOf('=');
+    await context.addCookies([{name:cookie.slice(0,split),value:cookie.slice(split+1),url:f.origin}]);
     const page=await context.newPage();page.on('pageerror',error=>pageErrors.push(error.message));
     return {context,page};
   }
@@ -84,9 +102,12 @@ test('Admin publication edit, save, publish, reopen, conflict and mobile layout 
   for(const [key,value] of Object.entries({operator:company.id,composition:compositionId,room:f.room.id,dealer:'astrid',game:'blackjack'}))assert.equal(query.get(key),value);
   assert.equal(new URL(page.url()).hash,'#publication');
   await capture(page,'05-reopened');
-  const fresh=await authenticatedContext();await fresh.page.goto(f.url);await waitReady(fresh.page);
+  const newSession=await newAuthenticatedAdmin(f);
+  const fresh=await authenticatedContext(newSession);await fresh.page.goto(f.url);await waitReady(fresh.page);
+  assert.equal((await fresh.context.cookies(f.origin)).find(cookie=>cookie.name==='bo_jwt').value,newSession.slice('bo_jwt='.length));
+  await fresh.page.getByText('Senast publicerat · version 2',{exact:true}).waitFor();
   assert.equal(await fresh.page.getByRole('textbox',{name:'Namn på sammansättningen'}).inputValue(),'J01 Nordbord');
-  await capture(fresh.page,'06-fresh-authenticated-context');
+  await capture(fresh.page,'06-fresh-authenticated-session');
   await fresh.page.setViewportSize({width:390,height:844});
   assert.equal(await fresh.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await capture(fresh.page,'07-mobile');
