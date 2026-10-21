@@ -347,3 +347,28 @@ test('a seated player renames by joining with the boxes they hold: bets, balance
  assert.equal(v.me.name,'Kevin');assert.deepEqual(v.me.boxesAfterRound,[4,5],'a pending box change survives a rename');assert.equal(JSON.stringify(v.round.hands),hands);assert.equal(v.me.balance,995);
  }finally{t.close();}
 });
+
+// Contract with Jakob (O01, 21 Oct): what a demo break still lets a player do, and what a repeated request does.
+test('break during insurance lets the player decline but not take it, then stand',()=>{
+ const t=setup();try{
+ t.send('kevin','join',{name:'Kevin',seats:[3]});t.setShoe(['8','A','8','5']);t.send('kevin','bet',{seat:3,field:'main',chip:10});t.send('kevin','ready');t.finish();
+ assert.equal(t.state().insuranceDue,true);
+ t.send('kevin','pause');
+ assert.throws(()=>t.send('kevin','insurance',{take:true}),/break/);assert.equal(t.state().insuranceDue,true,'the refused request changed nothing');
+ t.send('kevin','insurance',{take:false});assert.equal(t.state().insuranceDue,false);assert.equal(t.state().me.balance,990,'no insurance charged');t.finish();
+ assert.throws(()=>t.send('kevin','act',{action:'hit'}),/break/);assert.throws(()=>t.send('kevin','act',{action:'double'}),/break/);
+ t.send('kevin','act',{action:'stand'});t.finish();assert.equal(t.state().phase,'settled');assert.ok(t.state().me.lastSettlement);
+ }finally{t.close();}
+});
+test('a request id repeated with the same input is applied once; reused with other input it is refused',()=>{
+ const t=setup();try{
+ t.send('kevin','join',{name:'Kevin',seats:[3]});
+ const bet={session:'party',op:'bet',version:t.state().version,requestId:'bet-once',seat:3,field:'main',chip:5};
+ const first=t.service.run('kevin',bet);assert.equal(first.bets[3].main,5);
+ const again=t.service.run('kevin',bet);assert.equal(again.bets[3].main,5,'not a second chip');assert.equal(again.version,first.version,'nothing changed');
+ assert.throws(()=>t.service.run('kevin',{...bet,version:0}),/Request ID reused with different input/,'identical means the whole input, the version too');
+ assert.throws(()=>t.service.run('kevin',{...bet,chip:10}),/Request ID reused with different input/);assert.equal(t.state().bets[3].main,5);
+ assert.throws(()=>t.service.run('kevin',{...bet,requestId:''}),/Request ID required/);
+ assert.equal(t.service.run('john',{session:'party',op:'join',version:t.state('john').version,requestId:'bet-once',name:'John',seats:[4]}).me.name,'John','ids are per player token: another player may use the same id');
+ }finally{t.close();}
+});
