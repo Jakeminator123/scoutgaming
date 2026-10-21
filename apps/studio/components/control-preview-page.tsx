@@ -195,7 +195,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;
   }
-  const publicationHref=labUrl('/control/rooms?'+new URLSearchParams({composition:lane.id,...(initialOperatorId?{operator:initialOperatorId}:{})}));
+  const publicationHref=labUrl('/admin/publication?'+new URLSearchParams({composition:lane.id,...(initialOperatorId?{operator:initialOperatorId}:{})}));
   const sceneEditorHref=adminDocumentHref('/control/studio?'+new URLSearchParams({composition:lane.id,game,
     ...(startDealer?{dealer:startDealer.id}:{}),...(initialOperatorId?{operator:initialOperatorId}:{}),
     ...(initialRoomId?{table:initialRoomId}:{})}));
@@ -208,7 +208,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
       <CompositionMetadata project={project} onEdit={modelEdit} selectedId="" onSelect={setLaneId} disabled={saving||conflict}/>
       <p>{dirty?'Osparade ändringar. Spara för att bekräfta borttagningen.':'Inga sammansättningar sparade.'}</p>
-      <a href={labUrl('/control/rooms'+(initialOperatorId?'?operator='+encodeURIComponent(initialOperatorId):''))}>Spelrum &amp; publicering →</a>
+      <a href={labUrl('/admin/publication'+(initialOperatorId?'?operator='+encodeURIComponent(initialOperatorId):''))}>Spelrum &amp; publicering →</a>
     </div></PageTemplate>;
   return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar"
     primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||previewBusy||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current&&!previewAttempt.current)void save();}}>{saving?'Sparar…':'Spara'}</button><button type="button" className="sg-btn sg-btn-primary" disabled={previewBlocked} aria-describedby="studio-preview-help" onClick={()=>void startPreview()}>{previewBusy?'Startar provspelning…':'Provspela'}</button><a className="sg-btn sg-btn-secondary" aria-disabled={previewBusy||saving||uploading||conflict||invalidDealerSelection} href={publicationHref} onClick={event=>{event.preventDefault();if(!invalidDealerSelection)void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>

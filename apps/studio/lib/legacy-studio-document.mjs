@@ -7,7 +7,7 @@ const studioAliases = Object.freeze({
   'operator-chat':'/control/operator-chat', probe:'/control/probe', tree:'/control/tree',
   videos:'/control/videos', zones:'/control/preview',
 });
-const controlAliases = new Set(['/control/lanes','/control/library','/control/preview','/control/zones']);
+const controlAliases = new Set(['/control/rooms','/control/companies','/control/lanes','/control/library','/control/preview','/control/zones']);
 const contextKeys = new Set(['dealer','dealerId','operator','room','table','game','composition','lane','tab','role','event','variant','situation','view','category']);
 
 // These exact, unauthenticated page shells used to redirect before loading data.

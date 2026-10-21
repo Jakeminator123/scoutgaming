@@ -39,7 +39,7 @@ function loadTs(fileUrl, overrides = {}) {
 }
 
 const editor = loadTs(new URL('../components/lane-editor.tsx', import.meta.url));
-const page = loadTs(new URL('../components/control-lanes-page.tsx', import.meta.url));
+const page = loadTs(new URL('../components/admin-publication-page.tsx', import.meta.url));
 const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, CompositionSettings, LANE_ID_HELP } = editor;
 const { publishLaneRows } = page;
 
@@ -140,7 +140,7 @@ test('the empty editor requires a named composition and an explicit dealer', () 
   assert.doesNotMatch(editorHtml, /Skapa standardsammansättning/);
   assert.match(editorHtml, /Dealer för ny sammansättning/);
   assert.match(editorHtml, /tekniskt ID skapas automatiskt/);
-  const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
+  const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
     initialProject: empty,
     initialVideos: { videos: [] },
     initialStatus: { configured: false },
@@ -165,7 +165,7 @@ test('new compositions ask for a name and dealer while technical IDs remain auto
   assert.doesNotMatch(editorHtml, /<dt>Id|new-lane-id-help|Tekniskt ID<input/);
   assert.equal((editorHtml.match(/<input/g) ?? []).length, 1);
   assert.match(editorHtml, /Namn på ny sammansättning/);
-  const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
+  const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
     initialProject: empty,
     initialVideos: { videos: [] },
     initialStatus: { configured: false },
@@ -184,7 +184,7 @@ test('the editor omits inactive phase controls and retains presentation settings
   assert.match(editorHtml, /type="color"/);
   assert.match(editorHtml, /Bolaget får ändra/);
   assert.doesNotMatch(editorHtml, /sg-btn-primary/);
-  const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
+  const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
     initialProject: project,
     initialVideos: { videos: [] },
     initialStatus: { configured: false },

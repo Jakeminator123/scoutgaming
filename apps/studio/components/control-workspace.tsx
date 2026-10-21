@@ -29,8 +29,8 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
   const dealers = [...new Map(confirmed?.rooms.flatMap(room => room.dealers).map(dealer => [dealer.id, dealer]) ?? []).values()];
   const presentations = [...new Map(confirmed?.rooms.map(room => [room.presentation.id, room.presentation]) ?? []).values()];
   const query = selected && live ? '?' + new URLSearchParams({ operator: selected.id }) : '';
-  const publishingHref = labUrl('/control/rooms' + query);
-  const companyHref = labUrl('/control/companies' + query);
+  const publishingHref = labUrl('/admin/publication' + query);
+  const companyHref = labUrl('/admin/companies' + query);
   const playerHref = selected && live ? '/play?operator=' + encodeURIComponent(selected.slug) : '/play';
   const partnerHref = selected ? workspaceSurfacePath('partner', 'ops', selected.slug) ?? '/partner' : '/partner';
   const nextHref = ({ studio: labUrl('/control/clips'), composition: labUrl('/control/compositions' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];

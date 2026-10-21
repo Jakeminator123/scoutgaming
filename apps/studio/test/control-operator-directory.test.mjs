@@ -39,7 +39,7 @@ function loadTs(fileUrl, overrides = {}) {
   return module.exports;
 }
 
-const { ControlLanesPage } = loadTs(new URL('../components/control-lanes-page.tsx', import.meta.url));
+const { AdminPublicationPage } = loadTs(new URL('../components/admin-publication-page.tsx', import.meta.url));
 const { ControlOperatorDirectory, operatorDirectoryFailure } = loadTs(new URL('../components/control-operator-directory.tsx', import.meta.url));
 const standardRoles = STANDARD_OPERATOR_ROLES.map(role => ({ id: role.id, label: role.label, permissions: [...role.permissions] }));
 const roles = STANDARD_OPERATOR_ROLES.map(role => ({ id: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable }));
@@ -57,7 +57,7 @@ const directory = {
   ],
 };
 function page(extra) {
-  return renderToStaticMarkup(React.createElement(ControlLanesPage, {
+  return renderToStaticMarkup(React.createElement(AdminPublicationPage, {
     initialTab: 'companies',
     initialProject: createSeedProject(),
     initialVideos: { videos: [] },
@@ -108,9 +108,6 @@ test('failures name the cause the admin API status allows, without guessing betw
   assert.match(operatorDirectoryFailure('role', 409), /sista administratören/);
   assert.match(operatorDirectoryFailure('member', 403), /Åtkomst nekad/);
   assert.match(operatorDirectoryFailure('create', 503), /Neon-pool/);
-  const pageSource = readFileSync(new URL('../app/control/operator-page.tsx', import.meta.url), 'utf8');
-  assert.match(pageSource, /directory=\{directory\}/);
-  assert.match(pageSource, /listOperatorDirectory/);
 });
 
 test('human input suggests an editable address and selects exactly one membership identity', () => {

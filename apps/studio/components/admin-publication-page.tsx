@@ -11,21 +11,21 @@ import { initialPartnerRoomSelection } from '../lib/partner-room-selection.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { PageTemplate } from './page-template';
-import styles from './control-lanes-page.module.css';
+import styles from './admin-publication-page.module.css';
 import { ProjectConflict } from './project-conflict';
 import { useStudioProjectSession } from './studio-session';
 import type { ConnectionStatus } from './studio-types';
 import type { VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
 
-export type LaneOperatorChoice = { id: string; slug: string; name: string; status?: string; archivedAt?: string | null; publishedPackage?: { revision: number; lanes: string[] } | null };
+export type PublicationOperatorChoice = { id: string; slug: string; name: string; status?: string; archivedAt?: string | null; publishedPackage?: { revision: number; lanes: string[] } | null };
 type PackageEditor = { chosen: string[]; baseline: string[]; revision: number | null; message: string; error: string; needsRefresh: boolean };
 
-export function initialPackageOperator(operators: readonly LaneOperatorChoice[], laneId?: string, operatorId?: string) {
+export function initialPackageOperator(operators: readonly PublicationOperatorChoice[], laneId?: string, operatorId?: string) {
   if (operatorId) return operators.find(operator => operator.id === operatorId || operator.slug === operatorId)?.id ?? '';
   const matches = laneId ? operators.filter(operator => operator.publishedPackage?.lanes.includes(laneId)) : [];
   return matches.length === 1 ? matches[0].id : operators.length === 1 ? operators[0].id : '';
 }
-function packageEditor(operator?: LaneOperatorChoice): PackageEditor {
+function packageEditor(operator?: PublicationOperatorChoice): PackageEditor {
   return { chosen: [...(operator?.publishedPackage?.lanes ?? [])], baseline: [...(operator?.publishedPackage?.lanes ?? [])], revision: operator?.publishedPackage?.revision ?? null,
     message: '', error: '', needsRefresh: operator?.publishedPackage === undefined };
 }
@@ -58,7 +58,7 @@ function requestedPublicationRoom(snapshot: LifecycleSnapshot | null, operatorId
     .map(room=>({...room,status:room.state==='live'?'active':room.state}))},requestedRoomId);
   return snapshot?.rooms.find(room=>room.id===selection.roomId&&room.operatorId===operatorId);
 }
-export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialRoomId, onContextChange, initialTab = 'publish' }: {
+export function AdminPublicationPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialRoomId, onContextChange, initialTab = 'publish' }: {
   initialLaneId?: string;
   initialOperatorId?: string;
   initialRoomId?: string | string[];
@@ -67,7 +67,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
-  operators: LaneOperatorChoice[];
+  operators: PublicationOperatorChoice[];
   storeAvailable: boolean;
   directory?: OperatorDirectory | null;
 }) {
@@ -81,7 +81,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const initialRoomCompositionResolved = useRef(false);
   const [resourceSnapshot, setResourceSnapshot] = useState<LifecycleSnapshot | null>(null);
   const [resourceStale, setResourceStale] = useState(false);
-  const initialOperators: LaneOperatorChoice[] = [...operators, ...(directory?.operators ?? []).filter(entry => !operators.some(operator => operator.id === entry.id))];
+  const initialOperators: PublicationOperatorChoice[] = [...operators, ...(directory?.operators ?? []).filter(entry => !operators.some(operator => operator.id === entry.id))];
   const [operatorId, setOperatorId] = useState(() => initialPackageOperator(initialOperators, initialLaneId, initialOperatorId));
   const [listed, setListed] = useState(initialOperators);
   const pendingInitialOperator=useRef(initialOperatorId&&!initialOperators.some(operator=>operator.id===initialOperatorId||operator.slug===initialOperatorId)?initialOperatorId:null);
@@ -136,7 +136,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const compositionHref = studioNavigationHref('/control/compositions', editorContext);
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
   const setPublishError = (value: string) => updatePackage(operatorId, current => ({ ...current, error: value }));
-  const companyHref = studioNavigationHref('/control/companies', editorContext);
+  const companyHref = studioNavigationHref('/admin/companies', editorContext);
   const shownError = [publishError, error].filter(Boolean).join(' ');
   const selectionDirty = Object.values(packages).some(pack => JSON.stringify([...pack.chosen].sort()) !== JSON.stringify([...pack.baseline].sort()));
   const currentSelectionDirty = JSON.stringify([...chosen].sort()) !== JSON.stringify([...selectedPackage.baseline].sort());
@@ -284,7 +284,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
               {roomUnavailable?<p role="status">{!resourceSnapshot&&!resourceStale?'Kontrollerar det valda spelrummet…':'Det valda spelrummet är inte tillgängligt för det här bolaget. Välj ett aktuellt rum från Admin.'}</p>
                 :<a href={'/lobby?'+new URLSearchParams({operator:selectedOperator.slug,...(selectedRoom?{room:selectedRoom.id}:{})})}>Öppna spellobbyn →</a>}
             </div>
-          </div>:<p>Välj bolaget du vill arbeta med. Saknas det? <a href={labUrl('/control/companies')}>Skapa ett spelbolag</a>.</p>}
+          </div>:<p>Välj bolaget du vill arbeta med. Saknas det? <a href={labUrl('/admin/companies')}>Skapa ett spelbolag</a>.</p>}
         </section>
         {selectedOperator?<>
           {archived?<p className={styles.card}>Bolaget är arkiverat. <a href={companyHref}>Återställ bolaget under Bolag & team</a> för att fortsätta.</p>:null}

@@ -71,7 +71,7 @@ test('company links use the internal id for publication, the slug for players, a
   try {select.props.onChange({target:{value:'south-id'}});}finally{delete globalThis.window;}
   const html=renderToStaticMarkup(Interactive(props));
   assert.match(replaced,/operator=south-id/);assert.match(replaced,/other=keep/);
-  assert.match(html,/href="\/control\/rooms\?operator=south-id"/);
+  assert.match(html,/href="\/admin\/publication\?operator=south-id"/);
   assert.match(html,/href="\/partner\/south-slug"/);
   assert.doesNotMatch(html,/North room|room-north|Hämtad från spellobbyn/);
   assert.match(html,/Hämtar bolagets publicering/);

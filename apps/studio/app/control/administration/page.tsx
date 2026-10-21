@@ -28,7 +28,7 @@ export default async function Page(props: { searchParams?: Promise<Record<string
     const context = new URLSearchParams();
     for (const key of ['operator', 'composition', 'dealer', 'table']) {const value = firstQueryValue(query[key]);if (value) context.set(key, value);}
     if (!context.has('composition') && firstQueryValue(query.lane)) context.set('composition', firstQueryValue(query.lane)!);
-    return redirectToPublicControl('/control/rooms' + (context.size ? '?' + context : ''));
+    return redirectToPublicControl('/admin/publication' + (context.size ? '?' + context : ''));
   }
   return <NativeAdministration apiBase={native.config.apiBase} gameOrigin={native.config.allowedOrigins[0]} availableActions={native.api.availableActions(session)} initialGroup={tab} initialDealerId={Array.isArray(query.dealer) ? query.dealer[0] : query.dealer} />;
 }

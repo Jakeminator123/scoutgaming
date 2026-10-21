@@ -9,8 +9,8 @@ export const SCOUT_NAVIGATION = Object.freeze([
     { href: '/control/compositions', label: 'Sammansättningar' },
   ] },
   { id: 'companies', label: 'Spelbolag', items: [
-    { href: '/control/companies', label: 'Bolag & team' },
-    { href: '/control/rooms', label: 'Spelrum & publicering' },
+    { href: '/admin/companies', label: 'Bolag & team' },
+    { href: '/admin/publication', label: 'Spelrum & publicering' },
   ] },
   { id: 'operations', label: 'Drift', items: [
     { href: '/control/administration?tab=operations', label: 'Spelstatus & integritet' },
@@ -89,7 +89,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   if (mapped.query) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
-  if (mapped.path === '/control/administration' && params.get('tab') === 'tables') return items.find(item => item.href === '/control/rooms') ?? null;
+  if (mapped.path === '/control/administration' && params.get('tab') === 'tables') return items.find(item => item.href === '/admin/publication') ?? null;
   if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/control/clips') ?? null;
   if (mapped.path === '/control/administration') {
     const tab = params.get('tab');

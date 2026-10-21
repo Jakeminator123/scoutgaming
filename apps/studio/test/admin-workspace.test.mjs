@@ -109,3 +109,14 @@ test('duplicate selectors survive compatibility mapping for downstream validatio
   assert.deepEqual(new URL(target,'https://site.invalid').searchParams.getAll('dealer'),['dragan','astrid']);
   assert.equal(studioLoginReturnTo(target),'/admin');
 });
+
+
+test('retired publication bookmark mapping preserves fragments and rejects document redirects for writes',()=>{
+  for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+    const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
+    const url=new URL('https://site.invalid'+prefix+'/rooms?operator=north&table=room-1&lane=portrait#review');
+    assert.equal(platformRoute(url,config,new Request(url)).destination,'https://site.invalid/admin/publication?operator=north&table=room-1&composition=portrait#review');
+    for(const options of [{method:'POST',body:'fixture'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
+    for(const path of ['/studio/api/admin/operator-package','/control/login','/control/set-password'])assert.notEqual(platformRoute(new URL(path,url),config).kind,'redirect');
+  }
+});

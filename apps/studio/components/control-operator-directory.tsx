@@ -199,7 +199,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
       const add = adds[operator.id] ?? { contact: '', roleId: '' };
       const selectedRole = operator.roles.find(role => role.id === (add.roleId || defaultRole(operator)));
       return <article className={styles.card} aria-labelledby={`operator-${operator.id}`}>
-        <header className={styles.heading}><div><span className={styles.eyebrow}>BOLAGETS ARBETSYTA</span><h2 id={`operator-${operator.id}`}>{operator.name}</h2><p className={styles.muted}>/partner/{operator.slug}</p></div><a className="sg-btn sg-btn-secondary" href={labUrl('/control/rooms?' + new URLSearchParams({ operator: operator.id }))}>Spelrum & publicering →</a></header>
+        <header className={styles.heading}><div><span className={styles.eyebrow}>BOLAGETS ARBETSYTA</span><h2 id={`operator-${operator.id}`}>{operator.name}</h2><p className={styles.muted}>/partner/{operator.slug}</p></div><a className="sg-btn sg-btn-secondary" href={labUrl('/admin/publication?' + new URLSearchParams({ operator: operator.id }))}>Spelrum & publicering →</a></header>
         {operator.status!=='active'?<p className={styles.feedback} role="status">{lifecycleArchives[operator.id]?'Bolaget är arkiverat. Återställ bolaget nedan för att ändra teamet.':'Bolaget är avstängt. Teamet visas i läsläge.'}</p>:null}
         {operator.missingRoles.length ? <div className={styles.feedback}><p role="status">Standardroller saknas: {operator.missingRoles.join(', ')}.</p><button className="sg-btn sg-btn-ghost" type="button" disabled={teamUnavailable} onClick={() => { void restoreRoles(operator); }}>Skapa saknade standardroller</button></div> : null}
         <section className={styles.invite} aria-label="Lägg till i teamet">

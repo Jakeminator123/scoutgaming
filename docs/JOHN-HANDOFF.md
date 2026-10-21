@@ -605,6 +605,31 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
+J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
+`ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
+`admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla
+`app/control/rooms/page.tsx`, `companies/page.tsx` och `operator-page.tsx`
+är borttagna tillsammans med deras tracingposter och renderer-specifika testlås.
+Aktiva UI-/återhämtningslänkar går direkt till Admin. Bokmärken till
+`/control/rooms` och `/control/lanes` går till `/admin/publication`;
+`/control/companies` och `lanes?tab=companies` går till `/admin/companies`.
+Omdirigering gäller GET/HEAD med och utan native/unified-flagga och /studio-mount;
+querykontext, fragment och lane→composition bevaras. Skrivanrop och next-action
+omdirigeras inte. Befintlig N1-auth, Partner, tjänster och scoped writers kvarstår.
+Verifierat: 383 unika fokuserade prov (106 routing/publicering/browser och
+277 konsument/auth); sista riktade omkörningar 36/36 preview och 19/19 Next-navigation.
+J01-browserflödet körs utan skips via gamla rooms- och monterade lanes-bokmärken,
+inklusive ny signerad session, spara/publicera/återöppna, konflikt och mobil.
+Studio-typkontroll och komplett `npm --prefix apps/studio run build` med
+`CROUPIER_LAB_BASE_PATH=/studio` passerar; Admin/lobby-typer ingår. 78 byggspår,
+0 privata filer rensade. Orphan-kontroll: 530 kandidater, 0 orphan-prov.
+Lokala kommandoutfall/bilder: `arkiv/2026-10-21/j02-ui/` (gitignorerat).
+Befintliga CSS-composes-/Next middleware-varningar kvarstår. Proven använder
+syntetiska konton/minneslagring; ingen produktion, DDL eller GPU kontaktad.
+Testresurser stängs av egen cleanup. Kvar: fryst oberoende granskning, PR/CI;
+resterande Control-ytor och lobbyavveckling hör till J03/J04.
+
+
 J01 · 21 oktober 2026, branch `codex/admin-publication-j01` från main
 `15988f32fd572c453d2189502acbe324c4566815`: publicering visar bolag/rum/version,
 redigering och sparning, publiceringsval och bekräftat kvitto som skilda steg.

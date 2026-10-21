@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {ControlLanesPage,type LaneOperatorChoice} from '../../../../components/control-lanes-page';
+import {AdminPublicationPage,type PublicationOperatorChoice} from '../../../../components/admin-publication-page';
 import type {OperatorDirectory} from '../../../../components/control-operator-directory';
 import {ControlActivityPage} from '../../../../components/control-activity-page';
 import {ControlPreviewPage} from '../../../../components/control-preview-page';
@@ -22,7 +22,7 @@ import {withAdminContext} from '../../../runtime/admin-routing.mjs';
 import {ConnectedServices} from './connected-services';
 
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
-  operators:LaneOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
+  operators:PublicationOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
 const groups=[
   {title:'Bolag och rum',description:'Team, rum och sparade mallar.',items:['companies','publication','compositions']},
   {title:'Dealers och material',description:'Dealerinställningar, klipp och tal.',items:['dealer-studio','videos','replies','media-review']},
@@ -61,7 +61,7 @@ export function WorkspaceTool({section}:{section:string}){
   const initialRoomId=roomValues.length>1?roomValues:roomValues[0];
   let content;
   switch(section){
-    case 'companies':case 'publication':content=<ControlLanesPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
+    case 'companies':case 'publication':content=<AdminPublicationPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
     case 'compositions':content=<ControlPreviewPage {...common} initialGame={get('game')==='roulette'?'roulette':'blackjack'}/>;break;
     case 'dealer-studio':content=<LabStudio {...common} initialView={get('view')} initialCategory={get('category')}/>;break;
     case 'rehearsal':content=<ControlActivityPage {...common} initialOperatorSlug={get('operator')}/>;break;

@@ -265,17 +265,17 @@ test('account status labels keep stored values and integration dates never revea
 test('administration notices use the enclosing room destination and label team compatibility without changing its editor', () => {
   for (const group of ['tables', 'accounts', 'partners']) {
     const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
-    const href = group === 'tables' ? '/control/rooms' : '/control/companies';
+    const href = group === 'tables' ? '/admin/publication' : '/admin/companies';
     const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
     assert.ok(original, group);
     assert.equal(original.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team');
     const embedded = h.render({ ...props, roomsHref: '/admin/rooms', companyTeamLabel: 'Bolag & team (äldre editor)' });
     const links = nodes(embedded, node => node.type === 'a');
-    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/control/companies'));
+    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/admin/companies'));
     assert.ok(target, group);
     assert.equal(target.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team (äldre editor)');
     if (group === 'tables') {
-      assert.equal(links.some(node => node.props.href === '/control/rooms'), false);
+      assert.equal(links.some(node => node.props.href === '/admin/publication'), false);
       assert.match(renderToStaticMarkup(embedded), /Bolagets spelbara rum och publicering hanteras via/);
     }
     h.unmount();

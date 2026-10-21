@@ -11,6 +11,7 @@ import {createOperatorPackageApi} from '../../apps/studio/lib/operator-package-a
 import {createResourceLifecycleApi} from '../../apps/studio/lib/resource-lifecycle-api.mjs';
 import {createPresentationRoomController, createPresentationRoomClient} from '../../apps/studio/lib/presentation-room-client.mjs';
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import {platformRoute} from '../../packages/navigation/server/platform-routing.mjs';
 
 // Actual publication component, document CAS, cookie/role checks and package
 // writers; only accounts, media metadata and SQL storage are synthetic.
@@ -23,13 +24,13 @@ async function bundle() {
     stdin: {contents: `
       import React from 'react';
       import {createRoot} from 'react-dom/client';
-      import {ControlLanesPage} from './apps/studio/components/control-lanes-page.tsx';
+      import {AdminPublicationPage} from './apps/studio/components/admin-publication-page.tsx';
       import './apps/studio/client/admin/app/studio.css';
       async function mount(){
         const response=await fetch('/fixture-workspace');
         if(!response.ok)throw Error('Fixture session rejected');
         const props=await response.json(),q=new URLSearchParams(location.search);
-        createRoot(document.getElementById('root')).render(<ControlLanesPage {...props}
+        createRoot(document.getElementById('root')).render(<AdminPublicationPage {...props}
           initialOperatorId={q.get('operator')??undefined} initialLaneId={q.get('composition')??undefined}
           initialRoomId={q.get('room')??q.get('table')??undefined}/>);
       }
@@ -59,7 +60,11 @@ export async function startPublicationWorkspace() {
         method:incoming.method,headers:incoming.headers,...(body.length?{body}:{})});
       const path=new URL(request.url).pathname;
       let response;
-      if(path==='/admin/publication')response=new Response('<!doctype html><html lang="sv" class="preview-admin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"><div class="admin-workspace-tool" id="root"></div><script type="module" src="/fixture.js"></script></html>',{headers:{'content-type':'text/html; charset=utf-8'}});
+      if(/^\/(?:studio\/)?control\/(?:rooms|companies|lanes)$/.test(path)){
+        const route=platformRoute(new URL(request.url),{nativeStudio:false,publicOrigin:origin,labUiOrigin:origin,backendOrigin:origin},request);
+        response=route.kind==='redirect'?Response.redirect(route.destination,307):new Response(null,{status:404});
+      }
+      else if(path==='/admin/publication')response=new Response('<!doctype html><html lang="sv" class="preview-admin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"><div class="admin-workspace-tool" id="root"></div><script type="module" src="/fixture.js"></script></html>',{headers:{'content-type':'text/html; charset=utf-8'}});
       else if(path==='/fixture.js')response=new Response(js,{headers:{'content-type':'application/javascript'}});
       else if(path==='/fixture.css')response=new Response(css+'\nbody{margin:0;background:var(--sg-bg);color:var(--sg-text);font:14px system-ui}*{box-sizing:border-box}a{color:inherit}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:default}p,h1,h2{margin-top:0}',{headers:{'content-type':'text/css'}});
       else if(path==='/fixture-workspace'){

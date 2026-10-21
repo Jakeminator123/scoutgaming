@@ -121,9 +121,9 @@ test('a requested second lane keeps its dealer and its lane id when continuing t
   const html=render(nora.id);
   assert.match(html,/<option value="nora-evening" selected="">Nora kväll<\/option>/);
   assert.match(html,/<option value="nora" selected="">Nora<\/option>/);
-  assert.match(html,/href="[^"]*\/control\/rooms\?composition=nora-evening"/);
+  assert.match(html,/href="[^"]*\/admin\/publication\?composition=nora-evening"/);
   assert.doesNotMatch(html,/control\/zones|Bakgrundszoner/);
-  assert.match(render('unknown-lane'),/href="[^"]*\/control\/rooms\?composition=mobile-phone"/);
+  assert.match(render('unknown-lane'),/href="[^"]*\/admin\/publication\?composition=mobile-phone"/);
 });
 
 test('unsaved composition invokes guarded save before the next-step navigation',async()=>{
@@ -133,7 +133,7 @@ test('unsaved composition invokes guarded save before the next-step navigation',
     './studio-session':{useStudioProjectSession:()=>({project,projectRef:{current:project},videos:{videos:[]},dirty:true,saving:false,conflict:false,save:async()=>{saves++;return false;}})},
   });
   const tree=ControlPreviewPage({initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false}});
-  function find(node){if(!node||typeof node!=='object')return null;if(node.type==='a'&&node.props.href?.includes('/control/rooms?composition='))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
+  function find(node){if(!node||typeof node!=='object')return null;if(node.type==='a'&&node.props.href?.includes('/admin/publication?composition='))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
   const next=find(tree);assert.ok(next);assert.equal(next.props['aria-disabled'],false);assert.equal(next.props.children,'Spara och fortsätt');
   let prevented=false;next.props.onClick({preventDefault(){prevented=true;}});await Promise.resolve();assert.equal(prevented,true);assert.equal(saves,1);
 });
@@ -282,11 +282,11 @@ test('save and continue navigates only after a clean rendered save, and repeated
   const harness=previewHarness(),navigations=[];
   globalThis.window={location:{assign:href=>navigations.push(href)}};
   try {
-    const tree=harness.render(),next=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/rooms?composition='));
+    const tree=harness.render(),next=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition='));
     const event={preventDefault(){}};next.props.onClick(event);next.props.onClick(event);
     assert.equal(harness.saves(),1);assert.deepEqual(navigations,[]);
     await new Promise(setImmediate);harness.render();harness.effects[1]();
-    assert.deepEqual(navigations,['/control/rooms?composition=mobile-phone']);
+    assert.deepEqual(navigations,['/admin/publication?composition=mobile-phone']);
   }finally{delete globalThis.window;}
 });
 
@@ -296,7 +296,7 @@ test('failed save, revision conflict and active upload all preserve the draft an
     for(const option of [{saveResult:false},{conflict:true},{upload:true}]) {
       const harness=previewHarness(option),tree=harness.render();
       if(option.upload)harness.find(tree,node=>node.type?.name==='LayerLibrary').props.onBusyChange(true);
-      harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/rooms?composition=')).props.onClick({preventDefault(){}});
+      harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition=')).props.onClick({preventDefault(){}});
       await new Promise(setImmediate);harness.render();harness.effects[1]();
       assert.equal(harness.session.dirty,true);assert.equal(harness.saves(),option.saveResult===false?1:0);
     }
@@ -499,7 +499,7 @@ test('switching layers preserves mounted upload controls and its receipt while t
   uploaded.props.onRegistered(remote,asset.id);
   tree=harness.render();
   assert.equal(harness.session.project.lanes[0].layers.table.default,asset.id);
-  harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/rooms?composition=')).props.onClick({preventDefault(){}});
+  harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition=')).props.onClick({preventDefault(){}});
   await Promise.resolve();assert.equal(harness.saves(),0);
   uploaded.props.onBusyChange(false);tree=harness.render();
   assert.equal(library().props.disabled,false);
@@ -644,7 +644,7 @@ test('preview waits for its receipt, locks repeated clicks and mutations, then n
     assert.equal(calls,1);assert.equal(signal.aborted,false);assert.deepEqual(navigations,[]);
     assert.deepEqual(structuredClone(request),{presentationLaneId:original.lanes[0].id,expectedProjectRevision:original.revision});
     h.find(tree,node=>node.type?.name==='CompositionMetadata').props.onEdit(current=>({...current,revision:'changed'}));
-    h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/rooms?')).props.onClick({preventDefault(){}});
+    h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?')).props.onClick({preventDefault(){}});
     assert.deepEqual(h.session.project,original);assert.equal(h.saves(),0);
     assert.equal(previewButton(h,h.render()).props.disabled,true);
     resolve(previewReceipt());await new Promise(setImmediate);
@@ -731,7 +731,7 @@ test('a saved retired dealer remains invalid until explicit replacement and remo
   assert.equal(h.find(dealerSelect(),node=>node.type==='option'&&node.props.value==='amira'),null);
   assert.equal(h.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer,null);
   assert.equal(preview().props.disabled,true);preview().props.onClick();assert.equal(requests,0);
-  const next=h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/rooms?composition='));
+  const next=h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/publication?composition='));
   assert.equal(next.props['aria-disabled'],true);next.props.onClick({preventDefault(){}});assert.equal(h.saves(),0);
   assert.deepEqual(h.session.project,original);assert.equal(h.session.dirty,false);
   dealerSelect().props.onChange({target:{value:'amira'}});assert.deepEqual(h.session.project,original);

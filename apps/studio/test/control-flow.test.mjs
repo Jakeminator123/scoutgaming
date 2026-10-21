@@ -4,7 +4,7 @@ import { canonicalControlHref, compositionLabel } from '../../../packages/naviga
 import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
 test('older workspace links keep company and room context', () => {
-  assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/control/companies?operator=op-one#team');
+  assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/admin/companies?operator=op-one#team');
   assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), '/control/rehearsal?dealer=paow&operator=north&table=room-one');
   assert.equal(canonicalControlHref('/control/preview?composition=current'), '/control/compositions?composition=current');
 });

@@ -118,7 +118,7 @@ test('actual native page guard returns every current view after public, standalo
         await assert.rejects(guard.authorizeUiPage(request), error => {
           const login = new URL(locationFromNext(error, basePath), config.allowedOrigins[0]);
           assert.equal(login.pathname, basePath + '/login');
-          const expectedReturn = returnTo === '/studio/control/lanes?tab=companies' ? '/control/companies' : returnTo === '/studio/control/lanes?lane=evening' ? '/control/rooms?composition=evening' : returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo;
+          const expectedReturn = returnTo === '/studio/control/lanes?tab=companies' ? '/admin/companies' : returnTo === '/studio/control/lanes?lane=evening' ? '/admin/publication?composition=evening' : returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo;
           assert.equal(login.searchParams.get('returnTo'), expectedReturn);
           assert.equal(login.searchParams.size, 1);
           return true;
@@ -505,7 +505,7 @@ test('legacy administration tables await the public room redirect after authoriz
   });
   await assert.rejects(page.default({searchParams:Promise.resolve({tab:'tables',operator:'operator-42',lane:'mobile-phone',dealer:'vera',table:'room-7',token:'do-not-copy'})}),error=>{
     const url=new URL(locationFromNext(error,''));
-    assert.equal(url.origin,'https://game.fixture.invalid');assert.equal(url.pathname,'/control/rooms');
+    assert.equal(url.origin,'https://game.fixture.invalid');assert.equal(url.pathname,'/admin/publication');
     assert.equal(url.searchParams.get('operator'),'operator-42');assert.equal(url.searchParams.get('composition'),'mobile-phone');assert.equal(url.searchParams.get('dealer'),'vera');assert.equal(url.searchParams.get('table'),'room-7');assert.equal(url.searchParams.has('token'),false);
     return true;
   });
@@ -561,7 +561,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     }
     return transported;
   };
-  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers']) {
+  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/publication?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north']) {
     let incoming = new Headers({host:new URL(publicOrigin).host,cookie:f.auth.admin,
       'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'});
     if(position==='before') incoming = await throughTransport(incoming);
@@ -575,7 +575,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     assert.equal(headers.has('origin'),false);
     if(position==='after') headers = await throughTransport(headers);
     const destination = routed.headers.get('x-middleware-rewrite') ?? publicOrigin+path;
-    const segments = path.endsWith('/dealers') ? ['dealers'] : [];
+    const segments = new URL(destination).pathname.replace(/^\/(?:studio\/)?admin\/?/,'').split('/').filter(Boolean);
     const response = await admin.GET(new Request(destination,{headers}),{params:Promise.resolve({path:segments})});
     assert.equal(response.status,200,position+' middleware: '+path+' must authorize the unchanged synthetic admin cookie after the proxy hop');
     assert.match(await response.text(),/Authorized Admin fixture/);
@@ -583,6 +583,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     const login = await admin.GET(new Request(destination,{headers:anonymous}),{params:Promise.resolve({path:segments})});
     assert.equal(login.status,307,'document normalization never grants a session');
     assert.match(login.headers.get('location'),/^\/login\?returnTo=/);
+    assert.equal(new URL(login.headers.get('location'),publicOrigin).searchParams.get('returnTo'),path.replace(/^\/studio(?=\/admin)/,''));
   }
 });
 
@@ -637,5 +638,29 @@ test('actual middleware centralizes exact legacy documents without changing nati
       assert.equal(legacyStudioDocumentHref(request('/control/library',options),{basePath}),null);
       assert.equal(middleware(request('/control/library',options)).headers.has('location'),false);
     }
+  }
+});
+
+
+test('retired publication documents redirect with context in every native and mount configuration',()=>{
+  const platform=require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for(const basePath of ['','/studio']) for(const unified of [false,true]) for(const nativeStudio of [false,true]){
+    const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for(const [section,target]of [['rooms','publication'],['companies','companies'],['lanes','publication']]){
+      const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait';
+      for(const method of ['GET','HEAD']){
+        const response=middleware(new Request(url,{headers,method}));
+        assert.equal(response.status,307);const destination=new URL(response.headers.get('location'));
+        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/'+target);
+        for(const [key,value]of Object.entries({operator:'north',room:'room-1',table:'room-1',dealer:'dragan',game:'roulette',composition:'portrait'}))assert.equal(destination.searchParams.get(key),value);
+        assert.equal(destination.searchParams.has('lane'),false);
+      }
+      for(const options of [{method:'POST',body:'fixture',headers},{headers:{...headers,'next-action':'fixture'}}])assert.equal(middleware(new Request(url,options)).headers.has('location'),false);
+    }
+    const companies=middleware(new Request('https://game.fixture.invalid'+basePath+'/control/lanes?tab=companies&operator=north',{headers}));
+    assert.equal(new URL(companies.headers.get('location')).pathname,'/admin/companies');
   }
 });
