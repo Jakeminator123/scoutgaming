@@ -35,6 +35,9 @@ export function canonicalControlHref(value) {
   if (url.pathname === '/control/videos') url.pathname = '/admin/videos';
   if (url.pathname === '/control/compositions') url.pathname = '/admin/compositions';
   if (url.pathname === '/control/rehearsal') url.pathname = '/admin/rehearsal';
+  if (url.pathname === '/control/openclaw') url.pathname = url.searchParams.get('tab') === 'chat' ? '/admin/dealer-agent' : '/admin/ai/models';
+  if (url.pathname === '/control/ops') url.pathname = '/admin/ai/models';
+  if (url.pathname === '/control/operator-chat') url.pathname = '/admin/dealer-agent';
   return url.pathname + url.search + url.hash;
 }
 

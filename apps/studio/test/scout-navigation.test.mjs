@@ -125,6 +125,8 @@ test('partner pages retain their own shell and the staff shell retains its share
 
 test('query-specific links win without losing the chat alias or selecting publicering for bolag', () => {
   const cases = [
+    ['/admin/ai/models?dealer=saga&operator=north', 'Agentmodeller'], ['/admin/dealer-agent?dealer=saga', 'Intern agentchatt'],
+    ['/openclaw?tab=chat&dealer=saga', 'Intern agentchatt'], ['/control/ops?tab=chat', 'Agentmodeller'],
     ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt'],
     ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Intern agentchatt'],
     ['/control/openclaw?dealer=astrid', 'Agentmodeller'], ['/operator-chat', 'Intern agentchatt'],

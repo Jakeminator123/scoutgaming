@@ -3,8 +3,7 @@ import {canonicalControlHref, legacyActivityDocumentHref} from '../../../package
 
 const studioAliases = Object.freeze({
   activity:'/control/activity', administration:'/control/administration', events:'/control/events',
-  guide:'/control/guide', lissabon:'/control', openclaw:'/control/openclaw',
-  'operator-chat':'/control/operator-chat', probe:'/control/probe', tree:'/control/tree',
+  guide:'/control/guide', lissabon:'/control', probe:'/control/probe', tree:'/control/tree',
   videos:'/control/videos', zones:'/control/preview',
 });
 const controlAliases = new Set(['/control/rooms','/control/companies','/control/lanes','/control/library','/control/preview','/control/zones']);
@@ -20,8 +19,8 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   const path = url.pathname.slice(basePath.length);
   // These retired tools preserve navigation context at both historical entries.
   const tool = path.startsWith('/control/')
-    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones)$/)?.[1]
-    : path.match(/^\/(guide|videos|probe|events|tree|compositions|rehearsal|preview|zones)$/)?.[1];
+    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat|ops)$/)?.[1]
+    : path.match(/^\/(guide|videos|probe|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat)$/)?.[1];
   if (tool) {
     const query = new URLSearchParams();
     for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);

@@ -362,7 +362,7 @@ test('a partner cookie never authorizes control and a partner session skips the 
 
 test('legacy control entrances redirect once to canonical public control tools', async () => {
   const loaded = pages(async () => assert.fail('existing destination retains its own guard; no preview snapshot is loaded'));
-  for (const [section, destination] of [['studio', '/control'], ['admin', '/control/administration'], ['ops', '/control/openclaw'], ['lab', '/control']]) {
+  for (const [section, destination] of [['studio', '/control'], ['admin', '/control/administration'], ['ops', '/admin/ai/models'], ['lab', '/control']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
         assert.equal(canonicalControlPath(error, basePath), destination);

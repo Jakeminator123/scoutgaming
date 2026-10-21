@@ -19,8 +19,8 @@ export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'system', label: 'System', items: [
     { href: '/control/administration?tab=accounts', label: 'Konton & åtkomst' },
     { href: '/control/administration?tab=partners', label: 'API & integrationer' },
-    { href: '/control/openclaw', label: 'Agentmodeller' },
-    { href: '/control/openclaw?tab=chat', label: 'Intern agentchatt' },
+    { href: '/admin/ai/models', label: 'Agentmodeller' },
+    { href: '/admin/dealer-agent', label: 'Intern agentchatt' },
   ] },
 ].map(group => Object.freeze({...group, items: Object.freeze(group.items.map(item => Object.freeze(item)))})));
 
@@ -59,8 +59,7 @@ const legacyPaths = new Map([
   ['/admin/probe', '/control/clips'],
   ['/administration', '/control/administration'],
   ['/openclaw', '/control/openclaw'],
-  ['/operator-chat', '/control/openclaw?tab=chat'],
-  ['/control/operator-chat', '/control/openclaw?tab=chat'],
+  ['/operator-chat', '/admin/dealer-agent'],
   ['/tree', '/control/clips'],
   ['/control/tree', '/control/clips'],
   ['/activity', '/control/clips'],
@@ -87,11 +86,12 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   const cut = pathname.indexOf('?');
   const path = shellPath(cut === -1 ? pathname : pathname.slice(0, cut), basePath);
   if (path == null) return null;
-  const mapped = hrefParts(legacyPaths.get(path) ?? path);
+  let mapped = hrefParts(legacyPaths.get(path) ?? path);
   const params = new URLSearchParams(cut === -1 ? '' : pathname.slice(cut + 1).split('#')[0]);
   if (mapped.query) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
+  mapped = hrefParts(canonicalControlHref(mapped.path + (params.size ? '?' + params : '')));
   if (mapped.path === '/control/administration' && params.get('tab') === 'tables') return items.find(item => item.href === '/admin/publication') ?? null;
   if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/control/clips') ?? null;
   if (mapped.path === '/control/administration') {

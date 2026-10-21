@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   const config = platformConfiguration();
   if (!config?.unifiedUi) return new NextResponse(null, { status: 503 });
   // These retired top-level documents precede the generic frontend rejection.
-  if (/^\/(?:studio\/)?(?:events|tree|compositions|rehearsal|preview|zones|activity)$/.test(new URL(request.url).pathname)) {
+  if (/^\/(?:studio\/)?(?:events|tree|compositions|rehearsal|preview|zones|activity|openclaw|operator-chat)$/.test(new URL(request.url).pathname)) {
     const legacyRedirect = legacyDocumentRedirect(request, config.publicOrigin);
     if (legacyRedirect) return legacyRedirect;
   }

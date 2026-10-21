@@ -13,6 +13,14 @@ test('ambiguous or external document paths never become a navigation destination
   for (const value of ['https://evil.test/control', '//evil.test', '/control/../play', '/control/%2e%2e/play', '/control/%2froom', '/control//rooms', '/control\\rooms']) assert.throws(()=>canonicalControlHref(value));
 });
 
+test('AI bookmarks distinguish dealer chat from global models and keep exact navigation context', () => {
+  for (const base of ['', '/studio']) for (const [path,query,target] of [
+    ['openclaw','','ai/models'],['openclaw','tab=chat&','dealer-agent'],
+    ['openclaw','tab=models&','ai/models'],['operator-chat','','dealer-agent'],['ops','tab=chat&','ai/models'],
+  ]) assert.equal(canonicalControlHref(base+'/control/'+path+'?'+query+'dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&lane=portrait#selection'),
+    '/admin/'+target+'?'+query+'dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&composition=portrait#selection');
+});
+
 test('navigation keeps company and real room identity but never copies auth or diagnostic query', () => {
   const context=studioNavigationContextFromQuery(new URLSearchParams('operator=north&table=room-one&composition=scene-a&dealer=paow&token=private&debug=1'));
   const link=new URL(studioNavigationHref('/admin/rehearsal', context),'https://studio.invalid');

@@ -232,7 +232,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       const events = readFileSync(new URL('../components/control-events-page.tsx', import.meta.url), 'utf8');
       assert.doesNotMatch(events, /changeView\(|history\.pushState/);
       const routes = loadComponent('studio-types.ts');
-      assert.equal(routes.viewPaths.openclaw, '/control/openclaw?tab=chat');
+      assert.equal(routes.viewPaths.openclaw, '/admin/dealer-agent');
       assert.equal(routes.studioViewForPath(routes.viewPaths.openclaw), 'openclaw');
       const project = createSeedProject();
       const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
@@ -250,7 +250,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       visit(mountSelectedPage(ControlOpenClawChat, {...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
       assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
       const html = renderToStaticMarkup(tree);
-      assert.match(html, /href="\/control\/openclaw\?tab=chat"/);
+      assert.match(html, /href="\/admin\/dealer-agent(?:\?|"|&)/);
       assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01|Fråga OpenClaw om labbet →/);
     }
   } finally {

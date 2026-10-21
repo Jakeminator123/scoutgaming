@@ -57,7 +57,7 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
   assert.equal(resolveStudioEventId(project, 'idle.ready'), 'idle.ready');
   assert.equal(resolveStudioEventId(project, 'missing'), 'speak.goodluck');
   assert.equal(studioHref('/admin/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'triggers' }), '/admin/events?dealer=astrid&event=idle.ready&tab=triggers');
-  assert.equal(studioHref('/control/openclaw', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'chat' }), '/control/openclaw?dealer=astrid&event=idle.ready&tab=chat');
+  assert.equal(studioHref('/control/openclaw', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'chat' }), '/admin/dealer-agent?dealer=astrid&event=idle.ready&tab=chat');
   assert.equal(studioHref('/admin/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'nope' }), '/admin/events?dealer=astrid&event=idle.ready');
   assert.equal(selectionHref('/admin/events', '?tab=variants&filter=x', 'saga', 'idle.ready'), '/admin/events?dealer=saga&event=idle.ready&tab=variants');
   assert.equal(studioHref('/admin/videos', { dealerId: 'saga', eventId: 'idle.ready', variantId: 'v2' }), '/admin/videos?dealer=saga&event=idle.ready&variant=v2');
@@ -124,6 +124,23 @@ test('recorded media guidance keeps old groups optional and distinguishes models
   assert.match(activity, /Inspelade klipp: inga uppspelningskvitton ännu/);
 });
 
+test('event tree opens the Admin dealer agent with the selected dealer and event', () => {
+  const previous = globalThis.window, destinations = [];
+  globalThis.window = {location:{pathname:'/admin/events',search:'?dealer=saga&event=idle.ready',assign:href=>destinations.push(href)}};
+  try {
+    let tree;
+    const {ControlTreePage} = loadTs(new URL('../components/control-tree-page.tsx',import.meta.url), {
+      './event-tree': {EventTree: props => {tree=props;return null;}},
+    });
+    renderToStaticMarkup(React.createElement(ControlTreePage,{...props,initialDealerId:'saga',initialEventId:'idle.ready'}));
+    assert.equal(typeof tree?.onOpenClaw,'function');
+    tree.onOpenClaw();
+    assert.deepEqual(destinations,['/admin/dealer-agent?dealer=saga&event=idle.ready']);
+  } finally {
+    if(previous===undefined)delete globalThis.window;else globalThis.window=previous;
+  }
+});
+
 test('rehearsal requires an explicit dealer or room and never starts a default observation',()=>{
  for(const initialDealerId of [undefined,'','unknown','amira']) {
   const html=renderPage('control-activity-page.tsx',{initialDealerId,initialOperatorSlug:'operator-42',initialLaneId:'mobile-phone'});
@@ -137,7 +154,7 @@ test('rehearsal requires an explicit dealer or room and never starts a default o
 test('dealer editor routes gate missing and invalid dealers before mounting their media session',()=>{
  const previous=globalThis.window;
  try {
-  for(const [file,path] of [['control-tree-page.tsx','/admin/events'],['control-events-page.tsx','/admin/events'],['control-videos-page.tsx','/admin/videos'],['control-probe-page.tsx','/admin/probe'],['control-openclaw-chat.tsx','/control/openclaw']])for(const initialDealerId of [undefined,'unknown','amira']) {
+  for(const [file,path] of [['control-tree-page.tsx','/admin/events'],['control-events-page.tsx','/admin/events'],['control-videos-page.tsx','/admin/videos'],['control-probe-page.tsx','/admin/probe'],['control-openclaw-chat.tsx','/admin/dealer-agent']])for(const initialDealerId of [undefined,'unknown','amira']) {
    globalThis.window={location:{pathname:path,search:'?composition=composition-1&operator=operator-42&table=room-7'}};
    const html=renderPage(file,{initialDealerId});assert.match(html,/<h2>Välj dealer<\/h2>/,file);assert.doesNotMatch(html,/<video|<audio|Klippförhandsvisning och provspelning/,file);
    for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes(path+'?dealer='+dealer.id+'&amp;composition=composition-1&amp;operator=operator-42&amp;table=room-7'),file+' keeps context for '+dealer.id);

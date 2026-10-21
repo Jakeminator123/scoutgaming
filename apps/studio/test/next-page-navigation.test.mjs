@@ -133,92 +133,37 @@ test('actual native page guard returns every current view after public, standalo
   }
 });
 
-test('editor SSR authorization uses each real route and OpenClaw settings and chat reload render distinct surfaces', async () => {
-  const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-  try {
-    for (const basePath of ['', '/studio']) {
-      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
-      const routes = load('../components/studio-types.ts', {}), requests = [];
-      const dataModule = load('../app/control-studio-data.tsx', {
-        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/lib/ui-server': { studioUiInitialData: async request => {
-          requests.push(request.url); return {project: {fixture: true}, videos: {videos: []}, status: {configured: false}};
-        } },
-      });
-      function Models() { assert.fail('SSR does not invoke model client work'); }
-      const models = load('../app/control/openclaw/page.tsx', {
-        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/lib/ui-server': {authorizeUiPage: async request => requests.push(request.url)},
-        '@/components/openclaw-workspace': {OpenClawWorkspace: Models},
-      });
-      assert.equal((await models.default()).type, Models);
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
-
-      function ChatSurface(props) { return props; }
-      const chatRoute = load('../app/control/openclaw/page.tsx', {
-        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/lib/ui-server': { authorizeUiPage: async () => assert.fail('chat tab loads studio data') },
-        '@/components/openclaw-workspace': { OpenClawWorkspace: Models },
-        '../../control-studio-data': dataModule,
-        '@/components/control-openclaw-chat': { ControlOpenClawChat: ChatSurface },
-        '@/components/studio-types': routes,
-      });
-      const chatElement = await chatRoute.default({ searchParams: Promise.resolve({ tab: 'chat', dealer: ['mei'] }) });
-      assert.equal(chatElement.type, ChatSurface);
-      assert.equal(chatElement.props.initialDealerId, 'mei');
-      assert.equal(chatElement.props.standaloneVoicePreviewAvailable, process.env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && process.env.CROUPIER_STUDIO_NEON_POLICY !== '1');
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
-
-      const operator = load('../app/control/operator-chat/page.tsx', {
-        'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
-        'next/navigation': navigation,
-        '@/lib/lab-url.mjs': { publicAbsoluteUrl: require('../lib/lab-url.mjs').publicAbsoluteUrl },
-        '@/components/studio-types': routes,
-        '@/lib/ui-server': { authorizeUiPage: async request => { requests.push(request.url); } },
-      });
-      await assert.rejects(operator.default(), error => {
-        const url = new URL(locationFromNext(error, basePath));
-        assert.equal(url.protocol, 'https:');
-        assert.equal(url.host, 'game.fixture.invalid');
-        assert.equal(url.pathname, '/control/openclaw');
-        assert.equal(url.search, '?tab=chat');
-        return true;
-      });
-      await assert.rejects(operator.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'idle.ready' }) }), error => {
-        const url = new URL(locationFromNext(error, basePath));
-        assert.equal(url.pathname.startsWith('/studio'), false);
-        assert.equal(url.searchParams.get('tab'), 'chat');
-        assert.equal(url.searchParams.get('dealer'), 'vera');
-        assert.equal(url.searchParams.get('event'), 'idle.ready');
-        return true;
-      });
-      assert.equal(requests.at(-1), 'http://studio.fixture.invalid/control/operator-chat');
-
+test('retired AI documents reach distinct Admin surfaces across flags and mounts without redirecting writes', () => {
+  const platform = require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers = {host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for (const basePath of ['', '/studio']) for (const unified of [false,true]) for (const nativeStudio of [false,true]) {
+    const config = {publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware} = load('../middleware.ts', {'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for (const section of ['/openclaw','/operator-chat','/control/openclaw','/control/operator-chat','/control/ops']) for (const tab of ['', 'chat', 'models']) {
+      const context = {dealer:'dragan',event:'idle.ready',operator:'north',room:'room-1',table:'room-1',game:'roulette',lane:'portrait',variant:'take-2',...(tab?{tab}:{})};
+      const url = 'https://game.fixture.invalid'+basePath+section+'?'+new URLSearchParams(context)+'#selection';
+      const target = section.endsWith('/operator-chat') || section.endsWith('/openclaw') && tab === 'chat' ? '/admin/dealer-agent' : '/admin/ai/models';
+      for (const method of ['GET','HEAD']) {
+        const request = new Request(url,{headers,method});
+        const response = middleware(request), destination = new URL(response.headers.get('location'));
+        assert.equal(response.status,307);assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,target);
+        for (const [key,value] of Object.entries(context)) assert.equal(destination.searchParams.get(key==='lane'?'composition':key),value);
+        assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.hash,'#selection');
+        if(section.startsWith('/control/')) assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
+      }
+      for (const options of [{method:'POST',body:'fixture',headers},{method:'PUT',body:'fixture',headers},{method:'DELETE',headers},{headers:{...headers,'next-action':'fixture'}}]) {
+        const request = new Request(url,options);
+        assert.equal(legacyStudioDocumentHref(request,{basePath}),null);
+        assert.equal(middleware(request).headers.has('location'),false);
+      }
+      const bodyRequest = {url,method:'GET',body:{fixture:true},headers:new Headers(headers)};
+      assert.equal(legacyStudioDocumentHref(bodyRequest,{basePath}),null);
+      assert.equal(middleware(bodyRequest).headers.has('location'),false);
     }
-  } finally {
-    if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = saved;
-  }
-});
-
-test('OpenClaw chat SSR serializes only the standalone voice capability matching native and Neon server flags', async () => {
-  for (const env of [{}, {CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0'},
-    {CROUPIER_STUDIO_NATIVE_ADMIN: '1'}, {CROUPIER_STUDIO_NEON_POLICY: '1'},
-    {CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_STUDIO_NEON_POLICY: '1'}]) {
-    function Chat() { return null; }
-    const page = load('../app/control/openclaw/page.tsx', {
-      'next/headers': {headers: async () => new Headers({host: 'game.fixture.invalid'})},
-      '@/lib/ui-server': { authorizeUiPage: async () => assert.fail('chat tab loads studio data') },
-      '@/components/openclaw-workspace': { OpenClawWorkspace() { assert.fail('chat tab does not render model settings'); } },
-      '../../control-studio-data': { loadControlStudio: async () => ({project: {}, videos: {videos: []}, status: {configured: true}}) },
-      '@/components/control-openclaw-chat': { ControlOpenClawChat: Chat },
-      '@/components/studio-types': { firstQueryValue(value) { return Array.isArray(value) ? value[0] : value; } },
-    }, env);
-    const element = await page.default({ searchParams: Promise.resolve({ tab: 'chat' }) });
-    assert.equal(element.type, Chat);
-    assert.equal(element.props.standaloneVoicePreviewAvailable,
-      env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && env.CROUPIER_STUDIO_NEON_POLICY !== '1');
-    assert.ok(!Object.keys(element.props).some(key => key.startsWith('CROUPIER_')));
+    for (const section of ['/openclaw/extra','/operator-chat/extra','/api/openclaw/admin','/api/assistant','/control/login']) {
+      assert.equal(middleware(new Request(config.publicOrigin+basePath+section,{headers})).headers.has('location'),false);
+    }
   }
 });
 
@@ -520,7 +465,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     }
     return transported;
   };
-  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/publication?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait']) {
+  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/publication?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/ai/models?operator=north&dealer=dragan','/studio/admin/ai/models','/admin/dealer-agent?dealer=dragan&event=idle.ready','/studio/admin/dealer-agent?dealer=astrid&composition=portrait&operator=north&table=room-1']) {
     let incoming = new Headers({host:new URL(publicOrigin).host,cookie:f.auth.admin,
       'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'});
     if(position==='before') incoming = await throughTransport(incoming);
@@ -581,7 +526,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     ]) for(const method of ['GET','HEAD']) {
       const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
       assert.equal(response.status,307,path);
-      assert.equal(response.headers.get('location'),['guide','videos','probe','events','tree','activity','zones'].includes(path)?'https://game.fixture.invalid/admin/'+({tree:'events',activity:'rehearsal',zones:'compositions'}[path]??path)+'?dealer=dragan':'https://game.fixture.invalid/control'+(target?'/'+target:''));
+      assert.equal(response.headers.get('location'),['guide','videos','probe','events','tree','activity','zones','openclaw','operator-chat'].includes(path)?'https://game.fixture.invalid/admin/'+({tree:'events',activity:'rehearsal',zones:'compositions',openclaw:'ai/models','operator-chat':'dealer-agent'}[path]??path)+'?dealer=dragan':'https://game.fixture.invalid/control'+(target?'/'+target:''));
     }
     const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
     assert.equal(control.status,307);

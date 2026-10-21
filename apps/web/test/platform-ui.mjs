@@ -88,7 +88,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     // Retired documents redirect before transport headers are applied. Follow
     // their public destinations with the cookie a browser retains on this origin.
     let legacyUrl = config.publicOrigin + '/studio/activity';
-    for (const target of ['/control/activity', '/admin/rehearsal']) {
+    for (const target of ['/admin/rehearsal']) {
       const response = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
       assert.equal(response.status, 307, legacyUrl);
       assert.equal(response.headers.get('location'), config.publicOrigin + target);
@@ -168,7 +168,8 @@ test('new document surfaces rewrite to native Studio without creating customer o
   for(const [path,destination]of [['/control','/admin'],['/control/speech','/admin/dealer-studio?view=speech'],['/control/studio','/admin/clips'],['/control/admin','/admin/drift'],['/control/ops','/admin/ai/models'],['/control/lab','/admin/clips'],['/studio/control','/admin']]){
     const expected=new URL(destination,native.publicOrigin);expected.searchParams.set('_rsc','fixture');
     assert.deepEqual(platformRoute(new URL(path+'?_rsc=fixture',native.publicOrigin),native),{kind:'redirect',destination:expected.href});
-    if(path.startsWith('/control'))assert.equal(platformRoute(new URL(path,config.publicOrigin),config).kind,'frontend');
+    if(path==='/control/ops')assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:config.publicOrigin+'/admin/ai/models'});
+    else if(path.startsWith('/control'))assert.equal(platformRoute(new URL(path,config.publicOrigin),config).kind,'frontend');
   }
   for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',
     '/partner/demo-north/api/users', '/control/unknown', '/partner/demo-north/unknown']) {
