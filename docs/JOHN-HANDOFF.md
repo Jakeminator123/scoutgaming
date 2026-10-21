@@ -8,7 +8,7 @@ Bas är main `15988f32fd572c453d2189502acbe324c4566815`; Kevins källa är
 `kevin-merge-admin` på `c4818f51dab1b003811905fafb65ba59ad81ed4a`.
 Planeringen görs i `codex/migrering-masterplan`, i separat worktree; den
 ursprungliga checkoutens pågående ändringar bevaras. Ingen produktkod,
-produktionsdata eller åtkomst ändras av planleveransen.
+produktionsdata eller molnbehörigheter ändras av planleveransen.
 
 Första implementationsuppdrag är J01 och K01. Alla leveransaktiviteter startar
 som TODO. Procentsiffran mäter verifierade leveranser, inte skapade dokument.
@@ -19,8 +19,12 @@ webbläsaren har skapat kanalen och bjudit in verifierad Kevin efter Jakobs bekr
 Planen har oberoende läsgranskats utan kvarvarande blockerande fynd. Status-
 verktygets 0/5/100-procentsfall, saknade bevis, beroenden och cykeldetektion
 är kontrollerade; inget produktprov har körts. Main-SHA:ns GitHub Actions
-är gröna, men GitGuardian API:s incident-/platstäckning kunde inte läsas och
-ska inte rapporteras som säkerhetsklar.
+är gröna. Senare kompletterande säkerhetsläsning visar aktiv GitGuardian-monitorering
+och noll öppna incidenter i källistan, men historisk scan är too_large och
+platsmetadata bara delvis tillgängliga. Detta är inte full säkerhetstäckning.
+Planen levereras i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
+Kevin har verifierad Vercel-roll DEVELOPER; Neon är Vercel-hanterat och faktisk
+inloggning via Open in Neon återstår. Inga molnbehörigheter har ändrats.
 
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
 

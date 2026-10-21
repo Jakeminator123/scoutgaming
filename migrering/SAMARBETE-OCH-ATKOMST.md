@@ -54,12 +54,36 @@ Repot är vid kontroll ett privat repo under personkontot Jakeminator123. Person
 
 Ge inte admin enbart för att kunna jämföra schema. Denna plan har inte ändrat repositorytillgång, skyddsregler eller någon medlemsroll. Ägarskapet i inbox/people.json måste uppdateras med verifierad identitet när det behövs; ett agentnamn eller en commitförfattare bevisar inte kontot.
 
-## Neon: börja med schema, ge separat SQL-läsning vid behov
+## Vercel, Blob och Vercel-hanterad Neon
+
+Aktuell läskontroll 21 oktober: Vercel-projektet scoutgaming hör till teamet
+scoutgaming. Kevin har identifierats genom den verifierade Slack-profilens
+konto och matchar exakt en bekräftad Vercel-medlem med rollen DEVELOPER.
+Projektets accessgrupper gav 403 för granskarens anslutning; faktisk åtkomst
+till just projektets lagring är därför inte fullt verifierad. GitHub-login
+har efterfrågats i Slack och ska verifieras före någon rättighetsändring.
+
+Neon-projektet croupier-production (wandering-hill-60561912) är Vercel-hanterat.
+Medlemskap hanteras via Vercel, och Neons separata per-project permissions är
+inte aktiverade här. Kevin ska öppna databasen via Vercels Storage/integration,
+välja **Open in Neon** och slutföra autentisering. Ett misslyckat separat
+Neon-medlemsanrop bevisar inte att han saknar åtkomst. Vercel-rollen kan ge
+bredare Neon-dashboardåtkomst än en SQL-läsroll; kontrollera faktisk roll efter
+inloggningen. [Neons officiella integrationsguide](https://neon.com/docs/guides/vercel-managed-integration).
+
+Vercel anger att Owner, Member och Developer kan använda Blob. Prova först
+åtkomst till projektets befintliga store; dela inte en generell Blob-token
+för att kringgå kontokopplingen. [Vercel Blob](https://vercel.com/docs/vercel-blob).
+Jakob har beställt att åtkomsten ordnas, men ingen ny molnroll eller nyckel
+har utfärdats i denna leverans. Bekräfta återstående faktisk brist innan en
+konkret roll-/projektändring görs.
+
+## Separat SQL-läsning vid behov
 
 1. Dela befintligt versionshanterat schema och migrationskontrakt först: ops/neon-game och ops/neon-studio. K01 ska ange vilka ytterligare aktuella objekt som behöver granskas.
 2. Bekräfta Kevins identitet och exakt projekt/branch/databas. Rekommendation: en isolerad migrationsbranch med nödvändigt schema och syntetisk eller avgränsad testdata; inte generell åtkomst till riktiga spelarkonton.
 3. Om SQL-läsning behövs: skapa en separat Postgres-roll med endast avtalad CONNECT/USAGE/SELECT, utan skriv-, schemaägar- eller superuser-behörighet. Kontrollera även framtida tabellers default privileges och att rollen inte kan ärva bredare rättigheter.
-4. En Neon Viewer för projektmetadata är inte samma sak som en SQL-roll som kan SELECT. Kontrollera båda åtkomstplanen. Roller skapade via konsol/API kan ha bredare standardprivilegier; kalla dem inte read-only utan verifiering. [Neon: database access](https://neon.com/docs/manage/database-access), [projektbehörigheter](https://neon.com/blog/neon-now-has-per-project-permissions).
+4. Neon-dashboardåtkomst är inte samma sak som en SQL-roll som kan SELECT. Kontrollera båda åtkomstplanen. Roller skapade via konsol/API kan ha bredare standardprivilegier; kalla dem inte read-only utan verifiering. [Neon: database access](https://neon.com/docs/manage/database-access).
 5. Lämna anslutningen genom avtalad hemlighetshantering, aldrig i Slack, PR eller planfil. Verifiera läsning samt avvisad skrivning i isolerad miljö. Notera ansvarig och återkallelse när kartläggningen är klar.
 
 Inget livekonto, ingen SQL-roll och ingen connection string har skapats eller delats av planleveransen. Produktionsmigrering och DROP kräver en konkret granskad åtgärd enligt J09/O03; Kevins citerade åtkomstförfrågan är ett underlag, inte ett redan utfört godkännande.
