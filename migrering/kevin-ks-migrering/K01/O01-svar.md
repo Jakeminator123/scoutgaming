@@ -109,3 +109,97 @@ Utgår från MASTERPLAN.md @ `f9ca56228a6f5c102225967204ccbdd2bfc5bd25`, avsnitt
 - `act`: `roundId` + `turnId` + `box` + `handIndex`. `box` och `handIndex` = `r.round.hands[r.round.active].box` och `r.round.active` (`:422`). `turnId` motsvaras idag av `r.plan.id` (`:201`), som byts efter varje act, auto-stand och insurance men inte av `refill`/`join`/`leave` i andra boxar. Hellre en egen räknare `turnSeq` som ökar i `sequence`, så att spelidentitet inte hänger på ett presentations-id. `actionDeadline` (`:215`, planens slut + 15 s) avgörs server-side.
 - `next`: `roundId` för den avräknade rundan, så att ett sent `next` inte nollar en ny runda (`:430-432`).
 - `join`, `leave`, `refill`, `pause`: ingen fönsteridentitet, bara `commandId`. De gäller i alla faser och styrs av ägarskap och `leaving` (`:355`, `:374`, `:384-386`).
+
+## Komplettering efter sammanvägning (kommentar 6320551618)
+
+Designspecifikation för porten, ingen implementation. Kevin-refs: `server/shared-table.mjs` @ `5aa7ed10` om inget annat anges (`:NNN`). Main-refs: `15988f32`. Låsbeteckningar som i MASTERPLAN: G (advisory 1129467984), R (rum, sorterade), P (spelare, sorterade), A (spel-audit), alltid i ordningen G → R → P → A, ingen senare utvidgning.
+
+### 1. Tick med egen beständig identitet
+
+Idag är tidsdrivna övergångar namnlösa: `advance()` (`:260-292`) körs före varje kommando och poll (`:336`), i `tick()` var 250 ms (`:443-445`, `server.mjs:141`), inne i `leave` (`:385`) och för **alla rum** inne i `pause` (`:351-353`).
+
+**Förslag:**
+- `tickId = roomId : kind : anchor : scheduledAt`. `anchor` är det fönster/den tur/plats övergången hör till; `scheduledAt` är serverns deadline i ms som lagrats i rumsstate när den sattes (aldrig `now()`). En ändrad deadline ger alltså ett nytt tickId.
+- Tickresultatet lagras i `table_ticks(tick_id PK, room, kind, outcome, result, committed_at)` i samma transaktion som effekterna. Ett andra försök med samma tickId returnerar det lagrade resultatet och gör inget. `outcome` kan vara `applied`, `superseded` (förutsättningen gäller inte längre) eller `rejected` (t.ex. start nekad); ett lagrat `rejected` görs inte om under samma id.
+- Tick körs som eget kommando i egen transaktion av schemaläggaren. Ett kommando som når ett rum med förfallen tick kör först tick(arna) i separata transaktioner (first caller), sedan sig självt i en ny transaktion. Det sker bara efter att kvittoslagningen missat.
+- **Replay** (`commandId` finns i kvittotabellen med samma fingerprint) returnerar det lagrade resultatet plus en skrivskyddad snapshot direkt, **utan** att köra tick, uppdatera `seen` eller skriva audit. Annan fingerprint ger `Request ID reused with different input` (som `:341`).
+- `state` och presence: `state` skriver inget och kör ingen tick. `seen` (`:335`) blir en separat presence-skrivning utanför spelets transaktion och kedja. Den läses av tick-kind `seat.absent`, men skriver aldrig rumsstate själv.
+- Auditrad per applicerad tick: `table.tick {tickId, kind, scheduledAt}`. Den blir parent till följande `engine.*`, i stället för dagens `cause:{source:'automatic table progression'}` (`:108`).
+
+| Rad i `advance()` idag | Tick-kind | anchor | scheduledAt | Lås |
+|---|---|---|---|---|
+| `:262-263` frånvaro > 120 s i runda, lägg till i `leaving` | `seat.absent` | `memberGen` | `seen + 120000` | R → A |
+| `:264` frånvaro utanför runda, `releaseSeats` | `seat.release` | `memberGen` | `seen + 120000` | R → A |
+| `:266-268` pausad spelares satsningar rensas | ingen tick; görs av `pause` (avsnitt 2) | – | – | – |
+| `:270`, `:258` deadline nollas utan main | ingen tick; invariant i insatskommandona | – | – | – |
+| `:271` deadline nådd, `start()` (`:221-232`) | `window.close` | `windowId` | `r.deadline` | R → P(alla med insats) → A |
+| `:272-284` avgjord runda, planen slut, avräkning + `collect` | `round.settle` | `roundId` | `plan.endAt` | R → P(alla med hand) → A |
+| `:285-288` insurance-timeout eller lämnande | `insurance.timeout` | `roundId` | `actionDeadline` eller leave-commit | R → P(tagare) → A |
+| `:289` beslutstimeout eller lämnande ägare, auto-stand | `turn.autostand` | `roundId:turnSeq` | `actionDeadline` eller leave-commit | R → A |
+| `:291` `leaving` släpps efter rundan | `seat.release` | `roundId:playerId` | settle-commit | R → A |
+
+`start()` kan kasta i tick (`:222-223`, `:226`). Idag sväljs felet och provas om var 250 ms (`:444`). Med fryst configVersion försvinner limitfallet. Saldofallet finns kvar eftersom mains saldo är globalt: en spelare kan satsa här och spendera pengarna på ett annat bord. Förslag: `window.close` debiterar per spelare. En spelare vars debet nekas får sina boxar rensade i samma tick (`player.stake_rejected` i auditen) och resten av bordet startar. Kräver Kevins bekräftelse.
+
+### 2. Fullständig kommandomatris
+
+Alla muterande kommandon bär `roomId`, `commandId` och full inputfingerprint. Gemensamt: avvisat = ROLLBACK utan kvitto och utan audit. Accepterat = kvitto + `player.<op>` + effektrader. `turnSeq` ökar vid **varje** godkänt motordrag (`start`, `insurance`, `act` inklusive hit, stand, double, split, och `turn.autostand`). Det gäller även när samma hand fortsätter efter hit. Idag motsvaras det bara indirekt av `plan.id` (`:201`). `seatGen` per (rum, box) ökar varje gång ägaren byts. `memberGen` per (rum, aktör) ökar vid nytt medlemskap och vid slutligt släpp.
+
+| Op (kod idag) | Identitet utöver commandId | Lås i ordning | Wallet | Auditrader (förslag) |
+|---|---|---|---|---|
+| `bet` (`:391-397`) | `windowId` | R → P(aktör) | `available` (saldo − öppna reservationer), `reserve` | `player.bet` |
+| `undo` (`:403-404`) | `windowId` | R → P | `reserve` (justera) | `player.undo` |
+| `clear` (`:405-406`) | `windowId` | R → P | `release` | `player.clear` |
+| `doubleBets` (`:407`) | `windowId` | R → P | `available`, `reserve` | `player.doubleBets` |
+| `allSeats` (`:408`) | `windowId` | R → P | `available`, `reserve` | `player.allSeats` |
+| `repeat` (`:398-402`) | `windowId` | R → P | `available`, `reserve` | `player.repeat` |
+| `ready` (`:415-419`) | `windowId` | R → P(alla sittande med insats, lästa efter R) | om sista ready: `debit` stake per spelare | `player.ready`; om start: `round.started`, `engine.start`, `presentation.plan` |
+| `insurance` (`:425-429`) | `roundId` + `phase:'insurance'` | R → P(aktör + övriga tagare) | om sista beslutet: `debit` insurance per tagare | `player.insurance`; ev. `engine.insurance`, `presentation.plan` |
+| `act` hit/stand (`:420-424`) | `roundId` + `turnSeq` + `box` + `handIndex` | R | – | `player.act`, `engine.act`, `presentation.plan` |
+| `act` double/split (`:423-424`, `:245`) | samma | R → P(aktör) | `debit` stake | samma + ledger-id i `engine.act` |
+| `next` (`:430-432`) | `roundId` (den avgjorda) | R | – | `player.next` |
+| `join` (`:354-371`) | `seatGen` per begärd box; `memberGen` (0 = nytt) | R | ingen; dagens `opening_credit` (`:364`) utgår mot mains globala saldo | `player.join` |
+| `leave` (`:384-386`) | `memberGen` | R | – | `player.leave`; auto-stand blir `turn.autostand`-tick, inte inline `advance` (`:385`) |
+| `refill` (`:383`) | ingen fönsteridentitet | G (om rootens writer kräver G, som deposit) → R → P | `credit` enligt mains demo-credit-policy | `player.refill` med ledger-id |
+| `pause` (`:349-353`) | konto-scope; `validFrom` = commit, `validUntil` = +24 h, `MAX` som idag (`:350`) | R(alla rum med medlemskap, sorterade) → P → A | `release` av öppna reservationer | `player.pause` per rum; inga `advance`-sidoeffekter i andra rum |
+| `language` (`:377-382`) | utgår som spelar-op | – | – | – |
+| `state` | ingen | inga, konsistent läsning | – | inga |
+
+- **`next` kräver avslutad presentation:** giltigt när `round.settle`-ticken för samma `roundId` är committad. Den kan bara committas när `now ≥ plan.endAt` (`:272`), det vill säga när den schemalagda presentationen är klar. Klientkvittens (presentation ack) räknas inte, eftersom planen uttryckligen inte är någon uppspelningskvittens (`:214`). `talk`/svar (`r.talk`) blockerar inte `next`.
+- **`pause`, låsmängden före A:** läs aktörens medlemskap utan lås, lås rummen sorterade, lås P och läs medlemskapen igen. Har mängden ändrats: ROLLBACK och nytt försök med den nya mängden, ingen utvidgning. I varje rum med fas `bets` rensas aktörens insatser och ready direkt (ersätter `:266-268`). Mitt i en runda gäller dagens spärrlista (`:348`), och bara `stand` och nej till insurance är tillåtna. Dagens `advance` av alla rum inne i pause (`:351-353`) tas bort, eftersom den kan starta eller avräkna andra rum under pause-kommandots identitet.
+- **`language`:** förslag, inväntar Kevins bekräftelse. Bordsspråket ägs av Admin och ingår i configVersion enligt Jakobs riktning. Spelar-op `language` och klientens skrivning (`public/shared-table.js:70-72`) tas bort. Privat UI-lokalisering (`?lang`, undertexter, tittarens ljud) blir en separat klientinställning som aldrig skriver bordet.
+
+### 3. Wallet: atomisk debet/kredit, ledger-id och kvitto
+
+Idag ligger saldot **per rum** (`shared_players.balance`, `:48`, `:96-101`). Ledgerraden (`transactions.mjs:12`) saknar id som kvittot (`:280`) eller auditraden (`:281`) kan referera, och audit skrivs före utbetalningen (`:281` före `:282`). Mains `logTx` (`services/game/server.mjs:209-211`) gör `INSERT … .run(...)` utan `RETURNING id`. Mains `credit` (`services/game/partner-api.mjs:52-60`, `storage/async-partner-api.mjs:47-56`) öppnar en egen `db.transaction` och får därför inte anropas efter R/P/A.
+
+**Krav:** debet/kredit, ledger-id, kvitto och audit skrivs på **samma injicerade klient** i samma transaktion, i ordningen wallet → ledger-id → kvitto (med ledger-id) → audit (med ledger-id). Rootens interna writer äger porten och returnerar id via `RETURNING`. Rå SQL finns bara i J07-adaptrar. K02/K03 ser bara portarna nedan och öppnar aldrig transaktioner, tar aldrig lås och ser aldrig pool eller klient.
+
+| Port (K02/K03, SQL-fri) | Metoder |
+|---|---|
+| `WalletPort` | `available(playerId) → {balanceCents, reservedCents, currency}`; `reserve({playerId, roomId, windowId, amountCents})`; `release({playerId, roomId, windowId})`; `debit({playerId, amountCents, kind:'stake'\|'insurance'\|'double'\|'split', roomId, roundId, sourceKey}) → {ledgerId, balanceAfterCents}`; `credit({playerId, amountCents, kind:'payout'\|'refill', roomId, roundId?, sourceKey}) → {ledgerId, balanceAfterCents}` |
+| `SettlementPort` | `put({roomId, roundId, playerId, receipt, ledgerId}) → {settlementId}`; `get(roomId, roundId, playerId)` |
+| `RoomStatePort` | `load(roomId) → {state, stateVersion}`; `save(roomId, state, stateVersion)` |
+| `MembershipPort` | `get(roomId, actorId)`; `listByActor(actorId)`; `claim(roomId, actorId, boxes, seatGens)`; `release(roomId, actorId, memberGen)` |
+| `CommandReceiptPort` | `find(roomId, actorId, commandId) → {fingerprint, result}\|null`; `put(roomId, actorId, commandId, fingerprint, result)` |
+| `TickPort` | `due(roomId, now) → [{tickId, kind, anchor, scheduledAt}]`; `find(tickId)`; `put(tickId, outcome, result)` |
+| `PausePort` | `get(accountId) → {validUntil}`; `extend(accountId, validUntil, commandId)` |
+| `GameAuditPort` | `append({roomId, roundId, type, payload, parent}) → {seq, hash}`; endast under A |
+| `PresentationOutbox` | `enqueue({roomId, auditSeq, talkId, ver, payload})`; leverans sker efter commit (ersätter `onPlan` före COMMIT, `:217`) |
+| `ConfigPort` | `frozen(roomId, configVersion) → {limits, chips, refill, language, dealer, betMs, actionMs}` |
+
+`sourceKey` = `commandId` eller `tickId` + `playerId` + `kind`, unikt i ledgern. En omkörning efter avbrott kan alltså aldrig dubbelboka. J07 binder alla portar till den låsta klienten genom en adapter, `runLocked(lockPlan, work)`. Kärnan levererar `lockPlan(command, preRead) → {global, rooms[], players[]}` som ren funktion; behövs ett lås utanför planen kastas `LockSetExceeded`, ROLLBACK, och nytt försök med större plan.
+
+### 4. Audit: global kedja, shoe proof och presentation.*
+
+- **Kedjan är global:** `event()` tar föregående hash ur hela tabellen (`game-audit.mjs:20`, ingen rumsfiltrering), och `room` ingår i hashen (`:22`). `read()` filtrerar per rum och runda (`:56-68`) men returnerar global `chainHead` (`:69`). Filtrerade rumsrader har alltså luckor i `previous_hash` och bevisar ingen kontinuitet. Det finns idag **ingen verifierare** i koden (`previous_hash` läses ingenstans). Porten behöver `verifyChain(fromSeq, toSeq)` som går den globala seq-serien utan filter. En rumsvy är bara en vy. Per-rum-kedjor vore en uttrycklig ändring och föreslås inte.
+- **Shoe proof** gäller en stängd sko: `verifyShoe` körs när skon stängs (`game-audit.mjs:26-32`) över alla `engine.*`-draws för `shoeId` (`:28`). Skoordningen är privat tills skon stängs (`:49`). En enskild runda bevisas inte av proofet. Dess draws är en delmängd som blir verifierbar först när skon stängts.
+- **Inga player.\*-rader för state, replay eller avvisade kommandon:** `state` når aldrig `:343` (`:338`). Replay hoppar över grenen (`:340-342`). Avvisade kommandon rullas tillbaka (`:441`), även den redan skrivna `player.*`-raden. Porten behåller detta. Idag kan dock `advance` (`:336`) skriva `engine.*`/`round.started`/`wallet.settlement` under en replay eller state-poll. Det försvinner med avsnitt 1.
+- Övriga typer i kedjan idag: `engine.<op>` (`:108`), `round.started` (`:225`), `wallet.settlement` (`:281`), `player.<op>` (`:343`), `shoe.opened` (`game-audit.mjs:41`) och `shoe.closed` (`:32`). Alla behålls; `wallet.settlement` får ledger-id.
+
+| presentation.\* (alla som finns, grep i server/public/vendor) | Skrivs | Förslag | Skäl |
+|---|---|---|---|
+| `presentation.plan` | `:214`, i spelets transaktion, parent = `engine.*` | **Behåll i kedjan** | Binder klipp-id och tider till skodraws och motordrag. Läses av `integration-index.mjs:27` och `public/runtime-event-links.js:19`. Statusen `scheduled; not a playback acknowledgement` behålls. Workerleveransen flyttas till outbox efter commit. |
+| `presentation.language` | `:381`, vid spelar-op `language` | **Flytta ut** | Op:en utgår (avsnitt 2). Språkbyten blir Admin-publicering i Studio-/operatörsaudit (main `apps/studio/lib/studio-native-runtime.mjs:132`). Spelkedjan får `configVersion` i `round.started`, så språket per runda förblir bevisat. |
+| `presentation.speech_choice` | `:483` via `recordSpeechDecision`, anropad från `server.mjs:162` (OpenClaw-audit) och `:199` | **Flytta ut** till separat tal-/säkerhetslogg med pekare `{roomId, roundId, gameAuditSeq}` | Skrivs utanför spelets transaktion: två autocommit-satser (läs head `game-audit.mjs:20`, insert `:23`) utan lås, och parent tas från en separat läsning (`:479`). Det kan ge förgrening i en global kedja. Påverkar aldrig utfall eller pengar och dubbleras redan i `safetyAudit` (`server.mjs:162`). Konsumenten `integration-index.mjs:26` läser från den nya loggen. |
+
+Negativa prov som behövs (K03/J07): replay över deadline ger lagrat resultat och 0 nya tick-/auditrader; samma tickId två gånger ger en effekt; `pause` med ändrad medlemsmängd mellan förläsning och lås; refill/avräkning där audit-insert fallerar rullar tillbaka ledger och kvitto; global kedja verifierad över två rum med sammanflätade seq.
