@@ -60,6 +60,25 @@ satta; RunPod-kontot har 0 pods, 0 körande workers och endpoint `zjsdlni6cn8dvo
 `scoutgaming`; CLI fungerar. `CROUPIER_STUDIO_MOVING_DRIFT_API/_PROFILES` saknas
 i `docs/environment-variables.json` för både Studio och spelservern.
 
+## Budgettaken höjda: grant 150 USD, dygn 60 USD, provider 250 USD — 21 oktober 2026
+
+Jakob frågade vilken budget som stoppade och bad om höjning. Det är våra egna
+reservationer (1,20 USD per försök, aldrig återförda), inte RunPods saldo:
+RunPod gick 26,91 → 26,16 USD under hela 19 oktober. Granten var 44,40 av
+45 USD (37 reservationer) när arbetet började. PR306 (`d924d330`): kodtak
+`MOVING_BUDGET_MAX` 45 → 150 USD, provider 75 → 250 USD, dygn 40 → 60 USD;
+migration 019 (`deploymentOptional`) vidgar de tre moving-CHECK:arna till
+150 USD och dygns-CHECK:en till 60 USD, planeraren projicerar tillbaka för
+017/018/011/002. 019 applicerad i produktion ~11:55 UTC (ledger 001–019,
+återläst). Amendment `24a07c73` (grant 45 → 150 USD, fönster 105,6 USD,
+täckning 154,4 ≤ 250 USD, arbetare dränerad) och policyraden 40 → 60 USD
+bokförda via journalens bekräftade funktioner; bevis-JSON i Jakobs `%TEMP%`.
+Render deployar `d924d330` efter CI på main; tills dess gäller min(kod 45,
+sparat 150) = 45 på servern. GitGuardian flaggade PR306 (incident 38786588);
+diffen innehåller bara konstanter och test-ID:n — granska/avfärda i panelen.
+Ingen ”budgetlös” variant finns; taket är avsiktligt. Rotfil
+`DRAGAN-TAL-FORKLARING-2026-10-19.txt` (PR303) förklarar hela kedjan enkelt.
+
 ## Fem repliker i följd i produktion — 19 oktober 2026, 19:06–19:13 UTC
 
 Jakobs krav ”4–5 repliker i följd” uppfylldes på `main` `4a4d502b` (Render
