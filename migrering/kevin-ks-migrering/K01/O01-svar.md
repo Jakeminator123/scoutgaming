@@ -86,8 +86,7 @@ Portar (K03, bundna i J07): `WalletPort` (`available`, `reserve`, `consume`, `re
 
 ### 2.3 Ticks
 
-- **Föredraget:** en självständig scheduler driver alla tidsdrivna övergångar som egna transaktioner. Kommandon kör aldrig ticks.
-- **Om first-caller-ticks ändå behålls:** kommandot tar först exklusiv admission för rummet (R), kontrollerar kvittot **under låset** (två samtidiga kopior kan båda ha missat det före låset), kör förfallna ticks och sedan sig självt. Replay hittat under låset gör som 2.2.
+- **Beslutat (6321288941):** en självständig scheduler driver alla tidsdrivna övergångar som egna transaktioner. Kommandon, requests och retries driver aldrig spelets tid. First-caller-alternativet är borttaget ur målkontraktet.
 - `tickId = roomId : kind : anchor : scheduledAt`, där `scheduledAt` är den lagrade deadlinen (aldrig `now()`). Resultat i `table_ticks(tick_id PK, room, kind, outcome, result, committed_at)` i samma transaktion som effekterna; `outcome` ∈ `applied | superseded | rejected`; samma tickId körs aldrig två gånger.
 - Auditrad `table.tick {tickId, kind, scheduledAt}` blir parent till följande `engine.*`.
 
@@ -130,21 +129,24 @@ Saldot är mains globala; `available = balance − öppna reservationer` över a
 | Händelse | Reservation |
 |---|---|
 | `bet`/`doubleBets`/`allSeats`/`repeat`/`undo` | `reserve` / justera i samma transaktion som boxändringen |
-| `clear`, `leave` i `bets`, `seat.release` (frånvaro), `pause` | `release` av aktörens reservationer i det rummet |
+| `clear`, `leave` i `bets`, `seat.release` (frånvaro), `pause` | `release` av aktörens **insatsreservationer i fasen `bets`** i det rummet. En accepterad insurance-reservation släpps aldrig av dessa (se nästa rader). |
 | Rundstart (`ready` sista, `window.close`) | `consume` per spelare: debet som pekar på och stänger reservationen; ingen debet utan motsvarande reservation |
-| Tidigt insurance-ja | `reserve` vid valet; `consume` när sista beslutet eller `insurance.timeout` avgör |
-| `leave` / `seat.absent` mitt i runda | ingen öppen insatsreservation finns (konsumerad vid start); öppen insurance-reservation konsumeras eller släpps av `insurance.timeout` |
+| Tidigt insurance-ja | `reserve` vid valet; `consume` när sista beslutet eller `insurance.timeout` avgör. Valet är bindande: `pause`, `leave` och `seat.absent` efter ett accepterat ja ändrar inte reservationen, den konsumeras när insurance-fasen avgörs. |
+| `leave` / `seat.absent` / `pause` mitt i runda | ingen öppen insatsreservation finns (konsumerad vid start). En öppen insurance-reservation från ett accepterat ja **konsumeras** när insurance-fasen avgörs (sista beslut eller `insurance.timeout`); den släpps bara om spelaren aldrig sa ja. |
 | double/split | direkt `debit` mot `available` |
 
 - **Alla** mains debetwriters (1.3) måste räkna `available` med reservationerna och vägra debet som skär i dem; valutabyte nekas med öppna reservationer. Detta ägs av root.
 - Ordning på samma injicerade klient i samma transaktion: wallet → ledger-id (`RETURNING`) → kvitto (med ledger-id) → audit (med ledger-id). Mains `credit` som öppnar egen transaktion får inte anropas efter R/P/A.
 - **Ledgerns idempotensnyckel** (unik): `(namespace ∈ {command, tick}, roomId, actorId, identity, affectedPlayerId, effect)`, där `identity` = `commandId` eller `tickId`, `actorId` = `system` för tick och `effect` t.ex. `consume:stake`, `release`, `payout`, `refill`. Samma scope som kvittot; naket `commandId` räcker inte (kolliderar mellan rum). Ändrad input avvisas via kvittots fingerprint.
-- Vad som händer när `consume` ändå nekas vid start är **inte beslutat** (3.2). Automatisk rensning av accepterade insatser är inget kontraktsbeteende.
+- **Nekad `consume` vid start (Jakobs förslag, inväntar Kevins bekräftelse, 3.2):** `window.close` rullas tillbaka i sin helhet. Accepterade val och reservationer ligger kvar, och ingen annan spelares insats rensas automatiskt. Ticken lagras med `outcome = blocked` och `blockedOn = {playerId, reservationId, walletGen}`.
+  - **Omprövning utan oändlig loop:** schedulern kör inte samma passerade deadline igen förrän något i `blockedOn` har ändrats. Det gäller nytt `walletGen` för spelaren (insättning eller annan writer), att reservationen släppts eller ändrats (`clear`, `undo`, `leave`, `seat.release`, `pause`) eller en uttrycklig återhämtning från Admin. Varje omprövning får ett nytt `tickId` (`…:retry:<n>` med ändrings-generationen som ankare), så samma tillstånd prövas aldrig två gånger.
+  - Under blockering står fönstret stängt för nya insatser från andra. Bordet visar att det väntar på en spelare.
 
 ### 2.6 Pause, join och leave
 
 - Pause gäller kontot i alla rum. **24 h är effektens längd** från commit (`MAX` med befintlig, som `:350`), inte en giltighetstid för sen första leverans.
-- **Föreslagen policy:** pause-kommandot bär den paus-generation (`pauseGen`) och medlemsmängd klienten utfärdade det i, och accepteras bara inom den: har kontots `pauseGen` eller medlemsmängd ändrats avvisas det som inaktuellt. Replay av ett accepterat pause ger lagrat resultat.
+- **Föreslagen policy:** pause-kommandot bär `pauseGen` och `memberGen` från när klienten utfärdade det. `memberGen` är en generation per konto som ökar vid **varje** medlemsändring (join, leave, seat.release), så att leave → rejoin i samma rum inte ser oförändrat ut. Kommandot accepteras bara om båda är oförändrade, annars avvisas det som inaktuellt. Replay av ett accepterat pause ger lagrat resultat.
+- **Öppet produktbeslut:** hur ett sent *första* mottaget pause-kommando ska behandlas (giltighetstid för leverans), skilt från effektens 24 h.
 - Låsning: läs medlemskap utan lås, lås rummen sorterade, lås P(aktör), läs medlemskap igen. Ändrad mängd: ROLLBACK, nytt försök med ny plan. Mängden är fast före A.
 - `join` och `leave` tar samma P(aktör) och kontrollerar paus under P, så medlemsmängden kan inte ändras efter pausens omläsning.
 - Effekter: i rum i `bets` rensas aktörens insatser och ready med `release` (ersätter `:266-268`). Mitt i runda gäller dagens spärrlista (`:347-348`): bara `stand` och insurance-nej. Dagens `advance` av alla rum inne i pause (`:351-353`) tas bort.
@@ -181,8 +183,11 @@ Två samtidiga identiska kommandon över deadline ger en effekt och 0 extra tick
 
 ## 3. Öppna beslut
 
-1. **Kevin: per-rum-saldo → reservationer.** Dagens `shared_players.balance` och `opening_credit` (`:48`, `:96-101`, `:364`) ersätts av reservationer mot mains globala saldo enligt 2.5. Behöver Kevins ja, och roots ja på att alla mains debetwriters respekterar reservationerna.
-2. **Kevin: nekad debet vid rundstart.** Om `consume` nekas trots reservation (t.ex. writer utanför kontraktet): alternativ (a) den spelarens boxar rensas med `player.stake_rejected` och resten startar, (b) fönstret står kvar tills spelaren rensar eller frånvaro släpper platsen, (c) rundan startar inte och alla reservationer släpps. Inget är beslutat; (a) får inte införas tyst.
-3. **Pause-policy** enligt 2.6 (giltig bara inom utfärdande `pauseGen`/medlemsmängd, effekt 24 h): förslag, inväntar Kevin och Jakob.
-4. **Tickdrivning:** självständig scheduler (föredraget) eller first-caller med exklusiv admission (2.3). Ägs av K03/J07-koordinatorn.
-5. **Replay-horisont:** hur länge kommando- och tickkvitton sparas (MASTERPLAN, `/api/table`-raden).
+1. **Kevin: reservationsmodellen.** Saldo per rum (`shared_players.balance`, `opening_credit`, `:48`, `:96-101`, `:364`) ersätts av reservationer mot mains globala saldo enligt 2.5. Inväntar Kevins bekräftelse. Jakobs sida har tagit J07-ansvaret för att alla mains saldo-, debet- och valutawriters respekterar reservationerna (6321288941).
+2. **Kevin: nekad `consume` vid rundstart.** Jakobs förslag enligt 2.5: starten rullas tillbaka, val och reservationer ligger kvar, inga andra spelares insatser rensas, och omprövning sker bara efter tillståndsändring. Inväntar Kevins bekräftelse. Automatisk rensning införs inte.
+3. **Pause, sent första kommando:** öppet produktbeslut (2.6). `pauseGen` plus `memberGen` som giltighetsvillkor är förslag.
+
+**Beslutat:**
+- Självständig scheduler driver ticks (2.3).
+- Bordsspråket ägs av Admin (2.8).
+- Under migreringen gallras inga kommando- eller tickkvitton och inga idempotensnycklar. Ett senare retentionsbeslut får inte möjliggöra upprepad ekonomisk effekt.
