@@ -315,6 +315,96 @@ test('insurance yes is binding across pause and leave and is consumed when the p
   assert.equal(Object.keys(t.store.test.reservations()).length, 0);
 });
 
+// Kevin takes insurance (box 3), John's choice is still open; the dealer shows an ace.
+async function insuranceRound(funds) {
+  const t = setup(funds && { funds });
+  await t.join('kevin', [3]); await t.join('john', [4]);
+  await t.bet('kevin', 3, 10); await t.bet('john', 4, 10);
+  t.setShoe('party', ['8', '9', 'A', '8', '9', '5']);
+  await t.ready('kevin'); await t.ready('john');
+  await t.insurance('kevin', true);
+  const kevinRes = `party:${(await t.snap()).roundId}:kevin:insurance`;
+  assert.equal(t.store.test.reservations()[kevinRes].amount, 5);
+  const effects = () => ({ ledger: t.store.test.ledger().length, balances: ['kevin', 'john'].map(p => t.store.test.balance(p)),
+    outbox: t.store.test.outbox().length, engine: t.auditTypes().filter(x => x === 'engine.insurance').length });
+  return { t, kevinRes, effects };
+}
+// The last choice (John's no) is refused atomically; Kevin's accepted yes and its reservation stay.
+async function refusedLastChoice(t, kevinRes) {
+  const receipts = t.store.test.receipts(), reservation = t.store.test.reservations()[kevinRes] ?? null;
+  await rejects(t.insurance('john', false), 'INSURANCE_NOT_FUNDED');
+  assert.equal(t.store.test.receipts(), receipts, 'no accepted receipt for the refused last choice');
+  assert.equal((await t.snap('john')).me.insuranceDue, true, 'John may still choose');
+  assert.equal((await t.snap('kevin')).me.insuranceDue, false, 'Kevin keeps his yes');
+  assert.deepEqual(t.store.test.reservations()[kevinRes] ?? null, reservation, 'Kevin\'s commitment is untouched');
+}
+
+for (const [label, change] of [['missing', (all, id) => { delete all[id]; }], ['too small', (all, id) => { all[id].amount = 2; }]]) {
+  test(`insurance reservation ${label}: last choice refused, insurance.timeout blocked without effect or retry loop, one resolution once restored`, async () => {
+    const { t, kevinRes, effects } = await insuranceRound();
+    const saved = t.store.test.reservations()[kevinRes];
+    t.store.test.mutateReservations(all => change(all, kevinRes));   // another wallet writer
+    await refusedLastChoice(t, kevinRes);
+    t.time = (await t.snap()).actionDeadline;
+    const before = effects(), audits = t.store.test.audit().length, snap = await t.snap();
+    // An infrastructure error first: full rollback, no receipt, the same tick stays due.
+    const [due] = await t.table.dueTicks();
+    assert.equal(due.kind, 'insurance.timeout');
+    t.store.test.failOnce('wallet.reservation');
+    await assert.rejects(t.table.tick(due), /injected failure: wallet.reservation/);
+    assert.equal(t.store.test.ticks().length, 0); assert.equal(t.store.test.audit().length, audits);
+    assert.deepEqual(effects(), before); assert.deepEqual(await t.snap(), snap);
+    const [blocked, ...more] = await t.drain();
+    assert.equal(more.length, 0);
+    assert.equal(blocked.tickId, due.tickId); assert.equal(blocked.outcome, 'blocked'); assert.deepEqual(blocked.result, { waitingOn: 'kevin' });
+    assert.deepEqual(blocked.blockedOn, [{ playerId: 'kevin', reservationId: kevinRes, walletGen: 2, reservationGen: label === 'missing' ? null : saved.gen }]);
+    assert.deepEqual(JSON.parse(t.store.test.audit().at(-1).payload), { tickId: blocked.tickId, kind: 'insurance.timeout', outcome: 'blocked' });
+    assert.deepEqual(effects(), before, 'no game or wallet effect');
+    const s = await t.snap();
+    assert.equal(s.round.phase, 'insurance'); assert.equal(s.me.insuranceDue, false);
+    assert.equal((await t.snap('john')).me.insuranceDue, true, 'the timeout default for John was rolled back too');
+    for (let i = 0; i < 5; i++) { t.time += 1000; assert.deepEqual(await t.table.dueTicks(), []); }
+    t.restart();
+    assert.deepEqual(await t.table.dueTicks(), [], 'restart reads the same stop');
+    const forced = await t.table.tick({ ...due, tickId: `${due.tickId}:retry:1`, baseTickId: due.tickId, retry: 1, blockedPlayers: ['kevin'] });
+    assert.equal(forced.outcome, 'not_due'); assert.equal(t.store.test.ticks().length, 1);
+    // Restored reservation (new generation): exactly one resolution and one insurance consume.
+    t.store.test.mutateReservations(all => { all[kevinRes] = { ...saved, gen: saved.gen + 1 }; });
+    const ran = await t.drain();
+    assert.deepEqual(ran.map(r => [r.tickId, r.outcome]), [[`${due.tickId}:retry:1`, 'applied']]);
+    assert.deepEqual(t.store.test.ledger().filter(r => r.kind === 'consume:insurance').map(r => [r.playerId, r.amountCents]), [['kevin', -500]]);
+    assert.equal(t.auditTypes().filter(x => x === 'engine.insurance').length, 1);
+    assert.notEqual((await t.snap()).round.phase, 'insurance');
+    assert.equal(t.store.test.ticks().filter(x => x.kind === 'insurance.timeout').length, 2);
+  });
+}
+
+test('denied insurance consume: accepted yes survives the refused last choice, pause and leave; blocked until the wallet changes', async () => {
+  const { t, kevinRes, effects } = await insuranceRound();
+  const reservation = t.store.test.reservations()[kevinRes];
+  t.store.test.uncoveredDebit('kevin', 990);             // the reservation stays, the balance no longer covers it
+  await t.send('kevin', 'pause', {});
+  await t.send('kevin', 'leave', { memberGen: (await t.snap()).me.memberGen });
+  await refusedLastChoice(t, kevinRes);
+  t.time = (await t.snap()).actionDeadline;
+  const before = effects();
+  const [blocked, ...more] = await t.drain();
+  assert.equal(more.length, 0);
+  assert.equal(blocked.kind, 'insurance.timeout'); assert.equal(blocked.outcome, 'blocked');
+  assert.deepEqual(blocked.blockedOn, [{ playerId: 'kevin', reservationId: kevinRes, walletGen: 3, reservationGen: reservation.gen }]);
+  assert.deepEqual(effects(), before, 'partial consumes are rolled back');
+  assert.deepEqual(t.store.test.reservations()[kevinRes], reservation);
+  assert.deepEqual(await t.drain(), []);
+  t.restart(); t.time += 5000;
+  assert.deepEqual(await t.drain(), [], 'no retry loop after restart');
+  t.store.test.fund('kevin', 10);                        // another wallet writer: a new wallet generation
+  const ran = await t.drain();
+  assert.deepEqual(ran.map(r => [r.tickId, r.outcome]), [[`${blocked.tickId}:retry:1`, 'applied']]);
+  assert.deepEqual(t.store.test.ledger().filter(r => r.kind === 'consume:insurance').map(r => [r.playerId, r.amountCents]), [['kevin', -500]]);
+  assert.equal(t.store.test.balance('kevin'), 5);
+  assert.ok(!(kevinRes in t.store.test.reservations()));
+});
+
 test('a paused player may decline insurance and stand, but not take insurance, hit or double (PR #323)', async () => {
   const t = setup();
   await t.join('kevin', [3]); await t.bet('kevin', 3, 10);

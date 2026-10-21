@@ -22,6 +22,8 @@ const OPS = new Set([...BET_OPS, 'join', 'leave', 'ready', 'act', 'insurance', '
 const PAUSE_BLOCKS = new Set(['join', 'refill', 'bet', 'undo', 'doubleBets', 'allSeats', 'repeat', 'ready']);
 const stakeReservation = (r, p) => `${r.roomId}:${r.windowId}:${p}:stake`;
 const insuranceReservation = (r, p) => `${r.roomId}:${r.roundId}:${p}:insurance`;
+// Ticks whose wallet refusal (reservation or consume) is recorded as `blocked` (O01 2.5).
+const BLOCKABLE = new Set(['window.close', 'insurance.timeout']);
 
 export function createTableCoordinator({ store, clock, random, absentMs = 120000, onlineMs = 15000, maxLockAttempts = 4 }) {
   if (!store?.runLocked || typeof clock?.now !== 'function' || !random) throw new TypeError('store, clock and random are required');
@@ -59,12 +61,13 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       const amounts = boxes.map(i => kind === 'stake' ? sum(r.bets[i]) : handsOf(r, p).filter(h => h.box === i).reduce((n, h) => n + h.stake / 2, 0));
       // Only a reservation that covers this player's boxes funds them; otherwise K02 refuses.
       const covered = res && res.amount === amounts.reduce((a, b) => a + b, 0);
-      // A missing or non-matching stake reservation is a wallet refusal for this player, decided
-      // before the core step, so window.close records `blocked` (retried once the wallet or
-      // reservation generation changes) instead of a permanent RESERVATION_INSUFFICIENT rejection.
-      if (!covered && kind === 'stake') throw new WalletDenied({ playerId: p, reservationId,
-        walletGen: await tx.wallet.gen(p), reason: res ? 'reservation does not cover the stake' : 'no reservation' });
-      boxes.forEach((b, i) => { reserved[b] = covered ? amounts[i] : 0; });
+      // A missing or non-matching stake or insurance reservation is a wallet refusal for this
+      // player, decided before the core step, so window.close / insurance.timeout record `blocked`
+      // (retried once the wallet or reservation generation changes) instead of a permanent
+      // RESERVATION_INSUFFICIENT rejection. Never funded as zero: an accepted yes stays paid.
+      if (!covered) throw new WalletDenied({ playerId: p, reservationId,
+        walletGen: await tx.wallet.gen(p), reason: res ? `reservation does not cover the ${kind}` : 'no reservation' });
+      boxes.forEach((b, i) => { reserved[b] = amounts[i]; });
     }
     return { reserved: { [kind]: reserved } };
   }
@@ -383,7 +386,12 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         }
         r.insurance[actorId] = input.take;
         const pending = sorted(r.owners.filter((p, i) => p && handsOf(r, p).length));
-        if (pending.every(p => Object.hasOwn(r.insurance, p))) result.resolved = await resolveInsurance(tx, r, cfg, { parent, origin, cause });
+        // A wallet refusal while resolving rejects this last choice atomically (no receipt); the
+        // choices committed earlier stay, and the insurance.timeout tick records `blocked`.
+        if (pending.every(p => Object.hasOwn(r.insurance, p))) {
+          try { result.resolved = await resolveInsurance(tx, r, cfg, { parent, origin, cause }); }
+          catch (e) { if (e instanceof WalletDenied) fail('INSURANCE_NOT_FUNDED', 'Insurance cannot be settled yet. Try again'); throw e; }
+        }
       } else if (op === 'next') {
         if (r.phase !== 'settled' || t < r.plan.endAt) fail('ROUND_IN_PROGRESS', 'The round is still in progress');
         if (input.roundId !== r.roundId) fail('STALE_COMMAND', 'Command belongs to another round');
@@ -529,7 +537,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         else if (desc.kind === 'seat.absent') r.leaving.push(desc.playerId);
         else if (desc.kind === 'seat.release') await releaseSeats(tx, r, desc.playerId);
       } catch (e) {
-        const blocked = e instanceof WalletDenied && desc.kind === 'window.close';
+        const blocked = e instanceof WalletDenied && BLOCKABLE.has(desc.kind);
         if (!blocked && !(e instanceof TableError)) throw e;   // infrastructure error: full rollback
         // Domain refusal: back to the savepoint (wallet, ledger, state, engine events, outbox),
         // then only the tick receipt and its audit row are written before COMMIT.
