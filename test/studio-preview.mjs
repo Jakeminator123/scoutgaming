@@ -125,11 +125,29 @@ test('each preview has a separate shoe, wallet and idempotent authoritative tabl
 test('private media is pinned to captured records, ranges supported and unknown or changed hashes rejected',async t=>{
   const f=fixture(t),session=await start(f),base='/api/studio-preview/'+session.sessionId;
   f.row.pathname='different';f.layer.sha256='f'.repeat(64);
-  const video=await f.api.handle(f.request(base+'/videos/'+videoId,'GET',undefined,{range:'bytes=0-3'}));assert.equal(video.status,206);assert.equal(video.headers.get('cache-control'),'private, no-store');
+  const video=await f.api.handle(f.request(base+'/videos/'+videoId,'GET',undefined,{range:'bytes=0-3'}));assert.equal(video.status,206);assert.equal(video.headers.get('cache-control'),'private, no-cache, must-revalidate');
   assert.equal(f.state.media[0].record.sha256,'a'.repeat(64));assert.match(f.state.media[0].record.pathname,/croupier\/media\//);assert.equal(f.state.media[0].range,'bytes=0-3');
   const head=await f.api.handle(f.request(base+'/layers/'+layerId,'HEAD'));assert.equal(head.status,200);assert.equal(await head.text(),'');assert.equal(f.state.media[1].record.sha256,'b'.repeat(64));
   assert.equal((await f.api.handle(f.request(base+'/videos/10000000-0000-4000-8000-000000000099'))).status,404);
   f.state.mediaHash='f'.repeat(64);assert.equal((await f.api.handle(f.request(base+'/videos/'+videoId))).status,409);
+});
+
+test('cached preview bytes still require current owner, authorization and an open unexpired session',async t=>{
+  for(const change of [f=>{f.state.revoked=true;},f=>{f.state.actor='another-admin';},f=>{f.state.time+=3000;}]) {
+    const f=fixture(t),session=await start(f),path='/api/studio-preview/'+session.sessionId+'/videos/'+videoId;
+    const first=await f.api.handle(f.request(path));assert.equal(await first.text(),'abcdefgh');
+    const conditional={'if-none-match':first.headers.get('etag')};
+    const repeat=await f.api.handle(f.request(path,'GET',undefined,conditional));
+    assert.equal(repeat.status,304);assert.equal(await repeat.text(),'');
+    const calls=f.state.authCalls,reads=f.state.media.length;change(f);
+    const denied=await f.api.handle(f.request(path,'GET',undefined,conditional));
+    assert.ok([401,404,410].includes(denied.status));assert.equal(denied.headers.get('cache-control'),'private, no-store');
+    assert.equal(f.state.authCalls,calls+1);assert.equal(f.state.media.length,reads);
+  }
+  const f=fixture(t),session=await start(f),base='/api/studio-preview/'+session.sessionId;
+  await (await f.api.handle(f.request(base+'/videos/'+videoId))).body.cancel();
+  assert.equal((await f.api.handle(f.request(base,'DELETE',{}))).status,200);
+  assert.equal((await f.api.handle(f.request(base+'/videos/'+videoId,'GET',undefined,{'if-none-match':`"sha256-${'a'.repeat(64)}"`}))).status,404);
 });
 
 test('captured immutable bank UUID must retain its expected SHA and never borrows current uploads',async t=>{

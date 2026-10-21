@@ -51,12 +51,12 @@ class CaptureResponse extends Writable {
   header(name) { return Object.entries(this.headers).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1]; }
 }
 
-async function videoRequest(api, { host = 'croupier-v2.onrender.com', origin, range, fetchSite = 'same-origin', method = 'GET' } = {}) {
+async function videoRequest(api, { host = 'croupier-v2.onrender.com', origin, range, fetchSite = 'same-origin', method = 'GET', ifNoneMatch, playerId='fixture-player' } = {}) {
   const headers = { host, ...(origin ? { origin } : {}), ...(range ? { range } : {}),
-    ...(fetchSite ? { 'sec-fetch-site': fetchSite } : {}) };
+    ...(fetchSite ? { 'sec-fetch-site': fetchSite } : {}), ...(ifNoneMatch ? {'if-none-match':ifNoneMatch} : {}) };
   const response = new CaptureResponse();
   const finished = once(response, 'finish');
-  assert.equal(await api({ method, headers }, response, `/api/presentation/videos/${id}`, 'fixture-player'), true);
+  assert.equal(await api({ method, headers }, response, `/api/presentation/videos/${id}`, playerId), true);
   await finished;
   return response;
 }
@@ -74,6 +74,25 @@ test('Render same-origin video and local default retain ranged playback', async 
   const localRange = await videoRequest(local, { host: 'localhost', origin: 'http://localhost', range: 'bytes=0-3' });
   assert.equal(localRange.status, 206);
   assert.deepEqual(localRange.body(), bytes.subarray(0, 4));
+});
+
+test('warm legacy avatar cache still verifies source bytes, origin and login before 304',async t=>{
+  const registryOptions=await fixture(t);
+  const api=createPresentationApi({db:{},store:{},registryOptions,env:{CROUPIER_CLOUD_RUNTIME:'1',PUBLIC_URL:renderOrigin}});
+  const first=await videoRequest(api,{origin:renderOrigin});
+  assert.equal(first.status,200);assert.deepEqual(first.body(),bytes);
+  assert.equal(first.header('cache-control'),'private, no-cache, must-revalidate');
+  const ifNoneMatch=first.header('etag');
+  const repeat=await videoRequest(api,{origin:renderOrigin,ifNoneMatch});
+  assert.equal(repeat.status,304);assert.equal(repeat.body().length,0);
+  assert.equal(repeat.header('content-length'),undefined);
+  assert.equal((await videoRequest(api,{origin:renderOrigin,ifNoneMatch,playerId:null})).status,401);
+  assert.equal((await videoRequest(api,{origin:'https://other.invalid',ifNoneMatch})).status,403);
+  await writeFile(join(registryOptions.archiveDir,targetPath),Buffer.alloc(bytes.length,120));
+  const changed=await videoRequest(api,{origin:renderOrigin,ifNoneMatch});
+  assert.equal(changed.status,409);assert.equal(changed.header('cache-control'),'private, no-store');
+  await rm(join(registryOptions.archiveDir,targetPath));
+  assert.equal((await videoRequest(api,{origin:renderOrigin,ifNoneMatch})).status,404);
 });
 
 test('opted-in exact Vercel origin preserves Range 206 and HEAD metadata without CORS', async t => {
