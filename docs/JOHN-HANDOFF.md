@@ -605,6 +605,32 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
+J03 delaktivitet Guide/Videor · 21 oktober 2026, `codex/admin-control-tools-j03`,
+från J02 `6748838e9194e0554fda060e869785599b890ac4`: endast de två gamla
+`app/control/guide/page.tsx` och `app/control/videos/page.tsx` är borttagna,
+med exklusiva tracingposter och gamla SSR-förväntningar. Guide/Videor och deras
+aktiva återhämtnings-/navigationslänkar använder befintliga `/admin/guide` och
+`/admin/videos`. Delade komponenter, API:er, N1-auth och Partner är kvar.
+Gamla Control-bokmärken omdirigeras enbart för GET/HEAD, även med native/unified
+avstängt och med /studio-mount. Dealer/event/variant/situation, bolag/rum,
+spel och lane→composition följer med. Äldre /guide och /videos går direkt till
+Admin med allowlistad navigationskontext; tokenparametrar släpps inte igenom.
+Fokuserat: 108/108, 0 skips. Kommandot var `node --test --test-concurrency=4`
+med `apps/studio/test/{next-page-navigation,admin-workspace,lab-url,scout-navigation,studio-navigation,workspace-surface-pages,control-workspace}.test.mjs`
+och `apps/studio/components/{control-pages,control-videos-page,studio-content}.test.mjs`
+(bracelistan betecknar de tio uttryckliga filargumenten). Proven kör riktiga
+middleware-/Admin-handlers med syntetisk N1 och anonym nekad åtkomst, samt de
+befintliga komponenternas beteende. Ingen produktionsinloggning eller molndata.
+`CROUPIER_LAB_BASE_PATH=/studio npm --prefix apps/studio run build` passerar,
+inklusive Studio/Admin/Lobby-typkontroll och fyra Windows-workers. De två
+raderade sidorna saknas i byggmanifestet. Orphan-kontroll: 530 kandidater, 0 orphan.
+Lokala loggar: `arkiv/2026-10-21/j03-tools/{focused,build,orphan,commit}.log`.
+Beroenden läses via egna junctions till J02-ägarens färdiga installationer;
+byggoutput ligger här. Tracesanering: 76 kontrollerade, 44 borttagna poster;
+ingen fristående deployartefakt verifierad. Befintliga CSS-/middleware-varningar.
+Ingen egen verifieringsserver lämnas kvar. Kvar: oberoende granskning, PR/CI och
+resterande J03; denna del innebär inte att hela J03 är VERIFIED.
+
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
 `admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla

@@ -18,6 +18,13 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   if (basePath !== '' && basePath !== '/studio') return null;
   if (basePath && !url.pathname.startsWith(basePath+'/')) return null;
   const path = url.pathname.slice(basePath.length);
+  // These retired tools preserve navigation context at both historical entries.
+  const tool = path.match(/^\/(?:control\/)?(guide|videos)$/)?.[1];
+  if (tool) {
+    const query = new URLSearchParams();
+    for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);
+    return adminDocumentHref('/control/'+tool + (query.size ? '?'+query : '') + url.hash);
+  }
   const alias = path.slice(1);
   if (Object.hasOwn(studioAliases, alias)) return studioAliases[alias]; // Historical top-level links discard query.
   if (controlAliases.has(path)) {

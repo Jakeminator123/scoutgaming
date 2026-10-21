@@ -200,7 +200,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     ...(startDealer?{dealer:startDealer.id}:{}),...(initialOperatorId?{operator:initialOperatorId}:{}),
     ...(initialRoomId?{table:initialRoomId}:{})}));
   const contentHref=studioHref('/control/clips',{dealerId:startDealer?.id,laneId:lane.id,operatorId:initialOperatorId});
-  const uploadHref=studioHref('/control/videos',{dealerId:startDealer?.id,eventId:clip?.classification?.eventId??project.events[0]?.id,laneId:lane.id,operatorId:initialOperatorId});
+  const uploadHref=studioHref('/admin/videos',{dealerId:startDealer?.id,eventId:clip?.classification?.eventId??project.events[0]?.id,laneId:lane.id,operatorId:initialOperatorId});
   if (!lanes.length) return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar" intro="Samla dealer, bord och bakgrund till en sammansättning som kan användas i flera spelrum."
     primary={<button className="sg-btn sg-btn-primary" disabled={!dirty||saving||conflict} onClick={()=>void save()}>{saving?'Sparar…':'Spara'}</button>}>
     <div className={styles.empty}><p>Inga sammansättningar finns i utkastet. Skapa en nedan för att börja.</p>

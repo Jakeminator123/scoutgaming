@@ -277,14 +277,14 @@ interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
 | Befintlig adress | Nuvarande mål |
 | --- | --- |
 | `/control` | `/admin` |
-| `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås på `/admin/videos` via äldre `/control/videos` |
+| `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås direkt på `/admin/videos`; äldre `/control/videos` omdirigeras |
 | `/control/companies` | `/admin/companies` |
 | `/control/rooms`, `/control/lanes` | `/admin/publication`; `lanes?tab=companies` leder till `/admin/companies` |
 | `/control/library`, `/control/compositions` | `/admin/material-library` respektive `/admin/compositions` |
 | `/control/openclaw` | `/admin/ai/models`; med `?tab=chat` går länken till `/admin/dealer-agent?tab=chat` |
 | `/control/guide` | `/admin/guide` |
 | `/control/administration` | `/admin/drift`; `?tab=accounts` leder till `/admin/admin/accounts` |
-| `/studio` | 308 till `/control/clips`, sedan `/admin/dealer-studio`; `/studio/guide` går via `/control/guide` till `/admin/guide` |
+| `/studio` | 308 till `/control/clips`, sedan `/admin/dealer-studio`; `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
 | `/lab`, `/labb`, `/bo` | `/lab` och `/labb` går via `/control` till `/admin`; `/bo` går via `/control/administration` till `/admin/drift` |
 | `/lissabon` | Ingen aktiv publik ingång: svarade 404 vid kontrollen |
 

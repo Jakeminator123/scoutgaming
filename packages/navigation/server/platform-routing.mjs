@@ -93,8 +93,8 @@ export function blackjackLobbyDestination(url, config) {
 }
 
 export function platformRoute(url, config, request) {
-  const retiredPublication = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes)$/.test(url.pathname);
-  if((config.nativeStudio||retiredPublication)&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
+  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos)$/.test(url.pathname);
+  if((config.nativeStudio||retiredDocument)&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
     const documentHref=url.pathname+url.search+url.hash;
     const destination=adminDocumentHref(documentHref);
     if(destination!==documentHref)return {kind:'redirect',destination:config.publicOrigin+destination};

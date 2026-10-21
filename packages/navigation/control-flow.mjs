@@ -28,8 +28,10 @@ export function canonicalControlHref(value) {
     url.searchParams.delete('lane');
     for (const key of ['operator','composition','dealer','table']) if (url.searchParams.get(key) === '') url.searchParams.delete(key);
   }
-  // These two retired editors now have only their Admin documents.
+  // Retired editors and tools now have only their Admin documents.
   if (url.pathname === '/control/rooms') url.pathname = '/admin/publication';
   if (url.pathname === '/control/companies') url.pathname = '/admin/companies';
+  if (url.pathname === '/control/guide') url.pathname = '/admin/guide';
+  if (url.pathname === '/control/videos') url.pathname = '/admin/videos';
   return url.pathname + url.search + url.hash;
 }

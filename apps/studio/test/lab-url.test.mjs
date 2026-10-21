@@ -36,9 +36,9 @@ test('mounted Lab only permits loopback health, not loopback data access', () =>
 test('public root redirect admits exact Admin without accepting external or auth destinations', () => {
   const headers = new Headers({host:'studio.internal.invalid','x-forwarded-host':'public.example.invalid','x-forwarded-proto':'https'});
   assert.equal(publicAbsoluteUrl(headers, '/admin'), 'https://public.example.invalid/admin');
-  for(const path of ['/admin/publication?operator=north&room=room-1&game=roulette#review','/admin/companies?operator=north'])assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
+  for(const path of ['/admin/publication?operator=north&room=room-1&game=roulette#review','/admin/companies?operator=north','/admin/guide?dealer=saga','/admin/videos?dealer=saga&event=idle.ready#clips'])assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
   assert.equal(publicAbsoluteUrl(headers, '/control/clips?dealer=vera'), 'https://public.example.invalid/control/clips?dealer=vera');
-  for (const value of ['https://outside.invalid/admin','//outside.invalid/admin','/administrator','/admin/publication-extra','/admin/publication/../login','/admin/companies/edit','/admin/login','/admin?returnTo=https://outside.invalid','/studio/login','/admin\\outside','/admin#secret']) {
+  for (const value of ['https://outside.invalid/admin','//outside.invalid/admin','/administrator','/admin/publication-extra','/admin/publication/../login','/admin/companies/edit','/admin/videos-extra','/admin/guide/edit','/admin/login','/admin?returnTo=https://outside.invalid','/studio/login','/admin\\outside','/admin#secret']) {
     assert.throws(() => publicAbsoluteUrl(headers, value), /control_redirect_rejected/);
   }
 });

@@ -30,7 +30,7 @@ test('work groups expose unique labelled destinations that resolve to their acti
     }
   }
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
-    ['/control', 'Översikt'], ['/control/guide', 'Guide & hjälp'],
+    ['/control', 'Översikt'], ['/admin/guide', 'Guide & hjälp'],
   ]);
   assert.equal(new Set(sidebar.map(item => item.href)).size, sidebar.length);
   assert.equal(new Set(groups.map(group => group.id)).size, groups.length);

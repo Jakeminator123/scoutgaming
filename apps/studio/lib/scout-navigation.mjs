@@ -26,7 +26,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
 
 export const SCOUT_FOOTER_NAVIGATION = Object.freeze([
   Object.freeze({ href: '/control', label: 'Översikt' }),
-  Object.freeze({ href: '/control/guide', label: 'Guide & hjälp' }),
+  Object.freeze({ href: '/admin/guide', label: 'Guide & hjälp' }),
 ]);
 
 // Login and password pages render without the staff menu.
@@ -45,7 +45,7 @@ const legacyPaths = new Map([
   ['/', '/control/clips'],
   ['/clips', '/control/clips'],
   ['/videos', '/control/clips'],
-  ['/control/videos', '/control/clips'],
+  ['/admin/videos', '/control/clips'],
   ['/control/replies', '/control/clips'],
   ['/zones', '/control/compositions'],
   ['/control/zones', '/control/compositions'],
@@ -62,7 +62,7 @@ const legacyPaths = new Map([
   ['/control/tree', '/control/clips'],
   ['/activity', '/control/clips'],
   ['/control/rehearsal', '/control/clips'],
-  ['/guide', '/control/guide'],
+  ['/guide', '/admin/guide'],
 ]);
 
 function shellPath(pathname, basePath) {

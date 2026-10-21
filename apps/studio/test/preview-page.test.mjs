@@ -106,7 +106,7 @@ test('registered Nora gets her own clip preview and intake link without borrowin
   assert.match(html,/<option value="nora" selected="">Nora<\/option>/);
   assert.match(html,/Nora greenscreenprov/);
   assert.doesNotMatch(html,/ASTRID_SPEECH_SHOULD_NOT_BORROW|UNAVAILABLE_NORA_TAKE/);
-  assert.match(html,/\/control\/videos\?dealer=nora&amp;event=speak.goodluck/);
+  assert.match(html,/\/admin\/videos\?dealer=nora&amp;event=speak.goodluck/);
   assert.match(html,/Tröskel 0.23 · Mjukhet 0.15/);
   assert.deepEqual(project,original);
 });

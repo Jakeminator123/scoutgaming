@@ -252,7 +252,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
     : mode === 'active'
       ? 'låter OpenClaw välja; ett modellanrop kan göras när du trycker.'
       : `kör jämförelseläget ${mode === 'off' ? 'Bara standard' : mode === 'shadow' ? 'Skuggläge' : mode === 'rules' ? 'Regler' : 'Slumpvariation'}.`;
-  const videoHref = studioHref('/control/videos', { dealerId, eventId: event.id, variantId: variant.id });
+  const videoHref = studioHref('/admin/videos', { dealerId, eventId: event.id, variantId: variant.id });
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id, variantId: variant.id, tab: editorTab });
   const overviewHref = studioHref('/control/events', { dealerId });
 

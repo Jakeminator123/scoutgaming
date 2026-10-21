@@ -61,9 +61,9 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
   assert.equal(studioHref('/control/tree', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'nope' }), '/control/tree?dealer=astrid&event=idle.ready');
   assert.equal(selectionHref('/control/events', '?tab=variants&filter=x', 'saga', 'idle.ready'), '/control/events?dealer=saga&event=idle.ready&tab=variants');
   assert.equal(selectionHref('/control/tree', '?tab=variants', 'saga', 'idle.ready'), '/control/tree?dealer=saga&event=idle.ready');
-  assert.equal(studioHref('/control/videos', { dealerId: 'saga', eventId: 'idle.ready', variantId: 'v2' }), '/control/videos?dealer=saga&event=idle.ready&variant=v2');
+  assert.equal(studioHref('/admin/videos', { dealerId: 'saga', eventId: 'idle.ready', variantId: 'v2' }), '/admin/videos?dealer=saga&event=idle.ready&variant=v2');
   assert.equal(selectionHref('/control/events', '?tab=variants', 'saga', 'idle.ready', 'v2'), '/control/events?dealer=saga&event=idle.ready&variant=v2&tab=variants');
-  assert.equal(selectionHref('/control/videos', '', 'saga', 'idle.ready', 'v2'), '/control/videos?dealer=saga&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/admin/videos', '', 'saga', 'idle.ready', 'v2'), '/admin/videos?dealer=saga&event=idle.ready&variant=v2');
   assert.equal(selectionHref('/control/tree', '', 'saga', 'idle.ready', 'v2'), '/control/tree?dealer=saga&event=idle.ready');
 });
 
@@ -128,7 +128,7 @@ test('rehearsal requires an explicit dealer or room and never starts a default o
 test('dealer editor routes gate missing and invalid dealers before mounting their media session',()=>{
  const previous=globalThis.window;
  try {
-  for(const [file,path] of [['control-tree-page.tsx','/control/events'],['control-events-page.tsx','/control/events'],['control-videos-page.tsx','/control/videos'],['control-probe-page.tsx','/control/probe'],['control-openclaw-chat.tsx','/control/openclaw']])for(const initialDealerId of [undefined,'unknown','amira']) {
+  for(const [file,path] of [['control-tree-page.tsx','/control/events'],['control-events-page.tsx','/control/events'],['control-videos-page.tsx','/admin/videos'],['control-probe-page.tsx','/control/probe'],['control-openclaw-chat.tsx','/control/openclaw']])for(const initialDealerId of [undefined,'unknown','amira']) {
    globalThis.window={location:{pathname:path,search:'?composition=composition-1&operator=operator-42&table=room-7'}};
    const html=renderPage(file,{initialDealerId});assert.match(html,/<h2>Välj dealer<\/h2>/,file);assert.doesNotMatch(html,/<video|<audio|Klippförhandsvisning och provspelning/,file);
    for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes(path+'?dealer='+dealer.id+'&amp;composition=composition-1&amp;operator=operator-42&amp;table=room-7'),file+' keeps context for '+dealer.id);

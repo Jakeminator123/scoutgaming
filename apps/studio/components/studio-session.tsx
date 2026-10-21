@@ -266,6 +266,6 @@ export function StudioBindingNotices({ project, videos, dealerId, eventId }: { p
   const first = incompatible[0];
   return <>
     {incompatible.length ? <div className="feedback error" role="alert"><span><strong>{incompatible.length} animationskopplingar behöver rättas.</strong> Projektet innehåller äldre val som inte matchar spelhändelsen. Inget har ändrats automatiskt. Välj en kompatibel labbanimation för varje markerad variant innan du sparar eller testar.</span>{first ? <a className="primary-button" href={studioHref('/control/events', { dealerId: first.dealerId, eventId: first.eventId })}>Rätta första kopplingen →</a> : null}</div> : null}
-    {invalidVideos.length ? <div className="feedback error" role="alert"><span>{invalidVideos.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span><a className="text-button" href={studioHref('/control/videos', { dealerId, eventId })}>Granska i Videobanken →</a></div> : null}
+    {invalidVideos.length ? <div className="feedback error" role="alert"><span>{invalidVideos.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span><a className="text-button" href={studioHref('/admin/videos', { dealerId, eventId })}>Granska i Videobanken →</a></div> : null}
   </>;
 }

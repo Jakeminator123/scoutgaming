@@ -128,7 +128,7 @@ Adresserna nedan beskriver de fungerande `/control`-verktygen. Nya `/admin`
 återanvänder deras komponenter och native-API; skapa inget parallellt
 projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna.
 
-- **Guide & hjälp (`/control/guide`; `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
+- **Guide & hjälp (`/admin/guide`; äldre `/control/guide` och `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
 - **Spelhändelser & villkor, översikten (`/control/events` utan `?event=`; `/control/tree` omdirigerar dit):** välj dealer och presentationssätt: idle/bakgrund,
   engångshandling, exakt tal eller tur/resultat. De fyra grupperna är en vy
@@ -158,7 +158,7 @@ projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna
   högst sex sekunder tal i neutralt idle. Modellens uttrycksförslag loggas
   separat; ingen hand- eller kroppsrörelse läggs ovanpå talet. Riktig läppsynk
   återstår.
-- **Klippbibliotek (`/control/videos`; menyraden är Dealers & klipp på `/control/clips`):** lägg in egna MP4/WebM-filer med dealer, event, typ,
+- **Klippbibliotek (`/admin/videos`; äldre `/control/videos` omdirigerar dit):** lägg in egna MP4/WebM-filer med dealer, event, typ,
   standard/alternativ och konkret situation. Filtrera banken och kontrollera
   vilka standardlinjer som har video. Inspektera original och bind vald variant till ett exakt
   `videoGenerationId`. Samma koppling kan redigeras direkt i Händelser.
