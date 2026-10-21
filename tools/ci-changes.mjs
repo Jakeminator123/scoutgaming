@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDocumentationPath } from './documentation-paths.mjs';
@@ -66,9 +66,25 @@ export function movingWorkerRequired(changes) {
 export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   // Main and manual runs always verify the complete product after integration.
   const complete = {scope: 'full', migration: true, moving: true};
+  const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, stdio: ['ignore','pipe','pipe'] });
+  // Rebuilding an unchanged isolated worker image adds no new acceptance.
+  // Only a complete, verified push range may skip that image build on main.
+  if (env.GITHUB_EVENT_NAME === 'push' && env.GITHUB_REF === 'refs/heads/main'
+    && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '') && env.GITHUB_EVENT_PATH) {
+    try {
+      const event = JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
+      if (!/^[a-f0-9]{40}$/.test(event?.before || '') || event.before === env.GITHUB_SHA
+        || event.after !== env.GITHUB_SHA || git(['rev-parse','HEAD']).trim() !== env.GITHUB_SHA) return complete;
+      git(['merge-base','--is-ancestor',event.before,'HEAD']);
+      const changes = parseDiff(git(['diff','--raw','--no-abbrev','--no-renames','--no-ext-diff','--no-textconv','-z',event.before,'HEAD','--']));
+      return {...complete, moving: movingWorkerRequired(changes)};
+    } catch {
+      // Missing history, malformed events and uncertain diffs keep the build.
+      return complete;
+    }
+  }
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return complete;
   if (!/^refs\/pull\/\d+\/merge$/.test(env.GITHUB_REF || '') || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) return complete;
-  const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
   const parents = git(['rev-list', '--parents', '-n', '1', 'HEAD']).trim().split(' ');
   if (parents.length !== 3 || parents[0] !== env.GITHUB_SHA) return complete;
   // Checkout's PR merge commit includes current main. Comparing its first
