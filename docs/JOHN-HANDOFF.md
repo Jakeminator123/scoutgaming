@@ -645,7 +645,16 @@ behåller Admin samt workspace-/projekt-API. Orphan532/0 och diffkontroll gröna
 Beroenden via egna junctions till J02/PR320; traces70/44. Detta är lokalt
 byggbevis, ingen fristående deployartefakt. Loggar i leveransworktreens
 `arkiv/2026-10-21/j03-rehearsal/`. Fixturekontexter och browsers stängda.
-GitHub CI för denna nya leverans redovisas separat i PR/status.json.
+CI39657917855 på head43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee hittade ett
+förbrukat tvåhoppskrav i apps/web/test/platform-ui.mjs: activity ska gå direkt
+till Admin. Endast den förväntan och denna handoff rättas; negativa auth-/API-
+kontroller är kvar. CI-gruppens105unika fall passerar lokalt över två körningar
+(94+11,0skip). Två transportfiler krävde först saknade speech-beroenden; lokal
+npm-cache gav dessutom en äldre file:-paketkopia, som ersattes endast i vår
+installerade testkopia med fem hashkontrollerade källfiler. Låsta webberoenden
+installerades med pnpm10.33.2; speech-installation använde sin Node22.23.1.
+Produktkoden är oförändrad; tidigare build/browserbevis gäller fortfarande.
+Ny GitHub CI på rättningsheaden redovisas separat i PR/status.json.
 Full Control-/authavveckling och O01 återstår. J03 är IN_PROGRESS, total15%.
 Ingen runtimeport, DB-/mediaändring, deploy eller automatisk merge ingår.
 

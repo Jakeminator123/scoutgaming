@@ -88,7 +88,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     // Retired documents redirect before transport headers are applied. Follow
     // their public destinations with the cookie a browser retains on this origin.
     let legacyUrl = config.publicOrigin + '/studio/activity';
-    for (const target of ['/control/activity', '/admin/rehearsal']) {
+    for (const target of ['/admin/rehearsal']) {
       const response = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
       assert.equal(response.status, 307, legacyUrl);
       assert.equal(response.headers.get('location'), config.publicOrigin + target);
