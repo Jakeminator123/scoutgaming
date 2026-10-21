@@ -77,10 +77,10 @@
       "stage": "E1",
       "title": "Inventera den rensade Kevin-modulen",
       "weight": 5,
-      "status": "IN_REVIEW",
+      "status": "VERIFIED",
       "dependsOn": [],
       "branch": "codex/kevin-k01-underlag",
-      "head": "38a297f7915913fdd8b197ac24a93902918f8580",
+      "head": "7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33",
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/314",
       "reviewer": "Codex-underagent kevin_plan och orkestrator (oberoende läsgranskning)",
       "evidence": [
@@ -94,9 +94,10 @@
         "Två avgränsade K01-rättelser och nästa ansvarig: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653. O01 äger kvarvarande schema-/lås-/replaybeslut; inga nya GPU-prov krävs för inventeringen.",
         "PR314 på 38a297f7915913fdd8b197ac24a93902918f8580, fryst produktkälla fortsatt 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318788990. Den tidigare inlämnade kommentaren hade förbisetts i orkestratorns förra sammanställning.",
         "Oberoende delta-granskning verifierar KEVIN_SRC-importen och hashberäkningen mot fryst källa; audit-importblockeraren är stängd. Verktygets 21/21-rader är Kevins körningsrapport, inte vår egen körning. TEXT-rättelsen på rad174 är korrekt men matrisraden107 tillåter fortfarande jsonb och måste rättas.",
-        "PR315, codex/kevin-test-deterministic@f29adaf942acace6593b0c9bb5677bf412fa0763: oberoende läsgranskning utan blockerande kodfynd. Bara testfilen ändras; fast sko och obligatoriska assertions ersätter båda tidiga returerna. GitGuardian success men ingen funktionell CI-körning; 285/285 och 30/30 är Kevins rapporter. Ingen merge eller självständig runtimeacceptans."
+        "PR315, codex/kevin-test-deterministic@f29adaf942acace6593b0c9bb5677bf412fa0763: oberoende läsgranskning utan blockerande kodfynd. Bara testfilen ändras; fast sko och obligatoriska assertions ersätter båda tidiga returerna. GitGuardian success men ingen funktionell CI-körning; 285/285 och 30/30 är Kevins rapporter. Ingen merge eller självständig runtimeacceptans.",
+        "Slutdelta 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33 i PR314 ändrar endast K01-matris.md rad107 till TEXT/ordningskänsligt shoe-proof. Oberoende kevin_plan och orkestratorn har kontrollerat exakt commit och fil; audit-importen är oförändrat rättad. 2/2 tidigare blockerare stängda. K01 VERIFIED som avgränsad inventering, inte runtime-, mediaimport- eller O01-acceptans. Rapport: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319631936"
       ],
-      "blocker": "Kevin rättar K01-matris.md rad107: shared_rooms.state ska vara TEXT eftersom det innehåller ordningskänsligt shoe proof; raden motsäger avsnitt2.6/rad174. Audit-importblockeraren är verifierat stängd. Efter konsekvent dokumenträttelse kan K01 slutgranskas som inventering; inga nya GPU-prov eller fullsviter krävs."
+      "blocker": null
     },
     {
       "id": "O01",
@@ -117,7 +118,7 @@
         "Kevin levererade O01-svar på 24cacc5a2830b265604624a3ee371e8a3f4ab2a7: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319431310. Två oberoende underagenter och orkestratorn har läst relevanta källor på 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; inga runtime-/GPU-prov.",
         "Kodgranskningen verifierar advance före idempotens, onPlan före commit, limitändringslås även före clear, klientens språkstyrning vid poll samt heuristiska patchval och kvarvarande index. MASTERPLAN.md föreslår separat kommandoresultat/snapshot, fönster-/turidentitet, config frysning före insatsfönster, händelser efter commit och verifierad frame-/audioidentitet. Förslag, inte låst kontrakt."
       ],
-      "blocker": "K01:s matrisrad107 återstår. O01-svaren är mottagna/kodgranskade; Kevins beskrivningar av retry/audit, limitlåset och patchidentitet behöver rättas. Fönster-/turidentitet, configgräns, main-skrivvägar/lås och riktade kontraktsprov återstår före gemensam låsning."
+      "blocker": "O01-svaren är mottagna/kodgranskade; Kevins beskrivningar av retry/audit, limitlåset och patchidentitet behöver rättas. Fönster-/turidentitet, configgräns, main-skrivvägar/lås och riktade kontraktsprov återstår före gemensam låsning."
     },
     {
       "id": "J03",

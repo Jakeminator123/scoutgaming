@@ -21,7 +21,8 @@ Isolerad UI/API-acceptans är oberoende godkänd: spara/publicera/återöppna,
 ny distinkt signerad N1-session, konflikt och negativa behörighetsfall.
 Produktändringen passerade 160/160 prov, typer och klientbygge; den efterföljande
 sessionskompletteringen 23/23 berörda prov. CI på samma slutliga head passerar.
-J01 är VERIFIED: 5% av planen, 25% av E1. PR:en är inte mergad.
+J01 är VERIFIED och bidrar med 5 procentenheter. Tillsammans med K01 är
+10% av planen och 50% av E1 verifierat. PR:en är inte mergad.
 Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
 Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 
@@ -29,14 +30,13 @@ Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
 Kevin-källan är fortsatt kevin-merge-admin /
 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; underlag på
-codex/kevin-k01-underlag / 38a297f7915913fdd8b197ac24a93902918f8580,
+codex/kevin-k01-underlag / 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33,
 [PR #314](https://github.com/Jakeminator123/scoutgaming/pull/314).
-Matris och 1267 spårade mediekandidater är läsgranskade. Auditverktygets
-KEVIN_SRC-import är verifierat rättad. K01-matrisens rad174 kräver korrekt TEXT,
-men rad107 tillåter fortfarande jsonb för ordningskänsligt shoe-proof-state.
-Kevin äger denna sista dokumenträttelse; K01 förblir IN_REVIEW och totalen 5%.
-Den tidigare inlämnade [rättelseleveransen](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318788990)
-hade förbisetts i förra sammanställningen. Oberoende deltagranskning är nu klar.
+K01 är VERIFIED som avgränsad inventering. Matris och 1267 spårade
+mediekandidater är läsgranskade; KEVIN_SRC-importen och state/TEXT-motsägelsen
+är rättade. Oberoende slutgranskning av exakt ändringscommit stänger 2/2
+tidigare blockerare. [Leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319631936).
+Det innebär inte runtime-, mediaimport- eller O01-acceptans.
 [PR #315](https://github.com/Jakeminator123/scoutgaming/pull/315), head
 f29adaf942acace6593b0c9bb5677bf412fa0763, har inga blockerande kodfynd:
 fast sko ersätter båda tysta testreturerna. Ingen funktionell GitHub-CI finns;

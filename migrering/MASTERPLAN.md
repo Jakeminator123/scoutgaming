@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01:s audit-import är rättad och verifierad; en motsägelse om state/JSONB återstår i PR #314. O01 förbereds som kontraktsförslag. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
+Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-granskning och separat SQL-läsroll. J01 är verifierad i PR #313 men inte mergad. K01:s inventering är verifierad i PR #314 på 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33. J01 och K01 ger tillsammans 10% verifierat. O01 förbereds som kontraktsförslag. Aktuell färdiggrad finns i status.json och ökar bara efter verifierad leverans.
 
 ## Frysta utgångspunkter
 
@@ -24,10 +24,10 @@ Jakob har därefter uttryckligen startat J01 med underagenter, parallell K01-gra
 | --- | --- | --- |
 | main | 15988f32fd572c453d2189502acbe324c4566815 | Plattform, Admin, publicering, auth, Neon/Blob; inkluderar PR310:s Talade repliker och Vila/Idle |
 | jakob-gren | 15988f32fd572c453d2189502acbe324c4566815 | Verifierad säkerhetsgren, inte arbetsmål |
-| kevin-merge-admin | 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc | Fryst källa efter läppsynksfix; deltat från c4818f5 är oberoende granskat, K01 ännu öppet |
+| kevin-merge-admin | 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc | Fryst källa efter läppsynksfix; deltat från c4818f5 är oberoende granskat; K01-inventeringen är verifierad |
 | kevin-staging | 238d6dd681745ca87a813b969443e7edee3f820b | Äldre analysunderlag; inte migrationskälla |
 
-Refarna kontrollerades på GitHub 21 oktober. En senare käll-SHA kräver granskning av deltat; en branchs namn räcker inte som versionsbevis. Medieborttagningen är ingen garanti för att alla SQL-/runtimekopplingar är borta. K01 verifierar den nya källan innan portning.
+Refarna kontrollerades på GitHub 21 oktober. En senare käll-SHA kräver granskning av deltat; en branchs namn räcker inte som versionsbevis. Medieborttagningen är ingen garanti för att alla SQL-/runtimekopplingar är borta. K01 har verifierat inventeringen av den frysta källan; portning kräver O01:s kontrakt.
 
 ## Vad ”bäst av allt” betyder
 
@@ -90,8 +90,8 @@ Klart: Kevin och Jakob kan implementera sina sidor utan att behöva kopiera vara
 
 Utgår från main 15988f32fd572c453d2189502acbe324c4566815 och Kevin-kod
 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Kevins [O01-svar](https://github.com/Jakeminator123/scoutgaming/blob/24cacc5a2830b265604624a3ee371e8a3f4ab2a7/migrering/kevin-ks-migrering/K01/O01-svar.md)
-är oberoende kodgranskade, inte runtimeprovade. K01:s audit-import är rättad;
-matrisrad107 motsäger fortfarande TEXT-kravet. Inga kontrakt är låsta och detta
+är oberoende kodgranskade, inte runtimeprovade. K01:s två blockerare är stängda
+och inventeringen är VERIFIED i PR #314. Inga kontrakt är låsta och detta
 startar ingen runtimeport, DDL eller mediaimport.
 
 **Verifierade skillnader som portningen måste hantera:**
@@ -136,7 +136,7 @@ automatiskt när lagringen flyttas till Postgres.
 
 Kevin behöver rätta underlagets beskrivningar av retry/audit, limitlåset och
 patchidentitet samt stämma av fönstergräns och kommandoidentiteter med orkestratorn.
-O01 blir VERIFIED först när K01 är klar, båda ägare har stämt av kontrakten och
+K01 är klar som inventering. O01 blir VERIFIED först när båda ägare har stämt av kontrakten och
 nödvändiga beteendeprov finns. Media är fortsatt kandidater, inte importgodkända.
 
 ### O02 — Oberoende samprov

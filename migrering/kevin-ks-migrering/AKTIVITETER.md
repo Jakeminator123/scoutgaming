@@ -26,14 +26,16 @@ Ingen spelkörning, visuell acceptans eller full medieinventering ingår i denna
 
 ## K01 — Inventera den rensade Kevin-modulen
 
+**Verifierad inventering:** 21 oktober 2026, [PR #314](https://github.com/Jakeminator123/scoutgaming/pull/314), 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33. Oberoende kod-/dokumentgranskning; körningsresultat förblir tillskrivna Kevin. Status och procent beräknas endast i status.json. Ingen runtime- eller importacceptans.
+
 **Etapp/beroenden:** E1; inga. Levererar underlag till O01.
 **Mål:** en provbar urvalslista där varje beteende har ägare, kontraktsgräns, konsument och acceptanstest.
 **Startfiler:** K `server/shared-table.mjs`, `server/studio-tables.mjs`, `server/media-registry.mjs`, `vendor/croupier/shoe-game.mjs`, `public/game-presentation.js`, `public/idle-chain.js`, `test/shared-table.test.mjs`; M `services/game/shoe-game.mjs` och `services/game/public/card-presentation/README.md`.
 
-- [ ] Frys käll-SHA och inventera regler, platser, countdown, återanslutning, idempotens, tal/idle, kort och responsivitet. Prioritera delat bord, moving lipsync och idleklipp enligt Kevins DM-uppgifter; verifiera dem i K01/O01 och märk oprövade förbättringar som kandidater.
-- [ ] Följ varje kandidat till SQL, filer, auth, wallet, media, timers och externa tjänster. Kartlägg `createSharedTable`-callbackarna `talk`, `readyFor`, `onPlan` och `winners`, samt gränsen mellan `vendor/croupier/shoe-game.mjs` och `public/game-events.js`. Föreslå kommando-, händelse-, lagrings- och presentationsportar till O01; nuvarande callbackar bevisar inte färdig separation.
-- [ ] Inventera mediereferenser och borttagna V1-poster via spårade manifest/metadata och ändringslista. Notera kvarvarande referenser, okänd identitet och saknade filer; ladda inte ned binärmassor för inventeringen.
-- [ ] Klassificera varje del: porta, återanvänd från main, ersätt/radera eller utred. Bevara mains konto/rum/auth, Neon/Blob, Render och OpenClaw; jämför redan portade preloads innan ny kod planeras.
+- [x] Frys käll-SHA och inventera regler, platser, countdown, återanslutning, idempotens, tal/idle, kort och responsivitet. Prioritera delat bord, moving lipsync och idleklipp enligt Kevins DM-uppgifter; verifiera dem i K01/O01 och märk oprövade förbättringar som kandidater.
+- [x] Följ varje kandidat till SQL, filer, auth, wallet, media, timers och externa tjänster. Kartlägg `createSharedTable`-callbackarna `talk`, `readyFor`, `onPlan` och `winners`, samt gränsen mellan `vendor/croupier/shoe-game.mjs` och `public/game-events.js`. Föreslå kommando-, händelse-, lagrings- och presentationsportar till O01; nuvarande callbackar bevisar inte färdig separation.
+- [x] Inventera mediereferenser och borttagna V1-poster via spårade manifest/metadata och ändringslista. Notera kvarvarande referenser, okänd identitet och saknade filer; ladda inte ned binärmassor för inventeringen.
+- [x] Klassificera varje del: porta, återanvänd från main, ersätt/radera eller utred. Bevara mains konto/rum/auth, Neon/Blob, Render och OpenClaw; jämför redan portade preloads innan ny kod planeras.
 
 **Raderas/importeras inte:** inga produktfiler i K01; markera Kevins SQLite-/JSON-register, demoidentiteter, egen wallet, alternativa backoffice/serverstarter och bortvalda V1-media som ej avsedda för import. Specificera undantag som O01 måste avgöra.
 **Klart när:** O01 har en komplett avgränsad urvals- och beroendematris med testbara krav och öppna frågor; en kodläsning får inte anges som ett godkänt runtimeprov.
