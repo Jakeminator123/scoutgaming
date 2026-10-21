@@ -14,13 +14,29 @@ Lokalt verifierat: båda riktningarna genom sparning/återläsning och serverns
 mediekontroll, separata alternativ, byte av ett standardval utan grannändring
 och avvisning av fel fack: 59 fokuserade tester gröna, inklusive Admin-knappen.
 Admin- och Studio-typkontroll passerar. Ingen databasmigrering eller medieuppladdning krävs.
-Driftsättning och skarp sparning återstår. Automatisk infogning av övergångarna
-i spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
+PR [#304](https://github.com/Jakeminator123/scoutgaming/pull/304) är mergad
+som `3c3f27e19e8cdaa38b65d2ce4cf0883d7fa34e98`: full PR-CI grön och
+automatisk kodgranskning utan fynd. Vercel-produktion
+`dpl_B77rPVKWdtSM9mNf9RtAFbV1euRY` är READY på samma SHA och har
+`www.scoutgaming.tech` som aktiv alias. Till skon har därefter kopplats och
+sparats genom Admin med ny serverrevision. Efter full omladdning visar båda
+riktningarna **Kopplat i sparat utkast**.
 
-Skarpt läst 21 oktober: `in_vila_till_redo`
-(`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) finns och visades VILA → REDO,
-men kunde inte kopplas. `ut_redo_till_vila`
-(`9c2c2285-e80b-42c3-acee-8682276e47d7`) är redan kopplad och ska bevaras.
+På Jakobs begäran är nästa steg nu implementerat lokalt: filmplaneraren väljer
+de sparade skonstandarderna vid VILA/REDO-gränser och behåller inbakade
+returer. Fryst publicering och vanlig förhandsvisning använder samma urval;
+spelaren håller övergång och kortfilm under samma avbrytbara ägare utan att
+ge övergången kortspår. 125 fokuserade tester passerar, inklusive publicering,
+medieisolering, posegränser och avbrott. Runtimeändringen inväntar PR-CI,
+driftsättning på Render/Vercel och publicering av Dragan-rummets nya paket.
+Genererad talutdelning och automatisk variantrotation ingår inte.
+
+Skarpt verifierat 21 oktober: `in_vila_till_redo`
+(`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) är standard i Till skon och visades
+VILA → REDO. `ut_redo_till_vila`
+(`9c2c2285-e80b-42c3-acee-8682276e47d7`) behålls som standard i Från skon.
+Ingen film laddades upp eller ersattes. Publicerade rumsversioner behölls;
+ändringen gäller det sparade projektutkastet.
 
 ## Dragan: varför svaret visas som text — läsdiagnos 19 oktober 2026
 

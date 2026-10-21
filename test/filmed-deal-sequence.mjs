@@ -10,6 +10,23 @@ const flip=shoeDraw=>({type:'reveal',to:'dealer',shoeDraw});
 const plan=events=>planFilmedDealSequence({profile,events,inventory,dealerId:'dragan'});
 const keys=result=>result.steps.map(step=>step.takeKey);
 
+test('separate shoe clips wrap only REDO boundaries, never embedded VILA returns',()=>{
+  const transitions={toShoe:{id:'to'},fromShoe:{id:'from'}};
+  const withShoe=events=>planFilmedDealSequence({profile,events,inventory,dealerId:'dragan',transitions});
+  const run=withShoe([box(0,1),box(1,2)]);
+  assert.deepEqual(keys(run),['1:base','2:base']);
+  assert.equal(run.steps[0].beforeVideoId,'to');assert.equal(run.steps[0].afterVideoId,undefined);
+  assert.equal(run.steps[1].beforeVideoId,undefined);assert.equal(run.steps[1].afterVideoId,'from');
+  const opening=withShoe([box(0,1),dealer(2),dealer(3,true)]);
+  assert.deepEqual(keys(opening),['1:base','dealer:base','hole:base']);
+  assert.equal(opening.steps.at(-1).afterVideoId,undefined,'hole already returns to VILA');
+  const reveal=withShoe([flip(3),dealer(4)]);
+  assert.equal(reveal.steps[0].beforeVideoId,undefined);assert.equal(reveal.steps[0].afterVideoId,undefined);
+  assert.equal(reveal.steps[1].beforeVideoId,'to');assert.equal(reveal.steps[1].afterVideoId,'from');
+  const partial=planFilmedDealSequence({profile,events:[box(0,1)],inventory,dealerId:'dragan',transitions:{toShoe:{id:'to'}}});
+  assert.deepEqual(keys(partial),['1:v']);assert.equal(partial.steps[0].beforeVideoId,'to');
+});
+
 test('opening run lifts once, joins REDO takes and returns with the filmed hole card',()=>{
   const events=[{type:'speak',line:'goodluck'},box(6,1),box(0,2),dealer(3),box(6,4),box(0,5),dealer(6,true)];
   const before=structuredClone(events),result=plan(events);

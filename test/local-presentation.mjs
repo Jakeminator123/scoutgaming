@@ -657,7 +657,7 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -667,7 +667,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
   globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
-    : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
+    : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
@@ -692,6 +692,32 @@ test('native configuration and actual film receipts preserve their saved project
     assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'lab/project.json');
     assert.equal(row.requestId, 'selection-fixture');
   }
+});
+
+test('shoe transitions surround the card film, keep action ownership and never drive card frames', async t => {
+  const before={id:'to',sha256:'1'.repeat(64),fileName:'to.mp4'},after={id:'from',sha256:'2'.repeat(64),fileName:'from.mp4'};
+  const {controller,jobs,receipts}=await controllerFixture(t,{transitions:{before,after}});
+  controller.state({action:true});
+  const selections=[],frames=[];
+  const result=controller.present(source,{onSelected:video=>selections.push(video.id),onFrame:time=>frames.push(time)});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(jobs[0].take.media.sha256,before.sha256);assert.deepEqual(selections,[]);assert.equal(jobs[0].options.onFrame,undefined);
+  controller.state({speech:false});assert.equal(jobs[0].options.signal.aborted,false);
+  jobs[0].options.onReceipt({state:'end'});jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(selections.length,1);jobs[1].options.onFrame(.4);assert.deepEqual(frames,[.4]);
+  jobs[1].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(jobs[2].take.media.sha256,after.sha256);assert.equal(jobs[2].options.onFrame,undefined);
+  controller.state({ready:true});assert.equal(jobs[2].options.signal.aborted,false);
+  jobs[2].options.onReceipt({state:'end'});jobs[2].resolve();assert.equal(await result,true);
+  assert.deepEqual(receipts.filter(row=>row.event==='transition').map(row=>row.direction),['to-shoe','from-shoe']);
+});
+
+test('cancelling the entry transition cannot start a stale card film',async t=>{
+  const {controller,jobs}=await controllerFixture(t,{transitions:{before:{id:'to',sha256:'1'.repeat(64),fileName:'to.mp4'}}});
+  const abort=new AbortController(),selected=[];
+  const result=controller.present(source,{signal:abort.signal,onSelected:video=>selected.push(video)});
+  await new Promise(resolve=>setImmediate(resolve));abort.abort();
+  assert.equal(await result,false);assert.equal(jobs.length,1);assert.deepEqual(selected,[]);
 });
 
 test('a missing exact position skips every video, keeps the committed card and does not report a playback error', async t => {
