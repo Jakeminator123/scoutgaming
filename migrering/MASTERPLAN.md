@@ -88,38 +88,56 @@ Klart: Kevin och Jakob kan implementera sina sidor utan att behöva kopiera vara
 
 #### O01: kontraktsförslag för avstämning — ännu inte låst
 
-Utgår från main `15988f32fd572c453d2189502acbe324c4566815`, Kevin-kod
-`5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` och K01-underlag
-`bcd9273432c686c3e140892b5b00b2e69065dfcb`. K01:s två rättelser kvarstår.
-Detta är förberedelse, inte startbesked för runtimeport, DDL eller mediaimport.
+Utgår från main 15988f32fd572c453d2189502acbe324c4566815 och Kevin-kod
+5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Kevins [O01-svar](https://github.com/Jakeminator123/scoutgaming/blob/24cacc5a2830b265604624a3ee371e8a3f4ab2a7/migrering/kevin-ks-migrering/K01/O01-svar.md)
+är oberoende kodgranskade, inte runtimeprovade. K01:s audit-import är rättad;
+matrisrad107 motsäger fortfarande TEXT-kravet. Inga kontrakt är låsta och detta
+startar ingen runtimeport, DDL eller mediaimport.
 
-- Mains auth bestämmer spelare, operatör och tillåtet rum. Admin publicerar
-  versionsbunden konfiguration; bordstjänsten och regelkärnan äger kort/utfall.
-- Kommando: `roomId`, `commandId`, `expectedVersion`, `configVersion`, operation
-  och payload. Actor hämtas från auth. Föreslagen beständig idempotensnyckel är
-  `(roomId, actorId, commandId)`; samma nyckel med annat innehåll avvisas.
-  Pröva idempotens före versionskonflikt. Repris återger lagrat kommandoresultat;
-  aktuell snapshot är separat. Regler för samtidiga insatser är fortfarande öppna.
-- Behåll mains globala spelarsaldo. Rum, berörda saldon, avräkning, kvitto,
-  idempotens och audit ska committas atomiskt. Föreslagen låsordning är rum →
-  sorterade spelar-ID → global auditkedja, utan nya resurslås därefter. O01 ska
-  inventera alla berörda skrivvägar, även mains, tillsammans med J07:s ägare
-  innan ordningen beslutas. J07 verifierar sedan implementationen.
-- Bevara rumsstate inklusive shoe proof, auditpayload och separat proof som text.
-  Nyckelordning och numeriska typer får inte ändras utan verifierad kompatibilitet.
-  `rowid` ersätts uttryckligen. Studio-audit är inte spelhashkedjans ersättning.
-- Konfiguration ska vara gemensam för alla spelare vid samma bord och fryst över
-  en aktiv hand, även vid omstart. Föreslagen bordssession och dess bytesgräns
-  måste definieras; en spelares nya inloggning får inte ge bordet en annan version.
-- Offentliga händelser publiceras först efter commit med återläsbar sekvens.
-  Dolda kort stannar serverägda. Presentation använder exakt publicerat material;
-  tal-/video-/workerfel får inte påverka saldo eller utfall. Medielistan är kandidater.
+**Verifierade skillnader som portningen måste hantera:**
 
-Kevin behöver precisera vilka insatsoperationer som måste accepteras samtidigt,
-vilken gemensam rund-/sko-/sessionsgräns som kan byta konfiguration och vilka
-idle-/moving-lipsync-förlopp samt fallbackbeteenden som måste bevaras. Orkestratorn
-sammanför svaren med mains kontrakt. O01 blir inte VERIFIED innan K01 är klar,
-båda ägare har stämt av kontrakten och nödvändiga beteendeprov finns.
+| Nuvarande Kevin-beteende | Föreslagen kontraktsriktning |
+| --- | --- |
+| Bara act kräver exakt globalversion; andra operationer använder fas/ägarskap. Ett sent kommando kan anlända i nästa rundas samma fas. | Separera snapshotversion från insatsfönster-/rund-/turidentitet. Tillåt samtidiga insatser på egna boxar inom samma öppna fönster; avvisa försenade kommandon till annat fönster. Rättighets- och saldokontroll sker server-side i transaktionen. |
+| seen/advance körs före requestId-kontrollen; en retry kan driva tidsövergång/audit och returnerar aktuell snapshot. | Spara stabilt kommandoresultat under (roomId, actorId, commandId), avvisa ändrad input och håll aktuell snapshot separat. Skilj tidsdrivna övergångar från kommandoåterspelning så att sidoeffekter får en egen beständig identitet. |
+| limitsFor läses under drift; efter deadline kan nya gränser stoppa advance före både state och clear. Klientens länkspråk kan skriva bordsspråk även vid senare poll. | Admin äger gemensam configVersion, inklusive språk. Frys versionen innan insatsfönstret öppnas och genom avräkningen; lagra den över omstart. Ny publicering väntar till nästa fönster. Redan accepterade insatser ändras/rensas inte som bieffekt. En spelares länk eller login får aldrig skriva bordets konfiguration. |
+| onPlan anropas före databasens COMMIT; rollback tar inte tillbaka startat workerarbete. | Lagra presentationshändelsen atomiskt med kommandot och leverera först efter commit med återläsbar sekvens och dubblettskydd. |
+| Läppatchar söker inom ±48 tidsindex vid 24 fps och har slutrute-/VILA-reservval. Gamla indexnycklar rensas inte vid patchbyte. | Bevara exakt dealer/källbildruta/ljud/bank och planversion. Andra bildrutor kräver verifierad ekvivalens och separat ljudtidskontrakt. Rensa ersatta index och spärra tysta/äldre versioner; saknad giltig patch ger kropp/ljud utan munlager. Tidsfönstret är inte bevis för synk. |
+
+Kodreferenser: K server/shared-table.mjs:207–232,329–346; public/shared-table.js:70–72;
+public/lip-layer.js:53–60,74–90,143–161; server/rorlig-lipsync.mjs:260–268.
+Kodriskerna är läsverifierade, inte observerade i en ny körning. SQLite-skrivlåset
+gäller databasfilen även mellan processer; dess serialisering får inte antas gälla
+automatiskt när lagringen flyttas till Postgres.
+
+**Gemensamma gränser och kvarvarande beslut:**
+
+- Mains auth bestämmer actor, operatör och tillåtet rum. Kommandot bär roomId,
+  commandId, configVersion samt relevant fönster-/turidentitet. Detaljer för
+  expectedVersion och state-/tick-transaktioner måste avtalas med båda ägarna.
+- Behåll mains globala saldo. Rum, saldo, avräkning, kvitto, idempotens och audit
+  committas atomiskt. Föreslagen låsordning är rum → sorterade spelar-ID → global
+  auditkedja; O01 inventerar alla skrivvägar med J07:s ägare innan beslut.
+  J07 verifierar implementationen. Dolda kort och utfall förblir serverägda.
+- Rumsstate inklusive shoe proof, auditpayload och separat proof bevaras som text.
+  Nyckelordning/numeriska typer kräver kompatibilitetsprov; rowid ersätts uttryckligen.
+  Studio-audit ersätter inte spelhashkedjan.
+- Bevara deterministisk lugn väntekedja, klippgräns vid hit/stand, tal/idle och
+  fortsatt kropp/ljud vid sena eller saknade patchar. Utan worker används befintliga
+  godkända inspelade videosteg; väntekedjan filtreras fortfarande till calm/andas.
+  vilaMap byter patchkarta, inte kroppens uppspelning. Exakt VILA-ekvivalens och
+  kompatibel worker krävs innan sådana reservval kan accepteras.
+- Nödvändiga kontraktsprov: parallella insatser; sent kommando i ny runda;
+  retry över deadline med stabilt resultat och inga dubbla effekter; rollback utan
+  presentation; publicering med liggande insatser och omstart; språk vid join/poll;
+  omordnad patchavkodning, ersatta index, tysta rutor, sen version och workerbortfall.
+  Riktade isolerade prov räcker för kontraktsarbete; visuell läppsynk kräver separat
+  acceptans och inga nya GPU-prov är beställda här.
+
+Kevin behöver rätta underlagets beskrivningar av retry/audit, limitlåset och
+patchidentitet samt stämma av fönstergräns och kommandoidentiteter med orkestratorn.
+O01 blir VERIFIED först när K01 är klar, båda ägare har stämt av kontrakten och
+nödvändiga beteendeprov finns. Media är fortsatt kandidater, inte importgodkända.
 
 ### O02 — Oberoende samprov
 

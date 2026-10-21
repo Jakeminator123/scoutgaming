@@ -44,9 +44,13 @@ fast sko ersätter båda tysta testreturerna. Ingen funktionell GitHub-CI finns;
 Ingen av Kevins PR:er är mergad.
 O01 förbereds med ett uttryckligt ej låst kontraktsförslag i masterplanen:
 main-global wallet, beständig idempotens, gemensam bordskonfiguration,
-textbevarat shoe proof och händelser efter commit. Kevin behöver precisera
-samtidiga insatser, versionsbytesgräns och idle/lipsync-fallback. O01 inventerar
-skrivvägar/lås före kontraktsbeslut; J07 verifierar senare implementationen.
+textbevarat shoe proof och händelser efter commit. Kevins O01-svar på
+24cacc5a2830b265604624a3ee371e8a3f4ab2a7 är nu kodgranskade av två underagenter
+och orkestratorn. Förslaget preciserar fönster-/turidentitet, konfiguration fryst
+före insatsfönstret och verifierad frame-/audioidentitet. Kodgranskningen fann
+advance före idempotens, onPlan före commit och gamla patchindex; inga nya
+runtimeprov har körts. Kevin rättar beskrivningarna och stämmer av förslaget.
+O01 inventerar även mains skrivvägar/lås; J07 verifierar senare implementationen.
 Det startar ingen runtimeport, DDL eller mediaimport och ger inga poäng.
 Testloggar är lästa, inte omkörda;
 GPU-server-SHA/latensorsak är obestyrkta och mediaurval ännu inte beslutat.

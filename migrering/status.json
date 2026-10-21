@@ -113,9 +113,11 @@
       "pr": "https://github.com/Jakeminator123/scoutgaming/pull/311",
       "reviewer": null,
       "evidence": [
-        "Förberedande, ej låst kontraktsförslag i MASTERPLAN.md: auktoritet, kommando/idempotens/version, main-global wallet, föreslagen transaktion/låsordning, textbevarat shoe proof och committade presentationsevent. Underlag main 15988f32fd572c453d2189502acbe324c4566815 och Kevin 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; ingen implementation eller runtimeacceptans."
+        "Förberedande, ej låst kontraktsförslag i MASTERPLAN.md: auktoritet, kommando/idempotens/version, main-global wallet, föreslagen transaktion/låsordning, textbevarat shoe proof och committade presentationsevent. Underlag main 15988f32fd572c453d2189502acbe324c4566815 och Kevin 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; ingen implementation eller runtimeacceptans.",
+        "Kevin levererade O01-svar på 24cacc5a2830b265604624a3ee371e8a3f4ab2a7: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319431310. Två oberoende underagenter och orkestratorn har läst relevanta källor på 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; inga runtime-/GPU-prov.",
+        "Kodgranskningen verifierar advance före idempotens, onPlan före commit, limitändringslås även före clear, klientens språkstyrning vid poll samt heuristiska patchval och kvarvarande index. MASTERPLAN.md föreslår separat kommandoresultat/snapshot, fönster-/turidentitet, config frysning före insatsfönster, händelser efter commit och verifierad frame-/audioidentitet. Förslag, inte låst kontrakt."
       ],
-      "blocker": "K01:s kvarvarande motsägelse på matrisrad107 samt Kevins svar om samtidiga insatser, gemensam konfigurationsgräns och idle/lipsync-fallback återstår. Inga kontrakt låsta och inga poäng tilldelade."
+      "blocker": "K01:s matrisrad107 återstår. O01-svaren är mottagna/kodgranskade; Kevins beskrivningar av retry/audit, limitlåset och patchidentitet behöver rättas. Fönster-/turidentitet, configgräns, main-skrivvägar/lås och riktade kontraktsprov återstår före gemensam låsning."
     },
     {
       "id": "J03",
