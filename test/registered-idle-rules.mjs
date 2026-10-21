@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createEmptyProject, defaultPresentationLane, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { createRegisteredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
+import { createRegisteredIdlePolicy, registeredIdleInventory, registeredIdlePolicy } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import { selectRegisteredIdleRule } from '../services/game/presentation-selection.mjs';
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
 import { captureFrozenPresentation } from '../packages/presentation/server/frozen-presentation-capture.mjs';
@@ -148,4 +148,17 @@ test('rule offers expire, obey speech gates and are invalidated by scene revisio
   playing.controller.presented(clip.playId);
   assert.equal(playing.controller.clearOffers().clip.videoId, uuid(2), 'mode change does not cut already started media');
   assert.equal(playing.complete().videoId, uuid(1));
+});
+
+
+test('Astrid legacy idle policy resolves through the same accessor without leaking to another dealer',()=>{
+  const f=fixture();f.project.idlePolicy={...structuredClone(f.policy),familyId:'astrid/idle.ready/ready'};
+  assert.equal(registeredIdlePolicy(f.project,'astrid'),null,'no unrelated default policy without its bound base');
+  f.project.lines.push({...structuredClone(f.line),dealerId:'astrid'});
+  assert.equal(registeredIdlePolicy(f.project,'astrid'),f.project.idlePolicy);
+  assert.equal(registeredIdlePolicy(f.project,'linnea'),f.policy);
+  assert.equal(registeredIdlePolicy(f.project,'nora'),null);
+  const own={...structuredClone(f.project.idlePolicy),variants:[]};
+  f.project.dealerIdlePolicies.push({dealerId:'astrid',policy:own});
+  assert.equal(registeredIdlePolicy(f.project,'astrid'),own,'explicit dealer policy has precedence');
 });

@@ -27,7 +27,7 @@ const publicVideo = item => item ? {
 } : null;
 
 function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
-  const choice = selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode:body.mode},{inventory});
+  const choice = selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode:body.mode,requestId},{inventory});
   return choice && typeof requestId === 'string' ? {...choice,requestId,mode:body.mode,version:body.version,presentationContext:body.presentationContext ?? null,
     expiresAt:new Date(Date.now()+30000).toISOString()} : null;
 }

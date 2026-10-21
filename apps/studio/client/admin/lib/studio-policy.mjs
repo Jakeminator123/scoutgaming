@@ -27,6 +27,15 @@ export function studioIdleEventRule(project,dealerId,videoId) {
     [0,...rule.conditions.map((_,i)=>i+1)].map(i=>`idle.behavior.${rule.id}.${i}`)))?.id??'';
 }
 
+export function applyStudioIdleVariantPolicy(project,inventory,dealerId,slot,videoId,patch) {
+  const scope=studioPolicyContext(project,inventory,dealerId,slot);
+  if(scope.kind!=='idle'||!scope.policy?.variants.some(row=>row.videoId===videoId))fail('Välj ett kopplat beteendeklipp.');
+  const definition=scope.line.variants.find(row=>row.id!==scope.line.baselineVariantId&&row.videoGenerationId===videoId&&row.triggerIds.length);
+  if(patch.use==='rules'&&!definition)return applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId,'turn');
+  return applyStudioIdlePolicy(project,inventory,dealerId,slot,{...scope.policy,
+    variants:scope.policy.variants.map(row=>row.videoId===videoId?{...row,...patch}:row)});
+}
+
 export function applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId,ruleId) {
   const scope=studioPolicyContext(project,inventory,dealerId,slot), rule=IDLE_EVENT_RULES.find(row=>row.id===ruleId);
   if(scope.kind!=='idle'||!rule||!scope.policy?.variants.some(row=>row.videoId===videoId)
@@ -46,7 +55,7 @@ export function applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId
     if(!existing)draft.triggers.push(trigger);
     return trigger.id;
   });
-  Object.assign(variant,{videoGenerationId:videoId,selection:{rules:true,random:false,model:false},priority:50});
+  Object.assign(variant,{videoGenerationId:videoId,selection:{rules:true,random:false,model:false},priority:50+rule.conditions.length});
   const policy=structuredClone(scope.policy);
   Object.assign(policy.variants.find(row=>row.videoId===videoId),{use:'rules',automatic:null});
   return applyStudioIdlePolicy(draft,inventory,dealerId,slot,policy);

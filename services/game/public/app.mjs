@@ -521,7 +521,7 @@ async function tableCommand(op, extra = {}) {
   if (op !== 'state') probeClient?.activity();
   if (!player) await loadPlayer();
   if (!player) throw new Error('Cannot connect to the game server');
-  if (op !== 'state') localPresentation?.state({ action: true });
+  if (op !== 'state') localPresentation?.state({ action: true, command: op });
   if (op !== 'state') updatePoseState({ dealerPose: 'action', actionOwner: `table-${op}`, idlePresented: null }, 'table-command-started');
   const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), dealer: DEALER.key, ...extra,
     ...(op==='start'&&nextDealChat&&movingSpeechAvailable?{movingSpeech:{context:chatPresentationContext(entrySelection,DEALER.key),sessionRevision:clientSessionRevision}}:{}) };
@@ -551,8 +551,9 @@ async function tableCommand(op, extra = {}) {
       });
     }
   }
+  const previousVersion = tableVersion;
   tableVersion = out.version;
-  if (op !== 'state') void localPresentation?.observeEvents?.(out.presentation);
+  if (op !== 'state') void localPresentation?.observeEvents?.(out.presentation,{command:op,previousVersion});
   setMovingSpeechAvailable(out.movingSpeechAvailable===true);
   updatePoseState({ roundRevision: String(tableVersion),
     ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');

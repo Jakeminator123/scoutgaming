@@ -6,7 +6,7 @@ import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse } from '../../../../
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import { selectionFor } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
 import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
-import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, applyStudioIdleEventRule, studioIdleEventRule, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
+import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
 
 export type StudioPolicyPanelProps = {
   project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; selectedVideoId?:string; selectedVariantId?:string; blocked:boolean;
@@ -89,9 +89,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
           {!policy.variants.length&&<p className="text-[11px] text-sg-muted">Inga variationer i schemat.</p>}
           {policy.variants.map(item=><IdleVariant key={item.videoId} item={item} label={label(item.videoId)} rule={studioIdleEventRule(project,dealerId,item.videoId)}
             onRule={rule=>edit(()=>applyStudioIdleEventRule(project,inventory,dealerId,slot,item.videoId,rule))}
-            onChange={patch=>patch.use==='rules'&&!studioIdleEventRule(project,dealerId,item.videoId)
-              ?edit(()=>applyStudioIdleEventRule(project,inventory,dealerId,slot,item.videoId,'turn'))
-              :idle({...policy,variants:policy.variants.map(row=>row.videoId===item.videoId?{...row,...patch}:row)})}
+            onChange={patch=>edit(()=>applyStudioIdleVariantPolicy(project,inventory,dealerId,slot,item.videoId,patch))}
             onRemove={()=>idle({...policy,variants:policy.variants.filter(row=>row.videoId!==item.videoId)})}/>)}
         </>:<p className="mb-3 text-xs text-sg-muted">Välj ett registrerat grundloopsklipp för att skapa schemat.</p>}
         <div className="mt-3 flex flex-col gap-2 border-t border-sg-line pt-3">

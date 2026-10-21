@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSeedProject,addVariant,validateProject,allowedPathDescriptors } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { kindForEvent } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { clipSlots } from './connected-studio.mjs';
-import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage,applyStudioIdleEventRule,studioIdleEventRule,IDLE_EVENT_RULES } from './studio-policy.mjs';
+import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage,applyStudioIdleVariantPolicy,applyStudioIdleEventRule,studioIdleEventRule,IDLE_EVENT_RULES } from './studio-policy.mjs';
 import {selectRegisteredIdleRule} from '../../../../../services/game/presentation-selection.mjs';
 
 const ids=[1,2,3,4,5,6].map(number=>`${String(number).repeat(8)}-${String(number).repeat(4)}-4${String(number).repeat(3)}-8${String(number).repeat(3)}-${String(number).repeat(12)}`);
@@ -229,4 +229,33 @@ test('existing policy panel opens the selected take and never silently edits a d
   line.variants.at(-1).priority=62;
   const exact=render(ids[1],{...own,selectedVariantId:line.variants.at(-1).id});
   assert.ok(exact.includes(`value="${line.variants.at(-1).id}" selected=""`));assert.match(exact,/value="62"/);
+});
+
+
+test('switching a custom idle rule off and on preserves its predicates, selection and priority',()=>{
+  const f=fixture('idle.ready','',false);
+  let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
+  project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],1000,false);
+  project=applyStudioIdleVariantPolicy(project,f.inventory,f.dealerId,f.slot,ids[1],{use:'rules'});
+  const variant=project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId==='idle.ready').variants.at(-1);
+  variant.triggerIds=['policy.test.trigger'];variant.priority=37;variant.selection.model=true;
+  const before=structuredClone(project.lines);
+  for(const use of ['manual','automatic','openclaw']){
+    const policy=project.dealerIdlePolicies[0].policy;policy.variants[0].use=use;
+    policy.variants[0].automatic=use==='automatic'?{averageEveryMs:20000,jitterMs:0,cooldownMs:10000,maxPerMinute:2}:null;
+    project=applyStudioIdleVariantPolicy(project,f.inventory,f.dealerId,f.slot,ids[1],{use:'rules',automatic:null});
+    assert.deepEqual(project.lines,before);assert.equal(studioIdleEventRule(project,f.dealerId,ids[1]),'');
+  }
+});
+
+test('specific settlement presets win over generic ones and equal candidates share selection',()=>{
+  const f=fixture('idle.ready','',false);f.inventory.videos.forEach(video=>video.dealer=f.dealerId);
+  let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
+  for(const [id,rule] of [[ids[1],'settle'],[ids[2],'win'],[ids[3],'win']]){
+    project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,id,1000,false);
+    project=applyStudioIdleEventRule(project,f.inventory,f.dealerId,f.slot,id,rule);
+  }
+  const sourceEvent={type:'settle',dealerTotal:18,dealerBlackjack:false,hands:[{box:3,outcome:'win'}]};
+  const selected=new Set(Array.from({length:20},(_,i)=>selectRegisteredIdleRule({project,dealerId:f.dealerId,sourceEvent,mode:'rules',requestId:'round-'+i},{inventory:f.inventory}).videoId));
+  assert.deepEqual(selected,new Set([ids[2],ids[3]]));
 });
