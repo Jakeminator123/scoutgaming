@@ -50,6 +50,16 @@ kvitteras efter återhämtning. Runtime9/9 på Windows Node24.21.0; lokal logg `
 Tre underagenter hade skilda implementation/granskningsuppgifter. Ingen faktisk
 spelklient, live-mail, provider, media eller produktionsdatabas ingick.
 
+**CI-rättning PR #332:** körning `39685636720` stannade först på fyra oregistrerade
+testfiler; installations-/byggstegen hoppades därför över och gav efterföljande
+modulfel. De tre direkta K02/K03/runtimeproven ingår nu i full regressionens
+`gameplay/shared-blackjack`. SQL-filen klassas som exporterad hjälpfil och körs
+fortsatt av den befintliga isolerade PostgreSQL-runnern i CI. Produktkod och
+provassertioner är oförändrade. Samma orphan-repro går från fyra fel till 534
+kandidater/0 orphans; de nyregistrerade proven plus orphan-verktygets prov passerar
+56/56, 0 skips, med Node24.21.0. Loggar: `arkiv/2026-10-22/j07/ci-fix-{before,after,tests}.log`.
+Ingen ny fullbuild, SQL-körning eller fjärr-CI har gjorts för denna registerrättning.
+
 ## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
