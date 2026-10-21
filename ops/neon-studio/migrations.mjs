@@ -53,6 +53,11 @@ const sources = Object.freeze([
   // the persisted policy can only be raised after this version is applied.
   { version:'018', file:'018-gpu-daily-budget-40.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['gpu_budget_policies'] },
+  // Jakob's 21 October decision: grant ceiling 45 → 150 USD and daily ceiling
+  // 40 → 60 USD. Deployment-optional for the same reason as 018; grants still
+  // need their own funded amendment after this version is applied.
+  { version:'019', file:'019-trial-budget-ceilings.sql', deploymentOptional:true, tables:[], indexes:[],
+    fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments','gpu_budget_policies'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -100,8 +105,10 @@ function statements(sql) {
 }
 
 function validateSql(source, sql) {
-  if (source.version === '015' || source.version === '017') {
-    const parts = statements(sql), expected = movingCapacityAlters(source.version === '015' ? 40000000 : 45000000);
+  if (source.version === '015' || source.version === '017' || source.version === '019') {
+    const parts = statements(sql), expected = source.version === '019'
+      ? [...movingCapacityAlters(150000000), budgetAlter(60000000)]
+      : movingCapacityAlters(source.version === '015' ? 40000000 : 45000000);
     if (parts.length !== expected.length || parts.some((part,index) => part.replace(/\s+/g,' ') !== expected[index])) refuse('studio_migration_invalid_source',422);
     return;
   }
@@ -249,24 +256,37 @@ async function inspect(client, migrations, objects) {
   // project this exact constraint back to its historical 10 USD definition, and
   // only ledgered 018 may project it back to 011's 20 USD definition.
   const evolved = installed.some(row => row.version === '011'), raised = installed.some(row => row.version === '018');
-  let historical = objects, budgetPrevious = objects;
+  const widened = installed.some(row => row.version === '019');
+  let historical = objects, budgetPrevious = objects, dailyBeforeWidening = objects;
   if (evolved) {
     const matches = objects.constraints.filter(row => row.table_name === 'gpu_budget_policies' && row.name === budgetConstraint);
-    if (matches.length !== 1 || matches[0].definition !== budgetDefinition(raised ? 40000000 : 20000000)) refuse('studio_migration_structure_mismatch');
+    if (matches.length !== 1 || matches[0].definition !== budgetDefinition(widened ? 60000000 : raised ? 40000000 : 20000000)) refuse('studio_migration_structure_mismatch');
     const project = ceiling => ({ ...objects, constraints: objects.constraints.map(row => row === matches[0] ? { ...row, definition: budgetDefinition(ceiling) } : row) });
     historical = project(10000000);
     if (raised) budgetPrevious = project(20000000);
+    if (widened) dailyBeforeWidening = project(40000000);
   }
-  // Ledgered 017 projects only its three exact CHECKs back for 015's proof.
-  let movingCapacityPrevious = objects;
-  if (installed.some(row => row.version === '017')) {
+  // Ledgered 019 projects only the three exact moving CHECKs back for 017's proof.
+  let movingCapacityCurrent = objects;
+  if (widened) {
     const replacements = new Map();
     for (const {table,column,name} of movingCapacityChecks) {
       const matches = objects.constraints.filter(row => row.table_name === table && row.name === name);
+      if (matches.length !== 1 || matches[0].definition !== movingCapacityDefinition(column,150000000)) refuse('studio_migration_structure_mismatch');
+      replacements.set(matches[0],{...matches[0],definition:movingCapacityDefinition(column,45000000)});
+    }
+    movingCapacityCurrent = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
+  }
+  // Ledgered 017 projects only its three exact CHECKs back for 015's proof.
+  let movingCapacityPrevious = movingCapacityCurrent;
+  if (installed.some(row => row.version === '017')) {
+    const replacements = new Map();
+    for (const {table,column,name} of movingCapacityChecks) {
+      const matches = movingCapacityCurrent.constraints.filter(row => row.table_name === table && row.name === name);
       if (matches.length !== 1 || matches[0].definition !== movingCapacityDefinition(column,45000000)) refuse('studio_migration_structure_mismatch');
       replacements.set(matches[0],{...matches[0],definition:movingCapacityDefinition(column,40000000)});
     }
-    movingCapacityPrevious = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
+    movingCapacityPrevious = {...movingCapacityCurrent,constraints:movingCapacityCurrent.constraints.map(row => replacements.get(row) ?? row)};
   }
   // Ledgered 015 projects only its three exact CHECKs back for 014's proof.
   // Historical ledger rows and source checksums are never rewritten.
@@ -287,7 +307,7 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
     movingHistorical = { ...movingPrevious, constraints:movingPrevious.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
   }
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '017' ? movingCapacityCurrent : row.version === '018' ? dailyBeforeWidening : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
   return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply };
 }
 

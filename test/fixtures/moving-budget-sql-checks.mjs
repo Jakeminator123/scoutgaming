@@ -68,6 +68,21 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       WHERE environment_id='qa_initial_017' AND session_id=$1`,[exact.rows[0].session_id]),error=>error.code==='23514');
     await client.query('ROLLBACK TO SAVEPOINT binding_capacity45');
     assert.deepEqual(await snapshot(),priorBindings,'SQL boundary checks leave all prior budget history unchanged');
+    // 019 (21 October 2026): grant capacity 150 USD and daily ceiling 60 USD, data untouched.
+    const before019=await snapshot();
+    await client.query(migrations.find(row=>row.version==='019').sql);
+    assert.deepEqual(await snapshot(),before019,'019 changes no grant, reservation, policy, data or ledger row');
+    assert.deepEqual(await checks(),oldChecks.map(row=>({...row,definition:row.definition.replace('15000000','150000000')})));
+    const daily=await client.query(`SELECT pg_get_constraintdef(co.oid,true) AS definition FROM pg_constraint co JOIN pg_class c ON c.oid=co.conrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='croupier_studio' AND c.relname='gpu_budget_policies'
+      AND co.conname='gpu_budget_policies_daily_budget_micro_usd_check'`);
+    assert.equal(daily.rows.length,1);assert.ok(daily.rows[0].definition.endsWith('<= 60000000)'));
+    await insert(148800000,150000000);
+    for(const [previous,limit] of [[148800000,150000001],[150000001,150000002]]){
+      await client.query('SAVEPOINT invalid_capacity150');
+      await assert.rejects(insert(previous,limit),error=>error.code==='23514');
+      await client.query('ROLLBACK TO SAVEPOINT invalid_capacity150');
+    }
   } finally {try{await client.query('ROLLBACK');}finally{client.release();}}
 }
 
@@ -122,7 +137,8 @@ export async function runMovingDriftMigrationAfterBudgetSqlChecks({pool,restart}
   const capacityNames=new Set(['moving_speech_bindings_budget_limit_micro_usd_check',
     'moving_speech_budget_amendments_previous_limit_micro_usd_check','moving_speech_budget_amendments_budget_limit_micro_usd_check']);
   const capacity=before.constraints.filter(row=>capacityNames.has(row.name));
-  assert.equal(capacity.length,3);assert.ok(capacity.every(row=>row.validated&&row.definition.endsWith('<= 45000000)')));
+  // Optional 018/019 are applied with the required versions here; only 016 is deferred.
+  assert.equal(capacity.length,3);assert.ok(capacity.every(row=>row.validated&&row.definition.endsWith('<= 150000000)')));
   const applied=await applyStudioMigrations({pool,expectedTarget:beforePlan.target,confirm:true});
   assert.deepEqual(applied.appliedNow,['016'],'backfill executes the real016 DDL after committed017');
   assert.deepEqual(await snapshot(),before,'016 preserves all prior data, grants, reservations, columns and complete ledger rows');

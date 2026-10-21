@@ -239,6 +239,12 @@ tills den är applicerad. Appliceras med `node tools/check-migration-readiness.m
 policyraden med `journal.amendBudgetPolicy` och dess bekräftelse. Status för
 produktion står i `docs/JOHN-HANDOFF.md`.
 
+Migration 019 (`019-trial-budget-ceilings.sql`, 21 oktober 2026) vidgar på
+samma sätt grantens CHECK-gränser (moving_speech_bindings och
+moving_speech_budget_amendments) 45 → 150 USD och dygnstaket 40 → 60 USD;
+`deploymentOptional`, samma appliceringsväg. En befintlig grant kräver
+fortfarande sin egen finansierade amendment efteråt.
+
 GitGuardian: läsningen 18 oktober gav 2 öppna och 18 ignorerade incidenter.
 Platsmetadata är delvis ofullständig och historisk skanning har status too_large.
 Grön produkt-CI bevisar inte full säkerhetstäckning. Inga incidenter ändras här.
