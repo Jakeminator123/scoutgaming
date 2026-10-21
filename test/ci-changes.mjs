@@ -175,6 +175,42 @@ test('real PR merge diff detects an earlier code commit even when the final comm
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
 
+test('main uses the complete push range only for worker selection and stays strict on uncertain input', () => {
+  const root = mkdtempSync(join(tmpdir(),'croupier-main-worker-'));
+  const env = {...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null'};
+  for(const key of Object.keys(env))if(/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES)$/.test(key))delete env[key];
+  const git=(...args)=>execFileSync('git',args,{cwd:root,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+  const put=(path,text)=>writeFileSync(join(root,path),text),commit=message=>{git('add','.');git('commit','-qm',message);};
+  const complete={scope:'full',migration:true,moving:true};
+  try{
+    git('init','-q','-b','main');git('config','user.name','CI fixture');git('config','user.email','ci@example.invalid');git('config','core.hooksPath',join(root,'no-hooks'));
+    mkdirSync(join(root,'services','moving-gpu-worker'),{recursive:true});put('services/moving-gpu-worker/serverless.py','worker = 1\n');
+    put('app.mjs','export const version=1;\n');put('README.md','base\n');commit('base');const base=git('rev-parse','HEAD');
+    const eventPath=join(root,'.git','push-event.json');
+    const push=(before=base)=>{const head=git('rev-parse','HEAD');writeFileSync(eventPath,JSON.stringify({before,after:head}));
+      return {GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_SHA:head,GITHUB_EVENT_PATH:eventPath};};
+    put('app.mjs','export const version=2;\n');commit('unrelated product edit');
+    assert.deepEqual(ciSelection({cwd:root,env:push()}),{...complete,moving:false});
+    put('README.md','followup prose\n');commit('docs after code');
+    assert.deepEqual(ciSelection({cwd:root,env:push()}),{...complete,moving:false},'main regression and migration readiness remain full');
+    const shallow=join(root,'shallow');git('clone','-q','--depth=2',pathToFileURL(root).href,shallow);
+    assert.deepEqual(ciSelection({cwd:shallow,env:push()}),complete,'an unavailable batch base cannot skip the image');
+    rmSync(shallow,{recursive:true,force:true});
+    git('checkout','-qb','side',base);put('README.md','side branch\n');commit('unrelated history');const side=git('rev-parse','HEAD');git('checkout','main');
+    assert.deepEqual(ciSelection({cwd:root,env:push(side)}),complete,'a non-ancestor is not a push range');
+    const valid=push();
+    for(const changes of [{GITHUB_REF:'refs/heads/feature'},{GITHUB_EVENT_NAME:'workflow_dispatch'},{GITHUB_SHA:'f'.repeat(40)},{GITHUB_EVENT_PATH:join(root,'absent')}])
+      assert.deepEqual(ciSelection({cwd:root,env:{...valid,...changes}}),complete);
+    for(const payload of ['not JSON',JSON.stringify({before:'0'.repeat(40),after:valid.GITHUB_SHA}),JSON.stringify({before:base,after:'f'.repeat(40)}),JSON.stringify({before:valid.GITHUB_SHA,after:valid.GITHUB_SHA})]){
+      writeFileSync(eventPath,payload);assert.deepEqual(ciSelection({cwd:root,env:valid}),complete);
+    }
+    const previous=git('rev-parse','HEAD');put('services/moving-gpu-worker/serverless.py','worker = 2\n');commit('worker change');put('README.md','last commit is only prose\n');commit('docs after worker');
+    assert.deepEqual(ciSelection({cwd:root,env:push(previous)}),complete,'earlier worker changes in a batch cannot be hidden by its last commit');
+    git('rm','services/moving-gpu-worker/serverless.py');commit('remove worker source');
+    assert.deepEqual(ciSelection({cwd:root,env:push(previous)}),complete,'worker removals also require its image check');
+  }finally{rmSync(root,{recursive:true,force:true});}
+});
+
 test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped work', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
   const script = yaml.split('// Final gate script\n')[1]?.split('          NODE')[0]

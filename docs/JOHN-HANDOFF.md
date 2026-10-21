@@ -1,5 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
+## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
+
+Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
+vanlig kodändring kan återanvända installationslagret. En selektiv CI-kontroll
+bygger Linux-imagen, kontrollerar cacheträff efter en källändring och provar
+beroenden samt privata bootstrap-rättigheter utan nätverk.
+
+Main kör fortsatt full regression och produktionsledgergrind. Endast
+Moving-imagens ombygge väljs från GitHubs kompletta, verifierade pushintervall.
+Saknad historik, avvikande SHA, ogiltigt event och manuella körningar behåller
+ombygget. Ändrad eller borttagen worker-kod kan inte döljas av en senare
+dokumentationscommit. Lokalt passerar 174 fokuserade tester utan överhopp.
+Linux-bygget och cachekvittot körs i den aktuella pull requestens
+`Product container cache check`; Docker finns inte på denna Windows-värd.
+Ingen merge eller produktionsdriftsättning ingår i denna kvittens.
+
+Medie-/behörighetskontrakt och migrationsspåret är oförändrade.
+Bandbreddsbesparing är ännu inte verifierad; faktisk månadsbesparing måste
+mätas efter integration.
+
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
 
 På Jakobs beslut samlas tal under **Talade repliker** och tysta beteenden
