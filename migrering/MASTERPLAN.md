@@ -136,9 +136,76 @@ Den slutliga ordningen och publiceringskontrollen måste stämmas av med alla sk
 Orkestratorns 9/9 befintliga isolerade prov, 0 skip, verifierar mockade kontrakt för
 G → S, nekad låseskalering, gemensam klient, rollback och wallet/state/ledger/kvitto.
 Kommando och logg finns i status.json. Detta är inte ett faktiskt Postgres-raceprov
-och godkänner inte den föreslagna flerbordsordningen. Spelhashkedjans omfattning
-återstår: bara spelkommandon eller även övriga walletwriters; mains ledger är inte
-en sådan hashkedja.
+och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
+spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
+egna händelser; övriga walletwriters behåller mains ledger/audit.
+
+**O01-avstämning 6320082148 — läsgranskad, fortsatt olåst:**
+
+Kevin föreslår i [#312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6320082148)
+att K03-portarna tar den redan låsta SQL-klienten utan egna transaktioner/lås.
+Det är en gemensam arbetsriktning, ännu inte implementerat. J07 binder rå
+SQL-klient till adapters; K02/K03 använder avgränsade portar utan SQL, pool
+eller egen transaktionshantering. Klientinjektion får inte läcka databas-API
+in i den rena regelkärnan. Separat tick före varje kommando är däremot otillräckligt: kvittoåterspelning ska kunna avslutas
+utan att driva tick. Tick får egen beständig deadline-/händelseidentitet och
+oberoende körning; aktuell snapshot och kommandoresultat hålls åtskilda.
+
+| Kommandofamilj | Föreslagen giltighetsidentitet utöver actor/room/commandId och full inputfingerprint |
+| --- | --- |
+| bet, clear, undo, ready, doubleBets, allSeats, repeat | windowId; de tre sista saknades i Kevins lista. |
+| insurance | roundId och fas; engångsbeslut per spelare. |
+| act | roundId, turnSeq, box, handIndex; turnSeq byts vid varje beslutspunkt, även hit/split. |
+| next | roundId och verifierat avslutad presentation. |
+| join, leave | Medlemskaps-/platsgeneration så att en fördröjd första leverans inte påverkar ett senare platsinnehav. |
+| pause | Global kontoeffekt, uttrycklig giltighet och fullständig mängd berörda rum/spelare före låsning; inte sent upptäckta lås efter A. |
+| refill | Mains demo-credit-policy, beständigt kvitto och intern walletport på samma klient; inget anrop som öppnar ny main-transaktion efter rum/P/A. |
+| language, state | Bordsspråk ägs av Admin enligt Jakobs mål. Eventuell privat UI-lokalisering är separat; poll/presence/tick behöver eget kontrakt och får inte skriva bordets språk. |
+
+Refill/kreditbelopp, ledger-id och kvitto måste committas tillsammans; mains
+befintliga server.logTx returnerar inget ledger-id via SQL RETURNING och är
+inte i sig den färdiga porten. För spelavräkning används samma interna writer
+utan en konkurrerande ledger; audit refererar det faktiskt committade ledger-id:t.
+
+Befintlig Kevin-audit länkar globalt föregående hash, inte per rum. Filtrerade
+rums-/rundrader bevisar inte hela kedjans kontinuitet; shoe proof gäller hela
+stängda skon. Bevara/definiera global verifiering och eventuell filtrerad vy
+separat. Ingen certifiering härleds av dessa kodprov. Påståendet varje
+spelarkommando måste preciseras: state, replay och avvisade kommandon skapar
+inte egna beständiga player.*-rader. Befintliga presentation.*-händelser får
+inte försvinna tyst när framtida auditomfattning bestäms.
+
+Underagent och orkestrator har läst fryst kod: Kevin server/shared-table.mjs:329,
+server/game-audit.mjs:19 och main services/game/server.mjs:209. Ingen ny runtime,
+DDL eller samtidighetskörning. Kevin kompletterar kommando-/tick-/auditmatrisen;
+root sammanväger mains fält/writers. K03/J07 behöver riktade negativa prov för
+sen första leverans, retry över deadline, atomisk refill och global auditkedja.
+
+**Adminfält på main — O01/J08:s läsverifierade återanvändningskarta:**
+
+Granskad på main15988f32 av jakob_plan; orkestratorn har kontrollerat centrala
+kontrakt/writers. Detta är inventering, inte accepterat funktionsurval eller
+implementerad rundbunden configVersion. Befintlig paketrevision räcker inte
+ensam för att bestämma när nya värden börjar gälla i ett pågående spel.
+
+| Kandidat | Faktiskt stöd och införandebeslut |
+| --- | --- |
+| Språk per bord | Nytt rums-/publiceringsfält. Befintlig en/sv-validering i apps/studio/lib/studio-admin-accounts.mjs:117 gäller launch-JWT, inte bordsspråk. Admin ska äga gemensamt språk; klientlokalisering hålls separat. |
+| Logga/placering | Ingen aktiv motsvarighet funnen i granskade Admin-writers. packages/operators/contracts/branding.mjs:2 tillåter bara table/background/dealer/color i roomOverrides. Nytt fält kräver validator och konsument, inte extra rå-JSON. |
+| Insatsnivåer | Ny Admin/publiceringskoppling. services/game/shoe-game.mjs:52 och games/roulette/rules.mjs:5 använder hårdkodade validatorer. Tillåtna värden och verkan per insatsfönster behöver avtalas. |
+| Rundtimers | Nytt kontrakt; presentation-room.mjs:5 saknar timerfält. Timer/deadline måste vara serverägd och beständig, inte en fristående UI-nedräkning. |
+| Lipsync-worker och nyckelreferenser | Återanvänd miljöscopad moving-drift: off/saving/warm, profileId, expectedRevision och commandId; kontrakt moving-drift.mjs:9, writer moving-drift-admin.mjs:42. Detta är inte en färdig per-rums-knapp och ger inget mandat till betald drift. |
+| RNG shoe-proof-rapport | Ny port av skobeviset; befintlig studio-admin-readouts.mjs:20 ger skostatistik och certificationVerified:false. Visa bara tillåtna bevis efter stängd sko, bevara råtext och global auditgräns. |
+| Wallet rollback | Saknar motsvarande produktfunktion. Positiv demo-credit och SQL-rollback vid misslyckad transaktion är inte återföring av genomfört spel. Föreslås ligga senare och kräva uttryckligt produkt-/bokföringskontrakt. |
+| Dealer till avatarpaket/workerURL | Återanvänd exakt profil/video/hash/offset och bank-/profilrevision, studio-speech-panel.tsx:95 och dealer-speech-runtime.mjs:95. Fritt avatarpaket eller rå workerURL saknar likvärdigt kontrakt; använd validerad profilreferens. |
+| Djuplänk dealer/bord | Befintlig roomPlayPath i presentation-room.mjs:7 och serverval i game-entry-selector.mjs:76. Behåll autentiserad rum/paket/spel/dealer-validering; länken skriver ingen konfiguration. |
+
+Återanvänd scoped draft/review/publicering med revisionskontroll i
+apps/studio/lib/partner-branding-api.mjs:259 och atomisk rum/paket-writer i
+presentation-room-api.mjs:306. Gemensam mall får inte ersätta roomOverrides.
+J08 behöver explicit fält→validator→writer→fryst configVersion→spelkonsument;
+nya språk/limit/timer/logofält och ekonomisk återföring blir inte automatiskt
+accepterade bara för att de finns bland Kevins kandidater.
 
 **Gemensamma gränser och kvarvarande beslut:**
 
@@ -165,7 +232,7 @@ en sådan hashkedja.
   acceptans och inga nya GPU-prov är beställda här.
 
 Kevin behöver rätta underlagets beskrivningar av retry/audit, limitlåset och
-patchidentitet samt stämma av fönstergräns och kommandoidentiteter med orkestratorn.
+patchidentitet samt komplettera fönster-/kommando-/tickmatrisen enligt avstämningen ovan.
 K01 är klar som inventering. O01 blir VERIFIED först när båda ägare har stämt av kontrakten och
 nödvändiga beteendeprov finns. Media är fortsatt kandidater, inte importgodkända.
 

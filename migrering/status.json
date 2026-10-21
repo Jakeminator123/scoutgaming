@@ -60,16 +60,19 @@
       "stage": "E1",
       "title": "Avveckla ersatt Control-publicering",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "IN_REVIEW",
       "dependsOn": [
         "J01"
       ],
       "branch": "codex/admin-control-publication-j02",
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "head": "6748838e9194e0554fda060e869785599b890ac4",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/317",
+      "reviewer": "Codex-underagent plan_review och orkestrator (oberoende läsgranskning)",
       "evidence": [
-        "Jakob startade uttryckligen J02 med implementerare och oberoende granskare. Separat worktree från verifierade J01-head ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868; inga J02-poäng före verifierad leverans. Samordning: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319863155"
+        "Från verifierade J01 ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868. 38 J02-filer +155/-145: rooms/companies/operator SSR-filer borttagna; aktiv komponent/CSS/test flyttade till AdminPublicationPage; aktuella länkar och byggreferenser uppdaterade. Inga aktiva importer av de borttagna modulerna kvar enligt implementerarens, granskarens och orkestratorns sökningar.",
+        "Implementerarens Node24.21.0-körningar: 383 unika fokuserade fall gröna efter smala omkörningar; ordinarie hook303/303,0skip (överlappande). Studio-typkontroll och komplett build inklusive klienttyper passerar;78 byggspår;0orphan av530. Kommandon och loggar i J02-worktreens arkiv/2026-10-21/j02-ui/reproduce.txt, routing-publication.log, preview-final.log, next-navigation-final.log, commit.log och studio-build.log.",
+        "J01-browserflöde via /control/rooms och /studio/control/lanes utan skips: spara/publicera/återöppna, ny distinkt signerad N1-session, konflikt och mobil. GET/HEAD-kontext provad med native/unified av/på och /studio; skrivningar/next-action omdirigeras inte. Syntetiska konton/minneslagring, inte lösenordslogin, PostgreSQL-durabilitet eller produktion.",
+        "Oberoende slutgranskning av plan_review på exakt6748838e9194e0554fda060e869785599b890ac4: inga blockerande fynd; isolerad J02-acceptans styrkt av diff och slutloggar. Granskaren har inte kört om testerna. Orkestratorn har själv läst ändrad routing/aktiva konsumenter och slutloggar. GitHub CI återstår: https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991. Ingen merge; PR317 innehåller också J01 tills PR313 integreras."
       ],
       "blocker": null
     },
@@ -120,7 +123,9 @@
         "Kevin levererade O01-svar på 24cacc5a2830b265604624a3ee371e8a3f4ab2a7: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319431310. Två oberoende underagenter och orkestratorn har läst relevanta källor på 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; inga runtime-/GPU-prov.",
         "Kodgranskningen verifierar advance före idempotens, onPlan före commit, limitändringslås även före clear, klientens språkstyrning vid poll samt heuristiska patchval och kvarvarande index. MASTERPLAN.md föreslår separat kommandoresultat/snapshot, fönster-/turidentitet, config frysning före insatsfönster, händelser efter commit och verifierad frame-/audioidentitet. Förslag, inte låst kontrakt.",
         "Orkestratorns egna 9/9 isolerade baselineprov, 0 skip, på oförändrade main-produktfiler 15988f32fd572c453d2189502acbe324c4566815: node --test --test-concurrency=4 --test-name-pattern=\"Postgres SQL|Postgres facade|memory transaction|nested Studio|nested scoped|native project PUT|Postgres command|failed ledger|a stale request\" test/postgres-persistence.mjs test/postgres-native-table.mjs. Volta Node24.21.0, CROUPIER_POSTGRES_QA_CONFIG ej satt, endast mockpoolar. Logg arkiv/2026-10-21/o01-main-contracts/focused-main-contracts.log i planworktreen. Bevisar befintliga kontrakt, inte verklig PostgreSQL-samtidighet eller framtida delat bord.",
-        "Läsverifierad karta över mains aktiva skrivvägar på 15988f32: native blackjack/roulette använder spelar-radlås; deposit/currency/partner/admin använder globalt G→spelare; Studio publicering G→Studio→operatör. Separat auditlås krävs för att undvika föreslagen P→G-inversion; råa gamePool-transaktioner delar inte automatiskt fasadens AsyncLocalStorage. Kartan och öppna valuta-/konto-/idempotens-/auditgränser finns i MASTERPLAN.md. Ingen verklig deadlock eller Postgres-race har körts."
+        "Läsverifierad karta över mains aktiva skrivvägar på 15988f32: native blackjack/roulette använder spelar-radlås; deposit/currency/partner/admin använder globalt G→spelare; Studio publicering G→Studio→operatör. Separat auditlås krävs för att undvika föreslagen P→G-inversion; råa gamePool-transaktioner delar inte automatiskt fasadens AsyncLocalStorage. Kartan och öppna valuta-/konto-/idempotens-/auditgränser finns i MASTERPLAN.md. Ingen verklig deadlock eller Postgres-race har körts.",
+        "Kevin-avstämning6320082148 om injicerad SQL-klient och spelavgränsad audit läsgranskad av kevin_plan och orkestrator mot frysta källor. O01 preciserar självständig idempotent tick, full kommando-/generationsmatris, refill på samma klient/ledger-id och global hashkedja. Befintlig kedja kan inte fullt verifieras med bara filtrerade rumsrader; hela stängda skon krävs för shoe proof. Förslag, inte implementation, runtimeacceptans eller låst kontrakt. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6320082148",
+        "Nio Admin-kandidater kartlagda mot oförändrad main15988f32 av jakob_plan; centrala kontrakt/writers lästa av orkestratorn. MASTERPLAN skiljer befintliga scoped publicerings-/drift-/profil-/launchkontrakt från nya språk/limit/timer/logo/proof-fält och saknad produktfunktion för walletåterföring. Inga nya kontrakt godkända och ingen implementation eller runtimekörning; O01 fortsatt IN_PROGRESS."
       ],
       "blocker": "O01-svaren och mains skrivvägar är kodgranskade. Kevin rättar retry/audit-, limitlås- och patchbeskrivningarna. Ägaravstämning av fönster-/turidentitet, configgräns, auditomfattning, valuta/kontostängning över delade händer, slutlig lås-/klientordning samt riktade nya kontraktsprov återstår."
     },

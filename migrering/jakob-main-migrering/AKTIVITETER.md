@@ -33,9 +33,11 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 **Etapp:** E1. **Beroenden:** J01.
 **Mål:** den ersatta publiceringsfunktionen har en aktiv UI-implementation och en Admin-ingång.
 
-- [ ] Kartlägg konsumenter till `/control/rooms`, `/control/companies` och publiceringsdelarna i Control. Flytta aktuella länkar och återhämtningslänkar till rätt Admin-kontext.
-- [ ] Separera gemensamma tjänster från det pensionerade skalet. Kontrollera särskilt att Admin fortfarande använder delar av `ControlLanesPage`; flytta nyttig kod innan dess gamla fil tas bort.
-- [ ] Lista berörda bokmärken och deras beslutade destination. En eventuell redirect ska vara explicit och får inte montera den gamla UI-ytan.
+- [x] Kartlägg konsumenter till `/control/rooms`, `/control/companies` och publiceringsdelarna i Control. Flytta aktuella länkar och återhämtningslänkar till rätt Admin-kontext.
+- [x] Separera gemensamma tjänster från det pensionerade skalet. Kontrollera särskilt att Admin fortfarande använder delar av `ControlLanesPage`; flytta nyttig kod innan dess gamla fil tas bort.
+- [x] Lista berörda bokmärken och deras beslutade destination. En eventuell redirect ska vara explicit och får inte montera den gamla UI-ytan.
+**Lokal acceptans:** granskad på `6748838e9194e0554fda060e869785599b890ac4`, [PR317](https://github.com/Jakeminator123/scoutgaming/pull/317). Punkterna ovan är verifierade; aktiviteten är IN_REVIEW tills GitHub CI passerar. Ingen merge eller produktionsacceptans.
+
 **Startfiler:** `apps/studio/app/control/rooms/page.tsx`, `companies/page.tsx`, `operator-page.tsx`, `apps/studio/components/control-lanes-page.tsx`, `presentation-room-create.tsx`, `packages/navigation/admin-workspace-routes.mjs`.
 **Radera:** ersatta Control-routes/komponentdelar, deras exklusiva CSS och tester som enbart låser den gamla publiceringslayouten; ta bort motsvarande build- och dokumentreferenser.
 **Klart/verifiera:** noll aktiva konsumenter till de raderade modulerna; J01:s flöde fungerar från Admin och godkända gamla länkar; obehörig åtkomst är fortsatt blockerad. Kör berörda route-, navigations- och publiceringstester samt orphan-kontroll.

@@ -26,13 +26,20 @@ J01 är VERIFIED och bidrar med 5 procentenheter. Tillsammans med K01 är
 Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
 Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
 
-J02 är nu uttryckligen startad med implementerare och oberoende granskare på
-codex/admin-control-publication-j02 från J01-head ovan. Control-publiceringens
-aktiva komponenter/länkar flyttas till Admin; gamla bokmärkesmål ska provas
-med och utan nativeStudio samt /studio-prefix. Ingen J02-verifiering ännu.
-O01:s main-skrivvägar/lås granskas parallellt. Orkestratorn har kört 9/9
-befintliga isolerade transaktionsprov utan DB-anslutning, 0 skip; det bevisar
-nuvarande mockade kontrakt, inte framtida flerbordssamtidighet i Postgres.
+J02 finns i [PR #317](https://github.com/Jakeminator123/scoutgaming/pull/317),
+codex/admin-control-publication-j02 på
+6748838e9194e0554fda060e869785599b890ac4 från verifierade J01-head ovan.
+Tre gamla publicerings-SSR-filer är raderade; aktiv komponent/CSS/test och
+aktuella länkar har Admin-namn/mål. Gamla bokmärken omdirigeras med kontext
+med och utan native/unified samt /studio-prefix; skrivningar omdirigeras inte.
+Implementerarens 383 fokuserade prov och 303 överlappande commitprov passerar,
+liksom browserflöde utan skips, Studio-typer/build och orphancheck. Oberoende
+granskning av fryst head: inga blockerande fynd. Loggar är lästa, inte omkörda.
+J02 är IN_REVIEW: GitHub CI återstår; 10% totalt och E1 50% gäller fortsatt.
+Ingen merge eller produktionsacceptans. Kvitto/kommandon: status.json[J02].
+O01:s main-karta är separat läsgranskad; orkestratorns 9/9 befintliga isolerade
+transaktionsprov utan DB-anslutning, 0 skip, styrker mockade kontrakt,
+inte framtida flerbordssamtidighet i Postgres.
 
 [Masterplan](../migrering/MASTERPLAN.md) och [beräknad status](../migrering/STATUS.md)
 följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
@@ -62,6 +69,14 @@ O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
 partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
 Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
 valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
+Kevin-avstämning6320082148 är läsgranskad: injicerad SQL-klient är gemensam
+arbetsriktning. Kvar att precisera: tick utan replayeffekter, full
+kommando-/platsgeneration, atomisk refill och faktisk global auditverifiering.
+Den befintliga hashkedjan är global; filtrerad rumsdata räcker inte som bevis.
+Mains logTx behöver explicit ledger-id-kontrakt för porten. Inga nya runtimeprov.
+Nio Admin-kandidater är läskartlagda: scoped publicering, driftprofiler och
+rumslänkar kan återanvändas; språk/limit/timer/logo/proof behöver nya avtalade
+fält. Walletåterföring är ingen befintlig funktion. Ingen kandidat är automatiskt godkänd.
 Det startar ingen runtimeport, DDL eller mediaimport och ger inga poäng.
 Testloggar är lästa, inte omkörda;
 GPU-server-SHA/latensorsak är obestyrkta och mediaurval ännu inte beslutat.
