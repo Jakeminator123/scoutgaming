@@ -139,7 +139,7 @@ test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
       assert.match(html, /<h1>Guide &amp; hjälp<\/h1>/);
       assert.doesNotMatch(html, /dealer=astrid/);
     } else {
-      assert.match(html, /href="\/control\/clips\?dealer=astrid"/);
+      assert.match(html, /href="\/admin\/dealer-studio\?dealer=astrid"/);
       assert.equal(activityProps.streamView.dealerId, 'astrid');
       navigationUrls.length = 0;
       activityProps.streamView.onOpenEvent('speak.goodluck', { eventId: 'speak.goodluck', blocked: false });

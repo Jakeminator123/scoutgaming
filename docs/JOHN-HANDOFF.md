@@ -643,7 +643,13 @@ saknar alla elva avvecklade J03-verktygswrappers; Admin/API finns kvar.
 Orphan534/0, diffkontroll grön. Lokala beroendejunctions och traces67/44
 är lokalt byggbevis. Loggar: arkiv/2026-10-21/j03-clips/.
 Ordinarie hook och slutlig oberoende testreview redovisas i PR/status.json.
-Aktuell main644b565 är separat läst, inte integrerad i stacken.
+PR329 CI39666861547 föll på gamla Clips-adresser, saknad URL-global
+i två VM-fixtures och ett transportprov som delade en 50 ms deadline.
+Endast fem testfiler rättade; transport har egen budget medan deadline
+fortfarande kräver 504 vid 50 ms. 115/115 fokuserade och ordinarie hookprov,
+0 skips, Node24.21.0. Root har granskat hela deltat; ingen produktändring.
+Loggar: arkiv/2026-10-21/j03-clips/ci-fix.log och ci-fix-commit.log.
+Ny fjärr-CI återstår. Aktuell main4ca1ba8 är läst, inte integrerad i stacken.
 Control-administration, catch-all och authflöden återstår. Hela J03 är
 IN_PROGRESS, total15%; ingen merge, drift-, databas- eller mediaändring.
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01

@@ -22,7 +22,7 @@ vm.runInNewContext(transformSync(navigationSource, {
   filename: 'studio-navigation.tsx',
   jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
   module: { type: 'commonjs' },
-}).code, { module: navigationModule, exports: navigationModule.exports,
+}).code, { module: navigationModule, exports: navigationModule.exports, URL,
   require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name) });
 const source = readFileSync(new URL('./studio-administration.tsx', import.meta.url), 'utf8');
 const compiled = transformSync(source, {
