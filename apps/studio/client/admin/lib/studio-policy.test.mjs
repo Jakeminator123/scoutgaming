@@ -130,7 +130,7 @@ test('usage exposes exact automatic timing, manual status and unverified OpenCla
 });
 
 test('usage reports actual predicates and priority even when the default display selection resolves an alternative',()=>{
-  const f=fixture('transition.shoe','to-shoe',false);
+  const f=fixture('reveal.dealer','dealer-hole',false);
   f.project=addVariant(f.project,f.dealerId,f.slot.eventId,'Egen tagning');
   const line=f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===f.slot.eventId),variant=line.variants.at(-1);
   const trigger=f.project.triggers.find(row=>row.id==='policy.test.trigger');
@@ -141,6 +141,18 @@ test('usage reports actual predicates and priority even when the default display
   line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=ids[1];
   const exact=studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[1],variant.id);
   assert.match(exact.rules.join(' '),/Prioritet 38/);assert.doesNotMatch(exact.rules.join(' '),/Standard\/reserv/);
+});
+
+test('saved shoe choices do not claim automatic playback for either direction',()=>{
+  for(const situation of ['to-shoe','from-shoe']){
+    const f=fixture('transition.shoe',situation,false);
+    const line=f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===f.slot.eventId);
+    line.variants[0].videoGenerationId=ids[0];
+    const usage=studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[0]);
+    assert.equal(usage.configured,true);
+    assert.match(usage.rules.join(' '),/Automatisk uppspelning.*ännu inte inkopplad/);
+    assert.equal(studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[1]).configured,false);
+  }
 });
 
 test('usage keeps exact frequency and unavailable alternatives share as standard fallback',()=>{

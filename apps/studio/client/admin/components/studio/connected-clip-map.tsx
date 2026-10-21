@@ -204,12 +204,17 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
   }
   function edit(project:StudioProject) { setData(current => current && ({...current,project})); setError(''); setNotice(base&&JSON.stringify(project)===JSON.stringify(base)?'Alla lokala ändringar är återställda.':'Ändringen finns i utkastet. Spara när du har granskat berörda rum.'); }
   const updateInventory=useCallback((inventory:VideoInventory)=>setData(current=>current&&({...current,inventory})),[]);
-  async function link(slot:ClipSlot, id:string) {
+  async function link(slot:ClipSlot, id:string, asAlternative=false) {
     if (!data || !dealer) return;
     await work(async signal => {
       const video = clipsForSlot(data.inventory,dealer.id,slot).find(row => row.id === id);
       const durationMs = slot.eventId === 'idle.ready' && video ? await readIdleVideoDuration(video.previewUrl,{signal}) : undefined;
-      edit(bindClip(data.project,data.inventory,dealer.id,slot,id,{variantId:variants[slot.id],durationMs}));
+      const next=bindClip(data.project,data.inventory,dealer.id,slot,id,{variantId:variants[slot.id],durationMs,asAlternative});
+      edit(next);
+      if(asAlternative){
+        const variantId=next.lines.find(row=>row.dealerId===dealer.id&&row.eventId===slot.eventId)!.variants.at(-1)!.id;
+        setVariants(current=>({...current,[slot.id]:variantId}));
+      }
     });
   }
   function stage(file:File,slot:ClipSlot) {
@@ -282,7 +287,7 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
       data:{group,slot,clips,library,boundId,usage,usageChanged,active:clipPanel&&activeGroupId===group.id,onOpen:()=>{if(openPanel('clip')){setActiveGroupId(group.id);setSettingsSlot(null);}},boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:clipVariantChoices(data!.project,data!.inventory,dealer!.id,slot),
         onSlot:id=>{if(!openPanel('clip'))return;setActiveGroupId(group.id);setCardSlots(current=>({...current,[group.id]:id}));setSettingsSlot(null);},onSettings:()=>{if(!openPanel(slot.eventId==='roulette.wheel-start'?'roulette-start':slot.game==='roulette'?'roulette-media':slot.sourceType==='speak'?'room':'policy'))return;setActiveGroupId(group.id);setSettingsSlot(slot);setStartVideoId(selectedId||boundId);setStartVariantId(variantId);},
         onSelect:id=>{if(!openPanel('clip'))return;setSelected(current=>({...current,[slot.id]:id}));},onVariant:id=>{if(!openPanel('clip'))return;setVariants(current=>({...current,[slot.id]:id}));setSelected(current=>({...current,[slot.id]:currentClipId(data!.project,dealer!.id,slot,id,data!.inventory)}));},
-        onBind:()=>{void link(slot,selectedId);},onUnbind:()=>{void work(async()=>{edit(validateProject(unbindRouletteClip(data!.project,dealer!.id,slot,selectedId)));});},onFile:file=>stage(file,slot)}};
+         onBind:asAlternative=>{void link(slot,selectedId,asAlternative);},onUnbind:()=>{void work(async()=>{edit(validateProject(unbindRouletteClip(data!.project,dealer!.id,slot,selectedId)));});},onFile:file=>stage(file,slot)}};
   });
   const previewCompositions=base?.lanes?.filter(row=>row.layers.dealer.allowed.includes(dealer?.id??''))??[];
   const previewComposition=previewCompositions.find(row=>row.id===(previewCompositionId||lane?.id));

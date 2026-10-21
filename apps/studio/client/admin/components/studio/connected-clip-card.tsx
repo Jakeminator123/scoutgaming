@@ -10,7 +10,7 @@ import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup, type C
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
   localPreviewUrl?:string; usage?:StudioClipUsage; usageChanged?:boolean; active?:boolean; onOpen?:()=>void;
   library?:ClipLibraryGroup[]; variants:{id:string;label:string;baseline?:boolean}[]; variantId:string; selectedId:string; onSelect:(id:string)=>void; onSlot:(id:string)=>void;
-  onVariant:(id:string)=>void; onBind:()=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onSettings:()=>void; };
+  onVariant:(id:string)=>void; onBind:(asAlternative?:boolean)=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onSettings:()=>void; };
 export type CardNode = Node<CardData, 'registeredClip'>;
 export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{data:CardData;settingsOpen?:boolean;active?:boolean}) {
   const [drag,setDrag]=useState(false);
@@ -61,7 +61,8 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
         {data.slot.sourceType==='speak'?<button disabled={data.busy} onClick={data.onSettings}>Talset</button>:<label><Upload size={12}/>{data.slot.localOnly?'Prova PNG lokalt':'Ladda upp'}<input aria-label={`${data.slot.localOnly?'Prova lokalt':'Ladda upp'} ${data.slot.id}`} type="file" accept={image?'.png,image/png':'.mp4,.webm,video/mp4,video/webm'} disabled={data.busy} onChange={event=>{const file=event.target.files?.[0];if(file)data.onFile(file);event.target.value='';}}/></label>}</div>}
       {wheelStart&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Kalibrera startfilm</button>}
       {selected&&!settingsOpen&&data.slot.game==='roulette'&&data.slot.eventId==='roulette.idle'&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Granska poser och inramning</button>}
-      {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onBind}>Koppla till utkast</button>}
+      {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind()}>Koppla till utkast</button>}
+      {selected&&data.slot.eventId==='transition.shoe'&&!data.slot.family&&data.boundId&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind(true)}>Lägg till som variant</button>}
       {selected&&!wheelStart&&data.slot.game==='roulette'&&!intake&&data.boundIds.includes(selected.id)&&data.onUnbind&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onUnbind}>Ta bort koppling</button>}
       <section className="studio-card-rule" aria-label={`Körregel ${data.slot.id}`}><h3>Körregel · projektutkast</h3>
         {(data.usage?.rules??['Välj ett klipp för att se dess körregel.']).map(rule=><p key={rule}>{rule}</p>)}

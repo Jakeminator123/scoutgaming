@@ -10,6 +10,7 @@ import { layerAssetPath } from '../../../../../packages/presentation/contracts/l
 import { speechSlotStandard, speechSlotVariantId } from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { recordedSpeechIdentity } from '../../../../../packages/presentation/contracts/recorded-speech.mjs';
 import { gateRecordedSpeechSelection } from '../../../../../packages/presentation/runtime/recorded-speech-selection.mjs';
+import { clipVariantChoices, clipLibraryForSlot } from './studio-layout.mjs';
 const id1='11111111-1111-4111-8111-111111111111', id2='22222222-2222-4222-8222-222222222222';
 test('room choices in another tab preserve drafts while same-tab navigation retains its leave guard',()=>{
   const event={button:0,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false},anchor={target:'',hasAttribute:()=>false};
@@ -229,12 +230,61 @@ test('foreign media and non-authoritative event/slot data cannot create destinat
   assert.throws(()=>bindClip(f.project,foreign,'astrid',f.slots[0],id1),/passar inte/);
   assert.deepEqual(f.project,original);
 });
-test('transition lines still fail closed rather than replace a neighbouring exact slot',()=>{
-  for(const [eventId,situations]of [['transition.shoe',['to-shoe','from-shoe']]]){
-    const f=nativeSlots(eventId,situations),first=bindClip(f.project,f.inventory,'astrid',f.slots.find(row=>row.situation===situations[0]),id1),before=structuredClone(first);
-    assert.throws(()=>bindClip(first,f.inventory,'astrid',f.slots.find(row=>row.situation===situations[1]),id2),/talgruppen|servervillkor/);
-    assert.deepEqual(first,before);
-    assert.equal(currentClipId(first,'astrid',f.slots.find(row=>row.situation===situations[1]),undefined,f.inventory),'');
+test('both shoe standards survive save/reload without replacing an existing opposite baseline',async()=>{
+  for(const existing of ['to-shoe','from-shoe']){
+    const f=nativeSlots('transition.shoe',['to-shoe','from-shoe']);
+    const line=f.project.lines.find(row=>row.dealerId==='astrid'&&row.eventId===f.event.id);
+    line.variants[0].videoGenerationId=existing==='to-shoe'?id1:id2;
+    const before=structuredClone(f.project),other=f.slots.find(slot=>slot.situation!==existing);
+    const draft=bindClip(f.project,f.inventory,'astrid',other,existing==='to-shoe'?id2:id1);
+    assert.deepEqual(f.project,before);
+    const changed=draft.lines.find(row=>row.dealerId==='astrid'&&row.eventId===f.event.id);
+    assert.deepEqual(changed.variants[0],line.variants[0]);
+    assert.deepEqual(changed.variants[1].selection,{rules:false,model:false,random:false});
+    assert.deepEqual(draft.triggers,before.triggers);
+    const validateBindings=createStudioProjectBindings({videoRegistry:async()=>f.inventory});
+    let saved=f.project;
+    const client=createStudioClient({fetchImpl:async(url,options)=>{
+      if(options.method==='PUT'){
+        saved=JSON.parse(options.body).project;await validateBindings(saved);
+        saved.revision='shoe.saved.2';return Response.json({project:saved});
+      }
+      return Response.json(url.endsWith('/catalog')?{source:'registered',administration:{revisions:{project:saved.revision}}}:url.endsWith('/project')?{project:saved}:f.inventory);
+    }});
+    await client.save(draft);const loaded=await client.load();
+    for(const [index,slot]of f.slots.entries()){
+      assert.equal(currentClipId(loaded.project,'astrid',slot,line.baselineVariantId,loaded.inventory),slotIds[index]);
+      assert.deepEqual(configuredClipIds(loaded.project,'astrid',slot,undefined,loaded.inventory),[slotIds[index]]);
+      assert.deepEqual(clipLibraryForSlot(loaded.project,loaded.inventory,'astrid',slot).find(group=>group.id==='standard').clips.map(video=>video.id),[slotIds[index]]);
+    }
+  }
+});
+
+test('each shoe direction keeps its own standard and alternatives without borrowing the neighbour',async()=>{
+  const f=nativeSlots('transition.shoe',['to-shoe','from-shoe','to-shoe','from-shoe']);
+  let project=f.project;
+  assert.throws(()=>bindClip(project,f.inventory,'astrid',f.slots[0],id1,{asAlternative:true}),/standardklipp/);
+  for(const [index,slot]of f.slots.entries())project=bindClip(project,f.inventory,'astrid',slot,slotIds[index]);
+  const alternatives=[];
+  for(const [index,slot]of f.slots.entries()){
+    project=bindClip(project,f.inventory,'astrid',slot,slotIds[index+2],{asAlternative:true});
+    const variantId=project.lines.find(row=>row.dealerId==='astrid'&&row.eventId===f.event.id).variants.at(-1).id;
+    alternatives.push(variantId);
+    assert.throws(()=>bindClip(project,f.inventory,'astrid',slot,slotIds[index+2],{asAlternative:true}),/redan kopplat/);
+  }
+  await createStudioProjectBindings({videoRegistry:async()=>f.inventory})(project);
+  for(const [index,slot]of f.slots.entries()){
+    assert.equal(currentClipId(project,'astrid',slot,undefined,f.inventory),slotIds[index]);
+    assert.equal(currentClipId(project,'astrid',slot,alternatives[index],f.inventory),slotIds[index+2]);
+    assert.deepEqual(configuredClipIds(project,'astrid',slot,undefined,f.inventory),[slotIds[index],slotIds[index+2]]);
+    assert.ok(clipVariantChoices(project,f.inventory,'astrid',slot).some(row=>row.id===alternatives[index]));
+    assert.ok(!clipVariantChoices(project,f.inventory,'astrid',slot).some(row=>row.id===alternatives[1-index]));
+    assert.throws(()=>bindClip(project,f.inventory,'astrid',slot,slotIds[index+2],{variantId:alternatives[1-index]}),/annat exakt fack/);
+    assert.throws(()=>bindClip(project,f.inventory,'astrid',slot,slotIds[1-index]),/passar inte/);
+    const before=structuredClone(project),rebound=bindClip(project,f.inventory,'astrid',slot,slotIds[index+2]);
+    assert.equal(currentClipId(rebound,'astrid',slot,undefined,f.inventory),slotIds[index+2]);
+    assert.equal(currentClipId(rebound,'astrid',f.slots[1-index],undefined,f.inventory),slotIds[1-index]);
+    assert.deepEqual(project,before);
   }
 });
 

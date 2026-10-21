@@ -1,5 +1,27 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: separata skonfack i Admin — 21 oktober 2026
+
+`Till skon` och `Från skon` delar händelsegrupp, men ska behålla separata
+standardklipp och egna alternativ. Den tidigare sparfunktionen vägrade koppla
+en andra riktning när gruppens standard redan hörde till den första.
+Admin sparar nu den andra riktningen som ett separat val i befintligt format,
+utan att ersätta den första. **Lägg till som variant** behåller standarden och
+lägger till det valda klippet endast i sitt fack. Den befintliga gemensamma
+variantgränsen, N1-kontrollen och revisionskontrollen behålls.
+
+Lokalt verifierat: båda riktningarna genom sparning/återläsning och serverns
+mediekontroll, separata alternativ, byte av ett standardval utan grannändring
+och avvisning av fel fack: 59 fokuserade tester gröna, inklusive Admin-knappen.
+Admin- och Studio-typkontroll passerar. Ingen databasmigrering eller medieuppladdning krävs.
+Driftsättning och skarp sparning återstår. Automatisk infogning av övergångarna
+i spelet är fortfarande inte inkopplad; Admin säger detta uttryckligen.
+
+Skarpt läst 21 oktober: `in_vila_till_redo`
+(`d8817df6-77ee-4cf4-b2f4-0cbad4e38201`) finns och visades VILA → REDO,
+men kunde inte kopplas. `ut_redo_till_vila`
+(`9c2c2285-e80b-42c3-acee-8682276e47d7`) är redan kopplad och ska bevaras.
+
 ## Dragan: varför svaret visas som text — läsdiagnos 19 oktober 2026
 
 Jakob såg ”Dragans röstvideo saknas. Svaret visas som text.” i produktion
