@@ -665,7 +665,7 @@ var redan /lobby. Endast förväntad adress rättades; före 1/1 fel, efter
 10/10 i hela filen, 0 skip. Rum/bolag/dealer och separat provspelsretur
 prövas fortsatt. Ingen produktändring. Loggar:
 arkiv/2026-10-22/j04/pr335-footer-{before,after,commands}.log.
-Ordinarie commit-hook och ny fjärr-CI redovisas vid leverans.
+Ordinarie rättningshook passerar 10/10,0skip. Fjärr-main64e4c680a045eb3aed92043032fdbaa35e666359 integrerades utan konflikt; dess produktträd är identiskt med redan ärvda PR331/471549a8. Ny fjärr-CI krävs på integrationshead före PR335-merge.
 
 Browsern använder riktiga lobbykomponenter med syntetiska publicerade paket,
 syntetiska kontosvar och en isolerad launchmottagare; det är inget faktiskt
