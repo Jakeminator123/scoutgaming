@@ -6,7 +6,7 @@
     "main": "15988f32fd572c453d2189502acbe324c4566815",
     "backupBranch": "jakob-gren",
     "kevinBranch": "kevin-merge-admin",
-    "kevin": "c4818f51dab1b003811905fafb65ba59ad81ed4a"
+    "kevin": "5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc"
   },
   "stages": [
     {
@@ -37,13 +37,16 @@
       "stage": "E1",
       "title": "Tydligare publicering i Admin",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [],
-      "branch": null,
+      "branch": "codex/admin-publication-j01",
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
+      "evidence": [
+        "Jakob startade uttryckligen J01 med underagenter 2026-10-21; separat worktree från main 15988f32fd572c453d2189502acbe324c4566815. Detta är startbevis, inte slutförd leverans.",
+        "Ansvar och gränser: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318061602"
+      ],
       "blocker": null
     },
     {
@@ -69,14 +72,18 @@
       "stage": "E1",
       "title": "Inventera den rensade Kevin-modulen",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_REVIEW",
       "dependsOn": [],
-      "branch": null,
-      "head": null,
+      "branch": "kevin-merge-admin",
+      "head": "5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc",
       "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "reviewer": "Codex-underagent kevin_plan (oberoende läsgranskning)",
+      "evidence": [
+        "Kevin-underlag, rapporterade test/GPU-resultat: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6317942648",
+        "Oberoende granskning: fyra klientfiler och två tester efter c4818f5; sju DDL-filer, 13 tabeller, sex triggrar, tre SQLite-standardfiler och minst nio SQL-konsumenter. 28 V1-raderingar verifierade; 1790 ljud-/videofiler kvar i trädet.",
+        "Öppna fynd och nästa ägare: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117"
+      ],
+      "blocker": "Versionsbunden beteende-/beroendematris, fullständiga SQL-konsumenter, exakt mediaurval och körloggar saknas; GPU-tal och väntelägestestets tidiga retur behöver förklaras."
     },
     {
       "id": "O01",

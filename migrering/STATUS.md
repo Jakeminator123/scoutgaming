@@ -22,9 +22,9 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 
 | ID | Aktivitet | Ansvar | Status |
 | --- | --- | --- | --- |
-| J01 | Tydligare publicering i Admin | jakob | TODO |
+| J01 | Tydligare publicering i Admin | jakob | IN_PROGRESS |
 | J02 | Avveckla ersatt Control-publicering | jakob | TODO |
-| K01 | Inventera den rensade Kevin-modulen | kevin | TODO |
+| K01 | Inventera den rensade Kevin-modulen | kevin | IN_REVIEW |
 | O01 | Lås kontrakt och funktionsansvar | orkestrator | TODO |
 | J03 | Avveckla resterande Control-ytor | jakob | TODO |
 | J04 | En spelkatalog via lobby | jakob | TODO |

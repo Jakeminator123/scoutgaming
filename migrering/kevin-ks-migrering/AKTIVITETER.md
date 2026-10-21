@@ -11,7 +11,7 @@
 
 | Beteckning | Källa och omfattning |
 | --- | --- |
-| K | [kevin-merge-admin vid c4818f51dab1b003811905fafb65ba59ad81ed4a](https://github.com/Jakeminator123/scoutgaming/tree/c4818f51dab1b003811905fafb65ba59ad81ed4a/kevin/croupier-scoutgg); alla K-sökvägar nedan är relativa till `kevin/croupier-scoutgg/` |
+| K | [kevin-merge-admin vid 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc](https://github.com/Jakeminator123/scoutgaming/tree/5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc/kevin/croupier-scoutgg); alla K-sökvägar nedan är relativa till `kevin/croupier-scoutgg/` |
 | M | Main vid `15988f32fd572c453d2189502acbe324c4566815`; M-sökvägar är relativa till reporoten |
 | Historik | `kevin-staging` är äldre analysunderlag, inte portningskälla. Mappnamnet `kevin-ks-migrering` ändrar inte detta. |
 

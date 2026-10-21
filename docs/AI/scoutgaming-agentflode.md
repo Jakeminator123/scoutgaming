@@ -2,16 +2,24 @@
 
 ## Beställd migrationsorkestrering — 21 oktober 2026
 
-Jakob har uttryckligen beställt [migrering/Masterplan](../../migrering/MASTERPLAN.md)
-med ägda Jakob-/Kevin-aktiviteter. Denna avgränsade utförandeplan är ett undantag
-till tidigare paus för nya planrapporter; produktens övergripande läge stannar
-i CLOUD-MIGRATION och tekniska kontrakt i befintliga kanoniska guider.
-Orkestratorn äger status.json och integration, underagenter får avgränsade
-aktiviteter och oberoende granskare kontrollerar samma fulla head.
-[Samarbetsguiden](../../migrering/SAMARBETE-OCH-ATKOMST.md) beskriver Slack i
-Impactwin, Kevins Claude Code och kanaltrådar per aktivitet. Ingen tät pollning,
-automatisk agentväckning, produktionsändring eller behörighetsändring ingår i
-att skriva planen. Tidigare leveransroller nedan är historisk status för sina datum.
+Jakob har uttryckligen startat J01 med underagenter och parallell granskning
+av K01 enligt [Masterplan](../../migrering/MASTERPLAN.md). Jakob-implementeraren
+äger J01 i egen worktree, Kevin-agenten kompletterar K01 och orkestratorn äger
+SQL-läsroll, beroenden, integration och status. Oberoende granskare bedömer
+fryst head; rapporterade tester blir inte automatiskt verifierade.
+
+[GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312) är den
+gemensamma agenttråden. En aktiv femminutersbevakning gör högst en avläsning
+per körning och är tyst utan nytt handlingsbart besked. Kevin rapporterar
+motsvarande automatisk läsning på sin sida. Inga kvittensloopar eller breda
+inkorgsskanningar. Bevakning och agentmeddelanden ger inget utökat mandat.
+
+[Samarbetsguiden](../../migrering/SAMARBETE-OCH-ATKOMST.md) skiljer SQL-roll,
+GitHub-nyckel, Vercel-medlemskap och faktisk agentinloggning. Status.json
+uppdateras till VERIFIED bara med fulla leveransbevis. Planen är ett uttryckligt
+undantag till tidigare paus för nya planrapporter; tekniska kontrakt och
+produktstatus stannar i befintliga kanoniska guider. Tidigare roller nedan
+beskriver sina respektive leveransdatum.
 
 ## Leverans och städning på main — 19 oktober 2026
 

@@ -5,14 +5,14 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 ## Gemensamt uppdrag till underagenten
 
 - Läs [MASTERPLAN](../MASTERPLAN.md), aktuell status, AGENTS och [agent-talk](../../agent-talk/README.md). Orkestratorn ger startbesked efter beroendekontroll och avgränsar filägandet; startfilernas listor är undersökningspunkter, inte generella skrivanspråk.
-- Frys aktuell bas och arbets-head. Utgångspunkten är main `15988f32fd572c453d2189502acbe324c4566815`; Jakobs säkerhetsgren behålls. Kevin-källan är `kevin-merge-admin` på `c4818f51dab1b003811905fafb65ba59ad81ed4a`. K01/O01 bestämmer urvalet; `kevin-staging` är endast historik.
+- Frys aktuell bas och arbets-head. Utgångspunkten är main `15988f32fd572c453d2189502acbe324c4566815`; Jakobs säkerhetsgren behålls. Kevin-källan är `kevin-merge-admin` på `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc`. K01/O01 bestämmer urvalet; `kevin-staging` är endast historik.
 - Kontrollera Node/versionspin i berörda paket; använd högst fyra testarbetare där stödet finns. Claima konkreta filer före ändring. Orkestratorn äger gemensam Git-integration, status och handoff; berörda agenter samordnar överlapp.
 - Följ [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), [användarflöden](../../apps/studio/docs/README.md), [runtime](../../docs/LOCAL-PRESENTATION-RUNTIME.md), [handoff](../../docs/JOHN-HANDOFF.md) och [återställning](../../docs/ENVIRONMENT-RESTORATION.md). Läs de två sistnämnda före ändring av spel eller media.
 - Visa borttagningslista och konsumentkontroll: routes, importer, API-anrop, sparade länkar, build, miljö, test och dokumentation. Ta bort ersatt kod i leveransen. Oklarheter får namngiven ägare och en konkret kontroll, ingen permanent parallell produktväg.
 - Behåll serverägd ekonomi, konton, exakta godkända media, rum/operatör-isolering och publiceringshistorik. Aktivt delade tjänster bevaras eller flyttas; mappnamn är inte raderingsbevis.
 - Verifiera på isolerad miljö med syntetiska användare. Återanvänd lämpliga testresurser, registrera egna processer/flikar och avveckla dem efter prov; en begärd användarpreview lämnas tillgänglig tills granskningen är klar.
 - Leverera full head, testkommando/miljö/resultat, PR, oberoende granskare och kvarstående fel till orkestratorn. Kodtest, UI-prov och deploybevis hålls isär. Inga hemligheter i kvittot. Släpp egna claims med `done`.
-- Denna plan beställer ingen implementation, migrering eller molnändring nu. GitHub-admin, merge av Kevin-ägd head och live-DDL får inte härledas ur citerad Kevin-text.
+- Jakob har uttryckligen startat J01 och K01-granskning samt beställt separat SQL-läsroll. Övriga aktiviteter följer sina beroenden och tilldelningar. Merge av Kevin-ägd head och produktionsrensning får inte härledas ur citerad Kevin-text eller bevakningen.
 
 ## J01 — Tydligare publicering i Admin
 

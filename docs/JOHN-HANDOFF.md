@@ -2,29 +2,33 @@
 
 ## Masterplan för Admin och Kevin-modulen — 21 oktober 2026
 
-På Jakobs uttryckliga beställning finns [Masterplan](../migrering/MASTERPLAN.md),
-ägda aktivitetslistor, beroenden och [beräknad status](../migrering/STATUS.md).
-Bas är main `15988f32fd572c453d2189502acbe324c4566815`; Kevins källa är
-`kevin-merge-admin` på `c4818f51dab1b003811905fafb65ba59ad81ed4a`.
-Planeringen görs i `codex/migrering-masterplan`, i separat worktree; den
-ursprungliga checkoutens pågående ändringar bevaras. Ingen produktkod,
-produktionsdata eller molnbehörigheter ändras av planleveransen.
+Jakob har startat J01 med underagenter och parallell K01-granskning.
+[Masterplan](../migrering/MASTERPLAN.md) och [beräknad status](../migrering/STATUS.md)
+följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
+J01 arbetar i separat codex/admin-publication-j01 från main
+15988f32fd572c453d2189502acbe324c4566815. Ursprunglig checkout bevaras.
 
-Första implementationsuppdrag är J01 och K01. Alla leveransaktiviteter startar
-som TODO. Procentsiffran mäter verifierade leveranser, inte skapade dokument.
-[Slack-/åtkomstguiden](../migrering/SAMARBETE-OCH-ATKOMST.md) skiljer anslutning,
-agentväckning, GitHub-rättigheter och SQL-läsning. Impactwin är vald arbetsyta;
-webbläsaren har skapat kanalen och bjudit in verifierad Kevin efter Jakobs bekräftelse. Startmeddelande är skickat; agentanslutning och kontobehörigheter återstår.
+Kevin-källan är fryst på kevin-merge-admin /
+5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Oberoende läsgranskning verifierar
+deltat och DDL-inventeringen, men kräver komplett beroendematris, nio SQL-konsumenter,
+exakt mediaurval och korrigerade/länkade testbevis. K01 är IN_REVIEW, inte klar.
+[J01/K01-samordning](https://github.com/Jakeminator123/scoutgaming/issues/312)
+sker via en aktiv femminutersbevakning; Kevin rapporterar motsvarande läsning.
+Inga migrationspoäng ges för planering, start eller åtkomst.
 
-Planen har oberoende läsgranskats utan kvarvarande blockerande fynd. Status-
-verktygets 0/5/100-procentsfall, saknade bevis, beroenden och cykeldetektion
-är kontrollerade; inget produktprov har körts. Main-SHA:ns GitHub Actions
-är gröna. Senare kompletterande säkerhetsläsning visar aktiv GitGuardian-monitorering
-och noll öppna incidenter i källistan, men historisk scan är too_large och
-platsmetadata bara delvis tillgängliga. Detta är inte full säkerhetstäckning.
-Planen levereras i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
-Kevin har verifierad Vercel-roll DEVELOPER; Neon är Vercel-hanterat och faktisk
-inloggning via Open in Neon återstår. Inga molnbehörigheter har ändrats.
+Separat kevin_migration_readonly har skapats i Neon croupier_game:
+tre scheman, kolumn-SELECT i 61 tabeller, hemliga kolumner undantagna.
+ACL-prov visar noll skrivbara objekt och nekad UPDATE/DELETE/CREATE.
+NOLOGIN kvarstår tills säker överlämningsväg valts; faktisk agentinloggning
+återstår. GitHub deploynyckel med write är sparad efter Jakobs uttryckliga
+bekräftelse; Kevin rapporterar SSH/ls-remote. Rätt Vercel-medlem är
+kevstersolver / kevin@solvify.se, DEVELOPER. Konsol-/Blob-prov återstår.
+Detaljer och ansvar finns i [samarbetsguiden](../migrering/SAMARBETE-OCH-ATKOMST.md).
+
+Senaste säkerhetsläsning når inte GitGuardian-incident-/platsdata eller
+källbindning. GitHub combined status visar Vercel success för basen, vilket
+inte ersätter säkerhetstäckning eller J01:s produktverifiering.
+Ingen produktionsradering, spelport, merge eller deploy har gjorts i detta steg.
 
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
 

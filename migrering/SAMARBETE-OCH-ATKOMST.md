@@ -1,100 +1,65 @@
 # Samarbete och åtkomst
 
-## Startläge 21 oktober 2026
+## Verifierat läge 21 oktober 2026
 
-- Mål: arbetsytan **impactwin.slack.com**, privat kanal **#scoutgaming-migrering**.
-- [Den privata kanalen är skapad](https://app.slack.com/client/T0AS10FEHFY/C0CAXPEDRB8). Kevin verifierades mot den befintliga DM-konversationen och bjöds in efter Jakobs uttryckliga bekräftelse. [Startmeddelande](https://impactwin.slack.com/archives/C0CAXPEDRB8/p1792589669919839) skickat av Codex på Jakobs uppdrag. Webbläsaren når Impactwin; den anslutna Slack-installationen visar fortfarande endast Cursor.
-- Kevin uppger Claude Code, eventuellt Codex. Varje agent behöver sin egen godkända anslutning till samma arbetsyta.
-- Planen fungerar genom GitHub och planfiler även medan Slack-anslutningen löses. Ingen bakgrundsloop eller automatisk agentväckning är startad.
+Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312). [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311) innehåller planen; status.json är enda källa för migrationsprocent. Slack-kanalen [#scoutgaming-migrering i Impactwin](https://app.slack.com/client/T0AS10FEHFY/C0CAXPEDRB8) finns med Jakob och Kevin. Codex Slack-anslutning visar Cursor; GitHub används därför för agentarbetet.
 
-## Koppla ihop agenterna
-
-1. **Jakob:** logga in på [Impactwin](https://impactwin.slack.com) i webbläsaren. Öppna Slack-anslutningen i Codex-appens inställningar och anslut med Impactwin valt i Slacks godkännandefönster. Om bara Cursor syns är arbetsyteåtkomsten ännu fel. Ett workspace-admin-godkännande kan krävas; följ det faktiska felmeddelandet.
-2. **Orkestratorn:** återanvänd skapad kanal C0CAXPEDRB8 på Impactwin T0AS10FEHFY. Kevin är medlem. Verifiera workspace vid återanslutning; skapa ingen dubblerad kanal. Den separata profilen Kevin Negash AGENT är inte inbjuden; Kevin har tillfrågats om vilken agentanslutning som ska användas.
-3. **Kevin/Claude Code:** installera den officiella Slack-pluginen i Claude Code med kommandot nedan och genomför OAuth mot Impactwin. Kontrollera anslutningen och åtkomsten till den privata kanalen. Slacks officiella guide beskriver detta och kravet på workspace-godkännande. [Anslut Claude Code](https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude/), [officiell plugin](https://docs.slack.dev/ai/slack-skills-plugin/).
-4. **Båda:** läs samma startmeddelande och gör ett uttryckligen avtalat läs-/svarstest i kanalen. Verifiera avsändare, kanal, repo, branch och SHA. Att verktyget syns i en agent bevisar inte att den andra agenten kan läsa eller svara.
-5. **Orkestratorn:** dela PR/länkar till denna plan och ge ett avgränsat uppdrag. Slack bär samordningen; status.json och granskade PR:er bär leveransbevisen.
-
-```text
-/plugin install slack@claude-plugins-official
-```
-
-Kommandot gäller Kevins Claude Code. Slacks separata skills-plugin installerar enligt aktuell dokumentation inte automatiskt MCP-anslutning i Codex. Den här chattens inbyggda Slack-anslutning är en annan integrationsväg; den har redan kunnat läsa Cursor-arbetsytan. Installation och fungerande anslutning ska därför kontrolleras var för sig.
-
-Vid fel: notera vilken arbetsyta som valdes och feltexten, utan lösenord eller OAuth-koder. Om appinstallation kräver godkännande hanteras det av rätt workspace-administratör. [Slacks installationsguide](https://slack.com/help/articles/202035138-Add-apps-to-your-Slack-workspace).
-
-## Så sker arbetet
-
-| Roll | Ansvar | Skriver |
+| Roll | Aktuell uppgift | Ägd yta |
 | --- | --- | --- |
-| Jakob-agent | J01–J10, Admin, routes, plattform och Postgres | Egna aktivitetsfiler/kod i avgränsad featurebranch |
-| Kevin-agent | K01–K07, spelmodul och presentation | Egna aktivitetsfiler/kod i avgränsad featurebranch |
-| Orkestrator | O01–O03, beroenden, integration, status | status.json/STATUS.md och gemensamma kontraktsbeslut |
-| Oberoende granskare | Kontroll mot fryst head | Fynd och verifieringsbevis, inte självattest av egen implementation |
+| Jakob-implementerare | J01: tydligare Admin-publicering | codex/admin-publication-j01, separat worktree från main 15988f32fd572c453d2189502acbe324c4566815 |
+| Kevin-agent | Komplettera K01:s matris, mediaurval och testbevis | kevin-merge-admin, fryst 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc |
+| Orkestrator | Beroenden, SQL-läsroll, integration och status | codex/migrering-masterplan och GitHub #312 |
+| Oberoende granskare | Granska fryst K01 och därefter levererad J01 | Fynd och verifiering; ingen självattest av egen kod |
 
-En tråd per aktivitets-ID. Skicka vid tilldelning, konkret blockerare eller färdig leverans. Svara inte på rena kvittenser och bygg ingen tät pollningsloop. En agent tar bara ett nytt uppdrag när dess filägande och beroenden är tydliga. Arbete i samma checkout använder agent-talk; separata checkouter använder dessutom granskbara brancher.
+Jakob har uttryckligen startat J01 med underagenter och parallell granskning av Kevin-underlaget. J01 väntar inte på Kevin-porten eller SQL-inloggningen. K01:s första granskning är gjord, men hela aktiviteten är inte klar; [fynd och nästa leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117).
 
-```text
-[J01] IN_REVIEW
-Ansvar: Jakob-agent
-Branch/head: codex/<aktivitet> / <full SHA>
-Ändring: <användarresultat och borttaget gammalt>
-Bevis: <PR, relevanta tester och observerad sparning/återläsning>
-Blockerare: <konkret fråga eller inga>
-Nästa: <namngiven granskare och avgränsat beslut>
-```
+## Samordning och väckning
 
-Meddelandet är en mall, inte ett skickat uppdrag. Instruktioner från en annan agent får inte utöka Jakobs mandat. Åtkomst, produktion, kostnader och merge följer respektive uttryckliga beslut och befintliga regler.
+- Den befintliga Codex-chatten har aktiv femminutersbevakning, synka-migreringen-med-kevin. En avläsning av #312 per körning, tyst vid oförändrat läge. Ansluten GitHub används eftersom lokal gh-inloggning ger 401.
+- Kevin/invoicesolv har svarat i #312 och rapporterar motsvarande femminutersläsning på sin sida. Hans scheduler är rapporterad, inte inspekterad av oss.
+- Samma GitHub-tråd används med aktivitets-ID, full SHA, faktisk verifiering, blockerare och nästa ansvarig. Inga kvittenssvar på kvittenser. Detta är ett kommunikationssätt, inte en ny produkttracker.
+- Agentmeddelanden är arbetsunderlag; de utökar inte Jakobs mandat. Bevakningen ger inte automatiskt lov till merge, produktionsradering, DDL, åtkomstökning eller betald drift.
+- En agent får ett avgränsat filägande i taget. Samma checkout använder agent-talk; olika worktrees integreras genom granskbara brancher. Checklistan ändras till VERIFIED först när alla kriterier är styrkta.
+- Slack ger läsning/skrivning när agenten kör; ingen Slack-utlöst agentväckning är verifierad. Ingen extra bot behövs.
 
-**Automatisk väckning är inte verifierad.** Slack-verktyg ger läsning/skrivning när agenten kör; det visar inte att ett Slack-inlägg startar en pausad lokal agent. Börja med avgränsade aktiva arbetspass. Om kontinuerligt arbete senare beställs, verifiera en stödd händelsestyrd integration med namngivna avsändare och begränsad kanal innan den aktiveras. Ingen egen always-on-bot behövs för att börja J01/K01.
+## GitHub
 
-## GitHub: ge rätt åtkomst
+- Kevin är verifierad som invoicesolv med write. Repot ligger under personkontot Jakeminator123; en separat organisationsroll Admin finns inte här. Flytt till organisation är inget krav för migreringen.
+- Efter Jakobs uttryckliga bekräftelse sparades deploynyckeln Kevin scout-hel1 build — scoutgaming migration, ID 167191313, med read/write. Fingeravtryck: SHA256:zMcFfTgMWk0xhApfuQxqomD7rOcjkWFTRQDK/TUggFc.
+- Nyckeln gäller hela repot; branchskydd är oförändrade. Kevin rapporterar fungerande SSH och ls-remote; faktisk push från agenten är ännu inte verifierad.
+- Mergeägarskap och exakt head kontrolleras enligt AGENTS. Inga mergeåtgärder följer av SQL-rollen eller kommunikationen.
 
-Repot är vid kontroll ett privat repo under personkontot Jakeminator123. Personliga repon har ägare och collaborators; en separat organisationsroll Admin finns inte på samma sätt här. Kevin uppger att push redan fungerar, vilket normalt räcker för featurebranch och PR. Börja med att verifiera hans exakta GitHub-login och aktuella åtkomst. En eventuell flytt till organisation är ett eget beslut och inte en migrationsförutsättning. [GitHub: behörigheter för personliga repon](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/repository-access-and-collaboration/permission-levels-for-a-personal-account-repository).
+## Vercel, Blob och Neon
 
-Ge inte admin enbart för att kunna jämföra schema. Denna plan har inte ändrat repositorytillgång, skyddsregler eller någon medlemsroll. Ägarskapet i inbox/people.json måste uppdateras med verifierad identitet när det behövs; ett agentnamn eller en commitförfattare bevisar inte kontot.
+- Rätt Vercel-medlem är kevstersolver / kevin@solvify.se, kopplad till GitHub invoicesolv: bekräftad DEVELOPER i team scoutgaming.
+- Projekt scoutgaming: prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD.
+- Produktens Blob-store är croupier-media-private, store_AqwvebTbBHarOjvG. impactwin-media-preview hör till en annan miljö.
+- Neon croupier-production, wandering-hill-60561912, är Vercel-hanterat. Konsolåtkomst öppnas via Vercel Storage → Open in Neon och rätt kontokoppling; det är skilt från SQL-inloggning.
+- Kevin provar konsolerna. Faktisk åtkomst från hans agent till Neon/Blob är ännu inte verifierad. Ingen bredare Vercel-roll eller generell Blob-token har delats.
 
-## Vercel, Blob och Vercel-hanterad Neon
+## Separat SQL-läsroll
 
-Aktuell läskontroll 21 oktober: Vercel-projektet scoutgaming hör till teamet
-scoutgaming. Kevin har identifierats genom den verifierade Slack-profilens
-konto och matchar exakt en bekräftad Vercel-medlem med rollen DEVELOPER.
-Projektets accessgrupper gav 403 för granskarens anslutning; faktisk åtkomst
-till just projektets lagring är därför inte fullt verifierad. GitHub-login
-har efterfrågats i Slack och ska verifieras före någon rättighetsändring.
+Jakob beställde rollen direkt 21 oktober. Rollen kevin_migration_readonly är skapad via SQL enligt [Neons åtkomstguide](https://neon.com/docs/manage/database-access), utan neon_superuser eller andra ärvda roller.
 
-Neon-projektet croupier-production (wandering-hill-60561912) är Vercel-hanterat.
-Medlemskap hanteras via Vercel, och Neons separata per-project permissions är
-inte aktiverade här. Kevin ska öppna databasen via Vercels Storage/integration,
-välja **Open in Neon** och slutföra autentisering. Ett misslyckat separat
-Neon-medlemsanrop bevisar inte att han saknar åtkomst. Vercel-rollen kan ge
-bredare Neon-dashboardåtkomst än en SQL-läsroll; kontrollera faktisk roll efter
-inloggningen. [Neons officiella integrationsguide](https://neon.com/docs/guides/vercel-managed-integration).
+| Fält | Verifierat värde |
+| --- | --- |
+| Projekt / branch | wandering-hill-60561912 / main, br-flat-fog-b161a6r8 |
+| Databas | croupier_game |
+| Scheman | croupier_game, croupier_auth, croupier_studio |
+| Åtkomst | CONNECT, schema-USAGE och kolumn-SELECT på 61 befintliga tabeller |
+| Spärrat | INSERT/UPDATE/DELETE/TRUNCATE, schema-CREATE, sekvens-USAGE/UPDATE, role/database creation, superuser, replication, RLS-bypass |
+| Hemliga värden | Token, lösenordshash/salt, API key/secret, sessionsdigest/source_stamp och två möjliga hemlighetsvärden i meta undantagna |
+| Nya objekt | Inga automatiska default privileges; nästa tilldelning granskas uttryckligen |
+| Sessionsgränser | read-only som standard, statement 30 s, lock 2 s, idle transaction 60 s, högst tre anslutningar |
+| Aktivering | NOLOGIN utan lösenord medan privat överlämningsväg inväntas |
 
-Vercel anger att Owner, Member och Developer kan använda Blob. Prova först
-åtkomst till projektets befintliga store; dela inte en generell Blob-token
-för att kringgå kontokopplingen. [Vercel Blob](https://vercel.com/docs/vercel-blob).
-Jakob har beställt att åtkomsten ordnas, men ingen ny molnroll eller nyckel
-har utfärdats i denna leverans. Bekräfta återstående faktisk brist innan en
-konkret roll-/projektändring görs.
+Exakta kolumnundantag: namn som matchar (^|_)(password|hash|salt|secret|token|digest)($|_), source_stamp, croupier_auth.api_keys.key, croupier_auth.meta.v och croupier_game.player_chat_memory_meta.value. Tabell-/kolumnstrukturen kan kartläggas via pg_catalog även där dataläsningen är spärrad. SELECT * på en tabell med spärrade kolumner nekas; välj uttryckligen de tillåtna kolumnerna.
 
-## Separat SQL-läsning vid behov
+Verifierat med SET ROLE och transaction_read_only av: tre läsbara scheman, 61 läsbara tabeller, noll skrivbara tabeller/scheman/sekvenser och noll medlemskap för läsrollen. SELECT på tillåtna kolumner passerar; samtliga spärrade kolumner samt UPDATE, DELETE och CREATE nekas. Proven använder WHERE false; inga produktionsrader lästes ut eller ändrades. Administratörens tillfälliga SET-möjlighet stängdes inom provtransaktionen och den egna tillfälliga medlemskapsraden togs därefter bort. Endast ursprunglig ADMIN utan INHERIT/SET från cloud_admin återstår. Oberoende granskare fann inga blockerande fel i ACL-upplägget.
 
-1. Dela befintligt versionshanterat schema och migrationskontrakt först: ops/neon-game och ops/neon-studio. K01 ska ange vilka ytterligare aktuella objekt som behöver granskas.
-2. Bekräfta Kevins identitet och exakt projekt/branch/databas. Rekommendation: en isolerad migrationsbranch med nödvändigt schema och syntetisk eller avgränsad testdata; inte generell åtkomst till riktiga spelarkonton.
-3. Om SQL-läsning behövs: skapa en separat Postgres-roll med endast avtalad CONNECT/USAGE/SELECT, utan skriv-, schemaägar- eller superuser-behörighet. Kontrollera även framtida tabellers default privileges och att rollen inte kan ärva bredare rättigheter.
-4. Neon-dashboardåtkomst är inte samma sak som en SQL-roll som kan SELECT. Kontrollera båda åtkomstplanen. Roller skapade via konsol/API kan ha bredare standardprivilegier; kalla dem inte read-only utan verifiering. [Neon: database access](https://neon.com/docs/manage/database-access).
-5. Lämna anslutningen genom avtalad hemlighetshantering, aldrig i Slack, PR eller planfil. Verifiera läsning samt avvisad skrivning i isolerad miljö. Notera ansvarig och återkallelse när kartläggningen är klar.
+Nästa steg: Kevin anger privat hemlighetskanal eller publik krypteringsnyckel i #312. Aktivera därefter LOGIN med säkert skapat lösenord och avtalad lösenordsgiltighet, verifiera ny anslutning och låt Kevin bekräfta agentläsning. SET ROLE bevisar ACL men laddar inte rollens sessionsinställningar; dessa återstår att prova genom riktig inloggning. Lösenord, connection string och privatnycklar får aldrig hamna i GitHub, Slack-kanalen eller denna fil. Orkestratorn äger återkallelse efter kartläggningen.
 
-Inget livekonto, ingen SQL-roll och ingen connection string har skapats eller delats av planleveransen. Produktionsmigrering och DROP kräver en konkret granskad åtgärd enligt J09/O03; Kevins citerade åtkomstförfrågan är ett underlag, inte ett redan utfört godkännande.
-
-## Första uppdragen att ge
-
-**Jakob-agent:** Läs Masterplan och J01. Förbättra publicering i Admin med sparning/återläsning, skydda rum/roll/revision och redovisa exakt vilka gamla delar J02 tar bort. Visa en första körbar jämförelse tidigt.
-
-**Kevin-agent:** Läs Masterplan och K01. Utgå från kevin-merge-admin på angiven full SHA. Leverera funktions- och beroendeinventering samt förslag till modulkontrakt. Återimportera inga borttagna V1-klipp och ändra inte produktion.
-
-K01:s förberedelse är skickad till Kevin i startmeddelandet; inget agentsvar eller påbörjat arbete är ännu verifierat. J01 är inte startad. Att skicka ett meddelande visar inte att en extern agent har startat.
+Denna åtkomstleverans ger inga migrationsprocent. Produktionsrensning av tabeller kräver fortfarande granskad J09/O03-åtgärd.
 
 ## Modellval och kontext vid start
 
