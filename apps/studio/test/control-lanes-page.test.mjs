@@ -96,7 +96,11 @@ test('a composition link does not silently add the selected composition to the p
   const h=harness({initialOperatorId:'north',initialLaneId:'evening'});
   assert.equal(h.composition().props.value,'evening');assert.equal(h.checkbox('evening').props.checked,false);
   assert.equal(h.checkbox('mobile-phone').props.checked,true);
-  assert.match(h.html(),/control\/compositions\?operator=north&amp;composition=evening/);
+  const link=h.nodes(node=>node.type==='a'&&String(node.props.children).startsWith('Redigera dealer'))[0];
+  const target=new URL(link.props.href,'https://test.invalid');
+  assert.equal(target.pathname,'/control/compositions');
+  assert.equal(target.searchParams.get('operator'),'north');
+  assert.equal(target.searchParams.get('composition'),'evening');
 });
 
 test('company selection uses explicit identity or an unambiguous assignment',()=>{
@@ -366,4 +370,34 @@ test('unconfirmed, paused and removed requested rooms never normalize a mismatch
     assert.equal(h.composition().props.value,'mobile-phone');assert.equal(h.window.location.search,search);
     assert.equal(h.window.location.hash,'#review');assert.equal(h.replacements.length,0);
   }
+});
+
+
+test('a dirty project blocks package publication until its current draft is saved',()=>{
+  const h=harness({initialOperatorId:'north',dirty:true});
+  h.submit();assert.equal(h.requests.length,0);
+  const submit=h.nodes(node=>node.type==='button'&&node.props.type==='submit')[0];
+  assert.equal(submit.props.disabled,true);
+});
+
+test('explicit company and composition changes retain unrelated history and the fragment',()=>{
+  const h=harness({initialOperatorId:'north',search:'?operator=north&composition=mobile-phone&dealer=astrid&game=blackjack',hash:'#review'});
+  h.composition().props.onChange({target:{value:'evening'}});
+  assert.equal(h.window.location.hash,'#review');assert.equal(h.window.history.state.external,'preserved');
+  assert.equal(new URLSearchParams(h.window.location.search).get('game'),'blackjack');
+  h.operator().props.onChange({target:{value:'south'}});
+  assert.equal(h.window.location.hash,'#review');assert.equal(h.window.history.state.external,'preserved');
+  assert.equal(new URLSearchParams(h.window.location.search).get('composition'),'evening');
+});
+
+test('a newer package readback clears the previous publication confirmation',async()=>{
+  const h=harness({initialOperatorId:'north'});h.submit();
+  await h.reply(0,receipt('north',5,['mobile-phone']));
+  const refreshed=twoOperators();refreshed[0].publishedPackage.revision=5;
+  h.lifecycle().props.onChanged(snapshot(refreshed));
+  assert.match(h.html(),/Publiceringen är bekräftad/,'same revision keeps the valid receipt');
+  refreshed[0].publishedPackage.revision=6;
+  h.lifecycle().props.onChanged(snapshot(refreshed));
+  assert.doesNotMatch(h.html(),/Publiceringen är bekräftad/,'a different revision is not this action receipt');
+  assert.match(h.html(),/Senast publicerat · version 6/);
 });

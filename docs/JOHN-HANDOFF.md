@@ -605,6 +605,28 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
+J01 · 21 oktober 2026, branch `codex/admin-publication-j01` från main
+`15988f32fd572c453d2189502acbe324c4566815`: publicering visar bolag/rum/version,
+redigering och sparning, publiceringsval och bekräftat kvitto som skilda steg.
+Osparat projekt och konflikt blockerar publicering; återöppning läser sparade
+värden och behåller bolag, sammansättning, dealer, rum, spel och fragment.
+Befintliga scoped writers/auth används. Ersatt formulärmarkup och oanvända
+styles är borttagna; avveckling av Control-ingången hör till J02.
+Egen verifiering: 160/160 prov utan skips (control-lanes-page, workspace-tools,
+presentation-room-create, presentation-room-api, studio-session-save och nya
+admin-publication-workspace), Studio-typer och typkontrollerat klientbygge.
+Testupptäckt: 530 kandidater, noll orphan-prov. Browserprovet kör den verkliga
+komponenten och API-handlers med syntetiska konton och minneslagring:
+spara/publicera/omladdning, separat autentiserad browserkontext, konfliktlösning,
+390 px utan horisontell överrullning samt 401/409 utan otillåten skrivning.
+Det är inte en verklig ny lösenordsinloggning eller PostgreSQL-durabilitetskontroll.
+Lokala stegvisa bilder och loggar: `arkiv/2026-10-21/j01-ui/` (gitignorerat).
+Fixturservrar och browserkontexter stängs av provens cleanup. Inga prodskrivningar,
+mediaändringar eller deployer. Klientbygget har befintliga CSS-composes-varningar.
+Kvar: oberoende granskning/PR/CI; säkerhetsläsningen saknar GitHub- och
+GitGuardian-täckning (incident/location not-read, sourceBinding not-verified).
+
+
 Klippkartans scenreglage i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
 och bredare scenpanel/driftväljare i [PR274](https://github.com/Jakeminator123/scoutgaming/pull/274)
 är publicerade. Föregående UI/UX-agents 92 prov och visuella kontroller är

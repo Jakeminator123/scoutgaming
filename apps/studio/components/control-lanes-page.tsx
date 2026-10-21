@@ -9,6 +9,7 @@ import { ControlResourceLifecycle, type LifecycleSnapshot } from './control-reso
 import { compositionLabel } from '../../../packages/navigation/control-flow.mjs';
 import { initialPartnerRoomSelection } from '../lib/partner-room-selection.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
+import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { PageTemplate } from './page-template';
 import styles from './control-lanes-page.module.css';
 import { ProjectConflict } from './project-conflict';
@@ -72,7 +73,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
 }) {
   const session = useStudioProjectSession({ initialProject, initialVideos, initialStatus });
   const {
-    project, dirty, saving, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject,
+    project, dirty, saving, save, updateProject, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject,
   } = session;
   const rows = publishLaneRows(project.lanes, savedJson, dirty);
   const [selectedLaneId, setSelectedLaneId] = useState(initialLaneId ?? project.lanes?.[0]?.id ?? '');
@@ -94,7 +95,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const selectedRoom = !resourceStale ? requestedPublicationRoom(resourceSnapshot,operatorId,requestedRoomId,rows) : undefined;
   const roomUnavailable = requestedRoomId!==undefined&&!selectedRoom;
   const selectedLane = rows.find(lane=>lane.id===selectedLaneId)??rows[0];
-  const compositionHref = labUrl('/control/compositions' + (selectedLane ? '?composition=' + encodeURIComponent(selectedLane.id) : ''));
+  const editableLane = project.lanes?.find(lane=>lane.id===selectedLane?.id);
   const selectedPackage = packages[operatorId] ?? packageEditor(selectedOperator);
   const { chosen, revision, message, error: publishError, needsRefresh } = selectedPackage;
   function updatePackage(id: string, update: (current: PackageEditor) => PackageEditor) {
@@ -105,11 +106,11 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     if (id !== operatorId && roomDraft.current && !window.confirm('Lämna det osparade rumsnamnet och byta bolag?')) return;
     if(id!==operatorId)setRequestedRoomId(undefined);
     setOperatorId(id);
-    if (typeof window !== 'undefined' && window.history?.replaceState) {
+    if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (id) params.set('operator', id); else params.delete('operator');
       if(id!==operatorId){params.delete('room');params.delete('table');}
-      window.history.replaceState(null, '', window.location.pathname + '?' + params);
+      studioHistory(window).replaceContext(window.location.pathname + '?' + params + window.location.hash);
       onContextChange?.();
     }
     updatePackage(id, current => ({ ...current, message: '', error: '' }));
@@ -129,13 +130,19 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const companiesOnly = initialTab === 'companies';
   const writesOff = !storeAvailable || interactionBusy || suspended;
   const publishSelectionReady = chosen.length > 0 && chosen.every(id => rows.some(row => row.id === id && !row.unsaved));
-  const contextQuery = new URLSearchParams({... (operatorId ? {operator:operatorId} : {}), ...(selectedLane ? {composition:selectedLane.id} : {})});
-  const reloadHref = labUrl('/control/rooms' + (contextQuery.size ? '?' + contextQuery : ''));
+  const navigationContext = studioNavigationContextFromQuery(new URLSearchParams(typeof window==='undefined'?'':window.location?.search??''));
+  const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id, tableId:selectedRoom?.id,
+    dealerId:selectedLane?.dealers.includes(navigationContext.dealerId??'')?navigationContext.dealerId:undefined};
+  const compositionHref = studioNavigationHref('/control/compositions', editorContext);
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
   const setPublishError = (value: string) => updatePackage(operatorId, current => ({ ...current, error: value }));
-  const companyHref = labUrl('/control/companies' + (operatorId ? '?operator=' + encodeURIComponent(operatorId) : ''));
+  const companyHref = studioNavigationHref('/control/companies', editorContext);
   const shownError = [publishError, error].filter(Boolean).join(' ');
   const selectionDirty = Object.values(packages).some(pack => JSON.stringify([...pack.chosen].sort()) !== JSON.stringify([...pack.baseline].sort()));
+  const currentSelectionDirty = JSON.stringify([...chosen].sort()) !== JSON.stringify([...selectedPackage.baseline].sort());
+  const publishBlocked = writesOff || dirty || !publishSelectionReady || needsRefresh || conflict;
+  const publicationStatus = needsRefresh ? 'Läs in aktuell publicering' : dirty || conflict ? 'Spara ändringarna först'
+    : currentSelectionDirty ? 'Urvalet är inte publicerat' : message ? 'Publicerat · version '+revision : 'Redo att publicera';
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {if(selectionDirty || roomDirty || interactionBusy){event.preventDefault();event.returnValue='';}};
     window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);
@@ -171,7 +178,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
         const removed=new Set(previous.baseline.filter(id=>!previous.chosen.includes(id)));
         const added=previous.chosen.filter(id=>!previous.baseline.includes(id));
         next[operator.id]={...previous,chosen:[...new Set([...operator.lanes.filter(id=>!removed.has(id)),...added])],
-          baseline:[...operator.lanes],revision:operator.packageRevision,needsRefresh:false,error:''};
+          baseline:[...operator.lanes],revision:operator.packageRevision,message:operator.packageRevision===previous.revision?previous.message:'',needsRefresh:false,error:''};
       }
       return next;
     });
@@ -185,7 +192,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     setRequestedRoomId(undefined);
     setOperatorId(operator.id);
     setPackages(current=>({...current,[operator.id]:packageEditor({...operator,publishedPackage:null})}));
-    if(typeof window!=='undefined'&&window.history?.replaceState){const query=new URLSearchParams(window.location.search);query.set('operator',operator.id);query.delete('room');query.delete('table');window.history.replaceState(null,'',window.location.pathname+'?'+query);onContextChange?.();}
+    if(typeof window!=='undefined'){const query=new URLSearchParams(window.location.search);query.set('operator',operator.id);query.delete('room');query.delete('table');studioHistory(window).replaceContext(window.location.pathname+'?'+query+window.location.hash);onContextChange?.();}
     setResourcesRevision(value=>value+1);
   }
   function chooseComposition(id:string) {
@@ -195,8 +202,16 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     setSelectedLaneId(id);
     const query=new URLSearchParams(window.location.search);query.set('composition',id);query.delete('lane');
     if(id!==selectedLane?.id){query.delete('room');query.delete('table');}
-    window.history.replaceState(null,'',window.location.pathname+'?'+query);
+    studioHistory(window).replaceContext(window.location.pathname+'?'+query+window.location.hash);
     onContextChange?.();
+  }
+
+  async function saveComposition() {
+    if (!dirty || writesOff || conflict || !editableLane?.label.trim() || writeLock.current || Object.values(childLocks.current).some(Boolean)) return;
+    writeLock.current = true;
+    try {
+      if (await save()) setNotice('Sammansättningen är sparad. Publicera för att uppdatera spelrummen.');
+    } finally { writeLock.current = false; }
   }
 
   async function post(action: string, body: Record<string, unknown>) {
@@ -213,9 +228,9 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const lanes = [...chosen];
-    if (writesOff || writeLock.current || Object.values(childLocks.current).some(Boolean) || interactionBusy || conflict || !publishSelectionReady || needsRefresh || !operatorId) return;
+    if (publishBlocked || writeLock.current || Object.values(childLocks.current).some(Boolean) || !operatorId) return;
     writeLock.current = true;
-    setBusy('publish'); setPublishError(''); setMessage('');
+    setBusy('publish'); setPublishError(''); setMessage(''); setNotice('');
     try {
       const { response, payload } = await post('operator-package', { operatorId, lanes, expectedPackageRevision: revision });
       if (!response.ok) {
@@ -243,57 +258,76 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   }
 
   return <PageTemplate eyebrow="// SPELBOLAG" title={companiesOnly?'Bolag & team':'Spelrum & publicering'}
-    intro={companiesOnly?'Välj ett bolag för att hantera team, spelrum och åtkomst.':'Här samlar du bolagets spelrum och det spelarna får möta.'}>
+    intro={companiesOnly?'Välj ett bolag för att hantera team, spelrum och åtkomst.':'Välj sammanhang, spara sammansättningen och publicera för spelarna.'}>
     <div className={styles.page}>
       {!storeAvailable?<p role="status" className={styles.card}>{OFFLINE}</p>:null}
-      {shownError?<p role="alert" className={styles.card}>{shownError}</p>:null}
-      {message?<p role="status" className={styles.card}>{message}</p>:null}
-      {notice?<p role="status">{notice}</p>:null}
+      {shownError?<p role="alert" className={styles.problem}>{shownError}</p>:null}
       {conflict?<ProjectConflict base={JSON.parse(savedJson) as StudioProject} draft={project} onResolve={(remote,merged)=>{setProject(merged);setSavedJson(JSON.stringify(remote));setConflict(false);setError('');setNotice('Senaste projektet är inläst. Dina ändringar har behållits.');}}/>:null}
       {companiesOnly?<>
         <ControlOperatorDirectory directory={directory??null} selectedOperatorId={operatorId} onSelect={chooseOperator} lifecycleStatuses={lifecycleStatuses} lifecycleArchives={lifecycleArchives}
           disabled={!storeAvailable||parentBusy||childBusy.room||childBusy.lifecycle} onBusyChange={value=>setChildBusyFor('directory',value)} onCreated={companyCreated}/>
         <ControlResourceLifecycle operatorId={operatorId} kind="operator" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
       </>:<>
+        <ol className={styles.steps} aria-label="Arbetsgång för publicering">
+          <li aria-current={!selectedOperator?'step':undefined}><span>1</span><div><strong>Välj bolag</strong><small>Rätt sammanhang</small></div></li>
+          <li aria-current={selectedOperator&&(dirty||conflict)?'step':undefined}><span>2</span><div><strong>Redigera och spara</strong><small>Sammansättningens utkast</small></div></li>
+          <li aria-current={selectedOperator&&!dirty&&!conflict?'step':undefined}><span>3</span><div><strong>Publicera</strong><small>Uppdatera spelrummen</small></div></li>
+        </ol>
         <section className={styles.card} aria-label="Välj spelbolag">
-          <div className={styles.contextLine}><label className={styles.field}>Spelbolag<select value={operatorId} disabled={interactionBusy||!listed.length} onChange={event=>chooseOperator(event.target.value)}>
+          <div className={styles.contextLine}><label className={styles.field}>Spelbolag<select aria-label="Spelbolag" value={operatorId} disabled={interactionBusy||!listed.length} onChange={event=>chooseOperator(event.target.value)}>
             <option value="">Välj bolag</option>{listed.map(operator=><option key={operator.id} value={operator.id}>{operator.name}{(lifecycleStatuses[operator.id]??operator.status)==='suspended'?(lifecycleArchives[operator.id]?' · Arkiverat':' · Avstängt'):''}</option>)}
           </select></label><a className="sg-btn sg-btn-secondary" href={companyHref}>Bolag & team</a></div>
-          {selectedOperator?<><div className={styles.cardHeading}><div><span className={styles.eyebrow}>VALT SPELBOLAG</span><h2>{selectedOperator.name}</h2></div><span className={styles.version}>{suspended?(archived?'Arkiverat':'Avstängt'):revision===null?'Ingen publicering ännu':'Publicerad version '+revision}</span></div>
-            {selectedRoom?<p>Valt spelrum: <strong>{selectedRoom.name}</strong>. Rummet använder en gemensam sammansättning; ändringar i den kan påverka flera rum.</p>:null}
-            {roomUnavailable?<p role="status">{!resourceSnapshot&&!resourceStale?'Kontrollerar det valda spelrummet…':'Det valda spelrummet är inte tillgängligt för det här bolaget. Välj ett aktuellt rum från Admin.'}</p>
-              :<div className={styles.actions}><a className="sg-btn sg-btn-secondary" href={'/partner/'+encodeURIComponent(selectedOperator.slug)+'/rooms'+(selectedRoom?'?'+new URLSearchParams({room:selectedRoom.id}):'')}>Öppna partnerportalen</a><a className="sg-btn sg-btn-secondary" href={'/lobby?'+new URLSearchParams({operator:selectedOperator.slug,...(selectedRoom?{room:selectedRoom.id}:{})})}>Öppna spellobbyn</a></div>}
-          </>:<p>Välj bolaget du vill arbeta med. Saknas det? <a href={labUrl('/control/companies')}>Skapa ett spelbolag</a>.</p>}
+          {selectedOperator?<div className={styles.contextSummary}>
+            <div><span className={styles.eyebrow}>VALT SPELBOLAG</span><h2>{selectedOperator.name}</h2>
+              {selectedRoom?<p>Spelrum: <strong>{selectedRoom.name}</strong></p>:null}</div>
+            <div className={styles.contextActions}><span className={styles.version}>{suspended?(archived?'Arkiverat':'Avstängt'):revision===null?'Ingen publicering ännu':'Senast publicerat · version '+revision}</span>
+              {roomUnavailable?<p role="status">{!resourceSnapshot&&!resourceStale?'Kontrollerar det valda spelrummet…':'Det valda spelrummet är inte tillgängligt för det här bolaget. Välj ett aktuellt rum från Admin.'}</p>
+                :<a href={'/lobby?'+new URLSearchParams({operator:selectedOperator.slug,...(selectedRoom?{room:selectedRoom.id}:{})})}>Öppna spellobbyn →</a>}
+            </div>
+          </div>:<p>Välj bolaget du vill arbeta med. Saknas det? <a href={labUrl('/control/companies')}>Skapa ett spelbolag</a>.</p>}
         </section>
-        <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
         {selectedOperator?<>
           {archived?<p className={styles.card}>Bolaget är arkiverat. <a href={companyHref}>Återställ bolaget under Bolag & team</a> för att fortsätta.</p>:null}
           {suspended&&!archived?<p className={styles.card}>Bolaget är avstängt. <a href={companyHref}>Granska bolagets åtkomst under Bolag & team</a>.</p>:null}
           {!suspended?<>
-            <section className={styles.card} aria-label="Skapa spelrum">
-              <div className={styles.cardHeading}><div><span className={styles.eyebrow}>NYTT SPELRUM</span><h2>Välj en sammansättning</h2></div><a href={labUrl('/control/compositions?'+new URLSearchParams({operator:operatorId}))}>Hantera sammansättningar →</a></div>
-              <p>En sammansättning innehåller dealer, bord och bakgrund. Rummet blir bolagets spelbara ingång till den.</p>
-              {rows.length?<label className={styles.field}>Sammansättning<select value={selectedLane?.id??''} disabled={interactionBusy} onChange={event=>chooseComposition(event.target.value)}>{rows.map(row=><option key={row.id} value={row.id}>{row.label}{row.unsaved?' · Osparad':''}</option>)}</select></label>:<p>Det finns inga sparade sammansättningar. <a href={compositionHref}>Skapa en sammansättning</a> innan du skapar ett rum.</p>}
-              {selectedLane?<PresentationRoomCreate operator={selectedOperator} presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
-                projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory} hideExisting
-                onDraftChange={value=>{roomDraft.current=value;setRoomDirty(value);}} onBusyChange={value=>setChildBusyFor('room',value)} onCreated={receipt=>{updatePackage(receipt.room.operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>:null}
-            </section>
-            <section className={styles.card} aria-label="Publicera ändringar">
-              <div className={styles.cardHeading}><div><span className={styles.eyebrow}>BEFINTLIGA SPELRUM</span><h2>Publicera ändrade sammansättningar</h2></div>{revision!==null?<span className={styles.version}>Version {revision}</span>:null}</div>
-              <p>Ändringar i Studio blir synliga för spelarna efter publicering. Här väljer du bolagets sammansättningar och uppdaterar dess befintliga rum.</p>
-              {needsRefresh?<p role="status">Läs in bolagets senaste publicering innan du fortsätter. <button className="sg-btn sg-btn-secondary" type="button" disabled={interactionBusy} onClick={()=>setResourcesRevision(value=>value+1)}>Läs in aktuella uppgifter</button></p>:null}
-              {!chosen.length?<p role="status">Välj minst en sammansättning för att publicera. Vill du stänga spelutbudet kan du pausa eller arkivera rummen ovan, eller arkivera bolaget under Bolag &amp; team.</p>:null}
-              <form id="operator-package-selection" className={styles.form} onSubmit={event=>void publish(event)}>
-                <fieldset className={styles.choices} disabled={writesOff||needsRefresh}><legend>Sammansättningar som bolaget får använda</legend>
-                  {rows.map(row=><label className={styles.choice} key={row.id}><input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id)} disabled={row.unsaved}
-                    onChange={event=>{const checked=event.target.checked;updatePackage(operatorId,current=>({...current,chosen:checked?[...new Set([...current.chosen,row.id])]:current.chosen.filter(id=>id!==row.id),message:'',error:''}));}}/><span><strong>{row.label}</strong><br/>{row.dealers.map(id=>project.dealers.find(dealer=>dealer.id===id)?.label??id).join(', ')}{row.unsaved?' · Spara i Studio först':''}</span></label>)}
-                  {chosen.filter(id=>!rows.some(row=>row.id===id)).map(id=><label className={styles.choice} key={id}><input type="checkbox" value={id} checked onChange={()=>updatePackage(operatorId,current=>({...current,chosen:current.chosen.filter(value=>value!==id)}))}/><span>Sammansättning borttagen ur Studio · {id}. Avmarkera efter att berörda rum arkiverats.</span></label>)}
-                </fieldset>
-                <div className={styles.actions}><button className="sg-btn sg-btn-primary" type="submit" disabled={writesOff||!publishSelectionReady||needsRefresh||conflict}>Publicera för {selectedOperator.name}</button><a href={labUrl('/control/compositions?'+new URLSearchParams({operator:operatorId,...(selectedLane?{composition:selectedLane.id}:{})}))}>Redigera sammansättningen</a></div>
-              </form>
-            </section>
+            <div className={styles.workflow}>
+              <section className={styles.card} aria-label="Redigera och spara">
+                <div className={styles.cardHeading}><div><span className={styles.eyebrow}>STEG 2</span><h2>Redigera och spara</h2></div>
+                  <span className={styles.version} data-state={conflict?'conflict':dirty?'dirty':'saved'}>{conflict?'Versionskonflikt':saving?'Sparar…':dirty?'Osparade ändringar':'Sparad'}</span></div>
+                {rows.length?<label className={styles.field}>Sammansättning<select aria-label="Sammansättning" value={selectedLane?.id??''} disabled={interactionBusy} onChange={event=>chooseComposition(event.target.value)}>{rows.map(row=><option key={row.id} value={row.id}>{row.label}{row.unsaved?' · Osparad':''}</option>)}</select></label>:<p>Det finns inga sparade sammansättningar. <a href={compositionHref}>Skapa en sammansättning</a> innan du skapar ett rum.</p>}
+                {editableLane?<><label className={styles.field}>Namn på sammansättningen<input name="compositionLabel" value={editableLane.label} maxLength={100} disabled={writesOff||conflict}
+                  onChange={event=>{if(writesOff||conflict||writeLock.current||Object.values(childLocks.current).some(Boolean))return;const label=event.target.value;updateProject(draft=>{const lane=draft.lanes?.find(item=>item.id===selectedLane.id);if(lane)lane.label=label;});setMessage('');}}/></label>
+                  <p>En gemensam sammansättning kan användas av flera rum. <a href={compositionHref}>Redigera dealer, bord och bakgrund →</a></p>
+                  <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" disabled={!dirty||writesOff||conflict||!editableLane.label.trim()} onClick={()=>void saveComposition()}>{saving?'Sparar…':'Spara sammansättning'}</button></div>
+                  {!editableLane.label.trim()?<p role="status">Ange ett namn innan du sparar.</p>:null}
+                </>:null}
+                {notice?<p role="status" className={styles.savedNotice}>{notice}</p>:null}
+              </section>
+              <section className={styles.card} aria-label="Publicera ändringar">
+                <div className={styles.cardHeading}><div><span className={styles.eyebrow}>STEG 3</span><h2>Publicera för spelarna</h2></div></div>
+                <p>Det sparade innehållet blir tillgängligt i bolagets spelrum först när du publicerar.</p>
+                {needsRefresh?<p role="status" className={styles.problem}>Uppgifterna behöver kontrolleras. <button className="sg-btn sg-btn-secondary" type="button" disabled={interactionBusy} onClick={()=>setResourcesRevision(value=>value+1)}>Läs in aktuella uppgifter</button></p>:null}
+                {!chosen.length?<p role="status">Välj minst en sammansättning för att publicera. Stäng spelutbudet genom att pausa eller arkivera spelrummen.</p>:null}
+                <form id="operator-package-selection" className={styles.form} onSubmit={event=>void publish(event)}>
+                  <fieldset className={styles.choices} disabled={writesOff||needsRefresh}><legend>Sammansättningar som bolaget får använda</legend>
+                    {rows.map(row=><label className={styles.choice} key={row.id}><input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id)} disabled={row.unsaved}
+                      onChange={event=>{const checked=event.target.checked;updatePackage(operatorId,current=>({...current,chosen:checked?[...new Set([...current.chosen,row.id])]:current.chosen.filter(id=>id!==row.id),message:'',error:''}));}}/><span><strong>{row.label}</strong><br/>{row.dealers.map(id=>project.dealers.find(dealer=>dealer.id===id)?.label??id).join(', ')}{row.unsaved?' · Spara först':''}</span></label>)}
+                    {chosen.filter(id=>!rows.some(row=>row.id===id)).map(id=><label className={styles.choice} key={id}><input type="checkbox" value={id} checked onChange={()=>updatePackage(operatorId,current=>({...current,chosen:current.chosen.filter(value=>value!==id),message:'',error:''}))}/><span>Sammansättning borttagen ur Studio · {id}. Avmarkera efter att berörda rum arkiverats.</span></label>)}
+                  </fieldset>
+                  <div className={styles.publishAction}><p role="status">{busy==='publish'?'Publicerar…':publicationStatus}</p>
+                    <button className={message?"sg-btn sg-btn-secondary":"sg-btn sg-btn-primary"} type="submit" disabled={publishBlocked}>{busy==='publish'?'Publicerar…':message?'Publicera igen':'Publicera för '+selectedOperator.name}</button></div>
+                </form>
+                {message?<div className={styles.receipt} role="status"><strong>Publiceringen är bekräftad</strong><p>{message}</p></div>:null}
+                <div className={styles.actions}><button type="button" className={message?"sg-btn sg-btn-primary":"sg-btn sg-btn-secondary"} disabled={interactionBusy||dirty||selectionDirty||roomDirty} onClick={()=>window.location.reload()}>Återöppna sparat läge</button>
+                  {!roomUnavailable?<a href={'/partner/'+encodeURIComponent(selectedOperator.slug)+'/rooms'+(selectedRoom?'?'+new URLSearchParams({room:selectedRoom.id}):'')}>Öppna partnerportalen →</a>:null}</div>
+              </section>
+            </div>
+            {selectedLane?<PresentationRoomCreate operator={selectedOperator} presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
+              projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory} hideExisting
+              onDraftChange={value=>{roomDraft.current=value;setRoomDirty(value);}} onBusyChange={value=>setChildBusyFor('room',value)} onCreated={receipt=>{updatePackage(receipt.room.operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>:null}
           </>:null}
         </>:null}
+        <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
       </>}
     </div>
   </PageTemplate>;
