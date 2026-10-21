@@ -1,5 +1,10 @@
 [
   {
+    "path": "test/postgres-shared-table.mjs",
+    "kind": "helper",
+    "reason": "Exports real PostgreSQL checks invoked by tools/run-shared-table-qa.mjs in croupier.yml's isolated SQL step; requires that runner's owned cluster and is not a direct node:test suite."
+  },
+  {
     "path": "test/cloud-admin-bootstrap.mjs",
     "kind": "opt-in",
     "reason": "Green in about 11s locally, but it spawns web/server.mjs, uses a sqlite database, and calls that server over HTTP."

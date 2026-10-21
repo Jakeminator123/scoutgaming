@@ -151,6 +151,7 @@ jobs:
           fi
           echo "PostgreSQL source: ${postgres_source[*]}"
           node tools/regression-group.mjs database/isolated-sql-restart-https 360 node tools/studio-isolated-qa.mjs "${postgres_source[@]}"
+          node tools/regression-group.mjs database/shared-blackjack 360 node tools/run-shared-table-qa.mjs "${postgres_source[@]}"
       - name: Save regression group timings
         continue-on-error: true
         timeout-minutes: 2

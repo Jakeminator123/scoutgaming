@@ -1,5 +1,65 @@
 # Aktuell handoff — Scoutgaming
 
+## J07 — delat blackjackbord på mains PostgreSQL — 22 oktober 2026
+
+J07 är nu implementerad på `codex/postgres-shared-table-j07` från main
+`95ac98dcb1608bd89bb2ac44488b2a82a376682d`. Det tidigare beskedet ”nästa steg J07”
+var en plan, inte påbörjad kod. Kevin förbereder K04:s händelse-/mediemappning;
+den aktiva presentationen ska kopplas till den här adaptern efter leverans.
+
+- K02/K03:s isolerade modulslutning kommer från verifierad Kevin-head
+  `b8e1c957c99c5a16ee861f9767ec28041b2270dd`. Enda ändringen i importerad
+  produktkod är rum-ID-gränsen 40 → 128 för mains verkliga `room-<UUID>`.
+  Frysta jämförelsefixturer behåller exakta Git-blobbytes med LF.
+- `postgres-store.mjs` implementerar K03-portarna: samma PG-klient/yttertransaktion,
+  G→R→P→A före savepoint, lagrade svar, fryst konfiguration, sko/journal och
+  commitbunden outbox. JSON-text bevarar de ordnade bytes som skobeviset använder.
+- `postgres-wallet.mjs` använder mains spelare/saldo/transaktionsledger.
+  Reservationer och spelande händer skyddar även befintliga writers genom
+  databastriggers. Idempotensnycklar/fingerprints skiljer rum, aktör, kommando/tick,
+  berörd spelare och ekonomisk effekt. Ingen egen SQLite-wallet eller identitet.
+- `postgres-runtime.mjs` driver deadlines utan spelarens polling och har explicit
+  start/stopp. Appen äger poolen och måste invänta startens schemakontroll.
+  Utan K04-sink ligger committad outbox kvar; leveranshint är inte mottagarens CAS.
+
+**Integrationsgräns:** fabriken tar en uttrycklig demokonfiguration och en rå
+applikationsägd PG-pool. Befintlig autentisering/rumbehörighet ska kontrollera
+kommandoidentiteten före koordinatorn. K04 äger presentation och beständig
+mottagarversion; J08 binder godkänd rumspublicering till den interna config-porten.
+Inga aktiva HTTP-routes, befintliga launcherflöden eller publiceringswriters har
+kopplats om i denna leverans. Join/poll publicerar aldrig konfiguration.
+
+**Schema och drift:** `008-shared-wallet.sql` och `009-shared-blackjack.sql` är
+explicit tilläggs-DDL för spel-databasen, inte Studio. Startup installerar inget;
+saknat schema och extern wallet nekas. Produktionsidentitet, godkänd applicering
+och schemaberedskap måste verifieras före merge/aktivering. Ingen produktions-DDL,
+merge, deploy, betald drift eller medieimport har utförts.
+
+**Senare aggregator:** en framtida adapter måste använda stabila externa
+idempotensnycklar och varaktig status/reconciliation för osäkert transportsvar.
+Ett timeout får inte tolkas som nekad debit; återläs extern transaktionsstatus före
+ny effekt. Databasrollback kan inte återställa ett redan committat externt saldo.
+Därför behålls dagens externa PG-walletspärr tills den separata integrationen är
+implementerad och verifierad; ingen tyst demofallback.
+
+**Verifiering:** isolerad riktig PostgreSQL16.15/Linux Node22.22.0, två klienter,
+processavbrott före/efter COMMIT och fysisk PG-omstart; exakta saldo-/journal- och
+replaykontroller: 20/20 SQL-grupper passerar efter timeoutfixen för fristående
+frågor/outbox. Låst outboxrad avbryts även utan poolens query_timeout och kan
+kvitteras efter återhämtning. Runtime9/9 på Windows Node24.21.0; lokal logg `arkiv/2026-10-22/j07/plan-review-sql.log`.
+Tre underagenter hade skilda implementation/granskningsuppgifter. Ingen faktisk
+spelklient, live-mail, provider, media eller produktionsdatabas ingick.
+
+**CI-rättning PR #332:** körning `39685636720` stannade först på fyra oregistrerade
+testfiler; installations-/byggstegen hoppades därför över och gav efterföljande
+modulfel. De tre direkta K02/K03/runtimeproven ingår nu i full regressionens
+`gameplay/shared-blackjack`. SQL-filen klassas som exporterad hjälpfil och körs
+fortsatt av den befintliga isolerade PostgreSQL-runnern i CI. Produktkod och
+provassertioner är oförändrade. Samma orphan-repro går från fyra fel till 534
+kandidater/0 orphans; de nyregistrerade proven plus orphan-verktygets prov passerar
+56/56, 0 skips, med Node24.21.0. Loggar: `arkiv/2026-10-22/j07/ci-fix-{before,after,tests}.log`.
+Ingen ny fullbuild, SQL-körning eller fjärr-CI har gjorts för denna registerrättning.
+
 ## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
