@@ -19,8 +19,8 @@ Inga migrationspoäng ges för planering, start eller åtkomst.
 Separat kevin_migration_readonly har skapats i Neon croupier_game:
 tre scheman, kolumn-SELECT i 61 tabeller, hemliga kolumner undantagna.
 ACL-prov visar noll skrivbara objekt och nekad UPDATE/DELETE/CREATE.
-NOLOGIN kvarstår tills säker överlämningsväg valts; faktisk agentinloggning
-återstår. GitHub deploynyckel med write är sparad efter Jakobs uttryckliga
+Ny inloggning och sessionsgränser är verifierade från vår sida. Krypterad
+anslutning är levererad till Kevins age-nyckel i #312; hans agentprov återstår. GitHub deploynyckel med write är sparad efter Jakobs uttryckliga
 bekräftelse; Kevin rapporterar SSH/ls-remote. Rätt Vercel-medlem är
 kevstersolver / kevin@solvify.se, DEVELOPER. Konsol-/Blob-prov återstår.
 Detaljer och ansvar finns i [samarbetsguiden](../migrering/SAMARBETE-OCH-ATKOMST.md).

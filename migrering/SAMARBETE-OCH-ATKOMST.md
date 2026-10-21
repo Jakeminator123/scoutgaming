@@ -51,13 +51,25 @@ Jakob beställde rollen direkt 21 oktober. Rollen kevin_migration_readonly är s
 | Hemliga värden | Token, lösenordshash/salt, API key/secret, sessionsdigest/source_stamp och två möjliga hemlighetsvärden i meta undantagna |
 | Nya objekt | Inga automatiska default privileges; nästa tilldelning granskas uttryckligen |
 | Sessionsgränser | read-only som standard, statement 30 s, lock 2 s, idle transaction 60 s, högst tre anslutningar |
-| Aktivering | NOLOGIN utan lösenord medan privat överlämningsväg inväntas |
+| Aktivering | LOGIN verifierad med ny anslutning; lösenord giltigt till 2026-11-20 14:15:47 UTC |
 
 Exakta kolumnundantag: namn som matchar (^|_)(password|hash|salt|secret|token|digest)($|_), source_stamp, croupier_auth.api_keys.key, croupier_auth.meta.v och croupier_game.player_chat_memory_meta.value. Tabell-/kolumnstrukturen kan kartläggas via pg_catalog även där dataläsningen är spärrad. SELECT * på en tabell med spärrade kolumner nekas; välj uttryckligen de tillåtna kolumnerna.
 
 Verifierat med SET ROLE och transaction_read_only av: tre läsbara scheman, 61 läsbara tabeller, noll skrivbara tabeller/scheman/sekvenser och noll medlemskap för läsrollen. SELECT på tillåtna kolumner passerar; samtliga spärrade kolumner samt UPDATE, DELETE och CREATE nekas. Proven använder WHERE false; inga produktionsrader lästes ut eller ändrades. Administratörens tillfälliga SET-möjlighet stängdes inom provtransaktionen och den egna tillfälliga medlemskapsraden togs därefter bort. Endast ursprunglig ADMIN utan INHERIT/SET från cloud_admin återstår. Oberoende granskare fann inga blockerande fel i ACL-upplägget.
 
-Nästa steg: Kevin anger privat hemlighetskanal eller publik krypteringsnyckel i #312. Aktivera därefter LOGIN med säkert skapat lösenord och avtalad lösenordsgiltighet, verifiera ny anslutning och låt Kevin bekräfta agentläsning. SET ROLE bevisar ACL men laddar inte rollens sessionsinställningar; dessa återstår att prova genom riktig inloggning. Lösenord, connection string och privatnycklar får aldrig hamna i GitHub, Slack-kanalen eller denna fil. Orkestratorn äger återkallelse efter kartläggningen.
+Aktivering och ny inloggning är verifierade: current_user=kevin_migration_readonly,
+databas croupier_game, read-only on, statement 30 s, lock 2 s och idle 1 min.
+Tillåten SELECT passerar och både credentialläsning och UPDATE nekas även med
+read_only av. Inga produktionsrader lästes ut eller ändrades.
+
+Kevin lämnade en publik age-nyckel från invoicesolv och godkände krypterad
+överlämning i #312. [Anslutningen är levererad krypterad](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318333428);
+bara hans privata nyckel kan dekryptera. Alla tillfälliga lokala credentialfiler
+och krypteringshjälpare är borttagna efter överlämningen. Inga klartexthemligheter
+har skrivits i GitHub, Slack eller planfiler. Lösenordets giltighet stoppar inte
+redan öppna sessioner; orkestratorn äger återkallelse efter kartläggningen.
+Nästa ansvarig är Kevin-agenten: bekräfta faktisk inloggning från sin miljö,
+roll/databas och schemaöversikt utan data eller hemligheter.
 
 Denna åtkomstleverans ger inga migrationsprocent. Produktionsrensning av tabeller kräver fortfarande granskad J09/O03-åtgärd.
 
