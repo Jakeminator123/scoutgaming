@@ -16,7 +16,7 @@ När hela planen är verifierad ska användaren kunna:
 - Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
 - Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
 
-Jakob har startat arbetet med underagenter. J01, J02 och K01 är VERIFIED: totalt15%. J03-delarna i PR318/320/322/324 har grön CI. PR326:s Gateway-test är rättat i ba697260751eb692df09ebe85af6f3ae73489f46; CI39665285361 är verifierat success på samma ba697-head. Senaste oberoende Control-del är [Clips PR329](https://github.com/Jakeminator123/scoutgaming/pull/329), headb81d858367254a6572a67df02f1a7ee4dcaae585: wrapper/exklusiv loader borta, Adminflöde granskat, hook241/241 inklusive7browser,0skip och build/typer gröna. GitGuardian success; Clips-CI39666861547 pågår. Hela J03 är IN_PROGRESS; administration/auth/catch-all och O01 återstår. Leveranserna är inte mergade eller produktionsverifierade. Aktuell main644b565 är läst men inte integrerad i stacken. K02:s reservationsfynd är stängt på0493af3e med grön CI. K03:s tidigare fynd inklusive stake/insurance-återhämtning är stängda i kodgranskningen på b8e1c957c99c5a16ee861f9767ec28041b2270dd; samlad O01-/aktivitetsacceptans återstår enligt [6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). K02/K03/O01 fortsätter, J04 är endast läskartlagd. Fullständiga bevis och avgränsningar finns i status.json; delstarter ger inga migrationspoäng.
+Jakob har startat arbetet med underagenter. J01, J02 och K01 är VERIFIED: totalt15%. J03-delarna i PR318/320/322/324 har grön CI. PR326:s Gateway-test är rättat i ba697260751eb692df09ebe85af6f3ae73489f46; CI39665285361 är verifierat success på samma ba697-head. Senaste oberoende Control-del är [Clips PR329](https://github.com/Jakeminator123/scoutgaming/pull/329), headb81d858367254a6572a67df02f1a7ee4dcaae585: wrapper/exklusiv loader borta, Adminflöde granskat, hook241/241 inklusive7browser,0skip och build/typer gröna. GitGuardian success; Clips-CI39666861547 pågår. Hela J03 är IN_PROGRESS; administration/auth/catch-all och O01 återstår. Leveranserna är inte mergade eller produktionsverifierade. Aktuell main644b565 är läst men inte integrerad i stacken. K02:s reservationsfynd är stängt på0493af3e med grön CI. K03:s tidigare fynd inklusive stake/insurance-återhämtning är stängda i kodgranskningen på b8e1c957c99c5a16ee861f9767ec28041b2270dd; samlad O01-/aktivitetsacceptans återstår enligt [6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). Backendkontrakten i9c669e67 är delaccepterade enligt [6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074); root äger återstående Adminfälturval och provspårning i O01, ingen väntan på nytt Kevin-underlag. K02/K03/O01 fortsätter, J04 är endast läskartlagd. Fullständiga bevis och avgränsningar finns i status.json; delstarter ger inga migrationspoäng.
 
 ## Frysta utgångspunkter
 
@@ -111,13 +111,25 @@ Beroende: K01. Kan förberedas samtidigt som J01.
 
 Klart: Kevin och Jakob kan implementera sina sidor utan att behöva kopiera varandras runtime eller gissa schemasemantik. Bevis och granskad SHA förs till status.json.
 
-#### O01: kontraktsförslag för avstämning — ännu inte låst
+#### O01: backendkontrakt delaccepterade — Adminurval och provspårning återstår
 
-Utgår från main 15988f32fd572c453d2189502acbe324c4566815 och Kevin-kod
-5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Kevins [O01-svar](https://github.com/Jakeminator123/scoutgaming/blob/24cacc5a2830b265604624a3ee371e8a3f4ab2a7/migrering/kevin-ks-migrering/K01/O01-svar.md)
-är oberoende kodgranskade, inte runtimeprovade. K01:s två blockerare är stängda
-och inventeringen är VERIFIED i PR #314. Inga kontrakt är låsta och detta
-startar ingen runtimeport, DDL eller mediaimport.
+Utgår från main15988f32fd572c453d2189502acbe324c4566815 och Kevin-kod
+5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Root accepterar backenddelen i
+[fryst O01-specifikation](https://github.com/Jakeminator123/scoutgaming/blob/9c669e67e40c387c84fea6d02449698d373c4c49/migrering/kevin-ks-migrering/K01/O01-svar.md) efter
+root/kevin_plan-granskning och plan_review-avstämning. [Beslut6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074).
+Följande preciseringar gäller tillsammans med specifikationen:
+
+- next tar R → P(lämnande spelare, sorterade) → A innan utträde/rundreset.
+- Reservationskontroll sker före ren core; faktisk consume efter core på samma
+  transaktion. Vägran återställer samtliga försökets effekter.
+- Mottagaren applicerar endast högre planversion. Identisk senast accepterad
+  version kvitteras applied utan ny applicering; lägre version ger stale.
+
+K01 är VERIFIED. Hela O01 är fortsatt IN_PROGRESS: root fastställer Adminfältens
+urval, tillåtna värden, writer och publiceringsgräns samt samlar beteendeprov
+mot kontrakten. Detta väntar inte på nytt Kevin-underlag. Kodläsning ersätter
+inte full K02/K03-acceptans eller J07:s faktiska PostgreSQL-prov. Ingen runtimeport,
+DDL eller mediaimport startas genom denna delacceptans.
 
 **Fastställt av Jakob 21 oktober: demo först, aggregatorgräns förbereds.**
 
@@ -198,7 +210,7 @@ och godkänner inte den föreslagna flerbordsordningen. Mains ledger är inte en
 spelhashkedja. Kevins fortsatta förslag avgränsar den nya kedjan till spelens
 egna händelser; övriga walletwriters behåller mains ledger/audit.
 
-**O01-avstämning 362ad39 — konsoliderad läsgranskning, fortsatt olåst:**
+**Tidigare O01-avstämning 362ad39 — bakgrund till delacceptansen ovan:**
 
 Kevins [specifikation](https://github.com/Jakeminator123/scoutgaming/blob/362ad392acd70f49d7a6198f91e2f61c02ebd572/migrering/kevin-ks-migrering/K01/O01-svar.md#L80)
 i PR314 är dokumentation; produktkällan är oförändrad5aa7ed10.
@@ -239,7 +251,7 @@ wallet/audit, konkurrerande append samt krasch efter commit/före kvittens
 utan ny outboxversion. O01 är IN_PROGRESS. Ingen runtime, DDL eller GPU-körning
 gjordes i denna läsgranskning.
 
-**Konsoliderad granskning6324882125:** Pausregeln i cfe7037 ersätter den tidigare öppna frågan. PR323/head9b066769b8a0595d0e62e997285ac84460bb2ef9 provar pausspärrar och sekventiell insatsupprepning, inte lagrad pausreplay eller deadline-/omstartsfallet; detta har Kevin nu preciserat. Legacy advance före requestkontroll är ingen accepterad K03-mekanism. K02-rättning0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 skiljer reservationer per box från available för nya debiteringar; tidigare fynd och villkorliga turprov är stängda i oberoende läsreview och exakt head har grön CI39660600012. K03-rättningd20792ba50550ee7d73237e6dd82c4d575b756dc stänger de fem tidigare fynden i oberoende kod-/portreview. Uppföljning 3528c3f2632f94076ffbbc63413d02a15f6bb678 stänger stake/retry-fyndet och null-normaliseringen i oberoende läsreview. Insurance-rättning b8e1c957c99c5a16ee861f9767ec28041b2270dd stänger motsvarande fynd: reservations-/consume-vägran blir blocked efter savepoint-återställning, med retry först efter relevant generationsändring. Tidigare accepterat ja består vid paus/leave; sista insurance-kommandot nekas atomärt utan kvitto när avgörandet misslyckas. Infrastrukturfel ger full rollback. Root/kevin_plan har läst hela deltat och regressionerna utan blockerande fynd enligt [6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). 30/30 och52/52 är Kevinrapporterade; inga egna runtimeprov. Kevin konsoliderar tidigare överenskomna O01-punkter i fryst specifikationsversion, därefter gör root samlad avstämning. Root preciserar spelarunik frånvarotick, obligatorisk medlemsgeneration och clear som återhämtning före start även efter deadline. Undo efter deadline är ingen blockerare för första demon. Samlad O01/full aktivitetacceptans återstår; inga nya runtimeprov eller migrationspoäng.
+**Konsoliderad granskning6324882125:** Pausregeln i cfe7037 ersätter den tidigare öppna frågan. PR323/head9b066769b8a0595d0e62e997285ac84460bb2ef9 provar pausspärrar och sekventiell insatsupprepning, inte lagrad pausreplay eller deadline-/omstartsfallet; detta har Kevin nu preciserat. Legacy advance före requestkontroll är ingen accepterad K03-mekanism. K02-rättning0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 skiljer reservationer per box från available för nya debiteringar; tidigare fynd och villkorliga turprov är stängda i oberoende läsreview och exakt head har grön CI39660600012. K03-rättningd20792ba50550ee7d73237e6dd82c4d575b756dc stänger de fem tidigare fynden i oberoende kod-/portreview. Uppföljning 3528c3f2632f94076ffbbc63413d02a15f6bb678 stänger stake/retry-fyndet och null-normaliseringen i oberoende läsreview. Insurance-rättning b8e1c957c99c5a16ee861f9767ec28041b2270dd stänger motsvarande fynd: reservations-/consume-vägran blir blocked efter savepoint-återställning, med retry först efter relevant generationsändring. Tidigare accepterat ja består vid paus/leave; sista insurance-kommandot nekas atomärt utan kvitto när avgörandet misslyckas. Infrastrukturfel ger full rollback. Root/kevin_plan har läst hela deltat och regressionerna utan blockerande fynd enligt [6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578). 30/30 och52/52 är Kevinrapporterade; inga egna runtimeprov. Kevin har konsoliderat punkterna i9c669e67. Root har delaccepterat backendkontrakten enligt [6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074); Adminurval och samlad provspårning återstår på vår sida. Root preciserar spelarunik frånvarotick, obligatorisk medlemsgeneration och clear som återhämtning före start även efter deadline. Undo efter deadline är ingen blockerare för första demon. Samlad O01/full aktivitetacceptans återstår; inga nya runtimeprov eller migrationspoäng.
 
 **Adminfält på main — O01/J08:s läsverifierade återanvändningskarta:**
 
@@ -270,8 +282,9 @@ accepterade bara för att de finns bland Kevins kandidater.
 **Gemensamma gränser och kvarvarande beslut:**
 
 - Mains auth bestämmer actor, operatör och tillåtet rum. Kommandot bär roomId,
-  commandId, configVersion samt relevant fönster-/turidentitet. Detaljer för
-  expectedVersion och state-/tick-transaktioner måste avtalas med båda ägarna.
+  commandId och relevant fönster-/rund-/turidentitet enligt accepterad matris.
+  configVersion binds server-side till fönstret; global version är snapshotversion.
+  Replay och state/tick följer det delaccepterade kontraktet ovan.
 - Behåll mains globala saldo. Rum, saldo, avräkning, kvitto, idempotens och audit
   committas atomiskt. Mains skrivvägar ovan kräver separat auditlås och G först
   där G behövs; slutlig ordning stäms av med berörda ägare. J07 verifierar
@@ -291,10 +304,10 @@ accepterade bara för att de finns bland Kevins kandidater.
   Riktade isolerade prov räcker för kontraktsarbete; visuell läppsynk kräver separat
   acceptans och inga nya GPU-prov är beställda här.
 
-Kevin behöver rätta underlagets beskrivningar av retry/audit, limitlåset och
-patchidentitet samt komplettera fönster-/kommando-/tickmatrisen enligt avstämningen ovan.
-K01 är klar som inventering. O01 blir VERIFIED först när båda ägare har stämt av kontrakten och
-nödvändiga beteendeprov finns. Media är fortsatt kandidater, inte importgodkända.
+Kevins samlade backendunderlag är levererat och delaccepterat. Root slutför
+Adminfältens funktionsurval/värden/skrivmål/publiceringsgräns och spårningen av
+nödvändiga beteendeprov innan hela O01 blir VERIFIED. Faktiska PG-/GPU-/produktionsprov
+är separata aktivitetskrav. Media är fortsatt kandidater, inte importgodkända.
 
 ### O02 — Oberoende samprov
 

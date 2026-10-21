@@ -58,35 +58,18 @@ f29adaf942acace6593b0c9bb5677bf412fa0763, har inga blockerande kodfynd:
 fast sko ersätter båda tysta testreturerna. Ingen funktionell GitHub-CI finns;
 285/285 och 30/30 samt auditverktygets 21/21 är Kevins rapporter, inte egna prov.
 Ingen av Kevins PR:er är mergad.
-O01 förbereds med ett uttryckligt ej låst kontraktsförslag i masterplanen:
-main-global wallet, beständig idempotens, gemensam bordskonfiguration,
-textbevarat shoe proof och händelser efter commit. Kevins O01-svar på
-24cacc5a2830b265604624a3ee371e8a3f4ab2a7 är nu kodgranskade av två underagenter
-och orkestratorn. Förslaget preciserar fönster-/turidentitet, konfiguration fryst
-före insatsfönstret och verifierad frame-/audioidentitet. Kodgranskningen fann
-advance före idempotens, onPlan före commit och gamla patchindex; inga nya
-runtimeprov har körts. Kevin rättar beskrivningarna och stämmer av förslaget.
-O01:s main-karta är klar: native spel låser spelare direkt; deposit/currency,
-partner och admin går via globalt G före spelaren; Studio går G→scope→operatör.
-Ett nytt auditlås får inte återanvända G efter spelarlock. Gemensam SQL-klient,
-valuta/kontostängning över delade händer och auditomfattning måste avtalas före J07.
-O01-spec551b2e820664a4e6916d64eda4527d5d07366261 är läsgranskad av
-underagent och root: demoavgränsning, generationsnamn och blocked-outcome är
-preciserade. Root väljer savepoint i samma yttre transaktion med hela låsplanen
-före savepoint; nekade effekter återställs, blocked-kvitto/audit committas.
-Root har läst enda dokumentdeltat 362ad392acd70f49d7a6198f91e2f61c02ebd572: formuleringen följer savepointbeslutet, inklusive full rollback vid persistensfel. Det då öppna pausbeslutet ersätts av cfe7037 nedan.
-Detta är specifikationsgranskning, ingen PostgreSQL-/runtimeacceptans.
-Jakob har beslutat **demo först; förbered gränsen för aggregatorn**. K02 äger
-inget saldo/I/O; K03:s walletport binds i J07 till mains serverägda demowallet.
-Faktisk aggregatorintegration ligger senare; PostgreSQL-vägens explicita spärr
-för extern wallet behålls, ingen SQLite-/demofallback. Root och underagent har
-kodverifierat skillnaden på main15988, inte någon driftsatt integration.
-Kevins retrygodkännande är vidarebefordrat av Jakob. [Beslut i #312](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403).
-O01 är IN_PROGRESS; inget schema/runtime/GPU eller migrationspoäng ändrat.
-Ny O01-leverans cfe703718d124a5cec008f1c07125fac551aba9c: root och kevin_plan läsgranskade
-sen första pause alltid24h/MAX, identisk replay utan förlängning och
-medlemsomplanering utan stale-avvisning. Inga kontraktsmotsägelser; root
-accepterar inriktningen. Ägarvalet är rapporterat via Kevinagenten.
+O01:s backenddel är accepterad mot [fryst specifikation 9c669e67e40c387c84fea6d02449698d373c4c49](https://github.com/Jakeminator123/scoutgaming/blob/9c669e67e40c387c84fea6d02449698d373c4c49/migrering/kevin-ks-migrering/K01/O01-svar.md).
+Root/kevin_plan läste hela specen; plan_review kontrollerade aktivitetskriterierna.
+[Beslut6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074) preciserar next med lås på lämnande spelare,
+reservationskontroll före ren core/consume efter samt duplicate-version som
+applied utan ny applicering och äldre som stale. Demo först, ingen extern
+aggregator/SQLite-fallback; J07 äger mains reservationswriters på samma klient.
+Hela låsplanen tas före savepoint; domänvägran sparar blocked efter återställning,
+infrastrukturfel ger full rollback. Sen första pause gäller24h/MAX; replay
+förlänger inte. Inga nya runtime-/PG-prov, DDL eller GPU-körningar.
+Hela O01 kvarstår IN_PROGRESS: root fastställer Adminfältens urval, värden,
+writer/publiceringsgräns och samlar spårbara beteendeprov. Ingen väntan på nytt
+Kevin-underlag för dessa delar. Full K02/K03/J07-acceptans följer egna kriterier.
 PR323/9b066769b8a0595d0e62e997285ac84460bb2ef9 testar pausspärr och sekventiell bet-replay;
 inte sen paus/replay/medlemsrace. Fryst legacy advance sker före kvittokontroll.
 K02-rättning PR325/0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är läsgranskad av plan_review och root.
@@ -100,7 +83,7 @@ generationsstyrd retry. Sista insurance-kommandot nekas atomärt utan kvitto;
 tidigare accepterat ja består. Infrastrukturfel kräver full rollback.
 [Granskning6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578): inga blockerande fynd i deltat.
 30/30 och52/52 är Kevinrapporterade; inga egna runtimeprov/CI-/PG-acceptans.
-Kevin konsoliderar redan beslutade O01-punkter; root gör samlad avstämning.
+O01-backenddelen är nu delaccepterad; root slutför Adminurval/provspårning.
 Clear före start får häva ready/frigöra reservation även efter deadline; undo kan vänta.
 K03 IN_PROGRESS,total15%; inga aktiva callers eller drift ändrade.
 Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,
