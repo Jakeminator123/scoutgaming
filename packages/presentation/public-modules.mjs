@@ -40,6 +40,7 @@ export const presentationPublicModules = Object.freeze([
   {source: 'packages/presentation/runtime/moving-speech-source-frames.mjs', paths: ['/moving-speech-source-frames.mjs', '/packages/presentation/runtime/moving-speech-source-frames.mjs']},
   {source: 'packages/presentation/contracts/card-view.mjs', paths: ['/card-view.mjs', '/packages/presentation/contracts/card-view.mjs']},
   {source: 'packages/presentation/contracts/calibration.mjs', paths: ['/card-presentation/calibration.mjs', '/packages/presentation/contracts/calibration.mjs']},
+  {source: 'packages/navigation/player-lobby.mjs', paths: ['/packages/navigation/player-lobby.mjs']},
   {source: 'packages/navigation/game-entry.mjs',
     paths: ['/packages/navigation/game-entry.mjs']},
   {source: 'packages/navigation/operator-slug.mjs',

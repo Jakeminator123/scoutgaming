@@ -7,6 +7,7 @@ import { mkdtemp, mkdir, writeFile, rm, symlink, readFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { publicLobbyFile, servePublicLobby, serveDesignPreview } from '../apps/studio/lib/design-preview.mjs';
+import {playerAreaModel, renderPlayerAreaHtml} from '../apps/web/lib/player-area.mjs';
 import { platformConfiguration, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
 import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from '../apps/studio/client/runtime/public-lobby-catalog.mjs';
 
@@ -95,7 +96,7 @@ test('public readers retain tenant, game and dealer choices without calling admi
     assert.equal(playUrlFor(selected), `/play/${game}?operator=${slug}&table=shared-room&dealer=nora`);
   }
   assert.equal(lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-room', dealerId: 'nora' }).room, null);
-  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=beta&room=missing'), {operatorId:'beta',roomKey:null,unavailable:true});
+  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=beta&room=missing'), {operatorId:'beta',roomKey:null,dealerId:null,unavailable:true});
 });
 
 test('unavailable or malformed public data fails closed; empty and withdrawn rooms stay empty', async () => {
@@ -166,8 +167,8 @@ test('public lobby exposes one profile entry through the existing authenticated 
 
 
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
-test('dealer dialog returns keyboard focus to its own trigger after Escape and Swedish close button',
-  {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE for the isolated lobby browser check', timeout: 30_000}, async t => {
+test('lobby browser preserves choices, authenticated launch contract, account navigation and invalid-link isolation',
+  {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE for the isolated lobby browser check', timeout: 45_000}, async t => {
     const require = createRequire(new URL('../apps/studio/client/package.json', import.meta.url));
     const root = fileURLToPath(new URL('../apps/studio/client/lobby/', import.meta.url));
     const {outputFiles} = await require('esbuild').build({stdin: {contents: `
@@ -175,11 +176,12 @@ test('dealer dialog returns keyboard focus to its own trigger after Escape and S
       import {createRoot} from 'react-dom/client';
       import {LobbyProvider} from './components/lobby-provider.tsx';
       import {DealersSection} from './components/sections/dealers-section.tsx';
-      createRoot(document.getElementById('root')).render(<LobbyProvider><DealersSection/></LobbyProvider>);
+      import {Header} from './components/header.tsx';
+      createRoot(document.getElementById('root')).render(<LobbyProvider><Header/><DealersSection/></LobbyProvider>);
     `, resolveDir: root, loader: 'tsx'}, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
     external: ['/composition-runtime/compositor.js'],
     alias: {'@/lib/catalog.mjs': fileURLToPath(new URL('../apps/studio/client/runtime/public-lobby-catalog.mjs', import.meta.url)),
-      '@': root, 'next/image': fileURLToPath(new URL('../apps/studio/client/runtime/image.ts', import.meta.url))},
+      '@': root, 'next/link': fileURLToPath(new URL('../apps/studio/client/runtime/navigation.tsx', import.meta.url)), 'next/image': fileURLToPath(new URL('../apps/studio/client/runtime/image.ts', import.meta.url))},
     define: {'process.env.NODE_ENV': '"production"'}, logLevel: 'silent'});
     const pack = publication('alpha');
     pack.rooms[0].dealers.push({...pack.rooms[0].dealers[0], id: 'oskar', label: 'Oskar'});
@@ -197,6 +199,11 @@ test('dealer dialog returns keyboard focus to its own trigger after Escape and S
       else if (path === '/fixture.js') {body = outputFiles[0].text; type = 'application/javascript';}
       else if (path === '/api/operators') body = JSON.stringify({operators: [{slug: 'alpha', name: 'Bolag alpha'}]});
       else if (path === '/api/operators/alpha/rooms') body = JSON.stringify(pack);
+      else if (path === '/play/blackjack') {body = '<h1>Isolerad launchmottagare</h1><a href="/lobby?operator=alpha&room=shared-room">Till lobbyn</a>'; type='text/html';}
+      else if (path === '/play/profil' || path === '/play/historik') {
+        const model=playerAreaModel({session:{authenticated:true},player:{name:'Isolerad spelare',balance:125,currency:'SEK'},results:{currencies:[],lastRound:null}},path.endsWith('profil')?'profil':'historik');
+        body=renderPlayerAreaHtml(model);type='text/html';
+      }
       else if (path === '/favicon.ico') {response.writeHead(204); response.end(); return;}
       else {unexpected.push(request.method + ' ' + path); response.writeHead(404); response.end(); return;}
       response.writeHead(200, {'content-type': type}); response.end(body);
@@ -237,5 +244,53 @@ test('dealer dialog returns keyboard focus to its own trigger after Escape and S
       await page.waitForFunction(label => document.activeElement?.getAttribute('aria-label') === label, 'Välj ' + name);
       assert.equal(await trigger.evaluate(element => element === document.activeElement), true);
     }
+    // Use the real lobby components with a synthetic published room; no live game or media.
+    const table1='11111111-1111-4111-8111-111111111111',table2='22222222-2222-4222-8222-222222222222';
+    const back1='33333333-3333-4333-8333-333333333333',back2='44444444-4444-4444-8444-444444444444';
+    Object.assign(pack.rooms[0].dealers[0],{presentation:'local',independentLayers:true,
+      table:{enabled:true,default:table1,allowed:[{id:table1,label:'Grönt bord'},{id:table2,label:'Blått bord'}]},
+      background:{enabled:true,mode:'video',default:back1,allowed:[{id:back1,label:'Lounge'},{id:back2,label:'Terrass'}]}});
+    await page.goto(origin+'/lobby?operator=alpha&room=shared-room');
+    await page.getByRole('button',{name:'Välj Nora',exact:true}).click();
+    let dialog=page.getByRole('dialog',{name:'Nora',exact:true});
+    await dialog.getByLabel('Bord',{exact:true}).selectOption(table2);
+    await dialog.getByLabel('Bakgrund',{exact:true}).selectOption(back2);
+    assert.equal(new URL(page.url()).searchParams.get('tableAsset'),table2);
+    assert.equal(new URL(page.url()).searchParams.get('background'),back2);
+    assert.equal(await page.evaluate(()=>localStorage.getItem('croupier.choices.alpha')),null,'no preference writes before launch');
+    await page.reload();
+    await page.getByLabel('Bord',{exact:true}).waitFor();
+    assert.equal(await page.getByLabel('Bord',{exact:true}).inputValue(),table2);
+    assert.equal(await page.getByLabel('Bakgrund',{exact:true}).inputValue(),back2);
+    await page.getByRole('button',{name:'Välj Nora',exact:true}).click();
+    dialog=page.getByRole('dialog',{name:'Nora',exact:true});
+    assert.equal(await dialog.getByLabel('Bord',{exact:true}).inputValue(),table2,'reopening must retain the current chosen table');
+    await dialog.getByRole('link',{name:'Spela med Nora',exact:true}).click();
+    await page.waitForURL('**/play/blackjack?operator=alpha&table=shared-room&dealer=nora');
+    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('croupier.choices.alpha'))),{dealer:'nora',tableAsset:table2,background:back2});
+    await page.getByRole('link',{name:'Till lobbyn',exact:true}).click();
+    await page.getByLabel('Bord',{exact:true}).waitFor();
+    assert.equal(await page.getByLabel('Bord',{exact:true}).inputValue(),table2,'return uses still-allowed saved choice');
+    for(const [link,title]of [['Min profil','Egen profil'],['Historik','Egen historik']]){
+      await page.getByRole('link',{name:link,exact:true}).click();
+      await page.getByRole('heading',{name:title,exact:true}).waitFor();
+      await page.getByRole('link',{name:'Till spellobbyn',exact:true}).click();
+      await page.waitForURL('**/lobby');
+    }
+    // Explicit empty choices override stored preferences when the publication has nullable defaults.
+    pack.rooms[0].dealers[0].table.default=null;pack.rooms[0].dealers[0].background.default=null;
+    await page.goto(origin+'/lobby?operator=alpha&room=shared-room&dealer=nora');
+    await page.getByLabel('Bord',{exact:true}).selectOption('');
+    await page.getByLabel('Bakgrund',{exact:true}).selectOption('');
+    assert.equal(await page.getByLabel('Bord',{exact:true}).inputValue(),'');
+    await page.reload();await page.getByLabel('Bord',{exact:true}).waitFor();
+    assert.equal(await page.getByLabel('Bord',{exact:true}).inputValue(),'');
+    assert.equal(await page.getByLabel('Bakgrund',{exact:true}).inputValue(),'');
+    await page.goto(origin+'/lobby?operator=alpha&room=foreign-room&dealer=nora');
+    await page.getByRole('alert').waitFor();
+    assert.equal(await page.locator('a[href^="/play/blackjack"]').count(),0);
+    await page.goto(origin+'/lobby?operator=alpha&operator=beta&room=shared-room&dealer=nora');
+    await page.getByRole('alert').waitFor();
+    assert.equal(await page.locator('a[href^="/play/blackjack"]').count(),0);
     assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
   });

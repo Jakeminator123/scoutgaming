@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, type LobbyCatalog, type Dealer, type Operator, type Room } from '@/lib/catalog.mjs';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode, type MouseEvent } from 'react';
+import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, type LobbyCatalog, type Dealer, type RoomDealer, type Operator, type Room } from '@/lib/catalog.mjs';
 import { studioHistory } from '../../../lib/studio-history.mjs';
+import { roomSelection, rememberRoomSelection, readRoomSelection, type RoomSelection } from '../../../../../packages/player-catalog/room-selection.mjs';
 
 export const STEP_IDS = { operator: 'bolag', room: 'spelrum', dealer: 'dealers' } as const;
 export type LobbyStep = 1 | 2 | 3 | 4;
@@ -12,11 +13,13 @@ export function scrollToSection(id: string) {
 type SelectOptions = { advance?: boolean };
 type LobbyContextValue = LobbyCatalog & {
   status: 'loading' | 'ready' | 'error'; error: string | null; reload: () => void;
-  operator: Operator | null; room: Room | null; dealer: Dealer | null;
+  operator: Operator | null; room: Room | null; dealer: RoomDealer | null;
   availableRooms: Room[]; availableDealers: Dealer[]; step: LobbyStep;
   selectOperator: (id: string | null, options?: SelectOptions) => void;
   selectRoom: (key: string | null, options?: SelectOptions) => void;
   selectDealer: (id: string | null) => void; reset: () => void;
+  choices: RoomSelection | null; selectEnvironment: (key: 'tableAsset' | 'background', id: string) => void;
+  prepareLaunch: (event: MouseEvent<HTMLAnchorElement>) => void; launchError: string | null;
 };
 const EMPTY: LobbyCatalog = { operators: [], rooms: [], dealers: [] };
 const LobbyContext = createContext<LobbyContextValue | null>(null);
@@ -27,7 +30,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [search, setSearch] = useState(() => typeof window === 'undefined' ? '' : window.location.search);
-  const [dealerId, setDealerId] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     setStatus('loading'); setError(null); setCatalog(EMPTY);
@@ -44,29 +47,42 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   }, [revision]);
   useEffect(() => {
     const history = studioHistory(window);
-    let previous = window.location.search;
     const sync = () => {
       const next = new URL(history.snapshotHref(), window.location.origin).search;
-      if (next !== previous) { setDealerId(null); previous = next; }
       setSearch(next);
     };
     const unsubscribe = history.subscribe(sync);
     sync();
     return unsubscribe;
   }, []);
-  const writeSelection = useCallback((operatorId: string | null, roomId: string | null) => {
+  const writeSelection = useCallback((operatorId: string | null, roomId: string | null, dealerId: string | null = null, choices: Partial<RoomSelection> = {}) => {
     const history = studioHistory(window);
     const url = new URL(history.snapshotHref(), window.location.origin);
     if (operatorId) url.searchParams.set('operator', operatorId); else url.searchParams.delete('operator');
-    if (operatorId && roomId) url.searchParams.set('room', roomId); else url.searchParams.delete('room');
+    for (const key of ['room', 'table', 'dealer', 'tableAsset', 'background']) url.searchParams.delete(key);
+    if (operatorId && roomId) url.searchParams.set('room', roomId);
+    if (operatorId && roomId && dealerId) {
+      url.searchParams.set('dealer', dealerId);
+      for (const key of ['tableAsset', 'background'] as const) if (Object.hasOwn(choices, key)) url.searchParams.set(key, choices[key] ?? '');
+    }
     const href = url.pathname + url.search + url.hash;
     if (href !== history.snapshotHref() && (!history.canNavigate(href) || !history.push(href))) return false;
-    setDealerId(null);
+    setLaunchError(null);
     return true;
   }, []);
   const reload = useCallback(() => setRevision(value => value + 1), []);
   const requested = lobbyQuerySelection(catalog, search);
-  const { operator, room, dealer, availableRooms, availableDealers } = lobbySelection(catalog, { ...requested, dealerId });
+  const selected = lobbySelection(catalog, requested);
+  let stored: Partial<RoomSelection> = {};
+  try { if (selected.operator) stored = readRoomSelection(window.localStorage, selected.operator.id); } catch { /* Storage is optional until a launch needs explicit layer choices. */ }
+  const query = new URLSearchParams(search);
+  // The engine returns a validated company/room; only still-allowed saved dealer preferences may fill an absent selector.
+  const { operator, room, dealer, availableRooms, availableDealers } = lobbySelection(catalog, {
+    ...requested, dealerId: query.has('dealer') ? requested.dealerId : stored.dealer ?? null,
+  });
+  const preferred = { ...stored, dealer: dealer?.id };
+  for (const key of ['tableAsset', 'background'] as const) if (query.has(key)) preferred[key] = query.getAll(key).length === 1 ? query.get(key)! : '';
+  const choices = room && dealer ? roomSelection(room, preferred) : null;
   const selectOperator = useCallback((id: string | null, options?: SelectOptions) => {
     const next = catalog.operators.find(row => row.id === id);
     if (!writeSelection(next?.id ?? null, null)) return;
@@ -78,14 +94,33 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     if (next && options?.advance) scrollToSection(STEP_IDS.dealer);
   }, [availableRooms, operator, writeSelection]);
   const selectDealer = useCallback((id: string | null) => {
-    setDealerId(room?.dealers.some(row => row.id === id) ? id : null);
-  }, [room]);
+    const selected = room?.dealers.find(row => row.id === id);
+    if (!operator || !room || !selected || selected.id === dealer?.id) return;
+    let previous: Partial<RoomSelection> = {};
+    try { previous = readRoomSelection(window.localStorage, operator.id); } catch { /* Defaults are validated against the room. */ }
+    writeSelection(operator.id, room.id, selected.id, roomSelection(room, { ...previous, dealer: selected.id }) ?? {});
+  }, [operator, room, dealer?.id, writeSelection]);
+  const selectEnvironment = (key: 'tableAsset' | 'background', id: string) => {
+    if (!operator || !room || !dealer || !choices) return;
+    const next = roomSelection(room, { ...choices, [key]: id });
+    if (next) writeSelection(operator.id, room.id, dealer.id, { ...next, tableAsset: next.tableAsset ?? '', background: next.background ?? '' });
+  };
+  const prepareLaunch = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!operator || !room || !dealer || !choices) { event.preventDefault(); return; }
+    let saved = false;
+    try { saved = rememberRoomSelection(window.localStorage, operator.id, choices); }
+    catch { saved = !choices.tableAsset && !choices.background; }
+    if (!saved) {
+      event.preventDefault();
+      setLaunchError('Dina miljöval kunde inte sparas. Tillåt lokal lagring och försök igen.');
+    }
+  };
   const reset = useCallback(() => {
     if (writeSelection(null, null)) scrollToSection(STEP_IDS.operator);
   }, [writeSelection]);
   const step: LobbyStep = !operator ? 1 : !room ? 2 : !dealer ? 3 : 4;
   return <LobbyContext.Provider value={{ ...catalog, status, error, reload, operator, room, dealer,
-    availableRooms, availableDealers, step, selectOperator, selectRoom, selectDealer, reset }}>
+    availableRooms, availableDealers, step, selectOperator, selectRoom, selectDealer, reset, choices, selectEnvironment, prepareLaunch, launchError }}>
     {status === 'ready' && requested.unavailable && <p role="alert" className="border-b border-border bg-card px-5 py-4 text-sm text-off md:px-10">Det länkade valet är inte tillgängligt. Välj bolag och rum igen.</p>}
     {children}
   </LobbyContext.Provider>;

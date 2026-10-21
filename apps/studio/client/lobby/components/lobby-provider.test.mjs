@@ -111,11 +111,13 @@ test('company changes clear room and dealer while reload and back/forward retain
   assert.equal(h.location.search, '?operator=beta&room=shared-room');
   value.selectDealer('nora');
   h.history.go(-1); value = h.render();
-  assert.equal(value.operator.id, 'beta'); assert.equal(value.room, null); assert.equal(value.dealer, null);
-  h.history.go(-1); value = h.render();
-  assert.equal(value.room.key, 'alpha:shared-room'); assert.equal(value.dealer, null);
-  h.history.go(2); value = h.render();
   assert.equal(value.room.key, 'beta:shared-room'); assert.equal(value.dealer, null);
+  h.history.go(-1); value = h.render();
+  assert.equal(value.operator.id, 'beta'); assert.equal(value.room, null); assert.equal(value.dealer, null);
+  h.history.go(-2); value = h.render();
+  assert.equal(value.room.key, 'alpha:shared-room'); assert.equal(value.dealer, null);
+  h.history.go(4); value = h.render();
+  assert.equal(value.room.key, 'beta:shared-room'); assert.equal(value.dealer.id, 'nora');
   const reloaded = harness(h.location.href);
   assert.equal((await reloaded.ready()).room.key, 'beta:shared-room');
   assert.equal(h.history.state.consumer, 'preserved');
@@ -139,4 +141,14 @@ test('catalog refresh revokes a removed room and cancelled responses cannot rest
   assert.match(JSON.stringify(h.tree.props.children), /inte tillgängligt/);
   assert.equal(h.location.search, '?operator=alpha&room=shared-room');
   h.unmount();
+});
+
+test('game return uses only a saved dealer still present in the selected room, never an invalid explicit selector',async()=>{
+  for(const [query,saved,expected]of [
+    ['', 'nora', 'nora'],['','foreign',null],['&dealer=foreign','nora',null],['&dealer=nora&dealer=foreign','nora',null],
+  ]) {
+    const h=harness('/lobby?operator=alpha&room=shared-room'+query);
+    h.window.localStorage={getItem:()=>JSON.stringify({dealer:saved})};
+    assert.equal((await h.ready()).dealer?.id??null,expected);h.unmount();
+  }
 });

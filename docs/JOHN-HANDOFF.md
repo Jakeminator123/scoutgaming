@@ -623,6 +623,50 @@ visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
 
+## Spelarlobby J04 — 22 oktober 2026
+
+Återupptaget på codex/player-lobby-j04 från PR331:s frysta
+471549a8f02f9165be39c7077afef98f37a67ad0, inklusive dåvarande main95ac.
+/lobby är den enda spelkatalogen. /play:s katalogkomponenter och exklusiva
+preview-/portraitfallbackhjälpare är borttagna; /play, /demo och /casino.html
+är kontextbevarande katalogredirects. /play/{game}, /play/profil och
+/play/historik behåller befintlig autentisering och serverägda data.
+Profil/historik nås från lobbyhuvudet. Aktiva retur-/login-/webblänkar pekar
+på /lobby; gamla bokmärken behåller bolag, rum, dealer och tillåtna miljöval,
+men överför inte launch-token eller godtycklig returnTo till katalogen.
+Rumseditorns publiceringskvitto pekar också direkt på bolagets /lobby.
+
+Bord och bakgrund väljs bland samma publicerade rums-/dealeralternativ.
+Val ligger i URL för reload/historik och sparas i befintlig spelpreferenslagring
+före launch; motorn omvaliderar dem mot rummets publicerade paket.
+Chromeprovet fann att återöppnad dealerdialog tappade valt bord; rättat.
+Tomma nullable val över gamla preferenser och misslyckad lagringsrensning
+är också hanterade. Oberoende review fann att verklig spelretur saknade dealer:
+lobbyn återläser nu enbart fortfarande tillåten lagrad dealer när URL saknar
+explicit dealer, och roulette får båda returlänkarna från servervaliderat rum. Felaktigt bolag/rum/dealer breddar aldrig åtkomsten.
+Katalogalias nekar skrivmetoder/action-anrop. Inga spelregler eller saldo-
+writes flyttades till klienten.
+
+Verifiering: 117/117 fokuserade auth-/paket-/rum-/profil-/routingprov,
+inklusive faktiskt Chrome-flöde val → reload → dialog → launch → tillbaka →
+profil/historik och negativa rum/bolagslänkar, 0 skip. Senare route-/registry-
+körning 42/42, 0 skip; den överlappar tidigare prov och inkluderar ny
+metod-/aliasregression. Returrättningen verifieras i 24/24 ytterligare
+överlappande prov inklusive faktiskt Chrome och roulette HTTP, 0 skip.
+Publiceringscallerns närprov passerar 40/40, 0 skip. Lobby- och web-typkontroll passerar. Gamla katalog-
+layouttester togs bort/ersattes med beteendeprov, deras två exklusiva fullhook-
+registreringar borttagna. Public game-entry-modulgrafen byggs i routingprovet.
+Loggar: arkiv/2026-10-22/j04/{final-focused,final-route-registry,browser-before,
+browser-after,return-review,publication-caller,lobby-typecheck,web-typecheck}.log. Inga blockerande lokala fel.
+Oberoende produktreview och roots slutreview har inga kvarvarande blockerande
+fynd. Ordinarie commit-hook och fjärr-CI redovisas vid leverans.
+
+Browsern använder riktiga lobbykomponenter med syntetiska publicerade paket,
+syntetiska kontosvar och en isolerad launchmottagare; det är inget faktiskt
+spel-/betalnings-/medie-/Neon-/deployprov. Node24.21.0 och lokala beroende-
+junctions användes. Taskägd Chrome och tillfällig loopbackserver är stängda
+av provets avslutning; inga produktservrar startades. Ingen DDL/merge/deploy.
+
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
 J03 · 21 oktober 2026. Tidigare delarna PR318/320/322/324/326/329 har

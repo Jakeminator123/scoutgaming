@@ -1,4 +1,5 @@
 "use client";
+import { RoomChoices } from '../room-choices';
 
 import { useRef, useState } from 'react';
 import { ArrowRight, Check, Lock } from 'lucide-react';
@@ -30,7 +31,7 @@ function DealerArtwork({ dealer, selected = false, available = false, detail = f
 }
 
 export function DealersSection() {
-  const { operator, room, dealer, availableDealers, selectDealer, status } = useLobby();
+  const { operator, room, dealer, availableDealers, selectDealer, status, prepareLaunch } = useLobby();
   const [openFor, setOpenFor] = useState<string | null>(null);
   const dialogTrigger = useRef<HTMLButtonElement | null>(null);
   const locked = status !== 'ready' || !operator || !room;
@@ -89,6 +90,7 @@ export function DealersSection() {
         </ul>
         {locked && <LockedOverlay title={operator ? 'Välj spelrum först' : 'Välj bolag först'} step={operator ? '02' : '01'} onClick={() => scrollToSection(operator ? STEP_IDS.room : STEP_IDS.operator)} />}
       </div>
+      {dealer && openFor !== selectionKey && <div className="max-w-md"><RoomChoices /></div>}
     </div>
     <Dialog open={!locked && openFor !== null && openFor === selectionKey} onOpenChange={value => { if (!value) setOpenFor(null); }}>
       <DialogContent onCloseAutoFocus={event => {
@@ -104,8 +106,9 @@ export function DealersSection() {
           <div className="flex flex-col p-6 md:p-8">
             <DialogHeader className="text-left"><p className="eyebrow">Ditt val</p><DialogTitle className="display text-4xl text-off">{dealer.name}</DialogTitle><DialogDescription className="mt-2 font-serif text-xl italic">{room.name} hos {operator.name}</DialogDescription></DialogHeader>
             <dl className="mt-6 grid gap-4 border-y border-border py-5"><div><dt className="eyebrow">Spel</dt><dd className="mt-1 text-off">{room.game === 'roulette' ? 'Roulette' : 'Blackjack'}</dd></div></dl>
+            <RoomChoices />
             <p className="mt-5 text-sm text-muted-foreground">Du kan behöva logga in som spelare när bordet öppnas.</p>
-            {playUrl && <a href={playUrl} className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-ink">Spela med {dealer.name}<ArrowRight size={16} aria-hidden /></a>}
+            {playUrl && <a href={playUrl} onClick={prepareLaunch} onAuxClick={prepareLaunch} className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-ink">Spela med {dealer.name}<ArrowRight size={16} aria-hidden /></a>}
           </div>
         </div>}
       </DialogContent>
