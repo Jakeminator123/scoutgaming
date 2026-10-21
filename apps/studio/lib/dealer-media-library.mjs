@@ -4,7 +4,7 @@ import {clipSituationLabel} from './clip-label.mjs';
 import {speechSlotStandard,speechSlotVideoFits} from '../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import contract from '../../../packages/presentation/contracts/policies/studio-contract.json' with {type:'json'};
 const blackjackEventIds=new Set(contract.events.map(event=>event.id));
-export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'roulette',label:'Roulette'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
+export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'roulette',label:'Roulette'},{id:'idle',label:'Vila / Idle · bas och beteenden'},{id:'transition',label:'Till / från skon'},{id:'deal',label:'Kort och utdelning'},{id:'speech',label:'Talade repliker'}]);
 export function eventMediaCategory(event){if(rouletteMediaEvent(event.id))return 'roulette';if(event.sourceType==='transition'||event.id==='transition.shoe')return 'transition';if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
 export function dealerMediaSlots(project,category='all'){
   return slotsForEvents(dealerMediaEvents(project),category);
@@ -15,7 +15,7 @@ export function blackjackMediaSlots(project,category='all'){
   return slotsForEvents(project.events.filter(event=>blackjackEventIds.has(event.id)),category);
 }
 function slotsForEvents(events,category){
-  return events.filter(event=>category==='all'||eventMediaCategory(event)===category).flatMap(event=>{
+  return events.filter(event=>!['turn','settle'].includes(event.sourceType)&&(category==='all'||eventMediaCategory(event)===category)).flatMap(event=>{
     const situations=situationsForEvent(event);
     return (situations.length?situations:['']).map(situation=>({id:event.id+'/'+situation,eventId:event.id,situation,category:eventMediaCategory(event),label:event.id==='idle.ready'?'Grundloop':rouletteMediaEvent(event.id)?event.label+' · '+situation:situation?clipSituationLabel(event.id,situation):event.label}));
   }).sort((a,b)=>(a.category==='idle'?0:1)-(b.category==='idle'?0:1));

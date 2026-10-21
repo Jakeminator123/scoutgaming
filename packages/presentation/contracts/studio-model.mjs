@@ -6,7 +6,7 @@ import { validateCompositionSettings } from './composition-settings.mjs';
 import { validateBackgroundPlayback } from './background-playback-policy.mjs';
 import seed from './policies/project.seed.json' with { type: 'json' };
 import contract from './policies/studio-contract.json' with { type: 'json' };
-import { createDefaultIdlePolicy, validateIdlePolicy } from '../runtime/idle-policy.mjs';
+import { createDefaultIdlePolicy, validateIdlePolicy, MAX_IDLE_VARIANTS } from '../runtime/idle-policy.mjs';
 import { validateMediaPolicy } from '../runtime/media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 import { validateLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
@@ -24,6 +24,7 @@ export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'tem
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
 const filmedDealEvents = new Set(['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']);
 export function maxVariantsForEvent(eventId) {
+  if (eventId === 'idle.ready') return MAX_IDLE_VARIANTS + 1;
   return filmedDealEvents.has(eventId) ? contract.limits.filmedDealVariants
     : MAX_ALTERNATIVES + 1 + (eventId === 'speak.other' ? OTHER_SPEECH_SLOT_IDS.length : 0);
 }

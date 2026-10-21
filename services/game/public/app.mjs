@@ -552,6 +552,7 @@ async function tableCommand(op, extra = {}) {
     }
   }
   tableVersion = out.version;
+  if (op !== 'state') void localPresentation?.observeEvents?.(out.presentation);
   setMovingSpeechAvailable(out.movingSpeechAvailable===true);
   updatePoseState({ roundRevision: String(tableVersion),
     ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');

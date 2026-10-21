@@ -43,8 +43,8 @@ test('speech names resolve every standard line with language and take, reactions
   assert.equal(parsed.slotId, 'speak.goodluck/goodluck'); assert.equal(parsed.language, 'sv'); assert.equal(parsed.take, 1); assert.equal(parsed.poses, null);
   assert.equal(slot('dealerblackjack_2.mp4'), 'speak.other/dealerblackjack'); assert.equal(slot('dealerbust_1.mp4'), 'speak.other/dealerbust');
   assert.equal(slot('greet_jakob.mp4'), 'speak.other/greeting'); assert.equal(parseClipFilename('greet_jakob.mp4').take, null);
-  assert.equal(slot('dragan_settle_win.mp4'), 'settle.win/'); assert.equal(slot('dragan_reaktion_dealerbust.mp4'), 'settle.dealerBust/');
-  assert.equal(slot('dragan_settle_lose.mp4'), 'settle.other/'); assert.equal(slot('dragan_turn.mp4'), 'turn.player/');
+  assert.equal(slot('dragan_settle_win.mp4'), 'idle.ready/'); assert.equal(slot('dragan_reaktion_dealerbust.mp4'), 'idle.ready/');
+  assert.equal(slot('dragan_settle_lose.mp4'), 'idle.ready/'); assert.equal(slot('dragan_turn.mp4'), 'idle.ready/');
   assert.equal(slot('win_1.mp4'), 'speak.other/win');
   for (const name of ['remark_hit17_1.mp4', 'table_cash_1.mp4', 'mystery.webm', 'pos8.webm', 'turnip.mp4', 'blackjacket.mp4']) assert.equal(slot(name), null, name);
   assert.deepEqual(parseClipFilename('pos1-pos2.webm').slotIds, ['deal.player.left/box0', 'deal.player.left/box1']);

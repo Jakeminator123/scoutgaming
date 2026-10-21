@@ -46,6 +46,9 @@ test('unmeasured cards retain game spacing and invalid measurements cannot corru
 
 test('visual cards preserve every exact server slot and discover all 17 speech variants',()=>{
   const slots=clipSlots(createSeedProject(),{videos:[]},'astrid'),groups=groupSlots(slots);
+  assert.ok(slots.every(row=>!['turn','settle'].includes(row.sourceType)));
+  assert.equal(groups.some(row=>row.id==='game'),false);
+  assert.equal(slots.filter(row=>row.sourceType==='speak').length,17);
   assert.deepEqual(groups.find(row=>row.id==='speech').slots.map(row=>row.id).sort(),slots.filter(row=>row.sourceType==='speak').map(row=>row.id).sort());
   assert.equal(groups.find(row=>row.id==='players').slots.length,7);
   assert.deepEqual(groups.flatMap(row=>row.slots).map(row=>row.id).sort(),slots.map(row=>row.id).sort());
@@ -61,7 +64,7 @@ test('library roles come from exact IDs, preserving unassigned clips and separat
   const clips=[{id:'one',label:'Basloop'},{id:'two',label:'Standardfil'},{id:'three',label:'Beteendeklipp'}];
   const before=structuredClone(clips);
   assert.deepEqual(clipLibraryGroups(clips,['two'],['three'],true).map(group=>[group.label,group.clips.map(clip=>clip.id)]),[
-    ['Basloop',['two']],['Beteendeklipp',['three']],['Övriga klipp i situationen',['one']],
+    ['Basloop',['two']],['Beteendeklipp',['three']],['Beteendeklipp · inte i schemat',['one']],
   ]);
   assert.deepEqual(clipLibraryGroups(clips,['one'],['one','two']).flatMap(group=>group.clips),clips);
   assert.deepEqual(clipLibraryGroups([],['missing']),[]);
@@ -105,7 +108,7 @@ test('library idle roles use the saved base and behavior policy',()=>{
   f.project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,f.ids[0],2000,true);
   f.project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,f.ids[1],3000,false);
   assert.deepEqual(libraryRoles(f),{standard:[f.ids[0]],variants:[f.ids[1]],library:[f.ids[2]]});
-  assert.deepEqual(clipLibraryForSlot(f.project,f.inventory,f.dealerId,f.slot).map(group=>group.label),['Basloop','Beteendeklipp','Övriga klipp i situationen']);
+  assert.deepEqual(clipLibraryForSlot(f.project,f.inventory,f.dealerId,f.slot).map(group=>group.label),['Basloop','Beteendeklipp','Beteendeklipp · inte i schemat']);
 });
 
 test('library family roles retain manifest standards when preview selection prefers an active variant',()=>{

@@ -38,12 +38,13 @@ test('seed clones are isolated and JSON round-trips', () => {
 
 test('JSON schema agrees with model variant limits and allowed predicate fields/values', () => {
   assert.equal(schema.$defs.line.properties.variants.minItems, 1);
-  assert.equal(schema.$defs.line.properties.variants.maxItems, 19);
+  assert.equal(schema.$defs.line.properties.variants.maxItems, 31);
   const variantLimits = schema.$defs.line.allOf[0];
   assert.equal(variantLimits.then.properties.variants.maxItems, 16);
   assert.equal(variantLimits.else.then.properties.variants.maxItems, 19);
-  assert.equal(variantLimits.else.else.properties.variants.maxItems, 5);
-  for (const event of seedDocument.events) assert.equal(maxVariantsForEvent(event.id), variantLimits.if.properties.eventId.enum.includes(event.id) ? 16 : event.id === variantLimits.else.if.properties.eventId.const ? 19 : 5);
+  assert.equal(variantLimits.else.else.then.properties.variants.maxItems, 31);
+  assert.equal(variantLimits.else.else.else.properties.variants.maxItems, 5);
+  for (const event of seedDocument.events) assert.equal(maxVariantsForEvent(event.id), variantLimits.if.properties.eventId.enum.includes(event.id) ? 16 : event.id === variantLimits.else.if.properties.eventId.const ? 19 : event.id==='idle.ready'?31:5);
   assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
   assert.equal(schema.properties.triggers.maxItems, 128);
   assert.equal(schema.properties.lines.minItems, 0);
@@ -179,8 +180,9 @@ test('only blackjack dealing rows accept sixteen explicit variants and never dro
     line.variants.push({...line.variants[15], id:`dragan.${eventId}.overflow`});
     assert.throws(() => validateProject(project), /1–16/);
   }
-  for (const eventId of ['speak.goodluck','reveal.dealer','idle.ready','transition.shoe','roulette.deal']) assert.equal(maxVariantsForEvent(eventId), 5);
-  for (const eventId of ['speak.goodluck','reveal.dealer','idle.ready','transition.shoe']) {
+  assert.equal(maxVariantsForEvent('idle.ready'),31);
+  for (const eventId of ['speak.goodluck','reveal.dealer','transition.shoe','roulette.deal']) assert.equal(maxVariantsForEvent(eventId), 5);
+  for (const eventId of ['speak.goodluck','reveal.dealer','transition.shoe']) {
     let project = structuredClone(original);
     for (let count = 1; count < 5; count++) project = addVariant(project, 'dragan', eventId);
     assert.throws(() => addVariant(project, 'dragan', eventId), /högst fyra/);

@@ -12,9 +12,9 @@ export function createRegisteredIdleRuleSelector({ prepareDecision }) {
  * client examples as proof and never supplies simulated chat/history values.
  */
 function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode } = {}, { inventory } = {}) {
-  if (mode !== 'rules' || !['deal', 'reveal'].includes(sourceEvent?.type)
+  if (mode !== 'rules' || !['deal', 'reveal', 'turn', 'settle'].includes(sourceEvent?.type)
     || !isActiveDealerId(dealerId) || !registeredDealerIds(project).has(dealerId)) return null;
-  const policy = registeredIdlePolicy(project, dealerId);
+  const policy = registeredIdlePolicy(project, dealerId) ?? (dealerId === 'astrid' ? project.idlePolicy : null);
   if (!policy?.variants.some(item => item.use === 'rules')) return null;
   const catalog = buildRuntimeCatalog(project, dealerId);
   const line = project.lines.find(item => item.dealerId === dealerId && item.eventId === 'idle.ready');

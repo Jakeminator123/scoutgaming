@@ -33,6 +33,7 @@ function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
 }
 
 const modes = new Set(['off', 'rules', 'random', 'shadow', 'active']);
+const committedTypes = new Set(['deal','reveal','turn','settle']);
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
 
 // The request identifies a public instruction. Cards come exclusively from the
@@ -43,6 +44,12 @@ export function presentationInput(event, published) {
       && item.to === event.to && (event.type === 'reveal' || item.box === event.box));
     if (!source) fail('No committed instruction for this card', 409);
     return { ...source, card: source.faceDown ? null : source.card };
+  }
+  if (['turn','settle'].includes(event?.type)) {
+    const source = published.find(item => item.type === event.type
+      && (event.type === 'settle' || item.box === event.box && item.handIndex === event.handIndex));
+    if (!source) fail('No committed instruction for this behaviour',409);
+    return structuredClone(source);
   }
   if (event?.type === 'speak' && typeof event.line === 'string' && /^[a-z]{2,40}$/.test(event.line)) {
     return published.find(item => item.type === 'speak' && item.line === event.line) ?? { type: 'speak', line: event.line };
@@ -158,9 +165,16 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         if (!frozenDealerContext || body.presentationContext.dealerId !== body.dealerId) fail('Invalid presentation context');
         const frozen = await frozenDealerContext.resolve(body.presentationContext);
         const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
-        if (['deal','reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
+        if (committedTypes.has(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
         if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
         const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
+        if (['turn','settle'].includes(sourceEvent.type)) {
+          const requestId=randomUUID();
+          await frozenDealerContext.resolve(body.presentationContext);
+          json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
+            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId):null,
+            projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource});return true;
+        }
         if (frozen.project) {
           const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,
             published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
@@ -213,9 +227,14 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       const project = normalizeProject(loaded, { allowIncompatibleAnimations: true, preserveMissingLanes: true });
       if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('Invalid presentation request');
       const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
-      if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
+      if (committedTypes.has(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
+      if (['turn','settle'].includes(sourceEvent.type)) {
+        const requestId=randomUUID();
+        json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
+          idleRule:idleRuleFor(body,project,inventory,sourceEvent,requestId),projectRevision:project.revision,configurationSource});return true;
+      }
       const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,
         published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
       if(filmed){

@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
+
+På Jakobs beslut samlas tal under **Talade repliker** och tysta beteenden
+under **Vila/Idle**. De sex tomma tur-/resultatfacken tas bort från klippkarta
+och import; spelhändelserna finns kvar som villkor. Kort, reveal och skon har
+egna handlingsfack. Skarp inventering före ändringen: inga registrerade
+`turn.player`-/`settle.*`-filer, Dragan har fem idlefiler. Inga mediefiler,
+talgranskningar eller historiska paket har flyttats eller raderats.
+
+Idle-editorn sparar händelseregler i befintligt projektformat. Tur och resultat
+väljer tysta beteenden endast från serverns committade händelser, med paket-/
+versionskontroll och väntan på kort, tal och klippgräns. Inställningarna kräver
+sparning, rumspublicering och klippval **Regler**; inga befintliga beteenden
+aktiveras som bieffekt. Lokalt 149 fokuserade tester samt 137 tester i den
+utökade kontrollen gröna (delvis överlappande). Studio- och Admin-typkontroll
+passerar. PR-CI och driftsättning återstår vid denna arbetsrevision. Ingen
+databasmigrering krävs.
+
 ## Dragan: separata skonfack och automatisk filmövergång — 21 oktober 2026
 
 `Till skon` och `Från skon` delar händelsegrupp, men ska behålla separata

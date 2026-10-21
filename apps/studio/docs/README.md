@@ -1,5 +1,20 @@
 # Scoutgaming: användarguide
 
+## Klipp: tal och beteenden
+
+I **Klippkarta** ligger alla klipp med tal under **Talade repliker**, med egna
+situationer och tagningar. Tysta beteenden ligger under **Vila → Basloop och
+beteendeklipp**; kort och skonrörelser behåller egna fack.
+Öppna **Förhandsvisa och redigera → Redigera körregel** i Vila, lägg till
+en variation och välj **Av · endast manuellt prov**, **Ibland · med intervall**,
+**Vid spelhändelse** eller **OpenClaw**. Händelsevalen omfattar spelarens tur,
+rundans resultat och villkor för blackjack, dealer över 21, vinst, lika eller
+förlust. Händelseregler körs i spelarens klippvalsläge **Regler**, efter att
+utkastet har sparats och publicerats för rummet. De väntar på kort och tal
+och på basfilmens klippgräns; de skapar aldrig tal eller ändrar spelresultat.
+Filnamnsförslag är bara förslag: kontrollera att ett beteendeklipp är tyst och
+återgår till vila. Klipp med en inspelad mening behåller sitt exakta talfack.
+
 Produktmodell, ord och ny UX-inriktning har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 Den här guiden beskriver befintliga arbetssteg. **Klippkarta → Scen & lager**
 redigerar vald gemensam mall. Enhetliga låsningar per lager i alla tre nivåer

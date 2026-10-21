@@ -44,7 +44,8 @@ test('saved explicit idle rule matches only the received public game event and l
   assert.equal(f.select({ sourceEvent: { ...f.sourceEvent, box: 4 } }), null);
   assert.equal(JSON.stringify(f.project), before);
   for (const mode of ['off', 'random', 'active', 'shadow']) assert.equal(f.select({ mode }), null);
-  for (const sourceEvent of [{ type: 'idle' }, { type: 'speak', line: 'goodluck' }, { type: 'turn' }, { type: 'settle' }]) assert.equal(f.select({ sourceEvent }), null);
+  for (const sourceEvent of [{ type: 'idle' }, { type: 'speak', line: 'goodluck' }]) assert.equal(f.select({ sourceEvent }), null);
+  assert.equal(f.select({sourceEvent:{type:'turn',box:3,handIndex:0,legalActions:['stand']}}).videoId,uuid(2));
 });
 
 test('no explicit trigger, selection, policy role, baseline or compatible own media means no idle rule', () => {

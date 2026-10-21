@@ -3,9 +3,40 @@ import assert from 'node:assert/strict';
 import { createSeedProject,addVariant,validateProject,allowedPathDescriptors } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { kindForEvent } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { clipSlots } from './connected-studio.mjs';
-import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage } from './studio-policy.mjs';
+import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage,applyStudioIdleEventRule,studioIdleEventRule,IDLE_EVENT_RULES } from './studio-policy.mjs';
+import {selectRegisteredIdleRule} from '../../../../../services/game/presentation-selection.mjs';
 
 const ids=[1,2,3,4,5,6].map(number=>`${String(number).repeat(8)}-${String(number).repeat(4)}-4${String(number).repeat(3)}-8${String(number).repeat(3)}-${String(number).repeat(12)}`);
+
+test('idle presets save ordinary event predicates, survive readback and select only matching own behaviour',()=>{
+  for(const rule of IDLE_EVENT_RULES){
+    const f=fixture('idle.ready','',false);
+    f.inventory.videos.forEach(video=>video.dealer=f.dealerId);
+    let next=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
+    next=addStudioIdleClip(next,f.inventory,f.dealerId,f.slot,ids[1],1000,false);
+    const before=structuredClone(next);
+    next=applyStudioIdleEventRule(next,f.inventory,f.dealerId,f.slot,ids[1],rule.id);
+    assert.equal(studioIdleEventRule(next,f.dealerId,ids[1]),rule.id);
+    const saved=JSON.parse(JSON.stringify(next));validateProject(saved);
+    const sourceEvent=rule.type==='turn'?{type:'turn',box:3,handIndex:0,legalActions:['hit','stand']}
+      :{type:'settle',dealerTotal:rule.id==='dealer-bust'?23:18,dealerBlackjack:false,hands:[{box:3,outcome:['blackjack','push','lose'].includes(rule.id)?rule.id:'win'}]};
+    assert.equal(selectRegisteredIdleRule({project:saved,dealerId:f.dealerId,sourceEvent,mode:'rules'},{inventory:f.inventory}).videoId,ids[1]);
+    assert.equal(selectRegisteredIdleRule({project:saved,dealerId:f.dealerId,sourceEvent:{type:'speak',line:'win'},mode:'rules'},{inventory:f.inventory}),null);
+    assert.deepEqual(saved.lines.filter(row=>row.eventId!=='idle.ready'),before.lines.filter(row=>row.eventId!=='idle.ready'));
+    assert.deepEqual(next.dealerIdlePolicies[0].policy.base,before.dealerIdlePolicies[0].policy.base);
+    assert.throws(()=>applyStudioIdleEventRule(next,f.inventory,f.dealerId,f.slot,ids[0],rule.id),/beteendeklipp/);
+  }
+});
+
+test('more than four idle behaviours can have rules without changing the speech limit',()=>{
+  const f=fixture('idle.ready','',false);
+  let next=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
+  for(const id of ids.slice(1)){
+    next=addStudioIdleClip(next,f.inventory,f.dealerId,f.slot,id,1000,false);
+    next=applyStudioIdleEventRule(next,f.inventory,f.dealerId,f.slot,id,'turn');
+  }
+  assert.equal(next.lines.find(row=>row.dealerId===f.dealerId&&row.eventId==='idle.ready').variants.length,6);
+});
 function fixture(eventId='transition.shoe',situation='to-shoe',managed=true){
   const project=createSeedProject(),dealerId='astrid',event=project.events.find(row=>row.id===eventId);
   const descriptor=allowedPathDescriptors.find(row=>row.values?.length&&row.operators.includes('eq'));

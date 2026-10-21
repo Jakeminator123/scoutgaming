@@ -55,6 +55,26 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
+  let behaviourRequest = 0, lastBehaviour = '';
+  async function observeEvents(events) {
+    if (!idle || mode !== 'rules' || packageChanged || closed || document.hidden || !Array.isArray(events)
+      || !config.idlePolicy?.variants.some(item=>item.use==='rules')) return;
+    const event = events?.findLast(item => ['turn','settle'].includes(item.type));
+    if (!event) return;
+    const requestVersion=version(), key=JSON.stringify([requestVersion,event.type,event.box,event.handIndex]);
+    if (key===lastBehaviour) return;
+    lastBehaviour=key;
+    const own=++behaviourRequest;
+    try {
+      const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({dealerId,version:requestVersion,mode:'rules',event:{type:event.type,
+          ...(event.type==='turn'?{box:event.box,handIndex:event.handIndex}:{})},...(context?{presentationContext:context}:{})})});
+      if (!response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || requestVersion!==version()) return;
+      const result=await response.json();
+      if (own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || requestVersion!==version()) return;
+      retainRule(result,requestVersion);offerPendingRule();
+    } catch { /* Optional behaviour never blocks cards, speech or the player's turn. */ }
+  }
   async function observeChat(text) {
     adviceController?.abort();
     if (preview || !idle || !['active', 'shadow'].includes(mode)) return;
@@ -114,7 +134,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:requestVersion};
   }
   function offerPendingRule() {
-    if (!pendingRule || action || speech || document.hidden) return;
+    if (!pendingRule || action || speech || ready || document.hidden) return;
     const rule = pendingRule; pendingRule = null;
     if (mode === 'rules' && rule.version === version() && rule.expiresAt > performance.now())
       idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:'rules'});
@@ -279,7 +299,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   control.onchange = () => { pendingRule = null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
-  return { present, state, observeChat, start: resumeIdle,
+  return { present, state, observeChat, observeEvents, start: resumeIdle,
     prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
     close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };

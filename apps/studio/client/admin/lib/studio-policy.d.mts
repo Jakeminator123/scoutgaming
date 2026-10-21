@@ -6,6 +6,9 @@ export function studioPolicyContext(project:StudioProject,inventory:VideoInvento
 export function applyStudioIdlePolicy(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,policy:IdlePolicy):StudioProject;
 export function addStudioIdleClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,durationMs:number,asBase?:boolean):StudioProject;
 export function setStudioBaseWeight(policy:IdlePolicy,videoId:string,weight:number):IdlePolicy;
+export const IDLE_EVENT_RULES:readonly {id:string;label:string;type:string;conditions:unknown[][]}[];
+export function studioIdleEventRule(project:StudioProject,dealerId:string,videoId:string):string;
+export function applyStudioIdleEventRule(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,ruleId:string):StudioProject;
 export function applyStudioVariantPolicy(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,variantId:string,patch:Partial<Omit<MediaVariantPolicy,'videoId'>>):StudioProject;
 
 export type StudioClipUsage={configured:boolean;when:string;rules:string[]};
