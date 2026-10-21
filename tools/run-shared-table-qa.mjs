@@ -92,8 +92,13 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false }
     const { runSharedWalletSqlChecks } = await import('../test/fixtures/shared-wallet-sql-checks.mjs');
     const wallet = await runSharedWalletSqlChecks({ pool, createPool });
     const table = await runPostgresSharedTableChecks({ pool, createPool, restart }); pool = table.pool;
+    // K04: the durable presentation receiver, on the same owned cluster after J07's checks.
+    const { checkPresentationReceiverGuard, runPostgresPresentationReceiverChecks } = await import('../test/postgres-presentation-receiver.mjs');
+    const receiverGuard = await checkPresentationReceiverGuard({ pool });
+    await pool.query(await readFile(join(repository, 'ops/neon-game', '010-presentation-receiver.sql'), 'utf8'));
+    const receiver = await runPostgresPresentationReceiverChecks({ pool, createPool, restart }); pool = receiver.pool;
     await closePools(); await stop();
-    const checks = [...guards.checks, ...wallet.checks, ...table.checks];
+    const checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks];
     console.log(JSON.stringify({ acceptance: 'isolated-shared-table-sql-two-client-process-restart', checks, count: checks.length, clusterStopped: true }));
     return { checks };
   } finally {
