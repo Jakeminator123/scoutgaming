@@ -13,7 +13,8 @@ import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlot
 export function clipSlots(project, inventory, dealerId, game='blackjack') {
   if(game==='roulette')return rouletteClipSlots();
   if(game!=='blackjack')throw Error('Välj ett registrerat spel.');
-  return project.events.flatMap(event => {
+  // Turn and settlement are conditions for idle behaviour, not media slots.
+  return project.events.filter(event => !['turn','settle'].includes(event.sourceType)).flatMap(event => {
     const families = (inventory.families ?? []).filter(row => row.dealerId === dealerId && row.eventId === event.id);
     const situations = families.length ? families.map(row => row.situation) : situationsForEvent(event);
     return (situations.length ? [...new Set(situations)] : ['']).map(situation => ({

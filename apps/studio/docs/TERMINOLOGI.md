@@ -40,4 +40,13 @@ Klipp ordnas som **kategori → situation → standardklipp + varianter**.
 till/från skon; **Dela till spelare** skiljer box 1–7. Varje situation har
 eget standardklipp. Tekniska poseversioner är inte beteendevarianter.
 Talade repliker behåller situation, språk och exakt text/ljud/bild tillsammans.
+Alla klipp där dealern talar hör till **Talade repliker**, även välkomstfraser,
+småprat och resultatfraser. Tysta blickar, nickningar och andra beteenden som
+återgår till vila är **beteendeklipp under Vila/Idle**. Kortutdelning,
+kortvändning och till/från skon förblir egna spelhandlingar.
+**Tur och resultat är körvillkor, inte egna klippkategorier.** Beteenden kan
+vara avstängda för automatiken, köras med intervall eller väljas vid en
+spelhändelse. Talfrasens situation och val av tagning hålls isär: en fras kan
+ha flera varianter utan att bli ett Idle-klipp. Frivilliga beteenden ska inte
+presenteras som obligatoriskt material som saknas.
 [Användarguiden](README.md) beskriver arbetssteg, ingen separat produktmodell.

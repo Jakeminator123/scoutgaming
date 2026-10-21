@@ -55,6 +55,33 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
+  let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
+  const behaviourVersion = (value,type) => type==='settle' && settlementContinuation?.from===value ? settlementContinuation.to : value;
+  async function observeEvents(events, {command,previousVersion} = {}) {
+    // Successful collection completes the same settled round. Carry only its
+    // verified result across that one version change, including a late response.
+    if(command==='collect') {
+      settlementContinuation={from:previousVersion,to:version()};
+      if(pendingRule?.sourceType==='settle'&&pendingRule.version===previousVersion)Object.assign(pendingRule,{version:version(),collected:true});
+    }
+    if (!idle || mode !== 'rules' || packageChanged || closed || document.hidden || !Array.isArray(events)
+      || !config.idlePolicy?.variants.some(item=>item.use==='rules')) return;
+    const event = events?.findLast(item => ['turn','settle'].includes(item.type));
+    if (!event) return;
+    const requestVersion=version(), key=JSON.stringify([requestVersion,event.type,event.box,event.handIndex]);
+    if (key===lastBehaviour) return;
+    lastBehaviour=key;
+    const own=++behaviourRequest;
+    try {
+      const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({dealerId,version:requestVersion,mode:'rules',event:{type:event.type,
+          ...(event.type==='turn'?{box:event.box,handIndex:event.handIndex}:{})},...(context?{presentationContext:context}:{})})});
+      if (!response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      const result=await response.json();
+      if (own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      retainRule(result,requestVersion,event.type);offerPendingRule();
+    } catch { /* Optional behaviour never blocks cards, speech or the player's turn. */ }
+  }
   async function observeChat(text) {
     adviceController?.abort();
     if (preview || !idle || !['active', 'shadow'].includes(mode)) return;
@@ -105,16 +132,16 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
-  function retainRule(result, requestVersion) {
+  function retainRule(result, requestVersion, sourceType) {
     const rule = result.idleRule;
     if (!idle || mode !== 'rules' || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision.requestId
       || JSON.stringify(rule.presentationContext) !== JSON.stringify(context)) return;
     const remaining = Math.max(0, Math.min(30000, Date.parse(rule.expiresAt) - Date.now()));
     if (!Number.isFinite(remaining) || !remaining) return;
-    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:requestVersion};
+    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:behaviourVersion(requestVersion,sourceType),sourceType,collected:sourceType==='settle'&&settlementContinuation?.from===requestVersion};
   }
   function offerPendingRule() {
-    if (!pendingRule || action || speech || document.hidden) return;
+    if (!pendingRule || action || speech || ready || document.hidden || pendingRule.sourceType==='settle'&&!pendingRule.collected) return;
     const rule = pendingRule; pendingRule = null;
     if (mode === 'rules' && rule.version === version() && rule.expiresAt > performance.now())
       idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:'rules'});
@@ -178,7 +205,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   function state(patch) {
     if (!document.hidden) idleTransientRetries = 0;
-    if (Object.hasOwn(patch, 'action')) { if (patch.action && !action) pendingRule = null; action = patch.action; idleDuringAction = false; }
+    if (Object.hasOwn(patch, 'action')) {
+      if(patch.action && patch.command && patch.command!=='collect') {
+        pendingRule=null;settlementContinuation=null;++behaviourRequest;
+      } else if(patch.action && !action && patch.command!=='collect' && pendingRule?.sourceType!=='settle') pendingRule=null;
+      action=patch.action;idleDuringAction=false;
+    }
     if (Object.hasOwn(patch, 'speech')) speech = patch.speech;
     if (Object.hasOwn(patch, 'ready')) ready = patch.ready;
     control.disabled = packageChanged || action || speech;
@@ -186,7 +218,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // may revoke the current card's owner. Apply those flags on action release.
     if (action && ['deal', 'reveal'].includes(presentationKind) && !Object.hasOwn(patch, 'action') && !document.hidden) return;
     if (action || speech || document.hidden) adviceController?.abort();
-    if (document.hidden) { pendingRule = null; upcoming = []; player.cancelLocalPreparation?.(); }
+    if (document.hidden) { pendingRule = null; ++behaviourRequest; upcoming = []; player.cancelLocalPreparation?.(); }
     ++serial; stop(); idleRun = 0;
     idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}` });
     offerPendingRule();
@@ -277,9 +309,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         projectRevision: result?.projectRevision, configurationSource }); return false;
     }
   }
-  control.onchange = () => { pendingRule = null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
+  control.onchange = () => { pendingRule = null; ++behaviourRequest; settlementContinuation=null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
-  return { present, state, observeChat, start: resumeIdle,
+  return { present, state, observeChat, observeEvents, start: resumeIdle,
     prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
     close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };

@@ -1,5 +1,33 @@
 # Aktuell handoff — Scoutgaming
 
+## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
+
+På Jakobs beslut samlas tal under **Talade repliker** och tysta beteenden
+under **Vila/Idle**. De sex tomma tur-/resultatfacken tas bort från klippkarta
+och import; spelhändelserna finns kvar som villkor. Kort, reveal och skon har
+egna handlingsfack. Skarp inventering före ändringen: inga registrerade
+`turn.player`-/`settle.*`-filer, Dragan har fem idlefiler. Inga mediefiler,
+talgranskningar eller historiska paket har flyttats eller raderats.
+
+Idle-editorn sparar händelseregler i befintligt projektformat. Tur och resultat
+väljer tysta beteenden endast från serverns committade händelser, med paket-/
+versionskontroll och väntan på kort, tal och klippgräns. Inställningarna kräver
+sparning, rumspublicering och klippval **Regler**; inga befintliga beteenden
+aktiveras som bieffekt. Lokalt 149 fokuserade tester samt 137 tester i den
+utökade kontrollen gröna (delvis överlappande), därefter 230 tester i
+commitkontrollen. Studio- och Admin-typkontroll passerar. Materialskaparen
+följer samma indelning; äldre tester som krävde sex reaktionsfack är ersatta
+med kontroll att sådana fack inte skapar betalda jobb. Leveransstatus och
+CI för denna ändring följs i [PR #310](https://github.com/Jakeminator123/scoutgaming/pull/310). Ingen
+databasmigrering krävs. Granskningsrättningen bevarar egna villkor vid lägesbyte,
+behåller resultatval genom lyckad collect och blockerar dem i nästa runda.
+Specifika resultat går före generella; likvärdiga alternativ väljs med begärans-ID.
+Astrids bundna globala Idle-policy följer med som en explicit fryst dealerpolicy.
+Neon Launch är aktiverad med Jakobs prisgodkännande; migrationsberedskapen
+passerar igen. Fast 0,25 CU har inte aktiverats: RunPod gör bildberäkningen,
+men Neon ligger i strömmens återkommande kontroller och låsförnyelser.
+Låg observerad belastning bevisar inte kapacitet under samtidig läppsynk.
+
 ## Dragan: separata skonfack och automatisk filmövergång — 21 oktober 2026
 
 `Till skon` och `Från skon` delar händelsegrupp, men ska behålla separata

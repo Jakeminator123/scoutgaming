@@ -13,7 +13,11 @@ export function createRegisteredIdlePolicy({ dealerId, baselineVideoId, duration
     base:[{videoId:baselineVideoId,weight:100,durationMs}],variants:[]});
 }
 export function registeredIdlePolicy(project, dealerId) {
-  return project?.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy ?? null;
+  const own=project?.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy;
+  if(own)return own;
+  const legacy=dealerId==='astrid'?project?.idlePolicy:null;
+  const line=project?.lines?.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready');
+  return legacy && line?.variants.find(row=>row.id===line.baselineVariantId)?.videoGenerationId===legacy.base[0]?.videoId ? legacy : null;
 }
 export function validateRegisteredIdlePolicies(value, { dealers, lines, requireBaseline = false } = {}) {
   if (!Array.isArray(value) || value.length > MAX_DEALERS) fail();

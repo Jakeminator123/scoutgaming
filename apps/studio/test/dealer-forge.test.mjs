@@ -83,29 +83,30 @@ test('late Forge commits reject already pending media without losing an ambiguou
  assert.equal((await f.store.updateJob(f.job.jobId,{expectedStatus:'prepared',status:'submit_unknown'})).status,'submit_unknown');
 });
 
-test('roulette intake never becomes a blackjack Forge slot, provider submission or saved job',async()=>{
+test('roulette and game conditions never become blackjack Forge slots, provider submissions or saved jobs',async()=>{
   const project=addDealer(createSeedProject(),'paow','Paow'),roulette=dealerMediaSlots(project,'roulette');
-  assert.equal(roulette.length,4);assert.equal(forgeSlots(project).length,40);
+  assert.equal(roulette.length,4);
+  const gameConditions=project.events.filter(event=>['turn','settle'].includes(event.sourceType)).map(event=>({id:event.id+'/'}));
   const tampered={...project,events:[...project.events,...ROULETTE_MEDIA_EVENTS]};
   assert.deepEqual(forgeSlots(tampered),forgeSlots(project));
   const f=fixture();
-  for(const slot of roulette){
+  for(const slot of [...roulette,...gameConditions]){
     assert.throws(()=>slotById(project,slot.id),e=>e.code==='forge_slot_unknown');
     await assert.rejects(f.service.createJob('paow',{requestId:randomUUID(),slotId:slot.id,quality:'720'},actor),e=>e.code==='forge_slot_unknown');
   }
   assert.equal(f.submitted.length,0);assert.equal(f.store.jobs.size,0);assert.equal(f.registered.length,0);
 });
 
-test('catalog: 40 slots in group order, deal slots carry targets and frames, transitions come from the project event', () => {
+test('catalog separates speech and idle while deal targets and shoe transitions retain their exact geometry', () => {
   const project = addDealer(createSeedProject(), 'paow', 'Paow');
   const slots = forgeSlots(project);
-  assert.equal(slots.length, 40);
+  assert.ok(slots.every(slot=>slot.group!=='reaction'&&!/^(turn|settle)\./.test(slot.eventId??'')));
   assert.deepEqual(slots.slice(0, 5).map(slot => slot.id), ['pose/vila', 'pose/redo', 'idle.ready/', 'transition.shoe/to-shoe', 'transition.shoe/from-shoe']);
   const toShoe = slots.find(slot => slot.id === 'transition.shoe/to-shoe');
   assert.deepEqual([toShoe.fromProject, Boolean(toShoe.needsEvent), toShoe.start, toShoe.end], [true, false, 'VILA', 'REDO']);
   // A raw document without the event still lists the slots, marked as waiting for it.
   const legacy = forgeSlots({ ...project, events: project.events.filter(event => event.id !== 'transition.shoe') });
-  assert.equal(legacy.length, 40); assert.equal(legacy.find(slot => slot.id === 'transition.shoe/to-shoe').needsEvent, true);
+  assert.deepEqual(legacy.map(slot=>slot.id),slots.map(slot=>slot.id)); assert.equal(legacy.find(slot => slot.id === 'transition.shoe/to-shoe').needsEvent, true);
   const deal = slots.find(slot => slot.id === 'deal.player.centre/box3');
   assert.deepEqual([deal.target, deal.frames, deal.start, deal.end, deal.group], ['4', 26, 'REDO', 'REDO', 'deal']);
   assert.equal(slots.filter(slot => slot.group === 'speech').length, 17);

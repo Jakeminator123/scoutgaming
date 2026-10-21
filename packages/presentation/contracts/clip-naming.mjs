@@ -17,7 +17,6 @@ export const CLIP_POSE_VARIANTS = Object.freeze({
 export const CLIP_LANGUAGES = Object.freeze(['sv', 'en', 'es', 'no', 'da', 'fi', 'de', 'fr']);
 export const SPEECH_LINE_IDS = Object.freeze(Object.keys(SPEECH_LINES));
 const DEDICATED_SPEECH = new Set(['goodluck', 'insurance', 'double']);
-const SETTLE_SITUATIONS = Object.freeze({ blackjack: 'settle.blackjack', dealerbust: 'settle.dealerBust', win: 'settle.win', push: 'settle.push', other: 'settle.other', lose: 'settle.other' });
 const REACTION_PREFIX = /^(?:settle|reaktion|reaction|resultat)$/;
 const IDLE_TOKENS = new Set(['idle', 'grundloop', 'vila', 'andning', 'breath', 'breathing', 'blink', 'blinkning', 'smile', 'leende', 'glance', 'blick', 'yawn', 'gaspning', 'cheek', 'insulted']);
 // The token right after a destination may describe the pose chain. in/ut are
@@ -87,10 +86,7 @@ export function parseClipFilename(name, { type = 'video/mp4' } = {}) {
     result.variant = clipVariantForPoses(result.poses);
   }
   const reaction = tokens.some(token => REACTION_PREFIX.test(token));
-  if (!reveal && has(joined, 'turn|tur|spelarens-tur|player-turn')) candidates.add('turn.player/');
-  for (const [key, eventId] of Object.entries(SETTLE_SITUATIONS)) {
-    if (has(joined, `(?:settle|reaktion|reaction|resultat)-${key}`)) candidates.add(`${eventId}/`);
-  }
+  if (reaction || !reveal && has(joined, 'turn|tur|spelarens-tur|player-turn')) candidates.add('idle.ready/');
   // Speech: <line>[-<lang>][-<take>], for example goodluck-sv-1 or greet-jakob.
   if (!reaction) {
     for (const line of SPEECH_LINE_IDS) {
@@ -127,9 +123,6 @@ export function clipNamingGuide() {
     { slotId: 'reveal.dealer/dealer-hole', pattern: '<dealer>_flip', example: 'dragan_flip.mp4', note: 'Vänd dolt kort. VILA → VILA.' },
     ...SPEECH_LINE_IDS.map(line => ({ slotId: `${DEDICATED_SPEECH.has(line) ? `speak.${line}` : 'speak.other'}/${line}`, pattern: `<dealer>_${line}_<språk>_<nr>`, example: `dragan_${line}_sv_1.mp4`,
       note: 'Inspelad replik med inbakad mun. Språk och tagningsnummer följer med som notering; manus, ljudhash och granskning sätts separat.' })),
-    { slotId: 'turn.player/', pattern: '<dealer>_turn', example: 'dragan_turn.mp4', note: 'Reaktion. Spelas inte automatiskt av spelaren ännu.' },
-    ...Object.entries(SETTLE_SITUATIONS).filter(([key]) => key !== 'lose').map(([key, eventId]) => ({ slotId: `${eventId}/`, pattern: `<dealer>_settle_${key}`, example: `dragan_settle_${key}.mp4`,
-      note: 'Reaktion på resultat. Spelas inte automatiskt av spelaren ännu.' })),
     { slotId: 'pose/vila', pattern: '<dealer>_vila.png', example: 'dragan_vila.png', note: 'Referensbild, sparas inte i klippbanken.' },
     { slotId: 'pose/redo', pattern: '<dealer>_redo.png', example: 'dragan_redo.png', note: 'Referensbild, sparas inte i klippbanken.' },
   ];

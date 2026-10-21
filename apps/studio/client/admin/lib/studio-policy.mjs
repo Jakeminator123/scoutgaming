@@ -1,4 +1,4 @@
-import { validateProject, allowedPathDescriptors } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { validateProject, allowedPathDescriptors, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { validateIdlePolicy } from '../../../../../packages/presentation/runtime/idle-policy.mjs';
 import { createRegisteredIdlePolicy } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { isAstridDealFamily, dealFrequencyPolicies, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../../packages/presentation/runtime/media-family-policy.mjs';
@@ -7,6 +7,59 @@ import { clipSlots, clipsForSlot, configuredClipIds, currentClipId } from './con
 
 const fail = message => { throw Error(message); };
 const uses = new Set(['idle', 'transition', 'deal', 'reveal', 'speak', 'turn', 'settle']);
+
+// These presets write the existing, published event predicates. Media identity,
+// idle scheduling and the game's authoritative event catalogue stay separate.
+export const IDLE_EVENT_RULES = Object.freeze([
+  {id:'turn',label:'Spelarens tur',type:'turn',conditions:[]},
+  {id:'settle',label:'Efter rundans resultat',type:'settle',conditions:[]},
+  {id:'blackjack',label:'Spelarens blackjack',type:'settle',conditions:[['event.hands.outcome','includes','blackjack']]},
+  {id:'dealer-bust',label:'Dealern över 21',type:'settle',conditions:[['event.dealerTotal','gt',21]]},
+  {id:'win',label:'Minst en vinnande hand',type:'settle',conditions:[['event.hands.outcome','includes','win']]},
+  {id:'push',label:'Alla händer oavgjorda',type:'settle',conditions:[['event.hands.outcome','all_eq','push']]},
+  {id:'lose',label:'Alla händer förlorade',type:'settle',conditions:[['event.hands.outcome','all_eq','lose']]},
+]);
+
+export function studioIdleEventRule(project,dealerId,videoId) {
+  const variants=project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready')?.variants??[];
+  const variant=variants.find(row=>row.videoGenerationId===videoId&&row.selection?.rules&&row.triggerIds.length);
+  return IDLE_EVENT_RULES.find(rule=>JSON.stringify(variant?.triggerIds)===JSON.stringify(
+    [0,...rule.conditions.map((_,i)=>i+1)].map(i=>`idle.behavior.${rule.id}.${i}`)))?.id??'';
+}
+
+export function applyStudioIdleVariantPolicy(project,inventory,dealerId,slot,videoId,patch) {
+  const scope=studioPolicyContext(project,inventory,dealerId,slot);
+  if(scope.kind!=='idle'||!scope.policy?.variants.some(row=>row.videoId===videoId))fail('Välj ett kopplat beteendeklipp.');
+  const definition=scope.line.variants.find(row=>row.id!==scope.line.baselineVariantId&&row.videoGenerationId===videoId&&row.triggerIds.length);
+  if(patch.use==='rules'&&!definition)return applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId,'turn');
+  return applyStudioIdlePolicy(project,inventory,dealerId,slot,{...scope.policy,
+    variants:scope.policy.variants.map(row=>row.videoId===videoId?{...row,...patch}:row)});
+}
+
+export function applyStudioIdleEventRule(project,inventory,dealerId,slot,videoId,ruleId) {
+  const scope=studioPolicyContext(project,inventory,dealerId,slot), rule=IDLE_EVENT_RULES.find(row=>row.id===ruleId);
+  if(scope.kind!=='idle'||!rule||!scope.policy?.variants.some(row=>row.videoId===videoId)
+    ||!scope.clips.some(row=>row.id===videoId))fail('Välj ett kopplat beteendeklipp och en spelhändelse.');
+  let draft=structuredClone(project);
+  let line=draft.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready');
+  let variant=line.variants.find(row=>row.id!==line.baselineVariantId&&row.videoGenerationId===videoId);
+  if(!variant){
+    draft=addVariant(draft,dealerId,'idle.ready',scope.clips.find(row=>row.id===videoId).label.slice(0,80));
+    line=draft.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready');variant=line.variants.at(-1);
+  }
+  const predicates=[['event.type','eq',rule.type],...rule.conditions];
+  variant.triggerIds=predicates.map(([path,op,value],i)=>{
+    const trigger={id:`idle.behavior.${rule.id}.${i}`,label:rule.label,category:'deterministic',path,op,value};
+    const existing=draft.triggers.find(row=>row.id===trigger.id);
+    if(existing&&(existing.path!==path||existing.op!==op||JSON.stringify(existing.value)!==JSON.stringify(value)))fail('Ett befintligt villkor har samma ID men annan betydelse.');
+    if(!existing)draft.triggers.push(trigger);
+    return trigger.id;
+  });
+  Object.assign(variant,{videoGenerationId:videoId,selection:{rules:true,random:false,model:false},priority:50+rule.conditions.length});
+  const policy=structuredClone(scope.policy);
+  Object.assign(policy.variants.find(row=>row.videoId===videoId),{use:'rules',automatic:null});
+  return applyStudioIdlePolicy(draft,inventory,dealerId,slot,policy);
+}
 
 export function studioPolicyContext(project, inventory, dealerId, slot) {
   const current = clipSlots(project, inventory, dealerId).find(row => row.id === slot.id);
@@ -141,7 +194,7 @@ export function studioClipUsage(project, inventory, dealerId, slot, videoId, var
     if (variation.use === 'manual') return result(true, ['Endast manuellt prov; startar inte automatiskt.']);
     if (variation.use === 'openclaw') return result(true, ['OpenClaw-urval tillåtet i schemat. Faktisk triggeranslutning är inte verifierad i denna vy.']);
     const definitions = scope.line.variants.filter(row => row.videoGenerationId === videoId && selectionFor(row).rules && row.triggerIds.length);
-    return result(true, definitions.length ? definitions.map(row => `Sparade villkor (alla): ${conditions(row.triggerIds).join('; ')}.${row.triggerIds.every(id=>project.triggers.find(trigger=>trigger.id===id)?.path.startsWith('event.'))?' Händelseregel vid utdelning eller reveal; kräver publicerat regelläge.':' Grundloopens speltrigger stöder endast händelsevillkor; denna kombination är inte ansluten.'}`)
+    return result(true, definitions.length ? definitions.map(row => `Sparade villkor (alla): ${conditions(row.triggerIds).join('; ')}.${row.triggerIds.every(id=>project.triggers.find(trigger=>trigger.id===id)?.path.startsWith('event.'))?' Händelseregel vid utdelning, vändning, tur eller resultat; kräver publicerat regelläge.':' Grundloopens speltrigger stöder endast händelsevillkor; denna kombination är inte ansluten.'}`)
       : ['Regelurval valt, men inga kopplade händelsevillkor finns för tagningen.']);
   }
   const frequency = scope.family && dealFrequencyPolicies(project,scope.family);

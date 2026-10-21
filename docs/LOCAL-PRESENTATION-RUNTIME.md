@@ -1,5 +1,25 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Tal och villkorade Idle-beteenden
+
+Admin/intake exponerar inga `turn.player`-/`settle.*`-videofack. Dessa ID:n
+behålls som spelhändelser i katalogen och i äldre sparade paket; inga filer
+eller historiska kopplingar raderas. Nya skrivningar till dessa videofack
+avvisas: tyst beteende använder `idle.ready`, tal använder exakt `speak.*`-fack.
+Idle-editorns händelseval skriver vanliga `event.*`-triggers och en variant på
+dealerns idlelinje i befintligt projektformat, högst 30 beteenden.
+
+Spelaren observerar `turn`/`settle` från ett avslutat tabellkommando, en gång
+per version och händelse. `/api/presentation/select` läser om spelarens
+committade `native_presentations`; klientens kort, tillåtna drag och resultat
+får aldrig ersätta kvittot. Stale version, fel hand och saknad händelse avvisas.
+Endast `rules` väljer ett kopplat beteende. Svaret binds till version och
+fryst rumspaket, löper ut efter 30 sekunder och erbjuds till samma idlecontroller
+som redan hanterar kvot, talprioritet och klippgränser. Händelsen spelar ingen
+egen reaktionsfilm. Publicering och typ-/mediekontroller använder samma format;
+ingen databasmigrering krävs. Inspelat tals godkännanden och text/ljud/bild-par
+ändras inte av denna indelning.
+
 ## Driftväljare: kontrollplan
 
 <a id="driftvaljare-kontrollplan"></a>

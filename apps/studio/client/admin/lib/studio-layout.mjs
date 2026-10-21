@@ -56,7 +56,7 @@ export function clipLibraryGroups(clips, standardIds = [], variantIds = [], idle
   return [
     {id:'standard',label:idle?'Basloop':'Standardklipp',clips:clips.filter(clip=>standard.has(clip.id))},
     {id:'variants',label:idle?'Beteendeklipp':'Varianter',clips:clips.filter(clip=>!standard.has(clip.id)&&variants.has(clip.id))},
-    {id:'library',label:'Övriga klipp i situationen',clips:clips.filter(clip=>!standard.has(clip.id)&&!variants.has(clip.id))},
+    {id:'library',label:idle?'Beteendeklipp · inte i schemat':'Övriga klipp i situationen',clips:clips.filter(clip=>!standard.has(clip.id)&&!variants.has(clip.id))},
   ].filter(group=>group.clips.length);
 }
 export function clipLibraryForSlot(project, inventory, dealerId, slot) {
@@ -95,7 +95,6 @@ export function groupSlots(slots) {
     ['players','Dela till spelare','Plats 1–7','#ffb547',slot=>slot.eventId.startsWith('deal.player.')],
     ['dealer','Dealerns kort','Öppet · dolt · vända','#ffb547',slot=>slot.eventId==='deal.dealer'||slot.sourceType==='reveal'],
     ['speech','Talade repliker','Situation och språk','#9d8cff',slot=>slot.sourceType==='speak'],
-    ['game','Spel','Tur & resultat','#a3a8b0',slot=>['turn','settle'].includes(slot.sourceType)],
   ];
   return definitions.map(([id,title,subtitle,color,matches])=>({id,title,subtitle,color,slots:slots.filter(matches)})).filter(group=>group.slots.length);
 }

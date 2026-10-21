@@ -35,6 +35,7 @@ function emptyLines(dealerId) {
 }
 function projectFrom(playback, { registeredDealers, projectRevision }) {
   const project = structuredClone(seed);
+  delete project.idlePolicy; // Frozen packages use only the policies they captured.
   // Published packages keep the event set they captured. The optional shoe slot
   // is present only when the frozen lines include it; mandatory events stay required.
   const eventIds = new Set(playback.lines.map(line => line?.eventId));

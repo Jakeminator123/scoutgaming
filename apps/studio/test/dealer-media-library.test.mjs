@@ -5,8 +5,21 @@ import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatu
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {validateManagedStudioMedia} from '../../../packages/studio-registry/server/managed-media-contract.mjs';
 import {mediaHeaderMatches} from '../../../packages/shared/media-file-types.mjs';
-import {videoFitsLine} from '../../../packages/presentation/contracts/video-intake.mjs';
+import {videoFitsLine,validateVideoMetadata} from '../../../packages/presentation/contracts/video-intake.mjs';
 const project=addDealer(createSeedProject(),'paow','PAOW');
+
+test('turn and result are conditions, speech and idle keep distinct writable media destinations',()=>{
+  const slots=dealerMediaSlots(project);
+  assert.ok(slots.every(row=>row.eventId!=='turn.player'&&!row.eventId.startsWith('settle.')));
+  for(const eventId of ['turn.player','settle.win']){
+    assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:eventId+'/',label:'Gesture',contentType:'video/mp4'}));
+    const legacy={dealerId:'paow',eventId,kind:'reaction',role:'alternative',situation:'',label:'Old reaction',notes:'',compositing:{mode:'opaque'}};
+    assert.equal(validateVideoMetadata(legacy).eventId,eventId,'historical metadata remains readable');
+    assert.throws(()=>validateVideoMetadata(legacy,{forWrite:true}),/körvillkor/);
+  }
+  const voice=mediaClassification(project,{dealerId:'paow',slotId:'speak.other/win',label:'Vinst',contentType:'video/mp4'});
+  assert.equal(voice.kind,'speech');assert.equal(videoFitsLine({classification:voice},'paow','idle.ready'),false);
+});
 
 test('roulette reference and action slots stay separate from blackjack, audio and runtime bindings',()=>{
   const slots=dealerMediaSlots(project,'roulette');assert.equal(slots.length,4);

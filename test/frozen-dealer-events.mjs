@@ -356,3 +356,26 @@ test('v3 frozen own media require a registered adapter and reject retired Amira'
   f.saved.administration.gameLanes[0].dealer='amira';f.saved.administration.gameLanes[0].mediaCollection='amira-presentation';
   await assert.rejects(f.service.resolve(context),error=>error.statusCode===404);
 });
+
+
+test('Astrid global idle policy is frozen with exact media and reaches the player configuration',async()=>{
+  const input=fixture(),project=createSeedProject();
+  project.dealerIdlePolicies=[];project.lanes=[defaultPresentationLane('astrid')];
+  project.lanes[0].id='johns-linnea';
+  for(const line of project.lines)for(const variant of line.variants)variant.videoGenerationId=null;
+  const media=[record('astrid','idle.ready',10),record('astrid','idle.ready',11)];
+  const line=project.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready');
+  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=media[0].id;
+  project.idlePolicy=createRegisteredIdlePolicy({dealerId:'astrid',baselineVideoId:media[0].id,durationMs:1000});
+  project.idlePolicy.variants=[{videoId:media[1].id,durationMs:1000,use:'manual',automatic:null}];
+  input.snapshot.projectDocument={kind:'project',revision:project.revision,value:project};
+  input.snapshot.mediaRows=media.map(row=>({...row,revision:'media-1'}));
+  input.inventory={families:[],videos:media.map(row=>({id:row.id,sha256:row.sha256,bytes:row.size,dealer:'astrid',available:true,integrity:'verified',classification:row.classification}))};
+  input.requiredIdleDealerIds=['astrid'];
+  const captured=captureFrozenPresentation(input),before=structuredClone(project.idlePolicy);
+  assert.deepEqual(captured.presentation.playback.dealerIdlePolicies,[{dealerId:'astrid',policy:before}]);
+  project.idlePolicy.variants=[];
+  const f=serviceFor(captured.presentation);f.saved.administration.gameLanes[0].dealer='astrid';f.saved.administration.gameLanes[0].mediaCollection='astrid-presentation';
+  const config=await f.service.configuration({...context,dealerId:'astrid'});
+  assert.deepEqual(config.idlePolicy,before);assert.ok(config.inventory.videos.some(row=>row.id===media[1].id));
+});

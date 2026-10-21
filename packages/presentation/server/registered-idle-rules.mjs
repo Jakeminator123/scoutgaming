@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { isActiveDealerId, registeredDealerIds } from '../contracts/dealer-identity.mjs';
 import { buildRuntimeCatalog } from '../contracts/studio-model.mjs';
 import { selectionFor } from '../contracts/video-intake.mjs';
@@ -11,8 +12,8 @@ export function createRegisteredIdleRuleSelector({ prepareDecision }) {
  * that request's mode/version/presentation context. This helper never accepts
  * client examples as proof and never supplies simulated chat/history values.
  */
-function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode } = {}, { inventory } = {}) {
-  if (mode !== 'rules' || !['deal', 'reveal'].includes(sourceEvent?.type)
+function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode, requestId = '' } = {}, { inventory } = {}) {
+  if (mode !== 'rules' || !['deal', 'reveal', 'turn', 'settle'].includes(sourceEvent?.type)
     || !isActiveDealerId(dealerId) || !registeredDealerIds(project).has(dealerId)) return null;
   const policy = registeredIdlePolicy(project, dealerId);
   if (!policy?.variants.some(item => item.use === 'rules')) return null;
@@ -50,7 +51,10 @@ function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode } = {},
     if (item.id === line.baselineVariantId) node.baselineVariantId = id;
     return { ...item, id };
   });
-  const selected = aliases.get(prepareDecision(catalog, input).eligible[0]?.id);
+  const eligible = prepareDecision(catalog, input).eligible;
+  const tied = eligible.filter(item => item.priority === eligible[0]?.priority);
+  const index = requestId && tied.length > 1 ? createHash('sha256').update(requestId).digest().readUInt32BE(0) % tied.length : 0;
+  const selected = aliases.get(tied[index]?.id);
   if (!selected || selected.id === line.baselineVariantId) return null;
   return { videoId: selected.videoGenerationId, variantId: selected.id, reason: 'deterministic_rules' };
 }

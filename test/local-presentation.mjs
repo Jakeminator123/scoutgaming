@@ -668,15 +668,15 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
   globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
-  let proofs = 0, busy = 0;
+  let proofs = 0, busy = 0, tableVersion = 2;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); } };
-  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => 2,
+  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
-  return { controller, jobs, receipts, requests, elements, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
+  return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
@@ -1256,7 +1256,9 @@ test('configuration requires explicit identity and each dealer uses only its sav
   const own=await get('?dealerId=linnea');assert.equal(own.status,200);assert.deepEqual(own.body.idlePolicy,policy);
   assert.equal(own.body.idleInventory.families[0].dealerId,'linnea');assert.equal(own.body.idleInventory.videos[0].id,id);
   assert.equal((await get('')).status,400);
-  assert.equal((await get('?dealerId=astrid')).body.idlePolicy,project.dealerIdlePolicies.find(row=>row.dealerId==='astrid')?.policy??null);
+  const astridLine=project.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready');
+  astridLine.variants.find(row=>row.id===astridLine.baselineVariantId).videoGenerationId=project.idlePolicy.base[0].videoId;
+  assert.deepEqual((await get('?dealerId=astrid')).body.idlePolicy,project.idlePolicy,'Astrid exposes its saved global policy');
   assert.equal((await get('?dealerId=unknown')).status,400);
   assert.equal((await get('?dealerId=linnea&dealerId=linnea')).status,400);
 });
@@ -1271,6 +1273,7 @@ test('saved idle rules cross the API with committed event and exact package owne
   const inventory={families:[],videos:[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',
     classification:{dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:i?'alternative':'standard',situation:'',label:'Egen',notes:''}}))};
   const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
+  let published=source;
   const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
     frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}});
   const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'linnea',mode:'rules',version:2,event:source,presentationContext:context});
@@ -1278,28 +1281,58 @@ test('saved idle rules cross the API with committed event and exact package owne
   assert.equal(response.body.idleRule.requestId,response.body.decision.requestId);assert.equal(response.body.idleRule.version,2);
   assert.deepEqual(response.body.idleRule.presentationContext,context);
   assert.ok(Date.parse(response.body.idleRule.expiresAt)>Date.now());
+  for(const frozen of [false,true])for(const type of ['turn','settle']){
+    published=type==='turn'?{type,box:3,handIndex:1,legalActions:['stand']}
+      :{type,dealerTotal:19,dealerBlackjack:false,hands:[{box:3,outcome:'win'}]};
+    Object.assign(project.triggers.find(row=>row.id==='fixture.box3'),type==='turn'
+      ?{path:'event.box',op:'eq',value:3}:{path:'event.hands.outcome',op:'includes',value:'win'});
+    const api=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory,
+      db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([published])})})},
+      ...(frozen?{frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}}:{})});
+    const body={dealerId:'linnea',mode:'rules',version:2,event:{...published,dealerTotal:99,hands:[{box:3,outcome:'lose'}]},...(frozen?{presentationContext:context}:{})};
+    const observed=await presentationFixtureRequest(api,'fixture',body);
+    assert.equal(observed.status,200,JSON.stringify(observed.body));assert.equal(observed.body.idleRule.videoId,alt);
+    assert.deepEqual(observed.body.decision.sourceEvent,published,'client cannot change the public turn or result');
+    assert.equal(observed.body.video,null,'the event is not a second media destination');
+    assert.equal((await presentationFixtureRequest(api,'fixture',{...body,version:1})).status,409);
+    assert.equal((await presentationFixtureRequest(api,'fixture',{...body,event:{type:type==='turn'?'settle':'turn',box:3,handIndex:1}})).status,409);
+  }
 });
 
-for(const cancel of [false,true]) test('own idle rule waits for action and base boundary; mode cancelled='+cancel,async t=>{
+for(const eventType of ['deal','turn','settle']) for(const cancel of [false,true,'next-round']) for(const collected of [false,true]) for(const delayed of [false,true]) test('own idle rule waits for action and base boundary; '+eventType+' cancelled='+cancel+' collected='+collected+' delayed='+delayed,async t=>{
     const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='linnea/idle.ready/ready';
     const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]};
     const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
     const inventory={videos,families:[{id:familyId,dealerId:'linnea',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
     const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true});
-    const original=globalThis.fetch;
+    const original=globalThis.fetch;let release,observing;
+    const responseReady=delayed&&eventType!=='deal'?new Promise(resolve=>{release=resolve;}):Promise.resolve();
     globalThis.fetch=async(url,options)=>{
       const response=await original(url,options);if(url!=='/api/presentation/select')return response;
-      const result=await response.json(),body=JSON.parse(options.body);
+      const result=await response.json(),body=JSON.parse(options.body);await responseReady;
       return Response.json({...result,idleRule:{videoId:alt,requestId:result.decision.requestId,mode:'rules',version:body.version,presentationContext:null,expiresAt:new Date(Date.now()+30000).toISOString()}});
     };
     const control=f.elements.find(row=>row.className==='local-presentation-mode');control.value='rules';control.onchange();
-    f.controller.state({action:true});assert.equal(await f.controller.present(source),false);
-    if(cancel){control.value='off';control.onchange();}
+    f.controller.state({action:true});
+    if(eventType==='deal')assert.equal(await f.controller.present(source),false);
+    else {
+      const events=[{type:eventType,box:3,handIndex:0}];
+      observing=f.controller.observeEvents(events);
+      if(!delayed){await observing;const requests=f.requests.length;await f.controller.observeEvents(events);assert.equal(f.requests.length,requests,'one observation per committed event');}
+    }
+    if(collected){
+      if(eventType==='settle'){f.controller.state({action:false});f.controller.state({action:true});}
+      f.controller.state({action:true,command:'collect'});f.setVersion(3);
+      await f.controller.observeEvents([{type:'speak',line:'placebets'},{type:'idle'}],{command:'collect',previousVersion:2});
+    }
+    if(cancel===true){control.value='off';control.onchange();}
+    if(cancel==='next-round'){f.controller.state({action:true,command:'start'});f.setVersion(4);}
+    release?.();await observing;
     f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
     const current=f.jobs.at(-1);assert.equal(current.take.media.src,videos[0].src);
     current.options.onReceipt({state:'start'});current.options.onReceipt({state:'presented'});current.resolve();
     await new Promise(resolve=>setImmediate(resolve));
-    assert.equal(f.jobs.at(-1).take.media.src,videos[cancel?0:1].src);
+    assert.equal(f.jobs.at(-1).take.media.src,videos[cancel||collected&&eventType!=='settle'||!collected&&eventType==='settle'?0:1].src);
     f.controller.close();globalThis.fetch=original;
 });
 

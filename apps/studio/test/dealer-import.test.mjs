@@ -41,7 +41,7 @@ test('Kevin-style names, Emil transitions and recorded lines land in exact slots
   const body = validateDealerImportInput({ dealerId: 'dragan', files: names.map((name, index) => file(name, `f${index}`, 'video/mp4')), context: '' }, catalog);
   const proposals = filenameDealerImportRows(body, catalog);
   assert.deepEqual(proposals.map(row => row.slotId), ['deal.player.centre/box2', 'deal.dealer/dealer-up', 'deal.dealer/dealer-hole', 'reveal.dealer/dealer-hole',
-    'transition.shoe/to-shoe', 'transition.shoe/from-shoe', 'speak.goodluck/goodluck', 'settle.win/', 'deal.player.left/box0']);
+    'transition.shoe/to-shoe', 'transition.shoe/from-shoe', 'speak.goodluck/goodluck', 'idle.ready/', 'deal.player.left/box0']);
   assert.deepEqual(proposals.map(row => row.confidence), ['high', 'medium', 'high', 'medium', 'high', 'high', 'high', 'high', 'medium']);
   assert.deepEqual(proposals[0].poses, { start: 'VILA', end: 'VILA' }); assert.deepEqual(proposals[2].poses, { start: 'VILA', end: 'VILA' });
   // Without a suffix the usual chain is only suggested in the reason, never proposed as data.
@@ -55,7 +55,7 @@ test('Kevin-style names, Emil transitions and recorded lines land in exact slots
   assert.equal(rows[4].classification.startPose, 'VILA'); assert.equal(rows[4].classification.endPose, 'REDO');
   assert.equal(rows[5].classification.startPose, 'REDO'); assert.equal(rows[5].classification.endPose, 'VILA');
   assert.equal(rows[6].classification.startPose, undefined); assert.match(rows[6].classification.notes, /Språk i filnamnet: sv\. Tagning 1/);
-  assert.equal(rows[7].classification.kind, 'reaction'); assert.equal(rows[7].classification.startPose, undefined);
+  assert.equal(rows[7].classification.kind, 'idle'); assert.equal(rows[7].classification.startPose, undefined);
   assert.equal(rows[8].poses, undefined); assert.equal(rows[8].classification.startPose, undefined);
   // A model that picks a different slot does not inherit the filename's chain.
   const moved = finishDealerImportRows([{ ...proposals[0], slotId: 'deal.player.left/box0' }], { ...body, files: [body.files[0]] }, catalog);

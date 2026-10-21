@@ -42,11 +42,10 @@ const AVATAR_BASE = 2, AVATAR_PER_SIX_SECONDS = 2;
 
 export const FORGE_GROUPS = Object.freeze([
   Object.freeze({ id: 'pose', label: 'Grundposer' }),
-  Object.freeze({ id: 'idle', label: 'Idle' }),
+  Object.freeze({ id: 'idle', label: 'Vila / Idle' }),
   Object.freeze({ id: 'transition', label: 'Övergångar' }),
   Object.freeze({ id: 'deal', label: 'Givning' }),
-  Object.freeze({ id: 'speech', label: 'Repliker' }),
-  Object.freeze({ id: 'reaction', label: 'Reaktioner' }),
+  Object.freeze({ id: 'speech', label: 'Talade repliker' }),
   Object.freeze({ id: 'layer', label: 'Bord & bakgrund' }),
 ]);
 

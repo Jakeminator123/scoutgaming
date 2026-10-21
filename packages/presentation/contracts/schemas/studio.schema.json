@@ -3080,7 +3080,7 @@
         "variants": {
           "type": "array",
           "minItems": 1,
-            "maxItems": 19,
+            "maxItems": 31,
           "items": {
             "$ref": "#/$defs/variant"
           }
@@ -3092,7 +3092,11 @@
           "else": {
             "if": {"properties": {"eventId": {"const": "speak.other"}}},
             "then": {"properties": {"variants": {"maxItems": 19}}},
-            "else": {"properties": {"variants": {"maxItems": 5}}}
+            "else": {
+              "if": {"properties": {"eventId": {"const": "idle.ready"}}},
+              "then": {"properties": {"variants": {"maxItems": 31}}},
+              "else": {"properties": {"variants": {"maxItems": 5}}}
+            }
           }
       }]
     },

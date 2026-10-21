@@ -1,7 +1,7 @@
 // Server-only boundary: StudioMediaRecord is validated by the existing storage
 // contract. Do not import this module into presentation-layers/studio-model.
 import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../contracts/dealer-identity.mjs';
-import { validateRegisteredIdlePolicies } from '../runtime/registered-idle-policy.mjs';
+import { validateRegisteredIdlePolicies, registeredIdlePolicy } from '../runtime/registered-idle-policy.mjs';
 import { validateFrozenDealerPlayback } from '../contracts/frozen-dealer-playback.mjs';
 import { videoFitsLine } from '../contracts/video-intake.mjs';
 import { ownDealerIdle } from '../runtime/registered-idle.mjs';
@@ -157,7 +157,7 @@ export function captureFrozenDealerPlayback({ project, inventory, mediaRows, reg
   const saved = validateDocumentValue('project', source, source?.revision, { allowLegacyRead: true });
   const ids = registeredDealers.map(row => row.id), rows = rowMap(mediaRows);
   const lines = cloneStudioJson(saved.lines.filter(line => ids.includes(line.dealerId)));
-  const dealerIdlePolicies = cloneStudioJson((saved.dealerIdlePolicies ?? []).filter(row => ids.includes(row.dealerId)));
+  const dealerIdlePolicies = cloneStudioJson(ids.map(dealerId=>({dealerId,policy:registeredIdlePolicy(saved,dealerId)})).filter(row=>row.policy));
   try { validateRegisteredIdlePolicies(dealerIdlePolicies,{dealers:registeredDealers,lines,requireBaseline:true}); }
   catch { fail('studio_dealer_idle_policy_mismatch'); }
   const media = new Map(), preconditions = new Map(), assetIds = new Set(), triggerIds = new Set();

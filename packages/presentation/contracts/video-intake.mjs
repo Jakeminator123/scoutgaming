@@ -28,6 +28,7 @@ export function validateVideoMetadata(input, { allowLegacySituation = false, for
   if(input.mediaType==='image'&&(input.eventId!=='roulette.reference'||input.compositing?.mode!=='alpha'))throw Error('Bilder hör till roulettens VILA-referensfack och ska behålla sin alfa.');
   const event = rouletteMediaEvent(input.eventId) ?? seed.events.find(e => e.id === input.eventId);
   if (!isDealerId(input.dealerId) || !event) throw new Error('Välj dealer och event.');
+  if (forWrite && ['turn','settle'].includes(event.sourceType)) throw new Error('Tur och resultat är körvillkor. Lägg tysta beteendeklipp i Vila / Idle och klipp med tal i Talade repliker.');
   if (!schema.properties.role.enum.includes(input.role)) throw new Error('Välj standard eller alternativ.');
   if (input.playback !== undefined && !contract.playback.supported.includes(input.playback)) throw new Error('Labbet stöder endast en gång (once). Loop är ännu ett förslag.');
   if (input.kind !== kindForEvent(event)) throw new Error('Videotypen passar inte eventet.');
