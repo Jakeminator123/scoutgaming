@@ -37,17 +37,22 @@
       "stage": "E1",
       "title": "Tydligare publicering i Admin",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "IN_REVIEW",
       "dependsOn": [],
       "branch": "codex/admin-publication-j01",
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "head": "ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/313",
+      "reviewer": "Codex-underagent plan_review och orkestrator",
       "evidence": [
-        "Jakob startade uttryckligen J01 med underagenter 2026-10-21; separat worktree från main 15988f32fd572c453d2189502acbe324c4566815. Detta är startbevis, inte slutförd leverans.",
-        "Ansvar och gränser: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318061602"
+        "Isolerad implementation på head 2f3a5b503dd6b2dc98dd5d211d203151c3d75435: val/redigera/spara/publicera/återöppna, dirty/conflict-spärr och revisionskvitto; befintliga auth/writers återanvänds.",
+        "Node v24.21.0 (Volta). node --test --test-concurrency=4 apps/studio/test/control-lanes-page.test.mjs apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/test/presentation-room-create.test.mjs apps/studio/test/presentation-room-api.test.mjs apps/studio/test/studio-session-save.test.mjs apps/studio/test/admin-publication-workspace.test.mjs: 160/160,0skip. Browsermodul=lokalt Playwright index.mjs via CROUPIER_BROWSER_FIXTURE_MODULE, channel=chrome.",
+        "Studio tsc --noEmit --incremental false; klient tsc --noEmit -p admin --incremental false; node apps/studio/client/build.mjs; node tools/check-orphan-tests.mjs: passerar. Commitkontroll39/39;0orphan av530. Befintliga CSS-composes-varningar.",
+        "Egen körning av J01-implementeraren; orkestrator och oberoende granskare har läst slutloggar och före/efter/mobilbilder i J01-worktreens arkiv/2026-10-21/j01-ui. Syntetiska konton/minneslagring, inga produktionsrader eller GPU-anrop.",
+        "Sessionskomplettering på ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868: ny signerad syntetisk token för samma konto valideras med verklig N1-validator, API och browser återläser sparat namn och paketversion 2. node --test --test-concurrency=4 apps/studio/test/admin-publication-workspace.test.mjs apps/studio/test/studio-native-auth.test.mjs: 23/23,0skip; commit2/2. Orkestratorn har läst diff/logg. Ingen produktkod ändrad; tidigare160prov/typecheck/build återanvänds där deltat inte berör dem.",
+        "Oberoende slutlig delta-granskning (plan_review) på ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868: inga blockerande fynd; hela isolerade J01-acceptansen styrkt. Granskaren läste diff, 23/23-logg och nya sessionsbilden; inga egna omkörningar.",
+        "CI på slutlig head: https://github.com/Jakeminator123/scoutgaming/actions/runs/39618133973. Vid avläsning pending; inga resultat antas."
       ],
-      "blocker": null
+      "blocker": "CI på head ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868 inväntas. Isolerad acceptans är oberoende godkänd; ingen verklig lösenordslogin, PostgreSQL-durabilitet eller produktionsdrift påstås."
     },
     {
       "id": "J02",
@@ -81,9 +86,14 @@
       "evidence": [
         "Kevin-underlag, rapporterade test/GPU-resultat: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6317942648",
         "Oberoende granskning: fyra klientfiler och två tester efter c4818f5; sju DDL-filer, 13 tabeller, sex triggrar, tre SQLite-standardfiler och minst nio SQL-konsumenter. 28 V1-raderingar verifierade; 1790 ljud-/videofiler kvar i trädet.",
-        "Öppna fynd och nästa ägare: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117"
+        "Öppna fynd och nästa ägare: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117",
+        "Neon-läsroll levererad och oberoende ACL-/inloggningsprovad; Kevin-agenten kvitterar egen anslutning/schemaöversikt: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318426856",
+        "Verifierad kontraktsgräns: Studio-audit har dokument/medieansvar och ersätter inte direkt Kevins spelhashkedja: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318445589",
+        "Kompletterande inventering på codex/kevin-k01-underlag@bcd9273432c686c3e140892b5b00b2e69065dfcb: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318486389. Kodkällan är fortsatt 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc.",
+        "Oberoende läsgranskning verifierar matrisens SQL-konsumenter, rowid, global wallet och auditserialisering samt 1267/1267 TSV-sökvägar/storlekar/Git-blobbar mot fryst kodträd. SHA256-värden ej omräknade mot binärer. Medier är statiska kandidater, inte godkänt importurval. TAP-loggens 285 pass lästa, ingen egen körning; GPU-server-SHA/latensorsak fortsatt obestyrkta.",
+        "Två avgränsade K01-rättelser och nästa ansvarig: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653. O01 äger kvarvarande schema-/lås-/replaybeslut; inga nya GPU-prov krävs för inventeringen."
       ],
-      "blocker": "Versionsbunden beteende-/beroendematris, fullständiga SQL-konsumenter, exakt mediaurval och körloggar saknas; GPU-tal och väntelägestestets tidiga retur behöver förklaras."
+      "blocker": "Kevin ska rätta matrisens JSONB-förslag för rumsstate som innehåller ordningskänsligt shoe proof, och auditverktygets brutna import samt leverera körkommando/resultat från publicerad version. Dokument-PR/full head inväntas. Separat deterministisk testfix tillstyrkt; runtime/DDL ingår inte."
     },
     {
       "id": "O01",

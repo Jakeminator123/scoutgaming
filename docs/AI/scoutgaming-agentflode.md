@@ -5,7 +5,11 @@
 Jakob har uttryckligen startat J01 med underagenter och parallell granskning
 av K01 enligt [Masterplan](../../migrering/MASTERPLAN.md). Jakob-implementeraren
 äger J01 i egen worktree, Kevin-agenten kompletterar K01 och orkestratorn äger
-SQL-läsroll, beroenden, integration och status. Oberoende granskare bedömer
+SQL-läsroll, beroenden, integration och status. SQL-rollen är provad och
+levererad krypterad; Kevin har kvitterat egen anslutning. Rekommendationen för
+Jakobs parallella småändringar är egen jakob/*-branch/worktree och samordnade
+filgränser enligt samarbetsguiden. Ingen ny småfixbranch är skapad.
+Oberoende granskare bedömer
 fryst head; rapporterade tester blir inte automatiskt verifierade.
 
 [GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312) är den

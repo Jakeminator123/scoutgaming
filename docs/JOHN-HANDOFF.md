@@ -2,32 +2,44 @@
 
 ## Masterplan för Admin och Kevin-modulen — 21 oktober 2026
 
-Jakob har startat J01 med underagenter och parallell K01-granskning.
+J01 finns i [PR #313](https://github.com/Jakeminator123/scoutgaming/pull/313),
+branch codex/admin-publication-j01, head
+ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868 från main 15988f32.
+Isolerad UI/API-acceptans är oberoende godkänd: spara/publicera/återöppna,
+ny distinkt signerad N1-session, konflikt och negativa behörighetsfall.
+Produktändringen passerade 160/160 prov, typer och klientbygge; den efterföljande
+sessionskompletteringen 23/23 berörda prov. CI på slutlig head återstår.
+Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
+Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
+
 [Masterplan](../migrering/MASTERPLAN.md) och [beräknad status](../migrering/STATUS.md)
 följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
-J01 arbetar i separat codex/admin-publication-j01 från main
-15988f32fd572c453d2189502acbe324c4566815. Ursprunglig checkout bevaras.
-
-Kevin-källan är fryst på kevin-merge-admin /
-5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc. Oberoende läsgranskning verifierar
-deltat och DDL-inventeringen, men kräver komplett beroendematris, nio SQL-konsumenter,
-exakt mediaurval och korrigerade/länkade testbevis. K01 är IN_REVIEW, inte klar.
-[J01/K01-samordning](https://github.com/Jakeminator123/scoutgaming/issues/312)
-sker via en aktiv femminutersbevakning; Kevin rapporterar motsvarande läsning.
+Kevin-källan är fortsatt kevin-merge-admin /
+5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; underlag på
+codex/kevin-k01-underlag / bcd9273432c686c3e140892b5b00b2e69065dfcb.
+Matris och 1267 spårade mediekandidater är läsgranskade. Två K01-rättelser
+återstår: state/JSONB-förslaget kan bryta shoe proof och auditverktygets
+publicerade import pekar fel. Kevin äger rättelserna och dokument-PR;
+[granskning och nästa steg](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
+Schema-/låsbeslut hör till O01. Testloggar är lästa, inte omkörda;
+GPU-server-SHA/latensorsak är obestyrkta och mediaurval ännu inte beslutat.
+Befintlig femminutersbevakning av #312 är aktiv; inga kvittensloopar.
 Inga migrationspoäng ges för planering, start eller åtkomst.
 
 Separat kevin_migration_readonly har skapats i Neon croupier_game:
 tre scheman, kolumn-SELECT i 61 tabeller, hemliga kolumner undantagna.
 ACL-prov visar noll skrivbara objekt och nekad UPDATE/DELETE/CREATE.
 Ny inloggning och sessionsgränser är verifierade från vår sida. Krypterad
-anslutning är levererad till Kevins age-nyckel i #312; hans agentprov återstår. GitHub deploynyckel med write är sparad efter Jakobs uttryckliga
+anslutningsinformation är levererad till Kevins age-nyckel i #312; hans agent har kvitterat inloggning och schemaöversikt.
+GitHub deploynyckel med write är sparad efter Jakobs uttryckliga
 bekräftelse; Kevin rapporterar SSH/ls-remote. Rätt Vercel-medlem är
 kevstersolver / kevin@solvify.se, DEVELOPER. Konsol-/Blob-prov återstår.
 Detaljer och ansvar finns i [samarbetsguiden](../migrering/SAMARBETE-OCH-ATKOMST.md).
 
-Senaste säkerhetsläsning når inte GitGuardian-incident-/platsdata eller
-källbindning. GitHub combined status visar Vercel success för basen, vilket
-inte ersätter säkerhetstäckning eller J01:s produktverifiering.
+Senaste host-läsning av main 15988f32 verifierar GitGuardian-källbindning och
+aktiv monitorering: 0 öppna och 23 ignorerade incidenter. Historikskanningen
+är too_large och platsmetadata delvis tillgängliga; ingen full historiktäckning
+påstås. Detta ersätter inte J01:s produktverifiering eller PR:ens CI.
 Ingen produktionsradering, spelport, merge eller deploy har gjorts i detta steg.
 
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026

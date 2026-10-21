@@ -7,11 +7,33 @@ Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123
 | Roll | Aktuell uppgift | Ägd yta |
 | --- | --- | --- |
 | Jakob-implementerare | J01: tydligare Admin-publicering | codex/admin-publication-j01, separat worktree från main 15988f32fd572c453d2189502acbe324c4566815 |
-| Kevin-agent | Komplettera K01:s matris, mediaurval och testbevis | kevin-merge-admin, fryst 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc |
+| Kevin-agent | Rätta K01:s state/proof-mappning och reproducerbara auditunderlag | kevin-merge-admin, fryst 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc |
 | Orkestrator | Beroenden, SQL-läsroll, integration och status | codex/migrering-masterplan och GitHub #312 |
 | Oberoende granskare | Granska fryst K01 och därefter levererad J01 | Fynd och verifiering; ingen självattest av egen kod |
 
-Jakob har uttryckligen startat J01 med underagenter och parallell granskning av Kevin-underlaget. J01 väntar inte på Kevin-porten eller SQL-inloggningen. K01:s första granskning är gjord, men hela aktiviteten är inte klar; [fynd och nästa leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117).
+Jakob har uttryckligen startat J01 med underagenter och parallell granskning av Kevin-underlaget. J01 väntar inte på Kevin-porten eller SQL-inloggningen. J01:s isolerade acceptans är granskad i PR #313; CI återstår. K01:s komplettering är granskad men två rättelser krävs; [fynd och nästa leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
+
+## Jakobs småändringar parallellt
+
+Rekommenderat upplägg efter Jakobs fråga 21 oktober: en kortlivad branch som
+`jakob/smafix` från aktuell main i en **egen worktree/arbetsmapp**. En branch
+som bara heter `Jakob` följer inte repoets nuvarande leveransmönster `jakob/*`.
+Ingen sådan branch eller arbetsmapp är skapad av denna rekommendation.
+
+- Börja med avgränsade texter eller UI-delar utanför J01:s publicering. Ange
+  avsedda filer i #312 innan arbetet börjar; orkestratorn kontrollerar överlapp.
+- Lämna tills vidare publiceringskomponenten och dess tester, `migrering/`,
+  gemensam navigation, spel-/lagringskontrakt och schema till de ägare som
+  framgår av aktivitetsplanen. Delade handofffiler samordnas per avsnitt.
+- Byt inte branch i agenternas arbetsmappar. Commits och små PR:er ger
+  återställningspunkter; använd inga force-pushar eller breda reset/clean.
+- Main har aktivt skydd för PR och CI samt mot borttagning och force-push
+  ([ruleset 24642403](https://github.com/Jakeminator123/scoutgaming/rules/24642403),
+  verifierat 21 oktober). Administratören kan kringgå reglerna; använd inte
+  bypass för småändringar. Granska diff och överlapp före merge.
+- En worktree isolerar filer, inte Neon, Blob eller Vercel-miljöer. Använd
+  syntetiska lokala fixturer eller uttryckligen isolerad testmiljö för prov.
+  Ändra inte delade produktionsdata eller miljöinställningar från småfixgrenen.
 
 ## Samordning och väckning
 
@@ -35,7 +57,7 @@ Jakob har uttryckligen startat J01 med underagenter och parallell granskning av 
 - Projekt scoutgaming: prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD.
 - Produktens Blob-store är croupier-media-private, store_AqwvebTbBHarOjvG. impactwin-media-preview hör till en annan miljö.
 - Neon croupier-production, wandering-hill-60561912, är Vercel-hanterat. Konsolåtkomst öppnas via Vercel Storage → Open in Neon och rätt kontokoppling; det är skilt från SQL-inloggning.
-- Kevin provar konsolerna. Faktisk åtkomst från hans agent till Neon/Blob är ännu inte verifierad. Ingen bredare Vercel-roll eller generell Blob-token har delats.
+- Kevin provar konsolerna. SQL-åtkomst från hans agent är kvitterad i #312; faktisk Blob-/konsolåtkomst återstår. Ingen bredare Vercel-roll eller generell Blob-token har delats.
 
 ## Separat SQL-läsroll
 
@@ -68,8 +90,10 @@ bara hans privata nyckel kan dekryptera. Alla tillfälliga lokala credentialfile
 och krypteringshjälpare är borttagna efter överlämningen. Inga klartexthemligheter
 har skrivits i GitHub, Slack eller planfiler. Lösenordets giltighet stoppar inte
 redan öppna sessioner; orkestratorn äger återkallelse efter kartläggningen.
-Nästa ansvarig är Kevin-agenten: bekräfta faktisk inloggning från sin miljö,
-roll/databas och schemaöversikt utan data eller hemligheter.
+Kevin-agenten har [bekräftat egen inloggning och schemaöversikt](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318426856):
+rätt roll/databas, read-only on och 7/26/28 tabeller i auth/game/studio. Detta är
+Kevins körkvitto; vår separata anslutnings-/ACL-verifiering beskrivs ovan.
+Nästa ansvarig är Kevin-agenten för K01-matrisen.
 
 Denna åtkomstleverans ger inga migrationsprocent. Produktionsrensning av tabeller kräver fortfarande granskad J09/O03-åtgärd.
 
