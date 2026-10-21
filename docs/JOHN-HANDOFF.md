@@ -1306,8 +1306,10 @@ stoppas även med varm cache. En 304 utan verifierad SHA får inte återuppliva
 gamla bytes. Inga ljud, video, bildrutor, kalibreringar eller godkännanden
 ändras och ingen DDL eller publicering införs.
 
-69 riktade avatar-/transportprov och 32 befintliga publicerade-mediaprov
-passerar. Det nya cachetestet ingår i fullsvitens befintliga mediegrupp och
+69 riktade avatar-/transportprov, 32 befintliga publicerade-mediaprov och
+117 native-spelarprov passerar. Native-HTTP-provet verifierar också 304 efter
+en exakt ranged hämtning; fil-, spelar- och revisionskontroller behålls.
+Det nya cachetestet ingår i fullsvitens befintliga mediegrupp och
 orphan-kontrollen passerar. Ett separat isolerat Chrome-prov
 mot den riktiga registered-idle-routern ger samma 80 procents minskning vid
 fem sidöppningar: 16 753 820 till 3 350 764 body-bytes, fem färska kontroller
