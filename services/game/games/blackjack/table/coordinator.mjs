@@ -54,10 +54,16 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     for (const p of players) {
       const boxes = kind === 'stake' ? owned(r, p).filter(i => sum(r.bets[i]) > 0) : (r.insurance[p] ? handsOf(r, p).map(h => h.box) : []);
       if (!boxes.length) continue;
-      const res = await tx.wallet.reservation(kind === 'stake' ? stakeReservation(r, p) : insuranceReservation(r, p));
+      const reservationId = kind === 'stake' ? stakeReservation(r, p) : insuranceReservation(r, p);
+      const res = await tx.wallet.reservation(reservationId);
       const amounts = boxes.map(i => kind === 'stake' ? sum(r.bets[i]) : handsOf(r, p).filter(h => h.box === i).reduce((n, h) => n + h.stake / 2, 0));
       // Only a reservation that covers this player's boxes funds them; otherwise K02 refuses.
       const covered = res && res.amount === amounts.reduce((a, b) => a + b, 0);
+      // A missing or non-matching stake reservation is a wallet refusal for this player, decided
+      // before the core step, so window.close records `blocked` (retried once the wallet or
+      // reservation generation changes) instead of a permanent RESERVATION_INSUFFICIENT rejection.
+      if (!covered && kind === 'stake') throw new WalletDenied({ playerId: p, reservationId,
+        walletGen: await tx.wallet.gen(p), reason: res ? 'reservation does not cover the stake' : 'no reservation' });
       boxes.forEach((b, i) => { reserved[b] = covered ? amounts[i] : 0; });
     }
     return { reserved: { [kind]: reserved } };
@@ -433,10 +439,13 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     return out;
   }
 
+  // A missing reservation has generation null, both in the blocked receipt and when compared
+  // here, so an unchanged absence never counts as a change.
+  const reservationGen = res => res?.gen ?? null;
   async function blockedChanged(read, blockedOn) {
     for (const b of blockedOn) {
       if ((await read.walletGen(b.playerId)) !== b.walletGen) return true;
-      if ((await read.reservation(b.reservationId))?.gen !== b.reservationGen) return true;
+      if (reservationGen(await read.reservation(b.reservationId)) !== (b.reservationGen ?? null)) return true;
     }
     return false;
   }
@@ -530,7 +539,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (!blocked) return record('rejected', { code: e.code });
         const res = await tx.wallet.reservation(e.reservationId);
         return record('blocked', { waitingOn: e.playerId },
-          [{ playerId: e.playerId, reservationId: e.reservationId, walletGen: e.walletGen, reservationGen: res?.gen ?? null }]);
+          [{ playerId: e.playerId, reservationId: e.reservationId, walletGen: e.walletGen, reservationGen: reservationGen(res) }]);
       }
       r.version++;
       await tx.rooms.write(r.roomId, r);

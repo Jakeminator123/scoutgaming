@@ -72,7 +72,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       wallet: {
         available: async p => { player(p); return available(get(), p); },
         gen: async p => { player(p); return get().walletGen[p] ?? 0; },
-        reservation: async id => clone(get().reservations[id]) ?? null,
+        reservation: async id => { maybeFail('wallet.reservation'); return clone(get().reservations[id]) ?? null; },
         reserve: async (p, { reservationId, roomId, kind, amount }) => {
           player(p); const s = get(), cur = s.reservations[reservationId];
           if (amount - (cur?.amount ?? 0) > available(s, p)) throw new WalletDenied({ playerId: p, reservationId, walletGen: s.walletGen[p] ?? 0, reason: 'insufficient available' });
@@ -171,6 +171,8 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       outbox: () => clone(db.outbox),
       publish: (version, overrides) => { db.configs.versions[version] = { configVersion: version, ...clone(DEFAULT_CONFIG), ...clone(overrides) }; db.configs.latest = version; },
       mutateRoom: (id, fn) => { fn(db.rooms[id]); },
+      // Another wallet writer changing a reservation row directly (missing, shrunk or restored).
+      mutateReservations: fn => { fn(db.reservations); },
       tamperAudit: (seq, payload) => { db.audit[seq - 1].payload = payload; },
     },
   };

@@ -240,6 +240,61 @@ test('blocked consume: choices and reservations stay, no retry loop, restart kee
   assert.equal(t.store.test.ledger().filter(r => r.kind === 'consume:stake').length, 2);
 });
 
+for (const [label, change] of [['missing', (all, id) => { delete all[id]; }], ['too small', (all, id) => { all[id].amount = 50; }]]) {
+  test(`stake reservation ${label} at window.close: blocked, no effect, no retry loop, one retry once restored`, async () => {
+    const t = setup();
+    await t.join('kevin', [3]); await t.join('john', [4]);
+    await t.bet('kevin', 3, 100); await t.bet('john', 4, 100);
+    const johnRes = `party:${(await t.snap()).windowId}:john:stake`;
+    const saved = t.store.test.reservations()[johnRes];
+    t.store.test.mutateReservations(all => change(all, johnRes));   // another wallet writer
+    t.time = (await t.snap()).deadline;
+    const before = { ledger: t.store.test.ledger().length, balances: ['kevin', 'john'].map(p => t.store.test.balance(p)), outbox: t.store.test.outbox().length };
+    const [blocked, ...more] = await t.drain();
+    assert.equal(more.length, 0);
+    assert.equal(blocked.outcome, 'blocked'); assert.deepEqual(blocked.result, { waitingOn: 'john' });
+    assert.deepEqual(blocked.blockedOn, [{ playerId: 'john', reservationId: johnRes, walletGen: 1, reservationGen: label === 'missing' ? null : saved.gen }]);
+    const s = await t.snap();
+    assert.equal(s.phase, 'bets'); assert.equal(s.roundId, null); assert.ok(!t.auditTypes().includes('round.started'));
+    assert.ok(!t.auditTypes().some(x => x.startsWith('engine.')), 'no game effect');
+    assert.deepEqual({ ledger: t.store.test.ledger().length, balances: ['kevin', 'john'].map(p => t.store.test.balance(p)), outbox: t.store.test.outbox().length }, before, 'no wallet effect');
+    // Generations unchanged: never offered again, and a direct retry call writes nothing.
+    for (let i = 0; i < 5; i++) { t.time += 1000; assert.deepEqual(await t.table.dueTicks(), []); }
+    t.restart();
+    assert.deepEqual(await t.table.dueTicks(), [], 'restart reads the same stop');
+    const forced = await t.table.tick({ ...blocked, tickId: `${blocked.tickId}:retry:1`, roomId: 'party', kind: 'window.close',
+      baseTickId: blocked.tickId, retry: 1, blockedPlayers: ['john'] });
+    assert.equal(forced.outcome, 'not_due'); assert.equal(t.store.test.ticks().length, 1);
+    // Restored reservation (new generation): exactly one successful retry.
+    t.store.test.mutateReservations(all => { all[johnRes] = { ...saved, gen: saved.gen + 1 }; });
+    const due = await t.table.dueTicks();
+    assert.deepEqual(due.map(d => d.tickId), [`${blocked.tickId}:retry:1`]);
+    const ran = await t.drain();
+    assert.deepEqual(ran.map(r => [r.tickId, r.outcome]), [[`${blocked.tickId}:retry:1`, 'applied']]);
+    assert.equal((await t.snap()).phase, 'round');
+    assert.equal(t.store.test.ledger().filter(r => r.kind === 'consume:stake').length, 2);
+    assert.equal(t.store.test.balance('john'), 900);
+    assert.equal(t.store.test.ticks().filter(x => x.kind === 'window.close').length, 2);
+  });
+}
+
+test('an infrastructure error at window.close rolls back fully and writes no blocked receipt', async () => {
+  const t = setup();
+  await t.join('kevin', [3]); await t.bet('kevin', 3, 25);
+  t.time = (await t.snap()).deadline;
+  const audits = t.store.test.audit().length, before = await t.snap();
+  const [due] = await t.table.dueTicks();
+  t.store.test.failOnce('wallet.reservation');
+  await assert.rejects(t.table.tick(due), /injected failure: wallet.reservation/);
+  assert.equal(t.store.test.ticks().length, 0, 'no tick receipt, blocked or otherwise');
+  assert.equal(t.store.test.audit().length, audits, 'no audit row');
+  assert.equal(t.store.test.ledger().length, 0); assert.equal(t.store.test.balance('kevin'), 1000);
+  assert.deepEqual(await t.snap(), before);
+  const [again] = await t.table.dueTicks();
+  assert.equal(again.tickId, due.tickId, 'the same tick is offered again');
+  assert.equal((await t.table.tick(again)).outcome, 'applied');
+});
+
 test('insurance yes is binding across pause and leave and is consumed when the phase resolves', async () => {
   const t = setup();
   await t.join('kevin', [3]); await t.join('john', [4]);
