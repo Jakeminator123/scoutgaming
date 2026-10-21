@@ -43,7 +43,7 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 // The talk track lives on the room (r.talk), so an answer or a line outlives the plan it started in.
 export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null}={}) {
   const talkFor=talk;
-  const db=new DatabaseSync(filename);
+  const db=new DatabaseSync(filename);db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');   // WAL + NORMAL: a bet's COMMIT no longer waits on a full fsync (Kevin 22 Oct)
   db.exec(`CREATE TABLE IF NOT EXISTS shared_rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS shared_players (room TEXT NOT NULL, token TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, balance REAL NOT NULL, seen REAL NOT NULL, last_return REAL, PRIMARY KEY(room,token));
     CREATE TABLE IF NOT EXISTS shared_settlements (room TEXT NOT NULL, round_id TEXT NOT NULL, player_id TEXT NOT NULL, receipt TEXT NOT NULL, PRIMARY KEY(room,round_id,player_id));

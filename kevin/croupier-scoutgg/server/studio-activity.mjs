@@ -10,6 +10,7 @@ export const sidOf = headers => { const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9._-]+)(
 
 export function createStudioActivity(file, tableDb) {
   const db = new DatabaseSync(file);
+  db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');
   db.exec(`CREATE TABLE IF NOT EXISTS studio_activity (at TEXT NOT NULL, user TEXT NOT NULL, sid TEXT, ip TEXT, ua TEXT,
     kind TEXT NOT NULL, tbl TEXT, guest TEXT, detail TEXT);
     CREATE INDEX IF NOT EXISTS studio_activity_user ON studio_activity(user, at);`);

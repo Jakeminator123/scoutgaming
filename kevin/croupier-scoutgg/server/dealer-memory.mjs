@@ -9,6 +9,7 @@ const PERSONAL = /@|https?:|\d{5}|\+?\d[\d\s-]{7,}|password|lösenord|personnumm
 
 export function createDealerMemory(filename) {
   const db = new DatabaseSync(filename);
+  db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');
   db.exec(`CREATE TABLE IF NOT EXISTS dealer_memory (
     visitor TEXT NOT NULL, dealer TEXT NOT NULL, name TEXT, visits INTEGER NOT NULL DEFAULT 0,
     first_seen INTEGER, last_seen INTEGER, notes TEXT NOT NULL DEFAULT '[]', lines TEXT NOT NULL DEFAULT '[]',

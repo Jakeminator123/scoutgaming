@@ -7,6 +7,7 @@ import { command, newGame } from "../vendor/croupier/shoe-game.mjs";
 // shuffle, hidden cards, legality, debits and payouts. Never use a client balance.
 export function createTableService(filename, { shared } = {}) {
   const db = new DatabaseSync(filename);
+  db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');
   db.exec(`CREATE TABLE IF NOT EXISTS demo_tables (
     session TEXT PRIMARY KEY, balance REAL NOT NULL, state TEXT NOT NULL
   )`);
