@@ -14,144 +14,62 @@ Slutlig head följs i PR:en; inga produktändringar eller ändrade CI-/branchsky
 
 ## Masterplan för Admin och Kevin-modulen — 21 oktober 2026
 
-J01 finns i [PR #313](https://github.com/Jakeminator123/scoutgaming/pull/313),
-branch codex/admin-publication-j01, head
-ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868 från main 15988f32.
-Isolerad UI/API-acceptans är oberoende godkänd: spara/publicera/återöppna,
-ny distinkt signerad N1-session, konflikt och negativa behörighetsfall.
-Produktändringen passerade 160/160 prov, typer och klientbygge; den efterföljande
-sessionskompletteringen 23/23 berörda prov. CI på samma slutliga head passerar.
-J01 är VERIFIED och bidrar med 5 procentenheter. Tillsammans med K01 och J02 är
-15% av planen och 75% av E1 verifierat. PR:en är inte mergad.
-Inga nya lösenordslogin-, PostgreSQL-durabilitets- eller produktionsprov påstås.
-Produktkoden ligger i separat worktree; ursprunglig checkout bevaras.
+[Masterplan](../migrering/MASTERPLAN.md) och [beräknad checklista](../migrering/STATUS.md)
+följs i [PR311](https://github.com/Jakeminator123/scoutgaming/pull/311).
+Accepterat: J01, J02, K01 och O01; totalt20%, E1 100%.
+Fullständiga SHA, kommandon och bevisgränser finns i status.json.
+Inga migrations-PR:er är mergade eller produktionsverifierade i denna leverans.
 
-J02 finns i [PR #317](https://github.com/Jakeminator123/scoutgaming/pull/317),
-codex/admin-control-publication-j02 på
-6748838e9194e0554fda060e869785599b890ac4 från verifierade J01-head ovan.
-Tre gamla publicerings-SSR-filer är raderade; aktiv komponent/CSS/test och
-aktuella länkar har Admin-namn/mål. Gamla bokmärken omdirigeras med kontext
-med och utan native/unified samt /studio-prefix; skrivningar omdirigeras inte.
-Implementerarens 383 fokuserade prov och 303 överlappande commitprov passerar,
-liksom browserflöde utan skips, Studio-typer/build och orphancheck. Oberoende
-granskning av fryst head: inga blockerande fynd. Loggar är lästa, inte omkörda.
-J02 är VERIFIED: [GitHub CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991)
-passerar på samma frysta head; 15% totalt och E1 75% är verifierat.
-Ingen merge eller produktionsacceptans. Kvitto/kommandon: status.json[J02].
-O01:s main-karta är separat läsgranskad; orkestratorns 9/9 befintliga isolerade
-transaktionsprov utan DB-anslutning, 0 skip, styrker mockade kontrakt,
-inte framtida flerbordssamtidighet i Postgres.
+| Aktivitet | Verifierad leverans | Kvar |
+| --- | --- | --- |
+| J01 | PR313/ab4c8c98: tydligare Admin-publicering, spara/publicera/återöppna, ny N1-session, konflikt och auth; CI success | Integration och drift enligt slutetappen |
+| J02 | PR317/6748838e: ersatta publiceringssidor borta, Adminkomponent och kontextbevarande bokmärken; CI success | Ingår i J03:s ännu ointegrerade stack |
+| K01 | PR314/7f42c8f6: fryst källa5aa7ed10 inventerad, import-/state-fynd rättade | Medieimport och exakt take-/hashmappning är senare arbete |
+| O01 | Kontrakt4f45a59c763874466986fc1bb3f3e76b12edba53: backend9c669e67, fastställd Adminmatris och44/44 isolerade kontraktsprov; oberoende slutreview utan blockerare | Framtida writers och faktisk integration följer J07/J08/K04/K06 |
+| K02/K03 | Kodgranskade på0493af3e/b8e1c957; 13+30 isolerade prov samt1 språkprov faktiskt körda,0skip | Full aktivitetsacceptans; J07 äger PG-adapter och verklig persistens |
+| J03 | Guide/Videor318, Probe/Replies320, Events/Tree322, Compositions/Rehearsal324, Agentmodeller/Dealerchatt326 samt Clips329 har grön CI; Administration330 har lokal build/beteendeacceptans | Administration330:s CI, catch-all/auth samt samlad routeacceptans |
 
-[Masterplan](../migrering/MASTERPLAN.md) och [beräknad status](../migrering/STATUS.md)
-följs i [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311).
-Kevin-källan är fortsatt kevin-merge-admin /
-5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; underlag på
-codex/kevin-k01-underlag / 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33,
-[PR #314](https://github.com/Jakeminator123/scoutgaming/pull/314).
-K01 är VERIFIED som avgränsad inventering. Matris och 1267 spårade
-mediekandidater är läsgranskade; KEVIN_SRC-importen och state/TEXT-motsägelsen
-är rättade. Oberoende slutgranskning av exakt ändringscommit stänger 2/2
-tidigare blockerare. [Leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319631936).
-Det innebär inte runtime-, mediaimport- eller O01-acceptans.
-[PR #315](https://github.com/Jakeminator123/scoutgaming/pull/315), head
-f29adaf942acace6593b0c9bb5677bf412fa0763, har inga blockerande kodfynd:
-fast sko ersätter båda tysta testreturerna. Ingen funktionell GitHub-CI finns;
-285/285 och 30/30 samt auditverktygets 21/21 är Kevins rapporter, inte egna prov.
-Ingen av Kevins PR:er är mergad.
-O01:s backenddel är accepterad mot [fryst specifikation 9c669e67e40c387c84fea6d02449698d373c4c49](https://github.com/Jakeminator123/scoutgaming/blob/9c669e67e40c387c84fea6d02449698d373c4c49/migrering/kevin-ks-migrering/K01/O01-svar.md).
-Root/kevin_plan läste hela specen; plan_review kontrollerade aktivitetskriterierna.
-[Beslut6325862074](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074) preciserar next med lås på lämnande spelare,
-reservationskontroll före ren core/consume efter samt duplicate-version som
-applied utan ny applicering och äldre som stale. Demo först, ingen extern
-aggregator/SQLite-fallback; J07 äger mains reservationswriters på samma klient.
-Hela låsplanen tas före savepoint; domänvägran sparar blocked efter återställning,
-infrastrukturfel ger full rollback. Sen första pause gäller24h/MAX; replay
-förlänger inte. Inga nya runtime-/PG-prov, DDL eller GPU-körningar.
-Hela O01 kvarstår IN_PROGRESS: root fastställer Adminfältens urval, värden,
-writer/publiceringsgräns och samlar spårbara beteendeprov. Ingen väntan på nytt
-Kevin-underlag för dessa delar. Full K02/K03/J07-acceptans följer egna kriterier.
-PR323/9b066769b8a0595d0e62e997285ac84460bb2ef9 testar pausspärr och sekventiell bet-replay;
-inte sen paus/replay/medlemsrace. Fryst legacy advance sker före kvittokontroll.
-K02-rättning PR325/0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är läsgranskad av plan_review och root.
-Tidigare reservations-/budgetfynd och villkorliga turprov är rättade; CI39660600012
-är success på exakt samma head. Inga egna runtimeprov; K02 förblir IN_PROGRESS
-i väntan på samlad O01/full aktivitetacceptans.
-K03-rättning PR327/b8e1c957c99c5a16ee861f9767ec28041b2270dd är läsgranskad av kevin_plan/root.
-Tidigare fem fynd samt stake/insurance-återhämtningen är stängda i kodgranskningen.
-Insurance.timeout hanterar reservations-/consume-vägran med savepoint, blocked och
-generationsstyrd retry. Sista insurance-kommandot nekas atomärt utan kvitto;
-tidigare accepterat ja består. Infrastrukturfel kräver full rollback.
-[Granskning6325658578](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578): inga blockerande fynd i deltat.
-30/30 och52/52 är Kevinrapporterade; inga egna runtimeprov/CI-/PG-acceptans.
-O01-backenddelen är nu delaccepterad; root slutför Adminurval/provspårning.
-Clear före start får häva ready/frigöra reservation även efter deadline; undo kan vänta.
-K03 IN_PROGRESS,total15%; inga aktiva callers eller drift ändrade.
-Medieinventeringen53f66936 gäller annan staging238d6dd6/worker. Storlekar,
-tagningsmappning och raderingsförslag är rapporterade; rot-repliker och
-Astrid-fallback är kodverifierade på5aa7ed10. Inget import-/raderingsbeslut.
-J03-delen Guide/Videor är levererad i [PR318](https://github.com/Jakeminator123/scoutgaming/pull/318),
-codex/admin-control-tools-j03 / 314639b54019d02606d7d2e0b1cac19f9c72b24a,
-från verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Två SSR-sidor
-är raderade; lokala beteendeprov, build/typer och oberoende granskning passerar.
-Exakta kommandon/bevisgränser finns i status.json[J03]. CI39638533490 hittade ett
-föråldrat test som läste den raderade Control/Videor-filen. Den avgränsade
-testrättningen passerar 53 fokuserade och 21 hookprov, 0 skips; oberoende
-deltareview utan blockerande fynd. Uppföljande CI39641756885 passerar på exakt head314639b5;
-dealer-regression, lipsync-worker och slutgrinden CI lyckades.
-Probe/Replies fortsätter i [PR320](https://github.com/Jakeminator123/scoutgaming/pull/320),
-codex/admin-control-replies-probe-j03 / db96200a4aa8556c1ff456b70031501407e2935c.
-Ytterligare två SSR-sidor/tracingposter borta; callers och filterhistorik går till Admin.
-180/180 hookprov, 13/13 komponent och 10/10 faktisk Admin-browserhistorik,
-root15/15 API/query, build/typer och oberoende granskning passerar.
-Körningarna överlappar; syntetiska API-svar och lokalt byggbevis med junctions,
-inte fristående deployacceptans. GitGuardian och CI39646187160 success på oförändrad head db96200a4.
-Events/Tree är lokalt verifierad i [PR322](https://github.com/Jakeminator123/scoutgaming/pull/322),
-codex/admin-control-events-j03 / 2ea99899228b9574bbf142ae80f3e7a776af0a5b.
-Två ytterligare SSR-wrappers/tracingposter borta; Admin-historik och
-spara→Tree→Events återläser rätt data. 33/33 fokuserade inklusive3 browser,
-202/202 hook,0skip; /studio-build/alla typer, orphan531/0 och oberoende review
-passerar. API-svar/uppspelning isolerade; junctionbuild är inget deploybevis.
-GitHub CI39649419165 success på oförändrad head. Alla detaljer i status.json[J03].
-Compositions/Rehearsal är levererad i [PR324](https://github.com/Jakeminator123/scoutgaming/pull/324),
-codex/admin-control-rehearsal-j03 / 43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee, ovanpå PR322.
-Ytterligare två wrappers och tracingposter borta. Explicit rum/spel, tvetydiga
-rum och Admin-historik/utkastskydd verifierade. Hook350/350, preview/CAS35/35,
-slutlig faktisk Admin-browser5/5, root auth/room-API72/72,0skip; prov överlappar.
-Studio-build/alla typer, orphan532/0 och oberoende slutreview utan blockerare.
-Syntetiska API-svar, avgränsad playback, lokalt junctionbygge; inget deploybevis.
-CI39657917855 föll på förbrukat activity-tvåhoppstest. Rättning b69f8840d5f7e91ca27224e6d1abce9a50b83cfb
-ändrar test/handoff, passerar105unika lokala CI-gruppfall över separata körningar,
-hook27/27,0skip och oberoende review. GitHub CI39661754986 är verifierat success på samma rättningshead.
-Aktuell main644b565 är separat läst,
-ingen konflikt rapporteras men den är inte integrerad i denna leverans.
-Agentmodeller/Dealerchatt är levererad i PR326, codex/admin-control-ai-j03 /
-58133210804b001b6100474bd6833d320c5da3eb. Två SSR-wrappers/tracingposter borta,
-Adminmål med kontext, separata dealersamtal och utkast-/request-/historikskydd.
-Global modell-PATCH/baseHash/fallbacks/kvittoläsning behålls. Hook188/188,
-browser5/5, UI23/23, API/auth39/39, middleware27/27,0skip och riktade routeprov;
-build/alla typer/orphan533/0 samt oberoende slutreview gröna. Syntetiska API-svar,
-lokala junctions; inga verkliga provider-/Gatewayanrop eller deployacceptans.
-GitGuardian success på produktheaden; CI39661793088 föll på gammal React-testharness.
-Test/handoff rättade i ba697260751eb692df09ebe85af6f3ae73489f46:27/27,hook4/4,0skip.
-Ny CI39665285361 är verifierat success på samma ba697-head. Samma activity-testfix ingår.
-Clips PR329/headb81d858367254a6572a67df02f1a7ee4dcaae585 är lokalt verifierad:
-wrapper/exklusiv loader borta, Adminkontext/utkastskydd, hook241/241 inklusive7browser,
-0skip och oberoende slutreview. /studio-build/alla typer,orphan534/0,traces67/44.
-Syntetiska API-svar och isolerade media; ingen deployacceptans. GitGuardian success; Clips-CI39666861547 pågår.
-Jakobs mandat för mindre egna beslut och frågepott finns i MASTERPLAN:
-prioritera fungerande grundkedja; framtida integrationer får vänta, verkliga
-kontrakts-/auth-/datakorrekthetsfrågor löses före berörd inkoppling.
-Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
-och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
-inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.
-Nio Admin-kandidater är läskartlagda: scoped publicering, driftprofiler och
-rumslänkar kan återanvändas; språk/limit/timer/logo/proof behöver nya avtalade
-fält. Walletåterföring är ingen befintlig funktion. Ingen kandidat är automatiskt godkänd.
-Det startar ingen runtimeport, DDL eller mediaimport och ger inga poäng.
-Testloggar är lästa, inte omkörda;
-GPU-server-SHA/latensorsak är obestyrkta och mediaurval ännu inte beslutat.
-Befintlig femminutersbevakning av #312 är aktiv; inga kvittensloopar.
-Inga migrationspoäng ges för planering, start eller åtkomst.
+Clips PR329 produktheadb81d858367254a6572a67df02f1a7ee4dcaae585 har
+lokal komponent-/browser-/authacceptans, build/typer och oberoende review.
+CI39666861547 hittade gamla Clips-adresser, saknad URL-global i VM-fixtures
+och en för snäv gemensam transport/deadlinebudget. Endast fem testfiler samt
+handoff rättades påba983288f1e97e26e728e92329425f16125a1dcb.
+115/115 fokuserade och överlappande ordinarie hookprov,0skip; root läste deltat.
+Uppföljande CI39673629390 är success på samma head. Administration PR330 på
+b60ecf993b609136b32861b0ae433ca769489ba7 tar bort nästa SSR-wrapper och
+dess exklusiva redirecthjälpare/tracing. 224 fokuserade,2 browser och235 hookprov
+passerar utan skips; körningarna överlappar. Studio-build/alla typer passerar,
+oberoende produkt-/testreview utan blockerare. CI för330 ännu inte accepterad.
+Den zoombara /admin/clips bevaras; catch-all/root och authflöden återstår.
+
+O01: demo först och förberedd WalletPort gäller enligt Jakobs beslut.
+Ingen extern aggregator eller SQLite-fallback införs. J07 binder mains
+serverägda demowallet och samtliga reservationswriters till samma SQL-klient.
+Låsplanen tas före savepoint; domänvägran återställer försökets effekter och
+sparar blocked, medan infrastrukturfel ger full rollback. Sen första pause
+är24h/MAX; identisk replay förlänger inte. Backendens frysta specifikation:
+[9c669e67](https://github.com/Jakeminator123/scoutgaming/blob/9c669e67e40c387c84fea6d02449698d373c4c49/migrering/kevin-ks-migrering/K01/O01-svar.md).
+Adminfältens writer/publiceringsgräns och senare integrationer följs i
+MASTERPLAN, utan nya parallella register.
+
+plan_review körde faktiskt K02 på0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1
+(13/13), K03 påb8e1c957c99c5a16ee861f9767ec28041b2270dd (30/30) och1/1
+kompletterande språkprov. Node24.21.0,24 källfiler blobhashverifierade före/efter.
+Root läste loggar/provmappning och språkprovet: nytt språk väntar till nästa
+fönster, spelarinput skriver inte bordsspråk och koordinatorrekonstruktion
+bevarar fryst version. Bevis: primary arkiv/2026-10-21/o01-contract-verification.
+Minnesadapter och rekonstruerad koordinator bevisar inte processkrasch,
+PostgreSQL-durabilitet eller mottagarpersistens. Mains tidigare9/9 mockade
+transaktionsprov har samma tydliga gräns. Ingen ny DB-/GPU-körning.
+
+Jakobs senaste styrning gäller: ersätt/radera tester för avvecklat beteende;
+fokusera på aktuell produkt, auth, rätt rum, sparning och spelregler.
+Mindre reversibla beslut tas av orkestratorn; framtida integrationer kan vänta.
+J04 är läskartlagd, inte implementerad. Mediafil53f66936 avser annan
+staging238d6dd6/worker; mängder och urval är rapporterade, inte importgodkända.
+Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d har lästs efter separata
+PR328/319; den är inte integrerad i migrationsstacken. Annan agents arbete bevaras.
+Femminutersbevakningen av #312 är aktiv och svarar bara på ändrad sakinformation.
 
 Separat kevin_migration_readonly har skapats i Neon croupier_game:
 tre scheman, kolumn-SELECT i 61 tabeller, hemliga kolumner undantagna.
@@ -163,10 +81,9 @@ bekräftelse; Kevin rapporterar SSH/ls-remote. Rätt Vercel-medlem är
 kevstersolver / kevin@solvify.se, DEVELOPER. Konsol-/Blob-prov återstår.
 Detaljer och ansvar finns i [samarbetsguiden](../migrering/SAMARBETE-OCH-ATKOMST.md).
 
-Senaste host-läsning av main 15988f32 verifierar GitGuardian-källbindning och
-aktiv monitorering: 0 öppna och 23 ignorerade incidenter. Historikskanningen
-är too_large och platsmetadata delvis tillgängliga; ingen full historiktäckning
-påstås. Detta ersätter inte J01:s produktverifiering eller PR:ens CI.
+Färsk main95ac98dc-läsning visar grön GitHub CI. GitGuardian-suiten är queued;
+aktuell incident-/platstäckning är inte verifierad i denna connectorläsning.
+Detta ersätter inte de tidigare separata säkerhetsbevisen.
 Ingen produktionsradering, spelport, merge eller deploy har gjorts i detta steg.
 
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026

@@ -2,13 +2,13 @@
 
 Genererad från [status.json](status.json). Uppdaterad 2026-10-21.
 
-**Verifierad migrering: 15% (3/20 aktiviteter).**
+**Verifierad migrering: 20% (4/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
 | Etapp | Verifierat inom etappen | Kumulativt etappmål | Grind |
 | --- | ---: | ---: | --- |
-| E1 Kontrakt och första Adminleverans | 75% | 20% | Ej godkänd |
+| E1 Kontrakt och första Adminleverans | 100% | 20% | Godkänd |
 | E2 En produktväg | 0% | 40% | Ej godkänd |
 | E3 Kevinmodul med mains lagring | 0% | 60% | Ej godkänd |
 | E4 Adminstyrning och datamigrering | 0% | 80% | Ej godkänd |
@@ -18,14 +18,14 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | --- | ---: |
 | jakob | 20% |
 | kevin | 14% |
-| orkestrator | 0% |
+| orkestrator | 33% |
 
 | ID | Aktivitet | Ansvar | Status |
 | --- | --- | --- | --- |
 | J01 | Tydligare publicering i Admin | jakob | VERIFIED |
 | J02 | Avveckla ersatt Control-publicering | jakob | VERIFIED |
 | K01 | Inventera den rensade Kevin-modulen | kevin | VERIFIED |
-| O01 | Lås kontrakt och funktionsansvar | orkestrator | IN_PROGRESS |
+| O01 | Lås kontrakt och funktionsansvar | orkestrator | VERIFIED |
 | J03 | Avveckla resterande Control-ytor | jakob | IN_PROGRESS |
 | J04 | En spelkatalog via lobby | jakob | TODO |
 | J05 | Förenkla runtime och byggkedja | jakob | TODO |
