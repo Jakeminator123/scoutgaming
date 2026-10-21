@@ -17,7 +17,7 @@ import { MATERIAL_REVISION_CONTRACT, PlanningRefused, assertPublishable, plannin
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
 import { CATALOGUE_SOURCE, READY_CONTACT, activationSet, bindDeal, bindIdle, bindLine, contactFrame, loadCatalogue, trackFor, variantFrames, verifyActivation }
   from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
-import { bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
+import { LINE_GRACE_MS, bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
 import { endWait, layChain, roomWait, serverChainEntry, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
@@ -319,6 +319,29 @@ test('a late mouth patch never draws after its line ended, after the next line, 
     tracker.close(A); tracker.open(A);
     for (const revision of [0, 1, 2]) assert.equal(speech.offer({ lineId: A, revision, layer: layer(`re-A${revision}`) }), false);
     assert.deepEqual(calls, ['A0', 'A1', null]); assert.deepEqual(closed, ['dup-A0', 're-A0', 're-A1', 're-A2']); }
+});
+
+// Root input (Kevin public/lip-layer.js @ 5aa7ed10 :144-146, :159-161): a patch draws only inside
+// its line's window [map start, endAt + 600 ms), whenever it arrives.
+test('a line opened with its window draws only inside [startAt, endAt + 600 ms); late patches and held mouths expire', () => {
+  let clock = 0;
+  const tracker = createLineMediaTracker(), calls = [], closed = [];
+  const speech = bindMovingSpeech({ composition: { setMovingSpeechLayer: layer => calls.push(layer?.id ?? null) }, tracker, now: () => clock });
+  const layer = id => ({ id, paint() {}, close() { closed.push(id); } });
+  const A = lineIdOf('party', 'plan-1', 0, 'goodluck'), B = lineIdOf('party', 'plan-2', 0, 'bust');
+  tracker.open(A, { startAt: 1000, endAt: 3000 });
+  assert.throws(() => tracker.open(B, { startAt: 5, endAt: 1 }), /window/);
+  clock = 900; assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('early-A0') }), false, 'before its map starts');
+  clock = 1000; assert.equal(speech.offer({ lineId: A, revision: 0, layer: layer('A0') }), true);
+  assert.deepEqual(tracker.open(A, { startAt: 9000, endAt: 9999 }), { lineId: A, revision: 0, ended: false }, 'a redelivery keeps the first window');
+  clock = 3000 + LINE_GRACE_MS - 1; assert.equal(speech.expire(), false, 'the held last frame keeps its grace');
+  clock = 3000 + LINE_GRACE_MS; assert.equal(speech.expire(), true);
+  assert.equal(tracker.check({ lineId: A, revision: 0 }, 1500), 'ended', 'an expired line stays over, even back inside its window');
+  // A patch that arrives after the window, without any end() call, is refused and closed.
+  tracker.open(B, { startAt: 4000, endAt: 5000 });
+  clock = 5000 + LINE_GRACE_MS; assert.equal(speech.offer({ lineId: B, revision: 0, layer: layer('late-B0') }), false);
+  assert.equal(tracker.check({ lineId: B, revision: 0 }), 'outside', 'a windowed line needs the clock');
+  assert.deepEqual(calls, ['A0', null]); assert.deepEqual(closed, ['early-A0', 'late-B0']);
 });
 
 test('room idle chain equals Kevin idle-chain.js and is laid from the accepted plan row', async () => {
