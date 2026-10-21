@@ -33,7 +33,7 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
   const companyHref = labUrl('/admin/companies' + query);
   const playerHref = selected && live ? '/play?operator=' + encodeURIComponent(selected.slug) : '/play';
   const partnerHref = selected ? workspaceSurfacePath('partner', 'ops', selected.slug) ?? '/partner' : '/partner';
-  const nextHref = ({ studio: labUrl('/control/clips'), composition: labUrl('/admin/compositions' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];
+  const nextHref = ({ studio: labUrl('/admin/dealer-studio'), composition: labUrl('/admin/compositions' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];
   const firstPublished = confirmed?.rooms[0];
   const compositionHref = labUrl('/admin/compositions?' + new URLSearchParams({ ...(selected && live ? { operator: selected.id } : {}), ...(firstPublished ? { composition: firstPublished.presentation.id } : {}) }));
 
@@ -55,7 +55,7 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
     window.history.replaceState(null, '', window.location.pathname + '?' + params + window.location.hash);
   }
   const steps = [
-    { title: 'Dealer & klipp', detail: 'Välj grundloop, tal och reaktioner. Granska i verklig uppspelning.', href: labUrl('/control/clips' + query), link: 'Arbeta med dealers', meta: studio ? studio.dealers.length + ' dealers i studion' : 'Gemensamt innehåll', scope: 'STUDIO' },
+    { title: 'Dealer & klipp', detail: 'Välj grundloop, tal och reaktioner. Granska i verklig uppspelning.', href: labUrl('/admin/dealer-studio' + query), link: 'Arbeta med dealers', meta: studio ? studio.dealers.length + ' dealers i studion' : 'Gemensamt innehåll', scope: 'STUDIO' },
     { title: 'Sammansättning', detail: 'Kombinera dealer, bord och bakgrund till en sparad sammansättning.', href: compositionHref, link: 'Sätt ihop sammansättning', meta: studio ? studio.lanes.length + ' sparade sammansättningar' : 'Sparade sammansättningar', scope: 'STUDIO' },
     { title: 'Bolagets publicering', detail: 'Välj vad bolaget får använda. En ändring i Studio behöver publiceras.', href: publishingHref, link: 'Hantera publicering', meta: confirmed ? confirmed.packageRevision ? 'Publicerat · version ' + confirmed.packageRevision : 'Ännu inte publicerat' : 'Status inväntas', scope: 'VALT BOLAG' },
     { title: 'Spelrum', detail: 'Spelarens ingång till bolagets publicerade sammansättning och dealers.', href: roomCount ? playerHref : publishingHref, link: roomCount ? 'Öppna spellobbyn' : 'Skapa spelrum', meta: roomCount === undefined ? 'Status inväntas' : roomCount + ' öppna spelrum', scope: 'VALT BOLAG' },

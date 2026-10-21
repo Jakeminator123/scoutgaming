@@ -94,7 +94,7 @@ export function blackjackLobbyDestination(url, config) {
 }
 
 export function platformRoute(url, config, request) {
-  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|activity|openclaw|operator-chat|ops)$/.test(url.pathname);
+  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|activity|openclaw|operator-chat|ops|clips)$/.test(url.pathname);
   if((config.nativeStudio||retiredDocument)&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
     const documentHref=url.pathname+url.search+url.hash;
     const destination=/^\/(?:studio\/)?control\/activity$/.test(url.pathname) ? legacyActivityDocumentHref(documentHref) : adminDocumentHref(documentHref);

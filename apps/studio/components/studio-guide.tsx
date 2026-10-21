@@ -12,7 +12,7 @@ function stepOpenLabel(href: string) {
   const path = hashAt === -1 ? href : href.slice(0, hashAt);
   const hash = hashAt === -1 ? '' : href.slice(hashAt + 1);
   const redirect = hash ? workspaceLocation(hash).redirect : null;
-  const destination = redirect || (path && path !== '/' ? path : '/control/clips');
+  const destination = redirect || (path && path !== '/' ? path : '/admin/dealer-studio');
   const fromMenu = scoutNavigationItem(destination)?.label;
   const fromGuide = guide.surfaces.find(item => item.name.split('·').map(part => part.trim()).includes(destination))?.name.split('·')[0]?.trim();
   return `Öppna ${fromMenu || fromGuide || destination} →`;

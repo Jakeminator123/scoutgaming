@@ -77,7 +77,7 @@ export function ControlActivityPage({ initialProject: project, initialVideos: vi
     <div className="sg-page-body">
       <StudioNavigation {...context} dealerLabel={dealer?.label} active="playback" />
       {invalidRoomContext?<p role="alert">Länken anger flera rum. Öppna ett uttryckligt rum innan du startar observationen.</p>:null}
-      {!hasSelection ? <section aria-label="Välj dealer för provspelning"><h2>Välj en dealer att provspela</h2><p>{!dealers.length ? 'Inga dealers har registrerats ännu. Lägg till en dealer för att börja provspela.' : initialDealerId ? 'Den valda dealern är inte aktiv. Välj en dealer nedan.' : 'Välj en dealer nedan, eller öppna provspelning från ett valt spelrum.'}</p><div className="sg-chip-row">{dealers.map(row => <a key={row.id} className="sg-chip" href={contextHref('/admin/rehearsal', {...context,dealerId:row.id})}>{row.label}</a>)}</div><p><a href={contextHref('/control/clips',context)}>Hantera dealers →</a></p></section> : <ActivityLog
+      {!hasSelection ? <section aria-label="Välj dealer för provspelning"><h2>Välj en dealer att provspela</h2><p>{!dealers.length ? 'Inga dealers har registrerats ännu. Lägg till en dealer för att börja provspela.' : initialDealerId ? 'Den valda dealern är inte aktiv. Välj en dealer nedan.' : 'Välj en dealer nedan, eller öppna provspelning från ett valt spelrum.'}</p><div className="sg-chip-row">{dealers.map(row => <a key={row.id} className="sg-chip" href={contextHref('/admin/rehearsal', {...context,dealerId:row.id})}>{row.label}</a>)}</div><p><a href={contextHref('/admin/dealer-studio',context)}>Hantera dealers →</a></p></section> : <ActivityLog
         key={JSON.stringify(observationIdentity)}
         full
         rolling

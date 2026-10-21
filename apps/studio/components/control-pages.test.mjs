@@ -23,7 +23,7 @@ function loadTs(fileUrl, overrides = {}) {
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
-      if (name === 'next/navigation') return {useSearchParams:()=>new URLSearchParams(globalThis.window?.location?.search ?? ''),usePathname:()=>globalThis.window?.location?.pathname ?? '/control/clips'};
+      if (name === 'next/navigation') return {useSearchParams:()=>new URLSearchParams(globalThis.window?.location?.search ?? ''),usePathname:()=>globalThis.window?.location?.pathname ?? '/admin/dealer-studio'};
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -117,7 +117,7 @@ test('recorded media guidance keeps old groups optional and distinguishes models
   assert.match(html, /Automatisk grundloopvariation/);
   assert.match(html, /högst 8, totalt 3 200 tecken/);
   assert.match(html, /Dessa testvärden hämtas inte från spelaren/);
-  assert.match(html, /<a href="\/control\/clips\?dealer=astrid">/);
+  assert.match(html, /<a href="\/admin\/dealer-studio\?dealer=astrid">/);
   const activity = renderPage('control-activity-page.tsx');
   assert.match(activity, /<summary>Klippförhandsvisning och provspelning<\/summary>/);
   assert.match(activity, /AI-tal: inget förlopp observerat/);

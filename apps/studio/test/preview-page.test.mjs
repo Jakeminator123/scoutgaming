@@ -302,7 +302,7 @@ test('composition links own dealer upload and sequencing to Dealers and clips wi
   const project=addDealer(createSeedProject(),'nora','Nora');project.lanes[0].dealers.push('nora');project.lanes[0].layers.dealer.allowed.push('nora');project.lanes[0].layers.dealer.default='nora';
   const harness=previewHarness({project}),tree=harness.render(),original=structuredClone(project),navigations=[];
   assert.equal(harness.find(tree,node=>['VideoUpload','FamilyVideoUpload'].includes(node.type?.name)),null);
-  const link=harness.find(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/clips?')&&new URL(node.props.href,'https://studio.invalid').searchParams.get('dealer')==='nora');
+  const link=harness.find(tree,node=>node.type==='a'&&node.props.href?.startsWith('/admin/dealer-studio?')&&new URL(node.props.href,'https://studio.invalid').searchParams.get('dealer')==='nora');
   assert.ok(link);globalThis.window={location:{assign:href=>navigations.push(href)}};
   try {
     link.props.onClick({preventDefault(){}});await new Promise(setImmediate);harness.render();harness.effects[1]();
@@ -386,7 +386,7 @@ test('dealer choice is saved as the presentation default and allowed dealer, whi
   const selected=harness.session.project.lanes[0];
   assert.equal(selected.layers.dealer.default,'linnea');assert.ok(selected.dealers.includes('linnea'));assert.ok(selected.layers.dealer.allowed.includes('linnea'));
   assert.deepEqual(harness.session.project.lanes[1],original.lanes[1]);assert.deepEqual(project,original);assert.equal(harness.session.dirty,true);
-  const content=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/clips?dealer=linnea'));
+  const content=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/admin/dealer-studio?dealer=linnea'));
   assert.equal(content.props.children,'Dealerklipp, grundloop och händelser \u2192');
   const beforePreview=structuredClone(harness.session.project);
   harness.find(tree,node=>node.type==='select'&&node.props.value==='linnea-idle').props.onChange({target:{value:'linnea-card'}});
@@ -687,7 +687,7 @@ test('scene navigation preserves an explicitly requested dealer even when the se
   const html=render('nora');
   assert.match(html,/Du valde Nora i dealerbiblioteket/);assert.match(html,/Använd Nora som startdealer/);
   assert.doesNotMatch(html,/aria-label="Studio för|class="tabs"/);
-  const links=[...html.matchAll(/href="([^"]*\/control\/clips\?view=idle[^"]*)"/g)].map(match=>new URL(match[1].replaceAll('&amp;','&'),'https://studio.invalid'));
+  const links=[...html.matchAll(/href="([^"]*\/admin\/dealer-studio\?view=idle[^"]*)"/g)].map(match=>new URL(match[1].replaceAll('&amp;','&'),'https://studio.invalid'));
   assert.equal(links.length,1);
   for(const link of links){assert.equal(link.searchParams.get('dealer'),'nora');assert.equal(link.searchParams.get('composition'),project.lanes[0].id);}
   assert.deepEqual(project,before);

@@ -348,7 +348,7 @@ test('old activity URLs retain only observation context and canonicalize the com
 });
 
 
-test('Clips retains allowlisted context through an expired session and normalizes legacy selections', async () => {
+test('Clips bookmarks reach Admin and retain allowlisted context through an expired session', async () => {
   for (const basePath of ['', '/studio']) {
     const config = {allowedOrigins:['https://game.fixture.invalid','https://studio.fixture.invalid'],publicHosts:['game.fixture.invalid','studio.fixture.invalid'],apiBase:basePath+'/api/admin',authBase:basePath+'/api/auth'};
     const guard = load('../lib/ui-server.ts', {
@@ -360,29 +360,23 @@ test('Clips retains allowlisted context through an expired session and normalize
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
     });
-    const data = load('../app/control-studio-data.tsx', {
-      'next/headers': {headers:async()=>new Headers({host:'game.fixture.invalid','sec-fetch-mode':'navigate','sec-fetch-dest':'document'})},
-      '@/lib/ui-server':guard,
-    });
-    const studioTypes = load('../components/studio-types.ts', {});
-    for(const [route,component,exportName] of [['clips','@/components/lab-studio','LabStudio']]) {
-      const page = load('../app/control/'+route+'/page.tsx', {'../../control-studio-data':data,'@/components/studio-types':studioTypes,[component]:{[exportName]:()=>assert.fail('expired session cannot render client work')}});
       for(const legacy of [false,true]) {
-        const query={dealer:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid'};
-        if(route==='clips')Object.assign(query,{view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'});
-        await assert.rejects(page.default({searchParams:Promise.resolve(query)}),error=>{
+        const query={[legacy?'dealerId':'dealer']:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid',view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'};
+        const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+'/control/clips?'+new URLSearchParams(query)),{basePath});
+        assert.equal(new URL(target,'https://game.fixture.invalid').pathname,'/admin/dealer-studio');
+        const request=new Request('https://game.fixture.invalid'+basePath+target,{headers:{host:'game.fixture.invalid','sec-fetch-mode':'navigate','sec-fetch-dest':'document'}});
+        await assert.rejects(guard.authorizeUiPage(request),error=>{
           assert.match(error.digest ?? '', /^NEXT_REDIRECT;/, error.message);
           const login = new URL(locationFromNext(error,basePath),'https://game.fixture.invalid');
           assert.equal(login.pathname,basePath+'/login');
           const destination = new URL(login.searchParams.get('returnTo'),'https://game.fixture.invalid');
-          assert.equal(destination.pathname,'/control/'+route);
+          assert.equal(destination.pathname,'/admin/dealer-studio');
           assert.equal(destination.searchParams.get('dealer'),'vera');assert.equal(destination.searchParams.get('operator'),'operator-42');assert.equal(destination.searchParams.get('table'),'room-7');assert.equal(destination.searchParams.get('composition'),'desktop-wide');
           assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.searchParams.has('token'),false);assert.equal(destination.searchParams.has('returnTo'),false);
-          if(route==='clips'){assert.equal(destination.searchParams.get('view'),'settings');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');}
+          assert.equal(destination.searchParams.get('view'),'settings');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');
           return true;
         });
       }
-    }
   }
 });
 
@@ -465,7 +459,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     }
     return transported;
   };
-  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/publication?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/ai/models?operator=north&dealer=dragan','/studio/admin/ai/models','/admin/dealer-agent?dealer=dragan&event=idle.ready','/studio/admin/dealer-agent?dealer=astrid&composition=portrait&operator=north&table=room-1']) {
+  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/publication?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/ai/models?operator=north&dealer=dragan','/studio/admin/ai/models','/admin/clips?dealer=dragan','/studio/admin/clips','/admin/dealer-studio?dealer=dragan&view=clips&event=idle.ready&category=speech&game=roulette','/studio/admin/dealer-studio?dealer=astrid&composition=portrait&operator=north&table=room-1','/admin/dealer-agent?dealer=dragan&event=idle.ready','/studio/admin/dealer-agent?dealer=astrid&composition=portrait&operator=north&table=room-1']) {
     let incoming = new Headers({host:new URL(publicOrigin).host,cookie:f.auth.admin,
       'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'});
     if(position==='before') incoming = await throughTransport(incoming);
@@ -553,7 +547,7 @@ test('retired publication and tool documents redirect with context in every nati
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target]of [['rooms','publication'],['companies','companies'],['lanes','publication'],['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']]){
+    for(const [section,target]of [['rooms','publication'],['companies','companies'],['lanes','publication'],['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']]){
       const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
       for(const method of ['GET','HEAD']){
         const response=middleware(new Request(url,{headers,method}));
@@ -576,7 +570,7 @@ test('historical tool documents reach Admin with context before unified frontend
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target] of [['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const selected of [false,true]){
+    for(const [section,target] of [['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']])for(const selected of [false,true]){
       const context={dealer:'saga',operator:'north',table:'room-1',game:'roulette',lane:'portrait',...(selected?{event:'idle.ready',variant:'take-2',situation:'box1',tab:'variants'}:{})};
       const query=new URLSearchParams({...context,token:'private',unknown:'omit'});query.append('room','one');query.append('room','two');
       const url='https://game.fixture.invalid'+basePath+'/'+section+'?'+query;

@@ -19,8 +19,8 @@ export function legacyStudioDocumentHref(request, {basePath = ''} = {}) {
   const path = url.pathname.slice(basePath.length);
   // These retired tools preserve navigation context at both historical entries.
   const tool = path.startsWith('/control/')
-    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat|ops)$/)?.[1]
-    : path.match(/^\/(guide|videos|probe|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat)$/)?.[1];
+    ? path.match(/^\/control\/(guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat|ops|clips)$/)?.[1]
+    : path.match(/^\/(guide|videos|probe|events|tree|compositions|rehearsal|preview|zones|openclaw|operator-chat|clips)$/)?.[1];
   if (tool) {
     const query = new URLSearchParams();
     for (const [key,value] of url.searchParams) if (contextKeys.has(key)) query.append(key,value);

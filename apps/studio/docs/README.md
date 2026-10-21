@@ -284,7 +284,7 @@ interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
 | `/control/openclaw` | `/admin/ai/models`; med `?tab=chat` går länken till `/admin/dealer-agent?tab=chat` |
 | `/control/guide` | `/admin/guide` |
 | `/control/administration` | `/admin/drift`; `?tab=accounts` leder till `/admin/admin/accounts` |
-| `/studio` | 308 till `/control/clips`, sedan `/admin/dealer-studio`; `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
+| `/studio` | 308 till `/admin` utan query; äldre bokmärken med query går direkt till `/admin/dealer-studio`. `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
 | `/lab`, `/labb`, `/bo` | `/lab` och `/labb` går via `/control` till `/admin`; `/bo` går via `/control/administration` till `/admin/drift` |
 | `/lissabon` | Ingen aktiv publik ingång: svarade 404 vid kontrollen |
 

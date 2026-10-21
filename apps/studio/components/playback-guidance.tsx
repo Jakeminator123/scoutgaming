@@ -2,7 +2,7 @@ import { labUrl } from '../lib/lab-url.mjs';
 import styles from './playback-guidance.module.css';
 
 export function PlaybackGuidance({ dealerId, observation = false }: { dealerId: string; observation?: boolean }) {
-  const clips = labUrl('/control/clips?' + new URLSearchParams({ dealer: dealerId }));
+  const clips = labUrl('/admin/dealer-studio?' + new URLSearchParams({ dealer: dealerId }));
   if (observation) return <details className={styles.help}>
     <summary>Klippförhandsvisning och provspelning</summary>
     <p>Klippförhandsvisning visar en vald fil. Här följer du spelflikens klippval, visad bild och avslut. Ett valt klipp räknas först som visat när spelaren bekräftar det.</p>

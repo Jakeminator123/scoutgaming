@@ -10,7 +10,7 @@ import { studioNavigationHref, studioNavigationTabs, studioNavigationCrumbs, stu
 const selection = { dealerId: 'paow', eventId: 'speak.goodluck', variantId: 'paow.goodluck.alt-2', situation: 'goodluck', laneId: 'studio/main' };
 const query = href => new URL(href, 'https://scoutgaming.test').searchParams;
 
-function loadNavigation() {
+function loadNavigation(search = '') {
   const url = new URL('../components/studio-navigation.tsx', import.meta.url);
   const require = createRequire(url);
   const { transformSync } = require('next/dist/build/swc');
@@ -21,8 +21,8 @@ function loadNavigation() {
   });
   const module = { exports: {} };
   vm.runInNewContext(result.code, {
-    module, exports: module.exports,
-    require: name => name === 'next/navigation' ? { useSearchParams: () => new URLSearchParams('') } : name.endsWith('.module.css')
+    module, exports: module.exports, URL,
+    require: name => name === 'next/navigation' ? { useSearchParams: () => new URLSearchParams(search) } : name.endsWith('.module.css')
       ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) }
       : require(name),
   });
@@ -58,7 +58,7 @@ test('custom tab destinations keep their own query and hash while encoding selec
   assert.equal(query(href).get('dealer'), 'dealer & two');
   assert.equal(query(href).get('mode'), 'recorded');
   assert.ok(href.endsWith('#settings'));
-  assert.equal(query(studioNavigationHref('/control/clips', { ...selection, tab: 'triggers', token: 'not-a-context-value' })).has('token'), false);
+  assert.equal(query(studioNavigationHref('/admin/dealer-studio', { ...selection, tab: 'triggers', token: 'not-a-context-value' })).has('token'), false);
 });
 
 test('public Studio tabs use their active destinations with either lab base path', () => {
@@ -67,10 +67,10 @@ test('public Studio tabs use their active destinations with either lab base path
     for (const base of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = base;
       for (const tab of studioNavigationTabs(selection)) {
-        const target = {replies:'/admin/replies?',playback:'/admin/rehearsal?'}[tab.id] ?? '/control/';
+        const target = {replies:'/admin/replies?',playback:'/admin/rehearsal?'}[tab.id] ?? '/admin/dealer-studio?';
         assert.ok(tab.href.startsWith(target), tab.href);
       }
-      assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/control/clips?view=idle&dealer=paow');
+      assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/admin/dealer-studio?view=idle&dealer=paow');
     }
   } finally {
     if (before === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -80,19 +80,36 @@ test('public Studio tabs use their active destinations with either lab base path
 
 test('speech tab opens the selected dealer workspace rather than an Astrid-only setting', () => {
   for (const dealerId of ['astrid', 'paow', 'new-dealer']) {
-    assert.equal(studioNavigationTabs({ dealerId }).find(tab => tab.id === 'speech').href, `/control/clips?view=speech&dealer=${dealerId}`);
+    assert.equal(studioNavigationTabs({ dealerId }).find(tab => tab.id === 'speech').href, `/admin/dealer-studio?view=speech&dealer=${dealerId}`);
   }
 });
 
 test('nested clip breadcrumbs have clickable ancestors and one terminal page label', () => {
   const crumbs = studioNavigationCrumbs({ ...selection, dealerLabel: 'PAOW', active: 'clips', crumbs: [
-    { label: 'Tal-klipp', href: '/control/clips?dealer=paow&view=clips#clips' },
+    { label: 'Tal-klipp', href: '/admin/dealer-studio?dealer=paow&view=clips#clips' },
     { label: 'Lycka till' },
   ] });
   assert.deepEqual(crumbs.map(crumb => crumb.label), ['Studio', 'Dealers', 'PAOW', 'Klipp', 'Tal-klipp', 'Lycka till']);
   assert.ok(crumbs.slice(0, -1).every(crumb => typeof crumb.href === 'string'));
   assert.equal(crumbs.at(-1).href, undefined);
   assert.equal(query(crumbs[3].href).get('variant'), selection.variantId);
+});
+
+test('rendered tabs and ancestors preserve repeated and mixed room scope for destination validation', () => {
+  const queryText='dealer=paow&operator=north&operator=south&table=one&table=two&room=three&room=four&token=private';
+  const Navigation=loadNavigation(queryText);
+  for(const active of ['clips','scene']) {
+    const tree=Navigation({...selection,active,crumbs:[{label:'Klipp',href:'/admin/dealer-studio?view=clips#selected'},{label:'Detalj'}]});
+    const links=anchors(tree);assert.ok(links.length);
+    for(const link of links) {
+      const params=query(link.props.href);
+      assert.deepEqual(params.getAll('operator'),['north','south']);
+      assert.deepEqual(params.getAll('table'),['one','two']);
+      assert.deepEqual(params.getAll('room'),['three','four']);
+      assert.equal(params.has('token'),false);
+    }
+    assert.ok(links.some(link=>link.props.href.endsWith('#selected')));
+  }
 });
 
 test('rendered navigation exposes accessible breadcrumbs and the current tab without disclosures', () => {
@@ -134,7 +151,7 @@ test('dealer tabs are absent until a dealer is selected', () => {
   const sceneHtml = renderToStaticMarkup(scene);
   assert.doesNotMatch(sceneHtml, /Studio för|class="tabs"|Skapa material|Tal &amp; automatik/);
   assert.deepEqual(studioNavigationCrumbs(context).map(crumb => crumb.label), ['Studio','Sammansättningar','Kväll']);
-  const back = anchors(scene).find(link => link.props.href.startsWith('/control/clips?view=idle'));
+  const back = anchors(scene).find(link => link.props.href.startsWith('/admin/dealer-studio?view=idle'));
   assert.ok(back);
   assert.equal(query(back.props.href).get('dealer'),'paow');
   assert.equal(query(back.props.href).get('composition'),selection.laneId);

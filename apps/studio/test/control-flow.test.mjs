@@ -13,6 +13,19 @@ test('ambiguous or external document paths never become a navigation destination
   for (const value of ['https://evil.test/control', '//evil.test', '/control/../play', '/control/%2e%2e/play', '/control/%2froom', '/control//rooms', '/control\\rooms']) assert.throws(()=>canonicalControlHref(value));
 });
 
+test('Clips editor bookmarks preserve selection and fragments without changing the zoomable Admin map', () => {
+  for(const prefix of ['/control','/studio/control'])for(const view of ['idle','clips','generate','speech','settings']) {
+    const path=canonicalControlHref(prefix+'/clips?dealerId=saga&lane=portrait&view='+view+'&operator=north&room=one&room=two&table=three&game=roulette&category=speech&event=speak.goodluck#clip');
+    const url=new URL(path,'https://studio.invalid');assert.equal(url.pathname,'/admin/dealer-studio');
+    assert.equal(url.searchParams.get('dealer'),'saga');assert.equal(url.searchParams.get('composition'),'portrait');
+    assert.equal(url.searchParams.get('view'),view);assert.deepEqual(url.searchParams.getAll('room'),['one','two']);
+    assert.equal(url.searchParams.get('table'),'three');assert.equal(url.searchParams.get('game'),'roulette');
+    assert.equal(url.searchParams.get('category'),'speech');assert.equal(url.searchParams.get('event'),'speak.goodluck');
+    assert.equal(url.searchParams.has('dealerId'),false);assert.equal(url.searchParams.has('lane'),false);assert.equal(url.hash,'#clip');
+  }
+  assert.equal(canonicalControlHref('/admin/clips?dealer=saga#map'),'/admin/clips?dealer=saga#map');
+});
+
 test('AI bookmarks distinguish dealer chat from global models and keep exact navigation context', () => {
   for (const base of ['', '/studio']) for (const [path,query,target] of [
     ['openclaw','','ai/models'],['openclaw','tab=chat&','dealer-agent'],

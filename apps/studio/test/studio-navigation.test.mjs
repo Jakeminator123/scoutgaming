@@ -220,7 +220,7 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   assert.match(html, /Bolagets arbetsyta/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
   const cleanup = effects[0]();
-  assert.deepEqual(paths, [labUrl('/control/clips#deal')]);
+  assert.deepEqual(paths, [labUrl('/admin/dealer-studio#deal')]);
   cleanup();
 });
 
@@ -264,7 +264,7 @@ test('both real page guards protect dirty project drafts on native leave and cle
     for (const dirty of [false, true]) {
       const project = createSeedProject(), before = JSON.stringify(project), effects = [];
       const browser = new EventTarget();
-      browser.location = new URL(name === 'ControlEventsPage' ? 'https://studio.fixture.invalid/admin/events?dealer=astrid&event=idle.ready' : 'https://studio.fixture.invalid/control/clips?dealer=astrid');
+      browser.location = new URL(name === 'ControlEventsPage' ? 'https://studio.fixture.invalid/admin/events?dealer=astrid&event=idle.ready' : 'https://studio.fixture.invalid/admin/dealer-studio?dealer=astrid');
       let historyState = {foreign:'keep'};
       browser.history = {get state(){return historyState;},replaceState(state,_title,href){historyState=state;if(href!==undefined)browser.location.href=new URL(href,browser.location).href;}};
       const hooks = { ...React,

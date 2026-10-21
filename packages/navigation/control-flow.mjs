@@ -29,6 +29,11 @@ export function canonicalControlHref(value) {
     for (const key of ['operator','composition','dealer','table']) if (url.searchParams.get(key) === '') url.searchParams.delete(key);
   }
   // Retired editors and tools now have only their Admin documents.
+  if (url.pathname === '/control/clips') {
+    url.pathname = '/admin/dealer-studio';
+    if (!url.searchParams.has('dealer') && url.searchParams.has('dealerId')) url.searchParams.set('dealer', url.searchParams.get('dealerId'));
+    url.searchParams.delete('dealerId');
+  }
   if (url.pathname === '/control/rooms') url.pathname = '/admin/publication';
   if (url.pathname === '/control/companies') url.pathname = '/admin/companies';
   if (url.pathname === '/control/guide') url.pathname = '/admin/guide';

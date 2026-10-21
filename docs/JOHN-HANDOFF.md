@@ -605,43 +605,47 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
-J03 · 21 oktober 2026. Guide/Videor PR318, Probe/Replies PR320 och Events/Tree
-PR322 har verifierad GitHub CI. Compositions/Rehearsal PR324:s CI39657917855
-hittade ett förbrukat activity-tvåhoppstest; rättningen behåller negativa
-API-/authprov och ändrar ingen produktkod. Den är separat levererad i PR324.
-Inga av dessa migrationsleveranser är här mergade eller produktionsverifierade.
+J03 · 21 oktober 2026. Guide/Videor PR318, Probe/Replies PR320,
+Events/Tree PR322 och Compositions/Rehearsal PR324 har verifierad grön CI.
+PR324:s rättningshead är b69f8840d5f7e91ca27224e6d1abce9a50b83cfb
+(CI39661754986). PR326:s CI39661793088 föll på ett gammalt Gateway-test
+som anropade en hookkomponent utan React-renderare. Enbart test/handoff är
+rättade i ba697260751eb692df09ebe85af6f3ae73489f46: före3/4, efter27/27
+fokuserade och hook4/4,0skip. CI39665285361 pågår vid denna avläsning.
 
-Nästa avgränsade del: `codex/admin-control-ai-j03`, från PR324/head
-`43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee`. OpenClaw-/operator-chat-SSR-wrappers
-med exklusiv tracing är borttagna. Aktiva callers och gamla bokmärken går till
-`/admin/ai/models` respektive `/admin/dealer-agent`; tab=chat, ops, barealias,
-/studio och native/unified på/av är provade. GET/HEAD bevarar kontext, medan
-mutationer/server actions behåller sina gränser. Activity-testkorrigeringen
-följer med och ops-förväntan följer dess uttryckligen avvecklade gamla ingång.
+Senaste del: codex/admin-control-clips-j03 från PR326-produkthead
+58133210804b001b6100474bd6833d320c5da3eb, med samma Gateway-testfix.
+Den gamla Clips-SSR-sidan, dess sista exklusiva dataladdare och tracingpost
+är borttagna. Aktiva callers och gamla GET/HEAD-bokmärken går till
+/admin/dealer-studio; /studio, hash och tillåten kontext bevaras.
+Skrivningar/server actions omdirigeras inte. Den zoombara /admin/clips,
+aktiva LabStudio, delade API:er, N1-auth och projekt-CAS bevaras.
 
-Admin bevarar dealer, event, composition, spel, operator och explicit rumskontext.
-Accepterade dealerbyten börjar egen chatt/session. Utkast/pågående anrop skyddas
-vid navigation och Back/Forward/flersteg; aborterade sena svar läcker inte till
-nästa dealer. Global modellskrivning förblir global med baseHash, ordnade
-fallbacks och kvitto/återläsning. Vald rumskontext ändrar inte skrivscope.
-Validerad dashboardfortsättning frigör bara sitt eget anropsskydd. Inga nya
-Gateway-/providerfunktioner, externa anrop, driftändringar eller rumswriters.
+Admin växlar lokala editorflikar utan att kasta utkast. Explicit spel/rum
+och tvetydiga operator/table/room-värden bevaras till destinationens kontroll.
+Sparning och pågående arbete skyddas vid dealerbyte och historik. Granskning
+hittade och rättade traversalens jämförelse med redan ändrad pathname samt
+förlorad rumskontext i hashbokmärken; callerprov hittade ItemLinks tappade
+dealer när målet bytte från Control till Admin. Inga nya media-/rumswriters.
 
-Verifiering: två implementerare och separat läsgranskning. UI-komponent23/23,
-faktisk Admin-browser5/5 plus skärpt modellhistorik1/1, route90/90,
-callers55/55 och slutdelta23/23 (8överlapp), root API/auth39/39 och verklig
-plattformsmiddleware27/27; alla0skip. Körningar överlappar och summeras inte.
-Browsern använder verklig Admin-entry/adapter/UI med syntetiska API-svar och
-interceptad dashboarddestination; ingen verklig Gateway-, provider-, spel-
-eller medieuppspelning verifieras. Fixturekontexter/browsers är stängda.
+Verifiering med Volta24.21.0 och max4 workers: 200 unika fokuserade route- och
+callerfall över separata körningar (ett callerfynd rättades och berörda25/25
+omkördes), dealer-workspace32/32, root auth/save/harness37/37 och plattformens
+middleware27/27. Slutlig sammanhängande Admin-browser7/7,0skip:
+urval/flikar, Back/Forward/flersteg, utkast/pågående sparning, CAS/återläsning,
+409, okänd historikpost/främmande state och hashhandoff. Körningar överlappar.
+Verklig Admin-entry/WorkspaceTool/LabStudio med syntetiska API-svar och
+avskärmade media-/destinationskomponenter; ingen faktisk GPU/provider,
+medieuppspelning, PostgreSQL-durabilitet eller deployacceptans.
 
-Root byggde fryst produkt med /studio, Studio/Admin/Lobby-typer och Volta
-Node24.21.0. Manifestet saknar alla tio avvecklade J03-verktygswrappers och
-behåller Admin/API; orphan533/0. Lokala beroendejunctions: traces68/44,
-inte en fristående deployartefakt. Loggar i arbetskopians
-`arkiv/2026-10-21/j03-ai/`. Ordinarie hook och fjärr-CI redovisas i PR/status.json.
-Full Control-/authavveckling och O01 återstår. J03 IN_PROGRESS, total15%.
-Ingen runtimeport, DB-/mediaändring, deploy eller automatisk merge ingår.
+Rootens slutbuild med /studio inkluderar Studio/Admin/Lobby-typer och
+saknar alla elva avvecklade J03-verktygswrappers; Admin/API finns kvar.
+Orphan534/0, diffkontroll grön. Lokala beroendejunctions och traces67/44
+är lokalt byggbevis. Loggar: arkiv/2026-10-21/j03-clips/.
+Ordinarie hook och slutlig oberoende testreview redovisas i PR/status.json.
+Aktuell main644b565 är separat läst, inte integrerad i stacken.
+Control-administration, catch-all och authflöden återstår. Hela J03 är
+IN_PROGRESS, total15%; ingen merge, drift-, databas- eller mediaändring.
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
 `admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla

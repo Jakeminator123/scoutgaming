@@ -36,6 +36,8 @@ test('mounted Lab only permits loopback health, not loopback data access', () =>
 test('public root redirect admits exact Admin without accepting external or auth destinations', () => {
   const headers = new Headers({host:'studio.internal.invalid','x-forwarded-host':'public.example.invalid','x-forwarded-proto':'https'});
   assert.equal(publicAbsoluteUrl(headers, '/admin'), 'https://public.example.invalid/admin');
+  assert.equal(publicAbsoluteUrl(headers, '/admin/dealer-studio?dealer=saga&view=clips#idle'), 'https://public.example.invalid/admin/dealer-studio?dealer=saga&view=clips#idle');
+  for(const path of ['/admin/dealer-studio-extra','/admin/dealer-studio/edit','/admin/dealer-studio/../login'])assert.throws(()=>publicAbsoluteUrl(headers,path),/control_redirect_rejected/);
   for (const path of ['/admin/ai/models?dealer=saga&operator=north#models','/admin/dealer-agent?dealer=saga&event=idle.ready&composition=portrait']) {
     assert.equal(publicAbsoluteUrl(headers,path),'https://public.example.invalid'+path);
   }

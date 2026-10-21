@@ -2097,7 +2097,7 @@ proveniens i Neon saknar ännu ett typat kontrakt. Lägg inte fria extra fält i
 
 ## Dealerbibliotek och molnkatalog, 11 oktober 2026
 
-/control/clips och /control/videos delar DealerMediaLibrary. Alla registrerade
+`/admin/dealer-studio` och `/admin/videos` delar DealerMediaLibrary. Alla registrerade
 dealers får samma kategorier och bulkintag: välj upp till 50 filer, granska och
 mappa varje fil till ett exakt händelse-/situationsfack. Box 1–7 motsvarar
 box0–6. Grundloop, talreplik och dealer-up/dealer-hole förblir skilda fack.
@@ -2172,9 +2172,9 @@ frysta paket utan ny publicering. Rummets tillåtna utseendeval nås separat på
 `/partner/{slug}/rooms?room=<rum-id>` och använder befintliga `roomOverrides`,
 ägarkontroll, revisionsskydd, granskning och publicering.
 
-Äldre `/control/compositions` redigerar samma mallar, `/control/clips` deras
-dealerinnehåll och `/control/rooms` publicerar bolagspaket. Bolag och team
-finns på `/control/companies`; äldre preview/lanes-adresser är omdirigeringar.
+`/admin/compositions` redigerar samma mallar, `/admin/dealer-studio` deras
+dealerinnehåll och `/admin/publication` publicerar bolagspaket. Bolag och team
+finns på `/admin/companies`; motsvarande äldre Control-adresser är omdirigeringar.
 Presentationslane och spellane behåller sina tekniska ID:n. Spelarplatser box0–6
 och dealer-up/dealer-hole är skilda destinationer; UI-översättningen ändrar inte
 handIndex, card, replik-ID eller mediasynk.
@@ -2375,8 +2375,9 @@ projektion kontrollerar faktiskt ägarskap och kompatibel spellane i administrat
 Rum-writern beskrivs ovan; en paketsträng ensam bevisar inget ägarskap.
 
 `apps/studio/app/page.tsx` omdirigerar den tekniska roten `/studio` med 308 till
-`/control/clips` och behåller query. Tidigare återexporterades klippsidan direkt;
-dubbelinnehållet var samma React-vy. BasePath, API och tillgångar består.
+`/admin` utan query och direkt till `/admin/dealer-studio` för äldre bokmärken
+med query. Dealer-/composition-alias normaliseras, övrig query bevaras.
+Klippkartan `/admin/clips` är en separat aktiv yta. BasePath, API och tillgångar består.
 
 ## Render: skilj deploystatus från tillgänglighet
 

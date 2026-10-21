@@ -4,7 +4,7 @@ import { canonicalControlHref } from '../../../packages/navigation/control-flow.
 // Staff shell only. A menu href with a query wins over the same path without one.
 export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'studio', label: 'Studio', items: [
-    { href: '/control/clips', label: 'Dealers & klipp' },
+    { href: '/admin/dealer-studio', label: 'Dealers & klipp' },
     { href: '/control/library', label: 'Bord & bakgrunder' },
     { href: '/admin/compositions', label: 'Sammansättningar' },
   ] },
@@ -42,28 +42,28 @@ const items = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTE
 
 // Content tools retain their pages while sharing one menu entry.
 const legacyPaths = new Map([
-  ['/', '/control/clips'],
-  ['/clips', '/control/clips'],
-  ['/videos', '/control/clips'],
-  ['/admin/videos', '/control/clips'],
-  ['/control/replies', '/control/clips'],
-  ['/admin/replies', '/control/clips'],
+  ['/', '/admin/dealer-studio'],
+  ['/clips', '/admin/dealer-studio'],
+  ['/videos', '/admin/dealer-studio'],
+  ['/admin/videos', '/admin/dealer-studio'],
+  ['/control/replies', '/admin/dealer-studio'],
+  ['/admin/replies', '/admin/dealer-studio'],
   ['/zones', '/admin/compositions'],
   ['/control/zones', '/admin/compositions'],
   ['/control/backgrounds', '/admin/compositions'],
-  ['/events', '/control/clips'],
-  ['/control/events', '/control/clips'],
-  ['/admin/events', '/control/clips'],
-  ['/probe', '/control/clips'],
-  ['/control/probe', '/control/clips'],
-  ['/admin/probe', '/control/clips'],
+  ['/events', '/admin/dealer-studio'],
+  ['/control/events', '/admin/dealer-studio'],
+  ['/admin/events', '/admin/dealer-studio'],
+  ['/probe', '/admin/dealer-studio'],
+  ['/control/probe', '/admin/dealer-studio'],
+  ['/admin/probe', '/admin/dealer-studio'],
   ['/administration', '/control/administration'],
   ['/openclaw', '/control/openclaw'],
   ['/operator-chat', '/admin/dealer-agent'],
-  ['/tree', '/control/clips'],
-  ['/control/tree', '/control/clips'],
-  ['/activity', '/control/clips'],
-  ['/admin/rehearsal', '/control/clips'],
+  ['/tree', '/admin/dealer-studio'],
+  ['/control/tree', '/admin/dealer-studio'],
+  ['/activity', '/admin/dealer-studio'],
+  ['/admin/rehearsal', '/admin/dealer-studio'],
   ['/guide', '/admin/guide'],
 ]);
 
@@ -93,7 +93,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   }
   mapped = hrefParts(canonicalControlHref(mapped.path + (params.size ? '?' + params : '')));
   if (mapped.path === '/control/administration' && params.get('tab') === 'tables') return items.find(item => item.href === '/admin/publication') ?? null;
-  if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/control/clips') ?? null;
+  if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/admin/dealer-studio') ?? null;
   if (mapped.path === '/control/administration') {
     const tab = params.get('tab');
     // The administration page defaults to operations for an absent or unknown tab.

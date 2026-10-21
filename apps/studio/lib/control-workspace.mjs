@@ -7,7 +7,7 @@ const tools = Object.freeze({
   players: '/control/administration?tab=accounts', tx: '/control/administration?tab=finance', team: '/control/administration?tab=accounts',
   api: '/control/administration?tab=partners', bj: '/control/administration?tab=tables', dealers: '/control/administration?tab=tables',
   shoes: '/control/administration?tab=operations', tables: '/control/administration?tab=tables',
-  background: '/admin/compositions', voice: '/control/clips#clips', clips: '/control/clips#deal',
+  background: '/admin/compositions', voice: '/admin/dealer-studio#clips', clips: '/admin/dealer-studio#deal',
   media: '/admin/videos', archive: '/admin/videos', tree: '/admin/events',
 });
 
@@ -23,7 +23,7 @@ export function legacyControlView(hash) {
 }
 
 export const CONTROL_TOOLS = Object.freeze([
-  { href: '/control/clips', title: 'Dealers & klipp' },
+  { href: '/admin/dealer-studio', title: 'Dealers & klipp' },
   { href: '/admin/compositions', title: 'Sammansättning' },
   { href: '/admin/publication', title: 'Spelrum & publicering' },
 ].map(item => Object.freeze(item)));

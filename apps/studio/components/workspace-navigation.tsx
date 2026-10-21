@@ -2,7 +2,7 @@
 
 import { Suspense, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { studioNavigationHref } from '../lib/studio-navigation.mjs';
+import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutLevel, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 import { isPartnerSurfacePath, resolveWorkspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
@@ -20,8 +20,18 @@ function ItemLink({ item, active, routeKey }: { item: ScoutLink; active: boolean
   const currentPath = routeKey.split('?')[0].replace(/^\/studio(?=\/)/, '');
   if (active && currentPath === item.href.split('?')[0]) return <span className={styles.itemActive} aria-current="page">{item.label}</span>;
   const params = new URLSearchParams(routeKey.split('?')[1] ?? '');
-  const href = item.href.startsWith('/control/')
+  let href = item.href.startsWith('/control/')
     ? studioNavigationHref(item.href, {dealerId:params.get('dealer') ?? undefined, laneId:params.get('composition') ?? params.get('lane') ?? undefined, operatorId:params.get('operator') ?? undefined, tableId:params.get('table') ?? undefined}) : labUrl(item.href);
+  if (item.href === '/admin/dealer-studio') {
+    const destination = new URL(studioNavigationHref(item.href, studioNavigationContextFromQuery(params)), 'https://studio.invalid');
+    for (const key of ['operator', 'table', 'room']) {
+      const values = params.getAll(key);
+      if (!values.length) continue;
+      destination.searchParams.delete(key);
+      for (const value of values) destination.searchParams.append(key, value);
+    }
+    href = destination.pathname + destination.search + destination.hash;
+  }
   return <a className={active ? styles.itemActive : styles.item} href={href} aria-current={active ? 'page' : undefined}>{item.label}</a>;
 }
 

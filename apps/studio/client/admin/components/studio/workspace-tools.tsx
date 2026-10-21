@@ -71,7 +71,7 @@ export function WorkspaceTool({section}:{section:string}){
   switch(section){
     case 'companies':case 'publication':content=<AdminPublicationPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
     case 'compositions':content=<ControlPreviewPage {...common} initialRoomId={scopedRoomId} initialGame={get('game')==='roulette'?'roulette':'blackjack'}/>;break;
-    case 'dealer-studio':content=<LabStudio {...common} initialView={get('view')} initialCategory={get('category')}/>;break;
+    case 'dealer-studio':content=<LabStudio {...common} initialGame={get('game')} initialView={get('view')} initialCategory={get('category')}/>;break;
     case 'rehearsal':content=<ControlActivityPage {...common} initialOperatorSlug={get('operator')} initialRoomId={scopedRoomId} initialGame={get('game')}/>;break;
     case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
     case 'videos':content=<ControlVideosPage {...common}/>;break;

@@ -183,7 +183,7 @@ test('group controls toggle without navigation and reopen on route changes inclu
     },
   };
   const { NavigationGroup } = loadNavigation('/control/clips', '', hooks);
-  const group = groups.find(group => group.items.some(item => item.href === '/control/clips'));
+  const group = groups.find(group => group.items.some(item => item.href === '/admin/dealer-studio'));
   function render(active, routeKey) {
     let tree = NavigationGroup({ group, active, routeKey });
     if (pendingEffect) { const effect = pendingEffect; pendingEffect = null; effect(); tree = NavigationGroup({ group, active, routeKey }); }
@@ -252,7 +252,7 @@ test('mobile menu starts collapsed and closes with Escape or its native button w
 
 test('current document does not reload a draft and contextual tools still link back to their workspace', () => {
   const { ItemLink } = loadNavigation('/control/preview');
-  const composition = sidebar.find(item => item.href === '/admin/compositions'), content = sidebar.find(item => item.href === '/control/clips');
+  const composition = sidebar.find(item => item.href === '/admin/compositions'), content = sidebar.find(item => item.href === '/admin/dealer-studio');
   for (const routeKey of ['/admin/compositions?composition=saved', '/studio/admin/compositions?composition=saved']) {
     const current = ItemLink({ item: composition, active: true, routeKey });
     assert.equal(current.type, 'span');
@@ -261,8 +261,15 @@ test('current document does not reload a draft and contextual tools still link b
   }
   const contextual = ItemLink({ item: content, active: true, routeKey: '/control/events?dealer=astrid' });
   assert.equal(contextual.type, 'a');
-  assert.equal(contextual.props.href, labUrl('/control/clips?dealer=astrid'));
+  assert.equal(contextual.props.href, labUrl('/admin/dealer-studio?dealer=astrid'));
   assert.equal(contextual.props.onClick, undefined);
+  for (const prefix of ['', '/studio']) {
+    const link=ItemLink({item:content,active:true,routeKey:prefix+'/admin/events?dealer=saga&event=idle.ready&variant=take-2&situation=box1&composition=portrait&game=roulette&operator=north&operator=south&table=one&table=two&room=three&room=four&token=private'});
+    const url=new URL(link.props.href,'https://studio.invalid');assert.equal(url.pathname,'/admin/dealer-studio');
+    for(const [key,value]of Object.entries({dealer:'saga',event:'idle.ready',variant:'take-2',situation:'box1',composition:'portrait',game:'roulette'}))assert.equal(url.searchParams.get(key),value);
+    assert.deepEqual(url.searchParams.getAll('operator'),['north','south']);assert.deepEqual(url.searchParams.getAll('table'),['one','two']);assert.deepEqual(url.searchParams.getAll('room'),['three','four']);
+    assert.equal(url.searchParams.has('token'),false);
+  }
 });
 
 

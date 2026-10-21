@@ -236,7 +236,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   const publicationHref=contextHref('/admin/publication');
   const sceneEditorHref=contextHref('/admin/clips');
-  const contentHref=contextHref('/control/clips');
+  const contentHref=contextHref('/admin/dealer-studio');
   const uploadHref=contextHref('/admin/videos',{eventId:clip?.classification?.eventId??project.events[0]?.id});
   if (!lanes.length) return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar" intro="Samla dealer, bord och bakgrund till en sammansättning som kan användas i flera spelrum."
     primary={<button className="sg-btn sg-btn-primary" disabled={!dirty||saving||conflict} onClick={()=>void save()}>{saving?'Sparar…':'Spara'}</button>}>
