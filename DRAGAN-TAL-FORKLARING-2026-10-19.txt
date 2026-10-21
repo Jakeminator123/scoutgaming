@@ -4,6 +4,25 @@ detaljer längre ner. Tekniska källor: docs/JOHN-HANDOFF.md (avsnitten för
 19 oktober), docs/LOCAL-PRESENTATION-RUNTIME.md, docs/CLOUD-MIGRATION.md.
 
 ====================================================================
+0. UPPDATERING 21 OKTOBER – BUDGETEN HÖJD
+====================================================================
+
+Viktigt: budgetarna nedan är VÅRA EGNA SPÄRRAR (bokföring i vår databas),
+inte RunPods pengar. Hela kvällen 19 oktober kostade cirka 0,75 USD i verklig
+GPU-tid (RunPod-saldo 26,91 → 26,16 USD). Varje försök reserverar 1,20 USD
+hos oss som säkerhetsmarginal, oavsett vad RunPod sedan debiterar.
+
+På Jakobs beslut 21 oktober (PR #306, migration 019 applicerad i produktion,
+amendment 24a07c73):
+  Grant dragan-test-20261017 ..... 45 → 150 USD  (≈ 125 försök totalt;
+                                   37 försök / 44,40 USD var använda)
+  Dygnstak (UTC-dygn) ............ 40 → 60 USD   (≈ 50 försök per dygn)
+  Providertäckning ............... 75 → 250 USD
+Det finns ingen "budgetlös" variant; taket måste finnas av designskäl.
+Med dessa nivåer är budgeten inte längre det som stoppar en demokväll.
+Nästa höjning görs på samma sätt: kodtak + migration + bokförd amendment.
+
+====================================================================
 1. KORT SVAR
 ====================================================================
 
@@ -138,14 +157,12 @@ Studio/Admin
   Dragan: speechProfile enabled. Drift: Sparläge, Basprofil.
   Rum dragan-test publicerat, win_1 bundet (paket v5).
 
-Budget (alla värden i USD)
+Budget (alla värden i USD) – uppdaterat 21 oktober, se avsnitt 0
   Reservation per försök ................ 1,20 (dras även vid misslyckande)
-  Grant dragan-test-20261017 ............ 45 (journalens maxtak)
-      använt efter serien 19 okt ........ 35 reservationer / 42,00
-      => cirka TRE försök kvar
-  Dygnstak (UTC-dygn) ................... 40 (kod + policyrad + schema 018)
-      använt 19 okt ..................... 21 reservationer / 25,20
-  Provider-tak (teknisk kapacitet) ...... 75
+  Grant dragan-test-20261017 ............ 150 (kod + schema 019 + amendment)
+      använt t.o.m. 21 okt förmiddag .... 37 reservationer / 44,40
+  Dygnstak (UTC-dygn) ................... 60 (kod + policyrad + schema 019)
+  Provider-tak (teknisk kapacitet) ...... 250
 
 Vercel scoutgaming
   Produktion: main. Previews byggs bara för main, jakob/*, codex/*, cursor/*.
@@ -159,11 +176,10 @@ Klienten (spelvyn)
 5. REKOMMENDATIONER
 ====================================================================
 
-R1  Budget före nästa demo. Granten har cirka tre försök kvar. 45 USD är
-    journalens maxtak, så nästa höjning kräver en kodändring (samma mönster
-    som PR #299/#301: kodtak, amendment, ev. migration). Bestäm ett tak för
-    en hel demo-kväll (t.ex. 30 försök = 36 USD) i stället för att höja
-    stegvis under pågående prov.
+R1  Budget. KLART 21 oktober: grant 150 USD, dygn 60 USD, provider 250 USD
+    (avsnitt 0). Nästa höjning följer samma mönster (kodtak, migration,
+    bokförd amendment). Håll koll på "Provbudgeten för läppsynk är slut" –
+    den texten betyder att granten behöver en ny amendment.
 
 R2  Behåll idle-timeout 60 s på endpointen tills vidare. Längre timeout
     skulle minska kallstarter mellan repliker, men driftvakten kräver i dag
