@@ -1277,7 +1277,7 @@ Konfiguration: [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 
 `croupier-v2` skickade samma Dragan-bakgrund upprepade gånger. I ett avgränsat
 urval av 100 HTTP 206-svar stod dess spel- och rums-previewadresser för cirka
-92 procent av bytesen; urvalet är inte hela månadens trafik.
+94,6 procent av bytesen; urvalet är inte hela månadens trafik.
 
 De två mediarouterna tillåter nu privat webbläsarcache med obligatorisk
 revalidering, först efter färsk kontroll av publicering och exakt SHA-ETag.
