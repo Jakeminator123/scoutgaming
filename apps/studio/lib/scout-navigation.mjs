@@ -13,12 +13,12 @@ export const SCOUT_NAVIGATION = Object.freeze([
     { href: '/admin/publication', label: 'Spelrum & publicering' },
   ] },
   { id: 'operations', label: 'Drift', items: [
-    { href: '/control/administration?tab=operations', label: 'Spelstatus & integritet' },
-    { href: '/control/administration?tab=finance', label: 'Betalningar & journal' },
+    { href: '/admin/drift', label: 'Spelstatus & integritet' },
+    { href: '/admin/ekonomi', label: 'Betalningar & journal' },
   ] },
   { id: 'system', label: 'System', items: [
-    { href: '/control/administration?tab=accounts', label: 'Konton & åtkomst' },
-    { href: '/control/administration?tab=partners', label: 'API & integrationer' },
+    { href: '/admin/admin/accounts', label: 'Konton & åtkomst' },
+    { href: '/admin/admin/api', label: 'API & integrationer' },
     { href: '/admin/ai/models', label: 'Agentmodeller' },
     { href: '/admin/dealer-agent', label: 'Intern agentchatt' },
   ] },
@@ -92,13 +92,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
   mapped = hrefParts(canonicalControlHref(mapped.path + (params.size ? '?' + params : '')));
-  if (mapped.path === '/control/administration' && params.get('tab') === 'tables') return items.find(item => item.href === '/admin/publication') ?? null;
-  if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/admin/dealer-studio') ?? null;
-  if (mapped.path === '/control/administration') {
-    const tab = params.get('tab');
-    // The administration page defaults to operations for an absent or unknown tab.
-    if (!['tables', 'operations', 'finance', 'accounts', 'partners', 'media-review'].includes(tab)) params.set('tab', 'operations');
-  }
+  if (mapped.path === '/admin/media-review') return items.find(item => item.href === '/admin/dealer-studio') ?? null;
   const matches = items.filter(item => {
     const parts = hrefParts(item.href);
     if (parts.path !== mapped.path) return false;

@@ -123,7 +123,7 @@ test('internal menu keeps native Studio anchors and adds public control and part
         ...SCOUT_FOOTER_NAVIGATION.map(item => labUrl(item.href)),
         ...SCOUT_LEVELS.map(item => labUrl(item.href))]);
       assert.doesNotMatch(html, /onClick|onNavigate/);
-      assert.equal(links.filter(link => link === labUrl('/control/administration?tab=operations')).length, 1);
+      assert.equal(links.filter(link => link === labUrl('/admin/drift')).length, 1);
       assert.match(html, /aria-label="ScoutGamingGroup administration"/);
       assert.match(html, /Nivå 1 </);
       assert.match(html, /CROUPIER STUDIO/);

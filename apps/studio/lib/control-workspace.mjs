@@ -4,9 +4,9 @@ import { WORKSPACE_VIEW_SLUGS } from '../../../packages/navigation/workspace-sur
 // Leave unconnected prototype features without a destination rather than
 // pretending that a similar-looking production tool implements them.
 const tools = Object.freeze({
-  players: '/control/administration?tab=accounts', tx: '/control/administration?tab=finance', team: '/control/administration?tab=accounts',
-  api: '/control/administration?tab=partners', bj: '/control/administration?tab=tables', dealers: '/control/administration?tab=tables',
-  shoes: '/control/administration?tab=operations', tables: '/control/administration?tab=tables',
+  players: '/admin/admin/accounts', tx: '/admin/ekonomi', team: '/admin/admin/accounts',
+  api: '/admin/admin/api', bj: '/admin/publication', dealers: '/admin/publication',
+  shoes: '/admin/drift', tables: '/admin/publication',
   background: '/admin/compositions', voice: '/admin/dealer-studio#clips', clips: '/admin/dealer-studio#deal',
   media: '/admin/videos', archive: '/admin/videos', tree: '/admin/events',
 });

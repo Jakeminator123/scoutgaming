@@ -173,7 +173,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
   const selected = entries.find(operator => operator.id === selectedId);
   const visible = entries.filter(operator => (showArchive || operator.status === 'active') && (operator.name + ' ' + operator.slug).toLocaleLowerCase('sv').includes(search.trim().toLocaleLowerCase('sv')));
   return <section className={styles.directory} aria-label="Bolag & team">
-    <div className={styles.heading}><p className={styles.muted}>Intern personal och spelarkonton finns under <a href={labUrl('/control/administration?tab=accounts')}>Konton & åtkomst</a>.</p><span className={styles.count}>{entries.length} bolag</span></div>
+    <div className={styles.heading}><p className={styles.muted}>Intern personal och spelarkonton finns under <a href={labUrl('/admin/admin/accounts')}>Konton & åtkomst</a>.</p><span className={styles.count}>{entries.length} bolag</span></div>
     {error ? <p className={styles.feedback} role="alert">{error}</p> : null}
     {message ? <p className={styles.feedback} role="status">{message}</p> : null}
     <div className={styles.workspace}>

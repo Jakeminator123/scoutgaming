@@ -1,3 +1,5 @@
+import { adminDocumentHref } from './admin-workspace-routes.mjs';
+
 // Public document names. Stored IDs and API contracts keep their compatibility.
 export function compositionLabel(value, language = 'sv') {
   const label = typeof value === 'string' ? value.trim() : '';
@@ -43,7 +45,8 @@ export function canonicalControlHref(value) {
   if (url.pathname === '/control/openclaw') url.pathname = url.searchParams.get('tab') === 'chat' ? '/admin/dealer-agent' : '/admin/ai/models';
   if (url.pathname === '/control/ops') url.pathname = '/admin/ai/models';
   if (url.pathname === '/control/operator-chat') url.pathname = '/admin/dealer-agent';
-  return url.pathname + url.search + url.hash;
+  const href = url.pathname + url.search + url.hash;
+  return url.pathname === '/control/administration' ? adminDocumentHref(href) : href;
 }
 
 // Activity bookmarks accept only one value for each observation identity.

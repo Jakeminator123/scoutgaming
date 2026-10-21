@@ -94,7 +94,7 @@ export function blackjackLobbyDestination(url, config) {
 }
 
 export function platformRoute(url, config, request) {
-  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|activity|openclaw|operator-chat|ops|clips)$/.test(url.pathname);
+  const retiredDocument = /^\/(?:studio\/)?control\/(?:rooms|companies|lanes|guide|videos|probe|replies|events|tree|compositions|rehearsal|preview|zones|activity|openclaw|operator-chat|ops|clips|administration)$/.test(url.pathname);
   if((config.nativeStudio||retiredDocument)&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
     const documentHref=url.pathname+url.search+url.hash;
     const destination=/^\/(?:studio\/)?control\/activity$/.test(url.pathname) ? legacyActivityDocumentHref(documentHref) : adminDocumentHref(documentHref);
@@ -107,8 +107,8 @@ export function platformRoute(url, config, request) {
   }
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
-  if(config.unifiedUi && ['/administration','/administration/'].includes(path)){
-    return {kind:'redirect',destination:`${config.publicOrigin}/control/administration${url.search}`};
+  if(config.unifiedUi && ['/administration','/administration/'].includes(path) && (!request || ['GET','HEAD'].includes(request.method) && !request.body && !request.headers.has('next-action'))){
+    return {kind:'redirect',destination:config.publicOrigin+adminDocumentHref('/control/administration'+url.search+url.hash)};
   }
   const lobby = blackjackLobbyDestination(url, config);
   if (lobby) return {kind:'redirect',destination:config.publicOrigin+lobby};

@@ -75,28 +75,6 @@ test('switching away from Astrid hides her chat and an already prepared social r
   }
 });
 
-test('authenticated administration route forwards the first selected dealer to the review workspace', async () => {
-  const config = { apiBase: '/studio/api/admin', allowedOrigins: ['https://studio.invalid'] };
-  const Page = loadTs(new URL('../app/control/administration/page.tsx', import.meta.url), {
-    'next/headers': { headers: async () => new Headers({ host: 'studio.invalid' }) },
-    'next/navigation': { redirect: () => assert.fail('Authenticated fixture should not redirect') },
-    '@/components/native-administration': { NativeAdministration: () => null },
-    '@/components/studio-types':loadTs(new URL('./studio-types.ts',import.meta.url)),
-    '../public-redirect':{redirectToPublicControl:()=>assert.fail('media review remains an administration view')},
-    '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
-    '@/lib/studio-native-runtime.mjs': {
-      nativeStudioAdminConfiguration: () => config,
-      assertNativeStudioRequest: () => {},
-      studioNativeRuntime: async () => ({ config, authorize: async () => ({ role: 'admin' }), api: { availableActions: () => [] } }),
-    },
-    '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect: () => '/control/login' },
-  }).default;
-  const page = await Page({ searchParams: Promise.resolve({ tab: 'media-review', dealer: ['paow', 'astrid'] }) });
-  assert.equal(page.props.initialGroup, 'media-review');
-  assert.equal(page.props.initialDealerId, 'paow');
-});
-
-
 test('retired dealer links and active pickers are rejected without deleting saved dealer history',()=>{
   const project=normalizeProject(createLegacyProject()),before=structuredClone(project);
   assert.ok(project.dealers.some(row=>row.id==='amira'));

@@ -606,46 +606,42 @@ Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
 J03 · 21 oktober 2026. Guide/Videor PR318, Probe/Replies PR320,
-Events/Tree PR322 och Compositions/Rehearsal PR324 har verifierad grön CI.
-PR324:s rättningshead är b69f8840d5f7e91ca27224e6d1abce9a50b83cfb
-(CI39661754986). PR326:s CI39661793088 föll på ett gammalt Gateway-test
-som anropade en hookkomponent utan React-renderare. Enbart test/handoff är
-rättade i ba697260751eb692df09ebe85af6f3ae73489f46: före3/4, efter27/27
-fokuserade och hook4/4,0skip. CI39665285361 pågår vid denna avläsning.
+Events/Tree PR322, Compositions/Rehearsal PR324 och Agentmodeller/Dealerchatt
+PR326 har verifierad grön CI på dokumenterade slutheads.
+Clips PR329:s första CI hittade gamla testadresser och fixturfel; endast
+fem testfiler/handoff rättades på ba983288f1e97e26e728e92329425f16125a1dcb.
+115/115 fokuserade samt överlappande hookprov passerar; uppföljande CI
+39673629390 är success på samma rättningshead. Samma testfixar ingår här.
 
-Senaste del: codex/admin-control-clips-j03 från PR326-produkthead
-58133210804b001b6100474bd6833d320c5da3eb, med samma Gateway-testfix.
-Den gamla Clips-SSR-sidan, dess sista exklusiva dataladdare och tracingpost
-är borttagna. Aktiva callers och gamla GET/HEAD-bokmärken går till
-/admin/dealer-studio; /studio, hash och tillåten kontext bevaras.
-Skrivningar/server actions omdirigeras inte. Den zoombara /admin/clips,
-aktiva LabStudio, delade API:er, N1-auth och projekt-CAS bevaras.
+Senaste del: codex/admin-control-administration-j03 från Clips-produkthead
+b81d858367254a6572a67df02f1a7ee4dcaae585. Administrationens SSR-wrapper,
+dess exklusiva redirecthjälpare och tracingpost är borttagna. Callers och
+gamla dokumentlänkar går till befintliga Admin-sidor för drift, ekonomi,
+konton, API, publicering och Talgranskning. Kontext och basePath bevaras;
+GET/HEAD-omdirigering får inte bli en skrivväg. Delade API:er, N1-behörighet,
+revisions- och exakt medieidentitetskontroll är kvar.
 
-Admin växlar lokala editorflikar utan att kasta utkast. Explicit spel/rum
-och tvetydiga operator/table/room-värden bevaras till destinationens kontroll.
-Sparning och pågående arbete skyddas vid dealerbyte och historik. Granskning
-hittade och rättade traversalens jämförelse med redan ändrad pathname samt
-förlorad rumskontext i hashbokmärken; callerprov hittade ItemLinks tappade
-dealer när målet bytte från Control till Admin. Inga nya media-/rumswriters.
+Talgranskning följer Admins historikägare: dealerbyte och Back/Forward
+behåller kontext och främmande historikstate. Utkast och pågående skrivning
+hindrar navigation, 409 behåller utkast och återläsning kräver användarval.
+Föråldrade SSR-assertioner är raderade; de har ersatts av kontroller för
+Admin-beteendet. Zoomkartan /admin/clips och registrerade medier bevaras.
 
-Verifiering med Volta24.21.0 och max4 workers: 200 unika fokuserade route- och
-callerfall över separata körningar (ett callerfynd rättades och berörda25/25
-omkördes), dealer-workspace32/32, root auth/save/harness37/37 och plattformens
-middleware27/27. Slutlig sammanhängande Admin-browser7/7,0skip:
-urval/flikar, Back/Forward/flersteg, utkast/pågående sparning, CAS/återläsning,
-409, okänd historikpost/främmande state och hashhandoff. Körningar överlappar.
-Verklig Admin-entry/WorkspaceTool/LabStudio med syntetiska API-svar och
-avskärmade media-/destinationskomponenter; ingen faktisk GPU/provider,
-medieuppspelning, PostgreSQL-durabilitet eller deployacceptans.
+Verifierat lokalt: 224/224 fokuserade auth/routing/komponent/API-prov och
+2/2 faktiska Admin-browserfall, 0 skips. Browsern kör riktig Admin med
+syntetiska API-svar och isolerade medie-/sidytor; ingen medieuppspelning,
+uppladdning, databas, provider eller deploy verifieras. Root läste loggarna.
+Oberoende produkt- och testreview av kevin_plan: inga blockerande fynd.
+Studio-build med /studio och alla frontendtyper passerar, traces66/44. Lokala beroendejunctions används; detta är inte deployacceptans. Ordinarie hook redovisas i PR/status.json.
+Loggar finns i arkiv/2026-10-21/j03-administration/ i denna worktree.
+Browserfixturer stängde sina kontexter och Chromium; inga servrar startades.
 
-Rootens slutbuild med /studio inkluderar Studio/Admin/Lobby-typer och
-saknar alla elva avvecklade J03-verktygswrappers; Admin/API finns kvar.
-Orphan534/0, diffkontroll grön. Lokala beroendejunctions och traces67/44
-är lokalt byggbevis. Loggar: arkiv/2026-10-21/j03-clips/.
-Ordinarie hook och slutlig oberoende testreview redovisas i PR/status.json.
-Aktuell main644b565 är separat läst, inte integrerad i stacken.
-Control-administration, catch-all och authflöden återstår. Hela J03 är
-IN_PROGRESS, total15%; ingen merge, drift-, databas- eller mediaändring.
+O01 är verifierad som kontraktsaktivitet i plan-PR311 på
+4f45a59c763874466986fc1bb3f3e76b12edba53: fastställd Adminmatris och
+44/44 isolerade kontraktsprov, oberoende slutreview. Totalt20%, E1 100%.
+Hela J03 är fortfarande IN_PROGRESS: catch-all/root och authflöden återstår.
+Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är läst men inte
+integrerad i stacken; annan agents ändringar bevaras. Ingen merge/deploy.
 J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
 `ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
 `admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla

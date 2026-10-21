@@ -9,6 +9,7 @@ import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-i
 import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
+import { studioHistory } from '../lib/studio-history.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import { journalType, formatJournalAmount, readEconomyJournal } from '../client/admin/lib/economy-journal.mjs';
@@ -646,6 +647,18 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   const draftForms = useRef(new Map<HTMLFormElement, string | undefined>());
 
   useEffect(() => {
+    if (!changed.current && !writing.current) setReviewDealerId(props.initialDealerId || 'astrid');
+  }, [props.initialDealerId]);
+
+  useEffect(() => {
+    const owner = studioHistory(window), canLeave = () => !changed.current && !writing.current;
+    const release = owner.guardTraversal(canLeave);
+    const guard = (event: Event) => { if (!canLeave()) event.preventDefault(); };
+    window.addEventListener('studio:before-navigate', guard);
+    return () => { release(); window.removeEventListener('studio:before-navigate', guard); };
+  }, []);
+
+  useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => { if (changed.current || writing.current) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', guard);
     return () => window.removeEventListener('beforeunload', guard);
@@ -716,10 +729,10 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     // cancellation. A cancelled draft confirmation leaves the current read intact.
     ++sequence.current; activeRead.current?.abort(); setBusy(true);
     draftForms.current.clear(); changed.current = false; setDirty(false); setNotice(''); setOneTime(null); setResources({}); setGroup(next);
-    if (window.location && window.history?.replaceState) {
+    if (window.location) {
       const params = new URLSearchParams(window.location.search || '');
       params.set('tab', next);
-      window.history.replaceState(null, '', `${window.location.pathname || '/control/administration'}?${params.toString()}`);
+      studioHistory(window).push(`${window.location.pathname || '/admin/drift'}?${params.toString()}`, true);
     }
   }
 
@@ -782,7 +795,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
-    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
+    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{const dealer=event.target.value;if(busy||changed.current||writing.current||!reviewDealers.some(row=>row.id===dealer)||dealer===reviewDealerId)return;setReviewDealerId(dealer);const url=new URL(window.location.href);url.searchParams.set('dealer',dealer);studioHistory(window).push(url.pathname+url.search+url.hash);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
     {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/admin/publication')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}

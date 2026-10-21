@@ -332,7 +332,7 @@ test('browser back restores exact dealer slot and category without replacing a d
 test('speech clips link to the selected dealer review and invalid view safely falls back',()=>{
   const p=props();p.initialDealerId='elin';p.initialView='clips';p.initialCategory='speech';
   const h=harness('./lab-studio.tsx');let tree=h.render(p);
-  const link=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('tab=media-review'))[0];assert.ok(link);assert.equal(link.props.href,'/control/administration?tab=media-review&dealer=elin');
+  const link=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/admin/media-review'))[0];assert.ok(link);assert.equal(link.props.href,'/admin/media-review?dealer=elin');
   assert.equal(nodes(tree,node=>node.props?.onConfigureSlot)[0].props.category,'speech');
   const invalid=harness('./lab-studio.tsx');invalid.render({...p,initialView:'javascript:bad',initialCategory:'bad'});assert.equal(invalid.state('workspaceView'),'idle');
 });
@@ -468,8 +468,8 @@ test('dealer management preserves composition operator and room through history'
   const lifecycle=nodes(tree,node=>typeof node.props?.onApplied==='function')[0];assert.equal(lifecycle.props.laneId,'mobile-phone');assert.equal(lifecycle.props.operatorId,'operator-42');assert.equal(lifecycle.props.tableId,'room-7');
   const currentUrl=new URL(runtimeWindow.location.href);assert.equal(currentUrl.searchParams.get('operator'),'operator-42');assert.equal(currentUrl.searchParams.get('table'),'room-7');
   nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('speak.goodluck','goodluck');tree=h.render(page.props);
-  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/(?:admin\/(?:events|compositions|rehearsal)|control\/administration)/.test(node.props.href??''));
-  assert.equal(outgoing.some(link=>link.props.href.startsWith('/admin/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
+  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/(?:admin\/(?:events|compositions|rehearsal|media-review))/.test(node.props.href??''));
+  assert.equal(outgoing.some(link=>link.props.href.startsWith('/admin/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/admin/media-review')));
   for(const link of outgoing){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('composition'),'mobile-phone');assert.equal(query.get('operator'),'operator-42');assert.equal(query.get('table'),'room-7');}
   pressDealer(tree,'Saga');tree=h.render(page.props);assertTabs('saga','mobile-phone','operator-42','room-7');
   for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}

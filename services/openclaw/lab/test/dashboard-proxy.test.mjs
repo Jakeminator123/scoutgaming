@@ -295,14 +295,21 @@ test('read-only surface rejects mutations except bounded same-origin native medi
   assert.equal((await get(port, path, { ...headers, 'transfer-encoding': 'chunked' }, 'POST', 'a'.repeat(101))).status, 413);
 });
 
-test('upstream redirects remain within dashboard; disconnects and deadlines fail without details', async t => {
-  const { port } = await fixture(t, { requestTimeoutMs: 50 });
+test('upstream redirects remain within dashboard and disconnects fail without details', async t => {
+  // These cases test responses and disconnects, not a race against the deadline.
+  const { port } = await fixture(t, { requestTimeoutMs: 5000 });
   const safe = await get(port, '/openclaw/redirect-in');
   assert.equal(safe.status, 302); assert.equal(safe.headers.location, '/openclaw/chat');
   const outside = await get(port, '/openclaw/redirect-out');
   assert.equal(outside.status, 502); assert.equal(outside.headers.location, undefined); assert(!outside.body.includes('attacker'));
   assert.equal((await get(port, '/openclaw/disconnected')).status, 502);
-  assert.equal((await get(port, '/openclaw/slow')).status, 504);
+});
+
+test('a stalled upstream fails at the configured deadline without details', async t => {
+  const { port } = await fixture(t, { requestTimeoutMs: 50 });
+  const response = await get(port, '/openclaw/slow');
+  assert.equal(response.status, 504);
+  assert.equal(response.body, 'OpenClaw dashboard: Gateway Timeout\n');
 });
 
 test('native WS keeps /openclaw and tunnels caller auth frames without injected credentials', async t => {

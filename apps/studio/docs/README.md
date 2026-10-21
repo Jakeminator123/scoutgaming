@@ -546,11 +546,13 @@ Blackjack-start tills en spelkonfiguration läggs till.
 Delad kod, media och sparade spel raderas inte av den åtgärden; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
 
-Native administration på `/control` använder de befintliga kontonas rollkontroller och
+Native administration på `/admin` använder de befintliga kontonas rollkontroller och
 den gemensamma Neon-källan. En inloggning där ger inga nya administrativa
 rättigheter.
 
-Native administration är aktiverad på `/control/administration` och har
+Native administration öppnas på `/admin/drift`, `/admin/admin/accounts`,
+`/admin/admin/api` och `/admin/media-review`; äldre administrationsbokmärken
+leder till motsvarande Admin-sida med bevarad kontext. Det finns
 även en separat QA-miljö med egen databas. Den använder samma sparade
 revisionskälla som spelmotorn och bevarar osparade utkast vid en sparningskonflikt.
 QA:s mejlkoppling och produktionskopplingen till Resend är verifierade,

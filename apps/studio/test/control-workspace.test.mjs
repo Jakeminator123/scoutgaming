@@ -51,7 +51,7 @@ test('overview distinguishes shared preparation from company publication and exp
   for (const title of ['Dealer &amp; klipp','Sammansättning','Bolagets publicering','Spelrum']) assert.match(html,new RegExp('<h3>'+title+'</h3>'));
   assert.ok(html.indexOf('Demo North')<html.indexOf('Demo South'));
   assert.match(html,/Kräver partnerinloggning eller en aktiv administratörssession/);
-  assert.match(html,/href="\/control\/administration\?tab=media-review"/);
+  assert.match(html,/href="\/admin\/media-review"/);
 });
 test('an unavailable list is not presented as empty or as a demonstration', () => {
   const html=render({user:'admin',operatorStatus:'unavailable',operators:[{id:'secret',slug:'secret',name:'Private company'}]});

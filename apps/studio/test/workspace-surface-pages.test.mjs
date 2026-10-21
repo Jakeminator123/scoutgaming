@@ -312,8 +312,8 @@ test('missing, expired or invalid partner credentials still recover through part
 test('old internal tool documents authorize then lead to the real tool with one basePath', async () => {
   let reads = 0;
   const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
-  for (const [section, destination] of [['voice', '/admin/dealer-studio#clips'], ['clips', '/admin/dealer-studio#deal'], ['lanes', '/control/administration?tab=tables'],
-    ['media', '/admin/videos'], ['presentation-events', '/admin/events'], ['team', '/control/administration?tab=accounts'], ['backgrounds', '/admin/compositions']]) {
+  for (const [section, destination] of [['voice', '/admin/dealer-studio#clips'], ['clips', '/admin/dealer-studio#deal'], ['lanes', '/admin/publication'],
+    ['media', '/admin/videos'], ['presentation-events', '/admin/events'], ['team', '/admin/admin/accounts'], ['backgrounds', '/admin/compositions']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
         assert.equal(canonicalControlPath(error, basePath), destination);
@@ -397,7 +397,7 @@ test('retired internal task links select the relevant existing administrative wo
   const loaded = pages(async () => ({ session: { user: 'fixture-admin' } }));
   for (const [section, tab] of [['players', 'accounts'], ['team', 'accounts'], ['transactions', 'finance'], ['game-tables', 'tables'], ['lanes', 'tables'], ['shoes', 'operations'], ['legacy-rooms', 'tables'], ['integration', 'partners']]) {
     await assert.rejects(renderPage(loaded.control, [section]), error => {
-      assert.equal(canonicalControlPath(error, ''), `/control/administration?tab=${tab}`);
+      assert.equal(canonicalControlPath(error, ''), ({accounts:'/admin/admin/accounts',finance:'/admin/ekonomi',tables:'/admin/publication',operations:'/admin/drift',partners:'/admin/admin/api'})[tab]);
       return true;
     });
   }

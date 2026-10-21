@@ -318,7 +318,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     {view==='clips'&&familyWorkspace&&category==='speech'?<section className={styles.help}><h3>Inspelade tal-klipp</h3><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></section>:null}
     {saveButton}
   </section> : null;
-  const reviewHref=contentLink('/control/administration?tab=media-review');
+  const reviewHref=contentLink('/admin/media-review');
   return <div className={styles.shell}>
     <PageTemplate eyebrow="// STUDIO" title="Dealers & klipp" primary={saveButton}>
     <main className={styles.main}><fieldset className={styles.fields} disabled={dealerBusy} onClickCapture={event=>{if(dealerBusy){event.preventDefault();event.stopPropagation();}}}>
