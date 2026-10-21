@@ -87,7 +87,7 @@ Portar (K03, bundna i J07): `WalletPort` (`available`, `reserve`, `consume`, `re
 ### 2.3 Ticks
 
 - **Beslutat (6321288941):** en självständig scheduler driver alla tidsdrivna övergångar som egna transaktioner. Kommandon, requests och retries driver aldrig spelets tid. First-caller-alternativet är borttaget ur målkontraktet.
-- `tickId = roomId : kind : anchor : scheduledAt`, där `scheduledAt` är den lagrade deadlinen (aldrig `now()`). Resultat i `table_ticks(tick_id PK, room, kind, outcome, result, committed_at)` i samma transaktion som effekterna; `outcome` ∈ `applied | superseded | rejected`; samma tickId körs aldrig två gånger.
+- `tickId = roomId : kind : anchor : scheduledAt`, där `scheduledAt` är den lagrade deadlinen (aldrig `now()`). Resultat i `table_ticks(tick_id PK, room, kind, outcome, result, committed_at)` i samma transaktion som effekterna; `outcome` ∈ `applied | superseded | rejected | blocked`; samma tickId körs aldrig två gånger.
 - Auditrad `table.tick {tickId, kind, scheduledAt}` blir parent till följande `engine.*`.
 
 | Rad i `advance()` idag | Tick-kind | anchor | scheduledAt | Lås |
@@ -124,7 +124,9 @@ Portar (K03, bundna i J07): `WalletPort` (`available`, `reserve`, `consume`, `re
 
 ### 2.5 Reservationer och wallet
 
-Saldot är mains globala; `available = balance − öppna reservationer` över alla bord. Varje övergång sker atomiskt under P:
+**Omfattning (beslut 6321854403 och Kevins gröna ljus):** spelkärnan (K02) äger inget saldo och anropar inget wallet-API. K03 använder en explicit `WalletPort`. I migreringen kopplar J07 den till mains serverägda **demowallet** i PostgreSQL. Aggregatorn äger verkligt saldo och betalningar i en senare, separat integration. Ingen extern betalningskoppling, ingen SQLite-genväg och ingen tyst demo-fallback när extern wallet är konfigurerad.
+
+Demowalletens saldo är mains globala; `available = balance − öppna reservationer` över alla bord. Varje övergång sker atomiskt under P:
 
 | Händelse | Reservation |
 |---|---|
@@ -138,14 +140,16 @@ Saldot är mains globala; `available = balance − öppna reservationer` över a
 - **Alla** mains debetwriters (1.3) måste räkna `available` med reservationerna och vägra debet som skär i dem; valutabyte nekas med öppna reservationer. Detta ägs av root.
 - Ordning på samma injicerade klient i samma transaktion: wallet → ledger-id (`RETURNING`) → kvitto (med ledger-id) → audit (med ledger-id). Mains `credit` som öppnar egen transaktion får inte anropas efter R/P/A.
 - **Ledgerns idempotensnyckel** (unik): `(namespace ∈ {command, tick}, roomId, actorId, identity, affectedPlayerId, effect)`, där `identity` = `commandId` eller `tickId`, `actorId` = `system` för tick och `effect` t.ex. `consume:stake`, `release`, `payout`, `refill`. Samma scope som kvittot; naket `commandId` räcker inte (kolliderar mellan rum). Ändrad input avvisas via kvittots fingerprint.
-- **Nekad `consume` vid start (Jakobs förslag, inväntar Kevins bekräftelse, 3.2):** `window.close` rullas tillbaka i sin helhet. Accepterade val och reservationer ligger kvar, och ingen annan spelares insats rensas automatiskt. Ticken lagras med `outcome = blocked` och `blockedOn = {playerId, reservationId, walletGen}`.
+- **Nekad `consume` vid start (godkänt av Kevin, 6321685315):** **spel- och walleteffekterna** av `window.close` återställs: ingen debet, ingen rundstart, inga motorevents. Accepterade val och reservationer ligger kvar, och ingen annan spelares insats rensas automatiskt.
+  - **Blocked-kvittot committas beständigt** i en egen transaktion under samma R-lås, direkt efter återställningen. Låset släpps inte mellan stegen. Transaktionen skriver `table_ticks(outcome = blocked, blockedOn = {playerId, reservationId, walletGen})` och auditraden `table.tick {tickId, kind, outcome: blocked}`. Den exakta mekaniken (savepoint eller två transaktioner) hör till K03/J07.
+  - En omstart efter blockering läser samma kvitto och ser samma stopp och samma ändringsvillkor.
   - **Omprövning utan oändlig loop:** schedulern kör inte samma passerade deadline igen förrän något i `blockedOn` har ändrats. Det gäller nytt `walletGen` för spelaren (insättning eller annan writer), att reservationen släppts eller ändrats (`clear`, `undo`, `leave`, `seat.release`, `pause`) eller en uttrycklig återhämtning från Admin. Varje omprövning får ett nytt `tickId` (`…:retry:<n>` med ändrings-generationen som ankare), så samma tillstånd prövas aldrig två gånger.
   - Under blockering står fönstret stängt för nya insatser från andra. Bordet visar att det väntar på en spelare.
 
 ### 2.6 Pause, join och leave
 
 - Pause gäller kontot i alla rum. **24 h är effektens längd** från commit (`MAX` med befintlig, som `:350`), inte en giltighetstid för sen första leverans.
-- **Föreslagen policy:** pause-kommandot bär `pauseGen` och `memberGen` från när klienten utfärdade det. `memberGen` är en generation per konto som ökar vid **varje** medlemsändring (join, leave, seat.release), så att leave → rejoin i samma rum inte ser oförändrat ut. Kommandot accepteras bara om båda är oförändrade, annars avvisas det som inaktuellt. Replay av ett accepterat pause ger lagrat resultat.
+- **Föreslagen policy:** pause-kommandot bär `pauseGen` och `accountMembershipGen` från när klienten utfärdade det. `accountMembershipGen` är kontots generation och ökar vid **varje** medlemsändring i något rum (join, leave, seat.release), så att leave → rejoin i samma rum inte ser oförändrat ut. Den är skild från `memberGen` per (rum, aktör) i 2.4. Kommandot accepteras bara om båda är oförändrade, annars avvisas det som inaktuellt. Replay av ett accepterat pause ger lagrat resultat.
 - **Öppet produktbeslut:** hur ett sent *första* mottaget pause-kommando ska behandlas (giltighetstid för leverans), skilt från effektens 24 h.
 - Låsning: läs medlemskap utan lås, lås rummen sorterade, lås P(aktör), läs medlemskap igen. Ändrad mängd: ROLLBACK, nytt försök med ny plan. Mängden är fast före A.
 - `join` och `leave` tar samma P(aktör) och kontrollerar paus under P, så medlemsmängden kan inte ändras efter pausens omläsning.
@@ -183,9 +187,9 @@ Två samtidiga identiska kommandon över deadline ger en effekt och 0 extra tick
 
 ## 3. Öppna beslut
 
-1. **Kevin: reservationsmodellen.** Saldo per rum (`shared_players.balance`, `opening_credit`, `:48`, `:96-101`, `:364`) ersätts av reservationer mot mains globala saldo enligt 2.5. Inväntar Kevins bekräftelse. Jakobs sida har tagit J07-ansvaret för att alla mains saldo-, debet- och valutawriters respekterar reservationerna (6321288941).
-2. **Kevin: nekad `consume` vid rundstart.** Jakobs förslag enligt 2.5: starten rullas tillbaka, val och reservationer ligger kvar, inga andra spelares insatser rensas, och omprövning sker bara efter tillståndsändring. Inväntar Kevins bekräftelse. Automatisk rensning införs inte.
-3. **Pause, sent första kommando:** öppet produktbeslut (2.6). `pauseGen` plus `memberGen` som giltighetsvillkor är förslag.
+1. ~~Reservationsmodellen~~ **Beslutat:** demowallet med reservationer bakom `WalletPort`. Aggregatorn senare (Kevin 6321892682, Jakob 6321854403), se 2.5.
+2. ~~Nekad `consume` vid rundstart~~ **Beslutat:** Kevin godkände retryförslaget (6321685315), inskrivet i 2.5.
+3. **Pause, sent första kommando:** öppet produktbeslut (2.6). `pauseGen` plus `accountMembershipGen` som giltighetsvillkor är förslag.
 
 **Beslutat:**
 - Självständig scheduler driver ticks (2.3).
