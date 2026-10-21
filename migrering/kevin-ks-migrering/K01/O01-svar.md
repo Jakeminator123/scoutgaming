@@ -150,8 +150,7 @@ Demowalletens saldo är mains globala; `available = balance − öppna reservati
 ### 2.6 Pause, join och leave
 
 - Pause gäller kontot i alla rum. **24 h är effektens längd** från commit (`MAX` med befintlig, som `:350`), inte en giltighetstid för sen första leverans.
-- **Föreslagen policy:** pause-kommandot bär `pauseGen` och `accountMembershipGen` från när klienten utfärdade det. `accountMembershipGen` är kontots generation och ökar vid **varje** medlemsändring i något rum (join, leave, seat.release), så att leave → rejoin i samma rum inte ser oförändrat ut. Den är skild från `memberGen` per (rum, aktör) i 2.4. Kommandot accepteras bara om båda är oförändrade, annars avvisas det som inaktuellt. Replay av ett accepterat pause ger lagrat resultat.
-- **Öppet produktbeslut:** hur ett sent *första* mottaget pause-kommando ska behandlas (giltighetstid för leverans), skilt från effektens 24 h.
+- **Beslutat (Kevin, 21/10):** ett pause-kommando **avvisas aldrig som inaktuellt**. Även ett sent första mottaget kommando gäller direkt från commit i 24 h (`MAX` med befintlig paus), för kontot i alla rum. En paus får aldrig tappas. Detta motsvarar dagens beteende (`demo_breaks`, `:349-353`). Replay av samma pause-kommando ger lagrat resultat och förlänger inte pausen. `pauseGen` och `accountMembershipGen` är inte giltighetsvillkor. `accountMembershipGen` används bara för att låsa rätt rumsmängd (nästa punkt).
 - Låsning: läs medlemskap utan lås, lås rummen sorterade, lås P(aktör), läs medlemskap igen. Ändrad mängd: ROLLBACK, nytt försök med ny plan. Mängden är fast före A.
 - `join` och `leave` tar samma P(aktör) och kontrollerar paus under P, så medlemsmängden kan inte ändras efter pausens omläsning.
 - Effekter: i rum i `bets` rensas aktörens insatser och ready med `release` (ersätter `:266-268`). Mitt i runda gäller dagens spärrlista (`:347-348`): bara `stand` och insurance-nej. Dagens `advance` av alla rum inne i pause (`:351-353`) tas bort.
@@ -190,7 +189,7 @@ Två samtidiga identiska kommandon över deadline ger en effekt och 0 extra tick
 
 1. ~~Reservationsmodellen~~ **Beslutat:** demowallet med reservationer bakom `WalletPort`. Aggregatorn senare (Kevin 6321892682, Jakob 6321854403), se 2.5.
 2. ~~Nekad `consume` vid rundstart~~ **Beslutat:** Kevin godkände retryförslaget (6321685315), inskrivet i 2.5.
-3. **Pause, sent första kommando:** öppet produktbeslut (2.6). `pauseGen` plus `accountMembershipGen` som giltighetsvillkor är förslag.
+3. ~~Pause, sent första kommando~~ **Beslutat:** pausen gäller alltid direkt i 24 h och tappas aldrig (2.6).
 
 **Beslutat:**
 - Självständig scheduler driver ticks (2.3).
