@@ -659,7 +659,13 @@ registreringar borttagna. Public game-entry-modulgrafen byggs i routingprovet.
 Loggar: arkiv/2026-10-22/j04/{final-focused,final-route-registry,browser-before,
 browser-after,return-review,publication-caller,lobby-typecheck,web-typecheck}.log. Inga blockerande lokala fel.
 Oberoende produktreview och roots slutreview har inga kvarvarande blockerande
-fynd. Ordinarie commit-hook och fjärr-CI redovisas vid leverans.
+fynd. PR335:s första CI39693575758 föll endast i access/game-lanes
+på test/player-choices.mjs:194 som fortfarande krävde /play. Faktisk footer
+var redan /lobby. Endast förväntad adress rättades; före 1/1 fel, efter
+10/10 i hela filen, 0 skip. Rum/bolag/dealer och separat provspelsretur
+prövas fortsatt. Ingen produktändring. Loggar:
+arkiv/2026-10-22/j04/pr335-footer-{before,after,commands}.log.
+Ordinarie commit-hook och ny fjärr-CI redovisas vid leverans.
 
 Browsern använder riktiga lobbykomponenter med syntetiska publicerade paket,
 syntetiska kontosvar och en isolerad launchmottagare; det är inget faktiskt
