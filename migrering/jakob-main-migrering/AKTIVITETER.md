@@ -64,13 +64,17 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 
 **Nästa avgränsade leverans:** [PR320](https://github.com/Jakeminator123/scoutgaming/pull/320), `codex/admin-control-replies-probe-j03` / `db96200a4aa8556c1ff456b70031501407e2935c`, ovanpå PR318. Probe-/Replies-wrappers och exklusiv tracing är borttagna; aktiva länkar/filterhistorik går till befintlig Admin. Gamla dokumentlänkar bevarar kontext, mutationer omdirigeras inte. API/auth/sparning oförändrade. Oberoende granskning utan blockerande fynd; 180/180 hookprov utan skips, 13/13 Replies-komponentprov och 10/10 faktisk Admin-browserhistorik, root15/15 API/query; Studio-build och samtliga frontendtyper gröna. Körningarna överlappar. GitGuardian och CI39646187160 success på oförändrad head; ingen merge/produktion/deployacceptans. Detaljer och lokala byggbegränsningar i status.json[J03].
 
-**Events/Tree levererad:** [PR322](https://github.com/Jakeminator123/scoutgaming/pull/322), `codex/admin-control-events-j03` / `2ea99899228b9574bbf142ae80f3e7a776af0a5b`, ovanpå PR320. Två SSR-wrappers/tracingposter borttagna; Admin äger översikt/editor och historik. Verkligt browserprov hittade och verifierade rättning av gammal projektkopia efter sparning och vybyte. 33/33 fokuserade inklusive 3 browserprov, 202/202 ordinarie hookprov, 0 skips; Studio-build med /studio och alla frontendtyper, orphan531/0 samt oberoende granskning passerar. Route/auth57/57 och riktade konsumentprov passerar; körningarna överlappar. Syntetiska API-svar, lokal build med junctions. Ny CI är ännu inte accepterad. Ingen merge/deployacceptans; hela J03 är IN_PROGRESS och totalen15%.
+**Events/Tree levererad:** [PR322](https://github.com/Jakeminator123/scoutgaming/pull/322), `codex/admin-control-events-j03` / `2ea99899228b9574bbf142ae80f3e7a776af0a5b`, ovanpå PR320. Två SSR-wrappers/tracingposter borttagna; Admin äger översikt/editor och historik. Verkligt browserprov hittade och verifierade rättning av gammal projektkopia efter sparning och vybyte. 33/33 fokuserade inklusive 3 browserprov, 202/202 ordinarie hookprov, 0 skips; Studio-build med /studio och alla frontendtyper, orphan531/0 samt oberoende granskning passerar. Route/auth57/57 och riktade konsumentprov passerar; körningarna överlappar. Syntetiska API-svar, lokal build med junctions. GitHub CI39649419165 success på oförändrad head. Ingen merge/deployacceptans; hela J03 är IN_PROGRESS och totalen15%.
+
+**Compositions/Rehearsal levererad:** [PR324](https://github.com/Jakeminator123/scoutgaming/pull/324), codex/admin-control-rehearsal-j03 / 43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee, ovanpå PR322. Två SSR-wrappers och exklusiv tracing borta; callers/bokmärken går till Admin. Rum/spel når verktygen, tvetydiga rum blockeras och Admin-historik bevarar urval/state med skydd för utkast och pågående anrop. Hook350/350, preview/CAS35/35, faktisk Admin-browser5/5, root auth/room-API72/72 samt riktade konsumentprov,0skip; körningarna överlappar. Studio-build/alla typer, orphan532/0 och oberoende produkt-/testreview gröna. Syntetiska API-svar och avgränsad playback; lokalt junctionbygge, ingen gameplay-/deployacceptans. GitGuardian success; CI39657917855 pågår. J03 fortsatt IN_PROGRESS,total15%.
 
 - [x] Guide/Videor: wrappers/callers och CI verifierade i PR318.
 - [x] Probe/Replies: wrappers/callers, kontext, authgränser och Admin-historik verifierade lokalt i PR320.
 - [x] Probe/Replies: slutlig GitHub CI39646187160 på oförändrad head db96200a4aa8556c1ff456b70031501407e2935c.
 - [x] Events/Tree: wrappers/callers, Admin-historik, sparning/återläsning, skydd och lokal build verifierade i PR322.
-- [ ] Events/Tree: slutlig GitHub CI på oförändrad PR322-head.
+- [x] Events/Tree: GitHub CI39649419165 success på oförändrad PR322-head2ea99899228b9574bbf142ae80f3e7a776af0a5b.
+- [x] Compositions/Rehearsal: wrappers/callers, kontext, sparning/återläsning, historikskydd och lokal build verifierade i PR324.
+- [ ] Compositions/Rehearsal: slutlig GitHub CI39657917855 på head43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee.
 - [ ] Resterande Control-/authytor och full J03-acceptans.
 
 Läsinventering på samma J02-head av plan_review, med centrala destinationer och Guide/Videor-wrappers kontrollerade av orkestratorn. Detta är en arbetskarta, inte runtimeacceptans:
@@ -78,8 +82,8 @@ Läsinventering på samma J02-head av plan_review, med centrala destinationer oc
 | Control-route | Admin-destination | Kvarvarande ansvar |
 | --- | --- | --- |
 | clips | /admin/dealer-studio | LabStudio och projekt-/video-/dealer-API bevaras |
-| compositions | /admin/compositions | Delad preview/publicering bevaras |
-| rehearsal | /admin/rehearsal | Aktivitet och rumspresentation bevaras |
+| compositions | /admin/compositions | SSR-wrapper avvecklad i PR324; delad preview/publicering och projekt-CAS bevaras |
+| rehearsal | /admin/rehearsal | SSR-wrapper avvecklad i PR324; aktivitet och rumspresentation bevaras |
 | events, tree | /admin/events | SSR-wrappers avvecklade i PR322; delad Events/Tree, beslutssimulering och projekt-API bevaras |
 | videos, replies, probe, guide | respektive /admin/<route> | SSR-wrappers avvecklade i PR318/320; delade registry-/reply-/projektfunktioner bevaras |
 | openclaw, operator-chat | /admin/ai/models, /admin/dealer-agent | tab=chat och skyddade API:er följs före wrapperradering |
@@ -87,7 +91,7 @@ Läsinventering på samma J02-head av plan_review, med centrala destinationer oc
 | [[...path]] | /admin och deklarerade verktyg | Partner-grenen i WorkspaceSurfacePage behålls; ui-server används av Admin |
 | login, set-password | Admin-authhemvist saknas ännu | Flytta token/returnTo/logout/public origin/basePath tillsammans före avveckling |
 
-Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Events/Tree använder efter PR322 Admin-historikägaren; äldre history.replaceState i den kedjan är ersatt. Övriga kvarvarande delar är inte avvecklade av de tre leveranserna.
+Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/admin/components/studio/workspace-tools.tsx:64, apps/studio/lib/next-page-navigation.mjs:15 och apps/studio/next.config.mjs:31. Events/Tree använder efter PR322 Admin-historikägaren; äldre history.replaceState i den kedjan är ersatt. Compositions/Rehearsal använder efter PR324 samma historikägare och explicit rumskontext. Övriga kvarvarande delar är inte avvecklade av de fyra leveranserna.
 
 
 ## J04 — En spelkatalog via lobby

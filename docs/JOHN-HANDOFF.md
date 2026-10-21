@@ -105,7 +105,16 @@ Två ytterligare SSR-wrappers/tracingposter borta; Admin-historik och
 spara→Tree→Events återläser rätt data. 33/33 fokuserade inklusive3 browser,
 202/202 hook,0skip; /studio-build/alla typer, orphan531/0 och oberoende review
 passerar. API-svar/uppspelning isolerade; junctionbuild är inget deploybevis.
-Ny GitHub CI ännu inte accepterad. Alla detaljer i status.json[J03].
+GitHub CI39649419165 success på oförändrad head. Alla detaljer i status.json[J03].
+Compositions/Rehearsal är levererad i [PR324](https://github.com/Jakeminator123/scoutgaming/pull/324),
+codex/admin-control-rehearsal-j03 / 43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee, ovanpå PR322.
+Ytterligare två wrappers och tracingposter borta. Explicit rum/spel, tvetydiga
+rum och Admin-historik/utkastskydd verifierade. Hook350/350, preview/CAS35/35,
+slutlig faktisk Admin-browser5/5, root auth/room-API72/72,0skip; prov överlappar.
+Studio-build/alla typer, orphan532/0 och oberoende slutreview utan blockerare.
+Syntetiska API-svar, avgränsad playback, lokalt junctionbygge; inget deploybevis.
+GitGuardian success; CI39657917855 pågår. Aktuell main644b565 är separat läst,
+ingen konflikt rapporteras men den är inte integrerad i denna leverans.
 Ren dokumentrouting ändrar inga nya spelkontrakt; full Control-/authavveckling
 och O01 kvarstår före J03 VERIFIED. J04:s route-/callerkarta är förberedande,
 inte implementation. Båda kartorna finns i befintliga AKTIVITETER.md; totalt 15%.
