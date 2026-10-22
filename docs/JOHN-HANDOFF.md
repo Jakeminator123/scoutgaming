@@ -1,5 +1,56 @@
 # Aktuell handoff — Scoutgaming
 
+## Migreringsplan och ansvar — 22 oktober 2026
+
+[Masterplanen](../migrering/MASTERPLAN.md) och [status.json](../migrering/status.json)
+är kanoniska. **45% (9/20 hela aktiviteter) är VERIFIED; 55% återstår.**
+J01, J02, K01, O01, J03, J04, K02, K03 och J07 är verifierade.
+Detta är aktivitetsandel, inte tids-, kod- eller produktionsprocent.
+J03/PR331 och J04/PR335 är integrerade i betrodd main
+`6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad`; tidigare uppgift om inga
+migrationsmerger är ersatt. Denna planbranch har sammanförts lokalt med samma
+main för att lösa handoffkonflikten, utan GitHub-merge eller deploy.
+
+J05/J08/K04/K05 är fortfarande IN_PROGRESS. Root äger klientmontering, rumsväg,
+server och byggkedja; Kevin har ingen utestående klientleveransskuld. Hans
+refill `eb6ab45509fad539463bbcb6930cc46d2d0844c2` är oberoende granskad och
+återanvänd. Kevin äger tre återstående K04-prov: tal under kortövergång,
+touch/layout och fullflöde med skärmbilder på den monterade isolerade provvägen.
+
+PR336:s levererade `8504c6e83497c03fff55a34d0762e9faa37b41fb` har grön CI.
+Oberoende mergegranskning hittade tre P2: för kort total presentationstimeout,
+uteblivet placebets i färskt insatsfönster och utebliven walletuppdatering i
+aktörens andra rum. Rättningar pågår i transportarbetskopian och kräver fryst
+sluthead, oberoende deltareview och nya relevanta bevis.
+
+Game008/009/010 saknas fortfarande i verifierad Neonproduktion; read-only
+metadata och granskbar schemaförberedelse följs i transportbranchens befintliga
+återställningsguide. Inget produktions-DDL, deploy eller flaggaktivering är
+godkänt. Isolerade PG16-prov ersätter inte målmiljöns PG18-acceptans eller Kevins
+verkliga K04-medieprov. Planprocenten ändras inte av nya dokument eller delprov.
+
+Jakobs separata mergeagent äger sekventiell PR-integration; denna root gör inga
+GitHub-merger under överlämningen. Ordningen är #334 → #336, med #311 som separat
+planleverans efter konfliktlösning/review/CI. #332 ingår i #334; #333 är inte
+mergegodkänd. Jakob har uttryckligen godkänt att även automatisk deploy stoppas.
+Denna branch lägger därför till `git.deploymentEnabled: false` i `vercel.json`.
+Enligt [Vercels Git-konfiguration](https://vercel.com/docs/project-configuration/git-configuration#turning-off-all-automatic-deployments)
+stoppar värdet automatiska Git-deployer för alla brancher. Spärren måste finnas
+på den ref Vercel läser; den lokala ändringen är inte ett verifierat livestopp.
+Återaktivering kräver ett nytt uttryckligt beslut. Renderstoppet hanteras separat
+av mergeoperatören; inga providerinställningar eller befintliga deployer har
+ändrats här. JSON-parse och kontroll att övrig konfiguration är oförändrad
+passerar; inget produktions-DDL eller deploy ingår. Aktuell samordning sker i
+[GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
+
+## Förenklade agentinstruktioner — 21 oktober 2026
+
+På Jakobs begäran förenklas AGENTS i PR #311: masterplanen erkänns,
+Control avvecklas enligt aktiviteterna och sakdetaljer hänvisas till befintliga
+guider. Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap
+kvarstår. Oberoende regelgranskning har inga blockerande fynd. Denna
+regeländring godkänner ingen produktion eller ändring av CI-/branchskydd.
+
 ## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
