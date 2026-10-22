@@ -483,6 +483,32 @@ test("server-chain: a block (hidden, speech, action) takes the clip; the same cu
   }
 });
 
+test("server-chain: an expired entry is not re-attached after a block; identity stays so the next entry follows", () => {
+  const uuid = i => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, familyId = 'astrid/idle.ready/ready';
+  const policy = { schemaVersion: 1, familyId, base: [{ videoId: uuid(1), weight: 100, durationMs: 1625 }], variants: [] };
+  const inventory = { families: [{ id: familyId, dealerId: 'astrid', playbackType: 'idle-pool', standardIds: [uuid(1)], variantIds: [uuid(2)] }],
+    videos: [uuid(1), uuid(2)].map((id, i) => ({ id, familyId, role: i ? 'variant' : 'standard', available: true })) };
+  const entry = { ver: 7, startAt: 1000, endAt: 2625, videoId: uuid(2) };
+  for (const [name, on, off] of [['hidden', { visible: false }, { visible: true }], ['speech', { speechPlaying: true }, { speechPlaying: false }],
+    ['actionBusy', { actionBusy: true }, { actionBusy: false }]]) {
+    for (const [at, expected] of [[2000, true], [2624, true], [2625, false], [3000, false]]) {
+      let clock = 1000;
+      const idle = createLiveIdleController({ policy, inventory, mode: 'server-chain', now: () => clock, initialScene: { active: true } });
+      assert.equal(idle.follow(entry), true); idle.presented(idle.snapshot().clip.playId);
+      clock = 1500; idle.updateScene(on); clock = at; idle.updateScene(off);
+      assert.equal(idle.follow({ ...entry }), expected, `${name}: re-attach at ${at} (endAt ${entry.endAt})`);
+      if (!expected) {
+        assert.equal(idle.snapshot().clip, null, `${name}: nothing attached at ${at}`);
+        assert.equal(idle.follow({ ...entry, ver: entry.ver - 1, startAt: 5000, endAt: 6625 }), false, `${name}: older ver still refused`);
+        assert.equal(idle.follow({ ...entry, startAt: entry.startAt - 1 }), false, `${name}: earlier startAt still refused`);
+      }
+      const next = { ...entry, startAt: entry.endAt, endAt: entry.endAt + 1625 };
+      assert.equal(idle.follow(next), true, `${name}: the next valid entry follows after ${at}`);
+      assert.equal(idle.snapshot().clip.startAt, next.startAt);
+    }
+  }
+});
+
 test('planning/material revision: leadMs/cardMs + revision per exact dealer, language and media set; no binding, no publication', () => {
   const observed = new Map(catalogue.map(r => [r.path, r.sha256]));
   const docs = dealer => new Map(timingSourceOf(dealer) ? [[timingSourceOf(dealer), fixture(`public/${timingSourceOf(dealer)}`)]] : []);

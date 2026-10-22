@@ -55,7 +55,7 @@ function createServerChainIdle({ policy, inventory, dealerId, now, initialScene 
   configure(policy, inventory); time();
   return Object.freeze({ mode: 'server-chain', snapshot,
     follow(entry) {
-      time();
+      const at = time();
       if (closed || blocked(scene) || !entry || typeof entry !== 'object' || !Number.isSafeInteger(entry.ver) || entry.ver < 1
         || !Number.isFinite(entry.startAt) || !Number.isFinite(entry.endAt) || entry.endAt <= entry.startAt
         || typeof entry.videoId !== 'string' || !allowed.has(entry.videoId) || failedIds.has(entry.videoId)) return false;
@@ -63,6 +63,9 @@ function createServerChainIdle({ policy, inventory, dealerId, now, initialScene 
       // a completed one, an older one or the same ver/startAt with other content stays refused.
       const resume = last?.detached && entry.ver === last.ver && entry.startAt === last.startAt
         && entry.endAt === last.endAt && entry.videoId === last.videoId;
+      // Re-attaching is bounded by the same table clock: once endAt has passed the entry is over,
+      // refused without moving the latest accepted identity, so the next valid entry still follows.
+      if (resume && at >= entry.endAt) return false;
       if (!resume && last && (entry.ver < last.ver || (entry.ver === last.ver && entry.startAt <= last.startAt))) return false;
       last = { ver: entry.ver, startAt: entry.startAt, endAt: entry.endAt, videoId: entry.videoId, detached: false };
       clip = { playId: ++serial, videoId: entry.videoId, ver: entry.ver, startAt: entry.startAt, endAt: entry.endAt, started: false, presented: false };
