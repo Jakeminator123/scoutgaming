@@ -7,7 +7,7 @@ import {presentationCapabilitiesForVersion} from '../../../packages/presentation
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
-import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {layerAssetPath,validatePresentationPackage} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
 import {extendedDealerMediaFeatures} from '../../../packages/presentation/contracts/dealer-media-features.mjs';
 
@@ -904,4 +904,39 @@ test('stored cascade data retains v7 while archive operations require v19 withou
  }
   const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(19))});
  await input.wrapped.withMutationContext(async()=>{await assert.rejects(input.wrapped.withMutationContext(()=>assert.fail('no widening'),{kind:'dealer-archive',value:{}}),blocked);},{kind:'resource-lifecycle',value:{}});assert.equal(input.fetches.length,1);
+});
+
+test('v24: a table playback policy or a jittered background timer gates project writes on v24',async()=>{
+  const rule={id:'living',assetId:'00000000-0000-4000-8000-000000000002',trigger:{everyMs:195000,jitterMs:74000},maxDurationMs:10000,cooldownMs:60000,maxPerMinute:1,maxSecondsPerMinute:20};
+  const plainRule={...rule,trigger:{everyMs:25000}};
+  for(const [lane,required] of [[{backgroundPlayback:{schemaVersion:1,rules:[rule]}},24],[{tablePlayback:{schemaVersion:1,rules:[plainRule]}},24],[{backgroundPlayback:{schemaVersion:1,rules:[plainRule]}},8]]){
+    const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+    await f.wrapped.saveDocument('project',{value:{lanes:[lane]}});
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],String(required));assert.equal(f.writes.length,1);
+  }
+  const old=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(23))});
+  await assert.rejects(old.wrapped.saveDocument('project',{value:{lanes:[{tablePlayback:{schemaVersion:1,rules:[]}}]}}),blocked);
+  assert.equal(old.writes.length,0,'an older runtime cannot receive a lane field it rejects');
+});
+
+test('v24: publishing a package whose lane carries tablePlayback is refused before SQL on a pre-v24 runtime',async()=>{
+  const value=frozenPackage(value=>{
+    const asset=(n,contentType,label)=>{const id=`30000000-0000-4000-8000-00000000000${n}`,sha256=String(n).repeat(64),role='table';
+      return {schemaVersion:1,id,role,label,sha256,size:4096,contentType,pathname:layerAssetPath({id,sha256,contentType,role}),width:1920,height:1080};};
+    const base=asset(1,'image/png','Bord'),clip=asset(2,'video/mp4','Levande bord');value.assets.push(base,clip);
+    Object.assign(value.lanes[0].layers.table,{enabled:true,allowed:[base.id,clip.id],default:base.id});
+    // No jitter: the lane field alone must require v24.
+    value.lanes[0].tablePlayback={schemaVersion:1,rules:[{id:'living',assetId:clip.id,trigger:{everyMs:25000},
+      maxDurationMs:10000,cooldownMs:25000,maxPerMinute:2,maxSecondsPerMinute:20}]};
+  });
+  assert.doesNotThrow(()=>validatePresentationPackage(value),'the fixture is a publishable package');
+  const descriptor={kind:'presentation-package',value};
+  for(const version of [23,24]){
+    const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    let begun=0;input.repository.transaction=async work=>{begun++;return work(input.repository);};
+    const write=()=>input.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value}),{presentationMutation:descriptor});
+    if(version===23){await assert.rejects(write(),blocked);assert.equal(begun,0,'no SQL transaction is opened');assert.equal(input.writes.length,0);}
+    else{await write();assert.equal(begun,1);assert.equal(input.writes.length,1);}
+    assert.equal(input.fetches.length,1);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'24');
+  }
 });

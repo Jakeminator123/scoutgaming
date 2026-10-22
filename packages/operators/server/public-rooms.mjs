@@ -1,5 +1,6 @@
 import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
 import { clipCompositing } from '../../presentation/runtime/presentation-composition.mjs';
+import { selectableLayerBases } from '../../presentation/contracts/background-playback-policy.mjs';
 
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
 class UnplayableOperatorRooms extends Error {
@@ -27,7 +28,9 @@ function publicLayer(selection, role, independentLayers, defaults) {
   const composition = selection.composition, source = composition?.[role];
   const enabled = independentLayers && source?.enabled === true
     && (role !== 'background' || source.mode !== 'baked' || source.allowed.length > 0);
-  const allowed = enabled ? source.allowed.map(id => {
+  // Table clips named by tablePlayback stay granted but are never offered as a table.
+  const offered = enabled && role === 'table' ? selectableLayerBases(source.allowed, composition.tablePlayback, source.default) : source?.allowed;
+  const allowed = enabled ? offered.map(id => {
     const asset = composition.assets.find(item => item.id === id && item.role === role);
     if (!asset) unavailable();
     return { id, label: asset.label };

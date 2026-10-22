@@ -7,7 +7,7 @@ import { isPresentationRoomLaneCompatible } from '../../../packages/presentation
 import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../../packages/operators/contracts/branding.mjs';
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
-import { adminLayerAdjustments, effectivePartnerAdjustments } from './partner-package-view.mjs';
+import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
@@ -124,7 +124,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       gateKeys(branding,[...rights]);
       for (const role of ['background', 'table', 'dealer']) {
         if (Object.hasOwn(branding,role) && !rights.has(role)) fail(422);
-        if (merged[role] !== undefined && merged[role] !== null && !lane.layers[role].allowed.includes(merged[role])) fail(422);
+        if (merged[role] !== undefined && merged[role] !== null && !partnerLayerChoices(lane, role).includes(merged[role])) fail(422);
       }
       if (Object.hasOwn(branding,'dealer') || merged.dealer !== undefined && merged.dealer !== null) {
         const wanted = merged.dealer ?? lane.layers.dealer.default;
@@ -196,7 +196,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         if(!Object.hasOwn(value,key))continue;
         if(key==='color'){
           if(!/^#[a-f0-9]{6}$/.test(value.color)||selectedLane.layers.table.colors?.length&&!selectedLane.layers.table.colors.includes(value.color))fail(422);
-        }else if(!selectedLane.layers[key].allowed.includes(value[key]))fail(422);
+        }else if(!partnerLayerChoices(selectedLane,key).includes(value[key]))fail(422);
         if(key==='dealer'&&!allowedDealers.includes(value[key]))fail(409);
       }
     }

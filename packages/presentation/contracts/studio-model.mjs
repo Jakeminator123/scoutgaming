@@ -3,7 +3,7 @@ import { validateRegisteredIdlePolicies } from '../runtime/registered-idle-polic
 import { validateLayerAsset } from './layer-asset-contract.mjs';
 import { isDealerId, isActiveDealerId, MAX_DEALERS } from './dealer-identity.mjs';
 import { validateCompositionSettings } from './composition-settings.mjs';
-import { validateBackgroundPlayback } from './background-playback-policy.mjs';
+import { validateBackgroundPlayback, validateLayerPlayback } from './background-playback-policy.mjs';
 import seed from './policies/project.seed.json' with { type: 'json' };
 import contract from './policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy, MAX_IDLE_VARIANTS } from '../runtime/idle-policy.mjs';
@@ -149,10 +149,14 @@ function laneErrors(lanes, projectDealerIds) {
   lanes.forEach((lane, index) => {
     const at = `lanes[${index}]`;
     // probe and idle may be absent. A missing probe leaves openclaw.probe in force; this check does not copy it.
-    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback'])) return;
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback'])) return;
     if (Object.hasOwn(lane, 'backgroundPlayback')) {
       try { validateBackgroundPlayback(lane.backgroundPlayback); }
       catch { fail(`${at}.backgroundPlayback`, 'ogiltiga uppspelningsregler'); }
+    }
+    if (Object.hasOwn(lane, 'tablePlayback')) {
+      try { validateLayerPlayback(lane.tablePlayback, { role: 'table' }); }
+      catch { fail(`${at}.tablePlayback`, 'ogiltiga uppspelningsregler'); }
     }
     if (Object.hasOwn(lane, 'composition')) {
       try { validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed}); }
@@ -517,6 +521,14 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if(lane?.composition){
       try{validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed??[],assets:project.layerAssets??[]});}
       catch{error(`lanes[${index}].composition`,'kortplatser kräver ett tillåtet blackjackbord i biblioteket');}
+    }
+    if (Object.hasOwn(lane ?? {}, 'tablePlayback')) {
+      try {
+        const table = lane.layers?.table;
+        const policy = validateLayerPlayback(lane.tablePlayback, { role: 'table', assets: project.layerAssets ?? [],
+          allowed: table?.allowed, defaultAssetId: table?.default });
+        if (policy.rules.length && table?.enabled !== true) throw Error();
+      } catch { error(`lanes[${index}].tablePlayback`, 'kräver aktiverat bord med tillåten basbild eller basvideo och regelvideor'); }
     }
     if (!Object.hasOwn(lane ?? {}, 'backgroundPlayback')) continue;
     try {

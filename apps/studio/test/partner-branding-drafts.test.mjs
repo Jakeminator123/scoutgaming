@@ -12,7 +12,7 @@ import {defaultCompositionSettings} from '../../../packages/presentation/contrac
 import {withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {publicEditableBranding,resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
 const scope={environment:'isolated-drafts',workspaceId:'draft-unit'},operatorId='draft-unit';
-async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,metadataBytes=0,roomGames={}}={}){
+async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,metadataBytes=0,roomGames={},tableClip=false}={}){
  const pool=operatorMemoryPool(),store=await createOperatorStore({sql:pool,scope}),actor='fixture';
  const audit={actorId:'42',accessClass:'partner',requestId:randomUUID()};
  await store.createOperator({operatorId,actor,slug:'draft-unit',name:'Draft'});
@@ -26,6 +26,13 @@ async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,
  if(large){
   lane.layers.table={...lane.layers.table,enabled:true,default:assets[0].id,allowed:[assets[0].id]};
   lane.layers.background={...lane.layers.background,enabled:true,mode:'image',default:assets[1].id,allowed:[assets[1].id]};
+ }
+ if(tableClip){
+  // A granted table clip for tablePlayback next to the base table.
+  const row=(id,label,contentType)=>{const asset={schemaVersion:1,id,role:'table',label,contentType,sha256:'a'.repeat(64),size:32,width:1920,height:1080};return {...asset,pathname:layerAssetPath(asset)};};
+  assets.push(row('11111111-1111-4111-8111-111111111111','Bord','image/png'),row('33333333-3333-4333-8333-333333333333','Levande bord','video/mp4'));
+  lane.layers.table={...lane.layers.table,enabled:true,default:assets[0].id,allowed:assets.map(asset=>asset.id)};
+  lane.tablePlayback={schemaVersion:1,rules:[{id:'living',assetId:assets[1].id,trigger:{everyMs:25000},maxDurationMs:10000,cooldownMs:25000,maxPerMinute:2,maxSecondsPerMinute:20}]};
  }
  const tables=large?Array.from({length:28},(_,i)=>'room-'+String(i).padStart(2,'0')+'x'.repeat(50)):['room-a','room-b'];
  const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane],assets}).presentation;
@@ -115,6 +122,14 @@ function largeBranding(f){
  return {lane:f.lane.id,color:'#334455',roomOverrides:Object.fromEntries(f.tables.map(id=>[id,
   {table:f.assets[0].id,background:f.assets[1].id,dealer:'astrid',color:'#334455'}]))};
 }
+test('a tablePlayback clip cannot be saved as the company or a room table; ordinary tables still can',async()=>{
+ const f=await fixture(['table','table.color','dealer'],{tableClip:true}),[base,clip]=f.assets;
+ for(const branding of [{lane:f.lane.id,table:clip.id},{lane:f.lane.id,roomOverrides:{'room-a':{table:clip.id}}}])
+  await assert.rejects(f.command({action:'save-draft',branding}),e=>e.statusCode===422,'clip rejected: '+JSON.stringify(branding));
+ assert.equal(await f.store.getBrandingDraft(operatorId),null);
+ const saved=await f.command({action:'save-draft',branding:{lane:f.lane.id,roomOverrides:{'room-a':{table:base.id}}}});
+ assert.equal(saved.draft.branding.roomOverrides['room-a'].table,base.id);
+});
 test('large valid drafts save, update, review and publish with bounded verifiable journal references and atomic rollback',async()=>{
  const f=await fixture(['table','background','dealer','table.color'],{large:true}),branding=largeBranding(f);
  assert.ok(Buffer.byteLength(canonicalStudioJson(branding))>5000);

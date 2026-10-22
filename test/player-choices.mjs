@@ -232,3 +232,24 @@ test('the existing layer panel accepts a clear preview label and keeps the ordin
  assert.equal(configured.children[0].textContent,'Bord och bakgrund');
  assert.equal(configured.id,'player-choices');
 });
+
+test('a table clip in tablePlayback is never a player table; a stored or company choice naming it falls back to the default',()=>{
+  const living={id:'living',assetId:'table-clip',trigger:{everyMs:25000},maxDurationMs:10000,cooldownMs:25000,maxPerMinute:2,maxSecondsPerMinute:20};
+  const composition={dealer:{enabled:true,compatibility:'per-clip'},table:{enabled:true,allowed:['table-one','table-two','table-clip'],default:'table-one'},
+    tablePlayback:{schemaVersion:1,rules:[living]},
+    assets:[{id:'table-one',label:'Bord ett'},{id:'table-two',label:'Bord två'},{id:'table-clip',label:'Levande bord'}]};
+  for(const input of [{stored:{tableAsset:'table-clip'}},{branding:{table:'table-clip'}},{stored:{tableAsset:'table-clip'},branding:{table:'table-clip'}}]){
+    const selected=resolvePlayerSelection({choices:imageChoices,currentDealer:'astrid',composition,...input});
+    assert.equal(selected.tableValue,'table-one','falls back to the default table');assert.equal(Object.hasOwn(selected.nextStored,'tableAsset'),false,'the clip is dropped from storage');
+  }
+  const other=resolvePlayerSelection({choices:imageChoices,currentDealer:'astrid',composition,stored:{tableAsset:'table-two'},branding:{table:'table-clip'}});
+  assert.equal(other.tableValue,'table-two');assert.deepEqual(other.nextStored,{tableAsset:'table-two'});
+  const company=resolvePlayerSelection({choices:imageChoices,currentDealer:'astrid',composition,branding:{table:'table-two'}});
+  assert.equal(company.tableValue,'table-two','an ordinary company table still applies');
+  const tables=composition=>{const page=dom(),panel=mountPlayerChoices(page,{choices:imageChoices,composition,currentDealer:'astrid',tableValue:'table-one'});
+    return panel.children.find(row=>row.className==='choice-row'&&row.children[0].textContent==='Bord').children.filter(node=>node.tag==='button').map(button=>button.dataset.tableAsset);};
+  assert.deepEqual(tables(composition),['table-one','table-two'],'the clip is not offered as a table');
+  const {tablePlayback:_policy,...plain}=composition;
+  assert.deepEqual(tables(plain),['table-one','table-two','table-clip'],'without tablePlayback every granted table is offered as before');
+  assert.equal(resolvePlayerSelection({choices:imageChoices,currentDealer:'astrid',composition:plain,stored:{tableAsset:'table-clip'}}).tableValue,'table-clip');
+});

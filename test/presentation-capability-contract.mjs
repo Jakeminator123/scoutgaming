@@ -6,7 +6,7 @@ import {
 } from '../packages/presentation/capability-contract.mjs';
 
 const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version)));
-const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
 
@@ -36,7 +36,8 @@ test('negotiation preserves default v2 and opts into v3-v23 only with one exact 
   assert.equal(negotiatePresentationCapabilityVersion('21'), 21);
   assert.equal(negotiatePresentationCapabilityVersion('22'), 22);
   assert.equal(negotiatePresentationCapabilityVersion('23'), 23);
-  for (const malformed of ['', '1', '24', '023', '23, 23', '022', '22, 22', '021', '21, 21', '020', '20, 20', '019', '19, 19', '018', '18, 18', '017', '17, 17', '016', '16, 16', '015', '15, 15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
+  assert.equal(negotiatePresentationCapabilityVersion('24'), 24);
+  for (const malformed of ['', '1', '25', '024', '24, 24', '023', '23, 23', '022', '22, 22', '021', '21, 21', '020', '20, 20', '019', '19, 19', '018', '18, 18', '017', '17, 17', '016', '16, 16', '015', '15, 15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
     assert.throws(() => negotiatePresentationCapabilityVersion(malformed), unsupported);
   }
 });
@@ -66,6 +67,7 @@ test('v1-v11 exact representations advertise features while the legacy ID list n
   assert.deepEqual(presentationCapabilitiesForVersion(21), {...presentationCapabilitiesForVersion(20),schemaVersion:21,blackjackAnchors:'v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(22), {...presentationCapabilitiesForVersion(21),schemaVersion:22,clipPoses:'vila-redo-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(23), {...presentationCapabilitiesForVersion(22),schemaVersion:23,roomGameConfigs:'administration-drafts-v1'});
+  assert.deepEqual(presentationCapabilitiesForVersion(24), {...presentationCapabilitiesForVersion(23),schemaVersion:24,layerPlayback:'table-and-jitter-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(8), {...presentationCapabilitiesForVersion(7),schemaVersion:8,backgroundPlayback:'rules-v1'});
   for (const version of versions) {
     const input = parsed(version), checked = validatePresentationCapabilities(input);
@@ -83,7 +85,7 @@ test('expected-version validation rejects downgrade even when the old response i
       assert.throws(() => validatePresentationCapabilities(parsed(version), { expectedVersion: expected }), invalid);
     }
   }
-  for (const version of [undefined, null, 0, 24, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
+  for (const version of [undefined, null, 0, 25, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
   assert.throws(() => validatePresentationCapabilities(parsed(3), { expectedVersion: '3' }), invalid);
 });
 

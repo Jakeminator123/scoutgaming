@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {adminLayerAdjustments,effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles} from '../lib/partner-package-view.mjs';
+import {adminLayerAdjustments,effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles,partnerLayerChoices} from '../lib/partner-package-view.mjs';
 import {PartnerPackageView} from '../components/partner-package-view.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -105,4 +105,17 @@ test('Admin may choose every allowed layer of a layered composition while materi
   const fullFrame=makePresentation(false).lanes[0];
   assert.deepEqual(adminLayerAdjustments({...fullFrame,operatorAdjustable:[]}),['dealer'],'legacy full-frame clips bake table and background');
   assert.deepEqual(adminLayerAdjustments(undefined),[]);
+});
+
+test('Admin table choices exclude tablePlayback clips and a branding naming one shows the default table',()=>{
+  const clipId='33333333-3333-4333-8333-333333333333';
+  const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),
+    layers:{table:{enabled:true,default:tableId,allowed:[tableId,clipId]},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid']}},
+    tablePlayback:{schemaVersion:1,rules:[{id:'living',assetId:clipId,trigger:{everyMs:25000},maxDurationMs:10000,cooldownMs:25000,maxPerMinute:2,maxSecondsPerMinute:20}]}};
+  assert.deepEqual(partnerLayerChoices(lane,'table'),[tableId]);
+  assert.deepEqual(partnerLayerChoices(lane,'background'),[backgroundId],'background choices are unchanged');
+  assert.equal(partnerLaneState(lane,{lane:lane.id,table:clipId}).layers.table.selected,tableId);
+  const {tablePlayback:_policy,...plain}=lane;
+  assert.deepEqual(partnerLayerChoices(plain,'table'),[tableId,clipId],'without tablePlayback nothing changes');
+  assert.equal(partnerLaneState(plain,{lane:lane.id,table:clipId}).layers.table.selected,clipId);
 });

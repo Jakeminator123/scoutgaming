@@ -16,7 +16,7 @@ import {useStudioProjectSession} from './studio-session';
 import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
 import {LayerAssetManager} from './layer-asset-manager';
-import {BackgroundPlaybackEditor} from './background-playback-editor';
+import {BackgroundPlaybackEditor,LayerPlaybackEditor} from './background-playback-editor';
 import {BlackjackTableGeometryEditor} from './blackjack-table-geometry-editor';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
@@ -50,6 +50,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState('');
   const [previewBusy,setPreviewBusy]=useState(false),[previewError,setPreviewError]=useState('');
   const [previewBackgroundRuleId,setPreviewBackgroundRuleId]=useState<string>(),[previewBackgroundRequest,setPreviewBackgroundRequest]=useState(0);
+  const [previewTableRuleId,setPreviewTableRuleId]=useState<string>(),[previewTableRequest,setPreviewTableRequest]=useState(0);
   const previewAttempt=useRef<AbortController|null>(null);
   const modelEdit:typeof sessionEdit=change=>{if(!previewAttempt.current)sessionEdit(change);};
   const [activeRole,setActiveRole]=useState<Role>('dealer');
@@ -59,7 +60,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   savedBaseline.current=savedJson;
   const lanes=project.lanes??[];
   const lane=lanes.find(row=>row.id===laneId)??lanes[0]??{id:'',label:'',renderer:'layered',dealers:[],layers:{background:{enabled:false,mode:'baked',default:null,allowed:[]},table:{enabled:false,default:null,allowed:[]},dealer:{enabled:false,default:'',allowed:[]}},openclaw:{idle:'off',deal:'off',reveal:'off',speak:'off',probe:'off'},operatorAdjustable:[]} as StudioLane;
-  const backgroundAssets=(project.layerAssets??[]).filter(asset=>asset.role==='background'&&lane.layers.background.allowed.includes(asset.id)).map(asset=>({id:asset.id,url:labUrl(`/api/layer-assets/${asset.id}`),label:asset.label,contentType:asset.contentType}));
+  const clipAssets=(role:'background'|'table')=>(project.layerAssets??[]).filter(asset=>asset.role===role&&lane.layers[role].allowed.includes(asset.id)).map(asset=>({id:asset.id,url:labUrl(`/api/layer-assets/${asset.id}`),label:asset.label,contentType:asset.contentType}));
+  const backgroundAssets=clipAssets('background'),tableAssets=clipAssets('table');
   const dealers=activeStudioDealers(project);
   const contentDealer=dealers.find(row=>row.id===initialDealerId);
   const startDealer=dealers.find(row=>row.id===lane.layers.dealer.default);
@@ -93,7 +95,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);
   },[uploading,temporary]);
   useEffect(()=>()=>{previewAttempt.current?.abort();previewAttempt.current=null;},[]);
-  useEffect(()=>{setPreviewBackgroundRuleId(undefined);setPreviewBackgroundRequest(0);},[lane.id]);
+  useEffect(()=>{setPreviewBackgroundRuleId(undefined);setPreviewBackgroundRequest(0);setPreviewTableRuleId(undefined);setPreviewTableRequest(0);},[lane.id]);
   async function startPreview(){
     if(previewBlocked||previewAttempt.current||continuing.current||uploadLock.current||projectRef.current!==project)return;
     const controller=new AbortController(),snapshot=projectRef.current,requestedLane=lane.id,revision=project.revision;
@@ -142,6 +144,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     studioHistory(window).push(url.pathname+url.search+url.hash,true);
   }
   function markUpload(role:Role,busy:boolean){if(busy)uploads.current.add(role);else uploads.current.delete(role);uploadLock.current=uploads.current.size>0;setUploading(uploadLock.current);}
+  // A layer that still carries clip rules stays visible; the rules reference its base.
+  const hasClipRules=(role:Role)=>role==='background'?Boolean(lane.backgroundPlayback?.rules.length):role==='table'?Boolean(lane.tablePlayback?.rules.length):false;
   const edit=(next:StudioLane)=>modelEdit(current=>validateProject({...current,lanes:(current.lanes??[]).map(row=>row.id===lane.id?{...next,renderer:'layered',composition:next.composition??defaultCompositionSettings()}:row)}));
   function setPlacement(role:Role,key:'scale'|'width'|'x'|'y',value:number){
     const next=structuredClone(lane),composition=structuredClone(settings);
@@ -212,6 +216,13 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           onChange={policy=>{if(previewBusy||saving||uploading||conflict||temporary)return;const next=structuredClone(lane);if(policy)next.backgroundPlayback=policy;else delete next.backgroundPlayback;edit(next);}}
           onPreview={id=>{if(previewBusy||saving||uploading||conflict||temporary)return;setPreviewBackgroundRuleId(id);setPreviewBackgroundRequest(value=>value+1);}}/>
       </>:null}
+      {role==='table'?<><p className={styles.hint}>En bild ligger stilla. MP4 och WebM spelas som ljudlös grundloop. Lägg till separata bordsklipp nedan för händelser och automatik.</p>
+        <LayerPlaybackEditor role="table" policy={lane.tablePlayback} assets={project.layerAssets??[]} allowed={lane.layers.table.allowed}
+          baseSelected={lane.layers.table.enabled&&tableAssets.some(asset=>asset.id===lane.layers.table.default)}
+          disabled={previewBusy||saving||uploading||conflict||temporary}
+          onChange={policy=>{if(previewBusy||saving||uploading||conflict||temporary)return;const next=structuredClone(lane);if(policy)next.tablePlayback=policy;else delete next.tablePlayback;edit(next);}}
+          onPreview={id=>{if(previewBusy||saving||uploading||conflict||temporary)return;setPreviewTableRuleId(id);setPreviewTableRequest(value=>value+1);}}/>
+      </>:null}
       {placementControls(role)}
       {role==='table'&&game==='blackjack'&&lane.layers.table.default&&table&&!localMedia.table?<BlackjackTableGeometryEditor
         key={`${lane.id}:${lane.layers.table.default}:${layout}`} tableId={lane.layers.table.default} url={table.url} contentType={table.contentType} layout={layout}
@@ -278,7 +289,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           {game==='roulette'&&<><p className={styles.hint}>Roulette använder Desktop 16:9 även på mobil. Här ändrar du den sparade scenen, inte bara förhandsvisningens zoom.</p><CompositionZoomControls settings={settings} disabled={previewBusy||saving||uploading||conflict||temporary} onChange={composition=>edit({...lane,composition})}/></>}
           {legacyBackground?<p role="alert" className={styles.hint}>Äldre bakgrundsinställning behöver åtgärdas före publicering. Om en miljö är inbakad i dealerfilmen behöver den ersättas med en grön originalfilm.</p>:null}
           {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
-          <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing} backgroundPlayback={temporary?undefined:lane.backgroundPlayback} backgroundAssets={backgroundAssets} previewBackgroundRuleId={previewBackgroundRuleId} previewBackgroundRequest={previewBackgroundRequest}/>
+          <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing} backgroundPlayback={temporary?undefined:lane.backgroundPlayback} backgroundAssets={backgroundAssets} previewBackgroundRuleId={previewBackgroundRuleId} previewBackgroundRequest={previewBackgroundRequest} tablePlayback={temporary?undefined:lane.tablePlayback} tableAssets={tableAssets} previewTableRuleId={previewTableRuleId} previewTableRequest={previewTableRequest}/>
           {localError?<p role="alert">{localError}</p>:null}
         </section>
         <section className={styles.controls} aria-label="Tre lager">
@@ -309,7 +320,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       {project.lanes?.some(row=>row.id===lane.id)?<CompositionSettings key={lane.id} project={project} lane={lane} onEdit={modelEdit} disabled={previewBusy||saving||uploading||conflict}/>:null}
       <details id="composition-lab" className={styles.advanced} open={labMode} onToggle={event=>setLabMode(event.currentTarget.open)}><summary>Avancerat · lager och filprov</summary><div>
         <p>Prova VILA-/REDO-bilder och händelseklipp i samma scen. Lokala filer laddas inte upp. Storlek och placering ändrar utkastet; spara uttryckligen för att behålla dem. Du kan växla tillbaka utan att tappa filprovet.</p>
-        <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} disabled={role==='background'&&Boolean(lane.backgroundPlayback?.rules.length)} onChange={event=>{if(role==='background'&&lane.backgroundPlayback?.rules.length)return;const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}{lane.backgroundPlayback?.rules.length?<p>Ta bort bakgrundsklippen under Bakgrund innan du döljer bakgrundslagret.</p>:null}</fieldset>
+        <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} disabled={hasClipRules(role)} onChange={event=>{if(hasClipRules(role))return;const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}{lane.backgroundPlayback?.rules.length?<p>Ta bort bakgrundsklippen under Bakgrund innan du döljer bakgrundslagret.</p>:null}{lane.tablePlayback?.rules.length?<p>Ta bort bordsklippen under Bord innan du döljer bordslagret.</p>:null}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets friläggning</summary>{localMedia.dealer?<label><input type="checkbox" checked={localAlpha} onChange={event=>setLocalAlpha(event.target.checked)}/>Lokalt prov med befintlig alfa · ingen grön nyckling</label>:null}{compositing.mode==='alpha'?<p>Originalets alfa bevaras utan grön nyckling.</p>:<p>Grön nyckling · Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
         <section aria-label="Snabbprov med tre lokala filer"><h3>Snabbprov med tre lokala filer</h3><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><p>Dealer: bild eller video, frilagd eller med grön bakgrund. Grönt tas bort bara i dealerlagret. Filens marginaler behålls; stående och liggande källor visas höjdbaserat. Bord och miljö visas separat. Händelseklipp spelas en gång; Spela två gånger kontrollerar upprepning.</p><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></section>

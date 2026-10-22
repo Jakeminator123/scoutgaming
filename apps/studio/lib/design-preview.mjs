@@ -1,6 +1,7 @@
 import {studioRoots} from './studio-roots.mjs';
 import { lstat, realpath } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { parseByteRange } from './preview-files.mjs';
@@ -47,6 +48,32 @@ const publicLobbyDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
   'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy']
     .replace("connect-src 'self'", "connect-src 'self' https://api.d-id.com")
     .replace("media-src 'self' blob:", "media-src 'self' blob: https://agents-results.d-id.com") });
+// Lobby teasers replay the same images and idle clips (each portrait about
+// every 45 s). Only these media files may stay in the viewer's own browser.
+// File names are not content-hashed: keep the lifetime short, never immutable,
+// and keep `private` so shared caches never store them.
+const lobbyMediaHeaders = Object.freeze({ ...designPreviewHeaders, 'Cache-Control': 'private, max-age=3600' });
+const lobbyMediaFile = path => /^(?:public-)?lobby\/(?:images|videos)\/.+\.(?:png|jpe?g|webp|mp4)$/.test(path ?? '');
+// Chrome fetches <video> as `Range: bytes=0-` and only stores a 206 with a
+// strong validator. The ETag hashes the bytes (deploys may normalise mtimes);
+// the digest is computed once per file path, size and mtime.
+const mediaTags = new Map();
+function mediaValidators(file, info) {
+  const version = `${info.size}:${info.mtimeMs}`;
+  let entry = mediaTags.get(file);
+  if (entry?.version !== version) {
+    const tag = (async () => {
+      const hash = createHash('sha256');
+      for await (const chunk of createReadStream(file)) hash.update(chunk);
+      return `"${hash.digest('base64url')}"`;
+    })();
+    entry = { version, tag };
+    mediaTags.set(file, entry);
+    tag.catch(() => { if (mediaTags.get(file)?.tag === tag) mediaTags.delete(file); });
+  }
+  return entry.tag.then(ETag => ({ ETag, 'Last-Modified': info.mtime.toUTCString() }));
+}
+const noneMatch = (header, tag) => header?.split(',').some(value => ['*', tag].includes(value.trim().replace(/^W\//, ''))) ?? false;
 
 // Only the native Admin login redirect is translated. Absolute destinations
 // must match the configured public origin; remote handoffs stay intact.
@@ -78,19 +105,21 @@ export async function serveDesignPreview(request, segments, { authorize, root = 
     return new Response(null, { status: 307, headers: { ...designPreviewHeaders, Location: target } });
   }
   const path = designPreviewFile(segments);
-  return servePreviewFile(request, path, root, path === 'admin/index.html' ? adminDocumentHeaders : designPreviewHeaders);
+  return servePreviewFile(request, path, root, path === 'admin/index.html' ? adminDocumentHeaders
+    : lobbyMediaFile(path) ? lobbyMediaHeaders : designPreviewHeaders);
 }
 
 export async function servePublicLobby(request, segments = [], { root = designPreviewDirectory } = {}) {
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
   const path = publicLobbyFile(segments);
   const directory = path?.startsWith('fonts/') ? 'fonts' : 'public-lobby';
-  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory), path === 'public-lobby/index.html' ? publicLobbyDocumentHeaders : designPreviewHeaders);
+  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory), path === 'public-lobby/index.html'
+    ? publicLobbyDocumentHeaders : lobbyMediaFile(path) ? lobbyMediaHeaders : designPreviewHeaders);
 }
 
 async function servePreviewFile(request, path, root, responseHeaders = designPreviewHeaders) {
   if (!path) return new Response(null, { status: 404, headers: designPreviewHeaders });
-  let file, info;
+  let file, info, validators = null;
   try {
     const base = await realpath(root);
     file = await realpath(resolve(base, path));
@@ -98,10 +127,19 @@ async function servePreviewFile(request, path, root, responseHeaders = designPre
     if (!distance || distance === '..' || distance.startsWith('..' + sep) || isAbsolute(distance)) throw new Error('outside_preview');
     info = await lstat(file);
     if (!info.isFile()) throw new Error('not_file');
+    // Only browser-cacheable lobby media carries validators.
+    if (responseHeaders === lobbyMediaHeaders) validators = await mediaValidators(file, info);
   } catch { return new Response(null, { status: 404, headers: designPreviewHeaders }); }
-  const headers = { ...responseHeaders, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
-  const range = parseByteRange(request.headers.get('range'), info.size);
-  if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${info.size}` } });
+  if (validators && noneMatch(request.headers.get('if-none-match'), validators.ETag))
+    return new Response(null, { status: 304, headers: { ...responseHeaders, ...validators } });
+  const headers = { ...responseHeaders, ...validators, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
+  // A stale If-Range (bytes cached before a redeploy) gets the whole new file.
+  // Only the exact strong ETag matches; a date never does.
+  const ifRange = request.headers.get('if-range');
+  const stale = validators && ifRange !== null && ifRange.trim() !== validators.ETag;
+  const range = parseByteRange(stale ? null : request.headers.get('range'), info.size);
+  if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers,
+    'Cache-Control': designPreviewHeaders['Cache-Control'], 'Content-Range': `bytes */${info.size}` } });
   const start = range?.start ?? 0, end = range?.end ?? info.size - 1;
   headers['Content-Length'] = String(end - start + 1);
   if (range) headers['Content-Range'] = `bytes ${start}-${end}/${info.size}`;

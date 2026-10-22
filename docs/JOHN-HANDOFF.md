@@ -159,7 +159,11 @@ Verklig runtime-ACL och återställningsberedskap återstår före konkret DDL-b
 Senast lästa K05PR314/head9ab3701179d5edf46beee505752cd6080dad708e tillför
 talgranskningsunderlag ovanpå tidigare metadata/validator; faktisk registry-/
 Blobbindning och talgodkännande är fortsatt ofullständiga.
-Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
+Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ~~ingen Paowrestore~~
+ersatt av Jakobs beslut 22 oktober 2026 (PR #342): Paow är återställd och visas
+med Mårten som låst lobbyporträtt, se
+[Lobbyns dealerporträtt](#lobbyns-dealerporträtt-tillbaka-i-steg-3--22-oktober-2026).
+Ta inte bort Paow igen.
 Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
 sourceverified/monitoringactive, incidentcompleteforthissource,
 locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
@@ -270,6 +274,63 @@ en. Detta pass väljer en plats per funktion och omdirigerar resten.
   "skrivningar omdirigeras aldrig"-prov behållna. Ingen ny API, writer, schema
   eller capability. Kvar: zoom och placering per rum är ett eget kontraktspass
   (rumsöverstyrning + spelkonsument + paketbudget).
+
+## Levande lager: bord och variation (capability 24) — 22 oktober 2026
+
+PR #343 (`codex/levande-lager`), mergad till main 20f89d42. Uppföljning i
+PR #346 (`codex/levande-lager-geometri`).
+Jakobs beställning: var tredje minut och femton sekunder, med 74 sekunders
+variation, ska ett kort mp4-klipp spelas över bakgrunden; en mp4 ska kunna
+vara basen; samma för bordet och dealern.
+
+- **Kontrakt.** Intervallregler i `backgroundPlayback` får `jitterMs`
+  (0–120 000, kortare än `everyMs`); starter dras ur `everyMs ± jitterMs`.
+  Nytt valfritt `tablePlayback` på sammansättningen med samma form, mot
+  bordslagrets tillåtna videor. Standardregel 195 s ± 74 s, 10 s max, 1/min.
+  Capability 24 `layerPlayback: table-and-jitter-v1`; readiness kräver 24 för
+  fälten och avvisar dem mot äldre spelservrar. Inget schema, ingen SQL.
+- **Runtime.** `background-playback.mjs` tar `role` och injicerbar `random`.
+  `presentation-composition.mjs` kör en scheduler per lager; bordsklipp
+  ritas som bordslager medan de spelas och basen återställs efteråt.
+  `tablePlayback` följer med i frysta paket (game-entry-selector) och
+  Studio-prov; papperskorgen tar bort bordsregler som refererar filen; båda
+  spelklienterna skickar spelhändelser även till bordslagret (`tableEvent`).
+- **Admin.** `LayerPlaybackEditor` för bakgrund och bord med Variation ± och
+  klartextsammanfattning; Scen & lager, Sammansättning och förhandsvisningen
+  (bordsklipp provas i CompositionPreview) använder den. Dealerns beteendeklipp
+  är oförändrat vilopolicyn i Körregel.
+- **Verifiering.** 505/505 i de berörda sviterna (kontrakt, scheduler,
+  komposition, studio-preview, entry-selector, material-trash, readiness,
+  room-api, editor, preview, panel) plus 552 befintliga modell-/lagersviter;
+  Admin-bygge (tsc admin+lobby, esbuild) och Studio-tsc passerar.
+- **Produktion.** v24 är live i produktion sedan main 20f89d42. Såvitt känt
+  är inga bordsklipp publicerade än. Fasta intervall utan bordsklipp fungerar
+  som förut.
+- **Uppföljning efter granskning (PR #346).** (1) Spelplanet (platser,
+  insatser, dealerns kort, kortprojektion) räknas från det monterade
+  basbordet, aldrig från ett spelande bordsklipp. Ett klipp med annat format
+  flyttade tidigare spelet mitt i en hand. (2) Bordsklipp spelas bara över
+  standardbordet. Väljer spelaren eller rummet ett annat bord är bordets
+  scheduler pausad. (3) Media som `tablePlayback` refererar till är inte
+  bordsval. De finns kvar i bordslagrets tillåtna lista eftersom reglerna
+  kräver det, men erbjuds inte i spelarpanelen, lobbyns rumsval eller Admins
+  Utseende. Ett sparat spelarval eller en override som pekar på ett klipp
+  faller tillbaka till standardbordet, och Admin avvisar att spara ett klipp
+  som bord (422). Utan `tablePlayback` är allt som förut. (4) Mute-testet i
+  `test/background-playback.mjs` gick igenom vacuöst och kontrollerar nu
+  verkligen att lagerhändelserna kommer före mute-returen.
+  Bordsklipp bör ha samma pixelmått som basbilden: ett avvikande klipp
+  flyttar inte spelet men ritas i sitt eget format och linjerar inte visuellt.
+  Verifiering: nya tester fallerar mot koden före fixen. Riktade sviter
+  (scheduler, komposition, card-view, presentation-layers, studio-preview,
+  capability, game-lanes, player-choices, public-operator-rooms,
+  partner-package-view, partner-branding-drafts) och hela Studio-sviten är
+  gröna. Moving-speech-grupperna kördes inte lokalt (`ws` saknades i
+  worktree) och berörs inte.
+- **Midnight-bakgrunden.** Skript för Jakob: `C:\Users\jakem\CroupierBackups\
+  midnight-background-2026-10-22\KOR-MIDNIGHT.cmd` registrerar stillbild,
+  loop och två varianter via Admins ordinarie lageruppladdning och binder dem
+  till vald sammansättning med intervall 195/255 s; `--jitter` efter deploy.
 
 ## Admin UX-pass 1: klippkartan — 22 oktober 2026
 
@@ -1289,6 +1350,24 @@ Privata SQL-/browserkvitton och skärmbild finns utanför Git i HUVUDAGENT6:s
 visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
+
+## Lobbyns dealerporträtt tillbaka i steg 3 — 22 oktober 2026
+
+Jakob bad om porträtten igen. Steg 3 visar åter Astrid, Mårten, Dragge, Anna
+och Paow som låsta förhandsporträtt under glaset innan bolag och rum är valda;
+den 13 oktober tömdes listan i e3404cf4. Efter rumsval kommer rummets
+publicerade dealers först, sedan de porträtt rummet saknar som låsta kort.
+Porträttkort ger aldrig val eller startlänk. Exakta ID-alias, ingen
+namnmatchning: `dragan` visar Dragge (Kevin-importens `dragge` → `dragan`) och
+`paow-v2` visar Paow. Paows bild och film togs bort i 2f7b891a och är
+återställda med samma bytes; filmen är identisk med Jakobs råfil. Jakob bad
+uttryckligen om Paow. Kevin har bara stillbild och läggs inte till.
+Tomgångsvideon upprepas 45 s efter avslutad uppspelning, även under glaset.
+
+Verifierat: lobbyns enhetstester, `test/public-lobby.mjs` med lokal Chrome,
+bygge med typkontroll och skärmdumpar på 1440 och 390 px av byggd lobby med
+syntetisk katalog (video spelar under glaset och i dialogen, ingen
+horisontell överströmning). Ingen livekatalog eller produktion är provad.
 
 ## Spelarlobby J04 — 22 oktober 2026
 

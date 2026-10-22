@@ -13,8 +13,11 @@ export function CatalogueArtwork({ name, kind, image, game = 'blackjack', classN
   if (kind === 'dealer') return <div aria-hidden className={cn('relative flex items-center justify-center overflow-hidden bg-secondary text-brass', className)}
     style={{ backgroundImage: 'radial-gradient(ellipse at 30% 10%, #b49a5633, transparent 70%)' }}>
     <span className="absolute inset-5 rounded-full border border-brass/20" /><span className="absolute inset-10 rounded-full border border-brass/10" />
-    <span className="font-serif text-7xl opacity-70 md:text-8xl">{Array.from(name)[0]}</span>
-    <span className="absolute bottom-3 inset-x-2 text-center font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">Porträtt ej kopplat</span>
+    {/* The card's name and status cover the bottom edge, so the label sits under the initial. */}
+    <span className="relative flex flex-col items-center gap-2">
+      <span className="font-serif text-7xl opacity-70 md:text-8xl">{Array.from(name)[0]}</span>
+      <span className="hidden text-center font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground md:block">Porträtt ej kopplat</span>
+    </span>
   </div>;
   const actualImage = image && image !== failedSource ? image : undefined;
   const illustration = '/admin/_assets/lobby/images/lobby/room-salongen.png';
