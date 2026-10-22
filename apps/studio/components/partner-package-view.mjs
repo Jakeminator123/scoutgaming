@@ -3,6 +3,7 @@ import React from 'react';
 import { compositionLabel } from '../../../packages/navigation/control-flow.mjs';
 import { partnerLaneState } from '../lib/partner-package-view.mjs';
 import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
+import {gameStartPath} from '../../../packages/navigation/game-entry.mjs';
 import { resolveRoomBranding } from '../../../packages/operators/contracts/branding.mjs';
 
 const h = React.createElement;
@@ -34,7 +35,7 @@ export function PartnerPackageView({ snapshot, view, roomId = '', language = 'sv
     })),
     h('p', {className:'kevin-published-note'}, fallback ? t('Fullbildsklipp: bord och bakgrund ingår i filmen.', 'Full-frame video: table and background are part of the recording.') : t('Tre separata lager: dealer, bord och bakgrund.', 'Three separate layers: dealer, table and background.')),
     view === 'test' ? snapshot.roomBindings === 'operator-owned-v2' || presentation.schemaVersion >= 2
-      ? rooms.length ? h('div', {className:'kevin-room-actions'}, ...rooms.map(row => h('a', {key:row.id, className:'btn', target:'_blank', rel:'noopener', href:'/play/'+(row.game??'blackjack')+'?' + new URLSearchParams({operator:snapshot.operator.slug, table:row.id})}, t('Provspela ', 'Play ') + row.name + t(' ↗', ' ↗'))))
+      ? rooms.length ? h('div', {className:'kevin-room-actions'}, ...rooms.map(row => h('a', {key:row.id, className:'btn', target:'_blank', rel:'noopener', href:gameStartPath({game:row.game??'blackjack', operator:snapshot.operator.slug, table:row.id})}, t('Provspela ', 'Play ') + row.name + t(' ↗', ' ↗'))))
         : h('p', null, t('Inget publicerat spelrum för sammansättningen.', 'No published game room for this composition.'))
-      : h('a', {className:'btn', target:'_blank', rel:'noopener', href:'/play/blackjack?' + new URLSearchParams({operator:snapshot.operator.slug, lane:lane.id})}, t('Provspela publicerad version ↗', 'Play published version ↗')) : null);
+      : h('a', {className:'btn', target:'_blank', rel:'noopener', href:gameStartPath({game:'blackjack', operator:snapshot.operator.slug, lane:lane.id})}, t('Provspela publicerad version ↗', 'Play published version ↗')) : null);
 }

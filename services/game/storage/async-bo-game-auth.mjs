@@ -1,5 +1,6 @@
 import {backofficePlayerHandoffRequired,currentBackofficeAccount,backofficePlayerSource,readBackofficePlayerSource} from '../bo-player-session.mjs';
 import {playerHandoffPath} from '../../../packages/navigation/player-handoff.mjs';
+import {publicGameStart} from '../game-start.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -11,17 +12,16 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
   const hash=value=>createHash('sha256').update(value).digest('hex');
   const token=()=>randomBytes(32).toString('hex');
   const validToken=value=>typeof value==='string' && /^[a-f0-9]{64}$/.test(value);
-  const entry=path=>['/','/index.html','/v2','/v2/','/v2/index.html', ...(publicGamePath !== '/' ? ['/game','/game/'] : []),...(publicGamePath === '/blackjack' ? ['/blackjack','/blackjack/'] : [])].includes(path);
+  const entry=path=>['/','/index.html','/game','/game/',...(publicGamePath === '/blackjack' ? ['/blackjack','/blackjack/'] : [])].includes(path);
+  // A rejected or foreign return lands on the public game start, which opens the lobby.
+  const fallback=publicGamePath === '/blackjack' ? '/game' : '/';
   const nextPath=async value=>{
     const playerReturn=playerHandoffPath(value,{origin:game.origin});
     if(playerReturn) return playerReturn;
-    if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.length>2048)return publicGamePath === '/blackjack' ? '/blackjack' : '/';
+    if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.length>2048)return fallback;
     const url=new URL(value,game);
-    if(url.origin!==game.origin||!entry(url.pathname))return publicGamePath === '/blackjack' ? '/blackjack' : '/';
-    if(publicGamePath === '/blackjack') {
-      const { canonicalGameDestination } = await import('../../../packages/navigation/game-entry.mjs');
-      return canonicalGameDestination(url,{includeLaunch:false});
-    }
+    if(url.origin!==game.origin||!entry(url.pathname))return fallback;
+    if(publicGamePath === '/blackjack') return publicGameStart(url.searchParams,{origin:game.origin}) ?? fallback;
     // Launch credentials must not persist across a separate BO login.
     url.searchParams.delete('launch');return url.pathname+url.search;
   };

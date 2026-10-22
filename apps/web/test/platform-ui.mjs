@@ -3,7 +3,7 @@ import test from 'node:test';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
 import assert from 'node:assert/strict';
-import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
+import {mkdtemp, readFile, readdir, writeFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/navigation/server/platform-routing.mjs';
@@ -226,32 +226,85 @@ test('old workspace slugs redirect to one canonical document without granting an
 
 test('catalogue aliases keep scoped choices and reject mutation requests',()=>{
   const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
-  for(const path of ['/play','/play/','/demo','/demo/','/casino.html']){
+  for(const path of ['/play','/play/']){
     const url=new URL(path+'?operator=alpha&table=room-one&dealer=nora&launch=private&returnTo=https://evil.invalid',unified.publicOrigin);
     for(const method of ['GET','HEAD']) assert.deepEqual(platformRoute(url,unified,new Request(url,{method})),
       {kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha&room=room-one&dealer=nora'});
     for(const method of ['POST','PUT','PATCH','DELETE'])assert.deepEqual(platformRoute(url,unified,new Request(url,{method})),{kind:'reject'});
     assert.deepEqual(platformRoute(url,unified,new Request(url,{headers:{'next-action':'fixture'}})),{kind:'reject'});
   }
-  for(const path of ['/game','/v2','/blackjack','/play/blackjack']){
-    const url=new URL(path+'?operator=alpha',unified.publicOrigin);
-    assert.deepEqual(platformRoute(url,unified,new Request(url)),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha'});
-    assert.deepEqual(platformRoute(url,unified,new Request(url,{method:'POST'})),{kind:'reject'});
+  // Retired catalogue and document aliases are plain frontend 404s now; nothing links to them.
+  for(const path of ['/demo','/demo/','/casino.html','/v2','/v2/','/bo','/bo/login.html','/labb-lissabon','/roulette-test','/roulette-test/app.mjs','/api/roulette-test/spin']){
+    assert.deepEqual(platformRoute(new URL(path+'?operator=alpha',unified.publicOrigin),unified),{kind:'frontend'},path);
+    assert.equal(backendPlatformPath(path),false,path);
+  }
+  const url=new URL('/game?game=blackjack&operator=alpha',unified.publicOrigin);
+  assert.deepEqual(platformRoute(url,unified,new Request(url)),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha'});
+  assert.deepEqual(platformRoute(url,unified,new Request(url,{method:'POST'})),{kind:'reject'});
+  for(const path of ['/blackjack','/play/blackjack']){
+    const legacy=new URL(path+'?operator=alpha',unified.publicOrigin);
+    assert.deepEqual(platformRoute(legacy,unified,new Request(legacy)),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&operator=alpha'});
+    assert.deepEqual(platformRoute(legacy,unified,new Request(legacy,{method:'POST'})),{kind:'reject'});
+  }
+});
+
+test('one game start: /play/blackjack, /blackjack and /roulette are 308 aliases and the game selector is strict',()=>{
+  const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
+  for(const [old,destination] of [
+    ['/play/blackjack?operator=alpha&table=room-one&dealer=nora&returnTo=https://evil.invalid','/game?game=blackjack&dealer=nora&table=room-one&operator=alpha'],
+    ['/play/blackjack/?dealer=astrid','/game?game=blackjack&dealer=astrid'],
+    ['/blackjack/?game=roulette&dealer=astrid','/game?game=blackjack&dealer=astrid'],
+    ['/roulette','/game?game=roulette'],['/roulette/?operator=alpha&table=roulette-room','/game?game=roulette&table=roulette-room&operator=alpha']]){
+    assert.deepEqual(platformRoute(new URL(old,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+destination},old);
+  }
+  // A roulette room opens the engine's /play/roulette document with exactly the room selectors in the
+  // browser URL: the roulette client posts its own query as the room context and the engine accepts
+  // only operator/table/dealer there, so game=roulette must never reach that document.
+  const wheel=platformRoute(new URL('/game?game=roulette&operator=alpha&table=roulette-room&dealer=nora&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified);
+  assert.deepEqual(wheel,{kind:'redirect',destination:unified.publicOrigin+'/play/roulette?operator=alpha&table=roulette-room&dealer=nora'});
+  assert.deepEqual(platformRoute(new URL(wheel.destination),unified),{kind:'backend',destination:unified.backendOrigin+'/play/roulette?operator=alpha&table=roulette-room&dealer=nora'});
+  assert.deepEqual(platformRoute(new URL('/game?game=roulette&table=roulette-room&operator=alpha&operator=beta',unified.publicOrigin),unified),
+    {kind:'redirect',destination:unified.publicOrigin+'/play/roulette?table=roulette-room'});
+  for(const [dirty,clean] of [['/play/roulette?game=roulette&operator=alpha&table=roulette-room&utm_source=mail','/play/roulette?operator=alpha&table=roulette-room'],
+    ['/play/roulette/?dealer=nora&table=roulette-room&operator=alpha','/play/roulette?operator=alpha&table=roulette-room&dealer=nora']]){
+    assert.deepEqual(platformRoute(new URL(dirty,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+clean},dirty);
+    assert.deepEqual(platformRoute(new URL(clean,unified.publicOrigin),unified),{kind:'backend',destination:unified.backendOrigin+clean},clean);
+  }
+  for(const bare of ['/play/roulette','/play/roulette/','/play/roulette?utm_source=mail','/play/roulette?dealer=nora&dealer=astrid'])
+    assert.deepEqual(platformRoute(new URL(bare,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=roulette'},bare);
+  assert.deepEqual(platformRoute(new URL('/game?game=roulette',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
+  assert.deepEqual(platformRoute(new URL('/game?game=roulette&operator=alpha',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha'});
+  const wheelUrl=new URL('/play/roulette?operator=alpha&table=roulette-room',unified.publicOrigin);
+  assert.deepEqual(platformRoute(wheelUrl,unified,new Request(wheelUrl,{method:'POST'})),{kind:'reject'});
+  for(const asset of ['/play/roulette','/roulette/app.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs','/api/roulette/table'])
+    assert.equal(backendPlatformPath(asset),true,asset+' stays a signed transport path');
+  for(const asset of ['/roulette/app.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs','/api/roulette/table'])
+    assert.deepEqual(platformRoute(new URL(asset,unified.publicOrigin),unified),{kind:'backend',destination:unified.backendOrigin+asset},asset);
+  assert.deepEqual(platformRoute(new URL('/game?game=blackjack&operator=alpha&table=room-one',unified.publicOrigin),unified),{kind:'frontend'});
+  for(const query of ['game=poker','game=roulette&game=roulette','game=','game=Blackjack']){
+    const url=new URL('/game?'+query+'&operator=alpha&table=room-one',unified.publicOrigin);
+    assert.deepEqual(platformRoute(url,unified),{kind:'reject'},query);
+    assert.deepEqual(platformRoute(url,unified,new Request(url)),{kind:'reject'},query);
   }
 });
 
 test('unified player addresses preserve approved selectors and the existing signed launch handler',()=>{
   const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
-  for(const old of ['/blackjack','/blackjack/','/game','/play/blackjack/'])assert.deepEqual(platformRoute(new URL(old+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&lane=mobile-phone'});
-  assert.deepEqual(platformRoute(new URL('/play/blackjack?launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
-    {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
-  assert.deepEqual(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
+  for(const old of ['/blackjack','/blackjack/','/play/blackjack','/play/blackjack/'])assert.deepEqual(platformRoute(new URL(old+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),
+    {kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&dealer=astrid&lane=mobile-phone'});
+  for(const path of ['/game','/game/'])assert.deepEqual(platformRoute(new URL(path+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),{kind:'frontend'});
+  const launched=platformRoute(new URL('/play/blackjack?launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified);
+  assert.deepEqual(launched,{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&table=room-1&launch=fixture.claim.signature'});
+  assert.deepEqual(platformRoute(new URL(launched.destination),unified),
+    {kind:'backend',destination:unified.backendOrigin+'/game?game=blackjack&table=room-1&launch=fixture.claim.signature'});
+  assert.deepEqual(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack'});
+  assert.deepEqual(platformRoute(new URL('/game?game=blackjack',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
   assert.equal(platformRoute(new URL('/play/%62lackjack',unified.publicOrigin),unified).kind,'reject');
+  assert.equal(platformRoute(new URL('/%67ame?dealer=astrid',unified.publicOrigin),unified).kind,'reject');
   assert.deepEqual(platformRoute(new URL('/blackjack?operator=sg-test&dealer=astrid&returnTo=https://evil.invalid',unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&operator=sg-test'});
+    {kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&dealer=astrid&operator=sg-test'});
   assert.deepEqual(platformRoute(new URL('/blackjack?operator=play&dealer=astrid',unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid'});
+    {kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&dealer=astrid'});
   for (const path of ['/play/profil', '/play/profil/', '/play/historik', '/play/historik/']) {
     assert.equal(platformRoute(new URL(path, unified.publicOrigin), unified).kind, 'frontend', path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
@@ -263,15 +316,24 @@ test('new game document retains live session/policy checks, cookies and fail-clo
   const directory=await mkdtemp(join(tmpdir(),'croupier-play-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
-  const request=new Request(config.publicOrigin+'/play/blackjack?dealer=astrid',{headers:{cookie:'game_session=fixture'}});
+  const request=new Request(config.publicOrigin+'/game?game=blackjack&dealer=astrid',{headers:{cookie:'game_session=fixture'}});
   let calls=[];
   const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.headers.get('cookie'),'game_session=fixture');assert.equal(init.cache,'no-store');return url.endsWith('/api/auth/session')?Response.json({authenticated:true}):new Response('<html data-game-lane="saved-johanna" data-game-dealer="johanna"></html>');};
   const ok=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl});
   assert.equal(ok.status,200);assert.match(await ok.text(),/data-game-lane="saved-johanna"/);assert.equal(calls.length,2);
   const denied=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>Response.json({authenticated:false})});
-  assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?dealer=astrid');
+  assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?game=blackjack&dealer=astrid');
   const failed=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>{throw Error('private upstream detail');}});
   assert.equal(failed.status,503);assert.doesNotMatch(await failed.text(),/private upstream detail|Fixture game/);
+  // The route never guesses a game; a roulette room goes to the engine's document address without a session read.
+  for(const query of ['game=poker&dealer=astrid','game=blackjack&game=blackjack&dealer=astrid']){
+    const response=await platformUiDocument(new Request(config.publicOrigin+'/game?'+query),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('no session read for '+query)});
+    assert.equal(response.status,404,query);
+  }
+  const wheel=await platformUiDocument(new Request(config.publicOrigin+'/game?game=roulette&operator=sg-test&table=room-1&lane=mobile-phone'),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('no session read for roulette')});
+  assert.equal(wheel.status,307);assert.equal(wheel.headers.get('location'),'/play/roulette?operator=sg-test&table=room-1');
+  for(const path of ['/play/blackjack?dealer=astrid','/blackjack?dealer=astrid','/play/roulette','/v2','/bo','/casino.html','/demo'])
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin+path),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('retired document '+path)})).status,404,path);
 });
 
 test('lobby operator survives into the engine proxy; an invalid slug matches today and a launch partner wins',async t=>{
@@ -281,15 +343,16 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   const unified=platformConfiguration(unifiedEnv);
   const partner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({partner:'key-1',sub:'player-1'})).toString('base64url')}.sig`;
   const notPartner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({operator:'sg-test',sub:'player-1'})).toString('base64url')}.sig`;
-  assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
-    {kind:'backend',destination:unified.backendOrigin+'/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1'});
-  assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=play&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
-    {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
-  assert.deepEqual(platformRoute(new URL(`/play/blackjack?operator=sg-test&launch=${partner}&table=room-1`,unified.publicOrigin),unified),
-    {kind:'backend',destination:unified.backendOrigin+`/blackjack?launch=${partner}&table=room-1`});
-  assert.deepEqual(platformRoute(new URL(`/blackjack?operator=sg-test&launch=${partner}`,unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+`/play/blackjack?launch=${partner}`});
-  const kept=platformRoute(new URL(`/play/blackjack?operator=demo-north&launch=${notPartner}`,unified.publicOrigin),unified);
+  assert.deepEqual(platformRoute(new URL('/game?operator=sg-test&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+'/game?operator=sg-test&launch=fixture.claim.signature&table=room-1'});
+  assert.deepEqual(platformRoute(new URL('/game?operator=play&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+'/game?launch=fixture.claim.signature&table=room-1'});
+  assert.deepEqual(platformRoute(new URL(`/game?operator=sg-test&launch=${partner}&table=room-1`,unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+`/game?launch=${partner}&table=room-1`});
+  const legacyLaunch=platformRoute(new URL(`/blackjack?operator=sg-test&launch=${partner}`,unified.publicOrigin),unified);
+  assert.deepEqual(legacyLaunch,{kind:'redirect',status:308,destination:unified.publicOrigin+`/game?game=blackjack&operator=sg-test&launch=${partner}`});
+  assert.deepEqual(platformRoute(new URL(legacyLaunch.destination),unified),{kind:'backend',destination:unified.backendOrigin+`/game?game=blackjack&launch=${partner}`});
+  const kept=platformRoute(new URL(`/game?operator=demo-north&launch=${notPartner}`,unified.publicOrigin),unified);
   assert.equal(kept.kind,'backend');assert.match(kept.destination,/operator=demo-north/);assert.doesNotMatch(kept.destination,/partner=/);
   const calls=[];let authenticated=true;
   const fetchImpl=async(url,init)=>{
@@ -302,22 +365,22 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   };
   const request=path=>new Request(unified.publicOrigin+path,{headers:{cookie:'game_session=fixture'}});
   const options={env:unifiedEnv,directory,fetchImpl};
-  const played=await platformUiDocument(request('/play/blackjack?operator=sg-test&table=room-1'),options);
+  const played=await platformUiDocument(request('/game?game=blackjack&operator=sg-test&table=room-1'),options);
   assert.equal(played.status,200);assert.match(await played.text(),/data-game-operator="sg-test"/);
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session',unified.backendOrigin+'/blackjack?table=room-1&operator=sg-test']);
   calls.length=0;authenticated=false;
-  const login=await platformUiDocument(request('/play/blackjack?operator=sg-test&table=room-1'),options);
+  const login=await platformUiDocument(request('/game?operator=sg-test&table=room-1'),options);
   assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?table=room-1&operator=sg-test');
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
   calls.length=0;authenticated=true;
-  const plain=await platformUiDocument(request('/play/blackjack?dealer=astrid'),options);
-  const invalid=await platformUiDocument(request('/play/blackjack?dealer=astrid&operator=play'),options);
-  const duplicate=await platformUiDocument(request('/play/blackjack?dealer=astrid&operator=sg-test&operator=demo-north'),options);
+  const plain=await platformUiDocument(request('/game?dealer=astrid'),options);
+  const invalid=await platformUiDocument(request('/game?dealer=astrid&operator=play'),options);
+  const duplicate=await platformUiDocument(request('/game?dealer=astrid&operator=sg-test&operator=demo-north'),options);
   const plainText=await plain.text();
   assert.equal(await invalid.text(),plainText);assert.equal(await duplicate.text(),plainText);
   assert.equal(calls.some(url=>url.includes('/blackjack?')),true);assert.ok(calls.every(url=>!url.includes('/api/bo/config')));
   calls.length=0;
-  const partnerPage=await platformUiDocument(request(`/play/blackjack?dealer=astrid&operator=sg-test&launch=${partner}`),options);
+  const partnerPage=await platformUiDocument(request(`/game?dealer=astrid&operator=sg-test&launch=${partner}`),options);
   assert.equal(await partnerPage.text(),plainText);
   assert.equal(calls.some(url=>url.includes('/blackjack?')),true);assert.ok(calls.every(url=>!url.includes('/api/bo/config')));
 });
@@ -336,7 +399,7 @@ test('platform tracing keeps player documents without retired BO HTML', async ()
   const source = await readFile(new URL('../next.config.mjs', import.meta.url), 'utf8');
   assert.match(source, /'\/game': \['\.\/runtime-ui\/game\.html'\]/);
   assert.match(source, /'\/player-login': \['\.\/runtime-ui\/blackjack\.html'\]/);
-  assert.doesNotMatch(source, /runtime-ui\/bo|\/bo\/\[\[\.\.\.path\]\]/);
+  assert.doesNotMatch(source, /runtime-ui\/bo|\/bo\/\[\[\.\.\.path\]\]|'\/v2'|'\/blackjack'|'\/play\/blackjack'|onrender\.com|scoutgaming\.tech|destination: '\/control/);
 });
 
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {
@@ -404,19 +467,14 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     const game = await platformUiDocument(new Request(config.publicOrigin + '/game'), {env, directory: join(directory, 'runtime-ui')});
     assert.equal(game.status, 200); assert.match(await game.text(), /src="app.mjs"/);
     assert.match(game.headers.get('cache-control'), /no-store/);
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/casino.html'), {env, directory: join(directory, 'runtime-ui')})).status,404);
-    const retired=await platformUiDocument(new Request(config.publicOrigin+'/v2'),{env,directory:join(directory,'runtime-ui')});assert.equal(retired.status,307);assert.equal(retired.headers.get('location'),'/');
-    const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64), token = 'b'.repeat(43);
-    for (const [path,location] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
-      ['/bo/login.html','/control/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,`/control/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`],
-      [`/bo/set-password.html?t=${token}`,`/control/set-password?t=${token}`]]) {
+    // Retired document addresses have no frontend document any more.
+    const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64);
+    for (const path of ['/casino.html','/v2','/v2/','/bo','/bo/','/bo/index.html','/bo/login.html',`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,
+      '/bo/set-password.html?t='+'b'.repeat(43),'/bo/generations.json','/demo','/blackjack','/play/blackjack','/play/roulette','/labb-lissabon']) {
       const response = await platformUiDocument(new Request(config.publicOrigin + path),{env,directory:runtime});
-      assert.equal(response.status,308,path); assert.equal(response.headers.get('location'),location,path);
+      assert.equal(response.status,404,path); assert.equal(response.headers.get('location'),null,path);
     }
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/login.html?returnTo=https://attacker.invalid'),{env,directory:runtime})).headers.get('location'),'/control/login');
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/set-password.html?t=private.bad'),{env,directory:runtime})).headers.get('location'),'/control/set-password');
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo',{method:'POST'}),{env,directory:runtime})).status,405);
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/generations.json'), {env, directory})).status, 404);
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/game',{method:'POST'}),{env,directory:runtime})).status,405);
   } finally {await rm(directory, {recursive: true, force: true});}
 });
 
@@ -499,20 +557,32 @@ test('new frontend serves its built public module graph when the older backend r
     await rm(directory,{recursive:true,force:true});
   }
 });
-test('retired casino floor redirects to /lobby and keeps scoped selectors', async () => {
+test('actual /play/{game} route handlers are permanent redirects to /game and the retired route files are gone', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
-  const compiled = transpileModule(await readFile(new URL('../app/casino.html/route.ts', import.meta.url), 'utf8'), {compilerOptions: {module: ModuleKind.CommonJS, target: ScriptTarget.ES2022}}).outputText;
-  const module = {exports: {}};
-  new Function('require', 'module', 'exports', compiled)(createRequire(new URL('../app/casino.html/route.ts', import.meta.url)), module, module.exports);
-  const plain = await module.exports.GET(new Request(config.publicOrigin + '/casino.html'));
+  const load = async name => {
+    const routeUrl = new URL(`../app/${name}/route.ts`, import.meta.url);
+    const compiled = transpileModule(await readFile(routeUrl, 'utf8'), {compilerOptions: {module: ModuleKind.CommonJS, target: ScriptTarget.ES2022}}).outputText;
+    const module = {exports: {}};
+    new Function('require', 'module', 'exports', compiled)(createRequire(routeUrl), module, module.exports);
+    return module.exports;
+  };
+  const blackjack = await load('play/blackjack');
+  const plain = await blackjack.GET(new Request(config.publicOrigin + '/play/blackjack'));
   assert.equal(plain.status, 308);
-  assert.equal(plain.headers.get('location'), '/lobby');
+  assert.equal(plain.headers.get('location'), '/game?game=blackjack');
   assert.match(plain.headers.get('cache-control'), /no-store/);
-  const kept = await module.exports.HEAD(new Request(config.publicOrigin + '/casino.html?operator=sg-test&dealer=astrid'));
+  const kept = await blackjack.HEAD(new Request(config.publicOrigin + '/play/blackjack?operator=sg-test&dealer=astrid&returnTo=https://evil.invalid'));
   assert.equal(kept.status, 308);
-  assert.equal(kept.headers.get('location'), '/lobby?operator=sg-test&dealer=astrid');
+  assert.equal(kept.headers.get('location'), '/game?game=blackjack&dealer=astrid&operator=sg-test');
   assert.equal(await kept.text(), '');
+  const lobby = await load('play');
+  assert.equal((await lobby.GET(new Request(config.publicOrigin + '/play?operator=sg-test'))).headers.get('location'), '/lobby?operator=sg-test');
+  const routes = await readdir(new URL('../app/', import.meta.url));
+  for (const name of ['casino.html', 'v2', 'blackjack', 'bo', 'labb-lissabon', 'demo']) assert.equal(routes.includes(name), false, name);
+  // The roulette document is the engine's /play/roulette behind the platform rewrite; the frontend has no roulette route.
+  assert.deepEqual((await readdir(new URL('../app/play/', import.meta.url))).sort(), ['blackjack', 'historik', 'profil', 'route.ts']);
+  assert.equal((await readdir(new URL('../lib/', import.meta.url))).some(name => name.startsWith('game-url')), false, 'no Render game URL default remains');
 });
 
 test('actual Next middleware disables rewrite caching for backend and authenticated Lab without leaking ingress to the UI zone', async () => {
@@ -628,10 +698,13 @@ test('Studio preview transports only explicit session paths without acquiring or
     base+'/../table',base+'/videos/private/file',base+'/layers/'+id+'/extra',base+'/',base+'/presentation/select/extra',
     '/api/studio-preview//'+id,base.replace('/api/','/api/%73')]) assert.equal(backendPlatformPath(path),false,path);
 });
-test('bare public Blackjack enters the existing lobby without reading a player session or saved global lane',async()=>{
+test('bare game start enters the existing lobby without reading a player session or saved global lane',async()=>{
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const unified=platformConfiguration(unifiedEnv);
   for(const path of ['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/','/play/blackjack?utm_source=bookmark&returnTo=https://evil.invalid']){
+    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack'});
+  }
+  for(const path of ['/game','/game/','/game?game=blackjack','/game?game=roulette','/game?utm_source=bookmark&returnTo=https://evil.invalid']){
     assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
     for(const method of ['GET','HEAD']){
       const response=await platformUiDocument(new Request(unified.publicOrigin+path,{method}),{
@@ -644,7 +717,7 @@ test('bare public Blackjack enters the existing lobby without reading a player s
   for(const query of ['table=room-one&operator=sg-test','dealer=amira','lane=mobile-phone',
     'presentation=local','rehearsal=1','performance=staged','motion=smooth60','launch=fixture.claim.signature',
     'launch=invalid','operator=sg-test&operator=north','labObserverChannel=invalid']){
-    const route=platformRoute(new URL('/play/blackjack?'+query,unified.publicOrigin),unified);
+    const route=platformRoute(new URL('/game?'+query,unified.publicOrigin),unified);
     assert.notEqual(route.destination,unified.publicOrigin+'/lobby',query);
   }
   assert.equal(backendPlatformPath('/api/operators'),true);
@@ -654,12 +727,12 @@ test('bare public Blackjack enters the existing lobby without reading a player s
 test('published room login retains operator, room and dealer while the administrator portal keeps its own session',async()=>{
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const calls=[];
-  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=sg-test&table=room-one&dealer=linnea'),{
+  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?game=blackjack&operator=sg-test&table=room-one&dealer=linnea'),{
     env:unifiedEnv,fetchImpl:async(url)=>{calls.push(url);return Response.json({authenticated:false});},
   });
   assert.equal(response.status,303);
   const location=new URL(response.headers.get('location'),env.CROUPIER_PUBLIC_ORIGIN);
-  assert.equal(location.pathname,'/player-login');assert.equal(location.searchParams.get('operator'),'sg-test');
+  assert.equal(location.pathname,'/player-login');assert.equal(location.searchParams.get('operator'),'sg-test');assert.equal(location.searchParams.get('game'),'blackjack');
   assert.equal(location.searchParams.get('table'),'room-one');assert.equal(location.searchParams.get('dealer'),'linnea');
   assert.deepEqual(calls,[env.CROUPIER_BACKEND_ORIGIN+'/api/auth/session']);
 });
@@ -668,6 +741,9 @@ test('an operator-only Blackjack bookmark opens that company lobby without consu
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const unified=platformConfiguration(unifiedEnv);
   for(const path of ['/play/blackjack?operator=sg-test','/blackjack?operator=sg-test&utm_source=partner']){
+    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=blackjack&operator=sg-test'});
+  }
+  for(const path of ['/game?game=blackjack&operator=sg-test','/game?operator=sg-test&utm_source=partner']){
     assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=sg-test'});
     const response=await platformUiDocument(new Request(unified.publicOrigin+path),{env:unifiedEnv,fetchImpl:()=>assert.fail('company lobby entry must not create a game session')});
     assert.equal(response.status,303);assert.equal(response.headers.get('location'),'/lobby?operator=sg-test');
@@ -703,7 +779,7 @@ test('shared dealer voice has only two exact transport paths and preserves untru
   assert.equal(headers.get('x-croupier-lab-authorized'),null);assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
 });
 
-test('native legacy document aliases go straight to Admin with query preserved and legacy/auth contracts unchanged',async()=>{
+test('legacy lab aliases go straight to Admin with query preserved and auth contracts unchanged',async()=>{
  const require=createRequire(new URL('../package.json',import.meta.url));
  const {unstable_getResponseFromNextConfig,getRedirectUrl}=require('next/experimental/testing/server');
  const keys=Object.keys(env),saved=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
@@ -717,11 +793,10 @@ test('native legacy document aliases go straight to Admin with query preserved a
     const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+from+search,nextConfig});
     assert.equal(response.status,307,from);
     const actual=new URL(getRedirectUrl(response));
-    const legacy=from==='/labb/filmer'?'/control/videos':from==='/labb/zoner'?'/control/zones':from==='/labb/guide'?'/control/guide':'/control';
-    assert.equal(actual.origin,config.publicOrigin);assert.equal(actual.pathname,native?to:legacy,from);
+    assert.equal(actual.origin,config.publicOrigin);assert.equal(actual.pathname,to,from);
     assert.deepEqual([...actual.searchParams],[...new URLSearchParams(search)],from);
    }
-   for(const path of ['/control/login?returnTo=%2Fcontrol%2Fclips','/control/set-password?t=fixture','/api/auth/session','/api/table']){
+   for(const path of ['/control/login?returnTo=%2Fcontrol%2Fclips','/control/set-password?t=fixture','/api/auth/session','/api/table','/game?game=roulette&operator=alpha','/play/blackjack','/studio','/v2','/blackjack']){
     const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+path,nextConfig});
     assert.equal(getRedirectUrl(response),null,path);
    }

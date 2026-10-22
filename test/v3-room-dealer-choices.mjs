@@ -78,7 +78,7 @@ test('dealer navigation round trip retains the v3 room and exact requested ident
   Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:first.dataset}},configurable:true});
   t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
   const url=new URL(dealerVersionPath('nora','original','?operator=north&table=room-johns&launch=private'),'https://game.invalid');
-  assert.equal(url.pathname,'/blackjack');assert.equal(url.searchParams.has('launch'),false);
+  assert.equal(url.pathname,'/game');assert.equal(url.searchParams.get('game'),'blackjack');assert.equal(url.searchParams.has('launch'),false);
   assert.equal(url.searchParams.get('lane'),'portrait-linnea');assert.equal(url.searchParams.get('table'),'room-johns');
   const next=(await f.select(url.searchParams)).selection;
   assert.equal(next.dealer,'nora');assert.equal(next.roomId,'room-johns');

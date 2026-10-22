@@ -1,4 +1,5 @@
 import {readChoices,writeChoices} from '../presentation/runtime/player-choices.mjs';
+import {gameStartPath} from '../navigation/game-entry.mjs';
 
 export function roomSelection(room,preferred={}) {
   const dealer=room.dealers.find(row=>row.id===preferred.dealer)
@@ -18,7 +19,7 @@ export function roomLaunch(catalog,roomId,preferred,{directPlay=true}={}) {
   if(!room)return null;
   const choices=roomSelection(room,preferred);
   if(!choices||choices.dealer!==preferred?.dealer)return null;
-  const path=room.playUrl+'&dealer='+encodeURIComponent(choices.dealer);
+  const path=gameStartPath({game:room.game??'blackjack',operator:catalog.operator.slug,table:room.id,dealer:choices.dealer});
   return {choices,href:directPlay?path:'/player-login?returnTo='+encodeURIComponent(path)};
 }
 

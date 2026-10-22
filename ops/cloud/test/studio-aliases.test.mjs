@@ -69,3 +69,36 @@ test('following a Studio alias still requires the normal Lab session and never r
     assert.equal(upstreamCalls, 1);
   } finally { await close(gateway); await close(lab); }
 });
+
+test('without a Lab child every /studio request is misdirected before any session check; aliases and Web-owned Lab auth remain', async () => {
+  const gameOnly = { ...config, labChild: false };
+  for (const url of ['/studio', '/studio/', '/studio/administration', '/studio/api/project', '/studio/_next/static/chunk.js']) {
+    assert.equal(upstreamForRequest(incoming(url), gameOnly), null, url);
+    assert.equal(upstreamForRequest(incoming(url), config), 4188, url);
+  }
+  for (const url of ['/', '/api/table', '/api/auth/lab/start?next=%2Fstudio', '/api/bo/lab-login?state=abc', '/api/auth/lab/callback']) {
+    assert.equal(upstreamForRequest(incoming(url), gameOnly), 4173, url);
+  }
+  assert.equal(upstreamForRequest(incoming('/api/auth/lab/check'), gameOnly), null);
+  assert.equal(studioAliasRedirect(incoming('/lab?view=clips'), gameOnly), '/control?view=clips');
+  let sessionChecks = 0, labCalls = 0, webCalls = 0;
+  const lab = createServer((_req, res) => { labCalls++; res.writeHead(200); res.end(); });
+  const web = createServer((_req, res) => { webCalls++; res.writeHead(401); res.end(); });
+  const [labPort, webPort] = [await listen(lab), await listen(web)];
+  const gateway = createCloudGateway(gameOnly, { labInternalSecret: 's'.repeat(64), labPort, webPort,
+    sessionCheck: async () => { sessionChecks++; return { available: true, authorized: true }; } });
+  const gatewayPort = await listen(gateway);
+  const read = url => new Promise((resolve, reject) => {
+    const req = request({ hostname: '127.0.0.1', port: gatewayPort, path: url,
+      headers: { host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' } }, response => {
+      response.resume(); response.on('end', () => resolve(response.statusCode));
+    });
+    req.on('error', reject); req.end();
+  });
+  try {
+    for (const url of ['/studio', '/studio/api/project', '/studio/_next/static/chunk.js']) assert.equal(await read(url), 421, url);
+    assert.equal(sessionChecks, 0); assert.equal(labCalls, 0); assert.equal(webCalls, 0);
+    assert.equal(await read('/api/auth/lab/start?next=%2Fstudio'), 401);
+    assert.equal(webCalls, 1); assert.equal(labCalls, 0);
+  } finally { await close(gateway); await close(lab); await close(web); }
+});

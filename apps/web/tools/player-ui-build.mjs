@@ -11,7 +11,7 @@ const previewRoot = 'frontend-preview';
 const textExtensions = new Set(['.mjs', '.js', '.css', '.json']);
 const styles = [
   'styles.css', 'calibration.css', 'environment.css', 'auth-modal.css',
-  'local-presentation.css', 'rigged-review.css', 'astrid-voice-shell.css',
+  'local-presentation.css', 'astrid-voice-shell.css',
   'astrid-voice-control.css', 'blackjack-entry.css',
 ];
 
