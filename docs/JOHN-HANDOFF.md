@@ -274,6 +274,19 @@ en. Detta pass väljer en plats per funktion och omdirigerar resten.
   "skrivningar omdirigeras aldrig"-prov behållna. Ingen ny API, writer, schema
   eller capability. Kvar: zoom och placering per rum är ett eget kontraktspass
   (rumsöverstyrning + spelkonsument + paketbudget).
+- **Leverans direkt på main.** Jakob bad 22 okt ~18:00 om direkt push till
+  main i stället för PR (flera agenter och worktrees skapade förvirring).
+  UX-pass 2 landade som main cea6ab3e; branchen `codex/admin-ux-pass-2` finns
+  på origin men behöver ingen merge. Vercel-bygget av cea6ab3e rapporterade
+  fail medan samma commit bygger grönt lokalt (`npm run build` i apps/studio,
+  traces sanerade); loggen finns bara i Vercel
+  (`npx vercel inspect dpl_4g4jjNGcX8SR8JKR36f4qHRo4eMQ --logs`). Föregående
+  deployment (712be3e8) är kvar i produktion tills ett bygge går igenom.
+- **Kvar efter passet.** Playwright-sviten `apps/studio/test/admin-ai-browser.test.mjs`
+  (bara lokal, kräver `CROUPIER_BROWSER_FIXTURE_MODULE`) monterar fortfarande de
+  gamla OpenClaw-sidorna och behöver en fixtur mot `/admin/openclaw`; CI kör den
+  inte. Dealerns agent-flik visar ännu chattsidans egna flikar (Agentmodeller,
+  Chatt) under OpenClaw-sidans flikrad.
 
 ## Levande lager: bord och variation (capability 24) — 22 oktober 2026
 
