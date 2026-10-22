@@ -19,7 +19,7 @@ test('every existing Control tool and registered N1 view has a served Admin dest
   }
   for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS))assert.equal(adminToolName('/admin/'+key),key);
   assert.equal(adminToolName('/partner/companies'),null);
-  assert.equal(adminDocumentHref('/control/zones'),'/admin/compositions');
+  assert.equal(adminDocumentHref('/control/zones'),'/admin/clips?panel=layers');
   // Each retired OpenClaw entry returns to its owning resource.
   assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
   assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
@@ -44,15 +44,15 @@ test('legacy lanes bookmarks preserve the company tab instead of opening the roo
 test('legacy clip dealerId bookmarks restore the dealer and retain explicit dealer precedence',()=>{
   for(const prefix of ['/control','/studio/control']){
     const target=adminDocumentHref(prefix+'/clips?dealerId=dragan&view=speech');
-    assert.equal(target,'/admin/dealer-studio?view=speech&dealer=dragan');
+    assert.equal(target,'/admin/clips?panel=room&dealer=dragan');
     assert.equal(studioLoginReturnTo(target),target);
-    assert.equal(adminDocumentHref(prefix+'/clips?dealer=paow&dealerId=dragan&view=clips'),'/admin/dealer-studio?dealer=paow&view=clips');
+    assert.equal(adminDocumentHref(prefix+'/clips?dealer=paow&dealerId=dragan&view=clips'),'/admin/clips?dealer=paow');
   }
 });
 test('compatibility redirect preserves clip context and never rewrites API or authentication traffic',()=>{
   const config={nativeStudio:true,publicOrigin:'https://site.invalid'};
   const old=new URL('https://site.invalid/control/clips?dealer=dragan&view=speech&event=speak.welcome');
-  assert.deepEqual(platformRoute(old,config),{kind:'redirect',destination:'https://site.invalid/admin/dealer-studio?dealer=dragan&view=speech&event=speak.welcome'});
+  assert.deepEqual(platformRoute(old,config),{kind:'redirect',destination:'https://site.invalid/admin/clips?panel=room&dealer=dragan&event=speak.welcome'});
   for(const path of ['/control/login?returnTo=x','/control/set-password?token=secret','/studio/api/videos','/api/admin','https://evil.invalid/control/clips','//evil.invalid/control/clips'])assert.equal(adminDocumentHref(path),path);
 });
 test('workspace reader authorizes before any runtime or catalogue access',async()=>{
@@ -135,7 +135,7 @@ test('retired publication bookmark mapping preserves fragments and rejects docum
 });
 
 test('retired tool bookmarks retain exact context and never redirect mutations',()=>{
-  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+  for(const [section,target] of [['guide','guide'],['videos','clips'],['probe','clips?panel=room'],['replies','replies'],['events','events'],['tree','events'],['compositions','clips?panel=layers'],['rehearsal','rooms'],['preview','clips?panel=layers'],['zones','clips?panel=layers']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,
@@ -158,4 +158,18 @@ test('merged dependency bookmarks redirect to Kopplingar & användning with thei
   }
   for(const path of ['/admin/deletion/','/admin/deletions','/admin/structure?operator=north','/admin/deletion-extra'])assert.equal(adminDocumentHref(path),path);
   assert.equal(adminToolName('/admin/deletion'),null);assert.equal(adminToolName('/admin/structure'),null);
+});
+
+test('retired Admin editors redirect once to the owned panel with complete context',()=>{
+  for(const [source,target] of [['/admin/dealer-studio?view=speech','/admin/clips?panel=room'],['/admin/dealer-studio?view=settings','/admin/clips?panel=dealer'],['/admin/videos?view=clips','/admin/clips'],['/admin/compositions?view=preview','/admin/clips?panel=layers'],['/admin/probe?view=probe','/admin/clips?panel=room'],['/admin/rehearsal?view=log','/admin/rooms']]){
+    for(const prefix of ['', '/studio']){
+      const href=adminDocumentHref(prefix+source+'&dealer=saga&operator=north&room=one&room=two&lane=portrait#selection');
+      const url=new URL(href,'https://site.invalid'),expected=new URL(target,'https://site.invalid');
+      assert.equal(url.pathname,expected.pathname);assert.equal(url.searchParams.get('panel'),expected.searchParams.get('panel'));
+      assert.equal(url.searchParams.get('dealer'),'saga');assert.deepEqual(url.searchParams.getAll('room'),['one','two']);
+      assert.equal(url.searchParams.get('composition'),'portrait');assert.equal(url.hash,'#selection');assert.equal(adminDocumentHref(href),href);
+      const config={nativeStudio:true,publicOrigin:'https://site.invalid'},old=new URL(prefix+source,'https://site.invalid');
+      for(const method of ['POST','PUT','DELETE'])assert.notEqual(platformRoute(old,config,new Request(old,{method})).kind,'redirect');
+    }
+  }
 });

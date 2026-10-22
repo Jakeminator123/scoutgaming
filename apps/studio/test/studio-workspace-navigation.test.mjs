@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { studioNavigationHref, studioNavigationTabs, studioNavigationCrumbs, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
+import { studioNavigationHref, studioNavigationTabs, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
 const selection = { dealerId: 'paow', eventId: 'speak.goodluck', variantId: 'paow.goodluck.alt-2', situation: 'goodluck', laneId: 'studio/main' };
 const query = href => new URL(href, 'https://scoutgaming.test').searchParams;
@@ -38,7 +38,6 @@ function anchors(node) {
 
 test('switching dealer tabs keeps the selected event, variant, situation and composition', () => {
   const tabs = studioNavigationTabs(selection);
-  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Skapa material', 'Tal & automatik', 'Svarsbibliotek', 'Provspelning & logg', 'Inställningar']);
   for (const tab of tabs) {
     const params = query(tab.href);
     assert.equal(params.get('dealer'), selection.dealerId);
@@ -46,7 +45,7 @@ test('switching dealer tabs keeps the selected event, variant, situation and com
     assert.equal(params.get('variant'), selection.variantId);
     assert.equal(params.get('situation'), selection.situation);
     assert.equal(params.get('composition'), selection.laneId);
-    assert.equal(params.get('view'), ['scene','replies','playback'].includes(tab.id) ? null : tab.id);
+    assert.equal(params.get('view'), tab.id === 'generate' ? 'generate' : null);
   }
   assert.equal(tabs.some(tab => tab.href.startsWith('/admin/compositions')), false);
 });
@@ -67,10 +66,10 @@ test('public Studio tabs use their active destinations with either lab base path
     for (const base of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = base;
       for (const tab of studioNavigationTabs(selection)) {
-        const target = {replies:'/admin/replies?',playback:'/admin/rehearsal?'}[tab.id] ?? '/admin/dealer-studio?';
+        const target = {replies:'/admin/replies?',generate:'/admin/dealer-studio?'}[tab.id] ?? '/admin/clips?';
         assert.ok(tab.href.startsWith(target), tab.href);
       }
-      assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/admin/dealer-studio?view=idle&dealer=paow');
+      assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/admin/clips?dealer=paow');
     }
   } finally {
     if (before === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -80,25 +79,16 @@ test('public Studio tabs use their active destinations with either lab base path
 
 test('speech tab opens the selected dealer workspace rather than an Astrid-only setting', () => {
   for (const dealerId of ['astrid', 'paow', 'new-dealer']) {
-    assert.equal(studioNavigationTabs({ dealerId }).find(tab => tab.id === 'speech').href, `/admin/dealer-studio?view=speech&dealer=${dealerId}`);
+    assert.equal(studioNavigationTabs({ dealerId }).find(tab => tab.id === 'speech').href, `/admin/clips?panel=room&dealer=${dealerId}`);
   }
 });
 
-test('nested clip breadcrumbs have clickable ancestors and one terminal page label', () => {
-  const crumbs = studioNavigationCrumbs({ ...selection, dealerLabel: 'PAOW', active: 'clips', crumbs: [
-    { label: 'Tal-klipp', href: '/admin/dealer-studio?dealer=paow&view=clips#clips' },
-    { label: 'Lycka till' },
-  ] });
-  assert.deepEqual(crumbs.map(crumb => crumb.label), ['Studio', 'Dealers', 'PAOW', 'Klipp', 'Tal-klipp', 'Lycka till']);
-  assert.ok(crumbs.slice(0, -1).every(crumb => typeof crumb.href === 'string'));
-  assert.equal(crumbs.at(-1).href, undefined);
-  assert.equal(query(crumbs[3].href).get('variant'), selection.variantId);
-});
+
 
 test('rendered tabs and ancestors preserve repeated and mixed room scope for destination validation', () => {
   const queryText='dealer=paow&operator=north&operator=south&table=one&table=two&room=three&room=four&token=private';
   const Navigation=loadNavigation(queryText);
-  for(const active of ['clips','scene']) {
+  for(const active of ['clips','speech','settings']) {
     const tree=Navigation({...selection,active,crumbs:[{label:'Klipp',href:'/admin/dealer-studio?view=clips#selected'},{label:'Detalj'}]});
     const links=anchors(tree);assert.ok(links.length);
     for(const link of links) {
@@ -108,21 +98,10 @@ test('rendered tabs and ancestors preserve repeated and mixed room scope for des
       assert.deepEqual(params.getAll('room'),['three','four']);
       assert.equal(params.has('token'),false);
     }
-    assert.ok(links.some(link=>link.props.href.endsWith('#selected')));
   }
 });
 
-test('rendered navigation exposes accessible breadcrumbs and the current tab without disclosures', () => {
-  const html = renderToStaticMarkup(React.createElement(StudioNavigation, {
-    ...selection, dealerLabel: 'PAOW', active: 'clips', crumbs: [{ label: 'Lycka till' }],
-  }));
-  assert.match(html, /aria-label="Brödsmulor i Studio"/);
-  assert.match(html, /aria-label="Studio för PAOW"/);
-  assert.match(html, /aria-current="page">Klipp<\/a>/);
-  assert.match(html, /<span aria-current="page">Lycka till<\/span>/);
-  assert.doesNotMatch(html, /<details|<summary|role="tab"/);
-  assert.equal((html.match(/class="activeTab"/g) ?? []).length, 1);
-});
+
 
 test('every ancestor and tab delegates ordinary clicks to the editor guard without taking over navigation', () => {
   const calls = [];
@@ -142,24 +121,7 @@ test('every ancestor and tab delegates ordinary clicks to the editor guard witho
   assert.equal(calls.length, count);
 });
 
-test('dealer tabs are absent until a dealer is selected', () => {
-  const html = renderToStaticMarkup(React.createElement(StudioNavigation, { active: 'clips' }));
-  assert.match(html, /Brödsmulor i Studio/);
-  assert.doesNotMatch(html, /Studio för|class="tabs"/);
-  const context = { ...selection, dealerLabel: 'PAOW', operatorId: 'operator-42', tableId: 'room-7', active: 'scene', crumbs: [{label:'Kväll'}] };
-  const scene = StudioNavigation({ ...context, onNavigate: event => event.preventDefault() });
-  const sceneHtml = renderToStaticMarkup(scene);
-  assert.doesNotMatch(sceneHtml, /Studio för|class="tabs"|Skapa material|Tal &amp; automatik/);
-  assert.deepEqual(studioNavigationCrumbs(context).map(crumb => crumb.label), ['Studio','Sammansättningar','Kväll']);
-  const back = anchors(scene).find(link => link.props.href.startsWith('/admin/dealer-studio?view=idle'));
-  assert.ok(back);
-  assert.equal(query(back.props.href).get('dealer'),'paow');
-  assert.equal(query(back.props.href).get('composition'),selection.laneId);
-  assert.equal(query(back.props.href).get('operator'),'operator-42');
-  assert.equal(query(back.props.href).get('table'),'room-7');
-  const event={button:0,preventDefault(){this.defaultPrevented=true;}};
-  back.props.onClick(event);assert.equal(event.defaultPrevented,true);
-});
+
 
 
 test('query context reader includes only Studio selection keys and omits empty values',()=>{

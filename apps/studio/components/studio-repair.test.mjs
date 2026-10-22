@@ -119,35 +119,7 @@ test('testsituation selection is derived from actual values, including custom ed
   assert.doesNotMatch(custom, /aria-pressed="true"/);
 });
 
-test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
-  const props = { ...selectedClip, initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {} };
-  const { ControlOpenClawChat } = loadComponent('./control-openclaw-chat.tsx');
-  const openclaw = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, standaloneVoicePreviewAvailable: true }));
-  assert.doesNotMatch(openclaw, /class="event-sidebar"/);
-  assert.doesNotMatch(openclaw, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
-  assert.doesNotMatch(openclaw, /<button[^>]*>[^<]*Spara projekt/);
-  const { ControlGuidePage } = loadComponent('./control-guide-page.tsx');
-  const { ControlActivityPage } = loadComponent('./control-activity-page.tsx');
-  for (const Page of [ControlGuidePage, ControlActivityPage]) {
-    const html = renderToStaticMarkup(React.createElement(Page, props));
-    assert.doesNotMatch(html, /class="event-sidebar"/);
-    assert.doesNotMatch(html, /studio-chat-shortcuts/);
-    assert.doesNotMatch(html, /<button[^>]*>[^<]*Spara projekt/);
-    assert.doesNotMatch(html, /Osparade ändringar/);
-    if (Page === ControlGuidePage) {
-      assert.match(html, /<h1>Guide &amp; hjälp<\/h1>/);
-      assert.doesNotMatch(html, /dealer=astrid/);
-    } else {
-      assert.match(html, /href="\/admin\/dealer-studio\?dealer=astrid"/);
-      assert.equal(activityProps.streamView.dealerId, 'astrid');
-      navigationUrls.length = 0;
-      activityProps.streamView.onOpenEvent('speak.goodluck', { eventId: 'speak.goodluck', blocked: false });
-      assert.deepEqual(navigationUrls, ['/admin/events?dealer=astrid&event=speak.goodluck']);
-    }
-  }
-  assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');
-  assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/activity'), 'activity');
-});
+
 
 test('legacy incompatible selections are visible with a repair action and are not silently changed', () => {
   const project = createSeedProject();

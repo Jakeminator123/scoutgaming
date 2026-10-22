@@ -6,6 +6,7 @@ import { labUrl } from '../lib/lab-url.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import type { StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { GatewayPanel } from './gateway-panel';
+import { StudioNavigation } from './studio-navigation';
 import { PageTemplate } from './page-template.mjs';
 import { useStudioSession } from './studio-session';
 import { resolveStudioDealerId, type ConnectionStatus } from './studio-types';
@@ -30,20 +31,21 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
     return url.pathname+url.search;
   }
   const modelsHref=contextHref('/admin/ai/models');
-  const rehearsalHref=contextHref('/admin/rehearsal');
+  const rehearsalHref=contextHref('/admin/rooms');
   return <PageTemplate
-    eyebrow="// OPENCLAW"
-    title="Dealerns agent"
-    intro={`Arbeta med agentinställningar för ${initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label??dealerId} och gå vidare till provspelning.`}
+    eyebrow="Studio"
+    title="Dialogtest"
+    intro={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label??dealerId}
   >
     <div className="sg-page-body">
+      <StudioNavigation dealerId={dealerId} dealerLabel={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label} active="speech"/>
       <GatewayPanel modelsHref={modelsHref} standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
     </div>
   </PageTemplate>;
 }
 
 export function ControlOpenClawChat(props: Parameters<typeof SelectedControlOpenClawChat>[0]) {
-  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Intern agentchatt" />;
+  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Dialogtest" />;
   // An accepted dealer change starts its own session and conversation.
   return <SelectedControlOpenClawChat key={props.initialDealerId} {...props} />;
 }

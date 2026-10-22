@@ -7,8 +7,8 @@ import { legacyControlBookmarkHref } from '../lib/control-workspace.mjs';
 
 test('redirected Control fragments open the corresponding Admin tool once', () => {
   for (const [fragment, target] of [
-    ['clips', '/admin/dealer-studio#deal'], ['voice', '/admin/dealer-studio?view=speech#clips'],
-    ['speech', '/admin/dealer-studio?view=speech#clips'], ['backgrounds', '/admin/compositions'],
+    ['clips', '/admin/clips#deal'], ['voice', '/admin/clips?panel=room#clips'],
+    ['speech', '/admin/clips?panel=room#clips'], ['backgrounds', '/admin/clips?panel=layers'],
     ['transactions', '/admin/ekonomi'], ['integration', '/admin/admin/api'],
     ['game-tables', '/admin/rooms'], ['overview', '/admin'],
   ]) {
@@ -20,7 +20,7 @@ test('redirected Control fragments open the corresponding Admin tool once', () =
 test('bookmark handoff keeps exact dealer, composition, operator and room selectors', () => {
   const href = legacyControlBookmarkHref('/admin?dealer=astrid&dealer=vera&lane=layout-one&operator=north&room=vip&game=blackjack#clips');
   const target = new URL(href, 'https://fixture.invalid');
-  assert.equal(target.pathname, '/admin/dealer-studio');
+  assert.equal(target.pathname, "/admin/clips");
   assert.deepEqual(target.searchParams.getAll('dealer'), ['astrid', 'vera'], 'ambiguous identities remain ambiguous');
   assert.equal(target.searchParams.get('composition'), 'layout-one');
   assert.equal(target.searchParams.has('lane'), false);
@@ -41,7 +41,7 @@ test('the real Admin entry hands off known bookmarks before creating a React roo
   const { code } = transformSync(readFileSync(new URL(file, import.meta.url), 'utf8'), {
     filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' },
   });
-  for (const [href, expected] of [['/admin?dealer=astrid&room=vip#clips', '/admin/dealer-studio?dealer=astrid&room=vip#deal'],
+  for (const [href, expected] of [['/admin?dealer=astrid&room=vip#clips', '/admin/clips?dealer=astrid&room=vip#deal'],
     ['/admin/clips?dealer=astrid#clips', null], ['/admin#unknown', null]]) {
     const calls = [], location = new URL(href, 'https://fixture.invalid'), root = {};
     location.replace = value => calls.push(['replace', value]);

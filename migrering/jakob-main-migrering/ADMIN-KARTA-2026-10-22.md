@@ -204,31 +204,57 @@ Totalt ca 11 komponenter och 19 lib-moduler.
 13. Ska `studio-administration.tsx` städas från de döda sektionerna och åtgärderna (4d), eller behålls kontraktet för `croupier_game`-konfig?
 
 
-## 6. PR1: en ingång per sak — 22 oktober 2026
+## 6. PR #359 — rättad CSS och samlad navigation — 23 oktober 2026
 
-Avsnitt 1–5 ovan är kodinventeringen före denna ändring. Detta avsnitt beskriver den avgränsade leveransen på codex/admin-en-ingang, från main 7afae4260c28f1e2a18625879f28a95156fa13e0.
+Jakobs utökade uppdrag ersätter PR1:s ursprungliga begränsning till yttre navigation. Branch `codex/admin-en-ingang` har integrerat main 246e88064dc2d06e022fb845460aea8227c10c0e, inklusive #354. Konflikten i JOHN-HANDOFF är löst med båda ägarnas avsnitt bevarade. #358 är ännu öppen; dess lobbyfiler och rumssidan har inte redigerats här.
 
-- Studion heter **Studio** i menyn och åtskiljs från **Administration** i både meny och startsida. Tre dekorativa, skalbara illustrationer gör arbetsvalen visuella; System visar en platt lista utan extra smårubriker. Illustrationerna är inga nya kontroller eller produktdata.
-- Översikten har tre stora val: **Skapa dealer**, **Fortsätt redigera**, **Hantera spelbolag**. Pilrader och den parallella länksamlingen är borttagna. Skapa öppnar det befintliga formuläret; klicket sparar ingenting.
-- **Dealers** äger registret och dealerns verktyg. Klippkartans extra registerflik är borttagen. Befintlig klippredigering och uppladdning finns kvar.
-- **Ekonomi** samlar översikt och betalningar. **Bolag & team** visar befintlig ändringsjournal på valt aktivt bolag, med exakt bolags-ID/slug och ny komponentidentitet när bolag byts. Mellansidan för Bolagsjournal är borttagen.
-- Fördjupning är upplöst: dealerbundna verktyg ligger på dealern; guiden heter **Hjälp** under System. Ingen editor har slagits samman i denna PR.
-- OpenClaws samlingssida är borttagen: **Taldrift** finns under Drift, **Systeminställningar** under System, och agent/probe under dealern. Adminrobotens separata sida är borttagen; den globala assistenten finns kvar. Befintliga behörigheter och driftspärrar återanvänds.
+### Rotorsak och åtgärd
 
-### Borttagning och avgränsning
+- Admin använder en separat esbuild-klient. GatewayPanel förlitade sig på gamla globala CSS-regler som inte laddades där. Komponenten har nu egen CSS-modul. Tailwind-bygget söker också i återanvända Studio-komponenter, så deras layoutklasser följer med.
+- Gamla hela editorsidor låg inbäddade i nya skal. LabStudio, ControlVideosPage, ControlPreviewPage, ControlActivityPage och ControlProbePage samt deras exklusiva tester är borttagna. Den befintliga klippkartan äger nu tal, dealerinställningar och scenredigering. Materialskapandet har en egen fokuserad sida med bevarat skydd för osparat arbete.
+- Brödsmulor, verktygens extra länkrad, registret i klippkartan och den extra importflikraden är borta. Kartans zoomkontroller visas endast i kartvyn. Hela editorsidor får full bredd. System har en enda enkel grupp med länkar.
+- Hjälpens separata menykarta hade andra namn och adresser. Hjälp och sidomeny läser nu samma definition i packages/navigation/admin-navigation.mjs. /admin förblir översikt även om ett gammalt bokmärke har dealer- eller rumsparametrar.
 
-7 av de 9 utpekade lib-modulerna tas bort, tillsammans med de 2 komponenterna och samtliga 6 oanropade API-routes i 4b. Deras exklusiva zon-/previewhjälpare tas också bort. Aktiv partner-testdata har flyttats från produkt-lib till test/fixtures. Testerna använder uttryckliga temporära fixtures; ingen alternativ produktdatabas eller lokal produktväg införs.
+### Nuvarande karta
 
-Två korrigeringar av raderingslistan: **social-store.mjs** lämnas enligt PR #354:s skydd; **dealer-import-plan.mjs** och dess JSON lämnas eftersom tools/dealer-import-plan.mjs är en faktisk anropare och K05-arbetet fortfarande använder underlaget. Borttagning av kod är inte tillstånd att radera den externa zondatabasen, historik, media eller miljövariabler.
+```text
+/admin  Översikt: Skapa dealer | Fortsätt redigera | Hantera spelbolag
+|
++-- Studio
+|   +-- Dealers /admin/dealers: skapa, välj, arkivera/återställ
+|   +-- Klippkarta /admin/clips: vald dealer + valt spel
+|   |   +-- Klippkarta: standardklipp, varianter, uppladdning
+|   |   +-- Röst & tal ?panel=room: inspelat, generering, realtid
+|   |   |   +-- Dialogtest /admin/dealer-agent
+|   |   |   +-- Tal vid inaktivitet: bara där stödet finns (Astrid)
+|   |   +-- Svarsbibliotek /admin/replies: vald dealers svar
+|   |   +-- Skapa material /admin/dealer-studio?view=generate
+|   |   +-- Inställningar ?panel=dealer: dealer och användning
+|   |   +-- Scen & lager ?panel=layers: en gemensam mallredigerare
+|   +-- Bord & bakgrunder /admin/assets: gemensamt materialbibliotek
+|
++-- Administration
+|   +-- Spelbolag & rum /admin/rooms
+|   +-- Bolag & team /admin/companies: journal på valt bolag
+|   +-- Spelarkonton /admin/players
+|   +-- Drift /admin/drift: även taldrift
+|   +-- Ekonomi /admin/ekonomi: även betalningar
+|
++-- System: Systeminställningar | Kopplingar & användning
+            Integrationer | Konton & åtkomst | Hjälp
+```
 
-Skyddade #354/#358-filer, client/lobby/**, rumssidan /admin/rooms och services/** är orörda. Vid integration finns små överlapp att granska i **.githooks/pre-commit-full** (testlistan, #354) och **test/game-entry-auth.mjs** (direktimport av delad auth, #358). Befintliga API-kontrakt ändras inte; endast de sex uttryckligen pensionerade rutterna försvinner.
+Spelhändelser/regler och talgranskning behåller sina specialiserade kontroller. De är inga extra huvudmenyer. Datamodell, behörighet, lagringsägare och publiceringskontrakt är oförändrade.
 
 ### Bokmärken
 
-Dokumentomdirigeringarna är samlade i admin-workspace-routes.mjs. Serverns GET/HEAD autentiserar före omdirigering; klienten använder samma destinationsfunktion. Frågeparametrar och fragment behålls, förutom den pensionerade OpenClaw-fliken som förbrukas och lane som normaliseras till composition. Upprepade bolags-/rumsparametrar lämnas till destinationssidans validering.
-
-| Tidigare bokmärke | Ny destination |
+| Gammal adress | Destination |
 | --- | --- |
+| /admin/dealer-studio utan view=generate | /admin/clips; speech → panel=room, settings → panel=dealer |
+| /admin/videos | /admin/clips |
+| /admin/compositions | /admin/clips?panel=layers |
+| /admin/probe | /admin/clips?panel=room |
+| /admin/rehearsal | /admin/rooms |
 | /admin/tools | /admin/dealers |
 | /admin/admin/payments | /admin/ekonomi?tab=payments |
 | /admin/admin/log | /admin/companies |
@@ -236,22 +262,18 @@ Dokumentomdirigeringarna är samlade i admin-workspace-routes.mjs. Serverns GET/
 | /admin/openclaw, tab=drift | /admin/drift?tab=speech |
 | /admin/openclaw?tab=models | /admin/ai/models |
 | /admin/openclaw?tab=agent | /admin/dealer-agent |
-| /admin/openclaw?tab=probe | /admin/probe |
+| /admin/openclaw?tab=probe | /admin/clips?panel=room |
 | /admin/openclaw?tab=assistant | /admin |
 
-Äldre /control/ops, /control/probe och /control/operator-chat går direkt till samma funktionshem. /control/openclaw behåller sin äldre modell-/chattolkning. Befintliga alias för material-library, deletion, publication och admin/players finns kvar i samma tabell. /studio-prefixet stöds. De sex pensionerade API-rutterna omdirigeras inte till dokument.
+Motsvarande gamla /control- och /studio/control-bokmärken leder direkt till samma destinationer. Endast dokumentläsning omdirigeras; API:er och mutationer gör det inte. Dealer, spel, sammansättning, rums-/bolagsval och fragment bevaras. Upprepade identiteter behålls för mottagarens validering. lane normaliseras till composition; pensionerade view/tab-parametrar förbrukas när målpanelen ersätter dem. Inloggningsreturer accepterar bara avsedda lokala dokument och tillåtna parametrar.
 
-### Verifiering och produktionsgräns
+### Raderingsgräns och verifiering
 
-- Full Studio-kontroll: frontendtyper godkända, 2 191 tester godkända, 29 överhoppade, 0 fel.
-- Full Admin-kontroll: 354 godkända, 1 överhoppat, 0 fel över kontrollens testgrupper.
-- Efter sista rubrik-/dokumentändringen: journal och bolagsbyte 12/12; slutlig pre-commit verifierar ändrade källor.
-- check-orphan-tests: 572 kandidater, 0 föräldralösa tester (före nytt bolagsbindningstest i befintlig fil).
-- raderingsgrind mot main med staged källor: 29 borttagna filer, 0 importer, 0 registerrader. Historiska inventeringsreferenser är dokumentation, inte konsumenter. Den vanliga main-grinden körs även på committad leverans.
-- Klientbygget lyckades. Kort isolerad kontroll visade startsidans tre val, direkt öppnat dealerformulär, dealerbundna verktyg, Ekonomis två vyer, Taldrift och Systeminställningar. Bolagsregistrets anslutning stöddes inte av fixturen; journalens bolagsisolering verifieras i kodtester. Fixturen och dess flik stängdes efter Jakobs förtydligande.
-- **Detta är inte produktionsacceptans.** Ingen deploy, migrering, providerändring eller produktionsskrivning utförd. Produktionens UI och fungerande navigering är slutmålet; Claude granskar och integrerar PR:n före kontroll i den publicerade produkten. Ingen planaktivitet markeras VERIFIED här.
+Den ursprungliga städningen av 7 oanvända lib-moduler, 2 komponenter och 6 oanropade API-routes ingår. Social-store städades separat i #354; dealer-import-plan har aktiv verktygsanropare och behålls. De senare editorborttagningarna avlägsnar deras exklusiva tester; behörighet, CAS, rumsisolering, osparade utkast och sparade förhandsvisningsrevisioner testas i de aktiva ytorna.
 
-## 7. Förslag till senare flöde — endast produktförslag, ingen kod i PR1
+Faktiska slutkontroller och produktionsgräns finns i [JOHN-HANDOFF](../../docs/JOHN-HANDOFF.md). Webview-provet använder byggda produktionsfiler och syntetiska, skrivskyddade serversvar. Det verifierade dialoglayout, flikbyten, scenval och skapande av scen i minnesutkast; det är inte produktionsacceptans. Ingen databas, media, drifttjänst eller produktion har ändrats. Ingen planaktivitet markeras klar.
+
+## 7. Visuell målbild och återstående produktarbete
 
 Utgå från TERMINOLOGI: dealer, klipp, lager, sammansättning, spel, bolag och rum har separata identiteter. En dealer ska kunna återanvändas i flera kompatibla scener utan att kopieras för varje bakgrund.
 
@@ -269,4 +291,4 @@ Jakobs förtydligade visuella hierarki: **Spelbolag/domän → spel (Blackjack, 
 
 Exempel: ett Blackjack-erbjudande kan tillåta **två dealers och tre bakgrunder**, tillsammans med angivna kompatibla bord. Operatören väljer bland godkända alternativ. Det kräver inte sex kopior av dealern eller automatiskt alla tänkbara kombinationer; kompatibiliteten styr.
 
-Detta införs först efter #354 och #358 samt K05-besluten. Innan kodstart ska omfattning och acceptanskriterier tas in som en aktivitet i den befintliga masterplanen med status.json som enda statuskälla. Detta förslag skapar ingen separat tracker och ändrar inte nuvarande datamodell.
+Den sammanhållna operatörsytan och ändrade kombinationsregler planeras efter #358 samt K05-besluten. CSS- och navigationsstädningen i avsnitt 6 ingår redan i #359. Innan kodstart ska omfattning och acceptanskriterier tas in som en aktivitet i den befintliga masterplanen med status.json som enda statuskälla. Detta förslag skapar ingen separat tracker och ändrar inte nuvarande datamodell.

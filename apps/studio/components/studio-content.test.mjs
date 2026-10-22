@@ -121,21 +121,11 @@ test('dealer backgrounds are always keyed with bounded controls and retain the e
   assert.equal(validateVideoMetadata(values.at(-1)).situation, 'box1'); assert.equal(values.at(-1).eventId, metadata.eventId);
 });
 
-test('bibliotek and upload consume the exact situation from a dealer deep link', () => {
-  const { ControlVideosPage } = load('./control-videos-page.tsx');
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
-  const before = structuredClone(project);
-  const html = renderToStaticMarkup(React.createElement(ControlVideosPage, { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'nora', initialEventId: 'deal.player.left', initialSituation: 'box1' }));
-  assert.match(html, /<option value="box1" selected="">Spelarplats 2<\/option>/);
-  assert.match(html, /Spelarplats 2 <button/); assert.deepEqual(project, before);
-  const { ControlEventsPage } = load('./control-events-page.tsx', { './gateway-panel': { modeLabels: {}, modeExplanations: {}, GatewayPanel: () => null } });
-  const htmlEvents = renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: createSeedProject(), initialVideos: inventory, initialStatus: { configured: false }, initialDealerId: 'astrid', initialEventId: 'deal.player.left', initialSituation: 'box1' }));
-  assert.match(htmlEvents, /astrid\/deal.player.left\/box1/);
-});
+
 
 test('display naming is separate from file identity and situation URL survives variant changes', () => {
   const { studioHref, selectionHref } = load('./studio-types.ts');
-  assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), '/admin/videos?dealer=nora&event=deal.dealer&situation=dealer-hole');
+  assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), "/admin/clips?dealer=nora&event=deal.dealer&situation=dealer-hole");
   assert.match(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.player.left', 'same-variant'), /situation=box1/);
   assert.doesNotMatch(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.dealer'), /situation=/);
 });
@@ -148,7 +138,7 @@ test('Probe selection stays in Admin and preserves room context under either mou
     for (const basePath of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
       const href = selectionHref(basePath + '/admin/probe', '?dealer=astrid&event=idle.ready&operator=north&table=room-1&lane=portrait&token=private', 'saga', 'idle.ready');
-      assert.equal(href, '/admin/probe?dealer=saga&event=idle.ready&composition=portrait&operator=north&table=room-1');
+      assert.equal(href, "/admin/clips?panel=room&dealer=saga&event=idle.ready&composition=portrait&operator=north&table=room-1");
     }
   } finally {
     if (previous === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH; else process.env.NEXT_PUBLIC_LAB_BASE_PATH = previous;

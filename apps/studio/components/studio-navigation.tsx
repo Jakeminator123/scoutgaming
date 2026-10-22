@@ -2,10 +2,10 @@
 
 import type { MouseEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { studioNavigationCrumbs, studioNavigationTabs, studioNavigationHref, type StudioNavigationCrumbOptions, type StudioDealerTab } from '../lib/studio-navigation.mjs';
+import { studioNavigationTabs, type StudioNavigationOptions, type StudioDealerTab } from '../lib/studio-navigation.mjs';
 import styles from './studio-navigation.module.css';
 
-export type StudioNavigationProps = StudioNavigationCrumbOptions & {
+export type StudioNavigationProps = StudioNavigationOptions & {
   active: StudioDealerTab;
   tabHrefs?: Partial<Record<StudioDealerTab, string>>;
   onNavigate?: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
@@ -32,27 +32,14 @@ export function StudioNavigation({ tabHrefs, onNavigate, ...context }: StudioNav
     }
     return url.pathname + url.search + url.hash;
   };
-  const crumbs = studioNavigationCrumbs(context).map(crumb => ({...crumb, ...(crumb.href ? {href: scopeHref(crumb.href)} : {})}));
   const tabs = studioNavigationTabs(context, tabHrefs).map(tab => ({...tab, href: scopeHref(tab.href)}));
-  const dealerHref = scopeHref(studioNavigationHref('/admin/dealer-studio?view=idle', context));
   const navigate = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     // The editor owns its save/conflict guard. Native links preserve beforeunload
     // when no callback is supplied; modified clicks keep normal browser behavior.
     if (!event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) onNavigate?.(event, href);
   };
   return <div className={styles.navigation}>
-    <nav aria-label="Brödsmulor i Studio" className={styles.breadcrumbs}>
-      <ol>{crumbs.map((crumb, index) => <li key={`${index}-${crumb.label}`}>
-        {index > 0 && <span aria-hidden="true" className={styles.separator}>/</span>}
-        {crumb.href
-          ? <a href={crumb.href} onClick={event => navigate(event, crumb.href!)}>{crumb.label}</a>
-          : <span aria-current={index === crumbs.length - 1 ? 'page' : undefined}>{crumb.label}</span>}
-      </li>)}</ol>
-    </nav>
-    {context.active === 'scene' && context.dealerId ? <div className={styles.breadcrumbs}>
-      <a href={dealerHref} onClick={event => navigate(event, dealerHref)}>← Dealers &amp; klipp · {context.dealerLabel || context.dealerId}</a>
-    </div> : null}
-    {context.dealerId && context.active !== 'scene' && <nav aria-label={`Studio för ${context.dealerLabel || context.dealerId}`} className={styles.tabs}>
+    {context.dealerId && <nav aria-label={`Studio för ${context.dealerLabel || context.dealerId}`} className={styles.tabs}>
       {tabs.map(tab => <a key={tab.id} href={tab.href}
         className={tab.id === context.active ? styles.activeTab : styles.tab}
         aria-current={tab.id === context.active ? 'page' : undefined}

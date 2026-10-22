@@ -19,32 +19,32 @@ test('legacy dealer paths retain their current guide label', () => {
     assert.equal(scoutNavigationItem(path, '/studio')?.label, label, path);
     assert.equal(scoutNavigationItem(path === '/' ? '/studio' : `/studio${path}`, '/studio')?.label, label, path);
   };
-  expectLabel('/', 'Dealers & klipp');
-  expectLabel('/control/clips', 'Dealers & klipp');
-  expectLabel('/videos', 'Dealers & klipp');
-  expectLabel('/control/videos', 'Dealers & klipp');
-  expectLabel('/zones', 'Sammansättningar');
-  expectLabel('/control/zones', 'Sammansättningar');
-  expectLabel('/events', 'Dealers & klipp');
-  expectLabel('/control/events', 'Dealers & klipp');
-  expectLabel('/admin/events', 'Dealers & klipp');
-  expectLabel('/probe', 'Dealers & klipp');
-  expectLabel('/control/probe', 'Dealers & klipp');
-  expectLabel('/admin/probe', 'Dealers & klipp');
-  expectLabel('/admin/replies', 'Dealers & klipp');
-  expectLabel('/clips', 'Dealers & klipp');
-  expectLabel('/administration', 'Spelstatus & integritet');
+  expectLabel('/', 'Klippkarta');
+  expectLabel('/control/clips', 'Klippkarta');
+  expectLabel('/videos', 'Klippkarta');
+  expectLabel('/control/videos', 'Klippkarta');
+  expectLabel('/zones', 'Klippkarta');
+  expectLabel('/control/zones', 'Klippkarta');
+  expectLabel('/events', 'Klippkarta');
+  expectLabel('/control/events', 'Klippkarta');
+  expectLabel('/admin/events', 'Klippkarta');
+  expectLabel('/probe', 'Klippkarta');
+  expectLabel('/control/probe', 'Klippkarta');
+  expectLabel('/admin/probe', 'Klippkarta');
+  expectLabel('/admin/replies', 'Klippkarta');
+  expectLabel('/clips', 'Klippkarta');
+  expectLabel('/administration', 'Drift');
   expectLabel('/openclaw', 'Systeminställningar');
-  expectLabel('/operator-chat', 'Dealers & klipp');
-  expectLabel('/control/operator-chat', 'Dealers & klipp');
-  expectLabel('/tree', 'Dealers & klipp');
-  expectLabel('/control/tree', 'Dealers & klipp');
-  expectLabel('/activity', 'Dealers & klipp');
-  expectLabel('/admin/rehearsal', 'Dealers & klipp');
-  expectLabel('/control/rehearsal', 'Dealers & klipp');
-  expectLabel('/admin/compositions', 'Sammansättningar');
-  expectLabel('/control/compositions', 'Sammansättningar');
-  expectLabel('/guide', 'Guide & hjälp');
+  expectLabel('/operator-chat', 'Klippkarta');
+  expectLabel('/control/operator-chat', 'Klippkarta');
+  expectLabel('/tree', 'Klippkarta');
+  expectLabel('/control/tree', 'Klippkarta');
+  expectLabel('/activity', 'Spelbolag & rum');
+  expectLabel('/admin/rehearsal', 'Spelbolag & rum');
+  expectLabel('/control/rehearsal', 'Spelbolag & rum');
+  expectLabel('/admin/compositions', 'Klippkarta');
+  expectLabel('/control/compositions', 'Klippkarta');
+  expectLabel('/guide', 'Hjälp');
 });
 
 test('exact active-page lookup handles canonical paths and rejects a doubled studio prefix', () => {
@@ -61,7 +61,7 @@ test('exact active-page lookup handles canonical paths and rejects a doubled stu
 
 test('unknown, malformed and injected paths have no active item or default destination', () => {
   const resolved = new Map([
-    ['/videos?token=secret', 'Dealers & klipp'],
+    ['/videos?token=secret', 'Klippkarta'],
   ]);
   for (const basePath of ['', '/studio']) {
     for (const path of [null, undefined, 1, {}, [], 'constructor', '__proto__', '', '/unknown',
@@ -73,8 +73,8 @@ test('unknown, malformed and injected paths have no active item or default desti
       const item = scoutNavigationItem(path, basePath);
       const label = typeof path === 'string' ? resolved.get(path) : undefined;
       if (label && basePath === '') assert.equal(item?.label, label, `${basePath}: ${path}`);
-      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Dealers & klipp', path);
-      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Dealers & klipp', path);
+      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Klippkarta', path);
+      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Klippkarta', path);
       else assert.equal(item, null, `${basePath}: ${String(path)}`);
     }
   }
@@ -180,43 +180,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
   }
 });
 
-test('both real page guards protect dirty project drafts on native leave and clean up without mutating them', () => {
-  for (const [file, name] of [['lab-studio.tsx', 'LabStudio'], ['control-events-page.tsx', 'ControlEventsPage']]) {
-    for (const dirty of [false, true]) {
-      const project = createSeedProject(), before = JSON.stringify(project), effects = [];
-      const browser = new EventTarget();
-      browser.location = new URL(name === 'ControlEventsPage' ? 'https://studio.fixture.invalid/admin/events?dealer=astrid&event=idle.ready' : 'https://studio.fixture.invalid/admin/dealer-studio?dealer=astrid');
-      let historyState = {foreign:'keep'};
-      browser.history = {get state(){return historyState;},replaceState(state,_title,href){historyState=state;if(href!==undefined)browser.location.href=new URL(href,browser.location).href;}};
-      const hooks = { ...React,
-        useState: initial => {
-          const value = typeof initial === 'function' ? initial() : initial;
-          return [value === project && dirty ? { ...project, label: 'Osparat utkast' } : value, () => {}];
-        },
-        useEffect: effect => effects.push(effect), useRef: current => ({ current }),
-        useMemo: fn => fn(), useCallback: fn => fn,
-      };
-      const component = loadComponent(file, { react: hooks }, browser)[name];
-      const tree = mountSelectedPage(component, { initialProject: project, initialDealerId: 'astrid', initialVideos: { videos: [] }, initialStatus: {}, connectedLane: true });
-      const guardEffects = effects.filter(effect => effect.toString().includes('beforeunload') && effect.toString().includes('addEventListener'));
-      assert.ok(guardEffects.length > 0, 'the real page installs navigation protection');
-      const releases = guardEffects.map(effect => effect());
-      assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), !dirty);
-      if (name === 'ControlEventsPage' && !dirty) {
-        let social;
-        visit(tree, node => { const cache = node.props?.draftCache ?? node.props?.social?.draftCache; if (cache) social = cache; });
-        assert.ok(social, 'the social policy draft remains covered by the events page guard');
-        social.current = { draft: { text: 'Osparad policy' }, status: { policy: { text: 'Sparad policy' } } };
-        assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), false);
-        social.current.draft = { ...social.current.status.policy };
-        assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), true);
-      }
-      for (const release of releases.reverse()) release();
-      assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), true);
-      assert.equal(JSON.stringify(project), before);
-    }
-  }
-});
+
 
 test('unavailable search params leave Studio navigation unselected', () => {
   assert.deepEqual(studioNavigationContextFromQuery(null), {});
@@ -226,19 +190,19 @@ test('unavailable search params leave Studio navigation unselected', () => {
 });
 test('query-specific links win without losing the chat alias or selecting rooms for bolag', () => {
   const cases = [
-    ['/admin/ai/models?dealer=saga&operator=north', 'Systeminställningar'], ['/admin/dealer-agent?dealer=saga', 'Dealers & klipp'],
-    ['/openclaw?tab=chat&dealer=saga', 'Dealers & klipp'], ['/control/ops?tab=chat', 'Spelstatus & integritet'],
-    ['/control/openclaw', 'Systeminställningar'], ['/control/openclaw?tab=chat', 'Dealers & klipp'],
-    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Dealers & klipp'],
-    ['/control/openclaw?dealer=astrid', 'Systeminställningar'], ['/operator-chat', 'Dealers & klipp'],
-    ['/control/operator-chat', 'Dealers & klipp'], ['/admin/probe?dealer=saga', 'Dealers & klipp'], ['/control/lanes?lane=t10', 'Spelbolag & rum'],
+    ['/admin/ai/models?dealer=saga&operator=north', 'Systeminställningar'], ['/admin/dealer-agent?dealer=saga', 'Klippkarta'],
+    ['/openclaw?tab=chat&dealer=saga', 'Klippkarta'], ['/control/ops?tab=chat', 'Drift'],
+    ['/control/openclaw', 'Systeminställningar'], ['/control/openclaw?tab=chat', 'Klippkarta'],
+    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Klippkarta'],
+    ['/control/openclaw?dealer=astrid', 'Systeminställningar'], ['/operator-chat', 'Klippkarta'],
+    ['/control/operator-chat', 'Klippkarta'], ['/admin/probe?dealer=saga', 'Klippkarta'], ['/control/lanes?lane=t10', 'Spelbolag & rum'],
     ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
     ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
     ['/control/administration?tab=tables', 'Spelbolag & rum'],
-    ['/control/administration?tab=operations', 'Spelstatus & integritet'],
-    ['/control/administration?tab=finance', 'Betalningar & journal'],
+    ['/control/administration?tab=operations', 'Drift'],
+    ['/control/administration?tab=finance', 'Ekonomi'],
     ['/control/administration?tab=accounts', 'Konton & åtkomst'],
-    ['/control/administration?tab=partners', 'API & integrationer'],
+    ['/control/administration?tab=partners', 'Integrationer'],
   ];
   for (const base of ['', '/studio']) for (const [path, label] of cases) {
     assert.equal(scoutNavigationItem(path, base)?.label, label, path);

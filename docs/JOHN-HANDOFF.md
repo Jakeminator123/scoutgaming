@@ -1,14 +1,18 @@
 # Aktuell handoff — Scoutgaming
 
-## Admin PR1 — navigation och onådd kod — 22 oktober 2026
+## Admin / Studio — PR #359 — 23 oktober 2026
 
-**Leverans:** egen worktree scout-wt/admin-en-ingang, branch codex/admin-en-ingang från main 7afae426. Studio syns i menyn och startsidan får tre illustrerade arbetsval utan pilrader; Dealers äger registret, Ekonomi betalningarna och valt bolag journalen. Fördjupning/OpenClaw/Adminrobotens mellansidor är upplösta till funktionernas hem. Bokmärkesmatris och framtida flödesförslag finns i [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr1-en-ingång-per-sak--22-oktober-2026).
+**Leverans för Claudes granskning:** branch codex/admin-en-ingang, worktree scout-wt/admin-en-ingang. Aktuell main 246e88064dc2d06e022fb845460aea8227c10c0e är integrerad; handoffkonflikten är löst med båda leveransavsnitten bevarade. #354 inklusive Docker-skyddet ingår i basen. #358 är fortsatt öppen och dess skyddade filer är orörda.
 
-**Avgränsning:** 7/9 utpekade lib-moduler, 2 komponenter och 6 oanropade routes borttagna. Social-store skyddas av #354; dealer-import-plan har aktiv verktygsanropare och lämnas. Ingen datamodelländring, dataradering, editorfusion, rumssideändring eller services-ändring. Skyddade #354/#358-filer är orörda; testlistan i pre-commit-full och authimporten i test/game-entry-auth.mjs kan överlappa deras PR:er och måste sammanfogas vid integration.
+**Ändrat:** CSS för dialogpanelen följer nu komponenten och Admin-bygget inkluderar klassanvändningen i återanvända Studio-komponenter. Sidomeny och hjälp delar menykarta. Studio och Administration är tydliga grupper; brödsmulor, små pilrader och extra verktygs-/importflikar är borttagna. Klippkartan samlar vald dealers klipp, tal, inställningar och sceneditor. LabStudio, gamla video-/sceneditorerna samt separata Probe och Provspelning & logg är pensionerade. Materialskapandet har en fokuserad sida med egna utkastspärrar. Äldre dokument och inloggningsreturer går till rätt arbetsyta. De gamla läs-API-namnen behålls för redan laddade klienter; datamodell och skrivkontrakt är oförändrade.
 
-**Verifierat:** full Studio 2 191 pass/29 skip samt frontendtyper; full Admin 354 pass/1 skip; senare bolags-/journalprov 12/12. Klientbuild lyckades. Föräldralösa tester 0/572. Staged strikt raderingsgrind 29 filer/0 importer/0 registerrader. Ingen produktionsacceptans: kort lokal navigationskontroll avslutad, testserver och flik stängda. Slutmålet är produktionens UI/UX; Claude granskar och integrerar. Ingen planstatus ändrad och ingen merge/deploy utförd.
+**Verifiering:** full Studio: 2 103 godkända, 17 överhoppade; full Admin: 353 godkända, 1 överhoppat; frontendtyper och klientbuild godkända. Projektets verifierade Node 24.21.0 användes direkt för de fulla hookarna eftersom Volta-shimmens Windows-kommandorad blir för lång. Föräldralösa tester: 0 av 558 kandidater. Separat UI-prov av byggd klient verifierade den samlade talvyn, dialoglayouten, flikbyten och skapande/val av scen i minnesutkast. Provet använder syntetiska data och nekar serverskrivningar. Strikt raderingsgrind mot aktuell origin/main: 42 borttagna filer, 0 kvarvarande importer och 0 registerreferenser. Den enda textreferensen är den historiska inventeringen i ADMIN-KARTA. Testserver och provflik är stängda. Slutlig commitkontroll redovisas i PR:n.
 
-**Säkerhetsstatus på remote main 7afae426:** GitGuardian-källbindning verifierad, 0 öppna av 23 observerade incidenter (23 ignorerade), monitorering aktiv. Historisk scan är ofullständig (too_large), platsmetadata partiell och GitHub-sviten står queued. Det är inte bevis för full historisk täckning eller godkänd scan av denna nya branch.
+**Kvar:** den visuella operatörsytan enligt bolag → spel → kompatibla dealers/bord och gemensamma bakgrunder; fullständig produktionsacceptans efter integration; separat avgränsning av permanent radering/frikoppling av aktiva beroenden. Varken databas, media, drifttjänster, rumssidan eller produktion är ändrade. Specialiserad regelredigering och talgranskning finns kvar. Ingen planaktivitet är markerad klar.
+
+**Säkerhet:** befintlig skyddad GitGuardian-koppling kunde inte läsa incidenter/platsmetadata. Källbindning och monitorering är inte verifierade i denna kontroll; ingen full historisk täckning påstås. GitHub visar godkänd CI för basen 246e8806; det ersätter inte incidentsynlighet eller kontroll av PR:ns nya head.
+
+Karta, rotorsak, bokmärken och kvarvarande målbild: [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr-359--rättad-css-och-samlad-navigation--23-oktober-2026).
 
 ## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
 

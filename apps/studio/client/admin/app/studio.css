@@ -581,3 +581,22 @@
 .preview-admin .admin-accounts-page .admin-system-page{padding:0}
 .preview-admin [data-admin-view] .sg-page-copy>:is(.sg-eyebrow,h1){display:none}
 .preview-admin [data-admin-view=players] [data-admin-section=users],.preview-admin [data-admin-view=users] [data-admin-section=players]{display:none}
+
+/* Resource tabs share the clip workspace, without squeezing whole editors beside the map. */
+.studio-map-stage.is-resource-editor>.studio-canvas{display:none}
+.studio-map-stage.is-resource-editor>.studio-drawer{flex:1 1 auto;width:100%;max-width:none;max-height:none;position:relative;inset:auto;padding:24px clamp(18px,3vw,48px);border-left:0;box-shadow:none}
+.studio-map-stage.is-resource-editor .studio-detail-panel{max-width:1280px;margin-inline:auto}
+.studio-speech-tools{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}
+.studio-workspace-header>div:last-child{margin-top:16px}
+
+/* Keep the active editor and the two work areas legible in a split webview. */
+body.preview-admin{overflow:hidden}
+.studio-canvas-toolbar[hidden]{display:none}
+.studio-map-stage.is-resource-editor>.studio-drawer>header h1{font-size:22px;font-weight:600;line-height:1.3}
+@media(min-width:761px) and (max-width:900px){
+  .studio-sidebar{width:184px;min-height:0;overflow-y:auto;overscroll-behavior-y:contain}
+  .studio-wordmark{font-size:16px;padding:22px 16px}.studio-wordmark:after{display:none}
+  .studio-wordmark small,.studio-sidebar nav span,.studio-sidebar-foot span,.studio-nav-label{display:block}
+  .studio-nav-group{border:0;padding-top:0;margin-top:20px}
+  .studio-system-menu[open]{position:static;width:auto;max-height:none;background:none;box-shadow:none}
+}

@@ -56,7 +56,7 @@ test('video review link keeps the selected variant', () => {
   const line = draft.lines.find(item => item.dealerId === 'astrid' && item.eventId === 'speak.goodluck');
   line.variants[0].videoGenerationId = 'missing-video';
   const html = render({ initialProject: draft, initialEventId: 'speak.goodluck' });
-  assert.match(html, /href="\/admin\/videos\?dealer=astrid&amp;event=speak\.goodluck&amp;variant=/);
+  assert.match(html, /href="\/admin\/clips\?dealer=astrid&amp;event=speak\.goodluck&amp;variant=/);
 });
 
 test('normal event previews show missing-video status for registered and unbound dealers', () => {

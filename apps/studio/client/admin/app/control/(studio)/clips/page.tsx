@@ -12,10 +12,7 @@ export default function ClipsPage({active=true,dealersActive=false,onImportBusyC
     return router.push(`/admin/clips${next.size?`?${next}`:''}`);
   }
   return <>
-    <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active&&!(dealersActive&&importing)}>
-      <button aria-pressed={active&&!importing} onClick={()=>showTool('map')}>Klippkarta</button>
-      <button aria-pressed={importing} onClick={()=>showTool('import')}>Ladda upp klipp</button>
-    </nav>
+    {(active||dealersActive)&&importing&&<div className="dealer-import-tabs"><button type="button" onClick={()=>showTool('map')}>Öppna klippkartan</button></div>}
     <div className="studio-workspace-mount" hidden={!active||importing}>{children}</div>
     <DealerAssistantShell pageMode={(active||dealersActive)&&importing?'import':null} requestedDealerId={query.get('dealer')??''} onBusyChange={onImportBusyChange} registrationBlocked={registrationBlocked} onRegistered={onRegistered}/>
   </>;

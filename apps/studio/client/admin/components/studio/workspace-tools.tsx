@@ -1,24 +1,18 @@
 import {useEffect,useState} from 'react';
+import {DealerMaterialPage} from '../../../../components/dealer-material-page';
 import {AdminPublicationPage,type PublicationOperatorChoice} from '../../../../components/admin-publication-page';
 import type {OperatorDirectory} from '../../../../components/control-operator-directory';
-import {ControlActivityPage} from '../../../../components/control-activity-page';
-import {ControlPreviewPage} from '../../../../components/control-preview-page';
 import {ControlEventsPage} from '../../../../components/control-events-page';
 import {ControlTreePage} from '../../../../components/control-tree-page';
-import {ControlProbePage} from '../../../../components/control-probe-page';
 import {ControlRepliesPage} from '../../../../components/control-replies-page';
-import {ControlVideosPage} from '../../../../components/control-videos-page';
 import {ControlGuidePage} from '../../../../components/control-guide-page';
 
 import {ControlOpenClawChat} from '../../../../components/control-openclaw-chat';
-import {LabStudio} from '../../../../components/lab-studio';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type { ConnectionStatus } from '../../../../components/studio-types';
 import type { VideoInventory } from '../../../../../../packages/presentation/contracts/media-inventory.mjs';
 import {studioNavigationContextFromQuery} from '../../../../lib/studio-navigation.mjs';
 import {labUrl} from '../../../../lib/lab-url.mjs';
-import {withAdminContext} from '../../../runtime/admin-routing.mjs';
-import {adminPageLabels,adminToolHome} from '../../lib/admin-navigation';
 import {ConnectedServices} from './connected-services';
 
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
@@ -56,21 +50,13 @@ export function WorkspaceTool({section}:{section:string}){
   let content;
   switch(section){
     case 'companies':case 'publication':content=<AdminPublicationPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
-    case 'compositions':content=<ControlPreviewPage {...common} initialRoomId={scopedRoomId} initialGame={get('game')==='roulette'?'roulette':'blackjack'}/>;break;
-    case 'dealer-studio':content=<LabStudio {...common} initialGame={get('game')} initialView={get('view')} initialCategory={get('category')}/>;break;
-    case 'rehearsal':content=<ControlActivityPage {...common} initialOperatorSlug={get('operator')} initialRoomId={scopedRoomId} initialGame={get('game')}/>;break;
+    case 'dealer-studio':content=<DealerMaterialPage project={data.project} dealerId={get('dealer')} navigationContext={studioNavigationContextFromQuery(q)} disabled={!data.connectedLane}/>;break;
     case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
-    case 'videos':content=<ControlVideosPage {...common}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
     case 'media-review':content=<ConnectedServices path="/admin/media-review" dealerId={get('dealer')}/>;break;
-    case 'probe':content=<ControlProbePage {...common}/>;break;
     case 'guide':content=<ControlGuidePage {...common}/>;break;
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
     default:return <p role="alert">Verktyget finns inte.</p>;
   }
-  // One back link to the menu page this tool belongs to; the clip map keeps the dealer context.
-  const home=adminToolHome(section)!;
-  return <div className="admin-workspace-tool"><nav className="admin-system-actions border-b border-sg-line px-6 py-3" aria-label="Arbetsytor">
-    <a href={withAdminContext(home,location.search)} className="studio-button">{adminPageLabels[home]}</a>
-    {home!=='/admin/clips'&&<a className="studio-button" href={withAdminContext('/admin/clips',location.search)}>Klippkarta</a>}</nav>{content}</div>;
+  return <div className="admin-workspace-tool">{content}</div>;
 }

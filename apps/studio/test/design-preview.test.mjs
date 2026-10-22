@@ -266,7 +266,7 @@ test('retired library login returns to canonical assets without accepting invali
 test('retired Admin pages authenticate before redirecting and retain explicit resource context',async()=>{
   const cases=[['tools','/admin/dealers'],['admin/payments','/admin/ekonomi'],['admin/log','/admin/companies'],
     ['openclaw?tab=models','/admin/ai/models'],['openclaw?tab=agent','/admin/dealer-agent'],
-    ['openclaw?tab=probe','/admin/probe'],['openclaw?tab=drift','/admin/drift'],['openclaw?tab=assistant','/admin'],['ai/chat','/admin']];
+    ['openclaw?tab=probe','/admin/clips'],['openclaw?tab=drift','/admin/drift'],['openclaw?tab=assistant','/admin'],['ai/chat','/admin']];
   for(const [old,destination] of cases)for(const method of ['GET','HEAD']){
     const url=new URL('https://studio.test/admin/'+old);
     url.searchParams.append('dealer','nora');url.searchParams.append('operator','north');url.searchParams.append('room','one');url.searchParams.append('room','two');

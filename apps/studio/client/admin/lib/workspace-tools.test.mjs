@@ -85,16 +85,7 @@ test('each workspace tool marks its resource in the menu',()=>{
   for(const group of adminNavigation.adminSystemGroups)for(const link of group.links)assert.equal(adminNavigation.adminNavigationGroups.some(primary=>primary.links.some(row=>row.href===link.href)),false,link.href+' duplicates Skapande/Verksamhet');
 });
 
-test('a loaded tool shows one back link to its menu page and keeps the dealer context for the clip map',async()=>{
-  for(const [section,home,label] of [['replies','/admin/dealers','Dealers'],['videos','/admin/dealers','Dealers'],['compositions','/admin/clips','Klippkarta'],['publication','/admin/rooms','Spelbolag & rum']]){
-    const h=harness('../components/studio/workspace-tools.tsx','?dealer=dragan');
-    h.render(h.exports.WorkspaceTool,{section});await h.settle();
-    const nav=node(h.render(h.exports.WorkspaceTool,{section}),item=>item.props?.['aria-label']==='Arbetsytor');
-    const links=descendants(nav).filter(item=>item.type==='a');
-    assert.equal(links[0].props.href,home,section);assert.equal(links[0].props.children,label,section);
-    assert.deepEqual(links.slice(1).map(item=>item.props.href),home==='/admin/clips'?[]:['/admin/clips'],section);
-  }
-});
+
 
 test('Admin portal navigation opens the three current product entry points',()=>{
   for(const path of ['/admin','/admin/clips','/admin/companies']){
@@ -173,23 +164,20 @@ function publicationWorkspaceHarness(search) {
       for(const owner of [root,child])while(owner.effects.length)owner.effects.shift()();
       await new Promise(setImmediate);
     }},
-    clipHref:()=>node(rootTree,item=>item.type==='a'&&item.props.children==='Klippkarta').props.href,
     lifecycle:()=>node(lanesTree,item=>item.type===Lifecycle),
     composition:()=>node(lanesTree,item=>item.type==='select'&&item.props.value!=='north'),
   };
 }
 
-test('verified room seeding immediately updates the real WorkspaceTool clip-map link and history context',async()=>{
+test('verified room seeding updates history context without changing ownership',async()=>{
   const h=publicationWorkspaceHarness('?operator=north&room=room-evening&table=outdated-room&composition=mobile-phone&tableAsset=design-table#review');
   await h.settle();h.lifecycle().props.onChanged(h.snapshot);await h.settle();
-  assert.equal(h.clipHref(),'/admin/clips?operator=north&table=room-evening&composition=evening');
   const query=new URLSearchParams(h.window.location.search);
   assert.equal(query.get('composition'),'evening');assert.equal(query.get('table'),'room-evening');
   assert.equal(query.get('room'),'room-evening');assert.equal(query.get('tableAsset'),'design-table');
   assert.equal(h.window.location.hash,'#review');assert.equal(h.history.state.external,'preserved');
   assert.equal(h.history.state.__scoutAdminHistory.href,h.window.location.pathname+h.window.location.search+h.window.location.hash);
   h.composition().props.onChange({target:{value:'mobile-phone'}});await h.settle();
-  assert.equal(h.clipHref(),'/admin/clips?operator=north&composition=mobile-phone');
   assert.equal(new URLSearchParams(h.window.location.search).has('room'),false);
 });
 

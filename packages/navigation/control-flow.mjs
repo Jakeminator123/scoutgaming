@@ -64,5 +64,5 @@ export function legacyActivityDocumentHref(value) {
   }
   const lanes = url.searchParams.getAll('lane');
   if (!query.has('composition') && lanes.length === 1 && lanes[0]) query.set('composition', lanes[0]);
-  return '/admin/rehearsal' + (query.size ? '?' + query : '') + url.hash;
+  return adminDocumentHref('/control/rehearsal' + (query.size ? '?' + query : '') + url.hash);
 }

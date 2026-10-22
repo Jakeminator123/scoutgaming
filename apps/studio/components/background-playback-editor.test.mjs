@@ -123,28 +123,3 @@ function hooks(){
   const states=[],refs=[],effects=[];let cursor=0,refCursor=0,effectCursor=0,pending=[];
   return {react:{...React,useRef:initial=>refs[refCursor++]??={current:initial},useState(initial){const key=cursor++;if(!(key in states))states[key]=typeof initial==='function'?initial():initial;return [states[key],value=>states[key]=typeof value==='function'?value(states[key]):value];},useEffect(fn,deps){const key=effectCursor++,old=effects[key];if(!old||!deps||deps.some((value,index)=>value!==old.deps[index]))pending.push(()=>{old?.cleanup?.();effects[key]={deps,cleanup:fn()};});}},render(Component,props){cursor=refCursor=effectCursor=0;return Component(props);},effects(){const next=pending;pending=[];next.forEach(fn=>fn());},unmount(){effects.forEach(effect=>effect?.cleanup?.());}};
 }
-
-test('composition background rules remain drafts and table size is bounded per format with preview requests separate from saves',()=>{
-  let project=createSeedProject(),saves=0;
-  const lane=defaultPresentationLane('astrid');lane.layers.background={enabled:true,mode:'image',default:assets[0].id,allowed:[assets[0].id,assets[1].id]};
-  project.layerAssets=assets;project.lanes=[lane,{...structuredClone(lane),id:'second'}];
-  const baseline=JSON.stringify(project),projectRef={current:project};
-  const session={get project(){return project;},projectRef,videos:{videos:[]},get dirty(){return JSON.stringify(project)!==baseline;},saving:false,save:async()=>{saves++;return true;},savedJson:baseline,modelEdit(fn){project=fn(project);projectRef.current=project;},setSavedJson(){},setProject(){},setConflict(){},setError(){},setNotice(){},conflict:false};
-  const h=hooks(),window={addEventListener(){},removeEventListener(){},location:{href:'https://qa.invalid/control/compositions'},history:{replaceState(){}}};
-  const {ControlPreviewPage}=load('./control-preview-page.tsx',{react:h.react,'./studio-session':{useStudioProjectSession:()=>session}},{window});
-  const props={initialProject:project,initialVideos:{videos:[]},initialStatus:{provider:'neon'},initialLaneId:lane.id};
-  const render=()=>{let tree=h.render(ControlPreviewPage,props);h.effects();return h.render(ControlPreviewPage,props);};
-  let tree=render();const editor=nodes(tree,node=>node.type==='BackgroundPlaybackEditor')[0];assert.equal(editor.props.baseSelected,true,'image base supported');
-  editor.props.onChange({schemaVersion:1,rules:[defaultBackgroundRule(assets[1].id,'test-rule')]});tree=render();
-  const backgroundVisibility=()=>nodes(nodes(tree,node=>node.type==='fieldset'&&nodes(node,row=>row.type==='legend'&&text(row)==='Synliga lager').length)[0],node=>node.type==='input'&&node.props.type==='checkbox')[2];
-  assert.equal(backgroundVisibility().props.disabled,true);backgroundVisibility().props.onChange({target:{checked:false}});assert.equal(project.lanes[0].layers.background.enabled,true,'active rule base survives even a directly dispatched disabled callback');
-  const preview=()=>nodes(tree,node=>node.type==='CompositionPreview')[0].props;
-  assert.equal(preview().backgroundPlayback.rules[0].id,'test-rule');assert.deepEqual(preview().backgroundAssets.map(row=>row.id),[assets[0].id,assets[1].id]);
-  nodes(tree,node=>node.type==='BackgroundPlaybackEditor')[0].props.onPreview('test-rule');tree=render();assert.equal(preview().previewBackgroundRuleId,'test-rule');assert.equal(preview().previewBackgroundRequest,1);assert.equal(saves,0);
-  const mobile=project.lanes[0].composition.mobile.table.width,desktop=project.lanes[0].composition.desktop.table.width;
-  button(tree,'Förstora bord').props.onClick();tree=render();assert.equal(project.lanes[0].composition.mobile.table.width,Math.round((mobile+.1)*100)/100);assert.equal(project.lanes[0].composition.desktop.table.width,desktop);
-  field(tree,'Bordets storlek i procent').props.onChange({target:{valueAsNumber:999}});tree=render();assert.equal(project.lanes[0].composition.mobile.table.width,4);assert.equal(button(tree,'Förstora bord').props.disabled,true);
-  button(tree,'Desktop 16:9').props.onClick();tree=render();field(tree,'Bordets storlek i procent').props.onChange({target:{valueAsNumber:1}});tree=render();assert.equal(project.lanes[0].composition.desktop.table.width,.1);assert.equal(button(tree,'Förminska bord').props.disabled,true);assert.equal(project.lanes[0].composition.mobile.table.width,4);
-  nodes(tree,node=>node.type==='BackgroundPlaybackEditor')[0].props.onChange(undefined);tree=render();assert.equal(backgroundVisibility().props.disabled,false);backgroundVisibility().props.onChange({target:{checked:false}});assert.equal(project.lanes[0].layers.background.enabled,false,'background can be hidden after removing its rules');
-  nodes(tree,node=>node.type==='CompositionMetadata')[0].props.onSelect('second');tree=render();assert.equal(preview().previewBackgroundRuleId,undefined);assert.equal(preview().previewBackgroundRequest,0);assert.equal(saves,0);h.unmount();
-});

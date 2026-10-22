@@ -1,3 +1,4 @@
+import {designPreviewPages} from './design-preview-paths.mjs';
 import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 // Public routing only; never put credentials in these build-time variables.
 export function labBasePath() {
@@ -19,7 +20,8 @@ export function labUrl(value) {
 
 // Absolute public URL so Next redirect() does not prefix the /studio basePath.
 export function publicAbsoluteUrl(headerList, pathname) {
-  if (typeof pathname !== 'string' || (pathname !== '/admin' && !/^\/admin\/(?:publication|companies|guide|videos|probe|replies|events|compositions|rehearsal|ai\/models|dealer-agent|dealer-studio|media-review|drift|ekonomi|admin\/(?:accounts|players|payments|api))(?:[?#]|$)/.test(pathname) && !pathname.startsWith('/control')) || pathname.includes('//') || /[\s\\]/.test(pathname)) {
+  const path = typeof pathname==='string' ? pathname.split(/[?#]/,1)[0] : '';
+  if (typeof pathname !== 'string' || !(pathname==='/admin'||path.startsWith('/admin/')&&designPreviewPages.has(path.slice(7))||/^\/control(?:\/|$)/.test(path)) || pathname.includes('//') || /[\s\\]/.test(pathname)) {
     throw new Error('control_redirect_rejected');
   }
   const read = name => {

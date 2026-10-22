@@ -132,7 +132,7 @@ test('home create link opens the existing dealer form without a write and contex
   const h=harness([],[],'?view=create');await h.settle();
   assert.ok(h.input('Dealerns namn'));assert.equal(h.saves.length,0);
   const links=nodes(h.render(),row=>row.type==='a');
-  for(const label of ['Öppna klippkarta','Svarsbibliotek','Talgranskning','Dealerns agent','Tal vid inaktivitet']){
+  for(const label of ['Redigera dealer','Ladda upp klipp']){
     const link=links.find(row=>text(row)===label);assert.ok(link,label);
     assert.equal(new URL(link.props.href,'https://test.invalid').searchParams.get('dealer'),'dragan');
   }
