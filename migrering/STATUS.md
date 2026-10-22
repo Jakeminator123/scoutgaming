@@ -29,7 +29,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J03 | Avveckla resterande Control-ytor | jakob | VERIFIED |
 | J04 | En spelkatalog via lobby | jakob | VERIFIED |
 | J05 | Förenkla runtime och byggkedja | jakob | IN_PROGRESS |
-| J06 | Rensa testlås och rikta CI | jakob | TODO |
+| J06 | Rensa testlås och rikta CI | jakob | IN_PROGRESS |
 | K02 | Ren regelkärna med explicit slump | kevin | VERIFIED |
 | K03 | Delat bord utan SQL- och videokoppling | kevin | VERIFIED |
 | J07 | Postgres-adapter för delat bord | jakob | VERIFIED |
