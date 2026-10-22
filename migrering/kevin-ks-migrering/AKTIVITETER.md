@@ -116,12 +116,13 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K05 — Exakt mediakoppling till Neon och Blob
 
-**IN_PROGRESS 22 oktober, rapporterad arbetsstart:** Kevin anger pågående mappning i6329536559. Kommentaren skapades00:18:36Z efter heartbeatavläsningen och lästes riktat av root efter användarens uppgift; ingen ny full #312-avläsning. Ingen fryst K05-head eller ny godkänd verklig Neon/Blob-/paketmappning är verifierad. Inga nya färdigbockar, procentenheter eller importåtgärder.
+**IN_PROGRESS 22 oktober, granskad dokumentleverans:** PR314/head4fbd5467d07ad38399ca83737fbbddf1209bc2c1 innehåller K05-matris/validator/importplan. Oberoende mängd-/Gitblob-/TSVhashkontroll och egna26/26prov godkända. Två riktade live-SELECT bekräftar katalogrevision och tre Dragan-repliker utan godkännande/katalogkoppling. Ingen färdig runtimebindning eller full K05-acceptans. Konkreta rättningar: okänd sourceDealer godtas felaktigt; G13urval,review→runtime,JS ochPNG behöver samordnad specifikation. Nästa ansvar Kevin för rättat fryst underlag; root för registreringsplan/nativebindning efter verifierade identiteter och separat molnmandat. Detaljer i status.json.
 
 **Etapp/beroenden:** E4; K01 och K04.
 **Mål:** varje accepterat mediaobjekt har exakt identitet och koppling till befintligt register, Blob-objekt och publicerat paket.
 **Startfiler:** K `server/media-registry.mjs`, `public/dealers.js`, `public/runtime-event-links.js`, `public/media_omkodad_crf20_2026-09-25/manifest.json`; M `packages/presentation/contracts/material-catalog.mjs`, `packages/presentation/server/package-rooms.mjs`, `docs/LOCAL-PRESENTATION-RUNTIME.md`.
 
+- [x] Delsteg: läsgranska fryst matris, verifiera dess Gitblob/SHA256/mängder och kör befintlig manifestvalidator26/26. Detta bevisar metadata/validatorfall, inte full paket-/Blob-/visuell acceptans.
 - [ ] Slutför K01:s urval med dealer, händelse, språk, take, exakt SHA-256, källa, ljud/video/frameindex/kalibrering och befintlig acceptans. Okända eller ändrade hashar förblir oaccepterade.
 - [ ] Mappa varje post till befintligt Neon-ID/Blob-objekt eller en uttryckligt planerad ny post. Skilj design-ID, uppladdad layer-UUID, dealer, rum och fryst paket; ingen namn- eller längdmatchning som identitetsbevis.
 - [ ] Prova manifestvalidering och paketupplösning isolerat; avvisa saknad/mismatched identitet och bortvalda V1-referenser. Bevara historiskt refererade main-media och Astrids märkta legacyreferens.
