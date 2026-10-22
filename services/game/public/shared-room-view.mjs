@@ -12,9 +12,11 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
   const cleanups=[],listen=(node,handler)=>{if(!node)return;node.addEventListener('click',handler);cleanups.push(()=>node.removeEventListener('click',handler));};
   const scene=$(document,'scene'),seatsHost=$(document,'seats'),chipHost=$(document,'chips');
   const status=document.createElement('p');status.id='shared-room-status';status.className='local-presentation-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');scene.append(status);
-  const retry=button(document,'Försök igen',()=>actions?.retry());retry.id='shared-room-retry';retry.hidden=true;status.append(retry);
-  const notice=document.createElement('span');status.prepend(notice);
+  const notice=document.createElement('span');status.append(notice);
+  // The status box is pointer-transparent (it overlays the table), so the retry
+  // control lives in the clickable control bar instead of inside the message.
   const extra=document.createElement('div');extra.id='shared-room-controls';extra.style.cssText='position:absolute;right:12px;top:95px;z-index:30;display:flex;gap:8px;flex-wrap:wrap;max-width:90%';scene.append(extra);
+  const retry=button(document,'Försök igen',()=>actions?.retry());retry.id='shared-room-retry';retry.hidden=true;retry.style.cssText='min-height:44px';extra.append(retry);
   const leave=button(document,'Lämna platser',()=>actions?.dispatch('leave')),next=button(document,'Nästa runda',()=>actions?.dispatch('next'));
   const picker=document.createElement('select');picker.setAttribute('aria-label','Välj eller lämna plats');
   picker.style.cssText='min-height:44px;max-width:160px';
@@ -24,7 +26,9 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
   for(let i=0;i<7;i++){const option=document.createElement('option');option.value=String(i);option.textContent=`Visa plats ${i+1}`;focus.append(option);}
   const show=()=>actions?.focusSeat(Number(focus.value));focus.addEventListener('change',show);cleanups.push(()=>focus.removeEventListener('change',show));
   extra.append(picker,focus,leave,next);
-  for(const id of ['chat','table-pick','cashier','gate','autobet','sign-out']){const node=$(document,id);if(node){node.hidden=true;node.inert=true;}}
+  // Legacy single-player surfaces. `hidden` alone loses to stylesheet display
+  // rules (for example `#chat { display:flex }`), so the display is forced too.
+  for(const id of ['chat','table-pick','cashier','gate','autobet','sign-out']){const node=$(document,id);if(node){node.hidden=true;node.inert=true;node.style.display='none';}}
   const labels={ 'undo-btn':['Ångra','undo'], 'clear-btn':['Rensa','clear'], 'double-btn':['Dubbla','doubleBets'],
     'max-btn':['Upprepa','repeat'], 'all-sides':['Alla platser','allSeats'], 'add-funds':['Fyll på demosaldo','refill'],
     'pitboss':['Spelpaus 24 timmar','pause'], 'deal-now':['Redo','ready'] };
@@ -33,14 +37,16 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
   $(document,'ins-yes').textContent='Ja';$(document,'ins-no').textContent='Nej';
   const slots=Array.from({length:7},(_,index)=>{
-    const root=document.createElement('div');root.className='seat';root.dataset.seat=String(index);root.style.setProperty('--seat-i',String(index));
-    const inside=document.createElement('div');inside.className='seat-inner';root.append(inside);
-    const join=button(document,`Plats ${index+1}`,()=>actions?.dispatch('join',{seat:index}));join.className='spot';join.style.cssText='min-width:44px;min-height:44px';inside.append(join);
-    const bets=document.createElement('div');bets.style.cssText='position:absolute;top:58px;left:-28px;display:flex;gap:4px;z-index:5';inside.append(bets);
+    // Admin table geometry positions the seat root; the controls keep 44 px touch
+    // targets at any scale, and bet buttons only exist on the player's own seat.
+    const root=document.createElement('div');root.className='seat seat-shared';root.dataset.seat=String(index);root.style.setProperty('--seat-i',String(index));
+    const inside=document.createElement('div');inside.className='seat-inner seat-shared-inner';root.append(inside);
+    const join=button(document,`Plats ${index+1}`,()=>actions?.dispatch('join',{seat:index}));join.className='spot seat-shared-join';inside.append(join);
+    const bets=document.createElement('div');bets.className='seat-shared-bets';bets.hidden=true;bets.style.display='none';inside.append(bets);
     const fields=Object.fromEntries([['pp','Par'],['main','Insats'],['tp','21+3']].map(([field,label])=>{
-      const control=button(document,label,()=>actions?.dispatch('bet',{seat:index,field}));control.style.cssText='min-width:44px;min-height:44px;padding:3px';bets.append(control);return[field,control];
+      const control=button(document,label,()=>actions?.dispatch('bet',{seat:index,field}));control.className='seat-shared-bet';bets.append(control);return[field,control];
     }));
-    return {root,join,fields};
+    return {root,join,bets,fields};
   });
   seatsHost.replaceChildren(...slots.map(slot=>slot.root));
   let chipKey='';
@@ -57,6 +63,7 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
       $(document,'ins-yes').disabled=!can.insurance||Boolean(s&&s.me.pausedUntil>(value.serverNow??s.serverNow));$(document,'ins-no').disabled=!can.insurance;
       if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';return;}
       $(document,'balance').textContent=money(s.me.available)+' demo';
+      const limits=$(document,'limits');if(limits)limits.textContent=`${money(s.settings.limits.min)} – ${money(s.settings.limits.max)} kr · demo`;
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0));
       $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned):'–';
       $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Spelpaus aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
@@ -70,6 +77,7 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
         slot.root.classList.toggle('active',own);slot.root.classList.toggle('occupied',occupied);
         slot.join.textContent=own?`Lämna ${i+1}`:occupied?`Plats ${i+1} upptagen`:`Välj plats ${i+1}`;
         slot.join.disabled=!can.join||(occupied&&!own);slot.join.setAttribute('aria-pressed',String(own));
+        slot.bets.hidden=!own;slot.bets.style.display=own?'':'none';
         for(const [field,node] of Object.entries(slot.fields)){node.disabled=!can.bet||!own;node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+money(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field])}`);}
       }
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});

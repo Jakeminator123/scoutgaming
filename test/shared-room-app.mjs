@@ -116,7 +116,7 @@ class Element extends EventTarget {
   setAttribute(name,value){this.attributes[name]=String(value);}append(...children){this.children.push(...children);}prepend(...children){this.children.unshift(...children);}replaceChildren(...children){this._text='';this.children=children;}click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
 }
 function documentFixture(){
-  const ids=['scene','seats','chips','balance','total-bet','last-win','banner','deal-now','insurance','ins-yes','ins-no','actions','actions-top','undo-btn','clear-btn','double-btn','max-btn','all-sides','add-funds','pitboss','presentation-loading','caption'];
+  const ids=['scene','seats','chips','balance','total-bet','last-win','banner','deal-now','insurance','ins-yes','ins-no','actions','actions-top','undo-btn','clear-btn','double-btn','max-btn','all-sides','add-funds','pitboss','presentation-loading','caption','limits','chat','table-pick'];
   const nodes=new Map(ids.map(id=>[id,new Element()])),acts=['hit','stand','double','split'].map(action=>{const node=new Element('button');node.dataset.act=action;return node;});
   const document={documentElement:{dataset:{sharedRoom:'1',gameLane:'saved',gameDealer:'astrid',gameLocalDealer:'astrid',gamePresentation:'local',gameRegisteredDealers:JSON.stringify([{id:'astrid',label:'Astrid'}]),gameOperator:'north',gamePackageRevision:'1',gameBranding:'{}',gameRoomId:roomId}},
     getElementById:id=>nodes.get(id),createElement:tag=>new Element(tag),querySelector:selector=>nodes.get(selector.slice(1)),querySelectorAll:selector=>selector==='[data-act]'?acts:[]};
@@ -131,7 +131,15 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.match(nodes.get('balance').textContent,/17,5 demo/);assert.equal(nodes.get('seats').children.length,7);
   const own=nodes.get('seats').children[0],join=own.children[0].children[0];assert.equal(join.tagName,'BUTTON');join.click();assert.deepEqual(calls[0],['join',{seat:0}]);
   nodes.get('chips').children[1].disabled=false;nodes.get('chips').children[1].click();assert.deepEqual(calls[1],['chip',1]);
-  const status=nodes.get('scene').children.find(node=>node.id==='shared-room-status');status.children[1].click();assert.deepEqual(calls[2],['retry']);
+  // The status overlay is pointer-transparent; the retry control must sit in the clickable control bar.
+  const status=nodes.get('scene').children.find(node=>node.id==='shared-room-status');assert.equal(status.children.some(node=>node.id==='shared-room-retry'),false);
+  const controls=nodes.get('scene').children.find(node=>node.id==='shared-room-controls'),retry=controls.children.find(node=>node.id==='shared-room-retry');
+  assert.equal(retry.hidden,false);retry.click();assert.deepEqual(calls[2],['retry']);
+  // Bet controls exist only on the player's own seat; other seats keep one touch-sized join control.
+  assert.equal(own.children[0].children[1].hidden,false);assert.equal(nodes.get('seats').children[1].children[0].children[1].hidden,true);
+  assert.equal(nodes.get('seats').children[1].children[0].children[1].style.display,'none');
+  for(const id of ['chat','table-pick']){assert.equal(nodes.get(id).hidden,true);assert.equal(nodes.get(id).style.display,'none');}
+  assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 kr · demo$/);
   view.close();join.click();assert.equal(calls.length,3);
 });
 
@@ -196,7 +204,7 @@ test('all seven seats remain selectable through a native control when the visual
   const {document,nodes}=documentFixture(),calls=[];
   const view=createSharedRoomView({document});view.bind({dispatch:(...args)=>calls.push(args)});
   view.render({snapshot:snapshot(),chip:.5,can:{join:true,act:[]},notice:'',retry:false,busy:false,connected:true});
-  const controls=nodes.get('scene').children.find(node=>node.id==='shared-room-controls'),picker=controls.children[0];
+  const controls=nodes.get('scene').children.find(node=>node.id==='shared-room-controls'),picker=controls.children.find(node=>node.tagName==='SELECT');
   assert.equal(picker.tagName,'SELECT');assert.equal(picker.children.length,8);
   picker.value='6';picker.dispatchEvent(new Event('change'));assert.deepEqual(calls,[['join',{seat:6}]]);
   view.close();picker.value='0';picker.dispatchEvent(new Event('change'));assert.equal(calls.length,1);
