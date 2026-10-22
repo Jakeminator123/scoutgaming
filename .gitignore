@@ -5,7 +5,6 @@ content/encoded/
 .claude/
 .cursor/ping-croupier-seen.json
 .croupier-inbox/
-web/data/
 content/bake/frames/
 content/bake/masks/
 content/cutout/
@@ -18,24 +17,9 @@ media/.migration/
 # Personal historical reports are kept outside the active checkout.
 /random-stuff-jakob/jakob-docs/arkiv/
 /random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
-
-# Local backoffice network captures; keep raw responses out of Git.
-/random-stuff-jakob/jakob-log-files/
 .vercel
 .env*
 !.env.example
-
-# Session-gated preview build. Served by lab/app/preview, never from public/.
-/lab/preview-build/
-/lab/design-preview-build/
-/lab/public/public-assistant.js
-/lab/public/did-chunks/
-
-# Local env backups made while consolidating .env files (never commit)
-/random/env-backup-*/
-
-# Skärmbilder från agentarbete; lokala, inte i Git
-/random/bilder-*/
 
 # Generated dependencies, build caches and local verification output.
 .next/
@@ -60,22 +44,21 @@ __pycache__/
 /inbox/local-device.json
 /inbox/local-device.json.*.tmp
 
-# Relocated Studio: retain old private/build guards for files left in place.
-/lab/data/
-/lab/tsconfig.probe.json
-/apps/studio/data/
+# Studio build output served by the offline fixture; never source.
 /apps/studio/preview-build/
 /apps/studio/design-preview-build/
 /apps/studio/public/public-assistant.js
 /apps/studio/public/did-chunks/
 
-# OpenClaw source move: local state/media remain at the old protected root.
+# Retired local roots: never stage if an old checkout still has them
+/lab/data/
+/apps/studio/data/
+/web/data/
+/services/game/data/
+
+# Director/Gateway local state: the Director adapter defaults to the relative
+# open-claw/lab root when LAB_DATA_DIR is unset (Render sets it).
 /open-claw/lab/data/
 /open-claw/lab/runtime/
 /open-claw/lab/media/*
 /services/openclaw/lab/data/
-/services/openclaw/lab/runtime/
-
-# Game source moved; retain the old private state and protect the new source root.
-/web/data/
-/services/game/data/

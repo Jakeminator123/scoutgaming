@@ -111,8 +111,8 @@ node apps/studio/start.mjs --offline --no-open
 ```
 
 The offline launcher enforces one fixture pair and removes its temporary data
-when stopped. Existing `lab/data` authoring/recovery files are preserved and do
-not become product state. The old `--cloud-storage`, `--astrid-camera` and
+when stopped. The checkout holds no local product register: Neon is the
+register and Blob stores media bytes. The old `--cloud-storage`, `--astrid-camera` and
 `--check` modes are retired; `--skip-build` requires `--offline`.
 Check the package's Node engine and Volta pin before local scripts; `apps/studio/`
 requires Node 24.x and pins 24.21.0. See the [user guide](apps/studio/docs/README.md)

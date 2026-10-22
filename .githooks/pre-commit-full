@@ -48,7 +48,7 @@ run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs te
 run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
 run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
 run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs
-run_node_tests contracts backup-lab-state test/backup-lab-state.mjs test/migrate-lab-state.mjs test/retention-archive.mjs test/studio-retirement-plan.mjs
+run_node_tests contracts retention-archive test/retention-archive.mjs test/studio-retirement-plan.mjs
 run_node_tests contracts partner-access-policy test/partner-access-policy.mjs test/operator-store.mjs test/admin-publication-chain.mjs
 run_node_tests contracts operator-appearance-api test/operator-appearance-api.mjs test/operator-appearance-boundary.mjs test/operator-appearance-integration.mjs test/partner-branding-postgres.mjs
 run_node_tests contracts preview apps/studio/components/kevin-bo/preview.test.mjs
@@ -74,7 +74,7 @@ run_node_tests access speech-reply-library test/speech-reply-library.mjs test/sp
 run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/openclaw/lab/deploy/*.test.mjs
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
 run_node_tests access bo-lab-auth test/bo-lab-auth.mjs
-run_node_tests access postgres-persistence test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
+run_node_tests access postgres-persistence test/postgres-persistence.mjs test/postgres-native-table.mjs
 run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs test/platform-room-socket.mjs test/platform-room-routing.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs apps/web/test/player-scene-canvas.mjs apps/web/test/landing-motion.mjs apps/web/test/intro-device.mjs
 run_node_tests access media-layout test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
