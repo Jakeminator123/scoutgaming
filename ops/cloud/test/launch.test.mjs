@@ -133,3 +133,14 @@ test('an upgraded gateway connection cannot hold shutdown beyond the socket dead
   assert.ok(performance.now() - started < 1000, 'upgraded sockets must actually close, not just HTTP keep-alives');
   assert.equal(upgraded.destroyed, true);
 });
+
+test('access probes pass without a Lab child: mounted Lab is misdirected and no Lab port is contacted', async () => {
+  const layout = { ...config, singleOrigin: true, boOrigin: config.gameOrigin,
+    labOrigin: config.gameOrigin, labBasePath: '/studio', labChild: false };
+  // An open fixture Lab port would fail the default probes; game-only start must not reach it.
+  const services = await fixture({ labDirect: 200 }, layout);
+  try {
+    await verifyCloudAccess(layout, services);
+    await assert.rejects(verifyCloudAccess({ ...layout, labChild: true }, services), /Lab anonymous access/);
+  } finally { await services.close(); }
+});

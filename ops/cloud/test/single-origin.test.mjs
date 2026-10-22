@@ -87,3 +87,18 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
     assert.equal(fallback.status, 303);
   } finally { db.close(); }
 });
+
+test('one-origin game-only mode keeps the Web routes and closes the mounted Lab entirely', () => {
+  const gameOnly = { ...env, CROUPIER_CLOUD_LAB_CHILD: '0' };
+  const config = validateCloudConfig(gameOnly);
+  assert.equal(config.labChild, false); assert.equal(config.singleOrigin, true); assert.equal(config.labBasePath, '/studio');
+  const route = (url, host = new URL(origin).host) => upstreamForRequest({ headers: { host }, method: 'GET', url }, config);
+  for (const path of ['/', '/blackjack', '/api/table', '/bo/login.html', '/api/bo/users', '/api/auth/lab/start', '/api/bo/lab-login?state=x']) assert.equal(route(path), 4173, path);
+  for (const path of ['/studio', '/studio/openclaw', '/studio/api/project', '/studio/_next/static/example.js', '/api/auth/lab/check']) assert.equal(route(path), null, path);
+  const specs = childSpecifications(config, gameOnly);
+  assert.deepEqual(Object.keys(specs), ['web']);
+  assert.equal(specs.web.env.CROUPIER_CLOUD_LAYOUT, 'single-origin');
+  assert.equal(specs.web.env.LAB_PUBLIC_URL, origin);
+  // A stray CROUPIER_LAB_BASE_PATH still has to agree with the layout even when no Lab is started.
+  assert.throws(() => validateCloudConfig({ ...gameOnly, CROUPIER_LAB_BASE_PATH: '' }));
+});
