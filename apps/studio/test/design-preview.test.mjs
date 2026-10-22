@@ -125,6 +125,59 @@ test('staff permits Blob; public lobby permits D-ID; assets retain same-origin p
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+test('only lobby images and videos are browser-cacheable; documents, scripts and failures stay uncached', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'croupier-lobby-media-'));
+  try {
+    for (const surface of ['admin', 'lobby', 'public-lobby']) {
+      await mkdir(join(root, surface));
+      await writeFile(join(root, surface, 'index.html'), '<!doctype html>');
+      await writeFile(join(root, surface, 'app.js'), 'void 0;');
+      await writeFile(join(root, surface, 'theme.css'), ':root{}');
+      if (surface === 'admin') continue;
+      await mkdir(join(root, surface, 'images', 'dealers'), { recursive: true });
+      await mkdir(join(root, surface, 'videos', 'dealers'), { recursive: true });
+      await writeFile(join(root, surface, 'images', 'dealers', 'astrid.jpg'), '0123456789');
+      await writeFile(join(root, surface, 'videos', 'dealers', 'astrid-look.mp4'), '0123456789');
+    }
+    await mkdir(join(root, 'fonts'));
+    await writeFile(join(root, 'fonts', 'inter.woff2'), 'font');
+    const authorize = async () => {};
+    const admin = (segments, init) => serveDesignPreview(new Request('https://studio.test/admin/' + segments.join('/'), init), segments, { root, authorize });
+    const lobby = (segments, init) => servePublicLobby(new Request('https://studio.test/lobby/' + segments.join('/'), init), segments, { root });
+    const uncached = await serveDesignPreview(new Request('https://studio.test/admin'), [], { root, authorize });
+    const media = [['_assets', 'lobby', 'images', 'dealers', 'astrid.jpg'], ['_assets', 'lobby', 'videos', 'dealers', 'astrid-look.mp4']];
+    for (const serve of [admin, lobby]) for (const segments of media) {
+      const full = await serve(segments);
+      const ranged = await serve(segments, { headers: { range: 'bytes=2-5' } });
+      assert.equal(full.status, 200); assert.equal(await full.text(), '0123456789');
+      assert.equal(ranged.status, 206); assert.equal(await ranged.text(), '2345');
+      for (const response of [full, ranged]) {
+        assert.equal(response.headers.get('cache-control'), 'private, max-age=3600');
+        for (const name of ['vary', 'x-content-type-options', 'x-robots-tag', 'cross-origin-resource-policy'])
+          assert.equal(response.headers.get(name), uncached.headers.get(name));
+        assert.match(response.headers.get('content-security-policy'), /connect-src 'self'; frame-src 'none'/);
+      }
+      assert.equal((await serve(segments, { headers: { range: 'bytes=100-' } })).headers.get('cache-control'), 'private, no-store');
+      const missing = [...segments.slice(0, -1), 'missing' + segments.at(-1).slice(-4)];
+      assert.equal((await serve(missing)).status, 404);
+      assert.equal((await serve(missing)).headers.get('cache-control'), 'private, no-store');
+    }
+    const documentsAndCode = [
+      [admin, []], [admin, ['lobby']], [admin, ['_assets', 'admin', 'app.js']], [admin, ['_assets', 'lobby', 'app.js']],
+      [admin, ['_assets', 'lobby', 'theme.css']], [admin, ['_assets', 'fonts', 'inter.woff2']],
+      [lobby, []], [lobby, ['_assets', 'lobby', 'app.js']], [lobby, ['_assets', 'lobby', 'theme.css']], [lobby, ['_assets', 'fonts', 'inter.woff2']],
+    ];
+    for (const [serve, segments] of documentsAndCode) {
+      const response = await serve(segments);
+      assert.equal(response.status, 200, segments.join('/'));
+      assert.equal(response.headers.get('cache-control'), 'private, no-store', segments.join('/'));
+      await response.text();
+    }
+    assert.equal((await lobby(['_assets', 'admin', 'app.js'])).headers.get('cache-control'), 'private, no-store');
+    await uncached.text();
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test('retired Admin library authorizes before redirecting to the registered assets surface',async()=>{
   for(const prefix of ['/admin','/studio/admin'])for(const method of ['GET','HEAD']){
     const url='https://studio.test'+prefix+'/material-library?role=background&game=roulette&operator=north&room=vip';

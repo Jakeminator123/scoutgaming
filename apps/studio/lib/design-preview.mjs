@@ -47,6 +47,12 @@ const publicLobbyDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
   'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy']
     .replace("connect-src 'self'", "connect-src 'self' https://api.d-id.com")
     .replace("media-src 'self' blob:", "media-src 'self' blob: https://agents-results.d-id.com") });
+// Lobby teasers replay the same images and idle clips (each portrait about
+// every 45 s). Only these media files may stay in the viewer's own browser.
+// File names are not content-hashed: keep the lifetime short, never immutable,
+// and keep `private` so shared caches never store them.
+const lobbyMediaHeaders = Object.freeze({ ...designPreviewHeaders, 'Cache-Control': 'private, max-age=3600' });
+const lobbyMediaFile = path => /^(?:public-)?lobby\/(?:images|videos)\/.+\.(?:png|jpe?g|webp|mp4)$/.test(path ?? '');
 
 // Only the native Admin login redirect is translated. Absolute destinations
 // must match the configured public origin; remote handoffs stay intact.
@@ -78,14 +84,16 @@ export async function serveDesignPreview(request, segments, { authorize, root = 
     return new Response(null, { status: 307, headers: { ...designPreviewHeaders, Location: target } });
   }
   const path = designPreviewFile(segments);
-  return servePreviewFile(request, path, root, path === 'admin/index.html' ? adminDocumentHeaders : designPreviewHeaders);
+  return servePreviewFile(request, path, root, path === 'admin/index.html' ? adminDocumentHeaders
+    : lobbyMediaFile(path) ? lobbyMediaHeaders : designPreviewHeaders);
 }
 
 export async function servePublicLobby(request, segments = [], { root = designPreviewDirectory } = {}) {
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
   const path = publicLobbyFile(segments);
   const directory = path?.startsWith('fonts/') ? 'fonts' : 'public-lobby';
-  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory), path === 'public-lobby/index.html' ? publicLobbyDocumentHeaders : designPreviewHeaders);
+  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory), path === 'public-lobby/index.html'
+    ? publicLobbyDocumentHeaders : lobbyMediaFile(path) ? lobbyMediaHeaders : designPreviewHeaders);
 }
 
 async function servePreviewFile(request, path, root, responseHeaders = designPreviewHeaders) {
@@ -101,7 +109,8 @@ async function servePreviewFile(request, path, root, responseHeaders = designPre
   } catch { return new Response(null, { status: 404, headers: designPreviewHeaders }); }
   const headers = { ...responseHeaders, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
   const range = parseByteRange(request.headers.get('range'), info.size);
-  if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${info.size}` } });
+  if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers,
+    'Cache-Control': designPreviewHeaders['Cache-Control'], 'Content-Range': `bytes */${info.size}` } });
   const start = range?.start ?? 0, end = range?.end ?? info.size - 1;
   headers['Content-Length'] = String(end - start + 1);
   if (range) headers['Content-Range'] = `bytes ${start}-${end}/${info.size}`;
