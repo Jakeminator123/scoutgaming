@@ -272,6 +272,36 @@ samma sätt som J08-kortet, Kevins övergångssekvenser är inte kartlagda mot t
 lager (begärt i #312/6337998848, obesvarat) och Kevins mandat om sex svenska
 talrepliker (#312/6338036945) väntar på Jakobs beslut om uppladdning.
 
+**Senare samma dag, tre commits på samma branch (Claude):**
+
+- Spelvyn i delat rum: retry-knappen låg i den klickdöda statusrutan, gamla
+  enspelarkontroller syntes trots `hidden` (stilregler vann), dollargränsen kom
+  från gamla HUD:en och platskontrollerna krympte under 44 px och överlappade.
+  Rättat i `shared-room-view.mjs` och `styles.css`: retry i kontrollraden,
+  display:none på gamla ytor, rummets gränser i kr från serverns inställningar,
+  insatsknappar bara på egen plats, kontrollskala aldrig under 0,8. 27/27 prov.
+  Motsvarar Kevins B1/B2/C1/C2 i #312/6339094902; hans omkörning återstår.
+- Klippval styrs av Admin, inte av spelaren: det frysta rumspaketet exponerar
+  sammansättningens sparade OpenClaw-lägen per fas (idle/deal/reveal/speak),
+  servern härleder läget för select, idle-regler och idle-advice från den
+  publicerade sammansättningen i stället för klientens begäran, och den
+  publicerade spelaren döljer rullgardinen ”Klippval”. Studio-prov utan rum
+  behåller kontrollen. 271 prov över presentation, selection och vy.
+- QA-launchern: Kevins tre startrader (ingen `LAB_PUBLIC_URL`, slumpad
+  ingress-hemlighet per process, Lab-sessionskontroll av) är bundna till
+  engångskapabiliteten `sharedRoomQa`; inga produktionsvakter ändrade.
+
+Välkomstfilm: Kevins `dragge/repliker/{sv,en}/greeting_1–3.mp4` samt svenska
+`win_1`, `dealerbust_1` och `placebets_1` är hämtade från frysta `5aa7ed10`,
+verifierade mot mains importunderlag (gitblob och storlek), sha256-hashade och
+probade med ffprobe (1080×1920, CFR 24, AAC) i privat arbetsyta utanför Git.
+Registrering via ordinarie upload-API är inte utförd: klippkartans uppladdning
+nekar talmedia, identiteten kräver audio-/indexhash enligt recorded-speech v1,
+och sessionen saknar tillstånd för produktionsanrop. Attestation är begärd av
+Kevin i #312/6339673965. Kvarstående luckor: K04:s serverkedja för idle
+(`room-idle.mjs`) saknar automatiska intervall och OpenClaw-val, och mobil-/
+widescreenförval per rum saknar kontrakt.
+
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
