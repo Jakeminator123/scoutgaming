@@ -1,0 +1,49 @@
+name: Claude PR-granskning
+
+# Granskar varje icke-utkast-PR mot main automatiskt och skriver en samlad
+# kommentar. Kräver hemligheten ANTHROPIC_API_KEY i repots Actions-secrets.
+# Ingen merge, ingen deploy: granskningen är rådgivande; rulesetet styr merge.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: claude-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+  id-token: write
+
+jobs:
+  review:
+    # Hoppa över utkast och PR:er från forkar (de saknar secrets).
+    if: ${{ !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: true
+          prompt: |
+            Granska denna pull request mot main i Jakeminator123/scoutgaming. Läs AGENTS.md
+            och docs/JOHN-HANDOFF.md:s första avsnitt innan du läser diffen.
+
+            Rapportera på svenska, kort, i en enda kommentar:
+            1. Blockerare: fel i auth, bolags-/rumsisolering, saldo/utbetalning, spelregler,
+               schema/migrationsordning eller borttagna tester för aktivt beteende.
+            2. Raderingar: för varje borttagen fil, finns kvarvarande import, route, env-nyckel,
+               CI-steg eller dokumentlänk som pekar på den? Kör `node tools/raderingsgrind.mjs origin/main --strict`.
+            3. Legacy som återinförs: lokala SQLite-/filregister, /control, /bo, /play som ny ingång,
+               länkar till croupier-v2.onrender.com/studio, Kevin-kod utan konsument.
+            4. Ägarskap: branchprefix, författare och om PR:en rör filer som en annan öppen PR också rör.
+
+            Avsluta med en rad: GODKÄNN / ÄNDRA / BLOCKERA och varför. Ändra inga filer.
+          claude_args: "--max-turns 30"
