@@ -61,6 +61,10 @@ Vercel-ingress (krävs för att Vercel ska nå v3):
 - `CROUPIER_VERCEL_TRANSPORT_ORIGIN` = **v3:s egen** adress, `https://croupier-v3.onrender.com`
   (inte v2:s; gatewayn jämför med `Host` och, vid rörligt tal, med `RENDER_EXTERNAL_URL`).
 - `CROUPIER_PUBLIC_ORIGIN` = `https://www.scoutgaming.tech` (samma som Vercel).
+- `PUBLIC_URL` = `https://www.scoutgaming.tech`: spelets publika origin, samma som på v2.
+  `config.mjs` kräver att den är lika med `CROUPIER_PUBLIC_ORIGIN`; utan den härleds
+  origin från `RENDER_EXTERNAL_URL` och starten stoppar med
+  `Invalid or missing CROUPIER_PUBLIC_ORIGIN` (verifierat 22 oktober på första v3-deployen).
 - `CROUPIER_VERCEL_INGRESS_SECRET` = samma hemlighet som Vercel-projektet.
 
 Tal (samma namn och värden som på v2 om tal ska vara på):
@@ -87,9 +91,8 @@ Valfria (bara om de används på v2 i dag): `CROUPIER_PRESENTATION_DIRECTOR_URL`
 
 Sätt **inte** på v3 (Studio/Lab/BO/disk eller v2-bundna):
 
-- `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`,
-  `BETTALOTTO_PARTNER_BASE_URL`: härleds från `RENDER_EXTERNAL_URL` i
-  single-origin. Kopieras v2-värdena (`croupier-v2.onrender.com`) vägrar v3 starta.
+- `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, `BETTALOTTO_PARTNER_BASE_URL`:
+  härleds från spelets origin (`PUBLIC_URL`) i single-origin och behöver inte sättas.
 - `CROUPIER_LAB_BASE_PATH`, `NEXT_PUBLIC_LAB_BASE_PATH`, `LAB_REMOTE_URL`,
   `LAB_REMOTE_TOKEN`, `CROUPIER_ZONES_DATABASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`,
   `BETTALOTTO_PARTNER_SECRET`, `BETTALOTTO_PARTNER_PLAYER_ID` (nådde bara Lab-barnet).
