@@ -2,7 +2,7 @@ import {ADMIN_WORKSPACE_TOOLS} from '../../../../../packages/navigation/admin-wo
 
 export type AdminNavigationLink = {label:string;href:string;description:string};
 export const adminNavigationGroups: {id:string;label:string;description:string;links:AdminNavigationLink[]}[] = [
-  {id:'creation',label:'Skapande',description:'Dealers, klipp och scenens utseende.',links:[
+  {id:'creation',label:'Studio',description:'Dealers, klipp och scenens utseende.',links:[
     {label:'Klippkarta',href:'/admin/clips',description:'Ordna standardklipp och varianter för varje spelsituation.'},
     {label:'Dealers',href:'/admin/dealers',description:'Lägg till dealers och hantera deras bibliotek.'},
     {label:'Bord & bakgrunder',href:'/admin/assets',description:'Hantera material till scenens lager.'},

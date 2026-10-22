@@ -208,6 +208,7 @@ Totalt ca 11 komponenter och 19 lib-moduler.
 
 Avsnitt 1–5 ovan är kodinventeringen före denna ändring. Detta avsnitt beskriver den avgränsade leveransen på codex/admin-en-ingang, från main 7afae4260c28f1e2a18625879f28a95156fa13e0.
 
+- Studion heter **Studio** i menyn och **Din spelstudio** på startsidan. Tre dekorativa, skalbara illustrationer gör arbetsvalen visuella; System visar en platt lista utan extra smårubriker. Illustrationerna är inga nya kontroller eller produktdata.
 - Översikten har tre stora val: **Skapa dealer**, **Fortsätt redigera**, **Hantera spelbolag**. Pilrader och den parallella länksamlingen är borttagna. Skapa öppnar det befintliga formuläret; klicket sparar ingenting.
 - **Dealers** äger registret och dealerns verktyg. Klippkartans extra registerflik är borttagen. Befintlig klippredigering och uppladdning finns kvar.
 - **Ekonomi** samlar översikt och betalningar. **Bolag & team** visar befintlig ändringsjournal på valt aktivt bolag, med exakt bolags-ID/slug och ny komponentidentitet när bolag byts. Mellansidan för Bolagsjournal är borttagen.
@@ -254,11 +255,15 @@ Dokumentomdirigeringarna är samlade i admin-workspace-routes.mjs. Serverns GET/
 
 Utgå från TERMINOLOGI: dealer, klipp, lager, sammansättning, spel, bolag och rum har separata identiteter. En dealer ska kunna återanvändas i flera kompatibla scener utan att kopieras för varje bakgrund.
 
+Jakobs förtydligade visuella hierarki: **Spelbolag/domän → spel (Blackjack, Roulette, …) → valbara dealers och spelspecifika bord**. Bakgrunder utgör ett **gemensamt, speloberoende bibliotek** vid sidan av trädet och kan växlas mellan spelen. Spelregler avgör dealer-/bordskompatibilitet; bakgrunder ska inte kategoriseras eller låsas efter spel. Det är arbetsytans relationer, inte ett beslut att införa en ny datamodell i denna PR.
+
 1. **Skapa dealer.** Namnge dealern och öppna dess klippkarta direkt. Behåll en enda ingång för personens namn och identitet.
 2. **Sätt klippen.** Arbeta med kategori, situation, standardklipp och varianter på klippkartan. Posevarianter, idlepool och talfack ska följa samma modell efter K05-besluten. Grundloop, Klipp och Vila blir delar av denna editor.
-3. **Sätt scenen.** Välj kompatibel bakgrund, dealer och bord i en gemensam sceneditor. Scen & lager och Avancerad sammansättning förenas här; separata lagers identiteter och sparade kompatibilitetsregler bevaras.
+3. **Sätt scenen.** Välj dealer och bord som passar spelet, och en bakgrund från det gemensamma speloberoende biblioteket, i en gemensam sceneditor. Scen & lager och Avancerad sammansättning förenas här; separata lagers identiteter och sparade kompatibilitetsregler bevaras.
 4. **Tilldela alternativen.** Ange vilket spel och vilket bolag/rum som får använda vilka dealers, bakgrunder och bord. Rumsspecifika val följer roomOverrides; ett valt rum får inte ändra en gemensam mall av misstag.
 5. **Prova och publicera.** Visa exakt vad som är valt, vad operatören får byta och vad som saknas. Återanvänd befintlig publicering/versionering och speltransport. Inga nya parallella register eller launchvägar.
+
+**Visuell målbild för operatören:** välj bolag/domän och se dess spel som stora kort eller noder i en mindmap med verklig förhandsvisning. Dealers och bord visas under respektive spel; det gemensamma bakgrundsbiblioteket ligger vid sidan om och kan användas över spelgränserna. Varje kort visar bakgrund, dealer och bord som valbara lager. Lägg till/ta bort tillåtna spel och alternativ direkt med tydliga knappar; drag och släpp kan vara ett komplement, med tangentbordsalternativ. Sparat, osparat och publicerat ska vara lätt att skilja åt. Inga små pilrader som ersättning för arbetsytan. Detta är ett kommande gränssnitt, inte en funktion som PR1 påstår sig leverera.
 
 Exempel: ett Blackjack-erbjudande kan tillåta **två dealers och tre bakgrunder**, tillsammans med angivna kompatibla bord. Operatören väljer bland godkända alternativ. Det kräver inte sex kopior av dealern eller automatiskt alla tänkbara kombinationer; kompatibiliteten styr.
 

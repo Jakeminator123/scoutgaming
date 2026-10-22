@@ -18,7 +18,7 @@ export function StudioSidebar() {
         <p id={'nav-'+group.id} className="studio-nav-label">{group.label}</p>
         {group.links.map(({label,href})=>{const Icon=icons[href];return <Link key={href} href={href} aria-label={label} title={label} aria-current={path===href?'page':undefined}><Icon size={17} aria-hidden="true"/><span>{label}</span></Link>;})}
       </div>)}
-      <details key={systemActive?'active-system':'system'} open={systemActive||undefined} className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17} aria-hidden="true"/><span>System</span></summary>{adminSystemGroups.map(group=><div className="studio-system-group" key={group.label}><p>{group.label}</p>{group.links.map(({label,href})=><Link key={href} href={href} aria-current={path===href?'page':undefined}>{label}</Link>)}</div>)}</details>
+      <details key={systemActive?'active-system':'system'} open={systemActive||undefined} className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17} aria-hidden="true"/><span>System</span></summary><div className="studio-system-group">{adminSystemGroups.flatMap(group=>group.links).map(({label,href})=><Link key={href} href={href} aria-current={path===href?'page':undefined}>{label}</Link>)}</div></details>
     </nav><div className="studio-sidebar-foot"><Cpu size={14} aria-hidden="true"/><span>Intern arbetsyta</span></div>
   </aside>;
 }

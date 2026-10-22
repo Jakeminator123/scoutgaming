@@ -494,17 +494,23 @@
 
 .preview-admin .admin-system-models .sg-unsaved{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;margin-top:20px;border:1px solid var(--sg-warning);border-radius:10px;background:var(--sg-surface)}
 
-/* Admin overview shares the navigation's two work areas. */
-.admin-home{flex:1;min-width:0;padding:36px clamp(20px,3vw,48px) 48px;overflow-y:auto}
-.admin-home-heading{max-width:720px;margin-bottom:32px}.admin-home-heading h1{font-size:clamp(26px,3vw,38px);font-weight:600;line-height:1.15;letter-spacing:-.035em}.admin-home-heading>p:last-child{margin-top:12px;color:#a3a8b0;font-size:15px;line-height:1.65}
-.admin-home-link{display:flex;align-items:flex-start;min-width:0;min-height:180px;padding:24px;border:1px solid var(--sg-border);border-radius:10px;background:var(--sg-surface);text-decoration:none}
-.admin-home-link:hover{background:var(--sg-hover);border-color:var(--sg-lime)}
-.admin-home-link:focus-visible{outline:2px solid var(--sg-lime);outline-offset:3px}
-.admin-home-link h2{margin-top:18px;font-size:18px;line-height:1.4;font-weight:600}
-.admin-home-link p{margin-top:8px;color:var(--sg-muted);font-size:14px;line-height:1.55}
-.admin-home-link svg{color:var(--sg-lime)}
-@media(max-width:760px){.admin-home{padding:24px 16px 36px}.admin-home-link{min-height:140px}}
-
+/* Three visual actions form the Studio entrance. */
+.admin-home{flex:1;min-width:0;padding:clamp(28px,5vw,64px) clamp(20px,4vw,60px) 48px;overflow-y:auto;background:radial-gradient(ellipse at 15% 0%,#c8ec0c07,transparent 55%)}
+.admin-home-heading{max-width:720px;margin-bottom:36px}
+.admin-home-heading h1{margin-top:10px;font-size:clamp(30px,3.5vw,46px);font-weight:600;line-height:1.12;letter-spacing:-.04em}
+.admin-home-heading>p:last-child{margin-top:16px;color:var(--sg-muted);font-size:16px;line-height:1.65}
+.admin-home-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.admin-home-link{--action-accent:#c8ed71;display:flex;flex-direction:column;min-width:0;border:1px solid var(--sg-border);border-radius:18px;overflow:hidden;background:var(--sg-surface);text-decoration:none;box-shadow:0 12px 32px #00000012}
+.admin-home-clips{--action-accent:#8fded2}.admin-home-company{--action-accent:#b2b2ee}
+.admin-home-art{display:block;width:100%;height:auto;aspect-ratio:320/164;color:var(--action-accent);background:linear-gradient(160deg,#ffffff05,#00000012);border-bottom:1px solid var(--sg-border)}
+.admin-home-action-copy{padding:24px;flex:1}
+.admin-home-link h2{display:flex;align-items:center;gap:10px;font-size:18px;line-height:1.4;font-weight:600}
+.admin-home-link h2 svg{flex-shrink:0;color:var(--action-accent)}
+.admin-home-link p{margin-top:10px;color:var(--sg-muted);font-size:14px;line-height:1.6}
+.admin-home-link:hover{background:var(--sg-hover);border-color:var(--action-accent);box-shadow:0 12px 32px #00000024}
+.admin-home-link:focus-visible{outline:2px solid var(--action-accent);outline-offset:4px}
+@media(max-width:1050px){.admin-home-actions{gap:12px}.admin-home-action-copy{padding:18px}.admin-home-link h2{font-size:16px}}
+@media(max-width:760px){.admin-home{padding:28px 16px 36px}.admin-home-heading{margin-bottom:24px}.admin-home-actions{grid-template-columns:1fr}.admin-home-link{flex-direction:row;align-items:center}.admin-home-art{width:32%;flex-shrink:0;border-bottom:0}.admin-home-action-copy{padding:20px}.admin-home-link h2{font-size:18px}}
 
 /* Map cards show a still of the chosen file beside its status. */
 .studio-map-card-row{display:flex;gap:12px;align-items:flex-start;margin-top:12px}

@@ -2,7 +2,7 @@
 
 ## Admin PR1 — navigation och onådd kod — 22 oktober 2026
 
-**Leverans:** egen worktree scout-wt/admin-en-ingang, branch codex/admin-en-ingang från main 7afae426. Tre startval ersätter pilraderna; Dealers äger registret, Ekonomi betalningarna och valt bolag journalen. Fördjupning/OpenClaw/Adminrobotens mellansidor är upplösta till funktionernas hem. Bokmärkesmatris och framtida flödesförslag finns i [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr1-en-ingång-per-sak--22-oktober-2026).
+**Leverans:** egen worktree scout-wt/admin-en-ingang, branch codex/admin-en-ingang från main 7afae426. Studio syns i menyn och startsidan får tre illustrerade arbetsval utan pilrader; Dealers äger registret, Ekonomi betalningarna och valt bolag journalen. Fördjupning/OpenClaw/Adminrobotens mellansidor är upplösta till funktionernas hem. Bokmärkesmatris och framtida flödesförslag finns i [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr1-en-ingång-per-sak--22-oktober-2026).
 
 **Avgränsning:** 7/9 utpekade lib-moduler, 2 komponenter och 6 oanropade routes borttagna. Social-store skyddas av #354; dealer-import-plan har aktiv verktygsanropare och lämnas. Ingen datamodelländring, dataradering, editorfusion, rumssideändring eller services-ändring. Skyddade #354/#358-filer är orörda; testlistan i pre-commit-full och authimporten i test/game-entry-auth.mjs kan överlappa deras PR:er och måste sammanfogas vid integration.
 
