@@ -49,6 +49,10 @@ export function parseCatalogue(text) {
 
 export const loadCatalogue = () => parseCatalogue(readFileSync(new URL('./k04-media.tsv', import.meta.url), 'utf8'));
 
+// Deferred (K05 / review 6329902583 p2): G13 lines without a main slot and the Table Studio greeting.
+// One predicate for activation, planning and line binding: a deferred row is never bound or required.
+export const isDeferred = r => r.source === 'studio' || (r.source === 'replik' && !r.slot);
+
 const identity = row => ({ path: row.path, bytes: row.bytes, sha256: row.sha256 });
 const one = (rows, what) => {
   if (rows.length !== 1) throw new Error(`${rows.length ? 'Ambiguous' : 'No'} media binding for ${what}`);
@@ -96,7 +100,7 @@ export function bindLine(catalogue, { dealer, line, take, language }) {
   if (!/^[a-z]+$/.test(line) || !Number.isInteger(take) || take < 1) throw new Error('Invalid line identity');
   const path = KEYED.has(dealer) ? `media/dealers/${dealer}/repliker/${language}/${line}_${take}.mp4`
     : dealer === 'astrid' && language === 'en' ? `media/repliker/${line}_${take}.mp4` : null;
-  const row = one(path ? catalogue.filter(r => r.path === path && ['replik', 'replik-rot'].includes(r.source)) : [], `${dealer} ${line}_${take} ${language}`);
+  const row = one(path ? catalogue.filter(r => r.path === path && ['replik', 'replik-rot'].includes(r.source) && !isDeferred(r)) : [], `${dealer} ${line}_${take} ${language}`);
   return { ...identity(row), dealer, line, take, language, slot: row.slot || null };
 }
 
@@ -111,9 +115,7 @@ export function bindIdle(catalogue, { dealer, take }) {
 // en/sv texter.json) and the shared code/data rows; Astrid classic adds the root repliker.
 export function activationSet(catalogue, dealer) {
   const lang = r => !r.language || LANGUAGES.includes(r.language);
-  // Deferred (K05 / review 6329902583 p2): G13 lines without a main slot and the Table Studio greeting.
-  const deferred = r => r.source === 'studio' || (r.source === 'replik' && !r.slot);
-  return catalogue.filter(r => !deferred(r) && ((r.dealer === dealer && lang(r) && r.source !== 'face')
+  return catalogue.filter(r => !isDeferred(r) && ((r.dealer === dealer && lang(r) && r.source !== 'face')
     || (r.dealer === 'shared' && r.source === 'data-beroende')
     || (dealer === 'astrid' && r.source === 'replik-rot' && r.language === 'en')));
 }

@@ -15,7 +15,7 @@ import { presentationForRow, lineIdOf, reconnectPresentation } from '../services
 import { MATERIAL_REVISION_CONTRACT, PlanningRefused, assertPublishable, planningRevision, requirePlanningRevision, timingSourceOf }
   from '../services/game/games/blackjack/presentation/material-revision.mjs';
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
-import { CATALOGUE_SOURCE, READY_CONTACT, activationSet, bindDeal, bindIdle, bindLine, contactFrame, loadCatalogue, trackFor, variantFrames, verifyActivation }
+import { CATALOGUE_SOURCE, READY_CONTACT, activationSet, bindDeal, bindIdle, bindLine, contactFrame, isDeferred, loadCatalogue, trackFor, variantFrames, verifyActivation }
   from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { LINE_GRACE_MS, bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
 import { endWait, layChain, roomWait, serverChainEntry, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
@@ -254,7 +254,7 @@ test('activation verifies the whole binding, including meta.json, card track and
 
 test('activation set excludes the deferred K05 rows (G13 lines without a main slot, Table Studio greeting)', () => {
   const lang = r => !r.language || ['en', 'sv'].includes(r.language);
-  const deferred = r => r.source === 'studio' || (r.source === 'replik' && !r.slot);
+  const deferred = isDeferred;
   // Removed per dealer: exactly the 155 rows K05-mappning.md 4b lists (44+44+44+22+1).
   const removed = { dragge: 44, paow: 44, marten: 44, astrid2: 22, astrid: 1 };
   for (const [dealer, n] of Object.entries(removed)) {
@@ -269,6 +269,35 @@ test('activation set excludes the deferred K05 rows (G13 lines without a main sl
   const all = new Map(activationSet(catalogue, 'dragge').map(r => [r.path, r.sha256]));
   all.set('media/dealers/dragge/repliker/sv/twentyone_1.mp4', '0'.repeat(64));
   assert.equal(verifyActivation(catalogue, 'dragge', all).ok, true);
+});
+
+test('bindLine uses the same deferred predicate: G13 lines and the Table Studio greeting get no new binding', () => {
+  const lineOf = r => { const m = /\/([a-z]+)_(\d+)\.mp4$/.exec(r.path); return m && { line: m[1], take: Number(m[2]) }; };
+  const lineRows = catalogue.filter(r => ['replik', 'replik-rot', 'studio'].includes(r.source) && ['en', 'sv'].includes(r.language) && lineOf(r));
+  const bindable = lineRows.filter(r => !isDeferred(r)), deferredRows = lineRows.filter(isDeferred);
+  assert.ok(bindable.length > 0 && deferredRows.length > 0);
+  // Negative: every deferred en/sv line row (G13 without a main slot, the studio greeting) refuses.
+  for (const r of deferredRows) {
+    assert.throws(() => bindLine(catalogue, { dealer: r.dealer, ...lineOf(r), language: r.language }), /No media binding/, r.path);
+  }
+  for (const dealer of ['dragge', 'paow', 'marten']) for (const language of ['en', 'sv']) {
+    assert.throws(() => bindLine(catalogue, { dealer, line: 'twentyone', take: 1, language }), /No media binding/, `${dealer} ${language}`);
+  }
+  assert.throws(() => bindLine(catalogue, { dealer: 'astrid', line: 'greeting', take: 1, language: 'en' }), /No media binding/);
+  // Positive: every non-deferred line row (base slots, Astrid classic root) binds to its exact row.
+  for (const r of bindable) {
+    const b = bindLine(catalogue, { dealer: r.dealer, ...lineOf(r), language: r.language });
+    assert.deepEqual([b.path, b.sha256, b.bytes, b.slot], [r.path, r.sha256, r.bytes, r.slot], r.path);
+  }
+  assert.equal(bindLine(catalogue, { dealer: 'dragge', line: 'goodluck', take: 1, language: 'sv' }).slot, 'speak.goodluck/goodluck');
+  assert.ok(bindable.some(r => r.dealer === 'astrid' && r.source === 'replik-rot'), 'Astrid classic root lines stay bindable');
+  // Bound lines and the activation set agree row for row; catalogue history keeps the deferred rows.
+  for (const dealer of ['dragge', 'paow', 'marten', 'astrid2', 'astrid']) {
+    const set = new Set(activationSet(catalogue, dealer).map(r => r.path));
+    for (const r of bindable.filter(x => x.dealer === dealer)) assert.ok(set.has(r.path), r.path);
+  }
+  assert.ok(catalogue.some(r => r.path === 'media/dealers/dragge/repliker/sv/twentyone_1.mp4' && r.sha256 === 'c41dd6027d59cb6971049c2ba67051f83fc7c62bcb334e7ce752018be871cf53'));
+  assert.ok(catalogue.some(r => r.path === 'media/repliker/greeting_1.mp4' && r.source === 'studio'));
 });
 
 test('line identity is stable per committed row; media re-plans are revisions; stale mouths are dropped', () => {

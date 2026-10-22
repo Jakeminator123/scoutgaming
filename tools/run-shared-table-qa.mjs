@@ -97,8 +97,11 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false }
     const receiverGuard = await checkPresentationReceiverGuard({ pool });
     await pool.query(await readFile(join(repository, 'ops/neon-game', '010-presentation-receiver.sql'), 'utf8'));
     const receiver = await runPostgresPresentationReceiverChecks({ pool, createPool, restart }); pool = receiver.pool;
+    // K04 mounted flow: real coordinator on J07's store -> outbox -> presentation -> durable receiver.
+    const { runK04MountedFlowChecks } = await import('../test/postgres-k04-flow.mjs');
+    const flow = await runK04MountedFlowChecks({ pool, restart }); pool = flow.pool;
     await closePools(); await stop();
-    const checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks];
+    const checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks, ...flow.checks];
     console.log(JSON.stringify({ acceptance: 'isolated-shared-table-sql-two-client-process-restart', checks, count: checks.length, clusterStopped: true }));
     return { checks };
   } finally {
