@@ -160,6 +160,10 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id,
     tableId:selectedRoom&&selectedRoom.presentationLaneId===selectedLane?.id?selectedRoom.id:undefined,
     dealerId:selectedLane?.dealers.includes(navigationContext.dealerId??'')?navigationContext.dealerId:undefined};
+  // The room card's links always open the selected room in its own composition.
+  const roomLane = selectedRoom ? rows.find(lane=>lane.id===selectedRoom.presentationLaneId) : undefined;
+  const roomEditorContext = selectedRoom ? {...navigationContext, operatorId, laneId:selectedRoom.presentationLaneId, tableId:selectedRoom.id,
+    dealerId:roomLane?.dealers.includes(navigationContext.dealerId??'')?navigationContext.dealerId:undefined} : editorContext;
   const compositionHref = studioNavigationHref('/admin/compositions', editorContext);
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
   const setPublishError = (value: string) => updatePackage(operatorId, current => ({ ...current, error: value }));
@@ -347,7 +351,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
               <section className={styles.card} aria-label="Publicera ändringar">
                 <div className={styles.cardHeading}><div><span className={styles.eyebrow}>STEG 3</span><h2>Publicera för spelarna</h2></div></div>
                 <p>Det sparade innehållet blir tillgängligt i bolagets spelrum först när du publicerar.</p>
-                {needsRefresh?<p role="status" className={styles.problem}>Uppgifterna behöver kontrolleras. <button className="sg-btn sg-btn-secondary" type="button" disabled={interactionBusy} onClick={()=>setResourcesRevision(value=>value+1)}>Läs in aktuella uppgifter</button></p>:null}
+                {needsRefresh?<p role="status" className={styles.problem}>Uppgifterna behöver kontrolleras. <button className="sg-btn sg-btn-secondary" type="button" disabled={interactionBusy} onClick={()=>{if((gameConfigDraft.current||appearanceDraft.current)&&!window.confirm('Lämna osparade rumsändringar och läsa in aktuella uppgifter?'))return;setResourcesRevision(value=>value+1);}}>Läs in aktuella uppgifter</button></p>:null}
                 {!chosen.length?<p role="status">Välj minst en sammansättning för att publicera. Stäng spelutbudet genom att pausa eller arkivera spelrummen.</p>:null}
                 <form id="operator-package-selection" className={styles.form} onSubmit={event=>void publish(event)}>
                   <fieldset className={styles.choices} disabled={writesOff||needsRefresh}><legend>Sammansättningar som bolaget får använda</legend>
@@ -374,8 +378,8 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
             </section>:null}
             {selectedRoom?<section className={styles.card} aria-label="Rummets lager">
               <div className={styles.cardHeading}><div><span className={styles.eyebrow}>VALT RUM</span><h2>Rummets lager · {selectedRoom.name}</h2></div>
-                <a href={studioNavigationHref('/admin/clips',editorContext)}>Öppna klippkartan för rummet →</a></div>
-              <p>Bakgrund, dealer och bord väljs bland de alternativ som rummets sammansättning tillåter. Placering för mobil och desktop hör till borddesignen i <a href={compositionHref}>sammansättningen</a>.</p>
+                <a href={studioNavigationHref('/admin/clips',roomEditorContext)}>Öppna klippkartan för rummet →</a></div>
+              <p>Bakgrund, dealer och bord väljs bland de alternativ som rummets sammansättning tillåter. Placering för mobil och desktop hör till borddesignen i <a href={studioNavigationHref('/admin/compositions',roomEditorContext)}>sammansättningen</a>.</p>
               <PartnerAppearanceLoader key={operatorId+':'+selectedRoom.id+':'+resourcesRevision} apiBase={labBasePath()+'/api/partner'} operatorId={operatorId} operatorSlug={selectedOperator.slug} roomId={selectedRoom.id} roomLayout
                 disabled={parentBusy||childBusy.room||childBusy.lifecycle||childBusy.directory||childBusy.gameConfig||gameConfigDirty}
                 onBusyChange={appearanceCallbacks.current.busy} onDirtyChange={appearanceCallbacks.current.dirty}

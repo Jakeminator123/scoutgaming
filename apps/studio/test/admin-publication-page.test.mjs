@@ -502,6 +502,41 @@ test('an accepted room switch moves both room editors to the new room without sa
   assert.match(h.appearance().key,/room-other/);
   assert.match(h.html(),/Rummets lager · Annat rum/);
   assert.equal(h.requests.length,0);
+  // The open draft is still "evening"; the room card's links follow the room's own composition.
+  assert.equal(h.composition().props.value,'evening');
+  const href=text=>new URL(h.nodes(node=>node.type==='a'&&String(node.props.children).startsWith(text))[0].props.href,'https://test.invalid');
+  const clips=href('Öppna klippkartan');
+  assert.equal(clips.pathname,'/admin/clips');
+  assert.equal(clips.searchParams.get('table'),'room-other');assert.equal(clips.searchParams.get('composition'),'mobile-phone');
+  const placement=href('sammansättningen');
+  assert.equal(placement.pathname,'/admin/compositions');
+  assert.equal(placement.searchParams.get('table'),'room-other');assert.equal(placement.searchParams.get('composition'),'mobile-phone');
+});
+
+test('reading current data asks before it reloads room editors over unsaved room drafts',()=>{
+  const h=verifiedRoomHarness();
+  h.appearance().props.onSaved({operatorId:'north',packageRevision:6});
+  assert.match(h.html(),/Uppgifterna behöver kontrolleras/);
+  const reload=()=>h.nodes(node=>node.type==='button'&&node.props.children==='Läs in aktuella uppgifter')[0];
+  const clean=()=>{h.appearance().props.onDirtyChange(false);h.gameConfig().props.onDirtyChange(false);};
+  for(const editor of ['appearance','gameConfig']){
+    h[editor]().props.onDirtyChange(true);
+    const layerKey=h.appearance().key,gameKey=h.gameConfig().key;
+    let prompts=0;h.window.confirm=()=>{prompts++;return false;};
+    reload().props.onClick();
+    assert.equal(prompts,1,`an unsaved ${editor} draft asks first`);
+    assert.equal(h.appearance().key,layerKey);assert.equal(h.gameConfig().key,gameKey,'a declined reload keeps both editors mounted');
+    h.window.confirm=()=>{prompts++;return true;};
+    reload().props.onClick();
+    assert.equal(prompts,2);assert.notEqual(h.appearance().key,layerKey,'an accepted reload reads the new revision');
+    clean();
+  }
+  let prompts=0;h.window.confirm=()=>{prompts++;return true;};
+  const layerKey=h.appearance().key;
+  reload().props.onClick();
+  assert.equal(prompts,0,'without a room draft the reload needs no question');
+  assert.notEqual(h.appearance().key,layerKey);
+  assert.equal(h.requests.length,0);
 });
 
 test('room game drafts protect context navigation and their writes lock sibling room actions',()=>{

@@ -12,7 +12,7 @@ type DealerPortraitProps = {
   /** Environment painted in behind the dealer when hovered, selected or forced. */
   backdrop: string;
   sizes: string;
-  /** Idle clips repeat every 50 s after completion, even when the parent is blurred/locked. */
+  /** Idle clips repeat 45 s after completion, even when the parent is blurred/locked. */
   idle?: boolean;
   /** Hover/focus (via a parent `group`) paints the backdrop and brings colour. */
   interactive?: boolean;

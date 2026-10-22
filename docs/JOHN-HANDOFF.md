@@ -1288,6 +1288,24 @@ visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
 
+## Lobbyns dealerporträtt tillbaka i steg 3 — 22 oktober 2026
+
+Jakob bad om porträtten igen. Steg 3 visar åter Astrid, Mårten, Dragge, Anna
+och Paow som låsta förhandsporträtt under glaset innan bolag och rum är valda;
+den 13 oktober tömdes listan i e3404cf4. Efter rumsval kommer rummets
+publicerade dealers först, sedan de porträtt rummet saknar som låsta kort.
+Porträttkort ger aldrig val eller startlänk. Exakta ID-alias, ingen
+namnmatchning: `dragan` visar Dragge (Kevin-importens `dragge` → `dragan`) och
+`paow-v2` visar Paow. Paows bild och film togs bort i 2f7b891a och är
+återställda med samma bytes; filmen är identisk med Jakobs råfil. Jakob bad
+uttryckligen om Paow. Kevin har bara stillbild och läggs inte till.
+Tomgångsvideon upprepas 45 s efter avslutad uppspelning, även under glaset.
+
+Verifierat: lobbyns enhetstester, `test/public-lobby.mjs` med lokal Chrome,
+bygge med typkontroll och skärmdumpar på 1440 och 390 px av byggd lobby med
+syntetisk katalog (video spelar under glaset och i dialogen, ingen
+horisontell överströmning). Ingen livekatalog eller produktion är provad.
+
 ## Spelarlobby J04 — 22 oktober 2026
 
 Återupptaget på codex/player-lobby-j04 från PR331:s frysta
@@ -2082,6 +2100,33 @@ Denna samlade dokumentationsleverans kör inga nya GPU- eller spelprov och
 ändrar varken HTTP-hämtning, budgetjournal, miljövariabler eller media.
 
 ## Avslutsstädning och skyddat lokalt arbete
+
+**Verifierat 21 oktober 2026:** 23 lokala och 34 fjärrbrancher rensade efter
+färsk kontroll av exakt mergad PR-head, Jakob-ägarskap, öppna PR:er och
+registrerade worktrees. Före/efter: 43 → 20 lokala brancher, 58 → 24 på GitHub.
+Tre övergivna restmappar utan Git-koppling är borttagna; 124 beroendejunctions
+lossades utan att deras målkataloger rördes. Alla fem registrerade arbetskopior,
+öppna PR:er, aktiva agenter och osparade ändringar är bevarade. Tre ytterligare
+lokala brancher lämnades efter avvisad automatisk säkerhetsgranskning av
+head-/backupbevisningen; de ingår inte i de redovisade raderingarna.
+
+GitHubs automatiska featurebranchradering är avstängd vid kontroll 22 oktober
+(`delete_branch_on_merge=false`). Regel 25556822 skyddar de
+långlivade teambrancherna endast mot radering; main-regel 24642403 är oförändrad.
+Lokal `fetch.prune=true` är verifierad. Framtida slutstädning har lagts in av den
+aktiva migrationsagenten i dess [PR311](https://github.com/Jakeminator123/scoutgaming/pull/311);
+ingen annan agents branch eller PR har mergats som del av städningen.
+Privat refmanifest, verifierad Git-bundle och backup av `ai-system-map` finns
+lokalt under `arkiv/2026-10-21/smafix-cleanup/` och ingår inte i Git-leveransen.
+
+Bevarat arbete värt att känna till: `ai-system-map` har 37 lokala statusposter
+och en användbar idé om att prioritera schema-/evidensvarningar före hashbrus.
+Verktyget är pensionerat; återinför inte dess kod som del av städning.
+`codex/blob-neon-storage-audit-20261016` innehåller en daterad referensinventering
+för möjlig framtida lagringsgranskning, utan aktuell verifiering av molnläget.
+Scenzoom från `codex/studio-view-zoom` finns redan i main under Studios nya
+sökvägar; en separat import rekommenderas inte. Osäkra eller omergade original
+är kvar för riktad bedömning.
 
 Förbrukade flyttinstruktioner, aktivitetskort och motsägande väntelägen ska
 inte finnas kvar som aktiva uppdrag. Denna handoff ersätter den löpande
