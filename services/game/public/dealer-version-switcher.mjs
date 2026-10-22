@@ -22,6 +22,8 @@ export function dealerVersionPath(dealer, _version, observerSearch='') {
   for(const [name,key] of [['operator','gameOperator'],['table','gameRoomId']]){
     if(dataset[key])query.set(name,dataset[key]);else query.delete(name);
   }
-  const path=dataset.gamePath==='/blackjack'?'/blackjack':'/';
-  return path+'?'+approvedGameQuery(query,{origin:globalThis.location?.origin,includeLaunch:false});
+  const approved=approvedGameQuery(query,{origin:globalThis.location?.origin,includeLaunch:false});
+  approved.delete('game');
+  // The public game start names the game; the engine's blackjack document stays behind it.
+  return dataset.gamePath==='/blackjack' ? '/game?'+new URLSearchParams([['game','blackjack'],...approved]) : '/?'+approved;
 }

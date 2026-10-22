@@ -26,7 +26,13 @@ for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['Postgr
   sqlite.exec('DELETE FROM bo_game_handoffs');
   assert.ok(callback.headers['Set-Cookie'].includes('player_session=preserved; Path=/'));
   assert.equal((await request('/api/auth/bo/start?next='+encodeURIComponent('//evil.invalid/game'))).status,303);
-  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/blackjack');
+  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/game');
+  // The return names its game; an unknown or repeated game is no game and opens the plain game start.
+  for (const [next,expected] of [['/?game=roulette&table=r-1&operator=north&launch=a.b.c','/game?game=roulette&table=r-1&operator=north'],
+    ['/game/?game=poker&dealer=linnea','/game'],['/game/?game=roulette&game=blackjack&dealer=linnea','/game']]) {
+    sqlite.exec('DELETE FROM bo_game_handoffs');assert.equal((await request('/api/auth/bo/start?next='+encodeURIComponent(next))).status,303);
+    assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,expected,next);
+  }
 });
 
 

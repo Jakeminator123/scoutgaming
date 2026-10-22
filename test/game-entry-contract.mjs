@@ -62,8 +62,8 @@ test('server marker changes player links without new browser flags and keeps off
   globalThis.document = {documentElement:{dataset:{gamePath:'/blackjack',gameLane:'saved',gamePresentation:'local',gameRegisteredDealers:JSON.stringify(['elin','astrid','linnea'].map(id=>({id,label:id})))}}};
   for (const dealer of ['elin','astrid','linnea']) assert.equal(new URL(dealerVersionPath(dealer,'original'),'https://example.test').searchParams.get('dealer'),dealer);
   for(const dealer of ['vera','mei','amira','johanna','unknown'])assert.throws(()=>dealerVersionPath(dealer,'original'));
-  assert.equal(dealerVersionPath('linnea','original','?performance=staged&motion=smooth60&labObserverOrigin=https://evil.invalid&labObserverChannel=00000000-0000-4000-8000-000000000001&launch=a.b.c'),'/blackjack?dealer=linnea&presentation=local&lane=saved');
-  assert.equal(dealerVersionPath('astrid','v2'),'/blackjack?dealer=astrid&presentation=local&lane=saved');
+  assert.equal(dealerVersionPath('linnea','original','?performance=staged&motion=smooth60&labObserverOrigin=https://evil.invalid&labObserverChannel=00000000-0000-4000-8000-000000000001&launch=a.b.c'),'/game?game=blackjack&dealer=linnea&presentation=local&lane=saved');
+  assert.equal(dealerVersionPath('astrid','v2','?game=roulette&game=poker'),'/game?game=blackjack&dealer=astrid&presentation=local&lane=saved','the switch stays in blackjack');
   globalThis.document.documentElement.dataset = {};
   assert.throws(()=>dealerVersionPath('linnea','original'));
 });
@@ -142,4 +142,15 @@ test('only the selected first frame can reveal the scene and a redirect prevents
   assert.equal(target,'/blackjack?dealer=linnea');assert.equal(redirected.startup.ready('paow'),false);
   await Promise.resolve();assert.equal(continued,false);assert.equal(redirected.startup.state,'navigating');
   const closed=make();closed.startup.close();assert.equal(closed.startup.ready('paow'),false);
+});
+test('the engine names the game on every /game return and never carries a launch credential',async () => {
+  const {publicGameStart} = await import('../services/game/game-start.mjs');
+  const channel = '00000000-0000-4000-8000-000000000001';
+  assert.equal(publicGameStart('dealer=linnea&table=bj-1&launch=a.b.c&returnTo=https://evil.invalid',{origin}),'/game?game=blackjack&dealer=linnea&table=bj-1');
+  assert.equal(publicGameStart('game=roulette&operator=north&table=r-1',{origin}),'/game?game=roulette&table=r-1&operator=north');
+  assert.equal(publicGameStart('labObserverOrigin='+encodeURIComponent(origin)+'&labObserverChannel='+channel,{origin}),'/game?game=blackjack&labObserverOrigin='+encodeURIComponent(origin)+'&labObserverChannel='+channel);
+  for (const query of ['game=poker','game=','game=Roulette','game=roulette&game=roulette','game=blackjack&game=roulette']) assert.equal(publicGameStart(query,{origin}),null,query);
+  // A partner launch is blackjack only; a roulette launch is refused instead of opening another game.
+  assert.equal(publicGameStart('game=roulette&table=r-1',{origin,games:['blackjack']}),null);
+  assert.equal(publicGameStart(new URLSearchParams('game=blackjack&dealer=astrid'),{origin,games:['blackjack']}),'/game?game=blackjack&dealer=astrid');
 });
