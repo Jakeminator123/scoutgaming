@@ -78,6 +78,53 @@ function contains(polygon,[x,y]) {
   }
   return hit;
 }
+// Runs the actual roulette client against an inert document and returns what it sends and links.
+async function rouletteClient(search) {
+  class Element {
+    constructor(){this.style={setProperty(){}};this.dataset={};this.children=[];this.hidden=true;this.open=false;this.classList={toggle(){},add(){},remove(){},contains:()=>false};}
+    append(...nodes){this.children.push(...nodes);} replaceChildren(...nodes){this.children=nodes;}
+    addEventListener(){} setAttribute(){} focus(){} close(){this.open=false;} showModal(){this.open=true;}
+  }
+  const elements=new Map(),requests=[];let requested;const sent=new Promise(resolve=>{requested=resolve;});
+  const original=new Map(['document','location','fetch','sessionStorage'].map(key=>[key,globalThis[key]]));
+  try {
+    globalThis.document={title:'',fullscreenEnabled:false,createElement:()=>new Element(),querySelector:()=>new Element(),
+      getElementById:id=>elements.get(id)??elements.set(id,new Element()).get(id)};
+    globalThis.location={href:'https://game.example.invalid/play/roulette'+search,search};
+    globalThis.sessionStorage={getItem:()=>null,setItem(){},removeItem(){}};
+    globalThis.fetch=async(url,init)=>{requests.push([url,JSON.parse(init.body)]);requested();return Response.json({error:'roulette_room_not_found'},{status:404});};
+    const source=readFileSync(new URL('../services/game/public/roulette/app.mjs',import.meta.url),'utf8')
+      .replace("'/roulette-rules.mjs'",JSON.stringify(new URL('../services/game/games/roulette/rules.mjs',import.meta.url).href))
+      .replace("'./table-layout.mjs'",JSON.stringify(new URL('../services/game/public/roulette/table-layout.mjs',import.meta.url).href));
+    await import('data:text/javascript;base64,'+Buffer.from(source+'\n// '+search).toString('base64'));
+    await sent;await new Promise(resolve=>setImmediate(resolve));
+    return {requests,login:elements.get('login').href};
+  } finally {for(const [key,value] of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
+}
+test('extra address keys never become roulette room context, so the client reaches the same table',async()=>{
+  const {createRouletteRoomAccess,validateRoomContext}=await import('../services/game/games/roulette/access.mjs');
+  const {cloudPresentationFixture}=await import('../apps/studio/test/fixtures/cloud-presentation.mjs');
+  const {defaultPresentationLane}=await import('../packages/presentation/contracts/studio-model.mjs');
+  const {withPackagePresentation}=await import('../packages/presentation/server/presentation-package.mjs');
+  const {presentation}=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]});
+  const room={schemaVersion:2,id:'roulette-one',name:'North Roulette',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live',game:'roulette'};
+  const administration={rooms:[room],gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}]};
+  const pack={operatorId:'north',revision:1,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)};
+  const access=createRouletteRoomAccess({readCurrentContext:async()=>({operator:{id:'north',slug:'north',name:'North',status:'active'},package:pack,administration})});
+  const plain=await rouletteClient('?operator=north&table=roulette-one');
+  const extra=await rouletteClient('?game=roulette&operator=north&table=roulette-one&utm_x=1');
+  assert.deepEqual(plain.requests,[['/api/roulette/table',{op:'state',context:{operator:'north',table:'roulette-one'}}]]);
+  assert.deepEqual(extra.requests,plain.requests,'the public game selector and campaign keys stay out of the table command');
+  assert.equal(extra.login,'/player-login?returnTo='+encodeURIComponent('/game?game=roulette&operator=north&table=roulette-one'));
+  const [first,second]=[await access(plain.requests[0][1].context),await access(extra.requests[0][1].context)];
+  assert.equal(first.room.id,'roulette-one');assert.deepEqual(second.room,first.room);
+  // The engine stays strict: the unfiltered address is still no room context.
+  assert.throws(()=>validateRoomContext(Object.fromEntries(new URLSearchParams('game=roulette&operator=north&table=roulette-one&utm_x=1'))),error=>error.statusCode===400);
+  // A repeated selector is ambiguous: it is left out, never guessed, and the engine refuses the incomplete room.
+  const repeated=await rouletteClient('?operator=north&operator=south&table=roulette-one&dealer=astrid');
+  assert.deepEqual(repeated.requests[0][1].context,{table:'roulette-one',dealer:'astrid'});
+  await assert.rejects(access(repeated.requests[0][1].context),error=>error.statusCode===400);
+});
 test('photographed number centres and outside labels resolve to exactly one intended target',()=>{
   const targets=BETS.map(bet=>({id:bet.id,...tableBetGeometry(bet)})).filter(row=>row.polygon);
   // Independently read fiducials from the supplied original PNG.
