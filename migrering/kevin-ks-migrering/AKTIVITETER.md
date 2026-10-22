@@ -99,7 +99,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K04 — Spelklient och presentation från händelser
 
-**IN_PROGRESS 22 oktober:** aktuell PR333/head1148fa767de734c925bba3ea21938cf995f8bd5f är oberoende läsgranskad utan blockerare; endast live-idle.mjs och dess prov ändrades från e6287ea1. De två tidigare presentationsfynden stängdes på e628; nu är också utgånget-entry-fyndet stängt. kevin_plan körde eget Node24.21-prov12/12 på exakt blob3db7a5a82e53b0cb792716345b60edd048a37700: hidden/speech/action, resume2000/2624 godtas och2625/3000 nekas vid endAt2625; äldre identiteter nekas och nästa giltiga/future entry godtas. Tidsgrinden ligger före mutation av last. Root läste hela tvåfilsdeltat/reprologgen; bevis i planarbetskopians arkiv/2026-10-22/k04-1148-review/{live-idle.mjs,idle-expired.mjs,verification.log}. E628-reproduktionerna är historiska felbevis. PG-read-fyndet är sedan d226 stängt i kodläsning; ingen egen full K04-/PG-/Blob-/lipsyncacceptans. Kevins båda hooks och64 prov är rapporterade; tidigare K03/K04 pre-push uteblev enligt honom på grund av saknad core.hooksPath. Det upphäver inte självständigt accepterade K02/K03/J07-moduler. Verklig K05-bindning och full aktivitet kvarstår.
+**IN_PROGRESS 22 oktober:** aktuell PR333/headafba9dc22e77aecb89c1527fde37088d0ad1b7a4 har oberoende trefilsdeltareview utan blockerare. Egen metadatajämförelse motK05/159cc ger10/10mängder,union582,0skillnader,155uppskjutna;sourcepin/timing består men nya planningrevisions krävs. Tidigare1148mouth/idle/readtimeoutbevis består. **Nästa Kevinansvar är befintligt monterat klientflöde genomJ07 enligt kriterierna nedan**, inte ännu en review avafba. Produktion/GPU/fullK05 är inga nya förhandsgrindar. Root äger publiktransport. Inga nya fullaK04-/PG-/Blob-/lipsyncbevis; se status.json.
 
 **Etapp/beroenden:** E3; K03 och J07.
 **Mål:** utvalda förbättringar av idle, tal, kort och layout återger committade spelhändelser utan att styra spelutfallet.
@@ -116,13 +116,13 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K05 — Exakt mediakoppling till Neon och Blob
 
-**IN_PROGRESS 22 oktober, granskad dokumentleverans:** PR314/head4fbd5467d07ad38399ca83737fbbddf1209bc2c1 innehåller K05-matris/validator/importplan. Oberoende mängd-/Gitblob-/TSVhashkontroll och egna26/26prov godkända. Två riktade live-SELECT bekräftar katalogrevision och tre Dragan-repliker utan godkännande/katalogkoppling. Ingen färdig runtimebindning eller full K05-acceptans. Konkreta rättningar: okänd sourceDealer godtas felaktigt; G13urval,review→runtime,JS ochPNG behöver samordnad specifikation. Nästa ansvar Kevin för rättat fryst underlag; root för registreringsplan/nativebindning efter verifierade identiteter och separat molnmandat. Detaljer i status.json.
+**IN_PROGRESS 22 oktober, rättad dokumentleverans:** PR314/head159cc134d3a57db4ccbe3a871a3a5eb16fec3656 är läsgranskat,matris/validatorblobhashat och egetNode24.21-prov36/36. Gamla unknownsource-repro nekar nu;582valda/155uppskjutna/6JS-källbevis/550ejvalda/28V1. K04afba är synkat10/10. Dokument-/validatorrättningen är klar,fullK05kvar. J08:s PNG-/Draganpathrättning finns iPR334/d7d139b9. Root förbereder konkret promotion/importplan med återlästa mål och separat mandat; inga nya Cloudwrites/binärbevis. Tidigare riktade live-SELECT av tre Dragan-repliker är versionsmärkt bevis, inte full egen inventering.
 
 **Etapp/beroenden:** E4; K01 och K04.
 **Mål:** varje accepterat mediaobjekt har exakt identitet och koppling till befintligt register, Blob-objekt och publicerat paket.
 **Startfiler:** K `server/media-registry.mjs`, `public/dealers.js`, `public/runtime-event-links.js`, `public/media_omkodad_crf20_2026-09-25/manifest.json`; M `packages/presentation/contracts/material-catalog.mjs`, `packages/presentation/server/package-rooms.mjs`, `docs/LOCAL-PRESENTATION-RUNTIME.md`.
 
-- [x] Delsteg: läsgranska fryst matris, verifiera dess Gitblob/SHA256/mängder och kör befintlig manifestvalidator26/26. Detta bevisar metadata/validatorfall, inte full paket-/Blob-/visuell acceptans.
+- [x] Delsteg: rättad matris159cc,Gitblob/SHA256/mängder,egenvalidator36/36 och unknownsource-repro nekar. Detta bevisar metadata/validatorfall, inte full paket-/Blob-/visuell acceptans.
 - [ ] Slutför K01:s urval med dealer, händelse, språk, take, exakt SHA-256, källa, ljud/video/frameindex/kalibrering och befintlig acceptans. Okända eller ändrade hashar förblir oaccepterade.
 - [ ] Mappa varje post till befintligt Neon-ID/Blob-objekt eller en uttryckligt planerad ny post. Skilj design-ID, uppladdad layer-UUID, dealer, rum och fryst paket; ingen namn- eller längdmatchning som identitetsbevis.
 - [ ] Prova manifestvalidering och paketupplösning isolerat; avvisa saknad/mismatched identitet och bortvalda V1-referenser. Bevara historiskt refererade main-media och Astrids märkta legacyreferens.
