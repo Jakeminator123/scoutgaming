@@ -1233,7 +1233,8 @@ lossades utan att deras målkataloger rördes. Alla fem registrerade arbetskopio
 lokala brancher lämnades efter avvisad automatisk säkerhetsgranskning av
 head-/backupbevisningen; de ingår inte i de redovisade raderingarna.
 
-GitHubs automatiska featurebranchradering är på. Regel 25556822 skyddar de
+GitHubs automatiska featurebranchradering är avstängd vid kontroll 22 oktober
+(`delete_branch_on_merge=false`). Regel 25556822 skyddar de
 långlivade teambrancherna endast mot radering; main-regel 24642403 är oförändrad.
 Lokal `fetch.prune=true` är verifierad. Framtida slutstädning har lagts in av den
 aktiva migrationsagenten i dess [PR311](https://github.com/Jakeminator123/scoutgaming/pull/311);

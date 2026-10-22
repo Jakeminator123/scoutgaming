@@ -72,7 +72,9 @@ Gränserna gäller aktiv kö/historik, inte en automatisk tokenbudget. Obesvarad
 överflödespingar arkiveras; lokal snapshot-/observationsretention flyttar äldre
 poster till `arkiv`. Claims, Codex-chattar, arkiv och provbevis raderas inte
 automatiskt. Detta inför ingen ny process eller uppmätt tokenbesparing.
-GitHubs automatiska radering av mergade featurebrancher är aktiverad. En separat
+GitHubs automatiska radering av mergade featurebrancher är avstängd
+(`delete_branch_on_merge=false`, läst 22 oktober); mergade brancher ligger kvar
+tills de städas enligt AGENTS. En separat
 regel skyddar långlivade teambrancher mot radering; den tillför inga push-,
 CI- eller mergekrav. Den lokala klonens fetch använder prune för borttagna
 fjärrreferenser. Lokala brancher, worktrees och deras ignorerade filer kräver
@@ -653,7 +655,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
-| 2026-10-21 | Automatisk featurebranchradering och lokal fetch-prune aktiverade. Raderingsregel 25556822 skyddar långlivade teambrancher utan nya push-/mergekrav. Exakt mergade branchrester och tomma/junctionbaserade worktree-rester rensade med privat återställningsunderlag; aktivt/osparat arbete bevarat. Slutstädningskravet samordnat med migrationsagentens AGENTS-ändring i PR311. |
+| 2026-10-21 | Lokal fetch-prune aktiverad; GitHubs automatiska featurebranchradering var avstängd vid kontroll 22 oktober. Raderingsregel 25556822 skyddar långlivade teambrancher utan nya push-/mergekrav. Exakt mergade branchrester och tomma/junctionbaserade worktree-rester rensade med privat återställningsunderlag; aktivt/osparat arbete bevarat. Slutstädningskravet samordnat med migrationsagentens AGENTS-ändring i PR311. |
 | 2026-10-18 | Efterfix inför renklonprov: chattens beslutade visning/uppspelning/avbrott provas genom importerad klientlogik i stället för källutskärning. QA-källhashregistren följer den extraherade modulen med negativa offlineprov. Befintliga status- och env-guider rättas till levererat läge och rätt läsare; ingen privat konfiguration eller aktiv Lipsync-handoff flyttas. |
 | 2026-10-18 | Moving-workerns befintliga CPU/image-workflow kopplas till obligatorisk CI för relevanta PR-filer; main/manuell körning behåller full kontroll. Ingen dubbel PR-build eller GPU-start. Aktuellt Admin-/Preview-miljöval samlas i ENVIRONMENT-VARIABLES efter läsande SQL, molnmetadata och Admin-vy. |
 | 2026-10-17 | OpenClaws spårade källrot är services/openclaw med interna lab-nivån kvar. Director/Gateway behåller separata Dockercontext, samma volymer och runtimekontrakt. Lokala envfiler och data stannar vid gamla open-claw/lab; källroot och state/env är uttryckligen åtskilda. Kvitto och extern leverans anges i JOHN-HANDOFF. |
