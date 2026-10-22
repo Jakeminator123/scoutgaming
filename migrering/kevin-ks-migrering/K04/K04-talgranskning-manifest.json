@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "typ": "k04-talgranskning-underlag",
   "datum": "2026-10-22",
-  "syfte": "Minsta verkliga talgranskningspaket för K04-prov a (tal under kortövergång), dragge/sv. Underlag, inga godkännanden.",
+  "syfte": "Minsta verkliga talgranskningspaket för K04-prov a (tal under kortövergång), dragge/sv. Underlag, inga godkännanden. Utökat 22 okt (#312 6339673965 p3) med Dragans välkomst greeting_1..3 sv/en, standard greeting_1.",
   "regler": [
     "bara befintligt material, ingen generering",
     "inga godkännanden är satta eller påhittade: recording/review är pending eller saknas",
@@ -367,6 +367,406 @@
       "granska": {
         "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/sv",
         "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/placebets_1.mp4"
+      }
+    },
+    {
+      "lineId": "greeting",
+      "takeId": "greeting_1",
+      "standard": true,
+      "dealer": {
+        "kevin": "dragge",
+        "registrerad": "dragan"
+      },
+      "language": "sv",
+      "eventFamily": "speak.other/greeting",
+      "anvands_av": [
+        "#312 6339673965 p3: Dragans välkomst (standard greeting_1, varianter greeting_2/3)"
+      ],
+      "exactText": "God kväll och välkommen till bordet. Jag heter Dragan, sätt dig där du vill.",
+      "video": {
+        "kevinPath": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greeting_1.mp4",
+        "gitBlob5aa7ed10": "53232efa9821a470e1b57dc1f62d54e31264727d",
+        "bytes": 350390,
+        "sha256": "a305ade972019978ac51b5df9b8e5866efc096ad1d86265527e19b394414cc74",
+        "container": "mp4 h264 High 1080x1920 yuv420p + aac LC 24000 Hz mono (ljudet inbäddat)",
+        "fps": 24,
+        "frameCount": 119,
+        "duration": "00:00:04.96",
+        "observerat": "första ljudpaketet pts -1024/24000 s (-42,7 ms, AAC-priming), video pts 0; detta är inte en deklarerad audioDelayMs"
+      },
+      "audio": {
+        "separat_fil": null,
+        "audioSha256": null,
+        "status": "saknas i källan"
+      },
+      "index": {
+        "indexSha256": null,
+        "status": "saknas i källan"
+      },
+      "audioDelayMs": null,
+      "entryPose": null,
+      "exitPose": null,
+      "forvantad_pose": "VILA → VILA enligt Kevins talgrind (K04-mappning.md:154), ej attesterad",
+      "calibrationRevision": null,
+      "registrering": {
+        "neonMediaId": null,
+        "blobPathname": null,
+        "k05status": "ny-post-planerad",
+        "k05acceptans": "ej accepterad (saknar registerpost)",
+        "recordedSpeech_i_neon": "ingen post"
+      },
+      "nuvarande_status": {
+        "recording": "saknas",
+        "review": "saknas"
+      },
+      "saknas": [
+        "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
+        "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
+        "recording: verified-recording (by/at/identity) – människa",
+        "review: approved (by/at/identity) – Kevin/granskare",
+        "promotion till runtime + blobIndex-rad (K05-mappning steg 2-4)"
+      ],
+      "texter": {
+        "gitBlob": "d7453d87d06731b9904f099b6b342b415876f82d",
+        "sha256": "2a9d85eb3e7878e976144b28cbec6e1f98c57e626a4a32988fb331c99dbf2a1b"
+      },
+      "granska": {
+        "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/sv",
+        "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/greeting_1.mp4"
+      }
+    },
+    {
+      "lineId": "greeting",
+      "takeId": "greeting_2",
+      "standard": false,
+      "dealer": {
+        "kevin": "dragge",
+        "registrerad": "dragan"
+      },
+      "language": "sv",
+      "eventFamily": "speak.other/greeting",
+      "anvands_av": [
+        "#312 6339673965 p3: Dragans välkomst (standard greeting_1, varianter greeting_2/3)"
+      ],
+      "exactText": "Välkommen in. Dra fram en stol, korten är nyblandade och bordet är ditt.",
+      "video": {
+        "kevinPath": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greeting_2.mp4",
+        "gitBlob5aa7ed10": "83bd6c198751c45d3d28979ddc81804e5c004c4b",
+        "bytes": 1193799,
+        "sha256": "6d8325370ce59c722e13dd4e61999f11cbcaf8eb2d9e4461db7b0ad6b692aa8d",
+        "container": "mp4 h264 High 1080x1920 yuv420p + aac LC 24000 Hz mono (ljudet inbäddat)",
+        "fps": 24,
+        "frameCount": 119,
+        "duration": "00:00:04.96",
+        "observerat": "första ljudpaketet pts -1024/24000 s (-42,7 ms, AAC-priming), video pts 0; detta är inte en deklarerad audioDelayMs"
+      },
+      "audio": {
+        "separat_fil": null,
+        "audioSha256": null,
+        "status": "saknas i källan"
+      },
+      "index": {
+        "indexSha256": null,
+        "status": "saknas i källan"
+      },
+      "audioDelayMs": null,
+      "entryPose": null,
+      "exitPose": null,
+      "forvantad_pose": "VILA → VILA enligt Kevins talgrind (K04-mappning.md:154), ej attesterad",
+      "calibrationRevision": null,
+      "registrering": {
+        "neonMediaId": null,
+        "blobPathname": null,
+        "k05status": "saknas i K05",
+        "k05acceptans": "saknas i K05",
+        "recordedSpeech_i_neon": "ingen post"
+      },
+      "nuvarande_status": {
+        "recording": "saknas",
+        "review": "saknas"
+      },
+      "saknas": [
+        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
+        "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
+        "recording: verified-recording (by/at/identity) – människa",
+        "review: approved (by/at/identity) – Kevin/granskare",
+        "promotion till runtime + blobIndex-rad (K05-mappning steg 2-4)"
+      ],
+      "texter": {
+        "gitBlob": "d7453d87d06731b9904f099b6b342b415876f82d",
+        "sha256": "2a9d85eb3e7878e976144b28cbec6e1f98c57e626a4a32988fb331c99dbf2a1b"
+      },
+      "granska": {
+        "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/sv",
+        "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/greeting_2.mp4"
+      }
+    },
+    {
+      "lineId": "greeting",
+      "takeId": "greeting_3",
+      "standard": false,
+      "dealer": {
+        "kevin": "dragge",
+        "registrerad": "dragan"
+      },
+      "language": "sv",
+      "eventFamily": "speak.other/greeting",
+      "anvands_av": [
+        "#312 6339673965 p3: Dragans välkomst (standard greeting_1, varianter greeting_2/3)"
+      ],
+      "exactText": "Ett nytt ansikte vid bordet. Välkommen, jag heter Dragan och delar ut åt dig i kväll.",
+      "video": {
+        "kevinPath": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greeting_3.mp4",
+        "gitBlob5aa7ed10": "4be5ba43e1ba31e8b45478915286ada323557b25",
+        "bytes": 361302,
+        "sha256": "498a2dc12e70d7911791cca9c595c63dee5e51d058f45cf542f53e0f5ffee3d8",
+        "container": "mp4 h264 High 1080x1920 yuv420p + aac LC 24000 Hz mono (ljudet inbäddat)",
+        "fps": 24,
+        "frameCount": 131,
+        "duration": "00:00:05.46",
+        "observerat": "första ljudpaketet pts -1024/24000 s (-42,7 ms, AAC-priming), video pts 0; detta är inte en deklarerad audioDelayMs"
+      },
+      "audio": {
+        "separat_fil": null,
+        "audioSha256": null,
+        "status": "saknas i källan"
+      },
+      "index": {
+        "indexSha256": null,
+        "status": "saknas i källan"
+      },
+      "audioDelayMs": null,
+      "entryPose": null,
+      "exitPose": null,
+      "forvantad_pose": "VILA → VILA enligt Kevins talgrind (K04-mappning.md:154), ej attesterad",
+      "calibrationRevision": null,
+      "registrering": {
+        "neonMediaId": null,
+        "blobPathname": null,
+        "k05status": "saknas i K05",
+        "k05acceptans": "saknas i K05",
+        "recordedSpeech_i_neon": "ingen post"
+      },
+      "nuvarande_status": {
+        "recording": "saknas",
+        "review": "saknas"
+      },
+      "saknas": [
+        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
+        "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
+        "recording: verified-recording (by/at/identity) – människa",
+        "review: approved (by/at/identity) – Kevin/granskare",
+        "promotion till runtime + blobIndex-rad (K05-mappning steg 2-4)"
+      ],
+      "texter": {
+        "gitBlob": "d7453d87d06731b9904f099b6b342b415876f82d",
+        "sha256": "2a9d85eb3e7878e976144b28cbec6e1f98c57e626a4a32988fb331c99dbf2a1b"
+      },
+      "granska": {
+        "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/sv",
+        "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/greeting_3.mp4"
+      }
+    },
+    {
+      "lineId": "greeting",
+      "takeId": "greeting_1",
+      "standard": true,
+      "dealer": {
+        "kevin": "dragge",
+        "registrerad": "dragan"
+      },
+      "language": "en",
+      "eventFamily": "speak.other/greeting",
+      "anvands_av": [
+        "#312 6339673965 p3: Dragans välkomst (standard greeting_1, varianter greeting_2/3)"
+      ],
+      "exactText": "Good evening, and welcome to the table. I'm Dragan, take any seat you like.",
+      "video": {
+        "kevinPath": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greeting_1.mp4",
+        "gitBlob5aa7ed10": "2ee4aaf2ae344e38ee39cb5e2af103fc06a2b851",
+        "bytes": 335112,
+        "sha256": "676855d2cd0a65074afd6b2f1a234fc38fc88997d0b5f086cb08a6f6eeb85e3c",
+        "container": "mp4 h264 High 1080x1920 yuv420p + aac LC 24000 Hz mono (ljudet inbäddat)",
+        "fps": 24,
+        "frameCount": 99,
+        "duration": "00:00:04.13",
+        "observerat": "första ljudpaketet pts -1024/24000 s (-42,7 ms, AAC-priming), video pts 0; detta är inte en deklarerad audioDelayMs"
+      },
+      "audio": {
+        "separat_fil": null,
+        "audioSha256": null,
+        "status": "saknas i källan"
+      },
+      "index": {
+        "indexSha256": null,
+        "status": "saknas i källan"
+      },
+      "audioDelayMs": null,
+      "entryPose": null,
+      "exitPose": null,
+      "forvantad_pose": "VILA → VILA enligt Kevins talgrind (K04-mappning.md:154), ej attesterad",
+      "calibrationRevision": null,
+      "registrering": {
+        "neonMediaId": null,
+        "blobPathname": null,
+        "k05status": "ny-post-planerad",
+        "k05acceptans": "ej accepterad (saknar registerpost)",
+        "recordedSpeech_i_neon": "ingen post"
+      },
+      "nuvarande_status": {
+        "recording": "saknas",
+        "review": "saknas"
+      },
+      "saknas": [
+        "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
+        "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
+        "recording: verified-recording (by/at/identity) – människa",
+        "review: approved (by/at/identity) – Kevin/granskare",
+        "promotion till runtime + blobIndex-rad (K05-mappning steg 2-4)"
+      ],
+      "texter": {
+        "gitBlob": "aa0628aed61b1ff23ccd11bb91a2476f9fffbd1e",
+        "sha256": "8609306f86a5080b7c99536fd872d8495ae8a40d54d2998aad7a544b427e940a"
+      },
+      "granska": {
+        "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/en",
+        "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/en/greeting_1.mp4"
+      }
+    },
+    {
+      "lineId": "greeting",
+      "takeId": "greeting_2",
+      "standard": false,
+      "dealer": {
+        "kevin": "dragge",
+        "registrerad": "dragan"
+      },
+      "language": "en",
+      "eventFamily": "speak.other/greeting",
+      "anvands_av": [
+        "#312 6339673965 p3: Dragans välkomst (standard greeting_1, varianter greeting_2/3)"
+      ],
+      "exactText": "Welcome in. Pull up a chair, the cards are fresh and the table is yours.",
+      "video": {
+        "kevinPath": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greeting_2.mp4",
+        "gitBlob5aa7ed10": "541ea46899750f21a1440cf17502ae0120954da4",
+        "bytes": 1093778,
+        "sha256": "353989fcf73c785c1002f07a6149d817bb5ae84e33f90462fd3f456ab493ff7d",
+        "container": "mp4 h264 High 1080x1920 yuv420p + aac LC 24000 Hz mono (ljudet inbäddat)",
+        "fps": 24,
+        "frameCount": 102,
+        "duration": "00:00:04.25",
+        "observerat": "första ljudpaketet pts -1024/24000 s (-42,7 ms, AAC-priming), video pts 0; detta är inte en deklarerad audioDelayMs"
+      },
+      "audio": {
+        "separat_fil": null,
+        "audioSha256": null,
+        "status": "saknas i källan"
+      },
+      "index": {
+        "indexSha256": null,
+        "status": "saknas i källan"
+      },
+      "audioDelayMs": null,
+      "entryPose": null,
+      "exitPose": null,
+      "forvantad_pose": "VILA → VILA enligt Kevins talgrind (K04-mappning.md:154), ej attesterad",
+      "calibrationRevision": null,
+      "registrering": {
+        "neonMediaId": null,
+        "blobPathname": null,
+        "k05status": "saknas i K05",
+        "k05acceptans": "saknas i K05",
+        "recordedSpeech_i_neon": "ingen post"
+      },
+      "nuvarande_status": {
+        "recording": "saknas",
+        "review": "saknas"
+      },
+      "saknas": [
+        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
+        "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
+        "recording: verified-recording (by/at/identity) – människa",
+        "review: approved (by/at/identity) – Kevin/granskare",
+        "promotion till runtime + blobIndex-rad (K05-mappning steg 2-4)"
+      ],
+      "texter": {
+        "gitBlob": "aa0628aed61b1ff23ccd11bb91a2476f9fffbd1e",
+        "sha256": "8609306f86a5080b7c99536fd872d8495ae8a40d54d2998aad7a544b427e940a"
+      },
+      "granska": {
+        "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/en",
+        "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/en/greeting_2.mp4"
+      }
+    },
+    {
+      "lineId": "greeting",
+      "takeId": "greeting_3",
+      "standard": false,
+      "dealer": {
+        "kevin": "dragge",
+        "registrerad": "dragan"
+      },
+      "language": "en",
+      "eventFamily": "speak.other/greeting",
+      "anvands_av": [
+        "#312 6339673965 p3: Dragans välkomst (standard greeting_1, varianter greeting_2/3)"
+      ],
+      "exactText": "A new face at the table. Welcome, I'm Dragan, and I'll be dealing for you tonight.",
+      "video": {
+        "kevinPath": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greeting_3.mp4",
+        "gitBlob5aa7ed10": "ce037bbd4cd6cb2c0589c27ac95f34e5956e8a7f",
+        "bytes": 348522,
+        "sha256": "906cb3717abe23d526796bef5e87cec4314d3287be795f584b21632c28c853c1",
+        "container": "mp4 h264 High 1080x1920 yuv420p + aac LC 24000 Hz mono (ljudet inbäddat)",
+        "fps": 24,
+        "frameCount": 113,
+        "duration": "00:00:04.71",
+        "observerat": "första ljudpaketet pts -1024/24000 s (-42,7 ms, AAC-priming), video pts 0; detta är inte en deklarerad audioDelayMs"
+      },
+      "audio": {
+        "separat_fil": null,
+        "audioSha256": null,
+        "status": "saknas i källan"
+      },
+      "index": {
+        "indexSha256": null,
+        "status": "saknas i källan"
+      },
+      "audioDelayMs": null,
+      "entryPose": null,
+      "exitPose": null,
+      "forvantad_pose": "VILA → VILA enligt Kevins talgrind (K04-mappning.md:154), ej attesterad",
+      "calibrationRevision": null,
+      "registrering": {
+        "neonMediaId": null,
+        "blobPathname": null,
+        "k05status": "saknas i K05",
+        "k05acceptans": "saknas i K05",
+        "recordedSpeech_i_neon": "ingen post"
+      },
+      "nuvarande_status": {
+        "recording": "saknas",
+        "review": "saknas"
+      },
+      "saknas": [
+        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
+        "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
+        "recording: verified-recording (by/at/identity) – människa",
+        "review: approved (by/at/identity) – Kevin/granskare",
+        "promotion till runtime + blobIndex-rad (K05-mappning steg 2-4)"
+      ],
+      "texter": {
+        "gitBlob": "aa0628aed61b1ff23ccd11bb91a2476f9fffbd1e",
+        "sha256": "8609306f86a5080b7c99536fd872d8495ae8a40d54d2998aad7a544b427e940a"
+      },
+      "granska": {
+        "klippsida": "https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/en",
+        "direkt": "https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/en/greeting_3.mp4"
       }
     }
   ]

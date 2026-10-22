@@ -63,3 +63,35 @@ Kontraktet (`packages/presentation/contracts/recorded-speech.mjs`) kräver deale
 3. **Registrering och promotion** enligt K05-mappning steg 2-4. Det är ett auktoriserat skrivsteg och kräver eget ja.
 
 Minsta väg till ett körbart prov a är de tre befintliga (goodluck_1, insurance_1, double_1): de behöver bara steg 1-3 utan ny tuple. Flödet spelar också win_1, dealerbust_1 och placebets_1. Utan godkännande av dem blir de `skipped`-kvitton (`local-presentation.mjs:250-259`), och provet täcker då bara goodluck och insurance under kortövergången.
+
+## Tillägg 22 okt: Dragans välkomst (#312 6339673965 p3)
+
+Sex tagningar, lineId `greeting`, fack `speak.other/greeting`, dealer `dragge` (registrerad `dragan`). **Standard är greeting_1**, och greeting_2 och greeting_3 är varianter. Samma format som ovan: mp4 h264 1080x1920, 24 fps, AAC 24 kHz mono inbäddat, första ljudpaketet −42,7 ms (observation, inte `audioDelayMs`). Bytes är omräknade ur 5aa7ed10 och identiska med staging.
+
+| Språk | takeId | Exakt text | bytes | video sha256 | gitblob | frames |
+|---|---|---|---|---|---|---|
+| sv | greeting_1 | God kväll och välkommen till bordet. Jag heter Dragan, sätt dig där du vill. | 350 390 | `a305ade972019978ac51b5df9b8e5866efc096ad1d86265527e19b394414cc74` | `53232efa` | 119 |
+| sv | greeting_2 | Välkommen in. Dra fram en stol, korten är nyblandade och bordet är ditt. | 1 193 799 | `6d8325370ce59c722e13dd4e61999f11cbcaf8eb2d9e4461db7b0ad6b692aa8d` | `83bd6c19` | 119 |
+| sv | greeting_3 | Ett nytt ansikte vid bordet. Välkommen, jag heter Dragan och delar ut åt dig i kväll. | 361 302 | `498a2dc12e70d7911791cca9c595c63dee5e51d058f45cf542f53e0f5ffee3d8` | `4be5ba43` | 131 |
+| en | greeting_1 | Good evening, and welcome to the table. I'm Dragan, take any seat you like. | 335 112 | `676855d2cd0a65074afd6b2f1a234fc38fc88997d0b5f086cb08a6f6eeb85e3c` | `2ee4aaf2` | 99 |
+| en | greeting_2 | Welcome in. Pull up a chair, the cards are fresh and the table is yours. | 1 093 778 | `353989fcf73c785c1002f07a6149d817bb5ae84e33f90462fd3f456ab493ff7d` | `541ea468` | 102 |
+| en | greeting_3 | A new face at the table. Welcome, I'm Dragan, and I'll be dealing for you tonight. | 348 522 | `906cb3717abe23d526796bef5e87cec4314d3287be795f584b21632c28c853c1` | `ce037bbd` | 113 |
+
+Texterna kommer ur `repliker/{sv,en}/texter.json` @ 5aa7ed10: sv gitblob `d7453d87` (sha256 `2a9d85eb…`), en gitblob `aa0628ae` (sha256 `8609306f…`).
+
+Granska: [sv-mappen](https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/sv) · [en-mappen](https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/repliker/en) · direkt:
+[sv 1](https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/greeting_1.mp4) ·
+[sv 2](https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/greeting_2.mp4) ·
+[sv 3](https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/sv/greeting_3.mp4) ·
+[en 1](https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/en/greeting_1.mp4) ·
+[en 2](https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/en/greeting_2.mp4) ·
+[en 3](https://staging.37-27-199-225.sslip.io/media/dealers/dragge/repliker/en/greeting_3.mp4)
+
+**Saknas för alla sex:**
+- Registerpost: ingen Neon-post och inget media-ID.
+- `audioSha256` och `indexSha256` saknas i källan, eftersom Kevins mp4 har ljudet inbäddat och det inte finns någon separat ljudfil eller indexfil. Main har ingen producent för dem (`dealer-import-plan.mjs:173`). Producenten måste definieras i K05-registreringen och en ägare utses. Kevin attesterar.
+- `audioDelayMs`, entry/exitPose och `calibrationRevision` saknas. Förväntad pose är VILA → VILA (`K04-mappning.md:154`), men den är inte attesterad.
+- `recording` och `review` saknas helt, alltså inte ens pending.
+- **K05-lucka:** greeting_2 och greeting_3 (sv och en) finns inte i K05-matrisen c024d9bc. Bara greeting_1 finns där och i `k04-media.tsv`, som ny-post-planerad. De fyra raderna måste läggas till i K05 innan de kan registreras.
+
+**win_1, dealerbust_1, placebets_1:** de finns redan ovan med allt som källan har. Det som fattas där fattas också i källan (audio-/indexhash, poser, kalibrering, recording och review). Det finns inget nytt att lägga till.
