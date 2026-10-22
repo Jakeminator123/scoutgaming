@@ -322,8 +322,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (r.phase === 'round') { if (!r.leaving.includes(actorId)) r.leaving.push(actorId); }
         else await releaseSeats(tx, r, actorId);
       } else if (op === 'refill') {
-        result.ledgerId = (await tx.wallet.credit(actorId, { amount: cfg.refill, kind: 'refill',
-          key: ledgerKey({ ...origin, roomId, playerId: actorId, effect: 'refill' }) })).ledgerId;
+        try {
+          result.ledgerId = (await tx.wallet.credit(actorId, { amount: cfg.refill, kind: 'refill',
+            key: ledgerKey({ ...origin, roomId, playerId: actorId, effect: 'refill' }) })).ledgerId;
+        } catch (e) { if (e instanceof WalletDenied) fail('REFILL_REFUSED', 'Demo refill is not available for this account'); throw e; }
       } else if (BET_OPS.has(op)) {
         if (r.phase !== 'bets') fail('BETTING_CLOSED', 'Betting is closed');
         if (input.windowId !== r.windowId) fail('STALE_COMMAND', 'This betting window has closed');
