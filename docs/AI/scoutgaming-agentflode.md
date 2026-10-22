@@ -561,6 +561,46 @@ försvinner och inte kan återställas. Aktiva referenser, frysta/publicerade fi
 och historik kan blockera åtgärden. Bolagsåterställning öppnar inte rum igen.
 Modellbyte kan ändra den valda rollens fallbacklista enligt dialogen.
 
+## Klippassistenten känner klippkartan — 22 oktober 2026
+
+Importförslaget (`POST /api/dealers/import-proposal`, intent `mapping`) följer nu
+produktmodellen i TERMINOLOGI: kategori → situation → standardklipp + varianter.
+Modellen (`apps/studio/lib/dealer-import-model.mjs`) får klippkartans fem grupper
+med klartextnamn (Vila, Redo, Dela till spelare, Dealerns kort, Talade repliker),
+regeln att tur och resultat är körvillkor och inte fack, att poseversioner är
+tekniska kedjor och inte beteendevarianter, samt per fack om dealern redan har ett
+sparat standardklipp (`hasStandard`). Svaret ska vara enkel svenska för den som
+inte känner systemet. Modellen har fortfarande inga verktyg, ser inga bildrutor
+och kan inte spara; filnamn, mappnamn och kontext är obetrodda data.
+
+Kontraktet (`apps/studio/lib/dealer-import-catalog.mjs`):
+
+- Katalogen (`GET`) ger varje fack `group` (`wait`/`ready`/`players`/`dealer`/
+  `speech`/`pose`), `caption` och `explanation` på svenska, listan `groups` och
+  `standards[dealerId][slotId]` med sparat klipp-id eller `null`. Det gamla
+  fältet `category` är oförändrat och styr klientens filtypsskydd.
+- En fil får valfritt `path` (relativ sökväg vid mappsläpp, högst 240 tecken,
+  måste sluta med filnamnet, inga `..`, `\` eller tomma segment). Mappen
+  `repliker/<språk>/` ger språk, `idle-v2/` eller `idle/` gör en okänd tyst
+  tagning till ett Vila-förslag. Sökvägen är rådgivning, aldrig lagringsplats.
+- Filnamnsreglerna (`packages/presentation/contracts/clip-naming.mjs`) känner
+  Kevins beteendestammar (andas, axlar6101, nick6103, vridvanster6105, blick,
+  vikt, huvud, fingrar, rakrygg, lutfram) som Vila; siffror efter stammen är
+  tagning, inte plats. Språklistan har fått `ko` och `pt`.
+- Varje rad bär `group`, `role` (`standard` när facket saknar sparat standard-
+  klipp för dealern och raden är första videon dit i omgången, annars `variant`;
+  `null` för ljud, bilder och oplacerade filer), `alternatives` (högst två andra
+  tillåtna fack med anledning, `caption` och `group`, sammanslagna från modellens
+  förslag och filnamnets övriga läsningar, aldrig det valda facket) samt
+  `language`/`take` när namnet eller mappen ger dem för samma fack.
+- Modellens schema kräver `alternatives` per rad (tom lista tillåten); servern
+  validerar att varje alternativ finns i katalogen, är unikt och inte är själva
+  förslaget. Rollen räknas alltid av servern, aldrig av modellen.
+
+Klienten återuppbygger klassificeringen från katalogen som förut; `role` och
+`alternatives` är visningsstöd för intaget i klippkartan, inte skrivrättigheter.
+Prov: `apps/studio/test/dealer-import.test.mjs`, `apps/studio/test/clip-naming.test.mjs`.
+
 ## Skapa dealer och ladda upp flera filmer
 
 PR #94 lägger till **Skapa dealer** i `/admin/clips?tool=import`.

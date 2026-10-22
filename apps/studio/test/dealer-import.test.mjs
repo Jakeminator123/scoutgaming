@@ -488,3 +488,90 @@ test('process limits bound simultaneous and repeated advisory calls, and release
   const { api } = fixture({ limit: { enter() { throw new (class extends Error { constructor() { super('private'); this.code = 'studio_import_busy'; this.statusCode = 429; } })(); } } });
   const response = await api.handle(request(input([]))); assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '60');
 });
+
+test('catalog carries clip-map groups, plain captions and the saved standard per dealer and slot', () => {
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'paow', 'Paow'));
+  assert.deepEqual(catalog.groups.map(row => row.id), ['wait', 'ready', 'players', 'dealer', 'speech', 'pose']);
+  const by = id => catalog.slots.find(slot => slot.id === id);
+  assert.equal(by('idle.ready/').group, 'wait'); assert.equal(by('idle.ready/').caption, 'Basloop och beteendeklipp');
+  assert.equal(by('transition.shoe/to-shoe').group, 'ready'); assert.equal(by('transition.shoe/to-shoe').caption, 'Till skon');
+  assert.equal(by('deal.player.left/box0').group, 'players'); assert.equal(by('deal.player.left/box0').caption, 'Plats 1');
+  assert.equal(by('deal.player.right/box6').caption, 'Plats 7');
+  assert.equal(by('deal.dealer/dealer-hole').group, 'dealer'); assert.equal(by('deal.dealer/dealer-hole').caption, 'Lägg dolt kort');
+  assert.equal(by('reveal.dealer/dealer-hole').caption, 'Vänd dolt kort'); assert.equal(by('deal.dealer/dealer-up').caption, 'Dra öppet kort');
+  assert.equal(by('speak.other/greeting').group, 'speech'); assert.equal(by('speak.other/greeting').caption, 'Välkommen');
+  assert.equal(by('pose/vila').group, 'pose');
+  assert.ok(catalog.slots.every(slot => slot.group && slot.caption && typeof slot.explanation === 'string'));
+  // The old category field is unchanged for the client guards.
+  assert.equal(by('speak.other/greeting').category, 'speech'); assert.equal(by('idle.ready/').category, 'idle');
+  // A fresh dealer has no standards; every non-pose slot is listed as null.
+  assert.deepEqual(Object.keys(catalog.standards).sort(), catalog.dealers.map(row => row.id).sort());
+  assert.ok(Object.values(catalog.standards.paow).every(value => value === null));
+  assert.equal(Object.hasOwn(catalog.standards.paow, 'pose/vila'), false);
+  assert.equal(Object.keys(catalog.standards.paow).length, catalog.slots.filter(slot => slot.kind !== 'pose').length);
+});
+
+test('a dropped folder path is advice: it validates strictly and improves Vila and language proposals', () => {
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'paow', 'Paow'));
+  const withPath = (name, path, id, type = 'video/mp4') => ({ ...file(name, id, type), path });
+  const good = { dealerId: 'paow', context: '', files: [withPath('axlar6101.mp4', 'paow/v2/axlar6101.mp4', 'a'), withPath('goodluck_1.mp4', 'paow/repliker/ko/goodluck_1.mp4', 'b'),
+    withPath('take01.mp4', 'paow/idle-v2/take01.mp4', 'c'), withPath('pos4-iu.mp4', 'paow/v2/pos4-iu.mp4', 'd'), withPath('plain.mp4', 'plain.mp4', 'e')] };
+  const body = validateDealerImportInput(good, catalog);
+  assert.equal(body.files[0].path, 'paow/v2/axlar6101.mp4'); assert.equal(Object.hasOwn(body.files[4], 'path'), false);
+  for (const path of ['/paow/a.mp4', 'paow//a.mp4', 'paow/../a.mp4', 'paow/./a.mp4', 'paow\\a.mp4', 'paow/other.mp4', 'x'.repeat(240) + '/a.mp4', 'paow/a\n.mp4', 42]) {
+    assert.throws(() => validateDealerImportInput({ ...good, files: [withPath('a.mp4', path, 'z')] }, catalog), String(path));
+  }
+  const rows = finishDealerImportRows(filenameDealerImportRows(body, catalog), body, catalog);
+  assert.equal(rows[0].slotId, 'idle.ready/'); assert.equal(rows[0].group, 'wait'); assert.equal(rows[0].role, 'standard'); assert.equal(rows[0].confidence, 'high');
+  assert.equal(rows[1].slotId, 'speak.goodluck/goodluck'); assert.equal(rows[1].language, 'ko'); assert.equal(rows[1].take, 1); assert.equal(rows[1].group, 'speech');
+  assert.match(rows[1].classification.notes, /Språk i filnamnet: ko/);
+  assert.equal(rows[2].slotId, 'idle.ready/'); assert.equal(rows[2].role, 'variant'); assert.match(rows[2].reason, /^Mappen och filnamnet/);
+  assert.equal(rows[3].slotId, 'deal.player.centre/box3'); assert.deepEqual(rows[3].poses, { start: 'VILA', end: 'VILA' }); assert.equal(rows[3].group, 'players');
+  assert.equal(rows[4].slotId, null); assert.equal(rows[4].group, null); assert.equal(rows[4].role, null); assert.deepEqual(rows[4].alternatives, []);
+});
+
+test('roles follow the saved standard and batch order; alternatives merge model and filename readings without the chosen slot', () => {
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'paow', 'Paow'));
+  const body = validateDealerImportInput({ dealerId: 'paow', context: '', files: [file('pos1-i.mp4', 'a', 'video/mp4'), file('pos1-v.mp4', 'b', 'video/mp4'), file('pos1-pos2.mp4', 'c', 'video/mp4'), file('greeting.wav', 'd', 'audio/wav')] }, catalog);
+  const rows = finishDealerImportRows(filenameDealerImportRows(body, catalog), body, catalog);
+  assert.equal(rows[0].role, 'standard'); assert.equal(rows[1].role, 'variant'); assert.equal(rows[3].role, null);
+  assert.equal(rows[2].slotId, null); assert.equal(rows[2].confidence, 'low');
+  assert.deepEqual(rows[2].alternatives.map(row => row.slotId), ['deal.player.left/box0', 'deal.player.left/box1']);
+  assert.equal(rows[2].alternatives[0].caption, 'Plats 1'); assert.equal(rows[2].alternatives[0].group, 'players');
+  // A slot whose saved standard exists only yields variants.
+  const seeded = { ...catalog, standards: { ...catalog.standards, paow: { ...catalog.standards.paow, 'deal.player.left/box0': 'saved-clip' } } };
+  assert.equal(finishDealerImportRows(filenameDealerImportRows(body, seeded), body, seeded)[0].role, 'variant');
+  // Model alternatives: validated, bounded, never the proposal itself, merged with name hints.
+  const advice = { assistantMessage: 'Förslag.', rows: [
+    { fileId: 'a', slotId: 'deal.player.left/box0', confidence: 'high', reason: 'Plats 1.', alternatives: [] },
+    { fileId: 'b', slotId: 'deal.player.left/box0', confidence: 'medium', reason: 'Plats 1.', alternatives: [{ slotId: 'deal.player.left/box1', reason: 'Kan vara plats 2.' }] },
+    { fileId: 'c', slotId: null, confidence: 'low', reason: 'Två platser.', alternatives: [{ slotId: 'deal.player.centre/box2', reason: 'Modellens gissning.' }] },
+    { fileId: 'd', slotId: 'speak.other/greeting', confidence: 'medium', reason: 'Hälsning.' } ] };
+  const validated = validateDealerImportAdvice(advice, body, catalog);
+  assert.deepEqual(validated.rows[2].alternatives, advice.rows[2].alternatives);
+  const finished = finishDealerImportRows(validated.rows, body, catalog);
+  assert.deepEqual(finished[1].alternatives.map(row => row.slotId), ['deal.player.left/box1']);
+  assert.deepEqual(finished[2].alternatives.map(row => row.slotId), ['deal.player.centre/box2', 'deal.player.left/box0']);
+  assert.deepEqual(finished[3].alternatives, []);
+  for (const bad of [[{ slotId: 'deal.player.left/box0', reason: 'samma som förslaget' }], [{ slotId: 'nope/x', reason: 'okänt' }], [{ slotId: 'deal.player.left/box1' }],
+    [{ slotId: 'deal.player.left/box1', reason: 'a' }, { slotId: 'deal.player.left/box1', reason: 'b' }],
+    [{ slotId: 'deal.player.left/box1', reason: 'a' }, { slotId: 'deal.player.right/box5', reason: 'b' }, { slotId: 'deal.player.centre/box2', reason: 'c' }], 'x', null]) {
+    assert.throws(() => validateDealerImportAdvice({ ...advice, rows: [{ ...advice.rows[0], alternatives: bad }, ...advice.rows.slice(1)] }, body, catalog), JSON.stringify(bad));
+  }
+});
+
+test('the mapping request teaches the model the clip map, sends slot groups, captions and standards and requires alternatives in the schema', async () => {
+  const body = { dealerId: 'astrid', context: 'Paows klipp från mappen v2.', files: [{ ...file('axlar6101.mp4', 'a', 'video/mp4'), path: 'paow/v2/axlar6101.mp4' }] }; let captured;
+  const { api } = fixture({ env, fetchImpl: async (_url, options) => { captured = JSON.parse(options.body); return modelResponse({ assistantMessage: 'Vila.', rows: [{ fileId: 'a', slotId: 'idle.ready/', confidence: 'high', reason: 'Axelrörelse i vila.', alternatives: [] }] }); } });
+  const result = await (await api.handle(request(body))).json();
+  assert.equal(result.source, 'ai'); assert.equal(result.rows[0].group, 'wait'); assert.deepEqual(result.rows[0].alternatives, []);
+  assert.ok(['standard', 'variant'].includes(result.rows[0].role));
+  const user = JSON.parse(captured.input[0].content);
+  assert.deepEqual(Object.keys(user).sort(), ['context', 'dealerId', 'files', 'history', 'question', 'slots']);
+  assert.equal(user.files[0].path, 'paow/v2/axlar6101.mp4');
+  assert.deepEqual(Object.keys(user.slots[0]).sort(), ['caption', 'end', 'explanation', 'group', 'hasStandard', 'id', 'kind', 'label', 'start']);
+  assert.ok(user.slots.every(slot => typeof slot.hasStandard === 'boolean'));
+  const schema = captured.text.format.schema.properties.rows.items;
+  assert.deepEqual(schema.required, ['fileId', 'slotId', 'confidence', 'reason', 'alternatives']); assert.equal(schema.properties.alternatives.maxItems, 2);
+  for (const phrase of [/category > situation > one standard clip plus variants/, /group "wait"/, /Turn and result are run conditions, not slots/, /Pose versions .* are technical hand chains/, /Folder names are advice only/, /hasStandard/, /plain Swedish/]) assert.match(captured.instructions, phrase);
+});
