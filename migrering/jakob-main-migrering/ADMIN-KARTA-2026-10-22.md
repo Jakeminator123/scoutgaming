@@ -206,7 +206,7 @@ Totalt ca 11 komponenter och 19 lib-moduler.
 
 ## 6. PR #359 — rättad CSS och samlad navigation — 23 oktober 2026
 
-Jakobs utökade uppdrag ersätter PR1:s ursprungliga begränsning till yttre navigation. Branch `codex/admin-en-ingang` har integrerat main 246e88064dc2d06e022fb845460aea8227c10c0e, inklusive #354. Konflikten i JOHN-HANDOFF är löst med båda ägarnas avsnitt bevarade. #358 är ännu öppen; dess lobbyfiler och rumssidan har inte redigerats här.
+Jakobs utökade uppdrag ersätter PR1:s ursprungliga begränsning till yttre navigation. Branch `codex/admin-en-ingang` har integrerat main 7e51bb550ed078e75e561a0ca00fc5d79bc7a842, inklusive #354. Konflikten i JOHN-HANDOFF är löst med båda ägarnas avsnitt bevarade. #358 är nu mergad och integrerad från main. Denna PR gör inga egna ändringar i dess lobbyfiler eller rumssidan.
 
 ### Rotorsak och åtgärd
 
@@ -291,4 +291,4 @@ Jakobs förtydligade visuella hierarki: **Spelbolag/domän → spel (Blackjack, 
 
 Exempel: ett Blackjack-erbjudande kan tillåta **två dealers och tre bakgrunder**, tillsammans med angivna kompatibla bord. Operatören väljer bland godkända alternativ. Det kräver inte sex kopior av dealern eller automatiskt alla tänkbara kombinationer; kompatibiliteten styr.
 
-Den sammanhållna operatörsytan och ändrade kombinationsregler planeras efter #358 samt K05-besluten. CSS- och navigationsstädningen i avsnitt 6 ingår redan i #359. Innan kodstart ska omfattning och acceptanskriterier tas in som en aktivitet i den befintliga masterplanen med status.json som enda statuskälla. Detta förslag skapar ingen separat tracker och ändrar inte nuvarande datamodell.
+Den sammanhållna operatörsytan och ändrade kombinationsregler kräver K05-besluten; #358 är nu integrerad. CSS- och navigationsstädningen i avsnitt 6 ingår redan i #359. Innan kodstart ska omfattning och acceptanskriterier tas in som en aktivitet i den befintliga masterplanen med status.json som enda statuskälla. Detta förslag skapar ingen separat tracker och ändrar inte nuvarande datamodell.
