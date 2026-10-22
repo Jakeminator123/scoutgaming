@@ -287,3 +287,107 @@ test(name+' N1 revocation preserves new credential, local, partner and other-acc
     assert.equal(created,2);
   } finally {f.close();}
 });
+
+test('async internal bindings share credential, BO epoch and partner validation without changing public sessions',async()=>{
+  const f=fixture(asyncIdentity);f.admin();f.local();
+  try {
+    const hash=value=>createHash('sha256').update(value).digest('hex');
+    const account=await f.identity.find('operator'),local=f.players.prepare('SELECT salt,hash FROM player_accounts').get();
+    f.players.prepare('INSERT INTO players VALUES(?,?)').run('linked-player','active');
+    f.players.prepare('INSERT INTO craig_player_links VALUES(?,?)').run(account.id,'linked-player');
+    f.players.prepare('INSERT INTO players VALUES(?,?)').run('partner-player','active');
+    let key={id:'fixture-key',secret:'isolated-binding-secret',revoked_at:null,wallet_url:null};
+    const partnerStamp=hash(key.secret),expiresAt=Date.now()+60000,reads=[];
+    const db={prepare(sql){assert.match(sql,/^SELECT /);reads.push(sql);return f.players.prepare(sql);}};
+    const auth=asyncPlayerAuth(db,()=>assert.fail('binding cannot create a player'),f.identity,{playerAccounts:true,
+      authEpoch:f.authEpoch,allowLegacyPartnerSessions:false,partnerAuthority:async()=>key});
+    const sources=[
+      ['player-1',`local:${hash(`${local.salt}:${local.hash}`)}`,{playerId:'player-1',partnerKeyId:null}],
+      ['linked-player',`credential:${account.stamp}`,{playerId:'linked-player',partnerKeyId:null}],
+      ['linked-player',`bo:0:${account.stamp}`,{playerId:'linked-player',partnerKeyId:null}],
+      ['partner-player',`partner:fixture-key:${partnerStamp}`,{playerId:'partner-player',partnerKeyId:'fixture-key',partnerKeyStamp:partnerStamp,displayName:'fixture'}],
+    ];
+    const sessions=sources.map(([actorId,source,publicSession])=>{
+      const token=randomBytes(32).toString('hex'),digest=hash(token),sessionId='player-'+digest;
+      f.players.prepare('INSERT INTO player_sessions VALUES(?,?,?,?,?)').run(digest,actorId,expiresAt,source,'fixture');
+      return {actorId,token,digest,sessionId,publicSession,request:{headers:{cookie:'player_session='+token}}};
+    });
+    const before=f.players.prepare('SELECT * FROM player_sessions ORDER BY digest').all();
+    for(const s of sessions){
+      const expected={actorId:s.actorId,sessionId:s.sessionId,expiresAt};
+      const bound=await auth.binding(s.request),byId=await auth.bindingById(s.sessionId);
+      assert.deepEqual(bound,expected);assert.equal(Object.isFrozen(bound),true);
+      assert.deepEqual(byId,expected);assert.equal(Object.isFrozen(byId),true);
+      assert.notEqual(bound.sessionId,'player-'+s.token,'the internal id is not a bearer token');
+      assert.deepEqual(await auth.session(s.request),s.publicSession,'public session fields remain unchanged');
+      assert.equal(await auth.user(s.request),s.actorId);
+    }
+    assert.deepEqual(f.players.prepare('SELECT * FROM player_sessions ORDER BY digest').all(),before);
+    const denied=async s=>{
+      assert.equal(await auth.binding(s.request),null);assert.equal(await auth.bindingById(s.sessionId),null);
+      assert.equal(await auth.session(s.request),null);
+    };
+    f.revoke(account.id);await denied(sessions[2]);
+    assert.ok(await auth.bindingById(sessions[1].sessionId),'BO logout does not revoke a credential login');
+    f.users.prepare('UPDATE users SET hash=? WHERE id=?').run('changed-credential',account.id);await denied(sessions[1]);
+    f.players.prepare('UPDATE player_accounts SET hash=?').run('changed-local');await denied(sessions[0]);
+    f.players.prepare('UPDATE player_accounts SET hash=?').run(local.hash);
+    f.players.prepare('UPDATE players SET status=? WHERE id=?').run('blocked','player-1');await denied(sessions[0]);
+    f.players.prepare('UPDATE players SET status=? WHERE id=?').run('active','player-1');
+    const validKey={...key};
+    for(const changed of [null,{...validKey,revoked_at:'revoked'},{...validKey,secret:'rotated'},
+      {...validKey,wallet_url:'https://wallet.invalid'},{...validKey,id:'other-key'}]){
+      key=changed;await denied(sessions[3]);
+    }
+    key=validKey;assert.ok(await auth.bindingById(sessions[3].sessionId));
+    f.players.prepare('UPDATE player_sessions SET expires=? WHERE digest=?').run(Date.now()-1,sessions[3].digest);await denied(sessions[3]);
+    f.players.prepare('UPDATE player_sessions SET digest=? WHERE digest=?').run(hash('replacement'),sessions[0].digest);await denied(sessions[0]);
+    assert.ok(reads.length>0);
+  } finally {f.close();}
+});
+
+test('async binding rejects ambiguous cookies and invalid ids, and retains expiry from its one validated row',async()=>{
+  const f=fixture();f.local();
+  try {
+    const token=randomBytes(32).toString('hex'),digest=createHash('sha256').update(token).digest('hex'),sessionId='player-'+digest;
+    const expiresAt=Date.now()+60000,cookie='player_session='+token;
+    f.players.prepare('INSERT INTO player_sessions VALUES(?,?,?,?,?)').run(digest,'player-1',expiresAt,null,null);
+    const reads=[];let afterSessionRead;
+    const db={prepare(sql){assert.match(sql,/^SELECT /);return {async get(...args){
+      reads.push(sql);const row=f.players.prepare(sql).get(...args);
+      if(sql.includes('FROM player_sessions')&&afterSessionRead){const hook=afterSessionRead;afterSessionRead=null;hook();}
+      return row;
+    }};}};
+    const auth=asyncPlayerAuth(db,()=>assert.fail('read cannot create a player'));
+    for(const value of ['',cookie+'; '+cookie,'player_session=bad; '+cookie,cookie+'; player_session=',cookie+'; player_session']){
+      assert.equal(await auth.binding({headers:{cookie:value}}),null);
+    }
+    for(const value of [undefined,null,123,digest,'preview-'+digest,'player-'+digest.toUpperCase(),sessionId+'x']){
+      assert.equal(await auth.bindingById(value),null);
+    }
+    assert.deepEqual(reads,[],'invalid bindings cannot reach the database');
+    assert.deepEqual(await auth.session({headers:{cookie:cookie+'; '+cookie}}),{playerId:'player-1',partnerKeyId:null},'legacy session cookie parsing is unchanged');
+    reads.length=0;
+    afterSessionRead=()=>f.players.prepare('UPDATE player_sessions SET expires=? WHERE digest=?').run(expiresAt+10000,digest);
+    assert.deepEqual(await auth.binding({headers:{cookie:'other=fixture; '+cookie}}),{actorId:'player-1',sessionId,expiresAt});
+    assert.equal(reads.filter(sql=>sql.includes('FROM player_sessions')).length,1,'expiry is not fetched in a second lookup');
+    assert.equal((await auth.bindingById(sessionId)).expiresAt,expiresAt+10000,'a later revalidation reads the current row');
+    f.players.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest);
+    assert.equal(await auth.bindingById(sessionId),null);
+  } finally {f.close();}
+});
+
+test('async binding propagates SQL and authority failures without an anonymous fallback',async()=>{
+  const token='a'.repeat(64),digest=createHash('sha256').update(token).digest('hex'),request={headers:{cookie:'player_session='+token}};
+  const sqlError=new Error('synthetic SQL failure');
+  const broken=asyncPlayerAuth({prepare(){return {get:async()=>{throw sqlError;}};}},()=>assert.fail('no writes'));
+  for(const invoke of [()=>broken.binding(request),()=>broken.bindingById('player-'+digest),()=>broken.session(request)]){
+    await assert.rejects(invoke,error=>error===sqlError);
+  }
+  const authorityError=new Error('synthetic authority failure');
+  const db={prepare(sql){return {get:async()=>sql.includes('FROM player_sessions')
+    ?{player_id:'partner-player',source_stamp:'partner:fixture-key',expires:Date.now()+60000}:{status:'active'}};}};
+  const auth=asyncPlayerAuth(db,()=>assert.fail('no writes'),null,{partnerAuthority:async()=>{throw authorityError;}});
+  await assert.rejects(()=>auth.binding(request),error=>error===authorityError);
+  await assert.rejects(()=>auth.bindingById('player-'+digest),error=>error===authorityError);
+});

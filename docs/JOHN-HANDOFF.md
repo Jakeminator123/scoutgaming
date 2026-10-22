@@ -34,6 +34,32 @@ prov och gränser. Review gäller hela produktdeltat från ovanstående fulla ba
 senare dokumentation/testregistrering ändrar inte produkten. Slutlig normalhook
 och exakt leveranshead redovisas i PR:n och masterplanens status.
 
+Nästa koddelta från PR336/f34f8e38 kompletterar den verkliga Node-upgradegränsen
+med befintlig gateway-ws 8.21.3, noServer och en enda framtida dispatcher.
+Exakt engine-Host/browser-Origin/rumsväg och privata ingressens ansvar hålls isär;
+forwarded-host är ingen behörighet. Auth måste bli klar före101, okända vägar
+lämnas till övrig dispatch, och timeout/abort/tidig stängning/headbytes/dubbel
+anropning/shutdown hanteras utan sen upgrade. Ingen listener installeras automatiskt.
+6/6 prov,0skip, inklusive riktig loopback-HTTP/ws med kanalporten. Testport53236
+är stängd, noll egna sockets och efterkontroll gav ECONNREFUSED. Befintlig exakt
+installerad gatewaydependency användes genom processlokal resolution; inga
+installationer, manifest-/lockändringar eller primaryfiler ändrades. Nätprovet
+är obligatoriskt i CI, vars befintliga setup redan installerar gateway-ws.
+Logg: `arkiv/2026-10-22/shared-room-transport/room-upgrade.log`.
+
+Asynkron spelar-auth har interna skrivfria `binding(req)`/`bindingById`
+med digestbundet session-ID och utgångstid från samma validerade rad. Aktiva
+spelare, credentialstämpel, BO-epoch och partneråterkallelse kontrolleras som
+förut; det publika `session()`-svaret är oförändrat. Dubbla cookies nekas i
+bindningen; inga cookies/sessioner utfärdas och inget schema ändras.
+Ingen ny SQL-cancel implementeras; befintliga PG-tidsgränser kvarstår.
+j04_resume har oberoende läst authdeltat utan blockerande kodfynd; root läste
+även BIGINT-normaliseringen i gemensam PG-adapter. Sluthead/hook och oberoende
+upgrade-review redovisas i PR/status. kevin_plan läste hela upgrade-deltat och
+6/6-loggen utan blockerande fynd. Authloggen34/34 finns nu som uttryckligt märkt
+kopia av tidigare verktygsutdata i `shared-room-transport/auth-binding.log`. Faktisk app-/gateway-/relay-/Vercelrouting,
+rum→publiceringsbindning och K04-version/sink är fortfarande nästa inkoppling.
+
 Hostingvalet är befintlig Render `croupier-v2`, en verifierad instans med
 90s shutdown, ingen ny tjänst eller skalning. Kvar: verklig auth/HTTP-upgrade,
 K04-import med beständig mottagarversion och notifikation, start före readiness,
