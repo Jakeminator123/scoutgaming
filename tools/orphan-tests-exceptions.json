@@ -30,26 +30,6 @@
     "reason": "Existing opt-in rendering check for edge parameters, shader and compositor source bindings; needs no media. This inventory does not add it to default regression."
   },
   {
-    "path": "tools/media/test-astrid-folded-rest-lifecycle.mjs",
-    "kind": "opt-in",
-    "reason": "Existing opt-in check of the Astrid folded-rest orchestration with synthetic video frames; needs no media. This inventory does not add it to default regression."
-  },
-  {
-    "path": "tools/media/test-astrid-green-box-right.mjs",
-    "kind": "opt-in",
-    "reason": "Requires authoring take.json files in media/dealers/astrid/runtime/composited/astrid-table-v2 and astrid-blue-box4; these local media fixtures are not a default CI prerequisite."
-  },
-  {
-    "path": "tools/media/test-astrid-green-first-card.mjs",
-    "kind": "opt-in",
-    "reason": "Existing standalone check of the opted-in Astrid green dealer-card path; needs no media. This inventory does not change its existing opt-in execution status."
-  },
-  {
-    "path": "tools/media/test-astrid-idle-scheduler.mjs",
-    "kind": "opt-in",
-    "reason": "Combines scheduler behavior with historical web/public/review manifests and media hashes; some cases skip without the idle manifest. Keep opt-in until the mixed fixture requirements are reviewed separately."
-  },
-  {
     "path": "tools/media/test-blender-card-layout.mjs",
     "kind": "opt-in",
     "reason": "Existing standalone felt-corner landing check imports the live performance-player module and needs no media. Retained as an opt-in check; its old filename does not establish CI coverage."
@@ -68,5 +48,25 @@
     "path": "test/postgres-shared-command.mjs",
     "kind": "helper",
     "reason": "Exports eight real PostgreSQL authority/transaction checks run by tools/run-shared-table-qa.mjs in croupier.yml's database/shared-blackjack step using the runner-owned isolated cluster; not a direct node:test suite."
+  },
+  {
+    "path": "test/room-idle-kevin-parity.mjs",
+    "kind": "opt-in",
+    "reason": "K07 parity suite for room-idle.mjs against the frozen Kevin idle-chain fixture (5aa7ed10); pure node:test, no media or database. Opt-in until a CI regression group lists it."
+  },
+  {
+    "path": "test/table-behaviours-kevin.mjs",
+    "kind": "opt-in",
+    "reason": "K07 port of five table behaviours from Kevin's shared-table tests (5aa7ed10) against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
+  },
+  {
+    "path": "test/table-limits-kevin.mjs",
+    "kind": "opt-in",
+    "reason": "K07 port of Kevin's table-limits behaviours (5aa7ed10) per limit preset against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
+  },
+  {
+    "path": "test/table-restart-kevin.mjs",
+    "kind": "opt-in",
+    "reason": "K07 scenario 10 (K06-K07-forberedelse §2.5): process restart mid-round after a split hand and an insurance yes with two players, against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
   }
 ]

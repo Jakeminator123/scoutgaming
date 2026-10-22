@@ -18,9 +18,6 @@ arkiv
 # Rebuild dependencies and Next output inside a controlled image build.
 node_modules
 **/node_modules
-lab/.next
-lab/.next-probe
-lab/tsconfig.tsbuildinfo
 **/test-results
 **/coverage
 
@@ -34,9 +31,10 @@ _ENVIROMENT-INFO.md
 **/*.pem
 **/*.p12
 **/*.pfx
-web/data
 lab/data
-lissabon/data
+web/data
+apps/studio/data
+services/game/data
 open-claw/lab/data
 services/openclaw/lab/data
 
@@ -68,20 +66,13 @@ emil/astrid-demo-v3-reference
 # Documentation, review sources, and tests are not runtime inputs.
 docs
 test
-lab/test
 open-claw/lab/test
 services/openclaw/lab/test
 design-kit
 reference
-random-stuff-jakob
 
 # Relocated Studio: retain old private/build guards for files left in place.
 apps/studio/.next
 apps/studio/.next-probe
 apps/studio/tsconfig.tsbuildinfo
-apps/studio/data
 apps/studio/test
-
-# Game source moved; old private state remains excluded.
-web/data
-services/game/data

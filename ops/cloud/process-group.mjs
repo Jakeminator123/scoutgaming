@@ -86,7 +86,9 @@ export async function startChildren(specs, { spawnProcess = spawn, wait = waitFo
   const stop = () => stopPromise ??= Promise.all([terminateChild(lab), terminateChild(web)]);
   try {
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');
-    await portCheck();
+    // A game-only specification set (CROUPIER_CLOUD_LAB_CHILD=0) has no Lab
+    // entry: only Web is spawned, awaited and watched.
+    await portCheck(specs.lab ? undefined : [WEB_PORT]);
     // Each stream is observed only when an explicit line filter is supplied;
     // console.warn diagnostics arrive on stderr, console.info on stdout.
     const observeOut = typeof specs.web.onStdoutLine === 'function', observeErr = typeof specs.web.onStderrLine === 'function';
@@ -99,6 +101,10 @@ export async function startChildren(specs, { spawnProcess = spawn, wait = waitFo
     webExit = new Promise(resolve => web.once('exit', () => resolve('web-exit')));
     await wait(web, 'http://127.0.0.1:4173/api/auth/access', response => [200, 302, 401].includes(response.status), 30000, signal);
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');
+    if (!specs.lab) {
+      if (web.exitCode !== null || web.signalCode !== null) throw new Error('A cloud child exited before readiness.');
+      return { web, lab: null, stop, ended: webExit };
+    }
     lab = spawnProcess(specs.lab.command, specs.lab.args,
       { cwd: specs.lab.cwd, env: specs.lab.env, stdio: 'ignore', windowsHide: true });
     lab.on('error', () => {});

@@ -54,6 +54,7 @@ async function preflight(env) {
   const config = validateCloudConfig(env);
   await inspectCloudDisk(config);
   await inspectCloudBootstrap(config);
+  if (!config.labChild) return config; // Game-only image: no Next build exists or is needed.
   const build = await stat(join(REPOSITORY, 'apps/studio/.next/BUILD_ID')).catch(() => null);
   if (!build?.isFile()) throw new Error('A production Lab build is required.');
   const built = JSON.parse(await readFile(join(REPOSITORY, 'apps/studio/.next/required-server-files.json'), 'utf8'));

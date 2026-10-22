@@ -11,7 +11,7 @@ import { validateGameConnection } from '../../packages/storage/server/postgres-s
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
-import { validatePrivateMedia } from '../../apps/studio/lib/cloud-media-store.mjs';
+import { validatePrivateMedia } from '../../packages/studio-registry/server/private-media-contract.mjs';
 import { movingDriftConfiguration } from '../../packages/presentation/contracts/moving-drift.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -95,6 +95,11 @@ function optionalPair(env, urlName, tokenName) {
 
 export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.NODE_ENV !== 'production') fail('NODE_ENV');
+  // The game-only image (Dockerfile.game) sets CROUPIER_CLOUD_LAB_CHILD=0: no
+  // Next Lab child, no Lab build preflight and no /studio upstream. Unset or 1
+  // keeps the existing two-child runtime unchanged.
+  if (env.CROUPIER_CLOUD_LAB_CHILD !== undefined && !['', '0', '1'].includes(env.CROUPIER_CLOUD_LAB_CHILD)) fail('CROUPIER_CLOUD_LAB_CHILD');
+  const labChild = env.CROUPIER_CLOUD_LAB_CHILD !== '0';
   const nativeP6QaRouter=nativeP6QaRouterConfig(env);
   if (env.CROUPIER_PLAYER_ACCOUNTS && !['0', '1'].includes(env.CROUPIER_PLAYER_ACCOUNTS)) fail('CROUPIER_PLAYER_ACCOUNTS');
   for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
@@ -272,7 +277,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (partnerPresent.every(Boolean) && (!/^ck_live_[A-Za-z0-9_-]{24}$/.test(env.BETTALOTTO_PARTNER_KEY_ID)
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
-  return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
+  return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labChild, labBasePath, publicPort, dataRoot, paths, videoArchive,
     database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport, nativeP6QaRouter,
     director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
     mediaStorage, studioPolicy, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
@@ -329,7 +334,8 @@ export async function inspectCloudBootstrap(config) {
 }
 
 export function childSpecifications(config, env = process.env, { labInternalSecret } = {}) {
-  if (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32) {
+  const labChild = config.labChild !== false;
+  if (labChild && (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32)) {
     throw new Error('The cloud Lab child requires an internal secret.');
   }
   // Never pass the deployment environment wholesale to either child.
@@ -417,7 +423,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         OPENCLAW_PRODUCT_SPEECH_TOKEN: config.productSpeech.token,
         OPENCLAW_SPEECH_TIMEOUT_MS: String(config.speechTimeoutMs),
         OPENCLAW_TIMEOUT_MS: String(config.timeoutMs) } },
-    lab: { command: process.execPath,
+    ...(labChild ? { lab: { command: process.execPath,
       args: [join(REPOSITORY, 'apps/studio/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
       cwd: join(REPOSITORY, 'apps', 'studio'),
       env: { ...shared, HOST: '127.0.0.1', PORT: String(LAB_PORT), CROUPIER_LAB_DIST_DIR: '.next',
@@ -429,6 +435,6 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         BO_URL: config.boOrigin, CROUPIER_GAME_ORIGIN: config.gameOrigin,
         ...(config.zonesDatabaseUrl ? { CROUPIER_ZONES_DATABASE_URL: config.zonesDatabaseUrl } : {}),
         BETTALOTTO_PARTNER_BASE_URL: config.gameOrigin,
-        ...(config.partner ?? {}), LAB_REMOTE_URL: config.labRemote.url, LAB_REMOTE_TOKEN: config.labRemote.token } },
+        ...(config.partner ?? {}), LAB_REMOTE_URL: config.labRemote.url, LAB_REMOTE_TOKEN: config.labRemote.token } } } : {}),
   };
 }

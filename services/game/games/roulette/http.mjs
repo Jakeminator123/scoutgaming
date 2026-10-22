@@ -28,7 +28,9 @@ export async function rouletteDocument(req,res,{ authenticated, guestPreview, re
     res.writeHead(303,{...headers,Location:'/lobby'}); res.end(); return true;
   }
   if (url.pathname === '/play/roulette' && !authenticated && !guestPreview) {
-    res.writeHead(303,{ ...headers,Location:'/player-login?returnTo='+encodeURIComponent('/play/roulette'+url.search) }); res.end(); return true;
+    // Sign-in returns to the room's public address; the selectors are validated above.
+    const room = url.search ? '&'+url.search.slice(1) : '';
+    res.writeHead(303,{ ...headers,Location:'/player-login?returnTo='+encodeURIComponent('/game?game=roulette'+room) }); res.end(); return true;
   }
   let resolvedRoom;
   if (url.pathname === '/play/roulette' && resolveRoom) {

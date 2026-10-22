@@ -10,7 +10,7 @@ import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateC
 import { createCloudGateway, proxyHeaders, upstreamForHost, upstreamForRequest } from '../gateway.mjs';
 import { startChildren, terminateChild, observeChildStdout } from '../process-group.mjs';
 import { PassThrough } from 'node:stream';
-import { assertCloudAccessReady } from '../start.mjs';
+import { assertCloudAccessReady, main } from '../start.mjs';
 
 const fixture = () => ({
   NODE_ENV: 'production', PORT: '10000',
@@ -569,4 +569,41 @@ test('process group starts Web then Lab and signals both before waiting, once ev
   });
   await Promise.all([group.stop(), group.stop()]);
   assert.deepEqual(activity, ['start:web', 'start:lab', 'stop:lab:SIGTERM', 'stop:web:SIGTERM']);
+});
+
+test('CROUPIER_CLOUD_LAB_CHILD=0 runs one Web child without a Lab secret or Next build; unset and 1 keep both children', async () => {
+  const gameOnly = { ...fixture(), CROUPIER_CLOUD_LAB_CHILD: '0',
+    CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'fixture-admin', CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'fixture-bootstrap-password' };
+  delete gameOnly.CROUPIER_CLOUD_DATA_ROOT; // Mountless Neon/Blob like production.
+  const config = validateCloudConfig(gameOnly);
+  assert.equal(config.labChild, false);
+  assert.equal(validateCloudConfig(fixture()).labChild, true);
+  for (const value of ['', '1']) assert.equal(validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_LAB_CHILD: value }).labChild, true);
+  for (const value of ['0 ', 'off', 'false', 'no']) assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_LAB_CHILD: value }), /CROUPIER_CLOUD_LAB_CHILD/);
+  const specs = childSpecifications(config, gameOnly);
+  assert.deepEqual(Object.keys(specs), ['web']);
+  assert.equal(specs.web.env.CROUPIER_CLOUD_RUNTIME, '1');
+  assert.equal(specs.web.env.CROUPIER_CLOUD_LAYOUT, 'separate-hosts');
+  assert.equal(specs.web.env.CROUPIER_LAB_INTERNAL_SECRET, undefined);
+  assert.equal(specs.web.env.CROUPIER_CLOUD_LAB_CHILD, undefined, 'the switch is a launcher setting, not a game setting');
+  assert.deepEqual(specs.web.env, childSpecifications(config, gameOnly, { labInternalSecret: LAB_SECRET }).web.env);
+  assert.throws(() => childSpecifications(validateCloudConfig(fixture()), fixture()), /internal secret/);
+  assert.ok(childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET }).lab);
+  const activity = [];
+  const group = await startChildren(specs, {
+    spawnProcess: (_command, _args, options) => {
+      activity.push(`start:${options.cwd.endsWith('studio') ? 'lab' : 'web'}`);
+      const child = Object.assign(new EventEmitter(), { pid: 321, exitCode: null, signalCode: null,
+        kill(signal) { activity.push(`stop:${signal}`); queueMicrotask(() => { child.signalCode = signal; child.emit('exit', null, signal); child.emit('close', null, signal); }); return true; } });
+      return child;
+    },
+    wait: async (_child, url) => { activity.push(`wait:${new URL(url).port}`); },
+    portCheck: async ports => { activity.push(`ports:${ports.join(',')}`); },
+  });
+  assert.equal(group.lab, null);
+  await Promise.all([group.stop(), group.stop()]);
+  assert.deepEqual(activity, ['ports:4173', 'start:web', 'wait:4173', 'stop:SIGTERM']);
+  assert.equal(await group.ended, 'web-exit');
+  // Read-only --check succeeds without apps/studio/.next: no disk, database or Lab build is read.
+  assert.equal(await main(['--check'], gameOnly), 0);
 });
