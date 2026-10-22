@@ -42,17 +42,51 @@ function setup({ store = {}, coordinator = {}, options = {} } = {}) {
   return { runtime, timer, calls, errors, store: fakeStore, coordinator: fakeCoordinator };
 }
 
+test('health reports sanitized pump failure and recovery without doing work', async t => {
+  let at = 10, clockReads = 0, failure = null;
+  const h = setup({ coordinator: { async dueTicks() { if (failure) throw failure; return []; } },
+    options: { clock: { now() { clockReads++; return at; } } } });
+  t.after(() => h.runtime.stop());
+  assert.deepEqual(h.runtime.health(), { state: 'stopped', running: false, inFlight: false,
+    lastSuccessAt: null, failed: false, lastErrorAt: null });
+  assert.equal(clockReads, 0);
+  await h.runtime.start();
+  at = 20; await h.runtime.pump();
+  assert.deepEqual(h.runtime.health(), { state: 'running', running: true, inFlight: false,
+    lastSuccessAt: 20, failed: false, lastErrorAt: null });
+  failure = new Error('private SQL connection and credentials must not appear in health');
+  at = 30; await assert.rejects(h.runtime.pump(), error => error === failure);
+  assert.deepEqual(h.runtime.health(), { state: 'running', running: true, inFlight: false,
+    lastSuccessAt: 20, failed: true, lastErrorAt: 30 });
+  failure = null; at = 40; h.timer.fire(); await flush();
+  const recovered = h.runtime.health();
+  assert.deepEqual(recovered, { state: 'running', running: true, inFlight: false,
+    lastSuccessAt: 40, failed: false, lastErrorAt: 30 });
+  const calls = structuredClone(h.calls), reads = clockReads, jobs = [...h.timer.pending];
+  assert.ok(Object.isFrozen(recovered));
+  assert.throws(() => { recovered.state = 'stopped'; }, TypeError);
+  assert.deepEqual(h.runtime.health(), recovered);
+  assert.deepEqual(h.runtime.health(), recovered);
+  assert.equal(clockReads, reads); assert.deepEqual(h.calls, calls);
+  assert.deepEqual([...h.timer.pending], jobs);
+});
+
 test('readiness is single-flight and a failed schema check never starts work', async t => {
   const gate = deferred(), missing = new Error('schema missing'); let attempts = 0;
   const h = setup({ store: { assertInstalled() { attempts++; return gate.promise; } } });
   t.after(() => h.runtime.stop());
   const first = h.runtime.start(); assert.equal(h.runtime.start(), first);
+  assert.equal(h.runtime.health().state, 'starting');
   assert.equal(attempts, 1); assert.equal(h.timer.pending.size, 0);
   await assert.rejects(h.runtime.pump(), /not running/);
   gate.reject(missing); await assert.rejects(first, error => error === missing);
+  assert.deepEqual(h.runtime.health(), { state: 'stopped', running: false, inFlight: false,
+    lastSuccessAt: null, failed: true, lastErrorAt: 100000 });
   assert.equal(h.calls.due, 0); assert.equal(h.timer.pending.size, 0);
   h.store.assertInstalled = async () => {};
   await h.runtime.start(); assert.equal(h.timer.delay(), 0);
+  assert.equal(h.runtime.health().failed, true, 'schema success alone does not prove the pump recovered');
+  await h.runtime.pump(); assert.equal(h.runtime.health().failed, false);
   assert.equal(h.runtime.store, h.store); assert.equal(h.runtime.coordinator, h.coordinator);
 });
 
@@ -79,9 +113,13 @@ test('stop drains the active pass, clears its timer and leaves the supplied pool
   await h.runtime.start(); h.timer.fire(); await flush();
   let stopped = false; const stopping = h.runtime.stop().then(() => { stopped = true; });
   await flush(); assert.equal(stopped, false);
+  assert.deepEqual(h.runtime.health(), { state: 'stopping', running: false, inFlight: true,
+    lastSuccessAt: null, failed: false, lastErrorAt: null });
   await assert.rejects(h.runtime.pump(), /not running/);
   await assert.rejects(h.runtime.start(), /Await stop/);
   gate.resolve(); await stopping;
+  assert.deepEqual(h.runtime.health(), { state: 'stopped', running: false, inFlight: false,
+    lastSuccessAt: 100000, failed: false, lastErrorAt: null });
   assert.equal(seen.length, 1); assert.equal(h.timer.pending.size, 0);
   await h.runtime.start(); assert.equal(h.timer.pending.size, 1);
   await h.runtime.stop(); assert.equal(h.timer.pending.size, 0);
@@ -92,7 +130,10 @@ test('stop during schema readiness waits and cannot resurrect the scheduler', as
   const starting = h.runtime.start(); let stopped = false;
   const stopping = h.runtime.stop().then(() => { stopped = true; });
   await flush(); assert.equal(stopped, false);
+  assert.equal(h.runtime.health().state, 'stopping');
   gate.resolve(); await Promise.all([starting, stopping]);
+  assert.equal(h.runtime.health().state, 'stopped');
+  assert.equal(h.runtime.health().lastSuccessAt, null);
   assert.equal(h.timer.pending.size, 0); assert.equal(h.calls.due, 0);
 });
 
@@ -122,6 +163,7 @@ test('scheduled failures reach onError and stop waits for its owned reporting jo
     options: { async onError(error) { errors.push(error); await gate.promise; } } });
   await h.runtime.start(); h.timer.fire(); await flush();
   assert.deepEqual(errors, [failure]); assert.equal(h.timer.pending.size, 0);
+  assert.equal(h.runtime.health().failed, true);
   let stopped = false; const stopping = h.runtime.stop().then(() => { stopped = true; });
   await flush(); assert.equal(stopped, false);
   gate.resolve(); await stopping; assert.equal(h.timer.pending.size, 0);
@@ -131,8 +173,10 @@ test('invalid clocks never reach due jobs; absent sink leaves committed delivery
   let at = NaN;
   const h = setup({ options: { clock: { now: () => at } } }); t.after(() => h.runtime.stop());
   await h.runtime.start(); await assert.rejects(h.runtime.pump(), /Invalid shared table clock/);
+  assert.equal(h.runtime.health().failed, true); assert.equal(h.runtime.health().lastErrorAt, null);
   assert.equal(h.calls.due, 0); assert.equal(h.calls.delivery, 0);
   at = 100000; const result = await h.runtime.pump();
+  assert.equal(h.runtime.health().failed, false); assert.equal(h.runtime.health().lastSuccessAt, at);
   assert.equal(h.calls.due, 1); assert.equal(h.calls.delivery, 0); assert.equal(result.outbox, null);
 });
 

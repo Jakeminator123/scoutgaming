@@ -29,6 +29,20 @@ export function createPostgresTableRuntime({
   const store = createStore({ pool, walletMode, lockTimeoutMs, statementTimeoutMs });
   const coordinator = createCoordinator({ store, clock: checkedClock, random });
   let state = 'stopped', timer = null, starting = null, stopping = null, inFlight = null, background = null;
+  let lastSuccessAt = null, lastErrorAt = null, failed = false;
+
+  // A fresh snapshot only: no SQL, clock reads, timers or raw error details.
+  // inFlight describes the pump; state also covers startup and reporting drain.
+  // A full successful pump clears failed; historical timestamps survive stop/start.
+  function health() {
+    return Object.freeze({ state, running: state === 'running', inFlight: inFlight !== null,
+      lastSuccessAt, failed, lastErrorAt });
+  }
+  function healthTime() {
+    try { return checkedClock.now(); }
+    catch { return null; } // Diagnostics must never replace the original outcome.
+  }
+  function recordFailure() { failed = true; lastErrorAt = healthTime(); }
 
   async function runPass() {
     const due = await coordinator.dueTicks(checkedClock.now()), ticks = [], errors = [];
@@ -52,7 +66,11 @@ export function createPostgresTableRuntime({
 
   function pump() {
     if (state !== 'running') return Promise.reject(new Error('Shared table runtime is not running'));
-    if (!inFlight) inFlight = Promise.resolve().then(runPass).finally(() => { inFlight = null; });
+    if (!inFlight) inFlight = Promise.resolve().then(runPass).then(result => {
+      lastSuccessAt = healthTime(); failed = false; return result;
+    }, error => {
+      recordFailure(); throw error;
+    }).finally(() => { inFlight = null; });
     return inFlight;
   }
 
@@ -81,6 +99,7 @@ export function createPostgresTableRuntime({
         if (state !== 'starting') return; // stop during readiness must not arm a timer.
         state = 'running'; schedule(0);
       } catch (error) {
+        recordFailure();
         if (state !== 'stopping') state = 'stopped';
         throw error;
       }
@@ -98,5 +117,5 @@ export function createPostgresTableRuntime({
     return stopping;
   }
 
-  return { start, stop, pump, coordinator, store };
+  return { start, stop, pump, health, coordinator, store };
 }

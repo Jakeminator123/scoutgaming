@@ -1,5 +1,54 @@
 # Aktuell handoff — Scoutgaming
 
+## J05/J07/J08 — oberoende rumstransport och driftförberedelse — 22 oktober 2026
+
+Förberedelsen på `codex/shared-room-transport` utgår från J08-head
+`9b43e3e7f7cde871cdba9efe81800bf8b5c4d329`. J08:s CI39701503691 och
+GitGuardian119571576203 är verifierat completed/success på den basen.
+Ingen hel aktivitet färdigbockas av följande delsteg.
+
+- `shared-room-channel.mjs` är en läsande portadapter, ännu ingen WebSocketlistener.
+  Exakt browser-Origin, strikt rumsadress och serverägd session/aktör/företag/
+  rum/paketrevision kontrolleras före läsning och på nytt före sändning.
+  Commit-hint ger auktoritativ omläsning, inte outboxkvittens. Publik projektion
+  tar bara tillåtna fält; rums- och presentationsversion måste matcha. Återkallad
+  session, utgången bindning, bufferttryck och lästimeout stänger anslutningen.
+  Listener måste senare kontrollera konfigurerad enginehost/ingress; proxyheaders
+  är ingen behörighet. Snapshot utan K04:s `presentationVer` nekas.
+- J07-runtime har skrivfri, sanerad `health()`: start/pumpfel, lyckad återhämtning
+  och stop/drain blir avläsbara utan SQL, klockläsning eller nya timerjobb.
+  Den är ännu inte inkopplad i gameboot eller gatewayns readiness.
+- Native J08-publicering utan materialresolver ger 422 med den fasta offentliga
+  koden `studio_room_game_material_unavailable`. Verkliga native/API-handlers
+  provas på båda API-basvägarna; paket/config/head/audit/utkast förblir orörda.
+  Auth/origin nekas före dataread, och inga provideranrop görs.
+
+Fokuserad verifiering på Volta Node24.21.0: rumskanal 9/9, runtime 10/10,
+native J08/API 15/15, alla 0 skip. Socketportar och syntetiska data, inga
+produktservrar, lyssnande portar eller molnskrivningar. Loggar finns i
+`arkiv/2026-10-22/shared-room-transport/{room-channel,runtime-health}.log`
+och `arkiv/2026-10-22/transport/j08-native-dryrun-{before,after,commands}.log`.
+Oberoende kevin_plan läste kanal/API-deltat och loggar; j04_resume läste
+runtime/health-deltat och loggen. Inga blockerande fynd. Root läste produktkod,
+prov och gränser. Review gäller hela produktdeltat från ovanstående fulla bashead;
+senare dokumentation/testregistrering ändrar inte produkten. Slutlig normalhook
+och exakt leveranshead redovisas i PR:n och masterplanens status.
+
+Hostingvalet är befintlig Render `croupier-v2`, en verifierad instans med
+90s shutdown, ingen ny tjänst eller skalning. Kvar: verklig auth/HTTP-upgrade,
+K04-import med beständig mottagarversion och notifikation, start före readiness,
+stopp/drain före poolstängning och sanerad gateway-readiness. Ingen produkt-
+eller GPU-aktivering följer av denna leverans. K05 blockerar endast materialbindningen.
+
+Jakob har uttryckligen godkänt en tom isolerad Neon-staging enligt
+[stagingvillkoren](ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging).
+Skapandet är blockerat: Neon-API:t nekar projekt i Vercel-hanterad organisation;
+Vercel Marketplace-verktyget exponerar inte alla godkända computeinställningar.
+Exakt namnsökning efter försöket gav inget projekt. Ingen staging eller DDL
+är skapad/körd. Återuppta via tillgänglig Vercel/Neon-administration som kan
+verifiera samma godkända inställningar; upprepa inte oförändrat API-anrop.
+
+
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
@@ -77,9 +126,10 @@ Fjärr-main `6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad` (J04/lobby) är nu
 integrerad konfliktfritt från denna head. De identiska lobbylänksändringarna
 sammanföll; J04:s och J08:s separata handoff-/fullhookblock är bevarade.
 Importerade mainfiler är jämförda mot det frysta källträdet; inga produktfiler
-avviker. Diffkontroll passerar. Den gröna CI:n gäller före mainintegrationen;
+avviker. Diffkontroll passerar. CI39701503691 är nu verifierat completed/success på
+`9b43e3e7f7cde871cdba9efe81800bf8b5c4d329`, liksom GitGuardian119571576203;
 kevin_plan har oberoende läst hela integrationsdeltat utan blockerande fynd.
-Root har läst överlappen; ny integrations-CI återstår. Ingen K04-/K05-aktivering,
+Root har läst överlappen; integrations-CI är grön. Ingen K04-/K05-aktivering,
 produktions-DDL eller tung omkörning följer av integrationen.
 
 Nu även **9/9 riktiga PostgreSQL-grupper**, Node24.21.0/PostgreSQL16.15 i ägt

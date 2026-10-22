@@ -165,6 +165,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         if (safe) return json(safe.body,safe.status);
       }
       const status = publicErrors.has(error?.statusCode) ? error.statusCode : 500;
+      if (action === 'room-game-config' && status === 422 && error?.code === 'studio_room_game_material_unavailable') {
+        const code = 'studio_room_game_material_unavailable';
+        return json({ error: code, code }, status);
+      }
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
       }

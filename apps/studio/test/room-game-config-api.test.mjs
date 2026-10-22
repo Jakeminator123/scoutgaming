@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
+import {createNativeStudioRequestHandlers} from '../lib/studio-native-runtime.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
@@ -182,4 +183,54 @@ test('J08 HTTP boundary preserves private reads, origin protection and package r
   const forged=request(publishBody);forged.headers.set('origin','https://other.invalid');assert.equal((await http.handle(forged)).status,403);assert.equal(f.snapshot().packages.length,1);
   const published=await http.handle(request(publishBody));assert.equal(published.status,200);assert.equal((await published.json()).published.packageRevision,2);
   assert.deepEqual(transactions[1],{presentationDocuments:['project','administration'],presentationOperatorIds:['north']});
+});
+
+test('J08 native material dry-run refuses publication without a resolver and preserves the saved draft',async t=>{
+  const provider=t.mock.method(globalThis,'fetch',()=>{throw Error('unexpected provider request');});
+  for(const apiBase of ['/studio/api/admin','/api/admin']) {
+    const f=fixture({resolver:false}),origin='https://studio.invalid',path=origin+apiBase+'/room-game-config';
+    f.changeCapture(()=>{throw Error('material capture must not run without a resolver');});
+    let identity={...actor,scope};
+    const api=createStudioAdminApi({authorize:async()=>{
+      if(!identity)throw Object.assign(Error('private authentication failure'),{statusCode:401});return identity;
+    },allowedOrigins:[origin],publicHosts:['studio.invalid'],handlers:f.api.handlers,apiBase,mutationTransaction:async work=>work()});
+    const native=createNativeStudioRequestHandlers({configuration:()=>({allowedOrigins:[origin,'https://game.invalid'],
+      publicHosts:['studio.invalid','game.invalid'],apiBase,authBase:apiBase.replace('/admin','/auth')}),runtime:async()=>({api})});
+    const request=(body,extra={})=>new Request(path,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',...extra},body:JSON.stringify(body)});
+    const save={action:'save-draft',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:'admin-1',expectedPackageRevision:1,gameConfig:{language:'sv',limitPreset:'casual'}};
+    const saved=await native.handleNativeAdmin(request(save));assert.equal(saved.status,200);const draft=await saved.json();
+    assert.deepEqual(draft.publication,{ready:false,reason:'studio_room_game_material_unavailable'});
+    const before=f.snapshot(),read=await native.handleNativeAdmin(new Request(path+'?operatorId=north&roomId=room-test'));
+    assert.equal(read.status,200);assert.equal(read.headers.get('cache-control'),'private, no-store');
+    assert.deepEqual((await read.json()).publication,draft.publication);
+    const publish={action:'publish',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:draft.administrationRevision,
+      expectedPackageRevision:1,expectedDraftRevision:draft.draft.revision};
+    const traceBefore=f.trace.length;
+    identity=null;assert.equal((await native.handleNativeAdmin(request(publish))).status,401);
+    identity={user:'partner',role:'partner',scope};assert.equal((await native.handleNativeAdmin(request(publish))).status,403);
+    identity={...actor,scope};assert.equal((await native.handleNativeAdmin(request(publish,{origin:'https://other.invalid'}))).status,403);
+    assert.equal(f.trace.length,traceBefore,'auth/origin rejection happens before any repository reads');
+    const denied=await native.handleNativeAdmin(request(publish));assert.equal(denied.status,422);
+    assert.deepEqual(await denied.json(),{error:'studio_room_game_material_unavailable',code:'studio_room_game_material_unavailable'});
+    assert.equal(denied.headers.get('cache-control'),'private, no-store');
+    assert.deepEqual(f.snapshot(),before,'package, config, head, audit and saved draft remain unchanged');
+    assert.equal(f.trace.some(marker=>marker?.startsWith('material:')||marker==='operator-store:publish-package'||marker==='room-game-config:publish-config'),false);
+  }
+  assert.equal(provider.mock.callCount(),0);
+});
+
+test('J08 public material error is restricted to its action, status and fixed code',async()=>{
+  const origin='https://studio.invalid',materialCode='studio_room_game_material_unavailable';
+  for(const [action,statusCode,code,expected] of [
+    ['room-game-config',422,materialCode,{error:materialCode,code:materialCode}],
+    ['room-game-config',422,'private_internal_code',{error:'Invalid data'}],
+    ['room-game-config',503,materialCode,{error:'Action unavailable'}],
+    ['room',422,materialCode,{error:'Invalid data'}],
+  ]) {
+    const path='/studio/api/admin/'+action;
+    const api=createStudioAdminApi({authorize:async()=>({...actor,scope}),allowedOrigins:[origin],publicHosts:['studio.invalid'],
+      handlers:new Map([['POST '+path,()=>{throw Object.assign(Error('private database detail'),{statusCode,code,detail:'private provider detail'});}]]),mutationTransaction:async work=>work()});
+    const response=await api.handle(new Request(origin+path,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:'{}'}));
+    assert.equal(response.status,statusCode);assert.deepEqual(await response.json(),expected);
+  }
 });

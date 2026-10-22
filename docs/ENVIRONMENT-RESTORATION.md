@@ -45,6 +45,45 @@ Två äldre native-QA-projekt i `jakeminator123s-projects` saknar produktionsdom
 och behåller sin datagräns enligt [miljöregistret](ENVIRONMENT-VARIABLES.md).
 En gammal READY-deployment är inget färskt funktions- eller isoleringsprov.
 
+## Isolerad K06/K07-staging
+
+Jakobs uttryckliga godkännande 22 oktober gäller endast det tomma projektet
+`croupier-k06-k07-staging` i Scoutgamings Vercel-hanterade Neonorganisation
+`org-green-butterfly-00780270`: PostgreSQL18, Frankfurt
+(`aws-eu-central-1`), fast0,25CU och autosuspend efter300s. Första provet
+begränsas till cirka24 aktiva timmar. Användningskvoter är ingen exakt dollargräns;
+lagring kan fortsätta kosta efter compute-stopp. Kopiera inga produktionsdata,
+lösenord eller roller. Ingen produktions-DDL, deploy, skalning eller ny Render-
+tjänst ingår. Detta är en verifieringsmiljö, inte en produktionsåterställning.
+
+Neon-API:s första skapandeförsök avvisades eftersom organisationen hanteras av
+Vercel. Efterföljande exakt namnsökning gav inget projekt. Marketplace-CLI:t
+exponerar inte PGversion, CU eller autosuspend vid skapandet; tillgänglig adminvy
+krävs för att verifiera godkända värden. Ingen resurs eller DDL har skapats.
+Använd inte produktionsgren, arkiverad dataklon eller okända standardvärden som
+ersättning. Befintlig Vercel-projektlänk ersätter inte dessa resursinställningar.
+
+När målet finns: verifiera sanitiserad projekt-/branch-/endpoint-/DB-identitet,
+inställningar och tomma syntetiska data innan anslutning. Använd separat
+`croupier_staging` med dedikerad migrationsägare; skriv aldrig en anslutningssträng
+i Git eller tråden. Granska och applicera följande Gitblobbar i ordning efter
+bekräftad tom målidentitet; tillämpning har ännu inte skett:
+
+| Fil | Fryst källa | SHA256 av exakta Gitbytes |
+| --- | --- | --- |
+| `ops/neon-game/product-schema.sql` | J08 `9b43e3e7` | `831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a` |
+| `ops/neon-game/008-shared-wallet.sql` | J08 `9b43e3e7` | `fdff425ee30557dc6874b021bbaf163c9db7e1ac8ce5fef499f1dec36346fd81` |
+| `ops/neon-game/009-shared-blackjack.sql` | J08 `9b43e3e7` | `73853e23080baf9c1257893f6b74a68dab7067862ad9787a9f3f6b1d01a72515` |
+| `ops/neon-game/010-presentation-receiver.sql` | K04 `1148fa76` | `214d9259d7d83b9084e12e3807e1ebf8fbbc5dc801392f361f4763a2b64cce43` |
+
+Fulla källheads: J08 `9b43e3e7f7cde871cdba9efe81800bf8b5c4d329`, K04
+`1148fa767de734c925bba3ea21938cf995f8bd5f`. Schema010 finns i K04, inte i
+transportförberedelsens bas. Vissa schemafiler är inte idempotenta; kör inte
+blinda omförsök. Läs tillbaka schema och pröva beständighet, två klienter och
+atomisk rollback med syntetiska data. Befintlig lokal PG-harness äger ett
+loopbackkluster och fysisk omstart; rikta den inte direkt mot Neon. Verifiera
+separat PG18/målanslutning innan K06/K07-integrationsacceptans.
+
 ## Byggdelar och Node-versioner
 
 | Källmapp | Ansvar | Node |
