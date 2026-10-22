@@ -33,7 +33,7 @@ export const READY_CONTACT = Object.freeze({
 const REST_TAKES = new Set(['flip']);
 
 export function parseCatalogue(text) {
-  const [head, ...lines] = String(text).split('\n').filter(Boolean);
+  const [head, ...lines] = String(text).split(/\r?\n/).filter(Boolean);
   if (head.split('\t').length !== COLUMNS.length) throw new Error('Unexpected media catalogue header');
   const rows = lines.map(line => {
     const cells = line.split('\t');
