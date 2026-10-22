@@ -623,6 +623,64 @@ visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
 
+## Spelarlobby J04 — 22 oktober 2026
+
+Återupptaget på codex/player-lobby-j04 från PR331:s frysta
+471549a8f02f9165be39c7077afef98f37a67ad0, inklusive dåvarande main95ac.
+/lobby är den enda spelkatalogen. /play:s katalogkomponenter och exklusiva
+preview-/portraitfallbackhjälpare är borttagna; /play, /demo och /casino.html
+är kontextbevarande katalogredirects. /play/{game}, /play/profil och
+/play/historik behåller befintlig autentisering och serverägda data.
+Profil/historik nås från lobbyhuvudet. Aktiva retur-/login-/webblänkar pekar
+på /lobby; gamla bokmärken behåller bolag, rum, dealer och tillåtna miljöval,
+men överför inte launch-token eller godtycklig returnTo till katalogen.
+Rumseditorns publiceringskvitto pekar också direkt på bolagets /lobby.
+
+Bord och bakgrund väljs bland samma publicerade rums-/dealeralternativ.
+Val ligger i URL för reload/historik och sparas i befintlig spelpreferenslagring
+före launch; motorn omvaliderar dem mot rummets publicerade paket.
+Chromeprovet fann att återöppnad dealerdialog tappade valt bord; rättat.
+Tomma nullable val över gamla preferenser och misslyckad lagringsrensning
+är också hanterade. Oberoende review fann att verklig spelretur saknade dealer:
+lobbyn återläser nu enbart fortfarande tillåten lagrad dealer när URL saknar
+explicit dealer, och roulette får båda returlänkarna från servervaliderat rum. Felaktigt bolag/rum/dealer breddar aldrig åtkomsten.
+Katalogalias nekar skrivmetoder/action-anrop. Inga spelregler eller saldo-
+writes flyttades till klienten.
+
+Verifiering: 117/117 fokuserade auth-/paket-/rum-/profil-/routingprov,
+inklusive faktiskt Chrome-flöde val → reload → dialog → launch → tillbaka →
+profil/historik och negativa rum/bolagslänkar, 0 skip. Senare route-/registry-
+körning 42/42, 0 skip; den överlappar tidigare prov och inkluderar ny
+metod-/aliasregression. Returrättningen verifieras i 24/24 ytterligare
+överlappande prov inklusive faktiskt Chrome och roulette HTTP, 0 skip.
+Publiceringscallerns närprov passerar 40/40, 0 skip. Lobby- och web-typkontroll passerar. Gamla katalog-
+layouttester togs bort/ersattes med beteendeprov, deras två exklusiva fullhook-
+registreringar borttagna. Public game-entry-modulgrafen byggs i routingprovet.
+Loggar: arkiv/2026-10-22/j04/{final-focused,final-route-registry,browser-before,
+browser-after,return-review,publication-caller,lobby-typecheck,web-typecheck}.log. Inga blockerande lokala fel.
+Oberoende produktreview och roots slutreview har inga kvarvarande blockerande
+fynd. PR335:s första CI39693575758 föll endast i access/game-lanes
+på test/player-choices.mjs:194 som fortfarande krävde /play. Faktisk footer
+var redan /lobby. Endast förväntad adress rättades; före 1/1 fel, efter
+10/10 i hela filen, 0 skip. Rum/bolag/dealer och separat provspelsretur
+prövas fortsatt. Ingen produktändring. Loggar:
+arkiv/2026-10-22/j04/pr335-footer-{before,after,commands}.log.
+Ordinarie rättningshook passerar 10/10,0skip. Fjärr-main64e4c680a045eb3aed92043032fdbaa35e666359 integrerades utan konflikt; dess produktträd är identiskt med redan ärvda PR331/471549a8.
+CI39695713814 föll därefter endast på samma förbrukade katalogadress i
+test/blackjack-entry-http.mjs. Förväntan följer nu login-klientens /lobby;
+före 1/1 fel, efter 1/1 godkänt, 0 skip. Hela HTTP-provet behåller auth,
+serverägd konto-/bordsidentitet, logout och återhämtning efter serveromstart.
+En avgränsad läsning av aktiva launch-/login-HTTP-prov fann inga fler sådana
+adresskrav; /play/{game} och giltiga kompatibilitetslänkar består. Ingen
+produktändring. Loggar: arkiv/2026-10-22/j04/pr335-login-{before,after,commands}.log.
+Ny fjärr-CI krävs på rättningshead före PR335-merge.
+
+Browsern använder riktiga lobbykomponenter med syntetiska publicerade paket,
+syntetiska kontosvar och en isolerad launchmottagare; det är inget faktiskt
+spel-/betalnings-/medie-/Neon-/deployprov. Node24.21.0 och lokala beroende-
+junctions användes. Taskägd Chrome och tillfällig loopbackserver är stängda
+av provets avslutning; inga produktservrar startades. Ingen DDL/merge/deploy.
+
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
 
 J03 · 21 oktober 2026. Tidigare delarna PR318/320/322/324/326/329 har

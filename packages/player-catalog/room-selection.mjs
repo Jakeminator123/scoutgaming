@@ -1,5 +1,4 @@
-import {readChoices,writeChoices} from '../../../packages/presentation/runtime/player-choices.mjs';
-import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
+import {readChoices,writeChoices} from '../presentation/runtime/player-choices.mjs';
 
 export function roomSelection(room,preferred={}) {
   const dealer=room.dealers.find(row=>row.id===preferred.dealer)
@@ -28,11 +27,8 @@ export function roomLaunch(catalog,roomId,preferred,{directPlay=true}={}) {
 export function rememberRoomSelection(storage,operator,selection) {
   writeChoices(storage,operator,selection);
   const stored=readChoices(storage,operator);
-  return ['tableAsset','background'].every(key=>!selection[key]||stored[key]===selection[key]);
+  return ['tableAsset','background'].every(key=>stored[key]===selection[key]);
 }
 
-// Legacy demo links land in the same lobby; forward only one valid operator.
-export function demoLobbyPath(params={}) {
-  return typeof params.operator==='string'&&isOperatorSlug(params.operator)
-    ? '/play?'+new URLSearchParams({operator:params.operator}).toString() : '/play';
-}
+
+export const readRoomSelection = (storage, operator) => readChoices(storage, operator);

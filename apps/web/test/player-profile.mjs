@@ -6,7 +6,6 @@ import {
   OPERATOR_STORAGE_KEY, clearedOperatorLocation, lobbyOperatorName, operatorChoice, operatorPlayPath,
 } from '../lib/player-operator.mjs';
 import { choicesStorageKey, lobbyChoiceText, parseStoredChoices } from '../lib/player-choices.mjs';
-import { readFileSync } from 'node:fs';
 
 const env = {
   CROUPIER_VERCEL_UI: '1',
@@ -57,37 +56,6 @@ test('profile without the columns says it is not available yet and still shows t
   assert.doesNotMatch(page.html, /bg-lime|name="displayName"|secret-stack-trace/);
 });
 
-test('lobby shows the company from the operator query and carries it into blackjack', async () => {
-  const calls = [];
-  const page = await playerAreaPage(new Request('https://preview.example.test/play?operator=sg-test', {headers: {cookie: 'player_session=fixture'}}), env, 'lobby', {
-    fetchImpl: async (url, init) => {
-      calls.push({url: String(url), method: init.method});
-      if (String(url).endsWith('/api/auth/session')) return Response.json({authenticated: true, guest: false, sharedCredentials: true});
-      if (String(url).endsWith('/api/player')) return Response.json({name: 'Ada', currency: 'SEK', balance: 10});
-      if (String(url).endsWith('/api/operators/sg-test')) return Response.json(company);
-      return new Response('secret-stack-trace', {status: 404});
-    },
-  });
-  assert.equal(calls.some(call => call.url.endsWith('/api/operators/sg-test') && call.method === 'GET'), true);
-  assert.match(page.html, /Spelar hos: SG test game provider/);
-  assert.match(page.html, /Byt bolag/);
-  assert.match(page.html, /href="\/play\/blackjack\?operator=sg-test"/);
-  assert.doesNotMatch(page.html, /secret-stack-trace/);
-});
-
-test('lobby hides an unknown operator and keeps the plain blackjack link', async () => {
-  const page = await playerAreaPage(new Request('https://preview.example.test/play?operator=missing', {headers: {cookie: 'player_session=fixture'}}), env, 'lobby', {
-    fetchImpl: async url => {
-      if (String(url).endsWith('/api/auth/session')) return Response.json({authenticated: true, guest: false, sharedCredentials: true});
-      if (String(url).endsWith('/api/player')) return Response.json({name: 'Ada', currency: 'SEK', balance: 10});
-      return new Response('{"error":"not_found","secret":"nope"}', {status: 404});
-    },
-  });
-  assert.doesNotMatch(page.html, /Spelar hos|Byt bolag|secret|not_found/);
-  assert.match(page.html, /href="\/play\/blackjack"/);
-  assert.doesNotMatch(page.html, /operator=/);
-});
-
 test('lobby operator choice prefers the query, then storage, and drops an unknown slug', () => {
   assert.equal(OPERATOR_STORAGE_KEY, 'croupier.operator');
   assert.equal(operatorChoice({search: '?operator=sg-test', stored: 'demo-north'}), 'sg-test');
@@ -108,15 +76,6 @@ test('legacy stored choices remain readable while the lobby uses verified room a
   assert.equal(choicesStorageKey(''), 'croupier.choices.default');
   assert.equal(lobbyChoiceText(stored), 'Dealer Astrid · bord #112233');
   assert.equal(lobbyChoiceText(parseStoredChoices('{"dealer":"ghost"}')), '');
-  const source = readFileSync(new URL('../components/player/player-lobby-operator.tsx', import.meta.url), 'utf8');
-  assert.match(source, /readChoices\(window.localStorage,slug\)/);
-  assert.match(source, /loadRoomCatalogue\(slug/);
-  assert.match(source, /Spelar hos/);
-  assert.match(source, /room.dealers.map/);
-  assert.match(source, /dealer.label/);
-  assert.doesNotMatch(source, /lobbyChoiceText|DEALER_NAMES|data-player-choice/);
-  // Real rendering, stale-choice filtering, room-bound links and empty state
-  // are exercised by player-lobby.mjs against the shared rooms contract.
 });
 
 test('profile and public operator paths stay on the game backend', () => {

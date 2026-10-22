@@ -90,7 +90,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     {current && state.preflight?.environment ? <p><strong>Rummets miljö:</strong> {state.preflight.environment.label}
       {state.preflight.environment.kind === 'baked' ? ' · inbakad miljö' : state.preflight.environment.fixed ? ' · fast bakgrund' : ' · behöver avgränsas'}</p> : null}
     <p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>
-    {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
+    {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/lobby?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
     {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
       : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelrum för den här sammansättningen ännu.</p> : null}
     <details className={styles.create} open={rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>

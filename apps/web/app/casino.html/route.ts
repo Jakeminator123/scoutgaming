@@ -1,3 +1,4 @@
+import {playerLobbyPath} from '../../../../packages/navigation/player-lobby.mjs';
 export const dynamic = 'force-dynamic';
 
 const headers = {
@@ -7,7 +8,7 @@ const headers = {
 };
 
 function location(request: Request) {
-  return '/play' + new URL(request.url).search;
+  return playerLobbyPath(new URL(request.url).searchParams);
 }
 
 export function GET(request: Request) {

@@ -302,7 +302,7 @@ test('component delivers only a current verified receipt once, reports busy and 
   assert.equal(h.requests.length, 2); ui.render(props); assert.equal(busy.at(-1), true);
   h.reply(1, prepared()); await tick(); const payload = JSON.parse(h.requests[2].options.body); h.reply(2, created(payload)); await tick();
   tree = ui.render(props); ui.render(props); assert.equal(receipts.length, 1); assert.equal(busy.at(-1), false);
-  assert.equal(find(tree, 'a').props.href, '/play?operator=sg-test'); assert.ok(renderToStaticMarkup(tree).includes(created(payload).playUrl.replaceAll('&','&amp;'))); ui.unmount(); assert.equal(busy.at(-1), false);
+  assert.equal(find(tree, 'a').props.href, '/lobby?operator=sg-test'); assert.ok(renderToStaticMarkup(tree).includes(created(payload).playUrl.replaceAll('&','&amp;'))); ui.unmount(); assert.equal(busy.at(-1), false);
 });
 test('component renders a changed selection immediately empty and never delivers the previous late receipt', async () => {
   const h = fixture(), ui = componentHarness(h.controller), receipts = [];
@@ -379,7 +379,7 @@ test('room list opens the existing room before creating and hides stale links on
   h.reply(0,prepared(context,{rooms:[room],packageRevision:1}));await tick();
   let tree=ui.render(context),html=renderToStaticMarkup(tree);
   assert.match(html,/<ul aria-label="Befintliga spelrum">/);
-  assert.equal(find(tree,'a').props.href,'/play?operator=sg-test');
+  assert.equal(find(tree,'a').props.href,'/lobby?operator=sg-test');
   assert.ok(html.includes(room.playUrl.replaceAll('&','&amp;')));
   assert.match(html,/Öppna bolagets spellobby/);
   assert.match(html,/<details[^>]*><summary>Skapa nytt spelrum<\/summary>/);
