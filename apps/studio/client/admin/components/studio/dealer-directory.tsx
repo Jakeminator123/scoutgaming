@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Plus, RefreshCw, Trash2, Upload, Users } from 'lucide-react';
+import { Plus, RefreshCw, RotateCcw, Trash2, Upload, Users } from 'lucide-react';
 import { addDealer } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type { DealerArchiveImpact } from '../../../../lib/dealer-archive-impact.mjs';
 import { createStudioClient, type Workspace } from '../../lib/connected-studio.mjs';
-import { createLifecycleClient, lifecycleMessage } from '../../lib/studio-lifecycle.mjs';
+import { createLifecycleClient, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
+import { dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from '../../lib/lifecycle-actions.mjs';
 import { navigate, useSearchParams } from '../../../runtime/navigation';
+import { ConfirmAcknowledgement, ConfirmDialog } from './confirm-dialog';
 
 const client = createStudioClient(), lifecycle = createLifecycleClient();
-const dealerSlug = (name:string) => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40).replace(/-$/,'');
-type Review = { id:string; name:string; revision:string; archived:boolean; impact?:DealerArchiveImpact };
+const dealerSlug = (name:string) => name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40).replace(/-$/,'');
+// One confirmation per action. The server check runs inside the open dialog and
+// is bound to the project revision that was visible when it started.
+type Review = { id:string; name:string; revision:string; kind:'archive'|'restore'|'delete'; checking:boolean; impact?:DealerArchiveImpact; eligibility?:DeletionPlan; acknowledged:boolean; error:string };
 
 export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{active:boolean;blocked?:boolean;refreshKey?:number;onChanged:()=>void}) {
   const [workspace,setWorkspace] = useState<Workspace|null>(null);
@@ -54,37 +58,52 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
       catch {setWorkspace(null);}
       if(!confirmed)setError((cause as Error).message+' Läs om innan du försöker igen.');
     } finally {lock.current=false;setBusy(false);}
-    if(confirmed){setName('');setId('');setIdEdited(false);setCreating(false);setNotice(`${targetName} är sparad. Välj Ladda upp klipp för att börja.`);onChanged();navigate('/admin/dealers?dealer='+encodeURIComponent(targetId));}
+    if(confirmed){setName('');setId('');setIdEdited(false);setCreating(false);setNotice(`${targetName} är sparad. Välj Lägg till klipp för att börja.`);onChanged();navigate('/admin/dealers?dealer='+encodeURIComponent(targetId));}
   }
-  async function reviewRemoval(dealerId:string,label:string,archived:boolean) {
+  function patchReview(revision:string,patch:Partial<Review>) {
+    setReview(value=>value&&value.revision===revision&&value.checking?{...value,checking:false,...patch}:value);
+  }
+  async function openReview(dealerId:string,label:string,kind:Review['kind']) {
     if(disabled || lock.current || !workspace)return;
-    lock.current=true;setBusy(true);setReview(null);setError('');setNotice('');
     const revision=workspace.project.revision;
+    setError('');setNotice('');
+    setReview({id:dealerId,name:label,revision,kind,checking:kind!=='restore',acknowledged:false,error:''});
+    if(kind==='restore')return;
     try {
-      const impact=archived?await lifecycle.checkDealerArchive(workspace.project,dealerId):undefined;
-      if(current.current?.project.revision===revision)setReview({id:dealerId,name:label,revision,archived,impact});
-    } catch(cause){setError(lifecycleMessage(cause));}
-    finally{lock.current=false;setBusy(false);}
+      if(kind==='archive')patchReview(revision,{impact:await lifecycle.checkDealerArchive(workspace.project,dealerId)});
+      else patchReview(revision,{eligibility:await lifecycle.checkDealerDeletion(workspace.project,dealerId)});
+    } catch(cause){patchReview(revision,{error:lifecycleMessage(cause)});}
   }
-  async function applyRemoval() {
-    if(disabled||lock.current||!workspace||!review||review.revision!==workspace.project.revision)return;
-    const target=review;lock.current=true;setBusy(true);setError('');setReview(null);setNotice('');
+  async function applyReview() {
+    if(disabled||lock.current||!workspace||!review||review.checking||review.error||review.revision!==workspace.project.revision)return;
+    const target=review;
+    if(target.kind==='archive'&&!target.impact)return;
+    if(target.kind==='delete'&&(!target.eligibility?.allowed||deletePlan?.requiresAcknowledgement&&!target.acknowledged))return;
+    lock.current=true;setBusy(true);setError('');setNotice('');
     let confirmed=false;
+    const unchanged=()=>current.current?.project.revision===target.revision;
     try {
-      await lifecycle.dealerLifecycle(workspace.project,target.id,target.archived,target.impact,()=>current.current?.project.revision===target.revision);
+      if(target.kind==='delete')await lifecycle.deleteDealer(workspace.project,target.id,unchanged);
+      else await lifecycle.dealerLifecycle(workspace.project,target.id,target.kind==='archive',target.impact,unchanged);
       confirmed=true;
     } catch(cause){setError(lifecycleMessage(cause));}
     // Reconcile success and uncertain responses through the same registered read.
     try {
       const fresh=await client.load();setWorkspace(fresh);
-      confirmed=target.archived?Boolean(fresh.project.dealerTrash?.some(row=>row.dealer.id===target.id))&&!fresh.project.dealers.some(row=>row.id===target.id)
-        :fresh.project.dealers.some(row=>row.id===target.id)&&!fresh.project.dealerTrash?.some(row=>row.dealer.id===target.id);
+      const active=fresh.project.dealers.some(row=>row.id===target.id), trashed=Boolean(fresh.project.dealerTrash?.some(row=>row.dealer.id===target.id));
+      confirmed=target.kind==='archive'?trashed&&!active:target.kind==='restore'?active&&!trashed:!active&&!trashed;
     } catch {setWorkspace(null);setError('Registret kunde inte läsas om. Åtgärden upprepas inte automatiskt; läs om för att se resultatet.');confirmed=false;}
-    lock.current=false;setBusy(false);onChanged();
-    if(confirmed){setError('');setNotice(target.archived?`${target.name} har flyttats till papperskorgen.`:`${target.name} är återställd som utkast. Rum öppnas inte automatiskt.`);}
+    lock.current=false;setBusy(false);setReview(null);onChanged();
+    if(confirmed){setError('');setNotice(target.kind==='archive'?`${target.name} har flyttats till papperskorgen.`:target.kind==='restore'?`${target.name} är återställd som utkast. Rum öppnas inte automatiskt.`:`${target.name} och dealerns egna filer är permanent raderade.`);}
   }
   const dealers=workspace?.project.dealers??[], trash=workspace?.project.dealerTrash??[];
-  const restoreCompositions=review&&!review.archived?trash.find(row=>row.dealer.id===review.id)?.compositions??[]:[];
+  const trashEntry=review?trash.find(row=>row.dealer.id===review.id):undefined;
+  const mediaCount=review?(workspace?.inventory.videos.filter(video=>(video.classification?.dealerId??(video as {dealer?:string}).dealer)===review.id&&(video as {deletion?:{state?:string}}).deletion?.state!=='deleted').length??0):0;
+  const deletePlan=review?.kind==='delete'?dealerDeletePlan({label:review.name,mediaCount,eligibility:review.eligibility,pending:Boolean(trashEntry?.deletion)}):null;
+  const plan=review?review.kind==='archive'?dealerArchivePlan({label:review.name,impact:review.impact}):review.kind==='restore'?dealerRestorePlan({label:review.name,compositions:trashEntry?.compositions??[]}):deletePlan!:null;
+  const stale=Boolean(review&&workspace&&review.revision!==workspace.project.revision);
+  const reviewError=stale?'Registret har ändrats sedan dialogen öppnades. Stäng och försök igen.':review?.error||plan?.error||'';
+  const confirmLabel=review&&!review.checking&&!reviewError?plan?.confirmLabel:undefined;
   return <section className="dealer-import" aria-labelledby="dealer-directory-title">
     <header className="dealer-import-header"><div><p className="dealer-import-eyebrow">Nivå 1 · Bibliotek</p><h1 id="dealer-directory-title">Dealers</h1><p>Skapa en dealer, lägg in filmklipp och se var personen används.</p></div>
       <div className="dealer-import-actions"><button ref={createButton} className="dealer-import-primary" disabled={disabled} onClick={()=>setCreating(true)}><Plus size={16}/>Skapa dealer</button><button aria-label="Uppdatera dealers" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={16}/></button></div>
@@ -103,15 +122,22 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
       const count=workspace!.inventory.videos.filter(video=>(video.classification?.dealerId??(video as {dealer?:string}).dealer)===dealer.id&&!video.classification?.archived).length;
       return <li key={dealer.id} className={'dealer-import-panel '+(selectedId===dealer.id?'border-sg-lime':'')}><h2><Users size={18}/>{dealer.label}</h2><p>{count} klipp · {rooms.length?`${rooms.length} kopplade rum`:'Inga rum kopplade ännu'}</p>
         {dealer.id==='astrid'&&<p><strong>Legacyreferens</strong> · Astrid är inkopplad via legacy och saknar trelagersversion. Befintliga OpenClaw- och talflöden kan användas som referens.</p>}
-        <div className="dealer-import-actions"><a className="dealer-import-primary" href={'/admin/dealers?dealer='+encodeURIComponent(dealer.id)+'&tool=import'}><Upload size={15}/>Ladda upp klipp</a><button disabled={disabled} onClick={()=>void reviewRemoval(dealer.id,dealer.label,true)}><Trash2 size={15}/>Ta bort</button></div>
+        <div className="dealer-import-actions"><a className="dealer-import-primary" href={'/admin/clips?dealer='+encodeURIComponent(dealer.id)+'&panel=intake'}><Upload size={15}/>Lägg till klipp</a><button disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(dealer.id,dealer.label,'archive')}><Trash2 size={15}/>Ta bort</button></div>
         {!!rooms.length&&<details><summary>Visa kopplingar</summary><ul>{rooms.map(room=><li key={room.id}><a href={'/admin/structure?operator='+encodeURIComponent(room.operatorId)+'&table='+encodeURIComponent(room.id)}>{workspace!.catalog.administration.operators.find(row=>row.id===room.operatorId)?.name} · {room.name}</a></li>)}</ul></details>}
       </li>;
     })}</ul>
-    {workspace&&<details className="dealer-import-panel"><summary>Papperskorg ({trash.length})</summary>{!trash.length?<p>Papperskorgen är tom.</p>:<ul>{trash.map(row=><li className="dealer-import-actions" key={row.dealer.id}><span>{row.dealer.label}</span><button disabled={disabled||Boolean(row.deletion)} onClick={()=>void reviewRemoval(row.dealer.id,row.dealer.label,false)}>Återställ</button></li>)}</ul>}</details>}
-    {review&&<section className="dealer-import-panel dealer-import-review" aria-labelledby="dealer-review-title"><h2 id="dealer-review-title">{review.archived?'Ta bort':'Återställ'} {review.name}?</h2>
-      {review.archived?<><p>Dealern, klippen, klippkategorierna och berörda sammansättningar flyttas till papperskorgen. AI-tal stängs av och berörda rum och bolagspubliceringar kopplas loss. Källfiler och publiceringshistorik bevaras.</p>
-        <p>{review.impact?.mediaCount} klipp påverkas.</p><ul>{review.impact?.operators.map(row=><li key={'operator:'+row.id}>Spelbolag: {row.name}</li>)}{review.impact?.rooms.map(row=><li key={'room:'+row.id}>Rum: {row.name}</li>)}{review.impact?.compositions.map(row=><li key={'composition:'+row.id}>Sammansättning: {row.label}</li>)}</ul></>:<><p>Dealern, materialet och sparade sammansättningar återförs som utkast. AI-tal förblir avstängt. Rum återställs eller öppnas inte automatiskt.</p><p>Sparade sammansättningar ({restoreCompositions.length})</p>{restoreCompositions.length>0&&<ul>{restoreCompositions.map(row=><li key={row.id}>{row.label}</li>)}</ul>}</>}
-      <div className="dealer-import-actions"><button disabled={disabled} onClick={()=>void applyRemoval()}>{review.archived?'Flytta till papperskorgen':'Bekräfta återställning'}</button><button disabled={busy} onClick={()=>setReview(null)}>Avbryt</button></div>
-    </section>}
+    {workspace&&<details className="dealer-import-panel"><summary>Papperskorg ({trash.length})</summary>{!trash.length?<p>Papperskorgen är tom.</p>:<>
+      <p>Återställ återför dealern som utkast. Radera permanent tar bort dealern och dess egna filer för alltid efter serverns kontroll.</p>
+      <ul>{trash.map(row=><li className="dealer-import-actions" key={row.dealer.id}><span>{row.dealer.label}{row.deletion?' · radering påbörjad':''}</span>
+        <button disabled={disabled||Boolean(row.deletion)} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'restore')}><RotateCcw size={15}/>Återställ</button>
+        <button disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(row.dealer.id,row.dealer.label,'delete')}><Trash2 size={15}/>{row.deletion?'Slutför radering':'Radera permanent'}</button>
+      </li>)}</ul></>}</details>}
+    <ConfirmDialog open={review!==null} title={plan?.title??'Granska åtgärden'} description={plan?.summary} consequences={plan?.items??[]}
+      checking={review?.checking??false} checkingLabel={review?.kind==='delete'?'Kontrollerar lagring och beroenden…':'Kontrollerar klipp, rum, bolag och sammansättningar…'}
+      error={reviewError} busy={busy&&review!==null&&!review.checking} busyLabel={plan?.busyLabel}
+      confirmLabel={confirmLabel} confirmDisabled={disabled&&!busy||Boolean(deletePlan?.requiresAcknowledgement&&!review?.acknowledged)}
+      cancelLabel={stale||review?.error?'Stäng':plan?.cancelLabel} onConfirm={()=>void applyReview()} onCancel={()=>{if(!busy||review?.checking)setReview(null);}}>
+      {deletePlan?.requiresAcknowledgement&&review&&!reviewError&&<ConfirmAcknowledgement checked={review.acknowledged} label={deletePlan.acknowledgement} disabled={busy} onChange={checked=>setReview(value=>value?{...value,acknowledged:checked}:value)}/>}
+    </ConfirmDialog>
   </section>;
 }
