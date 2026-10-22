@@ -234,6 +234,41 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
+## Levande lager: bord och variation (capability 24) — 22 oktober 2026
+
+Branch `codex/levande-lager` ovanpå `codex/admin-ux-klippkarta` (PR340).
+Jakobs beställning: var tredje minut och femton sekunder, med 74 sekunders
+variation, ska ett kort mp4-klipp spelas över bakgrunden; en mp4 ska kunna
+vara basen; samma för bordet och dealern.
+
+- **Kontrakt.** Intervallregler i `backgroundPlayback` får `jitterMs`
+  (0–120 000, kortare än `everyMs`); starter dras ur `everyMs ± jitterMs`.
+  Nytt valfritt `tablePlayback` på sammansättningen med samma form, mot
+  bordslagrets tillåtna videor. Standardregel 195 s ± 74 s, 10 s max, 1/min.
+  Capability 24 `layerPlayback: table-and-jitter-v1`; readiness kräver 24 för
+  fälten och avvisar dem mot äldre spelservrar. Inget schema, ingen SQL.
+- **Runtime.** `background-playback.mjs` tar `role` och injicerbar `random`.
+  `presentation-composition.mjs` kör en scheduler per lager; bordsklipp
+  ritas som bordslager medan de spelas och basen återställs efteråt.
+  `tablePlayback` följer med i frysta paket (game-entry-selector) och
+  Studio-prov; papperskorgen tar bort bordsregler som refererar filen; båda
+  spelklienterna skickar spelhändelser även till bordslagret (`tableEvent`).
+- **Admin.** `LayerPlaybackEditor` för bakgrund och bord med Variation ± och
+  klartextsammanfattning; Scen & lager, Sammansättning och förhandsvisningen
+  (bordsklipp provas i CompositionPreview) använder den. Dealerns beteendeklipp
+  är oförändrat vilopolicyn i Körregel.
+- **Verifiering.** 505/505 i de berörda sviterna (kontrakt, scheduler,
+  komposition, studio-preview, entry-selector, material-trash, readiness,
+  room-api, editor, preview, panel) plus 552 befintliga modell-/lagersviter;
+  Admin-bygge (tsc admin+lobby, esbuild) och Studio-tsc passerar. Ingen
+  produktion berörd. Efter deploy måste spelservern svara capability 24 innan
+  Admin kan spara variation eller bordsklipp; tills dess fungerar fasta
+  intervall som förut.
+- **Midnight-bakgrunden.** Skript för Jakob: `C:\Users\jakem\CroupierBackups\
+  midnight-background-2026-10-22\KOR-MIDNIGHT.cmd` registrerar stillbild,
+  loop och två varianter via Admins ordinarie lageruppladdning och binder dem
+  till vald sammansättning med intervall 195/255 s; `--jitter` efter deploy.
+
 ## Admin UX-pass 1: klippkartan — 22 oktober 2026
 
 Branch `codex/admin-ux-klippkarta` från main `34060c4d` (PR336 mergad och

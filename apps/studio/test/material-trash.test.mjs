@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {createSeedProject,defaultPresentationLane,validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {changeMaterialTrash} from '../lib/material-trash.mjs';
+import {changeMaterialTrash,materialUsedBy} from '../lib/material-trash.mjs';
+import {defaultLayerRule} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
 import {createResourceLifecycleApi} from '../lib/resource-lifecycle-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
@@ -77,6 +78,21 @@ test('material deletion also detaches archived dealer snapshots without damaging
  assert.equal(removed.dealerTrash[0].compositions[0].layers.background.default,null);
  const restored=lifecycleProject(removed,{dealerId:'astrid',archived:false,records:[]});
  assert.equal(restored.lanes[0].layers.background.default,null);assert.equal(restored.layerAssetTrash[0].asset.id,target.id);
+});
+
+test('trashing a table video referenced by a table rule removes the rule; trashing the base table drops all table rules',()=>{
+ const project=createSeedProject(),base=asset(1,'table'),clip={...asset(2,'table'),contentType:'video/mp4'};clip.pathname=layerAssetPath(clip);
+ project.lanes=[defaultPresentationLane('astrid')];project.layerAssets=[base,clip];
+ const lane=project.lanes[0];lane.layers.table={enabled:true,default:base.id,allowed:[base.id,clip.id]};
+ lane.tablePlayback={schemaVersion:1,rules:[defaultLayerRule(clip.id,'living',{role:'table'})]};
+ validateProject(project);
+ assert.equal(materialUsedBy(lane,clip.id),true);assert.equal(materialUsedBy({...lane,layers:{...lane.layers,table:{enabled:true,default:base.id,allowed:[base.id]}}},clip.id),true,'a rule alone keeps the clip in use');
+ const removed=changeMaterialTrash(project,{id:clip.id,archived:true,now});
+ assert.deepEqual(removed.lanes[0].tablePlayback,{schemaVersion:1,rules:[]});assert.deepEqual(removed.lanes[0].layers.table,{enabled:true,default:base.id,allowed:[base.id]});
+ const restored=changeMaterialTrash(removed,{id:clip.id,archived:false});assert.deepEqual(restored.lanes,removed.lanes,'restore never reconnects rules');
+ const baseless=changeMaterialTrash(project,{id:base.id,archived:true,now});
+ assert.equal(baseless.lanes[0].layers.table.enabled,false);assert.deepEqual(baseless.lanes[0].tablePlayback.rules,[],'no base table means no living clips');
+ assert.deepEqual(baseless.lanes[0].layers.table.allowed,[clip.id]);
 });
 
 test('table trash removes its saved anchors from active and archived compositions; restore never reconnects them',()=>{

@@ -99,3 +99,41 @@ test('archiving a different lane preserves rule assets and archiving its owner p
   assert.deepEqual(remaining.assets.map(asset=>asset.id),[id(3)]);
   assert.equal(Object.hasOwn(remaining.lanes[0],'backgroundPlayback'),false);
 });
+
+test('v24 timer jitter and table playback: bounded jitter, table role assets, older shapes unchanged', async () => {
+  const {validateLayerPlayback,defaultLayerRule,playbackUsesJitter,LAYER_PLAYBACK_ROLES}=await import('../packages/presentation/contracts/background-playback-policy.mjs');
+  const {createBackgroundPlayback}=await import('../packages/presentation/runtime/background-playback.mjs');
+  assert.deepEqual(LAYER_PLAYBACK_ROLES,['background','table']);
+  const living=defaultLayerRule(id(2),'living');
+  assert.deepEqual(living.trigger,{everyMs:195000,jitterMs:74000});assert.equal(living.maxPerMinute,1);
+  assert.equal(playbackUsesJitter({schemaVersion:1,rules:[living]}),true);assert.equal(playbackUsesJitter(policy()),false);assert.equal(playbackUsesJitter(undefined),false);
+  assert.deepEqual(validateBackgroundPlayback({schemaVersion:1,rules:[{...rule(),trigger:{everyMs:25000,jitterMs:0}}]}).rules[0].trigger,{everyMs:25000,jitterMs:0});
+  for(const trigger of [{everyMs:25000,jitterMs:25000},{everyMs:25000,jitterMs:-1},{everyMs:25000,jitterMs:120001},{everyMs:25000,jitterMs:'7'},{eventId:'speak.win',jitterMs:1000},{everyMs:300000,jitterMs:120001}])
+    assert.throws(()=>validateBackgroundPlayback({schemaVersion:1,rules:[{...rule(),trigger}]}),/Invalid background playback policy/,JSON.stringify(trigger));
+  // Table rules resolve against table assets only; a background video is not a table clip.
+  const table=asset(5,'video/mp4','table'),tableBase=asset(6,'image/png','table');
+  const tableRule={...defaultLayerRule(id(5),'felt',{role:'table'})};
+  assert.doesNotThrow(()=>validateLayerPlayback({schemaVersion:1,rules:[tableRule]},{role:'table',assets:[table,tableBase],allowed:[id(5),id(6)],defaultAssetId:id(6)}));
+  assert.throws(()=>validateLayerPlayback({schemaVersion:1,rules:[tableRule]},{role:'table',assets:[asset(5),tableBase],allowed:[id(5),id(6)],defaultAssetId:id(6)}),/Invalid/);
+  assert.throws(()=>validateLayerPlayback({schemaVersion:1,rules:[tableRule]},{role:'dealer'}),/Invalid/);
+  // The project accepts tablePlayback on a lane only with an enabled table layer and table clips.
+  const {project,lane}=fixture();
+  project.layerAssets.push(table,tableBase);
+  lane.layers.table={enabled:true,default:id(6),allowed:[id(6),id(5)]};lane.tablePlayback={schemaVersion:1,rules:[tableRule]};
+  assert.doesNotThrow(()=>validateProject(project));
+  const disabled=structuredClone(project);disabled.lanes[0].layers.table.enabled=false;
+  assert.throws(()=>validateProject(disabled),/tablePlayback/);
+  const foreign=structuredClone(project);foreign.lanes[0].tablePlayback.rules[0].assetId=id(2);
+  assert.throws(()=>validateProject(foreign),/tablePlayback/);
+  // The scheduler draws each start from everyMs ± jitterMs with the injected source; 0.5 is the mean.
+  const starts=[];let draws=[1,0,0.5];
+  function clock(){let at=0,n=0;const timers=new Map();return {now:()=>at,setTimeout:(fn,ms)=>{timers.set(++n,{fn,at:at+ms});return n;},clearTimeout:k=>timers.delete(k),
+    advance(ms){const end=at+ms;for(;;){const next=[...timers].filter(([,v])=>v.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next){at=end;return;}timers.delete(next[0]);at=next[1].at;next[1].fn();}}};}
+  const timer=clock();
+  const player=createBackgroundPlayback({schemaVersion:1,rules:[{...living,maxDurationMs:1000,cooldownMs:0,maxPerMinute:12,maxSecondsPerMinute:60}]},{...timer,random:()=>draws.shift()??0.5,onStart:(r,token)=>{starts.push(timer.now());queueMicrotask(()=>{});}});
+  player.start();
+  timer.advance(195000+74000-1);assert.equal(starts.length,0);timer.advance(1);assert.deepEqual(starts,[269000]);
+  timer.advance(195000-74000);assert.deepEqual(starts,[269000,269000+121000]);
+  timer.advance(195000);assert.equal(starts.length,3);assert.equal(starts[2]-starts[1],195000);
+  player.close();
+});

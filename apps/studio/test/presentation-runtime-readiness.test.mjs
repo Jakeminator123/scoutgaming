@@ -905,3 +905,16 @@ test('stored cascade data retains v7 while archive operations require v19 withou
   const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(19))});
  await input.wrapped.withMutationContext(async()=>{await assert.rejects(input.wrapped.withMutationContext(()=>assert.fail('no widening'),{kind:'dealer-archive',value:{}}),blocked);},{kind:'resource-lifecycle',value:{}});assert.equal(input.fetches.length,1);
 });
+
+test('v24: a table playback policy or a jittered background timer gates project writes on v24',async()=>{
+  const rule={id:'living',assetId:'00000000-0000-4000-8000-000000000002',trigger:{everyMs:195000,jitterMs:74000},maxDurationMs:10000,cooldownMs:60000,maxPerMinute:1,maxSecondsPerMinute:20};
+  const plainRule={...rule,trigger:{everyMs:25000}};
+  for(const [lane,required] of [[{backgroundPlayback:{schemaVersion:1,rules:[rule]}},24],[{tablePlayback:{schemaVersion:1,rules:[plainRule]}},24],[{backgroundPlayback:{schemaVersion:1,rules:[plainRule]}},8]]){
+    const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+    await f.wrapped.saveDocument('project',{value:{lanes:[lane]}});
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],String(required));assert.equal(f.writes.length,1);
+  }
+  const old=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(23))});
+  await assert.rejects(old.wrapped.saveDocument('project',{value:{lanes:[{tablePlayback:{schemaVersion:1,rules:[]}}]}}),blocked);
+  assert.equal(old.writes.length,0,'an older runtime cannot receive a lane field it rejects');
+});
