@@ -7,7 +7,7 @@ const $=s=>dialog.querySelector(s);
 const playerLoginPath = '/blackjack';
 const playerEntry = $('#auth-player-login');
 playerEntry.href = document.documentElement.dataset.gamePath === '/blackjack'
-  ? canonicalGameDestination(new URL(location.href),{includeLaunch:false}).replace(/^\/blackjack/,'/player-login') : playerLoginPath;
+  ? canonicalGameDestination(new URL(location.href),{includeLaunch:false}).replace(/^\/(?:game|blackjack)(?=\?|$)/,'/player-login') : playerLoginPath;
 $('.auth-close').onclick=()=>dialog.close('cancel');
 function loginError(code){return ({401:'Unable to verify your username and password.',403:'This account cannot access the game.',429:'Too many attempts. Wait before trying again.'})[code] || 'Sign in is temporarily unavailable. Try again later.';}
 async function loadCapability(attempt){

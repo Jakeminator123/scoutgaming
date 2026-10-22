@@ -22,7 +22,8 @@ test('room document preserves login context and serves only explicit public asse
   const base=`http://127.0.0.2:${server.address().port}`,get=(path,options)=>fetch(base+path,{redirect:'manual',...options});
   const path='/play/roulette?operator=north&table=room-one&dealer=astrid';
   const login=await get(path);assert.equal(login.status,303);
-  assert.equal(login.headers.get('location'),'/player-login?returnTo='+encodeURIComponent(path));assert.equal(reads,0);
+  // Sign-in returns to the room's public game start with the same room selectors.
+  assert.equal(login.headers.get('location'),'/player-login?returnTo='+encodeURIComponent('/game?game=roulette&operator=north&table=room-one&dealer=astrid'));assert.equal(reads,0);
   authenticated=true;
   const page=await get(path);assert.equal(page.status,200);const document=await page.text();assert.match(document,/id="spin"/);
   assert.equal((document.match(/href="\/lobby\?operator=north&amp;room=room-one&amp;dealer=astrid"/g)??[]).length,2,'both returns use the authorized room');
@@ -47,6 +48,26 @@ test('room document preserves login context and serves only explicit public asse
   assert.equal((await get(path,{method:'HEAD'})).status,200);
   assert.equal((await get('/play/roulette')).headers.get('location'),'/lobby');
   assert.equal((await get('/roulette?operator=north&table=room-one')).headers.get('location'),'/play/roulette?operator=north&table=room-one');
+});
+
+test('player sign-in returns only to an exact roulette room start',async t=>{
+  const original=new Map(['document','location','fetch'].map(key=>[key,globalThis[key]]));
+  t.after(()=>{for(const [key,value] of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
+  const source=readFileSync(new URL('../services/game/public/blackjack-entry.mjs',import.meta.url),'utf8')
+    .replace("'../../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../packages/navigation/game-entry.mjs',import.meta.url).href));
+  const origin='https://game.example.invalid',room='/game?game=roulette&operator=north&table=room-one&dealer=astrid';
+  for(const [returnTo,expected] of [[room,room],['/play/roulette?operator=north&table=room-one','/play/roulette?operator=north&table=room-one'],
+    ['/game?game=blackjack&table=room-one'],['/game?table=room-one'],['/game?game=roulette&table=room-one&launch=a.b.c'],['/game?game=roulette&game=roulette&table=room-one'],
+    ['/game?game=roulette&table=room-one&table=room-two'],['/game/?game=roulette&table=room-one'],['/play/roulette/../game?game=roulette&table=room-one'],['/%67ame?game=roulette&table=room-one'],
+    ['/play/roulette?game=roulette&table=room-one'],['//evil.invalid/game?game=roulette'],['https://evil.invalid/game?game=roulette'],['/game?game=roulette#room'],['/game\\?game=roulette']]) {
+    const nodes={form:{hidden:true},'#status':{},'#submit':{},'#password':{},'#username':{},'#login-help':{},'#legacy-admin':{}},navigations=[];
+    const current=new URL('/player-login?returnTo='+encodeURIComponent(returnTo),origin);
+    globalThis.document={documentElement:{dataset:{}},querySelector:key=>nodes[key]};
+    globalThis.location={href:current.href,origin,search:current.search,assign:x=>navigations.push(x),replace:x=>navigations.push(x)};
+    globalThis.fetch=async()=>Response.json({authenticated:true,sharedCredentials:true});
+    await import('data:text/javascript;base64,'+Buffer.from(source+'\n// '+returnTo).toString('base64'));
+    assert.deepEqual(navigations,[expected??'/lobby'],returnTo);
+  }
 });
 
 function contains(polygon,[x,y]) {

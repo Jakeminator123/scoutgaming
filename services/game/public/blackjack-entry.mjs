@@ -7,12 +7,16 @@ const username = document.querySelector('#username');
 const help = document.querySelector('#login-help');
 const administratorEntry = document.querySelector('#legacy-admin');
 const destination = '/lobby';
+// Roulette returns to its room through /game?game=roulette; /play/roulette is
+// still accepted from documents opened before that address existed.
 function rouletteReturnPath() {
   const raw = new URL(location.href).searchParams.get('returnTo');
-  if (!raw?.startsWith('/play/roulette') || raw.includes('\\')) return null;
+  if (!raw?.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return null;
   const url = new URL(raw,location.origin);
-  if (url.origin !== location.origin || url.pathname !== '/play/roulette' || url.hash) return null;
-  if ([...url.searchParams.keys()].some(key=>!['operator','table','dealer'].includes(key)||url.searchParams.getAll(key).length!==1)) return null;
+  if (url.origin !== location.origin || raw.split('?')[0] !== url.pathname || url.hash) return null;
+  const keys = url.pathname === '/game' ? ['game','operator','table','dealer'] : url.pathname === '/play/roulette' ? ['operator','table','dealer'] : null;
+  if (!keys || [...url.searchParams.keys()].some(key=>!keys.includes(key)||url.searchParams.getAll(key).length!==1)) return null;
+  if (url.pathname === '/game' && url.searchParams.get('game') !== 'roulette') return null;
   return url.pathname+url.search;
 }
 const gameDestination = rouletteReturnPath() ?? (document.documentElement.dataset.gamePath === '/blackjack'

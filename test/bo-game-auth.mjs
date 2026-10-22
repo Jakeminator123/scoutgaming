@@ -26,7 +26,7 @@ const request=async(url,{cookie='',body,headers={},omitOrigin=false,method=body?
 };
 const cookies=response=>response.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');
 const location=response=>response.headers.get('location');
-async function begin(next='/v2/?dealer=astrid') {
+async function begin(next='/game/?dealer=astrid') {
   const start=await request(game+'/api/auth/bo/start?next='+encodeURIComponent(next));assert.equal(start.status,303);
   return {start,stateCookie:cookies(start),authorize:location(start)};
 }
@@ -59,7 +59,7 @@ try {
   const capability=await request(game+'/api/auth/session');assert.equal(capability.status,200);
   assert.equal(capability.headers.get('cache-control'),'no-store');
   assert.deepEqual(await capability.json(),{authenticated:false,guest:false,sharedCredentials:true},'installed login protocol is readable before authentication without granting a session');
-  const denied=await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/v2/?dealer=astrid'}});assert.equal(denied.status,302);assert.match(location(denied),/^\/api\/auth\/bo\/start/);
+  const denied=await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/game/?dealer=astrid'}});assert.equal(denied.status,302);assert.match(location(denied),/^\/api\/auth\/bo\/start/);
   assert.equal((await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/api/table','X-Forwarded-Method':'POST'}})).status,401);
   assert.equal((await request(game+'/api/table',{body:{op:'state'}})).status,401);
   const initial=await begin();
@@ -93,7 +93,7 @@ try {
   const continued=await request(initial.authorize,{cookie:boCookie});assert.equal(continued.status,303);
   const callback=location(continued);
   assert.equal((await request(callback)).status,400,'browser state required');
-  const completed=await request(callback,{cookie:initial.stateCookie});assert.equal(completed.status,303);assert.equal(location(completed),'/v2/?dealer=astrid');
+  const completed=await request(callback,{cookie:initial.stateCookie});assert.equal(completed.status,303);assert.equal(location(completed),'/game/?dealer=astrid');
   const playerCookie=cookies(completed).split('; bo_game_state=')[0];assert.match(playerCookie,/^player_session=/);assert.match(completed.headers.getSetCookie()[0],/SameSite=Lax/);assert.ok(!completed.headers.getSetCookie()[0].includes('Domain='));assert.ok(!playerCookie.includes('bo_jwt'));
   assert.equal((await request(callback,{cookie:initial.stateCookie})).status,400,'code single use');
   assert.equal((await request(game+'/api/auth/access',{cookie:playerCookie})).status,200);
@@ -106,14 +106,14 @@ try {
   if(state.round.phase==='insurance')await command('insurance',{take:false});
   while(state.round.phase==='decisions')await command('act',{action:'stand'});
   assert.equal(state.round.phase,'settled');await command('collect');assert.equal(state.round,null);const finalBalance=state.balance;
-  for(const next of ['/?dealer=amira','/v2/?dealer=amira']) {
+  for(const next of ['/?dealer=amira','/game?dealer=amira']) {
     const flow=await authorize(boCookie,next),r=await request(flow.callback,{cookie:flow.stateCookie});assert.equal(location(r),next);
     const p=await(await request(game+'/api/player',{cookie:cookies(r),body:{}})).json();assert.equal(p.id,player.id);assert.equal(p.balance,finalBalance);
   }
   const normal=await request(game+'/api/auth/login',{body:{email:'demo@example.invalid',password}});assert.equal(normal.status,200);
   assert.equal((await(await request(game+'/api/player',{cookie:cookies(normal),body:{}})).json()).id,player.id,'password and BO use same wallet');
   assert.equal(db.prepare('SELECT count(*) n FROM players').get().n,1);
-  for(const bad of ['//evil.invalid/','https://evil.invalid/','/\\evil.invalid/','/api/bo/users']) {
+  for(const bad of ['//evil.invalid/','https://evil.invalid/','/\\evil.invalid/','/api/bo/users','/v2/?dealer=amira']) {
     const flow=await authorize(boCookie,bad),r=await request(flow.callback,{cookie:flow.stateCookie});assert.equal(location(r),'/');
   }
   const expired=await authorize(boCookie);db.prepare('UPDATE bo_game_handoffs SET expires=0').run();assert.equal((await request(expired.callback,{cookie:expired.stateCookie})).status,400);
@@ -133,7 +133,8 @@ try {
   craig.prepare('DELETE FROM users WHERE id=1').run();
   assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/admin\/login/,'deleted account cannot authorize a handoff');
   const launch=sign({sub:player.id,partner:'isolated',exp:Date.now()/1000+60});
-  for(const path of ['/','/v2/']) {
+  assert.equal((await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/v2/?dealer=astrid&launch='+launch}})).status,401,'retired V2 is no launch entry');
+  for(const path of ['/','/game/']) {
     const observer='&labObserverOrigin=http%3A%2F%2F127.0.0.1%3A4192&labObserverChannel=isolated-comparison';
     const target=path+'?dealer=astrid&launch='+launch+observer;
     assert.equal((await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':target}})).status,200);
@@ -143,7 +144,7 @@ try {
     assert.equal((await request(game+'/api/auth/session',{cookie:cookies(r)})).status,200);
     assert.equal((await(await request(game+'/api/auth/session',{cookie:cookies(r)})).json()).authenticated,false);
   }
-  console.log('BO/game auth passed: retired BO routes stay absent, native Studio aliases are bounded, BO audience and current identity/role guard one-use handoff, normal/V2 wallet continuity, complete demo round, password login, revocation, launch tokens and logout.');
+  console.log('BO/game auth passed: retired BO routes stay absent, native Studio aliases are bounded, BO audience and current identity/role guard one-use handoff, normal/game wallet continuity, complete demo round, password login, revocation, launch tokens and logout.');
 } finally {
   if(server&&server.exitCode===null){const stopped=once(server,'exit');server.kill();await stopped;}
   db?.close();craig?.close();await rm(dir,{recursive:true,force:true});

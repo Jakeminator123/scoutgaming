@@ -222,7 +222,9 @@ async function init() {
     if(error.status===401) $('login').hidden=false;
   }
 }
-$('login').href='/player-login?returnTo='+encodeURIComponent(location.pathname+location.search);
+// The room's public address is /game?game=roulette; only its room selectors return through sign-in.
+const roomReturn=new URLSearchParams([['game','roulette'],...[...new URLSearchParams(location.search)].filter(([key])=>['operator','table','dealer'].includes(key))]);
+$('login').href='/player-login?returnTo='+encodeURIComponent('/game?'+roomReturn);
 function openOption(id){$('more').close();$(id).showModal();}
 $('show-rules').addEventListener('click',()=>openOption('rules'));
 $('show-inside').addEventListener('click',()=>openOption('inside'));

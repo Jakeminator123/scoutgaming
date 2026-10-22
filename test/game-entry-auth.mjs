@@ -16,13 +16,19 @@ for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['Postgr
     const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};await handle(req,res);return res;}
   const begin = await request('/api/auth/bo/start?next='+encodeURIComponent('/game?dealer=linnea&presentation=local&launch=a.b.c&returnTo=https://evil.invalid#bad'));
   assert.equal(begin.status,303);const state = new URL(begin.headers.Location).searchParams.get('state');
-  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/blackjack?dealer=linnea&presentation=local');
+  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/game?game=blackjack&dealer=linnea&presentation=local');
   const login = await request(begin.headers.Location);assert.equal(login.status,303);
   const callback = await request(login.headers.Location,`bo_game_state=${state}`);
-  assert.equal(callback.status,303);assert.equal(callback.headers.Location,'/blackjack?dealer=linnea&presentation=local');
+  assert.equal(callback.status,303);assert.equal(callback.headers.Location,'/game?game=blackjack&dealer=linnea&presentation=local');
   assert.ok(callback.headers['Set-Cookie'].includes('player_session=preserved; Path=/'));
   assert.equal((await request('/api/auth/bo/start?next='+encodeURIComponent('//evil.invalid/game'))).status,303);
-  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/blackjack');
+  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/game');
+  // The return names its game; an unknown or repeated game is no game and opens the plain game start.
+  for (const [next,expected] of [['/?game=roulette&table=r-1&operator=north&launch=a.b.c','/game?game=roulette&table=r-1&operator=north'],
+    ['/game/?game=poker&dealer=linnea','/game'],['/game/?game=roulette&game=blackjack&dealer=linnea','/game']]) {
+    sqlite.exec('DELETE FROM bo_game_handoffs');assert.equal((await request('/api/auth/bo/start?next='+encodeURIComponent(next))).status,303);
+    assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,expected,next);
+  }
 });
 
 

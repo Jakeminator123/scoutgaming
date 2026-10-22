@@ -89,7 +89,8 @@ const storage = sharedRoomQa?.storage ?? (postgres ? createPostgresStore({ conne
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
-const { gameEntryRedirect, canonicalGameDestination, playerLoginDestination } = await import('../../packages/navigation/game-entry.mjs');
+const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
+const { publicGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
@@ -342,7 +343,7 @@ let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root,
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(process.env), root,
   nativeMode:!localMediaEnabled,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
@@ -803,15 +804,17 @@ const server = createServer(async (req, res) => {
   }
   if((await boLabAuth(req,res)))return;
   { const u=new URL(req.url,neonStudioEnabled ? gameOrigin : 'http://local'); const launch=u.searchParams.get('launch');
-    if(['/', '/v2', '/v2/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
+    if(['/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
-      if (neonStudioEnabled) { const destination=canonicalGameDestination(u,{includeLaunch:false}); u.pathname='/blackjack'; u.search=new URL(destination,u).search; }
-      else if (gamePath === '/game') u.pathname = '/game';
+      // A partner launch is a blackjack start and lands on the one public game start.
+      const destination = neonStudioEnabled ? publicGameStart(u.searchParams,{origin:u.origin,games:['blackjack']})
+        : (gamePath === '/game' ? '/game' : u.pathname)+u.search;
+      if(!destination){res.writeHead(400,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('This launch opens blackjack only');return;}
       let sessionCookie;
       try { sessionCookie = await auth.fromPartner(req,claims); }
       catch { res.writeHead(403, {'Content-Type':'text/plain','Cache-Control':'no-store'}); res.end('Launch token invalid or expired'); return; }
-      res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':sessionCookie});res.end();return; } }
+      res.writeHead(303,{Location:destination,'Set-Cookie':sessionCookie});res.end();return; } }
   try {
     const loggingOut=pathname==='/api/auth/logout'?(await auth.session(req)):null;
     if(await auth.handle(req,res)){
