@@ -98,7 +98,7 @@ export async function copyOpenClawRuntime(root) {
   await copyFile(new URL('../../tools/media-blob-index-reader.mjs', import.meta.url),join(root,'tools/media-blob-index-reader.mjs'));
   const rouletteTarget = join(root, 'services/game/games/roulette');
   await mkdir(rouletteTarget, { recursive: true });
-  for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {
+  for (const file of ['index.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {
     await copyFile(new URL(`../../services/game/games/roulette/${file}`, import.meta.url), join(rouletteTarget, file));
   }
   const source = new URL('../../services/openclaw/lab/src/', import.meta.url);

@@ -52,7 +52,6 @@ import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { presentationPublicSource } from '../../packages/presentation/public-modules.mjs';
-import { createRoulettePreview } from './games/roulette/preview.mjs';
 import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
 
@@ -752,7 +751,6 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
   });
 })() : null;
-const roulettePreview = createRoulettePreview({ origin: gameOrigin });
 const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
@@ -764,8 +762,6 @@ const server = createServer(async (req, res) => {
     res.writeHead(health.ready ? 200 : 503, { 'Content-Type':'application/json', 'Cache-Control':'private, no-store' });
     res.end(JSON.stringify(health)); return;
   }
-  if ((pathname === '/roulette-test' || pathname.startsWith('/roulette-test/') || pathname === '/api/roulette-test/spin')
-      && await roulettePreview(req, res)) return;
   if (pathname==='/api/studio-preview'||pathname.startsWith('/api/studio-preview/')||pathname.startsWith('/studio-preview/')) {
     if(!studioPreview){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"error":"studio_preview_unavailable"}');return;}
     const request=new Request((process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin)+req.url,{method:req.method,headers:req.headers,
