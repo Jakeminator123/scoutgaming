@@ -142,10 +142,16 @@ Actions-kostnadsuppdrag och ensam plankopian/workflowändringar; root gör inga
 334/336 har dessutom schema/liveACL/restore/
 K04- och integrationsgrindar. Exakt-head grön obligatorisk CI och fräsch
 owner/source/headkontroll gäller; inga bypass/force/queue/automerge/branchraderingar.
-Jakobs direkta no-deploybeslut: Render autoDeploy=no/triggeroff, ej suspended,
-repo delete_branch_on_merge=false enligt merge-agentens verifiering. Vercel
-git.deploymentEnabled:false ligger i main. Återaktivera aldrig automatiskt.
-Ingen produktion-DDL/deploy/env-/flaggaktivering/mediaimport/GPU/betald drift.
+**Rättat deploybeslut 22 oktober (Jakob direkt):** main ska deployas till
+produktion som förut; endast förhandsgrenar ska inte få deployments. Den
+tidigare tolkningen ”ingen deploy alls” var ett missförstånd. `vercel.json` i
+PR336 sätter `git.deploymentEnabled` till main=true och alla andra grenar
+false; Render croupier-v2 får autoDeploy åter på för main genom Jakobs egen
+CLI-körning (`render services update srv-datg3j6gekts73amgli0 --auto-deploy`),
+eftersom agentsessionen inte får göra produktionsändringar.
+Övriga spärrar kvarstår: ingen produktion-DDL, env-/flaggaktivering, GPU eller
+betald drift utan separat beslut. Mediaimport av Kevins verifierade tagningar
+är beslutad av Jakob och körs genom Admins ordinarie uppladdning.
 
 Produktion wandering-hill-60561912/br-flat-fog-b161a6r8/croupier_game är PG18.6,
 6players/0ogiltiga balanser; game008–010 saknas. Studio-readiness täcker inte dessa.
