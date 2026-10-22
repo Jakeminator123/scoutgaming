@@ -66,8 +66,8 @@ async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, bo
 
 function OpenClawModelTabs({navigation}:{navigation?:{models:string;chat:string;studio:string}}) {
   return <>
-    <a href={navigation?.models??labUrl('/admin/ai/models')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
-    <a href={navigation?.chat??labUrl('/admin/dealer-agent')}>{navigation ? 'Dealerns agent' : 'Chatt'}</a>
+    <a href={navigation?.models??labUrl('/admin/openclaw?tab=models')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
+    <a href={navigation?.chat??labUrl('/admin/openclaw?tab=agent')}>{navigation ? 'Dealerns agent' : 'Chatt'}</a>
   </>;
 }
 

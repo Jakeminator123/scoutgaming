@@ -7,7 +7,7 @@ import { isPresentationRoomLaneCompatible } from '../../../packages/presentation
 import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../../packages/operators/contracts/branding.mjs';
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
-import { effectivePartnerAdjustments } from './partner-package-view.mjs';
+import { adminLayerAdjustments, effectivePartnerAdjustments } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
@@ -172,7 +172,13 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       }
     }
   }
-  async function validateDraft(pack,branding,document) {
+  // The Admin route carries the server-derived access class in the audit
+  // context. An N1 administrator may choose any layer the frozen composition
+  // allows; partner sessions keep the company's operatorAdjustable gate.
+  function laneRights(lane,adminChoices) {
+    return new Set(adminChoices?adminLayerAdjustments(lane):effectivePartnerAdjustments(lane));
+  }
+  async function validateDraft(pack,branding,document,adminChoices=false) {
     assertEditable(branding);
     const presentation=readPackagePresentation(pack);
     if(!presentation)fail(409); // A published Scout presentation is the authority for every editable choice.
@@ -182,7 +188,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     if(!lane)fail(422);
     const defaults={...branding};delete defaults.roomOverrides;
     function checkedValues(value,baseline,selectedLane,allowedDealers) {
-      const rights=new Set(effectivePartnerAdjustments(selectedLane));
+      const rights=laneRights(selectedLane,adminChoices);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS){
         const changed=canonicalStudioJson(value[key]??null)!==canonicalStudioJson(baseline[key]??null);
         const token=key==='color'?'table.color':key;
@@ -200,7 +206,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       const selectedLane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
       // Explicit overrides change future inheritance even when today's rendered value is equal.
       const explicitBefore=base.roomOverrides?.[room.id]??{},explicitAfter=branding.roomOverrides?.[room.id]??{};
-      const roomRights=new Set(effectivePartnerAdjustments(selectedLane));
+      const roomRights=laneRights(selectedLane,adminChoices);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS)if(canonicalStudioJson(explicitBefore[key]??null)!==canonicalStudioJson(explicitAfter[key]??null)
         &&!roomRights.has(key==='color'?'table.color':key))fail(422);
       const value=resolveRoomBranding({...branding,lane:laneId},room.id,room.presentationLaneId);
@@ -272,6 +278,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       const pack=await load(input.operatorId,context.store),draft=await context.store.getBrandingDraft(input.operatorId);
       if(!Array.isArray(pack.lanes)||!pack.lanes.length||pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
       const document=await administrationSnapshot(context.readAdministration);
+      const adminChoices=input.audit?.accessClass==='internal-admin';
       if(input.action==='save-draft'||input.action==='restore'){
         let branding=input.branding;
         if(input.action==='restore'){
@@ -280,11 +287,11 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
           if(!previous||previous.operatorId!==input.operatorId)fail(404);
           branding=publicEditableBranding(previous.branding);
         }
-        await validateDraft(pack,branding,document);
+        await validateDraft(pack,branding,document,adminChoices);
         await context.store.saveBrandingDraft({...input,branding});
       }else{
         if(!draft||draft.action==='draft.publish'||draft.basePackageRevision!==pack.revision)fail(409);
-        const branding=await validateDraft(pack,draft.branding,document),review=reviewOf(pack,draft,document);
+        const branding=await validateDraft(pack,draft.branding,document,adminChoices),review=reviewOf(pack,draft,document);
         if(input.action==='review')return review;
         if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);
         await checkPublication(context,{...pack,branding});

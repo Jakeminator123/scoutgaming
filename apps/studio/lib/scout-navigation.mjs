@@ -10,7 +10,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
   ] },
   { id: 'companies', label: 'Spelbolag', items: [
     { href: '/admin/companies', label: 'Bolag & team' },
-    { href: '/admin/publication', label: 'Spelrum & publicering' },
+    { href: '/admin/rooms', label: 'Spelbolag & rum' },
   ] },
   { id: 'operations', label: 'Drift', items: [
     { href: '/admin/drift', label: 'Spelstatus & integritet' },
@@ -19,8 +19,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'system', label: 'System', items: [
     { href: '/admin/admin/accounts', label: 'Konton & åtkomst' },
     { href: '/admin/admin/api', label: 'API & integrationer' },
-    { href: '/admin/ai/models', label: 'Agentmodeller' },
-    { href: '/admin/dealer-agent', label: 'Intern agentchatt' },
+    { href: '/admin/openclaw', label: 'OpenClaw' },
   ] },
 ].map(group => Object.freeze({...group, items: Object.freeze(group.items.map(item => Object.freeze(item)))})));
 
@@ -47,12 +46,15 @@ const legacyPaths = new Map([
   ['/events', '/admin/dealer-studio'],
   ['/control/events', '/admin/dealer-studio'],
   ['/admin/events', '/admin/dealer-studio'],
-  ['/probe', '/admin/dealer-studio'],
-  ['/control/probe', '/admin/dealer-studio'],
-  ['/admin/probe', '/admin/dealer-studio'],
+  ['/probe', '/admin/openclaw?tab=probe'],
+  ['/control/probe', '/admin/openclaw?tab=probe'],
+  ['/admin/probe', '/admin/openclaw?tab=probe'],
+  ['/admin/ai/models', '/admin/openclaw?tab=models'],
+  ['/admin/ai/chat', '/admin/openclaw?tab=assistant'],
+  ['/admin/dealer-agent', '/admin/openclaw?tab=agent'],
   ['/administration', '/control/administration'],
   ['/openclaw', '/control/openclaw'],
-  ['/operator-chat', '/admin/dealer-agent'],
+  ['/operator-chat', '/admin/openclaw?tab=agent'],
   ['/tree', '/admin/dealer-studio'],
   ['/control/tree', '/admin/dealer-studio'],
   ['/activity', '/admin/dealer-studio'],

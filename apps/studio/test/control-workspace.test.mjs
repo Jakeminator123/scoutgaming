@@ -10,7 +10,7 @@ test('redirected Control fragments open the corresponding Admin tool once', () =
     ['clips', '/admin/dealer-studio#deal'], ['voice', '/admin/dealer-studio?view=speech#clips'],
     ['speech', '/admin/dealer-studio?view=speech#clips'], ['backgrounds', '/admin/compositions'],
     ['transactions', '/admin/ekonomi'], ['integration', '/admin/admin/api'],
-    ['game-tables', '/admin/publication'], ['overview', '/admin'],
+    ['game-tables', '/admin/rooms'], ['overview', '/admin'],
   ]) {
     for (const prefix of ['', '/studio']) assert.equal(legacyControlBookmarkHref(prefix + '/admin#' + fragment), target);
     assert.equal(legacyControlBookmarkHref(target), null, 'the destination cannot hand off again');

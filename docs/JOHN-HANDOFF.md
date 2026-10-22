@@ -234,6 +234,43 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
+## Admin UX-pass 2: inga dubbletter, ett rumsflöde, en OpenClaw-sida — 22 oktober 2026
+
+Branch `codex/admin-ux-pass-2`. Jakobs besked: Admin var fullt av dubbletter och
+gammal partnerlogik läckte in i rumssidan. Ingen regel eller test förbjöd att ta
+bort ytor; J03 hade flyttat Control-sidorna under System i stället för att välja
+en. Detta pass väljer en plats per funktion och omdirigerar resten.
+
+- **Ett rumsflöde.** `/admin/rooms` (Spelbolag & rum) har förhandsvisningen i
+  full bredd, Rummets val (bakgrund, dealer, bord) bredvid Spelinställningar,
+  status (publicerad version, utkast, vad spelaren möter), och under det
+  bolagets Publicering, Skapa rum och Spelrum (livscykel). Paketlogiken ligger i
+  `apps/studio/lib/operator-package-client.mjs` och delas med Bolag & team.
+  `/admin/publication` omdirigeras (klient och server, GET/HEAD; skrivningar
+  aldrig). Rumskorten är borttagna ur den gamla sidan.
+- **Admin väljer fritt bland mallens lager.** `adminLayerAdjustments(lane)`
+  (partner-package-view.mjs) i klient och server: en N1-session
+  (`audit.accessClass==='internal-admin'`, satt server-side ur cookien) får
+  välja bakgrund, dealer och bord inom `allowed` även när
+  `operatorAdjustable` saknar dem. Partnersessioner oförändrade. "Låst i
+  publicerat paket" visas inte längre för Admin.
+- **System utan dubbletter.** Verktyg → Fördjupning (Talgranskning,
+  Svarsbibliotek, Spelhändelser & regler, Guide). Kopplingar och Användning &
+  beroenden → en sida `/admin/structure` "Kopplingar & användning";
+  `/admin/deletion` omdirigeras. Sammansättningar nås från Scen & lager
+  ("Avancerad sammansättning").
+- **OpenClaw på en sida.** `/admin/openclaw` med flikarna Driftläge (taldrift
+  flyttad från Drift), Agentmodeller, Dealerns agent, Tal vid inaktivitet,
+  Adminroboten. Gamla adresser omdirigeras till rätt flik. Drift behåller
+  spelstatus, skobevis och integritet (dess Logga ut-knapp försvann med
+  taldriftskortet; finns kvar på Konton, Betalningar, Integrationer).
+- **Konton delade.** Spelarkonton `/admin/players` under Verksamhet;
+  adminpersonal kvar på `/admin/admin/accounts` under System.
+- Destinationslås i tester är ompekade, behörighets-, isolerings- och
+  "skrivningar omdirigeras aldrig"-prov behållna. Ingen ny API, writer, schema
+  eller capability. Kvar: zoom och placering per rum är ett eget kontraktspass
+  (rumsöverstyrning + spelkonsument + paketbudget).
+
 ## Admin UX-pass 1: klippkartan — 22 oktober 2026
 
 Branch `codex/admin-ux-klippkarta` från main `34060c4d` (PR336 mergad och

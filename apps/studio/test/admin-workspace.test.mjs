@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ADMIN_WORKSPACE_TOOLS,adminToolName,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS,ADMIN_DEPTH_TOOLS,adminToolName,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {designPreviewPages} from '../lib/design-preview-paths.mjs';
 import {studioLoginReturnTo} from '../lib/studio-login-client.mjs';
 import {CONTROL_PREVIEW_VIEWS,workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
@@ -18,10 +18,15 @@ test('every existing Control tool and registered N1 view has a served Admin dest
     assert.equal(url.searchParams.get('composition'),'portrait');assert.equal(url.searchParams.has('lane'),false);
   }
   for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS))assert.equal(adminToolName('/admin/'+key),key);
+  for(const key of ADMIN_DEPTH_TOOLS)assert.ok(Object.hasOwn(ADMIN_WORKSPACE_TOOLS,key),key);
   assert.equal(adminToolName('/partner/companies'),null);
   assert.equal(adminDocumentHref('/control/zones'),'/admin/compositions');
-  assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/dealer-agent?tab=chat&dealer=dragan');
-  assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
+  // OpenClaw is one page: Control's chat, operator chat, ops and probe land on its tabs.
+  assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/openclaw?tab=agent&dealer=dragan');
+  assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/openclaw?tab=agent&dealer=dragan');
+  assert.equal(adminDocumentHref('/control/openclaw?dealer=dragan'),'/admin/openclaw?tab=models&dealer=dragan');
+  assert.equal(adminDocumentHref('/control/ops'),'/admin/openclaw?tab=drift');
+  assert.equal(adminDocumentHref('/control/players?operator=nord'),'/admin/players?operator=nord');
   assert.equal(adminDocumentHref('/control/dealer-forge?dealerId=dragan'),'/admin/dealer-studio?view=generate&dealer=dragan');
 });
 test('speech review retains its actual group and dealer on a served Admin document',()=>{
@@ -31,10 +36,10 @@ test('speech review retains its actual group and dealer on a served Admin docume
   assert.ok(designPreviewPages.has('media-review'));
   assert.equal(studioLoginReturnTo(target),target);
 });
-test('legacy lanes bookmarks preserve the company tab instead of opening publication',()=>{
+test('legacy lanes bookmarks preserve the company tab instead of opening the rooms page',()=>{
   for(const prefix of ['/control','/studio/control']){
     assert.equal(adminDocumentHref(prefix+'/lanes?tab=companies&operator=nord&lane=portrait'),'/admin/companies?operator=nord&composition=portrait');
-    assert.equal(adminDocumentHref(prefix+'/lanes?tab=publish&operator=nord&lane=portrait'),'/admin/publication?operator=nord&composition=portrait');
+    assert.equal(adminDocumentHref(prefix+'/lanes?tab=publish&operator=nord&lane=portrait'),'/admin/rooms?operator=nord&composition=portrait');
   }
 });
 test('legacy clip dealerId bookmarks restore the dealer and retain explicit dealer precedence',()=>{
@@ -68,8 +73,9 @@ test('Admin documents retain the existing navigation exception without opening A
   for(const bad of [new Request(request,{method:'POST'}),new Request(request,{headers:{...headers,origin:'https://foreign.invalid'}}),new Request(request,{headers:{...headers,'next-action':'fixture'}}),new Request('https://site.invalid/studio/api/admin/workspace/companies',{headers})])assert.throws(()=>normalizeNativeStudioPageRequest(bad,config),/studio_request_rejected/);
 });
 test('login restores the exact Admin tool and context without accepting external returns or duplicate selectors',()=>{
-  const target='/admin/publication?operator=nord&table=room-1&composition=portrait&dealer=dragan&game=blackjack';
+  const target='/admin/rooms?operator=nord&table=room-1&composition=portrait&dealer=dragan&game=blackjack';
   assert.equal(studioLoginReturnTo('/studio'+target),target);
+  assert.equal(studioLoginReturnTo('/studio/admin/publication?operator=nord&table=room-1&composition=portrait&dealer=dragan&game=blackjack'),target,'the retired publication page returns to Spelbolag & rum with the same context');
   assert.equal(studioLoginReturnTo('/admin/dealers?dealer=dragan&tool=import'),'/admin/dealers?dealer=dragan&tool=import');
   for(const invalid of ['/admin?returnTo=https://outside.invalid','/admin/clips?dealer=a&dealer=b','//outside.invalid/admin','/admin/_data/workspace?section=companies'])assert.equal(studioLoginReturnTo(invalid),'/admin');
 });
@@ -115,18 +121,42 @@ test('retired publication bookmark mapping preserves fragments and rejects docum
   for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/rooms?operator=north&table=room-1&lane=portrait#review');
-    assert.equal(platformRoute(url,config,new Request(url)).destination,'https://site.invalid/admin/publication?operator=north&table=room-1&composition=portrait#review');
+    assert.equal(platformRoute(url,config,new Request(url)).destination,'https://site.invalid/admin/rooms?operator=north&table=room-1&composition=portrait#review');
     for(const options of [{method:'POST',body:'fixture'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
     for(const path of ['/studio/api/admin/operator-package','/control/login','/control/set-password'])assert.notEqual(platformRoute(new URL(path,url),config).kind,'redirect');
   }
+  // The merged Admin page itself: GET/HEAD follow to Spelbolag & rum with context and fragment; writes never redirect.
+  for(const prefix of ['/admin','/studio/admin']){
+    const config={nativeStudio:true,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
+    const url=new URL('https://site.invalid'+prefix+'/publication?operator=north&table=room-1&lane=portrait#review');
+    for(const method of ['GET','HEAD'])assert.deepEqual(platformRoute(url,config,new Request(url,{method})),{kind:'redirect',destination:'https://site.invalid/admin/rooms?operator=north&table=room-1&composition=portrait#review'});
+    for(const options of [{method:'POST',body:'fixture'},{method:'PUT',body:'fixture'},{method:'DELETE'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
+  }
+  for(const path of ['/admin/publication/','/admin/publications','/admin/publication-extra'])assert.equal(adminDocumentHref(path),path);
 });
 
 test('retired tool bookmarks retain exact context and never redirect mutations',()=>{
-  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','openclaw?tab=probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,
-      'https://site.invalid/admin/'+target+'?operator=north&table=room-1&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting&composition=portrait#selected');
+      'https://site.invalid/admin/'+target+(target.includes('?')?'&':'?')+'operator=north&table=room-1&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting&composition=portrait#selected');
     for(const options of [{method:'POST',body:'fixture'},{method:'PUT',body:'fixture'},{method:'DELETE'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
   }
+});
+
+test('merged dependency bookmarks redirect to Kopplingar & användning with their selection and never for writes',()=>{
+  for(const prefix of ['/admin','/studio/admin']){
+    const source=prefix+'/deletion?operator=north&table=room-1&lane=portrait&dealer=saga#resource-room-726f6f6d2d31';
+    const target=adminDocumentHref(source);
+    assert.equal(target,'/admin/structure?operator=north&table=room-1&dealer=saga&composition=portrait#resource-room-726f6f6d2d31');
+    assert.equal(studioLoginReturnTo(prefix+'/deletion?operator=north&table=room-1'),'/admin/structure?operator=north&table=room-1');
+    assert.ok(designPreviewPages.has('structure'));
+    const config={nativeStudio:true,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
+    const url=new URL('https://site.invalid'+source);
+    for(const method of ['GET','HEAD'])assert.deepEqual(platformRoute(url,config,new Request(url,{method})),{kind:'redirect',destination:'https://site.invalid'+target});
+    for(const options of [{method:'POST',body:'fixture'},{headers:{'next-action':'fixture'}}])assert.notEqual(platformRoute(url,config,new Request(url,options)).kind,'redirect');
+  }
+  for(const path of ['/admin/deletion/','/admin/deletions','/admin/structure?operator=north','/admin/deletion-extra'])assert.equal(adminDocumentHref(path),path);
+  assert.equal(adminToolName('/admin/deletion'),null);assert.equal(adminToolName('/admin/structure'),null);
 });

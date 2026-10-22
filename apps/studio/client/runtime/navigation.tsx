@@ -5,7 +5,7 @@ import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext,adminTo
 export function previewHref(href: string) {
   return adminHref(href);
 }
-const nativeFormPaths = new Set(['/admin/admin/accounts', '/admin/admin/api', '/admin/ai/models']);
+const nativeFormPaths = new Set(['/admin/admin/accounts', '/admin/admin/api', '/admin/players']);
 const needsDocumentNavigation = (pathname: string) => adminToolName(pathname) || nativeFormPaths.has(adminPathname(pathname));
 const historyOwner = () => studioHistory(window);
 const snapshotLocation = () => new URL(historyOwner().snapshotHref(), location.origin);

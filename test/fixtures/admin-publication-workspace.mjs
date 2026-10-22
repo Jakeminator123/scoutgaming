@@ -64,7 +64,7 @@ export async function startPublicationWorkspace() {
         const route=platformRoute(new URL(request.url),{nativeStudio:false,publicOrigin:origin,labUiOrigin:origin,backendOrigin:origin},request);
         response=route.kind==='redirect'?Response.redirect(route.destination,307):new Response(null,{status:404});
       }
-      else if(path==='/admin/publication')response=new Response('<!doctype html><html lang="sv" class="preview-admin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"><div class="admin-workspace-tool" id="root"></div><script type="module" src="/fixture.js"></script></html>',{headers:{'content-type':'text/html; charset=utf-8'}});
+      else if(path==='/admin/rooms')response=new Response('<!doctype html><html lang="sv" class="preview-admin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"><div class="admin-workspace-tool" id="root"></div><script type="module" src="/fixture.js"></script></html>',{headers:{'content-type':'text/html; charset=utf-8'}});
       else if(path==='/fixture.js')response=new Response(js,{headers:{'content-type':'application/javascript'}});
       else if(path==='/fixture.css')response=new Response(css+'\nbody{margin:0;background:var(--sg-bg);color:var(--sg-text);font:14px system-ui}*{box-sizing:border-box}a{color:inherit}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:default}p,h1,h2{margin-top:0}',{headers:{'content-type':'text/css'}});
       else if(path==='/fixture-workspace'){
@@ -123,7 +123,7 @@ export async function startPublicationWorkspace() {
         const signature=createHmac('sha256',Buffer.from(signer.v,'hex')).update(header+'.'+body).digest('base64url');
         return 'bo_jwt='+header+'.'+body+'.'+signature;
       },
-      url:origin+'/admin/publication?'+new URLSearchParams({operator:company.id,composition:compositionId,room:receipt.room.id,dealer:'astrid',game:'blackjack'})+'#publication',
+      url:origin+'/admin/rooms?'+new URLSearchParams({operator:company.id,composition:compositionId,room:receipt.room.id,dealer:'astrid',game:'blackjack'})+'#publication',
       async close(){server.closeIdleConnections();await new Promise((yes,no)=>server.close(error=>error?no(error):yes()));},
       async request(path,{method='GET',body,cookie=chain.auth.admin}={}){
         return fetch(origin+path,{method,headers:{cookie,...(method!=='GET'?{origin,'sec-fetch-site':'same-origin','content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});

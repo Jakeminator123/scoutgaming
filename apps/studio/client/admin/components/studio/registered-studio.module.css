@@ -11,3 +11,15 @@
 /* A single registered room already has a selector and title; repeat cards add no choice. */
 .workspace[data-room-list=false]{grid-template-columns:minmax(0,1fr)}
 .pageHeader{align-items:center}.pageHeader>div>p:first-child{display:none}.pageHeader h1{margin-top:0;font-size:24px}.pageHeader>div>p:last-child{margin-top:6px;font-size:13px}.detailHeader{gap:12px;padding-bottom:14px}.detailHeader h2{font-size:22px}.detailHeader .detailEyebrow{display:none}
+
+/* Room status in the header and the company cards (publication, new room, lifecycle) below the room editor. */
+.roomStatus{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px}.roomStatus div{display:grid;gap:2px}.roomStatus dt{font-size:11px;color:var(--sg-muted)}.roomStatus dd{margin:0;font-size:13px;color:var(--sg-text);overflow-wrap:anywhere}
+.companyCard{display:grid;gap:14px;min-width:0}.companyCard>header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}.companyCard h3{font-size:16px;font-weight:600;overflow-wrap:anywhere}.companyCard>p{max-width:70ch;font-size:13px;line-height:1.6;color:var(--sg-muted)}
+section.companyCard{padding:18px}.version{font-size:11px;padding:5px 10px;border:1px solid var(--sg-border);border-radius:100px;color:var(--sg-muted);white-space:nowrap}
+.choices{display:grid;gap:10px;margin:0;padding:0;border:0;min-inline-size:0}.choices legend{padding:0 0 8px;font-size:13px;font-weight:600;color:var(--sg-muted)}
+.choice{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--sg-border);border-radius:10px;font-size:13px;line-height:1.45}.choice input{margin-top:.2em;flex:0 0 auto;accent-color:var(--sg-lime)}.choice:has(input:checked){border-color:var(--sg-lime);background:var(--sg-surface-2)}.choice strong{font-weight:600}
+.publishAction{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--sg-border)}.publishAction p{font-size:13px;color:var(--sg-muted)}
+.problem{padding:12px 14px;border:1px solid #946a34;border-radius:10px;font-size:13px;line-height:1.6;color:#f5c17d}.problem button{margin-left:8px}
+.receipt{padding:12px 14px;border:1px solid var(--sg-lime);border-radius:10px;font-size:13px;line-height:1.6}.receipt strong{color:var(--sg-lime)}
+.compositionPick{display:grid;gap:6px;max-width:24rem;font-size:13px}.compositionPick select{min-height:38px;padding:7px 10px;border:1px solid var(--sg-border);border-radius:8px;background:var(--sg-bg);color:var(--sg-text);font:inherit}
+@media(max-width:600px){.publishAction{align-items:stretch;flex-direction:column}.roomStatus{gap:8px 14px}}

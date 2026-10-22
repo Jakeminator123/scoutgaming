@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles} from '../lib/partner-package-view.mjs';
+import {adminLayerAdjustments,effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles} from '../lib/partner-package-view.mjs';
 import {PartnerPackageView} from '../components/partner-package-view.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -91,4 +91,18 @@ test('compact published summary follows the selected owned room and its exact ov
   assert.doesNotMatch(sv,/Second composition|image\/png|video\/webm|lane=/);
   const en=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:'vip',language:'en'}));
   assert.match(en,/Published composition/);assert.match(en,/Three separate layers/);assert.doesNotMatch(en,/<dt>Bakgrund|Provspela|Publicerat/);
+});
+
+test('Admin may choose every allowed layer of a layered composition while material compatibility still applies',()=>{
+  const layered=makePresentation().lanes[0];
+  assert.deepEqual(effectivePartnerAdjustments({...layered,operatorAdjustable:['table.color']}),['table.color'],'the company keeps its narrow gate');
+  assert.deepEqual(adminLayerAdjustments({...layered,operatorAdjustable:['table.color']}),['table.color','table','background','dealer']);
+  assert.deepEqual(adminLayerAdjustments({...layered,operatorAdjustable:[]}),['table','background','dealer']);
+  const baked=structuredClone(layered);baked.layers.background={enabled:true,mode:'baked',default:null,allowed:[]};baked.operatorAdjustable=['branding'];
+  assert.deepEqual(adminLayerAdjustments(baked),['table','dealer','branding'],'a baked background cannot be chosen separately');
+  const empty=structuredClone(layered);empty.layers.table={enabled:true,default:null,allowed:[]};empty.operatorAdjustable=[];
+  assert.deepEqual(adminLayerAdjustments(empty),['background','dealer'],'a layer without allowed material offers no choice');
+  const fullFrame=makePresentation(false).lanes[0];
+  assert.deepEqual(adminLayerAdjustments({...fullFrame,operatorAdjustable:[]}),['dealer'],'legacy full-frame clips bake table and background');
+  assert.deepEqual(adminLayerAdjustments(undefined),[]);
 });

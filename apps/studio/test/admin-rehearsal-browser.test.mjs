@@ -51,7 +51,7 @@ async function openFixture(browser,start=href()){
     if(url.pathname==='/api/inputs')return route.fulfill({json:{configured:false,missing:[],invalid:[],endpoint:null}});
     if(url.pathname==='/api/inputs/reference')return route.fulfill({json:{configured:false}});
     if(url.pathname==='/api/clip-controls')return route.fulfill({status:503,json:{error:'isolated_no_media'}});
-    if(url.pathname==='/admin/publication'||url.pathname.startsWith('/studio-preview/'))return route.fulfill({contentType:'text/html',body:'<h1>Verified destination</h1>'});
+    if(url.pathname==='/admin/rooms'||url.pathname.startsWith('/studio-preview/'))return route.fulfill({contentType:'text/html',body:'<h1>Verified destination</h1>'});
     assert.ok(['/admin/compositions','/admin/rehearsal'].includes(url.pathname));return route.fulfill({contentType:'text/html',body:'<div id="root"></div><script src="/fixture.js"></script>'});
   }catch(error){failures.push(error);await route.fulfill({status:500,body:'Isolated fixture failed'});}});
   const page=await context.newPage();page.setDefaultTimeout(7000);page.on('pageerror',error=>failures.push(error));page.on('dialog',async dialog=>{dialogs.push(dialog.type());await dialog.dismiss();});await page.goto(origin+start);
@@ -100,7 +100,7 @@ test('Admin composition request guards retain ownership and allow the exact ackn
       assert.equal(await f.page.evaluate(()=>window.__navigate('/admin/rehearsal')),false);await rejectTraversal(f,-1);f.release();await f.page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Provspela'&&!button.disabled));assert.deepEqual(f.writes.map(row=>row.path),['/api/layer-assets/upload']);
     }else{
       if(kind==='conflict')f.conflict();await f.page.getByLabel('Sammansättningens namn',{exact:true}).fill('Save before leaving');await f.page.getByRole('link',{name:'Spara och fortsätt',exact:true}).click();await waitWrite(f);
-      if(kind==='continue'){await f.page.waitForURL(url=>url.pathname==='/admin/publication');const url=new URL(f.page.url());assert.equal(url.searchParams.get('table'),'room-a');assert.equal(url.searchParams.get('composition'),'scene-a');assert.equal(url.searchParams.get('game'),'blackjack');assert.equal(f.saved.lanes[0].label,'Save before leaving');assert.deepEqual(f.dialogs,[]);}
+      if(kind==='continue'){await f.page.waitForURL(url=>url.pathname==='/admin/rooms');const url=new URL(f.page.url());assert.equal(url.searchParams.get('table'),'room-a');assert.equal(url.searchParams.get('composition'),'scene-a');assert.equal(url.searchParams.get('game'),'blackjack');assert.equal(f.saved.lanes[0].label,'Save before leaving');assert.deepEqual(f.dialogs,[]);}
       else{await f.page.getByRole('button',{name:'Spara',exact:true}).waitFor();await f.page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Spara'&&button.disabled));assert.equal(new URL(f.page.url()).pathname,'/admin/compositions');assert.equal(await f.page.getByLabel('Sammansättningens namn',{exact:true}).inputValue(),'Save before leaving');assert.equal(f.saved.lanes[0].label,'Scene A');assert.equal(f.reads.includes('/admin/publication'),false);}
       assert.equal(f.writes.length,1);
     }

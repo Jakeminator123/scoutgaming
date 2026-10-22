@@ -10,6 +10,20 @@ export function effectivePartnerAdjustments(lane) {
   });
 }
 
+// Admin (N1) chooses among every layer the frozen composition lists as allowed.
+// operatorAdjustable only narrows what the company may change itself; the
+// material's real compatibility (baked background, legacy full-frame clip) still
+// applies, and values outside `allowed` are refused by the branding API.
+export function adminLayerAdjustments(lane) {
+  if (!lane) return [];
+  const tokens = new Set(effectivePartnerAdjustments(lane));
+  const layered = Boolean(lane.composition);
+  if (layered && lane.layers.background.enabled && lane.layers.background.mode !== 'baked' && lane.layers.background.allowed.length) tokens.add('background');
+  if (layered && lane.layers.table.enabled && lane.layers.table.allowed.length) tokens.add('table');
+  if (lane.layers.dealer.enabled && lane.layers.dealer.allowed.length) tokens.add('dealer');
+  return ['table.color', 'table', 'background', 'dealer', 'branding'].filter(token => tokens.has(token));
+}
+
 export function partnerLaneState(lane, branding = {}, assets = [], registeredDealers = []) {
   const selected = branding.lane === lane.id;
   const layers = Object.fromEntries(['background', 'dealer', 'table'].map(role => {

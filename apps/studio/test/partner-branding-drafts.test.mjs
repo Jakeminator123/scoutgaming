@@ -161,3 +161,36 @@ test('save, review and publish reject an oversized merged package before mutatio
   assert.deepEqual(f.pool.tables,legacy);
  }
 });
+
+test('an N1 session on the Admin route may choose any allowed layer, a partner session keeps the company gate',async()=>{
+ const f=await fixture(['table.color'],{large:true});
+ const admin={...f.audit,accessClass:'internal-admin'};
+ const branding={lane:f.lane.id,color:'#112233',roomOverrides:{[f.tables[0]]:{background:f.assets[1].id,table:f.assets[0].id}}};
+ await assert.rejects(f.command({action:'save-draft',branding}),e=>e.statusCode===422,'the partner audit class is still gated by operatorAdjustable');
+ assert.equal(await f.store.getBrandingDraft(operatorId),null);
+ const saved=await f.command({action:'save-draft',audit:admin,branding});
+ assert.equal(saved.draft.revision,1);
+ const review=await f.command({action:'review',audit:admin,expectedDraftRevision:1});
+ assert.deepEqual(review.affectedRooms,[f.tables[0]]);
+ assert.deepEqual(review.changes.map(row=>[row.roomId,row.key,row.before,row.after]).sort(),[[f.tables[0],'background',null,f.assets[1].id],[f.tables[0],'table',null,f.assets[0].id]],'the review names the room and both unlocked layers');
+ await assert.rejects(f.command({action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken}),e=>e.statusCode===422,'a partner cannot publish an Admin draft outside its gate');
+ const published=await f.command({action:'publish',audit:admin,expectedDraftRevision:1,reviewToken:review.reviewToken});
+ assert.equal(published.packageRevision,2);
+ assert.deepEqual(resolveRoomBranding(published.branding,f.tables[0],f.lane.id),{lane:f.lane.id,color:'#112233',background:f.assets[1].id,table:f.assets[0].id});
+ assert.deepEqual(resolveRoomBranding(published.branding,f.tables[1],f.lane.id),{lane:f.lane.id,color:'#112233'},'sibling rooms are unchanged');
+ const foreign='33333333-3333-4333-8333-333333333333';
+ for(const [outside,status] of [[{background:foreign},422],[{table:foreign},422],[{dealer:'unknown'},422],[{dealer:'nora'},409]])
+  await assert.rejects(f.command({action:'save-draft',audit:admin,expectedDraftRevision:2,expectedPackageRevision:2,branding:{lane:f.lane.id,color:'#112233',roomOverrides:{[f.tables[0]]:outside}}}),e=>e.statusCode===status,'Admin stays within the composition allowlist and the room dealer choices');
+ assert.equal((await f.store.getCurrentPackage(operatorId)).revision,2);
+});
+test('Admin layer choices never bypass a baked background, missing material or an unrelated company grant',async()=>{
+ const f=await fixture(['dealer']);
+ const admin={...f.audit,accessClass:'internal-admin'};
+ for(const branding of [
+  {lane:f.lane.id,color:'#112233',roomOverrides:{'room-a':{background:'22222222-2222-4222-8222-222222222222'}}}, // the fixture composition bakes its background
+  {lane:f.lane.id,color:'#112233',roomOverrides:{'room-a':{table:'11111111-1111-4111-8111-111111111111'}}}, // no table material is allowed
+  {lane:f.lane.id,color:'#334455'}, // table colour is not a layer; the company grant decides
+ ])await assert.rejects(f.command({action:'save-draft',audit:admin,branding}),e=>e.statusCode===422);
+ assert.equal(await f.store.getBrandingDraft(operatorId),null);
+ assert.equal((await f.store.getCurrentPackage(operatorId)).revision,1);
+});

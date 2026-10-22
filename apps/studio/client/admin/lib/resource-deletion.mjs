@@ -1,4 +1,4 @@
-import {createStudioClient} from './connected-studio.mjs';
+import {createStudioClient,roomChoicesPath} from './connected-studio.mjs';
 
 const list=value=>Array.isArray(value)?value:[];
 const unique=values=>[...new Set(values.filter(value=>typeof value==='string'&&value))];
@@ -100,11 +100,13 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
       throw Error('Ett rum ändrades under läsningen. Uppdatera för att läsa samma revision.');
     const room={...node(row.id,row.name,Boolean(stored?.archivedAt||row.archivedAt||row.state==='archived')),
       // presentation-room-contract.mjs defines schema-v2 rooms without game as Blackjack.
-      operatorId:row.operatorId,game:row.game??(row.schemaVersion===2||stored?.schemaVersion===2?'blackjack':null),compositionId,published:row.published===true,state:row.state||stored?.state||'',publication:null,
-      publishedDealerIds:row.published?unique(row.dealerIds??list(row.dealers).map(dealer=>dealer.id)):[]};
+      operatorId:row.operatorId,game:row.game??(row.schemaVersion===2||stored?.schemaVersion===2?'blackjack':null),compositionId,published:row.published===true,playable:row.playable===true,state:row.state||stored?.state||'',publication:null,
+      publishedDealerIds:row.published?unique(row.dealerIds??list(row.dealers).map(dealer=>dealer.id)):[],choicesPath:null};
     rooms.set(room.id,room);
     const operator=operators.get(room.operatorId);
     if(operator)operator.roomIds.push(room.id);
+    // The room's own choices use the existing room editor; archived or unowned rooms have none.
+    room.choicesPath=room.archived?null:roomChoicesPath(administration.operators.find(current=>current.id===room.operatorId),{id:room.id,operatorId:room.operatorId,state:room.state,compositionId,game:room.game});
     if(compositionId){
       if(!compositions.has(compositionId))compositions.set(compositionId,{...node(compositionId,compositionId,false,true),layers:null,publishedTo:null,historicalPackageReferences:null});
       addRef(compositions.get(compositionId).uses,ref('room',room.id,room.label,room.archived?'Arkiverat rum':'Rummets sparade mall'));

@@ -27,7 +27,7 @@ test('friendly sections keep source view IDs while existing internal tools retai
   assert.equal(resolveWorkspaceSurfacePath('/control/tables').view, 'tables');
   assert.equal(resolveWorkspaceSurfacePath('/control/overview').view, 'ops');
   for (const [section, studioPath, legacyPath] of [['studio', '/studio', '/control'], ['admin', '/studio/administration', '/control/administration'],
-    ['ops', '/studio/admin/ai/models', '/admin/ai/models'], ['lab', '/studio', '/control']]) {
+    ['ops', '/studio/admin/openclaw', '/admin/openclaw'], ['lab', '/studio', '/control']]) {
     const route = resolveWorkspaceSurfacePath('/control/' + section);
     assert.equal(route.studioPath, studioPath); assert.equal(route.legacyPath, legacyPath);
     assert.equal(route.view, null);
