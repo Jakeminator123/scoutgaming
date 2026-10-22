@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { designPreviewFile, serveDesignPreview, servePublicLobby, designPreviewAuthRedirect } from '../lib/design-preview.mjs';
 import { studioLoginReturnTo, studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { platformConfiguration, platformRoute } from '../../../packages/navigation/server/platform-routing.mjs';
@@ -175,6 +176,63 @@ test('only lobby images and videos are browser-cacheable; documents, scripts and
     }
     assert.equal((await lobby(['_assets', 'admin', 'app.js'])).headers.get('cache-control'), 'private, no-store');
     await uncached.text();
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('lobby media validators let browsers keep ranged video and never stitch a replaced file', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'croupier-lobby-validators-'));
+  const digest = body => `"${createHash('sha256').update(body).digest('base64url')}"`;
+  try {
+    for (const surface of ['lobby', 'public-lobby']) {
+      await mkdir(join(root, surface, 'videos', 'dealers'), { recursive: true });
+      await writeFile(join(root, surface, 'app.js'), '0123456789');
+      await writeFile(join(root, surface, 'videos', 'dealers', 'astrid-look.mp4'), '0123456789');
+    }
+    const authorize = async () => {};
+    const admin = (segments, headers = {}, method = 'GET') => serveDesignPreview(new Request('https://studio.test/admin/' + segments.join('/'), { method, headers }), segments, { root, authorize });
+    const lobby = (segments, headers = {}, method = 'GET') => servePublicLobby(new Request('https://studio.test/lobby/' + segments.join('/'), { method, headers }), segments, { root });
+    const clip = ['_assets', 'lobby', 'videos', 'dealers', 'astrid-look.mp4'];
+    const tag = digest('0123456789');
+    for (const [serve, surface] of [[admin, 'lobby'], [lobby, 'public-lobby']]) {
+      const full = await serve(clip), ranged = await serve(clip, { range: 'bytes=0-' }), head = await serve(clip, {}, 'HEAD');
+      assert.equal(full.status, 200); assert.equal(ranged.status, 206); assert.equal(head.status, 200);
+      for (const response of [full, ranged, head]) {
+        assert.equal(response.headers.get('etag'), tag);
+        assert.ok(Date.parse(response.headers.get('last-modified')));
+        assert.equal(response.headers.get('cache-control'), 'private, max-age=3600');
+        await response.text();
+      }
+      // Only the exact strong tag resumes; a stale tag, weak tag or date sends the whole file.
+      const resumed = await serve(clip, { range: 'bytes=2-5', 'if-range': tag });
+      assert.equal(resumed.status, 206); assert.equal(await resumed.text(), '2345');
+      for (const ifRange of ['"stale"', 'W/' + tag, full.headers.get('last-modified')]) {
+        const whole = await serve(clip, { range: 'bytes=2-5', 'if-range': ifRange });
+        assert.equal(whole.status, 200); assert.equal(whole.headers.get('content-range'), null);
+        assert.equal(whole.headers.get('content-length'), '10'); assert.equal(await whole.text(), '0123456789');
+      }
+      for (const ifNoneMatch of [tag, 'W/' + tag, '"other", ' + tag, '*']) {
+        const unchanged = await serve(clip, { 'if-none-match': ifNoneMatch, range: 'bytes=0-' });
+        assert.equal(unchanged.status, 304); assert.equal(await unchanged.text(), '');
+        assert.equal(unchanged.headers.get('etag'), tag);
+        assert.equal(unchanged.headers.get('cache-control'), 'private, max-age=3600');
+        assert.equal(unchanged.headers.get('vary'), 'Cookie');
+      }
+      const changed = await serve(clip, { 'if-none-match': '"other"' });
+      assert.equal(changed.status, 200); assert.equal(await changed.text(), '0123456789');
+      // A redeployed clip gets a new tag, so the old cached bytes are never resumed.
+      await writeFile(join(root, surface, 'videos', 'dealers', 'astrid-look.mp4'), 'replaced clip');
+      const replaced = await serve(clip, { range: 'bytes=0-3', 'if-range': tag });
+      assert.equal(replaced.status, 200); assert.equal(await replaced.text(), 'replaced clip');
+      assert.equal(replaced.headers.get('etag'), digest('replaced clip'));
+      // Scripts keep uncached behaviour: no validators and no conditional answers.
+      for (const headers of [{}, { 'if-none-match': '*' }, { range: 'bytes=2-5', 'if-range': '"stale"' }]) {
+        const script = await serve(['_assets', 'lobby', 'app.js'], headers);
+        assert.equal(script.status, headers.range ? 206 : 200);
+        assert.equal(script.headers.get('etag'), null); assert.equal(script.headers.get('last-modified'), null);
+        assert.equal(script.headers.get('cache-control'), 'private, no-store');
+        await script.text();
+      }
+    }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
