@@ -2,12 +2,29 @@ import { createLayerComposition } from '../../../packages/presentation/runtime/p
 import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import { calibration } from '../../../packages/presentation/contracts/calibration.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
+import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
 
 // K04's public instructions are rendered through the existing exact media/card ports.
 // A reconnect restores authoritative cards and consumes its historical presentation.
-export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000 }) {
+// With a filmed profile the deal/reveal steps run on Kevin's table clock (K public/shared-table.js:304-328,
+// app.js:214-246): each step has its own time from the take lengths of the published plan, a step reached
+// early waits, a late one joins in phase, one whose time is over shows its committed card without film.
+// Speech has no published length, so a chain that follows speech anchors where it begins; the plan's
+// leading chain keeps the clock. Nothing here selects media or cards: every step is still the server's.
+const MAX_STEP_WAIT_MS = 5000;
+export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null }) {
   if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
   let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
+  const timelineFor=presentation=>{
+    if(!filmedProfile||presentation.kind!=='plan'||!Number.isFinite(presentation.startAt))return null;
+    const timeline=planFilmedTimeline({profile:filmedProfile,dealerId:dealerId??'filmed',events:presentation.events,startAt:presentation.startAt,endAt:presentation.endAt});
+    return timeline.complete?timeline:null;
+  };
+  const pause=(ms,signal)=>new Promise((resolve,reject)=>{
+    const abort=()=>{clearTimeout(timer);reject(signal.reason);};
+    const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve();},Math.min(ms,MAX_STEP_WAIT_MS));
+    signal?.addEventListener('abort',abort,{once:true});
+  });
   return Object.freeze({
     restoreSnapshot(snapshot,{signal} = {}) {
       signal?.throwIfAborted(); if(closed)return;
@@ -30,14 +47,32 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       onPresentation(presentation);
       if(presentation.ver<=restoredThrough)return;
       if(presentation.kind==='plan'&&presentation.endAt<=clock()+offset){cards.restore(state.round);restoredThrough=presentation.ver;return;}
-      media.prepareSequence?.([...presentation.events]);
+      const timeline=timelineFor(presentation),fitted=Boolean(timeline?.fit);
+      // The lookahead names each planned step's exact take, so the next file is prepared before its time.
+      media.prepareSequence?.(presentation.events.map((event,index)=>{const step=timeline?.eventIndex.get(index);
+        return step?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}));
       media.state({action:true,speech:false});
       void Promise.resolve(media.observeEvents?.([...presentation.events],{signal})).catch(()=>onError('shared_room_media_unavailable'));
-      let completedSequence=false;
+      let completedSequence=false,shiftMs=0,inRun=false;
+      const elapsed=()=>clock()+offset-presentation.startAt;
       try {
-        for(const event of presentation.events){
+        for(const [index,event] of presentation.events.entries()){
           signal?.throwIfAborted();if(closed)return;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
+          const step=timeline?.eventIndex.get(index)??null;let timing={};
+          if(step){
+            if(!inRun&&index>0)shiftMs=Math.max(shiftMs,elapsed()-(fitted?step.fit:step).startMs);
+            inRun=true;
+            let phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});
+            if(phase.waitMs>0){await pause(phase.waitMs,signal);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
+            if(phase.expired){
+              // Its time is over on the table clock: the committed card is shown, the take is never replayed from its start.
+              if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);
+              continue;
+            }
+            const startMs=phase.startMs+shiftMs;
+            timing={startOffset:phase.seekS,handoverAt:step.handoverMs/1000,...(fitted?{playbackRate:phase.rate}:{}),clockTime:()=>Math.max(0,(elapsed()-startMs)*phase.rate/1000)};
+          } else inRun=false;
           composition?.backgroundEvent?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
           let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1;
           const clip=new AbortController();
@@ -61,7 +96,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           };
           cancelCurrentClip=cancel;arm();
           try {
-            completed=await Promise.race([stalled,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,
+            completed=await Promise.race([stalled,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
               onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
                 if(video?.id!==selectedId){selectedId=video?.id;lastFrame=-1;}
                 if(event.type==='deal'||event.type==='reveal')token=cards.begin(video,source);},
@@ -95,6 +130,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   const host=document.getElementById('scene');
   const dealer=selection.registeredDealers?.find(row=>row.id===selection.dealer);
   if(!host||!dealer||selection.localDealer!==dealer.id)throw new Error('shared_room_presentation_binding_missing');
+  const filmedProfile=registeredFilmedProfile(dealer.id);
   signal?.throwIfAborted();
   const [{PerformancePlayer},{createLocalPresentation},{createLocalCardOverlay}]=await loadAdapters();
   signal?.throwIfAborted();
@@ -120,9 +156,9 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,
       muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:()=>onReady(dealer.id),onBusy:()=>{},onError:()=>onError('shared_room_media_unavailable')});
     signal?.throwIfAborted();
-    cards=createLocalCardOverlay(host,{dealerLabel:dealer.label,filmedProfile:registeredFilmedProfile(dealer.id)});
+    cards=createLocalCardOverlay(host,{dealerLabel:dealer.label,filmedProfile});
   } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();throw error;}
-  const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;}});
+  const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id});
   function layout(value=lastLayout){
     if(!value)return;lastLayout=value;
     const scene=host.getBoundingClientRect(),table=document.getElementById('table2d').getBoundingClientRect();

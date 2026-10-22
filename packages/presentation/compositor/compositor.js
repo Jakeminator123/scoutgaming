@@ -1,11 +1,26 @@
 import {stageGeometry,backgroundRect,tableRect} from './geometry.js';
 /* One WebGL compositor, one decoded dealer frame, multiple complementary passes.
- * No AI segmentation; split mask is an explicit authoring aid. */
+ * No AI segmentation; split mask is an explicit authoring aid.
+ * Green-screen clips get Kevin's matte refinement (kevin/.../public/dealer-layer.js @ 5aa7ed10):
+ * stored threshold/softness/despill stay the only tunables; unspill toward the dealer's
+ * skin tone, edge cleaning with choke and skin in front of the prop card are runtime behaviour. */
+export const DEFAULT_SKIN=Object.freeze([.07,.45]);
+// Like the eyedropper on normal skin (dealer-layer.js:105-118): median hue and saturation of the
+// RGBA pixels the shader calls skin (warm, red above green, not the greenish ones).
+export function pickSkin(data,fallback=DEFAULT_SKIN){
+  const hues=[],sats=[];
+  for(let i=0;i<data.length;i+=4){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
+    if(r<.2||g>r||r-b<.06||g<.42*r)continue;
+    const d=r-Math.min(g,b);hues.push(((g-b)/d/6+1)%1);sats.push(d/r);}
+  if(hues.length<50)return [...fallback];
+  const mid=a=>a.sort((p,q)=>p-q)[a.length>>1];
+  return [mid(hues),mid(sats)];
+}
 export class Compositor {
   constructor(canvas, onError = console.error) {
     this.canvas = canvas; this.onError = onError; this.images = new Map(); this.textures = new Map();
     this.cardCanvas = document.createElement('canvas'); this.cardCanvas.width=1080; this.cardCanvas.height=1920;
-    this.cardRevision=0; this.lastCards=''; this.ready=true;
+    this.cardRevision=0; this.lastCards=''; this.ready=true; this.skin=null; this.skinAt=-Infinity;
     this.gl=canvas.getContext('webgl',{alpha:false, antialias:false, premultipliedAlpha:true});
     if (!this.gl) { this.cpu=new CanvasFallback(canvas,this.cardCanvas); this.onError('WebGL är avstängt här. Reservvisning med CPU används – lägre förhandsupplösning, oförändrade exportfiler.'); return; }
     canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();this.ready=false;this.onError('Grafikkontexten tappades. Väntar på återställning.');});
@@ -16,12 +31,60 @@ export class Compositor {
     const gl=this.gl;
     const vertex=`attribute vec2 a; uniform vec4 rect; uniform vec2 res; varying vec2 uv;
       void main(){uv=a;vec2 p=(rect.xy+a*rect.zw)/res;gl_Position=vec4(p.x*2.-1.,1.-p.y*2.,0.,1.);}`;
-    const fragment=`precision mediump float;varying vec2 uv;uniform sampler2D image;uniform sampler2D mask;uniform sampler2D hand;
+    // Offsets of 1.5/3/6 source px next to uv 1.0 need more than fp16; phones without highp keep mediump like Kevin's layer.
+    const fragment=`#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+      varying vec2 uv;uniform sampler2D image;uniform sampler2D mask;uniform sampler2D hand;
       uniform float keyOn,threshold,softness,despill,debugMode,pass,splitY,hasHand,hasMask,opacity;
+      uniform vec2 skin;      // the dealer's skin hue and saturation (0..1): where surviving green cast goes (dealer-layer.js:12)
+      uniform vec2 sourcePx;  // one pixel of the 1920-high dealer plane in uv: Kevin's 1.5/3/6 px distances in this texture
+      uniform vec4 propCard;  // x,y,width,height in uv of the filmed prop card to key out; only while propCardOn
+      uniform float propCardOn;
+      // Green excess of a source texel (dealer-layer.js:18).
+      float gx(vec2 t){vec3 k=texture2D(image,t).rgb;return k.g-max(k.r,k.b);}
+      // The stored key, unchanged: dominance band threshold..threshold+softness with a dark floor.
+      float keyed(vec2 t){vec3 k=texture2D(image,t).rgb;float dominance=(k.g-max(k.r,k.b))/max(k.g,.001);
+        return smoothstep(threshold,threshold+softness,dominance)*smoothstep(.012,.065,k.g);}
+      // Keylight-style matte (dealer-layer.js:21): the stored band, then clip black/white so faint green
+      // noise in the suit or hair never turns see-through.
+      float solid(vec2 t){return clamp((1.-keyed(t)-.04)/.92,0.,1.);}
+      vec3 hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));
+        vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);
+        return vec3(abs(q.z+(q.w-q.y)/(6.*d+1e-4)),d/(q.x+1e-4),q.x);}
+      vec3 rgb(vec3 h){return h.z*mix(vec3(1.),clamp(abs(fract(h.xxx+vec3(1.,2./3.,1./3.))*6.-3.)-1.,0.,1.),h.y);}
+      // Spill to skin (dealer-layer.js:26-30): green cast that survives the key (motion-blurred fingers, see-through
+      // edges) takes the skin hue at its own brightness instead of turning grey. Only hues where green leads
+      // (past yellow, up to cyan); saturation capped at the skin's, so no orange fringe.
+      vec3 unspill(vec3 c){vec3 h=hsv(c);float band=smoothstep(.17,.22,h.x)*(1.-smoothstep(.45,.50,h.x));
+        return mix(c,rgb(vec3(skin.x,min(h.y,skin.y),h.z)),band);}
       void main(){vec4 c=texture2D(image,uv);float alpha=c.a;
-        if(keyOn>.5){float dominance=(c.g-max(c.r,c.b))/max(c.g,.001);
-          float green=smoothstep(threshold,threshold+softness,dominance)*smoothstep(.012,.065,c.g);
-          alpha*=1.-green;c.g=mix(c.g,min(c.g,max(c.r,c.b)),despill*green);}
+        if(keyOn>.5){float green=keyed(uv);
+          // The matte is softened ~1.5 px (a 5-tap cross) so edges blend instead of stair-stepping (dealer-layer.js:50-52).
+          vec2 d=1.5*sourcePx;
+          float a=.4*solid(uv)+.15*(solid(uv+vec2(d.x,0.))+solid(uv-vec2(d.x,0.))+solid(uv+vec2(0.,d.y))+solid(uv-vec2(0.,d.y)));
+          // The stored despill keeps its old meaning on keyed pixels; the clean-up below runs on every green-screen clip.
+          c.g=mix(c.g,min(c.g,max(c.r,c.b)),despill*green);
+          // Skin (his fingers) is read before the colour clean-up and stays in front of the prop card (dealer-layer.js:54).
+          float skinPx=step(.2,c.r)*step(c.g,c.r)*step(.06,c.r-c.b)*step(.42*c.r,c.g);
+          // Spill: inside him green may lead by .02; where he is see-through it is clamped to the mean of red and blue (dealer-layer.js:58-62).
+          float edgeW=1.-smoothstep(.75,1.,a);
+          c.rgb=unspill(c.rgb);
+          c.g=min(c.g,mix(max(c.r,c.b)+.02,(c.r+c.b)*.5,edgeW));
+          // Edge decontamination (dealer-layer.js:63-80): plates carry a 1-3 px dark rim between hair and green with no
+          // green in it, so no key removes it. Any pixel within 3 px of the screen takes the colour from 6 px further
+          // inside instead, and the outermost pixel is choked a little, like Keylight's screen shrink.
+          vec2 rim=vec2(0.);
+          for(int i=0;i<8;i++){float an=float(i)*.7853982;vec2 dir=vec2(cos(an),sin(an));rim+=dir*step(.1,gx(uv+dir*3.*sourcePx));}
+          float near=clamp(length(rim)/2.,0.,1.);
+          if(a>.01&&near>0.){vec2 inward=-normalize(rim);vec2 iuv=uv+inward*6.*sourcePx;vec3 inner=unspill(texture2D(image,iuv).rgb);
+            c.rgb=mix(c.rgb,inner,near*(1.-smoothstep(.02,.08,gx(iuv))));a*=1.-.3*near;}
+          // His filmed prop card goes where the game draws its own card; his fingers in front of it stay (dealer-layer.js:96-98).
+          if(propCardOn>.5){vec2 q=(uv-propCard.xy)/propCard.zw;float inCard=step(0.,q.x)*step(q.x,1.)*step(0.,q.y)*step(q.y,1.);
+            a*=1.-inCard*(1.-skinPx);}
+          alpha*=a;}
         if(hasMask>.5) alpha*=texture2D(mask,uv).r;
         float hands=hasHand>.5?texture2D(hand,uv).r:smoothstep(splitY-.002,splitY+.002,uv.y);
         if(pass>.5&&pass<1.5)alpha*=1.-hands;
@@ -33,7 +96,7 @@ export class Compositor {
     const vs=compile(gl.VERTEX_SHADER,vertex),fs=compile(gl.FRAGMENT_SHADER,fragment),p=gl.createProgram();
     gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);gl.deleteShader(vs);gl.deleteShader(fs);
     if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));this.program=p;gl.useProgram(p);
-    this.u={};for(const n of ['rect','res','image','mask','hand','keyOn','threshold','softness','despill','debugMode','pass','splitY','hasHand','hasMask','opacity'])this.u[n]=gl.getUniformLocation(p,n);
+    this.u={};for(const n of ['rect','res','image','mask','hand','keyOn','threshold','softness','despill','debugMode','pass','splitY','hasHand','hasMask','opacity','skin','sourcePx','propCard','propCardOn'])this.u[n]=gl.getUniformLocation(p,n);
     const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,0,1,0,0,1,0,1,1,0,1,1]),gl.STATIC_DRAW);
     const attr=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(attr);gl.vertexAttribPointer(attr,2,gl.FLOAT,false,0,0);
     gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
@@ -54,13 +117,35 @@ export class Compositor {
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);record.version=version;
     }
   }
-  draw(source,rect,{key=null,pass=0,mask=null,hand=null,splitY=.4,opacity=1,debug=0}={}){
+  // Kevin picked the skin from the rest image; this flow has only the keyed frame itself, so the
+  // eyedropper reads a quarter-size copy of it at most once a second and keeps the last good pick.
+  skinTone(source,width,height){
+    const now=Date.now();if(this.skin&&now-this.skinAt<1000)return this.skin;
+    this.skinAt=now;
+    try{
+      const w=Math.max(1,Math.round(width/4)),h=Math.max(1,Math.round(height/4));
+      this.skinCanvas??=document.createElement('canvas');
+      if(this.skinCanvas.width!==w||this.skinCanvas.height!==h){this.skinCanvas.width=w;this.skinCanvas.height=h;}
+      const context=this.skinCanvas.getContext('2d',{willReadFrequently:true});
+      context.clearRect(0,0,w,h);context.drawImage(source,0,0,w,h);
+      this.skin=pickSkin(context.getImageData(0,0,w,h).data,this.skin??DEFAULT_SKIN);
+    }catch{this.skin??=[...DEFAULT_SKIN];}
+    return this.skin;
+  }
+  // propCard: {x,y,width,height} in pixels of `source` (the decoded dealer frame handed here; 1920x1080 in the
+  // presentation runtime). Keyed out, skin excepted, only while given. skin: [hue,saturation] override of the eyedropper.
+  draw(source,rect,{key=null,pass=0,mask=null,hand=null,splitY=.4,opacity=1,debug=0,propCard=null,skin=null}={}){
     if(!source)return;const gl=this.gl,u=this.u;gl.useProgram(this.program);
     this.texture(source,0);this.texture(mask,1);this.texture(hand,2);
     gl.uniform1i(u.image,0);gl.uniform1i(u.mask,1);gl.uniform1i(u.hand,2);
     gl.uniform4f(u.rect,...rect);gl.uniform2f(u.res,...this.logical);
-    gl.uniform1f(u.keyOn,key?.enabled?1:0);gl.uniform1f(u.threshold,key?.threshold??.23);gl.uniform1f(u.softness,key?.softness??.15);
+    const keyOn=Boolean(key?.enabled),width=source.videoWidth||source.naturalWidth||source.width||1,height=source.videoHeight||source.naturalHeight||source.height||1;
+    gl.uniform1f(u.keyOn,keyOn?1:0);gl.uniform1f(u.threshold,key?.threshold??.23);gl.uniform1f(u.softness,key?.softness??.15);
     gl.uniform1f(u.despill,key?.despill??0);gl.uniform1f(u.debugMode,debug);gl.uniform1f(u.pass,pass);gl.uniform1f(u.splitY,splitY);
+    gl.uniform2f(u.skin,...(keyOn?skin??this.skinTone(source,width,height):DEFAULT_SKIN));
+    gl.uniform2f(u.sourcePx,(height/1920)/width,1/1920);
+    const card=keyOn&&propCard&&[propCard.x,propCard.y,propCard.width,propCard.height].every(Number.isFinite)&&propCard.width>0&&propCard.height>0;
+    gl.uniform4f(u.propCard,...(card?[propCard.x/width,propCard.y/height,propCard.width/width,propCard.height/height]:[0,0,0,0]));gl.uniform1f(u.propCardOn,card?1:0);
     gl.uniform1f(u.hasMask,mask?1:0);gl.uniform1f(u.hasHand,hand?1:0);gl.uniform1f(u.opacity,opacity);gl.drawArrays(gl.TRIANGLES,0,6);
   }
   geometry(scene){return stageGeometry(scene);}
@@ -82,6 +167,7 @@ export class Compositor {
         ctx.fillStyle='#62d7ed';ctx.font='bold 20px Arial';ctx.textAlign='center';ctx.fillText(target==='dealer'?'DEALER':'P'+target,point.cx,point.cy+h/2+27);}
     }
   }
+  // scene.propCard (optional, per frame): the filmed prop card to key out, in pixels of the actor frame.
   render(scene,actor,assets,cards,metadata){
     if(!this.ready)return; if(this.cpu){this.paintCards(cards,metadata,scene.anchors);this.cpu.render(scene,actor,assets,this.cardCanvas);return;} const gl=this.gl,{dims,s,x,y}=this.geometry(scene);this.logical=dims;
     const previewScale=Math.min(1,1280/Math.max(...dims));const width=Math.round(dims[0]*previewScale),height=Math.round(dims[1]*previewScale);
@@ -90,11 +176,11 @@ export class Compositor {
     const rect=[x,y,1080*s,1920*s],dealerRect=scene.dealerAspect?[(dims[0]-1920*s*scene.dealerAspect)/2+scene.stage[scene.layout].x*dims[0],y,1920*s*scene.dealerAspect,1920*s]:rect,get=role=>assets.get(scene[role]);
     const sceneRect=(a,t)=>[x+t.x*1080*s,y+t.y*1920*s,t.width*1080*s,t.width*1080*s*(a.height/a.width)];
     const background=get('background');if(scene.show.background&&background?.el)this.draw(background.el,backgroundRect(scene,background,dims));
-    const mask=get('matte')?.el,hand=get('handmatte')?.el;
+    const mask=get('matte')?.el,hand=get('handmatte')?.el,propCard=scene.propCard??null;
     if(scene.key.mode!=='composite'){
-      this.draw(actor,dealerRect,{key:{...scene.key,enabled:scene.key.enabled&&scene.key.mode==='alpha'},mask:scene.key.mode==='alpha'?mask:null,debug:scene.key.mode==='alpha'?2:0});return;
+      this.draw(actor,dealerRect,{key:{...scene.key,enabled:scene.key.enabled&&scene.key.mode==='alpha'},mask:scene.key.mode==='alpha'?mask:null,debug:scene.key.mode==='alpha'?2:0,propCard});return;
     }
-    const actorPass=p=>{if(scene.show.dealer)this.draw(actor,dealerRect,{key:scene.key,mask,hand,pass:p,splitY:scene.splitY});};
+    const actorPass=p=>{if(scene.show.dealer)this.draw(actor,dealerRect,{key:scene.key,mask,hand,pass:p,splitY:scene.splitY,propCard});};
     if(scene.tableFront===true)actorPass(0);
     else if(scene.layerMode==='split')actorPass(1);
     const table=get('table');if(scene.show.table&&table?.el)this.draw(table.el,tableRect(scene,table,{dims,s,x,y}));
@@ -109,7 +195,8 @@ export class Compositor {
 
 
 /* Deliberately slower compatibility path. A preview, not a performance benchmark.
- * In particular: the distributed source/export resolutions are NOT reduced. */
+ * In particular: the distributed source/export resolutions are NOT reduced.
+ * It keeps the plain stored key; Kevin's matte refinement lives in the WebGL shader only. */
 class CanvasFallback {
   constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.cacheKey=null;this.maskCache=new WeakMap();
     this.raw=document.createElement('canvas');this.raw.width=360;this.raw.height=640;this.rawctx=this.raw.getContext('2d',{willReadFrequently:true});
