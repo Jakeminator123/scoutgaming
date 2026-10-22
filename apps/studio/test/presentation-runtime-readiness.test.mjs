@@ -6,7 +6,7 @@ import { StudioStorageError } from '../../../packages/studio-registry/server/doc
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry,defaultBlackjackAutoScale} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,validatePresentationPackage} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
 import {extendedDealerMediaFeatures} from '../../../packages/presentation/contracts/dealer-media-features.mjs';
@@ -939,4 +939,38 @@ test('v24: publishing a package whose lane carries tablePlayback is refused befo
     else{await write();assert.equal(begun,1);assert.equal(input.writes.length,1);}
     assert.equal(input.fetches.length,1);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'24');
   }
+});
+
+test('v25: dealer-following autoScale gates active, archived and frozen geometry before any write',async()=>{
+  for(const layout of ['mobile','desktop'])for(const autoScale of [undefined,null,{},defaultBlackjackAutoScale()]){
+    const lane={composition:{blackjackTables:[{[layout]:{autoScale}}]}};
+    for(const descriptor of [{kind:'project',value:{lanes:[lane]}},{kind:'project',value:{dealerTrash:[{compositions:[lane]}]}}])for(const version of [24,25]){
+      const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value:descriptor.value}),{presentationMutation:descriptor});
+      if(version===24)await assert.rejects(work,blocked);else await work();
+      assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'25');assert.equal(begun,version===25?1:0);
+    }
+  }
+  const tableId='30000000-0000-4000-8000-000000000001';
+  const pack=autoScale=>frozenPackage(value=>{
+    const sha256='d'.repeat(64),contentType='image/png';
+    value.assets.push({schemaVersion:1,id:tableId,sha256,contentType,size:4096,width:720,height:1280,role:'table',label:'Table',pathname:layerAssetPath({id:tableId,sha256,contentType,role:'table'})});
+    Object.assign(value.lanes[0].layers.table,{enabled:true,allowed:[tableId],default:tableId});
+    const board=defaultBlackjackTableGeometry(tableId);if(autoScale)board.mobile.autoScale={...defaultBlackjackAutoScale(),adjust:{chips:{dx:0,dy:.01,scale:1.2}}};
+    value.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};
+  });
+  let version=25;const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+  const work=()=>f.wrapped.saveDocument('presentation-package',{value:pack(true)});await work();version=24;await assert.rejects(work,blocked);assert.equal(f.writes.length,1);
+  // The same frozen geometry without autoScale keeps its earlier v16 requirement.
+  const plain=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version'])))});
+  await plain.wrapped.saveDocument('presentation-package',{value:pack(false)});
+  assert.equal(plain.fetches[0][1].headers['X-Presentation-Capability-Version'],'16');assert.equal(plain.writes.length,1);
+});
+test('a preflight without autoScale cannot acquire it inside its transaction',async()=>{
+  const plain={kind:'project',value:{lanes:[{composition:{blackjackTables:[{desktop:{anchors:{}}}]}}]}};
+  const scaled={lanes:[{composition:{blackjackTables:[{desktop:{anchors:{},autoScale:{}}}]}}]};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:scaled}),{fixture:true,presentationMutation:plain}),blocked);
+  assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'21');
 });

@@ -29,9 +29,9 @@ test('real editor rebinds without a jump, retains manual markers through follow-
   h.field(tree,'Markerna följer').props.onChange({target:{value:'scene'}});tree=h.render();
   h.field(tree,'Marker grupp x').props.onChange({target:{valueAsNumber:15}});tree=h.render();
   const manual=structuredClone(h.props.value.desktop.anchors.bets);
-  nodes(tree,n=>n.type==='input'&&n.props.type==='checkbox')[0].props.onChange({target:{checked:true}});tree=h.render();
+  h.field(tree,'Markerna följer korten').props.onChange({target:{checked:true}});tree=h.render();
   assert.equal(h.field(tree,'Markerna följer').props.disabled,true);
-  nodes(tree,n=>n.type==='input'&&n.props.type==='checkbox')[0].props.onChange({target:{checked:false}});tree=h.render();
+  h.field(tree,'Markerna följer korten').props.onChange({target:{checked:false}});tree=h.render();
   assert.deepEqual(h.props.value.desktop.anchors.bets,manual);
   h.button(tree,'Återställ sparade kort').props.onClick();assert.deepEqual(h.props.value.desktop.dealer,before.desktop.dealer);
   assert.equal(h.props.value.desktop.anchors.cards,undefined);assert.deepEqual(h.props.value.desktop.anchors.bets,manual);assert.deepEqual(h.props.value.mobile,before.mobile);
@@ -43,4 +43,38 @@ test('drag callback and numeric editing change only the selected point; locked e
   assert.deepEqual(h.props.value.desktop.seats[2].card,{x:.7,y:.6});assert.equal(h.props.value.desktop.seats[1].card.y,h.props.savedValue.desktop.seats[1].card.y);
   h.props.disabled=true;tree=h.render();const before=structuredClone(h.props.value);
   h.field(tree,'Korten följer').props.onChange({target:{value:'scene'}});h.button(tree,'Ta bort bordets placering').props.onClick();assert.deepEqual(h.props.value,before);
+});
+const overlayMarks=h=>{const tree=h.render(),scene=nodes(tree,n=>typeof n.type==='function'&&n.type.name==='SceneOverlay')[0];
+  return Object.fromEntries(nodes(scene.type(scene.props),n=>n.props?.['data-mark']).map(n=>[n.props['data-mark'],n.props.transform]));};
+test('new geometry starts with autoScale in both formats; an existing one stays manual until the box is ticked, and edits only this format',()=>{
+  const fresh=fixture();fresh.props.value=undefined;fresh.props.savedValue=undefined;
+  fresh.button(fresh.render(),'Placera på detta bord').props.onClick();
+  for(const format of ['mobile','desktop'])assert.deepEqual(fresh.props.value[format].autoScale,contract.defaultBlackjackAutoScale());
+  const h=fixture();let tree=h.render();const box=h.field(tree,'Autoskala efter dealern');assert.equal(box.props.checked,false);
+  box.props.onChange({target:{checked:true}});tree=h.render();
+  assert.deepEqual(h.props.value.desktop.autoScale,contract.defaultBlackjackAutoScale());assert.equal(Object.hasOwn(h.props.value.mobile,'autoScale'),false);
+  h.field(tree,'Kortstorlek ovanpå autoskalan').props.onChange({target:{valueAsNumber:120}});tree=h.render();
+  h.field(tree,'Marker vågrätt ovanpå autoskalan').props.onChange({target:{valueAsNumber:4}});tree=h.render();
+  h.field(tree,'Markerstorlek ovanpå autoskalan').props.onChange({target:{valueAsNumber:150}});tree=h.render();
+  assert.deepEqual(h.props.value.desktop.autoScale.adjust,{cards:{scale:1.2},chips:{dx:.04,dy:0,scale:1.5}});
+  // A neutral adjustment is not stored; the contract validated every edit.
+  h.field(tree,'Kortstorlek ovanpå autoskalan').props.onChange({target:{valueAsNumber:100}});
+  assert.deepEqual(h.props.value.desktop.autoScale.adjust,{chips:{dx:.04,dy:0,scale:1.5}});
+  for(const label of ['Korten landar där filmen visar','Kortstorlek som dealerns rekvisitakort','Marker under korten, skalade med dealern'])
+    h.field(h.render(),label).props.onChange({target:{checked:false}});
+  assert.equal(Object.hasOwn(h.props.value.desktop,'autoScale'),false,'no part chosen removes the field');
+  assert.equal(h.field(h.render(),'Autoskala efter dealern').props.checked,false);assert.equal(h.edits.length,8);
+});
+test('filmed landings and automatic chips are not dragged; the scene marks follow the Admin dealer only with autoScale',()=>{
+  const h=fixture(),manual=overlayMarks(h),dealer=structuredClone(h.props.scene.settings);dealer.desktop.dealer={scale:1.4,x:.1,y:.05};
+  h.props.scene.settings=dealer;assert.deepEqual(overlayMarks(h),manual,'without autoScale the marks stay on the table');
+  h.props.value.desktop.autoScale=contract.defaultBlackjackAutoScale();h.props.scene.settings={...dealer,blackjackTables:[h.props.value]};
+  const followed=overlayMarks(h);h.props.scene.settings={...contract.defaultCompositionSettings(),blackjackTables:[h.props.value]};
+  const still=overlayMarks(h);for(const id of ['dealer','card:3','bet:3'])assert.notEqual(followed[id],still[id]);
+  const tree=h.render(),before=structuredClone(h.props.value);
+  assert.equal(nodes(tree,n=>n.type==='option'&&/· (kort|marker)$/.test(text(n))).length,0,'no manual point to move');
+  assert.equal(h.field(tree,'Korten följer').props.disabled,true);assert.equal(h.field(tree,'Markerna följer korten').props.disabled,true);
+  const scene=nodes(tree,n=>typeof n.type==='function'&&n.type.name==='SceneOverlay')[0];
+  scene.props.onPlace('card:2',{x:100,y:100});scene.props.onPlace('dealer',{x:100,y:100});scene.props.onPlace('bet:2',{x:100,y:100});
+  assert.deepEqual(h.props.value,before);
 });
