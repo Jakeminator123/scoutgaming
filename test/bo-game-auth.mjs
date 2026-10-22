@@ -106,7 +106,7 @@ try {
   if(state.round.phase==='insurance')await command('insurance',{take:false});
   while(state.round.phase==='decisions')await command('act',{action:'stand'});
   assert.equal(state.round.phase,'settled');await command('collect');assert.equal(state.round,null);const finalBalance=state.balance;
-  for(const next of ['/?dealer=amira','/game?dealer=amira']) {
+  for(const next of ['/?dealer=amira','/game?dealer=astrid']) {
     const flow=await authorize(boCookie,next),r=await request(flow.callback,{cookie:flow.stateCookie});assert.equal(location(r),next);
     const p=await(await request(game+'/api/player',{cookie:cookies(r),body:{}})).json();assert.equal(p.id,player.id);assert.equal(p.balance,finalBalance);
   }
