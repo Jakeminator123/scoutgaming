@@ -53,7 +53,7 @@ try {
   password.maxLength = session.sharedCredentials === true ? 256 : 128;
   localLogin = session.sharedCredentials !== true && session.playerAccounts === true;
   loginEndpoint = localLogin ? '/api/auth/player/login' : '/api/auth/login';
-  if (session.authenticated && !session.localDemoProfiles) location.replace(gameDestination);
+  if (session.authenticated) location.replace(gameDestination);
   else {
     help.textContent = session.sharedCredentials === true
       ? 'Administratörer använder samma konto och lösenord i spelet och Studio.'

@@ -63,9 +63,9 @@ använder Node 24. Installerade beroenden hör till `services/game/node_modules/
 Den historiska standardroten för lokal SQLite är fortfarande Git-ignorerade
 `web/data/`, eller den uttryckliga `CROUPIER_DATA_DIR`. Källflytten flyttar
 inte privata data, originalmedia eller gamla dependencyinstallationer.
-`lissabon-profiles.mjs` är kvarvarande lokal profilkompatibilitet med explicit
-gästdemo/loopback och flaggan `lissabon-stream-lane`; den aktiveras inte i
-PostgreSQL-läget och är ingen separat produkt.
+De lokala Lissabon-gästprofilerna (`lissabon-profiles.mjs`, `/api/lissabon/profiles`,
+`CROUPIER_LISSABON_PROFILES`) togs bort 22 oktober 2026; lanevärdet
+`lissabon-stream-lane` i `CROUPIER_STREAM_LANE` är kvar som anslutnings-ID.
 
 Aktuell drift och schemaansvar finns i [CLOUD-MIGRATION.md](../../docs/CLOUD-MIGRATION.md).
 Återställningsgränser finns i [ENVIRONMENT-RESTORATION.md](../../docs/ENVIRONMENT-RESTORATION.md)

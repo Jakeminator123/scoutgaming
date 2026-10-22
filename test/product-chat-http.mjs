@@ -95,7 +95,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       OPENCLAW_BASE_URL: poisonOrigin, OPENCLAWAPI_KEY: 'poison-gateway-key',
       OPENCLAW_MODEL_API_KEY: 'poison-provider-key', OPENCLAW_MODEL_BASE_URL: poisonOrigin,
     }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory, NODE_ENV: 'development',
-      CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
+      CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '',
       CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
       CROUPIER_ASTRID_TRANSLATION_KEY: 'isolated-fixture-not-a-live-key',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
@@ -456,34 +456,6 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     await crossOrigin.text();
     assert.deepEqual(await client.get('/api/chat/memory?dealer=astrid'), old);
     assert.equal(captured.length, count);
-  });
-  if (lissabon) await t.test('named profiles reach OpenClaw with separate recall and switching cancels stale speech', async () => {
-    const { client } = await guest();
-    const alfa = (await client.post('/api/lissabon/profiles', { action: 'create', name: 'Alfa' })).current;
-    let view = await client.post('/api/table', { op: 'state' });
-    await client.post('/chat', chat(view, { message: 'Alfa gillar skogspromenader.' }));
-    assert.equal(envelope().status.displayName, 'Alfa');
-    const beta = (await client.post('/api/lissabon/profiles', { action: 'create', name: 'Beta' })).current;
-    view = await client.post('/api/table', { op: 'state' });
-    await client.post('/chat', chat(view, { message: 'Beta gillar segling.' }));
-    assert.equal(envelope().status.displayName, 'Beta');
-    assert.deepEqual(envelope().request.history, []);
-    await client.post('/api/lissabon/profiles', { action: 'select', id: alfa.id });
-    view = await client.post('/api/table', { op: 'state' });
-    await client.post('/chat', chat(view, { message: 'Vad gillar jag?' }));
-    assert.equal(envelope().status.displayName, 'Alfa');
-    assert.equal(envelope().request.history[0].text, 'Alfa gillar skogspromenader.');
-    assert.equal(JSON.stringify(envelope()).includes('segling'), false);
-    const entered = deferred(), release = deferred();
-    beforeRespond = async () => { entered.resolve(); await release.promise; };
-    const active = client.post('/chat', chat(view, { message: 'This delayed answer belongs to Alfa.' }), 409);
-    try {
-      await within(entered.promise);
-      await client.post('/api/lissabon/profiles', { action: 'select', id: beta.id });
-      assert.equal((await within(active)).error, 'chat_cancelled');
-      assert.equal((await client.get('/api/chat/memory?dealer=astrid')).history[0].text, 'Beta gillar segling.');
-      assert.equal((await client.post('/api/player', {})).name, 'Beta');
-    } finally { release.resolve(); beforeRespond = null; await active.catch(() => {}); }
   });
   if (lissabon) await t.test('results come from committed rounds and ignore browser claims and deposits', async () => {
     const { client, state: initial } = await guest();

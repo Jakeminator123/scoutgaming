@@ -14,12 +14,16 @@ for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['Postgr
     validLaunch:async token=>token==='a.b.c',publicUrl:game,boUrl:bo,publicGamePath:'/blackjack'});
   async function request(address,cookie) {const url=new URL(address,game),req={url:url.pathname+url.search,method:'GET',headers:{host:url.host,...(cookie?{cookie}:{})},socket:{encrypted:true}};
     const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};await handle(req,res);return res;}
-  const begin = await request('/api/auth/bo/start?next='+encodeURIComponent('/game?dealer=linnea&presentation=local&launch=a.b.c&returnTo=https://evil.invalid#bad'));
+  const begin = await request('/api/auth/bo/start?next='+encodeURIComponent('/game?game=blackjack&dealer=linnea&presentation=local&launch=a.b.c&returnTo=https://evil.invalid#bad'));
   assert.equal(begin.status,303);const state = new URL(begin.headers.Location).searchParams.get('state');
   assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/game?game=blackjack&dealer=linnea&presentation=local');
   const login = await request(begin.headers.Location);assert.equal(login.status,303);
   const callback = await request(login.headers.Location,`bo_game_state=${state}`);
   assert.equal(callback.status,303);assert.equal(callback.headers.Location,'/game?game=blackjack&dealer=linnea&presentation=local');
+  // The engine still names its own /blackjack entry; the handoff keeps it as the one game start.
+  assert.equal((await request('/api/auth/bo/start?next='+encodeURIComponent('/blackjack?dealer=linnea&launch=a.b.c'))).status,303);
+  assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/blackjack?dealer=linnea');
+  sqlite.exec('DELETE FROM bo_game_handoffs');
   assert.ok(callback.headers['Set-Cookie'].includes('player_session=preserved; Path=/'));
   assert.equal((await request('/api/auth/bo/start?next='+encodeURIComponent('//evil.invalid/game'))).status,303);
   assert.equal(sqlite.prepare('SELECT next_path FROM bo_game_handoffs').get().next_path,'/game');
@@ -96,11 +100,12 @@ test('automatic N1 handoff requires one verified current admin on the exact shar
 
 test('player handoff only retains current document returns and approved game selectors',async()=>{
   const {playerHandoffPath:path,playerHandoffDestination:destination}=await import('../packages/navigation/player-handoff.mjs');
-  for(const target of ['/play','/play/profil','/play/historik','/play?operator=swedish-games','/play/roulette?table=room-evening','/play/blackjack?table=room-evening']) {
+  for(const target of ['/play','/play/profil','/play/historik','/play?operator=swedish-games','/game?game=roulette&table=room-evening','/game?table=room-evening','/play/roulette?table=room-evening','/play/blackjack?table=room-evening']) {
     assert.equal(path(target),target);assert.equal(destination(target),'/api/auth/bo/start?next='+encodeURIComponent(target));
   }
-  for(const target of ['https://attacker.invalid/play/profil','//attacker.invalid/play/profil','/play\\profil','/play/%70rofil','/other/../play/profil','/api/auth/bo/start','/admin/login','/player-login','/play/profil?returnTo=/admin','/play/profil#secret','/play?operator=a&operator=b','/play\n/profil']) assert.equal(path(target),null,target);
+  for(const target of ['https://attacker.invalid/play/profil','//attacker.invalid/play/profil','/play\\profil','/play/%70rofil','/other/../play/profil','/api/auth/bo/start','/admin/login','/player-login','/play/profil?returnTo=/admin','/play/profil#secret','/play?operator=a&operator=b','/play\n/profil','/v2?dealer=astrid','/game/extra','/casino.html','/demo']) assert.equal(path(target),null,target);
   assert.equal(path('/play/blackjack?launch=a.b.c&returnTo=https://attacker.invalid&table=room-evening'),'/play/blackjack?table=room-evening');
+  assert.equal(path('/game?game=poker&launch=a.b.c&returnTo=https://attacker.invalid&table=room-evening'),'/game?table=room-evening');
   const observed='/play/blackjack?labObserverOrigin='+encodeURIComponent('https://www.fixture.invalid')+'&labObserverChannel=12345678-1234-1234-1234-123456789abc';
   assert.equal(path(observed,{origin:'https://www.fixture.invalid'}),observed);
 });

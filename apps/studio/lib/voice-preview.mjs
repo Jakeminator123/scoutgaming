@@ -2,6 +2,7 @@ import {studioRoots} from './studio-roots.mjs';
 import { readFileSync } from 'node:fs';
 import { mkdir, open, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { parseEnv } from 'node:util';
 import { createHash, randomUUID } from 'node:crypto';
 import lockfile from 'proper-lockfile';
@@ -43,7 +44,8 @@ export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_D
   return {
     key: values.CARTESIA_API_KEY?.trim() || '',
     mismatch: false,
-    cacheDir: resolve(LAB_DIR, 'data', 'voice-cache'),
+    // Paid previews are deduplicated in the OS temp directory, never in the checkout.
+    cacheDir: join(tmpdir(), 'croupier-voice-preview'),
   };
 }
 
