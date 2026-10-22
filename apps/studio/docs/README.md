@@ -183,6 +183,27 @@ Spara eller hantera lokala ändringar först. **Stäng provspel** avslutar sessi
 den stängs också när du lämnar ytan eller byter kontext. Roulette har ännu inte
 denna inbäddade provstart.
 
+**Lägg till klipp i klippkartan.** Välj dealer och Blackjack. Dra in filer eller
+en hel mapp på kartans yta, släpp dem på ett kort för ett bestämt fack, eller
+välj **Lägg till klipp** i kontextraden (adress `/admin/clips?panel=intake`).
+Panelen visar varje fil som ett kort med stillbild, föreslaget fack som
+**Kategori › Situation**, roll (**Standard** när facket saknar standardklipp,
+annars **Variant**), hur säkert förslaget är och en kort motivering. Undermappar
+som `repliker/sv` följer med som ledtråd till förslaget. Osäkra klipp är märkta
+**Osäker · välj fack**: välj ett snabbval, byt fack i listan eller dra kortet
+till rätt kategori i kartan; korten visar under draget vilka fack som tar emot
+filen och varför ett fack avvisar den. Bilder och ljud sparas inte här och får
+en förklaring i listan. Bakgrund är grön som förval; transparent bakgrund är
+spärrad för import. **Godkänn och spara** laddar upp klippen som tagningar i
+sina fack, visar förlopp per fil och ett kvitto. Därefter kan du **Sätta som
+standard i facket** när facket saknar standard, **Lägga som variant** för Till /
+Från skon eller **Öppna facket i kartan** och välja klippet där; dessa val hamnar
+i projektutkastet som du sparar med **Spara utkast**. Talklipp sparas som
+tagningar i talfacket; text, ljud och godkännande av talet granskas separat
+under Röst & tal. Filer med fel stannar i listan med sitt fel och försöks inte om
+automatiskt. Ett dealerbyte tömmer listan efter bekräftelse. Roulettefilmer
+laddas fortfarande upp direkt via respektive kort.
+
 **Spara utkast** sparar projektets ändringar med en ny serverrevision; det
 publicerar inget rum. Synliga resultatmeddelanden visar vad som hände. Vid
 revisionskonflikt ligger lokala ändringar kvar för jämförelse. Materialets
@@ -190,14 +211,15 @@ papperskorg visar konsekvenser innan borttagning; att en fil inte är vald i
 ett utkast bevisar inte att den är oanvänd.
 
 Under **Dealerregister** väljer du **Skapa dealer**, anger namn och väljer
-**Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt
-dealer vald, även utan rum. Välj eller dra in upp till 30 filmer, välj bakgrund
-för omgången och **Sortera klippen**. Granska facken och välj
+**Skapa och spara**. **Ladda upp klipp** öppnar klippintaget för rätt dealer,
+även utan rum. Fliken **Lägg till dealer eller filmer** (`?tool=import`) finns
+kvar som alternativ väg: välj eller dra in upp till 30 filmer, välj bakgrund för
+omgången och **Sortera klippen**. Granska facken och välj
 **OK – placera klippen**. Fel visas med filnamn. En tidigare lokal import
 behålls tills du uttryckligen väljer att byta dealer.
 
-**Namnge filerna så sorteras de rätt.** Importassistenten läser filnamnet
-mot en gemensam namnregel som täcker alla 36 fack; **Så namnger du filerna**
+**Namnge filerna så sorteras de rätt.** Klippintaget och importassistenten
+läser filnamnet (och mappens namn) mot en gemensam namnregel som täcker alla 36 fack; **Så namnger du filerna**
 i importpanelen visar mönster och exempel för just den sparade kartan. Mönstret
 är `<dealer>_<fack>[_<poskedja>][_<språk>_<nr>]`, med `_` eller `-` som
 avdelare:

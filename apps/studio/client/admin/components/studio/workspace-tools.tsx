@@ -31,7 +31,7 @@ const groups=[
 export function WorkspaceToolsHome(){return <section className="admin-system-page" aria-labelledby="workspace-tools-title">
   <header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="workspace-tools-title">Verktyg</h1>
     <p>Fördjupade inställningar för samma dealers, bolag och rum.</p></div>
-    <nav className="admin-system-actions" aria-label="Klipp och import"><a className="studio-button" href={withAdminContext('/admin/clips?tool=import',location.search)}>Lägg till dealer eller filmer</a><a className="studio-button" href={withAdminContext('/admin/clips',location.search)}>Öppna klippkartan</a></nav>
+    <nav className="admin-system-actions" aria-label="Klipp och import"><a className="studio-button" href={withAdminContext('/admin/clips?panel=intake',location.search)}>Lägg till klipp i klippkartan</a><a className="studio-button" href={withAdminContext('/admin/clips?tool=import',location.search)}>Lägg till dealer eller filmer</a><a className="studio-button" href={withAdminContext('/admin/clips',location.search)}>Öppna klippkartan</a></nav>
   </header>
   <div className="grid gap-5 lg:grid-cols-3">{groups.map(group=><section className="admin-system-card" key={group.title}><h2>{group.title}</h2><p>{group.description}</p>
     <ul className="mt-4 flex flex-col gap-3">{group.items.map(key=><li key={key}><a className="studio-button" href={withAdminContext('/admin/'+key,location.search)}>{ADMIN_WORKSPACE_TOOLS[key as keyof typeof ADMIN_WORKSPACE_TOOLS]}</a></li>)}</ul>
