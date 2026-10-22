@@ -97,8 +97,8 @@ om automatiskt. Standardvarianten kan inte begränsas eller raderas.
 
 ## Lagring och gränser
 
-- Egna filer och `index.json`: `lab/data/videos/`, eller under
-  `LAB_STUDIO_DATA_DIR/videos/` om datamappen är omkonfigurerad. Git-ignorerat.
+- Egna filer: privat Blob i molnläget; offline-fixturen använder sin
+  tillfälliga datamapp. Inget skrivs i checkouten.
 - Varje fil behålls byte för byte och får UUID, SHA-256 och kategorisering.
   Originalnamnet används som förslag till visningsnamn, aldrig som filsökväg.
 - Uppladdning strömmar till en tillfällig fil med en hård storleksgräns.
