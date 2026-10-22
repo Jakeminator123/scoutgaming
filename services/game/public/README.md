@@ -8,7 +8,7 @@ presentationsmodulerna används även från andra produktdelar.
 | Del | Ansvar och status |
 | --- | --- |
 | [card-presentation/](card-presentation/README.md) | Aktiv kortprojektion, handocklusion och kalibrering från granskad GitLab-kod. `local-card-overlay.mjs` är produktadaptern. |
-| `performance-player.mjs`, `local-film-player.mjs`, `speech-*`, `astrid-*` | Filmuppspelning, tal, kamerafunktioner och Astrids presentation. |
+| `performance-player.mjs`, `local-film-player.mjs`, `speech-*` | Filmuppspelning och tal. |
 | `vendor/three/` | Versionsbundna Three.js-resurser som speluppspelning och kompositorer importerar direkt. De behövs i leveransen. |
 | `roulette/` | Spelklienten för roulette. |
 | `bo/speech-qa.*` | Kvarvarande behörighetsstyrd tal-QA. `/api/bo/speech-qa` är undantaget när äldre BO-skrivningar stängs i Studio-läget. |

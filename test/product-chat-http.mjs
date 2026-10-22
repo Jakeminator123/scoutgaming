@@ -1,5 +1,4 @@
 import {publishedChatContext,withPublishedChatContext,withPublishedChatQuery} from './fixtures/published-chat-authority.mjs';
-import { syntheticJpeg } from './fixtures/synthetic-jpeg.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer as createHttpServer } from 'node:http';
@@ -23,7 +22,7 @@ const PRIVATE_TRANSPORT_ENV = [
   'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
   'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL', 'OPENCLAW_MODEL_ID', 'OPENCLAW_MODEL_API',
   'CROUPIER_GENERATED_SPEECH', 'CROUPIER_GENERATED_SPEECH_PREVIEW', 'CROUPIER_GENERATED_SPEECH_DIR',
-  'CROUPIER_ASTRID_CAMERA', 'CARTESIA_API_KEY', 'CROUPIER_ASTRID_TRANSLATION_KEY',
+  'CARTESIA_API_KEY',
   'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID', 'ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API', 'RUNPOD_API_KEY',
 ];
 
@@ -52,7 +51,6 @@ function deferred() {
   return { promise, resolve };
 }
 
-function syntheticJpegUrl() { return `data:image/jpeg;base64,${syntheticJpeg().toString('base64')}`; }
 
 async function within(promise, milliseconds = 5000) {
   let timer;
@@ -96,8 +94,6 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       OPENCLAW_MODEL_API_KEY: 'poison-provider-key', OPENCLAW_MODEL_BASE_URL: poisonOrigin,
     }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory, NODE_ENV: 'development',
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
-      CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
-      CROUPIER_ASTRID_TRANSLATION_KEY: 'isolated-fixture-not-a-live-key',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
       OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }),
@@ -505,103 +501,17 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(envelope().status.playResults.lastRound,last);
     assert.equal(envelope().status.playResults.currentRound.wagered,10);
   });
-  await t.test('shared voice configuration supports explicitly published dealers and rejects retired or forged context', async () => {
-    const {client}=await guest(),before=captured.length;
-    for(const dealer of ['astrid','nora','marten']) {
-      const value=await client.get('/api/dealer/observation?dealer='+dealer);
-      assert.equal(value.enabled,lissabon);assert.equal(value.transcription.enabled,lissabon);
-    }
-    for(const query of ['dealer=vera','dealer=mei','dealer=amira','dealer=johanna','dealer=paow','dealer=dragge','dealer=astrid&dealer=paow','dealer=astrid&unexpected=1','dealer=astrid&presentationContext=%7B']) {
-      const result=await client.get('/api/dealer/observation?'+query,503);
-      assert.deepEqual(result,{enabled:false});
-    }
-    assert.equal(captured.length,before,'configuration reads never start the model');
-  });
-  await t.test('optional Astrid images require the flag, same turn, profile, consent and a data JPEG', async () => {
-    const a = await guest(), b = await guest();
-    const config = await a.client.get('/api/astrid/observation');
-    assert.equal(config.enabled, lissabon);
-    assert.equal(config.transcription.enabled, lissabon);
-    assert.equal(config.transcription.provider, 'openai');
-    assert.equal(config.transcription.model, 'whisper-1');
-    assert.equal(config.transcription.outputLanguage, 'original');
-    assert.equal(config.transcription.acceptsAutoLanguage, true);
-    assert.equal(config.vision.enabled, lissabon);
-    assert.equal(config.reason, lissabon ? null : 'feature_disabled');
-    const input = chat(a.state);
-    const image = syntheticJpegUrl();
+  await t.test('retired camera observations are rejected before any model request', async () => {
+    const { client, state } = await guest();
+    const before = captured.length, input = chat(state);
     const observation = { version: 1, turnId: input.requestId, consentTurnId: input.requestId,
-      profileRevision: config.profileRevision, images: [image] };
-    const before = captured.length;
-    if (!lissabon) {
-      assert.equal((await a.client.post('/chat', { ...input, observation }, 403)).error, 'observation_disabled');
-      assert.equal(captured.length, before);
-      return;
-    }
-    const invalid = [
-      value => ({ ...value, consentTurnId: 'other-turn' }),
-      value => ({ ...value, images: ['https://attacker.invalid/photo.jpg'] }),
-      value => ({ ...value, images: [image.replace('image/jpeg', 'image/png')] }),
-      value => ({ ...value, images: [image, image, image] }),
-      value => ({ ...value, profileRevision: 'b'.repeat(64) }),
-    ];
-    for (const mutate of invalid) {
-      const attempt = chat(a.state);
-      const value = mutate({ ...observation, turnId: attempt.requestId, consentTurnId: attempt.requestId });
-      const result = await a.client.post('/chat', { ...attempt, observation: value }, 400);
-      assert.match(result.error, /^invalid_observation_/);
-    }
-    // Each rejected request must leave the model and player memory untouched.
+      profileRevision: 'a'.repeat(64), images: ['data:image/jpeg;base64,/9j/4AAQSkZJRg=='] };
+    assert.equal((await client.post('/chat', { ...input, observation }, 403)).error, 'observation_disabled');
     assert.equal(captured.length, before);
-    const bInput = chat(b.state);
-    const wrongProfile = await b.client.post('/chat', { ...bInput, observation: {
-      ...observation, turnId: bInput.requestId, consentTurnId: bInput.requestId,
-    } }, 400);
-    assert.equal(wrongProfile.error, 'invalid_observation_consent');
-    const missingOrigin = await fetch(origin + '/chat', { method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: a.client.cookie() },
-      body: JSON.stringify({ ...input, observation }), signal: AbortSignal.timeout(5000) });
-    assert.equal(missingOrigin.status, 403); await missingOrigin.text();
-    await a.client.post('/chat', { ...input, observation });
-    const sent = captured.at(-1).body.messages.at(-1).content;
-    assert.equal(Array.isArray(sent), true);
-    assert.deepEqual(sent.slice(1), [{ type: 'image_url', image_url: { url: image } }]);
-    assert.equal(JSON.stringify(await a.client.get('/api/chat/memory?dealer=astrid')).includes(image), false);
-    assert.equal(captured.length, before + 1);
-  });
-
-  for (const [model, visionAllowed] of [['gpt-5.6-terra', true], ['gpt-5.4-mini', false]])
-  await t.test(`changing to ${model} preserves original-language transcription and enforces the image allowlist`, async () => {
-    const a = await guest();
-    const store = createProjectStore(join(directory, 'studio'));
-    const original = await store.load();
-    const changed = structuredClone(original);
-    changed.probePolicy = { ...createDefaultProbePolicy(), model };
-    const saved = await store.save(changed, original.revision);
-    try {
-      const config = await a.client.get('/api/astrid/observation');
-      assert.equal(config.enabled, lissabon);
-      assert.equal(config.transcription.enabled, lissabon, 'audio does not depend on vision support');
-      assert.equal(config.vision.enabled, lissabon && visionAllowed);
-      assert.equal(config.vision.reason, !lissabon ? 'feature_disabled' : visionAllowed ? null : 'model_not_verified');
-      if (lissabon) {
-        assert.match(config.profileRevision, /^[a-f0-9]{64}$/);
-        const input = chat(a.state);
-        const before = captured.length;
-        const result = await a.client.post('/chat', { ...input, observation: { version: 1,
-          turnId: input.requestId, consentTurnId: input.requestId,
-          profileRevision: config.profileRevision, images: [syntheticJpegUrl()] } }, visionAllowed ? 200 : 409);
-        if (visionAllowed) {
-          assert.equal(result.kind, 'generatedText');
-          assert.equal(captured.length, before + 1);
-          assert.deepEqual(captured.at(-1).body.messages.at(-1).content.slice(1),
-            [{ type: 'image_url', image_url: { url: syntheticJpegUrl() } }]);
-        } else {
-          assert.equal(result.error, 'observation_model_not_verified');
-          assert.equal(captured.length, before);
-        }
-      }
-    } finally { await store.save(original, saved.revision); }
+    for (const path of ['/api/dealer/observation?dealer=astrid', '/api/astrid/observation']) {
+      const response = await fetch(origin + path, { headers: { Cookie: client.cookie() }, signal: AbortSignal.timeout(5000) });
+      assert.equal(response.status, 404, path); await response.text();
+    }
   });
   assert.equal(poisonRequests, 0, 'parent relay, Gateway and provider settings never reach the child fixture');
 

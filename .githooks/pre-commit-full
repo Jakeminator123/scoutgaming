@@ -90,7 +90,7 @@ run_check access craig-login 180 node test/craig-login.mjs
 run_check access bo-game-auth 180 node test/bo-game-auth.mjs
 run_node_tests speech build-index test/build-index.mjs test/speech-playback.mjs
 run_node_tests speech openclaw-chat-contract test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/chat-presentation-context.mjs test/registered-chat-context.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
-run_node_tests speech astrid-camera test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs test/astrid-chat-visibility.mjs test/microphone-openclaw-integration.mjs
+run_node_tests speech chat-visibility test/chat-visibility.mjs
 run_node_tests speech activate-native-ai-qa test/activate-native-ai-qa.mjs test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
 run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 run_node_tests speech player-probe test/player-probe.mjs

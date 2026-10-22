@@ -11,8 +11,7 @@ const previewRoot = 'frontend-preview';
 const textExtensions = new Set(['.mjs', '.js', '.css', '.json']);
 const styles = [
   'styles.css', 'calibration.css', 'environment.css', 'auth-modal.css',
-  'local-presentation.css', 'rigged-review.css', 'astrid-voice-shell.css',
-  'astrid-voice-control.css', 'blackjack-entry.css',
+  'local-presentation.css', 'rigged-review.css', 'blackjack-entry.css',
 ];
 
 function canonicalSource(candidate) {
@@ -54,7 +53,6 @@ function moduleImports(source) {
 
 async function writePreview(output) {
   const queue = [join(publicRoot, 'app.mjs'), join(publicRoot, 'shared-room-app.mjs'), join(publicRoot, 'blackjack-entry.mjs'),
-    join(publicRoot, 'astrid-camera-audio-worklet.mjs'),
     // Middleware serves every exact public registry URL, including modules not
     // currently imported by the player entry. Reuse the same alias/import walk.
     ...presentationPublicModules.map(({source}) => join(repo, source))];

@@ -2640,27 +2640,13 @@ Verifiering och kvarstående arbete dokumenteras vid leverans i
 
 ## Kamera och mikrofon
 
-Record aktiverar lokal lyssning efter den valda dealerns namn (Astrid, Vera,
-Amira, Mei, PAOW, Dragge eller en publicerad dealerpost); Play styr spelljudet.
-Kamera väljs separat och är av från början. `/api/dealer/observation` och
-`/api/dealer/transcription` delar spelarens autentisering och validerar
-registrerade dealers mot aktuell publicering. De gamla Astrid-adresserna finns
-kvar för kompatibilitet. Uppspelning/chatt kan pausa namnväckningen med synlig
-status; ett upptaget bord blockerar den inte ensamt. Mobilens chattlogg är
-hopfälld och textfältet öppnas med Chatt.
-Efter aktiveringsordet skickas turen vid 1 150 ms tystnad. Ljudbufferten är
-högst tre sekunder i RAM; turen högst 30 sekunder. Kamerabilder tas först
-efter aktivering. Dold flik, spelarbyte och Record av avbryter. Första
-aktiveringen begär samtycke. Text/bilder visas i en tillfällig logg via
-fem sekunders långtryck, inte i normalvyn.
-
-Webbläsarens lokala talstöd krävs för aktiveringsordet. Produktservern
-använder Whisper `whisper-1` via `audio/transcriptions` och behåller talets
-originalspråk utan påtvingad översättning eller förvalt inmatningsspråk.
-Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst. Nycklar
-finns enbart på servern. Modell- och
-bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
-inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
+Webbspelarens kamera-, mikrofon- och wake-word-stack (`astrid-camera-*.mjs`,
+`astrid-wake-word.mjs`, `astrid-transcription.mjs`, `/api/dealer/observation`,
+`/api/dealer/transcription` och Astrid-aliasen) togs bort 22 oktober 2026.
+Spelarens chatt är textbaserad; `/chat` avvisar `observation` med 403
+`observation_disabled`. Mobilens chattlogg är hopfälld och textfältet öppnas
+med Chatt. Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst;
+nycklar finns enbart på servern.
 
 Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
 `media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `packages/presentation/runtime/`.

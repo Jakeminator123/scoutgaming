@@ -18,8 +18,6 @@ import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { createPlayerHistoryHandler } from './player-history.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
-import { normalizeAstridObservation } from '../../packages/director/astrid-observation.mjs';
-import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech-runtime.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createChatResponseStream } from './chat-response-stream.mjs';
@@ -560,10 +558,6 @@ const MIME = {
 // Product chat has one active decision owner: OpenClaw. It receives only this
 // freshly projected public state and a closed speech/media allowlist.
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
-const astridCameraEnabled = process.env.CROUPIER_ASTRID_CAMERA === '1'
-  && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane';
-const astridTranscription = createAstridTranscriptionApi({ apiKey: process.env.CROUPIER_ASTRID_TRANSLATION_KEY });
-const astridVisionModels = new Set(['gpt-6-luna', 'gpt-5.6-terra']);
 
 function chatSpeechPolicy() {
   return { recordedLines: [], generatedText: true, silence: true, mediaFamilies: [] };
@@ -879,49 +873,6 @@ const server = createServer(async (req, res) => {
     const result = operatorAppearanceApi ? await operatorAppearanceApi(new Request(new URL(req.url,gameOrigin),{method:req.method})) : new Response(JSON.stringify({error:'operator_appearance_unavailable'}),{status:503,headers:{'Content-Type':'application/json','Cache-Control':'private, no-store'}});
     res.writeHead(result.status,Object.fromEntries(result.headers));res.end(await result.text());return;
   }
-  if (['/api/astrid/observation','/api/dealer/observation'].includes(pathname) && req.method === 'GET') {
-    try {
-      const query = new URL(req.url,'http://local').searchParams;
-      if ([...query.keys()].some(key => !['dealer','presentationContext'].includes(key) || query.getAll(key).length !== 1)) throw Error('invalid_chat_context');
-      const dealerId = pathname === '/api/astrid/observation' ? 'astrid' : query.get('dealer');
-      const rawContext = query.get('presentationContext');
-      if (rawContext && rawContext.length > 512) throw Object.assign(Error('invalid_chat_context'),{statusCode:400});
-      const authorization = await authorizeChatDealer({dealerId,presentationContext:rawContext ? JSON.parse(rawContext) : null});
-      await authorization.recheck();
-      const config = await probeRuntime.config();
-      const enabled = astridCameraEnabled;
-      const profileRevision = enabled ? createHash('sha256').update((await chatSessionOwner(req, authenticated))).digest('hex') : null;
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
-      res.end(JSON.stringify({ enabled, profileRevision, model: config.policy.model,
-        reason: !enabled ? 'feature_disabled' : !astridTranscription.configured ? 'transcription_unavailable' : null,
-        vision: { enabled: enabled && astridVisionModels.has(config.policy.model),
-          reason: !enabled ? 'feature_disabled' : !astridVisionModels.has(config.policy.model) ? 'model_not_verified' : null },
-        transcription: { enabled: enabled && astridTranscription.configured, provider: 'openai', model: 'whisper-1',
-          outputLanguage: 'original', acceptsAutoLanguage: true } }));
-    } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
-    return;
-  }
-  if (['/api/astrid/transcription','/api/dealer/transcription'].includes(pathname)) {
-    const ownerRevision = async () => createHash('sha256').update((await chatSessionOwner(req, authenticated))).digest('hex');
-    let profileRevision, authorization, dealerId;
-    try {
-      dealerId = pathname === '/api/astrid/transcription' ? 'astrid' : req.headers['x-astrid-dealer'];
-      const rawContext = req.headers['x-dealer-presentation-context'];
-      if (rawContext && (typeof rawContext !== 'string' || rawContext.length > 512)) throw Error('invalid_chat_context');
-      authorization = await authorizeChatDealer({dealerId,presentationContext:rawContext ? JSON.parse(rawContext) : null});
-      profileRevision = (await ownerRevision());
-    }
-    catch { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"stale_transcription_context"}'); return; }
-    await astridTranscription.handle(req, res, { enabled: astridCameraEnabled, profileRevision, dealerId,
-      checkCurrent: async context => {
-        await authorization.recheck();
-        if ((await ownerRevision()) !== profileRevision) {
-          throw Object.assign(new Error('stale_transcription_context'), { code: 'stale_transcription_context', statusCode: 409 });
-        }
-        (await authoritativeChatStatus(authenticated, (await playerSession(req)), context));
-      } });
-    return;
-  }
   if (pathname === '/api/probe' || pathname.startsWith('/api/probe/')) {
     const json=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify(value));};
     const scope={playerId:authenticated,dealerId:'astrid'};
@@ -1125,21 +1076,9 @@ const server = createServer(async (req, res) => {
         const session = (await playerSession(req));
         const status = (await authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
         speechStreamService?.cancelOwner(owner);
-        const voiceConfig = await probeRuntime.config();
-        const probeConfig = dealerId === 'astrid' ? voiceConfig : null;
-        let observation;
-        if (incoming.observation !== undefined) {
-          if (!astridCameraEnabled) throw Object.assign(new Error('observation_disabled'), { statusCode: 403 });
-          if (!req.headers.origin || !URL.canParse(req.headers.origin)
-            || !['http:', 'https:'].includes(new URL(req.headers.origin).protocol)
-            || new URL(req.headers.origin).origin !== req.headers.origin
-            || new URL(req.headers.origin).host !== req.headers.host || req.headers['sec-fetch-site'] === 'cross-site') {
-            throw Object.assign(new Error('observation_same_origin_required'), { statusCode: 403 });
-          }
-          if (!astridVisionModels.has(voiceConfig.policy.model)) throw Object.assign(new Error('observation_model_not_verified'), { statusCode: 409 });
-          observation = normalizeAstridObservation(incoming.observation, incoming.requestId, dealerId,
-            createHash('sha256').update(owner).digest('hex'));
-        }
+        const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
+        // The browser camera/voice stack is retired; observations are never accepted.
+        if (incoming.observation !== undefined) throw Object.assign(new Error('observation_disabled'), { statusCode: 403 });
         const scope = { playerId: authenticated, dealerId };
         await probeRuntime.cancel(scope);
         memoryTurn = (await playerChatMemory.begin({ ...scope, requestId: incoming.requestId, message: incoming.message }));
@@ -1150,8 +1089,7 @@ const server = createServer(async (req, res) => {
         if (conversation) status.conversationMemory = conversation.context;
         // Neither a browser-supplied player ID nor fabricated assistant history
         // may enter the model. Stable identity and bounded recall are server-owned.
-        const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history,
-          ...(observation ? { observation } : {}) };
+        const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history };
         const readStatus = async () => {
           await chatAuthorization.recheck();
           if (conversation) {
@@ -1186,7 +1124,7 @@ const server = createServer(async (req, res) => {
           readStatus,
           signal: controller.signal,
           decide: async (value, state) => {
-            const model = probeConfig?.policy.model ?? (observation ? voiceConfig.policy.model : 'gateway-default');
+            const model = probeConfig?.policy.model ?? 'gateway-default';
             const ownedFetch = chatAuthorization.registered ? null : nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
               playerId: authenticated, owner, readOwner: async () => (await chatSessionOwner(req, authenticated)),
               readStatus, signal: controller.signal, model, streamRequested: incoming.acceptsSpeechStream === true });
