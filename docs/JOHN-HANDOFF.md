@@ -18,7 +18,9 @@ separata merge-agentens PR311-merge. Server/klient/command/select är monterade.
 Tidigare63c har grön CI39739331022 och normalhook299/299,0skip. c39:s CI39743612110
 föll på tre appearanceprov: extraherad testcallback saknade sharedRoomQa-bindning
 och ReferenceError blev503. Riktiga servern deklarerar variabeln. Denna uppföljning
-lägger endast sharedRoomQa:null i fixturen; verklig HTTP-helper/assertions bevaras.
+lade endast sharedRoomQa:null i fixturen; verklig HTTP-helper/assertions bevaras.
+Den levererades på4b0ccc1ee36c92b9a2505643e53442c63ab03e43, vars exakta
+CI39745790572 är completed/success. Denna etapp ändrar bara granskningsunderlag.
 Handoffkonflikten löstes genom aktuell produktstatus plus bevarade J08/J07- och
 regelavsnitt. Vercels Git-deployspärr följer med; ingen ny produktmerge här.
 
@@ -58,13 +60,25 @@ Detta bevisar inte full serverstart med verkliga K04-media. Fixtureleverans vän
 
 **Schemaförslaget:** tools/prepare-shared-schema.mjs är offline utan driver/apply,
 för exakt008→009→010 i en transaktion med identitet/ägare/product-v1-ledger,
-fresh-only/balans/ACL-grindar, begränsade lås och slutkontroller. Ingen produkt-DML/
+fresh-only/balans/ägargrindar, begränsade lås och slutkontroller. Ägarens ACL-kontroll
+är inte bevis på driftens credential/roll. Ingen produkt-DML/
 nyledger. Privat schema-preparation/game008-010-review.sql SHA256
 585db737e9732cf0d5ab8fcefa8b24e8b0615bceaf51825ce75669088f098e34.
 Nu faktiskt provat10/10 även på PostgreSQL18.6 (Node22.22), oförändrad63c-kod.
 Samtliga11källkopior/27artifacthashar oberoende verifierade; clusterStopped:true,
 port35437 ECONNREFUSED, ägda binärer/temp borttagna. Testets minimum-major16
-behölls; faktisk motor18.6. Detta stänger motorprovet, inte liveACL/restore/DDL.
+behölls; faktisk motor18.6. Separat syntetisk dump/restore är nu klar8/8 på
+PG18.6/Node22.22: 47 tabeller/fyra sekvenser, data/ledger/reservation/receipt,
+ägare/ACL och replay efter ny anslutning utan dubbel effekt. Elva readonly
+preflightfrågor körda före008 och efterrestore. Första försökets rena NUMERIC-
+textassert rättades smalt efter review; slutprovet grönt. Privat
+recovery-shared-restore/manifest.json + probe.log; PID608/port36911 stängda,
+kluster/binärer/temp borttagna. Roller förskapades; ingen Neon/PITR/prodrestore.
+Detta stänger det syntetiska återställningsprovet, inte liveACL/operativ restore/DDL.
+Faktisk runtimecredential är ännu obestyrkt: Render saknar env-read, browser use
+är avstängd och SSH nekade befintliga nycklar efter verifierad Frankfurt-värdnyckel.
+Granskningsplanen och rättad skillnad mellan DDL-ägare och driftroll finns i
+ENVIRONMENT-RESTORATION; inga produktionsåtgärder har gjorts.
 Tidigare PG46/46 och Chrome1440/3901/1 på63c består. Chrome använder isolerade
 data/mediaersättningar;27moduler, cleanuptrue, inte K04-mediaacceptans.
 Bevis privat under denna chatts visualizations/2026/10/22/
@@ -78,7 +92,15 @@ Kevin6334698735 rapporterade353/353 samt browser1/1 på8504 och konkret blockera
 riktig server nekade loopback-PG/TLS/Neonpolicy. Root tog detta i6335155847.
 I6335241363 fick Kevin parallell implementation av befintlig K04-fixture och
 hashverifierade media via createQaFixture({pool,scope,origin,mediaRoot}).
-Leverans väntar. Hans andra agent kan granska identiteter/förbereda tre K04-prov:
+113-kommentarsläsningen gav ingen ny Kevinpost. I6336318602 begärdes konkret
+starthead/första kommando eller exakt blockerare; start är ännu inte bekräftad.
+Jakob förtydligade därefter att HANS klippkarta/redigering är grunden; återanvänd
+deras videor/flöde och namngivning där det passar. Kanonisk TERMINOLOGI är uppdaterad,
+inte en ny parallell produktplan. I6336504757 tog root över den generella lokala
+fixturen i transportkopian. Pågående separata agentuppdrag: lokal manifest-/byteport
+och smal konstruktionsinjektion i neutrala mediefabriker; ännu ingen kodleverans.
+Kevin ska lämna befintligt exakt media-/paketmanifest och eventuell redan påbörjad
+fixture för återanvändning. Hans agent kan granska identiteter/förbereda tre K04-prov:
 tal under kortövergång/laddfel, touch/layout och fullflöde med skärmbilder.
 Egna kodändringar granskas oberoende av rootteamet. Inspelade repliker har ordnad
 filmkö; genererat tal under utdelning är separat kontrakt. Ljudknapp och synlig
@@ -104,9 +126,12 @@ Produktion wandering-hill-60561912/br-flat-fog-b161a6r8/croupier_game är PG18.6
 Verklig runtime-ACL och återställningsberedskap återstår före konkret DDL-beslut.
 K05PR314/159cc134 är metadata/validator; registry/Blobbindning/talgodkännande saknas.
 Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
-Färsk GitGuardian på98174fd8:0open/23ignored, sourceverified/monitoringactive,
-incidentcompleteforthissource, locationspartial/historicaltoo_large; queued
-mainsuite är inte full incidentfrihet. Inga incidenter ändrade.
+Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
+sourceverified/monitoringactive, incidentcompleteforthissource,
+locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
+GitGuardian-åtkomst; connectorn bekräftar oförändrad main och queued GitGuardian-
+suite utan checkrun. Aktuell incident-/platsläsning är därför ofullständig;
+tidigare kvitto eller queued suite är inte full incidentfrihet. Inga incidenter ändrade.
 
 **Arbetskopior:** arkivering, inte merge, tog gamla kopior. De är återställda på
 exakt gamla paths och Gitlåsta; app-attach ownerless nekas ännu. Ursprungschatt

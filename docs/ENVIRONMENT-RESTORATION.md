@@ -200,8 +200,10 @@ Kört isolerat: slutliga `node tools/run-shared-table-qa.mjs --schema-upgrade
 Proven täcker befolkad produktbas, fel mål/checksumma/saldo/partiellt schema,
 verklig låsväntan, rollback mitt i DDL, framgång med oförändrade äldre data,
 legacy receipt/replay/ny debit, separat begränsad roll och nekad återapplicering.
-Runtime-rollen i produktion var vid metadataavläsningen också tabellägare; den
-separata provrollen visar vilka nya SELECT-grants en annan runtime-roll behöver.
+Metadataanslutningen använde tabellägaren croupier_game. Det bevisar inte vilken
+credential/roll den driftsatta servern faktiskt använder. Den separata provrollen
+verifierar endast äldre debit/replay med SELECT-grants på två guardtabeller,
+inte fulla shared-runtimebehörigheter.
 Privat slutkvitto: denna chatts `recovery-replay/shared-schema-upgrade/final-cli/manifest.json`.
 Samma avgränsade CLI är registrerad i ordinarie CI. Offlinehelperns tre prov och
 oberoende källgranskning är gröna; detta är förberedelse, inte produktionsacceptans.
@@ -212,9 +214,70 @@ utan runnerändring;11källkopior/27artifacthashar oberoende verifierade. Privat
 recovery-pg18-schema/manifest.json visar signaturer, versions-/binärhashar och
 städning. Provets minimum-major16 behölls men faktisk motor var18.6.
 
-Röda grindar: färsk faktisk runtimeidentitet/ACL,
-verifierad återställningsberedskap och uttryckligt produktions-DDL-mandat saknas. Game-schemagrinden inför merge/aktivering förblir blockerad tills
-kraven faktiskt är uppfyllda; grön Studio-CI eller offlinegenererad SQL räcker inte.
+### Runtimebehörigheter och operativ återställning
+
+Före DDL ska den faktiska deploymentanslutningen bindas till ovanstående
+provider/projekt/branch/databas utan att exponera credentials. Läs current_user,
+session_user och current_database via just den anslutningen. Kontrollera effektiva
+schema-/tabell-/kolumnprivilegier, rollmedlemskap, RLS och DDL-ägarens globala samt
+schemavisa defaultACL. Ägarens godkända anslutning eller SET ROLE ersätter inte
+denna proveniens. Privat granskningsunderlag: denna chatts
+schema-runtime-preflight/runtime-preflight.sql och operations.md; endast
+katalogfrågor, inga produktdata eller skrivningar. Saknade 008–010-objekt före
+migrering är förväntade och får inte räknas som godkänd efterkontroll.
+
+Shared-runtime behöver utöver SELECT: INSERT/UPDATE/DELETE för reservationer,
+INSERT/DELETE för öppna händer, INSERT/UPDATE för rum/medlemmar/presence/pauser/
+skor/outbox/delivery/receiver och INSERT för receipts/ticks/audit. Befintliga
+players behöver UPDATE och transactions INSERT. Publiceringsvägens configwrites
+bedöms separat. Authens FOR SHARE kräver SELECT och UPDATE-privilegium på minst
+en kolumn i varje låst tabell. Triggerfunktionerna kör med anroparens privilegier.
+Matrisen ersätter inte övriga serverfunktioners befintliga behörighetskrav.
+
+Återställningsförfarandet ska granskas separat från schemafilen:
+
+1. Identifiera och stoppa/dränera samtliga writers till målgrenen, inklusive
+   Render, Vercel/API, bakgrundsjobb och gamla klienter. Ingen driftåtgärd utförs
+   som del av detta förberedelsearbete.
+2. Frys målidentitet, kodrevision och en verifierad backup efter dränering.
+   Välj i förväg ett separat tomt restoremål och explicit roll-/ägarmappning.
+   PostgreSQL pg_dump sparar inte globala roller. Befintliga
+   tools/postgres-backup-restore.mjs accepterar bara äldre tabelluppsättning och
+   sparar inte roller/ACL; det är inte en återställningsväg för 008–010.
+3. Prova pg_dump --format=custom och pg_restore --single-transaction
+   --exit-on-error mot det isolerade målet. Verifiera samtliga tabeller, ledger,
+   balanser, reservationer, receipts, sekvenser, objektägare och ACL samt verkligt
+   replay efter ny anslutning. Privata syntetiska prov bevisar verktygsvägen,
+   inte produktionsbackupens innehåll, Neon-PITR eller operativ återställningstid.
+4. Vid misslyckande före COMMIT ska schemafilens transaktion rulla tillbaka.
+   Efter COMMIT behåll tillagda objekt. Återgång till kompatibel kod kräver ett
+   eget beslut; skriv aldrig över nya wallettransaktioner med en äldre backup.
+5. Produktionens backup/restore, DDL och återöppning kräver sina uttryckliga
+   beslut. Kör inga blinda retries mot partiellt schema eller okänd målidentitet.
+
+Faktisk runtimeidentitet kan ännu inte läsas via tillgänglig Render-anslutning
+(miljövariabelläsning saknas); lokal browser use är avstängd. Renders Frankfurt-
+värdnyckel har verifierats mot [officiell SSH-dokumentation](https://render.com/docs/ssh)
+i en separat privat known-hosts-fil med fortsatt StrictHostKeyChecking=yes.
+Inloggningen nekades därefter med Permission denied (publickey). Ingen ny nyckel
+registrerades och inga anslutningsskydd eller globala inställningar ändrades.
+
+Det syntetiska återställningsprovet är nu genomfört på PostgreSQL18.6/Node22.22:
+8/8, exakt paritet för 47 tabeller och fyra sekvenser, inklusive ledger, saldo,
+reservationer, receipts, objektägare och ACL. Ny anslutning och replay gav ingen
+dubbel effekt; obehörig restore/läsning/skrivning nekades. Preflightens elva
+katalogfrågor kördes READ ONLY både före 008 och efter restore. Första försöket
+föll på provets NUMERIC-textjämförelse (1247.00/1247); bara den jämförelsen rättades
+och granskades före slutprovet. Privat recovery-shared-restore/manifest.json och
+probe.log innehåller båda försöken, frysta källhashar och slutbevis. PID608 borta,
+port36911 ECONNREFUSED; ägda databaser/roller/pooler/kluster/binärer borttagna.
+Roller förskapades i klustret; detta är inte globals-restore, Neon/PITR,
+produktionsbackup, full serverstart eller K04-mediaacceptans.
+
+Röda grindar: faktisk runtimeidentitet/ACL, operativ återställningsberedskap och
+uttryckligt produktions-DDL-mandat. Game-schemagrinden inför merge/aktivering
+förblir blockerad tills kraven är uppfyllda; grön Studio-CI eller offlinegenererad
+SQL räcker inte.
 
 ## Byggdelar och Node-versioner
 
