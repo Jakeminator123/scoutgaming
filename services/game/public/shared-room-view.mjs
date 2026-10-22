@@ -76,7 +76,8 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
       for(const [i,slot] of slots.entries()){
         const own=s.owners[i]===s.me.id,occupied=s.owners[i]!==null;
         slot.root.classList.toggle('active',own);slot.root.classList.toggle('occupied',occupied);
-        slot.join.textContent=own?`Lämna ${i+1}`:occupied?`Plats ${i+1} upptagen`:`Välj plats ${i+1}`;
+        // Short visible label so 44 px pills fit the seat spacing; the full text stays in aria-label.
+        slot.join.textContent=own?'Lämna':String(i+1);slot.join.setAttribute('aria-label',own?`Lämna ${i+1}`:occupied?`Plats ${i+1} upptagen`:`Välj plats ${i+1}`);
         slot.join.disabled=!can.join||(occupied&&!own);slot.join.setAttribute('aria-pressed',String(own));
         slot.bets.hidden=!own;slot.bets.style.display=own?'':'none';
         for(const [field,node] of Object.entries(slot.fields)){node.disabled=!can.bet||!own;node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+money(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field])}`);}

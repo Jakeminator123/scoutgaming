@@ -1,5 +1,6 @@
 import { validatePublicOperatorRooms } from '../../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 import { roomEnvironment } from '../../../../../packages/presentation/contracts/room-environment.mjs';
+import { gameStartPath } from '../../../../../packages/navigation/game-entry.mjs';
 
 /** Validate the published subcatalog, never use administration objects as playable data. */
 export function parseLobbyCatalog(payload) {
@@ -79,11 +80,12 @@ export function lobbySelection(catalog, { operatorId = null, roomKey = null, dea
   return { operator, room, dealer, availableRooms, availableDealers };
 }
 
-/** Both tenant and room membership must still match when rendering a launch link. */
+/** Both tenant and room membership must still match when rendering a launch link.
+ * The published playUrl is the engine's room contract; the link itself is the one game start. */
 export function playUrlFor({ operator, room, dealer }) {
   if (room.operatorId !== operator.id || !operator.roomIds.includes(room.key)
     || !room.dealers.some(row => row.id === dealer.id)) return undefined;
-  const canonical = `/play/${room.game}?` + new URLSearchParams({ operator: operator.id, table: room.id });
-  if (room.playUrl !== canonical) return undefined;
-  return canonical + '&dealer=' + encodeURIComponent(dealer.id);
+  const published = `/play/${room.game}?` + new URLSearchParams({ operator: operator.id, table: room.id });
+  if (room.playUrl !== published) return undefined;
+  return gameStartPath({ game: room.game, operator: operator.id, table: room.id, dealer: dealer.id });
 }
