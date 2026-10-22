@@ -64,7 +64,7 @@ test('explicit staged-base launch keeps Partner identity and token but removes i
 
 test('Partner launch follows the saved-policy route switch and preserves the server-owned launch identity', async () => {
   for (const [routing,gamePath] of [[{},'/'],[{CROUPIER_PUBLIC_GAME_PATH:'/game'},'/game'],
-    [{CROUPIER_STUDIO_NEON_POLICY:'1'},'/blackjack'],[{CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_PUBLIC_GAME_PATH:'/game'},'/blackjack']]) {
+    [{CROUPIER_STUDIO_NEON_POLICY:'1'},'/game'],[{CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_PUBLIC_GAME_PATH:'/game'},'/game']]) {
     const supplied = `${ORIGIN}${gamePath}?dealer=vera&launch=fixture-token&presentation=original&motion=smooth60#view`;
     const api = createPartnerReference({env:{...env,...routing},fetchImpl:async()=>Response.json({url:supplied,expiresIn:60})});
     const ordinary = await api.endpoint(request('launch'));
@@ -78,7 +78,7 @@ test('Partner launch follows the saved-policy route switch and preserves the ser
 });
 
 test('canonical Partner launch rejects retired game paths, wrong origins and non-game destinations', async () => {
-  for (const url of [`${ORIGIN}/?launch=token`,`${ORIGIN}/game?launch=token`,`${ORIGIN}/blackjack/?launch=token`,
+  for (const url of [`${ORIGIN}/?launch=token`,`${ORIGIN}/play/blackjack?launch=token`,`${ORIGIN}/blackjack/?launch=token`,`${ORIGIN}/game/?launch=token`,
     `${ORIGIN}/player-login?launch=token`,`${ORIGIN}/studio?launch=token`,'https://other.test/blackjack?launch=token']) {
     const api = createPartnerReference({env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1'},fetchImpl:async()=>Response.json({url})});
     for (const action of ['launch','launch-staged-base']) {

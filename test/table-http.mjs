@@ -83,22 +83,21 @@ try {
   await symlink(join(web,'public'), join(webDir,'public'), process.platform === 'win32' ? 'junction' : 'dir');
   await start();
   let entryHtml;
-  for (const path of ['/', '/v2', '/v2/', '/v2/index.html']) {
-    let response = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
-    if(path!=='/'){
-      assert.equal(response.status,307,`retired entry alias ${path}`);
-      assert.equal(response.headers.get('location'),'/?dealer=astrid','aliases keep the explicit choice but grant no registration');
-      await response.text();
-      response=await fetch(origin+'/?dealer=astrid',{redirect:'manual'});
-    }
+  for (const path of ['/v2', '/v2/', '/v2/index.html']) {
+    const retired = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
+    assert.equal(retired.status, 404, `retired V2 alias ${path} is gone, not redirected`);
+    await retired.text();
+  }
+  for (const path of ['/']) {
+    const response = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
     assert.equal(response.status, 503, `empty installation entry ${path}`);
     const html = await response.text();
     assert.match(html,/Ingen presentation vald/);
     assert.doesNotMatch(html,/data-game-dealer=|<video|src="app\.mjs"/,'a dealer query cannot create a playable presentation');
     entryHtml ??= html;
-    assert.equal(html, entryHtml, 'original and V2 share the same unavailable presentation response');
+    assert.equal(html, entryHtml, 'the empty entry has one unavailable presentation response');
   }
-  checks.push('Original/V2 empty entry fails closed; explicit dealer query never creates a presentation');
+  checks.push('Empty entry fails closed and V2 is gone; explicit dealer query never creates a presentation');
   player = await post('/api/player', {}); await refresh();
   checks.push('Isolated guest session still authenticates the authoritative table API');
   db = new DatabaseSync(join(dir,'data/croupier.db'));

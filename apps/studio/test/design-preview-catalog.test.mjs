@@ -44,7 +44,7 @@ test('registered admin and published lobby share exact identities without privat
   const adminRoom = result.administration.rooms.find(row => row.id === f.room.id);
   assert.equal(adminRoom.environment.label, choice.room.environmentLabel);
   assert.equal(adminRoom.environment.fixed, choice.room.environmentFixed);
-  assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=linnea');
+  assert.equal(playUrlFor(choice), '/game?game=blackjack&operator=north&table=' + f.room.id + '&dealer=linnea');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'linnea' }).dealer, null);
 });
 test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
