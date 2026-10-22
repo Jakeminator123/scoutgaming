@@ -1894,6 +1894,13 @@ Nya skrivningar med `tablePlayback` eller `jitterMs` kräver runtime capability
 spelservrar eftersom de strikta läsarna annars avvisar hela dokumentet. Ingen
 SQL-migration behövs; äldre publiceringar utan fälten läses som förut.
 
+Bordsklipp ändrar bara pixlar. Spelplanet (platser, insatsknappar, dealerns
+kort och kortprojektionen) räknas alltid från det monterade basbordet, aldrig
+från ett spelande klipp, så ett klipp med annat format flyttar inget mitt i en
+hand. Reglerna hör till sammansättningens standardbord: har spelaren eller
+rummets override valt ett annat bord står bordets scheduler pausad och inga
+bordsklipp spelas över det. Bakgrund och dealer påverkas inte.
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet
