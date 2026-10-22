@@ -177,9 +177,11 @@ test('J08 HTTP boundary preserves private reads, origin protection and package r
   const request=body=>new Request(path,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(body)});
   const body={action:'save-draft',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:'admin-1',expectedPackageRevision:1,gameConfig:{language:'sv',limitPreset:'casual'}};
   const draftResponse=await http.handle(request(body));assert.equal(draftResponse.status,200);const draft=await draftResponse.json();
-  assert.deepEqual(transactions[0],{presentationDocuments:['project','administration']});
+  // Both writes declare the administration draft field so the v23 preflight runs before SQL.
+  const drafts={kind:'administration',value:{roomGameConfigs:[]}};
+  assert.deepEqual(transactions[0],{presentationDocuments:['project','administration'],presentationMutation:drafts});
   const publishBody={action:'publish',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:draft.administrationRevision,expectedPackageRevision:1,expectedDraftRevision:draft.draft.revision};
   const forged=request(publishBody);forged.headers.set('origin','https://other.invalid');assert.equal((await http.handle(forged)).status,403);assert.equal(f.snapshot().packages.length,1);
   const published=await http.handle(request(publishBody));assert.equal(published.status,200);assert.equal((await published.json()).published.packageRevision,2);
-  assert.deepEqual(transactions[1],{presentationDocuments:['project','administration'],presentationOperatorIds:['north']});
+  assert.deepEqual(transactions[1],{presentationDocuments:['project','administration'],presentationMutation:drafts,presentationOperatorIds:['north']});
 });

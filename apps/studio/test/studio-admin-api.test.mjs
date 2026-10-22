@@ -222,6 +222,19 @@ test('authenticated Nora lane creation requires preflight before product SQL and
   }
 });
 
+test('room game config writes negotiate the administration draft field before product SQL', async () => {
+  for (const action of ['save-draft', 'publish']) {
+    let seen = null, inside = false;
+    const configured = api({ handlers: new Map([['POST ' + path('room-game-config'), () => { assert.equal(inside, true); return { ok: true }; }]]),
+      mutationTransaction: async (work, options) => { seen = options; inside = true; try { return await work(); } finally { inside = false; } } });
+    const response = await configured.handle(request('room-game-config', { body: JSON.stringify({ action, operatorId: 'north', roomId: 'room-1' }) }));
+    assert.equal(response.status, 200);
+    assert.deepEqual(seen.presentationDocuments, ['project', 'administration']);
+    assert.deepEqual(seen.presentationMutation, { kind: 'administration', value: { roomGameConfigs: [] } });
+    assert.deepEqual(seen.presentationOperatorIds, action === 'publish' ? ['north'] : undefined);
+  }
+});
+
 test('trusted preparation verifies provider data outside product SQL and supplies only server context to the locked handler', async () => {
   let inside = false, prepared = 0, invoked = 0;
   const proof = Object.freeze({ presentation: Object.freeze({ schemaVersion: 2, registeredDealers: [] }), source: 'server-capture' });

@@ -59,6 +59,13 @@ function requestedPublicationRoom(snapshot: LifecycleSnapshot | null, operatorId
     .map(room=>({...room,status:room.state==='live'?'active':room.state}))},requestedRoomId);
   return snapshot?.rooms.find(room=>room.id===selection.roomId&&room.operatorId===operatorId);
 }
+// Offer only rooms the room-game-config API accepts: live, published and on a composition in the current package.
+function gameConfigRoomChoices(snapshot: LifecycleSnapshot | null, operatorId: string, lanes: readonly {id:string}[]) {
+  const operator=snapshot?.operators.find(row=>row.id===operatorId);
+  if(!snapshot||!operator||operator.status!=='active'||operator.archivedAt)return [];
+  return snapshot.rooms.filter(room=>room.operatorId===operatorId&&room.published&&!room.archivedAt&&room.state==='live'
+    &&operator.lanes.includes(room.presentationLaneId)&&lanes.some(lane=>lane.id===room.presentationLaneId));
+}
 export function AdminPublicationPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialRoomId, onContextChange, initialTab = 'publish' }: {
   initialLaneId?: string;
   initialOperatorId?: string;
@@ -95,6 +102,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const archived = suspended && Boolean(lifecycleArchives[operatorId]);
   const selectedRoom = !resourceStale ? requestedPublicationRoom(resourceSnapshot,operatorId,requestedRoomId,rows) : undefined;
   const roomUnavailable = requestedRoomId!==undefined&&!selectedRoom;
+  const roomChoices = !resourceStale ? gameConfigRoomChoices(resourceSnapshot,operatorId,rows) : [];
   const selectedLane = rows.find(lane=>lane.id===selectedLaneId)??rows[0];
   const editableLane = project.lanes?.find(lane=>lane.id===selectedLane?.id);
   const selectedPackage = packages[operatorId] ?? packageEditor(selectedOperator);
@@ -134,7 +142,10 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const writesOff = !storeAvailable || interactionBusy || suspended;
   const publishSelectionReady = chosen.length > 0 && chosen.every(id => rows.some(row => row.id === id && !row.unsaved));
   const navigationContext = studioNavigationContextFromQuery(new URLSearchParams(typeof window==='undefined'?'':window.location?.search??''));
-  const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id, tableId:selectedRoom?.id,
+  // A room picked for game settings may use another composition than the open draft;
+  // editor links carry the room only when it belongs to that composition.
+  const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id,
+    tableId:selectedRoom&&selectedRoom.presentationLaneId===selectedLane?.id?selectedRoom.id:undefined,
     dealerId:selectedLane?.dealers.includes(navigationContext.dealerId??'')?navigationContext.dealerId:undefined};
   const compositionHref = studioNavigationHref('/admin/compositions', editorContext);
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
@@ -341,9 +352,9 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
             {selectedLane?<PresentationRoomCreate operator={selectedOperator} presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
               projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory||childBusy.gameConfig} hideExisting
               onDraftChange={value=>{roomDraft.current=value;setRoomDirty(value);}} onBusyChange={value=>setChildBusyFor('room',value)} onCreated={receipt=>{updatePackage(receipt.room.operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>:null}
-            {resourceSnapshot?.rooms.some(room=>room.operatorId===operatorId&&room.published&&!room.archivedAt)?<section className={styles.card} aria-label="Välj rum för spelinställningar">
-              <label className={styles.field}>Spelrum<select aria-label="Spelrum för spelinställningar" value={typeof requestedRoomId==='string'?requestedRoomId:''} disabled={interactionBusy} onChange={event=>chooseRoom(event.target.value)}>
-                <option value="">Välj ett publicerat spelrum</option>{resourceSnapshot.rooms.filter(room=>room.operatorId===operatorId&&room.published&&!room.archivedAt).map(room=><option key={room.id} value={room.id}>{room.name}</option>)}
+            {roomChoices.length?<section className={styles.card} aria-label="Välj rum för spelinställningar">
+              <label className={styles.field}>Spelrum<select aria-label="Spelrum för spelinställningar" value={roomChoices.some(room=>room.id===requestedRoomId)?requestedRoomId as string:''} disabled={interactionBusy} onChange={event=>chooseRoom(event.target.value)}>
+                <option value="">Välj ett publicerat spelrum</option>{roomChoices.map(room=><option key={room.id} value={room.id}>{room.name}</option>)}
               </select></label>
               <p>Bordsspråk och insatsprofil gäller delade blackjackrum. Rummets utseende hanteras via befintliga tillåtna val.</p>
             </section>:null}

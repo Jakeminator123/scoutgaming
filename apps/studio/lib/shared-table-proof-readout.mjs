@@ -40,13 +40,16 @@ function project(row, roomId, shoeId) {
   if (selected?.closedAt != null) {
     const proof = selected.proof;
     const verification = verifyShoe(proof, selected.commitment);
-    const checks = [...verification.checks, { name: 'Shoe identity matches stored receipt', pass: proof?.shoeId === selected.shoeId },
-      { name: 'Complete persisted global audit chain', pass: chain.ok }];
+    const own = [...verification.checks, { name: 'Shoe identity matches stored receipt', pass: proof?.shoeId === selected.shoeId }];
+    const checks = [...own, { name: 'Complete persisted global audit chain', pass: chain.ok }];
     const draws = audit.filter(a => a.room === roomId && a.type?.startsWith('engine.'))
       .map(a => parse(a.payload)).filter(p => p.shoeId === selected.shoeId).flatMap(p => p.draws ?? []);
     checks.push({ name: 'Proof draws match persisted engine events', pass: chain.ok && JSON.stringify(draws) === JSON.stringify(proof?.commandDraws) });
+    // An intact chain prefix beyond the bounded window cannot verify the draws,
+    // but it is not evidence of tampering either: report it as incomplete.
+    const incomplete = checked.ok && !complete && own.every(c => c.pass);
     view = { ...view, proof, rawProof: JSON.stringify(proof), verification: { ...verification, checks,
-      status: checks.every(c => c.pass) ? 'verified' : 'failed' } };
+      status: checks.every(c => c.pass) ? 'verified' : incomplete ? 'incomplete' : 'failed' } };
   }
   return { roomId, shoes: shoes.map(summary), selected: view, chain };
 }

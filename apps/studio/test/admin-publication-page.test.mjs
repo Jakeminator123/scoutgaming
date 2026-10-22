@@ -424,6 +424,19 @@ test('room game drafts protect context navigation and their writes lock sibling 
   assert.equal(h.gameConfig(),undefined);
 });
 
+test('the game settings room picker lists only rooms the room configuration accepts',()=>{
+  const h=harness({initialOperatorId:'north'});
+  const resources=roomContextSnapshot(),base=resources.rooms[0];
+  resources.rooms.push({...base,id:'room-pending',name:'Väntande',state:'pending'},{...base,id:'room-gone',name:'Utan sammansättning',presentationLaneId:'gone'},
+    {...base,id:'room-unpublished',name:'Opublicerat',published:false},{...base,id:'room-archived',name:'Arkiverat',archivedAt:'2026-10-14'},
+    {...base,id:'room-south',name:'Söder',operatorId:'south'});
+  h.lifecycle().props.onChanged(resources);
+  const picker=()=>h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Spelrum för spelinställningar')[0];
+  assert.deepEqual([picker().props.children].flat(Infinity).filter(Boolean).map(child=>child.props.value),['','room-evening']);
+  h.lifecycle().props.onChanged(roomContextSnapshot({state:'pending'}));
+  assert.equal(picker(),undefined,'no picker when the room configuration accepts no room');
+});
+
 for(const roomAlias of ['table','room'])test('publication room switching retains its room through the clip-map return from '+roomAlias,()=>{
   const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'evening',
     search:'?operator=north&'+roomAlias+'=room-evening&composition=evening&game=blackjack&dealer=astrid&tag=a&tag=b',hash:'#review'});
@@ -440,6 +453,9 @@ for(const roomAlias of ['table','room'])test('publication room switching retains
   picker().props.onChange({target:{value:'room-other'}});
   assert.equal(h.gameConfig().props.roomId,'room-other');
   assert.equal(h.composition().props.value,'evening','navigation must not reset the independent composition draft');
+  const editor=new URL(h.nodes(node=>node.type==='a'&&String(node.props.children).startsWith('Redigera dealer'))[0].props.href,'https://test.invalid');
+  assert.equal(editor.searchParams.get('composition'),'evening');
+  for(const key of ['table','room'])assert.equal(editor.searchParams.has(key),false,'a room on another composition never rides on the open composition link');
   const query=new URLSearchParams(h.window.location.search);
   assert.equal(query.get('table'),'room-other');assert.equal(query.has('room'),false);
   for(const key of ['composition','lane','game'])assert.equal(query.has(key),false,'new room must resolve its own '+key);

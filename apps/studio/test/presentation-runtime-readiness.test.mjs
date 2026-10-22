@@ -55,6 +55,22 @@ test('a declared VILA/REDO pose chain on a blackjack clip gates media writes on 
   await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.registerMedia({classification:chained}),blocked);},{metadata:plain});
   assert.equal(f.writes.length,0);
 });
+test('J08 room drafts in the administration document gate every write on v23, even when empty',async()=>{
+  for(const value of [{rooms:[],roomGameConfigs:[]},{rooms:[],roomGameConfigs:[{roomId:'room-1'}]}])for(const version of [22,23]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.saveDocument('administration',{value});
+    if(version===22)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'23');assert.equal(f.writes.length,version===23?1:0);
+  }
+  const plain=fixture();await plain.wrapped.saveDocument('administration',{value:{rooms:[]}});
+  assert.equal(plain.fetches.length,0,'an administration document without drafts keeps its earlier requirement');
+  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+  const rooms={kind:'administration',value:{rooms:[{schemaVersion:2}]}},drafts={kind:'administration',value:{roomGameConfigs:[]}};
+  // A context verified without the draft field cannot acquire it while SQL is active.
+  await f.wrapped.withMutationContext(async()=>{await assert.rejects(f.wrapped.saveDocument('administration',{value:{rooms:[{schemaVersion:2}],roomGameConfigs:[]}}),blocked);},rooms);
+  await f.wrapped.withMutationContext(async()=>{await f.wrapped.saveDocument('administration',{value:{rooms:[{schemaVersion:2}],roomGameConfigs:[]}});},[rooms,drafts]);
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'23');
+});
 test('a preflight without anchors cannot acquire them inside its transaction',async()=>{
   const plain={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
   const anchored={lanes:[{composition:{blackjackTables:[{desktop:{anchors:{}}}]}}]};

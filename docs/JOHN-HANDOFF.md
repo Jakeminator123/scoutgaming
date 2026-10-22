@@ -21,6 +21,23 @@ riktade regressionsbevis är två röda fall före rättning och 68/68 gröna ef
 Det är huvudagentens körning med instrumenterad UI, inte verklig K04-media
 eller ny browser-/PG-acceptans. Rättningen samlas före PR334:s enda slutpush.
 
+**Granskningsrättningar före merge (mergeagenten, 22 oktober):** oberoende
+läsgranskning av exakt `24e9f0264bc244e2ddabdac0cc12b1537ab164bd` fann att koden
+fungerar utan game008–010, eftersom publiceringen är stängd utan resolver. Fältet
+`roomGameConfigs` saknade däremot kapabilitetsspärr: ett sparat utkast hade fått
+äldre Studio och spelserver att neka hela administrationsdokumentet (503) vid
+versionsglapp eller återställning. Rättat med v23 enligt befintligt mönster, se
+[runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md). Dessutom visar rumsväljaren bara
+live-rum som API:t godtar, länken till sammansättningen bär inte längre ett rum
+från en annan sammansättning, och ett skobevis med intakt men för lång auditkedja
+visas som `incomplete` i stället för `failed`. Kvar som uppföljning: läsningarna
+tar Studios skrivlås eftersom repositoryt inte lämnar SQL-klient i läsläge;
+revisionsbesked och brandingbudget när resolvern kopplas in; bevis bortom 10 000
+auditrader kräver checkpoints. Nya prov föll 11/156 mot gamla koden och passerar
+156/156 efter rättning; berörda readiness-/J08-sviter grönt utom ett valfritt
+browserprov; Studio `tsc` grön; Node 24.21.0, högst fyra workers. Ingen DDL,
+deploy eller produktionsåtgärd.
+
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
 `4852f92f11635e20edd974c3261e0fc179ab7d1b`, med samlad Admin och J07 integrerade.
 Aktiviteten är inte VERIFIED; delverifieringen ger ingen ny färdigbock.
