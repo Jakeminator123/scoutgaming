@@ -45,6 +45,7 @@
       ],
       "conditional": [
         "CROUPIER_CLOUD_DATA_ROOT",
+        "CROUPIER_CLOUD_LAB_CHILD",
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
