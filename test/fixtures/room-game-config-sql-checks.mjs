@@ -12,6 +12,8 @@ import { createPostgresTableStore } from '../../services/game/games/blackjack/ta
 import { createTableCoordinator } from '../../services/game/games/blackjack/table/coordinator.mjs';
 import { deterministicRandom } from './blackjack-deterministic-random.mjs';
 import { openProof, replayShuffle } from '../../services/game/games/blackjack/shoe-proof.mjs';
+import { readRuntimeCatalogFixture } from './runtime-media-catalog.mjs';
+import { runtimeCatalogJson, runtimeCatalogRevision } from '../../packages/studio-registry/server/runtime-catalog.mjs';
 
 export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) {
   const target = (await pool.query('SELECT current_user AS role,current_database() AS database,inet_server_addr()::text AS address')).rows[0];
@@ -50,6 +52,12 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
     packages: await rows('croupier_studio.operator_packages', 'package_revision'), configs: await rows('croupier_game.shared_table_configs', 'version'), heads: await rows('croupier_game.shared_table_config_heads', 'room_id') });
   const status = wanted => error => error?.statusCode === wanted;
   await repository.initializeDocument('administration', { value: administration, revision: 'j08-initial', actor: actor.user });
+  await repository.initializeDocument('project', { value: cloud.project, revision: cloud.project.revision, actor: actor.user });
+  for (const { revision: _revision, updatedAt: _updatedAt, ...record } of cloud.mediaRows)
+    await repository.registerMedia(record, { actor: actor.user });
+  const catalog = readRuntimeCatalogFixture();
+  await pool.query('INSERT INTO croupier_studio.runtime_media_catalogs(environment_id,workspace_id,revision,value) VALUES($1,$2,$3,$4::jsonb)',
+    [...params, runtimeCatalogRevision(catalog), runtimeCatalogJson(catalog)]);
   await pool.query('INSERT INTO croupier_studio.operators(environment_id,workspace_id,operator_id,slug,name,status,created_at_ms) VALUES($1,$2,$3,$4,$5,$6,$7)', [...params, operatorId, 'j08-operator', 'Isolated operator', 'active', 1]);
   await pool.query('INSERT INTO croupier_studio.operator_packages(environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms) VALUES($1,$2,$3,1,$4,$5,$6,$7,1)',
     [...params, operatorId, '["mobile-phone"]', '["blackjack"]', JSON.stringify([roomId]), canonicalStudioJson(withPackagePresentation({}, cloud.presentation))]);

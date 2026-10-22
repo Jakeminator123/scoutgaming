@@ -33,9 +33,28 @@ Adaptern har 5/5 fokuserade provgrupper på Volta Node24.21.0,0skip. j04_resume 
 oberoende läst båda filerna och berörda kontrakt utan blockerande fynd; root har
 läst modul/prov. Proven använder injicerad producentstub och isolerade data.
 Det är inte faktisk K04-/Blob- eller visuell acceptans. Adaptern är registrerad i
-CI:s befintliga presentationsgrupp. Anroparen måste återkontrollera snapshot-
-revisionerna inom publiceringstransaktionen. Den verkliga K05-identitetsmappningen,
-scopade snapshots och nativebindningen återstår. Saknad mappning/producent/timing
+CI:s befintliga presentationsgrupp. API:t binder nu resolveranropet till befintlig
+`readPresentationSnapshot` på samma scopelåsta transaktionsklient: scope och
+administrationsrevision kontrolleras, katalogen valideras och separata kopior av
+rum/paket/katalog lämnas till producenten. Använda medier måste fortfarande finnas
+med exakt identitet i både fryst paket och aktuellt register; arkiverat/raderat
+material nekas, tal kräver godkänd exakt språk-/tagningsidentitet. Befintlig
+`assertCapturedPresentationMedia` återkontrollerar revision/post före paketwriter.
+Katalogimport och registerwriters delar scopelåset; ingen extra katalogläsning
+eller provider-I/O införs. Fem nya regressionsgrupper gav före 8 pass/5 fail,
+efter 13/13 API-prov; slutprov inklusive ren adapter 18/18, 0 skip på Node24.21.0.
+Bevis: `arkiv/2026-10-22/j08/material-snapshot-{before,after,final,commands}.log`.
+Root körde dessutom den ändrade vägen med riktig PostgreSQL16.15/Node24.21:
+9/9 grupper med två klienter, CAS, SQL-triggerrollback, R-lås, fryst konfiguration,
+proofbytes och fysisk omstart. Befintlig isolerad fixture kompletterades med
+project/media/katalog och befintligt schema012; inga produktionsmigrationer.
+Första fixturestarten rättades från vanlig JSON-serialiserare till befintliga
+runtimeCatalogJson; produktkoden ändrades inte av den rättningen. Slutlogg:
+`arkiv/2026-10-22/j08/material-snapshot-pg.log`. Eget kluster stoppat och borttaget;
+port35029 och temporär Node-runtime verifierat frigjorda. j04_resume läste hela
+femfilsdeltat och provloggar utan blockerande fynd; root läste kod/loggar.
+Detta verifierar isolerade handlers med injicerad planering, inte K04/Blob/live.
+Den verkliga K05-identitetsmappningen och nativebindningen återstår. Saknad mappning/producent/timing
 nekas; inga 700/500-fallbacks. Native publicering är fortsatt nekad utan resolvern.
 Ingen K04-import, live transport-/spelinkoppling eller produktions-DDL har utförts.
 

@@ -8,16 +8,32 @@ import {withPackagePresentation} from '../../../packages/presentation/server/pre
 import {canonicalStudioJson,validateDocumentValue} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {ROOM_LIMIT_PRESETS,validateRoomGameConfig} from '../../../packages/presentation/contracts/room-game-config.mjs';
 import {isPresentationRoomReadQuery,studioAdminEndpoint} from '../lib/studio-admin-contract.mjs';
+import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
+import {recordedSpeechIdentity} from '../../../packages/presentation/contracts/recorded-speech.mjs';
+import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
 
 const scope={environment:'j08-test',workspaceId:'isolated'},actor={user:'j08-admin',role:'admin'};
 const clone=structuredClone;
-function fixture({resolver=true}={}) {
+const catalogValue=readRuntimeCatalogFixture(),catalog={revision:runtimeCatalogRevision(catalogValue),value:catalogValue};
+function fixture({resolver=true,speech=false}={}) {
   const cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('linnea')]});
+  if(speech) {
+    const record=clone(cloud.mediaRows[0]);record.id='80000000-0000-4000-8000-000000000001';
+    record.pathname=`croupier/media/dealers/linnea/review/uploads/${record.id}/${record.sha256}.mp4`;
+    const recorded={schemaVersion:1,dealerId:'linnea',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'Fixture only.',
+      videoSha256:record.sha256,audioSha256:'a'.repeat(64),indexSha256:'b'.repeat(64),fps:24,frameCount:48,audioDelayMs:0,
+      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-1',recording:{status:'pending'},review:{status:'pending'}};
+    const proof={by:'fixture-reviewer',at:'2026-10-22T00:00:00.000Z',identity:recordedSpeechIdentity(recorded)};
+    recorded.recording={status:'verified-recording',...clone(proof)};recorded.review={status:'approved',...clone(proof)};
+    record.classification={dealerId:'linnea',eventId:'speak.goodluck',kind:'speech',role:'standard',situation:'goodluck',label:'Fixture',notes:'',recordedSpeech:recorded};
+    cloud.mediaRows.push(record);const {revision,...frozen}=record;cloud.presentation.playback.media.push(frozen);
+    cloud.presentation.playback.lines.find(row=>row.eventId==='speak.goodluck').variants[0].videoGenerationId=record.id;
+  }
   const room={schemaVersion:2,id:'room-test',name:'Test room',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'room-lane',state:'live'};
   const operator={environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1};
   let state={document:{revision:'admin-1',value:{rooms:[room],gameLane:'room-lane',gameLanes:[{schemaVersion:1,id:'room-lane',label:'Room',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}]}},
-    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation({},cloud.presentation)),published_at_ms:1}],configs:{},heads:{},audits:[]};
-  let work=null,serial=Promise.resolve(),failure=null;const trace=[];
+    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation({},cloud.presentation)),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
+  let work=null,serial=Promise.resolve(),failure=null,captureChange=null,mediaChange=null,resolverChange=null;const trace=[];
   const client={async query(sql,values) {
     assert.ok(work,'every SQL query uses one active repository transaction');assert.deepEqual(values.slice(0,2),[scope.environment,scope.workspaceId]);
     const marker=/\/\* ([^ ]+) \*\//.exec(sql)?.[1];trace.push(marker);
@@ -37,17 +53,23 @@ function fixture({resolver=true}={}) {
   const repository={scope,async transaction(callback) {
     const previous=serial;let unlock;serial=new Promise(resolve=>{unlock=resolve;});await previous;work=clone(state);
     try{const result=await callback();state=work;return result;}finally{work=null;unlock();}
-  },async withTransactionClient(callback){assert.ok(work);return callback(client);},async readDocument(){assert.ok(work);return clone(work.document);},async saveDocument(kind,{value,expectedRevision}) {
+  },async withTransactionClient(callback){assert.ok(work);return callback(client);},async readDocument(){assert.ok(work);return clone(work.document);},
+  async readPresentationSnapshot(){assert.ok(work,'snapshot must use the active scoped transaction');trace.push('material:snapshot');
+    const value={scope:clone(scope),projectDocument:{kind:'project',revision:cloud.project.revision,value:clone(cloud.project)},administrationDocument:clone(work.document),mediaRows:clone(work.mediaRows),runtimeCatalog:clone(work.catalog)};
+    captureChange?.(value);return value;},
+  async getMedia(id){assert.ok(work,'media recheck must use the same transaction');trace.push('material:recheck');const row=clone(work.mediaRows.find(row=>row.id===id));mediaChange?.(row);return row;},
+  async saveDocument(kind,{value,expectedRevision}) {
     assert.ok(work);assert.equal(kind,'administration');if(work.document.revision!==expectedRevision)throw Object.assign(Error('conflict'),{statusCode:409});
     work.document={revision:'admin-'+(Number(work.document.revision.split('-')[1])+1),value:validateDocumentValue(kind,value,'validation')};return clone(work.document);
   }};
   let materialOverride=null;
   const material=({language})=>materialOverride??({revision:'media-revision-1',dealerId:'linnea',language,leadMs:1200,cardMs:880,media:cloud.mediaRows.map(({id,sha256})=>({id,sha256}))});
-  const api=createRoomGameConfigApi({repository,scope,...(resolver?{resolveMaterial:material}:{}),now:()=>100});
+  const api=createRoomGameConfigApi({repository,scope,...(resolver?{resolveMaterial:input=>{assert.ok(work);const value=material(input);resolverChange?.(input,value);return value;}}:{}),now:()=>100});
   const invoke=(method,body,options={})=>api.handlers.get(method+' /studio/api/admin/room-game-config')({actor,scope,request:new Request('https://studio.invalid/studio/api/admin/room-game-config?operatorId=north&roomId=room-test',{method}),body,...options});
   const save=(gameConfig={language:'sv',limitPreset:'prive'},extra={})=>invoke('POST',{action:'save-draft',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:state.document.revision,expectedPackageRevision:state.packages.at(-1).package_revision,gameConfig,...extra});
   const publish=draft=>invoke('POST',{action:'publish',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:draft.administrationRevision,expectedPackageRevision:draft.packageRevision,expectedDraftRevision:draft.draft.revision});
-  return {api,invoke,save,publish,trace,snapshot:()=>clone(state),fail:marker=>{failure=marker;},setMaterial:value=>{materialOverride=value;},material:()=>material({language:'sv'})};
+  return {api,invoke,save,publish,trace,snapshot:()=>clone(state),fail:marker=>{failure=marker;},setMaterial:value=>{materialOverride=value;},material:()=>material({language:'sv'}),
+    changeState:change=>change(state),changeCapture:change=>{captureChange=change;},changeMediaRead:change=>{mediaChange=change;},changeResolver:change=>{resolverChange=change;}};
 }
 
 test('J08 save/read/publish binds immutable full profile and package on the same transaction',async()=>{
@@ -83,6 +105,59 @@ test('J08 unavailable, wrong-language or changed-hash material is rejected witho
   const unavailable=fixture({resolver:false}),draft=await unavailable.save();assert.equal(draft.publication.ready,false);await assert.rejects(unavailable.publish(draft),{statusCode:422});
   for(const override of ['language','hash']) {const f=fixture();const value=f.material();if(override==='language')value.language='en';else value.media[0].sha256='f'.repeat(64);f.setMaterial(value);const d=await f.save();assert.equal(d.publication.ready,false);await assert.rejects(f.publish(d),{statusCode:422});assert.deepEqual(f.snapshot().heads,{});}
 });
+test('J08 material receives the current scoped catalogue and detached package inside the write transaction',async()=>{
+  const f=fixture(),draft=await f.save();f.trace.length=0;
+  f.changeState(state=>{state.catalog.value.layout.files.reverse();state.catalog.revision=runtimeCatalogRevision(state.catalog.value);});
+  const currentCatalog=f.snapshot().catalog;assert.notEqual(currentCatalog.revision,catalog.revision);
+  f.changeResolver(input=>{
+    assert.deepEqual(input.capturedCatalog,f.snapshot().catalog);
+    assert.equal(input.package.operatorId,'north');assert.equal(input.package.revision,1);assert.equal(input.room.id,'room-test');
+    input.package.tables.length=0;input.room.id='tampered';input.capturedCatalog.revision='c'.repeat(64);
+  });
+  await f.publish(draft);const state=f.snapshot();
+  assert.deepEqual(JSON.parse(state.packages.at(-1).tables),['room-test']);assert.equal(state.document.value.rooms[0].id,'room-test');
+  assert.deepEqual(state.catalog,currentCatalog);assert.equal(f.trace.filter(row=>row==='material:snapshot').length,1);
+  assert.ok(f.trace.indexOf('material:recheck')<f.trace.indexOf('operator-store:publish-package'));
+});
+
+test('J08 current registry identities must still match the frozen package at publication',async()=>{
+  for(const change of [state=>state.mediaRows.splice(0),state=>state.mediaRows[0].sha256='f'.repeat(64),
+    state=>state.mediaRows[0].classification.dealerId='nora',state=>state.mediaRows[0].classification.archived=true,
+    state=>state.mediaRows[0].classification.kind='forged']) {
+    const f=fixture(),draft=await f.save();f.changeState(change);const before=f.snapshot();
+    assert.equal((await f.invoke('GET')).publication.ready,false);
+    await assert.rejects(f.publish(draft),{statusCode:422});assert.deepEqual(f.snapshot(),before);
+  }
+});
+
+test('J08 current speech must retain its approved exact language and take',async()=>{
+  const accepted=fixture({speech:true});await accepted.publish(await accepted.save());
+  for(const change of [speech=>{speech.review={status:'pending'};},speech=>{speech.review.status='rejected';},
+    speech=>{speech.language='en';speech.recording.identity.language='en';speech.review.identity.language='en';},
+    speech=>{speech.takeId='goodluck_2';speech.recording.identity.takeId='goodluck_2';speech.review.identity.takeId='goodluck_2';}]) {
+    const f=fixture({speech:true}),draft=await f.save();f.changeState(state=>change(state.mediaRows[1].classification.recordedSpeech));const before=f.snapshot();
+    await assert.rejects(f.publish(draft),{statusCode:422});assert.deepEqual(f.snapshot(),before);
+  }
+});
+
+test('J08 foreign or stale snapshots and corrupted catalogues cannot publish',async()=>{
+  for(const [change,statusCode] of [[snapshot=>snapshot.scope.workspaceId='other',409],
+    [snapshot=>snapshot.administrationDocument.revision='old',409],[snapshot=>snapshot.runtimeCatalog.revision='f'.repeat(64),503]]) {
+    const f=fixture(),draft=await f.save(),before=f.snapshot();f.changeCapture(change);
+    await assert.rejects(f.publish(draft),{statusCode});assert.deepEqual(f.snapshot(),before);
+  }
+});
+
+test('J08 media revision recheck and snapshot infrastructure failures roll back the entire publication',async()=>{
+  const changed=fixture(),draft=await changed.save(),before=changed.snapshot();
+  changed.changeMediaRead(row=>row.revision='replacement-revision');
+  await assert.rejects(changed.publish(draft),{statusCode:409});assert.deepEqual(changed.snapshot(),before);
+  const failed=fixture(),saved=await failed.save(),stable=failed.snapshot();failed.changeCapture(()=>{throw Error('injected snapshot read failure');});
+  await assert.rejects(failed.publish(saved),/injected snapshot read failure/);assert.deepEqual(failed.snapshot(),stable);
+  const unavailable=fixture({resolver:false});unavailable.changeCapture(()=>{throw Error('must not read material without resolver');});
+  const closed=await unavailable.save();assert.equal(closed.publication.ready,false);await assert.rejects(unavailable.publish(closed),{statusCode:422});
+});
+
 test('J08 only accepted values, strict document draft and read query shapes survive validation',()=>{
   for(const language of ['en','sv'])for(const limitPreset of Object.keys(ROOM_LIMIT_PRESETS))assert.deepEqual(validateRoomGameConfig({language,limitPreset}),{language,limitPreset});
   for(const bad of [{language:'de',limitPreset:'prive'},{language:'sv',limitPreset:'custom'},{language:'sv',limitPreset:'prive',betMs:1}])assert.throws(()=>validateRoomGameConfig(bad));

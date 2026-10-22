@@ -1,9 +1,12 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {isAdministratorRole} from '../../../packages/studio-access/account-role.mjs';
-import {canonicalStudioJson,validateRevision,validateStudioScope,StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {canonicalStudioJson,validateRevision,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {validateRuntimeCatalogRecord} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {isPresentationRoom,roomGame} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {assertCapturedPresentationMedia} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
+import {recordedSpeechForVideo} from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
 import {validateRoomGameConfig,validateRoomGameDrafts,validateRoomGameMaterial,ROOM_GAME_TIMERS,ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
@@ -51,9 +54,27 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
   async function material(saved,gameConfig) {
     if(typeof resolveMaterial!=='function')return {ready:false,reason:'studio_room_game_material_unavailable'};
     try {
-      const value=validateRoomGameMaterial(await resolveMaterial({room:structuredClone(saved.room),package:saved.pack,language:gameConfig.language}),{language:gameConfig.language,dealerId:saved.lane.layers.dealer.default});
+      if(typeof repository.readPresentationSnapshot!=='function')fail('studio_storage_unavailable',503);
+      // Nested snapshot reads reuse this transaction's scope-locked client. Registry
+      // writers and runtime-catalog import share that lock; no provider I/O belongs here.
+      const snapshot=await repository.readPresentationSnapshot();
+      if(canonicalStudioJson(validateStudioScope(snapshot.scope))!==canonicalStudioJson(scope))fail('studio_scope_mismatch',409);
+      if(snapshot.administrationDocument?.revision!==saved.document.revision)fail('studio_conflict',409);
+      const capturedCatalog=validateRuntimeCatalogRecord(snapshot.runtimeCatalog);
+      const value=validateRoomGameMaterial(await resolveMaterial({room:structuredClone(saved.room),package:structuredClone(saved.pack),
+        language:gameConfig.language,capturedCatalog:structuredClone(capturedCatalog)}),{language:gameConfig.language,dealerId:saved.lane.layers.dealer.default});
       const captured=[...(saved.presentation.playback?.media??[]),...(saved.presentation.registeredDealers??[]).flatMap(row=>row.idle?[row.idle]:[])];
-      if(value.media.some(ref=>!captured.some(row=>row.id===ref.id&&row.sha256===ref.sha256&&row.classification?.dealerId===value.dealerId)))fail('studio_room_game_material_unavailable',422);
+      const preconditions=value.media.map(ref=>{
+        const frozen=captured.find(row=>row.id===ref.id&&row.sha256===ref.sha256&&row.classification?.dealerId===value.dealerId);
+        const registered=snapshot.mediaRows?.find(row=>row.id===ref.id);
+        if(!frozen||!registered)fail('studio_room_game_material_unavailable',422);
+        const {revision,updatedAt,...input}=registered,record=validateStudioMedia(input);
+        if(record.deletion||record.classification.archived===true||canonicalStudioJson(record)!==canonicalStudioJson(validateStudioMedia(frozen)))fail('studio_room_game_material_unavailable',422);
+        if(record.classification.kind==='speech'&&!recordedSpeechForVideo(record,{dealerId:value.dealerId,language:gameConfig.language,
+          lineId:frozen.classification.situation,takeId:frozen.classification.recordedSpeech?.takeId}))fail('studio_room_game_material_unavailable',422);
+        return {id:record.id,revision:validateRevision(revision),record};
+      });
+      await assertCapturedPresentationMedia(repository,preconditions);
       return {ready:true,material:value};
     } catch(error) {
       if(error?.statusCode===422)return {ready:false,reason:'studio_room_game_material_unavailable'};
