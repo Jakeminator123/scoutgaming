@@ -6,10 +6,14 @@
 // Identity is only the exact matrix row (path + bytes + sha256 + Kevin's source/slot/variant/language).
 // No name, file-name or length matching: an unknown path is rejected even when its bytes or name
 // look like a known one. V1 rows (deleted in c4818f51) are always rejected.
+// sourceDealer must be a Kevin dealer with selected rows in the matrix ('shared', registered names
+// such as 'dragan' and unknown names are refused). Deferred rows (G13, Table Studio) and the six JS
+// source files (version-bound source evidence, not runtime identities) are never entries.
+// Stills (still, keyed-still: PNG) bind through the catalogue only: mediaId null, like documents.
 //
 // Modes:
-//   bind  every entry must already have the registry identity the J08 adapter needs today
-//         (media row: Neon media ID + catalogue logicalPath; document row: catalogue logicalPath).
+//   bind  every entry must already have its registry identity
+//         (media row: Neon media ID + catalogue logicalPath; document/still row: catalogue logicalPath).
 //   plan  rows with an existing Neon ID must reuse it; planned rows must carry mediaId null.
 // Usage:
 //   node validate-k05-manifest.mjs --matrix ../K05-matris.tsv --manifest m.json [--mode plan|bind] [--language en|sv]
@@ -20,11 +24,11 @@ import { fileURLToPath } from 'node:url';
 export const HEADER = ['kalla_sokvag', 'kalla_gitblob', 'bytes', 'sha256', 'k04_lika', 'kevin_dealer', 'k04_kalla', 'main_fack',
   'kevin_variant', 'sprak', 'replik', 'urval', 'registrerad_dealer', 'neon_media_id', 'neon_fack', 'fack_overens',
   'katalog_logicalPath', 'blob_identitet', 'paket', 'projekt', 'status', 'acceptans', 'anmarkning'];
-const STATUS = new Set(['befintlig-identitet', 'ny-post-planerad', 'ej-vald', 'v1-avvisad', 'andrad-hash']);
+const STATUS = new Set(['befintlig-identitet', 'ny-post-planerad', 'ej-vald', 'v1-avvisad', 'andrad-hash', 'uppskjuten', 'kallbevis']);
 const HASH = /^[a-f0-9]{64}$/, UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SOURCE_KEYS = ['dealer', 'path', 'source', 'slot', 'variant', 'language', 'bytes', 'sha256'];
 const MAP_KEYS = ['operatorId', 'packageRevision', 'roomId', 'presentationLaneId', 'dealerId', 'sourceDealer', 'entries'];
-const SPEECH = new Set(['replik', 'replik-rot']);
+const SPEECH = new Set(['replik', 'replik-rot']), STILL = new Set(['still', 'keyed-still']);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 
@@ -48,6 +52,12 @@ const languageOf = row => row.sprak || /\/repliker\/([a-z]{2})\//.exec(row.kalla
 const neonId = row => (UUID.test(row.neon_media_id) ? row.neon_media_id : null);
 const catalogPath = row => (['saknas', 'planerad', '-'].includes(row.katalog_logicalPath) ? null : row.katalog_logicalPath);
 const registered = row => (['planerad', '-'].includes(row.registrerad_dealer) ? null : row.registrerad_dealer);
+// Kevin dealers with selected rows; 'shared' is never a source dealer.
+export const sourceDealers = matrix => new Set([...matrix.values()].filter(r => r.urval === 'vald' && r.kevin_dealer !== 'shared').map(r => r.kevin_dealer));
+// The complete selected en/sv set for one Kevin dealer: its own rows plus the shared documents.
+const inSet = (row, dealer, language) => row.urval === 'vald'
+  && (row.kevin_dealer === dealer || (row.kevin_dealer === 'shared' && row.k04_kalla === 'data-beroende'))
+  && ['', language].includes(languageOf(row));
 
 // -> { ok, mode, entries, errors: [{ index, path, code }] }. Never fills a missing identity.
 export function validateManifest(matrix, manifest, { mode = 'plan', language } = {}) {
@@ -57,6 +67,9 @@ export function validateManifest(matrix, manifest, { mode = 'plan', language } =
     || typeof manifest.dealerId !== 'string' || !manifest.dealerId || typeof manifest.sourceDealer !== 'string' || !manifest.sourceDealer
     || !Number.isSafeInteger(manifest.packageRevision) || manifest.packageRevision < 1) {
     return { ok: false, mode, entries: 0, errors: [{ index: null, path: null, code: 'manifest_shape' }] };
+  }
+  if (!sourceDealers(matrix).has(manifest.sourceDealer)) {
+    return { ok: false, mode, entries: manifest.entries.length, errors: [{ index: null, path: null, code: 'unknown_source_dealer' }] };
   }
   const seen = new Set(), logical = new Map();
   manifest.entries.forEach((entry, i) => {
@@ -68,6 +81,8 @@ export function validateManifest(matrix, manifest, { mode = 'plan', language } =
     if (!row) return err(i, path, 'unknown_path');
     if (row.status === 'v1-avvisad') return err(i, path, 'v1_reference');
     if (row.status === 'andrad-hash') return err(i, path, 'changed_hash');
+    if (row.status === 'uppskjuten') return err(i, path, 'deferred');
+    if (row.status === 'kallbevis') return err(i, path, 'source_evidence_not_runtime');
     if (entry.source.sha256 !== row.sha256) return err(i, path, 'hash_mismatch');
     if (entry.source.bytes !== row.bytes) return err(i, path, 'bytes_mismatch');
     if (entry.source.dealer !== row.kevin_dealer || entry.source.source !== row.k04_kalla || entry.source.slot !== row.main_fack
@@ -85,6 +100,11 @@ export function validateManifest(matrix, manifest, { mode = 'plan', language } =
       if (mode === 'bind' && !known) return err(i, path, 'catalog_entry_missing');
       return;
     }
+    if (STILL.has(row.k04_kalla)) {
+      if (entry.mediaId !== null || entry.speech !== null) return err(i, path, 'still_with_media_id');
+      if (mode === 'bind' && !known) return err(i, path, 'catalog_entry_missing');
+      return;
+    }
     const id = neonId(row), owner = registered(row);
     if (owner && owner !== manifest.dealerId) return err(i, path, 'registered_dealer_mismatch');
     if (id ? entry.mediaId !== id : entry.mediaId !== null) return err(i, path, id ? 'media_id_mismatch' : 'media_id_unregistered');
@@ -98,9 +118,7 @@ export function validateManifest(matrix, manifest, { mode = 'plan', language } =
   if (language !== undefined) {
     if (!['en', 'sv'].includes(language)) errors.push({ index: null, path: null, code: 'language_outside_en_sv' });
     else {
-      const missing = [...matrix.values()].filter(row => row.urval === 'vald'
-        && (row.kevin_dealer === manifest.sourceDealer || (row.kevin_dealer === 'shared' && row.k04_kalla === 'data-beroende'))
-        && [ '', language ].includes(languageOf(row)) && !seen.has(row.kalla_sokvag));
+      const missing = [...matrix.values()].filter(row => inSet(row, manifest.sourceDealer, language) && !seen.has(row.kalla_sokvag));
       if (missing.length) errors.push({ index: null, path: missing[0].kalla_sokvag, code: 'incomplete_set', missing: missing.length });
     }
   }
@@ -111,13 +129,11 @@ export function validateManifest(matrix, manifest, { mode = 'plan', language } =
 // existing Neon IDs reused, planned rows null, logicalPath = existing or a placeholder.
 export function plannedManifest(matrix, { sourceDealer, dealerId, language, operatorId = 'planned', packageRevision = 1,
   roomId = 'planned', presentationLaneId = 'planned' }) {
-  const entries = [...matrix.values()].filter(row => row.urval === 'vald'
-    && (row.kevin_dealer === sourceDealer || (row.kevin_dealer === 'shared' && row.k04_kalla === 'data-beroende'))
-    && ['', language].includes(languageOf(row))).map(row => ({
+  const entries = [...matrix.values()].filter(row => inSet(row, sourceDealer, language)).map(row => ({
     source: { dealer: row.kevin_dealer, path: row.kalla_sokvag, source: row.k04_kalla, slot: row.main_fack,
       variant: row.kevin_variant, language: row.sprak, bytes: row.bytes, sha256: row.sha256 },
     logicalPath: catalogPath(row) ?? `planned/${row.sha256}`,
-    mediaId: row.k04_kalla === 'data-beroende' ? null : neonId(row),
+    mediaId: row.k04_kalla === 'data-beroende' || STILL.has(row.k04_kalla) ? null : neonId(row),
     speech: SPEECH.has(row.k04_kalla) ? { lineId: row.replik.replace(/_\d+$/, ''), takeId: row.replik } : null,
   }));
   return { operatorId, packageRevision, roomId, presentationLaneId, dealerId, sourceDealer, entries };
@@ -130,6 +146,11 @@ export function selftest(matrix) {
   const row = path => matrix.get(path);
   const neonOther = [...matrix.values()].find(r => r.kalla_sokvag === 'media/dealers/dragge/v2/pos1-v.mp4').neon_media_id;
   const v1 = [...matrix.values()].find(r => r.status === 'v1-avvisad');
+  // An entry for a matrix row exactly as recorded (only to build negative cases).
+  const entryOf = (r, extra = {}) => ({ source: { dealer: r.kevin_dealer, path: r.kalla_sokvag, source: r.k04_kalla, slot: r.main_fack,
+    variant: r.kevin_variant, language: r.sprak, bytes: r.bytes, sha256: r.sha256 }, logicalPath: `planned/${r.sha256}`, mediaId: null, speech: null, ...extra });
+  const sharedThree = ['media/manifest.json', 'public/dealers.js', 'public/idle-chain.js'].map(p => entryOf(row(p)));
+  const onlyShared = (dealer, entries) => () => ({ ...clone(base), dealerId: 'planned', sourceDealer: dealer, entries: clone(entries) });
   const cases = [
     ['positive: plan dragge/sv complete', m => m, { mode: 'plan', language: 'sv' }, []],
     ['positive: plan paow/en complete', () => plannedManifest(matrix, { sourceDealer: 'paow', dealerId: 'paow-kevin', language: 'en' }), { mode: 'plan', language: 'en' }, []],
@@ -154,6 +175,16 @@ export function selftest(matrix) {
     ['negative: logicalPath reused for other bytes', m => { m.entries[1].logicalPath = m.entries[0].logicalPath; return m; }, {}, ['logical_path_conflict']],
     ['negative: manifest extra key', m => { m.extra = true; return m; }, {}, ['manifest_shape']],
     ['negative: completeness asked for pt', m => m, { language: 'pt' }, ['language_outside_en_sv']],
+    ['negative: unknown sourceDealer with only the three shared documents', onlyShared('nobody', sharedThree), { language: 'sv' }, ['unknown_source_dealer']],
+    ['negative: unknown sourceDealer with only manifest.json', onlyShared('nobody', sharedThree.slice(0, 1)), { language: 'en' }, ['unknown_source_dealer']],
+    ['negative: sourceDealer \'shared\'', onlyShared('shared', sharedThree.slice(0, 1)), { language: 'sv' }, ['unknown_source_dealer']],
+    ['negative: registered name as sourceDealer (dragan)', m => { m.sourceDealer = 'dragan'; return m; }, { language: 'sv' }, ['unknown_source_dealer']],
+    ['negative: known dealer with only manifest.json', onlyShared('dragge', sharedThree.slice(0, 1)), { language: 'sv' }, ['incomplete_set']],
+    ['negative: JS source files as entries', onlyShared('dragge', sharedThree.slice(1).concat(entryOf(row('public/dealer-card-tracks-dragge.js')))), {}, ['source_evidence_not_runtime']],
+    ['negative: deferred G13 line', m => { m.entries.push(entryOf(row('media/dealers/dragge/repliker/sv/twentyone_1.mp4'), { speech: { lineId: 'twentyone', takeId: 'twentyone_1' } })); return m; }, {}, ['deferred']],
+    ['negative: deferred Table Studio greeting', () => { const m = plannedManifest(matrix, { sourceDealer: 'astrid', dealerId: 'planned', language: 'en' }); m.entries.push(entryOf(row('media/repliker/greeting_1.mp4'))); return m; }, { language: 'en' }, ['deferred']],
+    ['negative: keyed still with a media ID', m => { m.entries[at(m, 'media/dealers/dragge/v2/vila.png')].mediaId = neonOther; return m; }, {}, ['still_with_media_id']],
+    ['positive: plan astrid/en complete (startbild via catalogue)', () => plannedManifest(matrix, { sourceDealer: 'astrid', dealerId: 'planned', language: 'en' }), { mode: 'plan', language: 'en' }, []],
     ['real state: bind dragge/sv today', m => m, { mode: 'bind', language: 'sv' }, null],
     ['real state: bind dragge/sv existing IDs only', m => { m.entries = m.entries.filter(e => e.mediaId); return m; }, { mode: 'bind' }, null],
   ];
