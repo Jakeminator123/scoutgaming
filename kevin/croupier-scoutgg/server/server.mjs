@@ -677,6 +677,7 @@ room.on("connection", (ws) => {
       if (clean) { ws.name = clean; send(ws,{t:"named",name:clean}); }
     } else if (j.t === "warm") {
       if (hasVoice(j.dealer)) draggeWarm(j.dealer);   // a Dragge or Paow viewer arrived: take the GPU warm-up now
+      if (rorlig && rorligOn() && READY_TAKES[j.dealer]) rorlig.activity(j.dealer);   // and the lip-sync worker, before the first chat (~55 s cold)
     } else if (j.t === "roundResult") {
       roundResultReply(ws, j.roundId, j.dealer).catch(() => {});
     } else if (j.t === "say") {
