@@ -11,7 +11,7 @@ const previewRoot = 'frontend-preview';
 const textExtensions = new Set(['.mjs', '.js', '.css', '.json']);
 const styles = [
   'styles.css', 'calibration.css', 'environment.css', 'auth-modal.css',
-  'local-presentation.css', 'rigged-review.css', 'blackjack-entry.css',
+  'local-presentation.css', 'blackjack-entry.css',
 ];
 
 function canonicalSource(candidate) {
