@@ -31,6 +31,10 @@ _ENVIROMENT-INFO.md
 **/*.pem
 **/*.p12
 **/*.pfx
+lab/data
+web/data
+apps/studio/data
+services/game/data
 open-claw/lab/data
 services/openclaw/lab/data
 
