@@ -25,8 +25,38 @@ och befintliga auth-/rum-/SQL-assertioner är oförändrade; inga casts eller sk
 Före: 11/14 fixtureprov samt reproducerad TS2322. Efter: 18/18,0skip och verkligt
 Admin/Lobby-klientbygge med typkontroller/tre paket, Node24.21/TypeScript5.7.3.
 Inget Next-fullbygge. kevin_plan läste hela trefilsdeltat och före-/efterloggarna
-oberoende utan blockerare; root läste diff och bygglogg. Ny head/CI anges i PR/plan,
-inte som grön förrän exakt head faktiskt passerat.
+oberoende utan blockerare; root läste diff och bygglogg. Produkthead
+`012f4de6adf7feafab7edd65191408c9c6827ff3` har nu verifierad grön
+CI39718902798 och GitGuardian119627549002. Alla tillämpliga jobb kördes:
+changes, dealer-regression, lipsync-worker, moving-worker/build och CI;
+endast documentation var förväntat skipped. Build/typer, isolerad SQL/restart/HTTPS
+och readiness-stegen lyckades. Detta är CI-bevis, inte ny lokal körning eller deploy.
+Denna efterföljande handoffändring ändrar endast dokumentation; dess egen CI måste
+läsas separat och får inte ärva det äldre headets gröna status.
+
+**Kevin-granskning:** PR333 `codex/kevin-k04-presentation`, head
+`6a124410a39e168b078921f6d70507cb0ba42c14`, från
+`23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540`: root och oberoende kevin_plan
+läste hela tvåfilsdeltat utan blockerande fynd. CRLF-parserrättningen är portad.
+Replayprovet bevarar spel/saldo/ledger/audit/reservationer; alla fem injicerade
+leveransfel nås. Munlagret nekar sen patch efter injicerat decoderfel.
+Detta är kodgranskning, ingen egen omkörning. Kevins24/24,140pass/1codecskip,
+34/34PG och hooks är rapporterade bevis. K04 förblir IN_PROGRESS; monterat
+klientflöde och mobil/dator/felvägar återstår. Gamla konkreta fynd är stängda.
+
+**Kanonisk plan och övertagande:** PR311 `codex/migrering-masterplan`,
+head `4bd3a6dd9a812fd49049e67cc0da49b39602236e`, finns i
+`C:/Users/jakem/.codex/worktrees/migrering-masterplan/croupier`.
+Läs dess `migrering/status.json` och genererade `STATUS.md`; 9/20,45/55 består.
+J08-kopian `C:/Users/jakem/.codex/worktrees/admin-room-config-j08/croupier`
+ligger ren på `d7d139b9f7bf59b1bd924280ab456af12e1c8b5a` / PR334.
+Senaste hanterade Kevin-kommentar är6332075298, roots sammanfattning6332397883.
+Senaste fulla #312-läsning hade94kommentarer, endast egen6332397883 var ny.
+Privat93-checkpoint i planarkivets k04-23d4-review används med innehåll/ID/tider,
+inte enbart högsta egna ID. Alla gamla underagenter är avslutade och claims släpps.
+Automationen synka-migreringen-med-kevin pausades på Jakobs begäran inför ny chatt;
+ursprungschatten flyttar samma automation och aktiverar först efter läsverifierat
+övertagande. Ingen ny automation, ny checkout eller produktändring behövs för flytten.
 
 **Bevarad halvfärdig routing:** j08_ui:s fyra frysta filer är hashverifierat
 sparade i det gitignorerade
@@ -39,7 +69,7 @@ implementera strikta SHARED_ROOM_SOCKET/sharedRoomSocketPath- och socket-core-ko
 korrekt lokal ws8.22.0-resolution och rewrite-testjustering; applicera/granska patchen.
 Gatewayns ws8.21.3 får inte utges för att vara ws8.22.0.
 
-**Nästa enda leverans:** läs nya CI-utfallet en gång; därefter färdigställ publik
+**Nästa enda leverans:** färdigställ publik
 gateway/relay/Vercelrumsväg med kanonisk Host, browser-Origin och sessionscookie.
 Sedan befintliga `services/game/public/app.mjs` för replay/presentation och samlad
 PG/start/readiness/drain-verifiering. Separata agentscope, gemensamma writers sekventiellt.
