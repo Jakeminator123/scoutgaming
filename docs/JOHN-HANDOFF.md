@@ -44,6 +44,16 @@ UI-agentens 162/162 fokusprov och Studio `tsc`, rootens 7/7 proof-prov samt
 12/12 UI/server-proof-prov efter numerisk timestampfix. Körningar överlappar.
 PR334/head `61144fdac28832238130e2c24d10a21bf2badb61` hade normal hook249/249.
 
+CI39696563383 på `6ab4cd5e9448fad91cf85174c4e93c697fc5f74e` visade två
+ofullständiga VM-fixturer: `studio-registered-dealers.test.mjs` saknade
+`SharedTableProof`, och `workspace-tools.test.mjs` saknade `RoomGameConfig`.
+Endast motsvarande barnkomponenters fixtureimporter lades till; alla assertions
+och produktfiler är oförändrade. Före 15 pass/4 fail (en fil laddades inte), efter
+20/20,0skip på Volta Node24.21.0 med högst fyra workers. Registrerade dealers,
+sparspärr, bolags-/rumskontext och 401/403/503-proven består. Loggar:
+`arkiv/2026-10-22/j08/pr334-fixtures-{before,after,commands}.log`.
+Ingen produktserver startades; ny fjärr-CI på rättningshead återstår.
+
 Nu även **9/9 riktiga PostgreSQL-grupper**, Node24.21.0/PostgreSQL16.15 i ägt
 tillfälligt WSL-loopbackkluster. Två fysiska klienter verifierar sparning/återläsning,
 stale administrations-/paket-/utkastrevision och en enda vinnande dubbelpublicering.

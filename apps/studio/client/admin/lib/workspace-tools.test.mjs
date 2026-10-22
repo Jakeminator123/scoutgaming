@@ -128,6 +128,7 @@ function publicationWorkspaceHarness(search) {
     if(name.endsWith('.module.css'))return {__esModule:true,default:{}};
     if(name==='./studio-session')return {useStudioProjectSession:()=>({project,dirty:false,saving:false,conflict:false,savedJson:JSON.stringify(project)})};
     if(name==='./presentation-room-create')return {PresentationRoomCreate:Room};
+    if(name==='./room-game-config')return {RoomGameConfig:marker('RoomGameConfig')};
     if(name==='./control-resource-lifecycle')return {ControlResourceLifecycle:Lifecycle};
     if(name==='./control-operator-directory')return {ControlOperatorDirectory:marker('ControlOperatorDirectory')};
     if(name==='./page-template')return {PageTemplate:marker('PageTemplate')};
