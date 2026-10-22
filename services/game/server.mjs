@@ -704,7 +704,9 @@ const playerPasswordCommand=playerAdministration ? (await import('../../packages
   },
 }) : null;
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
-  scope: studioPolicyRuntime.scope, secret: process.env.CROUPIER_VERCEL_INGRESS_SECRET,
+  // The isolated K04 QA start forbids the ingress secret variable; a random
+  // per-process secret keeps the Studio command surface unusable there.
+  scope: studioPolicyRuntime.scope, secret: sharedRoomQa ? randomBytes(32).toString('hex') : process.env.CROUPIER_VERCEL_INGRESS_SECRET,
   publicOrigin: process.env.CROUPIER_PUBLIC_ORIGIN,
   authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
   execute: async ({ action, body, actor }) => {
@@ -734,7 +736,8 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
     return { ok: true, ...result };
   },
 }) : null;
-const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
+// The isolated K04 QA start has no Lab origin; its Lab session check stays off.
+const studioLabSession = studioPolicyRuntime && !sharedRoomQa ? createStudioLabSessionCheck({
   authorize: createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
   publicOrigin:process.env.CROUPIER_PUBLIC_ORIGIN,labOrigin:process.env.LAB_PUBLIC_URL,
 }) : null;
@@ -794,7 +797,7 @@ const server = createServer(async (req, res) => {
     res.end('{"error":"legacy_administration_retired"}'); return;
   }
   if((await boGameAuth(req,res)))return;
-  if (studioPolicyRuntime && pathname === '/api/auth/lab/check') {
+  if (studioLabSession && pathname === '/api/auth/lab/check') {
     const checked = await studioLabSession(req);
     res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
   }

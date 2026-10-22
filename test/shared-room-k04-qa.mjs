@@ -74,7 +74,8 @@ test('child environment includes only OS essentials and fixed matching loopback 
   const env = createSharedRoomQaEnvironment({PATH:'/safe/bin',HOME:'/isolated/home',UNRELATED_FLAG:'not-forwarded',
     HOST:'0.0.0.0',PORT:'9999',PUBLIC_URL:'https://unrelated.invalid'}, options());
   assert.equal(env.HOST,'127.0.0.1'); assert.equal(env.PORT,'34173'); assert.equal(env.NODE_ENV,'test');
-  for (const key of ['PUBLIC_URL','CROUPIER_PUBLIC_ORIGIN','BO_URL','LAB_PUBLIC_URL']) assert.equal(env[key],'http://127.0.0.1:34173');
+  for (const key of ['PUBLIC_URL','CROUPIER_PUBLIC_ORIGIN','BO_URL']) assert.equal(env[key],'http://127.0.0.1:34173');
+  assert.equal(env.LAB_PUBLIC_URL,undefined,'the plain-HTTP loopback origin is never offered as a Lab origin');
   assert.equal(env.CROUPIER_STUDIO_ENVIRONMENT_ID,'test'); assert.equal(env.CROUPIER_STUDIO_WORKSPACE_ID,'shared-qa-k04');
   assert.equal(env.CROUPIER_CLOUD_LAYOUT,'single-origin'); assert.equal(env.CROUPIER_DATABASE,'postgres');
   assert.equal(env.CROUPIER_STUDIO_NEON_POLICY,'1'); assert.equal(env.CROUPIER_SHARED_TABLE_ENABLED,'1');

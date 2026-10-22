@@ -67,7 +67,9 @@ function settings(value) {
   const origin = 'http://127.0.0.1:' + value.httpPort;
   return { NODE_ENV: 'test', CROUPIER_DATABASE: 'postgres', CROUPIER_STUDIO_NEON_POLICY: '1',
     CROUPIER_SHARED_TABLE_ENABLED: '1', CROUPIER_PLAYER_ACCOUNTS: '1', HOST: '127.0.0.1', PORT: String(value.httpPort),
-    PUBLIC_URL: origin, CROUPIER_PUBLIC_ORIGIN: origin, BO_URL: origin, LAB_PUBLIC_URL: origin,
+    // No Lab origin: the loopback origin is plain HTTP and K04 needs no Lab surface,
+    // so the server's Lab auth answers 404 instead of rejecting the start.
+    PUBLIC_URL: origin, CROUPIER_PUBLIC_ORIGIN: origin, BO_URL: origin,
     CROUPIER_CLOUD_LAYOUT: 'single-origin', CROUPIER_STUDIO_ENVIRONMENT_ID: 'test',
     CROUPIER_STUDIO_WORKSPACE_ID: 'shared-qa-' + value.database.slice('croupier_qa_'.length) };
 }
