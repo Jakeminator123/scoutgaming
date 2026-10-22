@@ -140,6 +140,8 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.equal(nodes.get('seats').children[1].children[0].children[1].style.display,'none');
   for(const id of ['chat','table-pick']){assert.equal(nodes.get(id).hidden,true);assert.equal(nodes.get(id).style.display,'none');}
   assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 kr · demo$/);
+  view.render({snapshot:null,chip:.5,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',retry:false,busy:false,connected:false});
+  assert.equal(nodes.get('limits').textContent,'–','no snapshot shows no stale placeholder limits');
   view.close();join.click();assert.equal(calls.length,3);
 });
 

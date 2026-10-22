@@ -61,9 +61,10 @@ export function createSharedRoomView({ document, onLayout = () => {} }) {
       for(const id of ['actions','actions-top'])if($(document,id))$(document,id).hidden=!can.act.length;
       $(document,'insurance').hidden=!s?.me?.insuranceDue;
       $(document,'ins-yes').disabled=!can.insurance||Boolean(s&&s.me.pausedUntil>(value.serverNow??s.serverNow));$(document,'ins-no').disabled=!can.insurance;
-      if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';return;}
+      const limits=$(document,'limits');
+      if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';if(limits)limits.textContent='–';return;}
       $(document,'balance').textContent=money(s.me.available)+' demo';
-      const limits=$(document,'limits');if(limits)limits.textContent=`${money(s.settings.limits.min)} – ${money(s.settings.limits.max)} kr · demo`;
+      if(limits)limits.textContent=`${money(s.settings.limits.min)} – ${money(s.settings.limits.max)} kr · demo`;
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0));
       $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned):'–';
       $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Spelpaus aktiv':s.phase==='bets'?'Välj plats och lägg insatser':s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');

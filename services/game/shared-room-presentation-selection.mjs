@@ -12,7 +12,7 @@ const SELECTION_MODES=new Set(['off','rules','random','shadow','active']);
 const phaseOf=event=>event?.type==='speak'?'speak':event?.type==='reveal'?'reveal':event?.type==='deal'?'deal':'idle';
 // A published room selects clips by the composition's saved per-phase mode
 // (Admin: Automatik / OpenClaw). The player's request mode never widens or
-// narrows it; it only applies where no frozen composition is in force.
+// narrows it. A frozen package without a saved mode fails closed to 'off'.
 export function publishedSelectionMode(lane,event,fallback='off'){
   const value=lane?.openclaw?.[phaseOf(event)];
   return SELECTION_MODES.has(value)?value:fallback;
@@ -67,7 +67,7 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
     return cloneStudioJson({...base,...value},{maxBytes:256*1024});
   };
   const requestId=randomUUID();
-  const mode=publishedSelectionMode(frozen.lane,sourceEvent,body.mode),idleMode=publishedSelectionMode(frozen.lane,{type:'idle'},body.mode);
+  const mode=publishedSelectionMode(frozen.lane,sourceEvent,'off'),idleMode=publishedSelectionMode(frozen.lane,{type:'idle'},'off');
   const rule=()=>{const value=idleRuleFor(body,project,inventory,sourceEvent,requestId,idleMode);return value&&allowed.has(value.videoId)?value:null;};
   if(['turn','settle'].includes(sourceEvent.type))return finish({video:null,standard:null,idleRule:rule(),decision:{requestId,sourceEvent}});
   const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,published,shoeTransitions:body.shoeTransitions===true});

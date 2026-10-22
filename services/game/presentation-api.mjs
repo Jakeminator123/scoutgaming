@@ -175,7 +175,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         const { presentationContext: _context, ...adviceBody } = body;
         if (frozen) {
           // Published rooms ask OpenClaw for idle variants only when the saved composition allows it.
-          const idleMode = publishedSelectionMode(frozen.lane, { type: 'idle' }, body.mode);
+          const idleMode = publishedSelectionMode(frozen.lane, { type: 'idle' }, 'off');
           if (!['active','shadow'].includes(idleMode)) { json(200,{videoId:null,provider:'idle_openclaw_off',projectRevision:frozen.projectRevision}); return true; }
           adviceBody.mode = idleMode;
         }
@@ -211,7 +211,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
           const requestId=randomUUID();
           await frozenDealerContext.resolve(body.presentationContext);
           json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
-            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId,publishedSelectionMode(frozen.lane,{type:'idle'},body.mode)):null,
+            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId,publishedSelectionMode(frozen.lane,{type:'idle'},'off')):null,
             projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource});return true;
         }
         if (frozen.project) {
@@ -232,7 +232,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
             readProject:async ()=>(await frozenDealerContext.resolve(body.presentationContext)).project,signal:controller.signal}) : null;
           if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable',503);
           // The saved composition decides the selection mode for this phase.
-          const mode = publishedSelectionMode(frozen.lane, sourceEvent, body.mode);
+          const mode = publishedSelectionMode(frozen.lane, sourceEvent, 'off');
           const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode },
             { settings, videoRegistry:frozen.inventory, ...(fetchImpl ? {fetchImpl} : {}) });
           const chosen = frozen.inventory.videos.find(row=>row.id===result.videoGenerationId);
@@ -245,7 +245,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
             {project:frozen.project,dealerId:body.dealerId,eventId,sourceEvent});
           const video=frozenDealerContext.publicVideo(frozen,selected.video?.id);
           const standard=frozenDealerContext.publicVideo(frozen,selected.standard?.id);
-          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId,publishedSelectionMode(frozen.lane,{type:'idle'},body.mode));
+          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId,publishedSelectionMode(frozen.lane,{type:'idle'},'off'));
           await frozenDealerContext.resolve(body.presentationContext);
           if (controller.signal.aborted) return true;
           const gated=recordedSpeechResult(result,selected);

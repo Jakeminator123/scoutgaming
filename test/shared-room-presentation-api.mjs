@@ -14,7 +14,8 @@ function fixture({dealerId='nora',sourceEvent=event,options={}}={}){
   line.variants[0].videoGenerationId=first;
   const video={id:first,dealer:dealerId,sha256:'a'.repeat(64),available:true,fileName:'exact.mp4',contentType:'video/mp4',classification:{dealerId,eventId:line.eventId,kind:sourceEvent.type==='speak'?'speech':'action',role:'standard',situation:sourceEvent.type==='speak'?'goodluck':'box3',playback:'once',label:'Exact',notes:''}};
   const context={operatorSlug:'north',roomId:'room-a',packageRevision:7,dealerId};
-  const frozen={context,dealer:{id:dealerId},project,inventory:{videos:[video],families:[]},projectRevision:'frozen-7',configurationSource:'operator-package-v3'};
+  const frozen={context,dealer:{id:dealerId},project,inventory:{videos:[video],families:[]},projectRevision:'frozen-7',configurationSource:'operator-package-v3',
+    lane:{openclaw:{idle:'rules',deal:'off',reveal:'off',speak:'off',probe:'off'}}};
   const capture={sourceEvent,published:[sourceEvent],material:{revision:'material-1',dealerId,language:'sv',leadMs:0,cardMs:1000,media:[{id:first,sha256:video.sha256}]},configVersion:'config-1',version:3,roomId:'room-a',talkId:'talk-3',language:'sv',presentationContext:context,operatorId:'operator-1',packageRevision:7};
   let reads=0,native=0,before=0,selects=0,failure;
   const base={env:{},db:{prepare(){native++;throw Error('must not read native journal');}},beforeActionPresentation(){before++;throw Error('must not change native action');},

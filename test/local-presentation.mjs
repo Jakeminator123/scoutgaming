@@ -1142,6 +1142,34 @@ test('frozen event selection uses only the published own-dealer snapshot and com
   assert.equal(absent.body.decision.media.reason,'frozen_clip_missing');
 });
 
+test('published selection modes come from the composition lane and fail closed without one', async () => {
+  const { publishedSelectionMode } = await import('../services/game/shared-room-presentation-selection.mjs');
+  const lane = { openclaw: { idle: 'rules', deal: 'random', reveal: 'off', speak: 'active', probe: 'off' } };
+  assert.equal(publishedSelectionMode(lane, { type: 'deal' }, 'active'), 'random');
+  assert.equal(publishedSelectionMode(lane, { type: 'speak' }, 'off'), 'active');
+  assert.equal(publishedSelectionMode(lane, { type: 'reveal' }, 'active'), 'off');
+  assert.equal(publishedSelectionMode(lane, { type: 'turn' }, 'active'), 'rules', 'turn and settle are idle conditions');
+  assert.equal(publishedSelectionMode({ openclaw: { deal: 'bogus' } }, { type: 'deal' }, 'active'), 'active', 'the caller decides the fallback');
+  assert.equal(publishedSelectionMode({ openclaw: { deal: 'bogus' } }, { type: 'deal' }), 'off');
+  assert.equal(publishedSelectionMode(undefined, { type: 'deal' }), 'off');
+  assert.equal(publishedSelectionMode(null, { type: 'idle' }), 'off');
+});
+
+test('idle advice for a published room is refused when the composition keeps OpenClaw off for idle', async () => {
+  const project = addDealer(directorProject(), 'linnea', 'Linnea');
+  const context = { operatorSlug: 'north', roomId: 'room-linnea', packageRevision: 7, dealerId: 'linnea' };
+  let advised = 0;
+  const handler = createPresentationApi({ env: {}, store: { load: async () => { throw Error('live Studio must not be read'); } },
+    registryLoader: async () => { advised++; return { videos: [], families: [] }; },
+    frozenDealerContext: { resolve: async () => ({ project, inventory: { videos: [], families: [] }, idleInventory: { videos: [], families: [] }, context,
+      projectRevision: 'frozen-idle', configurationSource: 'operator-package-v3', lane: { openclaw: { idle: 'off', deal: 'active', reveal: 'off', speak: 'off', probe: 'off' } } }), publicVideo: () => null } });
+  const response = await presentationFixtureRequest(handler, 'fixture', { requestId: 'advice-1', dealerId: 'linnea', mode: 'active', version: 2, project: {},
+    sourceRef: {}, observedChat: {}, presentationContext: context }, '/api/presentation/idle-advice');
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  assert.deepEqual(response.body, { videoId: null, provider: 'idle_openclaw_off', projectRevision: 'frozen-idle' });
+  assert.equal(advised, 0, 'no adviser or registry work for a room that keeps OpenClaw off');
+});
+
 test('an own dealer with only idle resumes that same film behind a missing card-position animation', async t=>{
   const ownIdle={id:'own-idle',fileName:'Linnea',sha256:'f'.repeat(64),src:'/frozen-idle'};
   const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,missingPosition:true});
@@ -1225,7 +1253,7 @@ test('own idle advice binds cached decisions and director rereads to each curren
   const handler=createPresentationApi({env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
     store:{load:async()=>{throw Error('live project must not be read');}},registryLoader:async()=>{throw Error('live registry must not be read');},
     frozenDealerContext:{resolve:async context=>{reads++;if(revoked)throw Object.assign(Error('republished'),{statusCode:409,code:'studio_presentation_idle_package_changed'});
-      return {project:structuredClone(project),context,idleInventory,configurationSource:'operator-package-v3'};}},
+      return {project:structuredClone(project),context,idleInventory,configurationSource:'operator-package-v3',lane:{openclaw:{idle:'active',deal:'off',reveal:'off',speak:'off',probe:'off'}}};}},
     directorFetchFactory:async context=>{
       assert.deepEqual(await context.readProject(),context.project);
       const owned=async (_url,options)=>{calls++;const projected=JSON.parse(options.body);
@@ -1308,7 +1336,7 @@ test('saved idle rules cross the API with committed event and exact package owne
   const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
   let published=source;
   const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
-    frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}});
+    frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3',lane:{openclaw:{idle:'rules',deal:'off',reveal:'off',speak:'off',probe:'off'}}}),publicVideo:()=>null}});
   const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'linnea',mode:'rules',version:2,event:source,presentationContext:context});
   assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.idleRule.videoId,alt);
   assert.equal(response.body.idleRule.requestId,response.body.decision.requestId);assert.equal(response.body.idleRule.version,2);
@@ -1321,7 +1349,7 @@ test('saved idle rules cross the API with committed event and exact package owne
       ?{path:'event.box',op:'eq',value:3}:{path:'event.hands.outcome',op:'includes',value:'win'});
     const api=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory,
       db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([published])})})},
-      ...(frozen?{frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}}:{})});
+      ...(frozen?{frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3',lane:{openclaw:{idle:'rules',deal:'off',reveal:'off',speak:'off',probe:'off'}}}),publicVideo:()=>null}}:{})});
     const body={dealerId:'linnea',mode:'rules',version:2,event:{...published,dealerTotal:99,hands:[{box:3,outcome:'lose'}]},...(frozen?{presentationContext:context}:{})};
     const observed=await presentationFixtureRequest(api,'fixture',body);
     assert.equal(observed.status,200,JSON.stringify(observed.body));assert.equal(observed.body.idleRule.videoId,alt);
