@@ -12,10 +12,13 @@ J05/J08/K04/K05 är IN_PROGRESS. Driftflaggan är fortsatt AV.
 
 **Integration:** draft PR336, codex/shared-room-transport, arbetskopia
 C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier.
-Fryst bas63c05eb17cc1668ba5cea18e0cf54ee4ed5e5848 har grön CI39739331022,
-oberoende slutreview och normalhook299/299,0skip. Servern/klienten/command/select
-är monterade. Denna etapp ansluter uttrycklig lokal QA och integrerar remote main
-98174fd8cc906137783ea842e529f711e06cfadb efter separata merge-agentens PR311-merge.
+Produkt/QA-kodbas c39d45f1029265d2dd932101dc307e51b33a9141 ansluter uttrycklig
+lokal QA och integrerar main98174fd8cc906137783ea842e529f711e06cfadb efter
+separata merge-agentens PR311-merge. Server/klient/command/select är monterade.
+Tidigare63c har grön CI39739331022 och normalhook299/299,0skip. c39:s CI39743612110
+föll på tre appearanceprov: extraherad testcallback saknade sharedRoomQa-bindning
+och ReferenceError blev503. Riktiga servern deklarerar variabeln. Denna uppföljning
+lägger endast sharedRoomQa:null i fixturen; verklig HTTP-helper/assertions bevaras.
 Handoffkonflikten löstes genom aktuell produktstatus plus bevarade J08/J07- och
 regelavsnitt. Vercels Git-deployspärr följer med; ingen ny produktmerge här.
 
@@ -41,12 +44,16 @@ Inga migrations-/seed-/mediaimportskrivningar i launchern. Befintlig graceful
 shutdown används. Körkommando/fixturekontrakt står i ENVIRONMENT-RESTORATION.
 Detta är en isolerad verifieringsväg; inget parallellt produktregister.
 
-**Verifiering denna etapp:** context18/18, riktad verklig HTTP/entry/appearance26/26,
-0skip. Verklig PG16.15 identity/capability5/5: rätt mål, fel system-ID, faktisk
-storage/pool och engångsconsume; instrumenterade policy-/mediaportar. Kluster,
-pool/temp/PID stängda, port34399 ECONNREFUSED. Oberoende serverreview rättade två
+**Verifiering denna etapp:** c39 normalhook75/75,0skip, context18 och launcher17
+ingår; oberoende kodreview utan blockerare. Det tidigare riktade HTTP/entry/
+appearancekvittot26/26 kördes FÖRE sista engineOrigin-bindningen och gäller inte
+c39:s slutbytes. CI-felet reproducerades i Linux:11/14, samma tre503. Rättade
+fixturens exakta slutbytes och nya körningar binds i PR-kvittot. Produktkod,
+behörighetsassertions och workflow ändras inte i denna testuppföljning.
+Verklig PG16.15 identity/capability5/5: rätt mål, fel system-ID, faktisk storage/
+pool och engångsconsume; instrumenterade policy-/mediaportar. Kluster/pool/temp/
+PID stängda, port34399 ECONNREFUSED. Tidigare oberoende serverreview rättade två
 saknade QA-bindningar för engineOrigin och public preview-media.
-Launcherns slutliga lifecycleprov/review och normalhook binds i PR-kvittot.
 Detta bevisar inte full serverstart med verkliga K04-media. Fixtureleverans väntar.
 
 **Schemaförslaget:** tools/prepare-shared-schema.mjs är offline utan driver/apply,
@@ -81,8 +88,10 @@ PR333 har inget mergemandat. Inga kvittenser på kvittenser.
 **Merge/produktion:** separat chatt01a1624f-b0af-7202-bda5-9a3c06566976 äger alla
 PR-merger. PR311 är mergad98174fd8; root mergar inga PR:ar. Eftermerge-CI
 39740157570 attempt1 föll på rapporterad250ms timingflake; attempt2 startade
-inga tester pga GitHubs betalnings-/utgiftsgräns. Merge-agenten gör inga fler
-reruns/merger tills detta hanterats.334/336 har dessutom schema/liveACL/restore/
+inga tester pga Billing/spending. Efter Jakobs budgethöjning rapporterar
+merge-agenten attempt3 completed/success utan teständring. Den äger separat
+Actions-kostnadsuppdrag och ensam plankopian/workflowändringar; root gör inga
+överlappande CI-/hookoptimeringar. c39:s eget fixturefel rättas separat.334/336 har dessutom schema/liveACL/restore/
 K04- och integrationsgrindar. Exakt-head grön obligatorisk CI och fräsch
 owner/source/headkontroll gäller; inga bypass/force/queue/automerge/branchraderingar.
 Jakobs direkta no-deploybeslut: Render autoDeploy=no/triggeroff, ej suspended,
