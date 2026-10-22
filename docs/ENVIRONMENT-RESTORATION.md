@@ -92,6 +92,55 @@ atomisk rollback med syntetiska data. Befintlig lokal PG-harness äger ett
 loopbackkluster och fysisk omstart; rikta den inte direkt mot Neon. Verifiera
 separat PG18/målanslutning innan K06/K07-integrationsacceptans.
 
+## Isolerad K04-start med verklig server
+
+Den explicita `tools/run-shared-room-k04-qa.mjs` startar ordinarie spelserver med
+en verifierad lokal testanslutning. Normal serverstart behåller TLS-/Neon-grindarna.
+Inga miljöflaggor eller HTTP-anrop kan registrera QA-capabilityn. Detta är en
+tillfällig provväg, inte ett lokalt produktregister eller produktionsläge.
+
+Förbered en ägd PostgreSQL-instans som endast lyssnar på literal `127.0.0.1`.
+Databasnamnet ska vara `croupier_qa_<id>`, rollen `studio_qa` eller dedikerad
+`croupier_qa_<id>`. Rollen måste kunna läsa klusteridentiteten med
+`pg_control_system()`; behörigheten tillhör den isolerade provinstallationen.
+Ta förväntat system-ID från det ägda klustrets `pg_controldata`, inte från en
+okänd anslutning. Produkt-/Studio-schema och korrekta migrationsmarkörer måste
+redan finnas. Launchern installerar eller seedar ingenting.
+
+Sju explicita argument krävs (värdena nedan är platshållare):
+
+```text
+node tools/run-shared-room-k04-qa.mjs --postgres-port <PGPORT> --database croupier_qa_<id> --role studio_qa --system-id <SYSTEM_ID> --http-port <HTTPPORT> --fixture <lokal-fixture.mjs> --media-root <lokal-mediakatalog>
+```
+
+Kör från en ren lokal miljö utan produktions-/provider-/molncredentials eller
+injektionsinställningar för Node/proxy. Launchern skapar ett separat barn med
+endast godkända OS-variabler och explicita lokala inställningar. Spelserverns
+publicorigin/listener blir `http://127.0.0.1:<HTTPPORT>`; använd fixturepaketets
+befintliga sparade rumslänk. Inga värdnamnsalias eller TLS-attrapper behövs.
+
+Fixturemodulen exporterar `createQaFixture({pool,scope,origin,mediaRoot})` och
+returnerar `{studioPolicyRuntime,studioMediaRuntime,privateMedia}`.
+Scope är `{environment:'test',workspaceId:'shared-qa-<id>'}`.
+Återanvänd faktisk scoped SQLrepository/saved-policy och befintliga mediekontrakt.
+De sju medieportarna är videoRegistry, videoResponse, videoRegistryCaptured,
+videoResponseCaptured, publicMediaResponse, hasPublicMedia och readMetadata.
+privateMedia returnerar hash-/identitets-/range-kontrollerad Response för exakt
+befintligt material. Fixtureporten är skrivskyddad; testdata ska förberedas i den
+ägda provdatabasen före start. Bevara dealer-/rum-/paket-/material-ID, språk,
+timing och talgodkännande; media och privata manifests hålls utanför Git.
+
+Faktisk DB-identitet kontrolleras före fixtureimport och åter före engångsstart.
+Produkt-/Studio-readiness och saved-policy ska passera innan lyssnaren öppnas.
+Ctrl+C använder befintlig graceful shutdown genom det ägda barnet. Tvångsstopp
+eller ofullständig cleanup får inte rapporteras som lyckad acceptans.
+
+Root äger QA-starten; Kevin äger sin befintliga fixture/media och de tre K04-proven.
+Contextens18 enhetsprov och5 verkliga PG-identitetsprov är separata från riktig
+server-/mediaacceptans. Inga kompletta accepterade K04-media finns i roots lästa
+syntetiska fixtures. Den saknade Kevinleveransen får inte ersättas med nya dealers,
+påhittade godkännanden eller syntetiska bytes och sedan räknas som visuell acceptans.
+
 ## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
 
 Detta är ett granskningsunderlag för den befintliga speldatabasen. Det ger inget
@@ -157,7 +206,13 @@ Privat slutkvitto: denna chatts `recovery-replay/shared-schema-upgrade/final-cli
 Samma avgränsade CLI är registrerad i ordinarie CI. Offlinehelperns tre prov och
 oberoende källgranskning är gröna; detta är förberedelse, inte produktionsacceptans.
 
-Röda grindar: PostgreSQL18-acceptans, färsk faktisk runtimeidentitet/ACL,
+Samma frysta63c-kod är därefter körd på faktisk PostgreSQL18.6:10/10, exit0,
+clusterStopped:true och port35437 ECONNREFUSED. Befintligt --postgres-bin användes
+utan runnerändring;11källkopior/27artifacthashar oberoende verifierade. Privat
+recovery-pg18-schema/manifest.json visar signaturer, versions-/binärhashar och
+städning. Provets minimum-major16 behölls men faktisk motor var18.6.
+
+Röda grindar: färsk faktisk runtimeidentitet/ACL,
 verifierad återställningsberedskap och uttryckligt produktions-DDL-mandat saknas. Game-schemagrinden inför merge/aktivering förblir blockerad tills
 kraven faktiskt är uppfyllda; grön Studio-CI eller offlinegenererad SQL räcker inte.
 

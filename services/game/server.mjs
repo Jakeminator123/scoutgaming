@@ -2,6 +2,7 @@
 import { MOVING_TRIAL_BUDGET } from './moving-speech-budget.mjs';
 import { handleSharedRoomHttp } from './shared-room-http.mjs';
 import { withSharedRoomEntry } from './shared-room-entry.mjs';
+import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from '../../packages/navigation/player-handoff.mjs';
@@ -55,6 +56,9 @@ import { createRoulettePreview } from './games/roulette/preview.mjs';
 import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
 
+// Only the separate local QA launcher can register this in-process capability.
+// Ordinary startup still uses the unchanged TLS/Neon configuration path.
+const sharedRoomQa = consumeSharedRoomQaContext();
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../../..');
 const localMediaEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' && process.env.CROUPIER_CLOUD_RUNTIME !== '1';
@@ -80,8 +84,8 @@ let sharedRoomService = null;
 let sharedRoomCommand = null;
 const { createPostgresStore } = postgres ? await import('./storage/postgres-store.mjs') : {};
 if (!postgres && process.env.CROUPIER_GAME_DATABASE_URL) throw new Error('Game database mode must be explicit.');
-const storage = postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
-  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
+const storage = sharedRoomQa?.storage ?? (postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
+  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null);
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
@@ -93,8 +97,8 @@ const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studi
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../../packages/studio-access/studio-native-auth.mjs') : {};
 const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
 const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
-const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
-const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
+const studioPolicyRuntime = sharedRoomQa?.studioPolicyRuntime ?? (neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null);
+const studioMediaRuntime = sharedRoomQa?.studioMediaRuntime ?? (studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null);
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
   ? (await import('../../packages/presentation/server/speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
     repository:(await import('../../packages/presentation/server/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
@@ -113,15 +117,15 @@ const frozenDealerContext = studioPolicyRuntime ? await (async () => {
   return createFrozenDealerPresentationContext({
     readCurrentContext: createFrozenDealerContextReader({ pool: storage.pool, scope: studioPolicyRuntime.scope }),
     readPresentation: (await import('../../packages/presentation/server/presentation-package.mjs')).readPackagePresentation,
-    privateMedia: (record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+    privateMedia: sharedRoomQa?.privateMedia ?? ((record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
       trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
         new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
-        ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
+        ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null}))),
   });
 })() : null;
 const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/published-layer-assets.mjs')).createPublishedLayerAssets({
   packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
-  privateMedia:(await import('./blob-media.mjs')).getPrivateMedia,
+  privateMedia:sharedRoomQa?.privateMedia ?? (await import('./blob-media.mjs')).getPrivateMedia,
 }) : null;
 
 const authorizeChatDealer = createRegisteredChatContext({
@@ -147,10 +151,10 @@ const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).create
 const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
 const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-operator-preview.mjs')).createPublicOperatorPreview({
   readCurrentContext: (await import('../../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
-  privateMedia: (record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+  privateMedia: sharedRoomQa?.privateMedia ?? ((record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
     trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
       new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
-      ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
+      ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null}))),
 }) : null;
 const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette/access.mjs')).createRouletteRoomAccess({
   readCurrentContext:(await import('../../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
@@ -532,10 +536,10 @@ function legacyBackofficeRedirect(req, pathname) {
   }
   return { status: 308, headers: { Location: destination, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } };
 }
-const port = Number(process.env.PORT ?? 4173);
+const port = sharedRoomQa?.port ?? Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
 // proxy set HOST=127.0.0.1 so the port is not exposed publicly.
-const host = process.env.HOST ?? '0.0.0.0';
+const host = sharedRoomQa?.host ?? process.env.HOST ?? '0.0.0.0';
 const layerPacksRoute = createLayerPacksRoute();
 // Source files change constantly while this is being built; Chrome happily
 // serves a cached app.mjs for a reload, so a change looks like it did nothing.
@@ -633,8 +637,8 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 
 const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
-const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
-const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
+const gameOrigin=sharedRoomQa?.publicOrigin??process.env.PUBLIC_URL??'https://bettalotto.se';
+const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '');
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
 const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
@@ -740,7 +744,7 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
   return createStudioPreview({ authorize:createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
     scope:studioPolicyRuntime.scope,repository:studioPolicyRuntime.repository,
     registryLoader:studioMediaRuntime.videoRegistryCaptured,
-    privateMedia:(record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository}),
+    privateMedia:sharedRoomQa?.privateMedia ?? ((record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository})),
     bankVideoResponse:(id,request,snapshot)=>studioMediaRuntime.videoResponseCaptured(id,request,snapshot),
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
   });
@@ -750,7 +754,7 @@ const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
-  if (await handleSharedRoomHttp(req,res,{command:sharedRoomCommand,engineOrigin:process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin})) return;
+  if (await handleSharedRoomHttp(req,res,{command:sharedRoomCommand,engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin})) return;
   const pathname=new URL(req.url,'http://local').pathname;
   if (sharedRoomsEnabled && pathname === '/__cloud/shared-room-health') {
     const health = sharedRoomService?.health() ?? { ready:false };
@@ -1405,12 +1409,12 @@ if (sharedRoomsEnabled) {
   sharedRoomService = createSharedRoomService({
     pool:storage.gamePool, walletMode:'demo', auth, commandAuth,
     repository:studioPolicyRuntime.repository, scope:studioPolicyRuntime.scope,
-    engineOrigin:process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL,
+    engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL,
     origin:frontendOrigin,
     onError:()=>console.warn(JSON.stringify({event:'shared_room_runtime_unavailable'})),
   });
   sharedRoomCommand = createSharedRoomCommand({service:sharedRoomService,origin:frontendOrigin,
-    engineOrigin:process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL});
+    engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL});
   gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
   gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
   // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
@@ -1492,7 +1496,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     cancelPlayer:value=>Promise.all([existing?.cancelPlayer(value),movingSpeechService.cancelPlayer(value)]),
     close:options=>Promise.all([existing?.close(options),driftRuntime.close(),movingSpeechService.close()])};
 }
-installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
+const gameShutdown = installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
   gameUpgradeDispatcher?.close();
   studioPreview?.close();
   // Persist cancellation/terminal receipts while the journal connection is open.
@@ -1510,4 +1514,11 @@ installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
   try { if (storage) await storage.close(); }
   catch { throw new Error('storage_shutdown_failed'); }
 } });
+export const sharedRoomQaRuntime = sharedRoomQa ? Object.freeze({
+  ready: new Promise((resolveReady, rejectReady) => {
+    server.once('listening', () => resolveReady(Object.freeze({ origin: sharedRoomQa.publicOrigin, host, port })));
+    server.once('error', rejectReady);
+  }),
+  close: () => gameShutdown.stop(),
+}) : null;
 server.listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));
