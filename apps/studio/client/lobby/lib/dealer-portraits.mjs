@@ -8,15 +8,31 @@ export const dealerPortraits = [
   { id: 'marten', name: 'Mårten', image: `${assets}images/dealers/marten.jpg`, clips: [`${assets}videos/dealers/marten-look.mp4`] },
   { id: 'dragge', name: 'Dragge', image: `${assets}images/dealers/dragge.jpg`, clips: [`${assets}videos/dealers/dragge-shirt.mp4`] },
   { id: 'anna', name: 'Anna', image: `${assets}images/dealers/anna.png`, clips: [`${assets}videos/dealers/anna.mp4`] },
+  // Last, so the centred lock box over the five-column row does not hide her.
+  { id: 'paow', name: 'Paow', image: `${assets}images/dealers/paow.jpg`, clips: [`${assets}videos/dealers/paow-hair.mp4`] },
 ];
 export const portraitBackdrop = `${assets}images/lobby/room-salongen.png`;
 
+// Exact registered IDs only: PAOW was published as `paow-v2`, and Dragge is
+// registered as `dragan` since the Kevin import (apps/studio/lib/dealer-import-kevin-source.json).
+const artworkAliases = Object.freeze({ 'paow-v2': 'paow', dragan: 'dragge' });
 
 // Match an exact registered ID, never an approximate display name.
 export function portraitFor(dealer) {
-  return dealerPortraits.find(portrait => portrait.id === dealer.id);
+  const id = Object.hasOwn(artworkAliases, dealer.id) ? artworkAliases[dealer.id] : dealer.id;
+  return dealerPortraits.find(portrait => portrait.id === id);
 }
 
+/**
+ * Published dealers first, in publication order. Portraits the room does not
+ * publish follow as locked teasers, so step 3 is never empty before a room is
+ * chosen. Teasers are never available and never produce a launch link.
+ */
 export function dealerCards(availableDealers = []) {
-  return availableDealers.map(dealer => ({ ...dealer, available: true }));
+  const shown = new Set(availableDealers.map(portraitFor).filter(Boolean));
+  return [
+    ...availableDealers.map(dealer => ({ ...dealer, available: true })),
+    ...dealerPortraits.filter(portrait => !shown.has(portrait))
+      .map(portrait => ({ id: portrait.id, name: portrait.name, available: false })),
+  ];
 }
