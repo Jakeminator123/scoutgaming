@@ -1,3 +1,4 @@
+import {isDealerId} from '../../presentation/contracts/dealer-identity.mjs';
 import {lstatSync,realpathSync,openSync,closeSync,fstatSync,constants} from 'node:fs';
 import {resolve,join,relative,extname,isAbsolute} from 'node:path';
 export const PRESENTATION_BANK = 'media/dealers/astrid/runtime/presentation';
@@ -11,7 +12,7 @@ export function validateMediaLayout(layout) {
   const paths = new Set(), legacy = new Set(), urls = new Set();
   for(const [old,next] of Object.entries(layout.roots)) if(!safe(old)||!safe(next)||!next.startsWith('media/')) throw new Error('Invalid media root.');
   for (const row of layout.files) {
-    if (!safe(row.path) || !/^(dealers\/(astrid|vera|amira|mei)|game|site)\//.test(row.path) || !safe(row.legacyPath) || paths.has(row.path) || legacy.has(row.legacyPath)
+    if (!safe(row.path) || !(row.path.startsWith('dealers/') ? isDealerId(row.path.split('/')[1]) && row.path.split('/').length >= 3 : /^(game|site)\//.test(row.path)) || !safe(row.legacyPath) || paths.has(row.path) || legacy.has(row.legacyPath)
       || !/^[a-f0-9]{64}$/.test(row.sha256) || !Number.isSafeInteger(row.size) || row.size < 0 || !['public','source','private'].includes(row.access)) throw new Error('Invalid media entry.');
     paths.add(row.path); legacy.add(row.legacyPath);
     if (row.publicUrl !== undefined && (row.access !== 'public' || urls.has(row.publicUrl) || !row.publicUrl.startsWith('/') || row.publicUrl.includes('\\') || !safe(row.publicUrl.slice(1)))) throw new Error('Invalid public alias.');

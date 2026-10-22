@@ -63,6 +63,13 @@ export function resolveRoomGameMaterial({package:pack,room,language,catalogue,ca
       if(text!==undefined)documents.set(source.path,Buffer.from(text,'utf8'));
       continue;
     }
+    if(source.source==='still'||source.source==='keyed-still') {
+      if(entry.mediaId!==null||entry.speech!==null||!/\.png$/.test(source.path)
+        ||!entry.logicalPath.endsWith('.png')||blob.storage.contentType!=='image/png')fail();
+      // The exact PNG identity is frozen by mapping + catalogRevision below,
+      // not by a fabricated video record; it still belongs to the producer's full set.
+      continue;
+    }
     const record=captured.find(row=>row.id===entry.mediaId);
     if(!record||record.sha256!==blob.sha256||record.size!==blob.size
       ||record.classification.dealerId!==mapping.dealerId)fail();
