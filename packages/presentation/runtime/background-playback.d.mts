@@ -11,4 +11,6 @@ export function createBackgroundPlayback(policy:BackgroundPlaybackPolicy,options
   onStop?:(token:number,reason:string)=>void;
   setTimeout?:(callback:()=>void,delay:number)=>unknown;
   clearTimeout?:(handle:unknown)=>void;
+  random?:()=>number;
+  role?:'background'|'table';
 }):BackgroundPlaybackController;

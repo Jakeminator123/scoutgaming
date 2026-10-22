@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {studioNavigationContextFromQuery,studioNavigationHref} from '../../../../lib/studio-navigation.mjs';
 import { OpenClawWorkspace } from '../../../../components/openclaw-workspace';
 import { NativeAdministration } from '../../../../components/native-administration';
+import { StudioAdministration, StudioAdminUiError } from '../../../../components/studio-administration';
+import adminStyles from '../../../../components/studio-administration.module.css';
 import { ConnectedEconomy } from './connected-economy';
 import type {Catalog} from '../../lib/connected-studio.mjs';
 import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
@@ -12,8 +14,32 @@ const groups: Record<string,string> = {
   '/admin/admin/payments':'finance', '/admin/admin/api':'partners',
   '/admin/media-review':'media-review',
 };
+/** The accounts group is one server document; a page may show only players (nivå 3) or staff users (nivå 1). */
+export type AccountsSection='players'|'users';
 
-function Administration({group,dealerId}:{group:string;dealerId?:string}) {
+/** Fresh N1 session for the native admin client: the same read NativeAdministration performs before every write. */
+export async function readAdminSession(signal?:AbortSignal):Promise<Record<string,unknown>> {
+  const response=await fetch('/studio/api/auth/session',{credentials:'same-origin',cache:'no-store',redirect:'error',signal,headers:{Accept:'application/json'}});
+  if(!response.ok)throw new StudioAdminUiError(response.status);
+  return response.json();
+}
+
+// Keep the shared Studio context and explicit ambiguous room/operator selectors
+// for the destination to validate. Only the path and query are returned.
+export function adminContextHref(target:string,query:URLSearchParams) {
+  const url=new URL(studioNavigationHref(target,studioNavigationContextFromQuery(query)),'https://studio.invalid');
+  for(const key of ['operator','table','room'])if(query.has(key)){
+    url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);
+  }
+  return url.pathname+url.search;
+}
+
+export type AgentModelsNavigation={models:string;chat:string;assistant:string;studio:string};
+export function AgentModelsPanel({navigation}:{navigation:AgentModelsNavigation}) {
+  return <div className="admin-system-page admin-workspace-tool admin-system-models"><nav className="admin-system-actions" aria-label="Hjälp med administration"><a href={navigation.assistant} className="studio-button">Öppna Adminroboten</a></nav><OpenClawWorkspace embedded navigation={{models:navigation.models,chat:navigation.chat,studio:navigation.studio}}/></div>;
+}
+
+function Administration({group,dealerId,section}:{group:string;dealerId?:string;section?:AccountsSection}) {
   const [actions,setActions]=useState<string[]|null>(null);
   const [gameOrigin,setGameOrigin]=useState<string>();
   const [error,setError]=useState('');
@@ -33,7 +59,13 @@ function Administration({group,dealerId}:{group:string;dealerId?:string}) {
     })();
     return()=>controller.abort();
   },[refresh]);
-  return <section className="admin-system-page">{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions} gameOrigin={gameOrigin} initialGroup={group} initialDealerId={dealerId}/>}</section>;
+  // Drift keeps game status, shoe proof and integrity through the same native
+  // reader; the taldrift controls live on the OpenClaw page.
+  const content=group==='operations'
+    ?<><nav className="admin-system-actions" aria-label="Taldrift"><a className="studio-button" href="/admin/openclaw?tab=drift">Driftläge för tal · OpenClaw</a></nav>
+      <div className={adminStyles.embedded}><StudioAdministration key={group} apiBase="/studio/api/admin" session={readAdminSession} availableActions={actions??undefined} gameOrigin={gameOrigin} initialGroup={group} readIdentity="response-headers-v1" roomsHref="/admin/rooms" companyTeamLabel="Bolag & team" showGroupNavigation={false}/></div></>
+    :<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions??[]} gameOrigin={gameOrigin} initialGroup={group} initialDealerId={dealerId}/>;
+  return <section className="admin-system-page" data-admin-view={section}>{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:content}</section>;
 }
 
 type CompanyJournalOperator=Pick<Catalog['administration']['operators'][number],'id'|'name'|'slug'|'status'|'archivedAt'>;
@@ -73,20 +105,9 @@ function CompanyJournal() {
   </section>;
 }
 
-export function ConnectedServices({path,dealerId}:{path:string;dealerId?:string}) {
+export function ConnectedServices({path,dealerId,section}:{path:string;dealerId?:string;section?:AccountsSection}) {
   if(path==='/admin/ekonomi')return <ConnectedEconomy/>;
-  if(path==='/admin/ai/models'){
-    const query=new URLSearchParams(location.search);
-    const contextHref=(target:string)=>{
-      const url=new URL(studioNavigationHref(target,studioNavigationContextFromQuery(query)),location.origin);
-      for(const key of ['operator','table','room'])if(query.has(key)){
-        url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);
-      }
-      return url.pathname+url.search;
-    };
-    return <div className="admin-system-page admin-workspace-tool admin-system-models"><nav className="admin-system-actions" aria-label="Hjälp med administration"><a href={contextHref('/admin/ai/chat')} className="studio-button">Öppna Adminroboten</a></nav><OpenClawWorkspace embedded navigation={{models:contextHref('/admin/ai/models'),chat:contextHref('/admin/dealer-agent'),studio:contextHref('/admin/clips')}}/></div>;
-  }
-  if(groups[path])return <Administration group={groups[path]} dealerId={dealerId}/>;
+  if(groups[path])return <Administration group={groups[path]} dealerId={dealerId} section={groups[path]==='accounts'?section:undefined}/>;
   if(path==='/admin/admin/log')return <CompanyJournal/>;
-  return <section className="admin-system-page" aria-labelledby="unknown-service-title"><header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="unknown-service-title">Tjänsten finns inte</h1><p>Den här adressen har ingen ansluten administrationstjänst.</p></div></header><nav className="admin-system-actions" aria-label="Tillgängliga verktyg"><a className="studio-button" href="/admin/tools">Öppna Verktyg</a></nav></section>;
+  return <section className="admin-system-page" aria-labelledby="unknown-service-title"><header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="unknown-service-title">Tjänsten finns inte</h1><p>Den här adressen har ingen ansluten administrationstjänst.</p></div></header><nav className="admin-system-actions" aria-label="Tillgängliga verktyg"><a className="studio-button" href="/admin/tools">Öppna Fördjupning</a></nav></section>;
 }

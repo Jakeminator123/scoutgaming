@@ -42,13 +42,25 @@
 .roomPanel .statusBar { padding:12px 16px; border:1px solid var(--sg-border,#657085); border-radius:8px; background:var(--sg-surface-2,#171b21); }
 .roomPanel .statusBar p { font-size:13px; line-height:1.5; }
 .roomPanel .statusBar button { font-size:12px; min-height:34px; }
-.roomLayout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(240px,1fr); gap:18px; align-items:start; }
+/* The frozen scene is the hero: full content width, Desktop/Mobil toggle and play/status under it.
+   The three layer choices sit beside the room's game settings; the company publication follows below. */
+.hero { padding:18px; border:1px solid var(--sg-border,#657085); border-radius:10px; background:var(--sg-surface-2,#171b21); }
+.hero .preview { gap:10px; }
+.hero .preview > p:not(.hint) { font-size:12px; color:var(--sg-muted); }
+.hero .preview > h4 { font-size:13px; font-weight:600; color:var(--sg-muted); }
+.roomLayout { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; align-items:start; }
+.roomLayout[data-aside] { grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr); }
 .roomLayout > * { min-width:0; }
-.roomLayout > [data-appearance-preview] { position:sticky; top:16px; padding:18px; border:1px solid var(--sg-border,#657085); border-radius:10px; background:var(--sg-surface-2,#171b21); }
-.roomLayout .preview { gap:10px; }
-.roomLayout .preview > p:not(.hint) { font-size:12px; color:var(--sg-muted); }
+.choicesColumn, .asideColumn { display:grid; gap:16px; min-width:0; }
 .roomLayout .editor { padding:16px; background:var(--sg-surface-2,#171b21); gap:14px; }
-.roomLayout .fields { grid-template-columns:1fr; gap:12px; }
+.roomLayout .editor > .hint { margin-top:-4px; }
+.roomLayout .fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; }
+.colorRow { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding-top:12px; border-top:1px solid var(--sg-border,#657085); font-size:12px; color:var(--sg-muted); }
+.colorRow > span { font-weight:600; }
+.roomPanel .colorRow select { width:auto; min-width:140px; min-height:32px; padding:4px 8px; font-size:12px; }
+.roomPanel .colorRow input[type=color] { width:40px; height:30px; padding:2px; }
+.roomPanel .colorRow button { min-height:30px; font-size:12px; padding:4px 10px; }
+.colorRow small { flex-basis:100%; font-size:11px; }
 .roomPanel .row { font-size:13px; gap:8px; }
 .roomPanel input,.roomPanel select { padding:8px 10px; background:var(--sg-bg,#101316); color:var(--sg-text); border:1px solid var(--sg-border,#657085); border-radius:6px; }
 .roomPanel input[type=color] { padding:4px; width:100%; max-width:80px; }
@@ -62,8 +74,8 @@
 .lockedChoice small { font-size:11px; color:var(--sg-muted); }
 .roomPanel .history,.roomPanel .review { background:var(--sg-surface-2,#171b21); }
 .roomPanel .history > p { color:var(--sg-muted); font-size:13px; line-height:1.6; }
-@container(max-width:850px) { .roomLayout { grid-template-columns:1fr; } .roomLayout > [data-appearance-preview] { position:static; } .roomLayout .fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); } }
-@container(max-width:500px) { .roomPanel .heading { align-items:flex-start; } .roomPanel .statusBar { padding:12px; } .roomLayout > [data-appearance-preview],.roomLayout .editor { padding:12px; } .roomPanel .actions > button { flex:1 1 100%; } }
+@container(max-width:850px) { .roomLayout[data-aside] { grid-template-columns:1fr; } }
+@container(max-width:500px) { .roomPanel .heading { align-items:flex-start; } .roomPanel .statusBar { padding:12px; } .hero,.roomLayout .editor { padding:12px; } .roomPanel .actions > button { flex:1 1 100%; } .roomLayout .fields { grid-template-columns:1fr; } }
 
 .previewHelp { font-size:12px; color:var(--sg-muted); }
 .previewHelp summary { cursor:pointer; width:fit-content; }

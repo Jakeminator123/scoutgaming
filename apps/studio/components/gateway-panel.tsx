@@ -14,7 +14,7 @@ export function ModeSelector({ mode, onChange, configured, compact = false }: { 
   return <div className={`mode-selector ${compact ? 'compact' : ''}`}><div className="mode-options" role="group" aria-label="Beslutsmodell">{(Object.keys(modeLabels) as DirectorMode[]).map(key => <button key={key} type="button" className={key === mode ? 'active' : ''} aria-pressed={key === mode} onClick={() => onChange(key)}><span>{modeLabels[key]}</span>{!compact ? <small>{modeExplanations[key]}</small> : null}</button>)}</div>{compact ? <p className="helper">{modeExplanations[mode]}</p> : null}{!configured && (mode === 'shadow' || mode === 'active') ? <p className="connection-warning">Ingen modellkoppling är konfigurerad. Testet använder säker standard och visar orsaken.</p> : null}</div>;
 }
 
-export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPlayerChat, modelsHref = '/admin/ai/models', standaloneVoicePreviewAvailable = true }: { status: ConnectionStatus; mode: DirectorMode; onModeChange: (mode: DirectorMode) => void; dealerId: string; dirty: boolean; onPlayerChat: () => void; modelsHref?:string; standaloneVoicePreviewAvailable?: boolean }) {
+export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPlayerChat, modelsHref = '/admin/openclaw?tab=models', standaloneVoicePreviewAvailable = true }: { status: ConnectionStatus; mode: DirectorMode; onModeChange: (mode: DirectorMode) => void; dealerId: string; dirty: boolean; onPlayerChat: () => void; modelsHref?:string; standaloneVoicePreviewAvailable?: boolean }) {
   const [message, setMessage] = useState('');
   const [conversationId, setConversationId] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);

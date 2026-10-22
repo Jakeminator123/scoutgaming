@@ -1,14 +1,14 @@
 import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {drawDealerFrame,validateDealerFraming} from '../../../packages/presentation/contracts/dealer-framing.mjs';
 import {effectiveDealerCompositing} from '../../../packages/presentation/contracts/dealer-compositing.mjs';
-import {validateBackgroundPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {validateLayerPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {createBackgroundPlayback} from '../../../packages/presentation/runtime/background-playback.mjs';
 import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import {compositionAnchorFrames,projectAnchorRects} from './composition-anchors.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {
-  if (!value || value.schemaVersion!==1 || Object.keys(value).filter(key=>!['settings','backgroundPlayback'].includes(key)).sort().join(',')!=='assets,background,dealer,schemaVersion,table'
+  if (!value || value.schemaVersion!==1 || Object.keys(value).filter(key=>!['settings','backgroundPlayback','tablePlayback'].includes(key)).sort().join(',')!=='assets,background,dealer,schemaVersion,table'
     || !Array.isArray(value.assets) || value.assets.length>64) fail();
   if (Object.keys(value.dealer??{}).sort().join(',')!=='compatibility,enabled' || !['full-frame','per-clip'].includes(value.dealer.compatibility) || typeof value.dealer.enabled!=='boolean') fail();
   if(value.settings!==undefined)validateCompositionSettings(value.settings);
@@ -29,9 +29,12 @@ export function validateComposition(value) {
       ||layer.default!==null&&!layer.allowed.includes(layer.default))fail();
     if(role==='background'&&!['baked','image','video'].includes(layer.mode))fail();
   }
-  if(value.backgroundPlayback!==undefined){
-    const policy=validateBackgroundPlayback(value.backgroundPlayback,{assets:value.assets,allowed:value.background.allowed,defaultAssetId:value.background.default});
-    if(policy.rules.length&&!value.background.enabled)fail();
+  // Silent living clips per layer: rules only reference granted videos of the
+  // same role and need the layer enabled with a base to return to.
+  for(const role of ['background','table']){
+    const playback=value[`${role}Playback`];if(playback===undefined)continue;
+    const policy=validateLayerPlayback(playback,{role,assets:value.assets,allowed:value[role].allowed,defaultAssetId:value[role].default});
+    if(policy.rules.length&&!value[role].enabled)fail();
   }
   if(value.settings!==undefined)validateCompositionSettings(value.settings,{tableIds:value.table.allowed,assets:value.assets});
   return structuredClone(value);
@@ -52,7 +55,8 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   document.documentElement.dataset.presentationStandard='three-layer';
   let current=initial?validateComposition(initial):null,compositor=null,runtime=null,key=null,framing=null,frameNumber=0,preparation=0,raf=null,closed=false;
   const mounts=new Map(),selected=new Map(),pending=new Map();
-  let backgroundPlayback=null,backgroundEvent=null,backgroundVisible=!document.hidden;
+  // One silent scheduler and at most one running event clip per layer role.
+  const PLAYBACK_ROLES=['background','table'],players=new Map(),events=new Map();let backgroundVisible=!document.hidden;
   const view=document.defaultView??globalThis;
   const compactQuery=view.matchMedia?.(BLACKJACK_COMPACT_QUERY);
   const geometryListeners=new Set();
@@ -73,7 +77,9 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(!compositor?.geometry)return null;
     const scene=compositionScene();
     const board=current?.settings?.blackjackTables?.find(row=>row.tableId===selected.get('table'));
-    const asset=assets().get('table');
+    // Geometry belongs to the mounted base table. A living table clip only
+    // changes pixels; its own size never moves seats, bets or dealer cards.
+    const asset=mountedAsset('table');
     if(board&&scene.show.table&&asset&&compositor.tableGeometry){
       return {...projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
         {width:host.clientWidth,height:host.clientHeight},board,scene.layout),
@@ -95,10 +101,15 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(unpatchedFrame){const context=actorFrame.getContext('2d');context.clearRect(0,0,actorFrame.width,actorFrame.height);context.drawImage(unpatchedFrame,0,0);actorFrame.src=`presented-frame-${++frameNumber}`;unpatchedFrame.width=unpatchedFrame.height=0;unpatchedFrame=null;paintHeld();}
     if(closed){layer?.close();return;}movingSpeech=layer;
   }
+  function mountedAsset(role) {
+    const node=mounts.get(role);if(!node)return null;
+    const width=node.videoWidth||node.naturalWidth,height=node.videoHeight||node.naturalHeight;
+    return width&&height?{el:node,width,height}:null;
+  }
   function assets() {
     const map=new Map();
-    for(const [role,node]of mounts){const width=node.videoWidth||node.naturalWidth,height=node.videoHeight||node.naturalHeight;if(width&&height)map.set(role,{el:node,width,height});}
-    if(backgroundEvent?.loaded){const node=backgroundEvent.node;if(node.videoWidth&&node.videoHeight)map.set('background',{el:node,width:node.videoWidth,height:node.videoHeight});}
+    for(const role of mounts.keys()){const asset=mountedAsset(role);if(asset)map.set(role,asset);}
+    for(const [role,event]of events)if(event.loaded){const node=event.node;if(node.videoWidth&&node.videoHeight)map.set(role,{el:node,width:node.videoWidth,height:node.videoHeight});}
     return map;
   }
   function paintHeld() {
@@ -111,34 +122,39 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   }
   function animate() {paintHeld();if(!closed&&key&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);}
   function stopAnimation(){if(raf!==null)view.cancelAnimationFrame?.(raf);raf=null;}
-  function stopBackgroundEvent(token) {
-    if(backgroundEvent?.token!==token)return;
-    const {node,ready,ended,failed}=backgroundEvent;backgroundEvent=null;
+  function stopLayerEvent(role,token) {
+    const event=events.get(role);if(event?.token!==token)return;
+    const {node,ready,ended,failed}=event;events.delete(role);
     node.removeEventListener?.('loadeddata',ready);node.removeEventListener?.('ended',ended);node.removeEventListener?.('error',failed);
     node.pause?.();compositor?.release?.(node);node.removeAttribute?.('src');node.load?.();node.remove();paintHeld();
   }
-  function configureBackgroundPlayback() {
-    backgroundPlayback?.close();backgroundPlayback=null;
-    if(!current?.backgroundPlayback?.rules.length)return;
-    backgroundPlayback=createBackgroundPlayback(current.backgroundPlayback,{...backgroundPlaybackOptions,
+  function closePlayers(){for(const player of players.values())player.close();players.clear();}
+  // Table rules are authored for the default table. Another selected table
+  // (player choice or room override) keeps its player paused: no clip over it.
+  const playbackAllowed=role=>role!=='table'||selected.get('table')===current?.table.default;
+  function configureLayerPlayback(role) {
+    players.get(role)?.close();players.delete(role);
+    const policy=current?.[`${role}Playback`];if(!policy?.rules.length)return;
+    const player=createBackgroundPlayback(policy,{...backgroundPlaybackOptions,role,
       onStart(rule,token){
-        const asset=current.assets.find(row=>row.id===rule.assetId&&row.role==='background'&&current.background.allowed.includes(row.id));
-        if(!asset||!asset.contentType.startsWith('video/'))throw Error('Background event unavailable');
+        const asset=current.assets.find(row=>row.id===rule.assetId&&row.role===role&&current[role].allowed.includes(row.id));
+        if(!asset||!asset.contentType.startsWith('video/')||!playbackAllowed(role))throw Error('Layer event unavailable');
         const node=document.createElement('video');
-        node.className='presentation-plane presentation-background presentation-background-event';node.dataset.layerAsset=asset.id;node.setAttribute('aria-hidden','true');
+        node.className=`presentation-plane presentation-${role} presentation-${role}-event`;node.dataset.layerAsset=asset.id;node.setAttribute('aria-hidden','true');
         node.muted=true;node.loop=false;node.playsInline=true;node.preload='auto';
         node.style.visibility='hidden';
-        const owns=()=>backgroundEvent?.token===token&&backgroundEvent.node===node;
-        const ended=()=>{if(owns())backgroundPlayback?.finish(token);},failed=()=>{if(owns())backgroundPlayback?.finish(token,'error');};
+        const owns=()=>events.get(role)?.token===token&&events.get(role).node===node;
+        const ended=()=>{if(owns())players.get(role)?.finish(token);},failed=()=>{if(owns())players.get(role)?.finish(token,'error');};
         const ready=()=>{if(!owns())return;node.removeEventListener('loadeddata',ready);
-          Promise.resolve(node.play()).then(()=>{if(owns()){backgroundEvent.loaded=true;node.style.visibility=current.dealer.enabled?'hidden':'';paintHeld();}}).catch(failed);};
-        backgroundEvent={token,node,ready,ended,failed,loaded:false};
-        // This load is deliberately absent from pending: an event background
-        // can never delay prepareClip, dealer speech, dealing or card reveal.
+          Promise.resolve(node.play()).then(()=>{if(owns()){events.get(role).loaded=true;node.style.visibility=current.dealer.enabled?'hidden':'';paintHeld();}}).catch(failed);};
+        events.set(role,{token,node,ready,ended,failed,loaded:false});
+        // This load is deliberately absent from pending: an event clip can
+        // never delay prepareClip, dealer speech, dealing or card reveal.
         node.addEventListener('loadeddata',ready,{once:true});node.addEventListener('ended',ended,{once:true});node.addEventListener('error',failed,{once:true});
         node.src=asset.src;host.append(node);node.load?.();if(node.readyState>=2)ready();
-      },onStop:stopBackgroundEvent});
-    if(backgroundVisible)backgroundPlayback.start();
+      },onStop:token=>stopLayerEvent(role,token)});
+    players.set(role,player);
+    if(backgroundVisible&&playbackAllowed(role))player.start();
   }
   function render(role,id) {
     const previous=mounts.get(role);previous?.pause?.();if(previous)compositor?.release?.(previous);previous?.remove();mounts.delete(role);pending.delete(role);
@@ -159,16 +175,16 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     }));void pending.get(role).catch(()=>{});}
   }
   function set(role,id) {if(current&&current[role].allowed.includes(id)){
-    if(role==='background')backgroundPlayback?.pause();
-    render(role,id);paintHeld();if(role==='background'&&backgroundVisible)backgroundPlayback?.start();
+    players.get(role)?.pause();
+    render(role,id);paintHeld();if(backgroundVisible&&playbackAllowed(role))players.get(role)?.start();
   }}
   function replace(value) {
     setMovingSpeechLayer(null);
-    backgroundPlayback?.close();backgroundPlayback=null;
+    closePlayers();
     ++preparation;current=validateComposition(value);key=null;referenceFraming=null;lastGeometry='';stopAnimation();compositor?.canvas?.style.setProperty('visibility','hidden');
     for(const role of ['background','table'])render(role,current[role].default);
     host.dataset.dealerLayerEnabled=String(current.dealer.enabled);host.dataset.presentationClipMode='pending';
-    configureBackgroundPlayback();
+    for(const role of PLAYBACK_ROLES)configureLayerPlayback(role);
   }
   async function prepareClip(compositing,sourceFraming,{kind}={}) {
     const revision=++preparation;stopAnimation();key=null;framing=sourceFraming?validateDealerFraming(sourceFraming):null;
@@ -209,11 +225,12 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   if(current)replace(current);
   return {setBackground:id=>set('background',id),setTable:id=>set('table',id),replace,prepareClip,renderFrame,setMovingSpeechLayer,
     referencePlane,onGeometryChange(listener){geometryListeners.add(listener);return()=>geometryListeners.delete(listener);},
-    backgroundEvent:(eventId,eventKey)=>backgroundPlayback?.event(eventId,eventKey)??false,
+    backgroundEvent:(eventId,eventKey)=>players.get('background')?.event(eventId,eventKey)??false,
+    tableEvent:(eventId,eventKey)=>players.get('table')?.event(eventId,eventKey)??false,
     setBackgroundVisible(visible){backgroundVisible=Boolean(visible);
-      if(backgroundVisible)backgroundPlayback?.start();else backgroundPlayback?.pause();
+      for(const [role,player] of players)if(backgroundVisible&&playbackAllowed(role))player.start();else player.pause();
       const base=mounts.get('background');if(base?.tagName==='VIDEO'){base.autoplay=backgroundVisible;
         if(backgroundVisible)Promise.resolve(base.play?.()).catch(()=>{});else base.pause?.();}},
     hold:()=>{if(key)paintHeld();},
-    close(){setMovingSpeechLayer(null);geometryListeners.clear();backgroundPlayback?.close();backgroundPlayback=null;closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
+    close(){setMovingSpeechLayer(null);geometryListeners.clear();closePlayers();closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
 }

@@ -1,12 +1,14 @@
-import {validateBackgroundPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {validateLayerPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 
 const WINDOW_MS=60000;
 // Silent presentation-only scheduling. Callbacks never own dealer, speech,
 // cards or wallet work. Admission reserves time before starting any media IO.
 export function createBackgroundPlayback(policy,{now=()=>performance.now(),onStart=()=>{},onStop=()=>{},
-  setTimeout:schedule=globalThis.setTimeout,clearTimeout:cancel=globalThis.clearTimeout}={}) {
-  const rules=validateBackgroundPlayback(policy).rules;
-  if([now,onStart,onStop,schedule,cancel].some(value=>typeof value!=='function'))throw Error('Invalid background playback callbacks');
+  setTimeout:schedule=globalThis.setTimeout,clearTimeout:cancel=globalThis.clearTimeout,random=Math.random,role='background'}={}) {
+  const rules=validateLayerPlayback(policy,{role}).rules;
+  if([now,onStart,onStop,schedule,cancel,random].some(value=>typeof value!=='function'))throw Error('Invalid background playback callbacks');
+  // Each timer start is drawn uniformly from everyMs ± jitterMs; a bad random source falls back to the mean.
+  const nextDue=(rule,at)=>{const jitter=rule.trigger.jitterMs??0;let draw=0;if(jitter){const value=Number(random());draw=Number.isFinite(value)?Math.round((Math.min(1,Math.max(0,value))*2-1)*jitter):0;}return at+rule.trigger.everyMs+draw;};
   let running=false,closed=false,active=null,serial=0,timer=null,lastTime=-Infinity;
   const history=new Map(rules.map(rule=>[rule.id,[]])),lastStart=new Map(),due=new Map(),seen=new Set();
   const time=()=>{const value=now();if(!Number.isFinite(value)||value<0||value<lastTime)throw Error('Invalid background playback clock');lastTime=value;return value;};
@@ -51,7 +53,7 @@ export function createBackgroundPlayback(policy,{now=()=>performance.now(),onSta
     const endedNow=Boolean(active&&active.deadline<=at);
     if(endedNow)stop('duration',at);
     if(running)for(const rule of rules)if(due.has(rule.id)&&due.get(rule.id)<=at){
-      due.set(rule.id,at+rule.trigger.everyMs);
+      due.set(rule.id,nextDue(rule,at));
       // Missed or busy opportunities are dropped, never queued for a burst.
       if(!active&&!endedNow)admit(rule,'automatic',at);
     }
@@ -63,7 +65,7 @@ export function createBackgroundPlayback(policy,{now=()=>performance.now(),onSta
   }
   return Object.freeze({
     start(){const at=time();if(closed||running)return;running=true;
-      for(const rule of rules)if('everyMs'in rule.trigger)due.set(rule.id,at+rule.trigger.everyMs);arm(at);},
+      for(const rule of rules)if('everyMs'in rule.trigger)due.set(rule.id,nextDue(rule,at));arm(at);},
     pause(){const at=time();if(closed)return;running=false;due.clear();stop('paused',at);arm(at);},
     event(eventId,eventKey){const at=time();if(closed||!running||typeof eventId!=='string')return false;
       if(eventKey!==undefined){if(typeof eventKey!=='string'||!eventKey||eventKey.length>256)return false;

@@ -32,7 +32,7 @@ function harness(fetchImpl, globals = {}) {
     useEffect(fn, deps) { const index = cursor++; const old = hooks[index];
       if (!old || deps.some((value, i) => value !== old.deps[i])) pending.push(() => { old?.cleanup?.(); hooks[index] = { deps, cleanup: fn() }; }); },
   };
-  let current=new URL('https://admin.fixture.invalid/admin/ai/models');
+  let current=new URL('https://admin.fixture.invalid/admin/openclaw?tab=models');
   const window = {crypto:globalThis.crypto,location:{get href(){return current.href;},get pathname(){return current.pathname;},get search(){return current.search;},get hash(){return current.hash;},assign:value=>navigations.push(value)},
     history:{state:null,replaceState(state,_title,href){this.state=state;if(href)current=new URL(href,current);}},
     addEventListener:(type,fn)=>listeners.set(type,fn),

@@ -87,7 +87,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin/publication?room=room-7'),{nextConfig:{basePath:'/studio'}}));
       assert.equal(response.status,307);
-      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin/publication?room=room-7'));
+      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin/rooms?room=room-7'));
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
       assert.equal(response.headers.get('cache-control'),'no-store');
     }
@@ -160,7 +160,9 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       const query=old.endsWith('set-password')?'t='+resetToken:'returnTo='+encodeURIComponent('/admin/publication?room=room-7');
       const response=module.exports.middleware(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
       const mode=old.endsWith('set-password')?'set-password':'login';
-      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+query);
+      // The legacy returnTo is kept but canonicalised: the retired publication page is Spelbolag & rum.
+      const expected=old.endsWith('set-password')?query:'returnTo='+encodeURIComponent('/admin/rooms?room=room-7');
+      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+expected);
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
     }
     assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
@@ -196,10 +198,10 @@ test('new document surfaces rewrite to native Studio without creating customer o
     if(!path.startsWith('/admin'))assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', 'native preview remains opt-in');
     assert.equal(backendPlatformPath(path), false, path);
   }
-  for(const [path,destination]of [['/control','/admin'],['/control/speech','/admin/dealer-studio?view=speech'],['/control/studio','/admin/clips'],['/control/admin','/admin/drift'],['/control/ops','/admin/ai/models'],['/control/lab','/admin/clips'],['/studio/control','/admin']]){
+  for(const [path,destination]of [['/control','/admin'],['/control/speech','/admin/dealer-studio?view=speech'],['/control/studio','/admin/clips'],['/control/admin','/admin/drift'],['/control/ops','/admin/openclaw?tab=drift'],['/control/lab','/admin/clips'],['/studio/control','/admin']]){
     const expected=new URL(destination,native.publicOrigin);expected.searchParams.set('_rsc','fixture');
     assert.deepEqual(platformRoute(new URL(path+'?_rsc=fixture',native.publicOrigin),native),{kind:'redirect',destination:expected.href});
-    if(path==='/control/ops')assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:config.publicOrigin+'/admin/ai/models'});
+    if(path==='/control/ops')assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:config.publicOrigin+'/admin/openclaw?tab=drift'});
     else assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:new URL(destination,config.publicOrigin).href});
   }
   for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',

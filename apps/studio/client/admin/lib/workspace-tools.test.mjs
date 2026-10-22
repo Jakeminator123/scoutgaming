@@ -4,8 +4,9 @@ import * as adminNavigation from './admin-navigation.ts';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {ADMIN_WORKSPACE_TOOLS} from '../../../../../packages/navigation/admin-workspace-routes.mjs';
+import * as adminWorkspaceRoutes from '../../../../../packages/navigation/admin-workspace-routes.mjs';
 import * as adminRouting from '../../runtime/admin-routing.mjs';
+const {ADMIN_WORKSPACE_TOOLS,ADMIN_DEPTH_TOOLS}=adminWorkspaceRoutes;
 import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -24,7 +25,7 @@ function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'d
   const source=readFileSync(new URL(file,import.meta.url),'utf8'),module={exports:{}};
   runInNewContext(transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URL,URLSearchParams,AbortController,Error,
     location:{search},fetch:async(path,init)=>{requests.push({path,init});const value=typeof data==='function'?await data(path,init):data;return {ok:responseStatus>=200&&responseStatus<300,status:responseStatus,json:async()=>value};},
-    require:name=>name==='react'?hooks:name.includes('studio-resource-lifecycle')?{isActiveOperator}:name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?{withAdminContext:href=>href}:name.includes('studio-navigation')?{studioNavigationContextFromQuery:()=>({})}:name.includes('lab-url')?{labUrl:path=>path}:name==='react/jsx-runtime'?require(name):components});
+    require:name=>name==='react'?hooks:name.includes('studio-resource-lifecycle')?{isActiveOperator}:name.includes('admin-workspace-routes')?adminWorkspaceRoutes:name.includes('admin-navigation')?adminNavigation:name.includes('admin-routing')?{withAdminContext:href=>href}:name.includes('studio-navigation')?{studioNavigationContextFromQuery:()=>({})}:name.includes('lab-url')?{labUrl:path=>path}:name==='react/jsx-runtime'?require(name):components});
   return {exports:module.exports,requests,render(fn,props){cursor=0;return fn(props);},async settle(){const pending=queue;queue=[];for(const item of pending){effects[item.index]=item.deps;item.effect();}await new Promise(setImmediate);}};
 }
 
@@ -55,7 +56,7 @@ function shell(file,path){
     require:name=>name==='react'?hooks:name==='react/jsx-runtime'?require(name)
       :name==='react-dom/client'?{createRoot:()=>({render:element=>{mounted=element;}})}
       :name==='next/link'||name==='next/navigation'||name==='../runtime/navigation'?navigation
-      :name.includes('admin-navigation')?adminNavigation:name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?adminRouting:placeholders,
+      :name.includes('admin-navigation')?adminNavigation:name.includes('admin-workspace-routes')?adminWorkspaceRoutes:name.includes('admin-routing')?adminRouting:placeholders,
   });
   return mounted?mounted.type(mounted.props):module.exports.StudioSidebar();
 }
@@ -64,16 +65,40 @@ function descendants(tree){
   return tree&&typeof tree==='object'?[tree,...descendants(tree.props?.children)]:[];
 }
 
-test('each workspace tool has one active main menu entry and companies remains reachable',()=>{
+test('each workspace tool marks exactly its menu page and Fördjupning lists no page the menu already has',()=>{
+  const menuHrefs=new Set([...adminNavigation.adminNavigationGroups,...adminNavigation.adminSystemGroups].flatMap(group=>group.links.map(link=>link.href)));
   for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS)){
+    const home=adminNavigation.adminToolHome(key);
+    assert.ok(menuHrefs.has(home),key+' belongs to a menu page');
     const tree=shell('../components/studio/studio-sidebar.tsx','/admin/'+key);
     const menu=node(tree,item=>item.props?.['aria-label']==='Huvudmeny');
     const active=descendants(menu).filter(item=>item.props?.['aria-current']==='page');
     assert.equal(active.length,1,key);
-    assert.equal(active[0].props.href,['companies','rehearsal'].includes(key)?'/admin/'+key:'/admin/tools',key);
+    assert.equal(active[0].props.href,home,key);
+    const tool=harness('../components/studio/workspace-tools.tsx','?dealer=dragan');
+    const back=descendants(tool.render(tool.exports.WorkspaceTool,{section:key})).filter(item=>item.type==='a').map(item=>item.props.href);
+    assert.equal(back[0],undefined,'the tool is loading; the back link follows the data');
   }
+  for(const key of ['publication','compositions','videos','dealer-studio','probe','dealer-agent','companies','rehearsal'])assert.notEqual(adminNavigation.adminToolHome(key),'/admin/tools',key+' is not a Fördjupning tool');
   const tools=harness('../components/studio/workspace-tools.tsx');
-  assert.ok(node(tools.exports.WorkspaceToolsHome(),item=>item.props?.href==='/admin/companies'));
+  const links=descendants(tools.exports.WorkspaceToolsHome()).filter(item=>item.type==='a').map(item=>item.props.href);
+  assert.deepEqual(links,ADMIN_DEPTH_TOOLS.map(key=>'/admin/'+key));
+  for(const href of links)assert.equal(menuHrefs.has(href),false,href+' would be reachable twice');
+  assert.equal(adminNavigation.adminPageLabels['/admin/tools'],'Fördjupning');
+  assert.equal(adminNavigation.adminPageLabels['/admin/structure'],'Kopplingar & användning');
+  assert.equal(adminNavigation.adminPageLabels['/admin/deletion'],undefined,'the merged page has no second label');
+  for(const group of adminNavigation.adminSystemGroups)for(const link of group.links)assert.equal(adminNavigation.adminNavigationGroups.some(primary=>primary.links.some(row=>row.href===link.href)),false,link.href+' duplicates Skapande/Verksamhet');
+});
+
+test('a loaded tool shows one back link to its menu page and keeps the dealer context for the clip map',async()=>{
+  for(const [section,home,label] of [['replies','/admin/tools','Fördjupning'],['videos','/admin/dealers','Dealerregister'],['compositions','/admin/clips','Klippkarta'],['publication','/admin/rooms','Spelbolag & rum']]){
+    const h=harness('../components/studio/workspace-tools.tsx','?dealer=dragan');
+    h.render(h.exports.WorkspaceTool,{section});await h.settle();
+    const nav=node(h.render(h.exports.WorkspaceTool,{section}),item=>item.props?.['aria-label']==='Arbetsytor');
+    const links=descendants(nav).filter(item=>item.type==='a');
+    assert.equal(links[0].props.href,home,section);assert.equal(links[0].props.children,label,section);
+    assert.deepEqual(links.slice(1).map(item=>item.props.href),home==='/admin/clips'?[]:['/admin/clips'],section);
+  }
 });
 
 test('Admin portal navigation opens the three current product entry points',()=>{
@@ -136,7 +161,8 @@ function publicationWorkspaceHarness(search) {
   });
   const {WorkspaceTool}=compile('../components/studio/workspace-tools.tsx',name=>{
     if(name.includes('admin-publication-page'))return {AdminPublicationPage};
-    if(name.includes('admin-workspace-routes'))return {ADMIN_WORKSPACE_TOOLS};
+    if(name.includes('admin-workspace-routes'))return adminWorkspaceRoutes;
+    if(name.includes('admin-navigation'))return adminNavigation;
     if(name.includes('admin-routing'))return adminRouting;
     if(name.includes('studio-navigation'))return {studioNavigationContextFromQuery:()=>({})};
     if(name.includes('lab-url'))return {labUrl:path=>path};

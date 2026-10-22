@@ -44,7 +44,7 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
 // global model settings are separate Admin documents.
 export const viewPaths: Record<StudioView, string> = {
   tree: '/admin/events', lab: '/admin/events', videos: '/admin/videos', activity: '/admin/rehearsal',
-  openclaw: '/admin/dealer-agent', guide: '/admin/guide', probe: '/admin/probe',
+  openclaw: '/admin/openclaw?tab=agent', guide: '/admin/guide', probe: '/admin/openclaw?tab=probe',
 };
 
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
@@ -52,7 +52,7 @@ const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
 // Public document URL plus dealer, event, an optional variant and an optional allowlisted tab.
 export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string; situation?: string; laneId?: string; operatorId?: string; tableId?: string } = {}) {
   const base = path.split(/[?#]/, 1)[0];
-  const params = new URLSearchParams();
+  const params = new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?') + 1).split('#', 1)[0] : '');
   if (selection.dealerId) params.set('dealer', selection.dealerId);
   if (selection.eventId) params.set('event', selection.eventId);
   if (selection.variantId) params.set('variant', selection.variantId);
@@ -101,10 +101,12 @@ export function resolveStudioEventId(project: StudioProject, initial?: string) {
 export function studioViewForPath(path: string): StudioView {
   const bare = stripLabBasePath(path).split('#')[0];
   const [pathname, query = ''] = bare.split('?');
+  const tab = query.split('&').find((part: string) => part.startsWith('tab='))?.slice(4) ?? '';
+  // The OpenClaw page: the dealer agent and idle speech are studio views; models, drift and the assistant are not.
+  if (pathname === '/admin/openclaw') return tab === 'agent' ? 'openclaw' : tab === 'probe' ? 'probe' : 'lab';
   if (pathname === '/admin/dealer-agent') return 'openclaw';
   const parts = pathname.split('/').filter(Boolean);
   const segment = parts[0] === 'control' ? parts[1] : parts[0];
-  const tab = query.split('&').find((part: string) => part.startsWith('tab='))?.slice(4) ?? '';
   if (segment === 'operator-chat' || (segment === 'openclaw' && tab === 'chat')) return 'openclaw';
   if (segment === 'events') return 'lab';
   return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'guide' || segment === 'probe' ? segment : 'lab';

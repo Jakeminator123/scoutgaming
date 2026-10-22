@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {appearanceBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, changeAppearance, resetAppearanceRoom, sameAppearance} from '../components/partner-appearance-state.mjs';
+import {appearanceBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, appearanceRoomStatus, changeAppearance, resetAppearanceRoom, sameAppearance} from '../components/partner-appearance-state.mjs';
 test('editable projection excludes N1 metadata and unused branding, preserves independent rooms',()=>{
   assert.deepEqual(appearanceBranding({lane:'main',logo:'never-live',composition:{secret:true},roomOverrides:{vip:{dealer:'vera',lane:'foreign',logo:'no'},main:{table:'table-a'}}}),{lane:'main',roomOverrides:{main:{table:'table-a'},vip:{dealer:'vera'}}});
   assert.equal(sameAppearance({color:'#112233',dealer:'vera'},{dealer:'vera',color:'#112233'}),true);
@@ -29,4 +29,16 @@ test('receipts accept explicit supported games and legacy rooms but reject unkno
   const rooms=[{id:'main',label:'Main',presentationLaneId:'shared',...(game===undefined?{}:{game})}];
   assert.equal(appearanceReceipt({...base,rooms},'north'),game===undefined||game==='blackjack'||game==='roulette');
  }
+});
+
+test('room status follows the published choice, then the company choice for the same composition, then the composition default',()=>{
+ const lane=id=>({id,layers:{background:{default:'bg-default',allowed:['bg-default','bg-two']},dealer:{default:'astrid',allowed:['astrid','vera']},table:{default:'table-default',allowed:['table-default']}}});
+ const state={packageRevision:7,draftRevision:2,draft:{revision:2,basePackageRevision:7,branding:{dealer:'vera'}},
+  branding:{lane:'main',background:'bg-two',roomOverrides:{vip:{dealer:'vera'}}},
+  presentation:{lanes:[lane('main'),lane('other')]},rooms:[{id:'main-room',label:'Main',presentationLaneId:'main'},{id:'vip',label:'VIP',presentationLaneId:'main'},{id:'alt',label:'Alt',presentationLaneId:'other'}]};
+ assert.deepEqual(appearanceRoomStatus(state,'vip'),{roomId:'vip',laneId:'main',packageRevision:7,draftRevision:2,draft:true,live:{background:'bg-two',dealer:'vera',table:'table-default'}});
+ assert.deepEqual(appearanceRoomStatus(state,'main-room').live,{background:'bg-two',dealer:'astrid',table:'table-default'},'the unsaved draft dealer is not live');
+ assert.deepEqual(appearanceRoomStatus(state,'alt').live,{background:'bg-default',dealer:'astrid',table:'table-default'},'another composition does not inherit company choices');
+ assert.equal(appearanceRoomStatus({...state,draft:null,draftRevision:3},'vip').draft,false);
+ assert.equal(appearanceRoomStatus(state,'missing'),null);
 });

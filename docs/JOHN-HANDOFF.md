@@ -159,7 +159,11 @@ Verklig runtime-ACL och återställningsberedskap återstår före konkret DDL-b
 Senast lästa K05PR314/head9ab3701179d5edf46beee505752cd6080dad708e tillför
 talgranskningsunderlag ovanpå tidigare metadata/validator; faktisk registry-/
 Blobbindning och talgodkännande är fortsatt ofullständiga.
-Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
+Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ~~ingen Paowrestore~~
+ersatt av Jakobs beslut 22 oktober 2026 (PR #342): Paow är återställd och visas
+med Mårten som låst lobbyporträtt, se
+[Lobbyns dealerporträtt](#lobbyns-dealerporträtt-tillbaka-i-steg-3--22-oktober-2026).
+Ta inte bort Paow igen.
 Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
 sourceverified/monitoringactive, incidentcompleteforthissource,
 locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
@@ -233,6 +237,113 @@ fortsätter i samma GitHubissue312 vid återupptaget arbete; senaste aktuella
 uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
+
+## Admin UX-pass 2: inga dubbletter, ett rumsflöde, en OpenClaw-sida — 22 oktober 2026
+
+Branch `codex/admin-ux-pass-2`. Jakobs besked: Admin var fullt av dubbletter och
+gammal partnerlogik läckte in i rumssidan. Ingen regel eller test förbjöd att ta
+bort ytor; J03 hade flyttat Control-sidorna under System i stället för att välja
+en. Detta pass väljer en plats per funktion och omdirigerar resten.
+
+- **Ett rumsflöde.** `/admin/rooms` (Spelbolag & rum) har förhandsvisningen i
+  full bredd, Rummets val (bakgrund, dealer, bord) bredvid Spelinställningar,
+  status (publicerad version, utkast, vad spelaren möter), och under det
+  bolagets Publicering, Skapa rum och Spelrum (livscykel). Paketlogiken ligger i
+  `apps/studio/lib/operator-package-client.mjs` och delas med Bolag & team.
+  `/admin/publication` omdirigeras (klient och server, GET/HEAD; skrivningar
+  aldrig). Rumskorten är borttagna ur den gamla sidan.
+- **Admin väljer fritt bland mallens lager.** `adminLayerAdjustments(lane)`
+  (partner-package-view.mjs) i klient och server: en N1-session
+  (`audit.accessClass==='internal-admin'`, satt server-side ur cookien) får
+  välja bakgrund, dealer och bord inom `allowed` även när
+  `operatorAdjustable` saknar dem. Partnersessioner oförändrade. "Låst i
+  publicerat paket" visas inte längre för Admin.
+- **System utan dubbletter.** Verktyg → Fördjupning (Talgranskning,
+  Svarsbibliotek, Spelhändelser & regler, Guide). Kopplingar och Användning &
+  beroenden → en sida `/admin/structure` "Kopplingar & användning";
+  `/admin/deletion` omdirigeras. Sammansättningar nås från Scen & lager
+  ("Avancerad sammansättning").
+- **OpenClaw på en sida.** `/admin/openclaw` med flikarna Driftläge (taldrift
+  flyttad från Drift), Agentmodeller, Dealerns agent, Tal vid inaktivitet,
+  Adminroboten. Gamla adresser omdirigeras till rätt flik. Drift behåller
+  spelstatus, skobevis och integritet (dess Logga ut-knapp försvann med
+  taldriftskortet; finns kvar på Konton, Betalningar, Integrationer).
+- **Konton delade.** Spelarkonton `/admin/players` under Verksamhet;
+  adminpersonal kvar på `/admin/admin/accounts` under System.
+- Destinationslås i tester är ompekade, behörighets-, isolerings- och
+  "skrivningar omdirigeras aldrig"-prov behållna. Ingen ny API, writer, schema
+  eller capability. Kvar: zoom och placering per rum är ett eget kontraktspass
+  (rumsöverstyrning + spelkonsument + paketbudget).
+- **Leverans direkt på main.** Jakob bad 22 okt ~18:00 om direkt push till
+  main i stället för PR (flera agenter och worktrees skapade förvirring).
+  UX-pass 2 landade som main cea6ab3e; branchen `codex/admin-ux-pass-2` finns
+  på origin men behöver ingen merge. Vercel-bygget av cea6ab3e rapporterade
+  fail medan samma commit bygger grönt lokalt (`npm run build` i apps/studio,
+  traces sanerade); loggen finns bara i Vercel
+  (`npx vercel inspect dpl_4g4jjNGcX8SR8JKR36f4qHRo4eMQ --logs`). Föregående
+  deployment (712be3e8) är kvar i produktion tills ett bygge går igenom.
+- **Kvar efter passet.** Playwright-sviten `apps/studio/test/admin-ai-browser.test.mjs`
+  (bara lokal, kräver `CROUPIER_BROWSER_FIXTURE_MODULE`) monterar fortfarande de
+  gamla OpenClaw-sidorna och behöver en fixtur mot `/admin/openclaw`; CI kör den
+  inte. Dealerns agent-flik visar ännu chattsidans egna flikar (Agentmodeller,
+  Chatt) under OpenClaw-sidans flikrad.
+
+## Levande lager: bord och variation (capability 24) — 22 oktober 2026
+
+PR #343 (`codex/levande-lager`), mergad till main 20f89d42. Uppföljning i
+PR #346 (`codex/levande-lager-geometri`).
+Jakobs beställning: var tredje minut och femton sekunder, med 74 sekunders
+variation, ska ett kort mp4-klipp spelas över bakgrunden; en mp4 ska kunna
+vara basen; samma för bordet och dealern.
+
+- **Kontrakt.** Intervallregler i `backgroundPlayback` får `jitterMs`
+  (0–120 000, kortare än `everyMs`); starter dras ur `everyMs ± jitterMs`.
+  Nytt valfritt `tablePlayback` på sammansättningen med samma form, mot
+  bordslagrets tillåtna videor. Standardregel 195 s ± 74 s, 10 s max, 1/min.
+  Capability 24 `layerPlayback: table-and-jitter-v1`; readiness kräver 24 för
+  fälten och avvisar dem mot äldre spelservrar. Inget schema, ingen SQL.
+- **Runtime.** `background-playback.mjs` tar `role` och injicerbar `random`.
+  `presentation-composition.mjs` kör en scheduler per lager; bordsklipp
+  ritas som bordslager medan de spelas och basen återställs efteråt.
+  `tablePlayback` följer med i frysta paket (game-entry-selector) och
+  Studio-prov; papperskorgen tar bort bordsregler som refererar filen; båda
+  spelklienterna skickar spelhändelser även till bordslagret (`tableEvent`).
+- **Admin.** `LayerPlaybackEditor` för bakgrund och bord med Variation ± och
+  klartextsammanfattning; Scen & lager, Sammansättning och förhandsvisningen
+  (bordsklipp provas i CompositionPreview) använder den. Dealerns beteendeklipp
+  är oförändrat vilopolicyn i Körregel.
+- **Verifiering.** 505/505 i de berörda sviterna (kontrakt, scheduler,
+  komposition, studio-preview, entry-selector, material-trash, readiness,
+  room-api, editor, preview, panel) plus 552 befintliga modell-/lagersviter;
+  Admin-bygge (tsc admin+lobby, esbuild) och Studio-tsc passerar.
+- **Produktion.** v24 är live i produktion sedan main 20f89d42. Såvitt känt
+  är inga bordsklipp publicerade än. Fasta intervall utan bordsklipp fungerar
+  som förut.
+- **Uppföljning efter granskning (PR #346).** (1) Spelplanet (platser,
+  insatser, dealerns kort, kortprojektion) räknas från det monterade
+  basbordet, aldrig från ett spelande bordsklipp. Ett klipp med annat format
+  flyttade tidigare spelet mitt i en hand. (2) Bordsklipp spelas bara över
+  standardbordet. Väljer spelaren eller rummet ett annat bord är bordets
+  scheduler pausad. (3) Media som `tablePlayback` refererar till är inte
+  bordsval. De finns kvar i bordslagrets tillåtna lista eftersom reglerna
+  kräver det, men erbjuds inte i spelarpanelen, lobbyns rumsval eller Admins
+  Utseende. Ett sparat spelarval eller en override som pekar på ett klipp
+  faller tillbaka till standardbordet, och Admin avvisar att spara ett klipp
+  som bord (422). Utan `tablePlayback` är allt som förut. (4) Mute-testet i
+  `test/background-playback.mjs` gick igenom vacuöst och kontrollerar nu
+  verkligen att lagerhändelserna kommer före mute-returen.
+  Bordsklipp bör ha samma pixelmått som basbilden: ett avvikande klipp
+  flyttar inte spelet men ritas i sitt eget format och linjerar inte visuellt.
+  Verifiering: nya tester fallerar mot koden före fixen. Riktade sviter
+  (scheduler, komposition, card-view, presentation-layers, studio-preview,
+  capability, game-lanes, player-choices, public-operator-rooms,
+  partner-package-view, partner-branding-drafts) och hela Studio-sviten är
+  gröna. Moving-speech-grupperna kördes inte lokalt (`ws` saknades i
+  worktree) och berörs inte.
+- **Midnight-bakgrunden.** Skript för Jakob: `C:\Users\jakem\CroupierBackups\
+  midnight-background-2026-10-22\KOR-MIDNIGHT.cmd` registrerar stillbild,
+  loop och två varianter via Admins ordinarie lageruppladdning och binder dem
+  till vald sammansättning med intervall 195/255 s; `--jitter` efter deploy.
 
 ## Admin UX-pass 1: klippkartan — 22 oktober 2026
 

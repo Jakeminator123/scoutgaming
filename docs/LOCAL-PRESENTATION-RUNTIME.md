@@ -1879,6 +1879,38 @@ bordsgeometri eller kontaktankare till blackjack.
 > undersök blackjack-legacy innan ändringar. Hårdkoda ingen dealer, ändra inte
 > aktiva publiceringar automatiskt och bygg inga nya hjul-/kulanimationer.
 
+## Levande lager: bord och variation, 22 oktober 2026
+
+Samma policyform som `backgroundPlayback` finns nu som valfritt `tablePlayback`
+på sammansättningen: bordet kan vara en bild eller en ljudlös mp4-loop som bas,
+och korta bordsklipp (tillåtna bordsvideor) spelas vid intervall eller
+spelhändelse och återgår sedan till basen. Intervallregler får `jitterMs`
+(0–120 000, kortare än `everyMs`): varje start dras likformigt ur
+`everyMs ± jitterMs`. Standardregeln är 195 s ± 74 s, högst 10 s, en start per
+minut. Schemaläggaren `background-playback.mjs` tar `role` och en injicerbar
+`random`; spelet och Studio-provet kör en scheduler per lager. Dealerns
+beteendeklipp styrs oförändrat av vilopolicyn i klippkartans Körregel.
+
+Nya skrivningar med `tablePlayback` eller `jitterMs` kräver runtime capability
+24, `layerPlayback: table-and-jitter-v1`; readiness avvisar dem mot äldre
+spelservrar eftersom de strikta läsarna annars avvisar hela dokumentet. Ingen
+SQL-migration behövs; äldre publiceringar utan fälten läses som förut.
+
+Bordsklipp ändrar bara pixlar. Spelplanet (platser, insatsknappar, dealerns
+kort och kortprojektionen) räknas alltid från det monterade basbordet, aldrig
+från ett spelande klipp, så ett klipp med annat format flyttar inget mitt i en
+hand. Reglerna hör till sammansättningens standardbord: har spelaren eller
+rummets override valt ett annat bord står bordets scheduler pausad och inga
+bordsklipp spelas över det. Bakgrund och dealer påverkas inte.
+
+Media som `tablePlayback` refererar till står kvar i bordslagrets `allowed`
+(reglerna kräver det) men är aldrig ett bordsval: `selectableLayerBases`
+tar bort dem ur spelarpanelen, lobbyns rumsval och Admins Utseende.
+Standardbordet är alltid valbart. Ett sparat val eller en override som pekar
+på ett klipp faller tillbaka till standardbordet, och Admin avvisar det med
+422. Bordsklipp bör ha samma pixelmått som basbilden; ett klipp med annat
+format flyttar inte spelet men ritas i sitt eget format och linjerar inte.
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet

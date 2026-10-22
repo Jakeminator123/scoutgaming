@@ -153,11 +153,11 @@ export function DealerRemoval({project, inventory, dealerId, laneId, operatorId,
           })}</ul></> : null}
           {impact.rooms.length ? <><p>Rum som stoppas:</p><ul className={styles.references}>{impact.rooms.map(room => {
             if (!room.operatorId) return <li key={room.id}>{room.name}</li>;
-            const href = studioNavigationHref('/admin/publication', {...context, operatorId: room.operatorId, tableId: room.id});
+            const href = studioNavigationHref('/admin/rooms', {...context, operatorId: room.operatorId, tableId: room.id});
             return <li key={room.id}><a href={href} onClick={event => navigate(event, href)}>{room.name}</a></li>;
           })}</ul></> : null}
           {impact.operators.length ? <><p>Berörda sammansättningar avpubliceras hos:</p><ul className={styles.references}>{impact.operators.map(operator => {
-            const href = studioNavigationHref('/admin/publication', {...context, operatorId: operator.id, tableId: operator.id === operatorId ? tableId : ''});
+            const href = studioNavigationHref('/admin/rooms', {...context, operatorId: operator.id, tableId: operator.id === operatorId ? tableId : ''});
             return <li key={operator.id}><a href={href} onClick={event => navigate(event, href)}>{operator.name}</a></li>;
           })}</ul></> : null}
           <p>Återställning återför dealern, klippen och sammansättningarna som utkast. AI-tal förblir avstängt. Rum och spelbolag publiceras inte automatiskt igen.</p>

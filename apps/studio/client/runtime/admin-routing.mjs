@@ -1,6 +1,6 @@
 export const adminContextKeys=Object.freeze(['operator','table','dealer','composition','lane','game']);
 
-const canonicalAccountHref=href=>href.replace(/^\/(?:studio\/)?admin\/admin\/players(?=[?#]|$)/,'/admin/admin/accounts');
+const canonicalAccountHref=href=>href.replace(/^\/(?:studio\/)?admin\/admin\/players(?=[?#]|$)/,'/admin/players');
 
 // Compatibility for imported design links only. Admin components and route
 // selection use their real /admin pathnames, never a virtual Control pathname.

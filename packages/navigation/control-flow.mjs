@@ -36,15 +36,20 @@ export function canonicalControlHref(value) {
     if (!url.searchParams.has('dealer') && url.searchParams.has('dealerId')) url.searchParams.set('dealer', url.searchParams.get('dealerId'));
     url.searchParams.delete('dealerId');
   }
-  if (url.pathname === '/control/rooms') url.pathname = '/admin/publication';
+  if (url.pathname === '/control/rooms') url.pathname = '/admin/rooms';
   if (url.pathname === '/control/companies') url.pathname = '/admin/companies';
   if (url.pathname === '/control/guide') url.pathname = '/admin/guide';
   if (url.pathname === '/control/videos') url.pathname = '/admin/videos';
   if (url.pathname === '/control/compositions') url.pathname = '/admin/compositions';
   if (url.pathname === '/control/rehearsal') url.pathname = '/admin/rehearsal';
-  if (url.pathname === '/control/openclaw') url.pathname = url.searchParams.get('tab') === 'chat' ? '/admin/dealer-agent' : '/admin/ai/models';
-  if (url.pathname === '/control/ops') url.pathname = '/admin/ai/models';
-  if (url.pathname === '/control/operator-chat') url.pathname = '/admin/dealer-agent';
+  // OpenClaw is one Admin page; Control's chat, ops and operator chat open its tabs.
+  const openClawTab = url.pathname === '/control/openclaw' ? (url.searchParams.get('tab') === 'chat' ? 'agent' : 'models')
+    : url.pathname === '/control/ops' ? 'drift' : url.pathname === '/control/operator-chat' ? 'agent' : null;
+  if (openClawTab) {
+    url.pathname = '/admin/openclaw';
+    url.searchParams.delete('tab');
+    url.search = 'tab=' + openClawTab + (url.search ? '&' + url.search.slice(1) : '');
+  }
   const href = url.pathname + url.search + url.hash;
   return url.pathname === '/control/administration' ? adminDocumentHref(href) : href;
 }

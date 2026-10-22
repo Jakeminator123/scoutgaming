@@ -74,3 +74,12 @@ test('loader rejects unknown room games but accepts older responses without game
   else assert.equal(view.props.role,'alert');
  }
 });
+
+test('Admin room mode forwards the Admin layer unlock and the header status callback',async()=>{
+ const data={...receipt('op-a'),rooms:[{id:'room-a',game:'blackjack'}]},h=loaderHarness(async()=>ok(data));
+ const onStatus=()=>{},props={apiBase:'/studio/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'room-a',roomLayout:true,adminChoices:true,onStatus};
+ h.render(props);await h.flush();const panel=h.render(props).props.children.props;
+ assert.equal(panel.adminChoices,true);assert.equal(panel.onStatus,onStatus);
+ const partner=h.render({...props,adminChoices:undefined}).props.children.props;
+ assert.equal(partner.adminChoices,false,'partners keep the company gate by default');
+});

@@ -28,15 +28,15 @@ test('legacy dealer paths retain their current guide label', () => {
   expectLabel('/events', 'Dealers & klipp');
   expectLabel('/control/events', 'Dealers & klipp');
   expectLabel('/admin/events', 'Dealers & klipp');
-  expectLabel('/probe', 'Dealers & klipp');
-  expectLabel('/control/probe', 'Dealers & klipp');
-  expectLabel('/admin/probe', 'Dealers & klipp');
+  expectLabel('/probe', 'OpenClaw');
+  expectLabel('/control/probe', 'OpenClaw');
+  expectLabel('/admin/probe', 'OpenClaw');
   expectLabel('/admin/replies', 'Dealers & klipp');
   expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Spelstatus & integritet');
-  expectLabel('/openclaw', 'Agentmodeller');
-  expectLabel('/operator-chat', 'Intern agentchatt');
-  expectLabel('/control/operator-chat', 'Intern agentchatt');
+  expectLabel('/openclaw', 'OpenClaw');
+  expectLabel('/operator-chat', 'OpenClaw');
+  expectLabel('/control/operator-chat', 'OpenClaw');
   expectLabel('/tree', 'Dealers & klipp');
   expectLabel('/control/tree', 'Dealers & klipp');
   expectLabel('/activity', 'Dealers & klipp');
@@ -154,7 +154,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       const events = readFileSync(new URL('../components/control-events-page.tsx', import.meta.url), 'utf8');
       assert.doesNotMatch(events, /changeView\(|history\.pushState/);
       const routes = loadComponent('studio-types.ts');
-      assert.equal(routes.viewPaths.openclaw, '/admin/dealer-agent');
+      assert.equal(routes.viewPaths.openclaw, '/admin/openclaw?tab=agent');
       assert.equal(routes.studioViewForPath(routes.viewPaths.openclaw), 'openclaw');
       const project = createSeedProject();
       const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
@@ -172,7 +172,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       visit(mountSelectedPage(ControlOpenClawChat, {...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
       assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
       const html = renderToStaticMarkup(tree);
-      assert.match(html, /href="\/admin\/dealer-agent(?:\?|"|&)/);
+      assert.match(html, /href="\/admin\/openclaw\?tab=agent(?:&amp;|")/);
       assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01|Fråga OpenClaw om labbet →/);
     }
   } finally {
@@ -225,17 +225,17 @@ test('unavailable search params leave Studio navigation unselected', () => {
   assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams()), {});
   assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams('dealer=vera&event=speak.goodluck&lane=explicit-layout&token=private')), { dealerId: 'vera', eventId: 'speak.goodluck', laneId: 'explicit-layout' });
 });
-test('query-specific links win without losing the chat alias or selecting publicering for bolag', () => {
+test('query-specific links win without losing the chat alias or selecting rooms for bolag', () => {
   const cases = [
-    ['/admin/ai/models?dealer=saga&operator=north', 'Agentmodeller'], ['/admin/dealer-agent?dealer=saga', 'Intern agentchatt'],
-    ['/openclaw?tab=chat&dealer=saga', 'Intern agentchatt'], ['/control/ops?tab=chat', 'Agentmodeller'],
-    ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt'],
-    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Intern agentchatt'],
-    ['/control/openclaw?dealer=astrid', 'Agentmodeller'], ['/operator-chat', 'Intern agentchatt'],
-    ['/control/operator-chat', 'Intern agentchatt'], ['/control/lanes?lane=t10', 'Spelrum & publicering'],
+    ['/admin/ai/models?dealer=saga&operator=north', 'OpenClaw'], ['/admin/dealer-agent?dealer=saga', 'OpenClaw'],
+    ['/openclaw?tab=chat&dealer=saga', 'OpenClaw'], ['/control/ops?tab=chat', 'OpenClaw'],
+    ['/control/openclaw', 'OpenClaw'], ['/control/openclaw?tab=chat', 'OpenClaw'],
+    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'OpenClaw'],
+    ['/control/openclaw?dealer=astrid', 'OpenClaw'], ['/operator-chat', 'OpenClaw'],
+    ['/control/operator-chat', 'OpenClaw'], ['/admin/openclaw?tab=probe&dealer=saga', 'OpenClaw'], ['/control/lanes?lane=t10', 'Spelbolag & rum'],
     ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
     ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
-    ['/control/administration?tab=tables', 'Spelrum & publicering'],
+    ['/control/administration?tab=tables', 'Spelbolag & rum'],
     ['/control/administration?tab=operations', 'Spelstatus & integritet'],
     ['/control/administration?tab=finance', 'Betalningar & journal'],
     ['/control/administration?tab=accounts', 'Konton & åtkomst'],

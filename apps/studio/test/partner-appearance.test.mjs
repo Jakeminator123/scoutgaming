@@ -287,3 +287,37 @@ test('Admin room publication review stays hidden until a room draft is saved and
   assert.equal(published.length,1);assert.equal(published[0].packageRevision,8);
   assert.equal(reviewSection(h.render()).props.hidden,true);
 });
+
+
+test('Admin choices unlock background, dealer and table within the composition allowlist while partners stay locked',()=>{
+  const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['table.color'];
+  initial.presentation.assets=[{id:'bg-one',label:'Salong'},{id:'bg-two',label:'Terrass'},{id:'table-one',label:'Grön filt'},{id:'table-two',label:'Blå filt'}];
+  const partner=html(initial,{roomId:'north-main',roomLayout:true});
+  assert.match(partner,/Låst i publicerat paket/);assert.doesNotMatch(partner,/aria-label="Bakgrund"|aria-label="Bord"|aria-label="Dealer"/);
+  const admin=html(initial,{roomId:'north-main',roomLayout:true,adminChoices:true});
+  assert.doesNotMatch(admin,/Låst i publicerat paket/);
+  for(const label of ['Bakgrund','Bord','Dealer','Bordsfärg'])assert.match(admin,new RegExp('aria-label="'+label+'"'));
+  assert.match(admin,/<option value="bg-two">Terrass/);assert.match(admin,/<option value="table-two">Blå filt/);
+  const baked=initialState();baked.presentation.lanes[0].operatorAdjustable=[];baked.presentation.lanes[0].layers.background={enabled:true,mode:'baked',default:null,allowed:[]};
+  const fixed=html(baked,{roomId:'north-main',roomLayout:true,adminChoices:true});
+  assert.match(fixed,/Fast i sammansättningen/,'a baked background is explained, not offered');assert.match(fixed,/aria-label="Bord"/);assert.match(fixed,/aria-label="Dealer"/);
+  const vip=html(initialState({roomDealerChoices:{'north-main':['astrid','vera'],'north-vip':[]}}),{roomId:'north-vip',roomLayout:true,adminChoices:true});
+  assert.doesNotMatch(vip,/aria-label="Dealer"/,'a room without allowed dealers offers none even to Admin');
+});
+
+test('Admin room overrides save the unlocked layers through the same draft contract and report the live status to the header',async()=>{
+  const initial=initialState({branding:{lane:'mobile-phone',background:'bg-one'}});initial.presentation.lanes[0].operatorAdjustable=['table.color'];
+  initial.presentation.assets=[{id:'bg-one',label:'Salong'},{id:'bg-two',label:'Terrass'},{id:'table-one',label:'Grön filt'}];
+  const statuses=[],calls=[];
+  const h=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);calls.push(body);return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});},
+    {roomId:'north-main',roomLayout:true,adminChoices:true,onStatus:value=>statuses.push(value)});
+  h.render();
+  assert.deepEqual(JSON.parse(JSON.stringify(statuses.at(-1))),{roomId:'north-main',laneId:'mobile-phone',packageRevision:7,draftRevision:0,draft:false,live:{background:'bg-one',dealer:'astrid',table:'table-one'},labels:{background:'Salong',dealer:'astrid',table:'Grön filt'}});
+  select(h.render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});select(h.render(),'Dealer').props.onChange({target:{value:'vera'}});
+  assert.equal(statuses.at(-1).live.background,'bg-one','unsaved choices are not what the player meets');
+  await byAction(h.render(),'save-draft').props.onClick();
+  assert.deepEqual(calls[0].branding,{lane:'mobile-phone',background:'bg-one',roomOverrides:{'north-main':{background:'bg-two',dealer:'vera'}}});
+  h.render();
+  assert.equal(statuses.at(-1).draft,true);assert.equal(statuses.at(-1).draftRevision,1);assert.equal(statuses.at(-1).live.background,'bg-one','a saved draft is not live until published');
+  h.unmount();assert.equal(statuses.at(-1),null);
+});

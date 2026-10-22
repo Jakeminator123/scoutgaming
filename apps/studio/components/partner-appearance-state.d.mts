@@ -16,3 +16,5 @@ export function appearanceReceipt(value:unknown,operatorId:string):value is Part
 export function appearanceReview(value:unknown,expected:{draftRevision:number;packageRevision:number;branding:unknown}):value is AppearanceReview;
 export function changeAppearance(value:EditableBranding,change:{roomId?:string|null;key:string;selection:string|null}):EditableBranding;
 export function resetAppearanceRoom(value:EditableBranding,roomId:string):EditableBranding;
+export type AppearanceRoomLive = Record<'background'|'dealer'|'table',string|null>;
+export function appearanceRoomStatus(state:PartnerAppearanceInitial,roomId:string):{roomId:string;laneId:string;packageRevision:number;draftRevision:number;draft:boolean;live:AppearanceRoomLive}|null;

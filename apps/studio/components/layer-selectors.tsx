@@ -6,7 +6,8 @@ import {retainBlackjackTableGeometry} from '../../../packages/presentation/contr
 export function LayerAssetSelect({role,lane,assets,onChange,permissions=true,game='blackjack'}:{role:'background'|'table';lane:StudioLane;assets:LayerAsset[];onChange:(lane:StudioLane)=>void;permissions?:boolean;game?:'blackjack'|'roulette'}) {
   const rows = assets.filter(asset=>asset.role===role&&layerAssetFitsGame(asset,game)), layer=lane.layers[role];
   const mismatched=role==='table'?[...new Set([...layer.allowed,...(layer.default?[layer.default]:[])])].filter(id=>!rows.some(row=>row.id===id)):[];
-  const backgroundRules=role==='background'?lane.backgroundPlayback?.rules??[]:[];
+  // A base or clip referenced by this layer's playback rules cannot be un-allowed from here; remove the rule first.
+  const backgroundRules=(role==='background'?lane.backgroundPlayback:lane.tablePlayback)?.rules??[];
   const inUse=(id:string)=>backgroundRules.length>0&&(layer.default===id||backgroundRules.some(rule=>rule.assetId===id));
   const edit = (change:(next:StudioLane)=>void) => {const next=structuredClone(lane);change(next);retainBlackjackTableGeometry(next.composition,next.layers.table.allowed);onChange(next);};
   const title=role==='background'?'Bakgrund':'Bord';
@@ -25,7 +26,7 @@ export function LayerAssetSelect({role,lane,assets,onChange,permissions=true,gam
       <input type="checkbox" checked={layer.allowed.includes(asset.id)} disabled={inUse(asset.id)} onChange={event=>{if(inUse(asset.id))return;edit(next=>{
         next.layers[role].allowed=event.target.checked?[...layer.allowed,asset.id]:layer.allowed.filter(id=>id!==asset.id);
         if(!event.target.checked&&next.layers[role].default===asset.id)next.layers[role].default=null;
-      });}}/>{asset.label}{inUse(asset.id)?' · används av bakgrundsregler':''}{role==='table'&&lane.composition?.blackjackTables?.some(row=>row.tableId===asset.id)?' · avmarkering tar också bort bordets kortplatser':''}
+      });}}/>{asset.label}{inUse(asset.id)?(role==='background'?' · används av bakgrundsklipp':' · används av bordsklipp'):''}{role==='table'&&lane.composition?.blackjackTables?.some(row=>row.tableId===asset.id)?' · avmarkering tar också bort bordets kortplatser':''}
     </label>)}<small>{role==='background'?'En videobakgrund loopas under spelet.':'Bordsvideo är en scenloop.'+(game==='roulette'?' Anna-bordets hjul och kula ritas i spelet; vinnande nummer kommer från spelservern.':'')} Partnern kan bara välja publicerade alternativ som bolaget får ändra.</small></fieldset>:null}
   </fieldset>;
 }
