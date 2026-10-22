@@ -238,7 +238,39 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
-## Admin UX-pass 2: inga dubbletter, ett rumsflöde, en OpenClaw-sida — 22 oktober 2026
+## K04: Kevins matte och tidsättning per tagning på mains treskiktsruntime — 22 oktober 2026
+
+Branch `codex/k04-chain`, direkt på main enligt Jakobs besked. Taget ur
+kevin/croupier-scoutgg 5aa7ed10 och anpassat till mains givningsprofil,
+kompositionsruntime och delade rumsportar. Inga nya payloadfält, kontrakt
+eller capability-versioner; Kevins mediekatalog, outbox, room-idle och DDL
+togs inte.
+
+- **Matte (kompositor).** Fast alfa med mjukat 5-punktskors, unspill av
+  kvarvarande grönstick mot dealerns hudton (median hue/mättnad ur den keyade
+  bilden, cachad 1 s), kantrensning med liten choke och hudskydd framför det
+  filmade propkortet. Sparade threshold/softness/despill är fortfarande de enda
+  rattarna. Den syntetiska fixturen kan inte bedöma matten (färgbalkar, ingen
+  green screen); kontrollera dealerkanterna i produktion efter deploy och
+  återställ med `git revert c426fac9` om de blivit sämre.
+- **Tidsättning.** `packages/presentation/runtime/filmed-deal-timeline.mjs`
+  (ren planerare): steglängd ur tagningens bildrutor vid profilens fps, REDO
+  rygg mot rygg, annars 80 ms lucka, öppningsförsprång 700 ms (1500 ms när
+  planen börjar med vändningen), överlämning på sista 1,5 bildrutorna men
+  aldrig före clear-rutan, sök in i fasen förbi 0,15 s och aldrig in i sista
+  0,04 s, ikappkörning över 0,4 s drift, anpassning med playbackRate 0,6–2 när
+  fönstret är kortare än materialet. `shared-room-presentation.mjs` tidsätter
+  varje filmat steg mot bordsklockan (startAt/endAt), väntar in stegets tid,
+  söker vid sen start, visar statiskt kort när tiden gått; en kedja efter tal
+  ankras där den börjar. `local-presentation.mjs` och `local-film-player.mjs`
+  spelar den exakta tagningen med startOffset/handoverAt/playbackRate/clockTime
+  och är oförändrade utan de alternativen.
+- **Kvar.** Taltidsättning (scheduleTalks, lipsync-fönster) och Kevins
+  1000 ms "talar"-försprång väntar på talspår med känd längd; återanslutning
+  mitt i en plan behåller mains regel (ögonblicksbild, aldrig omspelning).
+- **Verifiering.** 320 prov i presentation-, levande lager- och
+  rumssviterna efter merge med main; pre-commit 208 fokuserade prov.
+
 
 Branch `codex/admin-ux-pass-2`. Jakobs besked: Admin var fullt av dubbletter och
 gammal partnerlogik läckte in i rumssidan. Ingen regel eller test förbjöd att ta
