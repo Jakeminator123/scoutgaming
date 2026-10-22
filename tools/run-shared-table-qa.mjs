@@ -103,7 +103,9 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false, 
       const receiver = await runPostgresPresentationReceiverChecks({ pool, createPool, restart }); pool = receiver.pool;
       const { runK04MountedFlowChecks } = await import('../test/postgres-k04-flow.mjs');
       const flow = await runK04MountedFlowChecks({ pool, restart }); pool = flow.pool;
-      checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks, ...flow.checks];
+      const { runPostgresSharedCommandChecks } = await import('../test/postgres-shared-command.mjs');
+      const commands = await runPostgresSharedCommandChecks({pool,createPool}); pool = commands.pool;
+      checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks, ...flow.checks, ...commands.checks];
     }
     await closePools(); await stop();
     console.log(JSON.stringify({ acceptance: runChecks ? 'isolated-injected-sql-checks' : 'isolated-shared-table-sql-two-client-process-restart', checks, count: checks.length, clusterStopped: true }));

@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { registerPostgresPoolAlias, sharedPostgresTransaction, sharedPostgresClient, poisonSharedPostgresTransaction, runPostgresTransactionOwner } from './postgres-transaction-context.mjs';
 import { createHash } from 'node:crypto';
 import { validateStudioScope } from '../../studio-access/studio-scope.mjs';
 
@@ -68,6 +69,14 @@ export function createPostgresStore({ pool, readProductSchema } = {}) {
   function database(schema) {
     if (!SCHEMAS.has(schema)) throw new Error('Unsupported PostgreSQL schema');
     async function query(sql, values = []) {
+      const shared = sharedPostgresTransaction(pool);
+      if (shared) {
+        try {
+          if (/^\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i.test(sql)) throw new Error('Shared transaction control belongs to its owner');
+          return await sharedPostgresClient(pool).query(qualified(sql, schema), values);
+        }
+        catch (error) { throw poisonSharedPostgresTransaction(error, shared); }
+      }
       const context = transactionContext.getStore();
       if (context?.pool === pool) {
         return context.client.query(qualified(sql, schema), values);
@@ -76,7 +85,17 @@ export function createPostgresStore({ pool, readProductSchema } = {}) {
     }
     async function transaction(work, {serialize=true,studioScope}={}) {
       // validateStudioScope returns exactly these keys in canonical order.
-      const studioScopeKey = studioScope === undefined ? null : JSON.stringify(validateStudioScope(studioScope));
+      let studioScopeKey;
+      try { studioScopeKey = studioScope === undefined ? null : JSON.stringify(validateStudioScope(studioScope)); }
+      catch (error) { throw poisonSharedPostgresTransaction(error); }
+      const shared = sharedPostgresTransaction(pool);
+      if (shared) {
+        try {
+          if (studioScopeKey && shared.scopeKey !== studioScopeKey) throw new Error('Studio transaction scope mismatch');
+          if (serialize && !shared.serialize) throw new Error('Shared PostgreSQL lock escalation');
+          return await work();
+        } catch (error) { throw poisonSharedPostgresTransaction(error, shared); }
+      }
       const existing = transactionContext.getStore();
       if (existing?.pool === pool) {
         try{
@@ -99,7 +118,7 @@ export function createPostgresStore({ pool, readProductSchema } = {}) {
           await client.query('SELECT pg_advisory_xact_lock($1::integer, $2::integer)',[digest.readInt32BE(0),digest.readInt32BE(4)]);
         }
         const context={pool,client,studioScopeKey,serialize};
-        const result = await transactionContext.run(context, work);
+        const result = await runPostgresTransactionOwner(context, () => transactionContext.run(context, work));
         if(context.failed)throw context.failed;
         const committed=await client.query('COMMIT');
         if(committed?.command==='ROLLBACK')throw new Error('PostgreSQL transaction was rolled back');
@@ -111,18 +130,29 @@ export function createPostgresStore({ pool, readProductSchema } = {}) {
     }
     return {
       backend: 'postgres', schema, transaction,
+      assertSharedTransaction({ studioScope, serialize = false } = {}) {
+        const shared = sharedPostgresTransaction(pool);
+        try {
+          if (!shared || studioScope === undefined || shared.scopeKey !== JSON.stringify(validateStudioScope(studioScope))
+            || typeof serialize !== 'boolean' || serialize && !shared.serialize) throw new Error('Required shared PostgreSQL authority transaction is absent');
+        } catch (error) { throw poisonSharedPostgresTransaction(error, shared); }
+      },
       async exec(sql) {
-        if (/^\s*(BEGIN|COMMIT|ROLLBACK)\b/i.test(sql)) throw new Error('Use db.transaction(callback) for PostgreSQL');
+        if (/^\s*(BEGIN|COMMIT|ROLLBACK)\b/i.test(sql)) throw poisonSharedPostgresTransaction(new Error('Use db.transaction(callback) for PostgreSQL'));
         return query(sql);
       },
       prepare(sql) {
         return {
-          async all(...args) { const result = await query(sql, args); return result.rows.map(row => normalizeRow(row, result.fields)); },
+          async all(...args) {
+            try { const result = await query(sql, args); return result.rows.map(row => normalizeRow(row, result.fields)); }
+            catch (error) { throw poisonSharedPostgresTransaction(error); }
+          },
           async get(...args) { return (await this.all(...args))[0]; },
           async run(...args) { const result = await query(sql, args); return { changes: result.rowCount, lastInsertRowid: result.rows[0]?.id }; },
         };
       },
       async assertInstalled({ source } = {}) {
+        if (sharedPostgresTransaction(pool)) throw poisonSharedPostgresTransaction(new Error('Readiness cannot run in a shared transaction'));
         if (source === undefined || source === null) {
           if (typeof readProductSchema !== 'function') throw new Error('Game PostgreSQL source is invalid');
           source = await readProductSchema();
@@ -135,11 +165,23 @@ export function createPostgresStore({ pool, readProductSchema } = {}) {
     };
   }
   const gamePool = {
-    query: (sql, values) => pool.query(qualified(sql, 'croupier_game'), values),
+    async query(sql, values) {
+      const shared = sharedPostgresTransaction(pool);
+      if (shared) {
+        try {
+          if (/^\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i.test(sql)) throw new Error('Shared transaction control belongs to its owner');
+          return await sharedPostgresClient(pool).query(qualified(sql, 'croupier_game'), values);
+        }
+        catch (error) { throw poisonSharedPostgresTransaction(error, shared); }
+      }
+      return pool.query(qualified(sql, 'croupier_game'), values);
+    },
     async connect() {
+      if (sharedPostgresTransaction(pool)) throw poisonSharedPostgresTransaction(new Error('Do not open another client in a shared transaction'));
       const client = await pool.connect();
       return { query: (sql, values) => client.query(qualified(sql, 'croupier_game'), values), release: () => client.release() };
     },
   };
+  registerPostgresPoolAlias(gamePool, pool);
   return { pool, gamePool, db: database('croupier_game'), boDb: database('croupier_auth'), close: () => pool.end() };
 }

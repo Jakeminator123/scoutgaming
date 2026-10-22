@@ -4,122 +4,108 @@
 
 **Mål/status:** Admin → lobby → autentiserat delat spel med beständig sparning,
 serverägda regler/demo-wallet och exakt presentationsmedia. PR311 är kanonisk plan.
-45% accepterade hela aktiviteter (9/20),55% kvar; ingen tids-/kod-/produktionsprocent.
-J05/J08/K04/K05 är fortfarande IN_PROGRESS.
+45% accepterade hela aktiviteter (9/20), 55% kvar; ingen tids-/kod-/produktionsprocent.
+J05/J08/K04/K05 är fortfarande IN_PROGRESS. Denna etapp gör command-backend
+granskningsbar; monterad klient och produktionsschema är kvarvarande grindar.
 
-**Arbetskopia:** `C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier`,
-`codex/shared-room-transport`, draft PR336. J08:s produktdelta finns redan här.
-Primary main och andras filer/index/config är orörda. Routing/replay är pushad på
-673e9707b9bf1b97b79252e76673a9ca7719c87a. Dess CI39723734608 pågick vid senaste
-läsningen; GitGuardian success. Äldre grön CI39718902798 gäller012f4de6.
-Ingen tidigare kontroll påstås täcka nya kontrakts-/authoritydeltan.
+**Arbetskopia/bas:** C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier,
+codex/shared-room-transport, draft PR336. J08:s produktdelta finns redan här.
+Etappen bygger på c5d470b98e017ace54bdbc20ccf798d3ce0ecb09. Dess CI39724650872
+är färskverifierad completed/success. CI på c5 täcker inte denna senare etapp.
+Primary och andras filer/index/config lämnas orörda; ingen merge/deploy/aktivering.
 
-**Publik routing:** strikt `/shared-room/<roomId>` går via Vercels speech-service,
-signerad ingress och befintlig Gateway till spelets loopback. Kanonisk Host/Origin,
-browserns sessionscookie och auth före101 bevaras. Workerbearer, speech-ticket,
-subprotokoll och alternativ rumsadress ger ingen rumsauth. Pending/etablerade
-anslutningar dräneras när close inleds; sen admission nekas. Speech använder sin
-verkliga ws8.22.0 och spelet sin oförändrade gatewayägda ws8.21.3.
+**Same-PG-behörighet och sparning:** repository, produktstorage och shared-table
+ansluter nu till en uttrycklig serverintern transaktion. Ordning G → S → sorterade
+R/P/A bibehålls; separat pool/scope eller uppgradering av en redan vanlig
+repositorytransaktion nekas. Låsomtag använder savepoint och gamla försöksslutna
+SQL-portar kan inte återanvändas. Ursprungliga adapterbeteenden utanför shared-
+transaktionen består. Två oberoende P2 reproducerades och rättades innan leverans.
 
-**Isolerad replayadapter:** browser-säker gemensam reconnectregel återexporteras
-av K04. Snapshot återställs före presentation; versioner hålls monotona och
-asynkrona callbacks serialiseras/avbryts. En verklig P2 rättades: tre normala
-290s-rotationer förbrukade budgeten; den fjärde stoppade klienten efter cirka19min20s. Budgeten förnyas nu
-först efter färdigrenderat giltigt state från aktuell anslutning. Ingen appmontering,
-ny command-/walletwriter eller aktivering ingår; CROUPIER_SHARED_TABLE_ENABLED är osatt.
+En separat låst sessionadapter kontrollerar aktiv spelare, native/BO-proveniens,
+credential-fingerprint, BO-epoch och session på samma klient. FOR SHARE-lås hålls
+till commit; sessionens identitet/proveniens kontrolleras före och efter väntan.
+Auth körs efter deklarerade bordslås men före kvitto, även vid replay/låsomtag.
+Publicering, operatör, rum, paketrevision och konfiguration omkontrolleras under S.
+Svar och resultat projiceras före yttersta COMMIT; projekteringsfel rullar tillbaka.
+Stop/disconnect avbryter admission och väntande arbete; inga tokens skickas ut.
 
-**Kommandokontrakt:** separat ren parser/projektor accepterar14 explicita operationer,
-nekar klientvalda identiteter/okända fält och bevarar idempotensindata. Resultat
-innehåller inga ledger-ID, audit-, shoeproof- eller tvärrumsuppgifter. Root körde
-12/12,0skip på Node24.21/fyra workers; faktisk isolerad minneskoordinator ingår.
-Oberoende runtime_audit läste hela tvåfilsdeltat utan blockerande fynd.
+**Commandtransport:** strikt cookieautentiserad POST
+/api/shared-room/<roomId>/command med 14-operationerskontraktet från c5. Endast
+servervalda rum/aktörer tillåts. Host/Origin, rå path före URL-normalisering,
+JSON/UTF8/storlek, abort, fasta felkoder och säkert resultat kontrolleras.
+Vercel-routing äger exakt endpoint. Ingen annan writer eller ny sessionsmodell.
+WebSocket-state väntar på beständigt K04-resultat: state/presentation ska ha
+samma version, försenad receiver väntar på hint med en ändlig tidsgräns.
+Globala pause-invalideringar når alla faktiskt ändrade rum utan att läcka rumlistan.
 
-**Intern authority-port/refill:** en serverkonfigurerad, ännu oanvänd port körs i
-coordinatorns låsta arbetsenhet före kvittoläsning, också vid replay/låsomtag.
-Endast exakt true tillåter fortsatt behandling. Detta är en integrationspunkt,
-inte färdig sessions-/publiceringsauth. Nekat kvitto, full rollback, väntan och
-felidentitet täcks av8nya prov. Skribentens samkörning39/39,0skip består av dessa
-och31coordinatorprov; den tidigare40/40-regressionen överlappar. SQL-ordningsprovet
-använder verklig adapter med instrumenterad falsk klient, inte riktig PostgreSQL.
-Kevins exakta refillhunks från eb6ab45509fad539463bbcb6930cc46d2d0844c2
-återanvändes: endast WalletDenied blir REFILL_REFUSED; infrastrukturfel bevaras.
-runtime_audit granskade samlat slutdelta och testregistrering utan blockerande fynd.
+**Readonly klientbootstrap:** oöppnat rum får virtuell snapshot med serverägt
+saldo/paus, tomma platser och aktuell publicerad config utan DB-write/presence/RNG.
+Öppet rum får sin frysta config. settings visar bara configVersion, språk,
+bet/action-tider, min/max/sideMax, chips och refill, med typ-/gränsvalidering.
+Det isolerade entrypointvalet är förberett/provat men används inte av servern
+förrän Kevins shared-room-app finns och är granskad. Gamla app.mjs importeras
+inte av något nytt state-lager. CROUPIER_SHARED_TABLE_ENABLED är fortsatt osatt.
 
-**Verifiering/review:** root körde samlad service/scheduler/upgrade/dispatcher/
-serverstopp39/39,0skip. Routingskribenten körde15/15 nya nätverks-/grindprov,
-24/24 närliggande regressioner,7/7 webb-socket,7/7 native-Speech samt Speechs
-syntaxbygge på Node22.23.1. Riktiga treportsfixturer stängdes och gav ECONNREFUSED.
-24/24 finns som terminalkvitto, inte sparad slutlogg. Replayfix före16pass/1fail,
-efter17/17,0skip; sju friska1001-rotationer utan presentationsreplay. K04:s äldre
-presentationprov22/22. Dessa körningar överlappar; skribentprov är attribuerade.
-runtime_audit läste hela routingdeltat, hela replayadaptern och sista tvåfilsfixen
-oberoende utan kvarvarande blockerande fynd. Ingen ny PG-/browser-/visuell
-produktacceptans, deploy eller produktionsaktivering påstås.
+**Verifiering:** root körde hela befintliga isolerade PostgreSQL-harnessen:
+42/42 kontroller, clusterStopped:true. Den omfattar wallet/reservationer,
+två klienter/processåterstart, receiver/K04 samt åtta nya behörighetskontroller.
+De nya proven verifierar samma SQL-klient, rollback, session-DELETE kontra commit,
+nekad kvittoreplay efter revokation, credential/epoch/status-ändring vid låsväntan
+samt faktiska G/S-lås via pg_locks och konkurrerande publicerare.
+WSL Node22.22.0 uppfyller game>=22.16; eget loopback-kluster skapades och stängdes.
+Ingen produktionsdatabas eller systeminstallation ändrades. Exakt logg:
+C:/Users/jakem/.codex/visualizations/2026/10/22/01a161cd-294a-7951-8190-5cf396ab8c13/real-pg-shared-full.log.
+Frontend tsc --noEmit --incremental false är grön på projektets Node24.21.0.
+Fokuserade 53/53 bridge-, 17/17 auth-, 61/61 bootstrap- och 29/29 slutsettings-
+prov överlappar; de får inte summeras till en täckningssiffra. Nullsettingsfixen
+har separat 12/12 och oberoende slutreview utan blockerare.
+Normalhook/färskt exakt-head-CI och slutreview redovisas vid etappens PR-kvitto.
 
-**Nästa sammanhängande produktsteg:** bind S-lås före sorterade R/P/A till samma
-pg-klient, transaktionsbunden session/FOR SHARE, full proveniens/publicering och
-skyddad svarsläsning. Därefter publik shared-commandadapter med befintlig
-sessions-/rums-/revision-/idempotensgräns, därefter byte av kommandokontroller och
-montering i `services/game/public/app.mjs` tillsammans. Nuvarande `/api/table`
-är en annan spelwriter. Att visa shared-state framför legacy DEAL/ACT är inte en
-färdig klient. Schema008 har DB-skydd för reserverat saldo när det är installerat;
-detta ersätter inte korrekt UI-/commandkoppling. Samlad verklig PG/start/readiness/
-drain och Kevins monterade mobil-/dator-/felvägsbevis återstår för integrationen.
+**Kevin/nästa klientsteg:** i #312/6333117918 fick Kevin en avgränsad implementation
+av services/game/public/shared-room-app.mjs och nödvändiga egna view/controller-
+moduler på sin befintliga K04-branch. 6333203039 anger serverns exakta dataset och
+bootstrap/HTTP-kontrakt. Han ska koppla platser, insatser, ready/handlingar,
+försäkring, next/refill/pause, bevara commandId/payload vid osäkert nätfel och
+återställa snapshot före K04 utan presentationsreplay. Ingen ny leverans var läst
+vid denna skrivning; hans senaste frysta head är eb6ab45509fad539463bbcb6930cc46d2d0844c2.
+Root äger serverns entrypointval och player-ui-builds importkö efter klientreview.
+Därefter behövs verkligt monterade mobil-/dator-/felvägsprov och samlad slutreview.
+Kevins tidigare smala refillfix är redan oberoende granskad och inkluderad i c5.
+Hans egen kod räknas inte som oberoende granskad av honom. Inga PR333merger godkända.
 
-**Kevin:** aktiv kontakt verifierad i #312/6332600144, K04 PR333/tidigare granskad head
-`6a124410a39e168b078921f6d70507cb0ba42c14`. Tidigare oberoende tvåfilsreview från23d4
-utan blockerare består; Kevins24/24,140pass/1codecskip,34/34PG är rapporterade bevis.
-Kevin levererade commandgranskning6332783679 och beställd refillfix6332927259 på
-eb6ab45509fad539463bbcb6930cc46d2d0844c2. Den smala fixen är separat oberoende
-granskad och återanvänd här; inga PR333merger eller nya ägargodkännanden antas.
-Han behåller de tre återstående monterade K04-/mobil-/felvägsproven. K05 PR314/head
-159cc134 har granskad metadata/validator; verklig import/registry/talgodkännande
-saknas. Endast J08:s beroende native-materialbindning väntar. Ingen mediaimport,
-Paowrestore, nytt dealer-/rumsregister eller ändring av levande grundloop är beställd.
+**Mergeordning/mandat:** Jakobs direkta mandat22oktober omfattar verifierat Jakobägda
+migrations-PR:ar, en åt gången efter oberoende bugreview, exakt-head grön obligatorisk
+CI och ägar-/integrations-/schema-/säkerhetsgrindar. Annan/okänd/konfliktägare kräver
+direkt separat human confirmation för exakt PR/ägare/oförändrad head. Minsta etapp
+är334 →336;334 inkluderar332 och centrala K04 finns redan i336. Ingen bypass,
+force, automerge, queue eller grendeletion. Ingen merge har gjorts i denna etapp.
 
-**Mergeordning/mandat:** Jakob gav22oktober stående mandat för verifierat Jakobägda
-migrations-PR:ar inom planen, en åt gången efter oberoende bugreview och gröna
-exakt-head-kontroller samt befintliga ägar-/integrations-/schema-/säkerhetsgrindar.
-Kevin/John/Emil/okänd eller konfliktägare kräver separat uttryckligt exakt-head-beslut.
-Ingen bypass/force/automerge/queue/grendeletion. PR334 ensam innehåller hela PR332;
-minsta föreslagna etapp är334 → levererad/granskad336.332 behöver inte mergas separat.
-333:s centrala K04-produktblobbar ingår redan i336; dess två nya fel-/replayprov ska
-bevaras vid senare integration, utan att anta att historikmerge behövs.
+**Produktionsgrindar:** read-only metadata22oktober i Neon croupier-production,
+wandering-hill-60561912/br-flat-fog-b161a6r8, DB/roll croupier_game visade att008-
+reservationer/wallettrigger,009-rum/configheads och010-receiver saknas. Studio-CI
+bevisar inte dessa. Ingen produktions-DDL är godkänd. K05PR314/head159cc134 har
+metadata/validator; riktig registry/Blobbindning och talgodkännande saknas.
+Bevara exakta mediaidentiteter, Astridlegacy och MårtenPUBLIC_HIDDEN; ingen Paowrestore.
+Main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad har grön CI; GitGuardian-suite107587135522
+är queued utan checkrun. Incident-/historiktäckning är ofullständig, inte klarerad.
+Vercel www-alias var READY på dpl_BtsNCjAAHVodcii1L3B7ZQBLmHur/main6bcf; ingen ny
+visuell produktacceptans eller produktionsdeploy påstås.
 
-**Färsk schemagrind:** read-only metadataSELECT mot verifierade Neon
-`croupier-production`/`wandering-hill-60561912`, `br-flat-fog-b161a6r8`,
-DB/roll`croupier_game` visade22oktober att008-reservationer/wallettrigger,
-009-rum/configheads och010-mottagare saknas. Därför är game-schemagrinden konkret
-blockerad även om Studio-readiness/CI är grön. Inget produktions-DDL-mandat finns.
-Ingen merge har gjorts i denna leverans. Mains GitGuardian-suite är fortsatt queued
-utan checkrun; incident-/historiktäckning är ofullständig, inte säkerhetsklarerad.
+**Återställning/ägarskap:** ursprungschattens arkivering tog dess tre arbetskopior,
+inte en merge. Transport återställdes från snapshot7402403aaa069de35a6cdc0e25cab42f5c0f0caa,
+parented12034e; alla15 taskfiler finns och en verifierad privat Gitbundle säkrar dem.
+Efter Jakobs uttryckliga undantag återregistrerades EXAKT plan/J08 på ursprungliga
+paths/branchheads. Plan är nu ac9cf3b03dc06a571a8719a7efb0b9b451e0826f; J08 är
+d7d139b9f7bf59b1bd924280ab456af12e1c8b5a. Alla tre är Gitlåsta; inga extra kopior/brancher.
+App-attach nekas ännu för ownerless kopior: håll ursprungschatt01a15e6b-61f9-7843-aa06-3a47dee6a194
+oarkiverad utan parallell writer. Gamla ignorerade loggar/dependencies återställdes inte.
+Primary main028a199b är äldre än remote main; ingen automatisk synk av primary.
+Automation är ACTIVE/femminuter i denna chatt och tyst vid oförändrat läge.
+Exakt tidigare godkänd tom Neonstaging PG18/Frankfurt/0.25CU/300s är ännu oskapad
+eftersom Vercel-managed-provisionering inte säkert kan ange dessa parametrar.
+Inga produktions-DDL/deploy/env-/flaggändringar/betald drift/GPU/mediaimport tillåts.
+Render förblir croupier-v2/srv-datg3j6gekts73amgli0, en instans.
 
-**Publicerad UX:** Vercels verifierade domänalias www.scoutgaming.tech pekade22oktober
-på READY-deployment dpl_BtsNCjAAHVodcii1L3B7ZQBLmHur/main
-6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad. J01–J03Admin/J04lobby bör därför finnas
-publikt. UI:t har inte verifierats visuellt i denna körning. J08/PR336 är inte main.
-
-**Lokal återställning:** arkivering av ursprungschatten arkiverade dess tre kopior.
-Efter Jakobs uttryckliga godkännande återställdes transporten på samma sökväg från
-snapshot7402403aaa069de35a6cdc0e25cab42f5c0f0caa,parented12034e. Alla15taskfiler
-bevarades och säkrades i en verifierad privat Git-bundle utanför kopian. Replay4/4
-matchade den privata rekonstruktionen efter enbartLF-normalisering; slutfix2/2
-matchar egna SHA256. Ignorerat gammalt routingarkiv och privata loggar återställdes
-inte; dessa får inte beskrivas som fortfarande läsbara. Appens snapshots för rena
-plan/J08 saknades. Efter Jakobs uttryckliga undantag22oktober återregistrerades
-endast dessa två arbetskopior med Git på exakt samma gamla sökvägar/brancher,
-heads4bd3a6dd9a812fd49049e67cc0da49b39602236e respektive
-d7d139b9f7bf59b1bd924280ab456af12e1c8b5a. Båda verifierades rena med rätt origin
-och låstes i Git; inga nya brancher eller extra kopior skapades. Appens attach
-nekas fortfarande för ownerless kopior. Ursprungschatten hålls därför oarkiverad;
-ingen unsupported ägarregistrering eller primaryändring har gjorts.
-
-Samma automation är ACTIVE/femminuter i nya chatten01a161cd-294a-7951-8190-5cf396ab8c13;
-tyst vid oförändrat läge. Ingen parallell produktwriter finns i ursprungschatten.
-Exakt godkänd tom Neonstaging (PG18/Frankfurt/0.25CU/300s) är fortsatt oskapad på
-grund av Vercel-managed-provisionering; godkännandet gäller oförändrat. Ingen
-produktions-DDL/deploy/env-/flaggändring/betald drift/GPU/mediaimport följer av det.
-Render förblir befintlig croupier-v2, en instans.
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från

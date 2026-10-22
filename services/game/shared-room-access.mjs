@@ -51,7 +51,7 @@ function configMatches(value,{version,pack,room,presentation,dealerId}) {
  * Construction performs no I/O. No bearer, cache, inferred grants or provider
  * access is retained. Only the room id comes from the channel's strict path.
  */
-export function createSharedRoomAccess({auth,repository,scope,now=Date.now}={}) {
+export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Date.now}={}) {
   scope=validateStudioScope(scope);
   if(typeof now!=='function'||!auth||typeof auth.binding!=='function'||typeof auth.bindingById!=='function'
     ||!repository||!['transaction','withTransactionClient','readDocument'].every(key=>typeof repository[key]==='function')
@@ -121,5 +121,19 @@ export function createSharedRoomAccess({auth,repository,scope,now=Date.now}={}) 
     if(keys.some(key=>latest[key]!==binding[key]))deny();
     return latest;
   }
-  return Object.freeze({authorize,revalidate});
+  async function revalidateLocked(binding,{signal}={}) {
+    // Called only after the table's declared R/P/A locks, inside the explicit
+    // shared transaction. The auth adapter verifies this same scoped context.
+    if(typeof commandAuth?.bindingById!=='function')unavailable();
+    if(!binding||keys.some(key=>!Object.hasOwn(binding,key))||!isGameLaneId(binding.roomId)
+      ||!id(binding.operatorId)||!Number.isSafeInteger(binding.packageRevision)||binding.packageRevision<1)deny();
+    aborted(signal);
+    const fresh=session(await commandAuth.bindingById(binding.sessionId,{actorId:binding.actorId,signal}),now);
+    if(['actorId','sessionId','expiresAt'].some(key=>fresh[key]!==binding[key]))deny();
+    const publication=await current(binding.roomId,signal);
+    if(['operatorId','roomId','packageRevision'].some(key=>publication[key]!==binding[key]))deny();
+    aborted(signal);
+    return Object.freeze({...fresh,...publication});
+  }
+  return Object.freeze({authorize,revalidate,revalidateLocked});
 }

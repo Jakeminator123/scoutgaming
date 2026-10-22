@@ -1,5 +1,6 @@
 import { createSharedRoomAccess } from './shared-room-access.mjs';
-import { createSharedRoomChannel } from './shared-room-channel.mjs';
+import { createSharedRoomChannel, projectSharedRoomSnapshot } from './shared-room-channel.mjs';
+import { parseSharedRoomCommand, projectSharedRoomCommandResult } from './shared-room-command-contract.mjs';
 import { createSharedRoomUpgrade } from './shared-room-upgrade.mjs';
 import { createPostgresTableRuntime } from './games/blackjack/table/postgres-runtime.mjs';
 import { createPostgresPresentationReceiver } from './games/blackjack/presentation/postgres-receiver.mjs';
@@ -13,10 +14,11 @@ const timestamp = value => Number.isSafeInteger(value) && value >= 0 ? value : n
  * closing the application's pool. A stopped/failed instance cannot be restarted.
  * K04's receiver converts the frozen outbox row and commits its version before
  * the channel receives an invalidation hint. Only the coordinator acknowledges
- * outbox rows. No commands, publication writer or material fallback live here.
+ * outbox rows. Commands share the scoped database transaction; no publication
+ * writer or material fallback lives here.
  */
 export function createSharedRoomService({
-  pool, walletMode, origin, engineOrigin, scope, auth, repository,
+  pool, walletMode, origin, engineOrigin, scope, auth, commandAuth, repository,
   clock = { now: Date.now }, random, intervalMs, onError,
   lockTimeoutMs, statementTimeoutMs, readTimeoutMs, WebSocketServer,
 } = {}, {
@@ -26,12 +28,23 @@ export function createSharedRoomService({
 } = {}) {
   if (walletMode !== 'demo' || typeof pool?.connect !== 'function' || typeof pool?.query !== 'function'
     || typeof clock?.now !== 'function') throw unavailable();
-  const access = createAccess({ auth, repository, scope, now: () => clock.now() });
+  const access = createAccess({ auth, commandAuth, repository, scope, now: () => clock.now() });
   const receiver = createReceiver({ pool, lockTimeoutMs, statementTimeoutMs });
-  const lifetime = new AbortController(), reads = new Set();
+  const lifetime = new AbortController(), reads = new Set(), admissions = new WeakMap();
   let state = 'idle', failed = false, starting, closing, cleanup, channel;
   const runtime = createRuntime({ pool, walletMode, clock, random, intervalMs, onError,
-    lockTimeoutMs, statementTimeoutMs, sink: async row => {
+    lockTimeoutMs, statementTimeoutMs, authorizeCommand: async (tx, context) => {
+      const admission = context.authority && admissions.get(context.authority);
+      if (!admission
+        || context.actorId !== admission.binding.actorId || context.roomId !== admission.binding.roomId
+        || typeof access.revalidateLocked !== 'function') throw unavailable();
+      admission.signal.throwIfAborted(); requireReady();
+      await access.revalidateLocked(admission.binding, { signal: admission.signal });
+      const before = await tx.rooms.read(context.roomId);
+      admission.presentationVer = before?.presentationVer ?? 0;
+      admission.signal.throwIfAborted(); requireReady();
+      return true;
+    }, sink: async row => {
       // receiver.sink owns presentationForRow + the atomic receiver transaction.
       // Replayed 'applied' is only a reread hint, never a second application.
       const result = await receiver.sink(row);
@@ -57,10 +70,51 @@ export function createSharedRoomService({
       .finally(() => { reads.delete(operation); });
     reads.add(operation); return operation;
   }
+  async function command(request, { roomId, input, signal } = {}) {
+    if (typeof repository?.sharedTransaction !== 'function' || typeof runtime.coordinator.command !== 'function') throw unavailable();
+    // Re-parse even for another internal caller; only the separately supplied
+    // canonical room can be authoritative. The HTTP adapter already parses.
+    if (!input || input.roomId !== roomId) throw Object.assign(new Error('shared_room_invalid_command'), { code: 'shared_room_invalid_command' });
+    const { roomId: _room, ...body } = input;
+    const parsed = parseSharedRoomCommand(roomId, body);
+    const combined = request?.signal && signal ? AbortSignal.any([request.signal, signal]) : request?.signal ?? signal;
+    return read(async active => {
+      const binding = await access.authorize(request, { roomId, signal: active });
+      active.throwIfAborted(); requireReady();
+      const admission = { binding, signal: active, presentationVer: 0 }, token = Object.freeze({});
+      admissions.set(token, admission);
+      try {
+        const notifyRooms = new Set();
+        const response = await repository.sharedTransaction(async () => {
+          active.throwIfAborted(); requireReady();
+          const result = await runtime.coordinator.command({ actorId: binding.actorId, authority: token, clientSnapshot: true }, parsed);
+          active.throwIfAborted(); requireReady();
+          if (typeof result?.replay !== 'boolean') throw unavailable();
+          // Both projections run before the outer COMMIT; projection failure
+          // rolls back effects rather than returning private or malformed state.
+          if (result.snapshot === null && parsed.op !== 'pause') throw unavailable();
+          if (!result.replay && parsed.op === 'pause') {
+            // This global operation may update other rooms without an outbox.
+            // Keep its server-selected rooms private, but invalidate each one.
+            const affected = result.result?.rooms;
+            if (!Array.isArray(affected) || affected.some(room => typeof room !== 'string' || !/^[a-z0-9_-]{1,128}$/.test(room))) throw unavailable();
+            for (const room of affected) notifyRooms.add(room);
+          }
+          return Object.freeze({ result: projectSharedRoomCommandResult(result.result),
+            replay: result.replay, snapshot: result.snapshot === null ? null : projectSharedRoomSnapshot(result.snapshot, binding) });
+        }, { serialize: true });
+        // A new presentation is announced only by the receiver sink after its
+        // durable version commits. Ordinary state-only changes can notify now.
+        if (!response.replay && response.snapshot && response.snapshot.presentationVer === admission.presentationVer) notifyRooms.add(roomId);
+        for (const room of notifyRooms) channel.emitCommitted(room);
+        return response;
+      } finally { admissions.delete(token); }
+    }, combined);
+  }
   channel = createChannel({ origin, now: () => clock.now(), readTimeoutMs,
     authorize: (request, { roomId, signal }) => read(active => access.authorize(request, { roomId, signal: active }), signal),
     revalidate: (binding, { signal }) => read(active => access.revalidate(binding, { signal: active }), signal),
-    readSnapshot: (roomId, actorId, { signal }) => read(() => runtime.coordinator.snapshot(roomId, actorId), signal),
+    readSnapshot: (roomId, actorId, { signal }) => read(() => runtime.coordinator.snapshot(roomId, actorId, {client:true}), signal),
     readPresentation: (roomId, { signal }) => read(() => receiver.current(roomId), signal),
   });
   const upgrade = createUpgrade({ origin, engineOrigin, WebSocketServer, channel: {
@@ -121,6 +175,6 @@ export function createSharedRoomService({
     });
     return closing;
   }
-  return Object.freeze({ start, close, stop: close, health,
+  return Object.freeze({ start, close, stop: close, health, command,
     handleUpgrade: (request, socket, head) => upgrade.handleUpgrade(request, socket, head) });
 }

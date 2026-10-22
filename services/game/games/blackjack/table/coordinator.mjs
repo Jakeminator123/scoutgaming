@@ -12,6 +12,8 @@ export const TABLE_CONTRACT = 'blackjack-table/1';
 export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
 const PAUSE_MS = 86400000;                         // :350
 const emptyBets = () => Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 }));
+const clientSettings = cfg => ({ configVersion: cfg.configVersion, language: cfg.language, betMs: cfg.betMs, actionMs: cfg.actionMs,
+  limits: { min: cfg.limits.min, max: cfg.limits.max, sideMax: cfg.limits.sideMax }, chips: [...cfg.chips], refill: cfg.refill });
 const sum = b => b.main + b.pp + b.tp;
 const owned = (r, p) => r.owners.flatMap((o, i) => o === p ? [i] : []);
 const sorted = ids => [...new Set(ids.filter(Boolean))].sort();
@@ -281,7 +283,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     });
     // `seen` is a separate presence write after COMMIT; a replay writes nothing (O01 2.2).
     if (!outcome.replay) await store.presence.touch(input.roomId, actorId, now());
-    return { result: outcome.result, replay: outcome.replay, snapshot: await snapshot(input.roomId, actorId) };
+    return { result: outcome.result, replay: outcome.replay, snapshot: await snapshot(input.roomId, actorId, { client: ctx.clientSnapshot === true }) };
   }
 
   async function apply(tx, plan, { actorId, name }, input) {
@@ -591,9 +593,17 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
 
   // ---- reads and delivery ---------------------------------------------------------------
   // Read-only reconnect snapshot: everything a client needs to resume, incl. stored deadlines.
-  async function snapshot(roomId, actorId = null) {
+  async function snapshot(roomId, actorId = null, { client = false } = {}) {
     const r = await store.read.room(roomId);
-    if (!r) return null;
+    if (!r) {
+      if (client !== true || !actorId) return null;
+      const settings = clientSettings(await store.read.config(roomId));
+      return { contract: TABLE_CONTRACT, roomId, version: 0, configVersion: settings.configVersion, windowId: 'unopened',
+        phase: 'bets', roundId: null, turnSeq: 0, owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: emptyBets(),
+        deadline: null, actionDeadline: null, plan: null, round: null, shoe: null, presentationVer: 0, players: [], serverNow: now(),
+        me: { id: actorId, seats: [], memberGen: 0, active: false, available: await store.read.available(actorId),
+          pausedUntil: await store.read.pausedUntil(actorId), insuranceDue: false, lastSettlement: null }, unopened: true, settings };
+    }
     const view = publicView(r.game), members = await store.read.members(roomId), t = now();
     const players = [];
     for (const m of members) if (m.active && owned(r, m.actorId).length) players.push({ id: m.actorId, seats: owned(r, m.actorId),
@@ -604,11 +614,16 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       available: await store.read.available(actorId), pausedUntil: await store.read.pausedUntil(actorId),
       insuranceDue: r.roundPhase === 'insurance' && handsOf(r, actorId).length > 0 && !Object.hasOwn(r.insurance, actorId),
       lastSettlement: r.lastSettlement[actorId] ?? null } : null;
-    return { contract: TABLE_CONTRACT, roomId, version: r.version, configVersion: r.configVersion, windowId: r.windowId,
+    const result = { contract: TABLE_CONTRACT, roomId, version: r.version, configVersion: r.configVersion, windowId: r.windowId,
       phase: r.phase, roundId: r.roundId, turnSeq: view.turnSeq, owners: r.owners, seatGen: r.seatGen, bets: r.bets,
       deadline: r.deadline, actionDeadline: r.actionDeadline, plan: r.plan, round: view.round, shoe: view.shoe,
       // K04: the outbox version of the room's latest committed presentation (reconnect check only).
       presentationVer: r.presentationVer, players, serverNow: t, me };
+    if (client === true) {
+      result.unopened = false;
+      result.settings = clientSettings(await store.read.config(roomId, r.configVersion));
+    }
+    return result;
   }
 
   // Delivery after COMMIT with the stored talkId/ver (O01 2.9). deliveredVer only skips rows

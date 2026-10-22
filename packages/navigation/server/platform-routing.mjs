@@ -37,6 +37,7 @@ const AUTH = new Set([
   '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/player/login', '/api/auth/player/register',
   '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
+const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
 const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // Public, unlisted roulette diagnostics; exact files only, no game/server source.
@@ -61,6 +62,7 @@ export function backendPlatformPath(value) {
   return (path.startsWith('/packages/') && Boolean(presentationPublicSource(path))) || AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
     || path === '/api/operators'
     || path === '/api/studio-game/command'
+    || (value === path && SHARED_ROOM_COMMAND.test(path))
     || /^\/api\/moving-speech\/[a-f0-9]{32}\/rest$/.test(path)
     || /^\/api\/moving-speech\/bank\/[a-f0-9]{64}\/(?:archive|receipt)$/.test(path)
     || path === '/api/dealer/observation'
@@ -109,6 +111,8 @@ export function platformRoute(url, config, request) {
   }
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
+  if ((path === '/api/shared-room' || path.startsWith('/api/shared-room/'))
+    && (!SHARED_ROOM_COMMAND.test(path) || url.search || url.hash)) return { kind: 'reject' };
   // Studio validates returnTo/tokens before redirecting historical auth entries.
   if (legacyAuth) {
     if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};

@@ -12,7 +12,7 @@ import { createPostgresTableStore } from './postgres-store.mjs';
 export function createPostgresTableRuntime({
   pool, walletMode, clock = { now: Date.now }, random = secureRandom(), sink,
   intervalMs = 250, onError = error => process.emitWarning(error),
-  lockTimeoutMs, statementTimeoutMs,
+  lockTimeoutMs, statementTimeoutMs, authorizeCommand,
 } = {}, {
   createStore = createPostgresTableStore, createCoordinator = createTableCoordinator,
   setTimer = setTimeout, clearTimer = clearTimeout,
@@ -27,7 +27,7 @@ export function createPostgresTableRuntime({
     return at;
   } };
   const store = createStore({ pool, walletMode, lockTimeoutMs, statementTimeoutMs });
-  const coordinator = createCoordinator({ store, clock: checkedClock, random });
+  const coordinator = createCoordinator({ store, clock: checkedClock, random, authorizeCommand });
   let state = 'stopped', timer = null, starting = null, stopping = null, inFlight = null, background = null;
   let lastSuccessAt = null, lastErrorAt = null, failed = false;
 

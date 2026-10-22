@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { setImmediate as turn, setTimeout as delay } from 'node:timers/promises';
-import { createSharedRoomChannel } from '../services/game/shared-room-channel.mjs';
+import { createSharedRoomChannel, projectSharedRoomSnapshot } from '../services/game/shared-room-channel.mjs';
 
 const origin='https://game.invalid';
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
@@ -102,8 +102,8 @@ test('mismatched versions retry, persistent mismatch/missing K04 contract and re
   const h=setup(t,{readSnapshot:async room=>snapshot(room,2),readPresentation:async room=>++reads===1?{...presentation(room,1),windowId:'previous-window',configVersion:'previous-config'}:presentation(room,2)});
   const s=await h.attach();await until(()=>s.frames.length===1);assert.equal(reads,2);assert.equal(s.frames[0].presentation.ver,2);
   let mismatchReads=0;
-  const bad=setup(t,{readSnapshot:async room=>{mismatchReads++;return snapshot(room,2);},readPresentation:async room=>presentation(room,3)});
-  const bs=await bad.attach();await until(()=>bs.closed.length);assert.equal(mismatchReads,3);assert.equal(bs.frames.length,0);
+  const bad=setup(t,{consistencyTimeoutMs:15,readSnapshot:async room=>{mismatchReads++;return snapshot(room,2);},readPresentation:async room=>presentation(room,3)});
+  const bs=await bad.attach();await delay(30);assert.equal(mismatchReads,3);assert.equal(bs.frames.length,0);
   const old=setup(t,{readSnapshot:async room=>{const value=snapshot(room);delete value.presentationVer;return value;}});
   const os=await old.attach();await until(()=>os.closed.length);assert.equal(os.frames.length,0);
   let version=2;
@@ -170,4 +170,41 @@ test('read timeout and cancellation release listeners; late auth/read completion
   assert.equal(reads,0);assert.equal(cs.frames.length,0);clean(cs);
   const throwing=setup(t,{readPresentation:async()=>{throw new Error('database password private');}});
   const ts=await throwing.attach();await until(()=>ts.closed.length);assert.deepEqual(ts.closed,[{code:1011,reason:'shared_room_unavailable'}]);assert.equal(ts.frames.length,0);
+});
+
+test('committed game state waits for delayed receiver without sending mixed versions or closing a healthy channel',async t=>{
+  let ver=1,reads=0;
+  const h=setup(t,{maxReadAttempts:2,consistencyTimeoutMs:500,
+    readSnapshot:async room=>{reads++;return snapshot(room,2,2);},
+    readPresentation:async room=>presentation(room,ver)});
+  const socket=await h.attach();
+  await until(()=>reads===2);await turn();
+  assert.equal(socket.frames.length,0);assert.deepEqual(socket.closed,[]);
+  ver=2;h.channel.emitCommitted('room-a');
+  await until(()=>socket.frames.length===1);
+  assert.equal(socket.frames[0].snapshot.presentationVer,2);
+  assert.equal(socket.frames[0].presentation.ver,2);assert.deepEqual(socket.closed,[]);
+  h.channel.close();clean(socket);
+});
+
+test('a receiver that never catches up closes once within its explicit consistency deadline',async t=>{
+  const h=setup(t,{maxReadAttempts:1,consistencyTimeoutMs:15,
+    readSnapshot:async room=>snapshot(room,2,2),readPresentation:async room=>presentation(room,1)});
+  const socket=await h.attach();await delay(30);
+  assert.deepEqual(socket.closed,[{code:1011,reason:'shared_room_unavailable'}]);
+  assert.equal(socket.frames.length,0);clean(socket);
+});
+
+test('client settings reject malformed money, timing, language and bootstrap values before exposure',()=>{
+  const cfg={configVersion:'config-a',language:'en',betMs:20000,actionMs:15000,
+    limits:{min:0.5,max:2000,sideMax:0},chips:[0.5,1,5],refill:1000};
+  const state={...snapshot(),unopened:false,settings:cfg};
+  assert.deepEqual(projectSharedRoomSnapshot(state,binding()).settings,cfg);
+  for(const change of [
+    {configVersion:'other'},{language:'de'},{betMs:0},{betMs:1.5},{actionMs:-1},{refill:-1},{refill:null},
+    {limits:null},{limits:{min:0,max:10,sideMax:5}},{limits:{min:10,max:5,sideMax:5}},
+    {limits:{min:1,max:10,sideMax:-1}},{chips:[]},{chips:[null]},{chips:[1,-1]},{chips:[1,1]},
+  ])assert.throws(()=>projectSharedRoomSnapshot({...state,settings:{...cfg,...change}},binding()),{code:'shared_room_unavailable'});
+  assert.throws(()=>projectSharedRoomSnapshot({...state,settings:null},binding()),{code:'shared_room_unavailable'});
+  assert.throws(()=>projectSharedRoomSnapshot({...state,unopened:'false'},binding()),{code:'shared_room_unavailable'});
 });

@@ -17,7 +17,8 @@ const card = fields('r s shoeDraw');
 const side = {...fields('stake returned profit label'),draws:list(true,3)};
 const hand = {...fields('box splitFrom stake pp tp done doubled insured result sideReturn busted'),cards:list(card),sideLabels:list(true,4),sideResults:{pp:side,tp:side}};
 const snapshotShape = {
-  ...fields('contract roomId version configVersion windowId phase roundId turnSeq presentationVer deadline actionDeadline serverNow'),
+  ...fields('contract roomId version configVersion windowId phase roundId turnSeq presentationVer deadline actionDeadline serverNow unopened'),
+  settings:{...fields('configVersion language betMs actionMs refill'),limits:fields('min max sideMax'),chips:list(true,64)},
   owners:list(true,7),seatGen:list(true,7),bets:list(fields('main pp tp'),7),
   plan:fields('id startAt endAt turnAt'),
   round:{...fields('phase active holeDraw'),boxes:list(hand,7),hands:list(hand,28),dealer:list(card),legalActions:list(true,8)},
@@ -48,12 +49,26 @@ function project(value,shape) {
   if(!object(value))fail();
   return Object.fromEntries(Object.entries(shape).filter(([key])=>Object.hasOwn(value,key)&&value[key]!==undefined).map(([key,child])=>[key,project(value[key],child)]));
 }
-function publicPair(rawSnapshot,rawPresentation,binding) {
+export function projectSharedRoomSnapshot(rawSnapshot,binding) {
   const s=project(rawSnapshot,snapshotShape);
   if(!s||s.contract!=='blackjack-table/1'||s.roomId!==binding.roomId||s.me?.id!==binding.actorId
     ||!integer(s.version)||!integer(s.presentationVer)||!id(s.configVersion)||!id(s.windowId))fail();
+  if(s.unopened!==undefined&&typeof s.unopened!=='boolean')fail();
+  if(s.settings!==undefined) {
+    const cfg=s.settings,positive=value=>typeof value==='number'&&Number.isFinite(value)&&value>0;
+    if(!object(cfg)||cfg.configVersion!==s.configVersion||!['en','sv'].includes(cfg.language)
+      ||!Number.isSafeInteger(cfg.betMs)||cfg.betMs<=0||!Number.isSafeInteger(cfg.actionMs)||cfg.actionMs<=0
+      ||!cfg.limits||!positive(cfg.limits.min)||!positive(cfg.limits.max)||cfg.limits.max<cfg.limits.min
+      ||typeof cfg.limits.sideMax!=='number'||!Number.isFinite(cfg.limits.sideMax)||cfg.limits.sideMax<0
+      ||!positive(cfg.refill)||!Array.isArray(cfg.chips)||cfg.chips.length===0
+      ||!cfg.chips.every(positive)||new Set(cfg.chips).size!==cfg.chips.length)fail();
+  }
   if(s.round&&s.round.phase!=='settled'&&s.round.holeDraw!=null
     &&s.round.dealer?.some(c=>c.shoeDraw===s.round.holeDraw))fail();
+  return s;
+}
+function publicPair(rawSnapshot,rawPresentation,binding) {
+  const s=projectSharedRoomSnapshot(rawSnapshot,binding);
   if(rawPresentation===null)return {snapshot:s,presentation:null,consistent:s.presentationVer===0};
   const p=project(rawPresentation,{...fields('roomId ver talkId auditSeq kind status windowId configVersion language startAt endAt'),lines:list(fields('index line lineId'),128)});
   if(!p||p.roomId!==binding.roomId||!integer(p.ver)||!id(p.talkId)||!integer(p.auditSeq)
@@ -93,11 +108,12 @@ function bounded(work,controller,timeoutMs) {
   return Promise.race([task,aborted]).finally(()=>{clearTimeout(timer);controller.signal.removeEventListener('abort',cancel);});
 }
 export function createSharedRoomChannel({origin,authorize,revalidate,readSnapshot,readPresentation,now=Date.now,
-  readTimeoutMs=2000,maxBufferedBytes=256*1024,maxReadAttempts=3,maxConnections=128}={}) {
+  readTimeoutMs=2000,maxBufferedBytes=256*1024,maxReadAttempts=3,maxConnections=128,consistencyTimeoutMs=10000}={}) {
   let parsed;try{parsed=new URL(origin);}catch{fail();}
   if(parsed.origin!==origin||!['https:','http:'].includes(parsed.protocol)
     ||![authorize,revalidate,readSnapshot,readPresentation,now].every(port=>typeof port==='function')
     ||!Number.isSafeInteger(readTimeoutMs)||readTimeoutMs<1||readTimeoutMs>30000
+    ||!Number.isSafeInteger(consistencyTimeoutMs)||consistencyTimeoutMs<1||consistencyTimeoutMs>30000
     ||!Number.isSafeInteger(maxBufferedBytes)||maxBufferedBytes<256||maxBufferedBytes>1024*1024
     ||!Number.isSafeInteger(maxReadAttempts)||maxReadAttempts<1||maxReadAttempts>5
     ||!Number.isSafeInteger(maxConnections)||maxConnections<1||maxConnections>10000)fail();
@@ -119,10 +135,10 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       if(!socket||!['on','off','send','close'].every(key=>typeof socket[key]==='function')||socket.readyState!==1)fail();
       if(binding.expiresAt<=now()){socket.close(1008,'shared_room_unauthorized');fail('shared_room_unauthorized',403);}
       if(connections.size>=maxConnections){socket.close(1013,'shared_room_capacity');fail();}
-      let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation;
+      let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation,consistencyTimer;
       let sentVersion=-1,sentPresentation=-1;
       const cleanup=()=>{
-        if(closed)return;closed=true;clearTimeout(expiryTimer);operation?.abort();
+        if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);operation?.abort();
         socket.off('message',inbound);socket.off('close',cleanup);socket.off('error',broken);
         connections.delete(connection);const group=rooms.get(roomId);group?.delete(connection);if(!group?.size)rooms.delete(roomId);
       };
@@ -149,9 +165,23 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
             },operation,readTimeoutMs);
             operation=null;if(closed)return;
             if(observed!==generation){dirty=true;continue;}
-            if(!pair.consistent||pair.snapshot.version<sentVersion||pair.snapshot.presentationVer<sentPresentation) {
+            if(pair.snapshot.version<sentVersion||pair.snapshot.presentationVer<sentPresentation) {
               if(++mismatches>=maxReadAttempts)fail();dirty=true;continue;
             }
+            if(!pair.consistent) {
+              if(++mismatches>=maxReadAttempts) {
+                // Game state can commit before its outbox reaches the receiver.
+                // Wait for that receiver's next hint, with one bounded timer;
+                // never poll SQL in a loop or send a mixed-version frame.
+                if(!consistencyTimer) {
+                  consistencyTimer=setTimeout(()=>close(1011,'shared_room_unavailable'),consistencyTimeoutMs);
+                  consistencyTimer.unref?.();
+                }
+                break;
+              }
+              dirty=true;continue;
+            }
+            clearTimeout(consistencyTimer);consistencyTimer=undefined;
             if(binding.expiresAt<=now())fail('shared_room_unauthorized',403);
             const data=JSON.stringify({type:'shared-room-state',roomId,snapshot:pair.snapshot,presentation:pair.presentation});
             if(socket.readyState!==1||!Number.isFinite(socket.bufferedAmount)||socket.bufferedAmount<0
