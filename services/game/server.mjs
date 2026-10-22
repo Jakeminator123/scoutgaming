@@ -71,6 +71,10 @@ const nativeP6QaRouter = await initializeNativeP6QaRouter();
 const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
 if (!['sqlite', 'postgres'].includes(databaseBackend)) throw new Error('Invalid CROUPIER_DATABASE.');
 const postgres = databaseBackend === 'postgres';
+const sharedRoomFlag = process.env.CROUPIER_SHARED_TABLE_ENABLED;
+if (sharedRoomFlag !== undefined && !['0','1'].includes(sharedRoomFlag)) throw Error('shared_room_flag_invalid');
+const sharedRoomsEnabled = sharedRoomFlag === '1';
+let sharedRoomService = null;
 const { createPostgresStore } = postgres ? await import('./storage/postgres-store.mjs') : {};
 if (!postgres && process.env.CROUPIER_GAME_DATABASE_URL) throw new Error('Game database mode must be explicit.');
 const storage = postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
@@ -744,6 +748,11 @@ const server = createServer(async (req, res) => {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
+  if (sharedRoomsEnabled && pathname === '/__cloud/shared-room-health') {
+    const health = sharedRoomService?.health() ?? { ready:false };
+    res.writeHead(health.ready ? 200 : 503, { 'Content-Type':'application/json', 'Cache-Control':'private, no-store' });
+    res.end(JSON.stringify(health)); return;
+  }
   if ((pathname === '/roulette-test' || pathname.startsWith('/roulette-test/') || pathname === '/api/roulette-test/spin')
       && await roulettePreview(req, res)) return;
   if (pathname==='/api/studio-preview'||pathname.startsWith('/api/studio-preview/')||pathname.startsWith('/studio-preview/')) {
@@ -1370,10 +1379,29 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ error: 'Service temporarily unavailable' }));
   }
 });
+let gameUpgradeDispatcher = null;
+if (sharedRoomsEnabled) {
+  if (!postgres || !studioPolicyRuntime || !storage?.gamePool) throw Error('shared_room_postgres_registry_required');
+  const [{createSharedRoomService},{createGameUpgradeDispatcher}] = await Promise.all([
+    import('./shared-room-service.mjs'), import('./game-upgrade-dispatcher.mjs'),
+  ]);
+  sharedRoomService = createSharedRoomService({
+    pool:storage.gamePool, walletMode:'demo', auth,
+    repository:studioPolicyRuntime.repository, scope:studioPolicyRuntime.scope,
+    engineOrigin:process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL,
+    origin:frontendOrigin,
+    onError:()=>console.warn(JSON.stringify({event:'shared_room_runtime_unavailable'})),
+  });
+  gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
+  gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
+  // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
+  try { await sharedRoomService.start(); }
+  catch (error) { gameUpgradeDispatcher.close(); await sharedRoomService.close(); throw error; }
+}
 if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
-  speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+  speechStreamService = await createGeneratedSpeechStreamService(gameUpgradeDispatcher?.port('speech') ?? server, streaming.configuration, {
     movingSpeechRoutes:process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1',
     dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
     onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
@@ -1407,7 +1435,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',unresolved:recovery.unresolved.length}));
   const repository=studioPolicyRuntime.repository;
   const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
-  movingSpeechService=createMovingSpeechRuntime({server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
+  movingSpeechService=createMovingSpeechRuntime({server:gameUpgradeDispatcher?.port('moving') ?? server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
     readPresentation:playerId=>db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId),
     publicVideo:(frozen,id)=>frozenDealerContext.publicVideo(frozen,id),
     ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,bankOptions,
@@ -1446,6 +1474,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     close:options=>Promise.all([existing?.close(options),driftRuntime.close(),movingSpeechService.close()])};
 }
 installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
+  gameUpgradeDispatcher?.close();
   studioPreview?.close();
   // Persist cancellation/terminal receipts while the journal connection is open.
   const probeCancellations = [];
@@ -1456,7 +1485,7 @@ installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
       if (dealerId === 'astrid') probeCancellations.push(probeRuntime.cancel({ playerId, dealerId }, 'server_shutdown'));
     } catch { /* An invalid internal key cannot delay the remaining cancellations. */ }
   }
-  const outcomes = await Promise.allSettled([speechStreamService?.close({ signal }), ...probeCancellations]);
+  const outcomes = await Promise.allSettled([sharedRoomService?.close(), speechStreamService?.close({ signal }), ...probeCancellations]);
   if (outcomes.some(outcome => outcome.status === 'rejected')) throw new Error('runtime_shutdown_failed');
 }, closeStorage: async () => {
   try { if (storage) await storage.close(); }

@@ -1,106 +1,59 @@
 # Aktuell handoff — Scoutgaming
 
-## J05/J07/J08 — oberoende rumstransport och driftförberedelse — 22 oktober 2026
+## J05/J07/J08 — rumstransportens appinkoppling — 22 oktober 2026
 
-Förberedelsen på `codex/shared-room-transport` utgår från J08-head
-`9b43e3e7f7cde871cdba9efe81800bf8b5c4d329`. J08:s CI39701503691 och
-GitGuardian119571576203 är verifierat completed/success på den basen.
-Ingen hel aktivitet färdigbockas av följande delsteg.
+Transportbranchen `codex/shared-room-transport` utgår från PR336/65118f4192f6a27229377bfdb559257dba8d2cf1.
+Den granskade K04-slutningen är nu importerad från
+`23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540`: 24 exakta filer,
+plus QA-union som bevarar den befintliga injicerade `runChecks`-porten.
+Schema010 är en levererad fil, inte en applicerad migration.
 
-Ny sammanhängande accessdel `shared-room-access.mjs` kopplar verklig intern
-sessionsauth till servervalt live-Blackjackrum, aktiv operatör, aktuellt paket
-och dess explicita J08-configpekare. Befintlig scoped repositorytransaktion
-återanvänds för samtliga register-/configläsningar. Configens room/operator/lane,
-presentationshash, material-ID/hash/talgodkännande och spelvärden kontrolleras;
-brandingpublicering får behålla configens ursprungliga paketrevision. Aktiva
-spelfönster läses/ändras inte. Återkallelse/utgång kontrolleras även efter SQL.
-Partner-/saknad proveniens nekas i enbart denna nya demokanal tills riktig
-key→operator/rum-grant finns; inga namn/ID används för att gissa behörighet.
-Agentens11/11 och roots fokuserade samkörning40/40,0skip överlappar; verklig
-playerAuth/Fetch Request/repository/channel.prepare körs mot SQL-minnesklient.
-kevin_plan läste hela produkt-/testdeltat, authdeltat och loggar utan blockerare.
-Granskade accessblobbar:8599392000f69e3f5eb15f37e709f95d1ce70948/
-bb57fe6a32e75549ae9cec008ea18869f1ebfbf9. Ingen ny faktisk PG-, listener-,
-klientreplay-, full Partnertransport- eller produktionsacceptans. Loggar:
-shared-room-transport/room-access.log och room-access-integrated.log.
+`shared-room-service.mjs` binder access/kanal/upgrade till J07:s runtime och
+K04:s beständiga mottagare på samma appägda gamePool. Mottagarens schema
+kontrolleras före schedulerstart. Endast beständigt `applied` ger omläsningshint;
+coordinatorn äger fortfarande outboxkvittensen. Snapshotens `presentationVer`
+och mottagarversion måste matcha innan kanalen sänder. Inga kommandon,
+ny pool, walletwriter eller materialfallback införs av bryggan.
 
+Servern monterar tjänsten endast med explicit, fortfarande osatt
+`CROUPIER_SHARED_TABLE_ENABLED=1`, Postgres och befintlig Studio-repository/scope.
+Start färdigställs före listen; startup installerar inget schema.
+En appägd upgrade-dispatcher väljer exakt en ägare för rum, Astridtal eller
+movingtal. Befintliga speech/moving-handlers behåller on/off-livscykeln via
+separata registreringsportar, medan graceful-shutdown observerar riktiga servern.
+Osatt flagga behåller de befintliga serverkopplingarna. Hälsa är sanerad och
+skrivfri på den interna `/__cloud/shared-room-health`-vägen när flaggan är på.
+Shutdown stänger admission och dränerar scheduler samt faktiska auth-/SQL-läsningar
+innan appens pool får stängas. Den nya demokanalen nekar Partner/saknad proveniens;
+befintliga Partner-HTTP-flöden består. Ingen key→operatör/rumrelation gissas.
 
-- `shared-room-channel.mjs` är en läsande portadapter, ännu ingen WebSocketlistener.
-  Exakt browser-Origin, strikt rumsadress och serverägd session/aktör/företag/
-  rum/paketrevision kontrolleras före läsning och på nytt före sändning.
-  Commit-hint ger auktoritativ omläsning, inte outboxkvittens. Publik projektion
-  tar bara tillåtna fält; rums- och presentationsversion måste matcha. Återkallad
-  session, utgången bindning, bufferttryck och lästimeout stänger anslutningen.
-  Listener måste senare kontrollera konfigurerad enginehost/ingress; proxyheaders
-  är ingen behörighet. Snapshot utan K04:s `presentationVer` nekas.
-- J07-runtime har skrivfri, sanerad `health()`: start/pumpfel, lyckad återhämtning
-  och stop/drain blir avläsbara utan SQL, klockläsning eller nya timerjobb.
-  Den är ännu inte inkopplad i gameboot eller gatewayns readiness.
-- Native J08-publicering utan materialresolver ger 422 med den fasta offentliga
-  koden `studio_room_game_material_unavailable`. Verkliga native/API-handlers
-  provas på båda API-basvägarna; paket/config/head/audit/utkast förblir orörda.
-  Auth/origin nekas före dataread, och inga provideranrop görs.
+Verifiering på Volta Node24.21/max4: service10/10, dispatcher7/7; samkörning med
+K04/presentation/kanal/access/runtime gav först74/77. Tre fel hade samma verkliga
+Windowsorsak: TSV-parsern lämnade CR i sista kolumnen, så `lugn\r` inte klassades
+som lugn idle. Parsern accepterar nu LF/CRLF med identiska rader, hashidentiteter
+och aktiveringsmängder; ett regressionsprov tillagt. Efter rättning78/78,0skip.
+Körningarna överlappar. Orphan550/0 och miljönamnsregistret validerade.
+kevin_plan har oberoende granskat service, K04-delta och parserrättning;
+eget skrivfritt prov bekräftar 1293 identiska rader/fem aktiveringsmängder mellan
+LF/CRLF. j04_resume granskade server, dispatcher, QA-union och 22 oförändrade
+K04-importblobbar. Inga blockerande fynd. Sluthook/head anges i PR och plan.
 
-Fokuserad verifiering på Volta Node24.21.0: rumskanal 9/9, runtime 10/10,
-native J08/API 15/15, alla 0 skip. Socketportar och syntetiska data, inga
-produktservrar, lyssnande portar eller molnskrivningar. Loggar finns i
-`arkiv/2026-10-22/shared-room-transport/{room-channel,runtime-health}.log`
-och `arkiv/2026-10-22/transport/j08-native-dryrun-{before,after,commands}.log`.
-Oberoende kevin_plan läste kanal/API-deltat och loggar; j04_resume läste
-runtime/health-deltat och loggen. Inga blockerande fynd. Root läste produktkod,
-prov och gränser. Review gäller hela produktdeltat från ovanstående fulla bashead;
-senare dokumentation/testregistrering ändrar inte produkten. Slutlig normalhook
-och exakt leveranshead redovisas i PR:n och masterplanens status.
+Loggar: `arkiv/2026-10-22/shared-room-transport/room-service.log`,
+`room-service-integrated.log` och `room-service-integrated-after.log`.
+Bevisen omfattar injicerad komposition och rena moduler. Ingen ny faktisk
+PostgreSQL-/nätverks-/visuell körning, listener eller GPU startades i denna del.
+Kevins nya34/34 PG och hooks på23d4 är hans rapporterade bevis, inte rootomkörning.
 
-Nästa koddelta från PR336/f34f8e38 kompletterar den verkliga Node-upgradegränsen
-med befintlig gateway-ws 8.21.3, noServer och en enda framtida dispatcher.
-Exakt engine-Host/browser-Origin/rumsväg och privata ingressens ansvar hålls isär;
-forwarded-host är ingen behörighet. Auth måste bli klar före101, okända vägar
-lämnas till övrig dispatch, och timeout/abort/tidig stängning/headbytes/dubbel
-anropning/shutdown hanteras utan sen upgrade. Ingen listener installeras automatiskt.
-6/6 prov,0skip, inklusive riktig loopback-HTTP/ws med kanalporten. Testport53236
-är stängd, noll egna sockets och efterkontroll gav ECONNREFUSED. Befintlig exakt
-installerad gatewaydependency användes genom processlokal resolution; inga
-installationer, manifest-/lockändringar eller primaryfiler ändrades. Nätprovet
-är obligatoriskt i CI, vars befintliga setup redan installerar gateway-ws.
-Logg: `arkiv/2026-10-22/shared-room-transport/room-upgrade.log`.
+Kvar hos root: publik gateway/relay/Vercelrumsväg, klientens replay/presentation,
+verklig K05-register-/paket-/talgodkännandebindning och samlad PG/start/readiness/
+drain-verifiering. Nuvarande kod/flagga är ingen publik aktivering.
+Kevin fortsätter K04:s monterade klient-, felvägs- och visuella flödeskriterier.
+Inga nya hela aktiviteter färdigbockas; J05/J08/K04/K05 är fortsatt IN_PROGRESS.
+PR336 har inget mergemandat; inga molnvariabler, import, deploy eller DDL ändras.
 
-Asynkron spelar-auth har interna skrivfria `binding(req)`/`bindingById`
-med digestbundet session-ID och utgångstid från samma validerade rad. Aktiva
-spelare, credentialstämpel, BO-epoch och partneråterkallelse kontrolleras som
-förut; det publika `session()`-svaret är oförändrat. Dubbla cookies nekas i
-bindningen; inga cookies/sessioner utfärdas och inget schema ändras.
-Interna binding/bindingById bevarar nu även explicit partnerKeyId från samma
-validerade sessionsrad: null för egna local/credential/BO-sessioner och nyckel-ID
-för Partner. Publik session(), cookieutfärdande och befintliga Partner-/native-
-API:er är oförändrade. Nya demorumskanalen kräver explicit nativeproveniens;
-partnerkey får inte gissas till Studiooperator eftersom sådan relation saknas.
-Detta är en avgränsning av den nya kanalen, inte full Partnertransport.
-Före18pass/2fail,efter20/20,0skip påNode24.21/max4; kevin_plan har oberoende
-läst hela auth-/testdeltat och loggarna utan blockerare. Loggar:
-shared-room-transport/partner-binding-{before,after}.log.
-Ingen ny SQL-cancel implementeras; befintliga PG-tidsgränser kvarstår.
-j04_resume har oberoende läst authdeltat utan blockerande kodfynd; root läste
-även BIGINT-normaliseringen i gemensam PG-adapter. Sluthead/hook och oberoende
-upgrade-review redovisas i PR/status. kevin_plan läste hela upgrade-deltat och
-6/6-loggen utan blockerande fynd. Authloggen34/34 finns nu som uttryckligt märkt
-kopia av tidigare verktygsutdata i `shared-room-transport/auth-binding.log`. Faktisk app-/gateway-/relay-/Vercelrouting,
-rum→publiceringsbindning och K04-version/sink är fortfarande nästa inkoppling.
-
-Hostingvalet är befintlig Render `croupier-v2`, en verifierad instans med
-90s shutdown, ingen ny tjänst eller skalning. Kvar: verklig auth/HTTP-upgrade,
-K04-import med beständig mottagarversion och notifikation, start före readiness,
-stopp/drain före poolstängning och sanerad gateway-readiness. Ingen produkt-
-eller GPU-aktivering följer av denna leverans. K05 blockerar endast materialbindningen.
-
-Jakob har uttryckligen godkänt en tom isolerad Neon-staging enligt
-[stagingvillkoren](ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging).
-Skapandet är blockerat: Neon-API:t nekar projekt i Vercel-hanterad organisation;
-Vercel Marketplace-verktyget exponerar inte alla godkända computeinställningar.
-Exakt namnsökning efter försöket gav inget projekt. Ingen staging eller DDL
-är skapad/körd. Återuppta via tillgänglig Vercel/Neon-administration som kan
-verifiera samma godkända inställningar; upprepa inte oförändrat API-anrop.
-
+Hosting förblir befintlig Render `croupier-v2`, en instans. Den exakt godkända
+tomma Neonstagingmiljön är fortfarande oskapad tills PG18/0.25CU/300s kan verifieras
+via en isolerad metod i rätt Vercel-hanterad organisation. Samma godkännande består.
 
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 

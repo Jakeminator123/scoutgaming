@@ -85,8 +85,8 @@ bekräftad tom målidentitet; tillämpning har ännu inte skett:
 | `ops/neon-game/010-presentation-receiver.sql` | K04 `1148fa76` | `214d9259d7d83b9084e12e3807e1ebf8fbbc5dc801392f361f4763a2b64cce43` |
 
 Fulla källheads: J08 `9b43e3e7f7cde871cdba9efe81800bf8b5c4d329`, K04
-`1148fa767de734c925bba3ea21938cf995f8bd5f`. Schema010 finns i K04, inte i
-transportförberedelsens bas. Vissa schemafiler är inte idempotenta; kör inte
+`1148fa767de734c925bba3ea21938cf995f8bd5f`. Schema010 är nu importerad från K04 till transportbranchen; filen är inte
+applicerad i någon molnmiljö. Vissa schemafiler är inte idempotenta; kör inte
 blinda omförsök. Läs tillbaka schema och pröva beständighet, två klienter och
 atomisk rollback med syntetiska data. Befintlig lokal PG-harness äger ett
 loopbackkluster och fysisk omstart; rikta den inte direkt mot Neon. Verifiera

@@ -9,6 +9,7 @@ import { verifyShoe } from '../shoe-proof.mjs';
 import { LockSetExceeded, TableError, WalletDenied, fingerprint, ledgerKey, tickIdOf } from './ports.mjs';
 
 export const TABLE_CONTRACT = 'blackjack-table/1';
+export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
 const PAUSE_MS = 86400000;                         // :350
 const emptyBets = () => Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 }));
 const sum = b => b.main + b.pp + b.tp;
@@ -76,6 +77,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // Runs K02 and writes its events: shoe.* first, then engine.<op> with Kevin's payload order
   // (:108) plus cause and ledger ids. `pay(out)` performs the wallet effects before the audit.
   async function engine(tx, r, cfg, command, funding, { parent, cause, pay }) {
+    const before = publicView(r.game);   // sanitized projection only (K04 outbox), never raw state
     let out;
     try { out = step(r.game, command, { limits: cfg.limits }, { random, funding }); }
     catch (e) { if (e instanceof BlackjackCoreError) fail(e.code, e.message); throw e; }
@@ -93,13 +95,20 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
           { ...params, cause, shoeId, version, draws: d, phase, ...(ledgerIds?.length ? { ledgerIds } : {}) }, parent);
       }
     }
-    return { out, engineSeq, draws };
+    return { out, engineSeq, draws, before };
   }
+
+  // K04: the public facts a presentation receiver needs, written with the outbox row in the same
+  // transaction: sanitized publicView before/after the committed step (no hole card, shoe order,
+  // proof or private audit draws) and explicit public fields. Timing and deadlines stay server rules.
+  const publicPresentation = (kind, r, { op = null, action = null, before = null } = {}) => ({
+    contract: PRESENTATION_CONTRACT, kind, op, action, windowId: r.windowId, configVersion: r.configVersion,
+    before, after: kind === 'window' ? null : publicView(r.game) });
 
   // Presentation plan (:201-217) without media: a server rule from the frozen config gives the
   // timing, the plan is stored in room state and written to the outbox in this transaction with
   // a stored version. Delivery happens only after COMMIT (deliverOutbox).
-  async function present(tx, r, cfg, { out, engineSeq, draws }) {
+  async function present(tx, r, cfg, { out, engineSeq, draws, before }, action = null) {
     const startAt = now(), endAt = startAt + cfg.leadMs + draws * cfg.cardMs;
     const plan = { id: random.uuid(), startAt, endAt, turnAt: endAt };
     r.plan = plan;
@@ -108,7 +117,17 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const seq = await audit(tx, r.roomId, r.roundId, 'presentation.plan',
       { planId: plan.id, language: cfg.language, startAt, endAt, status: 'scheduled; not a playback acknowledgement' }, engineSeq);
     await tx.outbox.put({ roomId: r.roomId, auditSeq: seq, talkId: plan.id, ver,
-      payload: { roundId: r.roundId, planId: plan.id, language: cfg.language, startAt, endAt, events: out.publicEvents } });
+      payload: { roundId: r.roundId, planId: plan.id, language: cfg.language, startAt, endAt, events: out.publicEvents,
+        presentation: publicPresentation('plan', r, { op: out.events.at(-1).type.slice('engine.'.length), action, before }) } });
+  }
+
+  // K04: a committed step without a presentation plan (collect, a newly opened betting window). It
+  // never touches r.plan or any deadline; talkId is derived from the stored round/window identity.
+  async function presentState(tx, r, cfg, kind, auditSeq, extra = {}) {
+    const ver = ++r.presentationVer, at = now();
+    await tx.outbox.put({ roomId: r.roomId, auditSeq, talkId: `${kind === 'window' ? r.windowId : r.roundId}:${kind}`, ver,
+      payload: { roundId: kind === 'window' ? null : r.roundId, planId: null, language: cfg.language, startAt: at, endAt: at, events: [],
+        presentation: publicPresentation(kind, r, extra) } });
   }
 
   async function createRoom(tx, roomId) {
@@ -129,7 +148,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     Object.assign(r, { boxesAfterRound: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
       deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null,
       windowId: random.uuid(), configVersion: await tx.config.latest(r.roomId) });
-    await tx.config.frozen(r.roomId, r.configVersion);
+    const cfg = await tx.config.frozen(r.roomId, r.configVersion);
+    // K04: placebets follows the betting window actually opened here, not collect or a poll.
+    const seq = await audit(tx, r.roomId, null, 'presentation.window', { windowId: r.windowId, configVersion: r.configVersion });
+    await presentState(tx, r, cfg, 'window', seq);
   }
 
   // :253-259 plus O01 2.5: the actor's open stake reservation in this room is released, a
@@ -186,7 +208,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   async function settle(tx, r, cfg, { parent, origin, cause }) {
     const at = now(), receipts = [];
     const handsBefore = publicView(r.game).round.hands;
-    await engine(tx, r, cfg, { op: 'collect', roundId: r.roundId }, null, { parent, cause, pay: async out => {
+    const collected = await engine(tx, r, cfg, { op: 'collect', roundId: r.roundId }, null, { parent, cause, pay: async out => {
       const ids = [];
       for (const p of sorted(r.owners)) {
         const hands = handsBefore.filter(h => r.owners[h.box] === p);
@@ -204,6 +226,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       return ids;
     } });
     Object.assign(r, { phase: 'settled', actionDeadline: null, settledAt: at });
+    await presentState(tx, r, cfg, 'collect', collected.engineSeq, { op: 'collect', before: collected.before });
     if (!r.owners.some(Boolean)) await resetRound(tx, r);
     return { receipts };
   }
@@ -371,7 +394,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
             }
             return ids;
           } });
-        await present(tx, r, cfg, res);
+        await present(tx, r, cfg, res, input.action);
         const debits = res.out.effects.filter(e => e.direction === 'debit');
         if (debits.length) result.debits = debits.map(e => ({ kind: e.kind, amount: e.amount }));
       } else if (op === 'insurance') {
@@ -532,7 +555,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
           const v = publicView(r.game);
           const res = await engine(tx, r, cfg, { op: 'act', action: 'stand', roundId: r.roundId, turnSeq: v.turnSeq,
             box: v.round.hands[v.round.active].box, handIndex: v.round.active }, null, ctx);
-          await present(tx, r, cfg, res);
+          await present(tx, r, cfg, res, 'stand');
         } else if (desc.kind === 'round.settle') result = await settle(tx, r, cfg, ctx);
         else if (desc.kind === 'seat.absent') r.leaving.push(desc.playerId);
         else if (desc.kind === 'seat.release') await releaseSeats(tx, r, desc.playerId);
@@ -573,7 +596,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     return { contract: TABLE_CONTRACT, roomId, version: r.version, configVersion: r.configVersion, windowId: r.windowId,
       phase: r.phase, roundId: r.roundId, turnSeq: view.turnSeq, owners: r.owners, seatGen: r.seatGen, bets: r.bets,
       deadline: r.deadline, actionDeadline: r.actionDeadline, plan: r.plan, round: view.round, shoe: view.shoe,
-      players, serverNow: t, me };
+      // K04: the outbox version of the room's latest committed presentation (reconnect check only).
+      presentationVer: r.presentationVer, players, serverNow: t, me };
   }
 
   // Delivery after COMMIT with the stored talkId/ver (O01 2.9). deliveredVer only skips rows

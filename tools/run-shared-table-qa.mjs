@@ -97,7 +97,13 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false, 
       const { runSharedWalletSqlChecks } = await import('../test/fixtures/shared-wallet-sql-checks.mjs');
       const wallet = await runSharedWalletSqlChecks({ pool, createPool });
       const table = await runPostgresSharedTableChecks({ pool, createPool, restart }); pool = table.pool;
-      checks = [...guards.checks, ...wallet.checks, ...table.checks];
+      const { checkPresentationReceiverGuard, runPostgresPresentationReceiverChecks } = await import('../test/postgres-presentation-receiver.mjs');
+      const receiverGuard = await checkPresentationReceiverGuard({ pool });
+      await pool.query(await readFile(join(repository, 'ops/neon-game', '010-presentation-receiver.sql'), 'utf8'));
+      const receiver = await runPostgresPresentationReceiverChecks({ pool, createPool, restart }); pool = receiver.pool;
+      const { runK04MountedFlowChecks } = await import('../test/postgres-k04-flow.mjs');
+      const flow = await runK04MountedFlowChecks({ pool, restart }); pool = flow.pool;
+      checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks, ...flow.checks];
     }
     await closePools(); await stop();
     console.log(JSON.stringify({ acceptance: runChecks ? 'isolated-injected-sql-checks' : 'isolated-shared-table-sql-two-client-process-restart', checks, count: checks.length, clusterStopped: true }));
