@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject as createEmptyProject , defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 import { createPresentationRoomController } from '../lib/presentation-room-client.mjs';
+import { withAdminContext } from '../client/runtime/admin-routing.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -62,11 +63,11 @@ function harness(options={}) {
     const url=new URL(href,window.location.href);Object.assign(window.location,{pathname:url.pathname,search:url.search,hash:url.hash,href:url.href});
   }},confirm:()=>false,
     addEventListener:(name,cb)=>events.set(name,cb),removeEventListener:(name)=>events.delete(name)};
-  const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null;let merged,saved;
+  const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null,GameConfig=()=>null;let merged,saved;
   const {AdminPublicationPage}=loadTs(sourceUrl,{react,window,
     './studio-session':{useStudioProjectSession:()=>({project,dirty:options.dirty??false,saving:options.saving??false,conflict:options.conflict??false,
       savedJson:JSON.stringify(options.savedProject??project),setError(){},setNotice(){},setConflict(){},setProject:value=>merged=value,setSavedJson:value=>saved=value})},
-    './presentation-room-create':{PresentationRoomCreate:Room},'./control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle},
+    './room-game-config':{RoomGameConfig:GameConfig},'./presentation-room-create':{PresentationRoomCreate:Room},'./control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle},
     './control-operator-directory':{ControlOperatorDirectory:Directory},'./project-conflict':{ProjectConflict:Conflict},
     fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve}))});
   const render=()=>{cursor=0;effects.length=0;return AdminPublicationPage(props);};
@@ -76,7 +77,7 @@ function harness(options={}) {
     operator:()=>nodes(node=>node.type==='select')[0],composition:()=>nodes(node=>node.type==='select')[1],
     checkbox:id=>nodes(node=>node.type==='input'&&node.props.value===id)[0],
     submit:()=>nodes(node=>node.type==='form')[0].props.onSubmit({preventDefault(){}}),
-    room:()=>nodes(node=>node.type===Room)[0],lifecycle:()=>nodes(node=>node.type===Lifecycle)[0],directory:()=>nodes(node=>node.type===Directory)[0],
+    gameConfig:()=>nodes(node=>node.type===GameConfig)[0],room:()=>nodes(node=>node.type===Room)[0],lifecycle:()=>nodes(node=>node.type===Lifecycle)[0],directory:()=>nodes(node=>node.type===Directory)[0],
     conflict:()=>nodes(node=>node.type===Conflict)[0],get merge(){return merged;},get saved(){return saved;},
     async reply(index,payload,status=200){requests[index].resolve(Response.json(payload,{status}));await new Promise(resolve=>setImmediate(resolve));}};
 }
@@ -400,4 +401,77 @@ test('a newer package readback clears the previous publication confirmation',asy
   h.lifecycle().props.onChanged(snapshot(refreshed));
   assert.doesNotMatch(h.html(),/Publiceringen är bekräftad/,'a different revision is not this action receipt');
   assert.match(h.html(),/Senast publicerat · version 6/);
+});
+
+test('room game drafts protect context navigation and their writes lock sibling room actions',()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',search:'?operator=north&room=room-evening&composition=evening'});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  h.gameConfig().props.onDirtyChange(true);
+  h.composition().props.onChange({target:{value:'mobile-phone'}});
+  assert.equal(h.composition().props.value,'evening');
+  assert.equal(h.gameConfig().props.roomId,'room-evening');
+  h.operator().props.onChange({target:{value:'south'}});
+  assert.equal(h.operator().props.value,'north');
+  assert.equal(h.nodes(node=>node.type==='button'&&node.props.children==='Återöppna sparat läge')[0].props.disabled,true);
+  h.gameConfig().props.onBusyChange(true);
+  assert.equal(h.room().props.interactionDisabled,true);
+  assert.equal(h.lifecycle().props.disabled,true);
+  assert.equal(h.gameConfig().props.disabled,false,'the active editor must finish its own request');
+  h.gameConfig().props.onBusyChange(false);
+  h.window.confirm=()=>true;
+  h.composition().props.onChange({target:{value:'mobile-phone'}});
+  assert.equal(h.composition().props.value,'mobile-phone');
+  assert.equal(h.gameConfig(),undefined);
+});
+
+test('the game settings room picker lists only rooms the room configuration accepts',()=>{
+  const h=harness({initialOperatorId:'north'});
+  const resources=roomContextSnapshot(),base=resources.rooms[0];
+  resources.rooms.push({...base,id:'room-pending',name:'Väntande',state:'pending'},{...base,id:'room-gone',name:'Utan sammansättning',presentationLaneId:'gone'},
+    {...base,id:'room-unpublished',name:'Opublicerat',published:false},{...base,id:'room-archived',name:'Arkiverat',archivedAt:'2026-10-14'},
+    {...base,id:'room-south',name:'Söder',operatorId:'south'},{...base,id:'room-roulette',name:'Roulette',game:'roulette'},{...base,id:'room-blackjack',name:'Blackjack',game:'blackjack'});
+  h.lifecycle().props.onChanged(resources);
+  const picker=()=>h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Spelrum för spelinställningar')[0];
+  assert.deepEqual([picker().props.children].flat(Infinity).filter(Boolean).map(child=>child.props.value),['','room-evening','room-blackjack']);
+  h.lifecycle().props.onChanged(roomContextSnapshot({state:'pending'}));
+  assert.equal(picker(),undefined,'no picker when the room configuration accepts no room');
+  // A requested room the API rejects keeps its navigation context but never opens the game settings editor.
+  for(const change of [{game:'roulette'},{state:'pending'}]){
+    const direct=harness({initialOperatorId:'north',initialRoomId:'room-evening'});
+    direct.lifecycle().props.onChanged(roomContextSnapshot(change));
+    assert.equal(direct.gameConfig(),undefined);
+  }
+});
+
+for(const roomAlias of ['table','room'])test('publication room switching retains its room through the clip-map return from '+roomAlias,()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'evening',
+    search:'?operator=north&'+roomAlias+'=room-evening&composition=evening&game=blackjack&dealer=astrid&tag=a&tag=b',hash:'#review'});
+  const resources=roomContextSnapshot();
+  resources.rooms.push({...resources.rooms[0],id:'room-other',name:'Annat rum',presentationLaneId:'mobile-phone'});
+  h.lifecycle().props.onChanged(resources);
+  const picker=()=>h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Spelrum för spelinställningar')[0];
+  h.gameConfig().props.onDirtyChange(true);
+  const before=h.window.location.href;
+  picker().props.onChange({target:{value:'room-other'}});
+  assert.equal(h.window.location.href,before,'declined draft guard leaves navigation unchanged');
+  h.gameConfig().props.onDirtyChange(false);
+  h.room().props.onDraftChange(true);
+  picker().props.onChange({target:{value:'room-other'}});
+  assert.equal(h.gameConfig().props.roomId,'room-other');
+  assert.equal(h.composition().props.value,'evening','navigation must not reset the independent composition draft');
+  const editor=new URL(h.nodes(node=>node.type==='a'&&String(node.props.children).startsWith('Redigera dealer'))[0].props.href,'https://test.invalid');
+  assert.equal(editor.searchParams.get('composition'),'evening');
+  for(const key of ['table','room'])assert.equal(editor.searchParams.has(key),false,'a room on another composition never rides on the open composition link');
+  const query=new URLSearchParams(h.window.location.search);
+  assert.equal(query.get('table'),'room-other');assert.equal(query.has('room'),false);
+  for(const key of ['composition','lane','game'])assert.equal(query.has(key),false,'new room must resolve its own '+key);
+  assert.deepEqual(query.getAll('tag'),['a','b']);assert.equal(h.window.location.hash,'#review');
+  assert.equal(h.window.history.state.external,'preserved');
+  const back=new URL(withAdminContext('/admin/clips',h.window.location.search),'https://test.invalid');
+  assert.equal(back.searchParams.get('operator'),'north');assert.equal(back.searchParams.get('table'),'room-other');
+  for(const key of ['composition','lane','game','room'])assert.equal(back.searchParams.has(key),false);
+  assert.equal(h.requests.length,0,'changing selection and navigation cannot publish or save');
+  picker().props.onChange({target:{value:''}});
+  const cleared=new URL(withAdminContext('/admin/clips',h.window.location.search),'https://test.invalid');
+  assert.equal(cleared.searchParams.has('table'),false);assert.equal(cleared.searchParams.has('room'),false);
 });

@@ -5,6 +5,7 @@ import { labBasePath, labUrl } from '../lib/lab-url.mjs';
 import { type StudioLane, type StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
 import { PresentationRoomCreate } from './presentation-room-create';
+import { RoomGameConfig } from './room-game-config';
 import { ControlResourceLifecycle, type LifecycleSnapshot } from './control-resource-lifecycle';
 import { compositionLabel } from '../../../packages/navigation/control-flow.mjs';
 import { initialPartnerRoomSelection } from '../lib/partner-room-selection.mjs';
@@ -58,6 +59,15 @@ function requestedPublicationRoom(snapshot: LifecycleSnapshot | null, operatorId
     .map(room=>({...room,status:room.state==='live'?'active':room.state}))},requestedRoomId);
   return snapshot?.rooms.find(room=>room.id===selection.roomId&&room.operatorId===operatorId);
 }
+// Offer only rooms the room-game-config API accepts: live blackjack rooms, published
+// on a composition in the current package. A room without `game` is blackjack.
+const blackjackRoom=(room:object)=>!Object.hasOwn(room,'game')||(room as {game?:unknown}).game==='blackjack';
+function gameConfigRoomChoices(snapshot: LifecycleSnapshot | null, operatorId: string, lanes: readonly {id:string}[]) {
+  const operator=snapshot?.operators.find(row=>row.id===operatorId);
+  if(!snapshot||!operator||operator.status!=='active'||operator.archivedAt)return [];
+  return snapshot.rooms.filter(room=>room.operatorId===operatorId&&room.published&&!room.archivedAt&&room.state==='live'&&blackjackRoom(room)
+    &&operator.lanes.includes(room.presentationLaneId)&&lanes.some(lane=>lane.id===room.presentationLaneId));
+}
 export function AdminPublicationPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialRoomId, onContextChange, initialTab = 'publish' }: {
   initialLaneId?: string;
   initialOperatorId?: string;
@@ -94,6 +104,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const archived = suspended && Boolean(lifecycleArchives[operatorId]);
   const selectedRoom = !resourceStale ? requestedPublicationRoom(resourceSnapshot,operatorId,requestedRoomId,rows) : undefined;
   const roomUnavailable = requestedRoomId!==undefined&&!selectedRoom;
+  const roomChoices = !resourceStale ? gameConfigRoomChoices(resourceSnapshot,operatorId,rows) : [];
   const selectedLane = rows.find(lane=>lane.id===selectedLaneId)??rows[0];
   const editableLane = project.lanes?.find(lane=>lane.id===selectedLane?.id);
   const selectedPackage = packages[operatorId] ?? packageEditor(selectedOperator);
@@ -103,7 +114,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   }
   function chooseOperator(id: string) {
     if (writeLock.current || interactionBusy || Object.values(childLocks.current).some(Boolean)) return;
-    if (id !== operatorId && roomDraft.current && !window.confirm('Lämna det osparade rumsnamnet och byta bolag?')) return;
+    if (id !== operatorId && (roomDraft.current||gameConfigDraft.current) && !window.confirm('Lämna osparade rumsändringar och byta bolag?')) return;
     if(id!==operatorId)setRequestedRoomId(undefined);
     setOperatorId(id);
     if (typeof window !== 'undefined') {
@@ -117,9 +128,11 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   }
   const [busy, setBusy] = useState<'publish' | ''>('');
   const writeLock = useRef(false);
-  const [childBusy, setChildBusy] = useState({room:false,lifecycle:false,directory:false});
+  const [childBusy, setChildBusy] = useState({room:false,lifecycle:false,directory:false,gameConfig:false});
   const childLocks = useRef(childBusy);
   const roomDraft = useRef(false);
+  const gameConfigDraft=useRef(false);
+  const [gameConfigDirty,setGameConfigDirty]=useState(false);
   const [roomDirty,setRoomDirty] = useState(false);
   function setChildBusyFor(source:keyof typeof childBusy,value:boolean) {
     childLocks.current={...childLocks.current,[source]:value};
@@ -131,7 +144,10 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const writesOff = !storeAvailable || interactionBusy || suspended;
   const publishSelectionReady = chosen.length > 0 && chosen.every(id => rows.some(row => row.id === id && !row.unsaved));
   const navigationContext = studioNavigationContextFromQuery(new URLSearchParams(typeof window==='undefined'?'':window.location?.search??''));
-  const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id, tableId:selectedRoom?.id,
+  // A room picked for game settings may use another composition than the open draft;
+  // editor links carry the room only when it belongs to that composition.
+  const editorContext = {...navigationContext, operatorId, laneId:selectedLane?.id,
+    tableId:selectedRoom&&selectedRoom.presentationLaneId===selectedLane?.id?selectedRoom.id:undefined,
     dealerId:selectedLane?.dealers.includes(navigationContext.dealerId??'')?navigationContext.dealerId:undefined};
   const compositionHref = studioNavigationHref('/admin/compositions', editorContext);
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
@@ -140,13 +156,26 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const shownError = [publishError, error].filter(Boolean).join(' ');
   const selectionDirty = Object.values(packages).some(pack => JSON.stringify([...pack.chosen].sort()) !== JSON.stringify([...pack.baseline].sort()));
   const currentSelectionDirty = JSON.stringify([...chosen].sort()) !== JSON.stringify([...selectedPackage.baseline].sort());
-  const publishBlocked = writesOff || dirty || !publishSelectionReady || needsRefresh || conflict;
+  const publishBlocked = writesOff || dirty || gameConfigDirty || !publishSelectionReady || needsRefresh || conflict;
   const publicationStatus = needsRefresh ? 'Läs in aktuell publicering' : dirty || conflict ? 'Spara ändringarna först'
     : currentSelectionDirty ? 'Urvalet är inte publicerat' : message ? 'Publicerat · version '+revision : 'Redo att publicera';
   useEffect(() => {
-    const guard = (event: BeforeUnloadEvent) => {if(selectionDirty || roomDirty || interactionBusy){event.preventDefault();event.returnValue='';}};
+    const guard = (event: BeforeUnloadEvent) => {if(selectionDirty || roomDirty || gameConfigDirty || interactionBusy){event.preventDefault();event.returnValue='';}};
     window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);
-  },[selectionDirty,roomDirty,interactionBusy]);
+  },[selectionDirty,roomDirty,gameConfigDirty,interactionBusy]);
+  function chooseRoom(id:string) {
+    if(interactionBusy || writeLock.current || Object.values(childLocks.current).some(Boolean))return;
+    if(gameConfigDraft.current&&!window.confirm('Lämna osparade spelinställningar och byta rum?'))return;
+    setRequestedRoomId(id||undefined);
+    if(typeof window!=='undefined') {
+      const query=new URLSearchParams(window.location.search);
+      query.delete('room');if(id)query.set('table',id);else query.delete('table');
+      // Navigation follows the chosen room without resetting the composition draft.
+      if(id&&id!==requestedRoomId){query.delete('composition');query.delete('lane');query.delete('game');}
+      studioHistory(window).replaceContext(window.location.pathname+'?'+query+window.location.hash);
+      onContextChange?.();
+    }
+  }
   function resourceChanged(snapshot:LifecycleSnapshot) {
     setResourceSnapshot(snapshot);setResourceStale(false);
     let resolvedOperatorId=operatorId;
@@ -197,7 +226,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   }
   function chooseComposition(id:string) {
     if(interactionBusy||writeLock.current||Object.values(childLocks.current).some(Boolean))return;
-    if(id!==selectedLane?.id&&roomDraft.current&&!window.confirm('Lämna det osparade rumsnamnet och byta sammansättning?'))return;
+    if(id!==selectedLane?.id&&(roomDraft.current||gameConfigDraft.current)&&!window.confirm('Lämna osparade rumsändringar och byta sammansättning?'))return;
     if(id!==selectedLane?.id)setRequestedRoomId(undefined);
     setSelectedLaneId(id);
     const query=new URLSearchParams(window.location.search);query.set('composition',id);query.delete('lane');
@@ -265,8 +294,8 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
       {conflict?<ProjectConflict base={JSON.parse(savedJson) as StudioProject} draft={project} onResolve={(remote,merged)=>{setProject(merged);setSavedJson(JSON.stringify(remote));setConflict(false);setError('');setNotice('Senaste projektet är inläst. Dina ändringar har behållits.');}}/>:null}
       {companiesOnly?<>
         <ControlOperatorDirectory directory={directory??null} selectedOperatorId={operatorId} onSelect={chooseOperator} lifecycleStatuses={lifecycleStatuses} lifecycleArchives={lifecycleArchives}
-          disabled={!storeAvailable||parentBusy||childBusy.room||childBusy.lifecycle} onBusyChange={value=>setChildBusyFor('directory',value)} onCreated={companyCreated}/>
-        <ControlResourceLifecycle operatorId={operatorId} kind="operator" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
+          disabled={!storeAvailable||parentBusy||childBusy.room||childBusy.lifecycle||childBusy.gameConfig} onBusyChange={value=>setChildBusyFor('directory',value)} onCreated={companyCreated}/>
+        <ControlResourceLifecycle operatorId={operatorId} kind="operator" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory||childBusy.gameConfig} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
       </>:<>
         <ol className={styles.steps} aria-label="Arbetsgång för publicering">
           <li aria-current={!selectedOperator?'step':undefined}><span>1</span><div><strong>Välj bolag</strong><small>Rätt sammanhang</small></div></li>
@@ -318,16 +347,27 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
                     <button className={message?"sg-btn sg-btn-secondary":"sg-btn sg-btn-primary"} type="submit" disabled={publishBlocked}>{busy==='publish'?'Publicerar…':message?'Publicera igen':'Publicera för '+selectedOperator.name}</button></div>
                 </form>
                 {message?<div className={styles.receipt} role="status"><strong>Publiceringen är bekräftad</strong><p>{message}</p></div>:null}
-                <div className={styles.actions}><button type="button" className={message?"sg-btn sg-btn-primary":"sg-btn sg-btn-secondary"} disabled={interactionBusy||dirty||selectionDirty||roomDirty} onClick={()=>window.location.reload()}>Återöppna sparat läge</button>
+                <div className={styles.actions}><button type="button" className={message?"sg-btn sg-btn-primary":"sg-btn sg-btn-secondary"} disabled={interactionBusy||dirty||selectionDirty||roomDirty||gameConfigDirty} onClick={()=>window.location.reload()}>Återöppna sparat läge</button>
                   {!roomUnavailable?<a href={'/partner/'+encodeURIComponent(selectedOperator.slug)+'/rooms'+(selectedRoom?'?'+new URLSearchParams({room:selectedRoom.id}):'')}>Öppna partnerportalen →</a>:null}</div>
               </section>
             </div>
             {selectedLane?<PresentationRoomCreate operator={selectedOperator} presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
-              projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory} hideExisting
+              projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory||childBusy.gameConfig} hideExisting
               onDraftChange={value=>{roomDraft.current=value;setRoomDirty(value);}} onBusyChange={value=>setChildBusyFor('room',value)} onCreated={receipt=>{updatePackage(receipt.room.operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>:null}
+            {roomChoices.length?<section className={styles.card} aria-label="Välj rum för spelinställningar">
+              <label className={styles.field}>Spelrum<select aria-label="Spelrum för spelinställningar" value={roomChoices.some(room=>room.id===requestedRoomId)?requestedRoomId as string:''} disabled={interactionBusy} onChange={event=>chooseRoom(event.target.value)}>
+                <option value="">Välj ett publicerat spelrum</option>{roomChoices.map(room=><option key={room.id} value={room.id}>{room.name}</option>)}
+              </select></label>
+              <p>Bordsspråk och insatsprofil gäller delade blackjackrum. Rummets utseende hanteras via befintliga tillåtna val.</p>
+            </section>:null}
+            {selectedRoom&&roomChoices.some(room=>room.id===selectedRoom.id)?<RoomGameConfig key={operatorId+':'+selectedRoom.id} operatorId={operatorId} roomId={selectedRoom.id} roomName={selectedRoom.name}
+              disabled={parentBusy||childBusy.room||childBusy.lifecycle||childBusy.directory||resourceStale}
+              onBusyChange={value=>setChildBusyFor('gameConfig',value)}
+              onDirtyChange={value=>{gameConfigDraft.current=value;setGameConfigDirty(value);}}
+              onPublished={receipt=>{updatePackage(operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true}));setResourcesRevision(value=>value+1);}}/>:null}
           </>:null}
         </>:null}
-        <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
+        <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory||childBusy.gameConfig} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
       </>}
     </div>
   </PageTemplate>;

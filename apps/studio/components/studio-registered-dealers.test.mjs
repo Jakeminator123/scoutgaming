@@ -10,7 +10,7 @@ const {transformSync}=require('next/dist/build/swc');
 const source=readFileSync(new URL('./studio-administration.tsx',import.meta.url),'utf8');
 vm.runInNewContext(transformSync(source,{filename:'studio-administration.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,{
  module,exports:module.exports,
- require:name=>name.endsWith('.module.css')?{__esModule:true,default:{}}:name==='./dealer-video-surface'?{DealerClipPreview:()=>null}:name==='./studio-navigation'?{StudioNavigation:()=>null}:require(name),
+ require:name=>name.endsWith('.module.css')?{__esModule:true,default:{}}:name==='./dealer-video-surface'?{DealerClipPreview:()=>null}:name==='./shared-table-proof'?{SharedTableProof:()=>null}:name==='./studio-navigation'?{StudioNavigation:()=>null}:require(name),
 });
 function render(savedDealers){
  return renderToStaticMarkup(React.createElement(module.exports.StudioAdministrationView,{

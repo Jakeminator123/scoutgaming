@@ -1,46 +1,263 @@
 # Aktuell handoff — Scoutgaming
 
+## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
+
+**Integration inför PR334:** tidigare granskad head
+`d7d139b9f7bf59b1bd924280ab456af12e1c8b5a` förenas med betrodd main
+`47756bdf1df372c7aa5047dc165a2d721614c4a2`. J08:s funktioner bevaras;
+mainens CI-konsolidering, policyprov, arbetsregler och deployspärr följer med.
+Endast handoffen behövde konfliktlösning. Oberoende slutreview, normalhook och
+exakt-head-CI krävs före merge. Ingen GitHub-merge, produktions-DDL, deploy,
+flaggaktivering eller ny medieacceptans ingår i denna lokala integration.
+
+**Rättad returkontext vid rumsbyte:** publiceringen skriver nu kanoniskt
+`table=<valt rum>` och tar bort aliaset `room`. Vid byte till ett annat rum
+tas gammal `composition/lane/game` bort ur länken, så Klippkarta kan lösa
+det nya rummets kontext. Formulärets fristående sammansättningsutkast behålls;
+behörigheter och spar-/publiceringsvägar ändras inte. Samma två filer som i
+huvudagentens frysta leverans har hashverifierats före övertagandet. Rootens
+riktade regressionsbevis är två röda fall före rättning och 68/68 gröna efter,
+0 skip/Node24.21/max1 worker över publication, routing och workspace-tools.
+Det är huvudagentens körning med instrumenterad UI, inte verklig K04-media
+eller ny browser-/PG-acceptans. Rättningen samlas före PR334:s enda slutpush.
+
+**Granskningsrättningar före merge (mergeagenten, 22 oktober):** oberoende
+läsgranskning av exakt `24e9f0264bc244e2ddabdac0cc12b1537ab164bd` fann att koden
+fungerar utan game008–010, eftersom publiceringen är stängd utan resolver. Fältet
+`roomGameConfigs` saknade däremot kapabilitetsspärr: ett sparat utkast hade fått
+äldre Studio och spelserver att neka hela administrationsdokumentet (503) vid
+versionsglapp eller återställning. Rättat med v23 enligt befintligt mönster, se
+[runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md). Dessutom visar rumsväljaren bara
+live-blackjackrum som API:t godtar, och spelinställningarna öppnas inte för andra
+rum (en andra oberoende granskning hittade kvarvarande rouletterum), länken till sammansättningen bär inte längre ett rum
+från en annan sammansättning, och ett skobevis med intakt men för lång auditkedja
+visas som `incomplete` i stället för `failed`. Kvar som uppföljning: läsningarna
+tar Studios skrivlås eftersom repositoryt inte lämnar SQL-klient i läsläge;
+revisionsbesked och brandingbudget när resolvern kopplas in; bevis bortom 10 000
+auditrader kräver checkpoints. Nya prov föll 11/156 mot gamla koden och passerar
+156/156 efter rättning; berörda readiness-/J08-sviter grönt utom ett valfritt
+browserprov; Studio `tsc` grön; Node 24.21.0, högst fyra workers. Ingen DDL,
+deploy eller produktionsåtgärd.
+
+**IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
+`4852f92f11635e20edd974c3261e0fc179ab7d1b`, med samlad Admin och J07 integrerade.
+Aktiviteten är inte VERIFIED; delverifieringen ger ingen ny färdigbock.
+
+- N1 kan läsa och spara språk `en/sv` och limitprofil `casual/prive/high` för
+  ett befintligt publicerat blackjackrum. Runtiderna är skrivskyddade 20s/15s.
+  Separata utkast skyddas av administrationsrevision, paketrevision, ägarskap
+  och rumskontroll. Konflikt kräver omläsning och nytt sparande före publicering.
+- Publiceringssteget använder samma Studio-transaktion/PG-klient för befintlig
+  paketwriter, ny oföränderlig J07-config och senaste versionspekare. J07:s
+  R-lås, paket-CAS och befintlig runtime-readiness behålls. Inget join/poll-flöde
+  skriver konfiguration och inget nytt schema installeras här.
+- Native N1-läsning av skobevis verifierar rum/företag/paket före bounded SQL.
+  Öppen sko visar endast commitment; stängd sko kan lämna exakt proof-JSON.
+  Global auditkedja och persistenta drag jämförs, ofullständigt/felaktigt bevis
+  visas inte som verifierat. UI håller svar bundna till valt rum och avbryter
+  gamla läsningar. `closedAt` följer lagrad numerisk millisekundtid; även epoch
+  noll betyder stängd, medan ogiltiga tider nekas.
+
+**Återstår:** exakt register-/paketbindning och inkoppling av K04-producenten.
+K04 har nu en planeringsproducent på `d226f53370e4355267d8875bc9168e91357f41ba`.
+Den nya rena adaptern `room-game-material.mjs` kräver explicit identitetsmappning
+för operator/paketversion/rum/dealer och källans sökväg, variant och tal-tagning.
+Hashar och timingbytes hämtas från validerad fångad runtimekatalog, med medie-ID/hash
+i det frysta paketet och verifierad/godkänd talidentitet för rätt språk. K04:s egna
+katalogpåståenden får aldrig ersätta saknade registeridentiteter.
+
+Adaptern har 5/5 fokuserade provgrupper på Volta Node24.21.0,0skip. j04_resume har
+oberoende läst båda filerna och berörda kontrakt utan blockerande fynd; root har
+läst modul/prov. Proven använder injicerad producentstub och isolerade data.
+Det är inte faktisk K04-/Blob- eller visuell acceptans. Adaptern är registrerad i
+CI:s befintliga presentationsgrupp. API:t binder nu resolveranropet till befintlig
+`readPresentationSnapshot` på samma scopelåsta transaktionsklient: scope och
+administrationsrevision kontrolleras, katalogen valideras och separata kopior av
+rum/paket/katalog lämnas till producenten. Använda medier måste fortfarande finnas
+med exakt identitet i både fryst paket och aktuellt register; arkiverat/raderat
+material nekas, tal kräver godkänd exakt språk-/tagningsidentitet. Befintlig
+`assertCapturedPresentationMedia` återkontrollerar revision/post före paketwriter.
+Katalogimport och registerwriters delar scopelåset; ingen extra katalogläsning
+eller provider-I/O införs. Fem nya regressionsgrupper gav före 8 pass/5 fail,
+efter 13/13 API-prov; slutprov inklusive ren adapter 18/18, 0 skip på Node24.21.0.
+Bevis: `arkiv/2026-10-22/j08/material-snapshot-{before,after,final,commands}.log`.
+Root körde dessutom den ändrade vägen med riktig PostgreSQL16.15/Node24.21:
+9/9 grupper med två klienter, CAS, SQL-triggerrollback, R-lås, fryst konfiguration,
+proofbytes och fysisk omstart. Befintlig isolerad fixture kompletterades med
+project/media/katalog och befintligt schema012; inga produktionsmigrationer.
+Första fixturestarten rättades från vanlig JSON-serialiserare till befintliga
+runtimeCatalogJson; produktkoden ändrades inte av den rättningen. Slutlogg:
+`arkiv/2026-10-22/j08/material-snapshot-pg.log`. Eget kluster stoppat och borttaget;
+port35029 och temporär Node-runtime verifierat frigjorda. j04_resume läste hela
+femfilsdeltat och provloggar utan blockerande fynd; root läste kod/loggar.
+Detta verifierar isolerade handlers med injicerad planering, inte K04/Blob/live.
+Den verkliga K05-identitetsmappningen och nativebindningen återstår. Saknad mappning/producent/timing
+nekas; inga 700/500-fallbacks. Native publicering är fortsatt nekad utan resolvern.
+Ingen K04-import, live transport-/spelinkoppling eller produktions-DDL har utförts.
+
+**K05-katalogkompatibilitet, 22 oktober:** rättat underlag159cc134d3a57db4ccbe3a871a3a5eb16fec3656
+och K04afba9dc22e77aecb89c1527fde37088d0ad1b7a4 behåller producentens API men
+byter materialmängd/revisionshashar. Äldre planningrevisions återanvänds inte.
+J08 tillåter nu `still`/`keyed-still` via exakt validerad PNG-katalogpost,
+null media-ID/tal och fryst identitetskarta/katalogrevision/paketpresentation;
+ingen påhittad videopost. Video- och inspelat-talgodkännanden består.
+Före6pass/1fail på korrektPNG, efter20/20adapter/API,0skip. Samtidigt nekar
+media-layouts historiska fyrnamnslista giltiga `dealers/dragan/...`-poster.
+Den använder nu delad `isDealerId` för sökvägssyntax, med befintligt traversal-,
+alias- och privatskydd. Giltig syntax registrerar ingen dealer och ger ingen
+paket-/speltillgång. Reproföre1/1fel; slut23/23layout/katalog/importprov,0skip.
+Ett negativt testfall rättades från giltig dealerx med underkatalogy till en
+faktiskt ogiltig kodad dealerkomponent; ingen produkträttning av det testfelet.
+Oberoende j04_resume läste hela fyrfilsdeltat och loggar utan blockerare; root
+läste kod/loggar. Node24.21.0,max4workers. Loggar:
+`arkiv/2026-10-22/j08/png-binding-{commands,before,after}.log` och
+`dealer-path-{before,after,final}.log`. Detta är kontrakts-/fixturbevis,
+inte egen Blobbyte-/K04-/fullnativeacceptans. Ingen import, DDL eller aktivering.
+
+**Verifiering:** tidigare serverprov 73/73 och senare 27/27 API/HTTP-prov,
+UI-agentens 162/162 fokusprov och Studio `tsc`, rootens 7/7 proof-prov samt
+12/12 UI/server-proof-prov efter numerisk timestampfix. Körningar överlappar.
+PR334/head `61144fdac28832238130e2c24d10a21bf2badb61` hade normal hook249/249.
+
+CI39696563383 på `6ab4cd5e9448fad91cf85174c4e93c697fc5f74e` visade två
+ofullständiga VM-fixturer: `studio-registered-dealers.test.mjs` saknade
+`SharedTableProof`, och `workspace-tools.test.mjs` saknade `RoomGameConfig`.
+Endast motsvarande barnkomponenters fixtureimporter lades till; alla assertions
+och produktfiler är oförändrade. Före 15 pass/4 fail (en fil laddades inte), efter
+20/20,0skip på Volta Node24.21.0 med högst fyra workers. Registrerade dealers,
+sparspärr, bolags-/rumskontext och 401/403/503-proven består. Loggar:
+`arkiv/2026-10-22/j08/pr334-fixtures-{before,after,commands}.log`.
+Ingen produktserver startades. Senare CI39699893800 är verifierat completed/success
+på J08-head `08736cf37980cfbf6ceee2e3c36b9bb81b3cf04e`.
+Fjärr-main `6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad` (J04/lobby) är nu
+integrerad konfliktfritt från denna head. De identiska lobbylänksändringarna
+sammanföll; J04:s och J08:s separata handoff-/fullhookblock är bevarade.
+Importerade mainfiler är jämförda mot det frysta källträdet; inga produktfiler
+avviker. Diffkontroll passerar. CI39701503691 och GitGuardian119571576203 är nu
+verifierat completed/success på exakt9b43e3e7f7cde871cdba9efe81800bf8b5c4d329;
+kevin_plan har oberoende läst hela integrationsdeltat utan blockerande fynd.
+Root har läst överlappen. Denna gröna CI gäller basen före PNG-/dealersökvägsdeltat; ny CI krävs för den nya headen. Ingen K04-/K05-aktivering,
+produktions-DDL eller tung omkörning följer av integrationen.
+
+Nu även **9/9 riktiga PostgreSQL-grupper**, Node24.21.0/PostgreSQL16.15 i ägt
+tillfälligt WSL-loopbackkluster. Två fysiska klienter verifierar sparning/återläsning,
+stale administrations-/paket-/utkastrevision och en enda vinnande dubbelpublicering.
+Felinjektion med riktig SQL-trigger vid sista auditsteget återställer dokument,
+historik, paket, immutable config, head och audit tillsammans. J07:s fysiska R-lås
+stoppar J08-publicering med befintligt 423-svar utan delskrivning. Publicerad config
+behålls genom fönster, runda, settlement och rekonstruerad koordinator; först nästa
+fönster tar den nya versionen. Riktigt lagrat skobevis skyddar öppen sko, bevarar
+stängt proof-JSON inklusive epoch0 och nekar manipulerade drag. Fysisk PG-omstart
+bevarar paket/config/utkast och proofbytes. Logg: `arkiv/2026-10-22/j08/pg-verification.log`.
+
+Detta använder uttryckligt injicerad **testmaterialplanering**; verklig K04-producent,
+aktiverad native publicering, HTTP/readiness mot verkligt mål, browser/live-media,
+production och deploy är fortfarande overifierade. Native publicering utan resolver
+nekas även efter omstart. Inga produktwriters ändrades av testleveransen. J08-runnern
+återanvänder J07:s isolerade klusterlivscykel och är registrerad i CI som
+`database/room-game-config`; ingen ny grön GitHub-CI påstås. Egna kluster, tillfälliga
+Node-runtime och portar är stängda/borttagna (`pg-cleanup.log`). Nästa steg är
+materialkoppling efter granskad K04-producent. Oberoende j04_resume har läst samtliga fem PG-deltafiler samt körnings-/städloggar: inga blockerande fynd. Root har läst samma kod och bevis; ingen ny omkörning av oförändrat prov behövdes.
+
+## J07 — delat blackjackbord på mains PostgreSQL — 22 oktober 2026
+
+J07 är nu implementerad på `codex/postgres-shared-table-j07` från main
+`95ac98dcb1608bd89bb2ac44488b2a82a376682d`. Det tidigare beskedet ”nästa steg J07”
+var en plan, inte påbörjad kod. Kevin förbereder K04:s händelse-/mediemappning;
+den aktiva presentationen ska kopplas till den här adaptern efter leverans.
+
+- K02/K03:s isolerade modulslutning kommer från verifierad Kevin-head
+  `b8e1c957c99c5a16ee861f9767ec28041b2270dd`. Enda ändringen i importerad
+  produktkod är rum-ID-gränsen 40 → 128 för mains verkliga `room-<UUID>`.
+  Frysta jämförelsefixturer behåller exakta Git-blobbytes med LF.
+- `postgres-store.mjs` implementerar K03-portarna: samma PG-klient/yttertransaktion,
+  G→R→P→A före savepoint, lagrade svar, fryst konfiguration, sko/journal och
+  commitbunden outbox. JSON-text bevarar de ordnade bytes som skobeviset använder.
+- `postgres-wallet.mjs` använder mains spelare/saldo/transaktionsledger.
+  Reservationer och spelande händer skyddar även befintliga writers genom
+  databastriggers. Idempotensnycklar/fingerprints skiljer rum, aktör, kommando/tick,
+  berörd spelare och ekonomisk effekt. Ingen egen SQLite-wallet eller identitet.
+- `postgres-runtime.mjs` driver deadlines utan spelarens polling och har explicit
+  start/stopp. Appen äger poolen och måste invänta startens schemakontroll.
+  Utan K04-sink ligger committad outbox kvar; leveranshint är inte mottagarens CAS.
+
+**Integrationsgräns:** fabriken tar en uttrycklig demokonfiguration och en rå
+applikationsägd PG-pool. Befintlig autentisering/rumbehörighet ska kontrollera
+kommandoidentiteten före koordinatorn. K04 äger presentation och beständig
+mottagarversion; J08 binder godkänd rumspublicering till den interna config-porten.
+Inga aktiva HTTP-routes, befintliga launcherflöden eller publiceringswriters har
+kopplats om i denna leverans. Join/poll publicerar aldrig konfiguration.
+
+**Schema och drift:** `008-shared-wallet.sql` och `009-shared-blackjack.sql` är
+explicit tilläggs-DDL för spel-databasen, inte Studio. Startup installerar inget;
+saknat schema och extern wallet nekas. Produktionsidentitet, godkänd applicering
+och schemaberedskap måste verifieras före merge/aktivering. Ingen produktions-DDL,
+merge, deploy, betald drift eller medieimport har utförts.
+
+**Senare aggregator:** en framtida adapter måste använda stabila externa
+idempotensnycklar och varaktig status/reconciliation för osäkert transportsvar.
+Ett timeout får inte tolkas som nekad debit; återläs extern transaktionsstatus före
+ny effekt. Databasrollback kan inte återställa ett redan committat externt saldo.
+Därför behålls dagens externa PG-walletspärr tills den separata integrationen är
+implementerad och verifierad; ingen tyst demofallback.
+
+**Verifiering:** isolerad riktig PostgreSQL16.15/Linux Node22.22.0, två klienter,
+processavbrott före/efter COMMIT och fysisk PG-omstart; exakta saldo-/journal- och
+replaykontroller: 20/20 SQL-grupper passerar efter timeoutfixen för fristående
+frågor/outbox. Låst outboxrad avbryts även utan poolens query_timeout och kan
+kvitteras efter återhämtning. Runtime9/9 på Windows Node24.21.0; lokal logg `arkiv/2026-10-22/j07/plan-review-sql.log`.
+Tre underagenter hade skilda implementation/granskningsuppgifter. Ingen faktisk
+spelklient, live-mail, provider, media eller produktionsdatabas ingick.
+
+**CI-rättning PR #332:** körning `39685636720` stannade först på fyra oregistrerade
+testfiler; installations-/byggstegen hoppades därför över och gav efterföljande
+modulfel. De tre direkta K02/K03/runtimeproven ingår nu i full regressionens
+`gameplay/shared-blackjack`. SQL-filen klassas som exporterad hjälpfil och körs
+fortsatt av den befintliga isolerade PostgreSQL-runnern i CI. Produktkod och
+provassertioner är oförändrade. Samma orphan-repro går från fyra fel till 534
+kandidater/0 orphans; de nyregistrerade proven plus orphan-verktygets prov passerar
+56/56, 0 skips, med Node24.21.0. Loggar: `arkiv/2026-10-22/j07/ci-fix-{before,after,tests}.log`.
+Ingen ny fullbuild, SQL-körning eller fjärr-CI har gjorts för denna registerrättning.
+
 ## Migreringsplan och ansvar — 22 oktober 2026
 
 [Masterplanen](../migrering/MASTERPLAN.md) och [status.json](../migrering/status.json)
 är kanoniska. **45% (9/20 hela aktiviteter) är VERIFIED; 55% återstår.**
 J01, J02, K01, O01, J03, J04, K02, K03 och J07 är verifierade.
 Detta är aktivitetsandel, inte tids-, kod- eller produktionsprocent.
-J03/PR331 och J04/PR335 är integrerade i betrodd main
-`6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad`; tidigare uppgift om inga
-migrationsmerger är ersatt. Denna planbranch har sammanförts lokalt med samma
-main för att lösa handoffkonflikten, utan GitHub-merge eller deploy.
+J03/PR331 och J04/PR335 ingår sedan tidigare i main. PR311 och PR337 är nu
+mergade som `98174fd8cc906137783ea842e529f711e06cfadb` respektive
+`47756bdf1df372c7aa5047dc165a2d721614c4a2`. Båda har grön eftermerge-CI.
 
 J05/J08/K04/K05 är fortfarande IN_PROGRESS. Root äger klientmontering, rumsväg,
-server och byggkedja; Kevin har ingen utestående klientleveransskuld. Hans
-refill `eb6ab45509fad539463bbcb6930cc46d2d0844c2` är oberoende granskad och
-återanvänd. Kevin äger tre återstående K04-prov: tal under kortövergång,
-touch/layout och fullflöde med skärmbilder på den monterade isolerade provvägen.
+server och byggkedja. Kevin har ingen utestående klientleveransskuld; hans
+refill `eb6ab45509fad539463bbcb6930cc46d2d0844c2` är granskad och återanvänd.
+Transport-PR336:s aktuella frysta head är
+`83f5810d33c483868ac0ce2bab728efb813d51b4`. Tidigare P2-fynd är rättade;
+hela nya deltat är oberoende slutgranskat utan blockerande fynd och dess
+CI39753242313 är completed/success på exakt denna head. Den generella lokala
+QA-fixturen är levererad. Kevin fortsätter touch/layout och fullflöde med
+skärmbilder utan speech; verkliga körresultat återstår. Lipsync/RunPodval och
+nya jobb i det spåret är pausade till sista manuella etappen med Jakob/Kevin.
+Detta är ingen tal- eller K04-acceptans.
 
-PR336:s levererade `8504c6e83497c03fff55a34d0762e9faa37b41fb` har grön CI.
-Oberoende mergegranskning hittade tre P2: för kort total presentationstimeout,
-uteblivet placebets i färskt insatsfönster och utebliven walletuppdatering i
-aktörens andra rum. Rättningar pågår i transportarbetskopian och kräver fryst
-sluthead, oberoende deltareview och nya relevanta bevis.
-
-Game008/009/010 saknas fortfarande i verifierad Neonproduktion; read-only
-metadata och granskbar schemaförberedelse följs i transportbranchens befintliga
-återställningsguide. Inget produktions-DDL, deploy eller flaggaktivering är
-godkänt. Isolerade PG16-prov ersätter inte målmiljöns PG18-acceptans eller Kevins
+Game008/009/010 saknas i daterat verifierad Neonproduktion. Faktisk deployed
+runtimeidentitet/ACL, operativ återställningsberedskap och produktions-DDL-mandat
+är fortfarande öppna. Isolerade PG18.6-uppgraderingsprov10/10 och syntetisk
+restore8/8 är granskade bevis; de ersätter inte dessa produktionsgrindar eller
 verkliga K04-medieprov. Planprocenten ändras inte av nya dokument eller delprov.
 
-Jakobs separata mergeagent äger sekventiell PR-integration; denna root gör inga
-GitHub-merger under överlämningen. Ordningen är #334 → #336, med #311 som separat
-planleverans efter konfliktlösning/review/CI. #332 ingår i #334; #333 är inte
-mergegodkänd. Jakob har uttryckligen godkänt att även automatisk deploy stoppas.
-Denna branch lägger därför till `git.deploymentEnabled: false` i `vercel.json`.
-Enligt [Vercels Git-konfiguration](https://vercel.com/docs/project-configuration/git-configuration#turning-off-all-automatic-deployments)
-stoppar värdet automatiska Git-deployer för alla brancher. Spärren måste finnas
-på den ref Vercel läser; den lokala ändringen är inte ett verifierat livestopp.
-Återaktivering kräver ett nytt uttryckligt beslut. Renderstoppet hanteras separat
-av mergeoperatören; inga providerinställningar eller befintliga deployer har
-ändrats här. JSON-parse och kontroll att övrig konfiguration är oförändrad
-passerar; inget produktions-DDL eller deploy ingår. Aktuell samordning sker i
+Jakobs separata mergeagent äger sekventiell integration, #334 före #336.
+#332 ingår i #334; #333 saknar mergemandat. PR334:s lokala mainintegration är
+förberedelse: ny fryst head, oberoende slutreview, normalhook och exakt-head-CI
+krävs. Ingen schemaberoende produktmerge sker innan föreskrivna grindar är gröna.
+Ingen produktions-DDL, deploy, env-/flaggaktivering eller medieimport är godkänd.
+
+Vercels `git.deploymentEnabled:false` följer med från main och bevaras.
+Mergeagenten har tidigare verifierat Render autoDeploy=no/triggeroff,
+not_suspended samt repo delete_branch_on_merge=false; detta är ingen ny
+providerändring eller driftverifiering från Adminintegrationen. Spärrarna får
+inte återaktiveras automatiskt. Aktuell samordning sker i
 [GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
 
 ## Förenklade agentinstruktioner — 21 oktober 2026

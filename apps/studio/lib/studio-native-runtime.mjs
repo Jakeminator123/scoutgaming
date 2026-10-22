@@ -30,6 +30,8 @@ import { createStudioUploadService } from './studio-upload-service.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { createPresentationRoomApi, PRESENTATION_ROOM_MUTATION } from './presentation-room-api.mjs';
+import { createRoomGameConfigApi } from './room-game-config-api.mjs';
+import { createSharedTableProofReadout } from './shared-table-proof-readout.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
@@ -205,6 +207,10 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     });
     for (const service of [lanePackages, rooms]) {
       for (const [key, prepare] of service.preparations ?? []) { if (preparations.has(key)) unavailable(); preparations.set(key, prepare); }
+    }
+    // Room publication remains closed until an exact K04 media/timing resolver is bound.
+    for (const service of [createRoomGameConfigApi({repository,scope:config.scope}),createSharedTableProofReadout({repository,scope:config.scope})]) {
+      for (const [key,handler] of service.handlers) { if(handlers.has(key))unavailable();handlers.set(key,handler); }
     }
     for (const [key, handler] of rooms.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const operatorAdmin = createOperatorAdminApi({

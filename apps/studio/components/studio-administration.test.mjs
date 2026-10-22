@@ -94,7 +94,7 @@ function harness() {
       const wasDeferred = deferUpdates; deferUpdates = false;
       try { deferredUpdates.splice(0).forEach(apply=>apply()); return action(); }
       finally { deferUpdates = wasDeferred; }
-    }} : name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
+    }} : name === './shared-table-proof' ? {SharedTableProof:()=>null} : name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
@@ -1349,4 +1349,15 @@ test('malformed moving drift response cannot become a successful command receipt
   const h=harness(),current=actor('admin');
   const client=h.createStudioAdminClient({apiBase:'/studio/api/admin',session:async()=>current,availableActions:['POST moving-drift'],fetchImpl:async()=>nativeReply({schemaVersion:1,revision:'5'},200,current)});
   await assert.rejects(client.request('POST','moving-drift',{expectedRevision:4,commandId:'fixture-command',mode:'off'},undefined,current),error=>error.status===503);
+});
+test('scoped proof GET carries only validated query fields through the identity-checked client',async()=>{
+ const h=harness(),calls=[];
+ const actor={username:'admin',role:'admin'};
+ const client=h.createStudioAdminClient({apiBase:'/api/admin',session:async()=>actor,availableActions:['GET shared-table-proof'],
+   fetchImpl:async(url,options)=>{calls.push({url,options});return Response.json({roomId:'room-1',shoes:[],selected:null,chain:{ok:true,complete:true,count:0,total:0}});}});
+ const result=await client.request('GET','shared-table-proof',undefined,undefined,actor,{roomId:'room-1',shoeId:'shoe-2'});
+ assert.equal(result.payload.roomId,'room-1');assert.equal(calls[0].url,'/api/admin/shared-table-proof?roomId=room-1&shoeId=shoe-2');
+ for(const query of [{roomId:'room-1',extra:'x'},{roomId:'../room'},{shoeId:'shoe-2'},{roomId:'room-1',shoeId:2}])
+   await assert.rejects(client.request('GET','shared-table-proof',undefined,undefined,actor,query),error=>error.status===400);
+ assert.equal(calls.length,1);
 });

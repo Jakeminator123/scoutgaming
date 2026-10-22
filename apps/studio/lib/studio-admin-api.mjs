@@ -144,6 +144,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         ? {presentationDocuments:['project','administration'],presentationMaterialTrash:{id:body.id,archived:body.archived,expectedRevision:body.expectedRevision},presentationMutation:{kind:'material-trash',value:{}}}
         : ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
         ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
+        : endpoint.action === 'room-game-config'
+        // Both actions write administration.roomGameConfigs; negotiate v23 before either SQL lock.
+        ? { presentationDocuments: ['project','administration'], presentationMutation: { kind: 'administration', value: { roomGameConfigs: [] } },
+          ...(body?.action === 'publish' ? { presentationOperatorIds: [body.operatorId] } : {}) }
         : endpoint.action === 'presentation-room'
         ? { presentationDocuments: ['project', 'administration'], presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
         : administrationMutations.has(endpoint.action)

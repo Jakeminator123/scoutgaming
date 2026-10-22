@@ -1,5 +1,6 @@
 'use client';
 import {DealerClipPreview} from './dealer-video-surface';
+import {SharedTableProof} from './shared-table-proof';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
@@ -159,9 +160,11 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     if (!actor || role !== actor.role) throw new StudioAdminUiError(403);
     return actor;
   }
-  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor) {
+  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor, query?: Record<string,string>) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
     if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
+    if (query !== undefined && (method!=='GET'||action!=='shared-table-proof'||!object(query)||!query.roomId
+      || Object.keys(query).some(key=>!['roomId','shoeId'].includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
     aborted(signal);
     const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();
@@ -177,17 +180,17 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
       if (action === 'speech-qa') throw new StudioAdminUiError(501);
     }
-    const response = await send(method, action, body, signal);
+    const response = await send(method, action, body, signal, query);
     if (!response.ok) throw new StudioAdminUiError(response.status);
     const actor = preflightActor ?? responseActor(response);
     if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
       || (method === 'GET' && expectedActor && (actor.username !== expectedActor.username || actor.role !== expectedActor.role))) throw new StudioAdminUiError(403);
     return readPayload(method, action, response, actor, signal);
   }
-  async function send(method: Method, action: string, body?: JsonObject, signal?: AbortSignal) {
+  async function send(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, query?:Record<string,string>) {
     let response: Response;
     try {
-      response = await fetchImpl(`${apiBase}/${action}`, {
+      response = await fetchImpl(`${apiBase}/${action}${query?'?'+new URLSearchParams(query):''}`, {
         method, credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal,
         headers: { Accept: 'application/json', ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
         ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
@@ -811,6 +814,11 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
     {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Backoffice-grupper"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
+      {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
+        key={actor.username+':'+actor.role}
+        roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}
+        read={async(query,signal)=>(await client.request('GET','shared-table-proof',undefined,signal,actor,query)).payload}
+      />:null}
       <StudioAdministrationView dealerId={group === 'media-review' ? reviewDealerId : undefined} key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
     </>}
   </div>;
