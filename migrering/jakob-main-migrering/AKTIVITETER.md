@@ -131,12 +131,13 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J05 — Förenkla runtime och byggkedja
 
-**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`4dcc3bed0c4e7840a89e54e7a55fc1f30b7268f8` från grön J08/9b43. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. Senare auth/upgradedelta60/60,0skip med riktig HTTP/ws; GranskadJ08d7 integrerad utan produktavvikelse,12/12normalhook;CI39708474070 och GitGuardian completed/success på oförändrad4dcc; tillämpliga jobb körda, endast documentation förväntat skipped. Ingen produktlistener eller ny merge.
+**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`65118f4192f6a27229377bfdb559257dba8d2cf1` från grön transport4dcc/J08d7. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. Senare auth/upgradedelta60/60,0skip med riktig HTTP/ws; GranskadJ08d7 integrerad utan produktavvikelse,12/12normalhook;CI39708474070 och GitGuardian completed/success på oförändrad4dcc; tillämpliga jobb körda, endast documentation förväntat skipped. Ingen produktlistener eller ny merge.
 
 - [x] Verifiera separat rumskanalport: serverauth/Origin/rumsisolering, publika fält, samtidiga hints, återläsning/version, timeout/buffer och cleanup med syntetiska sockets. Ingen listener/PGnotifiering/klientreplayacceptans.
 - [x] Verifiera sanerad skrivfri schedulerhälsa och dokumentera återanvändning av befintlig Renderinstans/start/readiness/drain-gräns.
 - [x] Interna validerade sessionsbindningar och faktisk Node-upgradegräns iPR336/a80a80e0: authföre101,Host/Origin/rum,abort/timeout/headbytes/cleanup. Oberoende reviews,normalhook60/60,0skip och riktigloopbackportstängning. Ingen aktiv app/gatewayroute.
-- [ ] Koppla room→publiceringsbindning, enskild appdispatcher/gateway/Vercelrouting, K04-version/notifiering samt scheduler till gameboot/readiness utan ny tjänst.
+- [x] Sessions→rum/publicering-accessport i PR336/65118: verklig auth/scoped repository/Fetch/channel.prepare, exakt paket/config/materialkontroll och explicit partnerproveniens. SQL-minnesklient,11/11access/40/40samkörning/65/65normalhook,0skip,oberoende review; ingen ny PG-/listener-/full Partneracceptans. CI39713338449pågår/GGgrön.
+- [ ] Montera verifierad accessport i enskild appdispatcher/gateway/Vercelrouting, K04-version/notifiering samt scheduler till gameboot/readiness utan ny tjänst.
 
 **Etapp:** E2. **Beroenden:** J03, J04.
 **Mål:** en begriplig produktkedja utan överflödiga UI-processer, API-proxyer eller alternativa starter.
