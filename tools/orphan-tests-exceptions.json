@@ -58,5 +58,10 @@
     "path": "test/table-limits-kevin.mjs",
     "kind": "opt-in",
     "reason": "K07 port of Kevin's table-limits behaviours (5aa7ed10) per limit preset against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
+  },
+  {
+    "path": "test/table-restart-kevin.mjs",
+    "kind": "opt-in",
+    "reason": "K07 scenario 10 (K06-K07-forberedelse §2.5): process restart mid-round after a split hand and an insurance yes with two players, against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
   }
 ]
