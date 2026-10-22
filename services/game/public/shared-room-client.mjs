@@ -132,6 +132,9 @@ export function createSharedRoomClient({
             appliedVer = p.ver;
             await render(present, p, candidate);
           }
+          // Renew the allowance per outage only after current state was fully
+          // rendered. A retired socket completing late cannot renew this budget.
+          if (current(candidate)) retries = 0;
         } catch (error) {
           if (state === 'running' && (error?.rendererTimeout || current(candidate))) {
             finish(error?.rendererTimeout ? 'shared_room_renderer_timeout' : 'shared_room_renderer_failed');

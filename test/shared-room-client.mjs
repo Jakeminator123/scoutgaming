@@ -248,3 +248,51 @@ test('an uncompleted WebSocket handshake has a bounded retry budget; opening can
   await delay(25); assert.equal(opened.sockets.length, 1); assert.deepEqual(opened.errors, []);
   opened.sockets[0].message(frame()); await until(() => opened.calls.length === 2);
 });
+test('healthy 1001 rotations renew the retry budget after state rendering without replaying a presentation', async t => {
+  const h = setup(t); h.client.start(); h.sockets[0].message(frame());
+  await until(() => h.calls.length === 2);
+  for (let rotation = 1; rotation <= 7; rotation++) {
+    h.sockets.at(-1).ended(1001);
+    await until(() => h.sockets.length === rotation + 1 || h.errors.length);
+    assert.deepEqual(h.errors, []);
+    h.sockets.at(-1).message(frame(rotation + 1, 1));
+    await until(() => h.calls.length === rotation + 2);
+  }
+  assert.equal(h.sockets.length, 8);
+  assert.equal(h.calls.filter(([type]) => type === 'snapshot').length, 8);
+  assert.deepEqual(h.calls.filter(([type]) => type === 'present'), [['present', 1]]);
+  assert.deepEqual(h.errors, []);
+});
+
+test('opening or receiving a frame cannot renew the retry budget before rendering succeeds', async t => {
+  for (const port of ['restoreSnapshot', 'present']) {
+    const entered = deferred(), release = deferred();
+    const h = setup(t, { maxReconnectAttempts: 1, [port]: async () => { entered.resolve(); await release.promise; } });
+    h.client.start(); h.sockets[0].ended(1001); await until(() => h.sockets.length === 2);
+    const second = h.sockets[1]; second.opened(); second.message(frame()); await entered.promise;
+    second.ended(1001); release.resolve(); await turn();
+    assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]);
+    assert.equal(h.sockets.length, 2);
+  }
+  // A parsed but older state also did no renderer work and must not replenish.
+  const stale = setup(t, { maxReconnectAttempts: 1 }); stale.client.start(); stale.sockets[0].message(frame(2));
+  await until(() => stale.calls.length === 2); stale.sockets[0].ended(1001);
+  await until(() => stale.sockets.length === 2); stale.sockets[1].message(frame(1)); await turn(); stale.sockets[1].ended(1001);
+  assert.deepEqual(stale.errors, [{ code: 'shared_room_reconnect_exhausted' }]); assert.equal(stale.sockets.length, 2);
+});
+
+test('completion of an old generation cannot replenish the current connection retry budget', async t => {
+  for (const port of ['restoreSnapshot', 'present']) {
+    const entered = deferred(), release = deferred(), settled = deferred(); let oldSignal;
+    const h = setup(t, { maxReconnectAttempts: 1, [port]: async (_value, { signal }) => {
+      oldSignal = signal; entered.resolve(); await release.promise; settled.resolve();
+    } });
+    h.client.start(); h.sockets[0].message(frame()); await entered.promise;
+    h.sockets[0].ended(1001); await until(() => h.sockets.length === 2); h.sockets[1].opened();
+    assert.equal(oldSignal.aborted, true); release.resolve(); await settled.promise; await turn();
+    // The new connection has never rendered state. A completed old callback
+    // cannot turn its already-consumed one-retry budget into a fresh allowance.
+    h.sockets[1].ended(1001); await delay(15);
+    assert.equal(h.sockets.length, 2); assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]);
+  }
+});
