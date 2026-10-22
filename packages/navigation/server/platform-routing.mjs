@@ -1,5 +1,5 @@
 import { presentationPublicSource } from '../../presentation/public-modules.mjs';
-import { gameEntryRedirect, approvedGameQuery, requestedGame, legacyGameStartRedirect, rouletteRoomSearch, GAME_START_PATHS, GAME_CONTEXT_KEYS } from '../game-entry.mjs';
+import { gameEntryRedirect, approvedGameQuery, requestedGame, legacyGameStartRedirect, rouletteRoomSearch, rouletteDocumentPath, GAME_START_PATHS, GAME_CONTEXT_KEYS, ROULETTE_DOCUMENT_PATH, ROULETTE_DOCUMENT_PATHS } from '../game-entry.mjs';
 import { playerLobbyPath } from '../player-lobby.mjs';
 import {adminDocumentHref} from '../admin-workspace-routes.mjs';
 import {legacyActivityDocumentHref} from '../control-flow.mjs';
@@ -40,8 +40,8 @@ const AUTH = new Set([
 const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
 const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
-// The roulette document itself is reached through /game?game=roulette; these are its exact browser assets and API.
-const ROULETTE_ROOM = new Set(['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
+// /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
+const ROULETTE_ROOM = new Set(['/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
@@ -126,11 +126,20 @@ export function platformRoute(url, config, request) {
     if (isMutation(request)) return {kind:'reject'};
     return {kind:'redirect',destination:config.publicOrigin+playerLobbyPath(url.searchParams,url.hash)};
   }
-  // /play/{game}, /blackjack and /roulette are permanent redirects for one release.
+  // /play/blackjack, /blackjack and /roulette are permanent redirects for one release.
   const legacyStart = legacyGameStartRedirect(url);
   if (legacyStart) {
     if (isMutation(request)) return {kind:'reject'};
     return {kind:'redirect',status:308,destination:config.publicOrigin+legacyStart};
+  }
+  // The roulette document keeps the engine's address with exactly the room
+  // selectors in the browser URL; without a room it is a lobby entry via /game.
+  if (ROULETTE_DOCUMENT_PATHS.includes(path)) {
+    if (isMutation(request)) return {kind:'reject'};
+    const search = rouletteRoomSearch(url.searchParams,{origin:url.origin});
+    if (!search) return {kind:'redirect',status:308,destination:`${config.publicOrigin}/game?game=roulette`};
+    if (path !== ROULETTE_DOCUMENT_PATH || url.search !== search) return {kind:'redirect',destination:config.publicOrigin+ROULETTE_DOCUMENT_PATH+search};
+    return {kind:'backend',destination:config.backendOrigin+ROULETTE_DOCUMENT_PATH+search};
   }
   if (GAME_START_PATHS.includes(path)) {
     if (isMutation(request) || requestedGame(url.searchParams) === null) return {kind:'reject'};
@@ -138,8 +147,8 @@ export function platformRoute(url, config, request) {
     if (lobby) return {kind:'redirect',destination:config.publicOrigin+lobby};
     // Preserve the existing signed launch handler and game-session audience.
     if (url.searchParams.has('launch')) return {kind:'backend',destination:`${config.backendOrigin}${path}${launchBackendSearch(url)}`};
-    // The roulette room document is the engine's; blackjack is proxied by the frontend route with its session check.
-    if (requestedGame(url.searchParams) === 'roulette') return {kind:'backend',destination:`${config.backendOrigin}/play/roulette${rouletteRoomSearch(url.searchParams,{origin:url.origin})}`};
+    // A roulette room opens the engine's document address; blackjack is proxied by the frontend route with its session check.
+    if (requestedGame(url.searchParams) === 'roulette') return {kind:'redirect',destination:config.publicOrigin+rouletteDocumentPath(url.searchParams,{origin:url.origin})};
     return {kind:'frontend'};
   }
   if (path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {

@@ -48,9 +48,11 @@ moduler är inte publika käll-URL:er.
 
 Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`
 är spelarentré. Spelstarten är `/game?game=blackjack|roulette&operator=…&table=…`:
-blackjack proxas från spelmotorn efter sessionskontrollen i `lib/server-ui.mjs`,
-roulette skrivs om till spelmotorns dokument i middleware. `/game` utan spelkontext
-leder till `/lobby`. `/play/{game}`, `/blackjack` och `/roulette` är 308 till
+blackjack proxas från spelmotorn efter sessionskontrollen i `lib/server-ui.mjs`;
+ett roulettrum skickas (307) till spelmotorns dokument `/play/roulette?operator=&table=`
+med exakt rumsnycklarna i adressen, eftersom roulettklienten skickar sidans query som
+rumskontext och spelmotorn bara godtar operator/table/dealer där. `/game` utan spelkontext
+leder till `/lobby`. `/play/blackjack`, `/blackjack` och `/roulette` är 308 till
 `/game` under en release (spelmotorn svarar ännu med `/blackjack` efter launch).
 `CROUPIER_VERCEL_UNIFIED_UI=1` styr den gemensamma Services-konfigurationen.
 Partnerinloggning finns på `/partner/login` med separat `partner_session` och

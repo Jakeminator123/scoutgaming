@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {decorateGameEntryHtml} from '../services/game/public/game-entry-contract.mjs';
-import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination, requestedGame, gameStartPath, legacyGameStartRedirect, rouletteRoomSearch} from '../packages/navigation/game-entry.mjs';
+import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination, requestedGame, gameStartPath, legacyGameStartRedirect, rouletteRoomSearch, rouletteDocumentPath} from '../packages/navigation/game-entry.mjs';
 import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
 const env = {CROUPIER_STUDIO_NEON_POLICY:'1'},origin = 'https://game.example.invalid';
 test('canonical game address is /game and aliases preserve only unambiguous public selectors',() => {
@@ -34,6 +34,9 @@ test('the game selector is strict and the one game start is built, not guessed',
   assert.throws(() => gameStartPath({game:'poker',operator:'alpha'}));assert.throws(() => gameStartPath({game:'roulette',operator:''}));
   assert.equal(rouletteRoomSearch('game=roulette&operator=alpha&table=r-1&dealer=astrid&lane=mobile-phone&launch=a.b.c&returnTo=https://evil.invalid'),'?operator=alpha&table=r-1&dealer=astrid');
   assert.equal(rouletteRoomSearch('operator=alpha&operator=beta'),'');
+  // The roulette document keeps the engine's address: its client posts the page query as the room context.
+  assert.equal(rouletteDocumentPath('game=roulette&operator=alpha&table=r-1&dealer=astrid&returnTo=https://evil.invalid'),'/play/roulette?operator=alpha&table=r-1&dealer=astrid');
+  assert.equal(rouletteDocumentPath('game=roulette'),'/play/roulette');
 });
 test('observer survives only as complete valid same-cloud or loopback pair; launch remains a bounded opaque credential',() => {
   const channel = '00000000-0000-4000-8000-000000000001';
@@ -97,12 +100,12 @@ test('isolated comparison documents are visibly labelled only with server-owned 
 
 
 test('retired document addresses redirect permanently to /game by game and drop experiment flags; V2 is gone', () => {
-  for (const [path,game] of [['/play/blackjack','blackjack'],['/play/blackjack/','blackjack'],['/blackjack','blackjack'],['/blackjack/','blackjack'],['/play/roulette','roulette'],['/play/roulette/','roulette'],['/roulette','roulette'],['/roulette/','roulette']]) {
+  for (const [path,game] of [['/play/blackjack','blackjack'],['/play/blackjack/','blackjack'],['/blackjack','blackjack'],['/blackjack/','blackjack'],['/roulette','roulette'],['/roulette/','roulette']]) {
     const url=new URL(path+'?dealer=elin&rehearsal=1&performance=staged&motion=smooth60&scene=rigged-review&game=poker',origin);
     assert.equal(legacyGameStartRedirect(url),'/game?game='+game+'&dealer=elin&rehearsal=1',path);
     assert.equal(legacyGameStartRedirect(new URL(path,origin)),'/game?game='+game,path);
   }
-  for (const path of ['/v2','/v2/','/v2/index.html','/game','/','/play','/play/profil','/blackjack/extra','/casino.html','/demo']) {
+  for (const path of ['/v2','/v2/','/v2/index.html','/game','/','/play','/play/profil','/play/roulette','/play/roulette/','/blackjack/extra','/casino.html','/demo']) {
     assert.equal(legacyGameStartRedirect(new URL(path+'?dealer=elin',origin)),null,path);
     assert.equal(gameEntryRedirect(new URL(path+'?dealer=elin',origin),env),path==='/'?'/game?dealer=elin':null,path);
   }

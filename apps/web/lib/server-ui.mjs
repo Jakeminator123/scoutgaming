@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {platformConfiguration,platformBackendHeaders,gameLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
 import {decorateGameEntryHtml} from '../../../services/game/public/game-entry-contract.mjs';
-import {gameEntryEnabled, approvedGameQuery, playerLoginDestination, requestedGame, GAME_START_PATHS} from '../../../packages/navigation/game-entry.mjs';
+import {gameEntryEnabled, approvedGameQuery, playerLoginDestination, requestedGame, rouletteDocumentPath, GAME_START_PATHS} from '../../../packages/navigation/game-entry.mjs';
 import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 
 // /game is the only game document this frontend serves. /player-login is the
@@ -60,9 +60,9 @@ export async function platformUiDocument(request, {env = process.env, directory 
     if (game === null) return new Response(null, {status: 404, headers}); // An unknown game is no game.
     const lobby = gameLobbyDestination(url,config);
     if (lobby) return new Response(null,{status:303,headers:{...headers,Location:lobby}});
-    // The roulette room document is the engine's; the platform middleware
-    // rewrites /game?game=roulette there before this route can run.
-    if (game === 'roulette') return new Response(null, {status: 404, headers});
+    // A roulette room opens the engine's document address (the middleware
+    // normally answers this before the route runs).
+    if (game === 'roulette') return new Response(null,{status:307,headers:{...headers,Location:rouletteDocumentPath(url.searchParams,{origin:url.origin})}});
   }
   if (canonical && gameStart) {
     // The public UI uses the same live account session and saved policy as the

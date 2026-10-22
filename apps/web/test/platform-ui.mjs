@@ -248,22 +248,36 @@ test('catalogue aliases keep scoped choices and reject mutation requests',()=>{
   }
 });
 
-test('one game start: /play/{game}, /blackjack and /roulette are 308 aliases and the game selector is strict',()=>{
+test('one game start: /play/blackjack, /blackjack and /roulette are 308 aliases and the game selector is strict',()=>{
   const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
   for(const [old,destination] of [
     ['/play/blackjack?operator=alpha&table=room-one&dealer=nora&returnTo=https://evil.invalid','/game?game=blackjack&dealer=nora&table=room-one&operator=alpha'],
     ['/play/blackjack/?dealer=astrid','/game?game=blackjack&dealer=astrid'],
     ['/blackjack/?game=roulette&dealer=astrid','/game?game=blackjack&dealer=astrid'],
-    ['/play/roulette?operator=alpha&table=roulette-room&dealer=nora','/game?game=roulette&dealer=nora&table=roulette-room&operator=alpha'],
-    ['/play/roulette/','/game?game=roulette'],['/roulette','/game?game=roulette'],['/roulette/?operator=alpha','/game?game=roulette&operator=alpha']]){
+    ['/roulette','/game?game=roulette'],['/roulette/?operator=alpha&table=roulette-room','/game?game=roulette&table=roulette-room&operator=alpha']]){
     assert.deepEqual(platformRoute(new URL(old,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+destination},old);
   }
-  // The roulette document is the engine's; only room selectors reach it, each once.
-  assert.deepEqual(platformRoute(new URL('/game?game=roulette&operator=alpha&table=roulette-room&dealer=nora&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),
-    {kind:'backend',destination:unified.backendOrigin+'/play/roulette?operator=alpha&table=roulette-room&dealer=nora'});
+  // A roulette room opens the engine's /play/roulette document with exactly the room selectors in the
+  // browser URL: the roulette client posts its own query as the room context and the engine accepts
+  // only operator/table/dealer there, so game=roulette must never reach that document.
+  const wheel=platformRoute(new URL('/game?game=roulette&operator=alpha&table=roulette-room&dealer=nora&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified);
+  assert.deepEqual(wheel,{kind:'redirect',destination:unified.publicOrigin+'/play/roulette?operator=alpha&table=roulette-room&dealer=nora'});
+  assert.deepEqual(platformRoute(new URL(wheel.destination),unified),{kind:'backend',destination:unified.backendOrigin+'/play/roulette?operator=alpha&table=roulette-room&dealer=nora'});
   assert.deepEqual(platformRoute(new URL('/game?game=roulette&table=roulette-room&operator=alpha&operator=beta',unified.publicOrigin),unified),
-    {kind:'backend',destination:unified.backendOrigin+'/play/roulette?table=roulette-room'});
+    {kind:'redirect',destination:unified.publicOrigin+'/play/roulette?table=roulette-room'});
+  for(const [dirty,clean] of [['/play/roulette?game=roulette&operator=alpha&table=roulette-room&utm_source=mail','/play/roulette?operator=alpha&table=roulette-room'],
+    ['/play/roulette/?dealer=nora&table=roulette-room&operator=alpha','/play/roulette?operator=alpha&table=roulette-room&dealer=nora']]){
+    assert.deepEqual(platformRoute(new URL(dirty,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+clean},dirty);
+    assert.deepEqual(platformRoute(new URL(clean,unified.publicOrigin),unified),{kind:'backend',destination:unified.backendOrigin+clean},clean);
+  }
+  for(const bare of ['/play/roulette','/play/roulette/','/play/roulette?utm_source=mail','/play/roulette?dealer=nora&dealer=astrid'])
+    assert.deepEqual(platformRoute(new URL(bare,unified.publicOrigin),unified),{kind:'redirect',status:308,destination:unified.publicOrigin+'/game?game=roulette'},bare);
   assert.deepEqual(platformRoute(new URL('/game?game=roulette',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
+  assert.deepEqual(platformRoute(new URL('/game?game=roulette&operator=alpha',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha'});
+  const wheelUrl=new URL('/play/roulette?operator=alpha&table=roulette-room',unified.publicOrigin);
+  assert.deepEqual(platformRoute(wheelUrl,unified,new Request(wheelUrl,{method:'POST'})),{kind:'reject'});
+  for(const asset of ['/play/roulette','/roulette/app.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs','/api/roulette/table'])
+    assert.equal(backendPlatformPath(asset),true,asset+' stays a signed transport path');
   for(const asset of ['/roulette/app.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs','/api/roulette/table'])
     assert.deepEqual(platformRoute(new URL(asset,unified.publicOrigin),unified),{kind:'backend',destination:unified.backendOrigin+asset},asset);
   assert.deepEqual(platformRoute(new URL('/game?game=blackjack&operator=alpha&table=room-one',unified.publicOrigin),unified),{kind:'frontend'});
@@ -311,11 +325,13 @@ test('new game document retains live session/policy checks, cookies and fail-clo
   assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?game=blackjack&dealer=astrid');
   const failed=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>{throw Error('private upstream detail');}});
   assert.equal(failed.status,503);assert.doesNotMatch(await failed.text(),/private upstream detail|Fixture game/);
-  // The middleware owns the roulette rewrite and the game selector; the route never guesses a game.
-  for(const query of ['game=roulette&operator=sg-test&table=room-1','game=poker&dealer=astrid','game=blackjack&game=blackjack&dealer=astrid']){
+  // The route never guesses a game; a roulette room goes to the engine's document address without a session read.
+  for(const query of ['game=poker&dealer=astrid','game=blackjack&game=blackjack&dealer=astrid']){
     const response=await platformUiDocument(new Request(config.publicOrigin+'/game?'+query),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('no session read for '+query)});
     assert.equal(response.status,404,query);
   }
+  const wheel=await platformUiDocument(new Request(config.publicOrigin+'/game?game=roulette&operator=sg-test&table=room-1&lane=mobile-phone'),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('no session read for roulette')});
+  assert.equal(wheel.status,307);assert.equal(wheel.headers.get('location'),'/play/roulette?operator=sg-test&table=room-1');
   for(const path of ['/play/blackjack?dealer=astrid','/blackjack?dealer=astrid','/play/roulette','/v2','/bo','/casino.html','/demo'])
     assert.equal((await platformUiDocument(new Request(config.publicOrigin+path),{env:unifiedEnv,directory,fetchImpl:()=>assert.fail('retired document '+path)})).status,404,path);
 });
@@ -551,7 +567,7 @@ test('actual /play/{game} route handlers are permanent redirects to /game and th
     new Function('require', 'module', 'exports', compiled)(createRequire(routeUrl), module, module.exports);
     return module.exports;
   };
-  const blackjack = await load('play/blackjack'), roulette = await load('play/roulette');
+  const blackjack = await load('play/blackjack');
   const plain = await blackjack.GET(new Request(config.publicOrigin + '/play/blackjack'));
   assert.equal(plain.status, 308);
   assert.equal(plain.headers.get('location'), '/game?game=blackjack');
@@ -560,14 +576,12 @@ test('actual /play/{game} route handlers are permanent redirects to /game and th
   assert.equal(kept.status, 308);
   assert.equal(kept.headers.get('location'), '/game?game=blackjack&dealer=astrid&operator=sg-test');
   assert.equal(await kept.text(), '');
-  const wheel = await roulette.GET(new Request(config.publicOrigin + '/play/roulette?operator=sg-test&table=roulette-room&dealer=nora&game=blackjack'));
-  assert.equal(wheel.status, 308);
-  assert.equal(wheel.headers.get('location'), '/game?game=roulette&dealer=nora&table=roulette-room&operator=sg-test');
   const lobby = await load('play');
   assert.equal((await lobby.GET(new Request(config.publicOrigin + '/play?operator=sg-test'))).headers.get('location'), '/lobby?operator=sg-test');
   const routes = await readdir(new URL('../app/', import.meta.url));
   for (const name of ['casino.html', 'v2', 'blackjack', 'bo', 'labb-lissabon', 'demo']) assert.equal(routes.includes(name), false, name);
-  assert.deepEqual((await readdir(new URL('../app/play/', import.meta.url))).sort(), ['blackjack', 'historik', 'profil', 'roulette', 'route.ts']);
+  // The roulette document is the engine's /play/roulette behind the platform rewrite; the frontend has no roulette route.
+  assert.deepEqual((await readdir(new URL('../app/play/', import.meta.url))).sort(), ['blackjack', 'historik', 'profil', 'route.ts']);
   assert.equal((await readdir(new URL('../lib/', import.meta.url))).some(name => name.startsWith('game-url')), false, 'no Render game URL default remains');
 });
 

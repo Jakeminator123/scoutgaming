@@ -2036,8 +2036,9 @@ genererat tal bevaras; det finns ingen automatisk fallback till lokal talbank.
 ## Adresser och verktyg efter repo-ordning våg 2, 12 oktober 2026
 
 `/casino.html`, `/demo`, `/v2` och `/bo` är borttagna och svarar 404; kasinogolvet
-och dess GLB-filer är borta. Spelstarten är `/game?game=…` och `/play/{game}`
-är 308 dit under en release. De fem granskningssidorna svarar 404. Registrerad video
+och dess GLB-filer är borta. Spelstarten är `/game?game=…`; `/play/blackjack`
+är 308 dit under en release och roulettrummet öppnas på spelmotorns `/play/roulette`.
+De fem granskningssidorna svarar 404. Registrerad video
 spelas på den gemensamma scenen. Studios originalmediareserv är pensionerad;
 ett hanterat klipp utan spelbar fil visar den befintliga statustexten.
 Partnerns levande vyer (översikt, spelrum, integration och skal) renderas från
@@ -2327,7 +2328,7 @@ Tabellen här anger fungerande tekniska ingångar under övergången.
 | --- | --- | --- |
 | Intern personal | `/admin`; äldre `/control` | Hanterar Studio, bolag, publicering och drift. Äldre länkar och sparade konfigurationer fortsätter fungera. Kräver intern behörighet. |
 | Operatörens personal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Ser endast bolag där medlemskapet är aktivt. Publicerade alternativ och rättigheter kontrolleras på servern. |
-| Spelare | `/lobby` och spelstarten `/game`; `/play`, `/play/{game}`, `/blackjack` och `/roulette` är 308 dit | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
+| Spelare | `/lobby` och spelstarten `/game`; roulettrummet öppnas på spelmotorns `/play/roulette?operator=&table=`; `/play`, `/play/blackjack`, `/blackjack` och `/roulette` är 308 till `/game` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
 | Spelarresultat | `/api/history` | Egna aggregerade resultat i samma session som `/api/player`. |
 
 ### Lagring

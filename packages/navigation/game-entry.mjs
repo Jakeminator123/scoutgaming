@@ -77,9 +77,18 @@ export function rouletteRoomSearch(input,{origin} = {}) {
   const text = query.toString();
   return text ? `?${text}` : '';
 }
+// The roulette document stays on the engine's /play/roulette behind the /game
+// start: its client posts the page's own query as the room context and the
+// engine rejects any key but operator/table/dealer, so the document address
+// cannot carry game=roulette until services/game filters that context.
+export const ROULETTE_DOCUMENT_PATH = '/play/roulette';
+export const ROULETTE_DOCUMENT_PATHS = Object.freeze(['/play/roulette', '/play/roulette/']);
+export function rouletteDocumentPath(input,{origin} = {}) {
+  return ROULETTE_DOCUMENT_PATH + rouletteRoomSearch(input,{origin});
+}
 // Retired document addresses keep working for one release as a permanent
 // redirect; the path names the game and only approved selectors survive.
-const LEGACY_GAME_STARTS = new Map([['/play/blackjack','blackjack'],['/blackjack','blackjack'],['/play/roulette','roulette'],['/roulette','roulette']]);
+const LEGACY_GAME_STARTS = new Map([['/play/blackjack','blackjack'],['/blackjack','blackjack'],['/roulette','roulette']]);
 export function legacyGameStartRedirect(url) {
   const game = LEGACY_GAME_STARTS.get(url.pathname.length > 1 ? url.pathname.replace(/\/$/,'') : url.pathname);
   if (!game) return null;

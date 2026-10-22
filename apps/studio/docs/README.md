@@ -318,8 +318,11 @@ En bolagsslugg är inte ett dealer-ID, rum-ID, sammansättnings-ID eller agentna
 
 Spelstarten är `/game?game=blackjack|roulette&operator=…&table=…&dealer=…`; lobbyn
 länkar dit. `/player-login` är spelarens inloggning. `/play/profil` och
-`/play/historik` är spelarytan. `/play`, `/play/blackjack`, `/play/roulette`,
-`/blackjack` och `/roulette` är permanenta omdirigeringar (308) till `/game`
+`/play/historik` är spelarytan. Ett roulettrum skickas vidare (307) till
+spelmotorns dokument `/play/roulette?operator=&table=`, som förblir roulettens
+adress tills spelmotorns klient slutar skicka sidans query som rumskontext.
+`/play`, `/play/blackjack`, `/blackjack` och `/roulette` är permanenta
+omdirigeringar (308) till `/game`
 under en release; `/game` utan vald spelkontext leder till `/lobby`. `/v2`,
 `/bo`, `/casino.html`, `/demo` och `/labb-lissabon` är borttagna (404).
 En riktig spellänk behåller godkänd
