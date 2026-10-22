@@ -47,7 +47,7 @@ services:
       - key: OPENCLAW_TIMEOUT_MS
         value: "8000"
       - key: OPENCLAW_SPEECH_ROUTING
-        value: fixed
+        value: adaptive
       - key: OPENCLAW_SPEECH_DEEP_MODEL
         value: gpt-6-sol
       # Uses this web service's Render-provided HTTPS origin. Native Gateway
