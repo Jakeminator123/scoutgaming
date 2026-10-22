@@ -105,6 +105,9 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
       // Error bodies belong to this public boundary too, never to the provider.
       if(response.status===416) {await response.body?.cancel();safeHeaders.delete('content-length');safeHeaders.delete('content-type');
         return new Response(null,{status:416,headers:safeHeaders});}
+      // The fresh atomic room/package check above also precedes every 304.
+      // Keep bytes only in this browser and require validation on every reuse.
+      safeHeaders.set('Cache-Control','private, no-cache, must-revalidate');
       if(request.method==='HEAD')await response.body?.cancel();
       return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers:safeHeaders});
     } catch(error) {

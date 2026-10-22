@@ -9,7 +9,8 @@ import {registeredDealerIds} from '../../presentation/contracts/dealer-identity.
 
 // The preserved immutable bank lives in the scoped Neon catalog. Review records/classification
 // come from Neon exclusively; an unavailable database never means an empty bank.
-export function createNeonVideoRegistry({ repository, scope, env = process.env, options = {}, reader, getPrivateMedia } = {}) {
+export function createNeonVideoRegistry({ repository, scope, env = process.env, options = {}, reader, getPrivateMedia, isMediaConfigured = isCloudMediaConfigured } = {}) {
+  if(typeof isMediaConfigured!=='function')throw new TypeError('Explicit synchronous media configuration predicate required.');
   if(typeof reader?.loadVideoRegistry!=='function'||typeof reader?.getVideoResponse!=='function'||typeof getPrivateMedia!=='function')throw new TypeError('Explicit registry and private media readers required.');
   const {loadVideoRegistry,getVideoResponse}=reader;
   scope = validateStudioScope(scope);
@@ -50,7 +51,7 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     readClassifications: async () => [],
   };
   function cloudRequired() {
-    if (!isCloudMediaConfigured(checkedEnv)) {
+    if (isMediaConfigured(checkedEnv) !== true) {
       throw new StudioStorageError('studio_media_storage_unavailable');
     }
   }

@@ -1,3 +1,5 @@
+import { adminDocumentHref } from './admin-workspace-routes.mjs';
+
 // Public document names. Stored IDs and API contracts keep their compatibility.
 export function compositionLabel(value, language = 'sv') {
   const label = typeof value === 'string' ? value.trim() : '';
@@ -28,5 +30,34 @@ export function canonicalControlHref(value) {
     url.searchParams.delete('lane');
     for (const key of ['operator','composition','dealer','table']) if (url.searchParams.get(key) === '') url.searchParams.delete(key);
   }
-  return url.pathname + url.search + url.hash;
+  // Retired editors and tools now have only their Admin documents.
+  if (url.pathname === '/control/clips') {
+    url.pathname = '/admin/dealer-studio';
+    if (!url.searchParams.has('dealer') && url.searchParams.has('dealerId')) url.searchParams.set('dealer', url.searchParams.get('dealerId'));
+    url.searchParams.delete('dealerId');
+  }
+  if (url.pathname === '/control/rooms') url.pathname = '/admin/publication';
+  if (url.pathname === '/control/companies') url.pathname = '/admin/companies';
+  if (url.pathname === '/control/guide') url.pathname = '/admin/guide';
+  if (url.pathname === '/control/videos') url.pathname = '/admin/videos';
+  if (url.pathname === '/control/compositions') url.pathname = '/admin/compositions';
+  if (url.pathname === '/control/rehearsal') url.pathname = '/admin/rehearsal';
+  if (url.pathname === '/control/openclaw') url.pathname = url.searchParams.get('tab') === 'chat' ? '/admin/dealer-agent' : '/admin/ai/models';
+  if (url.pathname === '/control/ops') url.pathname = '/admin/ai/models';
+  if (url.pathname === '/control/operator-chat') url.pathname = '/admin/dealer-agent';
+  const href = url.pathname + url.search + url.hash;
+  return url.pathname === '/control/administration' ? adminDocumentHref(href) : href;
+}
+
+// Activity bookmarks accept only one value for each observation identity.
+export function legacyActivityDocumentHref(value) {
+  const url = new URL(value, 'https://studio.invalid');
+  const query = new URLSearchParams();
+  for (const key of ['dealer','operator','table','room','game','composition']) {
+    const values = url.searchParams.getAll(key);
+    if (values.length === 1 && values[0]) query.set(key, values[0]);
+  }
+  const lanes = url.searchParams.getAll('lane');
+  if (!query.has('composition') && lanes.length === 1 && lanes[0]) query.set('composition', lanes[0]);
+  return '/admin/rehearsal' + (query.size ? '?' + query : '') + url.hash;
 }

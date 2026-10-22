@@ -155,7 +155,7 @@ test('library renders registered clips consistently without requesting local cli
     const fakeReact={...React,useState:initial=>[initial,()=>{}],useRef:initial=>({current:initial}),useEffect:run=>effects.push(run)};
     runInNewContext(output.code,{module,exports:module.exports,require:name=>{
       if(name==='react')return fakeReact;
-      if(name==='./studio-types')return {requestJson:async path=>{calls.push(path);return {};},studioHref:()=>'/control/clips'};
+      if(name==='./studio-types')return {requestJson:async path=>{calls.push(path);return {};},studioHref:()=>'/admin/dealer-studio'};
       if(name==='./media-removal-feedback')return {mediaRemovalMessage:()=>''};
       if(name==='./video-metadata-fields')return {VideoCompositingFields:()=>null,DealerFramingFields:()=>null};
       if(name==='./dealer-video-surface')return {DealerClipPreview:()=>null};

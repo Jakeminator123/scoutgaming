@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import {redirect} from 'next/navigation';
-import {demoLobbyPath} from '@/lib/player-lobby.mjs';
+import {playerLobbyPath} from '../../../../packages/navigation/player-lobby.mjs';
 
 export const metadata:Metadata={
   title:'Välj bolag och spelrum · Scoutgaming',
@@ -8,5 +8,5 @@ export const metadata:Metadata={
 };
 
 export default async function DemoPage({searchParams}:{searchParams?:Promise<Record<string,string|string[]|undefined>>}) {
-  redirect(demoLobbyPath(await searchParams??{}));
+  redirect(playerLobbyPath(await searchParams??{}));
 }

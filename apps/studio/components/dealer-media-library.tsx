@@ -50,7 +50,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
   const status=(slot:DealerMediaSlot)=>dealerSlotStatus(project,inventory,dealerId,slot);
   function chooseCategory(value:string){setCategory(value);setSlotId('');setPage(1);onCategoryChange?.(value);}
   function chooseSlot(value:string){setSlotId(value);setPage(1);onSlotChange?.(value);}
-  function settings(slot:DealerMediaSlot){if(slot.eventId.startsWith('roulette.'))return <small>Rouletteprov · kopplas inte automatiskt till spel.</small>;return onConfigureSlot?<button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onConfigureSlot(slot.eventId,slot.situation)}>Öppna klipp och inställningar</button>:<a href={studioHref('/control/clips',{dealerId,eventId:slot.eventId,situation:slot.situation})}>Öppna klipp och inställningar</a>;}
+  function settings(slot:DealerMediaSlot){if(slot.eventId.startsWith('roulette.'))return <small>Rouletteprov · kopplas inte automatiskt till spel.</small>;return onConfigureSlot?<button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onConfigureSlot(slot.eventId,slot.situation)}>Öppna klipp och inställningar</button>:<a href={studioHref('/admin/dealer-studio',{dealerId,eventId:slot.eventId,situation:slot.situation})}>Öppna klipp och inställningar</a>;}
   const missing=allSlots.map(slot=>({slot,...status(slot)})).filter(row=>row.level==='required'||row.level==='recommended');
   function addFiles(files:FileList|null){
     if(!files||busy)return;

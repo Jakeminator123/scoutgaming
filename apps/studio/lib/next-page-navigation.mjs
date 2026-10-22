@@ -1,11 +1,14 @@
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { studioLoginReturnTo, studioPasswordToken } from './studio-login-client.mjs';
 
-// Next applies its configured basePath when it emits an SSR redirect. Keep
-// this destination relative to the app; returnTo is a separate public URL path.
-// API Response redirects and window.location navigation use public paths.
-export function nextStudioLoginRedirect(returnTo = '/studio') {
-  return `/login?returnTo=${encodeURIComponent(studioLoginReturnTo(returnTo))}`;
+// Admin documents use public paths. An absolute configured origin prevents
+// Next from adding the technical /studio basePath to an SSR redirect.
+export function nextStudioLoginRedirect(returnTo = '/admin', publicOrigin) {
+  const path = `/admin/login?returnTo=${encodeURIComponent(studioLoginReturnTo(returnTo))}`;
+  if (publicOrigin === undefined) return path;
+  const origin = new URL(publicOrigin);
+  if (origin.origin !== publicOrigin || origin.protocol !== 'https:') throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 });
+  return new URL(path, origin).href;
 }
 
 // Authenticate on the public host before following its one-use handoff.
@@ -17,7 +20,7 @@ export function nextStudioAuthEntryRedirect(request, config, { mode = 'login', r
   const logical = normalizeNativeStudioPageRequest(request, config);
   const [publicOrigin] = config.allowedOrigins;
   if (new URL(logical.url).origin === publicOrigin) return null;
-  const target = new URL('/studio/' + mode, publicOrigin);
+  const target = new URL('/admin/' + mode, publicOrigin);
   if (mode === 'login') target.searchParams.set('returnTo', studioLoginReturnTo(returnTo));
   else {
     const bearer = studioPasswordToken(token);

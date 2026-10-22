@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
-import {createRequire} from 'node:module';
 import {playerAccountKind, playerAreaData, playerAreaModel, playerAreaPage, playerAreaRequest, PLAYER_RESULTS_PATH} from '../lib/player-area.mjs';
 
 const env = {
@@ -22,7 +20,7 @@ test('player account kind uses only session flags the payload can carry', () => 
   assert.equal(PLAYER_RESULTS_PATH, '/api/history');
 });
 
-test('session 401 renders the lobby login call to action', async () => {
+test('legacy catalogue redirects without reading private account data', async () => {
   const calls = [];
   const fetchImpl = async (url, init) => {
     calls.push({url: String(url), method: init.method});
@@ -33,16 +31,9 @@ test('session 401 renders the lobby login call to action', async () => {
   assert.equal(data.player, null);
   assert.equal(data.results, null);
   assert.deepEqual(calls, [{url: env.CROUPIER_BACKEND_ORIGIN + '/api/auth/session', method: 'GET'}]);
-  const page = await playerAreaPage(request, env, 'lobby', {fetchImpl: async () => new Response(null, {status: 401})});
-  assert.equal(page.redirect, null);
-  assert.match(page.html, /Spellobby/);
-  assert.match(page.html, /Spela Blackjack/);
-  assert.match(page.html, /href="\/player-login\?returnTo=\/play\/blackjack"/);
-  assert.match(page.html, /Logga in för att se egen profil och egen historik/);
-  assert.doesNotMatch(page.html, /href="\/play\/profil"|href="\/play\/historik"/);
-  assert.doesNotMatch(page.html, /secret-stack-trace|Roulette<\/a>|Baccarat<\/a>/);
-  assert.match(page.html, /Roulette · demo/);
-  assert.match(page.html, /Baccarat · planerat/);
+  const page = await playerAreaPage(request, env, 'lobby', {fetchImpl: async () => { throw Error('no legacy data read'); }});
+  assert.equal(page.redirect, '/lobby');
+  assert.equal(page.html, '');
 });
 
 test('authenticated fixture renders the name, balance and both account links', async () => {
@@ -53,8 +44,8 @@ test('authenticated fixture renders the name, balance and both account links', a
     if (String(url).endsWith('/api/player')) return Response.json({id: 'player-1', name: 'Ada & Co', currency: 'SEK', balance: 2500, error: 'must-not-leak'});
     return new Response('secret-stack-trace', {status: 404});
   };
-  const page = await playerAreaPage(request, env, 'lobby', {fetchImpl});
-  assert.equal(calls.length, 2);
+  const page = await playerAreaPage(request, env, 'profil', {fetchImpl});
+  assert.equal(calls.length, 3);
   assert.equal(calls[0].url, env.CROUPIER_BACKEND_ORIGIN + '/api/auth/session');
   assert.equal(calls[1].url, env.CROUPIER_BACKEND_ORIGIN + '/api/player');
   assert.equal(calls[1].method, 'POST');
@@ -65,9 +56,8 @@ test('authenticated fixture renders the name, balance and both account links', a
   assert.equal(calls[1].redirect, 'error');
   assert.match(page.html, /Ada &amp; Co/);
   assert.match(page.html, /SEK/);
-  assert.match(page.html, /href="\/play\/profil"/);
   assert.match(page.html, /href="\/play\/historik"/);
-  assert.match(page.html, /href="\/play\/blackjack"/);
+  assert.match(page.html, /href="\/lobby"/);
   assert.doesNotMatch(page.html, /must-not-leak|player-1|secret-stack-trace/);
 });
 
@@ -83,11 +73,11 @@ test('profile and history redirect when the session is missing', async () => {
 
 test('backend 503 renders an unavailable notice without upstream text', async () => {
   const fetchImpl = async () => { throw new Error('secret-stack-trace'); };
-  const thrown = await playerAreaPage(request, env, 'lobby', {fetchImpl});
+  const thrown = await playerAreaPage(request, env, 'profil', {fetchImpl});
   assert.equal(thrown.redirect, null);
   assert.match(thrown.html, /Spelkontot kan inte läsas just nu/);
   assert.doesNotMatch(thrown.html, /secret-stack-trace|Error:|at player-area/);
-  const denied = await playerAreaPage(request, env, 'lobby', {fetchImpl: async () => new Response('secret-stack-trace', {status: 503})});
+  const denied = await playerAreaPage(request, env, 'profil', {fetchImpl: async () => new Response('secret-stack-trace', {status: 503})});
   assert.match(denied.html, /Spelkontot kan inte läsas just nu/);
   assert.doesNotMatch(denied.html, /secret-stack-trace/);
 });
@@ -102,7 +92,7 @@ test('history stays honest when no public results route exists', async () => {
   assert.match(page.html, /Inga avslutade rundor ännu/);
   assert.match(page.html, /Ada/);
   assert.match(page.html, /EUR/);
-  assert.match(page.html, /Spela en runda/);
+  assert.match(page.html, /Till spellobbyn/);
   assert.doesNotMatch(page.html, /Ingen serverdata har lästs/);
   const profil = await playerAreaPage(request, env, 'profil', {fetchImpl});
   assert.match(profil.html, /Egen profil/);
@@ -163,7 +153,7 @@ test('history keeps the empty state when every currency has zero rounds', () => 
 
 
 test('verified N1 handoff precedes every player or wallet read, even with a foreign player session',async()=>{
-  for(const surface of ['profil','historik','lobby']) {
+  for(const surface of ['profil','historik']) {
     const path=surface==='lobby'?'/play?operator=swedish-games':'/play/'+surface;
     const calls=[];
     const page=await playerAreaPage(new Request('https://preview.example.test'+path,{headers:{cookie:'bo_jwt=verified; player_session=other'}}),env,surface,{fetchImpl:async(url)=>{
@@ -175,38 +165,4 @@ test('verified N1 handoff precedes every player or wallet read, even with a fore
     assert.equal(page.html,'');assert.equal(page.data.player,null);
     assert.deepEqual(calls,['/api/auth/session']);
   }
-});
-
-test('actual legacy lobby page redirects verified N1 handoff before rendering an empty lobby',async()=>{
-  const require=createRequire(new URL('../package.json',import.meta.url));
-  const ts=require('typescript'),navigation=require('next/navigation');
-  const source=await readFile(new URL('../app/play/page.tsx',import.meta.url),'utf8');
-  const compiled=ts.transpileModule(source,{fileName:'page.tsx',compilerOptions:{
-    module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,
-  }}).outputText;
-  const calls=[],module={exports:{}};
-  const fetchImpl=async url=>{
-    calls.push(new URL(url).pathname);
-    assert.equal(new URL(url).pathname,'/api/auth/session','no player, wallet or operator read precedes handoff');
-    return Response.json({authenticated:false,guest:false,sharedCredentials:true,backofficeHandoff:true});
-  };
-  const imports=name=>{
-    if(name==='next/headers')return {headers:async()=>new Headers({cookie:'bo_jwt=verified; player_session=other'})};
-    if(name==='next/navigation')return navigation;
-    if(name==='@/lib/player-area.mjs')return {
-      playerAreaRequest:(path,headers)=>playerAreaRequest(path,headers,env),
-      playerAreaPage:(request,environment,surface)=>playerAreaPage(request,environment,surface,{fetchImpl}),
-    };
-    if(name==='@/components/player/player-area-document')return {PlayerAreaDocument:()=>null};
-    if(name==='react/jsx-runtime')return require(name);
-    throw Error('Unexpected page dependency: '+name);
-  };
-  new Function('require','module','exports','process',compiled)(imports,module,module.exports,{env});
-  for(const operator of ['', 'swedish-games']){
-    const destination='/api/auth/bo/start?next='+encodeURIComponent(operator?'/play?operator='+operator:'/play');
-    await assert.rejects(module.exports.default({searchParams:Promise.resolve({operator})}),error=>{
-      assert.equal(error.digest,'NEXT_REDIRECT;replace;'+destination+';307;');return true;
-    });
-  }
-  assert.deepEqual(calls,['/api/auth/session','/api/auth/session']);
 });

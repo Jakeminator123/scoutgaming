@@ -8,7 +8,6 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/navigation/server/platform-routing.mjs';
 import {platformUiDocument} from '../lib/server-ui.mjs';
-import {operatorPlayPath} from '../lib/player-operator.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {createRequire} from 'node:module';
 
@@ -50,7 +49,7 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
   for(const path of ['/administration','/administration/'])assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/control/administration'});
+    {kind:'redirect',destination:unified.publicOrigin+'/admin/drift'});
   assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
@@ -76,7 +75,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
   try {
     const headers = {cookie:'bo_session=isolated-fixture', 'x-croupier-vercel-secret':'spoof',
       'x-croupier-lab-authorized':'spoof', forwarded:'host=foreign.example'};
-    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin/replies', '/studio/login']) {
+    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin/replies', '/studio/admin/login']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
       assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
       assert.equal(response.headers.get('x-middleware-request-cookie'), headers.cookie);
@@ -85,10 +84,33 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('x-middleware-request-forwarded'), null);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
     }
+    for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login']) {
+      const response = module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin/publication?room=room-7'),{nextConfig:{basePath:'/studio'}}));
+      assert.equal(response.status,307);
+      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin/publication?room=room-7'));
+      assert.equal(response.headers.get('referrer-policy'),'no-referrer');
+      assert.equal(response.headers.get('cache-control'),'no-store');
+    }
+    const resetToken='fixture_restore_'.repeat(3);
+    for (const prefix of ['', '/studio']) for (const old of ['/set-password','/control/set-password']) {
+      for(const query of ['t='+resetToken,'token='+resetToken]) {
+        const response=module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?'+query+'&foreign=discard',{nextConfig:{basePath:'/studio'}}));
+        assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/set-password?t='+resetToken);
+        assert.equal(response.headers.get('referrer-policy'),'no-referrer');
+      }
+      for(const query of ['t=short','t='+resetToken+'&t='+resetToken,'t='+resetToken+'&token='+resetToken]) {
+        const response=module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?'+query,{nextConfig:{basePath:'/studio'}}));
+        assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/set-password');
+      }
+    }
+    for (const old of ['/control/login','/studio/login','/control/set-password','/studio/set-password']) {
+      const response=module.exports.middleware(new NextRequest(config.publicOrigin+old,{method:'POST',body:'password=discard'}));
+      assert.equal(response.status,400);assert.equal(response.headers.get('location'),null);
+    }
     // Retired documents redirect before transport headers are applied. Follow
     // their public destinations with the cookie a browser retains on this origin.
     let legacyUrl = config.publicOrigin + '/studio/activity';
-    for (const target of ['/control/activity', '/admin/rehearsal']) {
+    for (const target of ['/admin/rehearsal']) {
       const response = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
       assert.equal(response.status, 307, legacyUrl);
       assert.equal(response.headers.get('location'), config.publicOrigin + target);
@@ -119,7 +141,8 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       ['/control/replies', {headers:{...navigation,'next-action':'fixture'}}],
     ]) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, init));
-      assert.equal(response.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site', path);
+      if (path.startsWith('/control/')) assert.equal(response.status,400,path);
+      else assert.equal(response.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site', path);
     }
     const transport = module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
     assert.equal(transport.headers.get('x-middleware-rewrite'), config.backendOrigin + '/studio/api/inputs');
@@ -133,6 +156,13 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 404, path);
     }
     delete process.env.CROUPIER_VERCEL_UNIFIED_UI;
+    for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login','/set-password','/control/set-password']) {
+      const query=old.endsWith('set-password')?'t='+resetToken:'returnTo='+encodeURIComponent('/admin/publication?room=room-7');
+      const response=module.exports.middleware(new NextRequest('https://standalone.fixture.invalid'+prefix+old+'?'+query,{headers:{host:'standalone.fixture.invalid'},nextConfig:{basePath:'/studio'}}));
+      const mode=old.endsWith('set-password')?'set-password':'login';
+      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/'+mode+'?'+query);
+      assert.equal(response.headers.get('referrer-policy'),'no-referrer');
+    }
     assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
   } finally {
     for (const [key,value] of Object.entries(previous)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
@@ -140,7 +170,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
 });
 
 test('generated workspace chunks allow encoded bracket folders without widening encoded route access', () => {
-  for (const surface of ['control', 'partner']) {
+  for (const surface of ['partner']) {
     const path = `/studio/_next/static/chunks/app/${surface}/%5B%5B...path%5D%5D/page-99ec07720d222a1e.js`;
     assert.deepEqual(platformRoute(new URL(path + '?dpl=fixture', config.publicOrigin), config),
       {kind:'lab', destination:config.labUiOrigin + path + '?dpl=fixture'});
@@ -153,6 +183,7 @@ test('generated workspace chunks allow encoded bracket folders without widening 
     '/studio/_next/static/chunks/app/other/%5B%5B...path%5D%5D/page-a1.js',
     '/studio/_next/static/chunks/app/partner/%5B%5B...path%5D%5D/page-a1.html',
     '/studio/api/%61dmin/users', '/partner/demo-north/%74eam',
+    '/studio/_next/static/chunks/app/control/%5B%5B...path%5D%5D/page-a1.js',
   ]) assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'reject', path);
 });
 
@@ -168,11 +199,12 @@ test('new document surfaces rewrite to native Studio without creating customer o
   for(const [path,destination]of [['/control','/admin'],['/control/speech','/admin/dealer-studio?view=speech'],['/control/studio','/admin/clips'],['/control/admin','/admin/drift'],['/control/ops','/admin/ai/models'],['/control/lab','/admin/clips'],['/studio/control','/admin']]){
     const expected=new URL(destination,native.publicOrigin);expected.searchParams.set('_rsc','fixture');
     assert.deepEqual(platformRoute(new URL(path+'?_rsc=fixture',native.publicOrigin),native),{kind:'redirect',destination:expected.href});
-    if(path.startsWith('/control'))assert.equal(platformRoute(new URL(path,config.publicOrigin),config).kind,'frontend');
+    if(path==='/control/ops')assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:config.publicOrigin+'/admin/ai/models'});
+    else assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:new URL(destination,config.publicOrigin).href});
   }
   for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',
     '/partner/demo-north/api/users', '/control/unknown', '/partner/demo-north/unknown']) {
-    assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'frontend', path);
+    assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, path.startsWith('/control/')?'reject':'frontend', path);
     assert.equal(backendPlatformPath(path), false, path);
   }
   assert.equal(platformRoute(new URL('/partner/demo-north/%74eam', native.publicOrigin), native).kind, 'reject');
@@ -190,19 +222,35 @@ test('old workspace slugs redirect to one canonical document without granting an
   assert.equal(platformRoute(new URL('/partner/demo-south/presentation-events',native.publicOrigin),native).kind,'frontend');
 });
 
+test('catalogue aliases keep scoped choices and reject mutation requests',()=>{
+  const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
+  for(const path of ['/play','/play/','/demo','/demo/','/casino.html']){
+    const url=new URL(path+'?operator=alpha&table=room-one&dealer=nora&launch=private&returnTo=https://evil.invalid',unified.publicOrigin);
+    for(const method of ['GET','HEAD']) assert.deepEqual(platformRoute(url,unified,new Request(url,{method})),
+      {kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha&room=room-one&dealer=nora'});
+    for(const method of ['POST','PUT','PATCH','DELETE'])assert.deepEqual(platformRoute(url,unified,new Request(url,{method})),{kind:'reject'});
+    assert.deepEqual(platformRoute(url,unified,new Request(url,{headers:{'next-action':'fixture'}})),{kind:'reject'});
+  }
+  for(const path of ['/game','/v2','/blackjack','/play/blackjack']){
+    const url=new URL(path+'?operator=alpha',unified.publicOrigin);
+    assert.deepEqual(platformRoute(url,unified,new Request(url)),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=alpha'});
+    assert.deepEqual(platformRoute(url,unified,new Request(url,{method:'POST'})),{kind:'reject'});
+  }
+});
+
 test('unified player addresses preserve approved selectors and the existing signed launch handler',()=>{
   const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
   for(const old of ['/blackjack','/blackjack/','/game','/play/blackjack/'])assert.deepEqual(platformRoute(new URL(old+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),
     {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&lane=mobile-phone'});
   assert.deepEqual(platformRoute(new URL('/play/blackjack?launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
     {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
-  assert.deepEqual(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/play'});
+  assert.deepEqual(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
   assert.equal(platformRoute(new URL('/play/%62lackjack',unified.publicOrigin),unified).kind,'reject');
   assert.deepEqual(platformRoute(new URL('/blackjack?operator=sg-test&dealer=astrid&returnTo=https://evil.invalid',unified.publicOrigin),unified),
     {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&operator=sg-test'});
   assert.deepEqual(platformRoute(new URL('/blackjack?operator=play&dealer=astrid',unified.publicOrigin),unified),
     {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid'});
-  for (const path of ['/play', '/play/', '/play/profil', '/play/profil/', '/play/historik', '/play/historik/']) {
+  for (const path of ['/play/profil', '/play/profil/', '/play/historik', '/play/historik/']) {
     assert.equal(platformRoute(new URL(path, unified.publicOrigin), unified).kind, 'frontend', path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
     assert.equal(backendPlatformPath(path), false, path);
@@ -231,7 +279,6 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   const unified=platformConfiguration(unifiedEnv);
   const partner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({partner:'key-1',sub:'player-1'})).toString('base64url')}.sig`;
   const notPartner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({operator:'sg-test',sub:'player-1'})).toString('base64url')}.sig`;
-  assert.equal(operatorPlayPath('sg-test'),'/play/blackjack?operator=sg-test');
   assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
     {kind:'backend',destination:unified.backendOrigin+'/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1'});
   assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=play&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
@@ -253,11 +300,11 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   };
   const request=path=>new Request(unified.publicOrigin+path,{headers:{cookie:'game_session=fixture'}});
   const options={env:unifiedEnv,directory,fetchImpl};
-  const played=await platformUiDocument(request(operatorPlayPath('sg-test')+'&table=room-1'),options);
+  const played=await platformUiDocument(request('/play/blackjack?operator=sg-test&table=room-1'),options);
   assert.equal(played.status,200);assert.match(await played.text(),/data-game-operator="sg-test"/);
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session',unified.backendOrigin+'/blackjack?table=room-1&operator=sg-test']);
   calls.length=0;authenticated=false;
-  const login=await platformUiDocument(request(operatorPlayPath('sg-test')+'&table=room-1'),options);
+  const login=await platformUiDocument(request('/play/blackjack?operator=sg-test&table=room-1'),options);
   assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?table=room-1&operator=sg-test');
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
   calls.length=0;authenticated=true;
@@ -450,19 +497,19 @@ test('new frontend serves its built public module graph when the older backend r
     await rm(directory,{recursive:true,force:true});
   }
 });
-test('retired casino floor redirects to /play and keeps the query', async () => {
+test('retired casino floor redirects to /lobby and keeps scoped selectors', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const compiled = transpileModule(await readFile(new URL('../app/casino.html/route.ts', import.meta.url), 'utf8'), {compilerOptions: {module: ModuleKind.CommonJS, target: ScriptTarget.ES2022}}).outputText;
   const module = {exports: {}};
-  new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
+  new Function('require', 'module', 'exports', compiled)(createRequire(new URL('../app/casino.html/route.ts', import.meta.url)), module, module.exports);
   const plain = await module.exports.GET(new Request(config.publicOrigin + '/casino.html'));
   assert.equal(plain.status, 308);
-  assert.equal(plain.headers.get('location'), '/play');
+  assert.equal(plain.headers.get('location'), '/lobby');
   assert.match(plain.headers.get('cache-control'), /no-store/);
   const kept = await module.exports.HEAD(new Request(config.publicOrigin + '/casino.html?operator=sg-test&dealer=astrid'));
   assert.equal(kept.status, 308);
-  assert.equal(kept.headers.get('location'), '/play?operator=sg-test&dealer=astrid');
+  assert.equal(kept.headers.get('location'), '/lobby?operator=sg-test&dealer=astrid');
   assert.equal(await kept.text(), '');
 });
 
@@ -583,12 +630,12 @@ test('bare public Blackjack enters the existing lobby without reading a player s
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const unified=platformConfiguration(unifiedEnv);
   for(const path of ['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/','/play/blackjack?utm_source=bookmark&returnTo=https://evil.invalid']){
-    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/play'});
+    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby'});
     for(const method of ['GET','HEAD']){
       const response=await platformUiDocument(new Request(unified.publicOrigin+path,{method}),{
         env:unifiedEnv,fetchImpl:()=>assert.fail('bare entry must not read player auth, account or global policy'),
       });
-      assert.equal(response.status,303,path);assert.equal(response.headers.get('location'),'/play');
+      assert.equal(response.status,303,path);assert.equal(response.headers.get('location'),'/lobby');
       assert.equal(await response.text(),'');
     }
   }
@@ -596,7 +643,7 @@ test('bare public Blackjack enters the existing lobby without reading a player s
     'presentation=local','rehearsal=1','performance=staged','motion=smooth60','launch=fixture.claim.signature',
     'launch=invalid','operator=sg-test&operator=north','labObserverChannel=invalid']){
     const route=platformRoute(new URL('/play/blackjack?'+query,unified.publicOrigin),unified);
-    assert.notEqual(route.destination,unified.publicOrigin+'/play',query);
+    assert.notEqual(route.destination,unified.publicOrigin+'/lobby',query);
   }
   assert.equal(backendPlatformPath('/api/operators'),true);
   for(const path of ['/api/operators/','/api/operators/private/users','/api/operators%2f','/api/operator'])assert.equal(backendPlatformPath(path),false,path);
@@ -619,9 +666,9 @@ test('an operator-only Blackjack bookmark opens that company lobby without consu
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const unified=platformConfiguration(unifiedEnv);
   for(const path of ['/play/blackjack?operator=sg-test','/blackjack?operator=sg-test&utm_source=partner']){
-    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/play?operator=sg-test'});
+    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/lobby?operator=sg-test'});
     const response=await platformUiDocument(new Request(unified.publicOrigin+path),{env:unifiedEnv,fetchImpl:()=>assert.fail('company lobby entry must not create a game session')});
-    assert.equal(response.status,303);assert.equal(response.headers.get('location'),'/play?operator=sg-test');
+    assert.equal(response.status,303);assert.equal(response.headers.get('location'),'/lobby?operator=sg-test');
   }
 });
 

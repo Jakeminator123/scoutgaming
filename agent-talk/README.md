@@ -20,7 +20,8 @@ node tools/agent-talk.mjs done mitt-id "Klart: ändring, kontroll och eventuell 
   Överlapp nekas; be ägaren lämna över. Upprepad `claim` uppdaterar din status.
   Lägg till `.git` bland dina anspråk under stage/commit/push och frigör det
   efter leverans, eftersom index och branch delas av hela checkouten.
-- Kör `status ditt-id` vid start, före nya filanspråk och före commit/push.
+- Kör `status ditt-id` vid ett ändringsuppdrags start, före nya filanspråk och före commit/push.
+  En ren läsfråga utan ändring eller samordningsbehov kräver ingen ny statusrunda.
   Läs igen vid överlapp eller ett nytt samordningsmeddelande. Upprepa inte
   oförändrad status enligt klockan. Ingen bakgrundspollning eller automatisk väckning. En pausad agent läser
   först när den arbetar igen. En gammal status är inte ett godkännande.
@@ -71,7 +72,10 @@ arkivskrivfel, avbrutna filbyten, sidindelning och bevarade claims.
 
 ## GitGuardian vid start och leverans
 
-Läs säkerhetsstatus vid start och före commit/push enligt `AGENTS.md`.
+Läs säkerhetsstatus vid start av kod-/konfigurationsarbete eller säkerhetsgranskning
+och före commit/push enligt `AGENTS.md`. Rena läs-/planfrågor kräver ingen ny
+molnrunda. En nyss gjord läsning kan återanvändas inom samma leverans om ref
+och underlag är oförändrade.
 `node tools/security-status.mjs` ger nu en samlad rapport från GitHub och den
 befintliga skyddade GitGuardian-kopplingen. MCP `gitguardian.read_security_status`
 ger samma rapport; registreringen finns i projektets `.codex/config.toml`.

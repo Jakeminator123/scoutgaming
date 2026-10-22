@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import {canonicalPlatformPath, movingWorkerSocketPath} from './paths.mjs';
+import {canonicalPlatformPath, movingWorkerSocketPath, sharedRoomSocketPath} from './paths.mjs';
 
 const CLIENT_PATH = '/speech-stream', WORKER_PATH = '/lipsync-worker';
 const MAX_BUFFERED = 8 * 1024 * 1024;
@@ -49,15 +49,25 @@ function socketWriteState(socket) {
 // Host/Connection/Upgrade/key/extensions handshake to the configured backend.
 export function platformSocketRequest(request, configuration) {
   const url = new URL(request.url), path = canonicalPlatformPath(url.pathname);
+  const room = sharedRoomSocketPath(path);
   const movingClient = path === '/moving-speech-stream', movingWorker = movingWorkerSocketPath(path);
   const moving = movingClient || movingWorker;
-  if ((!moving && ![CLIENT_PATH, WORKER_PATH].includes(path)) || (!movingWorker && url.search) || url.hash) return {status: 400};
+  if ((!room && !moving && ![CLIENT_PATH, WORKER_PATH].includes(path)) || (!movingWorker && url.search) || url.hash) return {status: 400};
   if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return {status: 426};
   const origin = request.headers.get('origin');
   const headers = {'x-croupier-vercel-secret': configuration.secret, 'x-croupier-public-origin': configuration.publicOrigin,
     'x-forwarded-host': new URL(configuration.publicOrigin).host, 'x-forwarded-proto': 'https'};
   let protocols = [];
-  if (path === CLIENT_PATH || movingClient) {
+  if (room) {
+    // Only the game authenticates the current session before101. Speech tickets
+    // and worker bearers are never accepted as room authentication.
+    if (url.origin !== configuration.publicOrigin || request.headers.get('host') !== new URL(configuration.publicOrigin).host
+      || origin !== configuration.publicOrigin || request.headers.has('authorization')
+      || request.headers.has('x-worker-id') || request.headers.has('sec-websocket-protocol')) return {status: 403};
+    const cookie = request.headers.get('cookie');
+    if (!cookie || cookie.length > 16384) return {status: 401};
+    headers.cookie = cookie; headers.origin = origin;
+  } else if (path === CLIENT_PATH || movingClient) {
     if (origin !== configuration.publicOrigin) return {status: 403};
     const cookie = request.headers.get('cookie');
     if (!cookie || cookie.length > 16384) return {status: 401};
@@ -89,7 +99,8 @@ export function platformSocketRequest(request, configuration) {
     if (origin) headers.origin = origin;
   }
   return {url: configuration.backendOrigin.replace('https:', 'wss:') + path + url.search, headers, protocols,
-    maxPayload: moving ? 2 * 1024 * 1024 : path === CLIENT_PATH ? 1024 * 1024 : 4 * 1024 * 1024,
+    maxPayload: room ? 256 * 1024 : moving ? 2 * 1024 * 1024 : path === CLIENT_PATH ? 1024 * 1024 : 4 * 1024 * 1024,
+    ...(room ? {room: true, lifetimeMs: 290000, maxBufferedBytes: 256 * 1024} : {}),
     ...(moving ? {moving: true, lifetimeMs: 180000, maxBufferedBytes: 4 * 1024 * 1024} : {})};
 }
 

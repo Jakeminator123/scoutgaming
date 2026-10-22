@@ -15,7 +15,7 @@ import {defaultCompositionSettings} from '../packages/presentation/contracts/com
 
 test('room document preserves login context and serves only explicit public assets',async t=>{
   let authenticated=false,reads=0;
-  const resolveRoom=async context=>{reads++;if(context.table!=='room-one')throw Object.assign(Error('unavailable'),{statusCode:404});};
+  const resolveRoom=async context=>{reads++;if(context.table!=='room-one')throw Object.assign(Error('unavailable'),{statusCode:404});return {room:{operator:'north',id:'room-one',dealer:'astrid'}};};
   const server=createServer((req,res)=>void rouletteDocument(req,res,{authenticated,guestPreview:false,resolveRoom}).then(handled=>{if(!handled){res.writeHead(404);res.end();}}));
   await new Promise(resolve=>server.listen(0,'127.0.0.2',resolve));
   t.after(()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();}));
@@ -24,7 +24,8 @@ test('room document preserves login context and serves only explicit public asse
   const login=await get(path);assert.equal(login.status,303);
   assert.equal(login.headers.get('location'),'/player-login?returnTo='+encodeURIComponent(path));assert.equal(reads,0);
   authenticated=true;
-  const page=await get(path);assert.equal(page.status,200);assert.match(await page.text(),/id="spin"/);
+  const page=await get(path);assert.equal(page.status,200);const document=await page.text();assert.match(document,/id="spin"/);
+  assert.equal((document.match(/href="\/lobby\?operator=north&amp;room=room-one&amp;dealer=astrid"/g)??[]).length,2,'both returns use the authorized room');
   assert.match(page.headers.get('content-security-policy'),/media-src 'self' blob: https:\/\/agents-results\.d-id\.com;/);
   assert.match(page.headers.get('content-security-policy'),/connect-src 'self' https:\/\/api\.d-id\.com;/);
   assert.match(page.headers.get('content-security-policy'),/script-src 'self';/);
@@ -44,7 +45,7 @@ test('room document preserves login context and serves only explicit public asse
   assert.equal((await get(path+'&table=room-one')).status,400);
   assert.equal((await get(path,{method:'POST'})).status,405);
   assert.equal((await get(path,{method:'HEAD'})).status,200);
-  assert.equal((await get('/play/roulette')).headers.get('location'),'/play');
+  assert.equal((await get('/play/roulette')).headers.get('location'),'/lobby');
   assert.equal((await get('/roulette?operator=north&table=room-one')).headers.get('location'),'/play/roulette?operator=north&table=room-one');
 });
 

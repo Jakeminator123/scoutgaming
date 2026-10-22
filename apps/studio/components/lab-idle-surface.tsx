@@ -4,10 +4,10 @@ import { useEffect, useRef } from 'react';
 import {DealerVideoSurface} from './dealer-video-surface';
 import type {VideoMetadata} from '../../../packages/presentation/contracts/video-intake.mjs';
 
-export interface IdleSurfaceReceipt { phase: 'started' | 'presented' | 'completed' | 'failed' | 'cancelled'; videoId: string; kind: 'base' | 'variant'; reason?: string }
-/** A variant can report its lifecycle, but never a standard-position proof. */
+export interface IdleSurfaceReceipt { phase: 'started' | 'presented' | 'completed' | 'failed' | 'cancelled'; videoId: string; kind: 'base' | 'variant' | 'server'; reason?: string }
+/** Variants and server-chain clips report lifecycle, never a standard-position proof. */
 export function LabIdleSurface({ url, videoId, kind = 'base', repeat = true, standardBase = true, onReady, onReceipt,classification }: {
-  url: string; videoId: string; kind?: 'base' | 'variant'; repeat?: boolean; standardBase?: boolean;
+  url: string; videoId: string; kind?: 'base' | 'variant' | 'server'; repeat?: boolean; standardBase?: boolean;
   onReady: (ready: boolean) => void; onReceipt?: (receipt: IdleSurfaceReceipt) => void;
   classification?:VideoMetadata;
 }) {

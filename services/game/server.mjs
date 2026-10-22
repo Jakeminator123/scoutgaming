@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { MOVING_TRIAL_BUDGET } from './moving-speech-budget.mjs';
+import { handleSharedRoomHttp } from './shared-room-http.mjs';
+import { withSharedRoomEntry } from './shared-room-entry.mjs';
+import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from '../../packages/navigation/player-handoff.mjs';
@@ -53,6 +56,9 @@ import { createRoulettePreview } from './games/roulette/preview.mjs';
 import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
 
+// Only the separate local QA launcher can register this in-process capability.
+// Ordinary startup still uses the unchanged TLS/Neon configuration path.
+const sharedRoomQa = consumeSharedRoomQaContext();
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../../..');
 const localMediaEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' && process.env.CROUPIER_CLOUD_RUNTIME !== '1';
@@ -71,10 +77,15 @@ const nativeP6QaRouter = await initializeNativeP6QaRouter();
 const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
 if (!['sqlite', 'postgres'].includes(databaseBackend)) throw new Error('Invalid CROUPIER_DATABASE.');
 const postgres = databaseBackend === 'postgres';
+const sharedRoomFlag = process.env.CROUPIER_SHARED_TABLE_ENABLED;
+if (sharedRoomFlag !== undefined && !['0','1'].includes(sharedRoomFlag)) throw Error('shared_room_flag_invalid');
+const sharedRoomsEnabled = sharedRoomFlag === '1';
+let sharedRoomService = null;
+let sharedRoomCommand = null;
 const { createPostgresStore } = postgres ? await import('./storage/postgres-store.mjs') : {};
 if (!postgres && process.env.CROUPIER_GAME_DATABASE_URL) throw new Error('Game database mode must be explicit.');
-const storage = postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
-  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
+const storage = sharedRoomQa?.storage ?? (postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
+  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null);
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
@@ -86,8 +97,8 @@ const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studi
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../../packages/studio-access/studio-native-auth.mjs') : {};
 const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
 const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
-const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
-const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
+const studioPolicyRuntime = sharedRoomQa?.studioPolicyRuntime ?? (neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null);
+const studioMediaRuntime = sharedRoomQa?.studioMediaRuntime ?? (studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null);
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
   ? (await import('../../packages/presentation/server/speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
     repository:(await import('../../packages/presentation/server/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
@@ -106,15 +117,15 @@ const frozenDealerContext = studioPolicyRuntime ? await (async () => {
   return createFrozenDealerPresentationContext({
     readCurrentContext: createFrozenDealerContextReader({ pool: storage.pool, scope: studioPolicyRuntime.scope }),
     readPresentation: (await import('../../packages/presentation/server/presentation-package.mjs')).readPackagePresentation,
-    privateMedia: (record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+    privateMedia: sharedRoomQa?.privateMedia ?? ((record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
       trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
         new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
-        ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
+        ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null}))),
   });
 })() : null;
 const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/published-layer-assets.mjs')).createPublishedLayerAssets({
   packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
-  privateMedia:(await import('./blob-media.mjs')).getPrivateMedia,
+  privateMedia:sharedRoomQa?.privateMedia ?? (await import('./blob-media.mjs')).getPrivateMedia,
 }) : null;
 
 const authorizeChatDealer = createRegisteredChatContext({
@@ -140,10 +151,10 @@ const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).create
 const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
 const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-operator-preview.mjs')).createPublicOperatorPreview({
   readCurrentContext: (await import('../../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
-  privateMedia: (record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+  privateMedia: sharedRoomQa?.privateMedia ?? ((record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
     trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
       new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
-      ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
+      ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null}))),
 }) : null;
 const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette/access.mjs')).createRouletteRoomAccess({
   readCurrentContext:(await import('../../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
@@ -510,13 +521,13 @@ function legacyBackofficeRedirect(req, pathname) {
     destination = '/control/administration';
   } else if (pathname === '/bo/login.html') {
     const returnTo = new URL(req.url, 'http://local').searchParams.get('returnTo');
-    destination = '/control/login';
+    destination = '/admin/login';
     if (returnTo && (LEGACY_STUDIO_RETURNS.has(returnTo) || LEGACY_STUDIO_HANDOFF.test(returnTo))) {
       destination += `?returnTo=${encodeURIComponent(returnTo)}`;
     }
   } else if (pathname === '/bo/set-password.html') {
     const token = new URL(req.url, 'http://local').searchParams.get('t');
-    destination = '/control/set-password';
+    destination = '/admin/set-password';
     if (token && LEGACY_STUDIO_TOKEN.test(token)) destination += `?t=${encodeURIComponent(token)}`;
   }
   if (!destination) return false;
@@ -525,10 +536,10 @@ function legacyBackofficeRedirect(req, pathname) {
   }
   return { status: 308, headers: { Location: destination, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } };
 }
-const port = Number(process.env.PORT ?? 4173);
+const port = sharedRoomQa?.port ?? Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
 // proxy set HOST=127.0.0.1 so the port is not exposed publicly.
-const host = process.env.HOST ?? '0.0.0.0';
+const host = sharedRoomQa?.host ?? process.env.HOST ?? '0.0.0.0';
 const layerPacksRoute = createLayerPacksRoute();
 // Source files change constantly while this is being built; Chrome happily
 // serves a cached app.mjs for a reload, so a change looks like it did nothing.
@@ -626,8 +637,8 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 
 const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
-const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
-const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
+const gameOrigin=sharedRoomQa?.publicOrigin??process.env.PUBLIC_URL??'https://bettalotto.se';
+const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '');
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
 const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
@@ -693,7 +704,9 @@ const playerPasswordCommand=playerAdministration ? (await import('../../packages
   },
 }) : null;
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
-  scope: studioPolicyRuntime.scope, secret: process.env.CROUPIER_VERCEL_INGRESS_SECRET,
+  // The isolated K04 QA start forbids the ingress secret variable; a random
+  // per-process secret keeps the Studio command surface unusable there.
+  scope: studioPolicyRuntime.scope, secret: sharedRoomQa ? randomBytes(32).toString('hex') : process.env.CROUPIER_VERCEL_INGRESS_SECRET,
   publicOrigin: process.env.CROUPIER_PUBLIC_ORIGIN,
   authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
   execute: async ({ action, body, actor }) => {
@@ -723,7 +736,8 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
     return { ok: true, ...result };
   },
 }) : null;
-const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
+// The isolated K04 QA start has no Lab origin; its Lab session check stays off.
+const studioLabSession = studioPolicyRuntime && !sharedRoomQa ? createStudioLabSessionCheck({
   authorize: createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
   publicOrigin:process.env.CROUPIER_PUBLIC_ORIGIN,labOrigin:process.env.LAB_PUBLIC_URL,
 }) : null;
@@ -733,7 +747,7 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
   return createStudioPreview({ authorize:createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
     scope:studioPolicyRuntime.scope,repository:studioPolicyRuntime.repository,
     registryLoader:studioMediaRuntime.videoRegistryCaptured,
-    privateMedia:(record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository}),
+    privateMedia:sharedRoomQa?.privateMedia ?? ((record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository})),
     bankVideoResponse:(id,request,snapshot)=>studioMediaRuntime.videoResponseCaptured(id,request,snapshot),
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
   });
@@ -743,7 +757,13 @@ const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
+  if (await handleSharedRoomHttp(req,res,{command:sharedRoomCommand,engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin})) return;
   const pathname=new URL(req.url,'http://local').pathname;
+  if (sharedRoomsEnabled && pathname === '/__cloud/shared-room-health') {
+    const health = sharedRoomService?.health() ?? { ready:false };
+    res.writeHead(health.ready ? 200 : 503, { 'Content-Type':'application/json', 'Cache-Control':'private, no-store' });
+    res.end(JSON.stringify(health)); return;
+  }
   if ((pathname === '/roulette-test' || pathname.startsWith('/roulette-test/') || pathname === '/api/roulette-test/spin')
       && await roulettePreview(req, res)) return;
   if (pathname==='/api/studio-preview'||pathname.startsWith('/api/studio-preview/')||pathname.startsWith('/studio-preview/')) {
@@ -777,7 +797,7 @@ const server = createServer(async (req, res) => {
     res.end('{"error":"legacy_administration_retired"}'); return;
   }
   if((await boGameAuth(req,res)))return;
-  if (studioPolicyRuntime && pathname === '/api/auth/lab/check') {
+  if (studioLabSession && pathname === '/api/auth/lab/check') {
     const checked = await studioLabSession(req);
     res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
   }
@@ -938,7 +958,18 @@ const server = createServer(async (req, res) => {
   }
   if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || presentationPublicSource(pathname)) {
     try {
-      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
+      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext, qaPublicOrigin:sharedRoomQa?.publicOrigin,
+        withSharedCommittedReceipt: ({request,playerId,body,signal},selectFrozen) => {
+          if (!sharedRoomsEnabled || !sharedRoomService || request.method!=='POST' || request.url!=='/api/presentation/select')
+            throw Object.assign(Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+          const engineOrigin=process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin;
+          const url=new URL(request.url,engineOrigin);
+          if(request.headers.origin!==frontendOrigin || request.headers.host!==url.host
+            || ['authorization','upgrade','sec-websocket-protocol','x-worker-id'].some(key=>request.headers[key]!==undefined))
+            throw Object.assign(Error('shared_room_presentation_forbidden'),{code:'shared_room_presentation_forbidden',statusCode:403});
+          const authenticatedRequest=new Request(url,{method:'POST',headers:request.headers,signal});
+          return sharedRoomService.withSharedCommittedReceipt({request:authenticatedRequest,playerId,body,signal},selectFrozen);
+        },
         beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
           if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
@@ -1063,7 +1094,7 @@ const server = createServer(async (req, res) => {
     res.end('{"error":"not found"}'); return;
   }
   if (pathname.startsWith('/bo/') && !(await boSessionOk(req))) {
-    res.writeHead(302, { Location: '/control/login', 'Cache-Control': 'no-store' });
+    res.writeHead(302, { Location: '/admin/login', 'Cache-Control': 'no-store' });
     res.end(); return;
   }
   if (req.method === 'POST' && req.url === '/chat') {
@@ -1264,7 +1295,7 @@ const server = createServer(async (req, res) => {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
     // the ordinary BO gate above. Windows also ignores directory casing and
     // trailing dots/spaces. None of these aliases may fall through to static files.
-    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/control/login' }); res.end(); return; }
+    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/admin/login' }); res.end(); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
     res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(req.method === 'HEAD' ? undefined : '{"error":"legacy generation catalog retired"}'); return;
@@ -1332,7 +1363,7 @@ const server = createServer(async (req, res) => {
       }
       selection = entry.selection;
     }
-    const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);
+    const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection),{enabled:sharedRoomsEnabled,selection});
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
@@ -1370,10 +1401,33 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ error: 'Service temporarily unavailable' }));
   }
 });
+let gameUpgradeDispatcher = null;
+if (sharedRoomsEnabled) {
+  if (!postgres || !studioPolicyRuntime || !storage?.gamePool) throw Error('shared_room_postgres_registry_required');
+  const [{createSharedRoomService},{createGameUpgradeDispatcher},{createSharedCommandAuth},{createSharedRoomCommand}] = await Promise.all([
+    import('./shared-room-service.mjs'), import('./game-upgrade-dispatcher.mjs'),
+    import('./storage/shared-command-auth.mjs'), import('./shared-room-command.mjs'),
+  ]);
+  const commandAuth = createSharedCommandAuth({db,boDb,scope:studioPolicyRuntime.scope,playerAccounts});
+  sharedRoomService = createSharedRoomService({
+    pool:storage.gamePool, walletMode:'demo', auth, commandAuth,
+    repository:studioPolicyRuntime.repository, scope:studioPolicyRuntime.scope,
+    engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL,
+    origin:frontendOrigin,
+    onError:()=>console.warn(JSON.stringify({event:'shared_room_runtime_unavailable'})),
+  });
+  sharedRoomCommand = createSharedRoomCommand({service:sharedRoomService,origin:frontendOrigin,
+    engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL});
+  gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
+  gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
+  // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
+  try { await sharedRoomService.start(); }
+  catch (error) { gameUpgradeDispatcher.close(); await sharedRoomService.close(); throw error; }
+}
 if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
-  speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+  speechStreamService = await createGeneratedSpeechStreamService(gameUpgradeDispatcher?.port('speech') ?? server, streaming.configuration, {
     movingSpeechRoutes:process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1',
     dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
     onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
@@ -1407,7 +1461,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',unresolved:recovery.unresolved.length}));
   const repository=studioPolicyRuntime.repository;
   const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
-  movingSpeechService=createMovingSpeechRuntime({server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
+  movingSpeechService=createMovingSpeechRuntime({server:gameUpgradeDispatcher?.port('moving') ?? server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
     readPresentation:playerId=>db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId),
     publicVideo:(frozen,id)=>frozenDealerContext.publicVideo(frozen,id),
     ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,bankOptions,
@@ -1445,7 +1499,8 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     cancelPlayer:value=>Promise.all([existing?.cancelPlayer(value),movingSpeechService.cancelPlayer(value)]),
     close:options=>Promise.all([existing?.close(options),driftRuntime.close(),movingSpeechService.close()])};
 }
-installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
+const gameShutdown = installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
+  gameUpgradeDispatcher?.close();
   studioPreview?.close();
   // Persist cancellation/terminal receipts while the journal connection is open.
   const probeCancellations = [];
@@ -1456,10 +1511,17 @@ installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
       if (dealerId === 'astrid') probeCancellations.push(probeRuntime.cancel({ playerId, dealerId }, 'server_shutdown'));
     } catch { /* An invalid internal key cannot delay the remaining cancellations. */ }
   }
-  const outcomes = await Promise.allSettled([speechStreamService?.close({ signal }), ...probeCancellations]);
+  const outcomes = await Promise.allSettled([sharedRoomService?.close(), speechStreamService?.close({ signal }), ...probeCancellations]);
   if (outcomes.some(outcome => outcome.status === 'rejected')) throw new Error('runtime_shutdown_failed');
 }, closeStorage: async () => {
   try { if (storage) await storage.close(); }
   catch { throw new Error('storage_shutdown_failed'); }
 } });
+export const sharedRoomQaRuntime = sharedRoomQa ? Object.freeze({
+  ready: new Promise((resolveReady, rejectReady) => {
+    server.once('listening', () => resolveReady(Object.freeze({ origin: sharedRoomQa.publicOrigin, host, port })));
+    server.once('error', rejectReady);
+  }),
+  close: () => gameShutdown.stop(),
+}) : null;
 server.listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));

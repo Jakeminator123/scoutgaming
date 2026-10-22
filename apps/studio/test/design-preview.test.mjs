@@ -39,22 +39,26 @@ test('public admin documents and assets route to Studio without changing control
 test('native document login uses the public mounted path; resources fail without redirects or caching', async () => {
   for (const basePath of ['', '/studio']) {
     for (const target of ['/admin', '/admin/lobby', '/studio/admin/rooms']) {
-      const response = designPreviewAuthRedirect(`/login?returnTo=${encodeURIComponent(target)}`, { basePath });
+      const response = designPreviewAuthRedirect(`/admin/login?returnTo=${encodeURIComponent(target)}`, { basePath });
       const expected = target.replace(/^\/studio/, '');
       assert.equal(response.status, 307);
-      assert.equal(response.headers.get('location'), `${basePath}/login?returnTo=${encodeURIComponent(expected)}`);
+      assert.equal(response.headers.get('location'), `/admin/login?returnTo=${encodeURIComponent(expected)}`);
       assert.equal(response.headers.get('cache-control'), 'private, no-store');
       assert.equal(response.headers.get('vary'), 'Cookie');
       assert.equal(await response.text(), '');
     }
-    const denied = designPreviewAuthRedirect('/login?returnTo=%2Fstudio', { basePath, resource: true });
+    const denied = designPreviewAuthRedirect('/admin/login?returnTo=%2Fstudio', { basePath, resource: true });
     assert.equal(denied.status, 401);
     assert.equal(denied.headers.get('location'), null);
     assert.equal(denied.headers.get('cache-control'), 'private, no-store');
     assert.equal(await denied.text(), '');
   }
-  assert.equal(designPreviewAuthRedirect('/login?returnTo=https%3A%2F%2Felsewhere.test', { basePath: '/studio' }).headers.get('location'), '/studio/login?returnTo=%2Fadmin');
+  assert.equal(designPreviewAuthRedirect('/admin/login?returnTo=https%3A%2F%2Felsewhere.test', { basePath: '/studio' }).headers.get('location'), '/admin/login?returnTo=%2Fadmin');
   assert.equal(designPreviewAuthRedirect('https://public.example/api/auth/lab/start?next=%2Fstudio%2Fadmin'), null);
+  const publicOrigin='https://public.example';
+  assert.equal(designPreviewAuthRedirect(publicOrigin+'/admin/login?returnTo=%2Fadmin%2Frooms',{publicOrigin}).headers.get('location'),publicOrigin+'/admin/login?returnTo=%2Fadmin%2Frooms');
+  assert.equal(designPreviewAuthRedirect('https://foreign.invalid/admin/login?returnTo=%2Fadmin',{publicOrigin}),null);
+  assert.equal(designPreviewAuthRedirect(publicOrigin+'/admin/login?returnTo=%2Fadmin',{publicOrigin}).headers.get('referrer-policy'),'no-referrer');
 });
 
 test('every asset request reauthorizes, rejects writes, streams ranges and sends isolation headers', async () => {

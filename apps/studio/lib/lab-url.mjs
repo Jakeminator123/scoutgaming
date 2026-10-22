@@ -19,7 +19,7 @@ export function labUrl(value) {
 
 // Absolute public URL so Next redirect() does not prefix the /studio basePath.
 export function publicAbsoluteUrl(headerList, pathname) {
-  if (typeof pathname !== 'string' || (pathname !== '/admin' && !pathname.startsWith('/control')) || pathname.includes('//') || /[\s\\]/.test(pathname)) {
+  if (typeof pathname !== 'string' || (pathname !== '/admin' && !/^\/admin\/(?:publication|companies|guide|videos|probe|replies|events|compositions|rehearsal|ai\/models|dealer-agent|dealer-studio|media-review|drift|ekonomi|admin\/(?:accounts|players|payments|api))(?:[?#]|$)/.test(pathname) && !pathname.startsWith('/control')) || pathname.includes('//') || /[\s\\]/.test(pathname)) {
     throw new Error('control_redirect_rejected');
   }
   const read = name => {

@@ -148,16 +148,16 @@ export function DealerRemoval({project, inventory, dealerId, laneId, operatorId,
         {impact ? <>
           <p>{impact.speechEnabled ? 'AI-tal stängs av automatiskt.' : 'AI-tal är redan avstängt.'} {impact.mediaCount} klipp och mediefiler arkiveras. Inga filer raderas.</p>
           {impact.compositions.length ? <><p>Sammansättningar som arkiveras:</p><ul className={styles.references}>{impact.compositions.map(composition => {
-            const href = studioNavigationHref('/control/compositions', {...context, laneId: composition.id});
+            const href = studioNavigationHref('/admin/compositions', {...context, laneId: composition.id});
             return <li key={composition.id}><a href={href} onClick={event => navigate(event, href)}>{compositionLabel(composition.label)}</a></li>;
           })}</ul></> : null}
           {impact.rooms.length ? <><p>Rum som stoppas:</p><ul className={styles.references}>{impact.rooms.map(room => {
             if (!room.operatorId) return <li key={room.id}>{room.name}</li>;
-            const href = studioNavigationHref('/control/rooms', {...context, operatorId: room.operatorId, tableId: room.id});
+            const href = studioNavigationHref('/admin/publication', {...context, operatorId: room.operatorId, tableId: room.id});
             return <li key={room.id}><a href={href} onClick={event => navigate(event, href)}>{room.name}</a></li>;
           })}</ul></> : null}
           {impact.operators.length ? <><p>Berörda sammansättningar avpubliceras hos:</p><ul className={styles.references}>{impact.operators.map(operator => {
-            const href = studioNavigationHref('/control/rooms', {...context, operatorId: operator.id, tableId: operator.id === operatorId ? tableId : ''});
+            const href = studioNavigationHref('/admin/publication', {...context, operatorId: operator.id, tableId: operator.id === operatorId ? tableId : ''});
             return <li key={operator.id}><a href={href} onClick={event => navigate(event, href)}>{operator.name}</a></li>;
           })}</ul></> : null}
           <p>Återställning återför dealern, klippen och sammansättningarna som utkast. AI-tal förblir avstängt. Rum och spelbolag publiceras inte automatiskt igen.</p>

@@ -26,10 +26,10 @@ test('Next SSR emits one basePath while public login returnTo survives unchanged
   for (const basePath of ['', '/studio']) {
     for (const returnTo of studioReturns) {
       let thrown;
-      try { navigation.redirect(nextStudioLoginRedirect(returnTo)); } catch (error) { thrown = error; }
+      try { navigation.redirect(nextStudioLoginRedirect(returnTo, 'https://qa.example.invalid')); } catch (error) { thrown = error; }
       const location = locationFromNext(thrown, basePath);
       const url = new URL(location, 'https://qa.example.invalid');
-      assert.equal(url.pathname, `${basePath}/login`);
+      assert.equal(url.pathname, '/admin/login');
       assert.equal(url.searchParams.get('returnTo'), returnTo);
       assert.equal(studioLoginDestination(returnTo, basePath + '/api/auth'),
         basePath ? returnTo : returnTo.slice('/studio'.length) || '/');
@@ -42,9 +42,9 @@ test('malformed and foreign return targets cannot alter the SSR redirect destina
     'https://attacker.invalid', '//attacker.invalid', '/studio\\login', '/studio/%2f..',
     '/studio/control/lanes?tab=foreign', '/studio/control/lanes?token=private', '/studio/control/lanes?lane=x&lane=y',
     '/studio/control/lanes?lane=https%3A%2F%2Fattacker.invalid', '/studio#secret', '/blackjack', '/studio\r\nLocation: https://attacker.invalid']) {
-    const target = nextStudioLoginRedirect(value);
+    const target = nextStudioLoginRedirect(value, 'https://qa.example.invalid');
     const url = new URL(addPathPrefix(target, '/studio'), 'https://qa.example.invalid');
-    assert.equal(url.pathname, '/studio/login');
+    assert.equal(url.pathname, '/admin/login');
     assert.equal(url.search, '?returnTo=%2Fadmin');
   }
 });
@@ -84,7 +84,7 @@ test('actual Studio SSR guard reaches mounted login after 401 and preserves othe
       './next-page-navigation.mjs': { nextStudioLoginRedirect },
     });
     await assert.rejects(guard.authorizeUiPage(new Request('https://qa.example.invalid/studio')), error => {
-      if (status === 401) assert.equal(locationFromNext(error, '/studio'), '/studio/login?returnTo=%2Fstudio');
+      if (status === 401) assert.equal(locationFromNext(error, '/studio'), 'https://qa.example.invalid/admin/login?returnTo=%2Fstudio');
       else assert.equal(error.statusCode, status);
       return true;
     });
@@ -117,8 +117,8 @@ test('actual native page guard returns every current view after public, standalo
           { headers: {host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'sec-fetch-site': 'cross-site', ...extra} });
         await assert.rejects(guard.authorizeUiPage(request), error => {
           const login = new URL(locationFromNext(error, basePath), config.allowedOrigins[0]);
-          assert.equal(login.pathname, basePath + '/login');
-          const expectedReturn = returnTo === '/studio/control/lanes?tab=companies' ? '/control/companies' : returnTo === '/studio/control/lanes?lane=evening' ? '/control/rooms?composition=evening' : returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo;
+          assert.equal(login.pathname, '/admin/login');
+          const expectedReturn = returnTo === '/studio/control/lanes?tab=companies' ? '/admin/companies' : returnTo === '/studio/control/lanes?lane=evening' ? '/admin/publication?composition=evening' : returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo;
           assert.equal(login.searchParams.get('returnTo'), expectedReturn);
           assert.equal(login.searchParams.size, 1);
           return true;
@@ -133,204 +133,38 @@ test('actual native page guard returns every current view after public, standalo
   }
 });
 
-test('editor SSR authorization uses each real route and OpenClaw settings and chat reload render distinct surfaces', async () => {
-  const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-  try {
-    for (const basePath of ['', '/studio']) {
-      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
-      const routes = load('../components/studio-types.ts', {}), requests = [];
-      const dataModule = load('../app/control-studio-data.tsx', {
-        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/lib/ui-server': { studioUiInitialData: async request => {
-          requests.push(request.url); return {project: {fixture: true}, videos: {videos: []}, status: {configured: false}};
-        } },
-      });
-      function TreeSurface() { return null; }
-      function EventsSurface() { return null; }
-      const eventsPage = load('../app/control/events/page.tsx', {
-        '@/components/control-tree-page': { ControlTreePage: TreeSurface },
-        '@/components/control-events-page': { ControlEventsPage: EventsSurface },
-        '@/components/studio-types': routes,
-        '../../control-studio-data': dataModule,
-      });
-      const overview = await eventsPage.default({ searchParams: Promise.resolve({}) });
-      assert.equal(overview.type, TreeSurface, '/control/events');
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/events');
-      const editor = await eventsPage.default({ searchParams: Promise.resolve({ event: 'idle.ready', dealer: ['mei'], variant: 'v2' }) });
-      assert.equal(editor.type, EventsSurface);
-      assert.equal(editor.props.initialDealerId, 'mei');
-      assert.equal(editor.props.initialEventId, 'idle.ready');
-      assert.equal(editor.props.initialVariantId, 'v2');
-      const surfaces = [
-        ['../app/control/videos/page.tsx', '@/components/control-videos-page', 'ControlVideosPage', '/control/videos'],
-        ['../app/control/rehearsal/page.tsx', '@/components/control-activity-page', 'ControlActivityPage', '/control/rehearsal'],
-        ['../app/control/guide/page.tsx', '@/components/control-guide-page', 'ControlGuidePage', '/control/guide'],
-      ];
-      for (const [file, specifier, exportName, path] of surfaces) {
-        function Surface() { assert.fail('SSR delegates an element without invoking client work'); }
-        const surface = load(file, {
-          [specifier]: { [exportName]: Surface },
-          '@/components/studio-types': routes,
-          '../../control-studio-data': dataModule,
-        });
-        const element = await surface.default({ searchParams: Promise.resolve({}) });
-        assert.equal(element.type, Surface, path);
-        assert.equal(requests.at(-1), 'http://game.fixture.invalid' + path);
+test('retired AI documents reach distinct Admin surfaces across flags and mounts without redirecting writes', () => {
+  const platform = require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers = {host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for (const basePath of ['', '/studio']) for (const unified of [false,true]) for (const nativeStudio of [false,true]) {
+    const config = {publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware} = load('../middleware.ts', {'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for (const section of ['/openclaw','/operator-chat','/control/openclaw','/control/operator-chat','/control/ops']) for (const tab of ['', 'chat', 'models']) {
+      const context = {dealer:'dragan',event:'idle.ready',operator:'north',room:'room-1',table:'room-1',game:'roulette',lane:'portrait',variant:'take-2',...(tab?{tab}:{})};
+      const url = 'https://game.fixture.invalid'+basePath+section+'?'+new URLSearchParams(context)+'#selection';
+      const target = section.endsWith('/operator-chat') || section.endsWith('/openclaw') && tab === 'chat' ? '/admin/dealer-agent' : '/admin/ai/models';
+      for (const method of ['GET','HEAD']) {
+        const request = new Request(url,{headers,method});
+        const response = middleware(request), destination = new URL(response.headers.get('location'));
+        assert.equal(response.status,307);assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,target);
+        for (const [key,value] of Object.entries(context)) assert.equal(destination.searchParams.get(key==='lane'?'composition':key),value);
+        assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.hash,'#selection');
+        if(section.startsWith('/control/')) assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
       }
-      function Models() { assert.fail('SSR does not invoke model client work'); }
-      const models = load('../app/control/openclaw/page.tsx', {
-        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/lib/ui-server': {authorizeUiPage: async request => requests.push(request.url)},
-        '@/components/openclaw-workspace': {OpenClawWorkspace: Models},
-      });
-      assert.equal((await models.default()).type, Models);
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
-
-      function ProbeSurface(props) { return props; }
-      const probe = load('../app/control/probe/page.tsx', {
-        '../../control-studio-data': dataModule,
-        '@/components/control-probe-page': { ControlProbePage: ProbeSurface },
-        '@/components/studio-types': routes,
-      });
-      const bareProbe = await probe.default();
-      assert.equal(bareProbe.type, ProbeSurface);
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/probe');
-      const probed = await probe.default({ searchParams: Promise.resolve({ dealer: ['vera'], event: 'idle.ready' }) });
-      assert.equal(probed.props.initialDealerId, 'vera');
-      assert.equal(probed.props.initialEventId, 'idle.ready');
-
-      function ChatSurface(props) { return props; }
-      const chatRoute = load('../app/control/openclaw/page.tsx', {
-        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/lib/ui-server': { authorizeUiPage: async () => assert.fail('chat tab loads studio data') },
-        '@/components/openclaw-workspace': { OpenClawWorkspace: Models },
-        '../../control-studio-data': dataModule,
-        '@/components/control-openclaw-chat': { ControlOpenClawChat: ChatSurface },
-        '@/components/studio-types': routes,
-      });
-      const chatElement = await chatRoute.default({ searchParams: Promise.resolve({ tab: 'chat', dealer: ['mei'] }) });
-      assert.equal(chatElement.type, ChatSurface);
-      assert.equal(chatElement.props.initialDealerId, 'mei');
-      assert.equal(chatElement.props.standaloneVoicePreviewAvailable, process.env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && process.env.CROUPIER_STUDIO_NEON_POLICY !== '1');
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
-
-      const operator = load('../app/control/operator-chat/page.tsx', {
-        'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
-        'next/navigation': navigation,
-        '@/lib/lab-url.mjs': { publicAbsoluteUrl: require('../lib/lab-url.mjs').publicAbsoluteUrl },
-        '@/components/studio-types': routes,
-        '@/lib/ui-server': { authorizeUiPage: async request => { requests.push(request.url); } },
-      });
-      await assert.rejects(operator.default(), error => {
-        const url = new URL(locationFromNext(error, basePath));
-        assert.equal(url.protocol, 'https:');
-        assert.equal(url.host, 'game.fixture.invalid');
-        assert.equal(url.pathname, '/control/openclaw');
-        assert.equal(url.search, '?tab=chat');
-        return true;
-      });
-      await assert.rejects(operator.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'idle.ready' }) }), error => {
-        const url = new URL(locationFromNext(error, basePath));
-        assert.equal(url.pathname.startsWith('/studio'), false);
-        assert.equal(url.searchParams.get('tab'), 'chat');
-        assert.equal(url.searchParams.get('dealer'), 'vera');
-        assert.equal(url.searchParams.get('event'), 'idle.ready');
-        return true;
-      });
-      assert.equal(requests.at(-1), 'http://studio.fixture.invalid/control/operator-chat');
-
-      const tree = load('../app/control/tree/page.tsx', {
-        'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
-        '@/lib/lab-url.mjs': { publicAbsoluteUrl: require('../lib/lab-url.mjs').publicAbsoluteUrl },
-        '@/lib/ui-server': { authorizeUiPage: async request => { requests.push(request.url); } },
-      });
-      await assert.rejects(tree.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'idle.ready', variant: 'v2', extra: 'kept' }) }), error => {
-        assert.equal(navigation.getRedirectStatusCodeFromError(error), 308);
-        const url = new URL(navigation.getURLFromRedirectError(error));
-        assert.equal(url.protocol, 'https:');
-        assert.equal(url.host, 'game.fixture.invalid');
-        assert.equal(url.pathname.startsWith('/studio'), false);
-        assert.equal(url.pathname, '/control/events');
-        assert.equal(url.searchParams.get('dealer'), 'vera');
-        assert.equal(url.searchParams.get('event'), 'idle.ready');
-        assert.equal(url.searchParams.get('variant'), 'v2');
-        assert.equal(url.searchParams.get('extra'), 'kept');
-        return true;
-      });
-      await assert.rejects(tree.default(), error => {
-        const url = new URL(navigation.getURLFromRedirectError(error));
-        assert.equal(navigation.getRedirectStatusCodeFromError(error), 308);
-        assert.equal(url.pathname, '/control/events');
-        assert.equal(url.search, '');
-        return true;
-      });
+      for (const options of [{method:'POST',body:'fixture',headers},{method:'PUT',body:'fixture',headers},{method:'DELETE',headers},{headers:{...headers,'next-action':'fixture'}}]) {
+        const request = new Request(url,options);
+        assert.equal(legacyStudioDocumentHref(request,{basePath}),null);
+        assert.equal(middleware(request).headers.has('location'),false);
+      }
+      const bodyRequest = {url,method:'GET',body:{fixture:true},headers:new Headers(headers)};
+      assert.equal(legacyStudioDocumentHref(bodyRequest,{basePath}),null);
+      assert.equal(middleware(bodyRequest).headers.has('location'),false);
     }
-  } finally {
-    if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = saved;
+    for (const section of ['/openclaw/extra','/operator-chat/extra','/api/openclaw/admin','/api/assistant']) {
+      assert.equal(middleware(new Request(config.publicOrigin+basePath+section,{headers})).headers.has('location'),false);
+    }
   }
-});
-
-test('OpenClaw chat SSR serializes only the standalone voice capability matching native and Neon server flags', async () => {
-  for (const env of [{}, {CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0'},
-    {CROUPIER_STUDIO_NATIVE_ADMIN: '1'}, {CROUPIER_STUDIO_NEON_POLICY: '1'},
-    {CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_STUDIO_NEON_POLICY: '1'}]) {
-    function Chat() { return null; }
-    const page = load('../app/control/openclaw/page.tsx', {
-      'next/headers': {headers: async () => new Headers({host: 'game.fixture.invalid'})},
-      '@/lib/ui-server': { authorizeUiPage: async () => assert.fail('chat tab loads studio data') },
-      '@/components/openclaw-workspace': { OpenClawWorkspace() { assert.fail('chat tab does not render model settings'); } },
-      '../../control-studio-data': { loadControlStudio: async () => ({project: {}, videos: {videos: []}, status: {configured: true}}) },
-      '@/components/control-openclaw-chat': { ControlOpenClawChat: Chat },
-      '@/components/studio-types': { firstQueryValue(value) { return Array.isArray(value) ? value[0] : value; } },
-    }, env);
-    const element = await page.default({ searchParams: Promise.resolve({ tab: 'chat' }) });
-    assert.equal(element.type, Chat);
-    assert.equal(element.props.standaloneVoicePreviewAvailable,
-      env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && env.CROUPIER_STUDIO_NEON_POLICY !== '1');
-    assert.ok(!Object.keys(element.props).some(key => key.startsWith('CROUPIER_')));
-  }
-});
-
-test('actual administration page uses Next-local login with the exact public return destination', async () => {
-  for (const status of [401, 403]) {
-    const page = load('../app/control/administration/page.tsx', {
-      'next/navigation': navigation,
-      'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
-      '@/components/native-administration': {},
-      '@/components/studio-types': {firstQueryValue:value=>Array.isArray(value)?value[0]:value},
-      '../public-redirect': {redirectToPublicControl:()=>assert.fail('unauthorized page must not redirect to rooms')},
-      '@/lib/studio-native-runtime.mjs': nativeOverrides(status),
-      '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
-      '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
-    });
-    await assert.rejects(page.default(), error => {
-      if (status === 401) assert.equal(locationFromNext(error, '/studio'), '/studio/login?returnTo=%2Fstudio%2Fadministration');
-      else assert.equal(error.statusCode, status);
-      return true;
-    });
-  }
-});
-
-test('administration without native configuration fails before runtime initialization', async () => {
-  const page = load('../app/control/administration/page.tsx', {
-    'next/navigation': navigation,
-    'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
-    '@/components/native-administration': {},
-      '@/components/studio-types': {firstQueryValue:value=>Array.isArray(value)?value[0]:value},
-      '../public-redirect': {redirectToPublicControl:()=>assert.fail('unauthorized page must not redirect to rooms')},
-    '@/lib/studio-native-runtime.mjs': {
-      nativeStudioAdminConfiguration: () => null,
-      assertNativeStudioRequest: () => assert.fail('missing configuration cannot authorize'),
-      studioNativeRuntime: () => assert.fail('missing configuration cannot initialize runtime'),
-    },
-    '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: (_request, config) => {
-      assert.equal(config, null);
-      throw Object.assign(new Error('studio_native_unavailable'), { statusCode: 503 });
-    } },
-    '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
-  });
-  await assert.rejects(page.default(), error => error.statusCode === 503);
 });
 
 const authEntryConfig = authBase => ({
@@ -338,7 +172,7 @@ const authEntryConfig = authBase => ({
   publicHosts: ['game.fixture.invalid', 'studio.fixture.invalid'],
   authBase, apiBase: authBase === '/api/auth' ? '/api/admin' : '/studio/api/admin',
 });
-const entryRequest = (host, mode, extra = {}) => new Request('https://' + host + '/' + mode,
+const entryRequest = (host, mode, extra = {}) => new Request('https://' + host + '/admin/' + mode,
   { headers: { host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', ...extra } });
 
 test('standalone auth documents move to configured public Studio before rendering with exact state and token', async () => {
@@ -351,13 +185,13 @@ test('standalone auth documents move to configured public Studio before renderin
       let thrown; try { navigation.redirect(destination); } catch (error) { thrown = error; }
       const actual = new URL(locationFromNext(thrown, authBase === '/api/auth' ? '' : '/studio'));
       assert.equal(actual.origin, config.allowedOrigins[0]);
-      assert.equal(actual.pathname, '/studio/login');
+      assert.equal(actual.pathname, '/admin/login');
       assert.equal(actual.searchParams.get('returnTo'), returnTo);
       assert.equal(actual.searchParams.size, 1);
     }
     const token = 'b'.repeat(43);
     const destination = nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'set-password'), config, { mode: 'set-password', token });
-    assert.equal(destination, config.allowedOrigins[0] + '/studio/set-password?t=' + token);
+    assert.equal(destination, config.allowedOrigins[0] + '/admin/set-password?t=' + token);
     assert.equal(nextStudioAuthEntryRedirect(entryRequest('game.fixture.invalid', 'set-password'), config, { mode: 'set-password', token }), null);
     assert.equal(nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'login', { 'x-forwarded-host': 'game.fixture.invalid', 'x-forwarded-proto': 'https' }), config, { returnTo: '/studio' }), null);
     assert.equal(nextStudioAuthEntryRedirect(entryRequest('studio.fixture.invalid', 'set-password', { 'x-forwarded-host': 'game.fixture.invalid', 'x-forwarded-proto': 'https' }), config, { mode: 'set-password', token }), null);
@@ -373,7 +207,7 @@ test('auth-entry redirects reject spoofed origins and retain only validated retu
     assert.equal(url.origin, config.allowedOrigins[0]);
   }
   for (const token of [null, ['b'.repeat(43)], 'b'.repeat(129), 'bearer/private']) {
-    assert.equal(nextStudioAuthEntryRedirect(request, config, { mode: 'set-password', token }), config.allowedOrigins[0] + '/studio/set-password');
+    assert.equal(nextStudioAuthEntryRedirect(request, config, { mode: 'set-password', token }), config.allowedOrigins[0] + '/admin/set-password');
   }
   for (const headers of [{host: 'attacker.invalid'}, {host: 'studio.fixture.invalid', 'x-forwarded-host': 'attacker.invalid'}, {host: 'studio.fixture.invalid', origin: 'https://attacker.invalid'}, {host: 'studio.fixture.invalid', 'x-forwarded-proto': 'http'}]) {
     assert.throws(() => nextStudioAuthEntryRedirect(new Request('https://studio.fixture.invalid/login', { headers }), config), error => error.statusCode === 403);
@@ -388,7 +222,7 @@ test('actual login and password SSR routes redirect standalone before any auth f
       ['studio.fixture.invalid', {}, true], ['game.fixture.invalid', {}, false],
       ['studio.fixture.invalid', {'x-forwarded-host': 'game.fixture.invalid'}, false],
     ]) {
-      const page = load('../app/' + mode + '/page.tsx', {
+      const page = load('../app/admin/' + mode + '/page.tsx', {
         'next/headers': { headers: async () => new Headers({host, ...extra}) },
         'next/navigation': navigation,
         '@/components/studio-login': { StudioLogin() { assert.fail('SSR returns an element, never auth work'); } },
@@ -400,7 +234,7 @@ test('actual login and password SSR routes redirect standalone before any auth f
       if (moved) {
         await assert.rejects(page.default(options), error => {
           const destination = new URL(locationFromNext(error, authBase === '/api/auth' ? '' : '/studio'));
-          assert.equal(destination.origin, config.allowedOrigins[0]); assert.equal(destination.pathname, '/studio/' + mode);
+          assert.equal(destination.origin, config.allowedOrigins[0]); assert.equal(destination.pathname, '/admin/' + mode);
           assert.equal(destination.searchParams.get(mode === 'login' ? 'returnTo' : 't'), mode === 'login' ? returnTo : token);
           assert.equal(destination.searchParams.size, 1); return true;
         });
@@ -414,37 +248,59 @@ test('actual login and password SSR routes redirect standalone before any auth f
   }
 });
 
-test('legacy auth aliases retain queries with exactly one configured Next basePath', async () => {
-  const saved = { native: process.env.CROUPIER_STUDIO_NATIVE_ADMIN, base: process.env.CROUPIER_LAB_BASE_PATH };
-  try {
-    const config = (await import('../next.config.mjs')).default;
-    for (const basePath of ['', '/studio']) {
-      process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1'; process.env.CROUPIER_LAB_BASE_PATH = basePath;
-      const rules = await config.redirects();
-      for (const mode of ['login', 'set-password']) {
-        const rule = rules.find(item => item.source === (basePath ? '/' : '/studio/') + mode);
-        assert.equal(rule.basePath, false); assert.equal(rule.permanent, false);
-        assert.equal(rule.destination, (basePath ? '/studio/' : '/') + mode);
-        assert.ok(!rules.some(item => item.source === rule.destination), 'canonical route cannot loop back to the alias');
+test('legacy auth bookmarks use the central validator and reject writes or duplicate credentials', () => {
+  for (const basePath of ['', '/studio']) for (const entry of ['/login','/studio/login','/control/login','/studio/control/login']) {
+    const request = (query, options={}) => new Request('https://game.fixture.invalid'+entry+query,options);
+    const target='/admin/publication?operator=north&table=room-one&composition=scene-one';
+    assert.equal(legacyStudioDocumentHref(request('?returnTo='+encodeURIComponent(target)),{basePath}),'/admin/login?returnTo='+encodeURIComponent(target));
+    for(const value of ['//outside.invalid','/admin/login','/admin/set-password']) assert.equal(legacyStudioDocumentHref(request('?returnTo='+encodeURIComponent(value)),{basePath}),'/admin/login?returnTo=%2Fadmin');
+    assert.equal(legacyStudioDocumentHref(request('?returnTo=%2Fadmin&returnTo=%2Fpartner'),{basePath}),'/admin/login?returnTo=%2Fadmin');
+    for(const options of [{method:'POST',body:'secret'}, {headers:{'next-action':'fixture'}}]) assert.equal(legacyStudioDocumentHref(request('',options),{basePath}),null);
+    const password=entry.replace('login','set-password'),token='b'.repeat(43);
+    const reset=query=>new Request('https://game.fixture.invalid'+password+query);
+    assert.equal(legacyStudioDocumentHref(reset('?t='+token),{basePath}),'/admin/set-password?t='+token);
+    assert.equal(legacyStudioDocumentHref(reset('?t='+token+'&t='+token),{basePath}),'/admin/set-password');
+    assert.equal(legacyStudioDocumentHref(reset('?t=invalid&returnTo=https://outside.invalid'),{basePath}),'/admin/set-password');
+  }
+});
+
+test('Activity bookmarks retain only unambiguous observation identities across native and mounted middleware',()=>{
+  const platform=require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
+    const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for(const section of ['/activity','/control/activity'])for(const duplicate of [false,true]){
+      const query=new URLSearchParams({dealer:'saga',operator:'north',table:'room-1',room:'room-1',game:'roulette',lane:'portrait',event:'idle.ready',token:'private',unknown:'omit'});
+      if(duplicate)for(const key of ['dealer','operator','table','room','game'])query.append(key,'ambiguous');
+      const url='https://game.fixture.invalid'+basePath+section+'?'+query+'#observation';
+      for(const method of ['GET','HEAD']){
+        const request=new Request(url,{method,headers});
+        const response=middleware(request);assert.equal(response.status,307);
+        const destination=new URL(response.headers.get('location'));
+        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/rehearsal');
+        assert.equal(destination.hash,'#observation');assert.equal(destination.searchParams.get('composition'),'portrait');
+        for(const key of ['dealer','operator','table','room','game'])assert.equal(destination.searchParams.get(key),duplicate?null:query.get(key));
+        for(const key of ['event','token','unknown','lane'])assert.equal(destination.searchParams.has(key),false);
+        if(section==='/control/activity')assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
       }
-    }
-    process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '0';
-    assert.deepEqual(await config.redirects(), []);
-  } finally {
-    for (const [key, value] of [['CROUPIER_STUDIO_NATIVE_ADMIN', saved.native], ['CROUPIER_LAB_BASE_PATH', saved.base]]) {
-      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      for(const options of [{method:'POST',body:'fixture',headers},{method:'PUT',body:'fixture',headers},{method:'DELETE',headers},{headers:{...headers,'next-action':'fixture'}}]){
+        const request=new Request(url,options);assert.equal(legacyStudioDocumentHref(request,{basePath}),null);
+        assert.equal(middleware(request).headers.has('location'),false);
+      }
     }
   }
 });
 
 test('old activity URLs retain only observation context and canonicalize the composition alias', () => {
   const destination=query=>legacyStudioDocumentHref(new Request('https://qa.invalid/control/activity?'+query));
-  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), '/control/rehearsal?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone');
-  assert.equal(destination('dealer=vera&dealer=mei&composition=chosen&lane=stale'), '/control/rehearsal?composition=chosen');
+  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), '/admin/rehearsal?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone');
+  assert.equal(destination('dealer=vera&dealer=mei&composition=chosen&lane=stale'), '/admin/rehearsal?composition=chosen');
 });
 
 
-test('dealer pages retain allowlisted context through an expired session and normalize legacy selections', async () => {
+test('Editor and Administration bookmarks reach Admin and retain allowlisted context through an expired session', async () => {
   for (const basePath of ['', '/studio']) {
     const config = {allowedOrigins:['https://game.fixture.invalid','https://studio.fixture.invalid'],publicHosts:['game.fixture.invalid','studio.fixture.invalid'],apiBase:basePath+'/api/admin',authBase:basePath+'/api/auth'};
     const guard = load('../lib/ui-server.ts', {
@@ -456,60 +312,24 @@ test('dealer pages retain allowlisted context through an expired session and nor
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
     });
-    const data = load('../app/control-studio-data.tsx', {
-      'next/headers': {headers:async()=>new Headers({host:'game.fixture.invalid','sec-fetch-mode':'navigate','sec-fetch-dest':'document'})},
-      '@/lib/ui-server':guard,
-    });
-    const studioTypes = load('../components/studio-types.ts', {});
-    for(const [route,component,exportName] of [['clips','@/components/lab-studio','LabStudio'],['rehearsal','@/components/control-activity-page','ControlActivityPage']]) {
-      const page = load('../app/control/'+route+'/page.tsx', {'../../control-studio-data':data,'@/components/studio-types':studioTypes,[component]:{[exportName]:()=>assert.fail('expired session cannot render client work')}});
-      for(const legacy of [false,true]) {
-        const query={dealer:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid'};
-        if(route==='clips')Object.assign(query,{view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'});
-        await assert.rejects(page.default({searchParams:Promise.resolve(query)}),error=>{
+      for(const section of [{path:'/control/clips',target:'/admin/dealer-studio'}, {path:'/control/administration',target:'/admin/media-review',tab:'media-review'}]) for(const legacy of [false,true]) {
+        const query={...(section.tab?{tab:section.tab}:{}),[legacy&&section.path==='/control/clips'?'dealerId':'dealer']:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid',view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'};
+        const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+section.path+'?'+new URLSearchParams(query)),{basePath});
+        assert.equal(new URL(target,'https://game.fixture.invalid').pathname,section.target);
+        const request=new Request('https://game.fixture.invalid'+basePath+target,{headers:{host:'game.fixture.invalid','sec-fetch-mode':'navigate','sec-fetch-dest':'document'}});
+        await assert.rejects(guard.authorizeUiPage(request),error=>{
           assert.match(error.digest ?? '', /^NEXT_REDIRECT;/, error.message);
           const login = new URL(locationFromNext(error,basePath),'https://game.fixture.invalid');
-          assert.equal(login.pathname,basePath+'/login');
+          assert.equal(login.pathname,'/admin/login');
           const destination = new URL(login.searchParams.get('returnTo'),'https://game.fixture.invalid');
-          assert.equal(destination.pathname,'/control/'+route);
+          assert.equal(destination.pathname,section.target);
           assert.equal(destination.searchParams.get('dealer'),'vera');assert.equal(destination.searchParams.get('operator'),'operator-42');assert.equal(destination.searchParams.get('table'),'room-7');assert.equal(destination.searchParams.get('composition'),'desktop-wide');
           assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.searchParams.has('token'),false);assert.equal(destination.searchParams.has('returnTo'),false);
-          if(route==='clips'){assert.equal(destination.searchParams.get('view'),'settings');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');}
+          assert.equal(destination.searchParams.get('view'),'settings');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');
           return true;
         });
       }
-    }
   }
-});
-
-
-test('legacy administration tables await the public room redirect after authorization', async () => {
-  const calls=[];
-  const publicRedirect=load('../app/control/public-redirect.ts', {
-    'next/navigation': navigation,
-    'next/headers': {headers:async()=>{calls.push('public-host');return new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'});}},
-    '@/lib/lab-url.mjs': {publicAbsoluteUrl:require('../lib/lab-url.mjs').publicAbsoluteUrl},
-  });
-  const page=load('../app/control/administration/page.tsx', {
-    'next/navigation': navigation,
-    'next/headers': {headers:async()=>new Headers({host:'game.fixture.invalid'})},
-    '@/components/native-administration': {NativeAdministration:()=>assert.fail('the retired room view must redirect')},
-    '@/components/studio-types': {firstQueryValue:value=>Array.isArray(value)?value[0]:value},
-    '../public-redirect':publicRedirect,
-    '@/lib/studio-native-request.mjs': {normalizeNativeStudioPageRequest:request=>request},
-    '@/lib/next-page-navigation.mjs': {nextStudioLoginRedirect},
-    '@/lib/studio-native-runtime.mjs': {
-      nativeStudioAdminConfiguration:()=>({}),assertNativeStudioRequest:()=>{},
-      studioNativeRuntime:async()=>({authorize:async()=>{calls.push('authorize');return{};},api:{availableActions:()=>assert.fail('must await redirect before preparing page')},config:{allowedOrigins:['https://game.fixture.invalid']}}),
-    },
-  });
-  await assert.rejects(page.default({searchParams:Promise.resolve({tab:'tables',operator:'operator-42',lane:'mobile-phone',dealer:'vera',table:'room-7',token:'do-not-copy'})}),error=>{
-    const url=new URL(locationFromNext(error,''));
-    assert.equal(url.origin,'https://game.fixture.invalid');assert.equal(url.pathname,'/control/rooms');
-    assert.equal(url.searchParams.get('operator'),'operator-42');assert.equal(url.searchParams.get('composition'),'mobile-phone');assert.equal(url.searchParams.get('dealer'),'vera');assert.equal(url.searchParams.get('table'),'room-7');assert.equal(url.searchParams.has('token'),false);
-    return true;
-  });
-  assert.deepEqual(calls,['authorize','public-host']);
 });
 
 
@@ -561,7 +381,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     }
     return transported;
   };
-  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers']) {
+  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/publication?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/ai/models?operator=north&dealer=dragan','/studio/admin/ai/models','/admin/clips?dealer=dragan','/studio/admin/clips','/admin/dealer-studio?dealer=dragan&view=clips&event=idle.ready&category=speech&game=roulette','/studio/admin/dealer-studio?dealer=astrid&composition=portrait&operator=north&table=room-1','/admin/dealer-agent?dealer=dragan&event=idle.ready','/studio/admin/dealer-agent?dealer=astrid&composition=portrait&operator=north&table=room-1']) {
     let incoming = new Headers({host:new URL(publicOrigin).host,cookie:f.auth.admin,
       'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'});
     if(position==='before') incoming = await throughTransport(incoming);
@@ -575,14 +395,15 @@ test('actual Admin middleware preserves document access with Node transport befo
     assert.equal(headers.has('origin'),false);
     if(position==='after') headers = await throughTransport(headers);
     const destination = routed.headers.get('x-middleware-rewrite') ?? publicOrigin+path;
-    const segments = path.endsWith('/dealers') ? ['dealers'] : [];
+    const segments = new URL(destination).pathname.replace(/^\/(?:studio\/)?admin\/?/,'').split('/').filter(Boolean);
     const response = await admin.GET(new Request(destination,{headers}),{params:Promise.resolve({path:segments})});
     assert.equal(response.status,200,position+' middleware: '+path+' must authorize the unchanged synthetic admin cookie after the proxy hop');
     assert.match(await response.text(),/Authorized Admin fixture/);
     const anonymous = new Headers(headers);anonymous.delete('cookie');
     const login = await admin.GET(new Request(destination,{headers:anonymous}),{params:Promise.resolve({path:segments})});
     assert.equal(login.status,307,'document normalization never grants a session');
-    assert.match(login.headers.get('location'),/^\/login\?returnTo=/);
+    assert.ok(login.headers.get('location').startsWith(publicOrigin+'/admin/login?returnTo='));
+    assert.equal(new URL(login.headers.get('location'),publicOrigin).searchParams.get('returnTo'),path.replace(/^\/studio(?=\/admin)/,''));
   }
 });
 
@@ -611,7 +432,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     const request=(path,options={})=>new Request('https://game.fixture.invalid'+basePath+path,{headers,...options});
     if(unified && basePath==='/studio') {
       const response=middleware(request('/videos',{headers:{host:'studio.fixture.invalid','x-forwarded-host':'other.fixture.invalid','x-forwarded-proto':'http'}}));
-      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/control/videos');
+      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/admin/videos');
     }
     // Unified routing historically only admits these old Studio documents under /studio.
     if(!unified || basePath==='/studio') for(const [path,target] of [
@@ -621,7 +442,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     ]) for(const method of ['GET','HEAD']) {
       const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
       assert.equal(response.status,307,path);
-      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/control'+(target?'/'+target:''));
+      assert.equal(response.headers.get('location'),['guide','videos','probe','events','tree','activity','zones','openclaw','operator-chat','administration'].includes(path)?'https://game.fixture.invalid/admin/'+({tree:'events',activity:'rehearsal',zones:'compositions',administration:'drift',openclaw:'ai/models','operator-chat':'dealer-agent'}[path]??path)+'?dealer=dragan':'https://game.fixture.invalid/control'+(target?'/'+target:''));
     }
     const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
     assert.equal(control.status,307);
@@ -629,13 +450,88 @@ test('actual middleware centralizes exact legacy documents without changing nati
     assert.equal(target.pathname,'/admin/assets');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
     assert.equal(target.searchParams.get('composition'),'portrait');
     assert.equal(target.searchParams.has('token'),unified,'native mapping retains its existing query policy');
-    for(const path of ['/api/videos','/preview/compositor.js','/events/extra','/control/login','/control/set-password']) {
+    for(const path of ['/api/videos','/preview/compositor.js','/events/extra']) {
       assert.equal(legacyStudioDocumentHref(request(path),{basePath}),null,path);
       assert.equal(middleware(request(path)).headers.has('location'),false,path);
     }
     for(const options of [{method:'POST',body:'fixture',headers},{headers:{...headers,'next-action':'fixture'}}]) {
       assert.equal(legacyStudioDocumentHref(request('/control/library',options),{basePath}),null);
       assert.equal(middleware(request('/control/library',options)).headers.has('location'),false);
+    }
+  }
+});
+
+
+test('retired publication and tool documents redirect with context in every native and mount configuration',()=>{
+  const platform=require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for(const basePath of ['','/studio']) for(const unified of [false,true]) for(const nativeStudio of [false,true]){
+    const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for(const [section,target]of [['rooms','publication'],['companies','companies'],['lanes','publication'],['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']]){
+      const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
+      for(const method of ['GET','HEAD']){
+        const response=middleware(new Request(url,{headers,method}));
+        assert.equal(response.status,307);const destination=new URL(response.headers.get('location'));
+        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/'+target);
+        for(const [key,value]of Object.entries({operator:'north',room:'room-1',table:'room-1',dealer:'dragan',game:'roulette',composition:'portrait',event:'idle.ready',variant:'take-2',situation:'dealer-hole',category:'greeting'}))assert.equal(destination.searchParams.get(key),value);
+        assert.equal(destination.searchParams.has('lane'),false);
+      }
+      for(const options of [{method:'POST',body:'fixture',headers},{headers:{...headers,'next-action':'fixture'}}])assert.equal(middleware(new Request(url,options)).headers.has('location'),false);
+    }
+    const companies=middleware(new Request('https://game.fixture.invalid'+basePath+'/control/lanes?tab=companies&operator=north',{headers}));
+    assert.equal(new URL(companies.headers.get('location')).pathname,'/admin/companies');
+  }
+});
+
+test('historical tool documents reach Admin with context before unified frontend rejection',()=>{
+  const platform=require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
+    const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
+      {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for(const [section,target] of [['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']])for(const selected of [false,true]){
+      const context={dealer:'saga',operator:'north',table:'room-1',game:'roulette',lane:'portrait',...(selected?{event:'idle.ready',variant:'take-2',situation:'box1',tab:'variants'}:{})};
+      const query=new URLSearchParams({...context,token:'private',unknown:'omit'});query.append('room','one');query.append('room','two');
+      const url='https://game.fixture.invalid'+basePath+'/'+section+'?'+query;
+      for(const method of ['GET','HEAD']){
+        const response=middleware(new Request(url,{method,headers}));assert.equal(response.status,307);
+        const destination=new URL(response.headers.get('location'));
+        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/'+target);
+        for(const [key,value]of Object.entries(context))assert.equal(destination.searchParams.get(key==='lane'?'composition':key),value);
+        assert.deepEqual(destination.searchParams.getAll('room'),['one','two']);
+        assert.equal(destination.searchParams.has('event'),selected);
+        for(const key of ['token','unknown','lane'])assert.equal(destination.searchParams.has(key),false);
+      }
+      for(const options of [{method:'POST',body:'fixture',headers},{method:'PUT',body:'fixture',headers},{method:'DELETE',headers},{headers:{...headers,'next-action':'fixture'}}]){
+        const request=new Request(url,options);assert.equal(legacyStudioDocumentHref(request,{basePath}),null);
+        assert.equal(middleware(request).headers.has('location'),false);
+      }
+    }
+  }
+});
+
+
+test('retired Administration entries preserve context across mounts and flags without redirecting writes',()=>{
+  const platform=require('../../../packages/navigation/server/platform-routing.mjs');
+  const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for(const basePath of ['', '/studio'])for(const unified of [false,true])for(const nativeStudio of [false,true]){
+    const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://studio.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
+    const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    for(const entry of ['/administration','/control/administration'])for(const [tab,target]of Object.entries({operations:'/admin/drift',accounts:'/admin/admin/accounts',partners:'/admin/admin/api',finance:'/admin/ekonomi',tables:'/admin/publication','media-review':'/admin/media-review'})){
+      const query='tab='+tab+'&dealer=elin&operator=north&table=room-a&room=one&room=two&lane=portrait&game=roulette';
+      const url=config.publicOrigin+basePath+entry+'?'+query+'#selected';
+      for(const method of ['GET','HEAD']){
+        const request=new Request(url,{method,headers}),response=middleware(request),destination=new URL(response.headers.get('location'));
+        assert.equal(response.status,307);assert.equal(destination.pathname,target);assert.equal(destination.origin,config.publicOrigin);
+        assert.equal(destination.searchParams.get('dealer'),'elin');assert.equal(destination.searchParams.get('operator'),'north');assert.equal(destination.searchParams.get('table'),'room-a');assert.deepEqual(destination.searchParams.getAll('room'),['one','two']);assert.equal(destination.searchParams.get('composition'),'portrait');assert.equal(destination.searchParams.get('game'),'roulette');assert.equal(destination.hash,'#selected');
+        if(entry.startsWith('/control/'))assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
+      }
+      for(const options of [{method:'POST',body:'fixture',headers},{method:'DELETE',headers},{headers:{...headers,'next-action':'fixture'}}]){
+        const request=new Request(url,options);assert.equal(legacyStudioDocumentHref(request,{basePath}),null);assert.equal(middleware(request).headers.has('location'),false);
+      }
     }
   }
 });

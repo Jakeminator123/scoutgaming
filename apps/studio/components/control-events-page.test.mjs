@@ -21,7 +21,7 @@ function loadTs(fileUrl) {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
-      if (name === 'next/navigation') return { usePathname: () => '/control/events', useSearchParams: () => new URLSearchParams() };
+      if (name === 'next/navigation') return { usePathname: () => '/admin/events', useSearchParams: () => new URLSearchParams() };
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
       if (name.startsWith('./') || name.startsWith('../')) {
@@ -56,7 +56,7 @@ test('video review link keeps the selected variant', () => {
   const line = draft.lines.find(item => item.dealerId === 'astrid' && item.eventId === 'speak.goodluck');
   line.variants[0].videoGenerationId = 'missing-video';
   const html = render({ initialProject: draft, initialEventId: 'speak.goodluck' });
-  assert.match(html, /href="\/control\/videos\?dealer=astrid&amp;event=speak\.goodluck&amp;variant=/);
+  assert.match(html, /href="\/admin\/videos\?dealer=astrid&amp;event=speak\.goodluck&amp;variant=/);
 });
 
 test('normal event previews show missing-video status for registered and unbound dealers', () => {

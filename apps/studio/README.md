@@ -67,8 +67,9 @@ Video-intake: [lägg in standardtagningar och alternativ, välj användning och 
 I en offline-fixtur öppnas tjänsten på `/`. Äldre verktygslänkar ligger på `/control`;
 `/studio` är tjänstens basePath i molnet.
 Lab-roten `/` (publikt `/studio`) omdirigerar permanent till `/admin`.
-Äldre bokmärken med querykontext går via `/control/clips` till
-`/admin/dealer-studio` och behåller den kontexten.
+Äldre bokmärken med querykontext går direkt till `/admin/dealer-studio`
+och behåller kontexten. `/control/clips` omdirigeras till samma editor;
+den zoombara klippkartan finns separat på `/admin/clips`.
 Publika `/lab` och `/labb` går till `/admin` via `/control`; `/bo` går till
 `/admin/drift` via `/control/administration`. Publika `/lissabon` svarade 404
 vid kontrollen 14 oktober 2026 och ska inte användas som ny ingång.
@@ -128,7 +129,7 @@ Adresserna nedan beskriver de fungerande `/control`-verktygen. Nya `/admin`
 återanvänder deras komponenter och native-API; skapa inget parallellt
 projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna.
 
-- **Guide & hjälp (`/control/guide`; `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
+- **Guide & hjälp (`/admin/guide`; äldre `/control/guide` och `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
 - **Spelhändelser & villkor, översikten (`/control/events` utan `?event=`; `/control/tree` omdirigerar dit):** välj dealer och presentationssätt: idle/bakgrund,
   engångshandling, exakt tal eller tur/resultat. De fyra grupperna är en vy
@@ -158,7 +159,7 @@ projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna
   högst sex sekunder tal i neutralt idle. Modellens uttrycksförslag loggas
   separat; ingen hand- eller kroppsrörelse läggs ovanpå talet. Riktig läppsynk
   återstår.
-- **Klippbibliotek (`/control/videos`; menyraden är Dealers & klipp på `/control/clips`):** lägg in egna MP4/WebM-filer med dealer, event, typ,
+- **Klippbibliotek (`/admin/videos`; äldre `/control/videos` omdirigerar dit):** lägg in egna MP4/WebM-filer med dealer, event, typ,
   standard/alternativ och konkret situation. Filtrera banken och kontrollera
   vilka standardlinjer som har video. Inspektera original och bind vald variant till ett exakt
   `videoGenerationId`. Samma koppling kan redigeras direkt i Händelser.

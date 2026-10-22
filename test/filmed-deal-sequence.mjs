@@ -88,12 +88,17 @@ test('actual settled double receipt is reordered to the shared player without ch
   current.round.hands[0].cards.push(card('10',6));current.round.hands[0].result=40;
   current.round.dealer.push(card('9',5),card('5',7));
   const published=presentationEvents(previous,current,'act',{action:'double'}),before=structuredClone(published);
-  assert.deepEqual(published.filter(e=>['deal','reveal'].includes(e.type)).map(e=>e.shoeDraw),[5,6,7]);
+  // The generator now places the reveal after the player's card and before the extra dealer card (K04).
+  assert.deepEqual(published.filter(e=>['deal','reveal'].includes(e.type)).map(e=>e.shoeDraw),[6,5,7]);
   const ordered=orderFilmedPresentationEvents(published);
   assert.equal(ordered[0].line,'double');
   assert.deepEqual(ordered.filter(e=>['deal','reveal'].includes(e.type)).map(e=>e.shoeDraw),[6,5,7]);
   assert.deepEqual(keys(plan(ordered)),['1:iv','flip:base','dealer:iv']);
   assert.deepEqual(published,before);
+  // An instruction list stored before the fix (reveal first) still gets the same filmed order.
+  const stored=[published.find(e=>e.type==='reveal'),...published.filter(e=>e.type!=='reveal')];
+  assert.deepEqual(stored.filter(e=>['deal','reveal'].includes(e.type)).map(e=>e.shoeDraw),[5,6,7]);
+  assert.deepEqual(orderFilmedPresentationEvents(stored),ordered);
 });
 
 test('opening reveal follows the hole while resumed action groups still end in VILA',()=>{

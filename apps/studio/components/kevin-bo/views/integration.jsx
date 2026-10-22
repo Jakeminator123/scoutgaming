@@ -5,8 +5,8 @@ import { workspaceSurfacePath } from '../../../../../packages/navigation/workspa
 const h = React.createElement;
 
 export const DISCONNECTED = {
-  players: ['Spelare', 'Spelarkonton för den här operatören är inte anslutna.', '/control/administration', 'Öppna administration'],
-  tx: ['Transaktioner', 'Transaktioner för den här operatören är inte anslutna.', '/control/administration', 'Öppna administration'],
+  players: ['Spelare', 'Spelarkonton för den här operatören är inte anslutna.', '/admin/admin/players', 'Öppna administration'],
+  tx: ['Transaktioner', 'Transaktioner för den här operatören är inte anslutna.', '/admin/ekonomi', 'Öppna administration'],
   reports: ['Rapporter', 'Rapporter för den här operatören är inte anslutna.', null, 'Öppna integrationer'],
 };
 

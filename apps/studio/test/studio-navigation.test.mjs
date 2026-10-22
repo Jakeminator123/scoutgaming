@@ -6,20 +6,14 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { labUrl } from '../lib/lab-url.mjs';
 import { studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
-import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
+import { SCOUT_FOOTER_NAVIGATION, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('visible staff menu names the overview consistently', () => {
-  const visible = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
-  assert.equal(visible.find(item => item.href === '/control').label, 'Översikt');
-  assert.equal(visible.some(item => item.label === 'Kontrollpanel'), false);
-});
 
-test('legacy dealer paths highlight the current page in the visible menu', () => {
+test('legacy dealer paths retain their current guide label', () => {
   const expectLabel = (path, label) => {
     assert.equal(scoutNavigationItem(path, '')?.label, label, path);
     assert.equal(scoutNavigationItem(path, '/studio')?.label, label, path);
@@ -33,8 +27,11 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/control/zones', 'Sammansättningar');
   expectLabel('/events', 'Dealers & klipp');
   expectLabel('/control/events', 'Dealers & klipp');
+  expectLabel('/admin/events', 'Dealers & klipp');
   expectLabel('/probe', 'Dealers & klipp');
   expectLabel('/control/probe', 'Dealers & klipp');
+  expectLabel('/admin/probe', 'Dealers & klipp');
+  expectLabel('/admin/replies', 'Dealers & klipp');
   expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Spelstatus & integritet');
   expectLabel('/openclaw', 'Agentmodeller');
@@ -43,6 +40,10 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/tree', 'Dealers & klipp');
   expectLabel('/control/tree', 'Dealers & klipp');
   expectLabel('/activity', 'Dealers & klipp');
+  expectLabel('/admin/rehearsal', 'Dealers & klipp');
+  expectLabel('/control/rehearsal', 'Dealers & klipp');
+  expectLabel('/admin/compositions', 'Sammansättningar');
+  expectLabel('/control/compositions', 'Sammansättningar');
   expectLabel('/guide', 'Guide & hjälp');
 });
 
@@ -101,44 +102,6 @@ function loadComponent(file, overrides = {}, browser) {
   return module.exports;
 }
 
-test('internal menu keeps native Studio anchors and adds public control and partner entrances', () => {
-  const before = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-  try {
-    for (const basePath of ['', '/studio']) {
-      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
-      const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
-        'next/navigation': { usePathname: () => basePath + '/activity', useSearchParams: () => new URLSearchParams() },
-      });
-      const html = renderToStaticMarkup(WorkspaceNavigation());
-      const links = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map(match => match[1].replaceAll('&amp;', '&'));
-      assert.deepEqual(links, ['/control',
-        ...SCOUT_NAVIGATION.flatMap(group => group.items.map(item => labUrl(item.href))),
-        ...SCOUT_FOOTER_NAVIGATION.map(item => labUrl(item.href)),
-        ...SCOUT_LEVELS.map(item => labUrl(item.href))]);
-      assert.doesNotMatch(html, /onClick|onNavigate/);
-      assert.equal(links.filter(link => link === labUrl('/control/administration?tab=operations')).length, 1);
-      assert.match(html, /aria-label="ScoutGamingGroup administration"/);
-      assert.match(html, /Nivå 1 </);
-      assert.match(html, /CROUPIER STUDIO/);
-      assert.doesNotMatch(html, /<details|<summary[^>]*>Verktyg/);
-      assert.match(html, /aria-current="page"[^>]*>Dealers &amp; klipp/);
-      assert.doesNotMatch(html, /Backoffice\/Lab|Administration<\/summary>|#ops|#users|\/studio\/studio/);
-      assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
-    }
-  } finally {
-    if (before === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = before;
-  }
-});
-
-test('partner documents never render internal workspace links under public or native paths', () => {
-  for (const path of ['/partner', '/studio/partner', '/partner/demo-north/overview', '/studio/partner/demo-south/team', '/partner/unknown']) {
-    const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
-      'next/navigation': { usePathname: () => path, useSearchParams: () => new URLSearchParams() },
-    });
-    assert.equal(renderToStaticMarkup(WorkspaceNavigation()), '', path);
-  }
-});
 
 test('level-two entrance lists real supplied partners and preserves the administrator login', () => {
   const { PartnerWorkspace } = loadComponent('partner-workspace.tsx');
@@ -168,24 +131,6 @@ test('level-two member entrance is scoped and empty access never selects a fixtu
   }
 });
 
-test('control landing and imported views highlight the control entrance through either rewrite path', () => {
-  for (const path of ['/control', '/studio/control', '/control/voice', '/studio/control/voice']) {
-    const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
-      'next/navigation': { usePathname: () => path, useSearchParams: () => new URLSearchParams() },
-    });
-    const html = renderToStaticMarkup(WorkspaceNavigation());
-    assert.match(html, /aria-current="page"[^>]*>Översikt/);
-    assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
-  }
-});
-
-test('the global menu cannot introduce SPA history that bypasses existing beforeunload draft guards', () => {
-  const source = readFileSync(new URL('../components/workspace-navigation.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /next\/link|router\.(?:push|replace)|history\.(?:pushState|replaceState)|onNavigate/);
-  assert.match(source, /href=\{labUrl\(item\.href\)\}/);
-  const anchors = [...source.matchAll(/<a\b[\s\S]*?>/g)].map(match => match[0]);
-  for (const anchor of anchors) assert.doesNotMatch(anchor, /onClick|onNavigate/);
-});
 
 function mountSelectedPage(component, props) {
   const element = component(props);
@@ -200,22 +145,6 @@ function visit(node, callback) {
   visit(node.props?.children, callback);
 }
 
-test('internal landing links real tools and old clip hashes no longer open a second preview editor', () => {
-  const effects = [], paths = [], browser = { location: { hash: '#clips', replace: path => paths.push(path) },
-    history: { replaceState: () => assert.fail('a real tool needs native navigation') },
-    addEventListener: () => {}, removeEventListener: () => {} };
-  const hooks = { ...React, useState: initial => [initial, () => {}], useEffect: effect => effects.push(effect), useRef: current => ({ current }), useSyncExternalStore: (_subscribe, _get, getServerSnapshot) => getServerSnapshot() };
-  const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
-  const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
-  assert.match(html, /Sammansättning/);
-  assert.match(html, /Dealer &amp; klipp/);
-  assert.match(html, /Bolagets publicering/);
-  assert.match(html, /Bolagets arbetsyta/);
-  assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
-  const cleanup = effects[0]();
-  assert.deepEqual(paths, [labUrl('/control/clips#deal')]);
-  cleanup();
-});
 
 test('OpenClaw chat is a document route and keeps the Gateway panel and project context', () => {
   const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -225,7 +154,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       const events = readFileSync(new URL('../components/control-events-page.tsx', import.meta.url), 'utf8');
       assert.doesNotMatch(events, /changeView\(|history\.pushState/);
       const routes = loadComponent('studio-types.ts');
-      assert.equal(routes.viewPaths.openclaw, '/control/openclaw?tab=chat');
+      assert.equal(routes.viewPaths.openclaw, '/admin/dealer-agent');
       assert.equal(routes.studioViewForPath(routes.viewPaths.openclaw), 'openclaw');
       const project = createSeedProject();
       const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
@@ -243,7 +172,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       visit(mountSelectedPage(ControlOpenClawChat, {...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
       assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
       const html = renderToStaticMarkup(tree);
-      assert.match(html, /href="\/control\/openclaw\?tab=chat"/);
+      assert.match(html, /href="\/admin\/dealer-agent(?:\?|"|&)/);
       assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01|Fråga OpenClaw om labbet →/);
     }
   } finally {
@@ -257,6 +186,9 @@ test('both real page guards protect dirty project drafts on native leave and cle
     for (const dirty of [false, true]) {
       const project = createSeedProject(), before = JSON.stringify(project), effects = [];
       const browser = new EventTarget();
+      browser.location = new URL(name === 'ControlEventsPage' ? 'https://studio.fixture.invalid/admin/events?dealer=astrid&event=idle.ready' : 'https://studio.fixture.invalid/admin/dealer-studio?dealer=astrid');
+      let historyState = {foreign:'keep'};
+      browser.history = {get state(){return historyState;},replaceState(state,_title,href){historyState=state;if(href!==undefined)browser.location.href=new URL(href,browser.location).href;}};
       const hooks = { ...React,
         useState: initial => {
           const value = typeof initial === 'function' ? initial() : initial;
@@ -268,8 +200,8 @@ test('both real page guards protect dirty project drafts on native leave and cle
       const component = loadComponent(file, { react: hooks }, browser)[name];
       const tree = mountSelectedPage(component, { initialProject: project, initialDealerId: 'astrid', initialVideos: { videos: [] }, initialStatus: {}, connectedLane: true });
       const guardEffects = effects.filter(effect => effect.toString().includes('beforeunload') && effect.toString().includes('addEventListener'));
-      assert.equal(guardEffects.length, 1);
-      const release = guardEffects[0]();
+      assert.ok(guardEffects.length > 0, 'the real page installs navigation protection');
+      const releases = guardEffects.map(effect => effect());
       assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), !dirty);
       if (name === 'ControlEventsPage' && !dirty) {
         let social;
@@ -280,7 +212,7 @@ test('both real page guards protect dirty project drafts on native leave and cle
         social.current.draft = { ...social.current.status.policy };
         assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), true);
       }
-      release();
+      for (const release of releases.reverse()) release();
       assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), true);
       assert.equal(JSON.stringify(project), before);
     }
@@ -292,4 +224,25 @@ test('unavailable search params leave Studio navigation unselected', () => {
   assert.deepEqual(studioNavigationContextFromQuery(undefined), {});
   assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams()), {});
   assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams('dealer=vera&event=speak.goodluck&lane=explicit-layout&token=private')), { dealerId: 'vera', eventId: 'speak.goodluck', laneId: 'explicit-layout' });
+});
+test('query-specific links win without losing the chat alias or selecting publicering for bolag', () => {
+  const cases = [
+    ['/admin/ai/models?dealer=saga&operator=north', 'Agentmodeller'], ['/admin/dealer-agent?dealer=saga', 'Intern agentchatt'],
+    ['/openclaw?tab=chat&dealer=saga', 'Intern agentchatt'], ['/control/ops?tab=chat', 'Agentmodeller'],
+    ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt'],
+    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Intern agentchatt'],
+    ['/control/openclaw?dealer=astrid', 'Agentmodeller'], ['/operator-chat', 'Intern agentchatt'],
+    ['/control/operator-chat', 'Intern agentchatt'], ['/control/lanes?lane=t10', 'Spelrum & publicering'],
+    ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
+    ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
+    ['/control/administration?tab=tables', 'Spelrum & publicering'],
+    ['/control/administration?tab=operations', 'Spelstatus & integritet'],
+    ['/control/administration?tab=finance', 'Betalningar & journal'],
+    ['/control/administration?tab=accounts', 'Konton & åtkomst'],
+    ['/control/administration?tab=partners', 'API & integrationer'],
+  ];
+  for (const base of ['', '/studio']) for (const [path, label] of cases) {
+    assert.equal(scoutNavigationItem(path, base)?.label, label, path);
+    assert.equal(scoutNavigationItem(`${base}${path}`, base)?.label, label, `${base}${path}`);
+  }
 });

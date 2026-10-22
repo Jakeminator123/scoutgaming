@@ -34,7 +34,7 @@ export function createStudioPasswordDelivery({ boDb, mail, publicOrigin, now = D
       await boDb.prepare('DELETE FROM tokens WHERE username=?').run(username);
       await boDb.prepare('INSERT INTO tokens (token,username,kind,exp) VALUES (?,?,?,?)')
         .run(tokenKey(token),username,kind,Math.floor(now()/1000) + (kind === 'invite' ? 72 : 2) * 3600);
-      return { to: email, kind, role, link: `${publicOrigin}/studio/set-password?t=${encodeURIComponent(token)}` };
+      return { to: email, kind, role, link: `${publicOrigin}/admin/set-password?t=${encodeURIComponent(token)}` };
     },
     async send(invitation) {
       try { return (await mail.send(Object.freeze({ ...invitation })))?.sent === true; }

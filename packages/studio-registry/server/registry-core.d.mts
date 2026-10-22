@@ -65,4 +65,7 @@ export function createVideoRegistry(ports: {
   repositoryRoot: string; previewUrl(id: string): string; uploadDirectory(options: VideoRegistryOptions): string | null;
   readUploads(options: VideoRegistryOptions): Promise<any[]>; readClassifications(options: VideoRegistryOptions): Promise<any[]>;
   getPrivateMedia(record: any, request: Request, options?: any): Promise<Response>; mediaBlobIndex: any;
+  isMediaConfigured?(env: Record<string, string | undefined>, storage?: Readonly<{
+    provider: 'vercel-blob'; pathname: string; sha256: string; size: number; contentType: string;
+  }>): boolean;
 }): VideoRegistryReader;

@@ -5,7 +5,7 @@ export const DEALER_WORKSPACE_SECTIONS = Object.freeze([
   { id: 'clips', label: 'Repliker' },
 ]);
 // Former tabs that became their own pages. Old bookmarks still land there.
-const MOVED_SECTIONS = Object.freeze({ background: '/control/compositions', probe: '/control/probe', stream: '/control/rehearsal' });
+const MOVED_SECTIONS = Object.freeze({ background: '/admin/compositions', probe: '/admin/probe', stream: '/admin/rehearsal' });
 const idleParts = new Set(['idle', 'headTilt', 'think', 'gest']);
 const dealParts = new Set(['deal', 'dealWatch', 'box0', 'box1', 'box2', 'box3', 'box4', 'box5', 'box6', 'dealer-up', 'dealer-hole']);
 export function workspaceLocation(hash) {

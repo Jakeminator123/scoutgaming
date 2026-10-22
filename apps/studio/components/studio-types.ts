@@ -40,16 +40,16 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-// Staff editor views use the public /control addresses. OpenClaw chat is the
-// tab on /control/openclaw. Model settings stay on that path without the tab.
+// Staff editor views use their active public document addresses. Dealer chat and
+// global model settings are separate Admin documents.
 export const viewPaths: Record<StudioView, string> = {
-  tree: '/control/tree', lab: '/control/events', videos: '/control/videos', activity: '/control/activity',
-  openclaw: '/control/openclaw?tab=chat', guide: '/control/guide', probe: '/control/probe',
+  tree: '/admin/events', lab: '/admin/events', videos: '/admin/videos', activity: '/admin/rehearsal',
+  openclaw: '/admin/dealer-agent', guide: '/admin/guide', probe: '/admin/probe',
 };
 
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
 
-// Public control URL plus dealer, event, an optional variant and an optional allowlisted tab.
+// Public document URL plus dealer, event, an optional variant and an optional allowlisted tab.
 export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string; situation?: string; laneId?: string; operatorId?: string; tableId?: string } = {}) {
   const base = path.split(/[?#]/, 1)[0];
   const params = new URLSearchParams();
@@ -101,6 +101,7 @@ export function resolveStudioEventId(project: StudioProject, initial?: string) {
 export function studioViewForPath(path: string): StudioView {
   const bare = stripLabBasePath(path).split('#')[0];
   const [pathname, query = ''] = bare.split('?');
+  if (pathname === '/admin/dealer-agent') return 'openclaw';
   const parts = pathname.split('/').filter(Boolean);
   const segment = parts[0] === 'control' ? parts[1] : parts[0];
   const tab = query.split('&').find((part: string) => part.startsWith('tab='))?.slice(4) ?? '';

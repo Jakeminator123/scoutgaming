@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { runSharedPostgresTransaction, runPostgresTransactionOwner, assertSharedPostgresOwner } from '../../storage/server/postgres-transaction-context.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { StudioStorageError } from '../../studio-access/studio-scope.mjs';
 
@@ -45,35 +46,41 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
   const digest = createHash('sha256').update(`croupier-studio\0${scopeKey}`).digest();
   const lockKeys = [digest.readInt32BE(0), digest.readInt32BE(4)];
   function poison(error) {
-    const safe = studioStorageFailure(error), active = context.getStore();
+    const active = context.getStore(), safe = active?.shared ? error : studioStorageFailure(error);
     if (active && !active.closed && !active.failed) active.failed = safe;
     return safe;
   }
-  async function transaction(work, { readOnly = false } = {}) {
+  async function transaction(work, { readOnly = false, shared = false, serialize = false } = {}) {
     if (typeof work !== 'function') throw poison(new StudioStorageError('studio_invalid_data', 422));
+    if (shared && (readOnly || typeof serialize !== 'boolean')) throw poison(new StudioStorageError('studio_invalid_transaction', 503));
     const active = context.getStore();
     if (active) {
       if (active.closed) throw poison(new StudioStorageError('studio_invalid_transaction', 503));
       if (active.pool !== pool || active.scopeKey !== scopeKey || active.readOnly && !readOnly) throw poison(new StudioStorageError('studio_scope_mismatch', 409));
       if (active.failed) throw active.failed;
-      try { return await work(api); } catch (error) { throw poison(error); }
+      if (shared && !active.shared) throw poison(new StudioStorageError('studio_lock_escalation', 409));
+      if (shared && serialize && !active.serialize) throw poison(new StudioStorageError('studio_lock_escalation', 409));
+      try { return await (shared ? runSharedPostgresTransaction(active, () => work(api)) : work(api)); } catch (error) { throw poison(error); }
     }
+    if (shared) assertSharedPostgresOwner();
     let client, current, begun = false;
     try {
       client = await pool.connect();
       if (!client || typeof client.query !== 'function' || typeof client.release !== 'function') fail('studio_invalid_configuration', 503);
       await client.query(readOnly ? 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY' : 'BEGIN'); begun = true;
       await client.query("SET LOCAL statement_timeout = '5000ms'; SET LOCAL lock_timeout = '3000ms'; SET LOCAL idle_in_transaction_session_timeout = '10000ms'");
+      if (shared && serialize) await client.query('SELECT pg_advisory_xact_lock(1129467984)');
       if (!readOnly) await client.query('SELECT pg_advisory_xact_lock($1::integer, $2::integer)', lockKeys);
-      current = { pool, client, scopeKey, readOnly, failed: null, closed: false };
-      const result = await context.run(current, () => work(api));
+      current = { pool, client, scopeKey, readOnly, shared, serialize: shared && serialize, failed: null, closed: false };
+      const result = await runPostgresTransactionOwner(current, () => context.run(current, () => shared ? runSharedPostgresTransaction(current, () => work(api)) : work(api)));
       if (current.failed) throw current.failed;
+      if (shared) current.closed = true; // No escaped work may query while COMMIT is pending.
       const committed = await client.query('COMMIT'); begun = false; current.closed = true;
       if (committed?.command === 'ROLLBACK') fail('studio_transaction_rolled_back', 503);
       return result;
     } catch (error) {
       if (begun) try { await client.query('ROLLBACK'); } catch { /* Never expose the secondary database error. */ }
-      throw studioStorageFailure(error);
+      throw shared ? error : studioStorageFailure(error);
     } finally {
       if (current) current.closed = true;
       // Release failures cannot reveal driver messages or invalidate a committed result.
@@ -169,6 +176,9 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       try { return await work(client); } catch (error) { throw poison(error); }
     },
     scope, transaction,
+    sharedTransaction(work, { serialize = false } = {}) {
+      return transaction(work, { shared: true, serialize });
+    },
     readRuntimeCatalog() {
       return operation(()=>null,loadRuntimeCatalog,true);
     },

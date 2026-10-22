@@ -16,7 +16,7 @@ function harness(request){
  const module={exports:{}};
  vm.runInNewContext(compiled.code,{module,exports:module.exports,Error,require:name=>{
   if(name==='react')return react;
-  if(name==='./studio-types')return{requestJson:request,studioHref:()=>'/control/clips'};
+  if(name==='./studio-types')return{requestJson:request,studioHref:()=>'/admin/dealer-studio'};
   if(name==='./media-removal-feedback')return{mediaRemovalMessage:cause=>typeof cause==='string'?cause:cause?.message??'Fel'};
   if(name==='./video-metadata-fields')return{VideoCompositingFields:()=>null,DealerFramingFields:()=>null};
   if(name==='./dealer-video-surface')return{DealerClipPreview:()=>null};

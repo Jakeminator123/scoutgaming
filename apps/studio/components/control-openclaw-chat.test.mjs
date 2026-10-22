@@ -65,13 +65,13 @@ test('chat panel receives the studio session props and opens playback with a ful
   assert.equal(panel.dirty, false);
   const assigned = [];
   const previous = globalThis.window;
-  globalThis.window = { location: { assign: path => assigned.push(path) } };
+  globalThis.window = { location: { assign: path => assigned.push(path) },dispatchEvent:()=>true };
   try { panel.onPlayerChat(); }
   finally {
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
-  assert.deepEqual(assigned, [labUrl('/control/rehearsal?dealer=elin')]);
+  assert.deepEqual(assigned, [labUrl('/admin/rehearsal?dealer=elin')]);
 });
 
 // Explicit active dealers used by this isolated component fixture.
@@ -80,7 +80,7 @@ function createSeedProject(){return addDealer(addDealer(createBaseProject(),'eli
 test('retired or unknown dealer cannot open the chat panel and preserves context for explicit active selection', () => {
   const before = structuredClone(project);
   const { ControlOpenClawChat } = loadTs(new URL('./control-openclaw-chat.tsx', import.meta.url), {
-    'next/navigation': { usePathname: () => '/control/openclaw', useSearchParams: () => new URLSearchParams('composition=shared&operator=north&table=room-a') },
+    'next/navigation': { usePathname: () => '/admin/dealer-agent', useSearchParams: () => new URLSearchParams('composition=shared&operator=north&table=room-a') },
     './gateway-panel': { GatewayPanel: () => assert.fail('inactive dealer must never enter chat') },
     './studio-session': { useStudioSession: () => assert.fail('inactive dealer must never start a session') },
   });

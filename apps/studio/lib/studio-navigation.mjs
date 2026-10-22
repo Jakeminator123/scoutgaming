@@ -2,13 +2,13 @@ import { labUrl } from './lab-url.mjs';
 import { canonicalControlHref } from '../../../packages/navigation/control-flow.mjs';
 
 export const STUDIO_DEALER_TABS = Object.freeze([
-  { id: 'idle', label: 'Grundloop', href: '/control/clips?view=idle' },
-  { id: 'clips', label: 'Klipp', href: '/control/clips?view=clips' },
-  { id: 'generate', label: 'Skapa material', href: '/control/clips?view=generate' },
-  { id: 'speech', label: 'Tal & automatik', href: '/control/clips?view=speech' },
-  { id: 'replies', label: 'Svarsbibliotek', href: '/control/replies' },
-  { id: 'playback', label: 'Provspelning & logg', href: '/control/rehearsal' },
-  { id: 'settings', label: 'Inställningar', href: '/control/clips?view=settings' },
+  { id: 'idle', label: 'Grundloop', href: '/admin/dealer-studio?view=idle' },
+  { id: 'clips', label: 'Klipp', href: '/admin/dealer-studio?view=clips' },
+  { id: 'generate', label: 'Skapa material', href: '/admin/dealer-studio?view=generate' },
+  { id: 'speech', label: 'Tal & automatik', href: '/admin/dealer-studio?view=speech' },
+  { id: 'replies', label: 'Svarsbibliotek', href: '/admin/replies' },
+  { id: 'playback', label: 'Provspelning & logg', href: '/admin/rehearsal' },
+  { id: 'settings', label: 'Inställningar', href: '/admin/dealer-studio?view=settings' },
 ].map(tab => Object.freeze(tab)));
 
 const CONTEXT_PARAMETERS = Object.freeze({
@@ -46,12 +46,12 @@ export function studioNavigationTabs(context = {}, hrefs = {}) {
 
 export function studioNavigationCrumbs({ dealerId, dealerLabel, active, crumbs = [], ...context } = {}) {
   const selection = { ...context, dealerId };
-  const result = [{ label: 'Studio', href: studioNavigationHref('/control/clips', selection) }];
+  const result = [{ label: 'Studio', href: studioNavigationHref('/admin/dealer-studio', selection) }];
   if (active === 'scene') {
-    result.push({ label: 'Sammansättningar', href: studioNavigationHref('/control/compositions', selection) });
+    result.push({ label: 'Sammansättningar', href: studioNavigationHref('/admin/compositions', selection) });
   } else {
-    result.push({ label: 'Dealers', href: studioNavigationHref('/control/clips', selection) });
-    if (dealerId) result.push({ label: dealerLabel || dealerId, href: studioNavigationHref('/control/clips?view=idle', selection) });
+    result.push({ label: 'Dealers', href: studioNavigationHref('/admin/dealer-studio', selection) });
+    if (dealerId) result.push({ label: dealerLabel || dealerId, href: studioNavigationHref('/admin/dealer-studio?view=idle', selection) });
     const tab = STUDIO_DEALER_TABS.find(row => row.id === active);
     if (tab) result.push({ label: tab.label, href: studioNavigationHref(tab.href, selection) });
   }

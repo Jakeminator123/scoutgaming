@@ -1,4 +1,4 @@
-export function nextStudioLoginRedirect(returnTo?: unknown): string;
+export function nextStudioLoginRedirect(returnTo?: unknown, publicOrigin?: string): string;
 
 export function nextStudioAuthEntryRedirect(request:Request,config: {
   allowedOrigins:readonly string[];publicHosts:readonly string[];

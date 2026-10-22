@@ -13,6 +13,7 @@ import {validateLayerAsset} from '../../packages/presentation/contracts/presenta
 import {normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {ownDealerIdle} from '../../packages/presentation/runtime/registered-idle.mjs';
 import {canonicalStudioJson, validateRevision, validateStudioScope, validateStudioMedia} from '../../packages/studio-registry/server/document-contract.mjs';
+import {revalidatePrivateMedia} from '../../packages/studio-registry/server/private-media-revalidation.mjs';
 
 const uuid='[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}';
 const apiPattern=new RegExp(`^/api/studio-preview/(${uuid})(?:/(.*))?$`);
@@ -143,7 +144,9 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
     try{live(s);}catch(error){await response.body?.cancel();throw error;}
     if([200,206,304].includes(response.status)&&response.headers.get('etag')!==`"sha256-${expected.sha256}"`){await response.body?.cancel();fail('studio_preview_media_mismatch',409);}
     const resultHeaders=new Headers(response.headers);for(const [key,value]of Object.entries(headers))resultHeaders.set(key,value);resultHeaders.delete('set-cookie');
-    return new Response(response.body,{status:response.status,headers:resultHeaders});
+    const result=await revalidatePrivateMedia(new Response(response.body,{status:response.status,headers:resultHeaders}),request,expected.sha256);
+    try{live(s);}catch(error){await result.body?.cancel();throw error;}
+    return result;
   }
   async function presentation(s,endpoint,request,url) {
     if(!['config','legacy-config','select','idle-advice'].includes(endpoint))fail('studio_preview_route_not_found',404);

@@ -1,3 +1,5 @@
+import { cloneStudioJson } from '../../packages/studio-registry/server/storage-contract.mjs';
+import { idleRuleFor, publishedSelectionMode, selectSharedRoomPresentation } from './shared-room-presentation-selection.mjs';
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
@@ -12,6 +14,7 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
 import { createLocalProjectReader } from '../../packages/studio-registry/server/local-project-reader.mjs';
+import {revalidatePrivateMedia} from '../../packages/studio-registry/server/private-media-revalidation.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from './storage/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { prepareDecision } from '../../packages/director/engine.mjs';
@@ -26,11 +29,6 @@ const publicVideo = item => item ? {
   ...recordedSpeechProjection(item),
 } : null;
 
-function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
-  const choice = selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode:body.mode,requestId},{inventory});
-  return choice && typeof requestId === 'string' ? {...choice,requestId,mode:body.mode,version:body.version,presentationContext:body.presentationContext ?? null,
-    expiresAt:new Date(Date.now()+30000).toISOString()} : null;
-}
 
 const modes = new Set(['off', 'rules', 'random', 'shadow', 'active']);
 const committedTypes = new Set(['deal','reveal','turn','settle']);
@@ -60,7 +58,15 @@ export function presentationInput(event, published) {
 export function createPresentationApi({ db, env = process.env, store = createLocalProjectReader(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  recordedSpeechPreview = false, beforeActionPresentation = () => {} } = {}) {
+  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, qaPublicOrigin = null } = {}) {
+  // Only the verified server QA capability supplies this constructor port.
+  if (qaPublicOrigin !== null && (typeof qaPublicOrigin !== 'string'
+    || !/^http:\/\/127\.0\.0\.1:([1-9][0-9]{3,4})$/.test(qaPublicOrigin)
+    || Number(qaPublicOrigin.slice(qaPublicOrigin.lastIndexOf(':') + 1)) < 1024
+    || Number(qaPublicOrigin.slice(qaPublicOrigin.lastIndexOf(':') + 1)) > 65535)) {
+    throw new TypeError('Canonical loopback QA origin required');
+  }
+  const qaHost = qaPublicOrigin ? new URL(qaPublicOrigin).host : null;
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
@@ -75,6 +81,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       res.end(req.method === 'HEAD' ? undefined : content); return true;
     }
     if (!pathname.startsWith('/api/presentation/')) return false;
+    let sharedRequest=false,sharedSignal;
     try {
       if(pathname==='/api/presentation/native-p6-playback-context'){
         if(typeof nativeP6PlaybackContext!=='function')fail('Unknown presentation endpoint',404);
@@ -85,9 +92,13 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         json(200,await nativeP6PlaybackContext({req,playerId,project,readProject:()=>store.load()}));return true;
       }
       if (!playerId) fail('Sign in required', 401);
+      if (qaPublicOrigin && ['/api/presentation/registered-idle/', '/api/presentation/registered-video/', '/api/presentation/videos/']
+        .some(prefix => pathname.startsWith(prefix))
+        && (req.headers.host !== qaHost || req.headers.origin && req.headers.origin !== qaPublicOrigin
+          || ['cross-site', 'same-site'].includes(req.headers['sec-fetch-site']))) fail('Same-origin preview required', 403);
       if (pathname.startsWith('/api/presentation/registered-idle/') || pathname.startsWith('/api/presentation/registered-video/')) {
         if (!frozenDealerContext) fail('Frozen presentation unavailable',503);
-        const response = await frozenDealerContext.response(new Request((env.CROUPIER_CLOUD_RUNTIME==='1'&&exactHttpsOrigin(env.PUBLIC_URL)?env.PUBLIC_URL:'http://localhost')+(req.url||pathname), { method: req.method, headers: req.headers }));
+        const response = await frozenDealerContext.response(new Request((qaPublicOrigin||(env.CROUPIER_CLOUD_RUNTIME==='1'&&exactHttpsOrigin(env.PUBLIC_URL)?env.PUBLIC_URL:'http://localhost'))+(req.url||pathname), { method: req.method, headers: req.headers }));
         res.writeHead(response.status, Object.fromEntries(response.headers));
         if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
         return true;
@@ -95,14 +106,16 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       if (pathname.startsWith('/api/presentation/videos/')) {
         if (!['GET', 'HEAD'].includes(req.method)) fail('GET or HEAD required', 405);
         const id = pathname.slice('/api/presentation/videos/'.length);
-        const publicOrigin = env.CROUPIER_CLOUD_RUNTIME === '1' && exactHttpsOrigin(env.PUBLIC_URL) ? env.PUBLIC_URL : null;
+        const publicOrigin = qaPublicOrigin || (env.CROUPIER_CLOUD_RUNTIME === '1' && exactHttpsOrigin(env.PUBLIC_URL) ? env.PUBLIC_URL : null);
         const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN;
-        const trustedProxyOrigin = publicOrigin && exactHttpsOrigin(frontendOrigin)
+        const trustedProxyOrigin = !qaPublicOrigin && publicOrigin && exactHttpsOrigin(frontendOrigin)
           && [new URL(publicOrigin).host, new URL(frontendOrigin).host].includes(req.headers.host)
           ? frontendOrigin : null;
-        const response = await (videoResponse || ((videoId, request) => getVideoResponse(videoId, request, { ...registryOptions, trustedProxyOrigin })))(id,
-          new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers }),
-        );
+        const request = new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers });
+        const media = await (videoResponse || ((videoId, request) => getVideoResponse(videoId, request, { ...registryOptions, trustedProxyOrigin })))(id, request);
+        // The registry reader has just rechecked availability, origin and bytes.
+        const verifiedHash = /^"sha256-([a-f0-9]{64})"$/.exec(media.headers.get('etag') ?? '')?.[1];
+        const response = await revalidatePrivateMedia(media, request, verifiedHash);
         res.writeHead(response.status, Object.fromEntries(response.headers));
         if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
         return true;
@@ -131,6 +144,26 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       let raw = '';
       for await (const chunk of req) { raw += chunk; if (raw.length > 16384) fail('Presentation request too large', 413); }
       const body = JSON.parse(raw);
+      sharedRequest=body!==null&&typeof body==='object'&&Object.hasOwn(body,'sharedRoom');
+      if(sharedRequest){
+        const plain=value=>value&&Object.getPrototypeOf(value)===Object.prototype;
+        const marker=body.sharedRoom;
+        if(pathname!=='/api/presentation/select'||!plain(body)||!plain(marker)||Object.keys(marker).sort().join(',')!=='roomId,talkId,ver'
+          ||typeof marker.roomId!=='string'||!/^[a-z0-9_-]{1,128}$/.test(marker.roomId)||typeof marker.talkId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(marker.talkId)
+          ||!Number.isSafeInteger(marker.ver)||marker.ver<1||body.version!==marker.ver||!modes.has(body.mode)||!isDealerId(body.dealerId)||!plain(body.presentationContext))
+          throw Object.assign(new Error('shared_room_presentation_invalid'),{code:'shared_room_presentation_invalid',statusCode:400});
+        if(typeof withSharedCommittedReceipt!=='function'||typeof frozenDealerContext?.resolve!=='function'||typeof frozenDealerContext?.publicVideo!=='function')
+          throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+        const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};
+        sharedSignal=controller.signal;res.once('close',disconnected);
+        try{
+          const value=await withSharedCommittedReceipt({request:req,playerId,body,signal:controller.signal},(capture,{signal})=>
+            selectSharedRoomPresentation({capture,body,frozenDealerContext,select,settings,directorFetchFactory,request:req,playerId,signal}));
+          controller.signal.throwIfAborted();
+          if(!value||Object.getPrototypeOf(value)!==Object.prototype)throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+          json(200,cloneStudioJson(value,{maxBytes:256*1024}));return true;
+        }finally{res.removeListener('close',disconnected);}
+      }
       if (pathname === '/api/presentation/idle-advice') {
         let frozen = null;
         if (body.presentationContext !== undefined) {
@@ -140,6 +173,12 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         }
         const project = frozen?.project ?? await store.load();
         const { presentationContext: _context, ...adviceBody } = body;
+        if (frozen) {
+          // Published rooms ask OpenClaw for idle variants only when the saved composition allows it.
+          const idleMode = publishedSelectionMode(frozen.lane, { type: 'idle' }, 'off');
+          if (!['active','shadow'].includes(idleMode)) { json(200,{videoId:null,provider:'idle_openclaw_off',projectRevision:frozen.projectRevision}); return true; }
+          adviceBody.mode = idleMode;
+        }
         const ownInventory = !frozen && isDealerId(body.dealerId)
           ? registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}) : null;
         adviceService ??= createIdleAdviceServer({ settings, registryLoader });
@@ -172,7 +211,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
           const requestId=randomUUID();
           await frozenDealerContext.resolve(body.presentationContext);
           json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
-            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId):null,
+            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId,publishedSelectionMode(frozen.lane,{type:'idle'},'off')):null,
             projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource});return true;
         }
         if (frozen.project) {
@@ -192,19 +231,21 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
           const fetchImpl = directorFetchFactory ? await directorFetchFactory({req,playerId,project:frozen.project,
             readProject:async ()=>(await frozenDealerContext.resolve(body.presentationContext)).project,signal:controller.signal}) : null;
           if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable',503);
-          const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:body.mode },
+          // The saved composition decides the selection mode for this phase.
+          const mode = publishedSelectionMode(frozen.lane, sourceEvent, 'off');
+          const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode },
             { settings, videoRegistry:frozen.inventory, ...(fetchImpl ? {fetchImpl} : {}) });
           const chosen = frozen.inventory.videos.find(row=>row.id===result.videoGenerationId);
           // The fallback passes the same exact-event selector: never borrow a
           // different position, sentence or dealer after an alternative fails.
-          const baseline = chosen && body.mode !== 'off'
+          const baseline = chosen && mode !== 'off'
             ? await select({ requestId:result.decision.requestId, project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:'off' },
               { settings, videoRegistry:frozen.inventory }) : result;
           const selected=gateRecordedSpeechSelection({video:chosen,standard:frozen.inventory.videos.find(row=>row.id===baseline.videoGenerationId)},
             {project:frozen.project,dealerId:body.dealerId,eventId,sourceEvent});
           const video=frozenDealerContext.publicVideo(frozen,selected.video?.id);
           const standard=frozenDealerContext.publicVideo(frozen,selected.standard?.id);
-          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId);
+          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId,publishedSelectionMode(frozen.lane,{type:'idle'},'off'));
           await frozenDealerContext.resolve(body.presentationContext);
           if (controller.signal.aborted) return true;
           const gated=recordedSpeechResult(result,selected);
@@ -276,7 +317,11 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         // the gate to this request's fresh registry even for a cached decision.
         json(200, projectOwned(await decisions.get(key)));
       } finally { res.removeListener('close', disconnected); }
-    } catch (error) { json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }
+    } catch (error) { if(sharedRequest){
+      const known={shared_room_presentation_invalid:400,shared_room_presentation_unavailable:503,shared_room_presentation_stale:409,shared_room_presentation_forbidden:403,shared_room_authentication_required:401};
+      const code=Object.hasOwn(known,error?.code)?error.code:error?.statusCode===401?'shared_room_authentication_required':error?.statusCode===403?'shared_room_presentation_forbidden':typeof error?.code==='string'&&error.code.startsWith('studio_presentation_idle_')&&error.statusCode===409?'shared_room_presentation_stale':'shared_room_presentation_unavailable';
+      if(!res.destroyed&&!sharedSignal?.aborted)json(known[code],{error:code});return true;
+    } json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }
     return true;
   };
 }

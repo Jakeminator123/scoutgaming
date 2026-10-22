@@ -1,8 +1,9 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
+import {studioHistory} from '../lib/studio-history.mjs';
+import {studioNavigationHref} from '../lib/studio-navigation.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
-import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
 import {validateProject,type StudioProject,type StudioLane} from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -21,7 +22,7 @@ import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
 import {CompositionZoomControls} from './composition-zoom-controls';
-import { activeStudioDealers, studioHref, type ConnectionStatus } from './studio-types';
+import { activeStudioDealers, type ConnectionStatus } from './studio-types';
 import type { VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
 import styles from './control-preview-page.module.css';
 
@@ -38,7 +39,8 @@ export function initialCompositionLaneId(project:StudioProject,laneId?:string,de
     ??lanes[0]?.id??'';
 }
 
-export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId,initialRoomId,initialGame='blackjack'}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string;initialRoomId?:string;initialGame?:'blackjack'|'roulette'}) {
+export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId,initialRoomId,initialGame='blackjack'}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string;initialRoomId?:string|string[];initialGame?:'blackjack'|'roulette'}) {
+  const invalidRoomContext=Array.isArray(initialRoomId);
   const session=useStudioProjectSession({initialProject,initialVideos,initialStatus});
   const {project,projectRef,videos,modelEdit:sessionEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
@@ -103,12 +105,41 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       if(projectRef.current!==snapshot||current.laneId!==requestedLane||current.revision!==revision||current.dirty||current.saving||current.conflict||current.temporary||uploadLock.current){
         setPreviewError('Sammansättningen har ändrats. Spara och starta provspelningen igen.');return;
       }
+      previewAttempt.current=null;setPreviewBusy(false);
       window.location.assign(result.entryUrl);
     } catch(cause) {
       if(!controller.signal.aborted&&previewAttempt.current===controller)setPreviewError(cause instanceof Error?cause.message:'Provspelningen kunde inte startas. Försök igen.');
     } finally {
       if(previewAttempt.current===controller){previewAttempt.current=null;setPreviewBusy(false);}
     }
+  }
+  const navigationState=useRef({dirty,saving,conflict,temporary});
+  navigationState.current={dirty,saving,conflict,temporary};
+  useEffect(()=>{
+    const history=studioHistory(window);
+    const canLeave=()=>{
+      const current=navigationState.current;
+      if(!current.dirty&&!current.saving&&!current.conflict&&!current.temporary&&!uploadLock.current&&!previewAttempt.current&&!continuing.current)return true;
+      setNotice('Spara ändringarna och avsluta pågående filprov eller provspelning innan du lämnar sammansättningen.');return false;
+    };
+    const release=history.guardTraversal(canLeave);
+    const navigate=(event:Event)=>{if(!canLeave())event.preventDefault();};
+    const unload=(event:BeforeUnloadEvent)=>{if(!canLeave()){event.preventDefault();event.returnValue='';}};
+    const unsubscribe=history.subscribe(event=>{
+      if(!event)return;
+      const query=new URLSearchParams(window.location.search);
+      setLaneId(initialCompositionLaneId(projectRef.current,query.get('composition')??query.get('lane')??undefined,query.get('dealer')??undefined));
+      setGame(query.get('game')==='roulette'?'roulette':'blackjack');setClipId('');clearLocal();setPreviewError('');
+    });
+    window.addEventListener('studio:before-navigate',navigate);window.addEventListener('beforeunload',unload);
+    return()=>{unsubscribe();release();window.removeEventListener('studio:before-navigate',navigate);window.removeEventListener('beforeunload',unload);};
+  },[]);
+  function updateSelectionQuery(selection:{composition?:string;game?:string}){
+    if(typeof window==='undefined'||!window.location?.href||!window.history)return;
+    const url=new URL(window.location.href);url.pathname=labUrl('/admin/compositions');
+    for(const [key,value] of Object.entries(selection))url.searchParams.set(key,value);
+    if(selection.composition!==undefined)url.searchParams.delete('lane');
+    studioHistory(window).push(url.pathname+url.search+url.hash,true);
   }
   function markUpload(role:Role,busy:boolean){if(busy)uploads.current.add(role);else uploads.current.delete(role);uploadLock.current=uploads.current.size>0;setUploading(uploadLock.current);}
   const edit=(next:StudioLane)=>modelEdit(current=>validateProject({...current,lanes:(current.lanes??[]).map(row=>row.id===lane.id?{...next,renderer:'layered',composition:next.composition??defaultCompositionSettings()}:row)}));
@@ -153,7 +184,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     else {savedBaseline.current=JSON.stringify(remote);setSavedJson(savedBaseline.current);setError('');setNotice('Lagerfilen är vald i förhandsvisningen.');}
   }
   async function continueTo(href:string){
-    if(previewAttempt.current||continuing.current||saving||uploadLock.current||conflict)return;
+    if(previewAttempt.current||continuing.current||saving||uploadLock.current||conflict||invalidRoomContext)return;
     if(temporary){setLocalError('Lokala filprov följer inte med vid sparning. Välj Till sparade filer för att fortsätta.');return;}
     continuing.current=true;
     try {if(!dirty||await save())setContinueHref(href);}
@@ -195,12 +226,18 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;
   }
-  const publicationHref=labUrl('/control/rooms?'+new URLSearchParams({composition:lane.id,...(initialOperatorId?{operator:initialOperatorId}:{})}));
-  const sceneEditorHref=adminDocumentHref('/control/studio?'+new URLSearchParams({composition:lane.id,game,
-    ...(startDealer?{dealer:startDealer.id}:{}),...(initialOperatorId?{operator:initialOperatorId}:{}),
-    ...(initialRoomId?{table:initialRoomId}:{})}));
-  const contentHref=studioHref('/control/clips',{dealerId:startDealer?.id,laneId:lane.id,operatorId:initialOperatorId});
-  const uploadHref=studioHref('/control/videos',{dealerId:startDealer?.id,eventId:clip?.classification?.eventId??project.events[0]?.id,laneId:lane.id,operatorId:initialOperatorId});
+  function contextHref(path:string,selection:{dealerId?:string;eventId?:string}={}){
+    const url=new URL(studioNavigationHref(path,{dealerId:selection.dealerId??startDealer?.id,eventId:selection.eventId,laneId:lane.id,operatorId:initialOperatorId,game}),'https://studio.invalid');
+    const query=new URLSearchParams(typeof window==='undefined'?'':window.location?.search);
+    for(const key of ['operator','room','table'])if(query.has(key)){url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);}
+    // The scene editor consumes table; retain explicit aliases and every ambiguous value.
+    if(!url.searchParams.has('table')&&initialRoomId!==undefined)for(const value of Array.isArray(initialRoomId)?initialRoomId:[initialRoomId])url.searchParams.append('table',value);
+    return url.pathname+url.search+url.hash;
+  }
+  const publicationHref=contextHref('/admin/publication');
+  const sceneEditorHref=contextHref('/admin/clips');
+  const contentHref=contextHref('/admin/dealer-studio');
+  const uploadHref=contextHref('/admin/videos',{eventId:clip?.classification?.eventId??project.events[0]?.id});
   if (!lanes.length) return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar" intro="Samla dealer, bord och bakgrund till en sammansättning som kan användas i flera spelrum."
     primary={<button className="sg-btn sg-btn-primary" disabled={!dirty||saving||conflict} onClick={()=>void save()}>{saving?'Sparar…':'Spara'}</button>}>
     <div className={styles.empty}><p>Inga sammansättningar finns i utkastet. Skapa en nedan för att börja.</p>
@@ -208,23 +245,24 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
       <CompositionMetadata project={project} onEdit={modelEdit} selectedId="" onSelect={setLaneId} disabled={saving||conflict}/>
       <p>{dirty?'Osparade ändringar. Spara för att bekräfta borttagningen.':'Inga sammansättningar sparade.'}</p>
-      <a href={labUrl('/control/rooms'+(initialOperatorId?'?operator='+encodeURIComponent(initialOperatorId):''))}>Spelrum &amp; publicering →</a>
+      <a href={labUrl('/admin/publication'+(initialOperatorId?'?operator='+encodeURIComponent(initialOperatorId):''))}>Spelrum &amp; publicering →</a>
     </div></PageTemplate>;
   return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar"
-    primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||previewBusy||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current&&!previewAttempt.current)void save();}}>{saving?'Sparar…':'Spara'}</button><button type="button" className="sg-btn sg-btn-primary" disabled={previewBlocked} aria-describedby="studio-preview-help" onClick={()=>void startPreview()}>{previewBusy?'Startar provspelning…':'Provspela'}</button><a className="sg-btn sg-btn-secondary" aria-disabled={previewBusy||saving||uploading||conflict||invalidDealerSelection} href={publicationHref} onClick={event=>{event.preventDefault();if(!invalidDealerSelection)void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>
+    primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||previewBusy||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current&&!previewAttempt.current)void save();}}>{saving?'Sparar…':'Spara'}</button><button type="button" className="sg-btn sg-btn-primary" disabled={previewBlocked} aria-describedby="studio-preview-help" onClick={()=>void startPreview()}>{previewBusy?'Startar provspelning…':'Provspela'}</button><a className="sg-btn sg-btn-secondary" aria-disabled={previewBusy||saving||uploading||conflict||invalidDealerSelection||invalidRoomContext} href={publicationHref} onClick={event=>{event.preventDefault();if(!invalidDealerSelection)void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>
     <div className="sg-page-body">
-      <StudioNavigation dealerId={navigationDealer?.id} dealerLabel={navigationDealer?.label} active="scene" laneId={lane.id} operatorId={initialOperatorId} crumbs={[{label:compositionLabel(lane.label)}]} onNavigate={(event,href)=>{event.preventDefault();void continueTo(href);}} />
+      <StudioNavigation dealerId={navigationDealer?.id} dealerLabel={navigationDealer?.label} active="scene" laneId={lane.id} operatorId={initialOperatorId} tableId={typeof initialRoomId==='string'?initialRoomId:undefined} game={game} crumbs={[{label:compositionLabel(lane.label)}]} onNavigate={(event,href)=>{event.preventDefault();void continueTo(href);}} />
       {invalidDealerSelection?<p role="alert">Sammansättningen innehåller ett inaktivt dealerval: {invalidDealerIds.map(id=>invalidDealerLabel(id)||"saknas").join(", ")}. Välj en aktiv startdealer och ta bort inaktiva val innan du provspelar eller publicerar.</p>:null}
+      {invalidRoomContext?<p role="alert">Länken anger flera rum. Öppna ett uttryckligt rum innan du fortsätter till publicering eller rumsvyn.</p>:null}
       {initialDealerId&&!contentDealer?<p role="alert">Dealern i länken är inte aktiv. Välj en aktiv dealer uttryckligen.</p>:null}
       {previewError?<p role="alert">{previewError}</p>:null}
       {error?<p role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
       <CompositionMetadata project={project} onEdit={modelEdit} selectedId={lane.id} disabled={previewBusy||saving||uploading||conflict} onSelect={id=>{
         if(previewAttempt.current||uploadLock.current||saving||conflict)return;setLaneId(id);setClipId('');
-        const url=new URL(window.location.href);url.searchParams.set('composition',id);url.searchParams.delete('lane');window.history.replaceState(null,'',url.pathname+url.search);
+        updateSelectionQuery({composition:id});
       }}/>
       <p className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</p>
-      <label>Spel för materialval<select aria-label="Spel för materialval" value={game} disabled={previewBusy||saving||uploading||conflict} onChange={event=>{clearLocal();setClipId('');setGame(event.target.value as 'blackjack'|'roulette');}}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>
+      <label>Spel för materialval<select aria-label="Spel för materialval" value={game} disabled={previewBusy||saving||uploading||conflict} onChange={event=>{clearLocal();setClipId('');setGame(event.target.value as 'blackjack'|'roulette');updateSelectionQuery({game:event.target.value});}}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>
       <p className={styles.hint}>Spelvalet filtrerar biblioteket och märker nya bordsfiler. Det byter inte rummets spel och ändrar inte sparade tillåtna val.</p>
       <p id="studio-preview-help" className={styles.hint}>{game==='roulette'?'Roulette provspelas i det publicerade demorummet. Den separata Provspela-knappen stöder ännu bara blackjack.':temporary?'Avsluta det tillfälliga filprovet före provspelning.':dirty||!hasSavedLane?'Spara sammansättningen först för att provspela.':'Provspela blackjack med sparade dealers, bord och bakgrunder från biblioteket. Ett separat provspel startas utan att publicera till ett bolag.'}</p>
       <p className={styles.hint}>En sammansättning samlar dealer, bord och bakgrund samt vilka val bolaget får göra. Provspela här och koppla den sedan till ett spelrum under Spelrum & publicering.</p>

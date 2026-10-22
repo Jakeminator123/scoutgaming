@@ -70,15 +70,15 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const packageConflict = current && !unresolved && state.preflight?.reason === 'presentation_package_conflict';
   const needsEnvironment = current && !unresolved && state.preflight?.reason === 'presentation_room_environment_required';
   const needsComposition = current && !unresolved && ['presentation_lane_incompatible', 'presentation_package_too_large', 'presentation_room_environment_required'].includes(state.preflight?.reason ?? '');
-  const reloadHref = labUrl('/control/rooms?' + new URLSearchParams({ operator: operator?.id ?? '', composition: presentation?.id ?? '' }));
-  const compositionHref = labUrl('/control/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
+  const reloadHref = labUrl('/admin/publication?' + new URLSearchParams({ operator: operator?.id ?? '', composition: presentation?.id ?? '' }));
+  const compositionHref = labUrl('/admin/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
   const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
     ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }
     : conflictCode === 'presentation_room_environment_conflict'
       ? { href: compositionHref, label: 'Skapa en separat sammansättning' }
     : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
-      ? { href: labUrl('/control/rooms?' + new URLSearchParams({ operator: operator?.id ?? '' })), label: 'Kontrollera spelrummet' } : null;
+      ? { href: labUrl('/admin/publication?' + new URLSearchParams({ operator: operator?.id ?? '' })), label: 'Kontrollera spelrummet' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
   const canCreate = enabled && (ready || unresolved) && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
@@ -90,7 +90,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     {current && state.preflight?.environment ? <p><strong>Rummets miljö:</strong> {state.preflight.environment.label}
       {state.preflight.environment.kind === 'baked' ? ' · inbakad miljö' : state.preflight.environment.fixed ? ' · fast bakgrund' : ' · behöver avgränsas'}</p> : null}
     <p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>
-    {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
+    {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/lobby?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
     {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
       : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelrum för den här sammansättningen ännu.</p> : null}
     <details className={styles.create} open={rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>
