@@ -99,12 +99,13 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K04 — Spelklient och presentation från händelser
 
-**IN_PROGRESS 22 oktober:** aktuell PR333/headafba9dc22e77aecb89c1527fde37088d0ad1b7a4 har oberoende trefilsdeltareview utan blockerare. Egen metadatajämförelse motK05/159cc ger10/10mängder,union582,0skillnader,155uppskjutna;sourcepin/timing består men nya planningrevisions krävs. Tidigare1148mouth/idle/readtimeoutbevis består. **Nästa Kevinansvar är befintligt monterat klientflöde genomJ07 enligt kriterierna nedan**, inte ännu en review avafba. Produktion/GPU/fullK05 är inga nya förhandsgrindar. Root äger publiktransport. Inga nya fullaK04-/PG-/Blob-/lipsyncbevis; se status.json.
+**IN_PROGRESS 22 oktober:** aktuell PR333/head `23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540`. BindLine-fyndet är stängt efter oberoende fyrfilsreview,9 verifierade Gitblobbar och egna4/4 rena Nodeprov. Nya8 PG-servermodulgrupper/totalt34/34 och hooks är Kevinrapporterade, inte rootomkörning eller klient-/visuell acceptans. Tidigare metadata10/10 mot K05/159cc och stängda mouth/idle/readtimeoutfynd består. Root har importerat24 filer i PR336/d008;22 är exakta källblobbar, medan parser+regression rättar reproducerad Windows-CRLF. **Nästa Kevinansvar är monterat klientflöde genom J07 enligt kriterierna nedan.** Produktion/GPU/full K05 är inga nya förhandsgrindar. Root äger publik transport. Full K04 är inte accepterad.
 
 **Etapp/beroenden:** E3; K03 och J07.
 **Mål:** utvalda förbättringar av idle, tal, kort och layout återger committade spelhändelser utan att styra spelutfallet.
 **Startfiler:** K `public/shared-table.js`, `public/game-events.js`, `public/game-presentation.js`, `public/game-cards.js`, `public/idle-chain.js`, `public/dealer-layer.js`, `public/lip-layer.js`, `public/table-layout.js`, `public/phone-dock-fit.js`; M `services/game/public/performance-player.mjs`, `services/game/public/verified-video-buffer.mjs`, `packages/presentation/runtime/`.
 
+- [x] Delsteg23d4: samma uppskjuten-predikat i bindLine/activationSet/planningRevision; kataloghistoria, grundslot och Astridclassic bevarade. Egen4/4 och9 Gitblobbar; inte full klient-/PG-/visuell acceptans.
 - [ ] Mappa O01:s offentliga händelser till befintliga presentationskontrakt och publicerat paket. Kort avslöjas först av committad serverhändelse; klienten gissar inte nästa kort eller handlingsrätt.
 - [ ] Porta accepterad lugn idle, moving lipsync, övergångar, tal och kortplacering. Prova tal under idle, vänteläge och kortövergång samt när lipsyncworker saknas eller svarar sent. Bevara exakt dealer-/källframe-/audio-/bankkoppling; ingen fristående munanimation eller återdebitering vid återställning.
 - [ ] Återanvänd verifierad buffring och förladdning. Lägg till kod endast för ett dokumenterat gap; skilj spelhändelse, presentationstid och klientens laddningsfel.
