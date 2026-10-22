@@ -7,6 +7,7 @@ on:
       - .github/workflows/product-container-check.yml
       - .dockerignore
       - ops/cloud/Dockerfile
+      - ops/cloud/Dockerfile.game
       - apps/studio/package.json
       - apps/studio/package-lock.json
       - services/game/package.json
@@ -56,3 +57,30 @@ jobs:
             const privateRoot=fs.statSync("/app/lab/data/platform-private");
             assert.equal(privateRoot.uid,1000);assert.equal(privateRoot.mode&0o777,0o700);
           '
+  game-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the game-only image (Render croupier-v3) without publishing or deployment
+        run: docker build --progress=plain -f ops/cloud/Dockerfile.game -t croupier-game:check .
+      - name: Verify Linux dependency resolution and the Lab-free launcher offline
+        run: |
+          docker run --rm --network none --entrypoint node croupier-game:check -e '
+            const assert=require("node:assert/strict"),fs=require("node:fs"),{createRequire}=require("node:module");
+            for(const directory of ["services/game","services/astrid-gpu-worker/gateway"]){
+              const manifest="/app/"+directory+"/package.json",load=createRequire(manifest);
+              for(const name of Object.keys(JSON.parse(fs.readFileSync(manifest,"utf8")).dependencies))load.resolve(name);
+            }
+            assert.equal(fs.existsSync("/app/apps"),false,"the game image must not carry Studio or web code");
+            assert.equal(process.env.CROUPIER_CLOUD_LAB_CHILD,"0");
+          '
+          # Read-only preflight with fixture-only values: no database, disk or Lab build is read.
+          docker run --rm --network none \
+            -e PORT=10000 -e CROUPIER_CLOUD_LAYOUT=single-origin -e RENDER_EXTERNAL_URL=https://croupier-game-check.onrender.com \
+            -e CROUPIER_DATABASE=postgres -e CROUPIER_GAME_DATABASE_URL='postgresql://fixture:fixture-password@fixture.neon.tech/fixture?sslmode=require' \
+            -e CROUPIER_STUDIO_NEON_POLICY=1 -e CROUPIER_STUDIO_ENVIRONMENT_ID=test -e CROUPIER_STUDIO_WORKSPACE_ID=container-check \
+            -e CROUPIER_MEDIA_STORAGE=blob -e BLOB_READ_WRITE_TOKEN=fixture-private-blob-token -e CROUPIER_STREAM_LANE=lissabon-stream-lane \
+            -e OPENCLAW_PRODUCT_SPEECH_URL=https://speech.example.test -e OPENCLAW_PRODUCT_SPEECH_TOKEN=fixture-token \
+            -e CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER=fixture-admin -e CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD=fixture-bootstrap-password \
+            croupier-game:check node ops/cloud/start.mjs --check

@@ -399,10 +399,11 @@ serverpar och sessionsvakten i `services/openclaw/lab/deploy/local-session.mjs`.
 Kör ett sådant par åt gången; dess stoppväg rensar egna processer och testdata.
 Återanvänd relevanta browserflikar, bevara utkast/spel och lämna stoppade servrar
 stoppade tills Jakob ber om start.
-Sparade lokala projekt, historik och profiler finns i `lab/data`;
-spel-/CRAIG-databaserna ligger i `lab/data/players`. Isolerade testprofiler
-får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs` läser fortsatt
-`lab/data`, även när `apps/studio/data` finns. Inga privata filer flyttas av verktyget.
+Checkouten har inget lokalt produktregister: Neon är registret och Blob
+mediebyte. Fixturen skriver bara i sin tillfälliga mapp, och sessionsvakten
+ligger i OS-tempkatalogen. `tools/backup-lab-state.mjs` och
+`tools/migrate-lab-state.mjs` togs bort 22 oktober 2026; äldre privata kopior
+ligger kvar utanför Git.
 Anslutningsverktygens standardordning är rotens `.env`, äldre `lab/.env.*`,
 nya `apps/studio/.env.*` och sist processmiljön. Cloud storage kräver samma
 uttryckliga opt-in; ett explicit `envFiles` ersätter standardlistan.
@@ -413,14 +414,8 @@ hashverifierad privat kopia: `C:\Users\jakem\CroupierBackups\lab-consolidation-2
 `lissabon/` är därefter borttagen. Projektets bytes och historik bevarades;
 den gamla sessionsvakten ersattes med `lab/data/.local-session.sqlite`.
 
-Andra äldre checkouter flyttas offline med
-`node tools/migrate-lab-state.mjs --destination <ny-absolut-backup-utanför-Git> --apply`.
-Verktyget stoppar vid aktiv session, SQLite-sidecars, länkar eller målkonflikt.
-Utan `--apply` inventerar det endast; ett giltigt gammalt projekt får inte
-ignoreras av startaren. Backupen verifieras med `verifyLabMigrationBackup()`
-i samma modul. Återställ endast med stoppade servrar, bevara nuvarande Lab-data
-separat och kopiera den verifierade backupens `lissabon/data` till en tom
-`lab/data`, utan den gamla `.local-session.sqlite`. Återskapa inte den gamla katalogen.
+Äldre checkouter flyttas inte längre in i repot: Neon-/Blob-flytten är
+genomförd och flyttverktyget är borttaget. Återskapa inte `lab/data`.
 
 ## Git-historik efter rensningen 12 oktober 2026
 
@@ -553,9 +548,9 @@ source/staging-rensningen och dedupliceringen finns 2 514 logiska poster och
 Tidigare kopior återinförs inte från gamla manifest; använd aktuell layout och
 de bevarade privata kvittona i `lab/data/lane-media-audit/`.
 
-Neon-verktyg: `tools/migrate-sqlite-postgres.mjs` installerar/importerar till
-tom, separat game-databas; `tools/postgres-backup-restore.mjs` verifierar full
-rad-/sekvensparitet. De vägrar zon-databas och import med aktiv extern wallet.
+Neon-verktyg: `tools/postgres-backup-restore.mjs` verifierar full
+rad-/sekvensparitet och vägrar zon-databas och import med aktiv extern wallet.
+SQLite-importverktyget togs bort efter genomförd flytt.
 Bevara orörda SQLite-backuper utanför Git. Efter första nya Neon-skrivning
 kräver återgång senaste data/ledger; starta aldrig blindt en äldre SQLite-kopia.
 

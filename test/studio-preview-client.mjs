@@ -191,35 +191,6 @@ test('closing one preview addresses only its owner-bound session',async()=>{
  const count=calls.length;await assert.rejects(createStudioPreviewClient({fetchImpl}).close());assert.equal(calls.length,count);
 });
 
-test('preview never loads local profile UI or its ordinary session API; normal local play still does',async t=>{
- const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
- const at=source.indexOf("await import('./lissabon-profile.mjs')");
- assert.ok(at>0);
- const start=source.lastIndexOf('\nif ',at)+1,end=source.indexOf("document.querySelector('#sign-out')",at);
- const block=source.slice(start,end).replace("import('./lissabon-profile.mjs')","loadProfile()");
- const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
- const run=new AsyncFunction('studioPreview','localPresentationEnabled','tableReady','loadProfile','round','busy','chatBusy','astridCamera','console',block);
- const originalFetch=globalThis.fetch,calls=[];
- t.after(()=>{globalThis.fetch=originalFetch;});
- globalThis.fetch=async(url,options)=>{calls.push({url,options});return Response.json({localDemoProfiles:false});};
- let imports=0;
- const loadProfile=async()=>{imports++;return import('../services/game/public/lissabon-profile.mjs');};
- const quietConsole={warn(...args){assert.fail(args.join(' '));}};
- for(const local of [true,false]){
-  await run(context,local,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
-  await new Promise(resolve=>setImmediate(resolve));
- }
- assert.equal(imports,0);assert.deepEqual(calls,[]);
- await run(null,true,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
- await new Promise(resolve=>setImmediate(resolve));
- // Loading an uncached ES module may finish after the first event loop turn.
- for(let i=0;i<20&&!calls.length;i++)await new Promise(resolve=>setTimeout(resolve,5));
- assert.equal(imports,1);assert.equal(calls.length,1);assert.equal(calls[0].url,'/api/auth/session');
- await run(null,false,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
- await new Promise(resolve=>setImmediate(resolve));assert.equal(imports,1);assert.equal(calls.length,1);
-});
-
 test('preview notice uses the existing HUD and hides inert chat without changing ordinary initialization',async()=>{
  const {readFile}=await import('node:fs/promises');
  const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');

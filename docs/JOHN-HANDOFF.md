@@ -10,6 +10,55 @@
 
 **Säkerhetsstatus på remote main 7afae426:** GitGuardian-källbindning verifierad, 0 öppna av 23 observerade incidenter (23 ignorerade), monitorering aktiv. Historisk scan är ofullständig (too_large), platsmetadata partiell och GitHub-sviten står queued. Det är inte bevis för full historisk täckning eller godkänd scan av denna nya branch.
 
+## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
+
+**Gren:** `codex/spelklient-legacy` (bas main `7afae426`), PR #356. Underlag: `migrering/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md`.
+Varje kandidat fick en konsumentkarta med `git grep` (route, UI, tjänst, adapter,
+data, build, test, doc) innan radering; `node tools/raderingsgrind.mjs main --strict`
+ger IMPORT 0 / REGISTRY 0 och `node tools/check-orphan-tests.mjs` 0 orphans.
+
+**Raderat (med exklusiva tester, verktyg, flaggor, CSS, README-rader):**
+`public/lab/`, `public/bo/emails/`, `public/bo/generations.json`
+(`test/generation-media.mjs` använder syntetiska katalogposter);
+`public/docs/partner-api.html` + `build-docs.py` + `test/partner-docs.mjs`
+(`partner-api.md` flyttad till `docs/games/partner-api.md`); `/roulette-test`
+(`games/roulette/preview.mjs`, `public/roulette-test/`, servergrenen,
+`test/roulette-preview.mjs`, `tools/roulette-ui-fixture.mjs`,
+`tools/roulette-scene-fixture.mjs`); Lissabon-gästprofiler (`lissabon-profiles.mjs`, `public/lissabon-profile.mjs`,
+`CROUPIER_LISSABON_PROFILES`, `test/lissabon-profiles.mjs`); de oanvända
+Astrid-modulerna `astrid-green-dealer/speak`, `astrid-speech-join`,
+`astrid-folded-rest`, `astrid-idle-scheduler` med fyra opt-in-prov i
+`tools/media` samt `rigged-review.css` (ingen kod sätter `html.rigged-review`).
+
+**Behållet med bevis:** `card-presentation/` (app.mjs → `renderer-support.js`,
+`local-card-overlay.mjs`), `vendor/three/`, `shared-room-*`,
+`layered-presentation.mjs`, `performance-player.mjs`, `local-presentation.mjs`,
+`dealer-version-switcher.mjs` (app.mjs + fyra tester), `calibrate.mjs`
+(lazy import i app.mjs, serverns APPLY-route), `bo/speech-qa.*` och `/bo`-redirects (J05).
+**Kamera och röst behålls som produktfunktion** (Jakobs beslut 22 oktober):
+`public/astrid-camera-*.mjs`, `astrid-wake-word.mjs`, `astrid-voice-*.css`,
+`astrid-transcription.mjs`, `/api/{astrid,dealer}/{observation,transcription}`,
+`CROUPIER_ASTRID_CAMERA`/`CROUPIER_ASTRID_TRANSLATION_KEY` och testgruppen
+`speech/astrid-camera`. En första radering på grenen återställdes med revert.
+Kameran är fortfarande Astrid-märkt och flaggstyrd; att göra den dealer-generisk
+och styrbar från Admin är ett separat, ej påbörjat arbete.
+
+**Verifiering:** `node --test` grönt för de berörda sviterna i gameplay/speech
+samt `table-http`, `game-entry-*`, `shared-room-app`, `local-presentation`,
+`layered-presentation`, `product-chat-http`, `apps/web/test/player-ui-build`;
+pre-commit-hooken kördes på varje commit; `check-environment-variables` grön.
+Lokal Studio-start kräver junction till arkivets `apps/studio/node_modules`.
+
+**Kvar för andra ägare (inte redigerat här):** `ops/cloud/config.mjs` rader
+101 och 378 (`CROUPIER_LISSABON_PROFILES`), `ops/cloud/vercel-ingress.mjs:63`
+(`/roulette-test`); `packages/navigation/server/platform-routing.mjs` rad 44
+(`ROULETTE_PREVIEW`) och 62 (`ROULETTE_PREVIEW.has`) — rad 68–69
+(`/api/dealer/observation`, `/api/dealer/transcription`) och kameraflaggorna i
+ops/cloud ska **stå kvar**; `services/openclaw/lab/deploy/local-connection.mjs`
+(`CROUPIER_LISSABON_PROFILES`); `docs/environment-variables.json`
+(`CROUPIER_LISSABON_PROFILES` kvarstår tills ops/cloud slutar läsa den); `apps/studio/README.md:361` länkar
+`bettalotto.se/docs/partner-api.html` som inte längre serveras;
+`apps/studio/docs/README.md:450` nämner `/roulette-test`.
 
 ## J05/J07/J08 — aktuell leverans — 22 oktober 2026
 
