@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createVideoBuffer,tableVideoSources} from '../public/video-buffer.js';
+import {activeLine} from '../public/dealer-language.js';
 import {readFileSync} from 'node:fs';
 const turn=()=>new Promise(r=>setImmediate(r));
 test('full-quality buffers deduplicate playback and downloads; priority queues one transfer',async()=>{
@@ -12,7 +13,7 @@ test('failed loads can retry and cache evicts unpinned sources without disruptin
  await assert.rejects(b.load('/a'),/offline/);await b.load('/a');b.pin('/a');await b.load('/b');assert.ok(b.has('/a'));assert.ok(b.has('/b'));b.unpin('/a');assert.equal(b.bytes,4);assert.equal(revoked.length,1);assert.equal(b.has('/a'),false);
 });
 test('preparation includes every possible server announcement, dealer and occupied boxes only',async()=>{
- const m=JSON.parse(readFileSync(new URL('../public/media/manifest.json',import.meta.url)));const sources=tableVideoSources(m,[3]);assert.ok(sources.includes('/media/deal/pos4.mp4'));assert.ok(!sources.includes('/media/deal/pos1.mp4'));assert.equal(sources.filter(x=>x.includes('/deal/')).length,4);assert.ok(sources.includes(m.repliker.find(x=>x.id==='sidebet_2').url));for(const event of ['goodluck','bust','double','insurance','dealerblackjack','blackjack','dealerbust','win','push','lose'])assert.ok(sources.includes(m.repliker.find(x=>x.event===event).url));
+ const m=JSON.parse(readFileSync(new URL('../public/media/manifest.json',import.meta.url)));const sources=tableVideoSources(m,[3]);assert.ok(sources.includes('/media/deal/pos4.mp4'));assert.ok(!sources.includes('/media/deal/pos1.mp4'));assert.equal(sources.filter(x=>x.includes('/deal/')).length,4);assert.ok(sources.includes(m.repliker.find(x=>x.id==='sidebet_2').url));for(const event of ['goodluck','bust','double','insurance','dealerblackjack','blackjack','dealerbust','win','push','lose'])assert.ok(sources.includes(activeLine(m.repliker,event).url));assert.ok(!sources.includes(m.repliker.find(x=>x.id==='dealerbust_1').url),'the retired line is not preloaded');
  const progress=[];const b=createVideoBuffer({fetchImpl:async()=>({ok:true,blob:async()=>new Blob(['a'])}),createURL:()=> 'blob:ready'});await b.prepare(['/a','/a','/b'],(done,total)=>progress.push([done,total]));assert.deepEqual(progress,[[0,2],[1,2],[2,2]]);
 });
 test('four transfers run at once by default, game clips still first; the rest wait for a free slot',async()=>{

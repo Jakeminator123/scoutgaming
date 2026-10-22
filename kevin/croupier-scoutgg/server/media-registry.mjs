@@ -1,8 +1,9 @@
 import { readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { activeLine } from '../public/dealer-language.js';
 export const GAME_SPEECH=['goodluck','sidebet','insurance','double','bust','blackjack','dealerblackjack','dealerbust','win','push','lose'];
 export function classifyManifest(source){
-  const active=new Set(GAME_SPEECH.map(event=>(event==='sidebet'?source.repliker.find(c=>c.id==='sidebet_2'):null)??source.repliker.find(c=>c.event===event)).filter(Boolean).map(c=>c.id));
+  const active=new Set(GAME_SPEECH.map(event=>activeLine(source.repliker,event)).filter(Boolean).map(c=>c.id));
   const registry=[...source.deal.map(c=>({...c,category:'gameplay',binding:c.id==='deal_flip'?'engine hole-card reveal → filmed flip':c.id==='deal_hole'?'engine opening hole draw → face-down deal':'engine draw → seat clip'})),...source.idle.map(c=>({...c,category:'gameplay',binding:'idle presentation'})),...source.repliker.map(c=>({...c,category:active.has(c.id)?'gameplay':'legacy_training',binding:active.has(c.id)?`engine ${c.event}`:'training only; excluded from runtime selection'}))];
   const repliker_sprak={};
   for(const language of ['es','fr','zh']) {

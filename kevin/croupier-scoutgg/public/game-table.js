@@ -2,6 +2,7 @@ import { DEAL_CONTACT } from './card-table-layout.js';
 import { createRoundClock } from './round-clock.js';
 import { firstFaceTime } from './card-face-projection.js';
 import { cardsIn, total, planDraws, outcomeSpeech } from './game-events.js';
+import { RETIRED_LINES } from './dealer-language.js';
 import { createGameCards } from './game-cards.js';
 import { boxLabel } from './box-label.js';
 
@@ -105,7 +106,7 @@ export function createGameTable({ manifest, boxes, play, onBusy, unlock, audio, 
     cards.render(preview ? null : round, visible, revealed, focusHand);
   }
   async function speech(event) {
-    const variants = manifest.repliker.filter(c => c.event === event);
+    const variants = manifest.repliker.filter(c => c.event === event && !RETIRED_LINES.has(c.id));
     const pool = variants.filter(c=>c.id!==lastLine.get(event));
     const clip = (pool.length ? pool : variants)[Math.floor(Math.random()*(pool.length || variants.length))];
     if (!clip) return;

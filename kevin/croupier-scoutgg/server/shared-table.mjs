@@ -7,7 +7,7 @@ import {readOperations} from './operations.mjs';
 import {readBackofficeWorkspace} from './bo-workspace.mjs';
 import { createGameAudit } from './game-audit.mjs';
 import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
-import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
+import {dealerLanguage,availableLanguages,speechForEvent,RETIRED_LINES} from '../public/dealer-language.js';
 import {personalizedGreeting} from './dealer-responses-localized.mjs';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
 import {scheduleTalks,LJUD_FORE,idleFrom,idleChain} from './rorlig-lipsync.mjs';
@@ -85,7 +85,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   }
   function variantOf(r,clip,ready){
     const n=ready.variants[clip.event],last=r.lastVariant?.[clip.event];
-    const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>n<2||i!==last);
+    const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>!RETIRED_LINES.has(`${clip.event}_${i}`)&&(n<2||i!==last));
     const k=pick[Math.floor(Math.random()*pick.length)];
     r.lastVariant={...(r.lastVariant??{}),[clip.event]:k};
     const id=`${clip.event}_${k}`;
