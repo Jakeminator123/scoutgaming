@@ -2048,6 +2048,33 @@ Denna samlade dokumentationsleverans kör inga nya GPU- eller spelprov och
 
 ## Avslutsstädning och skyddat lokalt arbete
 
+**Verifierat 21 oktober 2026:** 23 lokala och 34 fjärrbrancher rensade efter
+färsk kontroll av exakt mergad PR-head, Jakob-ägarskap, öppna PR:er och
+registrerade worktrees. Före/efter: 43 → 20 lokala brancher, 58 → 24 på GitHub.
+Tre övergivna restmappar utan Git-koppling är borttagna; 124 beroendejunctions
+lossades utan att deras målkataloger rördes. Alla fem registrerade arbetskopior,
+öppna PR:er, aktiva agenter och osparade ändringar är bevarade. Tre ytterligare
+lokala brancher lämnades efter avvisad automatisk säkerhetsgranskning av
+head-/backupbevisningen; de ingår inte i de redovisade raderingarna.
+
+GitHubs automatiska featurebranchradering är avstängd vid kontroll 22 oktober
+(`delete_branch_on_merge=false`). Regel 25556822 skyddar de
+långlivade teambrancherna endast mot radering; main-regel 24642403 är oförändrad.
+Lokal `fetch.prune=true` är verifierad. Framtida slutstädning har lagts in av den
+aktiva migrationsagenten i dess [PR311](https://github.com/Jakeminator123/scoutgaming/pull/311);
+ingen annan agents branch eller PR har mergats som del av städningen.
+Privat refmanifest, verifierad Git-bundle och backup av `ai-system-map` finns
+lokalt under `arkiv/2026-10-21/smafix-cleanup/` och ingår inte i Git-leveransen.
+
+Bevarat arbete värt att känna till: `ai-system-map` har 37 lokala statusposter
+och en användbar idé om att prioritera schema-/evidensvarningar före hashbrus.
+Verktyget är pensionerat; återinför inte dess kod som del av städning.
+`codex/blob-neon-storage-audit-20261016` innehåller en daterad referensinventering
+för möjlig framtida lagringsgranskning, utan aktuell verifiering av molnläget.
+Scenzoom från `codex/studio-view-zoom` finns redan i main under Studios nya
+sökvägar; en separat import rekommenderas inte. Osäkra eller omergade original
+är kvar för riktad bedömning.
+
 Förbrukade flyttinstruktioner, aktivitetskort och motsägande väntelägen ska
 inte finnas kvar som aktiva uppdrag. Denna handoff ersätter den löpande
 flyttloggen; äldre exakta kvitton finns i [Git-historiken](https://github.com/Jakeminator123/scoutgaming/blob/4c782b3be4f49dc5743f27e3af3dfcb52e407939/docs/JOHN-HANDOFF.md).
