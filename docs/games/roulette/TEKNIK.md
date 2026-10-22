@@ -261,7 +261,7 @@ som återförsök av en redan avgjord runda. Certifiering och riktiga pengar ing
 Använd Node 24 för hela repo-/Studio-flödet. Kör från reporoten:
 
 ```sh
-node --test --test-concurrency=4 test/roulette.mjs test/roulette-preview.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
+node --test --test-concurrency=4 test/roulette.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
 ```
 
 Tester för generator och testyta kontrollerar

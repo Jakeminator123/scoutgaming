@@ -222,11 +222,11 @@ varken repliktext, transportticket eller ett visuellt godkännande.
 
 `test/moving-speech-deal-integration.mjs` driver verklig blackjack-commit och
 beständig presentation i ett eget SQLite-minne vidare till talets WebSocket.
-`test/microphone-openclaw-integration.mjs` kopplar mikrofonkontroll, WAV,
-transkriptions-API, Director, NDJSON, röstadapter och moving-runtime i loopback.
-De skyddar kort-/saldobehörighet, isolering, originalspråk och avbrott men
-använder syntetiska enheter, modell, TTS, GPU och mediebytes. De ersätter inte
-ett inspelat prov av den registrerade Dragan-banken och hela livekedjan.
+Det tidigare mikrofonprovet (`test/microphone-openclaw-integration.mjs`) togs
+bort med kamerastacken 22 oktober 2026. Provet skyddar kort-/saldobehörighet,
+isolering och avbrott men använder syntetiska enheter, modell, TTS, GPU och
+mediebytes. Det ersätter inte ett inspelat prov av den registrerade
+Dragan-banken och hela livekedjan.
 
 Det finns flera olika former av varm/kall lagring och beräkning:
 
