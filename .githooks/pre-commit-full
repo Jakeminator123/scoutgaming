@@ -81,7 +81,7 @@ run_check access environment-registry 180 node tools/check-environment-variables
 run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs
 run_check access build-lab-video-manifest 180 node tools/media/build-lab-video-manifest.mjs --check
 run_check access build-runtime-media-catalog 180 node tools/build-runtime-media-catalog.mjs --check
-run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs
+run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs test/k05-import-plan.mjs
 run_check access player-auth 180 node test/player-auth.mjs
 run_check access table-http 180 node test/table-http.mjs
 run_node_tests access agent-talk test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/web/test/player-ui-build.mjs
