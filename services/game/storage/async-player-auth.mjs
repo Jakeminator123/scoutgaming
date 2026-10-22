@@ -89,7 +89,8 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(!sessionDigest)return null;
     const verified=await validatedSession(sessionDigest);
     if(!verified || !Number.isSafeInteger(verified.expiresAt) || verified.expiresAt<=0)return null;
-    return Object.freeze({actorId:verified.publicSession.playerId,sessionId,expiresAt:verified.expiresAt});
+    // Keep partner provenance explicit; new room access must not reinterpret it as native.
+    return Object.freeze({actorId:verified.publicSession.playerId,sessionId,expiresAt:verified.expiresAt,partnerKeyId:verified.publicSession.partnerKeyId});
   }
   async function binding(req) {
     const header=req.headers.cookie;

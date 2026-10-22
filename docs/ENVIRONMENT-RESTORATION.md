@@ -57,9 +57,17 @@ lösenord eller roller. Ingen produktions-DDL, deploy, skalning eller ny Render-
 tjänst ingår. Detta är en verifieringsmiljö, inte en produktionsåterställning.
 
 Neon-API:s första skapandeförsök avvisades eftersom organisationen hanteras av
-Vercel. Efterföljande exakt namnsökning gav inget projekt. Marketplace-CLI:t
-exponerar inte PGversion, CU eller autosuspend vid skapandet; tillgänglig adminvy
-krävs för att verifiera godkända värden. Ingen resurs eller DDL har skapats.
+Vercel. Efterföljande exakt namnsökning gav inget projekt. Vercel API, CLI och
+Scoutgamings administrationsvy är nu verifierat inloggade. Skapandeformuläret
+visar Frankfurt, Auth false och Realtime false, men saknar PostgreSQLversion,
+fast CU och autosuspend. Dessa värden måste verifieras före Create; skapa inte
+det slumpade formulärnamnet som ersättning för det godkända projektet.
+Marketplace-CLI:t exponerar inte heller dessa inställningar. Ingen resurs eller
+DDL har skapats. [Neons guide](https://neon.com/docs/guides/vercel-managed-integration)
+anger att Change Configuration kan beröra alla databaser i installationen;
+kontoeffekten är inte verifierad och gemensamma produktionsinställningar får inte
+ändras för staging. Endpoint-specifik Neon-PATCH finns dokumenterad, men dess
+åtkomst i denna organisation och PG18-provisionering är fortfarande overifierade.
 Använd inte produktionsgren, arkiverad dataklon eller okända standardvärden som
 ersättning. Befintlig Vercel-projektlänk ersätter inte dessa resursinställningar.
 

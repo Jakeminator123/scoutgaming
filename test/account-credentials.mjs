@@ -314,7 +314,7 @@ test('async internal bindings share credential, BO epoch and partner validation 
     });
     const before=f.players.prepare('SELECT * FROM player_sessions ORDER BY digest').all();
     for(const s of sessions){
-      const expected={actorId:s.actorId,sessionId:s.sessionId,expiresAt};
+      const expected={actorId:s.actorId,sessionId:s.sessionId,expiresAt,partnerKeyId:s.publicSession.partnerKeyId};
       const bound=await auth.binding(s.request),byId=await auth.bindingById(s.sessionId);
       assert.deepEqual(bound,expected);assert.equal(Object.isFrozen(bound),true);
       assert.deepEqual(byId,expected);assert.equal(Object.isFrozen(byId),true);
@@ -369,7 +369,7 @@ test('async binding rejects ambiguous cookies and invalid ids, and retains expir
     assert.deepEqual(await auth.session({headers:{cookie:cookie+'; '+cookie}}),{playerId:'player-1',partnerKeyId:null},'legacy session cookie parsing is unchanged');
     reads.length=0;
     afterSessionRead=()=>f.players.prepare('UPDATE player_sessions SET expires=? WHERE digest=?').run(expiresAt+10000,digest);
-    assert.deepEqual(await auth.binding({headers:{cookie:'other=fixture; '+cookie}}),{actorId:'player-1',sessionId,expiresAt});
+    assert.deepEqual(await auth.binding({headers:{cookie:'other=fixture; '+cookie}}),{actorId:'player-1',sessionId,expiresAt,partnerKeyId:null});
     assert.equal(reads.filter(sql=>sql.includes('FROM player_sessions')).length,1,'expiry is not fetched in a second lookup');
     assert.equal((await auth.bindingById(sessionId)).expiresAt,expiresAt+10000,'a later revalidation reads the current row');
     f.players.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest);

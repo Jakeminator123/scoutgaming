@@ -7,6 +7,24 @@ Förberedelsen på `codex/shared-room-transport` utgår från J08-head
 GitGuardian119571576203 är verifierat completed/success på den basen.
 Ingen hel aktivitet färdigbockas av följande delsteg.
 
+Ny sammanhängande accessdel `shared-room-access.mjs` kopplar verklig intern
+sessionsauth till servervalt live-Blackjackrum, aktiv operatör, aktuellt paket
+och dess explicita J08-configpekare. Befintlig scoped repositorytransaktion
+återanvänds för samtliga register-/configläsningar. Configens room/operator/lane,
+presentationshash, material-ID/hash/talgodkännande och spelvärden kontrolleras;
+brandingpublicering får behålla configens ursprungliga paketrevision. Aktiva
+spelfönster läses/ändras inte. Återkallelse/utgång kontrolleras även efter SQL.
+Partner-/saknad proveniens nekas i enbart denna nya demokanal tills riktig
+key→operator/rum-grant finns; inga namn/ID används för att gissa behörighet.
+Agentens11/11 och roots fokuserade samkörning40/40,0skip överlappar; verklig
+playerAuth/Fetch Request/repository/channel.prepare körs mot SQL-minnesklient.
+kevin_plan läste hela produkt-/testdeltat, authdeltat och loggar utan blockerare.
+Granskade accessblobbar:8599392000f69e3f5eb15f37e709f95d1ce70948/
+bb57fe6a32e75549ae9cec008ea18869f1ebfbf9. Ingen ny faktisk PG-, listener-,
+klientreplay-, full Partnertransport- eller produktionsacceptans. Loggar:
+shared-room-transport/room-access.log och room-access-integrated.log.
+
+
 - `shared-room-channel.mjs` är en läsande portadapter, ännu ingen WebSocketlistener.
   Exakt browser-Origin, strikt rumsadress och serverägd session/aktör/företag/
   rum/paketrevision kontrolleras före läsning och på nytt före sändning.
@@ -52,6 +70,15 @@ med digestbundet session-ID och utgångstid från samma validerade rad. Aktiva
 spelare, credentialstämpel, BO-epoch och partneråterkallelse kontrolleras som
 förut; det publika `session()`-svaret är oförändrat. Dubbla cookies nekas i
 bindningen; inga cookies/sessioner utfärdas och inget schema ändras.
+Interna binding/bindingById bevarar nu även explicit partnerKeyId från samma
+validerade sessionsrad: null för egna local/credential/BO-sessioner och nyckel-ID
+för Partner. Publik session(), cookieutfärdande och befintliga Partner-/native-
+API:er är oförändrade. Nya demorumskanalen kräver explicit nativeproveniens;
+partnerkey får inte gissas till Studiooperator eftersom sådan relation saknas.
+Detta är en avgränsning av den nya kanalen, inte full Partnertransport.
+Före18pass/2fail,efter20/20,0skip påNode24.21/max4; kevin_plan har oberoende
+läst hela auth-/testdeltat och loggarna utan blockerare. Loggar:
+shared-room-transport/partner-binding-{before,after}.log.
 Ingen ny SQL-cancel implementeras; befintliga PG-tidsgränser kvarstår.
 j04_resume har oberoende läst authdeltat utan blockerande kodfynd; root läste
 även BIGINT-normaliseringen i gemensam PG-adapter. Sluthead/hook och oberoende
