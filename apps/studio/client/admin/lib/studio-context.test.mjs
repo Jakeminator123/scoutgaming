@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {studioContext} from './studio-context.mjs';
+import * as reactDomServer from 'react-dom/server';
 const catalog={administration:{operators:[{id:'a',status:'active',archivedAt:null},{id:'b',status:'active',archivedAt:null}],rooms:[
   {id:'bj',operatorId:'a',game:'blackjack',compositionId:'one'},
   {id:'roulette',operatorId:'a',game:'roulette',compositionId:'two'},
@@ -67,10 +68,13 @@ test('unknown explicit composition never falls back to the room template and a l
   assert.equal(roomOnly.lane.id,'one');assert.equal(roomOnly.dealer.id,'astrid');
 });
 
-async function registeredStudioHtml(path,search='',overrides={},interactive=false){
+async function registeredStudioHtml(path,search='',{fetch:customFetch,...overrides}={},interactive=false){
   let currentSearch=new URL(search||path,'https://scout.invalid'+path).search,currentHash=new URL(search||path,'https://scout.invalid'+path).hash,allowLeave=false,confirms=0,notifications=0;const listeners=new Map();
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
+  // Shared .mjs helpers resolve from the component's own location; React cards are stubbed with their props.
+  const componentRequire=createRequire(new URL('../components/studio/registered-studio.tsx',import.meta.url));
+  const stub=(tag,pick)=>props=>React.createElement('section',{[tag]:pick(props),'data-disabled':String(Boolean(props.disabled)),...('interactionDisabled' in props?{'data-interaction-disabled':String(Boolean(props.interactionDisabled))}:{})});
   const lifecycle=await import('./studio-resource-lifecycle.mjs');
   const historyModule=await import('../../../lib/studio-history.mjs');
   const routing=await import('../../runtime/admin-routing.mjs');
@@ -86,27 +90,38 @@ async function registeredStudioHtml(path,search='',overrides={},interactive=fals
   const source=readFileSync(new URL('../components/studio/registered-studio.tsx',import.meta.url),'utf8');
   const output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),module={exports:{}},slots=[],effects=[];let cursor=0;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
-    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
+    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(value){return slots[cursor++]??={current:value};},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
   runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{}},
-    fetch:async()=>Response.json(value),require:name=>name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
-      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
+    fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
+      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
+      :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
+      :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}:name.startsWith('.')?componentRequire(name):require(name)});
   const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register'})};
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
   if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get hash(){return currentHash;},get confirms(){return confirms;},get notifications(){return notifications;}};
   return renderToStaticMarkup(render());
 }
 const hrefs=html=>[...html.matchAll(/href="([^"]+)"/g)].map(match=>match[1].replaceAll('&amp;','&'));
+const compositions=[{id:'one',name:'Standard',dealerIds:['astrid'],defaultDealerId:'astrid'},{id:'two',name:'Kväll',dealerIds:['paow-v2'],defaultDealerId:'paow-v2'}];
+const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+const lifecycleSnapshot=(extra={})=>({administrationRevision:'admin-1',operators:[{id:'a',slug:'a',name:'a',status:'active',packageRevision:4,lanes:['one'],archivedAt:null,roomCount:2,archivedRoomCount:0},{id:'b',slug:'b',name:'b',status:'active',packageRevision:null,lanes:[],archivedAt:null,roomCount:1,archivedRoomCount:0}],rooms:[],...extra});
 
-test('registered room view embeds the exact scoped editor and keeps shared-template/publication context',async()=>{
-  const html=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette');
+test('registered room view embeds the exact scoped Admin editor with publication, room creation and lifecycle on the same page',async()=>{
+  const html=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette',{compositions});
   const links=hrefs(html);
-  assert.deepEqual(links.filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=a&table=roulette&composition=two&game=roulette']);
+  assert.equal(links.some(href=>href.startsWith('/admin/publication')),false,'no function lives only on the older publication page');
   const template=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.searchParams.get('panel')==='layers');
   assert.ok(template);assert.equal(template.pathname,'/admin/clips');
   assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',panel:'layers'});
-  assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);
+  assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);assert.match(html,/data-admin-choices="true"/);
+  assert.doesNotMatch(html,/data-game-config=/,'roulette rooms have no blackjack game settings');
+  assert.match(html,/aria-label="Publicering"/);assert.match(html,/Sammansättningar som bolaget får använda/);
+  assert.match(html,/data-room-create="two"/,'a new room defaults to the selected room\'s composition');
+  assert.match(html,/data-lifecycle="rooms"/);assert.doesNotMatch(html,/data-lifecycle="operator"/);
   assert.doesNotMatch(html,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"/);
   assert.match(html,/Papperskorg och återställning/);assert.match(html,/Gemensam mall och tillåtna alternativ/);
+  const blackjack=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions});
+  assert.match(blackjack,/data-game-config="bj"/);assert.match(blackjack,/data-room-create="one"/);
 });
 
 test('invalid explicit owner or cross-owner room never mounts another room editor',async()=>{
@@ -124,9 +139,10 @@ test('unpublished rooms lead to the existing template and publication without a 
 });
 
 test('an active company without registered rooms can still create its first room in Admin',async()=>{
-  const html=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[]});
-  assert.deepEqual(hrefs(html).filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=b']);
-  assert.match(html,/Skapa rum/);assert.doesNotMatch(html,/data-room-editor=/);
+  const html=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[],compositions});
+  assert.equal(hrefs(html).some(href=>href.startsWith('/admin/publication')),false);
+  assert.match(html,/Skapa rum/);assert.match(html,/data-room-create="one"/);assert.match(html,/aria-label="Publicering"/);
+  assert.doesNotMatch(html,/data-room-editor=|data-game-config=/);
 });
 test('company team editor links to the supported Admin workspace',async()=>{
   const html=await registeredStudioHtml('/admin/admin/operators','?operator=b');
@@ -243,3 +259,83 @@ test('selecting the active room is inert and preserves dirty guards even without
     assert.equal(editor().props.roomId,activeRoom);
   }
 });
+
+
+test('the publication card publishes the acknowledged company package with the lifecycle revision and reloads the room editors',async()=>{
+  const requests=[];let reply;
+  const fetcher=async(url,options={})=>{if(options.method==='POST'){requests.push({url,body:JSON.parse(options.body)});return new Promise(resolve=>{reply=resolve;});}return Response.json(await catalogResponse());};
+  const catalogResponse=async()=>({schemaVersion:1,source:'registered',readAt:'2026-10-13T00:00:00Z',administration:{...catalog.administration,
+    operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:4})),dealers:catalog.administration.dealers.map(row=>({...row,name:row.id})),
+    rooms:catalog.administration.rooms.map(row=>({...row,name:row.id,state:row.state??'live',published:true,playable:true,dealerIds:['astrid'],dealers:[],dealerSource:'published'})),compositions,revisions:{project:'p1',administration:'a1'}}});
+  const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{fetch:fetcher},true);
+  const lifecycle=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
+  const submit=()=>walk(h.render(),node=>node.type==='button'&&node.props.type==='submit')[0];
+  const checkbox=id=>walk(h.render(),node=>node.type==='input'&&node.props.value===id)[0];
+  const known=/^(Läs in aktuell publicering|Redo att publicera|Urvalet är inte publicerat|Spara rummets ändringar först|Publicerat · version \d+|Publicerar…|Spara det pågående Studio-arbetet först)$/;
+  const status=()=>walk(h.render(),node=>node.type==='p'&&node.props.role==='status'&&typeof node.props.children==='string'&&known.test(node.props.children))[0]?.props.children;
+  assert.equal(submit().props.disabled,true,'no package baseline before the lifecycle readback');assert.equal(status(),'Läs in aktuell publicering');
+  lifecycle().props.onChanged(lifecycleSnapshot());
+  assert.equal(checkbox('one').props.checked,true);assert.equal(checkbox('two').props.checked,false);assert.equal(status(),'Redo att publicera');
+  checkbox('two').props.onChange({target:{checked:true}});assert.equal(status(),'Urvalet är inte publicerat');
+  const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+  const gameConfig=()=>walk(h.render(),node=>node.props?.roomName!==undefined)[0];
+  editor().props.onDirtyChange(true);h.render();
+  assert.equal(submit().props.disabled,true);assert.equal(status(),'Spara rummets ändringar först');
+  assert.equal(gameConfig().props.disabled,true,'one room draft at a time');assert.equal(lifecycle().props.disabled,true);
+  assert.equal(walk(h.render(),node=>node.props?.onCreated)[0].props.interactionDisabled,true,'creating a room republishes the package');
+  editor().props.onDirtyChange(false);h.render();
+  gameConfig().props.onDirtyChange(true);h.render();assert.equal(editor().props.disabled,true,'a game settings draft locks the layer editor');
+  gameConfig().props.onDirtyChange(false);h.render();assert.equal(editor().props.disabled,false);
+  const form=walk(h.render(),node=>node.type==='form')[0];
+  const refreshBefore=lifecycle().props.refreshKey;
+  form.props.onSubmit({preventDefault(){}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(requests.map(row=>row.body),[{operatorId:'a',lanes:['one','two'],expectedPackageRevision:4}]);
+  assert.match(requests[0].url,/\/api\/admin\/operator-package$/);
+  assert.equal(submit().props.disabled,true,'the write locks the form');
+  reply(Response.json({ok:true,operatorId:'a',packageRevision:5,package_revision:5,lanes:['one','two']}));
+  await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(status(),'Publicerat · version 5');assert.equal(lifecycle().props.refreshKey,refreshBefore+1,'the lifecycle re-reads the new package');
+  const editorKey=editor().key;
+  lifecycle().props.onChanged(lifecycleSnapshot({operators:lifecycleSnapshot().operators.map(row=>row.id==='a'?{...row,packageRevision:5,lanes:['one','two']}:row)}));
+  assert.notEqual(editor().key,editorKey,'both room editors reload on the new package revision');
+  assert.equal(checkbox('two').props.checked,true);
+});
+
+test('a room draft, a busy editor and an unconfirmed publish receipt all keep the company package unpublished',async()=>{
+  const requests=[];
+  const fetcher=async(url,options={})=>{if(options.method==='POST'){requests.push(JSON.parse(options.body));return Response.json({ok:true,operatorId:'b',packageRevision:5,lanes:['one']});}
+    return Response.json({schemaVersion:1,source:'registered',readAt:'2026-10-13T00:00:00Z',administration:{...catalog.administration,
+      operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:4})),dealers:catalog.administration.dealers.map(row=>({...row,name:row.id})),
+      rooms:catalog.administration.rooms.map(row=>({...row,name:row.id,state:row.state??'live',published:true,playable:true,dealerIds:['astrid'],dealers:[],dealerSource:'published'})),compositions,revisions:{project:'p1',administration:'a1'}}});};
+  const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{fetch:fetcher},true);
+  const lifecycle=()=>walk(h.render(),node=>node.props?.kind==='rooms')[0];
+  lifecycle().props.onChanged(lifecycleSnapshot());
+  const form=()=>walk(h.render(),node=>node.type==='form')[0],checkbox=id=>walk(h.render(),node=>node.type==='input'&&node.props.value===id)[0];
+  walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0].props.onBusyChange(true);h.render();
+  form().props.onSubmit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,0,'a busy room editor blocks the package publication');
+  walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0].props.onBusyChange(false);h.render();
+  checkbox('two').props.onChange({target:{checked:true}});
+  form().props.onSubmit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,1);
+  const html=renderToStaticMarkupOf(h);
+  assert.match(html,/Publiceringskvittot stämmer inte/,'a foreign receipt never confirms this company');
+  assert.equal(checkbox('two').props.checked,true,'the draft selection is preserved');
+  assert.match(html,/Läs in aktuell publicering/);
+  form().props.onSubmit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,1,'an unconfirmed package requires readback before the next write');
+});
+
+test('the room header shows the published version, the saved draft and what the player meets now',async()=>{
+  const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions},true);
+  const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+  editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:true,live:{background:null,dealer:'astrid',table:'table-1'},labels:{background:'Standard',dealer:'Astrid',table:'Grön filt'}});
+  let html=renderToStaticMarkupOf(h);
+  assert.match(html,/Publicerad version<\/dt><dd[^>]*>7/);assert.match(html,/Sparat utkast<\/dt><dd[^>]*>2/);
+  assert.match(html,/Spelaren möter nu<\/dt><dd[^>]*>– · Astrid · Grön filt/);
+  editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:false,live:{background:'bg',dealer:'astrid',table:'table-1'},labels:{background:'Salong',dealer:'Astrid',table:'Grön filt'}});
+  html=renderToStaticMarkupOf(h);assert.match(html,/Sparat utkast<\/dt><dd[^>]*>Inget/);assert.match(html,/Salong · Astrid · Grön filt/);
+  editor().props.onStatus(null);assert.doesNotMatch(renderToStaticMarkupOf(h),/Spelaren möter nu/);
+});
+function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;return renderToStaticMarkup(h.render());}

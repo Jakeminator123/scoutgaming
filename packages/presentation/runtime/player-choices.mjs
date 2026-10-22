@@ -4,6 +4,7 @@
 // control stays disabled. Table colour paints DOM and SVG only: the felt mark,
 // the wallet edge and the chip row. It does not change the dealer film.
 import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
+import { selectableLayerBases } from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei', paow: 'Paow', dragge: 'Dragge', nora: 'Nora' });
@@ -42,6 +43,9 @@ export function writeChoices(storage, operator, nextStored, previewSessionId = n
   } catch { /* A private-mode store keeps this visit in memory only. */ }
 }
 
+// Table clips named by the composition's tablePlayback rules are not tables.
+const selectableTables=composition=>selectableLayerBases(composition?.table?.allowed,composition?.tablePlayback,composition?.table?.default??null);
+
 export function lobbyChoiceText(stored) {
   if (!stored || typeof stored !== 'object') return '';
   const parts = [];
@@ -69,7 +73,8 @@ export function resolvePlayerSelection({ choices, search = '', stored = {}, bran
   const urlColor = colors.includes(one(params, 'table')) ? one(params, 'table') : '';
   const storedDealer = dealers.includes(stored?.dealer) ? stored.dealer : '';
   const storedColor = colors.includes(stored?.tableColor) ? stored.tableColor : '';
-  const tableAssets=composition?.table?.allowed??[];
+  // A stored choice or room override naming a table clip falls back to the default table.
+  const tableAssets=selectableTables(composition);
   const tableValue=tableAssets.includes(stored?.tableAsset)?stored.tableAsset:tableAssets.includes(branding?.table)?branding.table:composition?.table?.default??null;
   const companyBackground=allowedBackground.includes(branding?.background)?branding.background:background.default??null;
   const storedBackground = !baked && allowedBackground.includes(stored?.background) ? stored.background : '';
@@ -186,7 +191,7 @@ export function mountPlayerChoices(document, {
   if(composition) {
     const row=document.createElement('div');row.className='choice-row';
     const label=document.createElement('span');label.textContent='Bord';row.append(label);
-    for(const id of composition.table.allowed) {
+    for(const id of selectableTables(composition)) {
       const button=choiceButton(document,composition.assets.find(asset=>asset.id===id)?.label??id,id===tableValue);
       button.dataset.tableAsset=id;button.onclick=()=>{if(isBusy()){status.textContent='Avsluta rundan innan du byter bord.';return;}for(const other of row.querySelectorAll('button'))other.setAttribute('aria-pressed',String(other===button));onTable?.(id);};row.append(button);
     }

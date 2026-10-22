@@ -16,7 +16,7 @@ const aliases = Object.freeze({ overview: 'ops', presentation: 'theme', integrat
 const legacyControl = Object.freeze({
   studio: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
   admin: Object.freeze({ studioPath: '/studio/administration', legacyPath: '/control/administration' }),
-  ops: Object.freeze({ studioPath: '/studio/admin/ai/models', legacyPath: '/admin/ai/models' }),
+  ops: Object.freeze({ studioPath: '/studio/admin/openclaw', legacyPath: '/admin/openclaw' }),
   lab: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
 });
 const staffTools = new Set(['companies', 'rooms', 'compositions', 'rehearsal', 'library', 'replies', 'clips', 'dealer-forge', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);

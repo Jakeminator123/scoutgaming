@@ -57,6 +57,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
     <p><strong>Rum som använder mallen:</strong></p>
     <ul>{uses.length?uses.map(use=><li key={use.roomId}>{use.operatorName} · {use.roomName}</li>):<li>Inga registrerade rum.</li>}</ul>
     {roomChoicesPath?<a className="studio-button" href={roomChoicesPath}>Ändra bara {room?.name}</a>:<p>Välj ett aktivt rum för att öppna dess egna val.</p>}
+    <a className="studio-button" href={'/admin/compositions?composition='+encodeURIComponent(lane.id)+(room?'&operator='+encodeURIComponent(room.operatorId)+'&table='+encodeURIComponent(room.id):'')+'&game='+game}>Avancerad sammansättning</a>
     <button className="studio-button" disabled={blocked||uploadBusy} aria-pressed={editing} onClick={()=>setEditingCompositionId(editing?'':lane.id)}>{editing?'Avsluta mallredigering':'Redigera gemensam mall'}</button>
     <fieldset disabled={locked} className="space-y-2"><legend>Dealers i den gemensamma mallen</legend>
       {project.dealers.map(dealer=><label key={dealer.id} className="flex items-center gap-2"><input type="checkbox" checked={lane.layers.dealer.allowed.includes(dealer.id)} onChange={event=>{

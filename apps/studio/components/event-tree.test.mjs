@@ -106,9 +106,10 @@ test('history route mapping includes tree without matching unrelated prefixes', 
   assert.equal(studioViewForPath('/tree/'), 'tree');
   assert.equal(studioViewForPath('/control/videos'), 'videos');
   assert.equal(studioViewForPath('/videos'), 'videos');
-  assert.equal(viewPaths.openclaw, '/admin/dealer-agent');
+  assert.equal(viewPaths.openclaw, '/admin/openclaw?tab=agent');
   assert.equal(studioViewForPath(viewPaths.openclaw), 'openclaw');
-  assert.equal(studioViewForPath('/admin/ai/models?dealer=saga'), 'lab', 'global model settings are not a dealer chat view');
+  assert.equal(studioViewForPath('/admin/openclaw?tab=models&dealer=saga'), 'lab', 'global model settings are not a dealer chat view');
+  assert.equal(studioViewForPath('/admin/openclaw?tab=probe&dealer=saga'), 'probe');
   assert.equal(studioViewForPath('/control/operator-chat'), 'openclaw');
   assert.equal(studioViewForPath('/operator-chat'), 'openclaw');
   assert.equal(studioViewForPath('/control/openclaw'), 'lab', 'model settings are a separate document page');

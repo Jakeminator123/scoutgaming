@@ -94,8 +94,20 @@ test('non-record history.state keeps its original type and value through context
   }
 });
 
+test('retired dependency bookmarks replace themselves with the merged page and keep their selection',()=>{
+  const h=harness('/admin/deletion?operator=north&table=room-1#resource-room-726f6f6d2d31');
+  assert.equal(h.api.navigate('/admin/structure?operator=north&table=room-1#resource-room-726f6f6d2d31',true),true);
+  assert.equal(h.history.length,1);assert.equal(h.location.pathname,'/admin/structure');
+  assert.equal(h.location.search,'?operator=north&table=room-1');assert.equal(h.location.hash,'#resource-room-726f6f6d2d31');
+  const link=harness('/admin/clips?dealer=saga');
+  assert.equal(link.api.previewHref('/admin/deletion?operator=north'),'/admin/structure?operator=north','links to the retired page resolve to the merged page');
+  assert.equal(link.api.navigate('/admin/deletion?operator=north'),true);
+  assert.equal(link.location.pathname,'/admin/structure');assert.equal(link.location.search,'?operator=north&dealer=saga');
+  assert.deepEqual(link.native,[]);
+});
+
 test('native Admin tools still use document navigation and their beforeunload guard',()=>{
-  for(const [source,target] of [['/admin','/admin/publication'],['/admin/publication','/admin']]){
+  for(const [source,target] of [['/admin','/admin/companies'],['/admin/companies','/admin']]){
     const h=harness(source);h.window.addEventListener('beforeunload',event=>event.preventDefault());const before=h.snapshot();
     assert.equal(h.api.navigate(target),true);assert.equal(h.api.navigate(target,true),true);
     assert.deepEqual(h.native,[{method:'assign',href:target,allowed:false},{method:'replace',href:target,allowed:false}]);assert.deepEqual(h.snapshot(),before);
@@ -103,7 +115,7 @@ test('native Admin tools still use document navigation and their beforeunload gu
   for(const href of ['/control/login?returnTo=%2Fadmin','/control/set-password?token=fixture'])assert.equal(harness().api.previewHref(href),href);
 });
 
-for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/ai/models']){
+for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/players']){
   test(`native service ${route} uses document entries in both directions, including replacement`,()=>{
     for(const [source,target] of [['/admin/assets',route],[route,'/admin/assets']]){
       const h=harness(source);h.window.addEventListener('beforeunload',event=>event.preventDefault());const before=h.snapshot();
@@ -118,15 +130,15 @@ for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/ai/models
 test('native service navigation canonicalizes account bookmarks and preserves context and destination fragments',()=>{
   const h=harness('/admin/assets?operator=company&table=room&dealer=astrid&composition=scene&game=blackjack');
   h.api.navigate('/admin/admin/players?tab=users#invite',true);
-  assert.deepEqual(h.native,[{method:'replace',href:'/admin/admin/accounts?tab=users&operator=company&table=room&dealer=astrid&composition=scene&game=blackjack#invite',allowed:true}]);
-  for(const source of ['/admin/admin/players','/studio/admin/admin/players','/studio/admin/admin/accounts','/studio/admin/admin/api','/studio/admin/ai/models']){
+  assert.deepEqual(h.native,[{method:'replace',href:'/admin/players?tab=users&operator=company&table=room&dealer=astrid&composition=scene&game=blackjack#invite',allowed:true}]);
+  for(const source of ['/admin/admin/players','/studio/admin/admin/players','/studio/admin/admin/accounts','/studio/admin/admin/api','/studio/admin/players']){
     const h=harness(source+'?dealer=astrid');h.api.navigate('/admin/assets?game=roulette#library');
     assert.deepEqual(h.native,[{method:'assign',href:'/admin/assets?game=roulette&dealer=astrid#library',allowed:true}]);
   }
 });
 
 test('existing navigation vetoes cancel native service pushes and replacements before beforeunload',()=>{
-  for(const guard of ['studio:before-navigate','scout:navigate'])for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/ai/models']){
+  for(const guard of ['studio:before-navigate','scout:navigate'])for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/players']){
     for(const [source,target] of [['/admin/assets',route],[route,'/admin/assets']]){
       const h=harness(source),before=h.snapshot();let prompts=0,unloads=0;
       h.window.addEventListener(guard,event=>{prompts++;event.preventDefault();});

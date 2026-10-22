@@ -622,3 +622,15 @@
 .studio-canvas-drop{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;gap:10px;background:#101113c0;color:#d6ff3a;font-size:16px;font-weight:600;pointer-events:none}
 @media(max-width:1000px){.studio-map-stage>.studio-drawer.is-intake{flex-basis:auto;width:100%;max-width:none}}
 @media(max-width:600px){.studio-intake-fields{grid-template-columns:1fr}.studio-intake-row{flex-direction:column}.studio-intake-thumb{width:100%;height:120px}}
+/* OpenClaw: one tabbed page. Reused panels keep their own headers; nested page paddings collapse. */
+.preview-admin .admin-openclaw-page>.sg-tabs{margin-top:0}
+.preview-admin .admin-openclaw-page .admin-system-page{padding:0}
+.preview-admin .admin-openclaw-page .admin-workspace-tool .sg-page{padding:24px 0}
+.preview-admin .admin-openclaw-page .admin-workspace-tool>nav{padding-left:0;padding-right:0}
+.preview-admin .admin-openclaw-panel{min-width:0}
+.preview-admin .admin-openclaw-panel .admin-system-header{margin-bottom:16px}
+.preview-admin .admin-openclaw-lead{max-width:76ch;margin:0 0 18px;color:var(--sg-muted);font-size:14px;line-height:1.6}
+/* Split account pages: own header above the shared native reader, which shows one section. */
+.preview-admin .admin-accounts-page .admin-system-page{padding:0}
+.preview-admin [data-admin-view] .sg-page-copy>:is(.sg-eyebrow,h1){display:none}
+.preview-admin [data-admin-view=players] [data-admin-section=users],.preview-admin [data-admin-view=users] [data-admin-section=players]{display:none}

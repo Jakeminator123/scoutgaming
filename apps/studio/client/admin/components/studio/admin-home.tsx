@@ -1,7 +1,9 @@
 import {ArrowRight,Building2,Clapperboard} from 'lucide-react';
 import Link from '../../../runtime/navigation';
-import {adminNavigationGroups} from '../../lib/admin-navigation';
+import {adminNavigationGroups,adminSystemGroups} from '../../lib/admin-navigation';
 
+// The footer repeats no Skapande/Verksamhet page: only System's work tools and access.
+const systemLinks=[...adminSystemGroups[0].links,...adminSystemGroups.flatMap(group=>group.links).filter(link=>link.href==='/admin/admin/accounts')];
 export function AdminHome() {
   return <section className="admin-home" aria-labelledby="admin-home-title">
     <header className="admin-home-heading">
@@ -15,6 +17,6 @@ export function AdminHome() {
         <div className="admin-home-links">{group.links.map(({label,href,description})=><Link href={href} key={href} className="admin-home-link"><div><h3>{label}</h3><p>{description}</p></div><ArrowRight size={18} aria-hidden="true"/></Link>)}</div>
       </section>;})}
     </div>
-    <footer className="admin-home-footer"><p>Fler verktyg</p><nav aria-label="Fler Admin-verktyg"><Link href="/admin/tools">Alla verktyg <ArrowRight size={14} aria-hidden="true"/></Link><Link href="/admin/publication">Rum & publicering</Link><Link href="/admin/admin/accounts">Konton & åtkomst</Link></nav></footer>
+    <footer className="admin-home-footer"><p>System</p><nav aria-label="System">{systemLinks.map(({label,href})=><Link key={href} href={href}>{label} <ArrowRight size={14} aria-hidden="true"/></Link>)}</nav></footer>
   </section>;
 }

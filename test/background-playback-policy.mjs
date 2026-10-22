@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BACKGROUND_EVENT_IDS, validateBackgroundPlayback, backgroundRuleAssetIds, defaultBackgroundRule} from '../packages/presentation/contracts/background-playback-policy.mjs';
+import {BACKGROUND_EVENT_IDS, validateBackgroundPlayback, backgroundRuleAssetIds, defaultBackgroundRule, selectableLayerBases} from '../packages/presentation/contracts/background-playback-policy.mjs';
 import {createSeedProject, defaultPresentationLane, validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath, validatePresentationPackage} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
@@ -136,4 +136,12 @@ test('v24 timer jitter and table playback: bounded jitter, table role assets, ol
   timer.advance(195000-74000);assert.deepEqual(starts,[269000,269000+121000]);
   timer.advance(195000);assert.equal(starts.length,3);assert.equal(starts[2]-starts[1],195000);
   player.close();
+});
+
+test('clip media referenced by layer rules are never offered as a selectable base; the default stays',()=>{
+  const policy={schemaVersion:1,rules:[{id:'living',assetId:id(3),trigger:{everyMs:25000}}]};
+  assert.deepEqual(selectableLayerBases([id(1),id(2),id(3)],policy,id(1)),[id(1),id(2)]);
+  assert.deepEqual(selectableLayerBases([id(1),id(3)],policy,id(3)),[id(1),id(3)],'a default that is also a rule clip remains the base');
+  for(const none of [undefined,null,{schemaVersion:1,rules:[]}])assert.deepEqual(selectableLayerBases([id(1),id(3)],none,id(1)),[id(1),id(3)],'no rules: unchanged');
+  assert.deepEqual(selectableLayerBases(undefined,policy,id(1)),[]);
 });

@@ -83,7 +83,7 @@ från fri chatt; ett filnamn eller röstval godkänner inte deras synk.
 **Redigera gemensam mall**. **Zooma in scenen** och
 **Zooma ut scenen** skalar bakgrund, dealer och bord tillsammans runt bildens
 mitt. Finjustera ett lager under **Storlek och placering**. Samma scenzoom finns
-i **Verktyg → Sammansättningar**, där du också kan skapa en ny sammansättning.
+under **Avancerad sammansättning** i Scen & lager, där du också kan skapa en ny sammansättning.
 Roulette använder Desktop 16:9 även på mobil; dessa editorer visar därför det
 format som roulette använder. Detta ändrar sparad geometri i den gemensamma
 mallens utkast, inte tillfällig visningszoom eller rummets `roomOverrides`.
@@ -91,11 +91,12 @@ Granska vilka rum som delar mallen, spara utkastet och publicera via det
 befintliga rumsflödet för att ändringen ska nå spelaren. Ett zoomsteg stoppas
 helt om ett lager når sin placeringsgräns.
 
-**Admin är den samlade interna arbetsytan på huvuddomänen.** **System → Verktyg**
-samlar Bolag & team, Rum & publicering, Sammansättningar, Dealerinställningar,
-Klippbibliotek, Svarsbibliotek, Provspelning, regler,
-dealerns agent och Guide. Gamla `/control`-länkar leder till motsvarande Admin-vy
-med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
+**Admin är den samlade interna arbetsytan på huvuddomänen.** Ingen funktion finns
+på två ställen: huvudmenyn har Skapande och Verksamhet, och **System** har
+**Fördjupning** (Talgranskning, Svarsbibliotek, Spelhändelser & regler, Guide),
+**Kopplingar & användning**, **OpenClaw** och åtkomst/historik. Gamla `/control`-
+länkar och gamla Admin-adresser leder till motsvarande sida med dealer och rum
+kvar. Sparade uppgifter och behörigheter är desamma.
 `apps/studio/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
 är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
 
@@ -120,11 +121,23 @@ postens valuta och tid i UTC. **Visa detaljer** visar fullständigt spelar-ID,
 serverns händelsetyp och tidsstämpel. Detta är ett begränsat journalurval,
 inte en fullständig ekonomisk periodrapport.
 
+**OpenClaw** (`/admin/openclaw`) samlar allt som rör automatiken på en sida med
+flikarna Driftläge (taldrift Av/Sparläge/Varm), Agentmodeller, Dealerns agent,
+Tal vid inaktivitet och Adminroboten. Valen per klipp och per fas ligger kvar
+hos innehållet i klippkartans Körregel och i Scen & lager.
 **Agentmodeller** sparar ett modellval på respektive agents rad. **Ångra alla**
 återställer osparade val. Byte från konton, integrationer eller modellval går
 via sidnavigering, så befintliga varningar för osparade formulär används.
 Engångsresultat för integrationer döljs när sidan lämnas.
-**Spelbolag & rum** (`/admin/rooms`) öppnar rummets egna val. Välj bolag
+**Spelbolag & rum** (`/admin/rooms`) är det enda rumsflödet. Överst syns rummets
+förhandsvisning i full bredd med Desktop/Mobil; bredvid ligger **Rummets val**
+(bakgrund, dealer och bord bland det sammansättningen tillåter, bordsfärg nedtonad
+under) och **Spelinställningar** (bordsspråk och insatsprofil). Rubriken visar
+publicerad version, sparat utkast och vad spelaren möter nu. Under rummet finns
+bolagets **Publicering** (vilka sammansättningar paketet tillåter), **Skapa rum**
+och **Spelrum** (pausa, öppna, arkivera). Ett rumsutkast åt gången låser de andra
+korten. Som Admin väljer du fritt bland mallens tillåtna lager; bolagets egna
+behörigheter gäller bara i partnerportalen. Välj bolag
 och rum. När bolaget har flera rum visas kort med spel och faktisk rums-/
 publiceringsstatus på större skärmar; mobilens rumsväljare har samma val och
 bytesregler. Ett enda rum behöver inget extra rumskort. Osparade ändringar
@@ -154,8 +167,9 @@ och åtkomst. Samma grupper och namn finns i mobilens sidväljare.
 **Klippkarta** samlar situationer och klipp. Flikarna
 **Klippkarta**, **Dealerregister** och **Lägg till dealer eller filmer** håller
 relaterat arbete tillsammans. **Bord & bakgrunder** har ett gemensamt bibliotek;
-bord filtreras efter spel och bakgrunder kan återanvändas. **System** samlar
-Verktyg, Kopplingar, Användning & beroenden, Konton & åtkomst och Integrationer.
+bord filtreras efter spel och bakgrunder kan återanvändas. **Spelarkonton** under
+Verksamhet visar spelarnas konton, saldon och status; **System** samlar Fördjupning,
+Kopplingar & användning, OpenClaw, Konton & åtkomst (adminpersonal) och Integrationer.
 Portalraden går till Admin (`/admin`), Spelbolag (`/partner`) och Spelarlobby
 (`/lobby`). Spelstarten `/play/{game}` behåller sitt kontrakt.
 
@@ -259,13 +273,14 @@ papperskorgen och återställs med dealern. Källfiler och publiceringshistorik
 bevaras. Användning av samma media hos en annan dealer visas som ett hinder som
 behöver lösas först.
 
-**System → Användning & beroenden** öppnar ett beroendeträd. Där syns bolag → spel
+**System → Kopplingar & användning** är en sida med flikarna Spelbolag, Dealers,
+Bord & bakgrunder och Sammansättningar. Där syns bolag → spel
 → rum samt dealers och deras registrerade filer och materialets användningar.
 Delade objekt visas en gång med länkar från de platser där de används.
 Vyn redovisar vilka register och historiska kopplingar som har kunnat läsas;
 frånvaro av en synlig koppling är inte ett besked att en fil är oanvänd.
 
-**Kopplingar** visar bolag → spel → rum med dealers, bakgrunder och bord.
+Fliken Spelbolag visar bolag → spel → rum med dealers, bakgrunder och bord.
 **Ändra mallens kopplingar** öppnar den gemensamma mallen och visar vilka rum
 som delar den. Välj **Redigera gemensam mall** för att ändra tillåtna dealers,
 förvald dealer, bord och bakgrunder, och granska **Spara utkast**. Publicering
@@ -304,9 +319,9 @@ interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
 | `/control` | `/admin` |
 | `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås direkt på `/admin/videos`; äldre `/control/videos` omdirigeras |
 | `/control/companies` | `/admin/companies` |
-| `/control/rooms`, `/control/lanes` | `/admin/publication`; `lanes?tab=companies` leder till `/admin/companies` |
+| `/control/rooms`, `/control/lanes`, `/admin/publication` | `/admin/rooms`; `lanes?tab=companies` leder till `/admin/companies` |
 | `/control/library`, `/control/compositions` | `/admin/material-library` respektive `/admin/compositions` |
-| `/control/openclaw` | `/admin/ai/models`; med `?tab=chat` går länken till `/admin/dealer-agent?tab=chat` |
+| `/control/openclaw`, `/admin/ai/models`, `/admin/ai/chat`, `/admin/dealer-agent`, `/admin/probe` | `/admin/openclaw` med rätt flik; `?tab=chat` går till fliken Dealerns agent |
 | `/control/guide` | `/admin/guide` |
 | `/control/administration` | `/admin/drift`; `?tab=accounts` leder till `/admin/admin/accounts` |
 | `/studio` | 308 till `/admin` utan query; äldre bokmärken med query går direkt till `/admin/dealer-studio`. `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
@@ -339,7 +354,7 @@ Dealers & klipp: välj dealer → Grundloop / Klipp / Sammansättning / Tal & au
 Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
-Spelrum & publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
+Spelbolag & rum: välj bolag → rum, eller skapa rum och publicera på samma sida
 /lobby: välj bolag → spel → rum → tillåten bakgrund, dealer och bord → spela
 ```
 
@@ -399,11 +414,11 @@ Sammansättning är den enda editorn för presentationen. **Ny sammansättning**
 
 **Levande lager: bakgrund och bord.** Både **Bakgrund** och **Bord** kan ha en stillbild eller en ljudlös MP4/WebM-loop som grund, och ovanpå den korta klipp som spelas med jämna mellanrum och sedan återgår till grunden.
 1. Välj standardbild eller videoloop för lagret och se till att lagret är aktivt.
-2. Ladda upp det korta klippet (t.ex. en blomma eller en skugga som passerar) och markera det som tillåtet för samma lager.
+2. Ladda upp det korta klippet (t.ex. en blomma eller en skugga som passerar) och markera det som tillåtet för samma lager. Ett bordsklipp bör ha samma pixelmått som bordets basbild; annars hamnar klippet förskjutet mot korten och insatserna, som alltid följer basbordet. Ett bordsklipp blir inte ett bordsval för spelare eller rum.
 3. Välj **Lägg till bakgrundsklipp** respektive **Lägg till bordsklipp**. Standard är **Automatiskt · tidsintervall**: ungefär var 195:e sekund med **Variation ± 74 sekunder**, högst 10 sekunder per klipp, minst 60 sekunder mellan starter och högst en start per minut. Raden under fälten sammanfattar regeln i klartext.
 4. Ändra **Spela var (sekunder)** och **Variation ± (sekunder)** vid behov. Variationen är 0–120 sekunder och alltid mindre än intervallet; sätt 0 för exakt takt. Alternativet **Spelhändelse** startar klippet vid t.ex. blackjack eller vinst i stället för på tid.
 5. **Prova klipp** spelar klippet i förhandsvisningen utan att spara och utan att starta dealerns tal. Spara sammansättningen och publicera separat när scenen är klar.
-Gränserna gäller per regel; ett upptaget tillfälle köas inte. Spelhändelser kan avbryta automatiken. Ett lager med klippregler kan inte döljas förrän reglerna tas bort. Dealerns motsvarande beteendeklipp ställs inte in här utan i klippkartans **Körregel** under Vila (se ovan).
+Gränserna gäller per regel; ett upptaget tillfälle köas inte. Spelhändelser kan avbryta automatiken. Bordsklipp spelas bara över standardbordet; väljer spelaren ett annat bord visas inga bordsklipp, och kort- och insatsplatser följer alltid basbordet. Ett lager med klippregler kan inte döljas förrän reglerna tas bort. Dealerns motsvarande beteendeklipp ställs inte in här utan i klippkartans **Körregel** under Vila (se ovan).
 
 I **Bord → Storlek och placering** finns **Förminska**, **Förstora**, procentfält och reglage. Storleken behåller bordets proportioner och sparas separat för Mobil och Desktop. Knapparna ändrar med tio procentenheter; intervallet är 10–400 procent av scenbredden.
 **Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Dealerklipp friläggs alltid från grön bakgrund. **Till Sammansättning** återgår till presentationen som startade provet.
@@ -447,7 +462,7 @@ visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
 Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
-I **Spelrum & publicering** på `/admin/publication` väljer du bolag och **Sammansättning**. **Bolag & team** på `/admin/companies` behåller samma bolagsval. De äldre `/control/rooms`- och `/control/companies`-adresserna omdirigerar till respektive Admin-sida; de har ingen egen editor. Detta gäller även utan native-routingsflaggan. Bolag, sammansättning (`lane` blir `composition`), dealer, rum, spel och fragment följer bokmärket. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
+I **Spelbolag & rum** på `/admin/rooms` väljer du bolag och rum; gamla `/admin/publication` leder dit. **Bolag & team** på `/admin/companies` behåller samma bolagsval. De äldre `/control/rooms`- och `/control/companies`-adresserna omdirigerar till respektive Admin-sida; de har ingen egen editor. Detta gäller även utan native-routingsflaggan. Bolag, sammansättning (`lane` blir `composition`), dealer, rum, spel och fragment följer bokmärket. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
 **Uppdatera publicerade sammansättningar** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
 **Öppna bolagets spellobby** leder till `/play?operator=<bolag>`. **Visa alla bolag** återgår till bolagsvalet. Administratörens inloggningsuppgifter fungerar även i den gemensamma spelarinloggningen, som skapar en separat spelarsession. För ett isolerat test med testsaldo används **Provspela** i Sammansättning. Lobbyn visar endast befintliga öppna rum i bolagets publicerade paket. Spelaren väljer rum, dealer och tillåtna bord- och bakgrundsalternativ innan **Spela med …**. Namnen kommer från det publicerade registret. Fullbildsdealers visar att bord och bakgrund ingår i dealerfilmen; de får inga separata lagerval. Ett tomt paket visar inga öppna rum. Ett läsfel visar ett felmeddelande, inga reservdealers.
 Rummets identitet och vald dealer följer med genom spelarinloggningen. Val av bordets utseende och bakgrund sparas i den här webbläsaren per bolag och kontrolleras på nytt av spelet. Spelrum är ingången till paketet; **Bord** är bildlagret i scenen, inget separat spelrum eller extra innehållslager.
@@ -730,6 +745,8 @@ befintliga kontroller och provgränser för sådana produktprov.
 ## Arkivera, återställa och provspela
 
 Alla borttagningar följer samma mönster: ett klick på knappen öppnar en bekräftelseruta som visar konsekvenserna, kör serverns kontroll medan rutan är öppen och har en tydlig knapp för åtgärden. Du behöver aldrig skriva in något id. Esc eller **Avbryt** stänger rutan utan att något ändras. Nekar servern visas orsaken i rutan och materialet blir kvar där det är.
+
+På **Spelbolag & rum** kan du pausa/öppna rum samt arkivera dem. Växla till arkivet för återställning; ett återställt rum är väntande tills du öppnar det. Saknade eller ändrade publiceringsberoenden visas före återställning. Åtgärderna läser tillbaka serverns aktuella version och kräver en kompatibel spelmotor.
 
 **Klipp** (klippkartans panel **Dealer → Klipp & dealerarkiv**): **Radera** på ett klipp visar var klippet används och flyttar det sedan till **Arkiv**; filen bevaras och kan återställas. Markera flera klipp och välj **Radera valda** eller **Radera alla** för samma ruta i grupp; servern stoppar gruppen vid första hindret och redan ändrade klipp redovisas. I vyn **Arkiv** finns **Återställ** och **Radera permanent** per klipp. Permanent radering kontrollerar i rutan att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter) har löpt ut, att inga kopplingar eller publiceringar finns och att lagringen kan verifieras; annars visas orsaken och **Behåll i arkivet**. Ett klipp som används någonstans visar användningen och kan inte raderas förrän det kopplats loss och utkastet sparats.
 

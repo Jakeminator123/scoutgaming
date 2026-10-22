@@ -80,8 +80,8 @@ test('Admin publication edit, save, publish, reopen, conflict and mobile layout 
     await page.getByRole('combobox',{name:'Spelbolag',exact:true}).waitFor();
     await page.waitForFunction(()=>!document.querySelector('select[aria-label="Spelbolag"]')?.disabled);
   };
-  const {page}=await authenticatedContext();await page.goto(f.url.replace('/admin/publication','/control/rooms'));await waitReady(page);
-  assert.equal(new URL(page.url()).pathname,'/admin/publication');
+  const {page}=await authenticatedContext();await page.goto(f.url.replace('/admin/rooms','/control/rooms'));await waitReady(page);
+  assert.equal(new URL(page.url()).pathname,'/admin/rooms');
   const name=page.getByRole('textbox',{name:'Namn på sammansättningen',exact:true});
   const save=page.getByRole('button',{name:'Spara sammansättning',exact:true});
   const publish=page.getByRole('button',{name:'Publicera för '+company.name,exact:true});
@@ -104,8 +104,8 @@ test('Admin publication edit, save, publish, reopen, conflict and mobile layout 
   assert.equal(new URL(page.url()).hash,'#publication');
   await capture(page,'05-reopened');
   const newSession=await newAuthenticatedAdmin(f);
-  const fresh=await authenticatedContext(newSession);await fresh.page.goto(f.url.replace('/admin/publication','/studio/control/lanes'));await waitReady(fresh.page);
-  assert.equal(new URL(fresh.page.url()).pathname,'/admin/publication');
+  const fresh=await authenticatedContext(newSession);await fresh.page.goto(f.url.replace('/admin/rooms','/studio/control/lanes'));await waitReady(fresh.page);
+  assert.equal(new URL(fresh.page.url()).pathname,'/admin/rooms');
   assert.equal((await fresh.context.cookies(f.origin)).find(cookie=>cookie.name==='bo_jwt').value,newSession.slice('bo_jwt='.length));
   await fresh.page.getByText('Senast publicerat · version 2',{exact:true}).waitFor();
   assert.equal(await fresh.page.getByRole('textbox',{name:'Namn på sammansättningen'}).inputValue(),'J01 Nordbord');

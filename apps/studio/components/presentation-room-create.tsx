@@ -70,7 +70,8 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const packageConflict = current && !unresolved && state.preflight?.reason === 'presentation_package_conflict';
   const needsEnvironment = current && !unresolved && state.preflight?.reason === 'presentation_room_environment_required';
   const needsComposition = current && !unresolved && ['presentation_lane_incompatible', 'presentation_package_too_large', 'presentation_room_environment_required'].includes(state.preflight?.reason ?? '');
-  const reloadHref = labUrl('/admin/publication?' + new URLSearchParams({ operator: operator?.id ?? '', composition: presentation?.id ?? '' }));
+  // Rooms are created and reviewed on Spelbolag & rum; the room link resolves its own composition.
+  const reloadHref = labUrl('/admin/rooms?' + new URLSearchParams({ operator: operator?.id ?? '' }));
   const compositionHref = labUrl('/admin/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
   const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
@@ -78,7 +79,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     : conflictCode === 'presentation_room_environment_conflict'
       ? { href: compositionHref, label: 'Skapa en separat sammansättning' }
     : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
-      ? { href: labUrl('/admin/publication?' + new URLSearchParams({ operator: operator?.id ?? '' })), label: 'Kontrollera spelrummet' } : null;
+      ? { href: reloadHref, label: 'Kontrollera spelrummet' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
   const canCreate = enabled && (ready || unresolved) && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;

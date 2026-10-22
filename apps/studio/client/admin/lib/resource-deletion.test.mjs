@@ -34,6 +34,8 @@ test('shared room layers are references; published dealer choices do not replace
   assert.equal(tree.media.find(row=>row.id==='clip').uses.length,2);
   assert.deepEqual(tree.dealers.find(row=>row.id==='dragan').mediaIds,['clip','portrait']);
   assert.match(tree.coverage.join(' '),/historiska paketreferenser.*Blob.*statiska lobbybilder/);
+  assert.equal(tree.rooms.find(row=>row.id==='room-a').choicesPath,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack');
+  assert.equal(tree.rooms.find(row=>row.id==='room-a').playable,false);
 });
 test('archived identities, rooms, compositions and media remain visible without inventing a game or owner',()=>{
   const {workspace,lifecycle}=fixture();
@@ -47,6 +49,7 @@ test('archived identities, rooms, compositions and media remain visible without 
   assert.equal(tree.materials.find(row=>row.id==='old-picture').archived,true);
   assert.equal(tree.rooms.find(row=>row.id==='old-room').archived,true);
   assert.equal(tree.rooms.find(row=>row.id==='old-room').game,null);
+  assert.equal(tree.rooms.find(row=>row.id==='old-room').choicesPath,null,'archived rooms have no room editor');
   assert.equal(tree.media.find(row=>row.id==='archived-clip').archived,true);
   assert.equal(tree.media.find(row=>row.id==='archived-clip').uses[0].relation,'Arkiverad mediakoppling');
 });
@@ -63,6 +66,7 @@ test('missing and conflicting references stay explicit and no names confer owner
   assert.equal(tree.media.find(row=>row.id==='missing-clip').missing,true);
   assert.equal(tree.compositions.find(row=>row.id==='missing-lane').missing,true);
   assert.deepEqual(tree.unownedRoomIds,['unowned-room']);
+  assert.equal(tree.rooms.find(row=>row.id==='unowned-room').choicesPath,null,'a room without its company has no room editor');
   assert.match(tree.warnings.join(' '),/motstridiga dealer-ID/);
   assert.ok(!JSON.stringify(tree).includes('canDelete'));
 });
@@ -109,18 +113,19 @@ function expand(node){
   if(typeof node.type==='function')return expand(node.type(node.props));
   return {...node,props:{...node.props,children:expand(node.props?.children)}};
 }
-function harness({workspace,lifecycle}=fixture()){
+function harness({workspace,lifecycle}=fixture(),search=''){
   const tree=buildResourceDeletionTree(workspace,lifecycle);
   const slots=[],effects=[],module={exports:{}};let cursor=0,fail=false;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},
     useEffect(fn,deps){const index=cursor++;if(!slots[index]||deps.some((dep,i)=>dep!==slots[index].deps[i]))effects.push(()=>{slots[index]?.cleanup?.();slots[index]={deps,cleanup:fn()};});}};
-  const output=transformSync(readFileSync(new URL('../components/studio/resource-deletion.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'});
-  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,AbortController,Date,Error,require:name=>{
+  const output=transformSync(readFileSync(new URL('../components/studio/resource-connections.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'});
+  const scrolled=[],document={getElementById:id=>({scrollIntoView(){scrolled.push(id);}})};
+  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,AbortController,Date,Error,location:{search},document,require:name=>{
     if(name==='react')return hooks;
     if(name.includes('resource-deletion.mjs'))return {resourceAnchor,createResourceDeletionClient:()=>({load:async()=>{if(fail)throw Error('Läsningen misslyckades');return tree;}})};
     return require(name);
   }});
-  const h={tree,setFailure:value=>fail=value,render(){cursor=0;return expand(module.exports.ResourceDeletion());},
+  const h={tree,scrolled,setFailure:value=>fail=value,render(){cursor=0;return expand(module.exports.ResourceConnections());},
     async settle(){for(let i=0;i<4;i++){h.render();while(effects.length)effects.shift()();await new Promise(resolve=>setImmediate(resolve));}},
   };return h;
 }
@@ -132,11 +137,35 @@ test('tree renders each object once, resolves its internal references and offers
   assert.equal(ids.filter(id=>id===resourceAnchor('material','snow')).length,1);
   assert.match(text(view),/Bolag → spel → rum/);assert.match(text(view),/Publicerade dealer-val/);
   assert.match(text(view),/Råa filer i Blob och statiska lobbybilder/);
-  assert.deepEqual(all.filter(row=>row.type==='button').map(text),['Uppdatera']);
-  const section=all.find(row=>row.props['aria-labelledby']==='resource-deletion-title');let stopped=false;
-  section.props.onClick({target:{closest:()=>({getAttribute:()=>resourceHrefForTest()})},stopPropagation(){stopped=true;}});
-  assert.equal(stopped,true);
-  function resourceHrefForTest(){return '#'+resourceAnchor('media','clip');}
+  assert.deepEqual(all.filter(row=>row.type==='button'&&row.props.role!=='tab').map(text),['Uppdatera']);
+  assert.deepEqual(all.filter(row=>row.props?.role==='tab').map(text),['Spelbolag','Dealers','Bord & bakgrunder','Sammansättningar']);
+  const panels=tree=>nodes(tree,row=>row.props?.role==='tabpanel').map(row=>[row.props.id,row.props.hidden]);
+  assert.deepEqual(panels(view),[['structure-panel-operators',false],['structure-panel-dealers',true],['structure-panel-materials',true],['structure-panel-compositions',true]]);
+  const section=all.find(row=>row.props['aria-labelledby']==='structure-title');let stopped=0,prevented=0;
+  const click=href=>section.props.onClick({target:{closest:()=>({getAttribute:()=>href})},stopPropagation(){stopped++;},preventDefault(){prevented++;}});
+  click('#'+resourceAnchor('room','room-a'));assert.equal(stopped,1);assert.equal(prevented,0,'a same-tab reference keeps native fragment navigation');
+  click('#'+resourceAnchor('media','clip'));assert.equal(stopped,2);assert.equal(prevented,1);await h.settle();
+  assert.deepEqual(panels(h.render()),[['structure-panel-operators',true],['structure-panel-dealers',false],['structure-panel-materials',true],['structure-panel-compositions',true]]);
+  assert.deepEqual(h.scrolled,[resourceAnchor('media','clip')]);
+  click('/admin/dealers?dealer=dragan');assert.equal(stopped,2,'Admin links keep the SPA click handling');
+});
+test('merged page opens the tab and item of the navigation context and keeps room, template and company actions',async()=>{
+  const h=harness(fixture(),'?operator=company-a&table=room-a&composition=shared&dealer=dragan&game=blackjack');await h.settle();
+  const view=h.render(),all=nodes(view,()=>true),links=all.filter(row=>row.type==='a').map(row=>row.props.href);
+  assert.deepEqual(h.scrolled,[resourceAnchor('room','room-a')]);
+  assert.equal(all.find(row=>row.props?.id==='structure-panel-operators').props.hidden,false);
+  assert.ok(links.includes('/admin/clips?operator=company-a&table=room-a&composition=shared&game=blackjack&panel=layers'),'template edits open the clip map Scen & lager panel');
+  assert.ok(links.includes('/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack'),'room choices use the room editor');
+  assert.equal(all.find(row=>row.type==='a'&&text(row)==='Öppna bolagets rum')?.props.href,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack','the company rooms open in Spelbolag & rum with the same context');
+  assert.ok(links.includes('/admin/clips?composition=shared&panel=layers'),'compositions open in the clip map, not a second editor');
+  assert.ok(links.includes('/admin/assets?tab=backgrounds'));assert.ok(links.includes('/admin/assets?tab=tables&game=blackjack'));
+  assert.equal(links.some(href=>href.startsWith('/admin/compositions')),false,'the advanced composition editor is reached only from the clip map');
+  const dealers=harness(fixture(),'?dealer=dragan');await dealers.settle();
+  assert.equal(nodes(dealers.render(),row=>row.props?.id==='structure-panel-dealers')[0].props.hidden,false);
+  assert.deepEqual(dealers.scrolled,[resourceAnchor('dealer','dragan')]);
+  const explicit=harness(fixture(),'?tab=materials&dealer=dragan');await explicit.settle();
+  assert.equal(nodes(explicit.render(),row=>row.props?.id==='structure-panel-materials')[0].props.hidden,false);
+  assert.deepEqual(explicit.scrolled,[]);
 });
 test('refresh failure removes the old tree and incomplete lifecycle stays visible as a warning',async()=>{
   const h=harness();h.tree.lifecycleAvailable=false;await h.settle();
@@ -145,22 +174,23 @@ test('refresh failure removes the old tree and incomplete lifecycle stays visibl
   assert.match(text(h.render()),/Läsningen misslyckades/);assert.doesNotMatch(text(h.render()),/Gemensam mall/);
 });
 test('dependency overview has an accessible active Admin link and unique resource anchors',()=>{
-  assert.ok(designPreviewPages.has('deletion'));assert.equal(designPreviewReturnTo('/admin/deletion'),'/admin/deletion');
+  assert.ok(designPreviewPages.has('deletion'));assert.ok(designPreviewPages.has('structure'));
+  assert.equal(designPreviewReturnTo('/admin/deletion'),'/admin/structure');
+  assert.equal(designPreviewReturnTo('/admin/deletion?operator=nord&table=room-1'),'/admin/structure?operator=nord&table=room-1');
   const componentUrl=new URL('../components/studio/studio-sidebar.tsx',import.meta.url),componentRequire=createRequire(componentUrl),module={exports:{}};
-  let pathname='/admin/deletion';
+  let pathname='/admin/structure';
   runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
     require:name=>name.includes('admin-navigation')?adminNavigation:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname,useSearchParams:()=>new URLSearchParams()}:componentRequire(name)});
   const dependencyLink=()=>{
     const navigation=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='nav'&&node.props['aria-label']==='Huvudmeny');
     assert.equal(navigation.length,1);
-    const links=nodes(navigation[0],node=>node.type==='a'&&node.props.href==='/admin/deletion');
-    assert.equal(links.length,1);assert.ok(text(links[0]).trim(),'the dependency overview needs an accessible link name');
+    const links=nodes(navigation[0],node=>node.type==='a'&&node.props.href==='/admin/structure');
+    assert.equal(links.length,1);assert.equal(text(links[0]).trim(),'Kopplingar & användning');
+    assert.equal(nodes(navigation[0],node=>node.type==='a'&&node.props.href==='/admin/deletion').length,0,'the merged page has one menu entry');
     return links[0];
   };
   assert.equal(dependencyLink().props['aria-current'],'page');
   pathname='/admin';assert.equal(dependencyLink().props['aria-current'],undefined);
-  const entry=readFileSync(new URL('../entry.tsx',import.meta.url),'utf8');
-  assert.match(entry,/path==='\/admin\/deletion'&&<ResourceDeletion/);
   assert.notEqual(resourceAnchor('media','a:b'),resourceAnchor('media','a_3Ab'));
   assert.notEqual(resourceAnchor('media','é'),resourceAnchor('dealer','é'));
   assert.ok(!resourceAnchor('media','é:#').includes('%'));

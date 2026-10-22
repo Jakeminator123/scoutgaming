@@ -90,6 +90,13 @@ export function backgroundRuleAssetIds(value) {
 export function layerRuleAssetIds(value, role = 'background') {
   return [...new Set(validateLayerPlayback(value, { role }).rules.map(rule => rule.assetId))];
 }
+// Clip media stay in the layer's allow-list (rules need the grant) but are
+// never a base: player, lobby and room choices offer only the other assets.
+// The default base always stays selectable. Without a policy nothing changes.
+export function selectableLayerBases(allowed, policy, defaultAssetId = null) {
+  const clips = new Set(Array.isArray(policy?.rules) ? policy.rules.map(rule => rule?.assetId) : []);
+  return (Array.isArray(allowed) ? allowed : []).filter(id => id === defaultAssetId || !clips.has(id));
+}
 export function defaultBackgroundRule(assetId, id) {
   return validateBackgroundPlayback({ schemaVersion: 1, rules: [{ id, assetId,
     trigger: { everyMs: 25000 }, maxDurationMs: 10000, cooldownMs: 25000,

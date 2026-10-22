@@ -51,3 +51,16 @@ export function resetAppearanceRoom(value, roomId) {
   if (result.roomOverrides) delete result.roomOverrides[roomId];
   return appearanceBranding(result);
 }
+
+// What the player meets now in one room: the published choice, the inherited
+// company choice for the same composition, else the composition default.
+export function appearanceRoomStatus(state, roomId) {
+  const room = state?.rooms?.find(row => row.id === roomId);
+  const lane = state?.presentation?.lanes?.find(row => row.id === room?.presentationLaneId);
+  if (!room || !lane) return null;
+  const published = appearanceBranding(state.branding);
+  const inherited = (published.lane ?? state.presentation.lanes[0]?.id) === lane.id ? published : {};
+  const override = published.roomOverrides?.[room.id] ?? {};
+  const live = Object.fromEntries(['background', 'dealer', 'table'].map(key => [key, override[key] ?? inherited[key] ?? lane.layers?.[key]?.default ?? null]));
+  return { roomId: room.id, laneId: lane.id, packageRevision: state.packageRevision, draftRevision: appearanceDraftRevision(state), draft: Boolean(state.draft), live };
+}
