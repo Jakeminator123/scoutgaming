@@ -321,11 +321,17 @@ Vid registerleveransen 16 oktober var noll aktiva bolag, rum och
 sammansättningar avsiktligt; äldre bolagsnamn är inga startdata att återskapa.
 En bolagsslugg är inte ett dealer-ID, rum-ID, sammansättnings-ID eller agentnamn.
 
-`/play`, `/player-login` och de befintliga spelstarterna finns kvar.
-`/game` leder till `/play/blackjack`. Vid utloggat prov utan vald spelkontext
-gick `/blackjack`, `/play/blackjack` och `/play/roulette` vidare till `/play`.
+Spelstarten är `/game?game=blackjack|roulette&operator=…&table=…&dealer=…`; lobbyn
+länkar dit. `/player-login` är spelarens inloggning. `/play/profil` och
+`/play/historik` är spelarytan. Ett roulettrum skickas vidare (307) till
+spelmotorns dokument `/play/roulette?operator=&table=`, som förblir roulettens
+adress tills spelmotorns klient slutar skicka sidans query som rumskontext.
+`/play`, `/play/blackjack`, `/blackjack` och `/roulette` är permanenta
+omdirigeringar (308) till `/game`
+under en release; `/game` utan vald spelkontext leder till `/lobby`. `/v2`,
+`/bo`, `/casino.html`, `/demo` och `/labb-lissabon` är borttagna (404).
 En riktig spellänk behåller godkänd
-bolags-/rums-/paketkontext och kontrolleras av spelservern; den nya `/lobby`
+bolags-/rums-/paketkontext och kontrolleras av spelservern; `/lobby`
 ersätter inte spelmotorn eller dessa startkontrakt.
 
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
@@ -640,8 +646,8 @@ idlepolicy eller presentationsspelarens klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är bevarad historik och visas inte som importerbara val i Dealers & klipp.
 Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
-Äldre lokala data i `lab/data` bevaras som
-historik och är inte produktionspolicy.
+Checkouten har inget lokalt `lab/data`; Neon är registret och Blob
+lagrar mediebyte.
 Se [vägar och strömmar](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 

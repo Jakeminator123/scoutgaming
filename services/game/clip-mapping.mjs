@@ -68,7 +68,7 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null,
       route: `/v2/?dealer=${dealer}`, enabled: speech.status === 'review' && speech.enabled !== false,
       status: speech.status ?? null, approval: speech.approval ?? null,
       candidate: true, actualPlayback: false,
-      selector: 'astrid-green-speak.mjs exact line with its paired audio and manifest text; V2 route only, subject to runtime validation and loading.',
+      selector: 'retired green-speak client path (module removed 2026-10-22); manifest rows are inventory only, never played.',
     }));
     dealers[dealer] = { ...dealers[dealer], greenSpeech };
   }
@@ -79,7 +79,7 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null,
     green.push({ event: t.box != null ? `show.deal.box${t.box}` : ACTION_EVENT[t.action] ?? t.action, action: t.action, box: t.box ?? null, status: t.status, plays: 'once',
       file: t.media?.src, sha256: t.media?.sha256, layout: t.media?.layout, width: t.media?.width, height: t.media?.height, fps: t.media?.fps, frames: t.media?.frames,
       format: 'mp4, RGB over masks (R actor alpha, G fingers), composited by PerformancePlayer',
-      selector: 'astrid-green-dealer.mjs selectGreenTake(action, box), currently bypassed by astridDealingPaused; shoe-to-felt card animation remains.',
+      selector: 'retired green-dealer client path (module removed 2026-10-22); shoe-to-felt card animation remains.',
       route: '/v2/?dealer=astrid', active: false, paused: true, actualPlayback: false, fileAvailable: available(t.media?.src) }); }
   const staged = []; const man = readJson('dealers/astrid/performance/manifest.json');
   for (const t of [...(man?.takes ?? []), ...(man?.continuations ?? [])]) staged.push({ event: ACTION_EVENT[t.action] ?? t.action, action: t.action, id: t.id, status: t.status, continuation: t.continuation?.baseId ?? null, plays: 'once',

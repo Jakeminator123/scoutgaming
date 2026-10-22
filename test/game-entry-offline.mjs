@@ -7,7 +7,7 @@ async function freePort(host){const server=createServer();await new Promise(reso
 test('offline startup never resurrects local profiles or their raw asset routes',async()=>{
  const fixture=await startLocalComparison({startLab:false,gamePort:await freePort('localhost'),labPort:await freePort('127.0.0.1')});
  try{
-  for(const dealer of ['astrid','vera','amira','mei'])for(const path of ['/','/game','/v2/']){
+  for(const dealer of ['astrid','vera','amira','mei'])for(const path of ['/','/game']){
    const response=await fetch(fixture.gameUrl+path+'?dealer='+dealer+'&rehearsal=1');
    assert.equal(response.status,503);const html=await response.text();
    assert.match(html,/Ingen presentation vald/);assert.doesNotMatch(html,/data-game-dealer=|<video|src="app.mjs"/);

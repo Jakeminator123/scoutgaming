@@ -32,13 +32,13 @@
       "buildCommand": "npm run build",
       "routes": [
         {
-          "src": "^/(control|partner|admin|lobby)$",
+          "src": "^/(partner|admin|lobby)$",
           "dest": "/studio/$1",
           "transforms": [{ "type": "request.path", "op": "set", "args": "/studio/$1" }],
           "continue": true
         },
         {
-          "src": "^/(control|partner|admin|lobby)/(.*)$",
+          "src": "^/(partner|admin|lobby)/(.*)$",
           "dest": "/studio/$1/$2",
           "transforms": [{ "type": "request.path", "op": "set", "args": "/studio/$1/$2" }],
           "continue": true
@@ -53,7 +53,6 @@
     { "source": "/lipsync-moving/:path*", "destination": { "service": "speech" } },
     { "source": "/shared-room/:path*", "destination": { "service": "speech" } },
     { "source": "/studio/:path*", "destination": { "service": "studio" } },
-    { "source": "/control/:path*", "destination": { "service": "studio" } },
     { "source": "/partner/:path*", "destination": { "service": "studio" } },
     { "source": "/admin/:path*", "destination": { "service": "studio" } },
     { "source": "/lobby/:path*", "destination": { "service": "studio" } },

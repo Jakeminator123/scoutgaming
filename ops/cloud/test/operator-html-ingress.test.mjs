@@ -60,7 +60,8 @@ async function fixture(t, canonical = true) {
 test('real canonical UI proxy and platformBackendHeaders cross gateway for operator GET/HEAD without launch',async t=>{
   const f=await fixture(t);
   for(const method of ['GET','HEAD']) {
-    const result=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?'+query,
+    // The public game start is /game; the proxy still reaches the engine's /blackjack document without the game selector.
+    const result=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?game=blackjack&'+query,
       {method,headers:{cookie}}),{env,fetchImpl:f.fetchImpl});
     assert.equal(result.status,200);
     assert.equal(result.headers.get('cache-control'),'private, no-store');
