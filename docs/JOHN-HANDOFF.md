@@ -1,5 +1,16 @@
 # Aktuell handoff — Scoutgaming
 
+## Admin PR1 — navigation och onådd kod — 22 oktober 2026
+
+**Leverans:** egen worktree scout-wt/admin-en-ingang, branch codex/admin-en-ingang från main 7afae426. Tre startval ersätter pilraderna; Dealers äger registret, Ekonomi betalningarna och valt bolag journalen. Fördjupning/OpenClaw/Adminrobotens mellansidor är upplösta till funktionernas hem. Bokmärkesmatris och framtida flödesförslag finns i [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr1-en-ingång-per-sak--22-oktober-2026).
+
+**Avgränsning:** 7/9 utpekade lib-moduler, 2 komponenter och 6 oanropade routes borttagna. Social-store skyddas av #354; dealer-import-plan har aktiv verktygsanropare och lämnas. Ingen datamodelländring, dataradering, editorfusion, rumssideändring eller services-ändring. Skyddade #354/#358-filer är orörda; testlistan i pre-commit-full och authimporten i test/game-entry-auth.mjs kan överlappa deras PR:er och måste sammanfogas vid integration.
+
+**Verifierat:** full Studio 2 191 pass/29 skip samt frontendtyper; full Admin 354 pass/1 skip; senare bolags-/journalprov 12/12. Klientbuild lyckades. Föräldralösa tester 0/572. Staged strikt raderingsgrind 29 filer/0 importer/0 registerrader. Ingen produktionsacceptans: kort lokal navigationskontroll avslutad, testserver och flik stängda. Slutmålet är produktionens UI/UX; Claude granskar och integrerar. Ingen planstatus ändrad och ingen merge/deploy utförd.
+
+**Säkerhetsstatus på remote main 7afae426:** GitGuardian-källbindning verifierad, 0 öppna av 23 observerade incidenter (23 ignorerade), monitorering aktiv. Historisk scan är ofullständig (too_large), platsmetadata partiell och GitHub-sviten står queued. Det är inte bevis för full historisk täckning eller godkänd scan av denna nya branch.
+
+
 ## J05/J07/J08 — aktuell leverans — 22 oktober 2026
 
 **Mål/status:** huvudprioriteten är begripligt Admin för Blackjack: Jakobs

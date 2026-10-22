@@ -11,15 +11,6 @@ import { useStudioSession } from './studio-session';
 import { resolveStudioDealerId, type ConnectionStatus } from './studio-types';
 import type { VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
 
-export function OpenClawTabLinks({ active, modelsHref=labUrl('/admin/openclaw?tab=models'), chatHref=labUrl('/admin/openclaw?tab=agent') }: { active: 'models' | 'chat'; modelsHref?:string; chatHref?:string }) {
-  const models = active === 'models';
-  const chat = active === 'chat';
-  return <>
-    <a href={modelsHref} aria-current={models ? 'page' : undefined} aria-pressed={models ? true : undefined}>Agentmodeller</a>
-    <a href={chatHref} aria-current={chat ? 'page' : undefined} aria-pressed={chat ? true : undefined}>Chatt</a>
-  </>;
-}
-
 function SelectedControlOpenClawChat({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, standaloneVoicePreviewAvailable }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
@@ -38,13 +29,12 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
     }
     return url.pathname+url.search;
   }
-  const modelsHref=contextHref('/admin/openclaw?tab=models');
+  const modelsHref=contextHref('/admin/ai/models');
   const rehearsalHref=contextHref('/admin/rehearsal');
   return <PageTemplate
     eyebrow="// OPENCLAW"
-    title="Intern agentchatt"
+    title="Dealerns agent"
     intro={`Arbeta med agentinställningar för ${initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label??dealerId} och gå vidare till provspelning.`}
-    tabs={<OpenClawTabLinks active="chat" modelsHref={modelsHref} chatHref={contextHref('/admin/openclaw?tab=agent')} />}
   >
     <div className="sg-page-body">
       <GatewayPanel modelsHref={modelsHref} standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />

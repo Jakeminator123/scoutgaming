@@ -12,15 +12,15 @@ import Clips from './app/control/(studio)/clips/page';
 import { AdminHome } from './components/studio/admin-home';
 import { DealerDirectory } from './components/studio/dealer-directory';
 import { ResourceConnections } from './components/studio/resource-connections';
-import {WorkspaceTool,WorkspaceToolsHome} from './components/studio/workspace-tools';
-import {OpenClawPage} from './components/studio/openclaw-page';
+import {WorkspaceTool} from './components/studio/workspace-tools';
+import {adminDocumentHref} from '../../../../packages/navigation/admin-workspace-routes.mjs';
 import {PlayerAccountsPage,AdminStaffPage} from './components/studio/accounts-pages';
-import {adminNavigationGroups,adminSystemGroups,adminPageLabels,adminRetiredPaths} from './lib/admin-navigation';
+import {adminNavigationGroups,adminSystemGroups,adminPageLabels} from './lib/admin-navigation';
 
 // Native readers and mutations keep their existing session, scopes and revisions.
-const servicePaths = new Set(['/admin/drift','/admin/ekonomi','/admin/admin/payments','/admin/admin/api','/admin/admin/log']);
+const servicePaths = new Set(['/admin/drift','/admin/ekonomi','/admin/admin/api']);
 // Pages that stay mounted once visited so their drafts survive menu changes.
-const mountedPages:Record<string,()=>ReactElement>={'/admin/openclaw':()=><OpenClawPage/>,'/admin/players':()=><PlayerAccountsPage/>,'/admin/admin/accounts':()=><AdminStaffPage/>};
+const mountedPages:Record<string,()=>ReactElement>={'/admin/ai/models':()=><ConnectedServices path="/admin/ai/models"/>,'/admin/players':()=><PlayerAccountsPage/>,'/admin/admin/accounts':()=><AdminStaffPage/>};
 
 const pages=adminPageLabels;
 const menuPaths=new Set(['/admin',...adminNavigationGroups.flatMap(group=>group.links.map(link=>link.href)),...adminSystemGroups.flatMap(group=>group.links.map(link=>link.href))]);
@@ -31,13 +31,13 @@ function App() {
   const studio=isStudioAdminRoute(path,search);
   const workspaceTool=adminToolName(path);
   // Retired pages: old bookmarks keep their query and fragment on the page that replaced them.
-  const retired=adminRetiredPaths[path];
+  const requested=path+(search?'?'+search:'');
+  const canonical=adminDocumentHref(requested);
+  const retired=canonical!==requested?canonical:null;
   const redirected=Boolean(retired);
   useEffect(()=>{
     if(!retired)return;
-    const target=new URL(retired,location.origin),query=new URLSearchParams(search);
-    for(const [key,value] of query)if(!target.searchParams.has(key))target.searchParams.append(key,value);
-    navigate(target.pathname+(target.searchParams.size?'?'+target.searchParams:'')+location.hash,true);
+    navigate(retired+location.hash,true);
   },[retired,search]);
   const [studioDirty,setStudioDirty]=useState(false),[studioRefresh,setStudioRefresh]=useState(0);
   const [studioRevision,setStudioRevision]=useState('');
@@ -69,16 +69,15 @@ function App() {
         <optgroup label="System">{adminSystemGroups.flatMap(group=>group.links).map(link=><option key={link.href} value={link.href}>{link.label}</option>)}</optgroup>
         {!studio&&!menuPaths.has(path)&&!retired&&pages[path]&&<option value={path}>{pages[path]}</option>}
       </select></label>
-      <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} chatActive={false} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap active={studio&&new URLSearchParams(search).get('tool')!=='import'} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
+      <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap active={studio&&new URLSearchParams(search).get('tool')!=='import'} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
       {dealersVisited&&<div hidden={path!=='/admin/dealers'||new URLSearchParams(search).get('tool')==='import'}><DealerDirectory active={path==='/admin/dealers'&&new URLSearchParams(search).get('tool')!=='import'} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
       {libraryVisited&&<div hidden={path!=='/admin/assets'}><RegisteredMaterialLibrary visible={path==='/admin/assets'} disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
       {visitedPages.map(page=><div key={page} hidden={path!==page}>{mountedPages[page]()}</div>)}
       {path==='/admin'&&!studio&&<AdminHome />}
-      {path==='/admin/tools'&&<WorkspaceToolsHome/>}
       {path==='/admin/structure'&&<ResourceConnections/>}
       {workspaceTool&&!redirected&&<WorkspaceTool section={workspaceTool}/>}
-      {!workspaceTool&&!studio&&!redirected && path!=='/admin/structure' && path!=='/admin/tools' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/assets' && !servicePaths.has(path) && !(path in mountedPages) && <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>}
+      {!workspaceTool&&!studio&&!redirected && path!=='/admin/structure' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/assets' && !servicePaths.has(path) && !(path in mountedPages) && <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>}
     </main>
   </div>;
 }

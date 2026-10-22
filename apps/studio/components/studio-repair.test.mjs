@@ -126,7 +126,6 @@ test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
   assert.doesNotMatch(openclaw, /class="event-sidebar"/);
   assert.doesNotMatch(openclaw, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
   assert.doesNotMatch(openclaw, /<button[^>]*>[^<]*Spara projekt/);
-  assert.match(openclaw, /href="\/admin\/openclaw\?tab=agent(?:&amp;|")/);
   const { ControlGuidePage } = loadComponent('./control-guide-page.tsx');
   const { ControlActivityPage } = loadComponent('./control-activity-page.tsx');
   for (const Page of [ControlGuidePage, ControlActivityPage]) {
@@ -197,7 +196,7 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
   assert.doesNotMatch(html, /studio-chat-shortcuts|Spelarchatt vid bordet →|Fråga OpenClaw om labbet →/);
   assert.equal(loadComponent('./studio-types.ts').viewPaths.activity, '/admin/rehearsal');
-  assert.equal(loadComponent('./studio-types.ts').viewPaths.openclaw, '/admin/openclaw?tab=agent');
+  assert.equal(loadComponent('./studio-types.ts').viewPaths.openclaw, '/admin/dealer-agent');
   assert.match(html, /<option value="off" selected="">Standard/);
   assert.match(html, /kör jämförelseläget Bara standard/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);

@@ -19,7 +19,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'system', label: 'System', items: [
     { href: '/admin/admin/accounts', label: 'Konton & åtkomst' },
     { href: '/admin/admin/api', label: 'API & integrationer' },
-    { href: '/admin/openclaw', label: 'OpenClaw' },
+    { href: '/admin/ai/models', label: 'Systeminställningar' },
   ] },
 ].map(group => Object.freeze({...group, items: Object.freeze(group.items.map(item => Object.freeze(item)))})));
 
@@ -46,15 +46,15 @@ const legacyPaths = new Map([
   ['/events', '/admin/dealer-studio'],
   ['/control/events', '/admin/dealer-studio'],
   ['/admin/events', '/admin/dealer-studio'],
-  ['/probe', '/admin/openclaw?tab=probe'],
-  ['/control/probe', '/admin/openclaw?tab=probe'],
-  ['/admin/probe', '/admin/openclaw?tab=probe'],
-  ['/admin/ai/models', '/admin/openclaw?tab=models'],
-  ['/admin/ai/chat', '/admin/openclaw?tab=assistant'],
-  ['/admin/dealer-agent', '/admin/openclaw?tab=agent'],
+  ['/probe', '/admin/dealer-studio'],
+  ['/control/probe', '/admin/dealer-studio'],
+  ['/admin/probe', '/admin/dealer-studio'],
+  ['/admin/ai/models', '/admin/ai/models'],
+  ['/admin/ai/chat', '/admin'],
+  ['/admin/dealer-agent', '/admin/dealer-studio'],
   ['/administration', '/control/administration'],
   ['/openclaw', '/control/openclaw'],
-  ['/operator-chat', '/admin/openclaw?tab=agent'],
+  ['/operator-chat', '/admin/dealer-studio'],
   ['/tree', '/admin/dealer-studio'],
   ['/control/tree', '/admin/dealer-studio'],
   ['/activity', '/admin/dealer-studio'],
@@ -87,7 +87,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
   mapped = hrefParts(canonicalControlHref(mapped.path + (params.size ? '?' + params : '')));
-  if (mapped.path === '/admin/media-review') return items.find(item => item.href === '/admin/dealer-studio') ?? null;
+  if (['/admin/media-review','/admin/dealer-agent','/admin/probe'].includes(mapped.path)) return items.find(item => item.href === '/admin/dealer-studio') ?? null;
   const matches = items.filter(item => {
     const parts = hrefParts(item.href);
     if (parts.path !== mapped.path) return false;

@@ -1,5 +1,5 @@
 import type { NativeStudioConfiguration } from './studio-native-runtime.mjs';
-import type { NativeStudioSession } from './studio-native-auth.mjs';
+import type { NativeStudioSession } from '../../../packages/studio-access/studio-native-auth.mjs';
 export interface OpenClawAdminModel {primary:string;fallbacks:string[];}
 export interface OpenClawAdminSnapshot {
   version:1; baseHash:string; gateway:{connected:true;version:string;applied:boolean|null};

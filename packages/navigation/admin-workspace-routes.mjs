@@ -6,8 +6,7 @@ export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
   events: 'Spelhändelser & regler', probe: 'Tal vid inaktivitet', guide: 'Guide',
   'dealer-agent': 'Dealerns agent',
 });
-// The only tools listed under System → Fördjupning; every other tool opens from its menu page.
-export const ADMIN_DEPTH_TOOLS = Object.freeze(['media-review', 'replies', 'events', 'guide']);
+
 const destinations = Object.freeze({
   '': '/admin', overview: '/admin', studio: '/admin/clips', lab: '/admin/clips',
   clips: '/admin/dealer-studio', 'dealer-forge': '/admin/dealer-studio?view=generate',
@@ -16,8 +15,8 @@ const destinations = Object.freeze({
   rehearsal: '/admin/rehearsal', activity: '/admin/rehearsal',
   library: '/admin/assets', videos: '/admin/videos', media: '/admin/videos', archive: '/admin/videos',
   replies: '/admin/replies', events: '/admin/events', tree: '/admin/events', 'presentation-events': '/admin/events',
-  zones: '/admin/compositions', probe: '/admin/openclaw?tab=probe', guide: '/admin/guide',
-  openclaw: '/admin/openclaw?tab=models', ops: '/admin/openclaw?tab=drift', 'operator-chat': '/admin/openclaw?tab=agent',
+  zones: '/admin/compositions', probe: '/admin/probe', guide: '/admin/guide',
+  openclaw: '/admin/ai/models', ops: '/admin/drift?tab=speech', 'operator-chat': '/admin/dealer-agent',
   players: '/admin/players', team: '/admin/admin/accounts', transactions: '/admin/ekonomi',
   integration: '/admin/admin/api', shoes: '/admin/drift', 'legacy-rooms': '/admin/rooms',
   'game-tables': '/admin/rooms', speech: '/admin/dealer-studio?view=speech',
@@ -33,21 +32,37 @@ export function adminToolName(path) {
   const name=path.replace(/^\/(?:studio\/)?admin\//,'');
   return Object.hasOwn(ADMIN_WORKSPACE_TOOLS,name)?name:null;
 }
+// Retired documents keep their bookmarks; canonical pages have a single menu home.
+export const ADMIN_RETIRED_DOCUMENTS = Object.freeze({
+  '/admin/material-library':'/admin/assets', '/admin/deletion':'/admin/structure',
+  '/admin/publication':'/admin/rooms', '/admin/tools':'/admin/dealers',
+  '/admin/admin/payments':'/admin/ekonomi?tab=payments', '/admin/admin/log':'/admin/companies',
+  '/admin/ai/chat':'/admin', '/admin/admin/players':'/admin/players',
+});
+const openClawHomes=Object.freeze({drift:'/admin/drift?tab=speech',models:'/admin/ai/models',
+  agent:'/admin/dealer-agent',probe:'/admin/probe',assistant:'/admin'});
 export function adminDocumentHref(value) {
-  if(typeof value!=='string'||!/^\/(?:studio\/)?(?:control(?:[/?#]|$)|admin\/(?:material-library|deletion|publication)(?:[/?#]|$))/.test(value)||/[\\\r\n]/.test(value))return value;
+  if(typeof value!=='string'||!/^\/(?:studio\/)?(?:control|admin)(?:[/?#]|$)/.test(value)||/[\\\r\n]/.test(value))return value;
   const url=new URL(value,'https://workspace.invalid');
-  // Retired Admin documents redirect like Control bookmarks; their query and fragment follow.
-  const retired=url.pathname.match(/^\/(?:studio\/)?admin\/(material-library|deletion|publication)$/)?.[1];
-  const section=retired==='material-library'?'library':retired??url.pathname.replace(/^\/(?:studio\/)?control\/?/,'').replace(/\/$/,'');
-  let target=section==='administration'||section==='admin'
-    ? administration[url.searchParams.get('tab')]??'/admin/drift' : destinations[section];
-  if(section==='openclaw'&&url.searchParams.get('tab')==='chat')target='/admin/openclaw?tab=agent';
-  if(section==='lanes'&&url.searchParams.get('tab')==='companies')target='/admin/companies';
-  if(!target)return value; // Includes login and set-password; never rewrite credentials.
-  const result=new URL(target,url.origin);
-  const destinationKeys=new Set(result.searchParams.keys());
-  for(const [key,item] of url.searchParams)if(!destinationKeys.has(key))result.searchParams.append(key,item);
-  if(section==='library'&&!result.searchParams.has('tab')){
+  const path=url.pathname.replace(/^\/studio(?=\/)/,'');
+  const control=/^\/control(?:\/|$)/.test(path);
+  const section=control?path.replace(/^\/control\/?/,'').replace(/\/$/,''):null;
+  let consumeTab=false;
+  let target;
+  if(path==='/admin/openclaw'){
+    const tab=url.searchParams.get('tab');
+    target=Object.hasOwn(openClawHomes,tab)?openClawHomes[tab]:openClawHomes.drift;consumeTab=true;
+  }else if(control){
+    consumeTab=['openclaw','operator-chat','ops'].includes(section);
+    target=section==='administration'||section==='admin'
+      ? administration[url.searchParams.get('tab')]??'/admin/drift' : destinations[section];
+    if(section==='openclaw'){target=url.searchParams.get('tab')==='chat'?'/admin/dealer-agent':'/admin/ai/models';consumeTab=true;}
+    if(section==='lanes'&&url.searchParams.get('tab')==='companies')target='/admin/companies';
+  }else target=ADMIN_RETIRED_DOCUMENTS[path];
+  if(!target)return value; // Login, credentials, APIs and canonical pages are untouched.
+  const result=new URL(target,url.origin),destinationKeys=new Set(result.searchParams.keys());
+  for(const [key,item] of url.searchParams)if(!destinationKeys.has(key)&&!(consumeTab&&key==='tab'))result.searchParams.append(key,item);
+  if((section==='library'||path==='/admin/material-library')&&!result.searchParams.has('tab')){
     const role=result.searchParams.get('role');
     if(role==='background'||role==='table')result.searchParams.set('tab',role==='background'?'backgrounds':'tables');
   }

@@ -152,7 +152,7 @@ test('existing navigation vetoes cancel native service pushes and replacements b
 test('read-only native service views retain normal SPA Back and Forward',()=>{
   const h=harness('/admin/assets');
   for(const route of ['/admin/drift','/admin/admin/payments','/admin/ekonomi'])assert.equal(h.api.navigate(route),true);
-  const before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/drift');h.go(1);assert.equal(h.location.pathname,'/admin/admin/payments');
+  const before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/drift');h.go(1);assert.equal(h.location.pathname,'/admin/ekonomi');assert.equal(new URLSearchParams(h.location.search).get('tab'),'payments');
   assert.deepEqual(h.snapshot(),before);assert.deepEqual(h.native,[]);
 });
 

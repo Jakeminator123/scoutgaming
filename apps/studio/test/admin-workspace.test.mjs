@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ADMIN_WORKSPACE_TOOLS,ADMIN_DEPTH_TOOLS,adminToolName,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS,adminToolName,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {designPreviewPages} from '../lib/design-preview-paths.mjs';
 import {studioLoginReturnTo} from '../lib/studio-login-client.mjs';
 import {CONTROL_PREVIEW_VIEWS,workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
@@ -18,14 +18,13 @@ test('every existing Control tool and registered N1 view has a served Admin dest
     assert.equal(url.searchParams.get('composition'),'portrait');assert.equal(url.searchParams.has('lane'),false);
   }
   for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS))assert.equal(adminToolName('/admin/'+key),key);
-  for(const key of ADMIN_DEPTH_TOOLS)assert.ok(Object.hasOwn(ADMIN_WORKSPACE_TOOLS,key),key);
   assert.equal(adminToolName('/partner/companies'),null);
   assert.equal(adminDocumentHref('/control/zones'),'/admin/compositions');
-  // OpenClaw is one page: Control's chat, operator chat, ops and probe land on its tabs.
-  assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/openclaw?tab=agent&dealer=dragan');
-  assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/openclaw?tab=agent&dealer=dragan');
-  assert.equal(adminDocumentHref('/control/openclaw?dealer=dragan'),'/admin/openclaw?tab=models&dealer=dragan');
-  assert.equal(adminDocumentHref('/control/ops'),'/admin/openclaw?tab=drift');
+  // Each retired OpenClaw entry returns to its owning resource.
+  assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
+  assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
+  assert.equal(adminDocumentHref('/control/openclaw?dealer=dragan'),'/admin/ai/models?dealer=dragan');
+  assert.equal(adminDocumentHref('/control/ops'),'/admin/drift?tab=speech');
   assert.equal(adminDocumentHref('/control/players?operator=nord'),'/admin/players?operator=nord');
   assert.equal(adminDocumentHref('/control/dealer-forge?dealerId=dragan'),'/admin/dealer-studio?view=generate&dealer=dragan');
 });
@@ -136,7 +135,7 @@ test('retired publication bookmark mapping preserves fragments and rejects docum
 });
 
 test('retired tool bookmarks retain exact context and never redirect mutations',()=>{
-  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','openclaw?tab=probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+  for(const [section,target] of [['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,

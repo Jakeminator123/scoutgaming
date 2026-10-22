@@ -59,18 +59,17 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,dirname,resolve,basename} from 'node:path';
 import {createSeedProject,addDealer} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {uploadVideo} from '../lib/video-uploads.mjs';
+import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import {readUploads} from '../lib/video-local-readers.mjs';
 import {loadVideoRegistry} from '../lib/video-registry.mjs';
 
-test('registered Nora intake survives reload with greenscreen metadata and never binds Astrid footage',async t=>{
+test('registered Nora video survives reload with greenscreen metadata and never binds Astrid footage',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-nora-video-'));
   t.after(()=>{assert.equal(dirname(resolve(root)),resolve(tmpdir()));assert.match(basename(root),/^croupier-nora-video-/);return rm(root,{recursive:true,force:true});});
   const original=createSeedProject(),saved=addDealer(original,'nora','Nora');
   const originalLines=JSON.stringify(original.lines),body=Buffer.from('0000ftypisom00000nora-container-fixture');
   const options={uploadDir:join(root,'uploads'),snapshotPath:join(root,'absent.json'),archiveDir:null,project:saved};
-  const request=new Request('http://localhost:4192/api/videos',{method:'POST',headers:{'content-type':'video/mp4','x-video-metadata':encodeURIComponent(JSON.stringify(classification))},body,duplex:'half'});
-  const uploaded=await uploadVideo(request,options),records=await readUploads(options),registry=await loadVideoRegistry(options);
+  const uploaded=await seedLegacyVideo(options,body,classification),records=await readUploads(options),registry=await loadVideoRegistry(options);
   assert.deepEqual(records[0].classification,classification);
   const video=registry.videos.find(row=>row.id===uploaded.id);
   assert.deepEqual(video.classification.compositing,classification.compositing);

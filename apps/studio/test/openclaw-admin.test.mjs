@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
 import { createOpenClawAdminApi } from '../lib/openclaw-admin.mjs';
-import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 import { nativeStudioAdminConfiguration } from '../lib/studio-native-runtime.mjs';
 
 const publicOrigin = 'https://public.example.invalid', labOrigin = 'https://studio.example.invalid';

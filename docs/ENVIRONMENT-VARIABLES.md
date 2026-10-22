@@ -375,7 +375,8 @@ bedömda separat från aktiva runtime-läsare.
 | Namn | Konsument och fas | Beslut |
 | --- | --- | --- |
 | `BETTALOTTO_API`, `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET` | partner-reference.mjs, partner-observer.mjs, ops/cloud/config.mjs | Behåll kanoniska namn. |
-| `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE`, `CROUPIER_ZONES_DATABASE_URL` | cloud-media-store.mjs, zone-cloud-store.mjs | Driftens Blob-/zoninställningar; vanliga lokala starter kopplar inte in dessa tjänster. |
+| `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE` | cloud-media-store.mjs | Driftens Blob-inställningar; vanliga lokala starter kopplar inte in tjänsten. |
+| `CROUPIER_ZONES_DATABASE_URL` | Pensionerade zonroutes | Kodkonsumenten är borttagen. Extern databas och miljövariabler har inte raderats; hanteras separat i O03. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
 | `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och apps/studio/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
@@ -1163,12 +1164,12 @@ Render-spelets villkorliga grupper:
   ersätter produktens gamla `videos/index.json` på Render-disk. Den gamla
   produktdisken är avvecklad och dess externa backup bevaras. QA:s separata
   disk och lokala filprofiler har egna livscykler.
-- Bakgrundszoner: `CROUPIER_ZONES_DATABASE_URL` kräver aktiv privat media
-  och en separat TLS-skyddad Postgres-anslutning. Den skickas endast till
-  Lab. Schemat i `apps/studio/lib/zone-cloud-schema.sql` installeras uttryckligen;
-  det är installerat i zonprojektet efter separat QA den 29 september.
-  Generella `DATABASE_URL`/`POSTGRES_URL` används aldrig som reserv.
-  Spelkonton och saldon använder en separat game/auth-Neon-databas.
+- Bakgrundszoner: de oanropade `/api/zones*`-rutterna och deras privata
+  databasadapter är pensionerade i PR1 för Admin-navigationen.
+  `CROUPIER_ZONES_DATABASE_URL` har ingen kvarvarande produktkonsument.
+  Den externa zoninstansen och dess historik är inte raderade eller verifierade
+  av denna kodändring; eventuell rensning kräver separat O03-mandat.
+  Spelkonton och saldon använder fortsatt en separat game/auth-Neon-databas.
 - Lokal provkörning: `node apps/studio/start.mjs --offline --no-open` startar endast
   isolerade temporära testdata, utan externa lagringstjänster. Tidigare
   `--cloud-storage` avvisas; den privata profilfilen bevaras. Render/Vercel

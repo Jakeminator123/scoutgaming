@@ -26,12 +26,12 @@ test('Clips editor bookmarks preserve selection and fragments without changing t
   assert.equal(canonicalControlHref('/admin/clips?dealer=saga#map'),'/admin/clips?dealer=saga#map');
 });
 
-test('AI bookmarks open the one OpenClaw page on the right tab and keep exact navigation context', () => {
+test('AI bookmarks open their resource and keep exact navigation context', () => {
   for (const base of ['', '/studio']) for (const [path,query,tab] of [
     ['openclaw','','models'],['openclaw','tab=chat&','agent'],
     ['openclaw','tab=models&','models'],['operator-chat','','agent'],['ops','tab=chat&','drift'],
   ]) assert.equal(canonicalControlHref(base+'/control/'+path+'?'+query+'dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&lane=portrait#selection'),
-    '/admin/openclaw?tab='+tab+'&dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&composition=portrait#selection');
+    ({models:'/admin/ai/models?',agent:'/admin/dealer-agent?',drift:'/admin/drift?tab=speech&'}[tab])+'dealer=saga&event=idle.ready&operator=north&room=room-1&table=room-1&game=roulette&composition=portrait#selection');
 });
 
 test('navigation keeps company and real room identity but never copies auth or diagnostic query', () => {

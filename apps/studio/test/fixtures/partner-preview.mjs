@@ -1,4 +1,4 @@
-import { assertPartnerPreviewResourceAccess, PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
+import { assertPartnerPreviewResourceAccess, PARTNER_PREVIEW_OPERATORS } from '../../lib/partner-preview-policy.mjs';
 
 // In-memory demonstration content only. This module has no repository, SQL,
 // filesystem, provider or fetch dependency and cannot fall back to global data.

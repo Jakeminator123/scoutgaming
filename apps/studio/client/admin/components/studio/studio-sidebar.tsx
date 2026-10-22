@@ -9,7 +9,7 @@ const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Cla
 export function StudioSidebar() {
   const pathname=usePathname(),search=useSearchParams().toString();
   // A deep tool marks the menu page it belongs to, so exactly one entry is current.
-  const path=isStudioAdminRoute(pathname,search)?'/admin/clips':pathname==='/admin/admin/players'?'/admin/players':pathname==='/admin/ai/models'||pathname==='/admin/ai/chat'?'/admin/openclaw':adminToolHome(adminToolName(pathname))??pathname;
+  const path=isStudioAdminRoute(pathname,search)?'/admin/clips':pathname==='/admin/admin/players'?'/admin/players':adminToolHome(adminToolName(pathname))??pathname;
   const systemActive=adminSystemGroups.some(group=>group.links.some(link=>link.href===path));
   return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>ADMIN</small></Link>
     <nav aria-label="Huvudmeny">

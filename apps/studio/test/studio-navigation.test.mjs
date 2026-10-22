@@ -28,15 +28,15 @@ test('legacy dealer paths retain their current guide label', () => {
   expectLabel('/events', 'Dealers & klipp');
   expectLabel('/control/events', 'Dealers & klipp');
   expectLabel('/admin/events', 'Dealers & klipp');
-  expectLabel('/probe', 'OpenClaw');
-  expectLabel('/control/probe', 'OpenClaw');
-  expectLabel('/admin/probe', 'OpenClaw');
+  expectLabel('/probe', 'Dealers & klipp');
+  expectLabel('/control/probe', 'Dealers & klipp');
+  expectLabel('/admin/probe', 'Dealers & klipp');
   expectLabel('/admin/replies', 'Dealers & klipp');
   expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Spelstatus & integritet');
-  expectLabel('/openclaw', 'OpenClaw');
-  expectLabel('/operator-chat', 'OpenClaw');
-  expectLabel('/control/operator-chat', 'OpenClaw');
+  expectLabel('/openclaw', 'Systeminställningar');
+  expectLabel('/operator-chat', 'Dealers & klipp');
+  expectLabel('/control/operator-chat', 'Dealers & klipp');
   expectLabel('/tree', 'Dealers & klipp');
   expectLabel('/control/tree', 'Dealers & klipp');
   expectLabel('/activity', 'Dealers & klipp');
@@ -154,7 +154,7 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       const events = readFileSync(new URL('../components/control-events-page.tsx', import.meta.url), 'utf8');
       assert.doesNotMatch(events, /changeView\(|history\.pushState/);
       const routes = loadComponent('studio-types.ts');
-      assert.equal(routes.viewPaths.openclaw, '/admin/openclaw?tab=agent');
+      assert.equal(routes.viewPaths.openclaw, '/admin/dealer-agent');
       assert.equal(routes.studioViewForPath(routes.viewPaths.openclaw), 'openclaw');
       const project = createSeedProject();
       const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
@@ -172,7 +172,6 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
       visit(mountSelectedPage(ControlOpenClawChat, {...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
       assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
       const html = renderToStaticMarkup(tree);
-      assert.match(html, /href="\/admin\/openclaw\?tab=agent(?:&amp;|")/);
       assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01|Fråga OpenClaw om labbet →/);
     }
   } finally {
@@ -227,12 +226,12 @@ test('unavailable search params leave Studio navigation unselected', () => {
 });
 test('query-specific links win without losing the chat alias or selecting rooms for bolag', () => {
   const cases = [
-    ['/admin/ai/models?dealer=saga&operator=north', 'OpenClaw'], ['/admin/dealer-agent?dealer=saga', 'OpenClaw'],
-    ['/openclaw?tab=chat&dealer=saga', 'OpenClaw'], ['/control/ops?tab=chat', 'OpenClaw'],
-    ['/control/openclaw', 'OpenClaw'], ['/control/openclaw?tab=chat', 'OpenClaw'],
-    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'OpenClaw'],
-    ['/control/openclaw?dealer=astrid', 'OpenClaw'], ['/operator-chat', 'OpenClaw'],
-    ['/control/operator-chat', 'OpenClaw'], ['/admin/openclaw?tab=probe&dealer=saga', 'OpenClaw'], ['/control/lanes?lane=t10', 'Spelbolag & rum'],
+    ['/admin/ai/models?dealer=saga&operator=north', 'Systeminställningar'], ['/admin/dealer-agent?dealer=saga', 'Dealers & klipp'],
+    ['/openclaw?tab=chat&dealer=saga', 'Dealers & klipp'], ['/control/ops?tab=chat', 'Spelstatus & integritet'],
+    ['/control/openclaw', 'Systeminställningar'], ['/control/openclaw?tab=chat', 'Dealers & klipp'],
+    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Dealers & klipp'],
+    ['/control/openclaw?dealer=astrid', 'Systeminställningar'], ['/operator-chat', 'Dealers & klipp'],
+    ['/control/operator-chat', 'Dealers & klipp'], ['/admin/probe?dealer=saga', 'Dealers & klipp'], ['/control/lanes?lane=t10', 'Spelbolag & rum'],
     ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
     ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
     ['/control/administration?tab=tables', 'Spelbolag & rum'],

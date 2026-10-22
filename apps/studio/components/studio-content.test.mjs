@@ -85,33 +85,6 @@ test('position preview changes only the destination; consecutive card slots, car
   assert.deepEqual(project, before);
 });
 
-test('family upload sends exact family and green metadata, then opens the saved clip without an acceptance click', async () => {
-  const h = hooks(); const project = createSeedProject();
-  const family = inventory.families.find(row => row.situation === 'box5');
-  const uploaded = [], opened = [], busy = [], captured = [];
-  const video = { id: 'saved-variant', familyId: family.id, available: true, previewUrl: '/saved', bytes: 200, label: 'Min handrörelse', eventId: family.eventId, situation: family.situation };
-  const { FamilyVideoUpload } = load('./family-video-upload.tsx', {
-    './video-metadata-fields': { VideoCompositingFields: () => null, DealerFramingFields: () => null },
-    './studio-types': { async requestJson() { return captured.length ? { videos: [video], families: inventory.families } : { uploadMode: 'private-client-blob' }; } },
-    '../lib/upload-native-video.mjs': { async uploadNativeVideo(file, metadata, mime, options) { captured.push({ file, metadata: validateVideoMetadata(metadata), mime, options }); return { id: video.id, duplicate: false }; } },
-  }, h.react);
-  const props = { project, inventory, dealerId: 'astrid', initialFamilyId: family.id, onUploaded: (...args) => uploaded.push(args), onOpen: (...args) => opened.push(args), onBusyChange: value => busy.push(value) };
-  let tree = h.render(FamilyVideoUpload, props);
-  nodes(tree, node => node.type === 'input' && node.props.type === 'file')[0].props.onChange({ target: { files: [{ name: 'technical-file.mp4', size: 200 }] } });
-  tree = h.render(FamilyVideoUpload, props);
-  nodes(tree, node => node.type === 'input' && node.props.maxLength === 120)[0].props.onChange({ target: { value: 'Min handrörelse' } });
-  nodes(tree, node => typeof node.type === 'function' && node.type.name === 'VideoCompositingFields')[0].props.onChange({ mode: 'green-screen', threshold: 0.23, softness: 0.15, despill: 0.4 });
-  tree = h.render(FamilyVideoUpload, props);
-  await nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {} });
-  assert.equal(captured[0].metadata.familyId, family.id);
-  assert.equal(captured[0].metadata.dealerId, 'astrid'); assert.equal(captured[0].metadata.eventId, family.eventId); assert.equal(captured[0].metadata.situation, 'box5');
-  assert.equal(captured[0].metadata.label, 'Min handrörelse');
-  assert.deepEqual(captured[0].metadata.compositing, { mode: 'green-screen', threshold: 0.23, softness: 0.15, despill: 0.4 });
-  assert.deepEqual(JSON.parse(JSON.stringify(captured[0].metadata.framing)),{scale:1,x:0,y:0});
-  assert.equal(uploaded[0][1], video.id); assert.deepEqual(opened, [[family.eventId, family.situation]]); assert.deepEqual(busy, [true, false]);
-  assert.ok(!renderToStaticMarkup(h.render(FamilyVideoUpload, props)).includes('Välj hur klippet ska användas'));
-});
-
 test('saved idle background can be corrected with its original revision and exact binding, including framing',async()=>{
   const h=hooks(),calls=[],saved=[];
   const classification={dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Grundloop',notes:'',compositing:{mode:'opaque'}};
@@ -129,18 +102,6 @@ test('saved idle background can be corrected with its original revision and exac
   assert.equal(calls.length,1);assert.deepEqual(calls[0].previous,classification);assert.equal(calls[0].sha256,video.sha256);
   assert.deepEqual(calls[0].metadata,{...classification,compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:.5},framing:{scale:3,x:0,y:.4}});
   assert.equal(saved.length,1);
-});
-
-test('family upload does not borrow Astrid families for Nora and disables submission during another operation', async () => {
-  const h = hooks(); let calls = 0;
-  const { FamilyVideoUpload } = load('./family-video-upload.tsx', { './video-metadata-fields': { VideoCompositingFields: () => null, DealerFramingFields: () => null }, './studio-types': { requestJson() { calls++; throw new Error('must not request'); } } }, h.react);
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
-  const props = { project, inventory, dealerId: 'nora', initialFamilyId: inventory.families[0].id, disabled: true, onUploaded() {} };
-  const tree = h.render(FamilyVideoUpload, props);
-  assert.equal(nodes(tree, node => node.type === 'option').length, 1);
-  assert.equal(nodes(tree, node => node.type === 'fieldset')[0].props.disabled, true);
-  await nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {} });
-  assert.equal(calls, 0);
 });
 
 test('dealer backgrounds are always keyed with bounded controls and retain the exact event and situation', () => {

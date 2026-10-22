@@ -6,7 +6,7 @@ import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as adminWorkspaceRoutes from '../../../../../packages/navigation/admin-workspace-routes.mjs';
 import * as adminRouting from '../../runtime/admin-routing.mjs';
-const {ADMIN_WORKSPACE_TOOLS,ADMIN_DEPTH_TOOLS}=adminWorkspaceRoutes;
+const {ADMIN_WORKSPACE_TOOLS}=adminWorkspaceRoutes;
 import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -65,7 +65,7 @@ function descendants(tree){
   return tree&&typeof tree==='object'?[tree,...descendants(tree.props?.children)]:[];
 }
 
-test('each workspace tool marks exactly its menu page and Fördjupning lists no page the menu already has',()=>{
+test('each workspace tool marks its resource in the menu',()=>{
   const menuHrefs=new Set([...adminNavigation.adminNavigationGroups,...adminNavigation.adminSystemGroups].flatMap(group=>group.links.map(link=>link.href)));
   for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS)){
     const home=adminNavigation.adminToolHome(key);
@@ -80,18 +80,13 @@ test('each workspace tool marks exactly its menu page and Fördjupning lists no 
     assert.equal(back[0],undefined,'the tool is loading; the back link follows the data');
   }
   for(const key of ['publication','compositions','videos','dealer-studio','probe','dealer-agent','companies','rehearsal'])assert.notEqual(adminNavigation.adminToolHome(key),'/admin/tools',key+' is not a Fördjupning tool');
-  const tools=harness('../components/studio/workspace-tools.tsx');
-  const links=descendants(tools.exports.WorkspaceToolsHome()).filter(item=>item.type==='a').map(item=>item.props.href);
-  assert.deepEqual(links,ADMIN_DEPTH_TOOLS.map(key=>'/admin/'+key));
-  for(const href of links)assert.equal(menuHrefs.has(href),false,href+' would be reachable twice');
-  assert.equal(adminNavigation.adminPageLabels['/admin/tools'],'Fördjupning');
   assert.equal(adminNavigation.adminPageLabels['/admin/structure'],'Kopplingar & användning');
   assert.equal(adminNavigation.adminPageLabels['/admin/deletion'],undefined,'the merged page has no second label');
   for(const group of adminNavigation.adminSystemGroups)for(const link of group.links)assert.equal(adminNavigation.adminNavigationGroups.some(primary=>primary.links.some(row=>row.href===link.href)),false,link.href+' duplicates Skapande/Verksamhet');
 });
 
 test('a loaded tool shows one back link to its menu page and keeps the dealer context for the clip map',async()=>{
-  for(const [section,home,label] of [['replies','/admin/tools','Fördjupning'],['videos','/admin/dealers','Dealerregister'],['compositions','/admin/clips','Klippkarta'],['publication','/admin/rooms','Spelbolag & rum']]){
+  for(const [section,home,label] of [['replies','/admin/dealers','Dealers'],['videos','/admin/dealers','Dealers'],['compositions','/admin/clips','Klippkarta'],['publication','/admin/rooms','Spelbolag & rum']]){
     const h=harness('../components/studio/workspace-tools.tsx','?dealer=dragan');
     h.render(h.exports.WorkspaceTool,{section});await h.settle();
     const nav=node(h.render(h.exports.WorkspaceTool,{section}),item=>item.props?.['aria-label']==='Arbetsytor');
@@ -203,63 +198,4 @@ for(const query of ['room=missing','room=room-evening&room=room-evening'])test('
   const h=publicationWorkspaceHarness(search);await h.settle();h.lifecycle().props.onChanged(h.snapshot);await h.settle();
   assert.equal(h.window.location.search,search);assert.equal(new URLSearchParams(h.window.location.search).has('table'),false);
   assert.equal(h.history.state.__scoutAdminHistory,undefined);
-});
-
-const journalTree=h=>{const entry=h.exports.ConnectedServices({path:'/admin/admin/log'});return h.render(entry.type,entry.props);};
-const journalMarkup=h=>require('react-dom/server').renderToStaticMarkup(journalTree(h));
-
-test('company journal reads only its catalogue, uses exact slugs and excludes archived or suspended companies',async()=>{
-  const operator={id:'internal-id',name:'Visningsnamn med mellanslag',slug:'actual-company',status:'active',archivedAt:null};
-  const data={source:'registered',administration:{operators:[operator,
-    {...operator,id:'archived',name:'Arkiverat bolag',slug:'archived-company',archivedAt:'2026-10-17'},
-    {...operator,id:'suspended',name:'Avstängt bolag',slug:'suspended-company',status:'suspended'},
-    {...operator,id:'missing-slug',name:'Bolag utan adress',slug:''},
-    {...operator,id:'invalid-slug',name:'Felaktig adress',slug:'../other'},
-  ]}};
-  const h=harness('../components/studio/connected-services.tsx','',path=>{assert.equal(path,'/admin/_data/catalog','journal must not read project or videos');return data;});
-  assert.match(journalMarkup(h),/Läser registrerade bolag/);await h.settle();
-  const view=journalTree(h),links=descendants(view).filter(row=>row.type==='a');
-  assert.deepEqual(links.map(row=>row.props.href),['/partner/actual-company/team?scope=company']);
-  const markup=journalMarkup(h);
-  assert.match(markup,/Bolagsjournal/);assert.match(markup,/Visningsnamn med mellanslag/);assert.match(markup,/Visa journal/);
-  assert.match(markup,/Gemensam historik för hela Admin finns ännu inte/);
-  assert.match(markup,/Bolag utan adress/);assert.match(markup,/adress saknas eller är ogiltig/);
-  assert.doesNotMatch(markup,/Arkiverat bolag|Avstängt bolag/);assert.equal(h.requests.length,1);assert.equal(h.requests[0].path,'/admin/_data/catalog');
-  assert.equal(h.requests[0].init.method,'GET');assert.equal(h.requests[0].init.credentials,'same-origin');assert.equal(h.requests[0].init.cache,'no-store');assert.equal(h.requests[0].init.redirect,'error');assert.ok(h.requests[0].init.signal);
-});
-
-test('company journal has an honest empty state without fabricated company links',async()=>{
-  const h=harness('../components/studio/connected-services.tsx','',{source:'registered',administration:{operators:[]}});
-  journalTree(h);await h.settle();assert.match(journalMarkup(h),/Inga aktiva registrerade bolag/);
-  assert.equal(descendants(journalTree(h)).filter(row=>row.type==='a').length,0);
-});
-
-test('company journal rejects unavailable or unregistered catalogues and can retry',async()=>{
-  for(const failure of ['unavailable','unregistered']){
-    let retry=false;
-    const h=harness('../components/studio/connected-services.tsx','',()=>{
-      if(!retry&&failure==='unavailable')throw Error('Katalogen kunde inte läsas');
-      return {source:retry?'registered':'fixture',administration:{operators:[]}};
-    });
-    journalTree(h);await h.settle();
-    const alert=node(journalTree(h),row=>row.props?.role==='alert');assert.ok(alert,failure);
-    assert.doesNotMatch(journalMarkup(h),/Inga aktiva registrerade bolag/);assert.equal(descendants(journalTree(h)).filter(row=>row.type==='a').length,0);
-    retry=true;node(alert,row=>row.type==='button').props.onClick();journalTree(h);await h.settle();
-    assert.match(journalMarkup(h),/Inga aktiva registrerade bolag/);assert.equal(node(journalTree(h),row=>row.props?.role==='alert'),null);
-  }
-});
-
-for(const status of [401,403,503])test('company journal presents catalogue HTTP '+status+' without an empty or stale directory',async()=>{
-  const h=harness('../components/studio/connected-services.tsx','',{source:'registered',administration:{operators:[]}},status);
-  journalTree(h);await h.settle();assert.ok(node(journalTree(h),row=>row.props?.role==='alert'));
-  assert.match(journalMarkup(h),status===503?/Bolagsregistret kunde inte läsas/:/N1-behörigheten saknas eller har gått ut/);
-  assert.doesNotMatch(journalMarkup(h),/Inga aktiva registrerade bolag/);assert.deepEqual(h.requests.map(row=>row.path),['/admin/_data/catalog']);
-});
-
-test('company journal rejects incomplete operator projections instead of fabricating an empty list',async()=>{
-  for(const operators of [null,[null],[{id:'company',name:'Bolag',slug:'company',status:'active'}]]){
-    const h=harness('../components/studio/connected-services.tsx','',{source:'registered',administration:{operators}});
-    journalTree(h);await h.settle();assert.match(journalMarkup(h),/Bolagsregistret kunde inte verifieras/);
-    assert.equal(descendants(journalTree(h)).filter(row=>row.type==='a').length,0);
-  }
 });

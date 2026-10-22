@@ -3,7 +3,7 @@ import { DealerAssistantShell } from '@/components/studio/dealer-assistant-shell
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Both workspaces stay mounted: changing tools preserves their independent drafts.
-export default function ClipsPage({active=true,dealersActive=false,onImportBusyChange,chatActive=false,children,registrationBlocked,onRegistered}:{active?:boolean;dealersActive?:boolean;onImportBusyChange?:(busy:boolean)=>void;chatActive?:boolean;children:ReactNode;registrationBlocked?:boolean;onRegistered?:()=>void}) {
+export default function ClipsPage({active=true,dealersActive=false,onImportBusyChange,children,registrationBlocked,onRegistered}:{active?:boolean;dealersActive?:boolean;onImportBusyChange?:(busy:boolean)=>void;children:ReactNode;registrationBlocked?:boolean;onRegistered?:()=>void}) {
   const router=useRouter(), query=useSearchParams();
   const importing=query.get('tool')==='import';
   function showTool(tool:'map'|'import') {
@@ -12,13 +12,11 @@ export default function ClipsPage({active=true,dealersActive=false,onImportBusyC
     return router.push(`/admin/clips${next.size?`?${next}`:''}`);
   }
   return <>
-    <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active&&!dealersActive}>
+    <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active&&!(dealersActive&&importing)}>
       <button aria-pressed={active&&!importing} onClick={()=>showTool('map')}>Klippkarta</button>
-      <button aria-pressed={dealersActive&&!importing} onClick={()=>{const next=new URLSearchParams(location.search);next.delete('tool');router.push('/admin/dealers'+(next.size?'?'+next:''));}}>Dealerregister</button>
-      <button aria-pressed={importing} onClick={()=>showTool('import')}>Lägg till dealer eller filmer</button>
+      <button aria-pressed={importing} onClick={()=>showTool('import')}>Ladda upp klipp</button>
     </nav>
     <div className="studio-workspace-mount" hidden={!active||importing}>{children}</div>
-    <DealerAssistantShell pageMode={chatActive?'chat':(active||dealersActive)&&importing?'import':null} requestedDealerId={query.get('dealer')??''} onBusyChange={onImportBusyChange} registrationBlocked={registrationBlocked} onRegistered={onRegistered}
-      onShowPage={mode=>mode==='chat'?router.push('/admin/ai/chat'):showTool('import')}/>
+    <DealerAssistantShell pageMode={(active||dealersActive)&&importing?'import':null} requestedDealerId={query.get('dealer')??''} onBusyChange={onImportBusyChange} registrationBlocked={registrationBlocked} onRegistered={onRegistered}/>
   </>;
 }

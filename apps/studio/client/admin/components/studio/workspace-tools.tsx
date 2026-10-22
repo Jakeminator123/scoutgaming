@@ -16,7 +16,6 @@ import type {StudioProject} from '../../../../../../packages/presentation/contra
 import type { ConnectionStatus } from '../../../../components/studio-types';
 import type { VideoInventory } from '../../../../../../packages/presentation/contracts/media-inventory.mjs';
 import {studioNavigationContextFromQuery} from '../../../../lib/studio-navigation.mjs';
-import {ADMIN_DEPTH_TOOLS,ADMIN_WORKSPACE_TOOLS} from '../../../../../../packages/navigation/admin-workspace-routes.mjs';
 import {labUrl} from '../../../../lib/lab-url.mjs';
 import {withAdminContext} from '../../../runtime/admin-routing.mjs';
 import {adminPageLabels,adminToolHome} from '../../lib/admin-navigation';
@@ -24,19 +23,6 @@ import {ConnectedServices} from './connected-services';
 
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
   operators:PublicationOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
-const depthDescriptions:Record<string,string>={
-  'media-review':'Godkänn dealerns exakta ljud, video och synk per replik.',
-  replies:'Sparade svar per dealer med exakt text, ljud och läppsynk.',
-  events:'Vilka klipp och villkor som gäller för varje spelhändelse.',
-  guide:'Hjälp och arbetssteg för Admin.',
-};
-// Fördjupning lists only tools without a menu page of their own.
-export function WorkspaceToolsHome(){return <section className="admin-system-page" aria-labelledby="workspace-tools-title">
-  <header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="workspace-tools-title">Fördjupning</h1>
-    <p>Fördjupade verktyg för tal, svar och spelhändelser – dealers, bolag och rum hanteras i huvudmenyn.</p></div></header>
-  <ul className="admin-system-grid" aria-label="Fördjupning">{ADMIN_DEPTH_TOOLS.map(key=><li className="admin-system-card" key={key}><h2>{ADMIN_WORKSPACE_TOOLS[key as keyof typeof ADMIN_WORKSPACE_TOOLS]}</h2><p>{depthDescriptions[key]}</p>
-    <a className="studio-button mt-4" href={withAdminContext('/admin/'+key,location.search)}>Öppna</a></li>)}</ul></section>;}
-
 export function WorkspaceTool({section}:{section:string}){
   const [,refreshContext]=useState(0);
   // Refresh only when Events crosses the overview/editor boundary. Local editor

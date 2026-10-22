@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createPreviewRuntime, operatorPackageRevision, sectionNotConnected, validatePreviewSnapshot } from './preview-runtime.mjs';
 import { destinationsFor, normalizeView } from './navigation.mjs';
-import { readPartnerPreviewFixture } from '../../lib/partner-preview-fixtures.mjs';
+import { readPartnerPreviewFixture } from '../../test/fixtures/partner-preview.mjs';
 import { createPartnerPreviewContext } from '../../lib/partner-preview-policy.mjs';
 
 const require=createRequire(new URL('../../package.json',import.meta.url));

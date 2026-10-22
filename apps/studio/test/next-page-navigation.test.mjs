@@ -133,7 +133,7 @@ test('actual native page guard returns every current view after public, standalo
   }
 });
 
-test('retired AI documents reach their OpenClaw tab across flags and mounts without redirecting writes', () => {
+test('retired AI documents reach their resource across flags and mounts without redirecting writes', () => {
   const platform = require('../../../packages/navigation/server/platform-routing.mjs');
   const headers = {host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   for (const basePath of ['', '/studio']) for (const unified of [false,true]) for (const nativeStudio of [false,true]) {
@@ -147,9 +147,9 @@ test('retired AI documents reach their OpenClaw tab across flags and mounts with
       for (const method of ['GET','HEAD']) {
         const request = new Request(url,{headers,method});
         const response = middleware(request), destination = new URL(response.headers.get('location'));
-        assert.equal(response.status,307);assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/openclaw');
+        assert.equal(response.status,307);assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,({agent:'/admin/dealer-agent',drift:'/admin/drift',models:'/admin/ai/models'})[target]);
         // The OpenClaw page owns its tab; a legacy tab never competes with it.
-        assert.deepEqual(destination.searchParams.getAll('tab'),[target]);
+        assert.deepEqual(destination.searchParams.getAll('tab'),target==='drift'?['speech']:[]);
         for (const [key,value] of Object.entries(context)) if (key !== 'tab') assert.equal(destination.searchParams.get(key==='lane'?'composition':key),value);
         assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.hash,'#selection');
         if(section.startsWith('/control/')) assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
@@ -444,7 +444,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     ]) for(const method of ['GET','HEAD']) {
       const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
       assert.equal(response.status,307,path);
-      const admin=({tree:'events',activity:'rehearsal',zones:'compositions',administration:'drift',openclaw:'openclaw?tab=models','operator-chat':'openclaw?tab=agent',probe:'openclaw?tab=probe'}[path]??path);
+      const admin=({tree:'events',activity:'rehearsal',zones:'compositions',administration:'drift',openclaw:'ai/models','operator-chat':'dealer-agent',probe:'probe'}[path]??path);
       assert.equal(response.headers.get('location'),['guide','videos','probe','events','tree','activity','zones','openclaw','operator-chat','administration'].includes(path)?'https://game.fixture.invalid/admin/'+admin+(admin.includes('?')?'&':'?')+'dealer=dragan':'https://game.fixture.invalid/control'+(target?'/'+target:''));
     }
     const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
@@ -472,7 +472,7 @@ test('retired publication and tool documents redirect with context in every nati
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target]of [['rooms','rooms'],['companies','companies'],['lanes','rooms'],['guide','guide'],['videos','videos'],['probe','openclaw?tab=probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']]){
+    for(const [section,target]of [['rooms','rooms'],['companies','companies'],['lanes','rooms'],['guide','guide'],['videos','videos'],['probe','probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']]){
       const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
       for(const method of ['GET','HEAD']){
         const response=middleware(new Request(url,{headers,method}));

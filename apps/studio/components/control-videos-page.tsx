@@ -95,7 +95,7 @@ function SelectedControlVideosPage({
       primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || intakePending} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
     >
       <div className="sg-page-body"><fieldset style={{border:0,padding:0,margin:0,minWidth:0}} disabled={deleting} onClickCapture={event=>{if(deleting){event.preventDefault();event.stopPropagation();}}}>
-      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/admin/dealer-studio','Innehåll'],['/admin/events','Händelser'],['/admin/openclaw?tab=probe','AI-småprat vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
+      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/admin/dealer-studio','Innehåll'],['/admin/events','Händelser'],['/admin/probe','AI-småprat vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label}</a>)}</nav>
       <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
       {incompatibleBindings.length ? (
