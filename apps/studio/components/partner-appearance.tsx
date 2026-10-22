@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from 'react';
 import styles from './partner-appearance.module.css';
 import {PartnerAppearancePreview} from './partner-appearance-preview';
-import {effectivePartnerAdjustments} from '../lib/partner-package-view.mjs';
+import {effectivePartnerAdjustments,partnerLayerChoices} from '../lib/partner-package-view.mjs';
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
 import {appearanceBranding, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
@@ -170,7 +170,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
         const layer = key === 'color' ? lane?.layers.table : lane?.layers[key];
         const effective = selected[key] ?? inherited[key] ?? (key !== 'color' ? layer?.default : undefined);
         if (!allowed.has(token)) return roomLayout ? <div className={styles.lockedChoice} key={key}><span>{labels[key]}</span><strong>{effective ? labelOf(effective) : t('Inget valt','None selected')}</strong><small>{t('Låst i publicerat paket','Locked in published package')}</small></div> : <label className={styles.row} key={key}>{labels[key]}<input disabled readOnly value={t('Inte tillgängligt i denna presentation','Unavailable in this presentation')} /></label>;
-        const values = key === 'dealer' ? dealerChoices : key === 'color' ? lane?.layers.table.colors ?? [] : layer?.allowed ?? [];
+        const values: readonly string[] = key === 'dealer' ? dealerChoices : key === 'color' ? lane?.layers.table.colors ?? [] : lane ? partnerLayerChoices(lane, key) : [];
         if (key === 'color' && !values.length) return <div className={styles.row} key={key}><label>{labels[key]}<input type="color" aria-label={labels[key]} value={/^#[a-f0-9]{6}$/i.test(selected.color ?? '') ? selected.color : '#000000'} onChange={event => change('color',event.target.value.toLowerCase())} /></label><button type="button" className="sg-btn" disabled={!selected.color} onClick={() => change('color','')}>{t('Använd standardfärg','Use default colour')}</button><span className={styles.hint}>{selected.color || t('Standard','Default')}</span></div>;
         const selectedValue = selected[key] ?? '';
         return <label className={styles.row} key={key}>{labels[key]}<select aria-label={labels[key]} value={selectedValue} disabled={!values.length} onChange={event => change(key,event.target.value)}><option value="">{t('Standard','Default')}{key !== 'color' && (room ? inherited[key] ?? layer?.default : layer?.default) ? `: ${labelOf((room ? inherited[key] ?? layer?.default : layer?.default)! )}` : ''}</option>{selectedValue && !values.includes(selectedValue) ? <option value={selectedValue}>{labelOf(selectedValue)} — {t('inte längre tillgängligt','no longer available')}</option> : null}{values.map(value => <option key={value} value={value}>{labelOf(value)}</option>)}</select></label>;

@@ -23,5 +23,6 @@ export function validateBackgroundPlayback(value: unknown, options?: {
 export function playbackUsesJitter(value: unknown): boolean;
 export function backgroundRuleAssetIds(value: unknown): string[];
 export function layerRuleAssetIds(value: unknown, role?: LayerPlaybackRole): string[];
+export function selectableLayerBases(allowed: readonly string[] | null | undefined, policy: unknown, defaultAssetId?: string | null): string[];
 export function defaultBackgroundRule(assetId: string, id: string): BackgroundPlaybackRule;
 export function defaultLayerRule(assetId: string, id: string, options?: { role?: LayerPlaybackRole; everyMs?: number; jitterMs?: number }): BackgroundPlaybackRule;

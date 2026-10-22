@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles} from '../lib/partner-package-view.mjs';
+import {effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles,partnerLayerChoices} from '../lib/partner-package-view.mjs';
 import {PartnerPackageView} from '../components/partner-package-view.mjs';
 import { defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -91,4 +91,17 @@ test('compact published summary follows the selected owned room and its exact ov
   assert.doesNotMatch(sv,/Second composition|image\/png|video\/webm|lane=/);
   const en=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:'vip',language:'en'}));
   assert.match(en,/Published composition/);assert.match(en,/Three separate layers/);assert.doesNotMatch(en,/<dt>Bakgrund|Provspela|Publicerat/);
+});
+
+test('Admin table choices exclude tablePlayback clips and a branding naming one shows the default table',()=>{
+  const clipId='33333333-3333-4333-8333-333333333333';
+  const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),
+    layers:{table:{enabled:true,default:tableId,allowed:[tableId,clipId]},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid']}},
+    tablePlayback:{schemaVersion:1,rules:[{id:'living',assetId:clipId,trigger:{everyMs:25000},maxDurationMs:10000,cooldownMs:25000,maxPerMinute:2,maxSecondsPerMinute:20}]}};
+  assert.deepEqual(partnerLayerChoices(lane,'table'),[tableId]);
+  assert.deepEqual(partnerLayerChoices(lane,'background'),[backgroundId],'background choices are unchanged');
+  assert.equal(partnerLaneState(lane,{lane:lane.id,table:clipId}).layers.table.selected,tableId);
+  const {tablePlayback:_policy,...plain}=lane;
+  assert.deepEqual(partnerLayerChoices(plain,'table'),[tableId,clipId],'without tablePlayback nothing changes');
+  assert.equal(partnerLaneState(plain,{lane:lane.id,table:clipId}).layers.table.selected,clipId);
 });

@@ -236,7 +236,8 @@ nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
 ## Levande lager: bord och variation (capability 24) — 22 oktober 2026
 
-Branch `codex/levande-lager` ovanpå `codex/admin-ux-klippkarta` (PR340).
+PR #343 (`codex/levande-lager`), mergad till main 20f89d42. Uppföljning i
+PR #346 (`codex/levande-lager-geometri`).
 Jakobs beställning: var tredje minut och femton sekunder, med 74 sekunders
 variation, ska ett kort mp4-klipp spelas över bakgrunden; en mp4 ska kunna
 vara basen; samma för bordet och dealern.
@@ -260,10 +261,31 @@ vara basen; samma för bordet och dealern.
 - **Verifiering.** 505/505 i de berörda sviterna (kontrakt, scheduler,
   komposition, studio-preview, entry-selector, material-trash, readiness,
   room-api, editor, preview, panel) plus 552 befintliga modell-/lagersviter;
-  Admin-bygge (tsc admin+lobby, esbuild) och Studio-tsc passerar. Ingen
-  produktion berörd. Efter deploy måste spelservern svara capability 24 innan
-  Admin kan spara variation eller bordsklipp; tills dess fungerar fasta
-  intervall som förut.
+  Admin-bygge (tsc admin+lobby, esbuild) och Studio-tsc passerar.
+- **Produktion.** v24 är live i produktion sedan main 20f89d42. Såvitt känt
+  är inga bordsklipp publicerade än. Fasta intervall utan bordsklipp fungerar
+  som förut.
+- **Uppföljning efter granskning (PR #346).** (1) Spelplanet (platser,
+  insatser, dealerns kort, kortprojektion) räknas från det monterade
+  basbordet, aldrig från ett spelande bordsklipp. Ett klipp med annat format
+  flyttade tidigare spelet mitt i en hand. (2) Bordsklipp spelas bara över
+  standardbordet. Väljer spelaren eller rummet ett annat bord är bordets
+  scheduler pausad. (3) Media som `tablePlayback` refererar till är inte
+  bordsval. De finns kvar i bordslagrets tillåtna lista eftersom reglerna
+  kräver det, men erbjuds inte i spelarpanelen, lobbyns rumsval eller Admins
+  Utseende. Ett sparat spelarval eller en override som pekar på ett klipp
+  faller tillbaka till standardbordet, och Admin avvisar att spara ett klipp
+  som bord (422). Utan `tablePlayback` är allt som förut. (4) Mute-testet i
+  `test/background-playback.mjs` gick igenom vacuöst och kontrollerar nu
+  verkligen att lagerhändelserna kommer före mute-returen.
+  Bordsklipp bör ha samma pixelmått som basbilden: ett avvikande klipp
+  flyttar inte spelet men ritas i sitt eget format och linjerar inte visuellt.
+  Verifiering: nya tester fallerar mot koden före fixen. Riktade sviter
+  (scheduler, komposition, card-view, presentation-layers, studio-preview,
+  capability, game-lanes, player-choices, public-operator-rooms,
+  partner-package-view, partner-branding-drafts) och hela Studio-sviten är
+  gröna. Moving-speech-grupperna kördes inte lokalt (`ws` saknades i
+  worktree) och berörs inte.
 - **Midnight-bakgrunden.** Skript för Jakob: `C:\Users\jakem\CroupierBackups\
   midnight-background-2026-10-22\KOR-MIDNIGHT.cmd` registrerar stillbild,
   loop och två varianter via Admins ordinarie lageruppladdning och binder dem

@@ -375,7 +375,7 @@ Sammansättning är den enda editorn för presentationen. **Ny sammansättning**
 
 **Levande lager: bakgrund och bord.** Både **Bakgrund** och **Bord** kan ha en stillbild eller en ljudlös MP4/WebM-loop som grund, och ovanpå den korta klipp som spelas med jämna mellanrum och sedan återgår till grunden.
 1. Välj standardbild eller videoloop för lagret och se till att lagret är aktivt.
-2. Ladda upp det korta klippet (t.ex. en blomma eller en skugga som passerar) och markera det som tillåtet för samma lager.
+2. Ladda upp det korta klippet (t.ex. en blomma eller en skugga som passerar) och markera det som tillåtet för samma lager. Ett bordsklipp bör ha samma pixelmått som bordets basbild; annars hamnar klippet förskjutet mot korten och insatserna, som alltid följer basbordet. Ett bordsklipp blir inte ett bordsval för spelare eller rum.
 3. Välj **Lägg till bakgrundsklipp** respektive **Lägg till bordsklipp**. Standard är **Automatiskt · tidsintervall**: ungefär var 195:e sekund med **Variation ± 74 sekunder**, högst 10 sekunder per klipp, minst 60 sekunder mellan starter och högst en start per minut. Raden under fälten sammanfattar regeln i klartext.
 4. Ändra **Spela var (sekunder)** och **Variation ± (sekunder)** vid behov. Variationen är 0–120 sekunder och alltid mindre än intervallet; sätt 0 för exakt takt. Alternativet **Spelhändelse** startar klippet vid t.ex. blackjack eller vinst i stället för på tid.
 5. **Prova klipp** spelar klippet i förhandsvisningen utan att spara och utan att starta dealerns tal. Spara sammansättningen och publicera separat när scenen är klar.
