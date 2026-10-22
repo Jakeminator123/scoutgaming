@@ -53,13 +53,27 @@ regeländring godkänner ingen produktion eller ändring av CI-/branchskydd.
 
 ## Lägre CI- och byggkostnad — 22 oktober 2026
 
-De små Git-/Node-jobben `changes` och slutgrinden `CI` använder `ubuntu-slim`.
-Tunga byggen och regressioner ligger kvar på `ubuntu-24.04`; testurval,
-negativa grindprov, migrationsberedskap, säkerhetskontroller och branchskydd
-är oförändrade. GitHubs publicerade minutpris för de två små jobben är
-0,002 USD i stället för 0,006 USD; detta är pris per minut, ingen verifierad
-minskning av hela fakturan. Lokalt passerar 10/10 befintliga CI-grindprov;
-exakt-head-CI krävs före merge. Budgetar, behörigheter, deployspärrar och produktionsdata ändras inte.
+Lipsync-proven återanvänder nu regressionsjobbets Node 24, FFmpeg och låsta
+gateway-beroenden. Alla fyra workerprov behålls: gatewaytest, Python-unittest,
+Python-compileall och Bash-syntax. Python 3.11 väljs separat utan att ändra
+övriga provs Pythonmiljö. Slutgrinden kräver ett uttryckligt slutförandekvitto;
+saknat kvitto, fel, avbrott och oväntat överhoppade jobb blockerar fortfarande.
+Klassificeringen använder slims förinstallerade Node 24 med blockerande
+majorkontroll och åtta nödvändiga filer via sparse checkout. Hela commitdiffen
+klassificeras fortfarande, även för filer som inte checkats ut. Separat
+Node-hämtning tas bort efter mätningen 24 s setup av totalt 53 s; ny starttid
+måste mätas på den nya headen. Slutgrinden CI behåller ubuntu-slim; full
+regression, Moving och produktionsledgergrindens urval är oförändrade.
+
+Historiska stegtider för 1 101 matchade körningar uppskattar 1 281 färre
+avrundade VM-minuter med konsolideringen (cirka 7,69 USD brutto vid 0,006
+USD/minut); detta är ingen verifierad minskning av fakturan. Lokalt passerar
+13/13 CI-policyprov med Node 24 och fyra workers, inklusive simulerat fel i
+vart och ett av de fyra workerkommandona, felaktig/saknad Node och en verklig
+sparse Git-fixture med kod, worker, borttagning och rename utanför worktree.
+Policyn körs också från de åtta filerna; saknat importberoende blockerar.
+Ny exakt-head-CI krävs före merge.
+Budgetar, behörigheter, deployspärrar och produktionsdata ändras inte.
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
 vanlig kodändring kan återanvända installationslagret. En selektiv CI-kontroll

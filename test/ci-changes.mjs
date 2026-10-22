@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { ciScope, ciSelection, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired } from '../tools/ci-changes.mjs';
 
 const change = (path, extra = {}) => ({ path, before: '100644', after: '100644', status: 'M', ...extra });
@@ -220,11 +221,16 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     encoding:'utf8',env:{...process.env,CI_NEEDS:JSON.stringify(needs)},
   }).status;
   const full = { changes:{result:'success',outputs:{scope:'full',moving:'false'}}, documentation:{result:'skipped'},
-    'dealer-regression':{result:'success'},'lipsync-worker':{result:'success'}, 'moving-worker':{result:'skipped'} };
+    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
   const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.documentation.result='success';
-  for (const job of ['dealer-regression','lipsync-worker']) docs[job].result='skipped';
+  docs['dealer-regression'].result='skipped'; delete docs['dealer-regression'].outputs;
   assert.equal(run(docs),0);
+  for (const receipt of [undefined,'','false',false]) {
+    const broken=structuredClone(full); broken['dealer-regression'].outputs.lipsync_verified=receipt; assert.notEqual(run(broken),0);
+  }
+  const missingOutputs=structuredClone(full); delete missingOutputs['dealer-regression'].outputs; assert.notEqual(run(missingOutputs),0);
+  const missingDealer=structuredClone(full); delete missingDealer['dealer-regression']; assert.notEqual(run(missingDealer),0);
   for (const result of ['failure','cancelled','skipped']) {
     const broken=structuredClone(full); broken['dealer-regression'].result=result; assert.notEqual(run(broken),0);
     const missingDocs=structuredClone(docs); missingDocs.documentation.result=result; assert.notEqual(run(missingDocs),0);
@@ -242,4 +248,153 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   }
   const unreported=structuredClone(full); delete unreported['moving-worker']; assert.notEqual(run(unreported),0);
   assert.notEqual(run({}),0);
+});
+
+test('consolidated worker checks use isolated Python and only attest after every command passes', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
+  const dealer = yaml.split('  dealer-regression:\n')[1]?.split('  moving-worker:\n')[0];
+  assert.ok(dealer, 'the full regression job must exist');
+  assert.doesNotMatch(yaml, /^  lipsync-worker:/m, 'the redundant worker VM must be removed');
+  assert.ok(dealer.includes('lipsync_verified: $' + '{{ steps.lipsync_contracts.outputs.verified }}'));
+  const python = dealer.split('      - name: Select the worker Python without changing other checks\n')[1]?.split('      - name:')[0];
+  assert.ok(python?.includes('id: lipsync_python'));
+  assert.ok(python.includes('uses: actions/setup-python@v6'));
+  assert.ok(python.includes("python-version: '3.11'"));
+  assert.ok(python.includes('update-environment: false'), 'worker setup must not replace other checks\' Python');
+  const step = dealer.split('      - name: Verify lipsync worker contracts in the prepared regression VM\n')[1]?.split('\n      # OpenClaw')[0];
+  assert.ok(step?.includes('id: lipsync_contracts'));
+  assert.ok(step.includes('shell: bash'));
+  assert.ok(step.includes('LIPSYNC_PYTHON: $' + "{{ steps.lipsync_python.outputs['python-path'] }}"));
+  assert.doesNotMatch(python + step, /^\s+(?:if|continue-on-error):/m, 'worker checks cannot silently skip or ignore failure');
+  const script = step.split('        run: |\n')[1]?.split('\n').filter(line=>line.trim()).map(line=>line.slice(10)).join('\n');
+  assert.ok(script);
+  const expected = [
+    'npm --prefix services/astrid-gpu-worker/gateway test',
+    'python -m unittest discover -s services/astrid-gpu-worker/tests -v',
+    'python -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py',
+    'bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh',
+  ];
+  const root = mkdtempSync(join(tmpdir(),'ci-lipsync-step-'));
+  const output = join(root,'output'), calls = join(root,'calls');
+  const shell = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+  const driver = [
+    'calls=0',
+    'record() { calls=$((calls+1)); printf \'%s\\n\' "$*" >> "$WORKER_CALLS"; if [ "$calls" = "$FAIL_CALL" ]; then return 23; fi; }',
+    'npm() { record "npm $*"; }',
+    'worker_python() { record "python $*"; }',
+    'bash() { record "bash $*"; }',
+    script,
+  ].join('\n');
+  try {
+    for (const fail of [0,1,2,3,4]) {
+      writeFileSync(output,''); writeFileSync(calls,'');
+      const run = spawnSync(shell,['--noprofile','--norc','-e','-o','pipefail','-c',driver],{
+        encoding:'utf8',env:{...process.env,LIPSYNC_PYTHON:'worker_python',GITHUB_OUTPUT:output.replaceAll('\\','/'),WORKER_CALLS:calls.replaceAll('\\','/'),FAIL_CALL:String(fail)},
+      });
+      assert.ifError(run.error);
+      assert.equal(run.status,fail === 0 ? 0 : 23,run.stderr);
+      assert.deepEqual(readFileSync(calls,'utf8').trim().split('\n'),expected.slice(0,fail || 4));
+      assert.equal(readFileSync(output,'utf8'),fail === 0 ? 'verified=true\n' : '', 'a failed command must not produce a success receipt');
+    }
+  } finally { rmSync(root,{recursive:true,force:true}); }
+});
+
+
+test('classifier rejects an unavailable or incompatible preinstalled Node runtime', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n','\n');
+  const changes = yaml.split('  changes:\n')[1]?.split('  documentation:\n')[0];
+  assert.ok(changes);
+  assert.doesNotMatch(changes,/actions\/setup-node/);
+  assert.doesNotMatch(changes,/^\s+(?:if|continue-on-error):/m,'classifier and runtime checks must remain mandatory');
+  const guard = changes.match(/- name: Verify preinstalled Node 24\n\s+run: node -e "([^"\n]+)"/)?.[1];
+  assert.ok(guard,'the installed runtime must be checked before running policy code');
+  assert.ok(changes.indexOf('Verify preinstalled Node 24') < changes.indexOf('Verify CI selection and final gate'));
+  for (const version of ['24.21.0','24.22.0']) runInNewContext(guard,{process:{versions:{node:version}}});
+  for (const version of ['','22.23.1','25.0.0']) {
+    assert.throws(()=>runInNewContext(guard,{process:{versions:{node:version}}}),/Preinstalled Node 24 is required/);
+  }
+  const shell = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+  const unavailable = spawnSync(shell,['--noprofile','--norc','-e','-o','pipefail','-c',
+    'node() { return 127; }\nnode -e "' + guard + '"\necho classifier-continued'],{encoding:'utf8'});
+  assert.ifError(unavailable.error);
+  assert.equal(unavailable.status,127);
+  assert.equal(unavailable.stdout,'','an unavailable runtime must not continue classification');
+});
+
+test('sparse checkout retains the full commit diff and every policy dependency', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n','\n');
+  const changes = yaml.split('  changes:\n')[1]?.split('  documentation:\n')[0];
+  assert.match(changes,/runs-on: ubuntu-slim/);
+  assert.match(changes,/fetch-depth: 2/);
+  assert.match(changes,/sparse-checkout-cone-mode: false/);
+  assert.doesNotMatch(changes,/^\s+filter:/m,'filter overrides checkout sparse patterns');
+  assert.doesNotMatch(changes,/^\s+(?:ref|repository):/m,'checkout must retain the event repository and commit');
+  const files = changes.match(/sparse-checkout: \|\n((?:            [^\n]+\n)+)/)?.[1].trim().split('\n').map(line=>line.trim());
+  assert.deepEqual(files,[
+    '.github/workflows/croupier.yml',
+    '.githooks/pre-commit-full',
+    'test/ci-changes.mjs',
+    'test/precommit-checks.mjs',
+    'tools/ci-changes.mjs',
+    'tools/documentation-paths.mjs',
+    'tools/precommit-checks.mjs',
+    'tools/check-push-target.mjs',
+  ]);
+  const root = mkdtempSync(join(tmpdir(),'ci-sparse-policy-'));
+  const env = {...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null'};
+  for (const key of Object.keys(env)) if (/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES)$/.test(key)) delete env[key];
+  const git = (...args)=>execFileSync('git',args,{cwd:root,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+  const put = (path,text)=>{mkdirSync(join(root,...path.split('/').slice(0,-1)),{recursive:true});writeFileSync(join(root,path),text);};
+  const commit = message=>{git('add','.');git('commit','-qm',message);};
+  const full = moving=>({scope:'full',migration:true,moving});
+  try {
+    git('init','-q','-b','main');git('config','user.name','CI fixture');git('config','user.email','ci@example.invalid');git('config','core.hooksPath',join(root,'no-hooks'));
+    for (const path of files) put(path,readFileSync(new URL('../'+path,import.meta.url),'utf8'));
+    put('services/moving-gpu-worker/serverless.py','worker = 1\n');
+    put('services/game/server.mjs','export const version=1;\n');
+    put('outside/runtime.mjs','export const version=1;\n');
+    put('README.md','base\n');
+    commit('base');const base=git('rev-parse','HEAD');
+    const cases = [
+      {path:'services/moving-gpu-worker/serverless.py',expected:full(true)},
+      {path:'services/game/server.mjs',expected:full(false)},
+      {path:'outside/runtime.mjs',expected:full(false)},
+      {path:'services/moving-gpu-worker/serverless.py',remove:true,expected:full(true)},
+      {path:'outside/runtime.mjs',rename:true,expected:full(false)},
+      {path:'README.md',expected:{scope:'documentation',migration:false,moving:false}},
+    ];
+    for (const [index,item] of cases.entries()) {
+      const branch='case-'+index;git('checkout','-qb',branch,base);
+      if (item.remove) git('rm',item.path);
+      else if (item.rename) {mkdirSync(join(root,'docs'));git('mv',item.path,'docs/runtime.md');}
+      else put(item.path,'changed\n');
+      commit(branch);git('checkout','-B','main',base);git('merge','--no-ff',branch,'-m','fixture merge');
+      item.head=git('rev-parse','HEAD');
+    }
+    git('sparse-checkout','set','--no-cone',...files.map(path=>'/'+path));
+    for (const item of cases) {
+      git('checkout','--detach',item.head);
+      assert.throws(()=>readFileSync(join(root,item.path)),{code:'ENOENT'},'changed product/prose files must actually be absent');
+      const pr={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/1/merge',GITHUB_SHA:item.head};
+      assert.deepEqual(ciSelection({cwd:root,env:pr}),item.expected,item.path);
+      for (const invalid of [{GITHUB_REF:'refs/heads/main'},{GITHUB_SHA:'0'.repeat(40)},{GITHUB_EVENT_NAME:'unknown'}]) {
+        assert.deepEqual(ciSelection({cwd:root,env:{...pr,...invalid}}),full(true),'uncertain identity must never become documentation-only');
+      }
+    }
+    const policy = spawnSync(process.execPath,['--test','--test-concurrency=4',
+      '--test-skip-pattern=^sparse checkout retains the full commit diff and every policy dependency$','test/ci-changes.mjs'],{
+      cwd:root,env,encoding:'utf8',maxBuffer:2*1024*1024,
+    });
+    assert.ifError(policy.error);
+    assert.equal(policy.status,0,policy.stdout+'\n'+policy.stderr);
+    // The nested run executes every other policy test; it skips only this
+    // fixture to avoid recursively creating another sparse checkout.
+    rmSync(join(root,'tools','documentation-paths.mjs'));
+    const missing = spawnSync(process.execPath,['tools/ci-changes.mjs'],{
+      cwd:root,env:{...env,GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/1/merge',GITHUB_SHA:git('rev-parse','HEAD')},encoding:'utf8',
+    });
+    assert.ifError(missing.error);
+    assert.notEqual(missing.status,0,'a missing transitive dependency must fail the classifier');
+    assert.match(missing.stderr,/ERR_MODULE_NOT_FOUND|Cannot find module/);
+  } finally { rmSync(root,{recursive:true,force:true}); }
 });
