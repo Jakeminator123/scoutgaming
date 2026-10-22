@@ -381,12 +381,21 @@ test('sparse checkout retains the full commit diff and every policy dependency',
         assert.deepEqual(ciSelection({cwd:root,env:{...pr,...invalid}}),full(true),'uncertain identity must never become documentation-only');
       }
     }
-    const policy = spawnSync(process.execPath,['--test','--test-concurrency=4',
+    const policyEnv = {...env};
+    // A separate runner must not inherit the parent node:test worker context:
+    // Node otherwise returns zero without discovering any test files.
+    delete policyEnv.NODE_TEST_CONTEXT;
+    const policy = spawnSync(process.execPath,['--test','--test-concurrency=4','--test-reporter=tap',
       '--test-skip-pattern=^sparse checkout retains the full commit diff and every policy dependency$','test/ci-changes.mjs'],{
-      cwd:root,env,encoding:'utf8',maxBuffer:2*1024*1024,
+      cwd:root,env:policyEnv,encoding:'utf8',maxBuffer:2*1024*1024,
     });
     assert.ifError(policy.error);
     assert.equal(policy.status,0,policy.stdout+'\n'+policy.stderr);
+    const total = Number(policy.stdout.match(/^# tests (\d+)$/m)?.[1]);
+    const passed = Number(policy.stdout.match(/^# pass (\d+)$/m)?.[1]);
+    const skipped = Number(policy.stdout.match(/^# skipped (\d+)$/m)?.[1]);
+    assert.ok(total >= 12 && passed === total && skipped === 0,
+      'the sparse checkout must actually execute every other policy test: '+policy.stdout+'\n'+policy.stderr);
     // The nested run executes every other policy test; it skips only this
     // fixture to avoid recursively creating another sparse checkout.
     rmSync(join(root,'tools','documentation-paths.mjs'));

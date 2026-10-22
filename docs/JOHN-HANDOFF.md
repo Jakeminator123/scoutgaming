@@ -72,6 +72,8 @@ USD/minut); detta är ingen verifierad minskning av fakturan. Lokalt passerar
 vart och ett av de fyra workerkommandona, felaktig/saknad Node och en verklig
 sparse Git-fixture med kod, worker, borttagning och rename utanför worktree.
 Policyn körs också från de åtta filerna; saknat importberoende blockerar.
+Den separata testprocessen rensar ärvd `NODE_TEST_CONTEXT` och verifierar
+faktiskt antal körda prov; exitkod noll ensam räcker inte som kvitto.
 Ny exakt-head-CI krävs före merge.
 Budgetar, behörigheter, deployspärrar och produktionsdata ändras inte.
 
