@@ -184,7 +184,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Etapp:** E4. **Beroenden:** J07, O01.
 **Mål:** varje överenskommen spelinställning har en tydlig Admin-kontroll, validerad sparning och bestämd verkan i spelet.
 
-- [x] Integrera main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad i J08/9b43e3e7 efter oberoende deltareview. Normalhook159pass/0fail/1valfrittbrowserskip. NyCI39701503691 pågår; lokal primary main orörd.
+- [x] Integrera main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad i J08/9b43e3e7 efter oberoende deltareview. Normalhook159pass/0fail/1valfrittbrowserskip. CI39701503691 och GitGuardian119571576203 completed/success på exakt9b43e3e7f7cde871cdba9efe81800bf8b5c4d329; tillämpliga jobb körda. Lokal primary main orörd.
 - [x] CI39699893800 verifierad grön på scope-/materialdelen08736cf37980cfbf6ceee2e3c36b9bb81b3cf04e; native-/materialbindning och full J08 kvarstår.
 - [ ] Följ O01:s fältmatris: UI-namn → kontraktsfält → scope → validator → writer → publicerad version → spelkonsument → verifiering. Odefinierade fält får beslut före implementation.
 - [ ] Pröva Kevins nio kandidater i O01: språk per bord; logga/placering; insatsnivåer; rundtimers; lipsync-worker av/på med nyckelreferenser; RNG shoe-proof-rapport; wallet rollback; dealer → avatarpaket/workerURL; djuplänk dealer/bord. Klassificera varje som accepterad, senare eller avvisad med skäl. Kandidaterna är inte verifierade funktioner eller produktionsmandat.
