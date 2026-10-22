@@ -228,18 +228,18 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
-    // Before a room is chosen, step 3 shows four locked portrait teasers under the glass.
+    // Before a room is chosen, step 3 shows five locked portrait teasers under the glass.
     const dealerCards = page.locator('ul[aria-label="Dealers"] > li');
     await page.goto(origin + '/lobby');
-    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(3).waitFor();
-    assert.equal(await dealerCards.count(), 4);
+    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(4).waitFor();
+    assert.equal(await dealerCards.count(), 5);
     assert.equal(await page.locator('ul[aria-label="Dealers"] button:not([disabled])').count(), 0);
     assert.equal(await page.locator('a[href^="/play/blackjack"], a[href^="/play/roulette"]').count(), 0);
     await page.goto(origin + '/lobby?operator=alpha&room=shared-room');
     await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
     assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
       ['Välj Nora', false], ['Välj Oskar', false],
-      ...['Astrid', 'Mårten', 'Dragge', 'Anna'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
+      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
     ], 'published dealers first, then disabled teasers');
     assert.ok(portraitRequests.has('/admin/_assets/lobby/images/dealers/astrid.jpg'));
     for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {

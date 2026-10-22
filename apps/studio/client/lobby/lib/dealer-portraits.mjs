@@ -8,12 +8,14 @@ export const dealerPortraits = [
   { id: 'marten', name: 'Mårten', image: `${assets}images/dealers/marten.jpg`, clips: [`${assets}videos/dealers/marten-look.mp4`] },
   { id: 'dragge', name: 'Dragge', image: `${assets}images/dealers/dragge.jpg`, clips: [`${assets}videos/dealers/dragge-shirt.mp4`] },
   { id: 'anna', name: 'Anna', image: `${assets}images/dealers/anna.png`, clips: [`${assets}videos/dealers/anna.mp4`] },
+  // Last, so the centred lock box over the five-column row does not hide her.
+  { id: 'paow', name: 'Paow', image: `${assets}images/dealers/paow.jpg`, clips: [`${assets}videos/dealers/paow-hair.mp4`] },
 ];
 export const portraitBackdrop = `${assets}images/lobby/room-salongen.png`;
 
-// Dragge is registered as `dragan` since the Kevin import
-// (apps/studio/lib/dealer-import-kevin-source.json). The alias is by exact ID only.
-const artworkAliases = Object.freeze({ dragan: 'dragge' });
+// Exact registered IDs only: PAOW was published as `paow-v2`, and Dragge is
+// registered as `dragan` since the Kevin import (apps/studio/lib/dealer-import-kevin-source.json).
+const artworkAliases = Object.freeze({ 'paow-v2': 'paow', dragan: 'dragge' });
 
 // Match an exact registered ID, never an approximate display name.
 export function portraitFor(dealer) {
