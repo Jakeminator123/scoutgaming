@@ -11,10 +11,13 @@ import { createTableCoordinator } from '../services/game/games/blackjack/table/c
 import { createPresentationGate } from '../services/game/games/blackjack/table/ports.mjs';
 import { presentationEvents } from '../services/game/partner-presentation.mjs';
 import { orderFilmedPresentationEvents } from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
-import { presentationForRow, lineIdOf, reconnectPresentation } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
+import { presentationForRow, lineIdOf } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
+import { reconnectPresentation } from '../packages/presentation/contracts/shared-room-replay.mjs';
 import { MATERIAL_REVISION_CONTRACT, PlanningRefused, assertPublishable, planningRevision, requirePlanningRevision, timingSourceOf }
   from '../services/game/games/blackjack/presentation/material-revision.mjs';
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
+import { createMovingSpeechFrameLayer } from '../packages/presentation/runtime/moving-speech-frame-layer.mjs';
+import { prepareMovingSpeechPlan } from '../services/game/moving-speech-plan.mjs';
 import { CATALOGUE_SOURCE, READY_CONTACT, activationSet, bindDeal, bindIdle, bindLine, contactFrame, isDeferred, loadCatalogue, parseCatalogue, trackFor, variantFrames, verifyActivation }
   from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { LINE_GRACE_MS, bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
@@ -652,4 +655,95 @@ test('planning/material revision: leadMs/cardMs + revision per exact dealer, lan
   refused({ binding: sv, ...pub }, 'planning_binding_other_material');
   refused({ binding: en, ...pub, leadMs: 700, cardMs: 500 }, 'planning_timing_not_from_binding');
   refused({ binding: en, ...pub, revision: sv.revision }, 'planning_revision_mismatch');
+});
+
+// K04 "Klart när": loading, speech and receiver failures and replay never change the server's
+// balance, shoe or outcome. Two identical tables (same seed, clock, shoe and commands): one delivers
+// to a healthy receiver after every step, the other's every delivery fails (receiver down, a status
+// that is not an answer, missing/unknown-language media, decoder failure) until a full replay.
+test('presentation failures and replay never change balance, shoe, ledger, audit or outcome', async () => {
+  const healthy = () => { const gate = createPresentationGate(), seen = [];
+    return { seen, sink: async row => { const a = gate.accept(row); if (a === 'new') seen.push(presentationForRow(row)); return a === 'stale' ? 'stale' : 'applied'; } }; };
+  const failures = [
+    async () => { throw new Error('receiver unreachable'); },
+    async () => 'loading',
+    async () => bindLine(catalogue, { dealer: 'dragge', line: 'twentyone', take: 1, language: 'sv' }),
+    async () => bindLine(catalogue, { dealer: 'dragge', line: 'bust', take: 1, language: 'pt' }),
+    async () => { throw new Error('moving_speech_decoder_unavailable'); },
+  ];
+  const broken = async row => { presentationForRow(row); return failures[row.ver % failures.length](row); };
+  async function play(deliver) {
+    const t = setup();
+    const steps = [() => t.join('kevin', [3]), () => t.join('john', [5]), () => t.bet('kevin', 3, 10), () => t.bet('john', 5, 10),
+      // Draw order (higher box first): john, kevin, dealer up, john, kevin, hole, kevin's hit, dealer draw.
+      () => t.setShoe(['10', '5', '10', '9', '6', '6', '4', '10']), () => t.ready('kevin'), () => t.ready('john'),
+      () => t.act('john', 'stand'), () => t.act('kevin', 'hit'), () => t.act('kevin', 'stand'),
+      async () => { t.time = (await t.snap()).plan.endAt; await t.drain(); },
+      async () => t.send('kevin', 'next', { roundId: (await t.snap()).roundId })];
+    const results = [];
+    for (const s of steps) { results.push(await s()); await deliver(t); }
+    let room; t.store.test.mutateRoom('party', r => { room = structuredClone(r); });
+    return { t, results, room, state: { balances: ['kevin', 'john'].map(t.store.test.balance), ledger: t.store.test.ledger(), audit: t.store.test.audit(),
+      reservations: t.store.test.reservations(), snapshots: [await t.snap('kevin'), await t.snap('john')] } };
+  }
+  const good = healthy();
+  const a = await play(t => t.table.deliverOutbox(good.sink));
+  let failed = 0;
+  const b = await play(async t => { const r = await t.table.deliverOutbox(broken); assert.deepEqual(r.delivered, []); failed += r.failed.length; });
+  assert.ok(failed >= b.t.rows().length, 'every delivery attempt failed');
+  assert.ok(b.t.rows().every(r => r.status === 'pending'), 'failed presentation leaves the outbox pending, nothing else');
+  // The round really played: kevin 15 and john 19 against a dealer bust (16 + 10).
+  assert.deepEqual([3, 5].map(i => a.room.game.round.boxes[i].result), [20, 20], 'both 10 stakes return 20');
+  assert.deepEqual(a.room.game.round.dealer.map(c => c.r), ['10', '6', '10']);
+  assert.deepEqual(a.state.balances, [1010, 1010]);
+  assert.deepEqual(b.state, a.state); assert.deepEqual(b.room, a.room); assert.deepEqual(b.results, a.results);
+  // Replay: everything delivered late, then every row again in reverse order (redelivery + stale).
+  const late = healthy();
+  const replay = await b.t.table.deliverOutbox(late.sink);
+  assert.deepEqual(replay.failed, []); assert.equal(replay.delivered.length, b.t.rows().length);
+  for (const row of [...b.t.rows()].reverse()) assert.ok(['applied', 'stale'].includes(await late.sink(row)));
+  assert.deepEqual(late.seen, good.seen, 'the late replay presents exactly what the healthy table presented');
+  assert.deepEqual(b.t.rows(), a.t.rows());
+  const after = { balances: ['kevin', 'john'].map(b.t.store.test.balance), ledger: b.t.store.test.ledger(), audit: b.t.store.test.audit(),
+    reservations: b.t.store.test.reservations(), snapshots: [await b.t.snap('kevin'), await b.t.snap('john')] };
+  assert.deepEqual(after, a.state, 'replay changes no balance, ledger, audit, reservation or snapshot');
+  const snap = after.snapshots[0];
+  assert.deepEqual(reconnectPresentation(snap, late.seen.at(-1)).apply, true);
+});
+
+// K04 checklist "när lipsyncworker saknas eller svarar sent" + decoder failure: the adapter's only
+// effect is main's setMovingSpeechLayer; body video and recorded audio are never touched. With
+// main's real frame layer and a failing decoder the body frame is painted unchanged.
+test('no worker, a late patch or a failed decoder: only the mouth layer is affected, the body frame stays', async () => {
+  const touched = [], set = [];
+  const composition = new Proxy({ setMovingSpeechLayer: layer => set.push(layer) }, { get(target, key) { touched.push(key); return target[key]; } });
+  const tracker = createLineMediaTracker(), speech = bindMovingSpeech({ composition, tracker });
+  touched.length = 0; // the constructor's own contract check
+  const A = lineIdOf('party', 'plan-1', 0, 'goodluck'), B = lineIdOf('party', 'plan-2', 3, 'bust');
+  // No worker: the line opens and ends without any patch; the composition is not touched at all.
+  tracker.open(A); assert.equal(speech.end(A), false); assert.deepEqual(touched, []);
+  // A failing decoder inside main's real moving-speech frame layer for line B.
+  const hash = 'a'.repeat(64);
+  const p = prepareMovingSpeechPlan({
+    binding: { dealerId: 'dragge', workerAvatar: 'dragge', sessionId: 'session-1', talkId: B, revision: 1, profileRevision: hash, textSha256: hash, audioSha256: hash, avatarSha256: hash },
+    clips: [{ dealerId: 'dragge', take: 'pos1', sha256: hash, fps: 24, frameCount: 60, kind: 'video' }],
+    frames: Array.from({ length: 60 }, (_, frame) => ({ take: 'pos1', frame })) });
+  const document = { createElement() { throw new Error('a failed decoder must not paint'); } };
+  const layer = await createMovingSpeechFrameLayer({ plan: p, document, decode: async () => { throw new Error('moving_speech_decoder_unavailable'); } });
+  tracker.open(B);
+  assert.equal(speech.offer({ lineId: B, revision: 0, layer }), true);
+  const chunk = { t: 'lapp', id: p.start.id, del: 0, fran: 0, rutor: Array.from({ length: 12 }, (_, i) => ({ tagning: 'pos1', ruta: i, rect: [10, 20, 40, 60] })) };
+  await assert.rejects(layer.push(chunk, Uint8Array.of(0, 0, 0, 1, 9, 0xF0, 0, 0, 1, 0x65, 1)), /decoder_unavailable/);
+  const video = { videoWidth: 320, videoHeight: 240 };
+  const shown = { binding: { ...p.binding }, planSha256: p.planSha256, take: 'pos1', frame: 5, sourceSha256: hash, audioPlaying: true, audioTimeSeconds: 5.5 / 24 - .22 };
+  assert.equal(layer.hasFrame(5), false);
+  assert.equal(layer.paint(video, shown), video, 'the presented body frame is returned unchanged');
+  // Speech ends; a late patch for B afterwards is refused and closed, and draws nothing.
+  assert.equal(speech.end(B), true);
+  let lateClosed = 0;
+  assert.equal(speech.offer({ lineId: B, revision: 0, layer: { paint() {}, close() { lateClosed++; } } }), false);
+  assert.equal(lateClosed, 1);
+  assert.deepEqual(set, [layer, null]);
+  assert.deepEqual([...new Set(touched)], ['setMovingSpeechLayer'], 'no body, audio, clip or frame call');
+  layer.close();
 });
