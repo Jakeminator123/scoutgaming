@@ -48,5 +48,10 @@
     "path": "test/room-idle-kevin-parity.mjs",
     "kind": "opt-in",
     "reason": "K07 parity suite for room-idle.mjs against the frozen Kevin idle-chain fixture (5aa7ed10); pure node:test, no media or database. Opt-in until a CI regression group lists it."
+  },
+  {
+    "path": "test/table-behaviours-kevin.mjs",
+    "kind": "opt-in",
+    "reason": "K07 port of five table behaviours from Kevin's shared-table tests (5aa7ed10) against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
   }
 ]
