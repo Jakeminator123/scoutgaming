@@ -25,7 +25,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
@@ -236,4 +236,12 @@ test('v9 advertises roulette while preserving every earlier capability represent
     const old = await presentationCapabilitiesResponse(new Request(endpoint, {headers: version ? {'X-Presentation-Capability-Version': version} : {}})).json();
     assert.equal(Object.hasOwn(old, 'rouletteRooms'), false);
   }
+});
+
+test('v25 announces dealer-source blackjack autoScale and keeps the v24 layer playback; v24 does not announce it',async()=>{
+  const read=async version=>{const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':String(version)}}));
+    assert.equal(response.status,200);return validatePresentationCapabilities(await response.json(),{expectedVersion:version});};
+  const cap=await read(25),old=await read(24);
+  assert.equal(cap.blackjackAutoScale,'dealer-source-v1');assert.equal(cap.layerPlayback,'table-and-jitter-v1');assert.equal(cap.blackjackAnchors,'v1');
+  assert.equal(Object.hasOwn(old,'blackjackAutoScale'),false);
 });

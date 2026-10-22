@@ -79,11 +79,13 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     const board=current?.settings?.blackjackTables?.find(row=>row.tableId===selected.get('table'));
     // Geometry belongs to the mounted base table. A living table clip only
     // changes pixels; its own size never moves seats, bets or dealer cards.
+    // An autoScale layout follows the dealer plane of the reference (idle)
+    // clip instead, so talking/variant crops never move resting cards either.
     const asset=mountedAsset('table');
     if(board&&scene.show.table&&asset&&compositor.tableGeometry){
       return {...projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
         {width:host.clientWidth,height:host.clientHeight},board,scene.layout),
-        ...projectAnchorRects(board[scene.layout],compositionAnchorFrames(current.settings,scene.layout,asset),{width:host.clientWidth,height:host.clientHeight}),tableId:board.tableId,
+        ...projectAnchorRects(board[scene.layout],compositionAnchorFrames(current.settings,scene.layout,asset),{width:host.clientWidth,height:host.clientHeight},referenceFraming??undefined),tableId:board.tableId,
         sourcePlane:projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},framing??undefined)};
     }
     const missing=Boolean(current?.settings?.blackjackTables?.length);

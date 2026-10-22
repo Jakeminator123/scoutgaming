@@ -701,9 +701,9 @@ function layoutSeats() {
     cardViewChoice.hidden=!localCards||!plane;
     if(plane){
       const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
-      const hud=$('#hud-bottom').getBoundingClientRect();
+      const hud=$('#hud-bottom').getBoundingClientRect(),filmedProfile=registeredFilmedProfile(DEALER.key);
       const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
-        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,cardView});
+        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,cardView,filmedProfile});
       $('#scene').dataset.betPlacement=layout.followCards?'under-cards':'manual';
       let geometryNotice=$('#table-geometry-warning');
       if(!geometryNotice&&layout.geometryWarning){
@@ -719,7 +719,6 @@ function layoutSeats() {
       }
       if(compactSeats)Object.assign(banner.style,{top:'auto',bottom:(scene.height-Math.min(...layout.seats.map(seat=>seat.y))+60*layout.controlScale+12)+'px'});
       Object.assign($('#dealer-cards').style,{left:(scene.left+layout.dealer.x-table.left)+'px',top:(scene.top+layout.dealer.y-table.top)+'px'});
-      const filmedProfile=registeredFilmedProfile(DEALER.key);
       if(filmedProfile&&layout.sourcePlane&&layout.tableId&&!layout.geometryWarning)
         layout.filmedLayout={profileId:filmedProfile.id,tableId:layout.tableId,layout:layout.tableLayout,sourcePlane:layout.sourcePlane};
       localCards?.setProjection(layout,scene.width,scene.height);

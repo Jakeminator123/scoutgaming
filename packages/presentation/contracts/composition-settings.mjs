@@ -31,7 +31,8 @@ export function validateCompositionSettings(value,{tableIds,assets}={}) {
       if(tableIds!==undefined&&!tableIds.includes(table.tableId))fail();
       if(assets!==undefined&&!assets.some(asset=>asset.id===table.tableId&&asset.role==='table'&&asset.game!=='roulette'))fail();
       for(const layout of ['mobile','desktop']){
-        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...(Object.hasOwn(geometry??{},'betMode')?['betMode']:[]),...(Object.hasOwn(geometry??{},'anchors')?['anchors']:[])]);
+        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...['betMode','anchors','autoScale'].filter(key=>Object.hasOwn(geometry??{},key))]);
+        if(Object.hasOwn(geometry,'autoScale'))autoScale(geometry.autoScale);
         if(Object.hasOwn(geometry,'anchors')){
           const anchors=geometry.anchors;
           if(!object(anchors)||!Object.keys(anchors).length||Object.keys(anchors).some(key=>!['cards','bets'].includes(key)))fail();
@@ -52,6 +53,23 @@ export function validateCompositionSettings(value,{tableIds,assets}={}) {
   }
   return structuredClone(value);
 }
+// Kevin's model, opt-in per board layout: the composited dealer plane decides
+// the landing point, the resting card size (the dealer's prop card) and the
+// chips. Adjustments sit on top of that scale; the filmed landing has no offset.
+function autoScale(value){
+  exact(value,['landing','cardSize','chips',...(Object.hasOwn(value??{},'adjust')?['adjust']:[])]);
+  if(['landing','cardSize','chips'].some(key=>typeof value[key]!=='boolean')||!(value.landing||value.cardSize||value.chips))fail();
+  if(!Object.hasOwn(value,'adjust'))return;
+  const adjust=value.adjust,ratio=v=>Number.isFinite(v)&&v>=.5&&v<=2;
+  if(!object(adjust)||!Object.keys(adjust).length||Object.keys(adjust).some(key=>!['cards','chips'].includes(key)))fail();
+  if(Object.hasOwn(adjust,'cards')){exact(adjust.cards,['scale']);if(!ratio(adjust.cards.scale))fail();}
+  if(Object.hasOwn(adjust,'chips')){
+    exact(adjust.chips,['dx','dy','scale']);
+    if(!ratio(adjust.chips.scale)||['dx','dy'].some(key=>!Number.isFinite(adjust.chips[key])||Math.abs(adjust.chips[key])>.5))fail();
+  }
+}
+// New board geometry starts with every automatic part on; absent stays manual.
+export function defaultBlackjackAutoScale(){return {landing:true,cardSize:true,chips:true};}
 function point(value){
   exact(value,['x','y']);
   if(['x','y'].some(key=>!Number.isFinite(value[key])||value[key]<0||value[key]>1))fail();

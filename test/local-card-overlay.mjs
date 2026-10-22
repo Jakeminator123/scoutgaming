@@ -8,6 +8,9 @@ import { createCardCursor, createLocalCardOverlay } from '../services/game/publi
 import { firstFaceTime } from '../services/game/public/card-presentation/card-face-projection.js';
 import { DRAGAN_KEVIN_PROFILE } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { filmedFaceAtTime } from '../packages/presentation/contracts/filmed-profile.mjs';
+import { filmedTransferTiming } from '../services/game/public/card-presentation/filmed-table-projection.mjs';
+import { layoutGameOverlay } from '../packages/presentation/runtime/game-overlay-layout.mjs';
+import { defaultBlackjackTableGeometry, defaultBlackjackAutoScale } from '../packages/presentation/contracts/composition-settings.mjs';
 
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
   assert.equal(calibration.videos.length, 10);
@@ -367,6 +370,33 @@ test('unregistered hashes, malformed profiles, absent source planes and hole wit
   const token=overlay.begin(filmedVideo(hole),{type:'deal',to:'dealer',faceDown:true,shoeDraw:4});
   overlay.frame(token,3);assert.equal(draw(svg,4),undefined);
   assert.equal(overlay.finish(token,4,true),false);assert.equal(draw(svg,4).attrs['data-card'],'hidden');
+});
+
+// autoScale (Kevin's model): the resting card is the prop at its filmed landing,
+// so the release blend has nothing to travel. Manual table points do.
+test('autoScale: a filmed Dragan card releases onto its resting card without a jump; manual table geometry jumps',()=>{
+  const source={x:420,y:-200,scale:.7},rect={x:560,y:420,width:800,height:450},take=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.key==='4:base');
+  const timing=filmedTransferTiming(DRAGAN_KEVIN_PROFILE,take),corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>[x*calibration.width/2,y*calibration.height/2]);
+  function release(autoScale){
+    const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');if(autoScale)board.desktop.autoScale=defaultBlackjackAutoScale();
+    const layout=layoutGameOverlay({tableGeometry:board,tableLayout:'desktop',rect,tableId:board.tableId,sourcePlane:source,...(autoScale?{dealerPlane:{...source}}:{})},
+      [0,1,2,3,4,5,6],{left:0,right:1920,top:0,bottom:1080},{filmedProfile:DRAGAN_KEVIN_PROFILE});
+    assert.equal(layout.geometryWarning,'');
+    layout.filmedLayout={profileId:DRAGAN_KEVIN_PROFILE.id,tableId:layout.tableId,layout:'desktop',sourcePlane:layout.sourcePlane};
+    const host=new Node('div');host.dataset={};const overlay=createLocalCardOverlay(host,{dealerLabel:'Dragan',filmedProfile:DRAGAN_KEVIN_PROFILE});
+    overlay.setProjection(layout,1920,1080);overlay.sync({phase:'decisions',active:0,holeDraw:null,dealer:[],hands:[{box:3,cards:[card('K','♥',1)]}]});
+    const token=overlay.begin(filmedVideo(take),{type:'deal',to:'box',box:3,shoeDraw:1,handIndex:0});
+    overlay.frame(token,timing.release/timing.fps);
+    const node=draw(host.children[0],1),pose=()=>node.attrs.transform.match(/-?\d+\.\d+/g).map(Number);
+    assert.equal(node.children[1].attrs.visibility,'visible');
+    const at=pose(),filmed=node.children[1].children[0].attrs.points.split(' ').map(p=>p.split(',').map(Number));
+    overlay.frame(token,(take.frames-1)/24);assert.equal(overlay.finish(token,1,true),true);assert.equal(node.children[1].attrs.visibility,'hidden');
+    // Largest corner travel from the filmed prop at release to the resting card, in plate px.
+    const rest=pose(),travel=Math.max(...filmed.map((q,i)=>Math.hypot(...[0,1].map(k=>(at[k]+q[k]-rest[k]-corners[i][k])*layout.scale))))/source.scale;
+    overlay.close();return travel;
+  }
+  const filmed=release(true),manual=release(false);
+  assert.ok(filmed<2,`autoScale release moves the card ${filmed} plate px`);assert.ok(manual>50,`manual table geometry: ${manual} plate px`);
 });
 
 test('Kevin resize, framing and A to B to legacy revoke a running film without reviving it after restoration',()=>{

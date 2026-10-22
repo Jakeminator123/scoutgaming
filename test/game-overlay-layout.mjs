@@ -4,8 +4,9 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {projectGamePlane,projectTableGamePlane,layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../packages/presentation/runtime/game-overlay-layout.mjs';
 import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
-import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry} from '../packages/presentation/contracts/composition-settings.mjs';
+import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry,defaultBlackjackAutoScale} from '../packages/presentation/contracts/composition-settings.mjs';
 import {calibration} from '../packages/presentation/contracts/calibration.mjs';
+import {DRAGAN_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const settings=defaultCompositionSettings();
 for(const [width,height]of [[390,844],[493,1438],[844,390],[1920,1080],[3440,1440]]){
@@ -149,4 +150,44 @@ test('compact collision check counts unscaled touch buttons even when graphics s
   board.mobile.seats.forEach((row,i)=>row.bet={x:(55+i*93)/320,y:.5});
   const result=layoutGameOverlay({tableGeometry:board,rect:{x:0,y:100,width:320,height:180}},[2,3,4],{left:0,right:320,top:0,bottom:800},{compact:true});
   assert.match(result.geometryWarning,/ryms inte/,'93px gaps overlap the actual 98px target row');
+});
+
+test('autoScale parts are independent: landing, card size and chips each follow the dealer plane only when chosen',()=>{
+  const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002'),rect={x:300,y:500,width:1200,height:675};
+  const dealerPlane={x:420,y:-200,scale:.7},boxes=[0,1,2,3,4,5,6],bounds={left:0,right:1920,top:0,bottom:1500};
+  const run=autoScale=>{const b=structuredClone(board);if(autoScale)b.desktop.autoScale=autoScale;
+    return layoutGameOverlay({tableGeometry:b,tableLayout:'desktop',rect,dealerPlane},boxes,bounds,{filmedProfile:DRAGAN_KEVIN_PROFILE});};
+  const manual=run(),screen=(r,seat)=>({x:r.x+r.positions[seat].cx*r.scale,y:r.y+r.positions[seat].cy*r.scale});
+  // A plane without the dealer (an older caller) keeps the exact manual layout.
+  assert.deepEqual(layoutGameOverlay({tableGeometry:{...board,desktop:{...board.desktop,autoScale:defaultBlackjackAutoScale()}},tableLayout:'desktop',rect},boxes,bounds),
+    layoutGameOverlay({tableGeometry:board,tableLayout:'desktop',rect},boxes,bounds));
+  const landing=run({landing:true,cardSize:false,chips:false});
+  close(landing.scale,manual.scale);assert.deepEqual(landing.seats,manual.seats);assert.equal(landing.followCards,false);
+  for(const seat of ['dealer','1','4','7']){const p=screen(landing,seat);close(p.x,420+calibration.positions[seat].cx*.7);close(p.y,-200+calibration.positions[seat].cy*.7);}
+  const size=run({landing:false,cardSize:true,chips:false});
+  close(size.scale,.7*78/63);for(const seat of ['dealer','4'])for(const axis of ['x','y'])close(screen(size,seat)[axis],screen(manual,seat)[axis]);
+  assert.deepEqual(size.seats,manual.seats);close(size.controlScale,manual.controlScale);
+  const chips=run({landing:false,cardSize:false,chips:true});
+  close(chips.scale,manual.scale);close(chips.controlScale,.7);assert.equal(chips.followCards,true);
+  chips.seats.forEach((seat,i)=>{const card=screen(chips,String(i+1));close(seat.x,card.x);assert.ok(seat.y>card.y);});
+});
+
+test('phone autoScale: three seats land on their own filmed boxes, resumed outer hands are reported, chip tiles keep a 0.8 minimum',()=>{
+  const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002'),rect={x:0,y:420,width:390,height:220};
+  board.mobile.autoScale=defaultBlackjackAutoScale();
+  // The mobile dealer plane, centred on box 4 like an Admin dealer zoom.
+  const plane=scale=>({x:195-540*scale,y:422-960*scale,scale});
+  const run=(scale,boxes,adjust)=>{const b=structuredClone(board);if(adjust)b.mobile.autoScale.adjust=adjust;
+    return layoutGameOverlay({tableGeometry:b,tableLayout:'mobile',rect,dealerPlane:plane(scale)},boxes,{left:12,right:378,top:80,bottom:800},{compact:true});};
+  for(const boxes of [[0,1,2],[2,3,4],[4,5,6]]){
+    const r=run(.8,boxes),d=plane(.8);assert.deepEqual(r.seats.map(s=>s.box),boxes);
+    boxes.forEach((box,i)=>{const seat=String(box+1),x=d.x+calibration.positions[seat].cx*d.scale;
+      close(r.x+r.positions[seat].cx*r.scale,x);close(r.y+r.positions[seat].cy*r.scale,d.y+calibration.positions[seat].cy*d.scale);close(r.seats[i].x,x);});
+    // Never moved off its filmed box: a hand outside the zoomed phone frame is reported.
+    assert.equal(r.geometryWarning,boxes[0]===2?'':'Kort eller insatsplatser ryms inte. Justera dealerns placering i Sammansättning.');
+  }
+  // At the plate's own size the filmed boxes are 52 px apart: the touch row overlaps.
+  assert.match(run(.36,[2,3,4]).geometryWarning,/ryms inte/);
+  close(run(.36,[2,3,4]).controlScale,.8);close(run(1.2,[2,3,4]).controlScale,1.2);
+  close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:.5}}).controlScale,.8);close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:1.5}}).controlScale,1.8);
 });

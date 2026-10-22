@@ -168,7 +168,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     const boxes=compact?Array.from({length:3},(_,i)=>Math.max(0,Math.min(4,centre-1))+i):[0,1,2,3,4,5,6];
     const width=scene.width,height=scene.height;
     let projected;
-    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:height-150},{compact,cardView:'raised'});
+    if(plane)projected=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:height-150},{compact,cardView:'raised',filmedProfile});
     else {
       // Existing calibrated film plane; no replacement board or dealer is selected here.
       const scale=Math.min(width/1080,height/1920),x=(width-1080*scale)/2,y=(height-1920*scale)/2;
