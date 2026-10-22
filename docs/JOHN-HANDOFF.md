@@ -20,9 +20,12 @@ föll på tre appearanceprov: extraherad testcallback saknade sharedRoomQa-bindn
 och ReferenceError blev503. Riktiga servern deklarerar variabeln. Denna uppföljning
 lade endast sharedRoomQa:null i fixturen; verklig HTTP-helper/assertions bevaras.
 Den levererades på4b0ccc1ee36c92b9a2505643e53442c63ab03e43, vars exakta
-CI39745790572 är completed/success. Denna etapp ändrar bara granskningsunderlag.
-Handoffkonflikten löstes genom aktuell produktstatus plus bevarade J08/J07- och
-regelavsnitt. Vercels Git-deployspärr följer med; ingen ny produktmerge här.
+CI39745790572 är completed/success. Dokumentleverans0644583 bevarar Jakobs
+klippkarta och innehåller verifierad syntetisk restore. Denna etapp ansluter en
+manifestbunden lokal fixture och smala konstruktionsportar med oförändrade
+produktionsdefaults. Verifierad main47756bdf1df372c7aa5047dc165a2d721614c4a2
+från separata mergeagentens PR337 integreras lokalt utan konflikter; CI-policy,
+kostnadshandoff och Vercels deployspärr bevaras. Root mergar inga PR:ar.
 
 **Oförändrade skydd och rättningar i63c:** samma-PG G → S → sorterade R/P/A,
 låst session/credential/epoch/proveniens före receipt/replay, säker svarsläsning
@@ -56,7 +59,23 @@ Verklig PG16.15 identity/capability5/5: rätt mål, fel system-ID, faktisk stora
 pool och engångsconsume; instrumenterade policy-/mediaportar. Kluster/pool/temp/
 PID stängda, port34399 ECONNREFUSED. Tidigare oberoende serverreview rättade två
 saknade QA-bindningar för engineOrigin och public preview-media.
-Detta bevisar inte full serverstart med verkliga K04-media. Fixtureleverans väntar.
+Generell fixture test/fixtures/k04-shared-room-runtime.mjs är nu implementerad:
+faktisk scoped repository/saved-policy, privat manifest kopplat till befintliga
+SQL-/katalogidentiteter/revisioner och lokala exakta bytes. Varje svar verifierar
+hash/storlek, tillåten origin, range och abort; länkar/utbytta filer nekas.
+Ingen DDL/seed/registrering/approval finns i fixturen. Tre neutrala fabriker får
+en konstruktorbunden isMediaConfigured(env,storage?); strikt true krävs,
+produktionsdefaults består och omappade rader är otillgängliga. Ingen ny
+request-/envflagga. Nya fixtureprov11/11 och fabriksprov10/10 samt relaterade26/26,
+0skip, Node24.21, max1 worker per körning. Dessa använder syntetiska bytes och
+instrumenterad SQLpool; ingen ny full serverstart/verklig PG-/K04-mediaacceptans.
+Presentations-API:ts verifierade QA-origin ansluts från servercapabilityn;
+mediesviten7/7 är grön, inklusive två nya verkliga loopbackfall för
+video/registeredvägar, range och negativa auth/Host/Origin/hash/publiceringsfall.
+Normalhook106/106,0skip,Node24.21,max4 workers; separat shared/frozen-presentation
+35/35,0skip. Studio tsc --noEmit grön,573 testkandidater/0orphan. Oberoende
+slutreview utan blockerare stängde originfyndet på faktisk serverwire. Oförändrade
+PG-/browserbevis återanvänds ovan; inga nya visuella eller produktionstestbevis.
 
 **Schemaförslaget:** tools/prepare-shared-schema.mjs är offline utan driver/apply,
 för exakt008→009→010 i en transaktion med identitet/ägare/product-v1-ledger,
@@ -92,28 +111,47 @@ Kevin6334698735 rapporterade353/353 samt browser1/1 på8504 och konkret blockera
 riktig server nekade loopback-PG/TLS/Neonpolicy. Root tog detta i6335155847.
 I6335241363 fick Kevin parallell implementation av befintlig K04-fixture och
 hashverifierade media via createQaFixture({pool,scope,origin,mediaRoot}).
-113-kommentarsläsningen gav ingen ny Kevinpost. I6336318602 begärdes konkret
-starthead/första kommando eller exakt blockerare; start är ännu inte bekräftad.
-Jakob förtydligade därefter att HANS klippkarta/redigering är grunden; återanvänd
-deras videor/flöde och namngivning där det passar. Kanonisk TERMINOLOGI är uppdaterad,
-inte en ny parallell produktplan. I6336504757 tog root över den generella lokala
-fixturen i transportkopian. Pågående separata agentuppdrag: lokal manifest-/byteport
-och smal konstruktionsinjektion i neutrala mediefabriker; ännu ingen kodleverans.
-Kevin ska lämna befintligt exakt media-/paketmanifest och eventuell redan påbörjad
-fixture för återanvändning. Hans agent kan granska identiteter/förbereda tre K04-prov:
-tal under kortövergång/laddfel, touch/layout och fullflöde med skärmbilder.
+Ny komplett116-kommentarsläsning jämförde ID och innehåll, även före egna sista
+ID. Kevin6336757098 är aktiv: bytes finns, men verkliga godkända dragge/sv-
+talidentiteter saknas. Han reproducerade403 med speech och auktorisering utan.
+Root verifierade talgrinden i kod. I6336875454 fick Kevin konkret fortsatt scope:
+touch/layout och fullflöde/screenshots/felvägar utan speech, samt minsta exakta
+underlaget för riktig talgranskning. Inget QA-undantag eller fabricerad approval.
+Hans kommande körresultat är ännu inte levererade och får inte räknas gröna.
+
+Jakobs befintliga klippkarta/redigering är grunden; återanvänd deras videor/flöde
+och namngivning där det passar, enligt kanonisk TERMINOLOGI. Root tog i6336504757
+över generell fixture; två underagenter levererade den och konstruktionsportarna.
+Tredje granskaren fann QA-originfelet i riktiga presentations-API:t: localhost
+byggdes i stället för verifierad127.0.0.1:port. Rättningen binds enbart från
+serverns capability, med oförändrad produktions-/proxy-/auth-/hashkontroll.
+Gitobjektinventering visar35/35 profilpaths i f15 och5aa;5aa har även21/21 idles,
+232/232 Dragge-repliker och9/9 roomassets med TSV-storlekar. Detta är inte ny
+binärhashning/visuell acceptans; f15 är ingen komplett medieleverans.
+
+Jakob preciserade också att val mellan mains och Kevin/Emils RunPod-lipsync
+ska vara uttryckligt och bevisbaserat. K04 omfattar redan moving lipsync;
+Tidigare riktning är redan Emils teknik med mains egna filmer; körsetup/worker,
+bank/cache och frameval ska nu jämföras. Identisk PCM/kropp/frameplan/kalibrering
+krävs för meningsfull jämförelse av kvalitet, kall/varm latens, avbrott och kostnad.
+API-/versions-/frame-/audio-/calibrationkontrakt och befintliga jämförelsebevis
+begärdes av Kevin i6336913787. QA är provmiljö, inte alternativ produktlogik.
+Ingen ny worker/GPU-körning, ny API-nyckel eller driftändring är godkänd.
 Egna kodändringar granskas oberoende av rootteamet. Inspelade repliker har ordnad
 filmkö; genererat tal under utdelning är separat kontrakt. Ljudknapp och synlig
 mediafel-caption ska provas. Ingen K05-/produktionsförhandsgrind för isolerade prov.
 PR333 har inget mergemandat. Inga kvittenser på kvittenser.
 
 **Merge/produktion:** separat chatt01a1624f-b0af-7202-bda5-9a3c06566976 äger alla
-PR-merger. PR311 är mergad98174fd8; root mergar inga PR:ar. Eftermerge-CI
+PR-merger. PR311 är mergad98174fd8 och PR337 är mergad47756bdf; root mergar inga
+PR:ar. Mergeagenten verifierar PR337:s main-CI39750982149 completed/success,
+identiskt träd med granskad a04. Inga nya deployer observerade. Eftermerge-CI
 39740157570 attempt1 föll på rapporterad250ms timingflake; attempt2 startade
 inga tester pga Billing/spending. Efter Jakobs budgethöjning rapporterar
 merge-agenten attempt3 completed/success utan teständring. Den äger separat
 Actions-kostnadsuppdrag och ensam plankopian/workflowändringar; root gör inga
-överlappande CI-/hookoptimeringar. c39:s eget fixturefel rättas separat.334/336 har dessutom schema/liveACL/restore/
+överlappande CI-/hookoptimeringar. c39:s eget fixturefel är redan rättat i4b0.
+334/336 har dessutom schema/liveACL/restore/
 K04- och integrationsgrindar. Exakt-head grön obligatorisk CI och fräsch
 owner/source/headkontroll gäller; inga bypass/force/queue/automerge/branchraderingar.
 Jakobs direkta no-deploybeslut: Render autoDeploy=no/triggeroff, ej suspended,
@@ -129,9 +167,11 @@ Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
 Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
 sourceverified/monitoringactive, incidentcompleteforthissource,
 locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
-GitGuardian-åtkomst; connectorn bekräftar oförändrad main och queued GitGuardian-
-suite utan checkrun. Aktuell incident-/platsläsning är därför ofullständig;
-tidigare kvitto eller queued suite är inte full incidentfrihet. Inga incidenter ändrade.
+GitGuardian-åtkomst; connectorn bekräftar nya main47756bdf med queued
+GitGuardian-suite utan checkrun. Aktuell incident-/platsläsning är därför ofullständig;
+tidigare kvitto eller queued suite är inte full incidentfrihet. Mergeagentens nya
+källbundna läsning på477 rapporterar0open/23ignored/monitoringactive, med fortsatt
+locationspartial/historicaltoo_large; detta är tillskrivet bevis. Inga incidenter ändrade.
 
 **Arbetskopior:** arkivering, inte merge, tog gamla kopior. De är återställda på
 exakt gamla paths och Gitlåsta; app-attach ownerless nekas ännu. Ursprungschatt
@@ -331,7 +371,31 @@ guider. Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap
 kvarstår. Oberoende regelgranskning har inga blockerande fynd. Denna
 regeländring godkänner ingen produktion eller ändring av CI-/branchskydd.
 
-## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
+## Lägre CI- och byggkostnad — 22 oktober 2026
+
+Lipsync-proven återanvänder nu regressionsjobbets Node 24, FFmpeg och låsta
+gateway-beroenden. Alla fyra workerprov behålls: gatewaytest, Python-unittest,
+Python-compileall och Bash-syntax. Python 3.11 väljs separat utan att ändra
+övriga provs Pythonmiljö. Slutgrinden kräver ett uttryckligt slutförandekvitto;
+saknat kvitto, fel, avbrott och oväntat överhoppade jobb blockerar fortfarande.
+Klassificeringen använder slims förinstallerade Node 24 med blockerande
+majorkontroll och åtta nödvändiga filer via sparse checkout. Hela commitdiffen
+klassificeras fortfarande, även för filer som inte checkats ut. Separat
+Node-hämtning tas bort efter mätningen 24 s setup av totalt 53 s; ny starttid
+måste mätas på den nya headen. Slutgrinden CI behåller ubuntu-slim; full
+regression, Moving och produktionsledgergrindens urval är oförändrade.
+
+Historiska stegtider för 1 101 matchade körningar uppskattar 1 281 färre
+avrundade VM-minuter med konsolideringen (cirka 7,69 USD brutto vid 0,006
+USD/minut); detta är ingen verifierad minskning av fakturan. Lokalt passerar
+13/13 CI-policyprov med Node 24 och fyra workers, inklusive simulerat fel i
+vart och ett av de fyra workerkommandona, felaktig/saknad Node och en verklig
+sparse Git-fixture med kod, worker, borttagning och rename utanför worktree.
+Policyn körs också från de åtta filerna; saknat importberoende blockerar.
+Den separata testprocessen rensar ärvd `NODE_TEST_CONTEXT` och verifierar
+faktiskt antal körda prov; exitkod noll ensam räcker inte som kvitto.
+Ny exakt-head-CI krävs före merge.
+Budgetar, behörigheter, deployspärrar och produktionsdata ändras inte.
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
 vanlig kodändring kan återanvända installationslagret. En selektiv CI-kontroll

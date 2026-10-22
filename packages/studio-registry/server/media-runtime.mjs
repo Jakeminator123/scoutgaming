@@ -36,10 +36,13 @@ function metadataResponse(row, bytes, request, options) {
   return new Response(request.method === 'HEAD' ? null : bytes.subarray(start, end + 1), { status, headers });
 }
 
+const defaultMediaConfigured = env => env.CROUPIER_MEDIA_STORAGE === 'blob' && Boolean(env.BLOB_READ_WRITE_TOKEN);
+
 // Apps bind their own registry, Blob and local metadata adapters.
 export function createMediaRuntimeServices({ repositoryRoot: defaultRoot, createNeonVideoRegistry, legacyClipControls,
   verifiedMediaBlobStorage, getPublicMediaBlobResponse, resolvePublicMedia, createRuntimeMetadataReader,
-  configurationSource: STUDIO_GAME_CONFIGURATION_SOURCE }) {
+  configurationSource: STUDIO_GAME_CONFIGURATION_SOURCE, isMediaConfigured = defaultMediaConfigured }) {
+  if(typeof isMediaConfigured!=='function')throw new TypeError('Explicit synchronous media configuration predicate required.');
 // Availability means the exact approved public asset has a verified private
 // object pointer. Metadata on a deployed disk never substitutes for its bytes.
 function createStudioPublicMediaAvailability({ env = process.env, repositoryRoot, repository, runtimeCatalog } = {}) {
@@ -47,7 +50,7 @@ function createStudioPublicMediaAvailability({ env = process.env, repositoryRoot
   return async file => {
     if (typeof file !== 'string' || !file || file.startsWith('/') || file.includes('\\')
       || file.split('/').some(part => !part || part === '.' || part === '..')) return false;
-    if (options.env.CROUPIER_MEDIA_STORAGE !== 'blob' || !options.env.BLOB_READ_WRITE_TOKEN) {
+    if (isMediaConfigured(options.env) !== true) {
       throw new StudioStorageError('studio_media_storage_unavailable');
     }
     try {

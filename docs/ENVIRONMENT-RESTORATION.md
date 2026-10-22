@@ -119,7 +119,9 @@ endast godkända OS-variabler och explicita lokala inställningar. Spelserverns
 publicorigin/listener blir `http://127.0.0.1:<HTTPPORT>`; använd fixturepaketets
 befintliga sparade rumslänk. Inga värdnamnsalias eller TLS-attrapper behövs.
 
-Fixturemodulen exporterar `createQaFixture({pool,scope,origin,mediaRoot})` och
+Den generella rootfixturen är `test/fixtures/k04-shared-room-runtime.mjs`.
+Ange dess absoluta sökväg som `--fixture`. Den exporterar
+`createQaFixture({pool,scope,origin,mediaRoot})` och
 returnerar `{studioPolicyRuntime,studioMediaRuntime,privateMedia}`.
 Scope är `{environment:'test',workspaceId:'shared-qa-<id>'}`.
 Återanvänd faktisk scoped SQLrepository/saved-policy och befintliga mediekontrakt.
@@ -135,11 +137,26 @@ Produkt-/Studio-readiness och saved-policy ska passera innan lyssnaren öppnas.
 Ctrl+C använder befintlig graceful shutdown genom det ägda barnet. Tvångsstopp
 eller ofullständig cleanup får inte rapporteras som lyckad acceptans.
 
-Root äger QA-starten; Kevin äger sin befintliga fixture/media och de tre K04-proven.
-Contextens18 enhetsprov och5 verkliga PG-identitetsprov är separata från riktig
-server-/mediaacceptans. Inga kompletta accepterade K04-media finns i roots lästa
-syntetiska fixtures. Den saknade Kevinleveransen får inte ersättas med nya dealers,
-påhittade godkännanden eller syntetiska bytes och sedan räknas som visuell acceptans.
+Root äger QA-starten och den generella lokala fixturen; Kevin tillför befintligt
+exakt media-/paketunderlag och de tre K04-proven. I mediaRoot krävs ett privat
+UTF-8-manifest `k04-qa-media.json` (max 4 MiB). Formatet beskrivs i fixturens
+JSDoc: schemaVersion1, exakt scope/origin samt files med relativePath, storage
+(provider/pathname/SHA256/size/contentType) och source. Source anger antingen
+befintligt SQL-media-ID/revision eller katalogens logicalPath/revision. Manifestet
+registrerar inga dealers, paket, kalibreringar, klassificeringar eller talgodkännanden.
+Delmängder tillåts; omappade identiteter är otillgängliga.
+
+Varje lokal fil måste vara vanlig, utan länkar och inom verifierad rot. Exakt
+storlek och SHA256 kontrolleras vid start och varje svar från samma öppnade fil;
+96 MiB per fil motsvarar browserns bytebudget. GET/HEAD/range/ETag, abort och
+loopbackorigin kontrolleras. Inget uppladdnings- eller Blobcredential krävs.
+Konstruktionsinjektionen i de tre neutrala mediefabrikerna ändrar inte ordinarie
+produktionsdefaults och kan inte väljas genom request/options/env. Faktisk
+scoped repository och saved-policy används; fixturestart skapar inga SQL-objekt
+eller rader. Kontextens18 enhetsprov,5 verkliga PG-identitetsprov och fixturens
+11 prov med syntetiska bytes/instrumenterad SQLpool är separata från full
+serverstart, verklig PG-/K04-mediaacceptans. Saknat underlag får inte ersättas
+med nya dealers eller påhittade godkännanden.
 
 ## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
 

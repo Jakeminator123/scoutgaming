@@ -154,3 +154,118 @@ test('Neon-only and cloud calibration routes reject before reading a body or tou
     assert.deepEqual(JSON.parse(res.body),{error:'calibration_unavailable'});
   }
 });
+
+import {createVideoRegistry} from '../packages/studio-registry/server/registry-core.mjs';
+import {createNeonVideoRegistry as createRegistryReader} from '../packages/studio-registry/server/registry-reader.mjs';
+import {createMediaRuntimeServices} from '../packages/studio-registry/server/media-runtime.mjs';
+import {createMediaBlobIndex} from '../packages/studio-registry/server/media-blob-index.mjs';
+import {createMediaLayout} from '../packages/studio-registry/server/media-layout.mjs';
+import {createRuntimeMetadataReader} from '../tools/runtime-media-catalog.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
+import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
+
+async function neutralMediaFixture(){
+  const localScope={environment:'test',workspaceId:'constructor-media'};
+  const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope:localScope});
+  const cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('linnea')]});
+  await repository.initializeDocument('project',{value:cloud.project,revision:cloud.project.revision,actor:'isolated-fixture'});
+  await repository.initializeDocument('administration',{value:{rooms:[]},revision:'constructor-admin',actor:'isolated-fixture'});
+  const bytes=Buffer.from('cloud-fixture:linnea'),record={...cloud.mediaRows[0],size:bytes.length};
+  delete record.revision;delete record.updatedAt;
+  await repository.registerMedia(record,{actor:'isolated-fixture'});
+  const catalog=readRuntimeCatalogFixture();pool.seedRuntimeCatalog(localScope,catalog);
+  const layout=createMediaLayout({repositoryRoot});
+  let privateReads=0;
+  const getPrivateMedia=async(storage,request)=>{
+    privateReads++;assert.equal(storage.pathname,record.pathname);
+    assert.equal(storage.sha256,createHash('sha256').update(bytes).digest('hex'));assert.equal(storage.size,bytes.length);
+    return new Response(request.method==='HEAD'?null:bytes,{headers:{'content-length':String(bytes.length)}});
+  };
+  const index=createMediaBlobIndex({repositoryRoot,getPrivateMedia});
+  const build=isMediaConfigured=>{
+    const port=isMediaConfigured===undefined?{}:{isMediaConfigured};
+    const reader=createVideoRegistry({repositoryRoot,previewUrl:id=>'/api/videos/'+id,uploadDirectory:()=>null,
+      readUploads:async()=>{throw Error('SQL uploads required');},readClassifications:async()=>[],getPrivateMedia,mediaBlobIndex:index,...port});
+    const registry=createRegistryReader({repository,scope:localScope,env:{},reader,getPrivateMedia,...port});
+    const services=createMediaRuntimeServices({repositoryRoot,createNeonVideoRegistry:()=>registry,legacyClipControls,
+      verifiedMediaBlobStorage:index.verifiedMediaBlobStorage,getPublicMediaBlobResponse:async()=>assert.fail('No provider access'),
+      resolvePublicMedia:layout.resolvePublicMedia,createRuntimeMetadataReader,configurationSource:STUDIO_GAME_CONFIGURATION_SOURCE,...port});
+    return {reader,registry,media:services.createStudioMediaRuntime({repository,scope:localScope,env:{},repositoryRoot}),services};
+  };
+  return {pool,repository,scope:localScope,catalog,record,bytes,build,get privateReads(){return privateReads;}};
+}
+
+test('neutral media defaults still reject missing Blob config and ignore per-call configuration bypasses',async()=>{
+  const f=await neutralMediaFixture(),{reader,registry,media}=f.build();
+  await assert.rejects(registry.load(),error=>error.code==='studio_media_storage_unavailable');
+  const result=await reader.loadVideoRegistry({runtimeCatalog:f.catalog,env:{},readUploads:async()=>[],
+    isMediaConfigured:()=>true});
+  assert.equal(result.summary.readable,false);assert.ok(result.videos.every(video=>video.available===false));
+  const publicFile=f.catalog.blobIndex.files.find(row=>row.access==='public');
+  assert.ok(publicFile);await assert.rejects(media.hasPublicMedia('media/'+publicFile.logicalPath),error=>error.code==='studio_media_storage_unavailable');
+  assert.equal(f.privateReads,0);
+});
+
+test('explicit local constructor uses the real scoped SQL registry and captured identity validation without a token',async()=>{
+  const f=await neutralMediaFixture(),{registry,media}=f.build(()=>true);
+  const loaded=await registry.load(),video=loaded.videos.find(row=>row.id===f.record.id);
+  assert.ok(video?.available);assert.equal(video.sha256,f.record.sha256);
+  const response=await registry.response(f.record.id,new Request('https://fixture.invalid/api/videos/'+f.record.id));
+  assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),f.bytes);
+  const snapshot=await f.repository.readPresentationSnapshot();
+  assert.ok((await registry.loadCaptured(snapshot)).videos.find(row=>row.id===f.record.id)?.available);
+  const captured=await registry.responseCaptured(f.record.id,new Request('https://fixture.invalid/api/videos/'+f.record.id,{method:'HEAD'}),snapshot);
+  assert.equal(captured.status,200);assert.equal(f.privateReads,2);
+  const other=structuredClone(snapshot);other.scope.workspaceId='another-workspace';
+  await assert.rejects(registry.loadCaptured(other),error=>error.code==='studio_scope_mismatch');
+  const changed=structuredClone(snapshot);changed.mediaRows.find(row=>row.id===f.record.id).sha256='f'.repeat(64);
+  await assert.rejects(registry.loadCaptured(changed));assert.equal(f.privateReads,2);
+  const publicFile=f.catalog.blobIndex.files.find(row=>row.access==='public');
+  assert.equal(await media.hasPublicMedia('media/'+publicFile.logicalPath),true);
+  const corrupt=structuredClone(f.catalog);corrupt.blobIndex.files.find(row=>row.logicalPath===publicFile.logicalPath).sha256='f'.repeat(64);
+  f.pool.seedRuntimeCatalog(f.scope,corrupt);
+  await assert.rejects(media.hasPublicMedia('media/'+publicFile.logicalPath),error=>error.code==='studio_media_storage_unavailable');
+});
+
+test('configuration construction rejects invalid ports and false, Promise, truthy or throwing ports grant no availability',async()=>{
+  const f=await neutralMediaFixture();
+  for(const port of [false,1,{},null])assert.throws(()=>f.build(port),TypeError);
+  const publicFile=f.catalog.blobIndex.files.find(row=>row.access==='public');
+  for(const port of [()=>false,()=>1,()=>({}),async()=>true,()=>{throw Error('local configuration unavailable');}]){
+    const {reader,registry,media}=f.build(port);
+    await assert.rejects(registry.load());await assert.rejects(media.hasPublicMedia('media/'+publicFile.logicalPath));
+    try {
+      const result=await reader.loadVideoRegistry({runtimeCatalog:f.catalog,env:{},readUploads:async()=>[]});
+      assert.equal(result.summary.readable,false);assert.ok(result.videos.every(video=>video.available===false));
+    } catch(error){assert.equal(error.message,'local configuration unavailable');}
+  }
+  assert.equal(f.privateReads,0);
+});
+
+test('media runtime default preserves its original token truthiness independently of constructor injection',async()=>{
+  const f=await neutralMediaFixture(),{services}=f.build();
+  const publicFile=f.catalog.blobIndex.files.find(row=>row.access==='public');
+  for(const [token,allowed] of [['',false],[' ',true],['configured',true]]){
+    const available=services.createStudioPublicMediaAvailability({env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:token},
+      repositoryRoot,repository:f.repository,runtimeCatalog:f.catalog});
+    if(allowed)assert.equal(await available('media/'+publicFile.logicalPath),true);
+    else await assert.rejects(available('media/'+publicFile.logicalPath),error=>error.code==='studio_media_storage_unavailable');
+  }
+});
+
+test('a partial local manifest grants only exact uploaded and bank storage tuples',async()=>{
+  const f=await neutralMediaFixture(),bank=f.catalog.presentation.items[0];
+  const bankStorage=f.catalog.blobIndex.files.find(row=>row.id===bank.id)?.storage;assert.ok(bankStorage);
+  const uploaded={provider:'vercel-blob',pathname:f.record.pathname,sha256:f.record.sha256,size:f.record.size,contentType:f.record.contentType};
+  const manifest=new Map([uploaded,bankStorage].map(row=>[row.pathname,{...row}]));
+  const configured=(_env,storage)=>storage===undefined || Boolean(manifest.has(storage?.pathname)
+    && ['provider','pathname','sha256','size','contentType'].every(key=>manifest.get(storage.pathname)[key]===storage[key]));
+  const {registry}=f.build(configured),loaded=await registry.load();
+  assert.equal(loaded.videos.find(row=>row.id===f.record.id).available,true);
+  assert.equal(loaded.videos.find(row=>row.id===bank.id).available,true);
+  const omitted=loaded.videos.filter(row=>row.id!==f.record.id && row.id!==bank.id);
+  assert.ok(omitted.length>0);assert.ok(omitted.every(row=>row.available===false));
+  manifest.get(f.record.pathname).sha256='f'.repeat(64);
+  assert.equal((await registry.load()).videos.find(row=>row.id===f.record.id).available,false);
+  assert.equal(f.privateReads,0,'configuration cannot replace the later byte-verifying reader');
+});

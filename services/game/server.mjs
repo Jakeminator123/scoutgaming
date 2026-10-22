@@ -955,7 +955,7 @@ const server = createServer(async (req, res) => {
   }
   if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || presentationPublicSource(pathname)) {
     try {
-      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
+      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext, qaPublicOrigin:sharedRoomQa?.publicOrigin,
         withSharedCommittedReceipt: ({request,playerId,body,signal},selectFrozen) => {
           if (!sharedRoomsEnabled || !sharedRoomService || request.method!=='POST' || request.url!=='/api/presentation/select')
             throw Object.assign(Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});

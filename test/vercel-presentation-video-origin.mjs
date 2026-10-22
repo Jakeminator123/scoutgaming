@@ -6,6 +6,11 @@ import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
 import { once } from 'node:events';
 import test from 'node:test';
+import { createServer, request as httpRequest } from 'node:http';
+import { createFrozenDealerPresentationContext } from '../packages/presentation/server/frozen-dealer-presentation.mjs';
+import { captureFrozenPresentation } from '../packages/presentation/server/frozen-presentation-capture.mjs';
+import { addDealer, createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
+import { getVideoResponse } from '../services/game/storage/video-registry.mjs';
 import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 
@@ -131,4 +136,120 @@ test('Vercel media opt-in rejects absent config, wrong Host, unknown Origin and 
   assert.equal((await videoRequest(api, { origin: frontendOrigin, fetchSite: 'cross-site' })).status, 403);
   assert.equal((await videoRequest(create({ CROUPIER_VERCEL_FRONTEND_ORIGIN: 'https://*.vercel.app' }),
     { origin: frontendOrigin })).status, 403);
+});
+
+
+async function qaHttpFixture(t, { overrideOrigin, env = {} } = {}) {
+  const registryOptions = await fixture(t);
+  const server = createServer((req, res) => {
+    Promise.resolve(api(req, res, new URL(req.url, origin).pathname, req.headers['x-fixture-player'] === '1' ? 'fixture-player' : null))
+      .catch(() => { res.writeHead(500); res.end(); });
+  });
+  server.listen({ host: '127.0.0.1', port: 0 });
+  await once(server, 'listening');
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  t.after(() => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+  const record = { id, sha256: sha256(bytes), size: bytes.length, contentType: 'video/mp4',
+    pathname: `croupier/media/dealers/linnea/review/uploads/${id}/${sha256(bytes)}.mp4`,
+    classification: { dealerId: 'linnea', eventId: 'idle.ready', kind: 'idle', role: 'standard',
+      situation: '', label: 'Linnea Grundloop', notes: '' } };
+  const project = addDealer(createSeedProject(), 'linnea', 'Linnea');
+  const lane = defaultPresentationLane('linnea'); lane.id = 'qa-presentation'; project.lanes = [lane];
+  project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready').variants[0].videoGenerationId = id;
+  const presentation = captureFrozenPresentation({
+    snapshot: { projectDocument: { kind: 'project', revision: project.revision, value: project },
+      administrationDocument: { kind: 'administration', revision: 'admin-1', value: { rooms: [] } },
+      mediaRows: [{ ...record, revision: 'media-1' }] },
+    inventory: { families: [], videos: [{ id, sha256: record.sha256, bytes: bytes.length, dealer: 'linnea',
+      available: true, integrity: 'verified', classification: record.classification }] },
+    selectedLaneIds: [lane.id], requiredIdleDealerIds: ['linnea'],
+  }).presentation;
+  const saved = { operator: { id: 'north-id', slug: 'north', status: 'active' },
+    package: { operatorId: 'north-id', revision: 7, lanes: [lane.id], tables: ['room-linnea'], frozen: presentation },
+    administration: { rooms: [{ schemaVersion: 2, id: 'room-linnea', name: 'Linnea', operatorId: 'north-id',
+      presentationLaneId: lane.id, gameLaneId: 'portrait-linnea', state: 'live' }],
+      gameLanes: [{ schemaVersion: 1, id: 'portrait-linnea', label: 'Linnea', dealer: 'linnea',
+        renderer: 'portrait-video', mediaCollection: 'linnea-presentation' }] } };
+  const seen = [];
+  const frozenDealerContext = createFrozenDealerPresentationContext({
+    readCurrentContext: async () => structuredClone(saved), readPresentation: pack => pack.frozen,
+    privateMedia: async (storage, request) => {
+      seen.push(request);
+      const url = new URL(request.url);
+      if (url.origin !== origin || request.headers.get('host') !== url.host
+        || request.headers.get('origin') && request.headers.get('origin') !== origin
+        || ['cross-site', 'same-site'].includes(request.headers.get('sec-fetch-site'))) return new Response(null, { status: 403 });
+      assert.equal(storage.sha256, sha256(bytes)); assert.equal(storage.size, bytes.length);
+      return getVideoResponse(id, request, registryOptions);
+    },
+  });
+  const api = createPresentationApi({ db: {}, store: {}, registryOptions, frozenDealerContext, env,
+    ...(overrideOrigin === false ? {} : { qaPublicOrigin: origin }) });
+  const paths = [`/api/presentation/videos/${id}`,
+    '/api/presentation/registered-idle/north/room-linnea/7/linnea',
+    `/api/presentation/registered-video/north/room-linnea/7/linnea/${id}`];
+  const request = (path, { anonymous = false, headers = {}, ...options } = {}) => new Promise((resolve, reject) => {
+    // node:http preserves the actual Host; fetch may normalize a supplied Host.
+    const request = httpRequest(origin + path, { ...options,
+      headers: { connection: 'close', ...(!anonymous ? { 'x-fixture-player': '1' } : {}),
+        origin, 'sec-fetch-site': 'same-origin', ...headers } }, response => {
+      const chunks = []; response.on('data', chunk => chunks.push(chunk)); response.once('error', reject);
+      response.once('end', () => {
+        const body = Buffer.concat(chunks);
+        resolve({ status: response.statusCode, headers: new Headers(response.headers),
+          text: async () => body.toString(), arrayBuffer: async () => body });
+      });
+    });
+    request.setTimeout(5000, () => request.destroy(new Error('QA HTTP fixture timeout')));
+    request.once('error', reject); request.end();
+  });
+  return { origin, paths, request, registryOptions, saved, seen };
+}
+
+test('QA constructor origin requires canonical explicit 127.0.0.1 HTTP port, without env/request override', async t => {
+  for (const value of ['', 'http://localhost:4321', 'http://127.1:4321', 'http://127.0.0.1',
+    'http://127.0.0.1:80', 'http://127.0.0.1:1023', 'http://127.0.0.1:65536', 'http://127.0.0.1:04321',
+    'https://127.0.0.1:4321', 'http://127.0.0.1:4321/', 'http://127.0.0.1:4321?x=1',
+    'http://user@127.0.0.1:4321', 'http://[::1]:4321', 'https://game.invalid', true, {}]) {
+    assert.throws(() => createPresentationApi({ db: {}, store: {}, qaPublicOrigin: value }), TypeError);
+  }
+  const f = await qaHttpFixture(t, { overrideOrigin: false, env: { QA_PUBLIC_ORIGIN: 'http://127.0.0.1:4321',
+    PUBLIC_URL: 'http://127.0.0.1:4321' } });
+  assert.equal((await f.request(f.paths[0], { headers: { 'x-qa-public-origin': f.origin } })).status, 403);
+  assert.equal((await f.request(f.paths[1], { headers: { 'x-qa-public-origin': f.origin } })).status, 403);
+});
+
+test('owned QA HTTP origin serves exact video and frozen registered GET/HEAD/Range without cloud config', async t => {
+  const f = await qaHttpFixture(t);
+  for (const path of f.paths) {
+    const get = await f.request(path); assert.equal(get.status, 200); assert.deepEqual(Buffer.from(await get.arrayBuffer()), bytes);
+    const head = await f.request(path, { method: 'HEAD' }); assert.equal(head.status, 200);
+    assert.equal(head.headers.get('content-length'), String(bytes.length)); assert.equal(await head.text(), '');
+    const range = await f.request(path, { headers: { range: 'bytes=2-7' } }); assert.equal(range.status, 206);
+    assert.equal(range.headers.get('content-range'), `bytes 2-7/${bytes.length}`);
+    assert.deepEqual(Buffer.from(await range.arrayBuffer()), bytes.subarray(2, 8));
+    assert.equal(range.headers.get('access-control-allow-origin'), null);
+    const cached = await f.request(path, { headers: { 'if-none-match': get.headers.get('etag') } });
+    assert.equal(cached.status, 304); assert.equal(await cached.text(), '');
+  }
+  assert.ok(f.seen.length > 0); assert.ok(f.seen.every(request => new URL(request.url).origin === f.origin));
+});
+
+test('QA HTTP media keeps auth, exact Host/Origin, publication and verified-byte gates', async t => {
+  const f = await qaHttpFixture(t, { env: { CROUPIER_CLOUD_RUNTIME: '1', PUBLIC_URL: renderOrigin,
+    CROUPIER_VERCEL_FRONTEND_ORIGIN: frontendOrigin } });
+  for (const path of f.paths) {
+    assert.equal((await f.request(path, { anonymous: true })).status, 401);
+    for (const headers of [{ host: 'attacker.invalid' }, { origin: 'http://localhost:' + new URL(f.origin).port },
+      { origin: frontendOrigin }, { 'sec-fetch-site': 'cross-site' }, { 'sec-fetch-site': 'same-site' }]) {
+      assert.equal((await f.request(path, { headers })).status, 403);
+    }
+  }
+  const registeredReads = f.seen.length;
+  f.saved.package.revision = 8;
+  for (const path of f.paths.slice(1)) assert.equal((await f.request(path)).status, 409);
+  assert.equal(f.seen.length, registeredReads, 'stale publication must not read media bytes');
+  f.saved.package.revision = 7;
+  await writeFile(join(f.registryOptions.archiveDir, targetPath), Buffer.alloc(bytes.length, 120));
+  for (const path of f.paths) assert.equal((await f.request(path)).status, 409);
 });

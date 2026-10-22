@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
@@ -26,9 +26,18 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/workflows/croupier.yml
+            .githooks/pre-commit-full
+            test/ci-changes.mjs
+            test/precommit-checks.mjs
+            tools/ci-changes.mjs
+            tools/documentation-paths.mjs
+            tools/precommit-checks.mjs
+            tools/check-push-target.mjs
+      - name: Verify preinstalled Node 24
+        run: node -e "if (process.versions.node.split('.')[0] !== '24') throw new Error('Preinstalled Node 24 is required')"
       - name: Verify CI selection and final gate
         run: node --test test/ci-changes.mjs
       - name: Classify the complete PR merge diff
@@ -58,6 +67,8 @@ jobs:
     if: needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    outputs:
+      lipsync_verified: ${{ steps.lipsync_contracts.outputs.verified }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -103,6 +114,24 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
+      - name: Select the worker Python without changing other checks
+        id: lipsync_python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          update-environment: false
+      - name: Verify lipsync worker contracts in the prepared regression VM
+        id: lipsync_contracts
+        shell: bash
+        timeout-minutes: 15
+        env:
+          LIPSYNC_PYTHON: ${{ steps.lipsync_python.outputs['python-path'] }}
+        run: |
+          npm --prefix services/astrid-gpu-worker/gateway test
+          "$LIPSYNC_PYTHON" -m unittest discover -s services/astrid-gpu-worker/tests -v
+          "$LIPSYNC_PYTHON" -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
+          bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh
+          echo "verified=true" >> "$GITHUB_OUTPUT"
       # OpenClaw launcher acceptance runs in the access suite and needs the build above.
       - run: npm --prefix services/openclaw/lab run check
       # Same registry as local --full. Each suite has its own visible step;
@@ -174,28 +203,6 @@ jobs:
         env:
           CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
 
-  lipsync-worker:
-    needs: changes
-    if: needs.changes.outputs.scope == 'full'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-      - name: Install verified ffmpeg packages
-        timeout-minutes: 8
-        uses: ./.github/actions/setup-ffmpeg
-      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
-      - run: npm --prefix services/astrid-gpu-worker/gateway test
-      - run: python -m unittest discover -s services/astrid-gpu-worker/tests -v
-      - run: python -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
-      - run: bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh
-
   moving-worker:
     needs: changes
     if: needs.changes.outputs.moving == 'true'
@@ -203,9 +210,9 @@ jobs:
 
   ci:
     name: CI
-    needs: [changes, documentation, dealer-regression, lipsync-worker, moving-worker]
+    needs: [changes, documentation, dealer-regression, moving-worker]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
       - name: Require every applicable check to pass
@@ -217,11 +224,12 @@ jobs:
           const jobs = JSON.parse(process.env.CI_NEEDS);
           const scope = jobs.changes?.outputs?.scope;
           const required = scope === 'documentation' ? ['documentation']
-            : scope === 'full' ? ['dealer-regression', 'lipsync-worker'] : [];
+            : scope === 'full' ? ['dealer-regression'] : [];
           const moving = jobs.changes?.outputs?.moving;
           if (!['true', 'false'].includes(moving)
             || jobs['moving-worker']?.result !== (moving === 'true' ? 'success' : 'skipped')
             || jobs.changes?.result !== 'success' || required.length === 0
+            || (scope === 'full' && jobs['dealer-regression']?.outputs?.lipsync_verified !== 'true')
             || required.some(name => jobs[name]?.result !== 'success')) {
             console.error('CI failed: a required check failed, was cancelled, skipped, or was not reported.');
             process.exit(1);

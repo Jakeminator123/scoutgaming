@@ -58,7 +58,15 @@ export function presentationInput(event, published) {
 export function createPresentationApi({ db, env = process.env, store = createLocalProjectReader(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null } = {}) {
+  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, qaPublicOrigin = null } = {}) {
+  // Only the verified server QA capability supplies this constructor port.
+  if (qaPublicOrigin !== null && (typeof qaPublicOrigin !== 'string'
+    || !/^http:\/\/127\.0\.0\.1:([1-9][0-9]{3,4})$/.test(qaPublicOrigin)
+    || Number(qaPublicOrigin.slice(qaPublicOrigin.lastIndexOf(':') + 1)) < 1024
+    || Number(qaPublicOrigin.slice(qaPublicOrigin.lastIndexOf(':') + 1)) > 65535)) {
+    throw new TypeError('Canonical loopback QA origin required');
+  }
+  const qaHost = qaPublicOrigin ? new URL(qaPublicOrigin).host : null;
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
@@ -84,9 +92,13 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         json(200,await nativeP6PlaybackContext({req,playerId,project,readProject:()=>store.load()}));return true;
       }
       if (!playerId) fail('Sign in required', 401);
+      if (qaPublicOrigin && ['/api/presentation/registered-idle/', '/api/presentation/registered-video/', '/api/presentation/videos/']
+        .some(prefix => pathname.startsWith(prefix))
+        && (req.headers.host !== qaHost || req.headers.origin && req.headers.origin !== qaPublicOrigin
+          || ['cross-site', 'same-site'].includes(req.headers['sec-fetch-site']))) fail('Same-origin preview required', 403);
       if (pathname.startsWith('/api/presentation/registered-idle/') || pathname.startsWith('/api/presentation/registered-video/')) {
         if (!frozenDealerContext) fail('Frozen presentation unavailable',503);
-        const response = await frozenDealerContext.response(new Request((env.CROUPIER_CLOUD_RUNTIME==='1'&&exactHttpsOrigin(env.PUBLIC_URL)?env.PUBLIC_URL:'http://localhost')+(req.url||pathname), { method: req.method, headers: req.headers }));
+        const response = await frozenDealerContext.response(new Request((qaPublicOrigin||(env.CROUPIER_CLOUD_RUNTIME==='1'&&exactHttpsOrigin(env.PUBLIC_URL)?env.PUBLIC_URL:'http://localhost'))+(req.url||pathname), { method: req.method, headers: req.headers }));
         res.writeHead(response.status, Object.fromEntries(response.headers));
         if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
         return true;
@@ -94,9 +106,9 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       if (pathname.startsWith('/api/presentation/videos/')) {
         if (!['GET', 'HEAD'].includes(req.method)) fail('GET or HEAD required', 405);
         const id = pathname.slice('/api/presentation/videos/'.length);
-        const publicOrigin = env.CROUPIER_CLOUD_RUNTIME === '1' && exactHttpsOrigin(env.PUBLIC_URL) ? env.PUBLIC_URL : null;
+        const publicOrigin = qaPublicOrigin || (env.CROUPIER_CLOUD_RUNTIME === '1' && exactHttpsOrigin(env.PUBLIC_URL) ? env.PUBLIC_URL : null);
         const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN;
-        const trustedProxyOrigin = publicOrigin && exactHttpsOrigin(frontendOrigin)
+        const trustedProxyOrigin = !qaPublicOrigin && publicOrigin && exactHttpsOrigin(frontendOrigin)
           && [new URL(publicOrigin).host, new URL(frontendOrigin).host].includes(req.headers.host)
           ? frontendOrigin : null;
         const request = new Request(`${publicOrigin || 'http://localhost'}${pathname}`, { method: req.method, headers: req.headers });
