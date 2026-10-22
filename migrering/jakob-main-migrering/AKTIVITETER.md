@@ -131,6 +131,12 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J05 — Förenkla runtime och byggkedja
 
+**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`f34f8e38a6386635958f8610ba39d07beacca35a` från grön J08/9b43. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. CI39705014885 pågår; GitGuardian grön.
+
+- [x] Verifiera separat rumskanalport: serverauth/Origin/rumsisolering, publika fält, samtidiga hints, återläsning/version, timeout/buffer och cleanup med syntetiska sockets. Ingen listener/PGnotifiering/klientreplayacceptans.
+- [x] Verifiera sanerad skrivfri schedulerhälsa och dokumentera återanvändning av befintlig Renderinstans/start/readiness/drain-gräns.
+- [ ] Koppla faktisk auth/HTTP-upgrade, K04-version/notifiering samt scheduler till gameboot/gateway-readiness utan ny tjänst.
+
 **Etapp:** E2. **Beroenden:** J03, J04.
 **Mål:** en begriplig produktkedja utan överflödiga UI-processer, API-proxyer eller alternativa starter.
 
@@ -166,6 +172,8 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 - [x] Gör insats, demosaldo/reservationer, bord/sko, resultat och journal atomiska inom demoadaptern. Skicka presentationshändelser först för committat utfall; retry, förlorat svar eller omstart får inte ge dubbla ekonomiska effekter.
 - [x] Bestäm och prova återstart/recovery och konfliktbeteende med samma kommando-ID samt med ändrad payload. Rum och operatörer får inte dela tillstånd genom fel nyckel.
 - [x] Håll walletimplementationen utanför spelkärnan och API-transport utanför koordinatorns spelregler. Behåll extern-wallet-spärren; ingen SQLite-genväg eller tyst demofallback vid extern konfiguration. Dokumentera framtida aggregators idempotens-/status-/återhämtningsgräns utan att bygga en overifierad HTTP-adapter.
+- [x] Runtimehealth i PR336/`f34f8e38a6386635958f8610ba39d07beacca35a` verifierad10/10 med oberoende review; ingen bootstrap-/gatewayinkoppling.
+- [ ] Isolerad Neonstaging: godkänd PG18/Frankfurt, fast0.25CU/autosuspend300s och cirka24aktivatimmar. En Verceladministrationsväg som kan verifiera inställningarna återstår. Inget projekt/DDL skapat; root återupptar när samma mål/värden kan verifieras.
 **Startfiler:** `services/game/postgres-native-table.mjs`, `native-table.mjs`, `storage/postgres-store.mjs`, `packages/storage/server/postgres-store.mjs`, `ops/neon-game/`. Källjämförelse efter K01: `kevin/croupier-scoutgg/server/shared-table.mjs` och `transactions.mjs` på fryst Kevin-SHA.
 **Radera:** ersatta SQLite-kopplingar och dubbla wallet-/transaktionsvägar ur den portade produktkedjan; lämna inte en tyst SQLite-fallback.
 **Klart/verifiera:** isolerade PostgreSQL-prov med två samtidiga klienter: samma rum, olika rum, samma spelare, dubbelkommando, timeout, rollback och processomstart. Kontrollera exakt saldo/journal, inga dubbla utbetalningar och samma sparade bord efter återläsning.
@@ -178,6 +186,8 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **J07 tidigare CI-utfall 22 oktober:** senaste PR332-head991ef0c571aef02cd5f475a106da5b010987b6c5 är endast testregistrering/handoff. CI39689146140 startade inga jobb på grund av GitHubs betalning/spendinglimit (jobannotation119530686477). Senare main-CI39694901249 passerade, men det ersätter inte PR332:s egna kontroller. Produktacceptansen på2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 kvarstår; ingen ny PR332-CI-acceptans.
 
 ## J08 — Admin styr versionerad spelkonfiguration
+
+- [x] Native kostnadsfri negativdryrun i PR336/`f34f8e38a6386635958f8610ba39d07beacca35a`: båda APIbasvägar, 422fast materialkod, inga delskrivningar/provideranrop och auth/origin före dataread.15/15,0skip och oberoende review. Det verifierar nekad publicering, inte bindning/aktivering.
 
 **IN_PROGRESS 22 oktober:** aktuell pushad PR334/head9b43e3e7f7cde871cdba9efe81800bf8b5c4d329 är fjärrverifierad med rätt author/source/repo. N1-skyddade room-game-config-utkast, revisions-/rumsskydd, atomiskt package/config-steg och scoped sko-/auditläsning består. Senaste femfilsdelta,+138/-14, binder snapshot/katalog/administrationsrevision till samma scope, frikopplar resolverinput och återkontrollerar aktuella/frysta exakta media och talgodkännande med assertCapturedPresentationMedia före publish på samma SQL-klient. j08_ui före8pass/5fail, efter13/13 API och18/18 med adapter,0skip. Root körde9/9 på riktig PG16.15/Node24.21 mot ändrad produkt och isolerad seed; första seedfelet rättades till befintligt runtimeCatalogJson, ingen produkträttning. Slutlogg: arkiv/2026-10-22/j08/material-snapshot-pg.log. Testport35029/temp-Node/kluster stoppade. j04_resume läste hela femfilsdeltat och API-/adapter-/PG-loggar utan blockerare; root läste. Normal hook13/13,0skip; körningar överlappar. CI39699893800 är completed/success på exakt08736cf37980cfbf6ceee2e3c36b9bb81b3cf04e, GitGuardian119566301138 success. Den gröna CI:n gäller före efterföljande mainintegration. Föregående f079ecd5-CI39698231354 var pågående vid senaste läsningen; inget slutresultat påstås. Verkliga K05-identiteter och native koppling till K04-producenten återstår. Inget provider-I/O, native binder, fallback eller schema-/produktionsaktivering; full J08 är fortsatt IN_PROGRESS. Tidigare isolerade PG-/adapterbevis och testfixar finns versionsmärkta i status.json.
 

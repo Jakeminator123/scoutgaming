@@ -1,6 +1,6 @@
 # Migrationsstatus
 
-Genererad från [status.json](status.json). Uppdaterad 2026-10-22.
+Genererad från [status.json](status.json). Uppdaterad 2026-10-22T01:21:46.797Z.
 
 **Verifierad migrering: 45% (9/20 aktiviteter).**
 
@@ -28,7 +28,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | O01 | Lås kontrakt och funktionsansvar | orkestrator | VERIFIED |
 | J03 | Avveckla resterande Control-ytor | jakob | VERIFIED |
 | J04 | En spelkatalog via lobby | jakob | VERIFIED |
-| J05 | Förenkla runtime och byggkedja | jakob | TODO |
+| J05 | Förenkla runtime och byggkedja | jakob | IN_PROGRESS |
 | J06 | Rensa testlås och rikta CI | jakob | TODO |
 | K02 | Ren regelkärna med explicit slump | kevin | VERIFIED |
 | K03 | Delat bord utan SQL- och videokoppling | kevin | VERIFIED |
