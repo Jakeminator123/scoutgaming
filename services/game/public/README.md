@@ -20,10 +20,10 @@ Ta inte bort `card-presentation/`, `local-card-overlay.mjs` eller vendorresurser
 för att deras ursprung eller ett presentationsnamn är äldre. Okända filmhashar
 har en fallback och ska inte beskrivas som visuellt godkänd kalibrering.
 
-`lab-speech-bridge.mjs` används av `app.mjs`. `lissabon-profile.mjs` stöder
-serverns avgränsade lokala profilfunktion. Namnen innebär inte att separata
-Lab/Lissabon-produkter ska skapas. Nya backoffice- och lobbygränssnitt utvecklas
-i `/admin` respektive `/lobby`; övergångens fungerande äldre länkar finns kvar.
+`/lab-speech-bridge.mjs` serveras från `packages/presentation/runtime/` via
+det publika modulregistret. Lissabon-profilklienten är borttagen (22 oktober
+2026). Nya backoffice- och lobbygränssnitt utvecklas i `/admin` respektive
+`/lobby`; övergångens fungerande äldre länkar finns kvar.
 
 Stora mediafiler kan ligga utanför mappen och lösas via projektets medielayout
 eller Blob. En saknad lokal film är därför inte belägg för oanvänd kod.

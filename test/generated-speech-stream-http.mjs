@@ -48,7 +48,7 @@ test('real product HTTP result survives into authenticated stream; memory forget
     'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID',
     'RUNPOD_API_KEY', 'RUNPOD_ENDPOINT_ID', 'ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API']) env[key] = '';
   Object.assign(env, { HOST: '127.0.0.1', PORT: String(port), NODE_ENV: 'development', CROUPIER_DATA_DIR: join(directory, 'db'),
-    DEMO_GUEST_ACCESS: '1', CROUPIER_LISSABON_PROFILES: '', CROUPIER_STREAM_LANE: '', CROUPIER_ASTRID_CAMERA: '',
+    DEMO_GUEST_ACCESS: '1', CROUPIER_STREAM_LANE: '',
     CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH_DIR: join(directory, 'speech'),
     CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: `ticket-${secret}`, CARTESIA_API_KEY: 'isolated-test-key',
     OPENCLAW_BASE_URL: `http://127.0.0.1:${llm.address().port}`, OPENCLAWAPI_KEY: 'fixture-key', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat' });

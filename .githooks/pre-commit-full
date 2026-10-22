@@ -108,4 +108,4 @@ run_node_tests gameplay local-comparison-fixture test/local-comparison-fixture.m
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
 run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
 run_node_tests gameplay local-presentation test/local-presentation.mjs test/layered-presentation.mjs test/layer-packs-route.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/presentation-select-dealers.mjs test/presentation-select-astrid-baseline.mjs
-run_node_tests gameplay lissabon-profiles test/lissabon-profiles.mjs test/player-results.mjs
+run_node_tests gameplay player-results test/player-results.mjs

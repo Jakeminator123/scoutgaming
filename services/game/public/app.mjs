@@ -2068,10 +2068,6 @@ if (new URLSearchParams(location.search).get('rehearsal') === '1') {
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
 tableReady.then(() => settleRehearsalInitialization?.(false), () => settleRehearsalInitialization?.(true));
-if (!studioPreview && localPresentationEnabled) tableReady.then(async () => {
-  const { installLissabonProfileUi } = await import('./lissabon-profile.mjs');
-  await installLissabonProfileUi({ canSwitch: () => !round && !busy && !chatBusy });
-}).catch(error => console.warn('[Lissabon profile]', error.message));
 document.querySelector('#sign-out').onclick=async()=>{if(studioPreview)return;await api('/api/auth/logout',{});location.reload();};
 
 // Separate explicit chat capability for the bound local lab. It cannot issue
