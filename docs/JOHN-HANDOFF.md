@@ -238,6 +238,36 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
+## Admin: klippintag med AI-förslag och radering med dialog — 22 oktober 2026
+
+Branch `codex/admin-klippintag` (Claude, två underagenter, worktrees
+`admin-klippintag` och `admin-radering` från main). Inga writers, scheman
+eller lagringsregler ändrade; servern nekar och tillåter exakt som förut.
+
+- **Klippassistenten** (serverdel): förslaget följer klippkartans fem grupper,
+  ger `group`, `role` (standard/variant), högst två `alternatives`, språk och
+  tagning, tar valfri mappsökväg som rådgivning och känner Kevins
+  beteendestammar (andas, axlar6101, nick6103 …) som Vila. Kontrakt och prompt:
+  [agentflödet](AI/scoutgaming-agentflode.md#klippassistenten-känner-klippkartan--22-oktober-2026).
+- **Intag i klippkartan:** dra in filer eller en mapp, få förslag, dra filkort
+  till ett kort eller en situationsknapp, godkänn och ladda upp med förlopp och
+  kvitto. Nås via **Lägg till klipp**, kortens uppladdning och `?panel=intake`.
+  Högst 30 filer per omgång (serverns gräns).
+- **Radering:** gemensam `ConfirmDialog`. Klipp: **Radera** (till arkivet) i
+  klippkartans klippvy och i Dealer & användning; **Radera permanent** i arkivet
+  efter serverkontroll i dialogen, utan id-inskrivning. Dealers: **Ta bort** till
+  papperskorgen och **Radera permanent** med kryssruta. Bolag och rum: samma
+  dialog i `control-resource-lifecycle.tsx` (+4/−4, filen claimad av
+  `admin-ux-pass-2-rooms`, inget svar på ping ännu).
+- **Ingenting raderat ur koden** enligt Jakobs beslut; kandidater listas i PR:en
+  (gamla importfliken, `/admin/deletion`, oanvänd `.confirm`-klass).
+- Kvar: spelbolag och rum saknar permanent radering på servern (endast
+  arkivering); publicerade beroenden spärrar dealer/klipp. Båda kräver
+  Jakobs beslut. Ingen webbläsarverifiering gjord (fixturporten upptagen).
+- Verifiering: 448/448 node-prov över Admin-klientens lib, runtime, import,
+  namnregler, livscykel och publiceringssida; `tsc` för admin och Studio grönt;
+  `build.mjs` exit 0.
+
 ## Levande lager: bord och variation (capability 24) — 22 oktober 2026
 
 Branch `codex/levande-lager` ovanpå `codex/admin-ux-klippkarta` (PR340).
