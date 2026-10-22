@@ -189,9 +189,11 @@ test('lobby browser preserves choices, authenticated launch contract, account na
       + '[data-slot="dialog-overlay"]{position:fixed;inset:0;background:#0003}'
       + '[data-slot="dialog-content"]{position:fixed;top:10%;left:10%;background:white;padding:1rem}'
       + '[data-slot="dialog-content"][data-state="closed"]{animation:fixture-close 50ms}'
-      + '@keyframes fixture-close{from{opacity:1}to{opacity:0}}</style><div id="root"></div>'
+      + '@keyframes fixture-close{from{opacity:1}to{opacity:0}}'
+      // Without the app's CSS, absolute portrait media would cover neighbouring cards.
+      + 'img,video{pointer-events:none}</style><div id="root"></div>'
       + '<script type="module" src="/fixture.js"></script></html>';
-    const unexpected = [], errors = [];
+    const unexpected = [], errors = [], portraitRequests = new Set();
     const server = createServer((request, response) => {
       const path = new URL(request.url, 'http://localhost').pathname;
       let body, type = 'application/json';
@@ -205,6 +207,8 @@ test('lobby browser preserves choices, authenticated launch contract, account na
         body=renderPlayerAreaHtml(model);type='text/html';
       }
       else if (path === '/favicon.ico') {response.writeHead(204); response.end(); return;}
+      // Decorative portrait stills/clips only; the fixture needs no media bytes.
+      else if (path.startsWith('/admin/_assets/lobby/')) {portraitRequests.add(path); response.writeHead(204); response.end(); return;}
       else {unexpected.push(request.method + ' ' + path); response.writeHead(404); response.end(); return;}
       response.writeHead(200, {'content-type': type}); response.end(body);
     });
@@ -224,7 +228,20 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
+    // Before a room is chosen, step 3 shows four locked portrait teasers under the glass.
+    const dealerCards = page.locator('ul[aria-label="Dealers"] > li');
+    await page.goto(origin + '/lobby');
+    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(3).waitFor();
+    assert.equal(await dealerCards.count(), 4);
+    assert.equal(await page.locator('ul[aria-label="Dealers"] button:not([disabled])').count(), 0);
+    assert.equal(await page.locator('a[href^="/play/blackjack"], a[href^="/play/roulette"]').count(), 0);
     await page.goto(origin + '/lobby?operator=alpha&room=shared-room');
+    await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
+    assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
+      ['Välj Nora', false], ['Välj Oskar', false],
+      ...['Astrid', 'Mårten', 'Dragge', 'Anna'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
+    ], 'published dealers first, then disabled teasers');
+    assert.ok(portraitRequests.has('/admin/_assets/lobby/images/dealers/astrid.jpg'));
     for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {
       const trigger = page.getByRole('button', {name: 'Välj ' + name, exact: true});
       await trigger.focus(); await trigger.press('Enter');

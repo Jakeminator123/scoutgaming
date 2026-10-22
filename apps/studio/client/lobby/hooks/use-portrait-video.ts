@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const IDLE_DELAY_MS = 50_000;
+const IDLE_DELAY_MS = 45_000;
 const EMPTY_CLIPS: readonly string[] = [];
 
 /** Decorative lobby clips only; this never controls the gameplay player. */

@@ -1223,6 +1223,23 @@ visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
 
+## Lobbyns dealerporträtt tillbaka i steg 3 — 22 oktober 2026
+
+Jakob bad om porträtten igen. Steg 3 visar åter Astrid, Mårten, Dragge och
+Anna som låsta förhandsporträtt under glaset innan bolag och rum är valda;
+den 13 oktober tömdes listan i e3404cf4. Efter rumsval kommer rummets
+publicerade dealers först, sedan de porträtt rummet saknar som låsta kort.
+Porträttkort ger aldrig val eller startlänk. Registrerat ID `dragan` visar
+Dragge-porträttet via exakt ID-alias (Kevin-importens `dragge` → `dragan`);
+ingen namnmatchning. Paow förblir avregistrerad (2f7b891a) och Kevin har bara
+stillbild, så ingen av dem läggs till. Tomgångsvideon upprepas 45 s efter
+avslutad uppspelning, även under glaset.
+
+Verifierat: lobbyns enhetstester, `test/public-lobby.mjs` med lokal Chrome,
+bygge med typkontroll och skärmdumpar på 1440 och 390 px av byggd lobby med
+syntetisk katalog (video spelar under glaset och i dialogen, ingen
+horisontell överströmning). Ingen livekatalog eller produktion är provad.
+
 ## Spelarlobby J04 — 22 oktober 2026
 
 Återupptaget på codex/player-lobby-j04 från PR331:s frysta
