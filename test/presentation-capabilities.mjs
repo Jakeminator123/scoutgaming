@@ -31,6 +31,16 @@ test('HEAD negotiates the same metadata response with no body and unsupported or
   }
 });
 
+test('v24 advertises living table and jittered layer clips within the readiness response limit', async () => {
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'24'}}));
+  assert.equal(response.status,200);
+  const body=await response.text();assert.ok(Buffer.byteLength(body)<=2048);
+  const cap=validatePresentationCapabilities(JSON.parse(body),{expectedVersion:24});
+  assert.equal(cap.layerPlayback,'table-and-jitter-v1');assert.equal(cap.roomGameConfigs,'administration-drafts-v1');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'23'}})).json();
+  assert.equal(Object.hasOwn(old,'layerPlayback'),false);
+});
+
 test('v23 advertises administration room drafts within the readiness response limit', async () => {
   const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'23'}}));
   assert.equal(response.status,200);

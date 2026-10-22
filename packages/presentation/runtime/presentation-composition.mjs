@@ -77,7 +77,9 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(!compositor?.geometry)return null;
     const scene=compositionScene();
     const board=current?.settings?.blackjackTables?.find(row=>row.tableId===selected.get('table'));
-    const asset=assets().get('table');
+    // Geometry belongs to the mounted base table. A living table clip only
+    // changes pixels; its own size never moves seats, bets or dealer cards.
+    const asset=mountedAsset('table');
     if(board&&scene.show.table&&asset&&compositor.tableGeometry){
       return {...projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
         {width:host.clientWidth,height:host.clientHeight},board,scene.layout),
@@ -99,9 +101,14 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(unpatchedFrame){const context=actorFrame.getContext('2d');context.clearRect(0,0,actorFrame.width,actorFrame.height);context.drawImage(unpatchedFrame,0,0);actorFrame.src=`presented-frame-${++frameNumber}`;unpatchedFrame.width=unpatchedFrame.height=0;unpatchedFrame=null;paintHeld();}
     if(closed){layer?.close();return;}movingSpeech=layer;
   }
+  function mountedAsset(role) {
+    const node=mounts.get(role);if(!node)return null;
+    const width=node.videoWidth||node.naturalWidth,height=node.videoHeight||node.naturalHeight;
+    return width&&height?{el:node,width,height}:null;
+  }
   function assets() {
     const map=new Map();
-    for(const [role,node]of mounts){const width=node.videoWidth||node.naturalWidth,height=node.videoHeight||node.naturalHeight;if(width&&height)map.set(role,{el:node,width,height});}
+    for(const role of mounts.keys()){const asset=mountedAsset(role);if(asset)map.set(role,asset);}
     for(const [role,event]of events)if(event.loaded){const node=event.node;if(node.videoWidth&&node.videoHeight)map.set(role,{el:node,width:node.videoWidth,height:node.videoHeight});}
     return map;
   }
@@ -122,13 +129,16 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     node.pause?.();compositor?.release?.(node);node.removeAttribute?.('src');node.load?.();node.remove();paintHeld();
   }
   function closePlayers(){for(const player of players.values())player.close();players.clear();}
+  // Table rules are authored for the default table. Another selected table
+  // (player choice or room override) keeps its player paused: no clip over it.
+  const playbackAllowed=role=>role!=='table'||selected.get('table')===current?.table.default;
   function configureLayerPlayback(role) {
     players.get(role)?.close();players.delete(role);
     const policy=current?.[`${role}Playback`];if(!policy?.rules.length)return;
     const player=createBackgroundPlayback(policy,{...backgroundPlaybackOptions,role,
       onStart(rule,token){
         const asset=current.assets.find(row=>row.id===rule.assetId&&row.role===role&&current[role].allowed.includes(row.id));
-        if(!asset||!asset.contentType.startsWith('video/'))throw Error('Layer event unavailable');
+        if(!asset||!asset.contentType.startsWith('video/')||!playbackAllowed(role))throw Error('Layer event unavailable');
         const node=document.createElement('video');
         node.className=`presentation-plane presentation-${role} presentation-${role}-event`;node.dataset.layerAsset=asset.id;node.setAttribute('aria-hidden','true');
         node.muted=true;node.loop=false;node.playsInline=true;node.preload='auto';
@@ -144,7 +154,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
         node.src=asset.src;host.append(node);node.load?.();if(node.readyState>=2)ready();
       },onStop:token=>stopLayerEvent(role,token)});
     players.set(role,player);
-    if(backgroundVisible)player.start();
+    if(backgroundVisible&&playbackAllowed(role))player.start();
   }
   function render(role,id) {
     const previous=mounts.get(role);previous?.pause?.();if(previous)compositor?.release?.(previous);previous?.remove();mounts.delete(role);pending.delete(role);
@@ -166,7 +176,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   }
   function set(role,id) {if(current&&current[role].allowed.includes(id)){
     players.get(role)?.pause();
-    render(role,id);paintHeld();if(backgroundVisible)players.get(role)?.start();
+    render(role,id);paintHeld();if(backgroundVisible&&playbackAllowed(role))players.get(role)?.start();
   }}
   function replace(value) {
     setMovingSpeechLayer(null);
@@ -218,7 +228,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     backgroundEvent:(eventId,eventKey)=>players.get('background')?.event(eventId,eventKey)??false,
     tableEvent:(eventId,eventKey)=>players.get('table')?.event(eventId,eventKey)??false,
     setBackgroundVisible(visible){backgroundVisible=Boolean(visible);
-      for(const player of players.values())if(backgroundVisible)player.start();else player.pause();
+      for(const [role,player] of players)if(backgroundVisible&&playbackAllowed(role))player.start();else player.pause();
       const base=mounts.get('background');if(base?.tagName==='VIDEO'){base.autoplay=backgroundVisible;
         if(backgroundVisible)Promise.resolve(base.play?.()).catch(()=>{});else base.pause?.();}},
     hold:()=>{if(key)paintHeld();},

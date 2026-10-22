@@ -17,7 +17,7 @@ function asset(role,n) {
     sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};
   return {...row,pathname:layerAssetPath(row)};
 }
-function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eventMode=null,legacy=false,fullFrame=false,baked=false}={}) {
+function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eventMode=null,legacy=false,fullFrame=false,baked=false,tableClip=false}={}) {
   const dealers=[['linnea','Linnea published'],['nora','Nora published'],['selma','Selma published'],['astrid','Astrid published'],['foreign','Draft only']];
   const project=dealers.reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
   const lane=defaultPresentationLane('linnea');lane.id='johns-presentation';lane.label='Published presentation';project.lanes=[lane];
@@ -28,6 +28,11 @@ function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eve
   lane.layers.background={enabled:true,mode:'image',default:project.layerAssets[0].id,allowed:project.layerAssets.slice(0,2).map(row=>row.id)};
   if(baked)lane.layers.background.mode='baked';
   lane.layers.table={enabled:true,default:project.layerAssets[2].id,allowed:project.layerAssets.slice(2,4).map(row=>row.id),colors:['#123456']};
+  if(tableClip){
+    const clip={...asset('table',6),label:'Levande bord',contentType:'video/mp4'};clip.pathname=layerAssetPath(clip);project.layerAssets.push(clip);
+    lane.layers.table.allowed.push(clip.id);
+    lane.tablePlayback={schemaVersion:1,rules:[{id:'living',assetId:clip.id,trigger:{everyMs:25000},maxDurationMs:10000,cooldownMs:25000,maxPerMinute:2,maxSecondsPerMinute:20}]};
+  }
   const mediaRows=lane.dealers.map((dealerId,index)=>{
     const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
     project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
@@ -77,7 +82,7 @@ function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eve
     renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]};
   const operator={id:'north-id',slug:'north',name:'North',status:'active',internalSecret:'never-expose'};
   const state={operator,project,administration,pack:{operatorId:operator.id,revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],
-    branding:withPackagePresentation({name:'North',dealer:'nora',table:project.layerAssets[3].id,background:project.layerAssets[1].id},presentation)}};
+    branding:withPackagePresentation({name:'North',dealer:'nora',table:tableClip?project.layerAssets.at(-1).id:project.layerAssets[3].id,background:project.layerAssets[1].id},presentation)}};
   const calls={operators:0,packages:0,snapshots:0};
   const api=createPublicOperatorRooms({store:{getOperatorBySlug:async slug=>{calls.operators++;return slug===operator.slug?structuredClone(state.operator):null;},
     getCurrentPackage:async()=>{calls.packages++;return structuredClone(state.pack);}},
@@ -109,6 +114,16 @@ test('public catalog freezes dealer and asset labels and honors company defaults
   assert.doesNotMatch(JSON.stringify(value),/never-expose|north-id|sha256|pathname|contentType|branding|_scoutPresentation|croupier\/media|Draft only/);
   assert.deepEqual(f.state.pack,before.pack);assert.deepEqual(f.state.administration,before.administration);
   assert.deepEqual(f.calls,{operators:1,packages:1,snapshots:1});
+});
+
+test('a tablePlayback clip is not a lobby table choice; a company table naming it falls back to the lane default',async()=>{
+  const f=fixture({tableClip:true}),value=await f.api.read('north'),clipId=f.state.project.layerAssets.at(-1).id;
+  const dealers=value.rooms[0].dealers.filter(row=>row.independentLayers);assert.ok(dealers.length);
+  for(const dealer of dealers){
+    assert.deepEqual(dealer.table.allowed.map(row=>row.id),f.state.project.layerAssets.slice(2,4).map(row=>row.id));
+    assert.equal(dealer.table.default,f.lane.layers.table.default);
+  }
+  assert.equal(JSON.stringify(value).includes(clipId),false,'the clip id never reaches the public catalogue');
 });
 
 test('public room choices use canonical material names without granting unpublished catalog assets',async()=>{

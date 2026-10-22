@@ -1894,6 +1894,21 @@ Nya skrivningar med `tablePlayback` eller `jitterMs` kräver runtime capability
 spelservrar eftersom de strikta läsarna annars avvisar hela dokumentet. Ingen
 SQL-migration behövs; äldre publiceringar utan fälten läses som förut.
 
+Bordsklipp ändrar bara pixlar. Spelplanet (platser, insatsknappar, dealerns
+kort och kortprojektionen) räknas alltid från det monterade basbordet, aldrig
+från ett spelande klipp, så ett klipp med annat format flyttar inget mitt i en
+hand. Reglerna hör till sammansättningens standardbord: har spelaren eller
+rummets override valt ett annat bord står bordets scheduler pausad och inga
+bordsklipp spelas över det. Bakgrund och dealer påverkas inte.
+
+Media som `tablePlayback` refererar till står kvar i bordslagrets `allowed`
+(reglerna kräver det) men är aldrig ett bordsval: `selectableLayerBases`
+tar bort dem ur spelarpanelen, lobbyns rumsval och Admins Utseende.
+Standardbordet är alltid valbart. Ett sparat val eller en override som pekar
+på ett klipp faller tillbaka till standardbordet, och Admin avvisar det med
+422. Bordsklipp bör ha samma pixelmått som basbilden; ett klipp med annat
+format flyttar inte spelet men ritas i sitt eget format och linjerar inte.
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet
