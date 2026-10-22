@@ -111,9 +111,11 @@ export function bindIdle(catalogue, { dealer, take }) {
 // en/sv texter.json) and the shared code/data rows; Astrid classic adds the root repliker.
 export function activationSet(catalogue, dealer) {
   const lang = r => !r.language || LANGUAGES.includes(r.language);
-  return catalogue.filter(r => (r.dealer === dealer && lang(r) && r.source !== 'face')
+  // Deferred (K05 / review 6329902583 p2): G13 lines without a main slot and the Table Studio greeting.
+  const deferred = r => r.source === 'studio' || (r.source === 'replik' && !r.slot);
+  return catalogue.filter(r => !deferred(r) && ((r.dealer === dealer && lang(r) && r.source !== 'face')
     || (r.dealer === 'shared' && r.source === 'data-beroende')
-    || (dealer === 'astrid' && r.source === 'replik-rot' && r.language === 'en'));
+    || (dealer === 'astrid' && r.source === 'replik-rot' && r.language === 'en')));
 }
 
 // Verify the whole binding before activation: every required path must be present with the exact

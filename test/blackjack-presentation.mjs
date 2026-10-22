@@ -252,6 +252,25 @@ test('activation verifies the whole binding, including meta.json, card track and
   assert.equal(verifyActivation(catalogue, 'nobody', all).ok, false);
 });
 
+test('activation set excludes the deferred K05 rows (G13 lines without a main slot, Table Studio greeting)', () => {
+  const lang = r => !r.language || ['en', 'sv'].includes(r.language);
+  const deferred = r => r.source === 'studio' || (r.source === 'replik' && !r.slot);
+  // Removed per dealer: exactly the 155 rows K05-mappning.md 4b lists (44+44+44+22+1).
+  const removed = { dragge: 44, paow: 44, marten: 44, astrid2: 22, astrid: 1 };
+  for (const [dealer, n] of Object.entries(removed)) {
+    const set = activationSet(catalogue, dealer);
+    assert.ok(!set.some(deferred), `${dealer}: no deferred row`);
+    assert.equal(catalogue.filter(r => r.dealer === dealer && lang(r) && deferred(r)).length, n, dealer);
+  }
+  const astrid = activationSet(catalogue, 'astrid');
+  assert.ok(!astrid.some(r => r.path === 'media/repliker/greeting_1.mp4') && astrid.some(r => r.path === 'media/repliker/goodluck_1.mp4'));
+  assert.ok(!activationSet(catalogue, 'dragge').some(r => r.path === 'media/dealers/dragge/repliker/sv/twentyone_1.mp4'));
+  // A deferred row is never required: verifyActivation passes without it and ignores a wrong hash for it.
+  const all = new Map(activationSet(catalogue, 'dragge').map(r => [r.path, r.sha256]));
+  all.set('media/dealers/dragge/repliker/sv/twentyone_1.mp4', '0'.repeat(64));
+  assert.equal(verifyActivation(catalogue, 'dragge', all).ok, true);
+});
+
 test('line identity is stable per committed row; media re-plans are revisions; stale mouths are dropped', () => {
   assert.equal(lineIdOf('party', 'plan-1', 0, 'goodluck'), lineIdOf('party', 'plan-1', 0, 'goodluck'));
   assert.notEqual(lineIdOf('party', 'plan-1', 0, 'goodluck'), lineIdOf('party', 'plan-2', 0, 'goodluck'));
@@ -532,6 +551,40 @@ test('planning/material revision: leadMs/cardMs + revision per exact dealer, lan
   }
   const classic = plan('astrid', 'en');
   assert.deepEqual([classic.leadMs, classic.cardMs, classic.timing.cardSeconds, classic.timing.flipSeconds], [3910, 3580, 3.5, 2.33]);
+  // Planned media per dealer/language = K05-matris.tsv selected rows (urval=vald, 582 in the union;
+  // checked 0 differences against 0968b2ae): no deferred rows, no public/ source-evidence JS.
+  const sizes = { dragge: [118, 118], paow: [120, 120], astrid2: [106, 68], marten: [100, 100], astrid: [28, 17] };
+  const union = new Set();
+  for (const [dealer, [enN, svN]] of Object.entries(sizes)) {
+    const languages = dealer === 'astrid2' || dealer === 'astrid' ? ['en'] : ['en', 'sv'];
+    for (const language of languages) {
+      const r = plan(dealer, language);
+      assert.equal(r.media.length, language === 'en' ? enN : svN, `${dealer} ${language}`);
+      assert.ok(!r.media.some(([path]) => path.startsWith('public/')), `${dealer} ${language}: no JS source evidence`);
+      r.media.forEach(([path]) => union.add(path));
+    }
+  }
+  // astrid2/astrid have no recorded sv lines (refused below); their sv sets are the shared/data rows.
+  const lo = r => r.language || /\/repliker\/([a-z]{2})\//.exec(r.path)?.[1] || null;
+  for (const [dealer, n] of [['astrid2', 68], ['astrid', 17]]) {
+    const svSet = activationSet(catalogue, dealer).filter(r => !lo(r) || lo(r) === 'sv').filter(r => !r.path.startsWith('public/'));
+    assert.equal(svSet.length, n, `${dealer} sv`); svSet.forEach(r => union.add(r.path));
+  }
+  assert.equal(union.size, 582);
+  // J08 observes only catalogue blob rows: without the six JS files planning still binds.
+  const noJs = new Map([...observed].filter(([path]) => !path.startsWith('public/')));
+  assert.equal(catalogue.filter(r => r.path.startsWith('public/')).length, 6);
+  for (const dealer of ['dragge', 'paow', 'astrid2', 'marten', 'astrid']) assert.equal(plan(dealer, 'en', { observed: noJs }).ok, true, dealer);
+  // Deferred rows are not required and cannot change the revision.
+  const g13 = 'media/dealers/dragge/repliker/en/twentyone_1.mp4';
+  assert.ok(catalogue.some(r => r.path === g13 && r.source === 'replik' && !r.slot));
+  const noG13 = new Map(noJs); noG13.delete(g13);
+  assert.equal(plan('dragge', 'en', { observed: noG13 }).revision, plan('dragge', 'en').revision);
+  const badG13 = new Map(noJs); badG13.set(g13, '0'.repeat(64));
+  assert.equal(plan('dragge', 'en', { observed: badG13 }).ok, true);
+  assert.ok(!plan('dragge', 'en').media.some(([path]) => path === g13));
+  const noStudio = new Map(noJs); noStudio.delete('media/repliker/greeting_1.mp4');
+  assert.equal(plan('astrid', 'en', { observed: noStudio }).ok, true);
   // Language is part of the material: same timing, different identity.
   const sv = plan('dragge', 'sv'), en = plan('dragge', 'en');
   assert.deepEqual([sv.leadMs, sv.cardMs], [en.leadMs, en.cardMs]); assert.notEqual(sv.revision, en.revision);

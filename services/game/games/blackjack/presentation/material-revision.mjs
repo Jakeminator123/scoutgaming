@@ -9,6 +9,9 @@
 // K01 TSV, path + bytes + sha256 of Kevin 5aa7ed10 files). They are NOT Neon ids or Blob
 // identities yet (K05); `observed` is whatever the binder verified (e.g. a local hash pass or,
 // later, the registry), and the revision changes if any of those hashes or timing inputs change.
+// The required set is activationSet (without K05's deferred rows) minus the six public/ JS files,
+// which are source evidence pinned by CATALOGUE_SOURCE and never observed in runtime. That change
+// (K05-mappning.md 4b) changed every revision; revisions computed at 1148fa76 are no longer valid.
 //
 // Timing rule (an upper bound, not a calibration). Kevin lays a plan from per-take lengths
 // (server/shared-table.mjs @ 5aa7ed10): lead 700/1000/1500 ms before the first take (:150, 1500
@@ -79,7 +82,8 @@ export function planningRevision({ catalogue, dealer, language, observed, docume
   if (!source || !catalogue.some(r => r.dealer === dealer)) return refuse('unknown_dealer');
   // A row's language: its column, or for the data rows (texter.json) the repliker/<lang>/ folder.
   const languageOf = r => r.language || /\/repliker\/([a-z]{2})\//.exec(r.path)?.[1] || null;
-  const required = activationSet(catalogue, dealer).filter(r => !languageOf(r) || languageOf(r) === language);
+  const required = activationSet(catalogue, dealer).filter(r => !languageOf(r) || languageOf(r) === language)
+    .filter(r => !r.path.startsWith('public/')); // version-bound source evidence, pinned by CATALOGUE_SOURCE
   if (!required.some(r => LINE_SOURCES.has(r.source) && r.language === language)) return refuse('no_recorded_lines_in_language');
   const missing = required.filter(r => get(observed, r.path) === undefined).map(r => r.path);
   const mismatched = required.filter(r => get(observed, r.path) !== undefined && get(observed, r.path) !== r.sha256).map(r => r.path);
