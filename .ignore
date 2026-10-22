@@ -2,9 +2,6 @@
 /arkiv/
 # Not a copy of .cursorignore. Heavy tracked media stays hidden from rg.
 # .cursorindexingignore alone keeps that text out of the Cursor index.
-# Retired private archive: never read or re-index.
-/random-stuff-jakob/jakob-docs/arkiv/
-/random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
 
 # Dependencies and generated cache (not source dist/public directories).
 node_modules/
@@ -31,11 +28,7 @@ vendor/
 .croupier-inbox/
 /agent-talk/state.json
 /agent-talk/write.lock
-/web/data/
-/lab/data/
 /media/.migration/
-/lissabon/data/
-/random-stuff-jakob/jakob-log-files/
 
 # Binary media/data: JSON manifests, calibration and source stay searchable.
 *.mp4
@@ -76,16 +69,8 @@ vendor/
 # Canonical recovery archive; inspect only when needed.
 /arkiv/
 
-# Relocated Studio: retain old private/build guards for files left in place.
-/apps/studio/data/
-
-# OpenClaw source move: local state/media remain at the old protected root.
+# Director/Gateway local state (the Director adapter defaults to open-claw/lab).
 /open-claw/lab/data/
 /open-claw/lab/runtime/
 /open-claw/lab/media/*
 /services/openclaw/lab/data/
-/services/openclaw/lab/runtime/
-
-# Game source moved; retain the old private state and protect the new source root.
-/web/data/
-/services/game/data/
