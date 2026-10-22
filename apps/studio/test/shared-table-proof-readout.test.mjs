@@ -68,10 +68,10 @@ test('unknown room, inactive operator or no current package binding cannot read 
   }
 });
 test('tampered or incomplete audit never yields verified proof',async()=>{
-  for(const mutate of [s=>s.audit[0].hash='b'.repeat(64),s=>s.total=10001,s=>s.audit[0].seq=2,
-    s=>{s.shoe.proof.commandDraws=[];}]) {
+  for(const [mutate,status] of [[s=>s.audit[0].hash='b'.repeat(64),'failed'],[s=>s.total=10001,'incomplete'],[s=>s.audit[0].seq=2,'failed'],
+    [s=>{s.shoe.proof.commandDraws=[];},'failed'],[s=>{s.total=10001;s.shoe={...s.shoe,proof:{...s.shoe.proof,shoeId:'other'}};},'failed']]) {
     const f=fixture(); mutate(f.state); const result=await f.call();
-    assert.equal(result.selected.verification.status,'failed');
+    assert.equal(result.selected.verification.status,status);
   }
 });
 test('shoe data from another room is rejected even after legitimate room authorization',async()=>{
