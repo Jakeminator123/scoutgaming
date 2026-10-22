@@ -24,10 +24,9 @@ Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
 
 Med `CROUPIER_VERCEL_UI=1` använder frontend de incheckade route-/ingress-
 kontrakten och paketerade produktgränssnitten. `/lab`, `/labb` och äldre
-Studio-adresser omdirigerar till `/control`; video-, zon- och guidegenvägar
-behåller sina undersidor. Utan flaggan används de äldre Render-genvägarna och
-`CROUPIER_GAME_URL`. Den grenen behövs ännu och är inte en isolerad QA-konfiguration.
-`/demo` länkar till det serverägda spelet. Den oanvända klientbaserade
+Studio-adresser omdirigerar direkt till `/admin`; video-, zon- och guidegenvägar
+behåller sina undersidor. Inga adresser pekar längre på Render-Studion; utan
+flaggan finns ingen spelstart. Den oanvända klientbaserade
 blackjack-demon, dubbla CSS-filen och oanvända UI-/tema-/hookkomponenter är borttagna.
 Den aktiva Button-komponenten och landningssidans kortsymboler är kvar.
 
@@ -48,13 +47,15 @@ speladressmodulens exakta URL:er exponeras via den befintliga modulallowlisten; 
 moduler är inte publika käll-URL:er.
 
 Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`
-är spelarentré. I unified/native-läget startar ett uttryckligt rum/dealerval
-spelet via `/play/blackjack`; en allmän blackjackadress leder till `/play`.
-Äldre `/game`- och `/blackjack`-länkar hanteras av det delade entrékontraktet.
+är spelarentré. Spelstarten är `/game?game=blackjack|roulette&operator=…&table=…`:
+blackjack proxas från spelmotorn efter sessionskontrollen i `lib/server-ui.mjs`,
+roulette skrivs om till spelmotorns dokument i middleware. `/game` utan spelkontext
+leder till `/lobby`. `/play/{game}`, `/blackjack` och `/roulette` är 308 till
+`/game` under en release (spelmotorn svarar ännu med `/blackjack` efter launch).
 `CROUPIER_VERCEL_UNIFIED_UI=1` styr den gemensamma Services-konfigurationen.
 Partnerinloggning finns på `/partner/login` med separat `partner_session` och
 scoped medlemskap; intern admin kan också använda portalen. Den befintliga
-spellobbyn, profilen och historiken finns under `/play`. T2–T4 har kvarvarande
+profilen och historiken finns under `/play/profil` och `/play/historik`. T2–T4 har kvarvarande
 acceptans- och integrationspunkter i driftkartan; de betyder inte att dessa
 funktioner saknas. Separata QA-miljöer bevaras för syntetiska prov;
 full AI/GPU-acceptans redovisas separat.

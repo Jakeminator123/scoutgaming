@@ -4,7 +4,6 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createRoulettePreview } from '../services/game/games/roulette/preview.mjs';
 import { backendPlatformPath, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
-import { vercelIngressRequest } from '../ops/cloud/vercel-ingress.mjs';
 
 async function fixture(t, options = {}) {
   let handler, time = 0;
@@ -82,30 +81,15 @@ test('entropy errors fail closed with a safe error and no fabricated event', asy
   assert.deepEqual(await response.json(), { error: 'roulette_draw_failed' });
 });
 
-test('Vercel and Render admit only the exact diagnostic routes through authenticated transport', () => {
+test('the public platform no longer transports the roulette diagnostics; they are engine-local only', () => {
   const publicOrigin = 'https://preview.example.test', transportOrigin = 'https://engine.example.test';
-  const ingress = { publicOrigin, transportOrigin, secret: 'isolated-preview-fixture-secret-123456' };
-  for (const path of ['/roulette-test', '/roulette-test/', '/roulette-test/app.mjs', '/roulette-test/style.css', '/api/roulette-test/spin']) {
-    assert.equal(backendPlatformPath(path), true, path);
+  for (const path of ['/roulette-test', '/roulette-test/', '/roulette-test/app.mjs', '/roulette-test/style.css', '/api/roulette-test/spin',
+    '/api/roulette-test/private', '/web/games/roulette/index.mjs', '/roulette-test/private.mjs']) {
+    assert.equal(backendPlatformPath(path), false, path);
     assert.equal(platformRoute(new URL(publicOrigin + path), {
       publicOrigin, backendOrigin: transportOrigin, labUiOrigin: publicOrigin, unifiedUi: true, canonicalGame: true,
-    }).kind, 'backend', path);
-    const accepted = vercelIngressRequest({ method: 'POST', url: path, headers: {
-      host: 'engine.example.test', 'x-croupier-vercel-secret': ingress.secret,
-      'x-croupier-public-origin': publicOrigin, 'x-forwarded-host': 'preview.example.test', 'x-forwarded-proto': 'https',
-      origin: publicOrigin, 'x-roulette-preview': '1',
-    } }, ingress);
-    assert.equal(accepted.accepted, true, path); assert.equal(accepted.headers['x-roulette-preview'], '1');
+    }).kind, 'frontend', path);
   }
-  for (const path of ['/api/roulette-test/private', '/web/games/roulette/index.mjs', '/roulette-test/private.mjs']) {
-    assert.equal(backendPlatformPath(path), false, path);
-  }
-  for (const path of ['/roulette-test', '/roulette-test/']) {
-    const bookmark = vercelIngressRequest({ method: 'GET', url: path, headers: { host: 'engine.example.test' } }, ingress);
-    assert.equal(bookmark.redirect, publicOrigin + '/roulette-test');
-  }
-  const direct = vercelIngressRequest({ method: 'POST', url: '/api/roulette-test/spin', headers: { host: 'engine.example.test' } }, ingress);
-  assert.equal(direct.accepted, false);
 });
 
 test('product mounts diagnostics before player and guest handlers', async () => {

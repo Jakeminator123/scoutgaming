@@ -39,7 +39,9 @@ test('room document preserves login context and serves only explicit public asse
   assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,8)],[137,80,78,71,13,10,26,10]);
   const head=await get('/roulette/assets/roulette-bord.png',{method:'HEAD'});assert.equal((await head.arrayBuffer()).byteLength,0);
   assert.equal((await get('/roulette/assets/private.png')).status,404);
-  assert.equal(backendPlatformPath('/api/roulette/table'),true);assert.equal(backendPlatformPath('/play/roulette'),true);
+  assert.equal(backendPlatformPath('/api/roulette/table'),true);assert.equal(backendPlatformPath('/roulette/app.mjs'),true);
+  // The public document address is /game?game=roulette; /play/roulette is a platform redirect, not a transport path.
+  assert.equal(backendPlatformPath('/play/roulette'),false);assert.equal(backendPlatformPath('/roulette'),false);
   assert.equal((await get('/roulette/private.mjs')).status,404);
   assert.equal((await get('/play/roulette?operator=north&table=other')).status,404);
   assert.equal((await get(path+'&table=room-one')).status,400);

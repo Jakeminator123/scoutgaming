@@ -204,7 +204,7 @@ test('all live partner composition names share localized labels while frozen dat
     for(const [index,room] of snapshot.tables.entries()) {
       const preview=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:room.id,language}));
       assert.ok(preview.includes('<p>'+expected[index]+'</p>'));
-      assert.ok(preview.includes('/play/blackjack?operator=johnsspelbolag&amp;table='+room.id));
+      assert.ok(preview.includes('/game?game=blackjack&amp;operator=johnsspelbolag&amp;table='+room.id));
       assert.doesNotMatch(preview,/Mobile Phone Lane|Layer Preview Lane/);
     }
     assert.equal(JSON.stringify(snapshot),before);

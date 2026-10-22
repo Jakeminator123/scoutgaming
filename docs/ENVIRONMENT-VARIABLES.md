@@ -830,8 +830,8 @@ behåller `verify-full`. CROOT ska vara **unset**, inte en tom sträng.
 
 Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
 `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN` och serverhemligheten
-`CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` bevaras för äldre
-flagga-av-kompatibilitet. Gemensamt Neon-läge använder dess serverägda
+`CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` och Render-standardadressen
+är borttagna; spelstarten är `/game`. Gemensamt Neon-läge använder dess serverägda
 policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
 Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger

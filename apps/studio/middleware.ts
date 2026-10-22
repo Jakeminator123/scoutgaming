@@ -36,7 +36,7 @@ export function middleware(request: NextRequest) {
   const route = platformRoute(new URL(request.url), config, request);
   if (route.kind === 'reject') return new NextResponse(null, { status: 400 });
   if (route.kind === 'frontend' || route.kind === 'socket') return new NextResponse(null, { status: 404 });
-  if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);
+  if (route.kind === 'redirect') return NextResponse.redirect(route.destination, route.status ?? 307);
   const legacyRedirect = legacyDocumentRedirect(request, config.publicOrigin);
   if (legacyRedirect) return legacyRedirect;
 
