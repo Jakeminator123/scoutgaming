@@ -156,7 +156,6 @@
     },
     "vercel-frontend-production": {
       "sources": [
-        "apps/web/lib/game-url.ts",
         "packages/navigation/server/platform-routing.mjs",
         "packages/server-transport/configuration.mjs"
       ],
@@ -172,7 +171,6 @@
       "required": [],
       "firstBoot": [],
       "conditional": [
-        "CROUPIER_GAME_URL",
         "CROUPIER_VERCEL_UI",
         "CROUPIER_VERCEL_UNIFIED_UI",
         "CROUPIER_STUDIO_NATIVE_ADMIN",

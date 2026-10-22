@@ -167,8 +167,10 @@ export async function createPublicationChain(origin = fixtureOrigin, {roomAppear
     }
     if (url.pathname === '/api/operators') return publicResponse(directory.handle, request);
     if (/^\/api\/operators\/[^/]+\/rooms$/.test(url.pathname)) return publicResponse(publicRooms.handle, request);
-    if (url.pathname === '/play/blackjack') {
-      const entry = await select(url.searchParams);
+    if (url.pathname === '/game') {
+      // Like the frontend proxy, the public game selector never reaches the engine selector.
+      const query = new URLSearchParams(url.searchParams); query.delete('game');
+      const entry = await select(query);
       return new Response(entry.status === 200 ? decorateGameEntryHtml('<html lang="sv"><body>Isolerad spelstart</body></html>',
         {CROUPIER_STUDIO_NEON_POLICY: '1'}, entry.selection) : 'Not found',
       {status: entry.status, headers: {'content-type': 'text/html; charset=utf-8'}});

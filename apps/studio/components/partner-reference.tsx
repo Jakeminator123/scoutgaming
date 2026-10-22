@@ -120,7 +120,7 @@ export function PartnerReference({ trace, connected, connection, dealerId, opera
         closeOnError = current.href === 'about:blank';
         if (!closeOnError) {
           const channel = current.searchParams.get('labObserverChannel');
-          if (game.opener !== window || current.origin !== cloudOrigin || !['/game', '/game/', '/v2', '/v2/', '/blackjack', '/blackjack/', '/play/blackjack', '/play/blackjack/'].includes(current.pathname)
+          if (game.opener !== window || current.origin !== cloudOrigin || !['/game', '/game/'].includes(current.pathname)
             || current.searchParams.get('labObserverOrigin') !== cloudOrigin || !/^[a-zA-Z0-9_-]{16,128}$/.test(channel?.replaceAll('-', '') ?? '')) {
             throw new Error('Spelet är redan öppet utan denna studiokoppling. Spela klart och stäng spelfliken före Anslut & följ spelet.');
           }

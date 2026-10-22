@@ -27,11 +27,15 @@ test('Vercel ingress owns the lobby prefix and transforms it to the mounted Stud
   const index = config.rewrites.findIndex(row => row.source === '/lobby/:path*');
   assert.ok(index >= 0 && index < config.rewrites.findIndex(row => row.source === '/(.*)'));
   assert.equal(config.rewrites[index].destination.service, 'studio');
-  for (const path of ['/lobby', '/lobby/_assets/lobby/app.js', '/admin', '/control/rooms', '/partner/login']) {
+  for (const path of ['/lobby', '/lobby/_assets/lobby/app.js', '/admin', '/admin/rooms', '/partner/login']) {
     const rule = config.services.studio.routes.find(row => new RegExp(row.src).test(path));
     assert.ok(rule, path);
     assert.equal(path.replace(new RegExp(rule.src), rule.transforms[0].args), '/studio' + path);
   }
+  // Control is retired: its bookmarks are redirects in platform routing, never a Studio document route.
+  assert.equal(config.services.studio.routes.some(row => new RegExp(row.src).test('/control/rooms')), false);
+  assert.equal(config.rewrites.some(row => row.source.startsWith('/control')), false);
+  assert.equal(JSON.stringify(config).includes('control'), false);
 });
 
 test('public lobby routing preserves queries and leaves admin access on its existing route', () => {
@@ -93,7 +97,7 @@ test('public readers retain tenant, game and dealer choices without calling admi
   assert.deepEqual(called, ['/api/operators', '/api/operators/alpha/rooms', '/api/operators/beta/rooms']);
   for (const [slug, game] of [['alpha', 'blackjack'], ['beta', 'roulette']]) {
     const selected = lobbySelection(catalog, { ...lobbyQuerySelection(catalog, '?operator=' + slug + '&room=shared-room'), dealerId: 'nora' });
-    assert.equal(playUrlFor(selected), `/play/${game}?operator=${slug}&table=shared-room&dealer=nora`);
+    assert.equal(playUrlFor(selected), `/game?game=${game}&operator=${slug}&table=shared-room&dealer=nora`);
   }
   assert.equal(lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-room', dealerId: 'nora' }).room, null);
   assert.deepEqual(lobbyQuerySelection(catalog, '?operator=beta&room=missing'), {operatorId:'beta',roomKey:null,dealerId:null,unavailable:true});

@@ -217,7 +217,7 @@ test('cloud reconnect preserves its game and native channel without another auth
 
 test('cloud Lab reload rebinds the named same-origin game or V2 popup and leaves ongoing play intact', async () => {
   const origin = 'https://qa.example.test', channel = 'saved-native-channel-0123456789';
-  for (const path of ['/game', '/game/', '/v2', '/v2/', '/blackjack', '/blackjack/', '/play/blackjack', '/play/blackjack/']) {
+  for (const path of ['/game', '/game/']) {
     const game = new URL(path, origin);
     game.searchParams.set('dealer', 'astrid');
     game.searchParams.set('labObserverOrigin', origin);
@@ -275,7 +275,7 @@ test('room observation forwards the exact operator/table and leaves dealer selec
 
 test('canonical room reconnect requires matching operator, table, dealer and unambiguous query values', async () => {
   const origin = 'https://qa.example.test';
-  const base = new URL('/play/blackjack', origin);
+  const base = new URL('/game', origin);
   for (const [key, value] of Object.entries({ dealer: 'vera', operator: 'operator-one', table: 'room-1', labObserverOrigin: origin, labObserverChannel: 'room-observation-channel-0123456789' })) base.searchParams.set(key, value);
   for (const change of [null, ['operator', 'other'], ['table', 'other'], ['dealer', 'mei'], ['operator', 'operator-one', true], ['table', 'room-1', true]]) {
     const target = new URL(base);

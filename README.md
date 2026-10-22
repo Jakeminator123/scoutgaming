@@ -17,7 +17,8 @@ engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 | --- | --- | --- |
 | Internal administration | `/admin` | New backoffice. Existing `/control` links remain compatible; many redirect to the corresponding `/admin` tool while retaining page context and permission checks. |
 | Operator portal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Real registered operators and scoped memberships; ordinary routes do not use demo fallback data. |
-| Player lobby | `/lobby` | New lobby. Existing `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` remain during the transition. |
+| Player lobby | `/lobby` | The lobby links every room to the one game start `/game?game=blackjack|roulette&operator=…&table=…`. `/play/profil` and `/play/historik` remain the player area; `/play`, `/play/blackjack`, `/blackjack` and `/roulette` are permanent redirects for one release. |
+| Game start | `/game` | Blackjack is proxied from the engine after the live session check. A roulette room is sent (307) to the engine document `/play/roulette?operator=&table=`, which stays the roulette address until the engine client stops posting the page query as its room context. `/player-login` is the player sign-in. `/v2`, `/bo`, `/casino.html`, `/demo` and `/labb-lissabon` are gone (404). |
 
 `/admin` and `/lobby` are served by the Studio service from
 `apps/studio/client/`. Their names do not imply that every old workflow

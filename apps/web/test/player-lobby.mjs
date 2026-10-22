@@ -54,7 +54,7 @@ test('room selections drop stale dealers and assets and use exact per-dealer def
 test('launch keeps operator, actual room and selected dealer through login without widening catalogue choices',()=>{
  const catalog=fixture(),choice=roomSelection(catalog.rooms[0],{dealer:'nora',tableAsset:table2,background:background2});
  const direct=roomLaunch(catalog,'room-johanna',choice);
- assert.equal(direct.href,'/play/blackjack?operator=johns-spelbolag&table=room-johanna&dealer=nora');
+ assert.equal(direct.href,'/game?game=blackjack&operator=johns-spelbolag&table=room-johanna&dealer=nora');
  assert.deepEqual(direct.choices,choice);
  const login=roomLaunch(catalog,'room-johanna',choice,{directPlay:false});
  assert.equal(new URL(login.href,'https://fixture.invalid').searchParams.get('returnTo'),direct.href);
