@@ -1,15 +1,17 @@
 import { createLocalProjectReader } from '../../../packages/studio-registry/server/local-project-reader.mjs';
 import { mkdir, writeFile, rename, unlink } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { validateProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import lockfile from 'proper-lockfile';
-import { autoArchiveLocalArtifacts } from '../../../tools/retention-archive.mjs';
 
 import { StudioError } from '../../../packages/shared/studio-error.mjs';
 export { StudioError } from '../../../packages/shared/studio-error.mjs';
 
-export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
+// Fixture/test adapter only: the caller names an absolute directory (the offline
+// fixture's temporary folder). Neon is the product register; there is no default.
+export function createProjectStore(dataDir) {
+  if (typeof dataDir !== 'string' || !isAbsolute(dataDir)) throw new StudioError('Lokal projektlagring kräver en uttrycklig absolut katalog. Produkten läser Neon; node apps/studio/start.mjs --offline skapar en tillfällig.', 503);
   const file = join(dataDir, 'project.json');
   const { load } = createLocalProjectReader(dataDir);
   return { load, async save(next, expectedRevision) {
@@ -38,7 +40,6 @@ export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
       if (compromised) throw new StudioError('Skrivlåset ändrades. Projektet har inte ersatts.', 423);
       await rename(temp, file);
       temp = undefined;
-      await autoArchiveLocalArtifacts('projectHistory', { dataDir });
       return saved;
     } finally {
       if (temp) await unlink(temp).catch(() => {});
