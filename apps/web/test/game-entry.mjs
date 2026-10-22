@@ -104,7 +104,7 @@ test('actual login module sends fresh and existing player sessions to the game w
     };
     await import('data:text/javascript;base64,'+Buffer.from(source+`\n// case ${canonical}-${authenticated}-${query}`).toString('base64'));
     if (!authenticated) {assert.equal(form.hidden,false);await form.onsubmit({preventDefault(){}});}
-    assert.deepEqual(navigations,[[authenticated ? 'replace' : 'assign',canonical ? '/blackjack'+(query ? '?dealer=nora' : '') : '/play']]);
+    assert.deepEqual(navigations,[[authenticated ? 'replace' : 'assign',canonical ? '/blackjack'+(query ? '?dealer=nora' : '') : '/lobby']]);
     if (!authenticated) {
       assert.equal(requests[1][0],'/api/auth/login');assert.equal(requests[1][1].method,'POST');
       assert.deepEqual(JSON.parse(requests[1][1].body),{email:'isolated-player',password:'isolated-password'});

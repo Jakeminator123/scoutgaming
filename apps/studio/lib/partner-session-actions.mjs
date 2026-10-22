@@ -6,7 +6,7 @@ function sessionRoute(apiBase, accessClass) {
     || !['internal-admin', 'partner'].includes(accessClass)) throw new StudioLoginUiError(400);
   const prefix = apiBase.startsWith('/studio/') ? '/studio' : '';
   return { partnerBase: `${prefix}/api/partner`, authBase: `${prefix}/api/auth`,
-    login: accessClass === 'internal-admin' ? `${prefix}/login` : '/partner/login' };
+    login: accessClass === 'internal-admin' ? '/admin/login' : '/partner/login' };
 }
 
 export function partnerSessionDestination({ apiBase, accessClass, action, returnTo }) {

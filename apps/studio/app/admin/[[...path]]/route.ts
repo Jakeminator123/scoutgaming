@@ -4,7 +4,7 @@ import { authorizeUiPage } from '../../../lib/ui-server';
 import { errorResponse } from '../../../lib/http-guard.mjs';
 import { serveDesignPreview, designPreviewHeaders, designPreviewAuthRedirect } from '../../../lib/design-preview.mjs';
 import { serveDesignCatalog } from '../../../lib/design-preview-catalog.mjs';
-import { studioNativeRuntime, nativeStudioErrorResponse } from '../../../lib/studio-native-runtime.mjs';
+import { studioNativeRuntime, nativeStudioErrorResponse, nativeStudioAdminConfiguration } from '../../../lib/studio-native-runtime.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ async function respond(request: Request, context: { params: Promise<{ path?: str
   } catch (error) {
     if (isRedirectError(error)) {
       const response = designPreviewAuthRedirect(getURLFromRedirectError(error), {
-        basePath: process.env.CROUPIER_LAB_BASE_PATH || '',
+        publicOrigin: nativeStudioAdminConfiguration()?.allowedOrigins[0],
         resource: path[0] === '_data' || path[0] === '_assets',
       });
       if (response) return response;

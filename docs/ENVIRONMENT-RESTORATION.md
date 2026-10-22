@@ -45,6 +45,257 @@ Två äldre native-QA-projekt i `jakeminator123s-projects` saknar produktionsdom
 och behåller sin datagräns enligt [miljöregistret](ENVIRONMENT-VARIABLES.md).
 En gammal READY-deployment är inget färskt funktions- eller isoleringsprov.
 
+## Isolerad K06/K07-staging
+
+Jakobs uttryckliga godkännande 22 oktober gäller endast det tomma projektet
+`croupier-k06-k07-staging` i Scoutgamings Vercel-hanterade Neonorganisation
+`org-green-butterfly-00780270`: PostgreSQL18, Frankfurt
+(`aws-eu-central-1`), fast0,25CU och autosuspend efter300s. Första provet
+begränsas till cirka24 aktiva timmar. Användningskvoter är ingen exakt dollargräns;
+lagring kan fortsätta kosta efter compute-stopp. Kopiera inga produktionsdata,
+lösenord eller roller. Ingen produktions-DDL, deploy, skalning eller ny Render-
+tjänst ingår. Detta är en verifieringsmiljö, inte en produktionsåterställning.
+
+Neon-API:s första skapandeförsök avvisades eftersom organisationen hanteras av
+Vercel. Efterföljande exakt namnsökning gav inget projekt. Vercel API, CLI och
+Scoutgamings administrationsvy är nu verifierat inloggade. Skapandeformuläret
+visar Frankfurt, Auth false och Realtime false, men saknar PostgreSQLversion,
+fast CU och autosuspend. Dessa värden måste verifieras före Create; skapa inte
+det slumpade formulärnamnet som ersättning för det godkända projektet.
+Marketplace-CLI:t exponerar inte heller dessa inställningar. Ingen resurs eller
+DDL har skapats. [Neons guide](https://neon.com/docs/guides/vercel-managed-integration)
+anger att Change Configuration kan beröra alla databaser i installationen;
+kontoeffekten är inte verifierad och gemensamma produktionsinställningar får inte
+ändras för staging. Endpoint-specifik Neon-PATCH finns dokumenterad, men dess
+åtkomst i denna organisation och PG18-provisionering är fortfarande overifierade.
+Använd inte produktionsgren, arkiverad dataklon eller okända standardvärden som
+ersättning. Befintlig Vercel-projektlänk ersätter inte dessa resursinställningar.
+
+När målet finns: verifiera sanitiserad projekt-/branch-/endpoint-/DB-identitet,
+inställningar och tomma syntetiska data innan anslutning. Använd separat
+`croupier_staging` med dedikerad migrationsägare; skriv aldrig en anslutningssträng
+i Git eller tråden. Granska och applicera följande Gitblobbar i ordning efter
+bekräftad tom målidentitet; tillämpning har ännu inte skett:
+
+| Fil | Fryst källa | SHA256 av exakta Gitbytes |
+| --- | --- | --- |
+| `ops/neon-game/product-schema.sql` | J08 `9b43e3e7` | `831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a` |
+| `ops/neon-game/008-shared-wallet.sql` | J08 `9b43e3e7` | `fdff425ee30557dc6874b021bbaf163c9db7e1ac8ce5fef499f1dec36346fd81` |
+| `ops/neon-game/009-shared-blackjack.sql` | J08 `9b43e3e7` | `73853e23080baf9c1257893f6b74a68dab7067862ad9787a9f3f6b1d01a72515` |
+| `ops/neon-game/010-presentation-receiver.sql` | K04 `1148fa76` | `214d9259d7d83b9084e12e3807e1ebf8fbbc5dc801392f361f4763a2b64cce43` |
+
+Fulla källheads: J08 `9b43e3e7f7cde871cdba9efe81800bf8b5c4d329`, K04
+`1148fa767de734c925bba3ea21938cf995f8bd5f`. Schema010 är nu importerad från K04 till transportbranchen; filen är inte
+applicerad i någon molnmiljö. Vissa schemafiler är inte idempotenta; kör inte
+blinda omförsök. Läs tillbaka schema och pröva beständighet, två klienter och
+atomisk rollback med syntetiska data. Befintlig lokal PG-harness äger ett
+loopbackkluster och fysisk omstart; rikta den inte direkt mot Neon. Verifiera
+separat PG18/målanslutning innan K06/K07-integrationsacceptans.
+
+## Isolerad K04-start med verklig server
+
+Den explicita `tools/run-shared-room-k04-qa.mjs` startar ordinarie spelserver med
+en verifierad lokal testanslutning. Normal serverstart behåller TLS-/Neon-grindarna.
+Inga miljöflaggor eller HTTP-anrop kan registrera QA-capabilityn. Detta är en
+tillfällig provväg, inte ett lokalt produktregister eller produktionsläge.
+
+Förbered en ägd PostgreSQL-instans som endast lyssnar på literal `127.0.0.1`.
+Databasnamnet ska vara `croupier_qa_<id>`, rollen `studio_qa` eller dedikerad
+`croupier_qa_<id>`. Rollen måste kunna läsa klusteridentiteten med
+`pg_control_system()`; behörigheten tillhör den isolerade provinstallationen.
+Ta förväntat system-ID från det ägda klustrets `pg_controldata`, inte från en
+okänd anslutning. Produkt-/Studio-schema och korrekta migrationsmarkörer måste
+redan finnas. Launchern installerar eller seedar ingenting.
+
+Sju explicita argument krävs (värdena nedan är platshållare):
+
+```text
+node tools/run-shared-room-k04-qa.mjs --postgres-port <PGPORT> --database croupier_qa_<id> --role studio_qa --system-id <SYSTEM_ID> --http-port <HTTPPORT> --fixture <lokal-fixture.mjs> --media-root <lokal-mediakatalog>
+```
+
+Kör från en ren lokal miljö utan produktions-/provider-/molncredentials eller
+injektionsinställningar för Node/proxy. Launchern skapar ett separat barn med
+endast godkända OS-variabler och explicita lokala inställningar. Spelserverns
+publicorigin/listener blir `http://127.0.0.1:<HTTPPORT>`; använd fixturepaketets
+befintliga sparade rumslänk. Inga värdnamnsalias eller TLS-attrapper behövs.
+
+Den generella rootfixturen är `test/fixtures/k04-shared-room-runtime.mjs`.
+Ange dess absoluta sökväg som `--fixture`. Den exporterar
+`createQaFixture({pool,scope,origin,mediaRoot})` och
+returnerar `{studioPolicyRuntime,studioMediaRuntime,privateMedia}`.
+Scope är `{environment:'test',workspaceId:'shared-qa-<id>'}`.
+Återanvänd faktisk scoped SQLrepository/saved-policy och befintliga mediekontrakt.
+De sju medieportarna är videoRegistry, videoResponse, videoRegistryCaptured,
+videoResponseCaptured, publicMediaResponse, hasPublicMedia och readMetadata.
+privateMedia returnerar hash-/identitets-/range-kontrollerad Response för exakt
+befintligt material. Fixtureporten är skrivskyddad; testdata ska förberedas i den
+ägda provdatabasen före start. Bevara dealer-/rum-/paket-/material-ID, språk,
+timing och talgodkännande; media och privata manifests hålls utanför Git.
+
+Faktisk DB-identitet kontrolleras före fixtureimport och åter före engångsstart.
+Produkt-/Studio-readiness och saved-policy ska passera innan lyssnaren öppnas.
+Ctrl+C använder befintlig graceful shutdown genom det ägda barnet. Tvångsstopp
+eller ofullständig cleanup får inte rapporteras som lyckad acceptans.
+
+Root äger QA-starten och den generella lokala fixturen; Kevin tillför befintligt
+exakt media-/paketunderlag och de tre K04-proven. I mediaRoot krävs ett privat
+UTF-8-manifest `k04-qa-media.json` (max 4 MiB). Formatet beskrivs i fixturens
+JSDoc: schemaVersion1, exakt scope/origin samt files med relativePath, storage
+(provider/pathname/SHA256/size/contentType) och source. Source anger antingen
+befintligt SQL-media-ID/revision eller katalogens logicalPath/revision. Manifestet
+registrerar inga dealers, paket, kalibreringar, klassificeringar eller talgodkännanden.
+Delmängder tillåts; omappade identiteter är otillgängliga.
+
+Varje lokal fil måste vara vanlig, utan länkar och inom verifierad rot. Exakt
+storlek och SHA256 kontrolleras vid start och varje svar från samma öppnade fil;
+96 MiB per fil motsvarar browserns bytebudget. GET/HEAD/range/ETag, abort och
+loopbackorigin kontrolleras. Inget uppladdnings- eller Blobcredential krävs.
+Konstruktionsinjektionen i de tre neutrala mediefabrikerna ändrar inte ordinarie
+produktionsdefaults och kan inte väljas genom request/options/env. Faktisk
+scoped repository och saved-policy används; fixturestart skapar inga SQL-objekt
+eller rader. Kontextens18 enhetsprov,5 verkliga PG-identitetsprov och fixturens
+11 prov med syntetiska bytes/instrumenterad SQLpool är separata från full
+serverstart, verklig PG-/K04-mediaacceptans. Saknat underlag får inte ersättas
+med nya dealers eller påhittade godkännanden.
+
+## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
+
+Detta är ett granskningsunderlag för den befintliga speldatabasen. Det ger inget
+mandat för produktions-DDL, merge, deploy eller aktivering och skapar ingen betald
+resurs eller stagingmiljö. På en redan installerad produktbas ska
+`product-schema.sql` inte köras igen; endast tilläggen 008 → 009 → 010 förbereds.
+
+Read-only metadata verifierades 22 oktober 2026 för Neonprojekt
+`wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, compute
+`ep-fragrant-meadow-b1qzb0qv`: PostgreSQL 18.6, databas och roll `croupier_game`,
+med `croupier_game` som schema- och tabellägare. Där fanns sex spelare,
+`invalidbalance=0`, och samtliga objekt för 008/009/010 saknades. Installerad
+`product-v1` har checksumma
+`831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a`.
+Detta är daterad metadata; identitet och förutsättningar måste läsas om inför en
+framtida uttryckligen godkänd åtgärd. PITR-retention sex timmar är metadata,
+inte bevis på en fungerande återställning eller en återställningsgaranti.
+
+Offlineverktyget `tools/prepare-shared-schema.mjs` är implementerat. Dess API är
+`prepareSharedSchema({expectedDatabase,expectedRole,minimumServerMajor=18})`
+och returnerar `{sql,manifest}` utan databasanslutning. CLI-kontraktet är
+`node tools/prepare-shared-schema.mjs --database croupier_game --role croupier_game --sql`;
+det skriver SQL till stdout och applicerar ingenting. Exportens SQL, manifest,
+verktygsrevision och LF-normaliserade källhashar ska frysas och granskas ihop.
+Hasharna för produktbasen och tilläggen finns i tabellen ovan.
+
+Den förberedda SQL-filen ska ha följande spärrar och ordning:
+
+1. En yttersta transaktion omfattar förkontroller, 008 → 009 → 010 och
+   efterkontroller. Kontrollera explicit databas, roll, serverns majorversion
+   (minst 18), schema-/tabellägare och installerad `product-v1`-checksumma.
+   Verktyget ska neka ändrade källhashar och annan målidentitet.
+2. Kräv en helt oinstallerad uppsättning tillägg: alla shared-objekt samt nya
+   kolumner `players.wallet_gen`, `transactions.source_key` och
+   `transactions.source_fingerprint` ska saknas. Partiellt eller redan
+   installerat schema ska nekas, även där käll-DDL använder `IF NOT EXISTS`.
+   Detta är ingen reparations- eller omkörningsprocedur.
+3. Ta exklusiva lås på `croupier_game.players` och
+   `croupier_game.transactions` innan förkontrollerna används för DDL.
+   Använd `lock_timeout=2s`, `statement_timeout=30s` och
+   `idle_in_transaction_session_timeout=10s`; låsväntan ska avbryta, inte vänta
+   obegränsat på en aktiv walletwriter. 30s gäller per statement, inte total
+   transaktionstid. Behåll låsen genom commit.
+4. Applicera endast den hashbundna käll-DDL:n i ordningen 008 → 009 → 010.
+   Lägg inte till journal-/ledgerposter eller andra DML-writes. Kontrollera före
+   commit skapad struktur, ägare, triggers, index och att nya tabeller är tomma.
+
+Fel före commit ska återställa hela transaktionen atomiskt, inklusive tidigare
+DDL i samma fil. Efter commit finns ingen blind DOWN-väg: bevara tillagda
+objekt och data. En kodrollback tar inte bort schema eller återställer walletdata.
+En separat plan för stopp/drain, kompatibel kodåtergång och eventuell
+schemaåterställning måste vara granskad före aktivering; PITR-metadata ersätter
+inte den planen.
+
+Kört isolerat: slutliga `node tools/run-shared-table-qa.mjs --schema-upgrade
+--download-postgres` gav **10/10**, Node22.22/PostgreSQL16.15, `clusterStopped:true`.
+Proven täcker befolkad produktbas, fel mål/checksumma/saldo/partiellt schema,
+verklig låsväntan, rollback mitt i DDL, framgång med oförändrade äldre data,
+legacy receipt/replay/ny debit, separat begränsad roll och nekad återapplicering.
+Metadataanslutningen använde tabellägaren croupier_game. Det bevisar inte vilken
+credential/roll den driftsatta servern faktiskt använder. Den separata provrollen
+verifierar endast äldre debit/replay med SELECT-grants på två guardtabeller,
+inte fulla shared-runtimebehörigheter.
+Privat slutkvitto: denna chatts `recovery-replay/shared-schema-upgrade/final-cli/manifest.json`.
+Samma avgränsade CLI är registrerad i ordinarie CI. Offlinehelperns tre prov och
+oberoende källgranskning är gröna; detta är förberedelse, inte produktionsacceptans.
+
+Samma frysta63c-kod är därefter körd på faktisk PostgreSQL18.6:10/10, exit0,
+clusterStopped:true och port35437 ECONNREFUSED. Befintligt --postgres-bin användes
+utan runnerändring;11källkopior/27artifacthashar oberoende verifierade. Privat
+recovery-pg18-schema/manifest.json visar signaturer, versions-/binärhashar och
+städning. Provets minimum-major16 behölls men faktisk motor var18.6.
+
+### Runtimebehörigheter och operativ återställning
+
+Före DDL ska den faktiska deploymentanslutningen bindas till ovanstående
+provider/projekt/branch/databas utan att exponera credentials. Läs current_user,
+session_user och current_database via just den anslutningen. Kontrollera effektiva
+schema-/tabell-/kolumnprivilegier, rollmedlemskap, RLS och DDL-ägarens globala samt
+schemavisa defaultACL. Ägarens godkända anslutning eller SET ROLE ersätter inte
+denna proveniens. Privat granskningsunderlag: denna chatts
+schema-runtime-preflight/runtime-preflight.sql och operations.md; endast
+katalogfrågor, inga produktdata eller skrivningar. Saknade 008–010-objekt före
+migrering är förväntade och får inte räknas som godkänd efterkontroll.
+
+Shared-runtime behöver utöver SELECT: INSERT/UPDATE/DELETE för reservationer,
+INSERT/DELETE för öppna händer, INSERT/UPDATE för rum/medlemmar/presence/pauser/
+skor/outbox/delivery/receiver och INSERT för receipts/ticks/audit. Befintliga
+players behöver UPDATE och transactions INSERT. Publiceringsvägens configwrites
+bedöms separat. Authens FOR SHARE kräver SELECT och UPDATE-privilegium på minst
+en kolumn i varje låst tabell. Triggerfunktionerna kör med anroparens privilegier.
+Matrisen ersätter inte övriga serverfunktioners befintliga behörighetskrav.
+
+Återställningsförfarandet ska granskas separat från schemafilen:
+
+1. Identifiera och stoppa/dränera samtliga writers till målgrenen, inklusive
+   Render, Vercel/API, bakgrundsjobb och gamla klienter. Ingen driftåtgärd utförs
+   som del av detta förberedelsearbete.
+2. Frys målidentitet, kodrevision och en verifierad backup efter dränering.
+   Välj i förväg ett separat tomt restoremål och explicit roll-/ägarmappning.
+   PostgreSQL pg_dump sparar inte globala roller. Befintliga
+   tools/postgres-backup-restore.mjs accepterar bara äldre tabelluppsättning och
+   sparar inte roller/ACL; det är inte en återställningsväg för 008–010.
+3. Prova pg_dump --format=custom och pg_restore --single-transaction
+   --exit-on-error mot det isolerade målet. Verifiera samtliga tabeller, ledger,
+   balanser, reservationer, receipts, sekvenser, objektägare och ACL samt verkligt
+   replay efter ny anslutning. Privata syntetiska prov bevisar verktygsvägen,
+   inte produktionsbackupens innehåll, Neon-PITR eller operativ återställningstid.
+4. Vid misslyckande före COMMIT ska schemafilens transaktion rulla tillbaka.
+   Efter COMMIT behåll tillagda objekt. Återgång till kompatibel kod kräver ett
+   eget beslut; skriv aldrig över nya wallettransaktioner med en äldre backup.
+5. Produktionens backup/restore, DDL och återöppning kräver sina uttryckliga
+   beslut. Kör inga blinda retries mot partiellt schema eller okänd målidentitet.
+
+Faktisk runtimeidentitet kan ännu inte läsas via tillgänglig Render-anslutning
+(miljövariabelläsning saknas); lokal browser use är avstängd. Renders Frankfurt-
+värdnyckel har verifierats mot [officiell SSH-dokumentation](https://render.com/docs/ssh)
+i en separat privat known-hosts-fil med fortsatt StrictHostKeyChecking=yes.
+Inloggningen nekades därefter med Permission denied (publickey). Ingen ny nyckel
+registrerades och inga anslutningsskydd eller globala inställningar ändrades.
+
+Det syntetiska återställningsprovet är nu genomfört på PostgreSQL18.6/Node22.22:
+8/8, exakt paritet för 47 tabeller och fyra sekvenser, inklusive ledger, saldo,
+reservationer, receipts, objektägare och ACL. Ny anslutning och replay gav ingen
+dubbel effekt; obehörig restore/läsning/skrivning nekades. Preflightens elva
+katalogfrågor kördes READ ONLY både före 008 och efter restore. Första försöket
+föll på provets NUMERIC-textjämförelse (1247.00/1247); bara den jämförelsen rättades
+och granskades före slutprovet. Privat recovery-shared-restore/manifest.json och
+probe.log innehåller båda försöken, frysta källhashar och slutbevis. PID608 borta,
+port36911 ECONNREFUSED; ägda databaser/roller/pooler/kluster/binärer borttagna.
+Roller förskapades i klustret; detta är inte globals-restore, Neon/PITR,
+produktionsbackup, full serverstart eller K04-mediaacceptans.
+
+Röda grindar: faktisk runtimeidentitet/ACL, operativ återställningsberedskap och
+uttryckligt produktions-DDL-mandat. Game-schemagrinden inför merge/aktivering
+förblir blockerad tills kraven är uppfyllda; grön Studio-CI eller offlinegenererad
+SQL räcker inte.
+
 ## Byggdelar och Node-versioner
 
 | Källmapp | Ansvar | Node |

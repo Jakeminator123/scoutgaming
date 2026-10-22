@@ -18,7 +18,8 @@ function fixture(dealerId = 'julia') {
       situation: '', label: `${label} Grundloop`, notes: 'Frozen baseline',
       compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
   const presentation = { schemaVersion: 2, projectRevision: 'published-project', assets: [],
-    lanes: [{ id: 'vip-presentation', dealers: [dealerId], layers: { dealer: { allowed: [dealerId], default: dealerId } } }],
+    lanes: [{ id: 'vip-presentation', dealers: [dealerId], layers: { dealer: { allowed: [dealerId], default: dealerId } },
+      openclaw: { idle: 'rules', deal: 'off', reveal: 'off', speak: 'active', probe: 'off' } }],
     registeredDealers: [{ id: dealerId, label, idle }] };
   const saved = { operator: { id: 'north-id', slug: 'north', status: 'active' },
     package: { operatorId: 'north-id', revision: 7, lanes: ['vip-presentation'], tables: [`room-${dealerId}`], frozen: presentation },
@@ -61,6 +62,8 @@ test('Julia receives only her frozen public descriptor, display label and exact 
   assert.equal(configuration.dealerIdle.julia.id, id); assert.equal(configuration.dealerIdle.julia.sha256, sha256);
   assert.equal(configuration.dealerIdle.julia.src, new URL(mediaUrl(input)).pathname);
   assert.deepEqual(configuration.dealerIdle.julia.compositing, f.idle.classification.compositing);
+  // The published player follows the composition's saved per-phase clip modes.
+  assert.deepEqual(configuration.openclaw, { idle: 'rules', deal: 'off', reveal: 'off', speak: 'active', probe: 'off' });
   assert.equal(JSON.stringify(configuration).includes('pathname'), false);
   assert.equal(JSON.stringify(configuration).includes('Frozen baseline'), false);
   assert.deepEqual(f.reads, ['north']); assert.equal(f.served.length, 0);
@@ -83,6 +86,27 @@ test('current package revision is re-read for every request and an old tab gets 
   assert.equal(response.status, 409); assert.deepEqual(await response.json(), { error: 'studio_presentation_idle_package_changed' });
   await assert.rejects(f.service.configuration(input), status(409));
   assert.equal(f.reads.length, 3); assert.equal(f.served.length, 0);
+});
+
+test('warm idle cache rechecks publication on conditional requests and blocks withdrawn or changed context', async () => {
+  for (const [change,code] of [
+    [f => { f.saved.operator.status = 'suspended'; },404],
+    [f => { f.saved.administration.rooms[0].state = 'preview'; },404],
+    [f => { f.saved.package.revision = 8; },409],
+  ]) {
+    const f=fixture(), before=clone(f.saved);
+    const first=await f.service.response(new Request(mediaUrl(input)));
+    assert.equal(first.headers.get('cache-control'),'private, no-cache, must-revalidate');
+    assert.equal(await first.text(),'frozen-fixture');
+    const headers={'if-none-match':first.headers.get('etag')};
+    const repeat=await f.service.response(new Request(mediaUrl(input),{headers}));
+    assert.equal(repeat.status,304); assert.equal(await repeat.text(),'');
+    assert.equal(f.reads.length,2); assert.equal(f.served.length,2); assert.deepEqual(f.saved,before);
+    change(f);
+    const revoked=await f.service.response(new Request(mediaUrl(input),{headers}));
+    assert.equal(revoked.status,code); assert.equal(revoked.headers.get('cache-control'),'private, no-store');
+    assert.equal(f.reads.length,3); assert.equal(f.served.length,2);
+  }
 });
 
 test('foreign operator, room ownership, revoked membership and nonlive rooms cannot serve idle', async () => {

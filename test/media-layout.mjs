@@ -55,3 +55,19 @@ test('explicit catalog resolves public and canonical aliases without a layout fi
   assert.equal(resolveMediaPath('web/public/unregistered.mjs',{...options,sourcePath}),join(root,'web/public/unregistered.mjs'),'captured runtime catalog cannot use local source fallback');
   assert.equal(resolveMediaPath('web/public/astrid.mp4',{...options,sourcePath}),join(root,'media',original.path));
 });
+
+test('canonical dealer paths resolve without treating a historical four-name list as registration',()=>{
+  const root=process.cwd();
+  for(const dealer of ['dragan','paow-kevin','astrid','vera','amira','mei']) {
+    const path=`dealers/${dealer}/runtime/presentation/vila.png`;
+    const row={path,legacyPath:`source/${dealer}/vila.png`,access:'private',sha256:'a'.repeat(64),size:32};
+    const layout={schemaVersion:1,roots:{},files:[row]};
+    assert.equal(validateMediaLayout(layout),layout);
+    assert.equal(resolveMediaPath(row.legacyPath,{repositoryRoot:root,runtimeCatalog:{layout}}),join(root,'media',path));
+    assert.equal(resolvePublicMedia('/media/'+path,{repositoryRoot:root,runtimeCatalog:{layout}}),null,'valid dealer syntax does not expose private media');
+  }
+  for(const dealer of ['admin','constructor','runtime','game','Dragan','-dragan','dragan--x','x'.repeat(41),'%2e%2e','..','x%2fy']) {
+    const layout={schemaVersion:1,roots:{},files:[{path:`dealers/${dealer}/runtime/a.png`,legacyPath:'source/a.png',access:'private',sha256:'a'.repeat(64),size:32}]};
+    assert.throws(()=>validateMediaLayout(layout),/Invalid media entry/);
+  }
+});

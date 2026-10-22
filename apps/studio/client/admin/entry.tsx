@@ -1,3 +1,4 @@
+import {legacyControlBookmarkHref} from '../../lib/control-workspace.mjs';
 import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useState } from 'react';
 import { StudioSidebar } from './components/studio/studio-sidebar';
@@ -66,4 +67,6 @@ function App() {
     </main>
   </div>;
 }
-createRoot(document.getElementById('root')!).render(<App />);
+const bookmark = legacyControlBookmarkHref(location.pathname + location.search + location.hash);
+if (bookmark) location.replace(bookmark);
+else createRoot(document.getElementById('root')!).render(<App />);

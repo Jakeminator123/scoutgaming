@@ -277,14 +277,14 @@ interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
 | Befintlig adress | Nuvarande mål |
 | --- | --- |
 | `/control` | `/admin` |
-| `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås på `/admin/videos` via äldre `/control/videos` |
+| `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås direkt på `/admin/videos`; äldre `/control/videos` omdirigeras |
 | `/control/companies` | `/admin/companies` |
 | `/control/rooms`, `/control/lanes` | `/admin/publication`; `lanes?tab=companies` leder till `/admin/companies` |
 | `/control/library`, `/control/compositions` | `/admin/material-library` respektive `/admin/compositions` |
 | `/control/openclaw` | `/admin/ai/models`; med `?tab=chat` går länken till `/admin/dealer-agent?tab=chat` |
 | `/control/guide` | `/admin/guide` |
 | `/control/administration` | `/admin/drift`; `?tab=accounts` leder till `/admin/admin/accounts` |
-| `/studio` | 308 till `/control/clips`, sedan `/admin/dealer-studio`; `/studio/guide` går via `/control/guide` till `/admin/guide` |
+| `/studio` | 308 till `/admin` utan query; äldre bokmärken med query går direkt till `/admin/dealer-studio`. `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
 | `/lab`, `/labb`, `/bo` | `/lab` och `/labb` går via `/control` till `/admin`; `/bo` går via `/control/administration` till `/admin/drift` |
 | `/lissabon` | Ingen aktiv publik ingång: svarade 404 vid kontrollen |
 
@@ -416,7 +416,7 @@ visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
 Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
-I **Spelrum & publicering** på `/admin/publication` väljer du bolag och **Sammansättning**. **Bolag & team** på `/admin/companies` behåller samma bolagsval. De äldre `/control/rooms`- och `/control/companies`-adresserna är kompatibilitetslänkar. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
+I **Spelrum & publicering** på `/admin/publication` väljer du bolag och **Sammansättning**. **Bolag & team** på `/admin/companies` behåller samma bolagsval. De äldre `/control/rooms`- och `/control/companies`-adresserna omdirigerar till respektive Admin-sida; de har ingen egen editor. Detta gäller även utan native-routingsflaggan. Bolag, sammansättning (`lane` blir `composition`), dealer, rum, spel och fragment följer bokmärket. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
 **Uppdatera publicerade sammansättningar** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
 **Öppna bolagets spellobby** leder till `/play?operator=<bolag>`. **Visa alla bolag** återgår till bolagsvalet. Administratörens inloggningsuppgifter fungerar även i den gemensamma spelarinloggningen, som skapar en separat spelarsession. För ett isolerat test med testsaldo används **Provspela** i Sammansättning. Lobbyn visar endast befintliga öppna rum i bolagets publicerade paket. Spelaren väljer rum, dealer och tillåtna bord- och bakgrundsalternativ innan **Spela med …**. Namnen kommer från det publicerade registret. Fullbildsdealers visar att bord och bakgrund ingår i dealerfilmen; de får inga separata lagerval. Ett tomt paket visar inga öppna rum. Ett läsfel visar ett felmeddelande, inga reservdealers.
 Rummets identitet och vald dealer följer med genom spelarinloggningen. Val av bordets utseende och bakgrund sparas i den här webbläsaren per bolag och kontrolleras på nytt av spelet. Spelrum är ingången till paketet; **Bord** är bildlagret i scenen, inget separat spelrum eller extra innehållslager.
@@ -546,11 +546,13 @@ Blackjack-start tills en spelkonfiguration läggs till.
 Delad kod, media och sparade spel raderas inte av den åtgärden; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
 
-Native administration på `/control` använder de befintliga kontonas rollkontroller och
+Native administration på `/admin` använder de befintliga kontonas rollkontroller och
 den gemensamma Neon-källan. En inloggning där ger inga nya administrativa
 rättigheter.
 
-Native administration är aktiverad på `/control/administration` och har
+Native administration öppnas på `/admin/drift`, `/admin/admin/accounts`,
+`/admin/admin/api` och `/admin/media-review`; äldre administrationsbokmärken
+leder till motsvarande Admin-sida med bevarad kontext. Det finns
 även en separat QA-miljö med egen databas. Den använder samma sparade
 revisionskälla som spelmotorn och bevarar osparade utkast vid en sparningskonflikt.
 QA:s mejlkoppling och produktionskopplingen till Resend är verifierade,

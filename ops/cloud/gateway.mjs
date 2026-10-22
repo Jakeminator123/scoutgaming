@@ -1,4 +1,5 @@
 import { createServer, request as httpRequest } from 'node:http';
+import {sharedRoomSocketPath} from '../../packages/server-transport/paths.mjs';
 import { posix } from 'node:path';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { LAB_PORT, WEB_PORT, NATIVE_P6_QA } from './config.mjs';
@@ -235,24 +236,37 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     outgoing.on('close', () => upstream.destroy());
     incoming.pipe(upstream);
   });
+  const roomTransports = new Set();
+  let closing = false;
+  const close = server.close;
+  server.close = function (...args) {
+    closing = true;
+    // Drain before HTTP close waits for upgraded sockets; its close event is too late.
+    for (const transport of roomTransports) transport.close();
+    return close.apply(this, args);
+  };
   server.on('upgrade', (incoming, socket, head) => {
     const reject = status => {
       if (!socket.destroyed) socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
     };
+    if (closing) {reject(503); return;}
     const ingress = vercelIngressRequest(incoming, vercelIngress);
     if (!ingress.accepted) { reject(421); return; }
     if (ingress.transported) incoming.headers = ingress.headers;
     // Web owns client tickets and both worker bearer/capability protocols.
     // The relay still verifies the worker bearer token or the client's signed
     // ticket, session cookie and current owner before any paid work begins.
+    const room = sharedRoomSocketPath(incoming.url);
     const moving = !!config.movingSpeech && (!vercelIngress || vercelIngress.movingWorkerOrigin === config.movingSpeech.workerOrigin);
     const movingClient = moving && incoming.url === '/moving-speech-stream';
     const movingWorker = moving && movingCallbackPath(incoming.url);
-    if (!(config.streaming && ['/speech-stream', '/lipsync-worker'].includes(incoming.url) || movingClient || movingWorker)
+    if (!(config.streaming && ['/speech-stream', '/lipsync-worker'].includes(incoming.url) || movingClient || movingWorker || room)
       || incoming.method !== 'GET'
       || incoming.headers.host !== new URL(config.gameOrigin).host
       || incoming.headers.upgrade?.toLowerCase() !== 'websocket'
-      || ((incoming.url === '/speech-stream' || movingClient) && incoming.headers.origin !== config.gameOrigin)
+      || ((incoming.url === '/speech-stream' || movingClient || room) && incoming.headers.origin !== config.gameOrigin)
+      || (room && (typeof incoming.headers.cookie !== 'string' || !incoming.headers.cookie || incoming.headers.cookie.length > 16384
+        || ['authorization','x-worker-id','sec-websocket-protocol'].some(name => incoming.headers[name] !== undefined) || head.length > 1038))
       || (movingWorker && ['origin','cookie','authorization','sec-websocket-protocol'].some(name => incoming.headers[name] !== undefined))
       || (incoming.url === '/lipsync-worker' && incoming.headers.origin
         && incoming.headers.origin !== config.gameOrigin)) {
@@ -262,10 +276,14 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
       connection: 'Upgrade', upgrade: 'websocket' };
     const upstream = httpRequest({ hostname: '127.0.0.1', port: webPort,
       method: 'GET', path: incoming.url, headers });
+    let roomPeer;
+    const transport = {close() {upstream.destroy();roomPeer?.destroy();socket.destroy();}};
+    if (room) {roomTransports.add(transport);socket.once('close', () => roomTransports.delete(transport));}
     const admission = setTimeout(() => upstream.destroy(), 10000);
     admission.unref?.();
     upstream.on('upgrade', (response, peer, peerHead) => {
       clearTimeout(admission);
+      roomPeer = peer;
       if (socket.destroyed) { peer.destroy(); return; }
       const lines = [`HTTP/${response.httpVersion} ${response.statusCode} ${response.statusMessage}`];
       for (let i = 0; i < response.rawHeaders.length; i += 2) {

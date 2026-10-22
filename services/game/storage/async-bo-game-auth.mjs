@@ -61,7 +61,7 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
       const claims=(await boSession(req));
       const account=claims&&!claims.partner&&['reader','staff','admin','superadmin'].includes(claims.role)&&(!claims.aud||claims.aud==='backoffice')?(await identity.find(claims.sub)):null;
       if(!account || claims.source_stamp!==account.stamp || !Number.isSafeInteger(claims.auth_epoch) || claims.auth_epoch<0
-        || !Number.isFinite(claims.exp))return reply(303,'',{Location:`/studio/login?returnTo=${encodeURIComponent('/api/bo/game-login?state='+state)}`});
+        || !Number.isFinite(claims.exp))return reply(303,'',{Location:`/admin/login?returnTo=${encodeURIComponent('/api/bo/game-login?state='+state)}`});
       const age=Math.min(86400,Math.floor(claims.exp-Date.now()/1000));
       if(age<1)return reply(401,'Backoffice session expired');
       const code=token();

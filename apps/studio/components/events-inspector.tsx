@@ -106,7 +106,7 @@ export function EventsInspector({
     }
   }
   function inspectVideos() {
-    window.location.assign(studioHref('/control/videos', { dealerId, eventId: event.id, variantId: variant.id }));
+    window.location.assign(studioHref('/admin/videos', { dealerId, eventId: event.id, variantId: variant.id }));
   }
   const triggerEditor = <TriggerEditor triggers={project.triggers} descriptors={allowedPathDescriptors} onChange={updateTrigger} onAdd={createTrigger} onRemove={deleteTrigger} />;
 

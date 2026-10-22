@@ -47,7 +47,7 @@ test('Services routes both public sockets to the native Node entrypoint before t
     assert.deepEqual(rule, {source: path, destination: {service: 'speech'}});
   }
   assert.deepEqual(deployment.rewrites.filter(value => value.destination.service === 'speech').map(value => value.source),
-    ['/speech-stream', '/lipsync-worker', '/moving-speech-stream', '/lipsync-moving/:path*']);
+    ['/speech-stream', '/lipsync-worker', '/moving-speech-stream', '/lipsync-moving/:path*', '/shared-room/:path*']);
   const entrypoint = await readFile(new URL('../apps/speech/server.mjs', import.meta.url), 'utf8');
   assert.match(entrypoint, /createSpeechIngress\(\)/);
   assert.match(entrypoint, /server\.listen\(/);

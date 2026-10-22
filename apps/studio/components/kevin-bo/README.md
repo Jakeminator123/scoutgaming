@@ -5,11 +5,11 @@ initialSnapshot, apiBase, user, initialView, initialRoomId })`. Its only product
 caller is the shared server page in `apps/studio/components/workspace-surface-page.tsx`.
 The page loads authorized live data through `apps/studio/lib/partner-data.mjs`;
 `surface: 'partner'` and `preview: false` are required at this client boundary.
-`/control` uses `ControlWorkspace`. Neither route mounts a client demonstration.
+The old Control shell is retired; its document bookmarks lead to Admin. Partner never mounts a client demonstration.
 
 The shared server page lives outside the Control route folder. It retains the
 same authentication, N1-session priority, operator grants, room return context,
-error handling and compatibility URLs for both entry points.
+and error handling for the Partner entrance and operator pages.
 
 ## Active views and session boundaries
 

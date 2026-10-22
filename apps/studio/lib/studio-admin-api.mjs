@@ -144,6 +144,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         ? {presentationDocuments:['project','administration'],presentationMaterialTrash:{id:body.id,archived:body.archived,expectedRevision:body.expectedRevision},presentationMutation:{kind:'material-trash',value:{}}}
         : ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
         ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
+        : endpoint.action === 'room-game-config'
+        // Both actions write administration.roomGameConfigs; negotiate v23 before either SQL lock.
+        ? { presentationDocuments: ['project','administration'], presentationMutation: { kind: 'administration', value: { roomGameConfigs: [] } },
+          ...(body?.action === 'publish' ? { presentationOperatorIds: [body.operatorId] } : {}) }
         : endpoint.action === 'presentation-room'
         ? { presentationDocuments: ['project', 'administration'], presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
         : administrationMutations.has(endpoint.action)
@@ -163,6 +167,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         if (safe) return json(safe.body,safe.status);
       }
       const status = publicErrors.has(error?.statusCode) ? error.statusCode : 500;
+      if (action === 'room-game-config' && status === 422 && error?.code === 'studio_room_game_material_unavailable') {
+        const code = 'studio_room_game_material_unavailable';
+        return json({ error: code, code }, status);
+      }
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
       }

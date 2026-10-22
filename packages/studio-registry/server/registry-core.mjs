@@ -18,7 +18,8 @@ export function exactHttpsOrigin(value) {
 }
 const verified = new Map();
 
-export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previewUrl,uploadDirectory,readUploads,readClassifications,getPrivateMedia,mediaBlobIndex}) {
+export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previewUrl,uploadDirectory,readUploads,readClassifications,getPrivateMedia,mediaBlobIndex,isMediaConfigured=isCloudMediaConfigured}) {
+  if(typeof isMediaConfigured!=='function')throw new TypeError('Explicit synchronous media configuration predicate required.');
   if(typeof defaultRepositoryRoot!=='string'||!isAbsolute(defaultRepositoryRoot)||![previewUrl,uploadDirectory,readUploads,readClassifications,getPrivateMedia].every(value=>typeof value==='function'))throw new TypeError('Explicit registry readers, root and URL formatter required.');
   const {normalizePresentationArchive,presentationBankRoot}=createMediaLayout({repositoryRoot:defaultRepositoryRoot});
   const {isMediaBlobIndexConfigured,verifiedMediaBlobStorage,getIndexedMediaBlobResponse,readMediaBlobIndex}=mediaBlobIndex;
@@ -215,7 +216,7 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
     const indexedBank=isMediaBlobIndexConfigured(options);
     if(indexedBank){
       summary.notes[2]='Tillgänglig betyder en exakt registerkoppling och konfigurerad privat mediekälla. SHA-256 kontrolleras före uppspelning.';
-      try { readMediaBlobIndex(options); summary.readable=Boolean(selection.path&&isAbsolute(selection.path)&&samePath(resolve(selection.path),presentationBankRoot(options.repositoryRoot??defaultRepositoryRoot))&&isCloudMediaConfigured(options.env??process.env)); }
+      try { readMediaBlobIndex(options); summary.readable=Boolean(selection.path&&isAbsolute(selection.path)&&samePath(resolve(selection.path),presentationBankRoot(options.repositoryRoot??defaultRepositoryRoot))&&(isMediaConfigured(options.env??process.env)===true)); }
       catch { summary.notes.push('Det aktiva Blob-indexet kunde inte verifieras. Lokal disk används inte som reserv.'); }
     }else{
       try { if(selection.path) archive = await archiveLocation(selection); summary.readable = Boolean(selection.path) || !options.snapshotPath; }
@@ -234,13 +235,13 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
       if (entry.storage) {
         // Immutable Blob references were hashed on upload. Availability here means
         // configured retrieval; playback still verifies all bytes before serving.
-        available = isCloudMediaConfigured(options.env ?? process.env);
+        available = isMediaConfigured(options.env ?? process.env,entry.storage)===true;
         integrity = available ? 'unchecked' : 'unavailable';
       } else if(indexedBank&&!entry.classification){
         try{
           const identity=bankBlobIdentity(selection,entry,options);
-          verifiedMediaBlobStorage(identity.logicalPath,identity.expected,options);
-          available=isCloudMediaConfigured(options.env??process.env);
+          const storage=verifiedMediaBlobStorage(identity.logicalPath,identity.expected,options);
+          available=(isMediaConfigured(options.env??process.env,storage)===true);
           integrity=available?'unchecked':'unavailable';
         }catch{summary.missing+=1;}
       } else if (location) {

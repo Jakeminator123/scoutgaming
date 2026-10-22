@@ -1,5 +1,6 @@
 'use client';
 import {DealerClipPreview} from './dealer-video-surface';
+import {SharedTableProof} from './shared-table-proof';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
@@ -9,6 +10,7 @@ import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-i
 import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
+import { studioHistory } from '../lib/studio-history.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import { journalType, formatJournalAmount, readEconomyJournal } from '../client/admin/lib/economy-journal.mjs';
@@ -158,9 +160,11 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     if (!actor || role !== actor.role) throw new StudioAdminUiError(403);
     return actor;
   }
-  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor) {
+  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedActor?: StudioAdminActor, query?: Record<string,string>) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
     if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
+    if (query !== undefined && (method!=='GET'||action!=='shared-table-proof'||!object(query)||!query.roomId
+      || Object.keys(query).some(key=>!['roomId','shoeId'].includes(key))||Object.values(query).some(value=>typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value))))throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
     aborted(signal);
     const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();
@@ -176,17 +180,17 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
       if (action === 'speech-qa') throw new StudioAdminUiError(501);
     }
-    const response = await send(method, action, body, signal);
+    const response = await send(method, action, body, signal, query);
     if (!response.ok) throw new StudioAdminUiError(response.status);
     const actor = preflightActor ?? responseActor(response);
     if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
       || (method === 'GET' && expectedActor && (actor.username !== expectedActor.username || actor.role !== expectedActor.role))) throw new StudioAdminUiError(403);
     return readPayload(method, action, response, actor, signal);
   }
-  async function send(method: Method, action: string, body?: JsonObject, signal?: AbortSignal) {
+  async function send(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, query?:Record<string,string>) {
     let response: Response;
     try {
-      response = await fetchImpl(`${apiBase}/${action}`, {
+      response = await fetchImpl(`${apiBase}/${action}${query?'?'+new URLSearchParams(query):''}`, {
         method, credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal,
         headers: { Accept: 'application/json', ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
         ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
@@ -646,6 +650,18 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   const draftForms = useRef(new Map<HTMLFormElement, string | undefined>());
 
   useEffect(() => {
+    if (!changed.current && !writing.current) setReviewDealerId(props.initialDealerId || 'astrid');
+  }, [props.initialDealerId]);
+
+  useEffect(() => {
+    const owner = studioHistory(window), canLeave = () => !changed.current && !writing.current;
+    const release = owner.guardTraversal(canLeave);
+    const guard = (event: Event) => { if (!canLeave()) event.preventDefault(); };
+    window.addEventListener('studio:before-navigate', guard);
+    return () => { release(); window.removeEventListener('studio:before-navigate', guard); };
+  }, []);
+
+  useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => { if (changed.current || writing.current) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', guard);
     return () => window.removeEventListener('beforeunload', guard);
@@ -716,10 +732,10 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     // cancellation. A cancelled draft confirmation leaves the current read intact.
     ++sequence.current; activeRead.current?.abort(); setBusy(true);
     draftForms.current.clear(); changed.current = false; setDirty(false); setNotice(''); setOneTime(null); setResources({}); setGroup(next);
-    if (window.location && window.history?.replaceState) {
+    if (window.location) {
       const params = new URLSearchParams(window.location.search || '');
       params.set('tab', next);
-      window.history.replaceState(null, '', `${window.location.pathname || '/control/administration'}?${params.toString()}`);
+      studioHistory(window).push(`${window.location.pathname || '/admin/drift'}?${params.toString()}`, true);
     }
   }
 
@@ -782,10 +798,10 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {group === 'operations' && actor && !fatal && props.renderOperations?.(actor)}
-    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
-    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/control/rooms')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
-    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
-    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
+    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{const dealer=event.target.value;if(busy||changed.current||writing.current||!reviewDealers.some(row=>row.id===dealer)||dealer===reviewDealerId)return;setReviewDealerId(dealer);const url=new URL(window.location.href);url.searchParams.set('dealer',dealer);studioHistory(window).push(url.pathname+url.search+url.hash);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
+    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/admin/publication')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
+    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
+    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/admin/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">
@@ -798,6 +814,11 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
     {actor && <>{props.showGroupNavigation !== false && <nav className={`${styles.groups} sg-tabs`} aria-label="Backoffice-grupper"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>}
+      {group==='operations'&&client.available('GET','shared-table-proof')&&actor.role==='admin'?<SharedTableProof
+        key={actor.username+':'+actor.role}
+        roomChoices={rows(resources.overview?.payload?.rooms).filter(room=>typeof room.id==='string').map(room=>({id:String(room.id),name:label(room.name??room.label??room.id)}))}
+        read={async(query,signal)=>(await client.request('GET','shared-table-proof',undefined,signal,actor,query)).payload}
+      />:null}
       <StudioAdministrationView dealerId={group === 'media-review' ? reviewDealerId : undefined} key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
     </>}
   </div>;

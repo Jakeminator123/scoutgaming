@@ -53,7 +53,7 @@ function moduleImports(source) {
 }
 
 async function writePreview(output) {
-  const queue = [join(publicRoot, 'app.mjs'), join(publicRoot, 'blackjack-entry.mjs'),
+  const queue = [join(publicRoot, 'app.mjs'), join(publicRoot, 'shared-room-app.mjs'), join(publicRoot, 'blackjack-entry.mjs'),
     join(publicRoot, 'astrid-camera-audio-worklet.mjs'),
     // Middleware serves every exact public registry URL, including modules not
     // currently imported by the player entry. Reuse the same alias/import walk.
@@ -70,7 +70,7 @@ async function writePreview(output) {
     if (!textExtensions.has(ext)) throw Error(`Frontend import är inte text: ${name}`);
     let content = await readFile(sourcePath, 'utf8');
     if (name === 'blackjack-entry.mjs') {
-      const previous = "const destination = '/play';";
+      const previous = "const destination = '/lobby';";
       if (!content.includes(previous)) throw Error('Inloggningens interna destination har ändrats.');
       content = content.replace(previous, "const destination = '/frontend-preview/game/?dealer=astrid&presentation=local';");
     }

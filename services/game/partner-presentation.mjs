@@ -61,10 +61,18 @@ export function presentationEvents(prevView, view, op, extra = {}) {
     const hands = (r.hands ?? []).filter(h => h.stake > 0);
     const val = cards => { let t = 0, aces = 0; for (const c of cards ?? []) { if (c.r == null) continue; if (c.r === 'A') { aces++; t += 11; } else t += ['K','Q','J'].includes(c.r) ? 10 : Number(c.r); } while (t > 21 && aces--) t -= 10; return t; };
     const dealerTotal = val(r.dealer); const dealerBJ = (r.dealer?.length === 2 && dealerTotal === 21);
-    const outcome = h => h.busted || !(h.result > 0) ? 'lose' : h.result > h.stake ? (h.cards?.length === 2 && val(h.cards) === 21 && !h.split ? 'blackjack' : 'win') : 'push';
+    // The core's natural: two cards, 21, and a hand that never took part in a split (splitFrom null; older views carry `split`).
+    const outcome = h => h.busted || !(h.result > 0) ? 'lose' : h.result > h.stake ? (h.cards?.length === 2 && val(h.cards) === 21 && !h.split && (h.splitFrom ?? null) === null ? 'blackjack' : 'win') : 'push';
     const outs = hands.map(outcome); const anyWin = outs.some(o => o === 'win' || o === 'blackjack'), anyPush = outs.includes('push'), anyLose = outs.includes('lose');
     const line = dealerBJ ? 'dealerblackjack' : (outs.includes('blackjack') && anyWin) ? 'blackjack' : (dealerTotal > 21 && anyWin) ? 'dealerbust' : anyWin ? 'win' : (anyPush && !anyLose) ? 'push' : 'lose';
-    const hole = r.dealer?.find(c => c.shoeDraw === holeDraw); if (prevDealerHidden && hole) ev.unshift({ type: 'reveal', to: 'dealer', card: { r: hole.r, s: hole.s }, shoeDraw: hole.shoeDraw });
+    // The reveal follows the card that triggered it (the player's last card, or the initial hidden deal) and comes before any
+    // extra dealer card (draw after the hole), never ahead of the whole instruction list.
+    const hole = r.dealer?.find(c => c.shoeDraw === holeDraw);
+    if (prevDealerHidden && hole) {
+      const extra = ev.findIndex(e => e.type === 'deal' && e.to === 'dealer' && e.shoeDraw > hole.shoeDraw);
+      const at = extra >= 0 ? extra : ev.reduce((last, e, i) => e.type === 'deal' ? i + 1 : last, 0);
+      ev.splice(at, 0, { type: 'reveal', to: 'dealer', card: { r: hole.r, s: hole.s }, shoeDraw: hole.shoeDraw });
+    }
     ev.push({ type: 'settle', dealerTotal, dealerBlackjack: dealerBJ, hands: hands.map((h, i) => ({ box: h.box, stake: h.stake, returned: h.result ?? 0, outcome: outs[i] })) }); ev.push({ type: 'speak', line });
   }
   if (r?.phase === 'decisions') ev.push({ type: 'turn', box: r.hands?.[r.active]?.box ?? null, handIndex: r.active, legalActions: r.legalActions ?? [] });

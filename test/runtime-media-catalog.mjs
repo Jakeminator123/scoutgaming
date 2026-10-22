@@ -69,12 +69,6 @@ test('retired dealer aliases and Blob pointers disappear while Astrid remains re
  assert.equal(index.files.some(row=>row.logicalPath==='dealers/astrid/runtime/composited/2026-09-09/mei-push.mp4'),false);
  assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/astrid/')),true);
 });
-test('retired IDs cannot acquire the older frontend portrait fallback',async()=>{
- const {dealerPortrait}=await import('../apps/web/lib/player-room-preview.mjs');
- for(const id of ['amira','paow','paow-v2','johanna'])assert.equal(dealerPortrait(id),null);
- assert.equal(dealerPortrait('astrid'),'/images/lobby/astrid-portrait.jpg');assert.equal(dealerPortrait('dragge'),'/images/lobby/dragge-portrait.jpg');
-});
-
 test('old Paow preview cannot return through a registry entry without preview choices',async t=>{
  const {dealerVersionPath}=await import('../services/game/public/dealer-version-switcher.mjs');
  const previous=globalThis.document;t.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});

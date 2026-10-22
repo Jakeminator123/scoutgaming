@@ -98,7 +98,7 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
     if(dirty||writeLock.current){setNotice('Spara eller ångra kategorivalen innan du byter dealer eller filter.');return;}
     const nextContext=nextDealer===dealerId?navigationContext:{laneId:navigationContext.laneId,operatorId:navigationContext.operatorId,tableId:navigationContext.tableId,game:navigationContext.game};
     setDealerId(nextDealer);setCategory(nextCategory);setNavigationContext(nextContext);setDrafts({});
-    const url=new URL(studioNavigationHref('/control/replies',{...nextContext,dealerId:nextDealer}),window.location.href);if(nextCategory)url.searchParams.set('category',nextCategory);
+    const url=new URL(studioNavigationHref('/admin/replies',{...nextContext,dealerId:nextDealer}),window.location.href);if(nextCategory)url.searchParams.set('category',nextCategory);
     studioHistory(window).push(url);context.current.href=url.href;
   }
   function navigate(event:MouseEvent<HTMLAnchorElement>){

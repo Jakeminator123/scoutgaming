@@ -59,6 +59,8 @@ import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible, type DealerId, type StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { videoFitsLine } from '../../../packages/presentation/contracts/video-intake.mjs';
 import { publishShellStatus } from './page-template.mjs';
+import { studioHistory } from '../lib/studio-history.mjs';
+import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { stripLabBasePath } from '../lib/lab-url.mjs';
 import { activeStudioDealers, requestJson, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
 import type { ConnectionStatus, DirectorMode } from './studio-types';
@@ -136,11 +138,17 @@ export function useStudioProjectSession(options: SessionOptions) {
   function replaceSelectionQuery(nextDealer: string, nextEvent: string, nextVariant = '') {
     if (typeof window === 'undefined' || !window.location || !window.history?.replaceState) return;
     const path = stripLabBasePath(window.location.pathname.split(/[?#]/, 1)[0]) || '/';
-    const href = options.overview
+    const selection = options.overview
       ? studioHref(path, { dealerId: nextDealer })
       : selectionHref(window.location.pathname, window.location.search, nextDealer, nextEvent, nextVariant);
-    if (`${window.location.pathname}${window.location.search}` === href) return;
-    window.history.replaceState(null, '', href);
+    const query = new URLSearchParams(window.location.search);
+    const { laneId, operatorId, tableId, game } = studioNavigationContextFromQuery(query);
+    const url = new URL(studioNavigationHref(selection, { laneId, operatorId, tableId, game }), 'https://studio.invalid');
+    if (query.get('room')) url.searchParams.set('room', query.get('room')!);
+    url.hash = window.location.hash;
+    const href = url.pathname + url.search + url.hash;
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` === href) return;
+    studioHistory(window).push(href, true);
   }
   function assignSelection(patch: StudioSelectionPatch, call: { invalidate?: boolean } = {}) {
     const nextDealer = patch.dealerId ?? dealerId;
@@ -265,7 +273,7 @@ export function StudioBindingNotices({ project, videos, dealerId, eventId }: { p
   const invalidVideos = project.lines.filter(item => !videos.families?.some(family => family.dealerId === item.dealerId)).flatMap(item => item.variants.filter(candidate => candidate.videoGenerationId && !videoFitsLine(videos.videos.find(video => video.id === candidate.videoGenerationId), item.dealerId, item.eventId)));
   const first = incompatible[0];
   return <>
-    {incompatible.length ? <div className="feedback error" role="alert"><span><strong>{incompatible.length} animationskopplingar behöver rättas.</strong> Projektet innehåller äldre val som inte matchar spelhändelsen. Inget har ändrats automatiskt. Välj en kompatibel labbanimation för varje markerad variant innan du sparar eller testar.</span>{first ? <a className="primary-button" href={studioHref('/control/events', { dealerId: first.dealerId, eventId: first.eventId })}>Rätta första kopplingen →</a> : null}</div> : null}
-    {invalidVideos.length ? <div className="feedback error" role="alert"><span>{invalidVideos.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span><a className="text-button" href={studioHref('/control/videos', { dealerId, eventId })}>Granska i Videobanken →</a></div> : null}
+    {incompatible.length ? <div className="feedback error" role="alert"><span><strong>{incompatible.length} animationskopplingar behöver rättas.</strong> Projektet innehåller äldre val som inte matchar spelhändelsen. Inget har ändrats automatiskt. Välj en kompatibel labbanimation för varje markerad variant innan du sparar eller testar.</span>{first ? <a className="primary-button" href={studioHref('/admin/events', { dealerId: first.dealerId, eventId: first.eventId })}>Rätta första kopplingen →</a> : null}</div> : null}
+    {invalidVideos.length ? <div className="feedback error" role="alert"><span>{invalidVideos.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span><a className="text-button" href={studioHref('/admin/videos', { dealerId, eventId })}>Granska i Videobanken →</a></div> : null}
   </>;
 }

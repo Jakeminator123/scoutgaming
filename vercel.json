@@ -1,5 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "*": false,
+      "main": true
+    }
+  },
   "services": {
     "speech": {
       "root": "apps/speech",
@@ -44,6 +51,7 @@
     { "source": "/lipsync-worker", "destination": { "service": "speech" } },
     { "source": "/moving-speech-stream", "destination": { "service": "speech" } },
     { "source": "/lipsync-moving/:path*", "destination": { "service": "speech" } },
+    { "source": "/shared-room/:path*", "destination": { "service": "speech" } },
     { "source": "/studio/:path*", "destination": { "service": "studio" } },
     { "source": "/control/:path*", "destination": { "service": "studio" } },
     { "source": "/partner/:path*", "destination": { "service": "studio" } },

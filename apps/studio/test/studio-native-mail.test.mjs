@@ -4,7 +4,7 @@ import { createNativeStudioMail } from '../lib/studio-native-mail.mjs';
 
 const origin = 'https://studio-fixture.invalid';
 const env = { RESEND_API_KEY: 'synthetic-provider-key', CROUPIER_STUDIO_MAIL_FROM: 'studio@owned-fixture.invalid', CROUPIER_PUBLIC_ORIGIN: origin };
-const invitation = { to: 'own-test+studio@fixture.invalid', kind: 'invite', role: 'admin', link: `${origin}/studio/set-password?t=${'a'.repeat(43)}` };
+const invitation = { to: 'own-test+studio@fixture.invalid', kind: 'invite', role: 'admin', link: `${origin}/admin/set-password?t=${'a'.repeat(43)}` };
 
 test('a key without an explicit mailbox never enables the old sender or any provider request', () => {
   let calls = 0;
@@ -36,7 +36,7 @@ test('invite and reset send exactly the configured server sender and owned token
       assert.match(content, /samma konto och lösenord på alla tre nivåerna/);
       assert.match(content, /kundval aktiveras när spelbolag ansluts/);
       assert.ok(content.includes(invitation.to)); assert.ok(content.includes(origin + '/play'));
-      assert.ok(content.includes(origin + '/studio/login?returnTo=%2Fcontrol'));
+      assert.ok(content.includes(origin + '/admin/login'));
       assert.match(content, /kan användas en gång/); assert.match(content, /Lösenord skickas aldrig via e-post/);
     }
     assert.ok(body.html.includes(`href="${invitation.link}"`));
@@ -76,10 +76,10 @@ test('foreign origins, duplicate tokens, malformed recipients and unsupported ma
   let calls = 0;
   const mail = createNativeStudioMail({ env, fetchImpl: async () => { ++calls; return Response.json({}); } });
   for (const change of [{ kind: 'custom' }, { role: undefined }, { role: 'unknown' }, { role: 'partner-admin' }, { to: 'a@fixture.invalid,b@fixture.invalid' },
-    { to: 'own@fixture.invalid\nBcc: other@fixture.invalid' }, { link: 'https://foreign.invalid/studio/set-password?t=' + 'a'.repeat(43) },
+    { to: 'own@fixture.invalid\nBcc: other@fixture.invalid' }, { link: 'https://foreign.invalid/admin/set-password?t=' + 'a'.repeat(43) },
     { link: invitation.link + '&t=' + 'b'.repeat(43) }, { link: invitation.link + '&extra=1' }, { link: invitation.link + '#fragment' },
-    { link: `${origin}/other?t=${'a'.repeat(43)}` }, { link: `${origin}/studio/set-password?t=short` },
-    { link: 'https://user:pass@studio-fixture.invalid/studio/set-password?t=' + 'a'.repeat(43) }]) {
+    { link: `${origin}/other?t=${'a'.repeat(43)}` }, { link: `${origin}/admin/set-password?t=short` },
+    { link: 'https://user:pass@studio-fixture.invalid/admin/set-password?t=' + 'a'.repeat(43) }]) {
     assert.deepEqual(await mail.send({ ...invitation, ...change }), { sent: false });
   }
   assert.equal(calls, 0);

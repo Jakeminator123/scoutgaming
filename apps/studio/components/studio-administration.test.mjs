@@ -22,7 +22,7 @@ vm.runInNewContext(transformSync(navigationSource, {
   filename: 'studio-navigation.tsx',
   jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
   module: { type: 'commonjs' },
-}).code, { module: navigationModule, exports: navigationModule.exports,
+}).code, { module: navigationModule, exports: navigationModule.exports, URL,
   require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name) });
 const source = readFileSync(new URL('./studio-administration.tsx', import.meta.url), 'utf8');
 const compiled = transformSync(source, {
@@ -77,13 +77,16 @@ function harness() {
     },
   };
   const window = {
+    location: new URL('https://admin.fixture.invalid/admin/media-review?dealer=astrid'),
+    history: {state:{foreign:'preserved',__NA:true},replaceState(state,title,href){this.state=state;if(href)window.location=new URL(href,window.location.href);},pushState(state,title,href){this.replaceState(state,title,href);}},
+    dispatchEvent(event) {listeners.get(event.type)?.(event);return !event.defaultPrevented;},
     confirm: () => true,
     addEventListener: (type, callback) => listeners.set(type, callback),
     removeEventListener: (type, callback) => { if (listeners.get(type) === callback) listeners.delete(type); },
   };
   const module = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, window, DOMException, AbortController, URL,
+    module, exports: module.exports, window, DOMException, AbortController, URL, URLSearchParams,
     crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
@@ -91,7 +94,7 @@ function harness() {
       const wasDeferred = deferUpdates; deferUpdates = false;
       try { deferredUpdates.splice(0).forEach(apply=>apply()); return action(); }
       finally { deferUpdates = wasDeferred; }
-    }} : name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
+    }} : name === './shared-table-proof' ? {SharedTableProof:()=>null} : name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
@@ -265,17 +268,17 @@ test('account status labels keep stored values and integration dates never revea
 test('administration notices use the enclosing room destination and label team compatibility without changing its editor', () => {
   for (const group of ['tables', 'accounts', 'partners']) {
     const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
-    const href = group === 'tables' ? '/control/rooms' : '/control/companies';
+    const href = group === 'tables' ? '/admin/publication' : '/admin/companies';
     const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
     assert.ok(original, group);
     assert.equal(original.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team');
     const embedded = h.render({ ...props, roomsHref: '/admin/rooms', companyTeamLabel: 'Bolag & team (äldre editor)' });
     const links = nodes(embedded, node => node.type === 'a');
-    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/control/companies'));
+    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/admin/companies'));
     assert.ok(target, group);
     assert.equal(target.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team (äldre editor)');
     if (group === 'tables') {
-      assert.equal(links.some(node => node.props.href === '/control/rooms'), false);
+      assert.equal(links.some(node => node.props.href === '/admin/publication'), false);
       assert.match(renderToStaticMarkup(embedded), /Bolagets spelbara rum och publicering hanteras via/);
     }
     h.unmount();
@@ -1346,4 +1349,15 @@ test('malformed moving drift response cannot become a successful command receipt
   const h=harness(),current=actor('admin');
   const client=h.createStudioAdminClient({apiBase:'/studio/api/admin',session:async()=>current,availableActions:['POST moving-drift'],fetchImpl:async()=>nativeReply({schemaVersion:1,revision:'5'},200,current)});
   await assert.rejects(client.request('POST','moving-drift',{expectedRevision:4,commandId:'fixture-command',mode:'off'},undefined,current),error=>error.status===503);
+});
+test('scoped proof GET carries only validated query fields through the identity-checked client',async()=>{
+ const h=harness(),calls=[];
+ const actor={username:'admin',role:'admin'};
+ const client=h.createStudioAdminClient({apiBase:'/api/admin',session:async()=>actor,availableActions:['GET shared-table-proof'],
+   fetchImpl:async(url,options)=>{calls.push({url,options});return Response.json({roomId:'room-1',shoes:[],selected:null,chain:{ok:true,complete:true,count:0,total:0}});}});
+ const result=await client.request('GET','shared-table-proof',undefined,undefined,actor,{roomId:'room-1',shoeId:'shoe-2'});
+ assert.equal(result.payload.roomId,'room-1');assert.equal(calls[0].url,'/api/admin/shared-table-proof?roomId=room-1&shoeId=shoe-2');
+ for(const query of [{roomId:'room-1',extra:'x'},{roomId:'../room'},{shoeId:'shoe-2'},{roomId:'room-1',shoeId:2}])
+   await assert.rejects(client.request('GET','shared-table-proof',undefined,undefined,actor,query),error=>error.status===400);
+ assert.equal(calls.length,1);
 });

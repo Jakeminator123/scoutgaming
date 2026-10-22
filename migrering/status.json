@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-21",
-  "scope": "Admin-förenkling och selektiv Kevin-migrering",
+  "updatedAt": "2026-10-22",
+  "scope": "Admin-förenkling, Jakobs klippkarta och selektiv Kevin-anpassning till mains tre lager",
   "baseline": {
     "main": "15988f32fd572c453d2189502acbe324c4566815",
     "backupBranch": "jakob-gren",
@@ -37,15 +37,21 @@
       "stage": "E1",
       "title": "Tydligare publicering i Admin",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "VERIFIED",
       "dependsOn": [],
       "branch": "codex/admin-publication-j01",
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "head": "ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/313",
+      "reviewer": "Codex-underagent plan_review och orkestrator",
       "evidence": [
-        "Jakob startade uttryckligen J01 med underagenter 2026-10-21; separat worktree från main 15988f32fd572c453d2189502acbe324c4566815. Detta är startbevis, inte slutförd leverans.",
-        "Ansvar och gränser: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318061602"
+        "Isolerad implementation på head 2f3a5b503dd6b2dc98dd5d211d203151c3d75435: val/redigera/spara/publicera/återöppna, dirty/conflict-spärr och revisionskvitto; befintliga auth/writers återanvänds.",
+        "Node v24.21.0 (Volta). node --test --test-concurrency=4 apps/studio/test/control-lanes-page.test.mjs apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/test/presentation-room-create.test.mjs apps/studio/test/presentation-room-api.test.mjs apps/studio/test/studio-session-save.test.mjs apps/studio/test/admin-publication-workspace.test.mjs: 160/160,0skip. Browsermodul=lokalt Playwright index.mjs via CROUPIER_BROWSER_FIXTURE_MODULE, channel=chrome.",
+        "Studio tsc --noEmit --incremental false; klient tsc --noEmit -p admin --incremental false; node apps/studio/client/build.mjs; node tools/check-orphan-tests.mjs: passerar. Commitkontroll39/39;0orphan av530. Befintliga CSS-composes-varningar.",
+        "Egen körning av J01-implementeraren; orkestrator och oberoende granskare har läst slutloggar och före/efter/mobilbilder i J01-worktreens arkiv/2026-10-21/j01-ui. Syntetiska konton/minneslagring, inga produktionsrader eller GPU-anrop.",
+        "Sessionskomplettering på ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868: ny signerad syntetisk token för samma konto valideras med verklig N1-validator, API och browser återläser sparat namn och paketversion 2. node --test --test-concurrency=4 apps/studio/test/admin-publication-workspace.test.mjs apps/studio/test/studio-native-auth.test.mjs: 23/23,0skip; commit2/2. Orkestratorn har läst diff/logg. Ingen produktkod ändrad; tidigare160prov/typecheck/build återanvänds där deltat inte berör dem.",
+        "Oberoende slutlig delta-granskning (plan_review) på ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868: inga blockerande fynd; hela isolerade J01-acceptansen styrkt. Granskaren läste diff, 23/23-logg och nya sessionsbilden; inga egna omkörningar.",
+        "GitHub CI success på oförändrad head ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868, verifierat 21 oktober 2026: https://github.com/Jakeminator123/scoutgaming/actions/runs/39618133973. Aktuell PR-head, källrepo och författare kontrollerade. Leveransen är isolerat verifierad i PR313; ej mergad eller produktionsverifierad.",
+        "Etappmerge22oktober: PR331 med granskad head471549a8f02f9165be39c7077afef98f37a67ad0 mergad med GitHub merge-commit64e4c680a045eb3aed92043032fdbaa35e666359 (2026-10-21T23:40:11Z). Färsk authorJakeminator123/sourceJakeminator123/scoutgaming, ägarkarta från main95ac, oberoende exakt-head review, samtliga tillämpliga CI-checks samt GitGuardian success verifierade före merge; inga nya PR-reviewfynd. API-merge bands till expected_head_sha och PRmerged/remote-main återlästes. Ingen produkt-, schema-, beroende- eller workflowändring sedan review. Main-CI39694901249 är därefter completed/success på oförändrad main64e4c680a045eb3aed92043032fdbaa35e666359: CI, dealer-regression, lipsync och changes success; doc/moving förväntat skip. Root har verifierat utfallet; detta är inte deploy- eller produktionsacceptans. Incident-API-täckning ofullständig. Lokal primary main och andras filer orörda; inga grenar borttagna. Detta var PR331:s mergekvitto; PR335 är därefter mergad enligt J04-kvittot, till aktuell main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad. Färdiggrad oförändrad45procent."
       ],
       "blocker": null
     },
@@ -55,15 +61,22 @@
       "stage": "E1",
       "title": "Avveckla ersatt Control-publicering",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "J01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
+      "branch": "codex/admin-control-publication-j02",
+      "head": "6748838e9194e0554fda060e869785599b890ac4",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/317",
+      "reviewer": "Codex-underagent plan_review och orkestrator (oberoende läsgranskning)",
+      "evidence": [
+        "Från verifierade J01 ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868. 38 J02-filer +155/-145: rooms/companies/operator SSR-filer borttagna; aktiv komponent/CSS/test flyttade till AdminPublicationPage; aktuella länkar och byggreferenser uppdaterade. Inga aktiva importer av de borttagna modulerna kvar enligt implementerarens, granskarens och orkestratorns sökningar.",
+        "Implementerarens Node24.21.0-körningar: 383 unika fokuserade fall gröna efter smala omkörningar; ordinarie hook303/303,0skip (överlappande). Studio-typkontroll och komplett build inklusive klienttyper passerar;78 byggspår;0orphan av530. Kommandon och loggar i J02-worktreens arkiv/2026-10-21/j02-ui/reproduce.txt, routing-publication.log, preview-final.log, next-navigation-final.log, commit.log och studio-build.log.",
+        "J01-browserflöde via /control/rooms och /studio/control/lanes utan skips: spara/publicera/återöppna, ny distinkt signerad N1-session, konflikt och mobil. GET/HEAD-kontext provad med native/unified av/på och /studio; skrivningar/next-action omdirigeras inte. Syntetiska konton/minneslagring, inte lösenordslogin, PostgreSQL-durabilitet eller produktion.",
+        "Oberoende slutgranskning av plan_review på exakt6748838e9194e0554fda060e869785599b890ac4: inga blockerande fynd; isolerad J02-acceptans styrkt av diff och slutloggar. Granskaren har inte kört om testerna. Orkestratorn har själv läst ändrad routing/aktiva konsumenter och slutloggar. GitHub CI återstår: https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991. Ingen merge; PR317 innehåller också J01 tills PR313 integreras.",
+        "GitHub CI success på oförändrad head6748838e9194e0554fda060e869785599b890ac4, verifierat21oktober2026: https://github.com/Jakeminator123/scoutgaming/actions/runs/39630025991. PR317 head/källrepo/författare färskt kontrollerade. J02 VERIFIED som isolerad leverans; ingen merge eller produktionsacceptans.",
+        "Etappmerge22oktober: PR331 med granskad head471549a8f02f9165be39c7077afef98f37a67ad0 mergad med GitHub merge-commit64e4c680a045eb3aed92043032fdbaa35e666359 (2026-10-21T23:40:11Z). Färsk authorJakeminator123/sourceJakeminator123/scoutgaming, ägarkarta från main95ac, oberoende exakt-head review, samtliga tillämpliga CI-checks samt GitGuardian success verifierade före merge; inga nya PR-reviewfynd. API-merge bands till expected_head_sha och PRmerged/remote-main återlästes. Ingen produkt-, schema-, beroende- eller workflowändring sedan review. Main-CI39694901249 är därefter completed/success på oförändrad main64e4c680a045eb3aed92043032fdbaa35e666359: CI, dealer-regression, lipsync och changes success; doc/moving förväntat skip. Root har verifierat utfallet; detta är inte deploy- eller produktionsacceptans. Incident-API-täckning ofullständig. Lokal primary main och andras filer orörda; inga grenar borttagna. Detta var PR331:s mergekvitto; PR335 är därefter mergad enligt J04-kvittot, till aktuell main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad. Färdiggrad oförändrad45procent."
+      ],
       "blocker": null
     },
     {
@@ -72,18 +85,28 @@
       "stage": "E1",
       "title": "Inventera den rensade Kevin-modulen",
       "weight": 5,
-      "status": "IN_REVIEW",
+      "status": "VERIFIED",
       "dependsOn": [],
-      "branch": "kevin-merge-admin",
-      "head": "5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc",
-      "pr": null,
-      "reviewer": "Codex-underagent kevin_plan (oberoende läsgranskning)",
+      "branch": "codex/kevin-k01-underlag",
+      "head": "7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/314",
+      "reviewer": "Codex-underagent kevin_plan och orkestrator (oberoende läsgranskning)",
       "evidence": [
         "Kevin-underlag, rapporterade test/GPU-resultat: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6317942648",
         "Oberoende granskning: fyra klientfiler och två tester efter c4818f5; sju DDL-filer, 13 tabeller, sex triggrar, tre SQLite-standardfiler och minst nio SQL-konsumenter. 28 V1-raderingar verifierade; 1790 ljud-/videofiler kvar i trädet.",
-        "Öppna fynd och nästa ägare: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117"
+        "Öppna fynd och nästa ägare: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318159117",
+        "Neon-läsroll levererad och oberoende ACL-/inloggningsprovad; Kevin-agenten kvitterar egen anslutning/schemaöversikt: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318426856",
+        "Verifierad kontraktsgräns: Studio-audit har dokument/medieansvar och ersätter inte direkt Kevins spelhashkedja: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318445589",
+        "Kompletterande inventering på codex/kevin-k01-underlag@bcd9273432c686c3e140892b5b00b2e69065dfcb: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318486389. Kodkällan är fortsatt 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc.",
+        "Oberoende läsgranskning verifierar matrisens SQL-konsumenter, rowid, global wallet och auditserialisering samt 1267/1267 TSV-sökvägar/storlekar/Git-blobbar mot fryst kodträd. SHA256-värden ej omräknade mot binärer. Medier är statiska kandidater, inte godkänt importurval. TAP-loggens 285 pass lästa, ingen egen körning; GPU-server-SHA/latensorsak fortsatt obestyrkta.",
+        "Två avgränsade K01-rättelser och nästa ansvarig: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653. O01 äger kvarvarande schema-/lås-/replaybeslut; inga nya GPU-prov krävs för inventeringen.",
+        "PR314 på 38a297f7915913fdd8b197ac24a93902918f8580, fryst produktkälla fortsatt 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318788990. Den tidigare inlämnade kommentaren hade förbisetts i orkestratorns förra sammanställning.",
+        "Oberoende delta-granskning verifierar KEVIN_SRC-importen och hashberäkningen mot fryst källa; audit-importblockeraren är stängd. Verktygets 21/21-rader är Kevins körningsrapport, inte vår egen körning. TEXT-rättelsen på rad174 är korrekt men matrisraden107 tillåter fortfarande jsonb och måste rättas.",
+        "PR315, codex/kevin-test-deterministic@f29adaf942acace6593b0c9bb5677bf412fa0763: oberoende läsgranskning utan blockerande kodfynd. Bara testfilen ändras; fast sko och obligatoriska assertions ersätter båda tidiga returerna. GitGuardian success men ingen funktionell CI-körning; 285/285 och 30/30 är Kevins rapporter. Ingen merge eller självständig runtimeacceptans.",
+        "Slutdelta 7f42c8f6d39f929d30c1b5fcec7a52c114e6ce33 i PR314 ändrar endast K01-matris.md rad107 till TEXT/ordningskänsligt shoe-proof. Oberoende kevin_plan och orkestratorn har kontrollerat exakt commit och fil; audit-importen är oförändrat rättad. 2/2 tidigare blockerare stängda. K01 VERIFIED som avgränsad inventering, inte runtime-, mediaimport- eller O01-acceptans. Rapport: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319631936",
+        "Kompletterande medieinventering53f6693610acc44fb45295da76a67d940a989125 (ingår icfe703718d124a5cec008f1c07125fac551aba9c) är läst. Den avser staging238d6dd6 och worker, inte fryst produkt5aa7ed10. Storlekar/tagningar/1:1-mappning och raderingsförslag är rapporterade, ingen import-/raderingsacceptans. Root verifierade i fryst kod5aa7ed10 att shared-table.mjs:57,81 refererar rotens repliker och public/dealers.js:104-105 faller tillbaka till astrid. Exakta dealer/take/frame/ljud/hashar och återställningsberoenden måste mappas mot vald produktversion i K04; inga binärhämtningar/GPU-/driftprov gjorda."
       ],
-      "blocker": "Versionsbunden beteende-/beroendematris, fullständiga SQL-konsumenter, exakt mediaurval och körloggar saknas; GPU-tal och väntelägestestets tidiga retur behöver förklaras."
+      "blocker": null
     },
     {
       "id": "O01",
@@ -91,15 +114,32 @@
       "stage": "E1",
       "title": "Lås kontrakt och funktionsansvar",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "K01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
+      "branch": "codex/migrering-masterplan",
+      "head": "4f45a59c763874466986fc1bb3f3e76b12edba53",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/311",
+      "reviewer": "plan_review: oberoende Admin-/kriteriereview och isolerade prov; root: slutlig kod-/bevisavstämning",
+      "evidence": [
+        "Förberedande, ej låst kontraktsförslag i MASTERPLAN.md: auktoritet, kommando/idempotens/version, main-global wallet, föreslagen transaktion/låsordning, textbevarat shoe proof och committade presentationsevent. Underlag main 15988f32fd572c453d2189502acbe324c4566815 och Kevin 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; ingen implementation eller runtimeacceptans.",
+        "Kevin levererade O01-svar på 24cacc5a2830b265604624a3ee371e8a3f4ab2a7: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6319431310. Två oberoende underagenter och orkestratorn har läst relevanta källor på 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc; inga runtime-/GPU-prov.",
+        "Kodgranskningen verifierar advance före idempotens, onPlan före commit, limitändringslås även före clear, klientens språkstyrning vid poll samt heuristiska patchval och kvarvarande index. MASTERPLAN.md föreslår separat kommandoresultat/snapshot, fönster-/turidentitet, config frysning före insatsfönster, händelser efter commit och verifierad frame-/audioidentitet. Förslag, inte låst kontrakt.",
+        "Orkestratorns egna 9/9 isolerade baselineprov, 0 skip, på oförändrade main-produktfiler 15988f32fd572c453d2189502acbe324c4566815: node --test --test-concurrency=4 --test-name-pattern=\"Postgres SQL|Postgres facade|memory transaction|nested Studio|nested scoped|native project PUT|Postgres command|failed ledger|a stale request\" test/postgres-persistence.mjs test/postgres-native-table.mjs. Volta Node24.21.0, CROUPIER_POSTGRES_QA_CONFIG ej satt, endast mockpoolar. Logg arkiv/2026-10-21/o01-main-contracts/focused-main-contracts.log i planworktreen. Bevisar befintliga kontrakt, inte verklig PostgreSQL-samtidighet eller framtida delat bord.",
+        "Läsverifierad karta över mains aktiva skrivvägar på 15988f32: native blackjack/roulette använder spelar-radlås; deposit/currency/partner/admin använder globalt G→spelare; Studio publicering G→Studio→operatör. Separat auditlås krävs för att undvika föreslagen P→G-inversion; råa gamePool-transaktioner delar inte automatiskt fasadens AsyncLocalStorage. Kartan och öppna valuta-/konto-/idempotens-/auditgränser finns i MASTERPLAN.md. Ingen verklig deadlock eller Postgres-race har körts.",
+        "Kevin-avstämning6320082148 om injicerad SQL-klient och spelavgränsad audit läsgranskad av kevin_plan och orkestrator mot frysta källor. O01 preciserar självständig idempotent tick, full kommando-/generationsmatris, refill på samma klient/ledger-id och global hashkedja. Befintlig kedja kan inte fullt verifieras med bara filtrerade rumsrader; hela stängda skon krävs för shoe proof. Förslag, inte implementation, runtimeacceptans eller låst kontrakt. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6320082148",
+        "Nio Admin-kandidater kartlagda mot oförändrad main15988f32 av jakob_plan; centrala kontrakt/writers lästa av orkestratorn. MASTERPLAN skiljer befintliga scoped publicerings-/drift-/profil-/launchkontrakt från nya språk/limit/timer/logo/proof-fält och saknad produktfunktion för walletåterföring. Inga nya kontrakt godkända och ingen implementation eller runtimekörning; O01 fortsatt IN_PROGRESS.",
+        "Specifikation551b2e820664a4e6916d64eda4527d5d07366261 läsgranskad av kevin_plan och root mot713c03e: endast O01-svar.md ändras. Demoavgränsning, blocked-outcome och accountMembershipGen skild från rums-memberGen är tydliga. Root har valt en savepoint i samma yttre transaktion för J07; alla planerade lås före savepoint, återställ försökets effekter, skriv blocked-kvitto/audit och committa utan låsglapp. Persistens-/anslutningsfel ger full rollback. Root har därefter läst enda dokumentdeltat362ad392acd70f49d7a6198f91e2f61c02ebd572 från551b2e8: samma yttre transaktion efter ROLLBACK TO SAVEPOINT, lås före savepoint, full rollback vid kvittofel och aldrig blocked-kvitto för anslutnings-/transaktionsfel är nu konsoliderat. Ingen runtime-/samtidighetsacceptans. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6322089912",
+        "Jakob beslutade direkt i chatten21oktober: Demo först; förbered gränsen för aggregatorn. Han vidarebefordrade också Kevins godkännande av retryförslaget. K02 äger inget saldo/I/O; K03 använder walletport; J07 binder main-demowallet med gemensamma reservationer/SQL-transaktion. Extern aggregatorintegration är separat senare omfattning. Spärren i async-partner-api.mjs:137 behålls, ingen SQLite- eller tyst demofallback. Faktisk kodgranskning av root+jakob_plan på main15988: extern callback finns i legacyspåret, inte aktiverad PostgreSQL-integration. Beslut: https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6321854403",
+        "Kevinagentens besked6324011274 rapporterar ägarval(a). Root och kevin_plan läste O01-deltat362ad392acd70f49d7a6198f91e2f61c02ebd572→cfe703718d124a5cec008f1c07125fac551aba9c: första pause avvisas inte som stale, gäller24h från commit/MAX över kontots rum; identisk replay förlänger inte pausen. Generation styr låsmängdens omläsning/omplanering, inte avvisning. Inga blockerande motsägelser med samma yttre transaktions savepointmodell. Root accepterar detta som O01:s kontraktsinriktning. Ingen ny fråga om sen första pause behövs. Ägaruppgiften är rapporterad via Kevins agent, inte separat mänskligt verifierad.",
+        "PR323 9b066769b8a0595d0e62e997285ac84460bb2ef9 är fryst och läsgranskad: endast kevin/croupier-scoutgg/test/shared-table.test.mjs,+25 rader. Provar insurance-/handlingsspärr under paus, sekventiell bet-upprepning, inputkonflikt och aktörsscope. Rapport287/287 är Kevins körning, inte vår. Den provar inte sen första paus, pausreplay, medlemsrace eller PG-lås. Befintlig shared-table.mjs:329-341 kör advance före requestkontroll och returnerar aktuell snapshot; oförändrad testklocka bevisar inte lagrat svar över deadline/omstart. Detta är känt legacybeteende, inte accepterad K03-replay.",
+        "K02-delta10dd2323→0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 läsgranskat av plan_review och root: reservation per box finansierar start/insurance, available endast nya double/split-debiteringar. Finansieringsmotsägelsen är stängd. K03-draftb1c94dee är läsgranskad mot O01 med fem konkreta återhämtnings-/identitets-/leveransfynd. Root preciserar spelaridentitet i frånvarotick, obligatorisk memberGen och clear som återhämtning före start även efter deadline; undo efter deadline krävs inte för första demoetappen. Ingen ny produkt-/ägarefråga behövs för dessa preciseringar. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125",
+        "Fryst O01-specifikation 9c669e67e40c387c84fea6d02449698d373c4c49 i PR314/codex/kevin-k01-underlag läst i sin helhet av root, kevin_plan och plan_review; root/kevin_plan granskade även deltat fråncfe7037, plan_review granskade aktivitetskriterierna och slutligt plandelta. Root accepterar backendkontraktens del inom Jakobs mandat: demo/portar, identiteter/replay, ticks, lås/savepoint, reservationslivscykel, pause, configfrysning och beständig presentations-/auditgräns. Tre befintliga preciseringar samordnas i MASTERPLAN: next låser lämnande spelare; reservationskontroll före ren core men consume efter; identisk senaste outboxversion kvitteras applied utan ny applicering, äldre stale. PR-head/source/author verifierade; ingen ny runtime/CI-/PG-acceptans. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325862074",
+        "O01 verifierad som kontraktsaktivitet på codex/migrering-masterplan/4f45a59c763874466986fc1bb3f3e76b12edba53. Fryst backend9c669e67 kompletterad med beslutad Adminmatris: nio fältområden, tillåtna värden/validator, befintlig eller framtida writer, publiceringsgräns och konsument. Demo en/sv, casual/prive/high, standardtider20s/15s; nya språk/limits/timers binds av J08/J07 atomiskt till versionerat rum/paket, fryst per fönster/runda. Framtida writers är inte påstått implementerade. Mindre utökningar i befintlig frågepott enligt Jakobs mandat.",
+        "plan_review körde13/13 K02 på0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1,30/30 K03 påb8e1c957c99c5a16ee861f9767ec28041b2270dd och1/1 kompletterande språkprov;44/44,0skip,exit0,Node24.21.0,max4workers.24 källfiler Git-blobhashverifierade före/efter. Kommandon/provmappning i Kevin AKTIVITETER.md; primary arkiv/2026-10-21/o01-contract-verification/{source-manifest.json,source-verification.log,k02.log,k03.log,language.log,o01-language.test.mjs}. Root läste loggar och språkprovet.",
+        "Oberoende slutreview av plan_review: inga blockerande fynd i Adminurval, publiceringsgräns eller O01:s fem kriterier. Tidigare backendreview, main-writermatris och de faktiska kontraktsproven räcker för kontraktsleveransen; ingen väntan på framtida J07/J08-implementation. Minnesmutex/koordinatorrekonstruktion är inte PG-durabilitet, processkrasch eller beständig mottagare. Vid O01-kvittot återstod full K02/K03-acceptans och J07/K04/K06-runtime i respektive aktivitet; senare acceptans redovisas där; inga aktiva callers, DDL, GPU, merge eller produktion ändrade."
+      ],
       "blocker": null
     },
     {
@@ -108,16 +148,61 @@
       "stage": "E2",
       "title": "Avveckla resterande Control-ytor",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "J02",
         "O01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
+      "branch": "codex/admin-control-auth-j03",
+      "head": "471549a8f02f9165be39c7077afef98f37a67ad0",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/331",
+      "reviewer": "plan_review: full produkt-/authreview; kevin_plan: oberoende CI-testdelta; root: integration, kod/loggar och fjärrkontroll; j04_resume: oberoende exakt-head kedje/slutreview",
+      "evidence": [
+        "Jakob startade oberoende parallellarbete 21 oktober. Guide/Videor-delen bygger på verifierad J02 6748838e9194e0554fda060e869785599b890ac4. Routekarta läst av plan_review; orkestrator kontrollerade centrala destinationer och de två wrappers. Övrig Control/auth och full O01-grind kvar. Se AKTIVITETER.md[J03].",
+        "Delaktivitet Guide/Videor levererad i PR318/head1cfe36e32c2c89b165c5c998cd2126325431dc5b. Två SSR-wrappers raderade med tracing och rendererkrav; callers och gamla GET/HEAD-bokmärken går till befintlig Admin med kontext, native/unified på/av och /studio. Mutations/server actions omdirigeras inte. Delade funktioner och N1-auth bevaras. Inga blockerande fynd i oberoende slutgranskning av kevin_plan på exakt head; root läste centrala diffar och loggar.",
+        "Implementerarens Volta24.21.0-prov med max4 workers: 108/108 fokuserade, 44/44 riktade efter rättade gamla adresskrav, ordinarie hook138/138; 0skip. Överlappande körningar summeras inte. Riktiga middleware-/Admin-handlers med syntetisk N1 och anonym negativ kontroll. Studio-build inklusive Studio/Admin/Lobby-typer passerar; orphan530/0, borttagna sidor saknas i manifestet. Loggar i J03-worktree arkiv/2026-10-21/j03-tools/{focused,build,orphan,commit}.log; handoff docs/JOHN-HANDOFF.md:608. Granskare läste, körde inte om.",
+        "Bygget återanvände J02-beroenden via junctions; tracesanering76 kontrollerade/44 borttagna poster, deras individuella sökvägar loggades inte. Endast lokalt byggbevis, inte fristående deployartefakt. Aktuell GitHub CI redovisas separat nedan. Ingen merge/produktion/DDL/GPU eller egen kvarvarande testserver. J03 förblir IN_PROGRESS och totalen15%, eftersom fulla aktiviteten inte är klar.",
+        "GitHub CI-run39638533490 på head1cfe36e32c2c89b165c5c998cd2126325431dc5b underkändes i Studio-gruppen: http-guard.test.mjs:88 läser raderade control/videos/page.tsx (ENOENT). Riktigt Studio-build och övriga körda regressiongrupper inklusive isolated SQL/restart/HTTPS passerade; slutgrinden underkänd. Felet rättas av den avgränsade testkorrigeringen nedan; inga gates ändras.",
+        "CI-rättningen i 314639b54019d02606d7d2e0b1cac19f9c72b24a ersätter enbart testets två raderade Control-sidor med aktiva loaderkonsumenter samt uppdaterar handoff. Negativa auth/API-prov bevaras. Implementerarloggar: 53/53 fokuserade och 21/21 hook, 0 skips. Oberoende deltareview av kevin_plan utan blockerande fynd; root kontrollerade diff och loggar. Ingen produktändring eller ny build behövdes. GitHub verifierade push; CI-run39641756885 passerar på oförändrad head314639b54019d02606d7d2e0b1cac19f9c72b24a: dealer-regression, lipsync-worker och slutgrinden CI lyckades. Ingen merge/deployacceptans.",
+        "Probe/Replies-delen levererad i PR320/headdb96200a4aa8556c1ff456b70031501407e2935c från PR318/head314639b54019d02606d7d2e0b1cac19f9c72b24a. 31 filer +221/-154: två SSR-wrappers och exklusiv tracing raderade; aktiva callers och Replies-filter/dealerhistorik går till Admin. GET/HEAD-bokmärken bevarar kontext med native/unified av/på och /studio; mutationer omdirigeras inte. Gemensamma API:er, N1-auth, revisioner och sparlogik oförändrade.",
+        "Volta24.21.0, max4 workers. Implementerarprov81/81,68/68,36/36,4/4 samt Replies13/13 komponent och slutligt10/10 browserhistorik, alla0skip. Root15/15 Replies API/query, Studio-build och Studio/Admin/Lobby-typer, orphan530/0. Ordinarie commitkontroll180/180,0skip. Körningarna överlappar. Verklig WorkspaceTool/Admin-navigation med syntetiska API-svar: dirty/pågående skrivning, beforeunload, Back/Forward/flersteg, kategori, dealer/API och reload. Loggar i admin-control-replies-probe-j03-worktreens arkiv/2026-10-21/j03-speech-tools; handoff docs/JOHN-HANDOFF.md.",
+        "kevin_plan läste produkt-/testdiff mot314639b5, loggar och manifest: inga blockerande fynd, inga egna omkörningar. Root läste centrala diffar och körde build/API/typer/orphan/hook. Lokalt bygge utan basePath; middlewareprov täcker båda mountlägena. Studio/game-beroenden via junctions; traces74/44, inte fristående deployacceptans. Push och PR-head verifierade; GitGuardian Security Checks success pådb96200a4aa8556c1ff456b70031501407e2935c. Ny CI var köad vid leverans, ingen CI-, merge- eller produktionsacceptans påstås.",
+        "GitHub CI39646187160 success på oförändrad headdb96200a4aa8556c1ff456b70031501407e2935c, verifierat21oktober2026: https://github.com/Jakeminator123/scoutgaming/actions/runs/39646187160. Färsk PR320-head/källrepo/författare kontrollerade; dealer-regression, lipsync-worker och slutgrinden CI lyckades. Endast denna delkontroll är klar; J03 fortsatt IN_PROGRESS, ingen merge/produktion.",
+        "Events/Tree levererad i PR322/head2ea99899228b9574bbf142ae80f3e7a776af0a5b på codex/admin-control-events-j03 från PR320/db96200a4aa8556c1ff456b70031501407e2935c. Eget delta34filer,+344/-199. Två SSR-wrappers och exklusiv tracing borttagna; aktiva callers går till Admin. Gamla control/events, control/tree, events och tree bevarar kontext för GET/HEAD med native/unified på/av och /studio; mutationer omdirigeras inte. Delade API:er, N1-auth och writers behålls.",
+        "Events/Tree och delad sessionwriter använder befintlig historikägare och bevarar urval, rumskontext och främmande history.state. Faktisk Admin-browser hittade gammal WorkspaceTool-projektkopia efter spara→Tree→Events; fixen återläser endast vid vygränsen och ignorerar gamla svar. Slutliga33/33 (30 Events/session/Clips/Replies-regressioner +3 browser), ordinarie hook202/202,0skip. Route/auth57/57; konsument125/128 följt av riktade46/46 och32/32 efter gamla fixturkrav,0skip. Körningar överlappar.",
+        "Root körde slutligt Studio-build med /studio efter sista produktfixen, inklusive Studio/Admin/Lobby-typer; orphan531/0, diffkontroll och manifest utan sex avvecklade verktygswrappers. Volta24.21.0,max4workers. Beroenden via junctions till J02/PR320; traces72/44, endast lokalt byggbevis. Verklig Admin-entry/WorkspaceTool/navigation med syntetiska API-svar och isolerad uppspelning: dirty/inflight, beforeunload, Back/Forward/flersteg, save/readback/reload och omkastade lässvar. Inga blockerande fynd i oberoende produkt- och sista testdeltareview; granskaren läste loggar, inga egna omkörningar. Loggar arkiv/2026-10-21/j03-events i leveransworktreen; handoff docs/JOHN-HANDOFF.md. Fixturekontexter/browser stängda. Push och PR-head verifierade; GitGuardian Security Checks success på samma head. Vid den tidigare leveransen pågick GitHub CI39649419165; slutligt success verifieras i nästa post. Ingen merge/produktion.",
+        "GitHub CI39649419165 success på oförändrad PR322/head2ea99899228b9574bbf142ae80f3e7a776af0a5b verifierad21oktober2026. Färsk PR-head/källrepo/författare kontrollerade. Events/Tree-delen har nu grön CI; ingen merge/produktion.",
+        "Compositions/Rehearsal levererad i PR324/head43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee, codex/admin-control-rehearsal-j03, från PR322/2ea99899228b9574bbf142ae80f3e7a776af0a5b. Eget delta47filer,+390/-230. Två SSR-wrappers och exklusiv tracing borttagna, inklusive förbrukade preview/activity/zones-poster. Aktiva callers och gamla GET/HEAD-bokmärken går till Admin med kontext; mutationer omdirigeras inte. Delade API:er, N1-auth och writers kvar.",
+        "WorkspaceTool skickar explicit rum/spel; tvetydiga rum blockeras i fortsättning/observation. Compositions använder Admin-historikägaren för sammansättning/spel och främmande state. Dirty/saving/conflict/localfile/upload/preview skyddas; bara eget validerat preview-anrop frigör sitt navigeringsskydd. Projektskrivning är fortsatt gemensam CAS, inte roomOverrides. Slutliga preview/CAS35/35, faktisk Admin-browser5/5, root auth/room-API72/72 och riktade route/caller/lifecycleprov gröna. Ordinarie hook350/350,0skip; överlappande körningar summeras inte.",
+        "Root körde slutlig Studio-build med /studio, inklusive Studio/Admin/Lobby-typer; orphan532/0, diffkontroll och manifest utan åtta avvecklade J03-wrappers. Volta24.21.0,max4workers. Beroenden via junctions till J02/PR320,traces70/44: lokalt byggbevis, inte fristående deployartefakt. Verklig Admin-entry/WorkspaceTool/kontroller/history med syntetiska API-svar och avgränsad playback; save/readback/reload, Back/Forward/flersteg, request/draft-skydd, kvitto/fortsättning och negativa rum. Ingen gameplay/medieuppspelning verifieras. Två implementerare och oberoende produkt-/slutlig testreview utan blockerare; granskaren läste loggar, inga egna omkörningar. Loggar arkiv/2026-10-21/j03-rehearsal i leveransworktreen. Fixturekontexter/browser stängda.",
+        "Push och PR324-head43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee verifierade. GitGuardian Security Checks success; GitHub CI39657917855 pågick vid produktleveransen; senare failure och testkorrigering redovisas nedan. Ny main644b5653936ed890d11c35a8ffb8780161b0a744 är läst och har ingen PR-konflikt; den är inte integrerad i denna leverans. Main-säkerhetsläsning:0 öppna/23 ignorerade incidenter, aktiverad övervakning; lokalisering partial och historisk scan too_large, GitHub-kontroll väntande. Ingen merge/deploy/DB-/mediaändring. J03 IN_PROGRESS,total15%.",
+        "CI39657917855 på PR324/head43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee föll på apps/web/test/platform-ui.mjs:94, gammalt tvåhopp för activity. Rättning b69f8840d5f7e91ca27224e6d1abce9a50b83cfb ändrar endast en testförväntan och handoff; negativa auth/API-prov består. Root verifierade105unika CI-gruppfall över separata lokala körningar (94+11,0skip), därefter ordinarie hook27/27. Två transportfiler behövde först låsta speech-beroenden; gammal lokal npm-file-cache rättades endast i installerad testkopia med fem hashmatchade källfiler. Web pnpm10.33.2, speech-installation Node22.23.1. Inga produkt-/lockfiländringar. Oberoende exakt-head-review av kevin_plan utan blockerare. Push verifierad; ny CI39661754986 in_progress vid leverans, ingen ny CI-acceptans.",
+        "Agentmodeller/Dealerchatt levererad i PR326/head58133210804b001b6100474bd6833d320c5da3eb, codex/admin-control-ai-j03, från PR324/head43c0ca8155fdc9f3f8f3b3be22a8d10fd99082ee. Eget delta32filer,+374/-256. Två SSR-wrappers och exklusiv tracing borta. Kontextbevarande Adminmål för OpenClaw/operator-chat, tab=chat, ops, barealias och /studio med native/unified på/av. GET/HEAD-redirect; mutationer/server actions och API/auth förblir skyddade. Activity-testfixen och nya ops-utfallet verifierade i faktisk middleware.",
+        "Dealerbyte får egen session/conversationId; utkast och pågående anrop skyddas vid navigation/Back/Forward/flersteg. Sena aborterade svar återanvänds inte. Global modell-PATCH behåller baseHash, ordnade fallbacks, konflikt/retry och kvitto/återläsning. Explicit rumskontext bevaras men ändrar inte globalt skrivscope. Endast validerad dashboardfortsättning frigör sitt eget anropsskydd. UI23/23, faktisk Admin-browser5/5 plus skärpt modellhistorik1/1; route90/90, callers55/55 och slutdelta23/23 (8överlapp); root API/auth39/39, plattformsmiddleware27/27. Ordinarie hook188/188,0skip. Körningar överlappar och summeras inte.",
+        "Root slutbuild på fryst produkt med /studio, Studio/Admin/Lobby-typer och Volta24.21.0; orphan533/0, manifest utan tio avvecklade J03-verktygswrappers. Lokala junctions och traces68/44: ingen fristående deployartefakt. Verklig Admin-entry/adapter/UI men syntetiska API-svar och avskärmad dashboarddestination; ingen verklig Gateway/provider/gameplay/media verifierad. Två implementerare och kevin_plan oberoende produkt-/testreview på exakt58133210804b001b6100474bd6833d320c5da3eb utan blockerare. Granskaren läste loggar, inga egna omkörningar. Loggar arkiv/2026-10-21/j03-ai i leveransworktreen; fixturekontexter/browser stängda.",
+        "GitHub PR326-head/källrepo/författare verifierade; mergeable true/behind main644b5653936ed890d11c35a8ffb8780161b0a744, ingen integration/merge. GitGuardian Security Checks success på58133210804b001b6100474bd6833d320c5da3eb; CI39661793088 in_progress vid leverans. Main säkerhetsstatus:0 öppna/23 ignorerade incidenter, övervakning active, location partial/historical too_large och GitHub-kontroll queued. Ingen deploy/DDL/mediaändring. Jakobs nya mandat för mindre beslut och icke blockerande frågepott är infört i MASTERPLAN; total15% oförändrad.",
+        "PR324:s rättningshead b69f8840d5f7e91ca27224e6d1abce9a50b83cfb har verifierad GitHub CI39661754986 completed/success på exakt samma head. PR326-produkthead58133210804b001b6100474bd6833d320c5da3eb föll i CI39661793088 på voice-preview-panel.test.mjs:94: GatewayPanel anropades direkt utan riktig React-renderare och useRef gav null. Test/handoff rättade i ba697260751eb692df09ebe85af6f3ae73489f46. Repro3/4, därefter27/27 och ordinarie hook4/4,0skip. Oberoende rootreview. Ny CI39665285361 in_progress på exakt ba697-head vid avläsningen; ingen CI-acceptans för326 ännu.",
+        "Clips levererad i PR329/codex/admin-control-clips-j03/headb81d858367254a6572a67df02f1a7ee4dcaae585 ovanpå PR326-produkthead58133210804b001b6100474bd6833d320c5da3eb. Samma Gateway-testfix som ba697 ingår. Eget delta50filer,+429/-393. Clips-SSR-wrapper, sista exklusiva control-studio-data-loadern och tracing borttagna; aktiva callers/bokmärken till /admin/dealer-studio. Zoombara /admin/clips och gemensamma API/auth/writers bevaras. GET/HEAD bevarar kontext/hash och /studio/native/unified; mutationer/server actions omdirigeras inte.",
+        "Gransknings-/provfynd rättade: traversalguard jämför med senast accepterad pathname; hashredirect bevarar explicit/tvetydig operator/table/room; menyn ItemLink bevarar dealer/spel när målet byter till Admin. Adminflikar behåller monterade utkast. Produkt- och slutlig testreview av kevin_plan utan blockerare; granskaren läste diff/loggar, körde inte om. Inga nya media-/rumswriters.",
+        "Volta24.21.0,max4workers. Ordinarie hook241/241,0skip inklusive slutlig faktisk Admin-browser7/7. Implementerarprov200unika route/callerfall över separata körningar (först65/65 och134/135, rättat ItemLink med berörda25/25),32/32 komponent och sex bevarade historyfall. Root auth/save/harness37/37, plattformsmiddleware27/27. Körningar överlappar. Browsern bevisar urval/flikar, Back/Forward/flersteg/reload, CAS/409/återläsning, utkast/inflight och okänd historik/främmande state. Syntetiska API-svar och avskärmade media-/destinationskomponenter; ingen verklig uppladdning/uppspelning/provider/PG-durabilitet eller produktionsauthacceptans.",
+        "Root slutbuild efter sista produktfixen: /studio, Studio/Admin/Lobby-typer, orphan534/0 och diffkontroll gröna. Manifest saknar elva avvecklade J03-wrappers; Admin/API finns kvar. Lokala beroendejunctions/traces67/44 ger inte fristående deploybevis. Loggar arkiv/2026-10-21/j03-clips i leveransworktreen; handoff docs/JOHN-HANDOFF.md. Egna browserkontexter/instanser stängda, inga servrar startade. PR329 head/källrepo/författare färskt verifierade; mergeable true/behind main644b565, ingen integration/merge. Ny CI-check changes queued, workflow ännu inte synlig; ingen fjärr-CI-acceptans. Säkerhetsläsning main644:0öppna/23ignorerade incidenter, övervakningactive; locationpartial/historicaltoo_large och GitHubkontrollqueued.",
+        "Slutlig avläsning före planleverans: GitHub CI39665285361 completed/success på PR326:s oförändrade headba697260751eb692df09ebe85af6f3ae73489f46. PR329/headb81d858367254a6572a67df02f1a7ee4dcaae585 har GitGuardian Security Checks success och CI39666861547 in_progress (dealer-regression pågår, lipsync-worker success). Ingen CI-acceptans för329 ännu.",
+        "PR329 CI39666861547 failed på produktheadb81d858: gamla Clips-adresser, saknad URL-global i två VM-fixtures och flakigt transportprov som delade deadline. Rättningsheadba983288f1e97e26e728e92329425f16125a1dcb ändrar enbart fem testfiler/handoff.115/115 fokuserade och överlappande ordinarie hookprov,0skip; root läste hela deltat. Separat transportbudget behåller strikt504/50ms-deadlineprov. Ny CI39673629390 pågår vid notering; ingen ny CI-acceptans ännu.",
+        "Clips PR329: uppföljande CI39673629390 completed/success på ba983288f1e97e26e728e92329425f16125a1dcb. Färsk PR-läsning verifierar samma head, branch och Jakeminator123/scoutgaming. Rättningen ändrar bara fem testfiler/handoff, efter verifierade gamla adresser/VM-fixturer och transportbudget. Ingen ny produktändring eller deployacceptans. https://github.com/Jakeminator123/scoutgaming/actions/runs/39673629390",
+        "Administration PR330, codex/admin-control-administration-j03/b60ecf993b609136b32861b0ae433ca769489ba7, från Clips-produktheadb81d858367254a6572a67df02f1a7ee4dcaae585 med samma PR329-testfixar. Eget delta29filer,+223/-233: SSR-wrapper och exklusiv redirecthjälpare/tracing borttagna, callers/bokmärken till Admin, Talgranskning med dealerhistorik och utkast/requestskydd. Root och jakob_plan implementerade separata delar; kevin_plan läsgranskade produkt och slutliga tester utan blockerare. Node24.21.0:224/224 fokuserade auth/routing/komponent/API-prov,2/2 faktiska Admin-browserfall, ordinariehook235/235,0skip; körningarna överlappar. Hook hittade en gammal Talgranskning-adress som rättades till Admin utan produktändring. Studio-build med /studio/alla frontendtyper passerar, traces66/44. Loggar/kommandon i worktreens arkiv/2026-10-21/j03-administration. Syntetiska API/sessioner och isolerade medier, befintliga beroendejunctions: ingen gameplay/media/provider/DB-/deployacceptans. Fixtures/Chromium stängda, inga servrar startade; claims frigjorda. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d är läst men inte integrerad; ingen merge. GitHub CI för330 ännu inte accepterad.",
+        "Administration PR330: första CI39675471027 föll på gammalt administrationsmål och saknat login-fixtureberoende. Endast två testfiler/handoff rättades i 9627cfa26179038ebd7cba5bc78e8a8061669628; 30/30 fokuserade/hookprov, tre valfria browserfall ej körda i den rättningen. Uppföljande CI39677936564 completed/success på samma head; branch/source och runhead verifierade. https://github.com/Jakeminator123/scoutgaming/actions/runs/39677936564",
+        "Slutdel auth/Control-skal PR331, codex/admin-control-auth-j03/9923100173e1d245f5cedeed8143f324cd6eaa26, från PR330-produktheadb60ecf993b609136b32861b0ae433ca769489ba7 med samma två CI-testfixar. Eget delta61filer,+440/-1477: Admin login/set-password, aktiva auth/mejl/logout/returlänkar; Control-root/catch-all/authwrappers/skal/tema/exklusiv översikt borta. Kända bokmärken och t-resetlänkar bevaras, okända Control-ytor/mutationer och dubbla/ogiltiga tokens nekas. Referrer/cache, basePath och separat Studio-publicOrigin verifierade. Partner, host-only cookies, signerade Game/Lab-handoffs, atomisk reset, rum och serverägd ekonomi bevaras. Gamla layouttester raderade/ändrade.",
+        "Node24.21.0: 89 unika fokuserade authfall och12 formulär/Partner/browserfall inklusive4 faktiska Chrome-fall passerade över separata slutkörningar,0skip; shell31/31 och root faktisk middleware/transport27/27. Ordinariehook185pass/0fail/6valfria browserskips;4 av dessa körda separat ovan,2 oförändrade Replies-fall återanvänder tidigare J03-bevis. Körningar överlappar, summeras inte. Slutbuild efter produktfrysning med /studio och alla frontendtyper success,traces63/44; manifest Admin-auth/Partner, inga Control-pages. Två implementerare och oberoende fullreview/slutdelta utan blockerare. Loggar/kommandon i authworktreens arkiv/2026-10-21/j03-auth/. Syntetiska API/sessioner, avgränsade browserfixturer och lokala beroendejunctions; ingen live-mail/gameplay/media/PG-/produktions-/deployacceptans. Fixturer stängda. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d läst men inte integrerad. Ingen merge. PR331:s slutliga GitHub CI återstår; J03 IN_PROGRESS, total20%.",
+        "Leveranshead fd5e6c342f5bc881f9ca09fa87eaeb291e9a3583 tillägger endast tre handoffrader om slutförd logoutreview och stängda fixturer; produkt och testfiler är oförändrade sedan9923100173e1d245f5cedeed8143f324cd6eaa26. Ordinarie dokumenthook passerar. GitGuardian success på produkthead992310; slutheadkontroll och CI39679862640 väntar vid notering. Ingen CI-acceptans påstås. Planens blockertext rättad efter oberoende granskning.",
+        "Efter Jakobs fråga om branch/main samlas J01/J02/J03 i befintlig PR331 i stället för fler del-PR:ar. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d (3 commits sedan basen) integrerad konfliktfritt på b46e8d1c441fe53572e2d31d38974bbaa77d31a0. plan_review/root såg endast överlapp i handoffens separata textblock; samtliga importerade main-produktfiler kontrollerades identiska med main. Båda handoffdelarna bevarade. Normal integrationshook252/252,0skip; ingen extra fullsvit eller ombyggnad lokalt, tidigare authbuildbevis föregår integrationen. CI39680259777 pending vid leverans, ingen slutlig integrations-/deployacceptans. Samlad diff mot aktuell main163filer,+2691/-2805. Branchens aktuella namn codex/admin-control-auth-j03 behålls för kontinuitet; PRtiteln anger samlad publicering/Control/inloggning. Ingen force-push eller merge till main.",
+        "CI39680259777 påb46e8d1c441fe53572e2d31d38974bbaa77d31a0 avslutades failure: control-operator-directory hade två förbrukade källsträngsassertioner, preview-page saknade obligatorisk originconfig, studio-admin-accounts och single-origin förväntade gamla login/resetadresser. Faktiskt CI-Studio-build/alla frontendtyper samt isolerad SQL/restart/HTTPS passerade på mainintegrationen; ingen produktdefekt påvisad.",
+        "Rättningsheadc7578ede050d21dec3ede098f193fe0276b25027 ändrar enbart fyra testfiler och befintlig handoff. Före4/4 reproducerade fel; efter58/58 och normal hook58/58,0skip,Node24.21.0,max4workers. Auth-före-dataläsning, hash/ingen bearer, atomisk invite, roll/state/engång/liveidentity kvar. Root och kevin_plan läste hela deltat/loggar: inga blockerande fynd. Ingen ytterligare lokal build behövdes eftersom produkt oförändrad och CI-build redan passerat. Loggar authworktree arkiv/2026-10-21/j03-auth/pr331-ci-{commands,before,after,commit,push}.log.",
+        "Fjärrhead/författare Jakeminator123/källrepo Jakeminator123/scoutgaming verifierade efter push. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d fortfarande integrerad; GitGuardian success påc7578ede. Uppföljande CI39682283055 in_progress vid leverans, ingen samlad CI-/J03-/deployacceptans.",
+        "Slutlig CI-rättning471549a8f02f9165be39c7077afef98f37a67ad0 ändrar enbart test/account-credentials.mjs och handoff: två epoch-handofffall väntade gammal /studio/login. Före2/2 fel, efter17/17 fokuserade och ordinarie hook17/17,0skip, Node24.21.0. Root läste diff/loggar: provenance/epoch och inga nya sessioner är fortsatt testade. Ingen produktändring.",
+        "Samlad GitHub CI39684376735 completed/success på exakt471549a8f02f9165be39c7077afef98f37a67ad0; färsk PR331 authorJakeminator123/sourceJakeminator123/scoutgaming/head verifierade. Main95ac98dcb1608bd89bb2ac44488b2a82a376682d är oförändrad och integrerad. Tidigare full route/auth/browser/build-acceptans samt nu grön samlad CI uppfyller hela J03. J03 VERIFIED som kodleverans; ingen merge, live-mail eller produktions-/deployacceptans. https://github.com/Jakeminator123/scoutgaming/actions/runs/39684376735",
+        "22 oktober inför etappmerge: j04_resume läste oberoende hela kedjan produkt9923100173e1d245f5cedeed8143f324cd6eaa26 till sluthead471549a8f02f9165be39c7077afef98f37a67ad0, inklusive mainintegrationb46 och senare test/handoffdelta. Alla20 importerade mainfiler utom handoff är byte-identiska med main95ac; produkten oförändrad efter integrationen. Origin/host, returnTo, reset/token, atomisk lösenordsändring, sessionsåterkallelse och rum/auth före dataläsning lästa. Inga blockerande fynd; befintliga loggar återlästa, inga nya prov. Root återläste exakt-head CI/GitGuardian success och ägarkartan på betrodd main; incident-API-täckning inte verifierad. Ingen merge utförd.",
+        "Etappmerge22oktober: PR331 med granskad head471549a8f02f9165be39c7077afef98f37a67ad0 mergad med GitHub merge-commit64e4c680a045eb3aed92043032fdbaa35e666359 (2026-10-21T23:40:11Z). Färsk authorJakeminator123/sourceJakeminator123/scoutgaming, ägarkarta från main95ac, oberoende exakt-head review, samtliga tillämpliga CI-checks samt GitGuardian success verifierade före merge; inga nya PR-reviewfynd. API-merge bands till expected_head_sha och PRmerged/remote-main återlästes. Ingen produkt-, schema-, beroende- eller workflowändring sedan review. Main-CI39694901249 är därefter completed/success på oförändrad main64e4c680a045eb3aed92043032fdbaa35e666359: CI, dealer-regression, lipsync och changes success; doc/moving förväntat skip. Root har verifierat utfallet; detta är inte deploy- eller produktionsacceptans. Incident-API-täckning ofullständig. Lokal primary main och andras filer orörda; inga grenar borttagna. Detta var PR331:s mergekvitto; PR335 är därefter mergad enligt J04-kvittot, till aktuell main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad. Färdiggrad oförändrad45procent."
+      ],
       "blocker": null
     },
     {
@@ -126,15 +211,23 @@
       "stage": "E2",
       "title": "En spelkatalog via lobby",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "O01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
+      "branch": "codex/player-lobby-j04",
+      "head": "e4df5cba6a2da0bc238f98113db000acd65e62f2",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/335",
+      "reviewer": "j08_ui: full produktreview och delta till 433b3a17; j04_resume: hela slutdeltat till e4df5cba6a2da0bc238f98113db000acd65e62f2 utan blockerare; root: kod och loggar",
+      "evidence": [
+        "J04 återupptagen i befintlig arbetskopia från PR331/471549a8f02f9165be39c7077afef98f37a67ad0. Eget delta49filer,+366/-941. /lobby är enda katalog med publicerade bolag/rum/dealer och tillåtna bord/bakgrundsval; gamla /play-katalogen och exklusiva previewkomponenter borttagna. /play/{game}, profil/historik och serverägt saldo/auth/room/package kvar.",
+        "j04_resume körde på VoltaNode24.21:117/117 fokuserade inklusive verkligt Chrome-lobbyflöde,42/42 route/registry,24/24 efter returrättning och40/40 publiceringscaller. Normal commit-hook189/189,0skip. Körningar överlappar. Lobby och web tsc godkända. Loggar i J04-worktree arkiv/2026-10-22/j04/{final-focused,final-route-registry,return-review,publication-caller,commit,push}.log.",
+        "Oberoende review hittade att browserfixturens retur innehöll dealer medan verklig blackjack bara returnerar operator+room. Rättat och omprovat: endast fortfarande tillåten lagrad dealer inom exakt rum återläses när URL-dealer saknas; explicit ogiltig/dubblerad dealer får ingen fallback. Rouletteretur använder serverauktoriserad rumskontext. Ingen kvarvarande blockerare efter slutreview.",
+        "Full J04-kriterieavstämning: katalogcallers/publiceringskvitto flyttade, kontosidor nåbara, GET/HEAD-kontext och nekade mutationer, reload/val/dialog/launch/retur samt negativa auth/rum/operatör/paketfall verifierade. Browserns launchmottagare och sessioner är syntetiska; ingen produktionsgameplay, deploy eller ny ekonomimotor påstås.",
+        "Historik: PR335 skapades och push återlästes påf442fdf4d05bf8ec77bc7006769de10eb2ada4cb, authorJakeminator123/sourceJakeminator123/scoutgaming. Den tidigare betalnings-/spendinglimit-blockeringen beskriver dåvarande körningar. Browserfixturer stängda, egna claims frigjorda och arbetskopia bevarad. Aktuell head och CI redovisas i nästa kvitto.",
+        "Historik inför PR335-merge: j08_ui granskade f442fdf4 och433b3a17 utan blockerare; full produktreview,40/40 callerprov och189/189 hook återanvändes. Rättningen till433b3a17 ändrade endast testadress /play till /lobby och handoff, normal hook10/10. Mainintegrationen gav inget produktdelta:471549a8 och64e4c680 har identiska träd. CI39695713814 föll därefter på en förbrukad /play-källsträng i test/blackjack-entry-http.mjs; den senare rättningen och mergeutfallet finns i nästa kvitto.",
+        "CI-rättning i e4df5cba6a2da0bc238f98113db000acd65e62f2 ändrar bara förbrukad testadress och handoff: före1/1 fel, efter1/1 och normal hook1/1,0skip på VoltaNode24.21.0. HTTP/auth, serverägd identitet, omstart och logout behålls. Root läste hela testet/diff/logg; j04_resume läste hela tvåfilsdeltat från433b3a17 till exakt e4df5cba och slut-/hookloggar utan blockerare. Tidigare full produktreview gäller. CI39696860730 och GitGuardian success på fryst head; author/source/head återlästa. PR335 mergades med SHA-kontroll2026-10-22T00:09:06Z till verifierad main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad. Föregående main64e4c680/CI39694901249 success; Main-CI39697930664 är completed/success på oförändrad6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad: changes, dealer, lipsync och CI success; doc/moving förväntade skips. Main-GitGuardian-suite är queued utan checkrun, och incident-API-täckning är ofullständig; ingen ny säkerhetsklarering eller deployacceptans. Inga schema-, beroende- eller produktdelta sedan review. Första auto-review avvisade queued suites; faktisk regelspecifikation visade att24642403 kräver CI och25556822 endast skyddar mot radering. Efter färsk identitet godkändes vanlig merge utan bypass. Primary main orörd, inga grenraderingar. PR331/335-kön är avslutad; inga nya PR:ar är tillåtna automatiskt. Ingen deploy-/produktionsacceptans. Samlad leverans och nästa ansvar i root6329470103."
+      ],
       "blocker": null
     },
     {
@@ -143,17 +236,22 @@
       "stage": "E2",
       "title": "Förenkla runtime och byggkedja",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "J03",
         "J04"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/shared-room-transport",
+      "head": "83f5810d33c483868ac0ce2bab728efb813d51b4",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/336",
+      "reviewer": "Oberoende backend/auth/replay/presentation- och mediafabriksreview av runtime_audit, room_routing och replay-adapter; root har samlat kod- och provbevis. Fixtureprov är inte full K04-media- eller produktacceptans.",
+      "evidence": [
+        "Aktuell transportleverans PR336/codex/shared-room-transport/head83f5810d33c483868ac0ce2bab728efb813d51b4. Root rapporterar exakt-head CI39753242313 completed/success. Main47756bdf1df372c7aa5047dc165a2d721614c4a2 är integrerad i featurebranchen; PR334/336 är inte produktmergade. Tidigare8504 är ersatt som aktuell J05-head.",
+        "Levererat inom PR336: skyddad POST-command, readonly rumskanal, servervald rum/paket/config-bindning, same-PG G → S → R/P/A och låst session/proveniens före receipt/replay. WS återställer snapshot före presentation; osäker retry behåller commandId/bytes. Tvåfasigt mediaval omkontrollerar auth/config/material kring olåst arbete. Inga nativejournalwrites eller klientägda wallet-/spelregler.",
+        "Senaste avgränsade rootkvitto: normalhook106/106 och presentation35/35, tsc samt573kandidater/0orphan. Manifestbunden lokal QA-fixture återanvänder SQLregistry och neutrala mediafabriker; constructorportar bevarar produktionsdefault, exakt origin/hash och publiceringskontroller. Tidigare isolerade PG-/schema-/restore- och presentationsbevis bevaras i befintlig handoff/evidens; de är inte full K04-media-, spelar- eller produktionsacceptans.",
+        "Direkt Jakobprioritet22oktober: main och Jakobs klippkarta/redigering är grund, med tre separata valbara lager bakgrund/dealer/bord. AdminBlackjack och operatörflöde till spel prioriteras; Kevins videor/övergångar anpassas till main och tvålagersmodellen är utesluten. Flerspelarutökning, nya QA-seeds och spelarprov är pausade som aktiv prioritet. SeedCLI hann inte skapas; separat seedutkast är partial/unreviewed, inte levererat. Läppsynk tas sist manuellt efter separat beslut."
+      ],
+      "blocker": "J05 är inte färdig: runtime-/byggförenkling, verifierad gameboot/readiness och drain/poollivstid återstår som samlad produktleverans. Pausade spelar-/seed-/flerspelarspår är inte nästa aktiva steg. Produktionsflaggan är AV; game008/009/010-productionblock består. Inga produktions-DDL/deploy/env-aktiveringar är godkända. GitGuardian incident-/historiktäckning är ofullständig."
     },
     {
       "id": "J06",
@@ -161,7 +259,7 @@
       "stage": "E2",
       "title": "Rensa testlås och rikta CI",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "J03",
         "J04",
@@ -171,8 +269,10 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "evidence": [
+        "STÄD arbetar avgränsat med paket A:s sju filer: apps/web/lib/player-operator.mjs, player-catalog.mjs, player-catalog.d.mts, player-choices.mjs samt apps/web/test/player-profile.mjs, player-lobby.mjs och platform-ui.mjs. Syftet är att avveckla testbundna webblobbywrappers och bevara aktivt gemensamt katalog-/launchkontrakt. Pågående arbete utan fryst sluthead, full J06-acceptans eller nya migrationspoäng."
+      ],
+      "blocker": "J06-förenkling återstår. Paket A är ett begränsat pågående delarbete, inte hela test-/CI-rensningen; J05-beroendet och aktiva säkerhets-, auth-, transaktions- och spelprov består."
     },
     {
       "id": "K02",
@@ -180,16 +280,23 @@
       "stage": "E3",
       "title": "Ren regelkärna med explicit slump",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "O01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/kevin-k02-regelkarna",
+      "head": "0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/325",
+      "reviewer": "kevin_plan: oberoende full aktivitetsgranskning; plan_review: faktisk isolerad körning; root: kod/loggar och acceptans",
+      "evidence": [
+        "PR325 invoicesolv/codex/kevin-k02-regelkarna/head0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1 är färskt head-/källrepo-/författarverifierad. Fast-forward från tidigare granskad10dd2323; ingen aktiv konsument flyttad och ingen DDL/drift.",
+        "plan_review och root har läst rättningsdeltat i services/game/games/blackjack/core.mjs och test/blackjack-core.mjs: reservationer kontrolleras per typ/box för start/insurance; nya double/split-belopp prövas mot available. Effekter anger source. Negativa turfall når ovillkorligt besluts-/insurancefas via fast sko. Det tidigare finansieringsfyndet och de villkorliga turproven är rättade; inga blockerande fynd i detta delta. Ingen ny runtimekörning här. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125",
+        "GitHub CI39660600012 är completed/success, och runmetadata binder den till exakt0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. https://github.com/Jakeminator123/scoutgaming/actions/runs/39660600012",
+        "Kevin rapporterar13/13 coreprov,3/3 fler-sko-/splitprov och hook utan bypass på rättad head. Rapporten ersätter inte egna körningar. Tidigare hook31/33/no-verify på10dd2323 är historik, inte aktuell acceptans. Full K02/O01-acceptans, RNG-certifiering och integrerad runtimeacceptans påstås inte.",
+        "Självständig körning av plan_review21oktober: 13/13 på0493af3e,0skip,Node24.21.0.24 källfiler blobhashverifierade före/efter. Root har läst loggar/provmappning; O01 är avslutad men ingen automatisk full aktivitetacceptans. Se status[O01] och Kevin AKTIVITETER.md.",
+        "Full K02-aktivitetsacceptans21oktober på oförändrad0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1: kevin_plan har mappat samtliga fyra kriterier till kod och faktiskt körda13/13,0skip;12/12 källblobbar återverifierade. Root läste centrala core/funding/secureRandom samt prov/loggar. Determinism, explicit säker produktionsslump utan testfallback, kommandofel, privat kort/sko, ekonomiska effekter utan saldoägande, exakt avräkning och commit/reveal/manipulationskontroller uppfyllda. CI39660600012 success återverifierad. Inga blockerande fynd. VERIFIED gäller isolerad modul, inte J07-inkoppling, drift eller RNG-certifiering."
+      ],
+      "blocker": ""
     },
     {
       "id": "K03",
@@ -197,16 +304,28 @@
       "stage": "E3",
       "title": "Delat bord utan SQL- och videokoppling",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "K02"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/kevin-k03-bord",
+      "head": "b8e1c957c99c5a16ee861f9767ec28041b2270dd",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/327",
+      "reviewer": "plan_review: oberoende full aktivitetsgranskning och kompletterande replayprov; root: portar, kod/loggar och acceptans",
+      "evidence": [
+        "Mottagen draft PR327, invoicesolv/codex/kevin-k03-bord/headb1c94dee2eae6db25be70f94cf0cb7baf84d1be7, från K02/head0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1. GitHub-head/källrepo/författare verifierade. Portar, bordssamordnare, audit och minnesfixtur; inga aktiva callers, SQL/DDL eller drift ändrade.",
+        "Oberoende läsreview mot O01cfe7037: fem konkreta fynd i coordinator.mjs. 421–422 frånvarotick saknar aktör och kolliderar;119–122/376–379 next tömmer väntande leaving;297–298/334–342 READY blockerar clear efter nekat consume;557–559 parallella outboxleveranser saknar bindande versionsspärr;264 inaktivt medlemskap accepterar saknad memberGen. Root har verifierat kodmekanismer och relevant port-/testtäckning. Ingen körd repro eller produktionsbugg påstås. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6324882125",
+        "Root preciserar minsta demoåterhämtning: clear får häva ready och frigöra egen insatsreservation före rundstart även efter deadline; undo efter deadline är ingen blockerare. Spelaridentitet ska ingå entydigt i frånvarotick och join måste jämföra memberGen. Versionsspärren ska bindas till store/sink-kontrakt; faktisk worker/PG-integration kommer i K04/J07.",
+        "Kevinrapporterat19/19 och hook52/52 samt upprepade Node22/24-prov; inte omkört här. Connectorns PR-workflowavläsning gav inga körningar för denna head. Minnesfixturens globala mutex bevisar inte PG-lås, flerprocessleverans eller verklig kraschpersistens. Ingen CI-/runtimeacceptans.",
+        "Rättning d20792ba50550ee7d73237e6dd82c4d575b756dc från b1c94dee läsgranskad av kevin_plan och root. Fem tidigare fynd stängda i kod/portkontrakt: aktörsunik tick, next verkställer leaving under planerade lås, clear återhämtar READY, obligatorisk memberGen och atomisk mottagarversion med applied/stale. Nya regressioner lästa. PR327 head/författare/källrepo verifierade. 24/24 och 21/21 fortsatt Kevinrapporterade; ingen egen exekvering eller PG-/mottagarpersistensacceptans.",
+        "Rättning 3528c3f2632f94076ffbbc63413d02a15f6bb678 från d20792ba läsgranskad av kevin_plan och root: stake-reservationsvägran klassificeras som WalletDenied före kärnan, saknad reservationsgeneration normaliseras till null. Tidigare stake/retry-fynd stängt i kod. Nya prov för saknad/för liten reservation, oförändrad frånvaro, återställning och injicerat infrastrukturfel lästa. PR-head/författare/källrepo verifierade. 27/27 på Node22/24 och hooks utan bypass är Kevinrapporterade; inga egna runtimeprov eller ny CI-/PG-acceptans.",
+        "Insurance-rättning b8e1c957c99c5a16ee861f9767ec28041b2270dd från3528c3f2 läsgranskad av kevin_plan och root; inga blockerande fynd i deltat. WalletDenied före kärnan och från consume hanteras av insurance.timeout genom samma savepoint/blocked/generationsstyrda retry. Sista insurance-kommandot nekas atomärt med INSURANCE_NOT_FUNDED utan kvitto; tidigare accepterade ja och åtaganden består. Infrastrukturfel kräver full rollback. Regressioner för saknad/för liten reservation, nekad consume, oförändrad generation/omstart, återställd finansiering, bindande ja vid pause/leave och felinjektion är lästa. 30/30 och52/52 samt hooks utan bypass är Kevinrapporterade; ingen egen exekvering, CI- eller PG-/flerprocess-/kraschpersistensacceptans. PR-head/source/author verifierade. https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6325658578",
+        "Självständig körning av plan_review21oktober: 30/30 påb8e1c957 och1/1 avgränsat språkprov,0skip,Node24.21.0.24 källfiler blobhashverifierade före/efter. Root har läst loggar/provmappning; O01 är avslutad men ingen automatisk full aktivitetacceptans. Se status[O01] och Kevin AKTIVITETER.md.",
+        "Full K03-aktivitetsacceptans21oktober på oförändradb8e1c957c99c5a16ee861f9767ec28041b2270dd: plan_review har mappat samtliga fem kriterier, återverifierat12/12 källblobbar och återanvänt30/30+1/1 språkprov. Nytt kompletterande debit-replayprov1/1,0skip,Node24.21.0: efter settlement, nytt fönster och rekonstruktion återges lagrat kommandoresultat utan nya spel/wallet/audit/tick/outboxeffekter; ändrad fingerprint avvisas. Root läste portar, tick/rollback och hela tilläggsprovet/loggen. Inga blockerande fynd. K02 är VERIFIED. Bevis primary arkiv/2026-10-21/o01-contract-verification/k03-acceptance-replay.{test.mjs,log}.",
+        "K03 GitGuardian success; ingen Actions-körning finns på denna head eftersom PR327 baseras på codex/kevin-k02-regelkarna och workflowet endast triggar PR mot main. Detta är isolerad K03-portacceptans, inte samlad integrations-CI, PostgreSQL-/flerprocess-/processkrasch- eller beständig mottagaracceptans. Dessa genomförs i J07/K04/K07 före respektive integrerad leverans. Ingen produktfil, aktiv caller, databas, merge eller drift ändrad.",
+        "Korrigerad bevisgräns22oktober: Kevin6329211434 uppger att tidigare K03-rättningars pre-push inte kördes eftersom core.hooksPath saknades; tidigare hookuppgifter ska inte tolkas som verifierad pre-push. Pre-commit uppges ha körts. Roots/plan_reviews självständiga modulprov och kodgranskning består; ingen ny runtime- eller mergeacceptans följer av denna korrigering."
+      ],
+      "blocker": ""
     },
     {
       "id": "J07",
@@ -214,15 +333,23 @@
       "stage": "E3",
       "title": "Postgres-adapter för delat bord",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "K03"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
+      "branch": "codex/postgres-shared-table-j07",
+      "head": "991ef0c571aef02cd5f475a106da5b010987b6c5",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/332",
+      "reviewer": "jakob_plan: store/wallet-review och timeoutfix; kevin_plan: oberoende store/timeout/handoff-slutreview; plan_review: faktisk PG-verifiering och full kriterieavstämning; root: kod/loggar/proveniens/integration",
+      "evidence": [
+        "J07 var tidigare endast angivet som nästa steg; faktisk implementation startades22oktober efter Jakobs fråga om väntan. PR332/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 utgår från aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d i egen arbetskopia. K02/K03-modulslutning importerad från accepteradb8e1c957c99c5a16ee861f9767ec28041b2270dd; enda ändrade importerade produktkod är rum-ID-gräns40 till128 för mains room-UUID. Gitblob-jämförelse verifierad. Gamla lokala wallet-/SQLite-/identitetsvägar importeras inte.",
+        "PostgresStore på samma applikationsägda pool/klient implementerar G/R/P/A-lås före savepoint, lagrade kvitton, fryst konfiguration, journal/sko och commitbunden outbox. Textlagrad JSON bevarar ordnade skobevis. PostgresWallet använder mains players.balance och transactions med stabila idempotensnycklar/fingerprints; globala reservationer och öppna händer skyddar befintliga writers genom triggers. Fristående scheduler drivs utan pollskrivningar, explicit start/stopp och valfri versionsmedveten sink. Saknat schema/extern wallet nekas, ingen fallback/startup-DDL.",
+        "plan_review körde faktiskt slutlig PostgreSQL16.15 på ägt temporärt loopbackkluster i Ubuntu, Node22.22.0 som uppfyller game>=22.16:20/20 kontrollgrupper,exit0. Två klienter/samma och olika rum/samma spelare, dubbelkommando och ändrad payload, exakta saldo/ledger, rollback, savepoint med fysiskt kvarhållet P-lås, generationsstyrd retry, processavbrott före COMMIT och efter COMMIT före svar, återspelning och fysisk PG-omstart. Nytt outboxprov utan driverquery_timeout bevisar begränsat SQL-fel på låst rad, oförändrat pending och lyckad återhämtning. Root läste testkod och slutlogg.",
+        "Runtime9/9 och normal commitkontroll88/88,0skip på VoltaNode24.21.0; importens core/table ingår, körningar överlappar. Hook stoppade först tre extra slutrader, endast whitespace rättades innan88/88. Oberoende review hittade fristående outboxfråga utan timeout; gemensam bounded transaction/query-väg rättar det utan ändrad låsordning. Slutreview och full J07-kriterieavstämning utan blockerare. Loggar i J07-worktree arkiv/2026-10-22/j07/{plan-review-sql,commit,push}.log. Egna PG/barnprocesser/port/tempdata verifierat avslutade.",
+        "J07 VERIFIED avser isolerad adaptermodul mot riktig PostgreSQL. PR332 är draft; CI ännu inte accepterad. Schema008-shared-wallet och009-shared-blackjack är enbart levererade, inte applicerade i produktion. Krävd målidentitet/godkänd DDL/readiness kvar före merge/aktivering. Inga aktiva HTTP/auth/launch/publiceringsvägar har bytts. K04 äger presentation/beständig mottagarversion; J08 äger godkänd publiceringskoppling. Framtida aggregator kräver egen extern idempotens/status/reconciliation, dokumenterat i befintlig handoff. Ingen merge/deploy/produktion/mediaimport.",
+        "Senaste PR332-head991ef0c571aef02cd5f475a106da5b010987b6c5 ändrar bara testregistrering och handoff efter CI39685636720:s fyra orphanfiler; produktacceptansen på2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 gäller oförändrad produktkod. Orphan534/0 och56/56 fokuserade register-/modulprov,0skip. Historiskt CI-utfall39689146140: inga jobb startade på grund av GitHubs betalnings-/spendinglimit; root verifierade jobannotation119530686477. Detta var en extern blockering av den körningen, inte ett kodfynd eller grön PR332-CI. Senare main-CI39694901249 passerade; det ersätter inte PR332:s egna kontroller. Ingen merge/deploy/produktion eller förändring av isolerad J07-acceptans.",
+        "Följande oberoende förberedelse iPR336/headf34f8e38a6386635958f8610ba39d07beacca35a: skrivfri sanerad runtimehealth ger state/running/inFlight/lastSuccessAt/failed/lastErrorAt. Start/pumpfel/återhämtning/stop/drain verifierade10/10,0skip,utanSQL/klocka/timer på healthread. j04_resume oberoende hela tvåfilsdelta/logg utan blockerare; root läste. Ingen gameboot/gatewaykoppling eller nyPGacceptans. Jakob godkände uttryckligen tom isolerad Neonstaging croupier-k06-k07-staging i org-green-butterfly-00780270/Scoutgaming,PG18/aws-eu-central-1,fast0.25CU/autosuspend300s,första prov cirka24aktivatimmar,ingenproddata/lösenordskopia. Ingen automatisk generell betald drift. Neoncreate_project avvisades: organization is managed by Vercel; exakt efterföljande namnsökning gav inget projekt. Vercel API, CLI och inloggad Scoutgaming-administration är nu verifierade. Skapandeformuläret visar Frankfurt/Auth false/Realtime false men saknar PostgreSQLversion, fast CU och autosuspend. Dessa värden är inte verifierade före Create; ingen resurs har skapats. VercelMarketplaceCLI exponerar inte heller alla godkända värden. Ingen resurs/DDL skapad. Återuppta när en tillgänglig administrativ väg kan verifiera samma godkända inställningar; fråga inte om samma godkännande igen,upprepa inte identiskt APIanrop eller skapa med okända standardvärden. Källblobbar/schemaordning iPR336 docs/ENVIRONMENT-RESTORATION.md."
+      ],
       "blocker": null
     },
     {
@@ -231,17 +358,30 @@
       "stage": "E3",
       "title": "Spelklient och presentation från händelser",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "K03",
         "J07"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/kevin-k04-presentation",
+      "head": "eb6ab45509fad539463bbcb6930cc46d2d0844c2",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/333",
+      "reviewer": "kevin_plan: oberoende tvåfilsreview e628 till1148 och eget Node24.21-prov12/12; root: hela delta och reprologg lästa; granskade presentationsfynd stängda, full K04-acceptans kvar; j04_resume full trefilsafba-delta och egen metadata10/10,rootkod/loggar; 23d4: kevin_plan full fyrfilsdeltareview,9 verifierade Gitblobbar och egna4/4 Nodeprov; root underlag och transportimport lästa; 6a124410: kevin_plan och root läste hela tvåfilsdeltat från23d4 utan blockerande fynd; ingen egen omkörning",
+      "evidence": [
+        "Dokumentunderlag PR314/head6bd92d05b0d52032675148519e001b8386110dec läsgranskat:1293 unika TSV-paths,1267 runtimeposter matchar K01:s path/bytes/hash och26 databeroenden. Metadatajämförelse är inte egen binärhashning, Neon/Blob- eller visuell acceptans. Beslut6328064364 anger K04:s beständiga presentationssink, sanerade publicViews och exakt materialbindning; root äger auth/HTTP och J08 publicering.",
+        "Historik: root6328762858 granskade9e62923b och reproducerade sena munpatchar. Påd226f53370e4355267d8875bc9168e91357f41ba fick PG-läsningarna assertInstalled/lastAccepted/current begränsade transaktioner; fyndet stängt i kodläsning utan egen PG-körning. D226 lämnade två presentationsfel: äldre aldrig ritad A efter end(B) och förlorad återanslutning till samma idle-entry efter avbrott. Root reproducerade A/B/end(B)/sen A som accepted=true med anrop[B,null,A-late], återkopplat i6329131459. Dessa två ursprungsfynd är därefter stängda påe6287ea1 enligt nästa granskningskvitto.",
+        "Materialplaneringsproducenten introducerades i material-revision.mjs påd226f533 och är oförändrad i e628: exakt dealer/språk, katalog-/mediehashar och beräknade leadMs/cardMs binds till planeringsrevision. Fem metadatafixturer matchar fryst5aa7ed10 på Gitblobnivå; detta är inte egen mediebinärhashning. Mains registrerade Neon/Blob-identiteter och publicerade operatörspaket återstår för J08/K05;700/500-fixturtider får inte vara produktfallback. K04 IN_PROGRESS, ingen aktiv inkoppling, full PG-runtime-/Blob-/media-/lipsync-/produktacceptans eller merge.",
+        "Historisk PR333/head e6287ea1ab653a7a9977c426447afc36b1bf3b14: endast line-identity.mjs, live-idle.mjs och test/blackjack-presentation.mjs ändrade från d226. Oberoende kod-/testläsning stänger de två tidigare fynden: boundary består efter end/expire; identisk server-idle-entry kan återanslutas efter hidden/speech/action, medan ändrat innehåll, äldre version/startAt och fullbordad uppspelning nekas. Root körde eget Node24.21-prov: mun-end+expire2/2 pass; giltig resume2000/end2625 accepted=true, men utgången resume3000/end2625 också true. Ett konkret utgånget-entry-kontraktsfynd återstod i live-idle.mjs:57–83 före server-chain-inkoppling; ingen aktiv renderer är visad som drabbad. Bevis i planarbetskopians arkiv/2026-10-22/k04-e628-review/{mouth-boundary.mjs,idle-expired.mjs,verification.log}. Ingen egen K04-PG-/Blob-/lipsyncacceptans. Återkopplat till Kevin i root6329470103; tidsgrinden är därefter rättad/verifierad på1148fa76, medan verklig K05-identitetsmappning och J08-bindning kvarstår. Återupptagningsvillkor för full bindning: exakt register-/paketdata med verifierbara revisioner, inte TSV-påståenden.",
+        "Rapporterad korrigering från Kevin6329211434: tidigare K03/K04 pre-push kördes inte på byggservern eftersom core.hooksPath saknades; pre-commit uppges körd och e628 pre-push uppges nu körd. Detta är Kevins uppgift, inte ny egen hook-/fullacceptans, och ändrar inte självständigt accepterade K02/K03/J07-moduler.",
+        "Aktuell PR333/head1148fa767de734c925bba3ea21938cf995f8bd5f, authorinvoicesolv/sourceJakeminator123/scoutgaming/branchcodex/kevin-k04-presentation verifierade via GitHub. Endast live-idle.mjs och test/blackjack-presentation.mjs ändrade från e6287ea1. Oberoende läsreview utan blockerare: återanslutning nekar at>=endAt före mutation av last. kevin_plan körde eget isolerat Node24.21-prov12/12: hidden/speech/action vid2000/2624 godtas,2625/3000 nekas för endAt2625; äldre version/startAt nekas och nästa giltiga/future entry godtas. Exakt källblob3db7a5a82e53b0cb792716345b60edd048a37700 verifierad. Root har läst hela tvåfilsdeltat och reprologgen. Bevis i planarbetskopians arkiv/2026-10-22/k04-1148-review/{live-idle.mjs,idle-expired.mjs,verification.log}. Tidsgränsfyndet stängt; ingen egen full K04-/PG-/Blob-/lipsyncacceptans. Kevins båda hooks och64 prov i6329536559 är fortsatt rapporterade, inte våra körningar.",
+        "NyPR333/afba9dc22e77aecb89c1527fde37088d0ad1b7a4 från1148fa767de734c925bba3ea21938cf995f8bd5f: hela3filsdelta läst avj04_resume ochrootcentrala2produktfiler. ActivationSet skjuterupp155G13/TableStudioposter,planningRevision kräverinte6JSobservedhashar medan CATALOGUE_SOURCEpin består. Tidsformler/lead/cardoförändrade. Egen functionsV8metadatakontroll motK05/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 verifierar10/10dealer/språkmängder,union582,0path/bytes/hashskillnader,155uppskjutna. Inte Node-/runtime-/binärprov. Tidigareplanningrevisionsersätts; gamlamouth/idle/readtimeoutfindingsförblirstängda. Inga nya blockerande kodfynd; ingen ytterligare afbakodreviewbehövs. Bevisplanarkiv/2026-10-22/k04-afba-review/verification.json.",
+        "FullK04kvar enligt befintliga kriterier: monterat klientflöde genomJ07 insats→utdelning→beslut→resultat→reconnect, idle/talfel/slow/missingmedia och mobil/datorinteraktion. Kevinägerdetta flödesbevis och behöverinteväntapåfullK05/produktion/GPU;rootägerpublikautentiseradtransport. Root6330396584 är redigerad med konkretansvar. Ingen ny acceptansgrind eller fullK04bock.",
+        "Urvalsfrågan i6330232589 är stängd på PR333/codex/kevin-k04-presentation/head23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540: bindLine använder nu samma uppskjuten-predikat som activationSet/planningRevision. Katalograder/historik, grundslot och Astridclassic bevaras; ingen aktiv visuell produktbugg påstås. kevin_plan läste hela fyrfilsdeltat, verifierade9 Gitblobbar och körde egna4/4 rena Node24.21-prov. Root läste underlag/logg. Nya8 PG-servermodulgrupper och totalt34/34 samt hooks på23d4 är Kevinrapporterade, inte egen PG-, klient- eller visuell acceptans. Privat bevis i planarkiv/2026-10-22/k04-23d4-review. Root har därefter importerat24 filer i PR336/d0086f5fc2391ea68f92b558ad846f7b285ea66d:22 källblobbar exakt verifierade avj04_resume, enda2skillnader är reproducerad CRLF-parserfix+regression. kevin_plan kontrollerade1293 identiska LF/CRLF-rader och fem aktiveringsmängder; samkörning78/78 och normalhook84/84 överlappar. Ingen full K04-acceptans: Kevin äger monterat klientflöde, felvägar och mobil/dator/visuell verifiering; root publik autentiserad transport. Full K05/produktion/GPU är inga nya förhandsgrindar.",
+        "Kevin6332075298/PR333/codex/kevin-k04-presentation/head6a124410a39e168b078921f6d70507cb0ba42c14: authorinvoicesolv/sourceJakeminator123/scoutgaming verifierade och hela tvåfilsdeltat från23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540 läst av root och oberoende kevin_plan utan blockerande fynd. Parsern har den smala CRLF-rättningen. Testet jämför verkliga spelsteg, saldo/ledger/audit/reservationer/rum/resultat mellan lyckad och felande presentationsleverans samt sen replay; alla fem injicerade feltyper nås genom sekventiella versioner1–6 och fortsatt outboxloop efter fel. Verkligt munlager med injicerat decoderfel lämnar kroppsbilden oförändrad och nekar sen patch. Detta är läsgranskade isolerade assertions, inte egen omkörning eller faktisk browser-/decoder-/PG-/visuell acceptans. Kevins24/24 presentation,140 regression/0fel/1valfritt codecskip,34/34 PG och hooks är rapporterade bevis. K04 förblir IN_PROGRESS; monterat klientflöde och mobil/dator kvar. Root äger publik autentiserad transport; inga nya K05/GPU/produktionsförhandsgrindar.",
+        "Kevin6332927259 levererade beställd smal refillfix i PR333/codex/kevin-k04-presentation/head eb6ab45509fad539463bbcb6930cc46d2d0844c2,parent6a124410a39e168b078921f6d70507cb0ba42c14. Färsk GitHubcommit/tvåfilsdelta och source verifierat; PRauthorinvoicesolv/commitauthorSolvifyAB. Endast WalletDenied blir TableErrorREFILL_REFUSED; riktiga infrastrukturfel kastas vidare. Oberoende runtime_audit läste fryst kod/test mot parent utan blockerare: nekad refill/replay lämnar saldo/ledger/reservationer/kvitton/audit/snapshot oförändrade; senare friskt försök med sammaID krediterar en gång. Kevins31/31table och24/24presentation påLinux/macOS är rapporterade prov; ingen nyPG. Endast dessa granskade hunks återanvändes i rootc5d470b98e017ace54bdbc20ccf798d3ce0ecb09 efter koordinatoröverlapp samordnats, ny samlad oberoende review och rootnormalhook85/85,0skip. Detta är inget godkännande att merga KevinsPR333. Rootbackend 2f479f52a90586965210aae8fbebaa5160274a9f är nu pushverifierad i PR336 och överlämnad i6333354400: skyddad POST-command, låst same-PG auth före receipt/replay och skrivfri bootstrap för första join/återanslutning finns; settings valideras och rum/presentationsversion matchas. Rootnormalhook152/152,0skip inklusive verklig isolerad lobbybrowser; PG42/42,0fel,clusterStopped:true; oberoende review och orphan563/0. Rootposterna6333117918/6333203039 beställer den nya klienten hos Kevin, men ingen ny klienthead är levererad eller granskad här. Entryhelper förberedd, servercutover AV. K04:s monterade mobil/dator/felvägar och full klientacceptans kvarstår; ingen merge av Kevins PR eller media-/driftacceptans följer av backendbeviset. Ny CI39727259718 pågår på2f; tidigare c5-CI39724650872 är grön på föregående head.",
+        "Aktuellt integrationsunderlag är rootklienten i PR336/83f5810d33c483868ac0ce2bab728efb813d51b4 med grön CI39753242313 enligt root. Root äger klientmontering/rumsväg; Kevin har ingen obeställd klientleveransskuld. Tidigare isolerade presentation-/browser-/PG-bevis bevaras men är inte full verklig K04-mediaacceptans. Direkt Jakobprioritet22oktober: videor/övergångar anpassas till mains klippkarta och tre separata lager; tvålagersmodellen är utesluten. Spelarprov/ny QA-seed/flerspelarutökning är pausade som aktiv prioritet; läppsynk sist manuellt."
+      ],
+      "blocker": "K04 är inte fullt accepterad. Tidigare tre monterade prov (tal/kortövergång, touch/layout, fullflöde/skärmbilder) kvarstår som obekräftad acceptans, men körs inte som aktiv prioritet nu. Nästa videokoppling följer mains klippkarta/tre lager och AdminBlackjack/operatörflöde. Ingen ny QA-seed/spelarprov/GPU/mediaimport/PR333merge godkänd."
     },
     {
       "id": "J08",
@@ -249,17 +389,22 @@
       "stage": "E4",
       "title": "Admin styr versionerad spelkonfiguration",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "J07",
         "O01"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/admin-room-config-j08",
+      "head": "24e9f0264bc244e2ddabdac0cc12b1537ab164bd",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/334",
+      "reviewer": "Tidigare oberoende API/adapter/PG/materialreview och roots kod-/logggranskning bevaras för respektive deltan; aktuell exakt-head CI rapporterad grön av mergeagenten. Ingen full J08/material- eller produktionsacceptans.",
+      "evidence": [
+        "Aktuell PR334/codex/admin-room-config-j08/head24e9f0264bc244e2ddabdac0cc12b1537ab164bd har grön exakt-head CI39757805089 enligt mergeagenten. Tidigare d7d139/9b43 är historiska delunderlag, inte aktuell PR-head. PR334 är inte produktmergad och main47756bdf1df372c7aa5047dc165a2d721614c4a2 är oförändrad.",
+        "Delimplementationen återanvänder befintlig Admin och samma scoped Studio/Postgres-transaktion för rumsutkast, paket-CAS, immutable spelconfig, versionspekare och audit. Språk en/sv och limitPreset casual/prive/high;20s/15s är skrivskyddade. Exakt PNG-/video-/dealeridentitet, katalogrevision och paketpresentation valideras; lagring av ett rumsutkast är inte godkänd publicering.",
+        "Befintliga oberoende API-/adapter-/PG-bevis och negativa materialprov bevaras. Aktuellt backendberoende är PR336/83f5810d33c483868ac0ce2bab728efb813d51b4 med grön CI39753242313 enligt root; se J05:s fixture- och produktionsgränser. En grön CI-runda ersätter inte full Admin→operatör→spel eller verklig material-/talbindning.",
+        "Direkt Jakobprioritet är AdminBlackjack och operatörflödet på main, Jakobs klippkarta och tre separata bakgrund/dealer/bord. Kevins videor/övergångar anpassas till detta; tvålagersmodellen införs inte. Nya QA-seeds/spelarprov och flerspelarutökning är pausade som aktiv prioritet; tidigare bevis sparas."
+      ],
+      "blocker": "Full J08 och verklig material-/paketbindning återstår. Prioritera AdminBlackjack/operatörflödet; ingen ny seed-/spelar-QA är beställd nu. Verkliga register-/Blobidentiteter och godkänt inspelat tal får inte fabriceras. Molnimport, produktions-DDL och flaggaktivering kräver separat mål/mandat; game008/009/010-productionblock och befintliga merge-/ägarskapsgrindar består."
     },
     {
       "id": "K05",
@@ -267,17 +412,24 @@
       "stage": "E4",
       "title": "Exakt mediakoppling till Neon och Blob",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "K01",
         "K04"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "branch": "codex/kevin-k01-underlag",
+      "head": "159cc134d3a57db4ccbe3a871a3a5eb16fec3656",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/314",
+      "reviewer": "kevin_plan: oberoende fryst dokument/matris/validator och egna26/26 samt okänd-dealerrepro; j04_resume: två riktade live-SELECT; root: importkontrakt och beslutsavstämning; kevin_plan egen36/36/unknownsource-repro och textblobhashar; root hela mappning/centrala validator-/katalogdiffar",
+      "evidence": [
+        "Fryst K05-dokumentleverans4fbd5467d07ad38399ca83737fbbddf1209bc2c1 iPR314, meddelad i6329759078. Root läste hela K05-mappning.md. kevin_plan verifierade Gitblobhash för exakt TSV/validator samt TSV-SHA25608dea8ad55964df0e41e9ae62640941ef0f9163cd0c233f216e11a3d7c063cf9.1321unika rader=743valda+550ejvalda+28V1;52befintlig-identitet/691planerade nya,673medier/658unika SHA/548252035unika bytes stämmer. Egen Node24.21.0-körning av befintliga validatorprov26/26. Ingen egen omhashning av1293binärer eller Blob-hämtning; Kevins fulla frysta byte-/liveinventering är rapporterad.",
+        "j04_resume verifierade kanonisk och ansluten Neonidentitet wandering-hill-60561912/br-flat-fog-b161a6r8/croupier_game,scope production/croupier. Två riktade läsande SELECT:79medieposter,varav56Dragan;katalogrevision9201007d27c7b6464cbd905123c59b48608083a1af726ee9f896767e6e7bff20 med760layoutposter/542Blobreferenser. Exakta svenska goodluck_1,double_1,insurance_1 matchar K05-videohash,har recording=pending/review=pending och0katalogreferenser med sammahash. Detta bekräftar dessa tre hinder, inte hela rapporterade0bindbara medier. Inga skrivningar/credentials/spelardata eller mediebytehämtningar.",
+        "Importplanreview fann faktiska gränser: runtime-catalog nekar review/uploads-objekt; verifierad runtimekopia eller framtida uttryckligt auktoriserad promotion behövs. legacy.entries är JSON-only och kan inte ta sex JS-källfiler. PNG kräver separat katalogbaserad stillbildskoppling.154extra G13-repliker är fortfarande obligatoriska i aktiveringsset/validator trots beslut att vänta; urval/matris/validator ska rättas samordnat. Utan G13:519nya medier/504SHA/472098193unika bytes, en planeringssumma. Eget kevin_plan-repro visar att okänd sourceDealer med tre shared-dokument felaktigt godtas som komplett plan; Kevin äger rättning.",
+        "Rootbeslut inom befintligt scope: planera dragge→dragan först,med explicit rum/paketbindning och nytt granskat utkast; ingen automatisk Paow-återställning,nya dealers/rum eller ändring i levande paket. Identiska bytes får återanvända exakt samma media-ID men source.variant och separata källvägar består; olika u/v-bytes får aldrig aliasas. Astrid classic förblir separat märkt legacyreferens; Mårten fortsatt PUBLIC_HIDDEN. Extra G13/TableStudio-hälsning väntar och måste tas ur det obligatoriska urvalet samordnat. JSONtiming binds via befintligt validerat katalogformat; JS/PNG-frågor kräver rättad specifikation, ingen schemautökning eller prodimport beställd. Grundloopbyte endast i senare granskad publicering. K05ärIN_PROGRESS och ingen ny aktivitet ärVERIFIED.",
+        "KorrigeratPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 är head/source/authorverifierat. kevin_plan verifierade7textblobbar motGitHub,matrisblob13aa21e0f9f827a659e3b69305fc04881b52cb90/sha256c024d9bc3664dbda7965c29afca6124c700a671b5065b03ad91366ddb1e06227 ochvalidatorblob820884f9a0facb59fee9d8006dee1d3da0bbd758. EgenNode24.21självtest36/36 och tidigareunknownsource-repro gammalok:true→nyunknown_source_dealer.1321rader=582valda+155uppskjutna+6JS-källbevis+550ejvalda+28V1. SHA/bytes/gitblob oförändrade; inga rader raderade. Review/uploads kräverauktoriserad promotion/återhashning,JSärversionskälla,PNGkatalog-onlyutanvideoID. Root läste helaK05mappning ochcentrala validatorändringar/loggar. Tvåsmåtextfel klassificeradeicke-blockerande:rad18missar4PNG-IDkolumnändringar,rad136Astrid27nyaska26. Inga kvarvarande konkreta gamla metadatafynd; helK05fortsattIN_PROGRESS. Bevisplanarkiv/2026-10-22/k05-159cc-review/{source-hashes.json,metadata-and-repro.log}. Ingen egen Neon/Blob/binärupprepning.",
+        "Kevinrapporterat, inte roots egen binärverifiering: kommentar6330456172 uppger separat byggserveragent/egen klon och omhashning av 1293/1293 matrisrader mot fryst5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc samt 28/28 V1 mot238d6dd6; 0 avvikelser i Gitblob/bytes/sha256. Matris sha256c024d9bc3664dbda7965c29afca6124c700a671b5065b03ad91366ddb1e06227. Detta gäller källidentitet, inte Neon/Blob, talgodkännande eller aktivering."
+      ],
+      "blocker": "Verklig register-/Blobbindning och full K05 återstår; metadatareview gäller det frysta159cc-underlaget och är inte tal-/produktionsacceptans. Kevins videor/övergångar ska anpassas till mains tre lager och Jakobs klippkarta; tvålagersmodellen är utesluten. Ingen promotion/import/grundloopändring eller prodskrivning aktiveras av tidigare importplan. Kräver separat exakt mål, identitets-/hash-/godkännandebevis, rum/paket-CAS och uppladdningsmandat. Läppsynk är sist och manuell; nya QA-seeds/spelarprov är pausade."
     },
     {
       "id": "J09",
@@ -297,7 +449,7 @@
       "pr": null,
       "reviewer": null,
       "evidence": [],
-      "blocker": null
+      "blocker": "J09-förenkling och avvecklingsförslag återstår efter befintliga beroenden. Ta bara bort belagt oanvända läsare/skrivare; ingen tabell-/data-/mediaradering eller produktions-DDL ingår i omprioriteringen."
     },
     {
       "id": "K06",
@@ -314,8 +466,11 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "evidence": [
+        "Kevinrapporterar förberedelsedokument iPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 (K06-K07/K06-K07-forberedelse.md). Mottaget dokumentunderlag, inte egen full läsgranskning eller verifierat flöde; aktivitetsstatus ändras inte av dokumentet.",
+        "Tidigare K06-förberedelse är dokumentunderlag, inte verifierat Admin→spel efter omstart. Rumsbranding/roomOverrides, paketrevision och fryst spelconfig måste följas separat. Rootklienten är nu monterad i PR336/83f5810, men featureflaggan är AV i drift. Nya spelarprov/QA-seed är pausade enligt direkt Jakobstyrning; återstående acceptans kan inte ersättas med befintliga fixturekvitton."
+      ],
+      "blocker": "Pausad som aktiv spelar-/QA-prioritet. K06 och befintliga beroenden J08/K05 kvarstår; återupptagning kräver ny samordnad beställning efter AdminBlackjack/operatörflödet, utan nya automatiska miljö- eller mediaskrivningar."
     },
     {
       "id": "K07",
@@ -332,8 +487,10 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "evidence": [
+        "Kevinrapporterar förberedelsedokument iPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 (K06-K07/K06-K07-forberedelse.md). Mottaget dokumentunderlag, inte egen full läsgranskning eller verifierat flöde; aktivitetsstatus ändras inte av dokumentet."
+      ],
+      "blocker": "Pausad som aktiv spelar-/flerspelar-/QA-prioritet. K07 och beroenden K04/K06 kvarstår; tidigare isolerade regel-/PG-prov bevaras men betyder inte full spel-, samtidighets- eller medieacceptans."
     },
     {
       "id": "J10",
@@ -352,7 +509,7 @@
       "pr": null,
       "reviewer": null,
       "evidence": [],
-      "blocker": null
+      "blocker": "J10 återstår: ren klon, start, readiness/drain och återställningskedja är inte samlat produktaccepterade. Tidigare isolerade schema-/restorebevis behålls; nya QA-seeds/spelarprov är pausade och utgör inte nästa aktiva leverans."
     },
     {
       "id": "O02",

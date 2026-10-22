@@ -27,6 +27,7 @@ export function studioDocumentNavigationHeaders(request) {
   const surface = resolveWorkspaceSurfacePath(pathname);
   const publicPath = pathname.startsWith('/studio/') ? pathname.slice('/studio'.length) : pathname;
   const adminDocument = publicPath === '/admin' || publicPath === '/admin/lobby'
+    || publicPath === '/admin/login' || publicPath === '/admin/set-password'
     || publicPath.startsWith('/admin/') && designPreviewPages.has(publicPath.slice('/admin/'.length));
   // Vercel's fetch hop can replace navigate with cors before middleware too.
   // Accept that observed shape only without Origin and on known documents;

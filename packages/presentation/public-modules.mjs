@@ -5,7 +5,7 @@ const browserContracts = [
   'recorded-speech', 'composition-settings', 'background-playback-policy',
   'roulette-idle-contract', 'roulette-start-contract', 'speech-slot-bindings',
   'speech-lines', 'material-catalog', 'background-materials',
-  'speech-package', 'astrid-voice-profile',
+  'speech-package', 'astrid-voice-profile', 'shared-room-replay',
 ];
 // One canonical source per browser module; legacy URLs keep resolving its imports.
 export const presentationPublicModules = Object.freeze([
@@ -40,6 +40,7 @@ export const presentationPublicModules = Object.freeze([
   {source: 'packages/presentation/runtime/moving-speech-source-frames.mjs', paths: ['/moving-speech-source-frames.mjs', '/packages/presentation/runtime/moving-speech-source-frames.mjs']},
   {source: 'packages/presentation/contracts/card-view.mjs', paths: ['/card-view.mjs', '/packages/presentation/contracts/card-view.mjs']},
   {source: 'packages/presentation/contracts/calibration.mjs', paths: ['/card-presentation/calibration.mjs', '/packages/presentation/contracts/calibration.mjs']},
+  {source: 'packages/navigation/player-lobby.mjs', paths: ['/packages/navigation/player-lobby.mjs']},
   {source: 'packages/navigation/game-entry.mjs',
     paths: ['/packages/navigation/game-entry.mjs']},
   {source: 'packages/navigation/operator-slug.mjs',

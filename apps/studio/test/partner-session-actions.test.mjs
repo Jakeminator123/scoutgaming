@@ -20,14 +20,14 @@ function transport(responses) {
 
 test('account switching uses the server API base and only canonical partner return paths', () => {
   for (const apiBase of ['/studio/api/partner/snapshot', '/api/partner/snapshot']) {
-    const login = apiBase.startsWith('/studio/') ? '/studio/login' : '/login';
+    const login = '/admin/login';
     assert.equal(partnerSessionDestination({ ...defaults, apiBase }), `${login}?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam`);
     assert.equal(partnerSessionDestination({ ...defaults, apiBase, action: 'logout' }), login);
     assert.equal(partnerSessionDestination({ ...defaults, apiBase, accessClass: 'partner' }), '/partner/login?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam');
   }
-  assert.equal(partnerSessionDestination({ ...defaults, returnTo: '/studio/partner/johnsspelbolag/ops' }), '/studio/login?returnTo=%2Fpartner%2Fjohnsspelbolag');
+  assert.equal(partnerSessionDestination({ ...defaults, returnTo: '/studio/partner/johnsspelbolag/ops' }), '/admin/login?returnTo=%2Fpartner%2Fjohnsspelbolag');
   for (const returnTo of ['https://evil.example/partner/john', '//evil.example', '/partner/login', '/partner/set-password', '/control', '/partner/john?redirect=https://evil.example', '/partner/john#secret']) {
-    assert.equal(partnerSessionDestination({ ...defaults, returnTo }), '/studio/login', returnTo);
+    assert.equal(partnerSessionDestination({ ...defaults, returnTo }), '/admin/login', returnTo);
   }
 });
 
@@ -54,7 +54,7 @@ test('internal admin clears any secondary partner session before confirmed N1 lo
     } });
     assert.deepEqual(calls, [`${prefix}/api/partner/logout`, `${prefix}/api/auth/logout`]);
     assert.equal(cookies.size, 0);
-    assert.ok(destination.startsWith(`${prefix}/login?returnTo=`));
+    assert.ok(destination.startsWith(`/admin/login?returnTo=`));
   }
 });
 
@@ -84,7 +84,7 @@ test('secondary or N1 failure stops switching, and a partial logout can be safel
   assert.equal(secondary.calls.length, 1);
   const partial = transport([response(), response(500), response(401), response()]);
   await assert.rejects(endPartnerSession({ ...defaults, fetchImpl: partial.fetchImpl }));
-  assert.equal(await endPartnerSession({ ...defaults, fetchImpl: partial.fetchImpl }), '/studio/login?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam');
+  assert.equal(await endPartnerSession({ ...defaults, fetchImpl: partial.fetchImpl }), '/admin/login?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam');
   assert.deepEqual(partial.calls.map(call => call.url), ['/studio/api/partner/logout', '/studio/api/auth/logout', '/studio/api/partner/logout', '/studio/api/auth/logout']);
   await assert.rejects(endPartnerSession({ ...defaults, fetchImpl: async () => { throw Error('private network details'); } }));
 });
@@ -145,7 +145,7 @@ test('auth actions remain clickable on mobile and show localized failure without
     assert.equal(render().find(node => node.props?.role === 'alert').props.children, partnerCopy(language).logoutError);
     fail = false; buttons()[0].props.onClick();
     await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual(destinations, ['/studio/login?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam']);
+    assert.deepEqual(destinations, ['/admin/login?returnTo=%2Fpartner%2Fjohnsspelbolag%2Fteam']);
     assert.equal(render().some(node => node.props?.role === 'alert'), false);
   }
   const css = readFileSync(new URL('../components/partner-session-actions.module.css', import.meta.url), 'utf8');

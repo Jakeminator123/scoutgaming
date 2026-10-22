@@ -1,11 +1,30 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Förenklade agentregler — 21 oktober 2026
+
+På Jakobs begäran har rotens AGENTS kortats och knutits till befintliga guider.
+Masterplanen och status.json är uttryckligen tillåtna; historiska inventeringar
+kräver inte att Control eller gamla implementationer bevaras. Data-, medie-,
+behörighets- och mergeägarskapsskydd kvarstår. Rena läsfrågor kräver inte egna
+inkorgs-/agent-talk-/molnsäkerhetsrundor; ändringsarbete och leverans behåller
+relevanta kontroller. Orkestratorn får tilldela egna commits i separat worktree.
+Cursor-reglerna följer samma gräns. Studios genererade Next-block är oförändrat
+med en beständig avgränsning till Next-relaterat arbete utanför blocket.
+
+Verifiering och full head följs i PR #311. Ingen produktkod, hook, CI-klassning
+eller branchprotection ändras av instruktionstexten.
+
 ## Beställd migrationsorkestrering — 21 oktober 2026
 
 Jakob har uttryckligen startat J01 med underagenter och parallell granskning
 av K01 enligt [Masterplan](../../migrering/MASTERPLAN.md). Jakob-implementeraren
 äger J01 i egen worktree, Kevin-agenten kompletterar K01 och orkestratorn äger
-SQL-läsroll, beroenden, integration och status. Oberoende granskare bedömer
+SQL-läsroll, beroenden, integration och status. SQL-rollen är provad och
+levererad krypterad; Kevin har kvitterat egen anslutning. Rekommendationen för
+Jakobs parallella småändringar är egen jakob/*-branch/worktree och samordnade
+filgränser enligt samarbetsguiden. Skapande/städning av den arbetskopian följs
+i dess eget uppdrag.
+Oberoende granskare bedömer
 fryst head; rapporterade tester blir inte automatiskt verifierade.
 
 [GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312) är den
@@ -16,8 +35,7 @@ inkorgsskanningar. Bevakning och agentmeddelanden ger inget utökat mandat.
 
 [Samarbetsguiden](../../migrering/SAMARBETE-OCH-ATKOMST.md) skiljer SQL-roll,
 GitHub-nyckel, Vercel-medlemskap och faktisk agentinloggning. Status.json
-uppdateras till VERIFIED bara med fulla leveransbevis. Planen är ett uttryckligt
-undantag till tidigare paus för nya planrapporter; tekniska kontrakt och
+uppdateras till VERIFIED bara med fulla leveransbevis. Planen är nu uttryckligen erkänd i rotens AGENTS; tekniska kontrakt och
 produktstatus stannar i befintliga kanoniska guider. Tidigare roller nedan
 beskriver sina respektive leveransdatum.
 

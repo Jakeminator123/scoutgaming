@@ -25,9 +25,18 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const video = config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
     if (video) player.prepareLocalClip?.({ media: { src: mediaUrl(video), sha256: video.sha256 } });
   };
-  let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = !preview && config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null, packageChanged = false;
+  // A published room follows the composition's saved per-phase clip modes from
+  // Admin (idle, deal, reveal, speak). Only Studio rehearsal keeps a local
+  // mode control; the player never widens or narrows the saved selection.
+  const SELECTION_MODES = ['off', 'rules', 'random', 'shadow', 'active'];
+  // Without saved modes a published room plays standard clips only ('off').
+  const roomModes = context ? (config.openclaw && typeof config.openclaw === 'object' && !Array.isArray(config.openclaw) ? config.openclaw : {}) : null;
+  const phaseOf = type => type === 'speak' ? 'speak' : type === 'reveal' ? 'reveal' : type === 'deal' ? 'deal' : 'idle';
+  const roomMode = type => { const value = roomModes?.[phaseOf(type)]; return SELECTION_MODES.includes(value) ? value : 'off'; };
+  let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = roomModes ? roomMode('idle') : !preview && config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null, packageChanged = false;
+  const selectionMode = type => roomModes ? roomMode(type) : mode;
   const configurationSource = config.configurationSource || 'lab/project.json';
-  receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource });
+  receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource, ...(roomModes ? { modeSource: 'composition' } : {}) });
   const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status'); host.append(status);
   const control = document.createElement('select'); control.setAttribute('aria-label', 'Klippval');
   for (const [value, text] of [['off','Standard'],['rules','Regler'],['random','Slump'],['active','OpenClaw'],['shadow','OpenClaw · skugga']]) {
@@ -35,7 +44,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const option = document.createElement('option'); option.value = value; option.textContent = text; control.append(option);
   }
   control.value = mode;
-  control.className = 'local-presentation-mode'; host.append(control);
+  control.className = 'local-presentation-mode'; if (!roomModes) host.append(control);
   const hasOwnIdlePolicy = config.idlePolicy?.familyId === `${dealerId}/idle.ready/ready`;
   const idle = !hasOwnIdlePolicy ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.idleInventory ?? config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
@@ -57,7 +66,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
   const behaviourVersion = (value,type) => type==='settle' && settlementContinuation?.from===value ? settlementContinuation.to : value;
-  async function observeEvents(events, {command,previousVersion} = {}) {
+  async function observeEvents(events, {command,previousVersion,signal} = {}) {
+    if(signal?.aborted)return;
     // Successful collection completes the same settled round. Carry only its
     // verified result across that one version change, including a late response.
     if(command==='collect') {
@@ -73,12 +83,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     lastBehaviour=key;
     const own=++behaviourRequest;
     try {
-      const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+      const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json'},
         body:JSON.stringify({dealerId,version:requestVersion,mode:'rules',event:{type:event.type,
           ...(event.type==='turn'?{box:event.box,handIndex:event.handIndex}:{})},...(context?{presentationContext:context}:{})})});
-      if (!response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || !response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
       const result=await response.json();
-      if (own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
       retainRule(result,requestVersion,event.type);offerPendingRule();
     } catch { /* Optional behaviour never blocks cards, speech or the player's turn. */ }
   }
@@ -107,7 +117,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
-  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent } = {}) {
+  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress } = {}) {
     const own = new AbortController(); active = own;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
@@ -116,6 +126,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     host.dataset.presentationRevision = String(config.projectRevision || config.revision || '');
     host.dataset.presentationPackageRevision = String(context?.packageRevision ?? '');
     try {
+      onProgress?.({phase:'prepare'});
       if (context || preview) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
         if (current.status === 409) throw packageError();
@@ -124,12 +135,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing,video.framing ?? video.classification?.framing,{kind});
       if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
       onPrepared?.();
+      onProgress?.({phase:'play'});
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
-        signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
+        signal: own.signal, muted: kind !== 'speech' || muted(), hold,
+        onFrame: onMediaFrame || onProgress ? time => { onProgress?.({phase:'frame',time}); onMediaFrame?.(time); } : undefined,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
         onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
+      onProgress?.({phase:'complete'});
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
   function retainRule(result, requestVersion, sourceType) {
@@ -224,7 +238,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     offerPendingRule();
     if (action || speech) onBusy(); else resumeIdle();
   }
-  async function present(event, { signal, onPresented, onSelected, onFrame } = {}) {
+  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress } = {}) {
     if (packageChanged) return false;
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
@@ -232,10 +246,20 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     ++serial; stop(); onBusy();
     status.textContent = '';
     const token = serial;
+    let progressClip = 0;
+    const progress = () => {
+      if (typeof onProgress !== 'function') return undefined;
+      const clip = ++progressClip;
+      return value => {
+        if (clip === progressClip && token === serial && requestVersion === version() && !signal?.aborted)
+          onProgress({clip,...value});
+      };
+    };
     let result;
     try {
+      const eventMode = selectionMode(event.type);
       const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode: eventMode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
       if (selected.status === 409 && context) {
         const failure = await selected.json().catch(() => null);
         if (failure?.code === 'studio_presentation_idle_package_changed') throw packageError();
@@ -243,7 +267,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (!selected.ok) throw new Error('Inget verifierat klipp för instruktionen');
       result = await selected.json();
       if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
-      receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode, projectRevision: result.projectRevision, configurationSource });
+      receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode: eventMode, projectRevision: result.projectRevision, configurationSource });
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
       else upcoming = [];
@@ -279,7 +303,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         }))) throw new Error('Talfilmens granskning eller identitet stämmer inte');
         const current = ++attempt;
         try {
-          await film(video, { kind, signal, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
+          await film(video, { kind, signal, onProgress:progress(), onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
             onFrame: () => { if (owns(current)) onPresented?.(); },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
@@ -288,7 +312,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const transition = async (video, direction) => {
         if (!video) return;
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
-        await film(video, { kind: 'transition', signal, details: { direction, shoeDraw: event.shoeDraw,
+        await film(video, { kind: 'transition', signal, onProgress:progress(), details: { direction, shoeDraw: event.shoeDraw,
           requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource } });
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
       };

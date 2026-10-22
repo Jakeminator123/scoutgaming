@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import {studioNavigationContextFromQuery,studioNavigationHref} from '../../../../lib/studio-navigation.mjs';
 import { OpenClawWorkspace } from '../../../../components/openclaw-workspace';
 import { NativeAdministration } from '../../../../components/native-administration';
 import { ConnectedEconomy } from './connected-economy';
@@ -74,7 +75,17 @@ function CompanyJournal() {
 
 export function ConnectedServices({path,dealerId}:{path:string;dealerId?:string}) {
   if(path==='/admin/ekonomi')return <ConnectedEconomy/>;
-  if(path==='/admin/ai/models')return <div className="admin-system-page admin-workspace-tool admin-system-models"><nav className="admin-system-actions" aria-label="Hjälp med administration"><a href="/admin/ai/chat" className="studio-button">Öppna Adminroboten</a></nav><OpenClawWorkspace embedded navigation={{models:'/admin/ai/models',chat:'/admin/dealer-agent',studio:'/admin/clips'}}/></div>;
+  if(path==='/admin/ai/models'){
+    const query=new URLSearchParams(location.search);
+    const contextHref=(target:string)=>{
+      const url=new URL(studioNavigationHref(target,studioNavigationContextFromQuery(query)),location.origin);
+      for(const key of ['operator','table','room'])if(query.has(key)){
+        url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);
+      }
+      return url.pathname+url.search;
+    };
+    return <div className="admin-system-page admin-workspace-tool admin-system-models"><nav className="admin-system-actions" aria-label="Hjälp med administration"><a href={contextHref('/admin/ai/chat')} className="studio-button">Öppna Adminroboten</a></nav><OpenClawWorkspace embedded navigation={{models:contextHref('/admin/ai/models'),chat:contextHref('/admin/dealer-agent'),studio:contextHref('/admin/clips')}}/></div>;
+  }
   if(groups[path])return <Administration group={groups[path]} dealerId={dealerId}/>;
   if(path==='/admin/admin/log')return <CompanyJournal/>;
   return <section className="admin-system-page" aria-labelledby="unknown-service-title"><header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="unknown-service-title">Tjänsten finns inte</h1><p>Den här adressen har ingen ansluten administrationstjänst.</p></div></header><nav className="admin-system-actions" aria-label="Tillgängliga verktyg"><a className="studio-button" href="/admin/tools">Öppna Verktyg</a></nav></section>;

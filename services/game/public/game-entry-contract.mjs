@@ -38,10 +38,10 @@ function isIsolatedComparison(env, offline) {
 }
 function decorateIsolatedComparison(html) {
   const style = '<style id="local-comparison-style">html[data-local-comparison] #hud-top{flex-wrap:wrap;gap:8px}#local-comparison-notice{display:flex;flex:0 0 100%;align-items:center;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;padding:6px 10px;border:1px solid #d4b65a75;border-radius:7px;background:#241e10f2;color:#ffebaa;font:11px/1.35 Arial,sans-serif;pointer-events:none}#local-comparison-notice a{pointer-events:auto;color:#f2f1ed;white-space:nowrap}#local-comparison-notice a:focus-visible{outline:2px solid #d4f83a;outline-offset:3px}@media(max-width:650px){#local-comparison-notice .local-comparison-detail{display:none}}</style>';
-  const notice = '<aside id="local-comparison-notice" aria-label="Isolerad testmiljö"><strong>Isolerad mediarepetition</strong><span class="local-comparison-detail">Testdata · inget publicerat bolagspaket</span><a href="https://www.scoutgaming.tech/play" target="_blank" rel="noopener noreferrer">Publicerad produkt ↗</a></aside>';
+  const notice = '<aside id="local-comparison-notice" aria-label="Isolerad testmiljö"><strong>Isolerad mediarepetition</strong><span class="local-comparison-detail">Testdata · inget publicerat bolagspaket</span><a href="https://www.scoutgaming.tech/lobby" target="_blank" rel="noopener noreferrer">Publicerad produkt ↗</a></aside>';
   return html.replace(/<html(?=[\s>])/i, () => '<html data-local-comparison="true"')
     .replace(/<title>/i, '<title>Isolerad mediarepetition · ')
-    .replace('<a class="casino-return" href="/play">Till lobbyn</a>', '<a class="casino-return" href="https://www.scoutgaming.tech/play" target="_blank" rel="noopener noreferrer">Publicerad lobby ↗</a>')
+    .replace('<a class="casino-return" href="/lobby">Till lobbyn</a>', '<a class="casino-return" href="https://www.scoutgaming.tech/lobby" target="_blank" rel="noopener noreferrer">Publicerad lobby ↗</a>')
     .replace(/<\/head>/i, () => style + '</head>')
     .replace(/(<header\b[^>]*\bid=["']hud-top["'][^>]*>)/i, match => match + notice);
 }

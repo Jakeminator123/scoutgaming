@@ -14,6 +14,7 @@ import {isPresentationRoom} from '../contracts/presentation-room.mjs';
 import { StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
 import { resolveFrozenDealerIdle, validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
 import {recordedSpeechProjection} from '../runtime/recorded-speech-selection.mjs';
+import {revalidatePrivateMedia} from '../../studio-registry/server/private-media-revalidation.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
@@ -115,6 +116,9 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     return { owner: 'web', configurationSource: resolved.configurationSource,
       projectRevision: resolved.projectRevision, packageRevision: resolved.context.packageRevision,
       operator: resolved.context.operatorSlug, roomId: resolved.context.roomId, dealer: resolved.dealer,
+      // Saved per-phase clip selection modes of the room's composition. The
+      // published player follows these; it has no mode control of its own.
+      openclaw: structuredClone(resolved.lane.openclaw),
       dealerIdle: { [resolved.dealer.id]: publicIdle(resolved.record, resolved.context) },
       ...(resolved.schemaVersion === 3 ? {idlePolicy:resolved.idlePolicy,inventory:{families:structuredClone(resolved.idleInventory.families),videos:resolved.records.map(row => {
         const idle = resolved.idleInventory.videos.find(video => video.id === row.id);
@@ -143,7 +147,8 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       const record = eventMedia ? (resolved.schemaVersion === 3 ? resolved.records.find(row => row.id === parts[4]) : null) : resolved.record;
       if (!record) return json(404, 'studio_presentation_idle_media_unavailable');
       const { pathname, sha256, size, contentType } = record;
-      return await privateMedia({ provider: 'vercel-blob', pathname, sha256, size, contentType }, request);
+      const media = await privateMedia({ provider: 'vercel-blob', pathname, sha256, size, contentType }, request);
+      return await revalidatePrivateMedia(media, request, sha256);
     } catch (error) {
       const status = [400, 404, 409].includes(error?.statusCode) ? error.statusCode : 503;
       const code = typeof error?.code === 'string' && error.code.startsWith('studio_presentation_idle_') ? error.code : 'studio_presentation_idle_media_unavailable';

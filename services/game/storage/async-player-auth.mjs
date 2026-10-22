@@ -49,10 +49,8 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     const previous=attempts.get(key);
     attempts.set(key,{at:Date.now(),n:(previous?.n??0)+1});
   }
-  async function session(req) {
-    const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-    if (!token) return null;
-    const session=(await db.prepare('SELECT player_id,source_stamp,display_name FROM player_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now()));
+  async function validatedSession(sessionDigest) {
+    const session=(await db.prepare('SELECT player_id,source_stamp,display_name,expires FROM player_sessions WHERE digest=? AND expires>?').get(sessionDigest,Date.now()));
     if(!session)return null;
     const player = await db.prepare('SELECT status FROM players WHERE id=?').get(session.player_id);
     if (!player || player.status !== 'active') return null;
@@ -74,9 +72,33 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     // Historical sessions stay in storage, but revoked keys and unsupported
     // external wallets cannot bypass partner API checks through the native UI.
     if(partnerKeyId&&!(await partnerAllowed(partnerKeyId,partnerKeyStamp)))return null;
-    return partnerKeyId
+    const publicSession = partnerKeyId
       ? { playerId: session.player_id, partnerKeyId, ...(partnerKeyStamp?{partnerKeyStamp}:{}), displayName: session.display_name || 'spelaren' }
       : { playerId: session.player_id, partnerKeyId: null };
+    return { publicSession, expiresAt: session.expires };
+  }
+  async function session(req) {
+    const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
+    return token ? (await validatedSession(digest(token)))?.publicSession ?? null : null;
+  }
+  // Internal read-only transport bindings, never an HTTP session payload. Keep
+  // expiry from the validated row; revalidation needs no retained bearer cookie.
+  // These DB reads do not implement cancellation: callers bound their own wait.
+  async function bindingById(sessionId) {
+    const sessionDigest=typeof sessionId==='string' && /^player-([a-f0-9]{64})$/.exec(sessionId)?.[1];
+    if(!sessionDigest)return null;
+    const verified=await validatedSession(sessionDigest);
+    if(!verified || !Number.isSafeInteger(verified.expiresAt) || verified.expiresAt<=0)return null;
+    // Keep partner provenance explicit; new room access must not reinterpret it as native.
+    return Object.freeze({actorId:verified.publicSession.playerId,sessionId,expiresAt:verified.expiresAt,partnerKeyId:verified.publicSession.partnerKeyId});
+  }
+  async function binding(req) {
+    const header=req.headers.cookie;
+    if(typeof header!=='string')return null;
+    const cookies=header.split(';').map(value=>value.trim()).filter(value=>value.split('=',1)[0].trim()==='player_session');
+    if(cookies.length!==1)return null;
+    const token=/^player_session=([a-f0-9]{64})$/.exec(cookies[0])?.[1];
+    return token ? bindingById('player-'+digest(token)) : null;
   }
   const user = async req => (await session(req))?.playerId ?? null;
   const cookie=(req,token,age,sameSite='Strict')=>`player_session=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${age}${(req.socket.encrypted || process.env.NODE_ENV==='production') ? '; Secure' : ''}`;
@@ -226,5 +248,5 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     }catch(e){reply(400,{error:e.message});}
     return true;
   }
-  return {user,session,handle,fromBackoffice,fromPartner,partnerAllowed};
+  return {user,session,binding,bindingById,handle,fromBackoffice,fromPartner,partnerAllowed};
 }

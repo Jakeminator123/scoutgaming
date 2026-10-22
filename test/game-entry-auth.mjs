@@ -93,7 +93,7 @@ test('player handoff only retains current document returns and approved game sel
   for(const target of ['/play','/play/profil','/play/historik','/play?operator=swedish-games','/play/roulette?table=room-evening','/play/blackjack?table=room-evening']) {
     assert.equal(path(target),target);assert.equal(destination(target),'/api/auth/bo/start?next='+encodeURIComponent(target));
   }
-  for(const target of ['https://attacker.invalid/play/profil','//attacker.invalid/play/profil','/play\\profil','/play/%70rofil','/other/../play/profil','/api/auth/bo/start','/studio/login','/player-login','/play/profil?returnTo=/admin','/play/profil#secret','/play?operator=a&operator=b','/play\n/profil']) assert.equal(path(target),null,target);
+  for(const target of ['https://attacker.invalid/play/profil','//attacker.invalid/play/profil','/play\\profil','/play/%70rofil','/other/../play/profil','/api/auth/bo/start','/admin/login','/player-login','/play/profil?returnTo=/admin','/play/profil#secret','/play?operator=a&operator=b','/play\n/profil']) assert.equal(path(target),null,target);
   assert.equal(path('/play/blackjack?launch=a.b.c&returnTo=https://attacker.invalid&table=room-evening'),'/play/blackjack?table=room-evening');
   const observed='/play/blackjack?labObserverOrigin='+encodeURIComponent('https://www.fixture.invalid')+'&labObserverChannel=12345678-1234-1234-1234-123456789abc';
   assert.equal(path(observed,{origin:'https://www.fixture.invalid'}),observed);
@@ -179,7 +179,7 @@ test('fresh native N1 login reaches its own profile through the actual isolated 
     assert.equal((await(await request('/api/auth/session',{cookie:newBo})).json()).backofficeHandoff,undefined,'old BO cookie cannot advertise a new authenticated handoff');
     const newStart=await request('/api/auth/bo/start?next=/play/profil',{cookie:newBo});assert.equal(newStart.status,303);
     const newAuthorization=await request(newStart.headers.get('location'),{cookie:newBo});
-    assert.equal(newAuthorization.status,303);assert.match(newAuthorization.headers.get('location'),/^\/studio\/login\?returnTo=/,'old BO cookie must reauthenticate before a fresh code can be minted');
+    assert.equal(newAuthorization.status,303);assert.match(newAuthorization.headers.get('location'),/^\/admin\/login\?returnTo=/,'old BO cookie must reauthenticate before a fresh code can be minted');
     assert.equal(players.prepare('SELECT count(*) n FROM player_sessions').get().n,before);
   } finally {
     if(child&&child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
