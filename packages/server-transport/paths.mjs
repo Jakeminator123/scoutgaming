@@ -12,6 +12,12 @@ export function canonicalPlatformPath(value) {
   return path;
 }
 
+// Room identity is one literal, bounded path segment; no queries or aliases.
+export const SHARED_ROOM_SOCKET = '/shared-room/';
+export function sharedRoomSocketPath(path) {
+  return typeof path === 'string' && /^\/shared-room\/[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(path);
+}
+
 // Dynamic callbacks stay on the speech service; their one-use capability is
 // private to the worker and is rechecked by the product server before101.
 export const MOVING_WORKER_SOCKET = '/lipsync-moving/';

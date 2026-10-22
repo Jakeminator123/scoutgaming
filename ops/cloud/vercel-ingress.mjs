@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import {sharedRoomSocketPath} from '../../packages/server-transport/paths.mjs';
 import {approvedGameQuery} from '../../packages/navigation/game-entry.mjs';
 import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 import { exactPlatformOrigin, backendPlatformPath, canonicalPlatformPath } from '../../packages/navigation/server/platform-routing.mjs';
@@ -97,14 +98,28 @@ export function vercelIngressRequest(request, ingress) {
     && operatorQuery?.getAll('operator').length === 1 && isOperatorSlug(operatorQuery.get('operator'))
     && operatorQuery.size === approvedOperatorQuery.size
     && [...operatorQuery].every(([name, value]) => approvedOperatorQuery.get(name) === value);
+  const room = sharedRoomSocketPath(request.url);
+  if (room) {
+    const seen = new Set();
+    for (let i = 0; i < (request.rawHeaders?.length ?? 0); i += 2) {
+      const name = request.rawHeaders[i].toLowerCase();
+      if (seen.has(name)) return {accepted:false,transported:false};
+      seen.add(name);
+    }
+    if (request.method !== 'GET' || request.headers.upgrade?.toLowerCase() !== 'websocket'
+      || request.headers.origin !== ingress.publicOrigin || typeof request.headers.cookie !== 'string'
+      || !request.headers.cookie || request.headers.cookie.length > 16384
+      || ['authorization','x-worker-id','sec-websocket-protocol'].some(name => request.headers[name] !== undefined)) return {accepted:false,transported:false};
+  }
   const session = path === '/__vercel/lab/session';
   if (request.headers.host !== transportHost || request.headers['x-croupier-public-origin'] !== ingress.publicOrigin
       || bytes.length !== key.length || !timingSafeEqual(bytes, key)
       || request.headers['x-forwarded-host'] !== publicHost || request.headers['x-forwarded-proto'] !== 'https'
-      || !(backendPlatformPath(request.url) || launch || operatorDocument || session)
+      || !(backendPlatformPath(request.url) || room || launch || operatorDocument || session)
       || (session && request.method !== 'GET')) return { accepted: false, transported: false };
   const headers = {...request.headers, host: publicHost};
   delete headers['x-croupier-vercel-secret']; delete headers['x-croupier-public-origin'];
   delete headers['x-croupier-lab-authorized']; delete headers.forwarded;
+  if (room) for (const name of Object.keys(headers)) if (name.startsWith('x-croupier-') || name === 'x-forwarded-for') delete headers[name];
   return { accepted: true, transported: true, session, headers };
 }
