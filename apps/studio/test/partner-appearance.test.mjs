@@ -14,9 +14,14 @@ const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url)
 const localRequire = createRequire(fileUrl);
 const compiled = transformSync(readFileSync(fileUrl,'utf8'), {filename:fileURLToPath(fileUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 const css = {__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})};
+const pickerUrl=new URL('../components/appearance-layer-picker.tsx',import.meta.url);
+const pickerCompiled=transformSync(readFileSync(pickerUrl,'utf8'),{filename:fileURLToPath(pickerUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+const pickerModule={exports:{}};
+vm.runInNewContext(pickerCompiled.code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.endsWith('.css')?css:localRequire(name)});
+const {AppearanceLayerPicker}=pickerModule.exports;
 function load(hooks=React, fetcher) {
   const output={exports:{}};
-  vm.runInNewContext(compiled.code,{module:output,exports:output.exports,fetch:fetcher,require:name=>name==='react'?hooks:name==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:name.endsWith('.css')?css:localRequire(name)},{filename:fileURLToPath(fileUrl)});
+  vm.runInNewContext(compiled.code,{module:output,exports:output.exports,fetch:fetcher,require:name=>name==='react'?hooks:name==='./appearance-layer-picker'?{AppearanceLayerPicker}:name==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:name.endsWith('.css')?css:localRequire(name)},{filename:fileURLToPath(fileUrl)});
   return output.exports.PartnerAppearance;
 }
 const Panel=load();
@@ -289,20 +294,22 @@ test('Admin room publication review stays hidden until a room draft is saved and
 });
 
 
-test('Admin choices unlock background, dealer and table within the composition allowlist while partners stay locked',()=>{
+const picker=(tree,kind)=>walk(tree,node=>node.type===AppearanceLayerPicker&&node.props.kind===kind)[0];
+test('Admin layer choices preserve composition and room allowlists while partners stay locked',()=>{
   const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['table.color'];
-  initial.presentation.assets=[{id:'bg-one',label:'Salong'},{id:'bg-two',label:'Terrass'},{id:'table-one',label:'Grön filt'},{id:'table-two',label:'Blå filt'}];
-  const partner=html(initial,{roomId:'north-main',roomLayout:true});
-  assert.match(partner,/Låst i publicerat paket/);assert.doesNotMatch(partner,/aria-label="Bakgrund"|aria-label="Bord"|aria-label="Dealer"/);
-  const admin=html(initial,{roomId:'north-main',roomLayout:true,adminChoices:true});
-  assert.doesNotMatch(admin,/Låst i publicerat paket/);
-  for(const label of ['Bakgrund','Bord','Dealer','Bordsfärg'])assert.match(admin,new RegExp('aria-label="'+label+'"'));
-  assert.match(admin,/<option value="bg-two">Terrass/);assert.match(admin,/<option value="table-two">Blå filt/);
-  const baked=initialState();baked.presentation.lanes[0].operatorAdjustable=[];baked.presentation.lanes[0].layers.background={enabled:true,mode:'baked',default:null,allowed:[]};
-  const fixed=html(baked,{roomId:'north-main',roomLayout:true,adminChoices:true});
-  assert.match(fixed,/Fast i sammansättningen/,'a baked background is explained, not offered');assert.match(fixed,/aria-label="Bord"/);assert.match(fixed,/aria-label="Dealer"/);
-  const vip=html(initialState({roomDealerChoices:{'north-main':['astrid','vera'],'north-vip':[]}}),{roomId:'north-vip',roomLayout:true,adminChoices:true});
-  assert.doesNotMatch(vip,/aria-label="Dealer"/,'a room without allowed dealers offers none even to Admin');
+  const partner=stateful(initial,()=>assert.fail('read only'),{roomId:'north-main',roomLayout:true});
+  assert.equal(select(partner.render(),'Bakgrund'),undefined);
+  const admin=stateful(initial,()=>assert.fail('read only'),{roomId:'north-main',roomLayout:true,adminChoices:true});
+  for(const [kind,ids] of Object.entries({background:['bg-one','bg-two'],table:['table-one','table-two'],dealer:['astrid','vera']})){
+    assert.equal(picker(admin.render(),kind).props.locked,false);
+    assert.deepEqual(Array.from(picker(admin.render(),kind).props.choices,row=>row.id),ids);
+  }
+  const baked=initialState();baked.presentation.lanes[0].layers.background={enabled:true,mode:'baked',default:null,allowed:[]};
+  const fixed=stateful(baked,()=>assert.fail('read only'),{roomId:'north-main',roomLayout:true,adminChoices:true});
+  assert.equal(picker(fixed.render(),'background').props.locked,true);
+  assert.equal(picker(fixed.render(),'background').props.choices.length,0);
+  const vip=stateful(initialState({roomDealerChoices:{'north-main':['astrid','vera'],'north-vip':[]}}),()=>assert.fail('read only'),{roomId:'north-vip',roomLayout:true,adminChoices:true});
+  assert.equal(picker(vip.render(),'dealer').props.locked,true);
 });
 
 test('Admin room overrides save the unlocked layers through the same draft contract and report the live status to the header',async()=>{
@@ -313,11 +320,23 @@ test('Admin room overrides save the unlocked layers through the same draft contr
     {roomId:'north-main',roomLayout:true,adminChoices:true,onStatus:value=>statuses.push(value)});
   h.render();
   assert.deepEqual(JSON.parse(JSON.stringify(statuses.at(-1))),{roomId:'north-main',laneId:'mobile-phone',packageRevision:7,draftRevision:0,draft:false,live:{background:'bg-one',dealer:'astrid',table:'table-one'},labels:{background:'Salong',dealer:'astrid',table:'Grön filt'}});
-  select(h.render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});select(h.render(),'Dealer').props.onChange({target:{value:'vera'}});
+  picker(h.render(),'background').props.onChange('bg-two');picker(h.render(),'dealer').props.onChange('vera');
   assert.equal(statuses.at(-1).live.background,'bg-one','unsaved choices are not what the player meets');
   await byAction(h.render(),'save-draft').props.onClick();
   assert.deepEqual(calls[0].branding,{lane:'mobile-phone',background:'bg-one',roomOverrides:{'north-main':{background:'bg-two',dealer:'vera'}}});
   h.render();
   assert.equal(statuses.at(-1).draft,true);assert.equal(statuses.at(-1).draftRevision,1);assert.equal(statuses.at(-1).live.background,'bg-one','a saved draft is not live until published');
   h.unmount();assert.equal(statuses.at(-1),null);
+});
+
+test('changing a visual background preserves the chosen dealer, table, other rooms and company defaults',async()=>{
+  const branding={lane:'mobile-phone',background:'bg-one',dealer:'astrid',table:'table-one',roomOverrides:{'north-main':{dealer:'vera',table:'table-two'},'north-vip':{background:'bg-one',dealer:'astrid'}}};
+  const initial=initialState({branding}),calls=[];
+  const h=stateful(initial,async(_url,request)=>{calls.push(JSON.parse(request.body));return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:calls[0].branding}});},{roomId:'north-main',roomLayout:true,adminChoices:true});
+  picker(h.render(),'background').props.onChange('bg-two');
+  assert.equal(picker(h.render(),'dealer').props.effective,'vera');assert.equal(picker(h.render(),'table').props.effective,'table-two');
+  await byAction(h.render(),'save-draft').props.onClick();
+  assert.deepEqual(calls[0].branding,{...branding,roomOverrides:{...branding.roomOverrides,'north-main':{dealer:'vera',table:'table-two',background:'bg-two'}}});
+  assert.equal(calls[0].expectedPackageRevision,7);assert.equal(calls[0].expectedDraftRevision,0);
+  assert.equal(initial.branding.roomOverrides['north-main'].background,undefined,'the read snapshot is not mutated');
 });

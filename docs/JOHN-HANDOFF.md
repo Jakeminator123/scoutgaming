@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Visuell operatörsyta — 23 oktober 2026
+
+**Leverans:** `codex/visuell-operator` innehåller den separata visuella ändringen mot main. Den utvecklades tillsammans med PR #359; integrera #359 först för gemensam CSS och navigation. Bolagsvalet ligger i rubriken; spelkort samlar utbudet. Lägg till öppnar spelmall, spel och namn. Bekräftat skapande öppnar rätt rum; borttagning lämnar det återstående utbudet valt. Återställningsvyn visar enbart borttagna spel. Paus/öppning finns för valt spel.
+
+**Tre lager:** bakgrund och bord har materialkort med paketets verifierade förhandsbilder, dealer har tydligt valkort. Ett bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Samma roomOverrides, save-draft/review/publish, behörigheter och CAS används. Inbakad bakgrund är låst; nya rum kräver fortfarande en kompatibel sparad spelmall med fast utgångsmiljö. Paketets urval och godkänt mediematerial utökas inte automatiskt.
+
+**Verifiering:** 98 riktade beteendeprov och Admin 351 godkända/1 överhoppat; byggd Admin-/lobbyklient inklusive typer. Studio gav 2 102 godkända/17 överhoppade samt två laddningsfel i en testadapter. Adaptern har rättats och dess 12 beteendeprov passerar i omprov. Föräldralösa tester: 0/562. Samlad CI-status följer PR:ens slutliga head. Isolerat UI-prov med syntetiska data verifierar bolagsbyte, skydd av osparade val, tre separata val, spara/omladdning, skapa med rätt spel och direkt öppning, borttagning samt rätt återställningslista. Inga produktionsdata eller tjänster är ändrade. Slutlig PR/head anges vid leveransen.
+
+**Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
+
+
+
 ## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
 
 **Gren:** `codex/spelklient-legacy` (bas main `7afae426`), PR #356. Underlag: `migrering/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md`.
