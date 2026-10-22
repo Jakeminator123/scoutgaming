@@ -53,5 +53,10 @@
     "path": "test/table-behaviours-kevin.mjs",
     "kind": "opt-in",
     "reason": "K07 port of five table behaviours from Kevin's shared-table tests (5aa7ed10) against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
+  },
+  {
+    "path": "test/table-limits-kevin.mjs",
+    "kind": "opt-in",
+    "reason": "K07 port of Kevin's table-limits behaviours (5aa7ed10) per limit preset against the K03 coordinator with the memory store; pure node:test, no SQL. Opt-in until a CI regression group lists it."
   }
 ]
