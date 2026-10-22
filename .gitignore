@@ -13,6 +13,10 @@ content/cutout/
 inbox-token.txt
 vendor/
 media/.migration/
+
+# Personal historical reports are kept outside the active checkout.
+/random-stuff-jakob/jakob-docs/arkiv/
+/random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
 .vercel
 .env*
 !.env.example
