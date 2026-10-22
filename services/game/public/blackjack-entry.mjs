@@ -6,7 +6,7 @@ const password = document.querySelector('#password');
 const username = document.querySelector('#username');
 const help = document.querySelector('#login-help');
 const administratorEntry = document.querySelector('#legacy-admin');
-const destination = '/play';
+const destination = '/lobby';
 function rouletteReturnPath() {
   const raw = new URL(location.href).searchParams.get('returnTo');
   if (!raw?.startsWith('/play/roulette') || raw.includes('\\')) return null;

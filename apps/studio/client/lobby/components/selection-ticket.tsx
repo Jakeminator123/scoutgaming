@@ -6,7 +6,7 @@ import { playUrlFor } from "@/lib/lobby-data";
 import { cn } from "@/lib/utils";
 
 export function SelectionTicket() {
-  const { operator, room, dealer, step, reset } = useLobby();
+  const { operator, room, dealer, step, reset, prepareLaunch } = useLobby();
 
   if (!operator) return null;
 
@@ -60,7 +60,7 @@ export function SelectionTicket() {
         <div className="flex items-center p-1.5">
           {room && dealer ? (
             <a
-              href={playUrlFor({ operator, room, dealer })}
+              href={playUrlFor({ operator, room, dealer })} onClick={prepareLaunch} onAuxClick={prepareLaunch}
               className="flex h-8 items-center gap-2 rounded-full bg-lime px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-85"
             >
               Spela

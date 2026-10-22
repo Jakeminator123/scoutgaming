@@ -25,7 +25,8 @@ export function parseLobbyCatalog(payload) {
         game: room.game ?? 'blackjack', presentation: room.presentation.label,
         environmentLabel: environment.label, environmentFixed: environment.fixed, environmentKind: environment.kind,
         ...(environment.image ? { image: environment.image } : {}),
-        dealers: room.dealers.map(dealer => ({ id: dealer.id, name: dealer.label })),
+        dealerDefault: room.dealerDefault,
+        dealers: room.dealers.map(dealer => ({ ...dealer, name: dealer.label })),
         playUrl: room.playUrl,
       });
     }
@@ -55,13 +56,17 @@ export async function loadLobbyCatalog({ fetchImpl = fetch, signal } = {}) {
 export function lobbyQuerySelection(catalog, search = '') {
   const query = new URLSearchParams(search);
   const operatorId = query.getAll('operator').length === 1 ? query.get('operator') : null;
-  const roomId = query.getAll('room').length === 1 ? query.get('room') : null;
+  const roomValues = [...query.getAll('room'), ...query.getAll('table')];
+  const roomId = roomValues.length === 1 ? roomValues[0] : null;
+  const dealerId = query.getAll('dealer').length === 1 ? query.get('dealer') : null;
   const { operator, room } = lobbySelection(catalog, {
     operatorId, roomKey: operatorId && roomId ? operatorId + ':' + roomId : null,
   });
   return {
     operatorId: operator?.id ?? null, roomKey: room?.key ?? null,
-    unavailable: query.has('operator') && !operator || query.has('room') && !room,
+    dealerId: room?.dealers.some(row => row.id === dealerId) ? dealerId : null,
+    unavailable: query.has('operator') && !operator || roomValues.length > 0 && !room
+      || query.has('dealer') && !room?.dealers.some(row => row.id === dealerId),
   };
 }
 /** Derive each step from the selected parent; stale IDs never broaden access. */

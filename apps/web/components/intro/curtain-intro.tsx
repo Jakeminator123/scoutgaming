@@ -511,7 +511,7 @@ function DesktopCurtainIntro() {
         <button type="button" className="intro-skip" onClick={skip} autoFocus>
           Hoppa över intro
         </button>
-        <Link href="/demo" className="intro-demo">Öppna blackjack →</Link>
+        <Link href="/lobby" className="intro-demo">Öppna blackjack →</Link>
       </div>
     </div>
   )

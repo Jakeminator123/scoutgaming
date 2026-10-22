@@ -1,7 +1,9 @@
+import type { PublicRoomDealer } from '../../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
+export type RoomDealer = Dealer & PublicRoomDealer;
 export type Dealer = { id: string; name: string; image?: string };
 export type Room = {
   id: string; key: string; operatorId: string; name: string;
-  game: 'blackjack' | 'roulette'; presentation: string; dealers: Dealer[]; playUrl: string;
+  game: 'blackjack' | 'roulette'; presentation: string; dealerDefault: string; dealers: RoomDealer[]; playUrl: string;
   environmentLabel: string; environmentFixed: boolean; environmentKind: 'image' | 'video' | 'baked' | 'variable'; image?: string;
 };
 export type Operator = {
@@ -12,9 +14,9 @@ export type LobbyCatalog = { operators: Operator[]; rooms: Room[]; dealers: Deal
 export function parseLobbyCatalog(payload: unknown): LobbyCatalog;
 export function loadLobbyCatalog(options?: { fetchImpl?: typeof fetch; signal?: AbortSignal }): Promise<LobbyCatalog>;
 export function lobbySelection(catalog: LobbyCatalog, selected?: { operatorId?: string | null; roomKey?: string | null; dealerId?: string | null }): {
-  operator: Operator | null; room: Room | null; dealer: Dealer | null; availableRooms: Room[]; availableDealers: Dealer[];
+  operator: Operator | null; room: Room | null; dealer: RoomDealer | null; availableRooms: Room[]; availableDealers: RoomDealer[];
 };
 export function lobbyQuerySelection(catalog: LobbyCatalog, search?: string): {
-  operatorId: string | null; roomKey: string | null; unavailable: boolean;
+  operatorId: string | null; roomKey: string | null; dealerId: string | null; unavailable: boolean;
 };
 export function playUrlFor(selection: { operator: Operator; room: Room; dealer: Dealer }): string | undefined;

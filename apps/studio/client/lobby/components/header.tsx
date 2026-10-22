@@ -21,7 +21,7 @@ type StepState = "done" | "current" | "locked";
 const STEP_ORDER = [STEP_IDS.operator, STEP_IDS.room, STEP_IDS.dealer];
 
 export function Header() {
-  const { operators, operator, room, dealer, selectOperator } = useLobby();
+  const { operators, operator, room, dealer, selectOperator, prepareLaunch } = useLobby();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [inView, setInView] = useState<string | null>(null);
@@ -154,11 +154,12 @@ export function Header() {
         >
           Min profil
         </a>
+        <a href="/play/historik" className="mr-4 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground">Historik</a>
 
         <div className="hidden items-center gap-3 md:flex">
           {playUrl ? (
             <a
-              href={playUrl}
+              href={playUrl} onClick={prepareLaunch} onAuxClick={prepareLaunch}
               className="inline-flex items-center gap-2 rounded-full bg-lime px-4 py-1.5 text-sm font-semibold text-ink transition-opacity hover:opacity-85"
             >
               Spela
@@ -254,7 +255,7 @@ export function Header() {
 
             {playUrl ? (
               <a
-                href={playUrl}
+                href={playUrl} onClick={prepareLaunch} onAuxClick={prepareLaunch}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-ink"
               >
                 Spela med {dealer?.name}
