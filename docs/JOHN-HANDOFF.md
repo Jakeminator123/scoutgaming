@@ -32,9 +32,15 @@ verkliga K04-medieprov. Planprocenten ändras inte av nya dokument eller delprov
 Jakobs separata mergeagent äger sekventiell PR-integration; denna root gör inga
 GitHub-merger under överlämningen. Ordningen är #334 → #336, med #311 som separat
 planleverans efter konfliktlösning/review/CI. #332 ingår i #334; #333 är inte
-mergegodkänd. Mergeagenten har dessutom rapporterat Renders automatiska deploy
-från main som en olöst grind för villkoret att inte deploya. Inga
-providerinställningar har ändrats. Aktuell samordning sker i
+mergegodkänd. Jakob har uttryckligen godkänt att även automatisk deploy stoppas.
+Denna branch lägger därför till `git.deploymentEnabled: false` i `vercel.json`.
+Enligt [Vercels Git-konfiguration](https://vercel.com/docs/project-configuration/git-configuration#turning-off-all-automatic-deployments)
+stoppar värdet automatiska Git-deployer för alla brancher. Spärren måste finnas
+på den ref Vercel läser; den lokala ändringen är inte ett verifierat livestopp.
+Återaktivering kräver ett nytt uttryckligt beslut. Renderstoppet hanteras separat
+av mergeoperatören; inga providerinställningar eller befintliga deployer har
+ändrats här. JSON-parse och kontroll att övrig konfiguration är oförändrad
+passerar; inget produktions-DDL eller deploy ingår. Aktuell samordning sker i
 [GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
 
 ## Förenklade agentinstruktioner — 21 oktober 2026
