@@ -2,7 +2,7 @@
 
 ## Admin / Studio — PR #359 — 23 oktober 2026
 
-**Leverans för Claudes granskning:** branch codex/admin-en-ingang, worktree scout-wt/admin-en-ingang. Aktuell main 7e51bb550ed078e75e561a0ca00fc5d79bc7a842 är integrerad; handoffkonflikten är löst med båda leveransavsnitten bevarade. #354 inklusive Docker-skyddet ingår i basen. #358 är nu mergad och integrerad från main; denna PR gör inga egna ändringar i dess skyddade filer.
+**Leverans för Claudes granskning:** branch codex/admin-en-ingang, worktree scout-wt/admin-en-ingang. Aktuell main 4336c2cfca2fd9e7a09cc1b4116845d677c52f52 är integrerad; handoffkonflikten är löst med båda leveransavsnitten bevarade. #354 inklusive Docker-skyddet ingår i basen. #358 är nu mergad och integrerad från main; denna PR gör inga egna ändringar i dess skyddade filer.
 
 **Ändrat:** CSS för dialogpanelen följer nu komponenten och Admin-bygget inkluderar klassanvändningen i återanvända Studio-komponenter. Sidomeny och hjälp delar menykarta. Studio och Administration är tydliga grupper; brödsmulor, små pilrader och extra verktygs-/importflikar är borttagna. Klippkartan samlar vald dealers klipp, tal, inställningar och sceneditor. LabStudio, gamla video-/sceneditorerna samt separata Probe och Provspelning & logg är pensionerade. Materialskapandet har en fokuserad sida med egna utkastspärrar. Äldre dokument och inloggningsreturer går till rätt arbetsyta. De gamla läs-API-namnen behålls för redan laddade klienter; datamodell och skrivkontrakt är oförändrade.
 
