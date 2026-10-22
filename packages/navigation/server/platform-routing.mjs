@@ -1,6 +1,8 @@
 import { presentationPublicSource } from '../../presentation/public-modules.mjs';
 import { gameEntryRedirect, approvedGameQuery } from '../game-entry.mjs';
+import { playerLobbyPath } from '../player-lobby.mjs';
 import {adminDocumentHref} from '../admin-workspace-routes.mjs';
+import {legacyActivityDocumentHref} from '../control-flow.mjs';
 import { requestedOperator } from '../operator-entry.mjs';
 import { resolveWorkspaceSurfacePath } from '../workspace-surfaces.mjs';
 import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '../../server-transport/paths.mjs';
@@ -83,33 +85,49 @@ export function backendPlatformPath(value) {
 // Explicit selectors (even malformed ones) keep their existing validation/auth path.
 export function blackjackLobbyDestination(url, config) {
   if (!config?.unifiedUi || !config.canonicalGame
-    || !['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/'].includes(url.pathname)) return null;
+    || !['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/','/game','/game/','/v2','/v2/'].includes(url.pathname)) return null;
   const context = ['table','dealer','lane','presentation','launch','rehearsal',
     'performance','motion','labObserverOrigin','labObserverChannel'];
   if (context.some(key => url.searchParams.has(key))) return null;
   const operator = requestedOperator(url.searchParams);
   if (operator === null) return null; // Preserve the existing invalid/duplicate selector handling.
-  return typeof operator === 'string' ? '/play?'+new URLSearchParams({operator}).toString() : '/play';
+  return playerLobbyPath(url.searchParams, url.hash);
 }
 
 export function platformRoute(url, config, request) {
-  if(config.nativeStudio&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
+  const retiredDocument = /^\/(?:studio\/)?control(?:\/|$)/.test(url.pathname);
+  const legacyAuth = /^\/(?:studio\/)?(?:control\/)?(?:login|set-password)\/?$/.test(url.pathname);
+  if((config.nativeStudio||retiredDocument)&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
     const documentHref=url.pathname+url.search+url.hash;
-    const destination=adminDocumentHref(documentHref);
+    const destination=/^\/(?:studio\/)?control\/activity$/.test(url.pathname) ? legacyActivityDocumentHref(documentHref) : adminDocumentHref(documentHref);
     if(destination!==documentHref)return {kind:'redirect',destination:config.publicOrigin+destination};
   }
-  // Next encodes the literal catch-all folder in these two generated chunks.
+  // Next encodes the literal catch-all folder in the remaining Partner chunk.
   // Allow only their hashed JS assets; encoded document/API paths stay rejected.
-  if (/^\/studio\/_next\/static\/chunks\/app\/(?:control|partner)\/%5B%5B\.\.\.path%5D%5D\/page-[0-9a-f]+\.js$/i.test(url.pathname)) {
+  if (/^\/studio\/_next\/static\/chunks\/app\/partner\/%5B%5B\.\.\.path%5D%5D\/page-[0-9a-f]+\.js$/i.test(url.pathname)) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${url.pathname}${url.search}` };
   }
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
-  if(config.unifiedUi && ['/administration','/administration/'].includes(path)){
-    return {kind:'redirect',destination:`${config.publicOrigin}/control/administration${url.search}`};
+  // Studio validates returnTo/tokens before redirecting historical auth entries.
+  if (legacyAuth) {
+    if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};
+    const mounted = path.startsWith('/studio/') ? path : '/studio'+path;
+    return {kind:'lab',destination:config.labUiOrigin+mounted+url.search};
+  }
+  if (retiredDocument) return {kind:'reject'};
+  if(config.unifiedUi && ['/administration','/administration/'].includes(path) && (!request || ['GET','HEAD'].includes(request.method) && !request.body && !request.headers.has('next-action'))){
+    return {kind:'redirect',destination:config.publicOrigin+adminDocumentHref('/control/administration'+url.search+url.hash)};
+  }
+  if (['/play', '/play/', '/demo', '/demo/', '/casino.html'].includes(path)) {
+    if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};
+    return {kind:'redirect',destination:config.publicOrigin+playerLobbyPath(url.searchParams,url.hash)};
   }
   const lobby = blackjackLobbyDestination(url, config);
-  if (lobby) return {kind:'redirect',destination:config.publicOrigin+lobby};
+  if (lobby) {
+    if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};
+    return {kind:'redirect',destination:config.publicOrigin+lobby};
+  }
   if(config.unifiedUi && config.canonicalGame){
     const previous=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:'1'});
     if(previous||['/blackjack','/blackjack/','/play/blackjack/'].includes(path)){
@@ -123,7 +141,7 @@ export function platformRoute(url, config, request) {
       return {kind:'backend',destination:`${config.backendOrigin}/blackjack${launchBackendSearch(url)}`};
     }
   }
-  if (path === '/play' || path === '/play/' || path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
+  if (path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
     return {kind: 'frontend'};
   }
   const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
@@ -143,7 +161,7 @@ export function platformRoute(url, config, request) {
   if (path === '/admin' || path.startsWith('/admin/') || path === '/lobby' || path.startsWith('/lobby/')) {
     return { kind: 'lab', destination: `${config.labUiOrigin}/studio${path}${url.search}` };
   }
-  if (workspace && (path === '/control' || path.startsWith('/control/') || path === '/partner' || path.startsWith('/partner/'))) {
+  if (workspace && (path === '/partner' || path.startsWith('/partner/'))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }
   if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)

@@ -346,7 +346,11 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   assert.equal(flip.video.fileName, 'deal_flip.mp4'); assert.deepEqual(flip.decision.sourceEvent.card, reveal.card);
   const media = await fetch(origin + result.video.src, { headers: { range: 'bytes=0-15' } });
   assert.equal(media.status, 206); assert.equal((await media.arrayBuffer()).byteLength, 16);
-  assert.equal(media.headers.get('cache-control'), 'private, no-store');
+  assert.equal(media.headers.get('cache-control'), 'private, no-cache, must-revalidate');
+  const unchanged = await fetch(origin + result.video.src, { headers: { 'if-none-match': media.headers.get('etag') } });
+  assert.equal(unchanged.status, 304);
+  assert.equal((await unchanged.arrayBuffer()).byteLength, 0);
+  assert.equal(unchanged.headers.get('cache-control'), 'private, no-cache, must-revalidate');
   const missing = await choose({ event: { type: 'speak', line: 'unknownline' } });
   assert.equal(missing.status, 200); assert.equal((await missing.json()).video, null);
   const at = new Date().toISOString();

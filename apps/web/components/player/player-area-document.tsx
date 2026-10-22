@@ -1,4 +1,3 @@
-import {PlayerLobbyDocument} from './player-lobby-document';
 import {PlayerProfileForm} from './player-profile-form';
 
 type PlayerField = {label: string, value: string};
@@ -6,7 +5,7 @@ type PlayerPill = {label: string, status: string};
 type PlayerLink = {href: string, label: string};
 
 export type PlayerAreaModel = {
-  surface: 'lobby' | 'profil' | 'historik';
+  surface: 'profil' | 'historik';
   eyebrow: string;
   title: string;
   intro: string;
@@ -30,7 +29,6 @@ function PrimaryAction({primary}: {primary: PlayerAreaModel['primary']}) {
 }
 
 export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
-  if(model.surface==='lobby')return <PlayerLobbyDocument model={model}/>;
   return <main className="min-h-screen bg-[#0b151b] px-6 py-14 text-white">
     <div className="mx-auto max-w-3xl">
       <a href="/" className="text-sm text-slate-300">← Scoutgaming</a>

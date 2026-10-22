@@ -1,17 +1,28 @@
 # Samarbete och åtkomst
 
-## Verifierat läge 21 oktober 2026
+## Verifierat läge 22 oktober 2026
 
-Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312). [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311) innehåller planen; status.json är enda källa för migrationsprocent. Slack-kanalen [#scoutgaming-migrering i Impactwin](https://app.slack.com/client/T0AS10FEHFY/C0CAXPEDRB8) finns med Jakob och Kevin. Codex Slack-anslutning visar Cursor; GitHub används därför för agentarbetet.
+Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
+[PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311) innehåller planen;
+status.json är enda källa för migrationsprocent: 45% (9/20), 55% återstår.
+K01/J01 är redan VERIFIED; de tidigare angivna K01-rättningarna är avslutade.
+Nuvarande ansvar ersätter tabellen från 21 oktober.
 
 | Roll | Aktuell uppgift | Ägd yta |
 | --- | --- | --- |
-| Jakob-implementerare | J01: tydligare Admin-publicering | codex/admin-publication-j01, separat worktree från main 15988f32fd572c453d2189502acbe324c4566815 |
-| Kevin-agent | Rätta K01:s state/proof-mappning och reproducerbara auditunderlag | kevin-merge-admin, fryst 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc |
-| Orkestrator | Beroenden, SQL-läsroll, integration och status | codex/migrering-masterplan och GitHub #312 |
-| Oberoende granskare | Granska fryst K01 och därefter levererad J01 | Fynd och verifiering; ingen självattest av egen kod |
+| Root och egna implementerare | J05/J08-integration, monterad spelklient, tre P2-rättningar och granskbar schemaförberedelse | Befintlig codex/shared-room-transport; separata filclaims |
+| Kevin-agent | Tre monterade K04-prov: tal under kortövergång, touch/layout och fullflöde med skärmbilder | Befintlig Kevin-branch och isolerade paket/media; ingen klientleveransskuld |
+| Root planägare | Kanonisk status och kontrollerad konfliktlösning i #311 | Befintlig codex/migrering-masterplan |
+| Oberoende granskare | Granska fryst slutdelta, konkreta felvägar och körda bevis | Ingen självattest av egen kod |
+| Separat mergeagent | Ägarkontroll, grindar, oberoende review och sekventiell merge | #334 → #336; separat #311 när godkänd |
 
-Jakob har uttryckligen startat J01 med underagenter och parallell granskning av Kevin-underlaget. J01 väntar inte på Kevin-porten eller SQL-inloggningen. J01:s isolerade acceptans och CI är verifierade i PR #313; aktiviteten är VERIFIED (5% av planen), ännu inte mergad. K01:s komplettering är granskad men två rättelser krävs; [fynd och nästa leverans](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318726653).
+Kevin-refill eb6ab45509fad539463bbcb6930cc46d2d0844c2 är oberoende granskad
+och återanvänd i transportbranchen. Det innebär inte mergegodkännande för #333.
+Root har pausat egna GitHub-merger. Produktions-DDL, deploy och flaggaktivering
+saknar mandat. Mergeagentens verifierade Render-autoDeploy från main måste
+hanteras innan en merge kan uppfylla villkoret att inte deploya.
+Samordningsbeslut och nästa verifierade head publiceras en gång i #312;
+inga mottagningskvittenser eller parallella statusregister.
 
 ## Jakobs småändringar parallellt
 
@@ -93,7 +104,8 @@ redan öppna sessioner; orkestratorn äger återkallelse efter kartläggningen.
 Kevin-agenten har [bekräftat egen inloggning och schemaöversikt](https://github.com/Jakeminator123/scoutgaming/issues/312#issuecomment-6318426856):
 rätt roll/databas, read-only on och 7/26/28 tabeller i auth/game/studio. Detta är
 Kevins körkvitto; vår separata anslutnings-/ACL-verifiering beskrivs ovan.
-Nästa ansvarig är Kevin-agenten för K01-matrisen.
+Vid denna åtkomstleverans var K01-matrisen nästa uppgift; K01 är nu VERIFIED.
+Kevins aktuella ansvar är de tre monterade K04-proven i tabellen överst.
 
 Denna åtkomstleverans ger inga migrationsprocent. Produktionsrensning av tabeller kräver fortfarande granskad J09/O03-åtgärd.
 

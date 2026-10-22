@@ -33,7 +33,7 @@ export function adminDocumentHref(value) {
   if(typeof value!=='string'||!/^\/(?:studio\/)?(?:control(?:[/?#]|$)|admin\/material-library(?:[/?#]|$))/.test(value)||/[\\\r\n]/.test(value))return value;
   const url=new URL(value,'https://workspace.invalid');
   const materialAlias=/^\/(?:studio\/)?admin\/material-library$/.test(url.pathname);
-  const section=materialAlias?'library':url.pathname.replace(/^\/(?:studio\/)?control\/?/,'');
+  const section=materialAlias?'library':url.pathname.replace(/^\/(?:studio\/)?control\/?/,'').replace(/\/$/,'');
   let target=section==='administration'||section==='admin'
     ? administration[url.searchParams.get('tab')]??'/admin/drift' : destinations[section];
   if(section==='openclaw'&&url.searchParams.get('tab')==='chat')target='/admin/dealer-agent';

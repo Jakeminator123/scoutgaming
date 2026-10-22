@@ -19,7 +19,7 @@ const module = { exports: {} };
 vm.runInNewContext(compiled, { module, exports: module.exports, require: name => name.endsWith('.module.css')
   ? { __esModule: true, default: {} } : name === '../lib/studio-login-client.mjs' ? login : require(name), fetch, URL }, { filename: 'studio-login.tsx' });
 const propsFor = (authBase, mode = 'login') => ({ authBase, mode, resetAvailable: true,
-  returnTo: '/studio/administration', token: mode === 'set-password' ? 't'.repeat(48) : null });
+  returnTo: '/studio/admin/drift', token: mode === 'set-password' ? 't'.repeat(48) : null });
 const ssr = props => renderToString(React.createElement(module.exports.StudioLogin, props));
 
 test('installed React SSR renders every auth form as exact POST with all controls disabled before hydration', () => {
@@ -63,6 +63,7 @@ function browserSources() {
       ['./' + name + '.mjs', compile(readFileSync(new URL('../lib/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
     ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'admin-workspace-routes'].map(name =>
       ['../../../packages/navigation/' + name + '.mjs', compile(readFileSync(new URL('../../../packages/navigation/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
+    './admin-workspace-routes.mjs': compile(readFileSync(new URL('../../../packages/navigation/admin-workspace-routes.mjs', import.meta.url), 'utf8'), 'admin-workspace-routes.mjs'),
     './operator-slug.mjs': compile(readFileSync(new URL('../../../packages/navigation/operator-slug.mjs', import.meta.url), 'utf8'), 'operator-slug.mjs'),
     './studio-login.module.css': 'module.exports={__esModule:true,default:{}};',
     component: compiled,
@@ -110,7 +111,8 @@ test('browser fixture loads the real login component and every return-path depen
   const load = fixtureRequire(browserSources()), client = load('../lib/studio-login-client.mjs');
   assert.equal(typeof load('component').StudioLogin, 'function');
   for (const target of ['/admin/clips?operator=north&table=room-7&composition=scene-7&dealer=vera&game=roulette',
-    '/control/preview?operator=north&lane=scene-7', '/partner/north/rooms?room=vip-room']) {
+    '/control/preview?operator=north&lane=scene-7', '/control/administration?tab=operations&operator=north&room=room-7#status',
+    '/partner/north/rooms?room=vip-room']) {
     assert.equal(client.studioLoginReturnTo(target), login.studioLoginReturnTo(target));
     assert.equal(client.studioLoginDestination(target), login.studioLoginDestination(target));
   }
@@ -127,11 +129,11 @@ test('actual browser cold Enter/submit stays inert and hydrated forms use JSON P
         page.on('pageerror', error => errors.push(error.message));
         await page.route('https://login.fixture.invalid/**', async route => {
           const request = route.request(), url = new URL(request.url());
-          if (url.pathname === '/login') return route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<div id="root">${ssr(props)}</div>` });
+          if (url.pathname === '/admin/login') return route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<div id="root">${ssr(props)}</div>` });
           requests.push({ path: url.pathname, search: url.search, method: request.method(), contentType: request.headers()['content-type'], body: request.postData() });
           return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"fixture-denied"}' });
         });
-        await page.goto('https://login.fixture.invalid/login');
+        await page.goto('https://login.fixture.invalid/admin/login');
         assert.equal(await page.locator('form:not(details form) input:enabled').count(), 0);
         assert.equal(await page.locator('form:not(details form) button:enabled').count(), 0);
         assert.deepEqual(await page.locator('form').evaluateAll(forms => forms.map(form => [...new FormData(form).keys()])), mode === 'login' ? [[], []] : [[]]);
@@ -143,7 +145,7 @@ test('actual browser cold Enter/submit stays inert and hydrated forms use JSON P
         await page.waitForURL(url => url.pathname === `${authBase}/${mode}`, { waitUntil: 'load' });
         assert.equal(requests.length, 1); assert.equal(requests[0].method, 'POST'); assert.equal(requests[0].search, '');
         assert.equal(requests[0].body ?? '', '');
-        await page.goto('https://login.fixture.invalid/login'); requests.length = 0;
+        await page.goto('https://login.fixture.invalid/admin/login'); requests.length = 0;
         await page.addScriptTag({ content: browserBootstrap(props) }); await page.evaluate(() => window.fixtureHydrate());
         await page.waitForFunction(() => document.querySelector('button[type="submit"]')?.disabled === false);
         const form = page.locator('form').first();
@@ -185,7 +187,7 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
   const config = { allowedOrigins:[publicOrigin,labOrigin], publicHosts:['game.fixture.invalid','studio.fixture.invalid'],
     apiBase:'/studio/api/admin',authBase:'/studio/api/auth' };
   const pages = Object.fromEntries(['login','set-password'].map(mode => [mode,
-    compile(readFileSync(new URL('../app/' + mode + '/page.tsx', import.meta.url),'utf8'),mode + '.tsx')]));
+    compile(readFileSync(new URL('../app/admin/' + mode + '/page.tsx', import.meta.url),'utf8'),mode + '.tsx')]));
   async function pageResponse(url, headers) {
     const mode = url.pathname.endsWith('/set-password') ? 'set-password' : 'login', pageModule = {exports:{}};
     const overrides = {
@@ -207,7 +209,7 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
   }
   const browser = await chromium.launch({ headless:true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? {channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL} : {}) });
   try {
-    for (const kind of ['game','lab']) for (const entry of ['/login','/studio/login']) {
+    for (const kind of ['game','lab']) for (const entry of ['/control/login','/admin/login']) {
       const bo = new DatabaseSync(':memory:'), game = new DatabaseSync(':memory:');
       const context = await browser.newContext();
       try {
@@ -260,14 +262,10 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
               headers.set('sec-fetch-site','same-origin');
             }
             seen.push({origin:url.origin,path:url.pathname,method:request.method()});
-            if (url.pathname === '/login' || url.pathname === '/set-password') {
-              // The installed Next config applies these basePath:false aliases
-              // before App Router; keep its original search string.
-              const rules = await (await import('../next.config.mjs')).default.redirects();
-              const rule = rules.find(item=>item.source === url.pathname);
-              if (rule) return fulfill({status:307,headers:{location:rule.destination + url.search},body:''});
-            }
-            if (['/login','/studio/login','/set-password','/studio/set-password'].includes(url.pathname)) return fulfill(await pageResponse(url,headers));
+            const {legacyStudioDocumentHref} = await import('../lib/legacy-studio-document.mjs');
+            const alias = legacyStudioDocumentHref(new Request(url,{headers}),{basePath:'/studio'});
+            if (alias) return fulfill({status:307,headers:{location:new URL(alias,publicOrigin).href,'referrer-policy':'no-referrer'},body:''});
+            if (['/admin/login','/studio/admin/login','/admin/set-password','/studio/admin/set-password'].includes(url.pathname)) return fulfill(await pageResponse(url,headers));
             if (url.pathname === '/studio/api/auth/login') {
               const response = await actions.handle(new Request(url,{method:request.method(),headers,body:request.postData()}));
               assert.equal(response.status,200,'native fixture login succeeds');
@@ -283,7 +281,7 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
               const output = Object.fromEntries(Object.entries(responseHeaders).map(([key,value])=>[key.toLowerCase(),Array.isArray(value)?value.join('\n'):String(value)]));
               return fulfill({status,headers:output,body});
             }
-            const target = kind === 'game' ? '/blackjack' : '/studio/administration';
+            const target = kind === 'game' ? '/blackjack' : '/studio/admin/drift';
             assert.equal(url.origin,publicOrigin);assert.equal(url.pathname,target);
             if (kind === 'game') assert.equal(auth.user({headers:{cookie:rawHeaders.cookie || ''}}),'fixture-player');
             else assert.equal((await authorize(new Request(url,{headers}))).role,'admin');
@@ -291,15 +289,15 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
           } catch(error) {failures.push(error);await route.fulfill({status:500,body:'Isolated fixture failed'});}
         });
         const page = await context.newPage();
-        const target = kind === 'game' ? '/blackjack?dealer=astrid&rehearsal=1' : '/studio/administration';
+        const target = kind === 'game' ? '/blackjack?dealer=astrid&rehearsal=1' : '/studio/admin/drift';
         try { await page.goto(publicOrigin + '/api/auth/' + (kind === 'game' ? 'bo' : 'lab') + '/start?next=' + encodeURIComponent(target)); } catch(error) { throw Error('Fixture start failed; intercepted=' + JSON.stringify(seen) + '; errors=' + failures.map(e=>e.message).join('|')); }
         if(failures.length) throw failures[0];
-        await page.waitForURL(url=>url.origin === publicOrigin && url.pathname === '/studio/login');
+        await page.waitForURL(url=>url.origin === publicOrigin && url.pathname === '/admin/login');
         if(failures.length) throw failures[0];
         const returnTo = new URL(page.url()).searchParams.get('returnTo');
         assert.match(returnTo,new RegExp('^/api/bo/' + kind + '-login\\?state=[a-f0-9]{64}$'));
         await page.goto(labOrigin + entry + '?returnTo=' + encodeURIComponent(returnTo));
-        await page.waitForURL(publicOrigin + '/studio/login?returnTo=' + encodeURIComponent(returnTo));
+        await page.waitForURL(publicOrigin + '/admin/login?returnTo=' + encodeURIComponent(returnTo));
         const form = page.locator('form').first();
         await form.locator('[name="user"]').fill('operator');await form.locator('[name="pass"]').fill(pass);
         await form.locator('button').click();
@@ -350,7 +348,8 @@ test('actual browser expired Admin login restores the real room view through his
     {...room,id:'fixture-first-room',presentationLaneId:'fixture-default-scene',name:'C4 annat rum'},room]};
   assert.notEqual(room.id,room.presentationLaneId);
   async function assertRoomView(page) {
-    const studio = page.getByRole('region',{name:'Central Studio'});
+    const studio = page.getByRole('region',{name:'Klippkarta för vald dealer'});
+    await studio.locator('summary').filter({hasText:'Rum och publicering'}).click();
     const choices = [['Spelbolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],
       ['Rum',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
     for (const [name,value,label] of choices) {
@@ -360,12 +359,12 @@ test('actual browser expired Admin login restores the real room view through his
       assert.equal(await select.isEnabled(),true);
     }
     assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
-    await studio.getByRole('button',{name:'Gemensam sammansättningsmall',exact:true}).click();
+    await studio.getByRole('button',{name:'Scen & lager',exact:true}).click();
     const composition = page.getByRole('region',{name:'Gemensam sammansättningsmall',exact:true});
     await composition.getByRole('heading',{name:expectedLabels.composition,exact:true}).waitFor();
     assert.equal(await composition.getByRole('listitem').textContent(),expectedLabels.operator + ' · ' + expectedLabels.room);
     assert.equal(await composition.getByRole('combobox',{name:'Förvald dealer',exact:true}).inputValue(),expectedContext.dealer);
-    await page.getByRole('complementary',{name:'Kontextpanel'}).getByRole('button',{name:'Stäng',exact:true}).click();
+    await page.getByRole('complementary',{name:'Klipp och inställningar'}).getByRole('button',{name:'Stäng',exact:true}).click();
     assert.equal(await studio.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'reading the room must not create a draft');
   }
   const unexpected = () => assert.fail('fixture must not access another runtime or data source');
@@ -441,8 +440,8 @@ test('actual browser expired Admin login restores the real room view through his
               assert.equal(new URL(request.frame().url()).origin,url.origin);assert.equal(headers.get('origin'),url.origin);
               headers.set('sec-fetch-site','same-origin');
             }
-            if (url.pathname === '/studio/login') {
-              const page = load('../app/login/page.tsx', {
+            if (url.pathname === '/admin/login') {
+              const page = load('../app/admin/login/page.tsx', {
                 '@/components/studio-login':module.exports,'@/lib/studio-native-runtime.mjs':runtime,
                 '@/lib/studio-login-client.mjs':login,'@/lib/next-page-navigation.mjs':nextPage,'next/headers':{headers:async()=>headers},
               });
@@ -473,7 +472,7 @@ test('actual browser expired Admin login restores the real room view through his
             assert.equal(response.headers.get('vary'),'Cookie');
             if (response.status === 307) {
               const destination = response.headers.get('location');
-              assert.equal(destination,'/studio/login?returnTo=' + encodeURIComponent(target));
+              assert.equal(destination,publicOrigin + '/admin/login?returnTo=' + encodeURIComponent(target));
               // Like the handoff fixture above, replay the redirect receipt as a
               // new navigation so Playwright intercepts every synthetic request.
               // This shim has its own HTML policy; it does not test redirect CSP.
@@ -486,13 +485,13 @@ test('actual browser expired Admin login restores the real room view through his
         const page = await context.newPage();page.setDefaultTimeout(10_000);page.on('pageerror',error=>failures.push(error));
         try {
           await page.goto(publicOrigin + prefix + target);
-          await page.waitForURL(publicOrigin + '/studio/login?returnTo=' + encodeURIComponent(target));
+          await page.waitForURL(publicOrigin + '/admin/login?returnTo=' + encodeURIComponent(target));
           assert.deepEqual(documentStatuses,[307]);
           const form = page.locator('form').first();
           await form.locator('[name="user"]').fill('operator');await form.locator('[name="pass"]').fill(pass);await form.locator('button').click();
           await page.waitForURL(publicOrigin + target);
           await assertRoomView(page);
-          await page.goBack();await page.waitForURL(publicOrigin + '/studio/login?returnTo=' + encodeURIComponent(target));
+          await page.goBack();await page.waitForURL(publicOrigin + '/admin/login?returnTo=' + encodeURIComponent(target));
           await page.goForward();await page.waitForURL(publicOrigin + target);await assertRoomView(page);
           const readsBeforeReload = dataReads.length;
           await page.reload();await assertRoomView(page);

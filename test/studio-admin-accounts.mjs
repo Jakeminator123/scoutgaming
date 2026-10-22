@@ -41,7 +41,7 @@ test('invite creates an inactive existing-domain identity and hashed invitation;
   assert.deepEqual(response,{ok:true,kind:'invite',emailSent:true});
   assert.equal(f.state.users[0].role,'admin'); assert.equal(f.state.users[0].username,'new@example.invalid'); assert.equal(f.state.users[0].hash,null);
   assert.equal(f.state.tokens.length,1); assert.match(f.state.tokens[0].token,/^studio-sha256:/);
-  assert.equal(f.sent.length,1); assert.match(f.sent[0].link,/\/studio\/set-password\?t=/);
+  assert.equal(f.sent.length,1); assert.match(f.sent[0].link,/\/admin\/set-password\?t=/);
   assert.equal(JSON.stringify(response).includes(new URL(f.sent[0].link).searchParams.get('t')),false);
   await assert.rejects(f.call('users/invite',{email:'NEW@example.invalid',role:'admin'}),error=>error.statusCode===409);
   assert.equal(f.state.users.length,1);

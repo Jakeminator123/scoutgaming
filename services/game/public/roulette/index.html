@@ -9,7 +9,7 @@
 </head>
 <body data-scout-assistant="disabled">
   <header class="topbar">
-    <a class="brand" href="/play" aria-label="Scoutgaming – tillbaka till lobbyn"><span class="brand-mark">S</span>scout<span class="slash">/</span>gaming</a>
+    <a class="brand" href="/lobby" aria-label="Scoutgaming – tillbaka till lobbyn"><span class="brand-mark">S</span>scout<span class="slash">/</span>gaming</a>
     <div class="room-title"><h1 id="room-name">Privé Roulette</h1></div>
     <div class="last-result"><span class="eyebrow">SENAST</span><span id="result-number" class="result-number">—</span></div>
     <div class="account"><span class="demo-tag">SALDO · DEMO</span><strong id="balance">—</strong></div>
@@ -43,7 +43,7 @@
     <details class="bet-summary"><summary>Mina satsningar <span id="bet-count">0</span></summary><ul id="bet-list"></ul></details>
     <details class="recent"><summary>Historik · senaste 20 rundor</summary><div id="result-color">Välkommen till bordet</div><p id="round-return">Lägg din första satsning</p><ol id="history" aria-label="Senaste rouletteutfall"></ol></details>
     <details class="room-info"><summary>Rumsinformation</summary><p id="scene-caption">Europeisk roulette · Enkel nolla</p><p id="scene-status" role="status">Laddar rummets media…</p><p id="player-name">Ditt spelkonto</p><p><span id="phase">ANSLUTER</span> · 1–2 000 per fält · högst 10 000 per runda</p><p>Europeisk roulette med enkel nolla. Individuella rundor och demosaldo.</p></details>
-    <a class="lobby-link" href="/play">← Till lobbyn</a>
+    <a class="lobby-link" href="/lobby">← Till lobbyn</a>
   </dialog>
   <dialog id="rules"><form method="dialog"><button class="close" aria-label="Stäng spelregler">×</button></form><span class="eyebrow">PRIVÉ ROULETTE</span><h2>Spelregler</h2><p>Europeisk roulette med 0–36. Varje nummer har samma chans. Varje snurr är oberoende.</p><table><thead><tr><th>Satsning</th><th>Vinst</th></tr></thead><tbody><tr><td>Ett nummer</td><td>35:1</td></tr><tr><td>Delning, 2 nummer</td><td>17:1</td></tr><tr><td>Gata eller trio, 3 nummer</td><td>11:1</td></tr><tr><td>Hörn / första fyra</td><td>8:1</td></tr><tr><td>Sexrad, 6 nummer</td><td>5:1</td></tr><tr><td>Dussin / kolumn</td><td>2:1</td></tr><tr><td>Röd/svart, jämnt/udda, låg/hög</td><td>1:1</td></tr></tbody></table><p>Vid vinst får du även tillbaka den vinnande insatsen. Ingen La Partage eller En Prison. Demosaldot är gemensamt med blackjack.</p><p>Satsningarna låses när du snurrar. Servern sparar utfall och saldo samtidigt; resultatrutan visar det sparade resultatet. Efter omladdning visas dina senaste sparade rundor.</p></dialog>
   <dialog id="inside"><form method="dialog"><button class="close" aria-label="Stäng satsningsval">×</button></form><span class="eyebrow">SATSNINGAR</span><h2>Välj satsning</h2><label for="inside-type">Typ av satsning</label><select id="inside-type"><option value="straight">Ett nummer · 35:1</option><option value="outside">Röd/svart, jämnt/udda, låg/hög · 1:1</option><option value="dozen">Dussin · 2:1</option><option value="column">Kolumn · 2:1</option><option value="split">Delning · 17:1</option><option value="street">Gata · 11:1</option><option value="trio">Trio med nollan · 11:1</option><option value="corner">Hörn / första fyra · 8:1</option><option value="line">Sexrad · 5:1</option></select><label for="inside-bet">Nummer eller område</label><select id="inside-bet"></select><p id="inside-chip"></p><button id="add-inside" class="spin">Lägg marker</button></dialog>

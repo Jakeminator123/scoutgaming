@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import {publicAbsoluteUrl} from '../lib/lab-url.mjs';
+import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 
 const url=new URL('../app/page.tsx',import.meta.url);
 const require=createRequire(url);
@@ -16,6 +17,7 @@ function load(){
     if(name==='next/headers')return {headers:async()=>new Headers({'host':'studio.internal.invalid','x-forwarded-host':'public.example.invalid','x-forwarded-proto':'https'})};
     if(name==='next/navigation')return navigation;
     if(name==='@/lib/lab-url.mjs')return {publicAbsoluteUrl};
+    if(name==='../../../packages/navigation/admin-workspace-routes.mjs')return {adminDocumentHref};
     throw Error(name);
   }});
   return module.exports.default;
@@ -29,7 +31,7 @@ test('legacy technical root bookmarks retain clip context and repeated query par
   await assert.rejects(page({searchParams:Promise.resolve({dealer:'vera',event:'a&b',tag:['one','two'],empty:undefined})}),error=>{
     assert.match(error.digest,/;308;$/);
     const destination=new URL(error.digest.split(';')[2]);
-    assert.equal(destination.pathname,'/control/clips');
+    assert.equal(destination.pathname,'/admin/dealer-studio');
     assert.equal(destination.searchParams.get('event'),'a&b');
     assert.deepEqual(destination.searchParams.getAll('tag'),['one','two']);
     assert.equal(destination.searchParams.get('dealer'),'vera');

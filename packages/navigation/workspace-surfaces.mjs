@@ -12,11 +12,11 @@ export const CONTROL_PREVIEW_VIEWS = Object.freeze([
   'archive', 'tables', 'voice', 'clips', 'media', 'tree',
 ]);
 const aliases = Object.freeze({ overview: 'ops', presentation: 'theme', integration: 'api' });
-// studioPath stays the internal Lab rewrite. legacyPath is the public /control URL.
+// studioPath is the internal rewrite. legacyPath is the current public document.
 const legacyControl = Object.freeze({
   studio: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
   admin: Object.freeze({ studioPath: '/studio/administration', legacyPath: '/control/administration' }),
-  ops: Object.freeze({ studioPath: '/studio/openclaw', legacyPath: '/control/openclaw' }),
+  ops: Object.freeze({ studioPath: '/studio/admin/ai/models', legacyPath: '/admin/ai/models' }),
   lab: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
 });
 const staffTools = new Set(['companies', 'rooms', 'compositions', 'rehearsal', 'library', 'replies', 'clips', 'dealer-forge', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);

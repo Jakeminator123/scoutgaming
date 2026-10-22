@@ -1,0 +1,58 @@
+name: Product container cache check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/product-container-check.yml
+      - .dockerignore
+      - ops/cloud/Dockerfile
+      - apps/studio/package.json
+      - apps/studio/package-lock.json
+      - services/game/package.json
+      - services/game/package-lock.json
+      - services/astrid-gpu-worker/gateway/package.json
+      - services/astrid-gpu-worker/gateway/package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: product-container-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the production image without publishing or deployment
+        run: docker build --progress=plain -f ops/cloud/Dockerfile -t croupier-cloud:check . 2>&1 | tee "$RUNNER_TEMP/container-first.log"
+      - name: Verify dependency cache survives a product source change
+        run: |
+          printf '\n// Isolated container cache verification.\n' >> services/game/server.mjs
+          docker build --progress=plain -f ops/cloud/Dockerfile -t croupier-cloud:check . 2>&1 | tee "$RUNNER_TEMP/container-cached.log"
+          python3 - "$RUNNER_TEMP/container-cached.log" <<'PY'
+          import pathlib, re, sys
+          log = pathlib.Path(sys.argv[1]).read_text()
+          step = re.search(r'^#([0-9]+) \[.*\] RUN npm --prefix services/astrid-gpu-worker/gateway ci', log, re.M)
+          assert step and re.search(r'^#' + step[1] + r' CACHED$', log, re.M), 'Locked dependency installation was not cached'
+          PY
+      - name: Verify Linux dependencies and private bootstrap permissions offline
+        run: |
+          docker run --rm --network none --entrypoint node croupier-cloud:check -e '
+            const assert=require("node:assert/strict"),fs=require("node:fs"),{createRequire}=require("node:module");
+            for(const directory of ["apps/studio","services/game","services/astrid-gpu-worker/gateway"]){
+              const manifest="/app/"+directory+"/package.json",load=createRequire(manifest);
+              for(const name of Object.keys(JSON.parse(fs.readFileSync(manifest,"utf8")).dependencies))load.resolve(name);
+            }
+            assert(fs.readFileSync("/app/apps/studio/.next/BUILD_ID","utf8").trim());
+            const privateRoot=fs.statSync("/app/lab/data/platform-private");
+            assert.equal(privateRoot.uid,1000);assert.equal(privateRoot.mode&0o777,0o700);
+          '

@@ -22,7 +22,7 @@ vm.runInNewContext(transformSync(navigationSource, {
   filename: 'studio-navigation.tsx',
   jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
   module: { type: 'commonjs' },
-}).code, { module: navigationModule, exports: navigationModule.exports,
+}).code, { module: navigationModule, exports: navigationModule.exports, URL,
   require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name) });
 const source = readFileSync(new URL('./studio-administration.tsx', import.meta.url), 'utf8');
 const compiled = transformSync(source, {
@@ -77,13 +77,16 @@ function harness() {
     },
   };
   const window = {
+    location: new URL('https://admin.fixture.invalid/admin/media-review?dealer=astrid'),
+    history: {state:{foreign:'preserved',__NA:true},replaceState(state,title,href){this.state=state;if(href)window.location=new URL(href,window.location.href);},pushState(state,title,href){this.replaceState(state,title,href);}},
+    dispatchEvent(event) {listeners.get(event.type)?.(event);return !event.defaultPrevented;},
     confirm: () => true,
     addEventListener: (type, callback) => listeners.set(type, callback),
     removeEventListener: (type, callback) => { if (listeners.get(type) === callback) listeners.delete(type); },
   };
   const module = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, window, DOMException, AbortController, URL,
+    module, exports: module.exports, window, DOMException, AbortController, URL, URLSearchParams,
     crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
@@ -265,17 +268,17 @@ test('account status labels keep stored values and integration dates never revea
 test('administration notices use the enclosing room destination and label team compatibility without changing its editor', () => {
   for (const group of ['tables', 'accounts', 'partners']) {
     const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
-    const href = group === 'tables' ? '/control/rooms' : '/control/companies';
+    const href = group === 'tables' ? '/admin/publication' : '/admin/companies';
     const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
     assert.ok(original, group);
     assert.equal(original.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team');
     const embedded = h.render({ ...props, roomsHref: '/admin/rooms', companyTeamLabel: 'Bolag & team (äldre editor)' });
     const links = nodes(embedded, node => node.type === 'a');
-    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/control/companies'));
+    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/admin/companies'));
     assert.ok(target, group);
     assert.equal(target.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team (äldre editor)');
     if (group === 'tables') {
-      assert.equal(links.some(node => node.props.href === '/control/rooms'), false);
+      assert.equal(links.some(node => node.props.href === '/admin/publication'), false);
       assert.match(renderToStaticMarkup(embedded), /Bolagets spelbara rum och publicering hanteras via/);
     }
     h.unmount();

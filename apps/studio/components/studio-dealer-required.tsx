@@ -13,6 +13,6 @@ export function StudioDealerRequired({ project, title }: { project: StudioProjec
     <h2>Välj dealer</h2><p>Öppna den dealer du vill arbeta med. Varje dealer har egna klipp och inställningar.</p>
     <div className="sg-actions">{dealers.map(dealer => <a className="sg-btn sg-btn-secondary" key={dealer.id} href={studioNavigationHref(pathname, { ...context, dealerId: dealer.id })}>{dealer.label}</a>)}</div>
     {!dealers.length ? <p>Inga dealers har registrerats ännu.</p> : null}
-    <p><a href={studioNavigationHref('/control/clips', { laneId: context.laneId, operatorId: context.operatorId, tableId: context.tableId })}>Hantera dealers och arkiv →</a></p>
+    <p><a href={studioNavigationHref('/admin/dealer-studio', { laneId: context.laneId, operatorId: context.operatorId, tableId: context.tableId })}>Hantera dealers och arkiv →</a></p>
   </div></PageTemplate>;
 }

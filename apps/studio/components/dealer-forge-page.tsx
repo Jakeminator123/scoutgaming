@@ -252,7 +252,7 @@ function RowFragment({slot,active,poster,state,busy,dealerId,navigationContext,o
   const canGenerate=state.runwayConfigured&&state.migrationReady&&!slot.needsEvent&&!(slot.kind==='pose'&&slot.pose==='vila');
   const videos=slot.media.filter(row=>row.mediaType!=='audio'&&!row.archived);
   const audio=slot.media.filter(row=>row.mediaType==='audio');
-  const clipHref=studioNavigationHref('/control/clips?view=clips',{...navigationContext,dealerId,eventId:slot.eventId,situation:slot.situation});
+  const clipHref=studioNavigationHref('/admin/dealer-studio?view=clips',{...navigationContext,dealerId,eventId:slot.eventId,situation:slot.situation});
   return <>
     <tr>
       <td><span className={styles.slotLabel}>{slot.label}</span><span className={styles.slotMeta}>{slot.id}{slot.start?` · ${slot.start} → ${slot.end}`:''}{slot.kind==='speech'&&state.speechLines[slot.situation??'']?` · ”${state.speechLines[slot.situation??'']}”`:''}</span></td>

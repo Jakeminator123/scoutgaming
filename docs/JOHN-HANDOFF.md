@@ -1,90 +1,69 @@
 # Aktuell handoff — Scoutgaming
 
+## Migreringsplan och ansvar — 22 oktober 2026
+
+[Masterplanen](../migrering/MASTERPLAN.md) och [status.json](../migrering/status.json)
+är kanoniska. **45% (9/20 hela aktiviteter) är VERIFIED; 55% återstår.**
+J01, J02, K01, O01, J03, J04, K02, K03 och J07 är verifierade.
+Detta är aktivitetsandel, inte tids-, kod- eller produktionsprocent.
+J03/PR331 och J04/PR335 är integrerade i betrodd main
+`6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad`; tidigare uppgift om inga
+migrationsmerger är ersatt. Denna planbranch har sammanförts lokalt med samma
+main för att lösa handoffkonflikten, utan GitHub-merge eller deploy.
+
+J05/J08/K04/K05 är fortfarande IN_PROGRESS. Root äger klientmontering, rumsväg,
+server och byggkedja; Kevin har ingen utestående klientleveransskuld. Hans
+refill `eb6ab45509fad539463bbcb6930cc46d2d0844c2` är oberoende granskad och
+återanvänd. Kevin äger tre återstående K04-prov: tal under kortövergång,
+touch/layout och fullflöde med skärmbilder på den monterade isolerade provvägen.
+
+PR336:s levererade `8504c6e83497c03fff55a34d0762e9faa37b41fb` har grön CI.
+Oberoende mergegranskning hittade tre P2: för kort total presentationstimeout,
+uteblivet placebets i färskt insatsfönster och utebliven walletuppdatering i
+aktörens andra rum. Rättningar pågår i transportarbetskopian och kräver fryst
+sluthead, oberoende deltareview och nya relevanta bevis.
+
+Game008/009/010 saknas fortfarande i verifierad Neonproduktion; read-only
+metadata och granskbar schemaförberedelse följs i transportbranchens befintliga
+återställningsguide. Inget produktions-DDL, deploy eller flaggaktivering är
+godkänt. Isolerade PG16-prov ersätter inte målmiljöns PG18-acceptans eller Kevins
+verkliga K04-medieprov. Planprocenten ändras inte av nya dokument eller delprov.
+
+Jakobs separata mergeagent äger sekventiell PR-integration; denna root gör inga
+GitHub-merger under överlämningen. Ordningen är #334 → #336, med #311 som separat
+planleverans efter konfliktlösning/review/CI. #332 ingår i #334; #333 är inte
+mergegodkänd. Mergeagenten har dessutom rapporterat Renders automatiska deploy
+från main som en olöst grind för villkoret att inte deploya. Inga
+providerinställningar har ändrats. Aktuell samordning sker i
+[GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
+
 ## Förenklade agentinstruktioner — 21 oktober 2026
 
 På Jakobs begäran förenklas AGENTS i PR #311: masterplanen erkänns,
-Control ska avvecklas enligt aktiviteterna, sakdetaljer hänvisas till sina
-befintliga guider och rena läsfrågor behöver inte extra samordnings-/molnrundor.
-Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap kvarstår.
-Orkestratorn kan tilldela commits i separat worktree; Cursor-reglerna följer
-samma gräns. Studio begränsar Next-läskravet utanför det oförändrade genererade
-blocket. Installerad Next-generator känner fortsatt igen blocket; statusvalidering
-och diffkontroll passerar. Oberoende regelgranskning har inga blockerande fynd.
-Slutlig head följs i PR:en; inga produktändringar eller ändrade CI-/branchskydd ingår.
+Control avvecklas enligt aktiviteterna och sakdetaljer hänvisas till befintliga
+guider. Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap
+kvarstår. Oberoende regelgranskning har inga blockerande fynd. Denna
+regeländring godkänner ingen produktion eller ändring av CI-/branchskydd.
 
-## Masterplan för Admin och Kevin-modulen — 21 oktober 2026
+## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
 
-[Masterplan](../migrering/MASTERPLAN.md) och [beräknad checklista](../migrering/STATUS.md)
-följs i [PR311](https://github.com/Jakeminator123/scoutgaming/pull/311).
-Accepterat: J01, J02, K01 och O01; totalt20%, E1 100%.
-Fullständiga SHA, kommandon och bevisgränser finns i status.json.
-Inga migrations-PR:er är mergade eller produktionsverifierade i denna leverans.
+Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
+vanlig kodändring kan återanvända installationslagret. En selektiv CI-kontroll
+bygger Linux-imagen, kontrollerar cacheträff efter en källändring och provar
+beroenden samt privata bootstrap-rättigheter utan nätverk.
 
-| Aktivitet | Verifierad leverans | Kvar |
-| --- | --- | --- |
-| J01 | PR313/ab4c8c98: tydligare Admin-publicering, spara/publicera/återöppna, ny N1-session, konflikt och auth; CI success | Integration och drift enligt slutetappen |
-| J02 | PR317/6748838e: ersatta publiceringssidor borta, Adminkomponent och kontextbevarande bokmärken; CI success | Ingår i J03:s ännu ointegrerade stack |
-| K01 | PR314/7f42c8f6: fryst källa5aa7ed10 inventerad, import-/state-fynd rättade | Medieimport och exakt take-/hashmappning är senare arbete |
-| O01 | Kontrakt4f45a59c763874466986fc1bb3f3e76b12edba53: backend9c669e67, fastställd Adminmatris och44/44 isolerade kontraktsprov; oberoende slutreview utan blockerare | Framtida writers och faktisk integration följer J07/J08/K04/K06 |
-| K02/K03 | Kodgranskade på0493af3e/b8e1c957; 13+30 isolerade prov samt1 språkprov faktiskt körda,0skip | Full aktivitetsacceptans; J07 äger PG-adapter och verklig persistens |
-| J03 | Guide/Videor318, Probe/Replies320, Events/Tree322, Compositions/Rehearsal324, Agentmodeller/Dealerchatt326 samt Clips329 har grön CI; Administration330 har lokal build/beteendeacceptans | Administration330:s CI, catch-all/auth samt samlad routeacceptans |
+Main kör fortsatt full regression och produktionsledgergrind. Endast
+Moving-imagens ombygge väljs från GitHubs kompletta, verifierade pushintervall.
+Saknad historik, avvikande SHA, ogiltigt event och manuella körningar behåller
+ombygget. Ändrad eller borttagen worker-kod kan inte döljas av en senare
+dokumentationscommit. Lokalt passerar 174 fokuserade tester utan överhopp.
+Linux-bygget och cachekvittot körs i den aktuella pull requestens
+`Product container cache check`; Docker finns inte på denna Windows-värd.
+Ingen merge eller produktionsdriftsättning ingår i denna kvittens.
 
-Clips PR329 produktheadb81d858367254a6572a67df02f1a7ee4dcaae585 har
-lokal komponent-/browser-/authacceptans, build/typer och oberoende review.
-CI39666861547 hittade gamla Clips-adresser, saknad URL-global i VM-fixtures
-och en för snäv gemensam transport/deadlinebudget. Endast fem testfiler samt
-handoff rättades påba983288f1e97e26e728e92329425f16125a1dcb.
-115/115 fokuserade och överlappande ordinarie hookprov,0skip; root läste deltat.
-Uppföljande CI39673629390 är success på samma head. Administration PR330 på
-b60ecf993b609136b32861b0ae433ca769489ba7 tar bort nästa SSR-wrapper och
-dess exklusiva redirecthjälpare/tracing. 224 fokuserade,2 browser och235 hookprov
-passerar utan skips; körningarna överlappar. Studio-build/alla typer passerar,
-oberoende produkt-/testreview utan blockerare. CI för330 ännu inte accepterad.
-Den zoombara /admin/clips bevaras; catch-all/root och authflöden återstår.
-
-O01: demo först och förberedd WalletPort gäller enligt Jakobs beslut.
-Ingen extern aggregator eller SQLite-fallback införs. J07 binder mains
-serverägda demowallet och samtliga reservationswriters till samma SQL-klient.
-Låsplanen tas före savepoint; domänvägran återställer försökets effekter och
-sparar blocked, medan infrastrukturfel ger full rollback. Sen första pause
-är24h/MAX; identisk replay förlänger inte. Backendens frysta specifikation:
-[9c669e67](https://github.com/Jakeminator123/scoutgaming/blob/9c669e67e40c387c84fea6d02449698d373c4c49/migrering/kevin-ks-migrering/K01/O01-svar.md).
-Adminfältens writer/publiceringsgräns och senare integrationer följs i
-MASTERPLAN, utan nya parallella register.
-
-plan_review körde faktiskt K02 på0493af3ec15f2c379e0172aa8d0bdfea1ff3c8a1
-(13/13), K03 påb8e1c957c99c5a16ee861f9767ec28041b2270dd (30/30) och1/1
-kompletterande språkprov. Node24.21.0,24 källfiler blobhashverifierade före/efter.
-Root läste loggar/provmappning och språkprovet: nytt språk väntar till nästa
-fönster, spelarinput skriver inte bordsspråk och koordinatorrekonstruktion
-bevarar fryst version. Bevis: primary arkiv/2026-10-21/o01-contract-verification.
-Minnesadapter och rekonstruerad koordinator bevisar inte processkrasch,
-PostgreSQL-durabilitet eller mottagarpersistens. Mains tidigare9/9 mockade
-transaktionsprov har samma tydliga gräns. Ingen ny DB-/GPU-körning.
-
-Jakobs senaste styrning gäller: ersätt/radera tester för avvecklat beteende;
-fokusera på aktuell produkt, auth, rätt rum, sparning och spelregler.
-Mindre reversibla beslut tas av orkestratorn; framtida integrationer kan vänta.
-J04 är läskartlagd, inte implementerad. Mediafil53f66936 avser annan
-staging238d6dd6/worker; mängder och urval är rapporterade, inte importgodkända.
-Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d har lästs efter separata
-PR328/319; den är inte integrerad i migrationsstacken. Annan agents arbete bevaras.
-Femminutersbevakningen av #312 är aktiv och svarar bara på ändrad sakinformation.
-
-Separat kevin_migration_readonly har skapats i Neon croupier_game:
-tre scheman, kolumn-SELECT i 61 tabeller, hemliga kolumner undantagna.
-ACL-prov visar noll skrivbara objekt och nekad UPDATE/DELETE/CREATE.
-Ny inloggning och sessionsgränser är verifierade från vår sida. Krypterad
-anslutningsinformation är levererad till Kevins age-nyckel i #312; hans agent har kvitterat inloggning och schemaöversikt.
-GitHub deploynyckel med write är sparad efter Jakobs uttryckliga
-bekräftelse; Kevin rapporterar SSH/ls-remote. Rätt Vercel-medlem är
-kevstersolver / kevin@solvify.se, DEVELOPER. Konsol-/Blob-prov återstår.
-Detaljer och ansvar finns i [samarbetsguiden](../migrering/SAMARBETE-OCH-ATKOMST.md).
-
-Färsk main95ac98dc-läsning visar grön GitHub CI. GitGuardian-suiten är queued;
-aktuell incident-/platstäckning är inte verifierad i denna connectorläsning.
-Detta ersätter inte de tidigare separata säkerhetsbevisen.
-Ingen produktionsradering, spelport, merge eller deploy har gjorts i detta steg.
+Medie-/behörighetskontrakt och migrationsspåret är oförändrade.
+Bandbreddsbesparing är ännu inte verifierad; faktisk månadsbesparing måste
+mätas efter integration.
 
 ## Talade repliker och tysta Idle-beteenden — 21 oktober 2026
 
@@ -689,7 +668,181 @@ visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
 
+## Spelarlobby J04 — 22 oktober 2026
+
+Återupptaget på codex/player-lobby-j04 från PR331:s frysta
+471549a8f02f9165be39c7077afef98f37a67ad0, inklusive dåvarande main95ac.
+/lobby är den enda spelkatalogen. /play:s katalogkomponenter och exklusiva
+preview-/portraitfallbackhjälpare är borttagna; /play, /demo och /casino.html
+är kontextbevarande katalogredirects. /play/{game}, /play/profil och
+/play/historik behåller befintlig autentisering och serverägda data.
+Profil/historik nås från lobbyhuvudet. Aktiva retur-/login-/webblänkar pekar
+på /lobby; gamla bokmärken behåller bolag, rum, dealer och tillåtna miljöval,
+men överför inte launch-token eller godtycklig returnTo till katalogen.
+Rumseditorns publiceringskvitto pekar också direkt på bolagets /lobby.
+
+Bord och bakgrund väljs bland samma publicerade rums-/dealeralternativ.
+Val ligger i URL för reload/historik och sparas i befintlig spelpreferenslagring
+före launch; motorn omvaliderar dem mot rummets publicerade paket.
+Chromeprovet fann att återöppnad dealerdialog tappade valt bord; rättat.
+Tomma nullable val över gamla preferenser och misslyckad lagringsrensning
+är också hanterade. Oberoende review fann att verklig spelretur saknade dealer:
+lobbyn återläser nu enbart fortfarande tillåten lagrad dealer när URL saknar
+explicit dealer, och roulette får båda returlänkarna från servervaliderat rum. Felaktigt bolag/rum/dealer breddar aldrig åtkomsten.
+Katalogalias nekar skrivmetoder/action-anrop. Inga spelregler eller saldo-
+writes flyttades till klienten.
+
+Verifiering: 117/117 fokuserade auth-/paket-/rum-/profil-/routingprov,
+inklusive faktiskt Chrome-flöde val → reload → dialog → launch → tillbaka →
+profil/historik och negativa rum/bolagslänkar, 0 skip. Senare route-/registry-
+körning 42/42, 0 skip; den överlappar tidigare prov och inkluderar ny
+metod-/aliasregression. Returrättningen verifieras i 24/24 ytterligare
+överlappande prov inklusive faktiskt Chrome och roulette HTTP, 0 skip.
+Publiceringscallerns närprov passerar 40/40, 0 skip. Lobby- och web-typkontroll passerar. Gamla katalog-
+layouttester togs bort/ersattes med beteendeprov, deras två exklusiva fullhook-
+registreringar borttagna. Public game-entry-modulgrafen byggs i routingprovet.
+Loggar: arkiv/2026-10-22/j04/{final-focused,final-route-registry,browser-before,
+browser-after,return-review,publication-caller,lobby-typecheck,web-typecheck}.log. Inga blockerande lokala fel.
+Oberoende produktreview och roots slutreview har inga kvarvarande blockerande
+fynd. PR335:s första CI39693575758 föll endast i access/game-lanes
+på test/player-choices.mjs:194 som fortfarande krävde /play. Faktisk footer
+var redan /lobby. Endast förväntad adress rättades; före 1/1 fel, efter
+10/10 i hela filen, 0 skip. Rum/bolag/dealer och separat provspelsretur
+prövas fortsatt. Ingen produktändring. Loggar:
+arkiv/2026-10-22/j04/pr335-footer-{before,after,commands}.log.
+Ordinarie rättningshook passerar 10/10,0skip. Fjärr-main64e4c680a045eb3aed92043032fdbaa35e666359 integrerades utan konflikt; dess produktträd är identiskt med redan ärvda PR331/471549a8.
+CI39695713814 föll därefter endast på samma förbrukade katalogadress i
+test/blackjack-entry-http.mjs. Förväntan följer nu login-klientens /lobby;
+före 1/1 fel, efter 1/1 godkänt, 0 skip. Hela HTTP-provet behåller auth,
+serverägd konto-/bordsidentitet, logout och återhämtning efter serveromstart.
+En avgränsad läsning av aktiva launch-/login-HTTP-prov fann inga fler sådana
+adresskrav; /play/{game} och giltiga kompatibilitetslänkar består. Ingen
+produktändring. Loggar: arkiv/2026-10-22/j04/pr335-login-{before,after,commands}.log.
+Ny fjärr-CI krävs på rättningshead före PR335-merge.
+
+Browsern använder riktiga lobbykomponenter med syntetiska publicerade paket,
+syntetiska kontosvar och en isolerad launchmottagare; det är inget faktiskt
+spel-/betalnings-/medie-/Neon-/deployprov. Node24.21.0 och lokala beroende-
+junctions användes. Taskägd Chrome och tillfällig loopbackserver är stängda
+av provets avslutning; inga produktservrar startades. Ingen DDL/merge/deploy.
+
 ## UX/UI: Admins arbetsområden och rumseditor — 19 oktober 2026
+
+J03 · 21 oktober 2026. Tidigare delarna PR318/320/322/324/326/329 har
+verifierad grön CI på dokumenterade slutheads. PR330:s första CI39675471027
+föll på ett saknat login-fixtureberoende och en gammal administrationsadress.
+Endast två tester/handoff rättades i 9627cfa26179038ebd7cba5bc78e8a8061669628;
+30/30 fokuserade/hookprov passerar, tre valfria browserfall ej körda där.
+Uppföljande CI39677936564 är verifierat success på oförändrad head9627cfa2.
+
+Senaste del: codex/admin-control-auth-j03 från PR330-produkthead
+b60ecf993b609136b32861b0ae433ca769489ba7, med samma två CI-testfixar.
+Admin har egna /admin/login och /admin/set-password. Control-catchall,
+authwrappers, gamla formulärsidor, navigationsskal, temaomkopplare och
+exklusiv översiktskod är borttagna. Kända bokmärken går till Admin; okända
+Control-ytor och skrivförsök skapar ingen alternativ backoffice-väg.
+Kända gamla hashval får en enda handoff före Admin-mount. Partner och
+zoomkartan behåller egna funktioner och behörighetsgränser.
+
+Login, återställningslänkar, retur-URL och logout använder Adminmålen.
+Gamla t-länkar bevaras; dubbla/ogiltiga tokens nekas, referrer/cache stängs
+för authredirect. Båda mountformerna och separat Studio-värd går genom
+validerad publicOrigin. Host-only cookies, signerade Game/Lab-handoffs,
+atomisk tokenförbrukning, sessioner och serverägd ekonomi är oförändrade.
+Föråldrade Control-/layoutassertioner har ändrats eller raderats; skydd för
+aktiva auth-, rum-, sparnings- och spelbeteenden består.
+
+Verifiering: root middleware/transport27/27 och shell31/31, 0 skips;
+auth89 unika fall över slutkörningar och12 form/Partner/browserfall,0skip.
+Körningar överlappar; exakta kommandon och sista rättningar finns i loggar.
+Ordinarie hook redovisas i PR/status.json.
+Samlat Studio-build med /studio och alla frontendtyper passerar,
+traces63/44; manifest har Admin-auth och Partner, inga Control-pages.
+Lokala beroendejunctions och syntetiska API/sessioner används; inga
+produktions-, databas-, medie- eller deployprov påstås. Loggar finns i
+arkiv/2026-10-21/j03-auth/ i leveransworktreen. Oberoende slutreview inklusive sista logoutdeltat har inga blockerande fynd.
+Slutbygget efter produktfrysning passerar. Egna authfixtureprocesser och
+browserkontexter är stängda; inga produktservrar startades.
+
+O01 är VERIFIED som kontraktsaktivitet på
+4f45a59c763874466986fc1bb3f3e76b12edba53: Adminmatris och44/44 isolerade
+kontraktsprov. Totalt20%, E1 100%; J03:s slutliga CI/aktivitetsacceptans
+återstår. Aktuell main95ac98dcb1608bd89bb2ac44488b2a82a376682d är integrerad
+konfliktfritt i denna egenbranch/PR331; andra agenters ändringar bevaras.
+CI39680259777 på integrationshead b46e8d1c misslyckades i fyra föråldrade
+test-/fixturekrav. Studio-build/alla frontendtyper och isolerad SQL/restart/HTTPS
+passerade i CI. Fyra testfiler har rättats utan produktändring: gammal
+Control-källsträngskoppling borttagen, preview-authfixture kompletterad och
+två adresskrav flyttade till Admin. Före4/4 reproducerade fel; efter58/58,
+0 skips, på Node24.21.0. Auth-före-dataläsning, hash/ingen bearer, atomisk
+inbjudan och signerad engångshandoff bevarade. Oberoende deltareview av
+kevin_plan och root utan blockerare. Loggar pr331-ci-{before,after,commands}.log.
+CI39682283055 på c7578ede050d21dec3ede098f193fe0276b25027 passerade Studio,
+övriga regressionsgrupper och isolerad SQL/restart/HTTPS, men föll på samma
+föråldrade loginadress i två sync/async-provenancefall i account-credentials.
+En enda testassertion är nu flyttad från /studio/login till /admin/login;
+produkt och kontroller av återkallad epoch, ogiltig provenance och noll nya
+sessioner är oförändrade. Lokal reproduktion: 2/2 fel före; hela berörda
+filen efter rättning: 17/17, 0 skips, Node24.21.0. Exakta kommandon/loggar:
+pr331-epoch-{before,after,commands}.log i samma privata arkiv.
+Ny CI återstår för denna rättning; ingen push, merge till main eller deploy
+påstås av det lokala kvittot.
+
+J02 · 21 oktober 2026, `codex/admin-control-publication-j02`, från J01
+`ab4c8c98ed029b61aaf30b2ca6137b2fb8e93868`: Admin använder nu
+`admin-publication-page.tsx` med flyttad CSS och beteendeprov. De gamla
+`app/control/rooms/page.tsx`, `companies/page.tsx` och `operator-page.tsx`
+är borttagna tillsammans med deras tracingposter och renderer-specifika testlås.
+Aktiva UI-/återhämtningslänkar går direkt till Admin. Bokmärken till
+`/control/rooms` och `/control/lanes` går till `/admin/publication`;
+`/control/companies` och `lanes?tab=companies` går till `/admin/companies`.
+Omdirigering gäller GET/HEAD med och utan native/unified-flagga och /studio-mount;
+querykontext, fragment och lane→composition bevaras. Skrivanrop och next-action
+omdirigeras inte. Befintlig N1-auth, Partner, tjänster och scoped writers kvarstår.
+Verifierat: 383 unika fokuserade prov (106 routing/publicering/browser och
+277 konsument/auth); sista riktade omkörningar 36/36 preview och 19/19 Next-navigation.
+J01-browserflödet körs utan skips via gamla rooms- och monterade lanes-bokmärken,
+inklusive ny signerad session, spara/publicera/återöppna, konflikt och mobil.
+Studio-typkontroll och komplett `npm --prefix apps/studio run build` med
+`CROUPIER_LAB_BASE_PATH=/studio` passerar; Admin/lobby-typer ingår. 78 byggspår,
+0 privata filer rensade. Orphan-kontroll: 530 kandidater, 0 orphan-prov.
+Lokala kommandoutfall/bilder: `arkiv/2026-10-21/j02-ui/` (gitignorerat).
+Befintliga CSS-composes-/Next middleware-varningar kvarstår. Proven använder
+syntetiska konton/minneslagring; ingen produktion, DDL eller GPU kontaktad.
+Testresurser stängs av egen cleanup. Kvar: fryst oberoende granskning, PR/CI;
+resterande Control-ytor och lobbyavveckling hör till J03/J04.
+
+
+J01 · 21 oktober 2026, branch `codex/admin-publication-j01` från main
+`15988f32fd572c453d2189502acbe324c4566815`: publicering visar bolag/rum/version,
+redigering och sparning, publiceringsval och bekräftat kvitto som skilda steg.
+Osparat projekt och konflikt blockerar publicering; återöppning läser sparade
+värden och behåller bolag, sammansättning, dealer, rum, spel och fragment.
+Befintliga scoped writers/auth används. Ersatt formulärmarkup och oanvända
+styles är borttagna; avveckling av Control-ingången hör till J02.
+Grundverifiering på 2f3a5b50: 160/160 prov utan skips (control-lanes-page, workspace-tools,
+presentation-room-create, presentation-room-api, studio-session-save och nya
+admin-publication-workspace), Studio-typer och typkontrollerat klientbygge.
+Testupptäckt: 530 kandidater, noll orphan-prov. Browserprovet kör den verkliga
+komponenten och API-handlers med syntetiska konton och minneslagring:
+spara/publicera/omladdning, ny separat signerad N1-session för samma konto/scope,
+konfliktlösning, 390 px utan horisontell överrullning samt 401/409 utan otillåten skrivning.
+Sessionskomplettering: 23/23 prov utan skips med `node --test --test-concurrency=4`
+`apps/studio/test/admin-publication-workspace.test.mjs` och
+`apps/studio/test/studio-native-auth.test.mjs`; samma Chrome/browser-env som grundprovet.
+Fixturen utfärdar en distinkt JWT och den verkliga cookievalidatorn verifierar
+samma N1-konto/scope. Ny cookie i ny browserkontext återläser sparat namn och
+publicerad version 2; API-provet kontrollerar också den sparade projektrevisionen.
+Ingen produkt-auth eller endpoint har ändrats. Produktbygget har inte upprepats.
+Det är inte en verklig ny lösenordsinloggning eller PostgreSQL-durabilitetskontroll.
+Lokala stegvisa bilder och loggar: `arkiv/2026-10-21/j01-ui/` (gitignorerat).
+Fixturservrar och browserkontexter stängs av provens cleanup. Inga prodskrivningar,
+mediaändringar eller deployer. Klientbygget har befintliga CSS-composes-varningar.
+PR [313](https://github.com/Jakeminator123/scoutgaming/pull/313) är draft; ny head
+ska granskas och få CI. Egen hostläsning av main före kompletteringscommit:
+0 öppna/23 ignorerade, sourceBinding verified, aktiv övervakning;
+historik `too_large` och partiell platsmetadata kvarstår.
+
 
 Klippkartans scenreglage i [PR267](https://github.com/Jakeminator123/scoutgaming/pull/267)
 och bredare scenpanel/driftväljare i [PR274](https://github.com/Jakeminator123/scoutgaming/pull/274)
@@ -1358,3 +1511,51 @@ Begrepp: [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
 Teknisk verklighet: [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md).
 Konfiguration: [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 Återställning: [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md).
+
+## Bandbredd för publicerade presentationsmedia — 21 oktober 2026
+
+PR #321 är mergad som `644b5653936ed890d11c35a8ffb8780161b0a744` och Render
+rapporterar den som live i `dep-dbcgqc9srm7s73cvqqu0`. Loggkartläggningen
+8–21 oktober omfattar 3 754 lyckade GET och 8,30 GB loggade responseBytes:
+Lounge varm 1,86 GB, Casino/bakground 1,67 GB (två ID:n, identisk SHA),
+historisk Johanna-video 0,84 GB, Dragan/Kevin V2 andning 0,49 GB och Oak-bord
+0,26 GB. Detta är ett avgränsat loggurval, inte hela månadsfakturan; äldre
+PNG-täckning är partiell och vissa historiska filnamn/hasher saknas.
+
+De två mediarouterna tillåter nu privat webbläsarcache med obligatorisk
+revalidering, först efter färsk kontroll av publicering och exakt SHA-ETag.
+Oförändrade bytes kan besvaras med 304. Avpublicering, fel rum/revision och
+felaktiga eller overifierade svar får fortfarande inte återanvändas.
+Blob-token, privata lagringsadresser, medieidentiteter och spel/auth är
+oförändrade. Ingen delad CDN-cache eller ny publicering av media införs.
+
+75 riktade tester passerar utan överhopp. Ett isolerat Chrome-prov med samma
+syntetiska 3 350 764-bytevideo och fem sidöppningar jämförde tidigare no-store
+med revalidering: 16 753 820 respektive 3 350 764 överförda body-bytes,
+80 procent mindre i detta prov. Båda alternativen gjorde fem färska
+publiceringskontroller; avpublicering gav 404 även efter uppvärmd cache.
+Första hämtningen kostar lika mycket och återanvändning inom samma sida
+fungerade redan i Chrome. Faktisk månadsbesparing återstår att mäta.
+
+Uppföljningen på `codex/render-avatar-bandwidth` utökar privat revalidering
+till registered-idle/registered-video, äldre presentation/videos och Studio
+previewmedia. Färska auth-, rums-, paket-, ursprungs- och sessionskontroller
+ligger kvar före återanvändning; stängda/utgångna previews och ändrade bytes
+stoppas även med varm cache. En 304 utan verifierad SHA får inte återuppliva
+gamla bytes. Inga ljud, video, bildrutor, kalibreringar eller godkännanden
+ändras och ingen DDL eller publicering införs.
+
+69 riktade avatar-/transportprov, 32 befintliga publicerade-mediaprov och
+117 native-spelarprov passerar. Native-HTTP-provet verifierar också 304 efter
+en exakt ranged hämtning; fil-, spelar- och revisionskontroller behålls.
+Det nya cachetestet ingår i fullsvitens befintliga mediegrupp och
+orphan-kontrollen passerar. Ett separat isolerat Chrome-prov
+mot den riktiga registered-idle-routern ger samma 80 procents minskning vid
+fem sidöppningar: 16 753 820 till 3 350 764 body-bytes, fem färska kontroller
+i båda fallen och 404 efter indragning. SHA för hämtade bytes är identisk.
+PR #321:s adresser stod för 77,1 procent av loggurvalet; med uppföljningens
+adresser omfattas 99,1 procent. Detta mäter adressernas trafiktäckning, inte
+besparing. Uppföljningen levereras i separat PR utan merge eller deploy;
+migreringsagenten är informerad och dess kodfiler/egen handoffsektion lämnas
+orörda. Bildkomprimering har lägre prioritet; byte av medieadresser och första
+hämtningar kan fortfarande vara betydande och ska bedömas från nya driftdata.

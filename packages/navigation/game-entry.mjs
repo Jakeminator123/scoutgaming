@@ -1,6 +1,7 @@
 import {isActiveDealerId as isDealerId} from '../presentation/contracts/dealer-identity.mjs';
 import {isGameLaneId} from '../presentation/contracts/game-lane-id.mjs';
 import {isOperatorSlug} from './operator-slug.mjs';
+import {playerLobbyPath} from './player-lobby.mjs';
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
@@ -46,6 +47,7 @@ export function gameEntryRedirect(url,env) {
     return publicGamePath(env) + (query ? '?' + query : '');
   }
   if (!gameEntryEnabled(env)) return null;
+  if (['/game','/game/'].includes(url.pathname) && !['dealer','presentation','lane','rehearsal','table','launch','labObserverOrigin','labObserverChannel'].some(key => url.searchParams.has(key))) return playerLobbyPath(url.searchParams,url.hash);
   if (['/game','/game/'].includes(url.pathname)
     || url.pathname === '/' && ['dealer','presentation','lane','performance','motion','rehearsal','table','launch','labObserverOrigin','labObserverChannel'].some(key => url.searchParams.has(key))) return canonicalGameDestination(url);
   return null;

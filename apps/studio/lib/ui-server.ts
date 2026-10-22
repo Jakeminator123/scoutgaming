@@ -23,7 +23,7 @@ async function nativeUi(request: Request) {
       const url = new URL(normalized.url);
       const path = url.pathname;
       const returnTo = path === '/studio' || path.startsWith('/studio/') ? path : `/studio${path === '/' ? '' : path}`;
-      redirect(nextStudioLoginRedirect(returnTo + returnSearch));
+      redirect(nextStudioLoginRedirect(returnTo + returnSearch, config.allowedOrigins[0]));
     }
     throw error;
   }

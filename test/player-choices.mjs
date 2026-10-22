@@ -191,7 +191,7 @@ test('dealer footer labels its real action and returns to the same operator lobb
   const {readFile}=await import('node:fs/promises');
   const html=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
   assert.match(html,/aria-label="Välj dealer"/);assert.match(html,/>Välj dealer<\/span>/);
-  assert.match(html,/class="casino-return" href="\/play">Till lobbyn/);
+  assert.match(html,/class="casino-return" href="\/lobby">Till lobbyn/);
   const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const code=app.slice(app.indexOf('const lobbyReturn ='),app.indexOf('for (const {id,label}'));
   for(const [entrySelection,expected] of [

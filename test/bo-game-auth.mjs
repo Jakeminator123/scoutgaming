@@ -63,32 +63,32 @@ try {
   assert.equal((await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/api/table','X-Forwarded-Method':'POST'}})).status,401);
   assert.equal((await request(game+'/api/table',{body:{op:'state'}})).status,401);
   const initial=await begin();
-  const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/studio\/login\?returnTo=%2Fapi%2Fbo%2Fgame-login%3Fstate%3D[a-f0-9]{64}$/);
+  const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/admin\/login\?returnTo=%2Fapi%2Fbo%2Fgame-login%3Fstate%3D[a-f0-9]{64}$/);
   const aliasState='a'.repeat(64),token='b'.repeat(43);
   for(const [path,destination] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
-    ['/bo/login.html','/control/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/control/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
-    [`/bo/set-password.html?t=${token}`,`/control/set-password?t=${token}`]]){
+    ['/bo/login.html','/admin/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/admin/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
+    [`/bo/set-password.html?t=${token}`,`/admin/set-password?t=${token}`]]){
     const response=await request(bo+path);assert.equal(response.status,308,path);assert.equal(location(response),destination,path);
   }
-  assert.equal(location(await request(bo+'/bo/login.html?returnTo=https://attacker.invalid')),'/control/login');
-  assert.equal(location(await request(bo+'/bo/set-password.html?t=private.bad')),'/control/set-password');
+  assert.equal(location(await request(bo+'/bo/login.html?returnTo=https://attacker.invalid')),'/admin/login');
+  assert.equal(location(await request(bo+'/bo/set-password.html?t=private.bad')),'/admin/set-password');
   assert.equal((await request(bo+'/api/bo/config')).status,503,'legacy disk defaults cannot answer the public game projection');
   for(const [path,options] of [['/api/bo/me',{}],['/api/bo/players',{}],['/api/bo/login',{body:{user:'demo-reviewer',pass:password}}],
     ['/api/bo/users/remove',{body:{username:'demo-reviewer'}}]])assert.equal((await request(bo+path,options)).status,404,path);
   let boCookie=administratorCookie();
   const speechQa=await request(bo+'/bo/speech-qa.html',{cookie:boCookie});assert.equal(speechQa.status,200);assert.match(await speechQa.text(),/speech-qa\.mjs/);
-  const protectedMedia=await request(bo+'/bo/speech-qa.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/control/login');
+  const protectedMedia=await request(bo+'/bo/speech-qa.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/admin/login');
   const boClaims=JSON.parse(Buffer.from(boCookie.split('.')[1],'base64url').toString());
   const launchCookie='bo_jwt='+sign({sub:'partner-player',partner:'partner-key',exp:boClaims.exp});
-  assert.equal(location(await request((await begin()).authorize,{cookie:launchCookie})).startsWith('/studio/login'),true,'Partner launch JWT is not a BO session');
+  assert.equal(location(await request((await begin()).authorize,{cookie:launchCookie})).startsWith('/admin/login'),true,'Partner launch JWT is not a BO session');
   for(const claims of [
     {...boClaims,aud:'partner'},
     {...boClaims,partner:'partner-key'},
     {...boClaims,source_stamp:'stale'},
     {...boClaims,role:'superadmin'},
-  ])assert.equal(location(await request((await begin()).authorize,{cookie:'bo_jwt='+sign(claims)})).startsWith('/studio/login'),true,'wrong audience, partner, fingerprint or role is rejected');
+  ])assert.equal(location(await request((await begin()).authorize,{cookie:'bo_jwt='+sign(claims)})).startsWith('/admin/login'),true,'wrong audience, partner, fingerprint or role is rejected');
   craig.prepare("UPDATE users SET role='superadmin' WHERE id=1").run();
-  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/studio\/login/,'role change revokes old BO cookie');
+  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/admin\/login/,'role change revokes old BO cookie');
   boCookie=administratorCookie();
   const continued=await request(initial.authorize,{cookie:boCookie});assert.equal(continued.status,303);
   const callback=location(continued);
@@ -118,20 +118,20 @@ try {
   }
   const expired=await authorize(boCookie);db.prepare('UPDATE bo_game_handoffs SET expires=0').run();assert.equal((await request(expired.callback,{cookie:expired.stateCookie})).status,400);
   const oldBoCookie='bo_jwt='+sign({sub:'demo-reviewer',role:'reader',exp:Date.now()/1000+300});
-  assert.match(location(await request((await begin()).authorize,{cookie:oldBoCookie})),/^\/studio\/login/,'legacy cookie without BO audience must re-login');
+  assert.match(location(await request((await begin()).authorize,{cookie:oldBoCookie})),/^\/admin\/login/,'legacy cookie without BO audience must re-login');
   for(const claims of [{sub:'demo-reviewer',role:'reader',exp:1},{sub:'missing',role:'reader',exp:Date.now()/1000+60},{sub:'demo-reviewer',role:'reader',partner:'operator',exp:Date.now()/1000+60}]) {
-    const flow=await begin(),r=await request(flow.authorize,{cookie:'bo_jwt='+sign(claims)});assert.match(location(r),/^\/studio\/login/);
+    const flow=await begin(),r=await request(flow.authorize,{cookie:'bo_jwt='+sign(claims)});assert.match(location(r),/^\/admin\/login/);
   }
   const signatureAt=boCookie.lastIndexOf('.')+1;
   const wrongCookie=boCookie.slice(0,signatureAt)+(boCookie[signatureAt]==='a'?'b':'a')+boCookie.slice(signatureAt+1);
-  assert.match(location(await request((await begin()).authorize,{cookie:wrongCookie})),/^\/studio\/login/);
+  assert.match(location(await request((await begin()).authorize,{cookie:wrongCookie})),/^\/admin\/login/);
   const pending=await authorize(boCookie);
   craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync('Different-password','test-salt',64).toString('hex'));
   assert.equal((await request(pending.callback,{cookie:pending.stateCookie})).status,401,'password reset while handoff pending');
   assert.equal((await request(game+'/api/auth/access',{cookie:playerCookie,headers:{'X-Forwarded-Uri':'/api/table'}})).status,401);
-  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/studio\/login/,'stamped BO cookie revoked on reset');
+  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/admin\/login/,'stamped BO cookie revoked on reset');
   craig.prepare('DELETE FROM users WHERE id=1').run();
-  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/studio\/login/,'deleted account cannot authorize a handoff');
+  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/admin\/login/,'deleted account cannot authorize a handoff');
   const launch=sign({sub:player.id,partner:'isolated',exp:Date.now()/1000+60});
   for(const path of ['/','/v2/']) {
     const observer='&labObserverOrigin=http%3A%2F%2F127.0.0.1%3A4192&labObserverChannel=isolated-comparison';

@@ -154,12 +154,12 @@ test('impact links preserve selection context and target each affected room and 
  const h=harness(async()=>({impact}));await confirmArchive(h,p);const tree=h.render(p);
  const link=find(tree,node=>node.type==='a'&&node.props.children==='Sparad scen');
  const composition=new URL(link.props.href,'https://test.invalid');
- assert.equal(composition.pathname,'/control/compositions');assert.equal(composition.searchParams.get('composition'),'affected-composition');
+ assert.equal(composition.pathname,'/admin/compositions');assert.equal(composition.searchParams.get('composition'),'affected-composition');
  assert.equal(composition.searchParams.get('operator'),'operator-42');assert.equal(composition.searchParams.get('table'),'room-7');
  const room=find(tree,node=>node.type==='a'&&node.props.children==='Berört rum'),roomUrl=new URL(room.props.href,'https://test.invalid');
- assert.equal(roomUrl.pathname,'/control/rooms');assert.equal(roomUrl.searchParams.get('table'),'affected-room');assert.equal(roomUrl.searchParams.get('operator'),'affected-operator');
+ assert.equal(roomUrl.pathname,'/admin/publication');assert.equal(roomUrl.searchParams.get('table'),'affected-room');assert.equal(roomUrl.searchParams.get('operator'),'affected-operator');
  const operator=find(tree,node=>node.type==='a'&&node.props.children==='Berört spelbolag'),operatorUrl=new URL(operator.props.href,'https://test.invalid');
- assert.equal(operatorUrl.pathname,'/control/rooms');assert.equal(operatorUrl.searchParams.get('operator'),'affected-operator');assert.equal(operatorUrl.searchParams.has('table'),false);
+ assert.equal(operatorUrl.pathname,'/admin/publication');assert.equal(operatorUrl.searchParams.get('operator'),'affected-operator');assert.equal(operatorUrl.searchParams.has('table'),false);
  for(const anchor of [link,room,operator]){const query=new URL(anchor.props.href,'https://test.invalid').searchParams;assert.equal(query.get('dealer'),'linnea');assert.equal(query.has('lane'),false);anchor.props.onClick({button:0,preventDefault(){}});}
  assert.equal(navigated.length,3);
 });

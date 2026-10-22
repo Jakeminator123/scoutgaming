@@ -4,7 +4,6 @@ import Script from 'next/script';
 import {studioHistoryBootstrap} from '@/lib/studio-history.mjs';
 import './globals.css';
 import './scout-theme.css';
-import { WorkspaceNavigation } from '@/components/workspace-navigation';
 
 // Local variable fonts (app/fonts/README.md). Builds no longer depend on fonts.googleapis.com.
 const display = localFont({ src: './fonts/space-grotesk-latin-wght-normal.woff2', weight: '300 700', variable: '--sg-next-display', display: 'swap' });
@@ -23,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <body>
       <Script id="sg-history" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: studioHistoryBootstrap }} />
       <Script id="sg-theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeBoot }} />
-      <WorkspaceNavigation>{children}</WorkspaceNavigation>
+      {children}
       <Script src={(process.env.CROUPIER_LAB_BASE_PATH || '') + '/assistant-widget.js'} strategy="afterInteractive" />
     </body>
   </html>;

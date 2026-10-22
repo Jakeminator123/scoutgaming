@@ -17,7 +17,7 @@ function noticeFor(status: number) {
 // the requested partner view with their existing N1 rights. This form never mints a
 // session for them; it stays limited to operator staff.
 export function internalLoginHref(authBase: AuthBase, returnTo?: string) {
-  return `${authBase.startsWith('/studio/') ? '/studio' : ''}/login?returnTo=${encodeURIComponent(partnerLoginReturnTo(returnTo))}`;
+  return `/admin/login?returnTo=${encodeURIComponent(partnerLoginReturnTo(returnTo))}`;
 }
 
 export function PartnerLogin({ authBase, returnTo }: { authBase: AuthBase; returnTo?: string }) {

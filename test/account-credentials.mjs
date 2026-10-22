@@ -235,7 +235,7 @@ for(const [name,authFactory,identityFactory,handoffFactory] of [
     }
     for(const epoch of [-1,Infinity,NaN,Number.MAX_SAFE_INTEGER+1]) {
       claimsEpoch=epoch;const start=await request('/api/auth/bo/start?next=/play/profil');
-      assert.match((await request(start.headers.Location)).headers.Location,/^\/studio\/login\?/);
+      assert.match((await request(start.headers.Location)).headers.Location,/^\/admin\/login\?/);
     }
     assert.equal(f.players.prepare('SELECT count(*) n FROM player_sessions').get().n,1,'invalid codes create no sessions');
     f.revoke(account.id);assert.equal(await auth.user({headers:{cookie}}),null,'every later read checks the frozen epoch');

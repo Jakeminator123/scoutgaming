@@ -16,7 +16,7 @@ const empty = () => null;
 let activityProps;
 const navigationUrls = [];
 const mocks = {
-  'next/navigation': { usePathname: () => '/control/events', useSearchParams: () => new URLSearchParams() },
+  'next/navigation': { usePathname: () => '/admin/events', useSearchParams: () => new URLSearchParams() },
   './studio-guide': { StudioGuide: empty },
   './event-tree': { EventTree: empty },
   './activity-log': { ActivityLog: props => { activityProps = props; return null; } },
@@ -126,7 +126,7 @@ test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
   assert.doesNotMatch(openclaw, /class="event-sidebar"/);
   assert.doesNotMatch(openclaw, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
   assert.doesNotMatch(openclaw, /<button[^>]*>[^<]*Spara projekt/);
-  assert.match(openclaw, /href="\/control\/openclaw\?tab=chat"/);
+  assert.match(openclaw, /href="\/admin\/dealer-agent(?:\?|"|&)/);
   const { ControlGuidePage } = loadComponent('./control-guide-page.tsx');
   const { ControlActivityPage } = loadComponent('./control-activity-page.tsx');
   for (const Page of [ControlGuidePage, ControlActivityPage]) {
@@ -139,11 +139,11 @@ test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
       assert.match(html, /<h1>Guide &amp; hjälp<\/h1>/);
       assert.doesNotMatch(html, /dealer=astrid/);
     } else {
-      assert.match(html, /href="\/control\/clips\?dealer=astrid"/);
+      assert.match(html, /href="\/admin\/dealer-studio\?dealer=astrid"/);
       assert.equal(activityProps.streamView.dealerId, 'astrid');
       navigationUrls.length = 0;
       activityProps.streamView.onOpenEvent('speak.goodluck', { eventId: 'speak.goodluck', blocked: false });
-      assert.deepEqual(navigationUrls, ['/control/events?dealer=astrid&event=speak.goodluck']);
+      assert.deepEqual(navigationUrls, ['/admin/events?dealer=astrid&event=speak.goodluck']);
     }
   }
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');
@@ -196,8 +196,8 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(html, /Urvalsläge för eventtest/);
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
   assert.doesNotMatch(html, /studio-chat-shortcuts|Spelarchatt vid bordet →|Fråga OpenClaw om labbet →/);
-  assert.equal(loadComponent('./studio-types.ts').viewPaths.activity, '/control/activity');
-  assert.equal(loadComponent('./studio-types.ts').viewPaths.openclaw, '/control/openclaw?tab=chat');
+  assert.equal(loadComponent('./studio-types.ts').viewPaths.activity, '/admin/rehearsal');
+  assert.equal(loadComponent('./studio-types.ts').viewPaths.openclaw, '/admin/dealer-agent');
   assert.match(html, /<option value="off" selected="">Standard/);
   assert.match(html, /kör jämförelseläget Bara standard/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);

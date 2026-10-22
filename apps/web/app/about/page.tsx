@@ -31,7 +31,7 @@ export default function AboutPage() {
         <Link className="about-wordmark" href="/" aria-label="Scout Gaming, startsida">scout<span>/</span>gaming</Link>
         <nav aria-label="Huvudmeny" className="about-nav">
           <a className="about-nav-product" href="https://scoutgaminggroup.com/fantasy">Fantasy sports</a>
-          <Link className="about-nav-product" href="/demo">AI live casino</Link>
+          <Link className="about-nav-product" href="/lobby">AI live casino</Link>
           <Link href="/about" aria-current="page">Om oss<span className="about-nav-dot" /></Link>
         </nav>
         <a className="about-contact-link" href="mailto:hello@scoutgaminggroup.com">Säg hej <ArrowUpRight size={16} aria-hidden="true" /></a>
@@ -73,7 +73,7 @@ export default function AboutPage() {
               <p>Vi utforskar ett nytt slags spelbord med digitala värdar och lokala språk. Möt Astrid i vår blackjackpilot.</p>
               <ArrowUpRight className="about-row-arrow" aria-hidden="true" />
             </a>
-            <Link className="about-pilot-link" href="/demo">Nyfiken på Astrid? Besök blackjackpiloten <ArrowUpRight size={17} aria-hidden="true" /></Link>
+            <Link className="about-pilot-link" href="/lobby">Nyfiken på Astrid? Besök blackjackpiloten <ArrowUpRight size={17} aria-hidden="true" /></Link>
           </div>
         </section>
 

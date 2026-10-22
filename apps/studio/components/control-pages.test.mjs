@@ -23,7 +23,7 @@ function loadTs(fileUrl, overrides = {}) {
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
-      if (name === 'next/navigation') return {useSearchParams:()=>new URLSearchParams(globalThis.window?.location?.search ?? ''),usePathname:()=>globalThis.window?.location?.pathname ?? '/control/clips'};
+      if (name === 'next/navigation') return {useSearchParams:()=>new URLSearchParams(globalThis.window?.location?.search ?? ''),usePathname:()=>globalThis.window?.location?.pathname ?? '/admin/dealer-studio'};
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -56,15 +56,14 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
   assert.equal(resolveStudioDealerId(project), '');
   assert.equal(resolveStudioEventId(project, 'idle.ready'), 'idle.ready');
   assert.equal(resolveStudioEventId(project, 'missing'), 'speak.goodluck');
-  assert.equal(studioHref('/control/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'triggers' }), '/control/events?dealer=astrid&event=idle.ready&tab=triggers');
-  assert.equal(studioHref('/control/openclaw', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'chat' }), '/control/openclaw?dealer=astrid&event=idle.ready&tab=chat');
-  assert.equal(studioHref('/control/tree', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'nope' }), '/control/tree?dealer=astrid&event=idle.ready');
-  assert.equal(selectionHref('/control/events', '?tab=variants&filter=x', 'saga', 'idle.ready'), '/control/events?dealer=saga&event=idle.ready&tab=variants');
-  assert.equal(selectionHref('/control/tree', '?tab=variants', 'saga', 'idle.ready'), '/control/tree?dealer=saga&event=idle.ready');
-  assert.equal(studioHref('/control/videos', { dealerId: 'saga', eventId: 'idle.ready', variantId: 'v2' }), '/control/videos?dealer=saga&event=idle.ready&variant=v2');
-  assert.equal(selectionHref('/control/events', '?tab=variants', 'saga', 'idle.ready', 'v2'), '/control/events?dealer=saga&event=idle.ready&variant=v2&tab=variants');
-  assert.equal(selectionHref('/control/videos', '', 'saga', 'idle.ready', 'v2'), '/control/videos?dealer=saga&event=idle.ready&variant=v2');
-  assert.equal(selectionHref('/control/tree', '', 'saga', 'idle.ready', 'v2'), '/control/tree?dealer=saga&event=idle.ready');
+  assert.equal(studioHref('/admin/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'triggers' }), '/admin/events?dealer=astrid&event=idle.ready&tab=triggers');
+  assert.equal(studioHref('/control/openclaw', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'chat' }), '/admin/dealer-agent?dealer=astrid&event=idle.ready&tab=chat');
+  assert.equal(studioHref('/admin/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'nope' }), '/admin/events?dealer=astrid&event=idle.ready');
+  assert.equal(selectionHref('/admin/events', '?tab=variants&filter=x', 'saga', 'idle.ready'), '/admin/events?dealer=saga&event=idle.ready&tab=variants');
+  assert.equal(studioHref('/admin/videos', { dealerId: 'saga', eventId: 'idle.ready', variantId: 'v2' }), '/admin/videos?dealer=saga&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/admin/events', '?tab=variants', 'saga', 'idle.ready', 'v2'), '/admin/events?dealer=saga&event=idle.ready&variant=v2&tab=variants');
+  assert.equal(selectionHref('/admin/videos', '', 'saga', 'idle.ready', 'v2'), '/admin/videos?dealer=saga&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/admin/events', '', 'saga', 'idle.ready', 'v2'), '/admin/events?dealer=saga&event=idle.ready&variant=v2');
 });
 
 test('managed tree folders are real event links and dealer changes replace the query', () => {
@@ -72,15 +71,20 @@ test('managed tree folders are real event links and dealer changes replace the q
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })) };
   const { ControlTreePage } = loadTs(new URL('../components/control-tree-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlTreePage, { ...props, initialVideos: inventory, initialDealerId: 'astrid', initialEventId: 'missing' }));
-  assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=/);
+  assert.match(html, /href="\/admin\/events\?dealer=astrid&amp;event=/);
   assert.match(html, /deal\/deal_pos3|repliker\/goodluck/);
   for (const family of manifest.families.filter(item => item.dealerId === 'astrid')) {
-    const target = '/control/events?' + new URLSearchParams({dealer:'astrid',event:family.eventId,situation:family.situation});
+    const target = '/admin/events?' + new URLSearchParams({dealer:'astrid',event:family.eventId,situation:family.situation});
     assert.ok(html.includes(target.replaceAll('&','&amp;')), 'exact family situation must survive: '+family.id);
   }
   const paths = [];
   const previous = globalThis.window;
-  globalThis.window = { location: { pathname: '/control/tree', search: '' }, history: { replaceState: (_state, _title, path) => paths.push(path) }, addEventListener() {}, removeEventListener() {} };
+  const location = new URL('https://studio.fixture.invalid/admin/events');
+  let historyState = { foreign: 'keep', __NA: true, __scoutAdminHistory: {session:'existing-admin',index:7,href:'/admin/events'} };
+  globalThis.window = { location, history: {
+    get state() { return historyState; },
+    replaceState(state, _title, path) { historyState = state; if(path !== undefined) { paths.push(path); location.href = new URL(path, location).href; } },
+  }, addEventListener() {}, removeEventListener() {} };
   const session = loadTs(new URL('../components/studio-session.tsx', import.meta.url));
   try {
     let api;
@@ -88,13 +92,18 @@ test('managed tree folders are real event links and dealer changes replace the q
     renderToStaticMarkup(React.createElement(Harness));
     api.selectDealer('elin');
     api.selectDealer('unknown');
-    assert.deepEqual(paths, ['/control/tree?dealer=elin&event=speak.goodluck']);
-    globalThis.window.location.pathname = '/control/events';
+    assert.deepEqual(paths, ['/admin/events?dealer=elin&event=speak.goodluck']);
+    globalThis.window.location.pathname = '/admin/events';
     let overview;
     function Overview() { overview = session.useStudioSession({ ...props, overview: true, initialDealerId: 'astrid', initialEventId: 'speak.goodluck' }); return null; }
     renderToStaticMarkup(React.createElement(Overview));
     overview.selectDealer('saga');
-    assert.equal(paths.at(-1), '/control/events?dealer=saga');
+    assert.equal(paths.at(-1), '/admin/events?dealer=saga');
+    assert.equal(historyState.foreign, 'keep');
+    assert.equal(historyState.__NA, true);
+    assert.equal(historyState.__scoutAdminHistory.session, 'existing-admin');
+    assert.equal(historyState.__scoutAdminHistory.index, 7);
+    assert.equal(historyState.__scoutAdminHistory.href, '/admin/events?dealer=saga');
   } finally {
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
@@ -108,18 +117,35 @@ test('recorded media guidance keeps old groups optional and distinguishes models
   assert.match(html, /Automatisk grundloopvariation/);
   assert.match(html, /högst 8, totalt 3 200 tecken/);
   assert.match(html, /Dessa testvärden hämtas inte från spelaren/);
-  assert.match(html, /<a href="\/control\/clips\?dealer=astrid">/);
+  assert.match(html, /<a href="\/admin\/dealer-studio\?dealer=astrid">/);
   const activity = renderPage('control-activity-page.tsx');
   assert.match(activity, /<summary>Klippförhandsvisning och provspelning<\/summary>/);
   assert.match(activity, /AI-tal: inget förlopp observerat/);
   assert.match(activity, /Inspelade klipp: inga uppspelningskvitton ännu/);
 });
 
+test('event tree opens the Admin dealer agent with the selected dealer and event', () => {
+  const previous = globalThis.window, destinations = [];
+  globalThis.window = {location:{pathname:'/admin/events',search:'?dealer=saga&event=idle.ready',assign:href=>destinations.push(href)}};
+  try {
+    let tree;
+    const {ControlTreePage} = loadTs(new URL('../components/control-tree-page.tsx',import.meta.url), {
+      './event-tree': {EventTree: props => {tree=props;return null;}},
+    });
+    renderToStaticMarkup(React.createElement(ControlTreePage,{...props,initialDealerId:'saga',initialEventId:'idle.ready'}));
+    assert.equal(typeof tree?.onOpenClaw,'function');
+    tree.onOpenClaw();
+    assert.deepEqual(destinations,['/admin/dealer-agent?dealer=saga&event=idle.ready']);
+  } finally {
+    if(previous===undefined)delete globalThis.window;else globalThis.window=previous;
+  }
+});
+
 test('rehearsal requires an explicit dealer or room and never starts a default observation',()=>{
  for(const initialDealerId of [undefined,'','unknown','amira']) {
   const html=renderPage('control-activity-page.tsx',{initialDealerId,initialOperatorSlug:'operator-42',initialLaneId:'mobile-phone'});
   assert.match(html,/Välj en dealer att provspela/);assert.doesNotMatch(html,/Anslut &amp; följ|Klippförhandsvisning och provspelning|Dealerprov/);
-  for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes('/control/rehearsal?dealer='+dealer.id+'&amp;composition=mobile-phone&amp;operator=operator-42'));
+  for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes('/admin/rehearsal?dealer='+dealer.id+'&amp;composition=mobile-phone&amp;operator=operator-42'));
  }
  const room=renderPage('control-activity-page.tsx',{initialDealerId:undefined,initialOperatorSlug:'operator-42',initialTableId:'room-7'});
  assert.match(room,/Spelrummets publicerade dealer/);assert.match(room,/<h2>Valt spelrum<\/h2>/);assert.match(room,/Spelbolag: Valt spelbolag/);assert.doesNotMatch(room,/<h2>room-7<\/h2>|Spelbolag: operator-42/);assert.doesNotMatch(room,/Välj en dealer att provspela|Separat Lab-preview/);
@@ -128,7 +154,7 @@ test('rehearsal requires an explicit dealer or room and never starts a default o
 test('dealer editor routes gate missing and invalid dealers before mounting their media session',()=>{
  const previous=globalThis.window;
  try {
-  for(const [file,path] of [['control-tree-page.tsx','/control/events'],['control-events-page.tsx','/control/events'],['control-videos-page.tsx','/control/videos'],['control-probe-page.tsx','/control/probe'],['control-openclaw-chat.tsx','/control/openclaw']])for(const initialDealerId of [undefined,'unknown','amira']) {
+  for(const [file,path] of [['control-tree-page.tsx','/admin/events'],['control-events-page.tsx','/admin/events'],['control-videos-page.tsx','/admin/videos'],['control-probe-page.tsx','/admin/probe'],['control-openclaw-chat.tsx','/admin/dealer-agent']])for(const initialDealerId of [undefined,'unknown','amira']) {
    globalThis.window={location:{pathname:path,search:'?composition=composition-1&operator=operator-42&table=room-7'}};
    const html=renderPage(file,{initialDealerId});assert.match(html,/<h2>Välj dealer<\/h2>/,file);assert.doesNotMatch(html,/<video|<audio|Klippförhandsvisning och provspelning/,file);
    for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes(path+'?dealer='+dealer.id+'&amp;composition=composition-1&amp;operator=operator-42&amp;table=room-7'),file+' keeps context for '+dealer.id);

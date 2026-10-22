@@ -97,7 +97,7 @@ export function EventsIdleNotice({ refreshing, onRefresh }: { refreshing: boolea
       <button type="button" className="text-button" disabled={refreshing} onClick={onRefresh}>{refreshing ? 'Läser…' : 'Läs in nya filer'}</button>
     </div>
     <p className={styles.idleLink}>
-      <a className="text-button" href={labUrl('/control/clips#idle')}>Grundloop och klipp →</a>
+      <a className="text-button" href={labUrl('/admin/dealer-studio#idle')}>Grundloop och klipp →</a>
     </p>
   </>;
 }
