@@ -5,8 +5,9 @@
 I **Klippkarta** ligger alla klipp med tal under **Talade repliker**, med egna
 situationer och tagningar. Tysta beteenden ligger under **Vila → Basloop och
 beteendeklipp**; kort och skonrörelser behåller egna fack.
-Öppna **Förhandsvisa och redigera → Redigera körregel** i Vila, lägg till
-en variation och välj **Av · endast manuellt prov**, **Ibland · med intervall**,
+Öppna **Förhandsvisa och redigera → Körregel** i Vila. Vyn visar basloopen,
+beteendeklippen och hur varje beteendeklipp startar: **Av**, **Ibland · intervall**
+(ungefär var N:e sekund med variation, minsta paus och tak per minut),
 **Vid spelhändelse** eller **OpenClaw**. Händelsevalen omfattar spelarens tur,
 rundans resultat och villkor för blackjack, dealer över 21, vinst, lika eller
 förlust. Händelseregler körs i spelarens klippvalsläge **Regler**, efter att

@@ -75,6 +75,10 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
 }
 
 
+// A still frame of the chosen file. Decorative: the status text beside it carries the meaning.
+export function ClipThumb({url,image=false}:{url?:string;image?:boolean}) {
+  return <div className="studio-map-card-thumb" aria-hidden="true">{!url?<Film size={20}/>:image?<img src={url} alt=""/>:<video src={url+'#t=0.1'} muted playsInline preload="metadata" tabIndex={-1}/>}</div>;
+}
 export function ConnectedClipCard({data}:NodeProps<CardNode>) {
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
@@ -89,8 +93,13 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
       <h2>{slotCaption(data.slot)}</h2>
       <p className="studio-map-card-description">{slotExplanation(data.slot)}</p>
       {data.slot.game!=='roulette'&&data.group.slots.length>1&&data.group.slots.length<=7&&<div className="studio-slot-choices" role="group" aria-label={`Situation i ${data.group.title}`}>{data.group.slots.map(slot=><button key={slot.id} type="button" disabled={data.busy} aria-pressed={slot.id===data.slot.id&&Boolean(data.active)} onClick={()=>data.onSlot(slot.id)}>{slotCaption(slot)}</button>)}</div>}
-      <p className="studio-map-card-file">{selected?.label??(rendered?'Ritas i spelet':data.slot.planned?'Planerat fack':'Inget klipp valt')}</p>
-      <p className={`studio-card-status ${ready||rendered?'is-ready':''}`}>{data.busy?'Bearbetar…':rendered?'Serverstyrt utfall':data.localPreviewUrl?'Lokalt prov · inte sparat':data.slot.planned?'Planerat fack':data.slot.intakeOnly?data.clips.length?'Registrerat · ej spelkopplat':'Material saknas':ready?data.usageChanged?'Ändrat lokalt · ej sparat':'Kopplat i sparat utkast':selected?exactBinding?'Valt för prov · ej kopplat till vald variant':'Valt för prov · ej kopplat':'Material saknas'}</p>
+      <div className="studio-map-card-row">
+        <ClipThumb url={data.slot.game==='roulette'||data.slot.planned||data.slot.intakeOnly?undefined:selected?.previewUrl}/>
+        <div>
+          <p className="studio-map-card-file">{selected?.label??(rendered?'Ritas i spelet':data.slot.planned?'Planerat fack':'Inget klipp valt')}</p>
+          <p className={`studio-card-status ${ready||rendered?'is-ready':''}`}>{data.busy?'Bearbetar…':rendered?'Serverstyrt utfall':data.localPreviewUrl?'Lokalt prov · inte sparat':data.slot.planned?'Planerat fack':data.slot.intakeOnly?data.clips.length?'Registrerat · ej spelkopplat':'Material saknas':ready?data.usageChanged?'Ändrat lokalt · ej sparat':'Kopplat i sparat utkast':selected?exactBinding?'Valt för prov · ej kopplat till vald variant':'Valt för prov · ej kopplat':'Material saknas'}</p>
+        </div>
+      </div>
       <button id={`studio-card-open-${data.group.id}`} type="button" className="studio-card-open" aria-controls="studio-clip-inspector" disabled={data.busy} aria-expanded={Boolean(data.active)} onClick={data.onOpen}><Film size={17}/>{rendered?'Visa funktion':'Förhandsvisa och redigera'}</button>
     </div>
     <footer><span>{data.group.slots.length} fack</span><span>{data.clips.length} filer i valt fack</span></footer>
