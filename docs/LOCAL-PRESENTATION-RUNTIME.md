@@ -2640,6 +2640,9 @@ Verifiering och kvarstående arbete dokumenteras vid leverans i
 
 ## Kamera och mikrofon
 
+Kamera och röst är en behållen produktfunktion (Jakobs beslut 22 oktober 2026),
+idag Astrid-märkt och styrd av `CROUPIER_ASTRID_CAMERA`; storstädningen rör den inte.
+
 Record aktiverar lokal lyssning efter den valda dealerns namn (Astrid, Vera,
 Amira, Mei, PAOW, Dragge eller en publicerad dealerpost); Play styr spelljudet.
 Kamera väljs separat och är av från början. `/api/dealer/observation` och

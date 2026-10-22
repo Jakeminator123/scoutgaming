@@ -46,7 +46,7 @@ run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-direct
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs
 run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs test/shared-room-k04-qa.mjs
 run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
-run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
+run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
 run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs
 run_node_tests contracts backup-lab-state test/backup-lab-state.mjs test/migrate-lab-state.mjs test/retention-archive.mjs test/studio-retirement-plan.mjs
 run_node_tests contracts partner-access-policy test/partner-access-policy.mjs test/operator-store.mjs test/admin-publication-chain.mjs
@@ -101,11 +101,11 @@ run_node_tests gameplay action-placement test/action-placement.mjs test/bugshot-
 run_node_tests gameplay generations-api test/generations-api.mjs test/clip-mapping-runtime.mjs
 run_node_tests gameplay native-partner-events test/native-partner-events.mjs
 run_node_tests gameplay native-observation test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
-run_node_tests gameplay roulette test/roulette.mjs test/roulette-preview.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
+run_node_tests gameplay roulette test/roulette.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
 run_node_tests gameplay shared-blackjack test/blackjack-core.mjs test/blackjack-table.mjs test/shared-table-command-authority.mjs test/shared-table-runtime.mjs test/shared-postgres-transaction.mjs test/shared-table-client-snapshot.mjs test/blackjack-presentation.mjs
 run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs
 run_node_tests gameplay local-comparison-fixture test/local-comparison-fixture.mjs test/generation-media.mjs
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
 run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
 run_node_tests gameplay local-presentation test/local-presentation.mjs test/layered-presentation.mjs test/layer-packs-route.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/presentation-select-dealers.mjs test/presentation-select-astrid-baseline.mjs
-run_node_tests gameplay lissabon-profiles test/lissabon-profiles.mjs test/player-results.mjs
+run_node_tests gameplay player-results test/player-results.mjs

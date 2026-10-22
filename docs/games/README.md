@@ -5,6 +5,7 @@ Här finns en gemensam dokumentationsingång per spel:
 - [Blackjack](blackjack/README.md) — regler, serverflöde, dealerbank, geometri och format.
 - [Roulette](roulette/README.md) — regler, rundor, publicerad scen och medieunderlag.
 - [Gemensamma klipp och format](KLIPP-OCH-FORMAT.md) — lagerroll, handling, poser, mätdata, visningsprofil och godkännande.
+- [Partner-API v1](partner-api.md) — partnerintegrationens HTTP-kontrakt (flyttat från spelserverns publika `docs/`; servern publicerar inte längre någon HTML-kopia).
 
 ## Vad är källa till vad?
 
