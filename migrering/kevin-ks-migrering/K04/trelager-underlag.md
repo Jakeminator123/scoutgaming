@@ -8,7 +8,7 @@ Svar på #312 6337998848. Jakobs modell gäller: mains Admin, Jakobs klippkarta 
 | M | `codex/kevin-k04-presentation` @ `eb6ab455` (K04) | reporoten |
 | J | `codex/shared-room-transport` @ `87765066`, bara `docs/JOHN-HANDOFF.md` för ordvalen | reporoten |
 
-Metod: kodläsning med radnummer. Radnummer gäller exakt de två heads ovan. Medieidentiteter och fack står redan i [K04-mappning.md](K04-mappning.md) och [K04-medie-fack.tsv](K04-medie-fack.tsv); de upprepas inte här.
+Metod: kodläsning med radnummer. Granskad av e2e (27 stickprov, rader 22–24 tillagda efter granskningen). Radnummer gäller exakt de två heads ovan. Medieidentiteter och fack står redan i [K04-mappning.md](K04-mappning.md) och [K04-medie-fack.tsv](K04-medie-fack.tsv); de upprepas inte här.
 
 ## 0. De två modellerna, som koden har dem
 
@@ -60,7 +60,7 @@ Metod: kodläsning med radnummer. Radnummer gäller exakt de två heads ovan. Me
 
 ### 1.5 Kortöverlägget i dealerplanet (fungerar om ankaret byts)
 
-Dessa är rena funktioner i plattans 1080 × 1920-pixlar. Kortet i luften följer dealerns spår (dealerplanet); kortet i vila ligger på bordet. Med separata lager måste vilopunkten komma från bordets ankare (`anchors.cards.target: 'table'`) och flygspåret från dealerns (`'dealer'`), samma uppdelning som `composition-anchors.mjs:10-19` redan tillåter.
+Dessa är rena funktioner i plattans 1080 × 1920-pixlar. Kortet i luften följer dealerns spår (dealerplanet); kortet i vila ligger på bordet. Med separata lager måste vilopunkten komma från bordets ankare (`anchors.cards.target: 'table'`) och flygspåret från dealerns (`'dealer'`), samma uppdelning som `packages/presentation/runtime/composition-anchors.mjs:10-19` redan tillåter.
 
 | Funktion | K fil:rader | Vad den gör | I main @ eb6ab455 |
 | --- | --- | --- | --- |
@@ -97,8 +97,13 @@ Beteendelås som följer med (K `test/`): `ready-dealer.test.mjs:11` (hela röre
 | 19 | `public/dealer-hand-occlusion.js:11-17` + `dealer-hand-tracks.js`; `public/card-face-projection.js:8-17` (`flipFace`) + `card-face-tracks.js` | Astrids handmatte och vändning i hennes filmade bord; keyade dealers får `FULL_TABLE` (`handMatte: false`). | Hör till Astrid classic, inte till trelagersflödet (porten ligger i `card-presentation/` för det lokala bordet). |
 | 20 | `server/server.mjs:82`, `:91-105`; `/api/clips` (`public/app.js:635`) | Servern lämnar Astrid-plattans positioner och meta.json direkt till klienten. | Paketet: registrerad dealer + filmad profil + sammansättning (`presentation-layers.mjs:86-116`). |
 | 21 | `public/shared-table.js:320` (`fit`) | När servern inte tidsatt tagningen sträcks den till Astrids lucka (`readyVariant` → `iu`). Med konfigtid (`leadMs`/`cardMs`) skulle varje tagning sträckas eller få frysta gap. | Antingen tidsättning per tagning (1.1 `readyTimeline`) i planen, eller uttalat accepterad sträckning. |
+| 22 | `public/studio-table.js:17-20` | Ett Table Studio-bord slår på `#feltBrand` och `keepHandsOverFeltBrand`: utlösaren till rad 13. | Logotypen följer bordslagret i paketet (`branding`, `presentation-layers.mjs:68`). |
+| 23 | `public/scout-ui.css:22-26` | `.felt-brand` ligger absolut över hela 1080 × 1920-ramen, "printed on the clean felt between the filmed arc and box 4", under boxar och kort. | Bordets ankare (`composition-anchors.mjs:10-19`). |
+| 24 | `public/game-table.js:119`, `:123` | Enspelarbordet spelar `manifest.deal`-klippen, även `deal_flip`, direkt ur Astrid-plattans manifest. | Samma som rad 19–20: Astrid classic och paketets profil. |
 
-Rader 1–8 är rummet. Rader 9–13 är dealerlagrets antaganden om rummet. Rader 14–18 är kortöverläggets ankare. Rad 19 är Astrid classic. Rader 20–21 är transporten av geometri och tid.
+Rader 1–8 är rummet. Rader 9–13 och 22–23 är dealerlagrets och dukmärkets antaganden om rummet. Rader 14–18 är kortöverläggets ankare. Rader 19 och 24 är Astrid classic. Rader 20–21 är transporten av geometri och tid.
+
+Ingen åtgärd: `public/dealer-hand-matte.js` har plattkoordinater (x 320, y 844) men importeras inte någonstans i `public/`.
 
 ## 3. Redan i main, så att inget görs dubbelt
 
