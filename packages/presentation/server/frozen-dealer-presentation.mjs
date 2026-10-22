@@ -116,6 +116,9 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     return { owner: 'web', configurationSource: resolved.configurationSource,
       projectRevision: resolved.projectRevision, packageRevision: resolved.context.packageRevision,
       operator: resolved.context.operatorSlug, roomId: resolved.context.roomId, dealer: resolved.dealer,
+      // Saved per-phase clip selection modes of the room's composition. The
+      // published player follows these; it has no mode control of its own.
+      openclaw: structuredClone(resolved.lane.openclaw),
       dealerIdle: { [resolved.dealer.id]: publicIdle(resolved.record, resolved.context) },
       ...(resolved.schemaVersion === 3 ? {idlePolicy:resolved.idlePolicy,inventory:{families:structuredClone(resolved.idleInventory.families),videos:resolved.records.map(row => {
         const idle = resolved.idleInventory.videos.find(video => video.id === row.id);

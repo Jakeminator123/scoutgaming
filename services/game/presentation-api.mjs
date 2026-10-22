@@ -1,5 +1,5 @@
 import { cloneStudioJson } from '../../packages/studio-registry/server/storage-contract.mjs';
-import { idleRuleFor, selectSharedRoomPresentation } from './shared-room-presentation-selection.mjs';
+import { idleRuleFor, publishedSelectionMode, selectSharedRoomPresentation } from './shared-room-presentation-selection.mjs';
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
@@ -173,6 +173,12 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         }
         const project = frozen?.project ?? await store.load();
         const { presentationContext: _context, ...adviceBody } = body;
+        if (frozen) {
+          // Published rooms ask OpenClaw for idle variants only when the saved composition allows it.
+          const idleMode = publishedSelectionMode(frozen.lane, { type: 'idle' }, body.mode);
+          if (!['active','shadow'].includes(idleMode)) { json(200,{videoId:null,provider:'idle_openclaw_off',projectRevision:frozen.projectRevision}); return true; }
+          adviceBody.mode = idleMode;
+        }
         const ownInventory = !frozen && isDealerId(body.dealerId)
           ? registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}) : null;
         adviceService ??= createIdleAdviceServer({ settings, registryLoader });
@@ -205,7 +211,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
           const requestId=randomUUID();
           await frozenDealerContext.resolve(body.presentationContext);
           json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
-            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId):null,
+            idleRule:frozen.project?idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,requestId,publishedSelectionMode(frozen.lane,{type:'idle'},body.mode)):null,
             projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource});return true;
         }
         if (frozen.project) {
@@ -225,19 +231,21 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
           const fetchImpl = directorFetchFactory ? await directorFetchFactory({req,playerId,project:frozen.project,
             readProject:async ()=>(await frozenDealerContext.resolve(body.presentationContext)).project,signal:controller.signal}) : null;
           if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable',503);
-          const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:body.mode },
+          // The saved composition decides the selection mode for this phase.
+          const mode = publishedSelectionMode(frozen.lane, sourceEvent, body.mode);
+          const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode },
             { settings, videoRegistry:frozen.inventory, ...(fetchImpl ? {fetchImpl} : {}) });
           const chosen = frozen.inventory.videos.find(row=>row.id===result.videoGenerationId);
           // The fallback passes the same exact-event selector: never borrow a
           // different position, sentence or dealer after an alternative fails.
-          const baseline = chosen && body.mode !== 'off'
+          const baseline = chosen && mode !== 'off'
             ? await select({ requestId:result.decision.requestId, project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:'off' },
               { settings, videoRegistry:frozen.inventory }) : result;
           const selected=gateRecordedSpeechSelection({video:chosen,standard:frozen.inventory.videos.find(row=>row.id===baseline.videoGenerationId)},
             {project:frozen.project,dealerId:body.dealerId,eventId,sourceEvent});
           const video=frozenDealerContext.publicVideo(frozen,selected.video?.id);
           const standard=frozenDealerContext.publicVideo(frozen,selected.standard?.id);
-          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId);
+          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId,publishedSelectionMode(frozen.lane,{type:'idle'},body.mode));
           await frozenDealerContext.resolve(body.presentationContext);
           if (controller.signal.aborted) return true;
           const gated=recordedSpeechResult(result,selected);

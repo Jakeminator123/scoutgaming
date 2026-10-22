@@ -8,9 +8,18 @@ import { filmedDealSelection } from './filmed-deal-selection.mjs';
 import { selectRegisteredIdleRule } from './presentation-selection.mjs';
 const fail=()=>{throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});};
 const same=(a,b)=>canonicalStudioJson(a)===canonicalStudioJson(b);
-export function idleRuleFor(body,project,inventory,sourceEvent,requestId){
-  const choice=selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode:body.mode,requestId},{inventory});
-  return choice&&typeof requestId==='string'?{...choice,requestId,mode:body.mode,version:body.version,presentationContext:body.presentationContext??null,expiresAt:new Date(Date.now()+30000).toISOString()}:null;
+const SELECTION_MODES=new Set(['off','rules','random','shadow','active']);
+const phaseOf=event=>event?.type==='speak'?'speak':event?.type==='reveal'?'reveal':event?.type==='deal'?'deal':'idle';
+// A published room selects clips by the composition's saved per-phase mode
+// (Admin: Automatik / OpenClaw). The player's request mode never widens or
+// narrows it; it only applies where no frozen composition is in force.
+export function publishedSelectionMode(lane,event,fallback='off'){
+  const value=lane?.openclaw?.[phaseOf(event)];
+  return SELECTION_MODES.has(value)?value:fallback;
+}
+export function idleRuleFor(body,project,inventory,sourceEvent,requestId,mode=body.mode){
+  const choice=selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode,requestId},{inventory});
+  return choice&&typeof requestId==='string'?{...choice,requestId,mode,version:body.version,presentationContext:body.presentationContext??null,expiresAt:new Date(Date.now()+30000).toISOString()}:null;
 }
 function narrow(frozen,capture,body){
   if(!['en','sv'].includes(capture.language)||!same(capture.presentationContext,body.presentationContext)||capture.roomId!==body.sharedRoom.roomId||capture.talkId!==body.sharedRoom.talkId
@@ -58,7 +67,8 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
     return cloneStudioJson({...base,...value},{maxBytes:256*1024});
   };
   const requestId=randomUUID();
-  const rule=()=>{const value=idleRuleFor(body,project,inventory,sourceEvent,requestId);return value&&allowed.has(value.videoId)?value:null;};
+  const mode=publishedSelectionMode(frozen.lane,sourceEvent,body.mode),idleMode=publishedSelectionMode(frozen.lane,{type:'idle'},body.mode);
+  const rule=()=>{const value=idleRuleFor(body,project,inventory,sourceEvent,requestId,idleMode);return value&&allowed.has(value.videoId)?value:null;};
   if(['turn','settle'].includes(sourceEvent.type))return finish({video:null,standard:null,idleRule:rule(),decision:{requestId,sourceEvent}});
   const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,published,shoeTransitions:body.shoeTransitions===true});
   if(filmed){
@@ -69,17 +79,17 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
   const eventId=prepareDecision(buildRuntimeCatalog(project,body.dealerId),{event:sourceEvent,mode:'off'}).node.id;
   const fetchImpl=directorFetchFactory?await directorFetchFactory({req:request,playerId,project,readProject:async()=>project,signal}):null;
   if(fetchImpl!==null&&typeof fetchImpl!=='function')fail();signal.throwIfAborted();
-  const result=await select({requestId,project,dealerId:body.dealerId,eventId,sourceEvent,mode:body.mode},{settings,videoRegistry:inventory,...(fetchImpl?{fetchImpl}:{})});
+  const result=await select({requestId,project,dealerId:body.dealerId,eventId,sourceEvent,mode},{settings,videoRegistry:inventory,...(fetchImpl?{fetchImpl}:{})});
   signal.throwIfAborted();
   const chosen=inventory.videos.find(row=>row.id===result.videoGenerationId);
   if(result.videoGenerationId&&!chosen)fail();
-  const baseline=chosen&&body.mode!=='off'?await select({requestId,project,dealerId:body.dealerId,eventId,sourceEvent,mode:'off'},{settings,videoRegistry:inventory}):result;
+  const baseline=chosen&&mode!=='off'?await select({requestId,project,dealerId:body.dealerId,eventId,sourceEvent,mode:'off'},{settings,videoRegistry:inventory}):result;
   if(baseline.videoGenerationId&&!allowed.has(baseline.videoGenerationId))fail();
   const selected=gateRecordedSpeechSelection({video:chosen,standard:inventory.videos.find(row=>row.id===baseline.videoGenerationId)},
     {project,dealerId:body.dealerId,eventId,sourceEvent});
   const video=publicVideo(selected.video?.id),standard=publicVideo(selected.standard?.id);
   const gated=recordedSpeechResult(result,selected);
   return finish({video,standard,idleRule:rule(),provider:typeof result.provider==='string'?result.provider:'shared-selection',
-    decision:{requestId,sourceEvent,mode:body.mode,media:{videoId:video?.id??null,sha256:video?.sha256??null,
+    decision:{requestId,sourceEvent,mode,media:{videoId:video?.id??null,sha256:video?.sha256??null,
       reason:selected.blocked?'recorded_speech_unavailable':video?'shared_exact_material':gated.decision?.media?.reason==='position_clip_missing'?'position_clip_missing':'frozen_clip_missing'}}});
 }

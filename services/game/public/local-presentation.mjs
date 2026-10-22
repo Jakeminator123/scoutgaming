@@ -25,9 +25,18 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const video = config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
     if (video) player.prepareLocalClip?.({ media: { src: mediaUrl(video), sha256: video.sha256 } });
   };
-  let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = !preview && config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null, packageChanged = false;
+  // A published room follows the composition's saved per-phase clip modes from
+  // Admin (idle, deal, reveal, speak). Only Studio rehearsal keeps a local
+  // mode control; the player never widens or narrows the saved selection.
+  const SELECTION_MODES = ['off', 'rules', 'random', 'shadow', 'active'];
+  // Without saved modes a published room plays standard clips only ('off').
+  const roomModes = context ? (config.openclaw && typeof config.openclaw === 'object' && !Array.isArray(config.openclaw) ? config.openclaw : {}) : null;
+  const phaseOf = type => type === 'speak' ? 'speak' : type === 'reveal' ? 'reveal' : type === 'deal' ? 'deal' : 'idle';
+  const roomMode = type => { const value = roomModes?.[phaseOf(type)]; return SELECTION_MODES.includes(value) ? value : 'off'; };
+  let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = roomModes ? roomMode('idle') : !preview && config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null, packageChanged = false;
+  const selectionMode = type => roomModes ? roomMode(type) : mode;
   const configurationSource = config.configurationSource || 'lab/project.json';
-  receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource });
+  receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource, ...(roomModes ? { modeSource: 'composition' } : {}) });
   const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status'); host.append(status);
   const control = document.createElement('select'); control.setAttribute('aria-label', 'Klippval');
   for (const [value, text] of [['off','Standard'],['rules','Regler'],['random','Slump'],['active','OpenClaw'],['shadow','OpenClaw · skugga']]) {
@@ -35,7 +44,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const option = document.createElement('option'); option.value = value; option.textContent = text; control.append(option);
   }
   control.value = mode;
-  control.className = 'local-presentation-mode'; host.append(control);
+  control.className = 'local-presentation-mode'; if (!roomModes) host.append(control);
   const hasOwnIdlePolicy = config.idlePolicy?.familyId === `${dealerId}/idle.ready/ready`;
   const idle = !hasOwnIdlePolicy ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.idleInventory ?? config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
@@ -248,8 +257,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     };
     let result;
     try {
+      const eventMode = selectionMode(event.type);
       const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealerId, mode: eventMode, version: requestVersion, event, shoeTransitions: true, ...(context ? {presentationContext:context} : {}) }) });
       if (selected.status === 409 && context) {
         const failure = await selected.json().catch(() => null);
         if (failure?.code === 'studio_presentation_idle_package_changed') throw packageError();
@@ -257,7 +267,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (!selected.ok) throw new Error('Inget verifierat klipp för instruktionen');
       result = await selected.json();
       if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
-      receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode, projectRevision: result.projectRevision, configurationSource });
+      receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode: eventMode, projectRevision: result.projectRevision, configurationSource });
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
       else upcoming = [];
