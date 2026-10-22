@@ -232,6 +232,26 @@ test('existing policy panel opens the selected take and never silently edits a d
 });
 
 
+test('idle rule view lists the four start modes and reads the schedule in plain language',async()=>{
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs');
+  const module={exports:{}};
+  runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+    {module,exports:module.exports,require:name=>name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
+  const f=fixture('idle.ready','',false);f.inventory.videos.forEach(video=>video.dealer=f.dealerId);
+  let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);
+  project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],1000,false);
+  project=applyStudioIdleVariantPolicy(project,f.inventory,f.dealerId,f.slot,ids[1],{use:'automatic',automatic:{averageEveryMs:25000,jitterMs:7000,cooldownMs:15000,maxPerMinute:3}});
+  const html=renderToStaticMarkup(React.createElement(module.exports.StudioPolicyPanel,{...f,project,blocked:false,onEdit(){assert.fail('render must not write');}}));
+  assert.match(html,/Körregler · Vila/);assert.match(html,/Basloop/);assert.match(html,/Beteendeklipp/);assert.match(html,/Huvudklipp/);
+  for(const label of ['Av','Ibland · intervall','Vid spelhändelse','OpenClaw'])assert.ok(html.includes('>'+label+'</button>'),label);
+  assert.match(html,/aria-pressed="true">Ibland · intervall</);
+  assert.match(html,/Spelas i snitt var 25:e sekund, ± 7 s. Minst 15 s paus och högst 3 gånger per minut/);
+  assert.match(html,/value="25"/);assert.match(html,/value="7"/);assert.match(html,/value="15"/);
+  assert.match(html,/Lägg till som beteendeklipp/);
+  assert.equal(module.exports.scheduleSummary({averageEveryMs:20000,jitterMs:0,cooldownMs:0,maxPerMinute:1}),'Spelas i snitt var 20:e sekund. Högst 1 gång per minut. Spelhändelser kan skjuta upp starten.');
+});
+
 test('switching a custom idle rule off and on preserves its predicates, selection and priority',()=>{
   const f=fixture('idle.ready','',false);
   let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],1000,true);

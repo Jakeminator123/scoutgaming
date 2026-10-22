@@ -330,7 +330,9 @@
 .studio-clip-workspace .studio-context-row{gap:12px;align-items:end}
 .studio-clip-workspace .studio-field{font-size:14px;gap:6px}
 .studio-clip-workspace .studio-field select,.studio-clip-workspace .studio-button{min-height:40px;font-size:14px;line-height:1.4;padding:9px 12px}
+.studio-primary-context{flex-wrap:wrap}
 .studio-primary-context .studio-field{flex:0 1 240px;min-width:160px}
+.studio-primary-context .studio-button{flex:0 0 auto;white-space:nowrap}
 .studio-room-context{margin-top:14px;border-top:1px solid #33363b;padding-top:10px}
 .studio-room-context>summary{display:flex;align-items:center;gap:12px;padding:8px 0;font-weight:500}
 .studio-room-context>summary>span{font-weight:400;color:#b8bec6}
@@ -502,3 +504,63 @@
 @media(max-width:1200px){.admin-home-links{grid-template-columns:1fr}.admin-home-link{min-height:100px}}
 @media(max-width:760px){.admin-home{padding:24px 16px 36px}.admin-home-heading{margin-bottom:24px}.admin-home-areas{grid-template-columns:1fr;gap:16px}.admin-home-area>header{padding:20px}.admin-home-links{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-home-link{padding:16px;min-height:120px}}
 @media(max-width:440px){.admin-home-links{grid-template-columns:1fr}.admin-home-link{min-height:88px}.admin-home-heading>p:last-child{font-size:14px}}
+
+/* Map cards show a still of the chosen file beside its status. */
+.studio-map-card-row{display:flex;gap:12px;align-items:flex-start;margin-top:12px}
+.studio-map-card-row>div:last-child{min-width:0;flex:1}
+.studio-map-card-row .studio-map-card-file{margin-top:0}
+.studio-map-card-thumb{flex:0 0 56px;width:56px;height:98px;display:grid;place-items:center;border:1px solid #33363b;border-radius:5px;background:#101113;color:#5c636d;overflow:hidden}
+.studio-map-card-thumb :is(video,img){display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+
+/* The rule view keeps the chosen clip in sight while the schedule is edited. */
+.studio-rule-context{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px;border:1px solid #33363b;border-radius:8px;background:#141517}
+.studio-rule-context>div{min-width:0;flex:1}
+.studio-rule-context p{margin-top:2px;font-size:15px;overflow-wrap:anywhere}
+.studio-rule-context small{display:block;margin-top:2px;color:#b8bec6;font-size:13px}
+
+/* Run rules on the Admin scale: readable sections, one card per clip, a clear mode switch. */
+.studio-policy-panel{display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:1.5;color:#e6e8eb}
+.studio-policy-panel h2{font-size:16px;font-weight:600}
+.studio-policy-panel>header p,.studio-policy-section>p,.studio-policy-hint{color:#b8bec6;font-size:13px;line-height:1.5}
+.studio-policy-panel>header p{margin-top:4px}
+.studio-policy-body{display:flex;flex-direction:column;gap:16px;min-width:0;border:0;padding:0;margin:0}
+.studio-policy-section{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid #33363b}
+.studio-policy-section h3{font-size:14px;font-weight:600}
+.studio-policy-details>summary{cursor:pointer;font-weight:500;min-height:36px;display:flex;align-items:center}
+.studio-policy-clip{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid #383e47;border-radius:8px;background:#141517}
+.studio-policy-clip-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.studio-policy-clip-head strong{flex:1 1 140px;min-width:0;font-weight:500;overflow-wrap:anywhere}
+.studio-policy-clip-head>span:not(.studio-policy-tag){color:#b8bec6;font-size:13px;white-space:nowrap}
+.studio-policy-tag{padding:2px 9px;border:1px solid #647333;border-radius:99px;color:#d6ff3a;font-size:12px;white-space:nowrap}
+.studio-policy-link{align-self:flex-start;padding:4px 0;border:0;background:none;color:#b8bec6;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.studio-policy-link:hover:not(:disabled){color:#e6e8eb}.studio-policy-link.is-remove:hover:not(:disabled){color:#ff9a82}
+.studio-policy-actions{display:flex;flex-wrap:wrap;gap:8px}
+.studio-segmented{display:flex;flex-wrap:wrap;gap:4px;padding:3px;border:1px solid #2b2e33;border-radius:6px;background:#0c0d0f}
+.studio-segmented button{flex:1 1 auto;min-height:36px;padding:6px 10px;border-radius:4px;font-size:13px;line-height:1.3;color:#a3a8b0}
+.studio-segmented button:hover:not(:disabled){color:#e6e8eb}
+.studio-segmented button[aria-pressed=true]{background:#2b2e33;color:#e6e8eb;font-weight:500;box-shadow:inset 0 0 0 1px #414650}
+.studio-schedule{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.studio-policy-summary{margin:0;padding:10px 12px;border-radius:6px;background:#202a1b;color:#d6eab4;font-size:13px;line-height:1.5}
+.studio-policy-summary p+p{margin-top:6px}
+.studio-chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.studio-chip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 14px 6px 10px;border:1px solid #414650;border-radius:99px;font-size:13px;color:#d8dde4;cursor:pointer}
+.studio-chip input{width:16px;height:16px;margin:0;accent-color:#d6ff3a}
+.studio-chip:has(input:checked){border-color:#d6ff3a;background:#252a1e;color:#d6ff3a}
+.studio-policy-triggers{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;padding-top:4px}
+.studio-policy-trigger{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}
+.studio-policy-trigger input{width:16px;height:16px;margin-top:1px;accent-color:#d6ff3a;flex-shrink:0}
+.studio-policy-error{color:#ff7a59;font-size:13px}.studio-policy-warning{color:#ffb547;font-size:13px}
+.studio-policy-panel .studio-field{font-size:13px;gap:5px}
+.studio-policy-panel .studio-field :is(select,input){min-height:38px;font-size:14px}
+.studio-policy-panel :is(button,select,input,summary):focus-visible{outline:3px solid #d6ff3a;outline-offset:3px}
+.studio-policy-body:disabled{opacity:.6}
+
+/* Three layers at a glance before the detailed template fields. */
+.studio-layer-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;list-style:none;padding:0;margin:0}
+.studio-layer-tile{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px;border:1px solid #383e47;border-radius:8px;background:#141517}
+.studio-layer-tile-media{display:grid;place-items:center;aspect-ratio:16/9;border-radius:5px;background:repeating-conic-gradient(#202327 0 25%,#26292e 0 50%) 50%/20px 20px;color:#8d949c;font-size:12px;overflow:hidden}
+.studio-layer-tile-media :is(video,img){display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.studio-layer-tile.is-dealer .studio-layer-tile-media :is(video,img){object-fit:contain}
+.studio-layer-tile strong{font-size:14px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.studio-layer-tile small{color:#b8bec6;font-size:12px}
+@media(max-width:600px){.studio-layer-summary{grid-template-columns:1fr}.studio-schedule{grid-template-columns:1fr}.studio-segmented button{flex-basis:45%}}

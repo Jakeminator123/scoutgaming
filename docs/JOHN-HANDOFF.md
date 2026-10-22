@@ -234,6 +234,36 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
+## Admin UX-pass 1: klippkartan — 22 oktober 2026
+
+Branch `codex/admin-ux-klippkarta` från main `34060c4d` (PR336 mergad och
+deployad). Bara Admin-klientens vyer, CSS, en test och användarguiden ändras;
+inga kontrakt, writers, API:er, scheman eller medier. Jakobs riktning: klippkartan
+och redigeringen är grunden, varianterna ligger bakom standardklippet, och
+beteendeklipp styrs av intervall, spelhändelse eller OpenClaw.
+
+- **Körregel som egen vy.** Knappen Redigera körregel öppnar nu vyn Körregel i
+  panelen bredvid Klipp, med det valda klippet som kontext överst. Beteendeklipp
+  i Vila har fyra startlägen som knappgrupp: Av, Ibland · intervall, Vid
+  spelhändelse, OpenClaw. Intervallfälten (ungefär var, variation ±, minsta paus,
+  högst per minut) har enheter och en klartextsammanfattning av schemat.
+  Varianter i övriga fack visar Regler/Slump/OpenClaw som val med sammanfattning
+  av den sparade regeln. Samma data och writers som förut
+  (`applyStudioIdleVariantPolicy`, `applyStudioVariantPolicy`).
+- **Klippkartans kort** visar en stillbild av valt klipp. Roulette, planerade
+  och intagsfack är oförändrade.
+- **Sammansättning** väljs direkt i klippkartans kontextrad, så Scen & lager
+  kan öppnas utan rumsval. Scen & lager inleds med tre lagerkort: bakgrund,
+  dealer och bord med förval och antal tillåtna val.
+- Verifiering: isolerat visuellt harness `node tools/admin-clips-fixture.mjs
+  --scene` med Playwright mot installerad Chrome, 1440 och 390 px, före- och
+  efterbilder i sessionens scratchpad (inte i git). `node apps/studio/client/
+  build.mjs` med `CROUPIER_LAB_BASE_PATH=/studio` (tsc admin+lobby, esbuild)
+  passerar. Riktade sviter studio-layout, studio-policy (ny test för vilovyn),
+  roulette-clip-map, studio-composition-panel, clip-guide, navigation och
+  studio-login-form: 92/92, 3 browserfall överhoppade utan fixturmiljö.
+  Ingen produktion, databas eller deploy berörd; full regression i CI.
+
 ## Admin: rummets lager på Spelrum & publicering — 22 oktober 2026
 
 Claude (annan IDE) tog över från rootens checkpoint `4e094fbb` på samma

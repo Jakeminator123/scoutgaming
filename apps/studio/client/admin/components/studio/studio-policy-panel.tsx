@@ -2,18 +2,31 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { StudioProject, MediaVariantPolicy } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse } from '../../../../../../packages/presentation/runtime/idle-policy.mjs';
+import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse, IdleAutomaticPolicy } from '../../../../../../packages/presentation/runtime/idle-policy.mjs';
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import { selectionFor } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
 import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
-import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
+import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
 
 export type StudioPolicyPanelProps = {
   project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; selectedVideoId?:string; selectedVariantId?:string; blocked:boolean;
   onEdit:(project:StudioProject)=>void; onBusyChange?:(busy:boolean)=>void;
 };
-const useLabels:Record<IdleVariantUse,string>={manual:'Av · endast manuellt prov',automatic:'Ibland · med intervall',rules:'Vid spelhändelse',openclaw:'OpenClaw'};
-const automatic={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
+// The four ways a silent behaviour clip can start. Labels match the user guide.
+export const IDLE_USES:readonly {id:IdleVariantUse;label:string;hint:string}[]=Object.freeze([
+  {id:'manual',label:'Av',hint:'Spelas bara vid manuellt prov. Grundloopen fortsätter.'},
+  {id:'automatic',label:'Ibland · intervall',hint:'Startar av sig själv med jämna mellanrum medan dealern väntar, och återgår sedan till grundloopen.'},
+  {id:'rules',label:'Vid spelhändelse',hint:'Startar efter en vald spelhändelse när rummet kör klippvalsläget Regler.'},
+  {id:'openclaw',label:'OpenClaw',hint:'OpenClaw får välja klippet utifrån chatt och persona när rummets automatikläge tillåter det.'},
+]);
+const automatic:IdleAutomaticPolicy={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
+const seconds=(ms:number)=>(ms/1000).toLocaleString('sv-SE',{maximumFractionDigits:1});
+export function scheduleSummary(a:IdleAutomaticPolicy) {
+  const every=a.averageEveryMs%1000===0?`var ${a.averageEveryMs/1000}:e sekund`:`var ${seconds(a.averageEveryMs)} sekund`;
+  const jitter=a.jitterMs>0?`, ± ${seconds(a.jitterMs)} s`:'';
+  const pause=a.cooldownMs>0?`Minst ${seconds(a.cooldownMs)} s paus och högst`:'Högst';
+  return `Spelas i snitt ${every}${jitter}. ${pause} ${a.maxPerMinute} ${a.maxPerMinute===1?'gång':'gånger'} per minut. Spelhändelser kan skjuta upp starten.`;
+}
 
 export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const {project,inventory,dealerId,slot,selectedVideoId,selectedVariantId,blocked,onEdit,onBusyChange}=props;
@@ -67,81 +80,98 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const addChoices=scope?.clips.filter(video=>!policy||![...policy.base,...policy.variants].some(row=>row.videoId===video.id))??[];
   const baseAllowed=(id:string)=>!scope?.global||Boolean(scope.family?.standardIds.includes(id));
   const variationAllowed=(id:string)=>!scope?.global||Boolean(scope.family?.variantIds.includes(id));
+  // Plain-language reading of the saved rule for the chosen variant. Read-only.
+  const variantVideoId=scope?.family?selectedId:lineVariant?.videoGenerationId??'';
+  const usage=scope&&scope.kind!=='idle'&&variant&&variantVideoId?studioClipUsage(project,inventory,dealerId,slot,variantVideoId,scope.family?undefined:selectedId):null;
+  const caption=slot.eventId==='idle.ready'?'Vila (idle)':slot.title;
 
   return <section aria-label={`Policy för ${slot.title}`} className="studio-policy-panel">
-    <header className="mb-3"><h2 className="text-sm font-semibold">Klippregler · {slot.title}</h2><p className="mt-1 text-[11px] text-sg-muted">Ändrar denna situation i projektutkastet. Rumspublicering sker separat. OpenClaw-val visar tillåtet urval, inte en verifierad triggeranslutning.</p></header>
-    {scopeError?<p role="alert" className="text-xs text-sg-amber">{scopeError}</p>:scope&&<fieldset disabled={locked} className="min-w-0 border-0 p-0" aria-busy={busy}>
+    <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Rummet får ändringen först när utkastet sparas och rummet publiceras. OpenClaw-val visar tillåtet urval, inte en verifierad triggeranslutning.</p></header>
+    {scopeError?<p role="alert" className="studio-policy-error">{scopeError}</p>:scope&&<fieldset disabled={locked} className="studio-policy-body" aria-busy={busy}>
       {scope.kind==='idle'?<>
-        {policy?<>
-          <h3 className="mb-2 text-xs font-semibold">Basklipp · totalt 100 %</h3>
-          {policy.base.map((item,index)=><div key={item.videoId} className="mb-2 rounded border border-sg-line p-2">
-            <div className="flex items-center gap-2 text-xs"><span className="min-w-0 flex-1 truncate">{label(item.videoId)}</span><span className="text-sg-muted">{(item.durationMs/1000).toFixed(2)} s</span>
-              {index===0?<span className="text-[10px] text-sg-lime">Huvudklipp</span>:<button type="button" className="studio-button" onClick={()=>idle({...policy,base:[item,...policy.base.filter(row=>row.videoId!==item.videoId)]})}>Gör huvudklipp</button>}
+        <section className="studio-policy-section" aria-label="Basloop"><h3>Basloop</h3>
+          <p>Loopar hela tiden när inget annat spelas. Flera basklipp turas om enligt sina andelar.</p>
+          {policy?policy.base.map((item,index)=><div key={item.videoId} className="studio-policy-clip">
+            <div className="studio-policy-clip-head"><strong>{label(item.videoId)}</strong><span>{seconds(item.durationMs)} s</span>
+              {index===0?<span className="studio-policy-tag">Huvudklipp</span>:<button type="button" className="studio-policy-link" onClick={()=>idle({...policy,base:[item,...policy.base.filter(row=>row.videoId!==item.videoId)]})}>Gör till huvudklipp</button>}
             </div>
-            <Numeric label={`Andel för ${label(item.videoId)}`} value={item.weight} min={1} max={100-policy.base.length+1} suffix="%" disabled={policy.base.length===1}
-              onChange={weight=>{try{idle(setStudioBaseWeight(policy,item.videoId,weight));}catch(cause){setError(cause instanceof Error?cause.message:'Ogiltig andel.');}}}/>
-            {policy.base.length>1&&<button type="button" className="mt-1 text-[10px] text-sg-muted hover:text-sg-text" onClick={()=>{
-              const base=policy.base.filter(row=>row.videoId!==item.videoId).map(row=>({...row}));base[0].weight+=item.weight;idle({...policy,base});
-            }}>Ta bort ur baspoolen</button>}
-          </div>)}
-          <h3 className="mb-2 mt-4 text-xs font-semibold">Tysta beteendeklipp</h3>
-          <p className="mb-2 text-[11px] text-sg-muted">Blickar, nickningar och andra rörelser som återgår till vila. Klipp med tal hör till Talade repliker.</p>
-          {!policy.variants.length&&<p className="text-[11px] text-sg-muted">Inga variationer i schemat.</p>}
-          {policy.variants.map(item=><IdleVariant key={item.videoId} item={item} label={label(item.videoId)} rule={studioIdleEventRule(project,dealerId,item.videoId)}
+            {policy.base.length>1&&<>
+              <Numeric label={`Andel av basloopen (%)`} value={item.weight} min={1} max={100-policy.base.length+1}
+                onChange={weight=>{try{idle(setStudioBaseWeight(policy,item.videoId,weight));}catch(cause){setError(cause instanceof Error?cause.message:'Ogiltig andel.');}}}/>
+              <button type="button" className="studio-policy-link is-remove" onClick={()=>{
+                const base=policy.base.filter(row=>row.videoId!==item.videoId).map(row=>({...row}));base[0].weight+=item.weight;idle({...policy,base});
+              }}>Ta bort ur basloopen</button>
+            </>}
+          </div>):<p className="studio-policy-hint">Välj ett registrerat grundloopsklipp för att skapa schemat.</p>}
+        </section>
+        <section className="studio-policy-section" aria-label="Beteendeklipp"><h3>Beteendeklipp</h3>
+          <p>Korta tysta rörelser som startar från vilan och återgår till den: blickar, nickningar, att klia sig. Klipp med tal hör till Talade repliker.</p>
+          {policy&&!policy.variants.length&&<p className="studio-policy-hint">Inga beteendeklipp i schemat ännu.</p>}
+          {policy?.variants.map(item=><BehaviourClip key={item.videoId} item={item} label={label(item.videoId)} rule={studioIdleEventRule(project,dealerId,item.videoId)}
             onRule={rule=>edit(()=>applyStudioIdleEventRule(project,inventory,dealerId,slot,item.videoId,rule))}
             onChange={patch=>edit(()=>applyStudioIdleVariantPolicy(project,inventory,dealerId,slot,item.videoId,patch))}
             onRemove={()=>idle({...policy,variants:policy.variants.filter(row=>row.videoId!==item.videoId)})}/>)}
-        </>:<p className="mb-3 text-xs text-sg-muted">Välj ett registrerat grundloopsklipp för att skapa schemat.</p>}
-        <div className="mt-3 flex flex-col gap-2 border-t border-sg-line pt-3">
-          <label className="studio-field"><span>Lägg till grundloopsklipp</span><select value={addId} onChange={event=>setAddId(event.target.value)}>
+        </section>
+        <section className="studio-policy-section" aria-label="Lägg till klipp i schemat"><h3>Lägg till klipp i schemat</h3>
+          <label className="studio-field"><span>Registrerat klipp</span><select value={addId} onChange={event=>setAddId(event.target.value)}>
             <option value="">Välj registrerat klipp…</option>{addChoices.map(video=><option key={video.id} value={video.id}>{label(video.id)}</option>)}
           </select></label>
-          <div className="flex flex-wrap gap-2"><button type="button" className="studio-button" disabled={!addId||!baseAllowed(addId)||(policy?.base.length??0)>=4} onClick={()=>void add(true)}>{busy?'Läser längd…':'Lägg till basklipp'}</button>
-            {policy&&<button type="button" className="studio-button" disabled={!addId||!variationAllowed(addId)} onClick={()=>void add(false)}>Lägg till variation</button>}
-          </div><p className="text-[10px] text-sg-muted">Nya längder läses från den valda videons metadata.</p>
-        </div>
+          <div className="studio-policy-actions"><button type="button" className="studio-button" disabled={!addId||!baseAllowed(addId)||(policy?.base.length??0)>=4} onClick={()=>void add(true)}>{busy?'Läser längd…':'Lägg till i basloopen'}</button>
+            {policy&&<button type="button" className="studio-button" disabled={!addId||!variationAllowed(addId)} onClick={()=>void add(false)}>Lägg till som beteendeklipp</button>}
+          </div><p className="studio-policy-hint">Klippets längd läses från videons metadata. Högst fyra basklipp.</p>
+        </section>
       </>:<>
         {choices.length?<>
-          <label className="studio-field"><span>Klippvariant</span><select value={selectedId} onChange={event=>setSelected(event.target.value)}>{!selectedId&&<option value="">Välj en alternativ tagning…</option>}{choices.map(choice=><option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label>
-          {!selectedId?<p className="mt-3 text-xs text-sg-muted">Den valda tagningen saknar en redigerbar alternativregel. Standardklippets urval är fast; ett okopplat klipp måste kopplas först.</p>:scope.frequency?<div className="mt-3">
-            {legacyFrequency&&<p className="mb-2 text-[11px] text-sg-amber">Första frekvensändringen ersätter det äldre urvalet för just denna plats.</p>}
-            <Numeric label="Frekvens" value={percent} min={0} max={percent===0&&activeFrequency>=4?0:100-total+percent} suffix="%" onChange={frequencyPercent=>variantEdit({frequencyPercent})}/>
-            <p className="mt-2 text-[11px] text-sg-muted">0 % = manuell. Högst fyra aktiva varianter.{!legacyFrequency&&` Standardens andel: ${100-total+unavailableShare} %.`}</p>
-          </div>:variant?<>
-            <div className="my-3 flex flex-wrap gap-3">{([['rules','Regler'],['model','OpenClaw'],['random','Slump']]as const).map(([key,title])=><label key={key} className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={selection[key]} onChange={event=>variantEdit({selection:{...selection,[key]:event.target.checked}})}/>{title}</label>)}</div>
-            <button type="button" className="studio-button" onClick={()=>variantEdit({selection:{rules:false,model:false,random:false}})}>Endast manuell</button>
-            <details className="mt-3"><summary className="cursor-pointer text-xs">Villkor & prioritet</summary>
+          <label className="studio-field"><span>Variant</span><select value={selectedId} onChange={event=>setSelected(event.target.value)}>{!selectedId&&<option value="">Välj en alternativ tagning…</option>}{choices.map(choice=><option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label>
+          {!selectedId?<p className="studio-policy-hint">Den valda tagningen saknar en redigerbar alternativregel. Standardklippets urval är fast; ett okopplat klipp måste kopplas först.</p>:scope.frequency?<section className="studio-policy-section" aria-label="Frekvens">
+            <h3>Hur ofta väljs varianten?</h3>
+            {legacyFrequency&&<p className="studio-policy-warning">Första frekvensändringen ersätter det äldre urvalet för just denna plats.</p>}
+            <Numeric label="Frekvens (%)" value={percent} min={0} max={percent===0&&activeFrequency>=4?0:100-total+percent} onChange={frequencyPercent=>variantEdit({frequencyPercent})}/>
+            <p className="studio-policy-hint">0 % = endast manuellt prov. Högst fyra aktiva varianter.{!legacyFrequency&&` Standardens andel: ${100-total+unavailableShare} %.`}</p>
+          </section>:variant?<>
+            <section className="studio-policy-section" aria-label="Urval"><h3>Hur väljs varianten?</h3>
+              <div className="studio-chip-row">{([['rules','Regler','Väljs när villkoren nedan stämmer.'],['random','Slump','Kan väljas slumpmässigt i stället för standardklippet.'],['model','OpenClaw','OpenClaw får välja varianten utifrån chatt och persona.']] as const).map(([key,title,hint])=><label key={key} className="studio-chip" title={hint}><input type="checkbox" checked={selection[key]} onChange={event=>variantEdit({selection:{...selection,[key]:event.target.checked}})}/>{title}</label>)}</div>
+              <p className="studio-policy-hint">Alla av = endast manuellt prov. Standardklippet finns alltid som reserv. Rummets publicerade automatikläge avgör vilket urval som används.</p>
+              <button type="button" className="studio-policy-link" onClick={()=>variantEdit({selection:{rules:false,model:false,random:false}})}>Endast manuell</button>
+            </section>
+            {usage&&<div className="studio-policy-summary" role="status" aria-label="Så används varianten">{usage.rules.map(rule=><p key={rule}>{rule}</p>)}</div>}
+            <details className="studio-policy-section studio-policy-details"><summary>Villkor &amp; prioritet</summary>
               <Numeric label="Prioritet" value={variant.priority} min={-100} max={100} onChange={priority=>variantEdit({priority})}/>
-              <div className="mt-2 flex max-h-40 flex-col gap-2 overflow-y-auto">{project.triggers.map(trigger=><label key={trigger.id} className="flex items-start gap-2 text-[11px]"><input type="checkbox" checked={variant.triggerIds.includes(trigger.id)} onChange={event=>variantEdit({triggerIds:event.target.checked?[...variant.triggerIds,trigger.id]:variant.triggerIds.filter(id=>id!==trigger.id)})}/><span>{trigger.label}</span></label>)}</div>
+              <div className="studio-policy-triggers">{project.triggers.map(trigger=><label key={trigger.id} className="studio-policy-trigger"><input type="checkbox" checked={variant.triggerIds.includes(trigger.id)} onChange={event=>variantEdit({triggerIds:event.target.checked?[...variant.triggerIds,trigger.id]:variant.triggerIds.filter(id=>id!==trigger.id)})}/><span>{trigger.label}</span></label>)}</div>
             </details>
-            <p className="mt-3 text-[10px] text-sg-muted">Alla urvalsval av = manuellt prov. Standardklippet finns alltid som reserv.</p>
           </>:null}
-        </>:<p className="text-xs text-sg-muted">Inga kopplade klippvarianter i detta fack. Standardklippet behåller sitt fasta urval.</p>}
+        </>:<p className="studio-policy-hint">Inga kopplade klippvarianter i detta fack. Standardklippet behåller sitt fasta urval.</p>}
       </>}
     </fieldset>}
-    {error&&<p role="alert" className="mt-3 text-xs text-sg-amber">{error}</p>}
+    {error&&<p role="alert" className="studio-policy-error">{error}</p>}
   </section>;
 }
 
-function Numeric({label,value,min,max,suffix='',disabled=false,onChange}:{label:string;value:number;min:number;max:number;suffix?:string;disabled?:boolean;onChange:(value:number)=>void}){
-  return <label className="studio-field mt-2"><span>{label}{suffix&&` (${suffix})`}</span><input type="number" value={value} min={min} max={max} step={1} disabled={disabled} onChange={event=>{if(Number.isFinite(event.target.valueAsNumber))onChange(event.target.valueAsNumber);}}/></label>;
+function Numeric({label,value,min,max,disabled=false,onChange}:{label:string;value:number;min:number;max:number;disabled?:boolean;onChange:(value:number)=>void}){
+  return <label className="studio-field"><span>{label}</span><input type="number" value={value} min={min} max={max} step={1} disabled={disabled} onChange={event=>{if(Number.isFinite(event.target.valueAsNumber))onChange(event.target.valueAsNumber);}}/></label>;
 }
-function IdleVariant({item,label,rule,onRule,onChange,onRemove}:{item:IdleVariantPolicy;label:string;rule:string;onRule:(rule:string)=>void;onChange:(patch:Partial<IdleVariantPolicy>)=>void;onRemove:()=>void}){
-  return <div className="mb-2 rounded border border-sg-line p-2">
-    <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate">{label}</span><span className="shrink-0 text-sg-muted">{(item.durationMs/1000).toFixed(2)} s</span></div>
-    <label className="studio-field mt-2"><span>Användning</span><select value={item.use} onChange={event=>{const use=event.target.value as IdleVariantUse;onChange({use,automatic:use==='automatic'?item.automatic??{...automatic}:null});}}>
-      {(Object.entries(useLabels)as [IdleVariantUse,string][]).map(([use,title])=><option key={use} value={use}>{title}</option>)}
-    </select></label>
+const SCHEDULE_FIELDS:readonly [keyof IdleAutomaticPolicy,string,number,number][]=[['averageEveryMs','Ungefär var (s)',5,300],['jitterMs','Variation ± (s)',0,60],['cooldownMs','Minsta paus (s)',0,300],['maxPerMinute','Högst per minut',1,12]];
+function BehaviourClip({item,label,rule,onRule,onChange,onRemove}:{item:IdleVariantPolicy;label:string;rule:string;onRule:(rule:string)=>void;onChange:(patch:Partial<IdleVariantPolicy>)=>void;onRemove:()=>void}){
+  const use=IDLE_USES.find(row=>row.id===item.use)??IDLE_USES[0];
+  return <div className="studio-policy-clip">
+    <div className="studio-policy-clip-head"><strong>{label}</strong><span>{seconds(item.durationMs)} s</span></div>
+    <div className="studio-segmented" role="group" aria-label={`Hur spelas ${label}?`}>
+      {IDLE_USES.map(row=><button key={row.id} type="button" aria-pressed={item.use===row.id} onClick={()=>{if(item.use!==row.id)onChange({use:row.id,automatic:row.id==='automatic'?item.automatic??{...automatic}:null});}}>{row.label}</button>)}
+    </div>
+    <p className="studio-policy-hint">{use.hint}</p>
     {item.use==='rules'&&<>
-      <label className="studio-field mt-2"><span>Spelhändelse</span><select value={rule} onChange={event=>onRule(event.target.value)}>
+      <label className="studio-field"><span>Spelhändelse</span><select value={rule} onChange={event=>onRule(event.target.value)}>
         {!rule&&<option value="">Egna villkor · välj för att ersätta</option>}
         {IDLE_EVENT_RULES.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}
       </select></label>
-      <p className="mt-2 text-[10px] text-sg-muted">Körs i klippvalsläget Regler efter publicering. Väntar tills kort och tal är klara och byter vid viloklippets slut.</p>
+      <p className="studio-policy-hint">Väntar tills kort och tal är klara och byter vid viloklippets slut.</p>
     </>}
-    {item.use==='automatic'&&item.automatic&&<div className="grid grid-cols-2 gap-2">
-      {([['averageEveryMs','Intervall',5,300],['jitterMs','Slump ±',0,60],['cooldownMs','Minsta paus',0,300],['maxPerMinute','Max per minut',1,12]]as const).map(([key,title,min,max])=><Numeric key={key} label={title} value={key==='maxPerMinute'?item.automatic![key]:item.automatic![key]/1000} min={min} max={max} suffix={key==='maxPerMinute'?'':'s'} onChange={value=>onChange({automatic:{...item.automatic!,[key]:key==='maxPerMinute'?value:value*1000}})}/>)}
-    </div>}
-    <button type="button" className="mt-2 text-[10px] text-sg-muted hover:text-sg-text" onClick={onRemove}>Ta bort variation ur schemat</button>
+    {item.use==='automatic'&&item.automatic&&<>
+      <div className="studio-schedule">
+        {SCHEDULE_FIELDS.map(([key,title,min,max])=><Numeric key={key} label={title} value={key==='maxPerMinute'?item.automatic![key]:item.automatic![key]/1000} min={min} max={max} onChange={value=>onChange({automatic:{...item.automatic!,[key]:key==='maxPerMinute'?value:value*1000}})}/>)}
+      </div>
+      <p className="studio-policy-summary" role="status">{scheduleSummary(item.automatic)}</p>
+    </>}
+    <button type="button" className="studio-policy-link is-remove" onClick={onRemove}>Ta bort ur schemat</button>
   </div>;
 }
