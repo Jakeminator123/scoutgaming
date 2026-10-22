@@ -38,7 +38,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
         for(const event of presentation.events){
           signal?.throwIfAborted();if(closed)return;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
-          composition?.backgroundEvent?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
+          for(const layerEvent of ['backgroundEvent','tableEvent'])composition?.[layerEvent]?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
           let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1;
           const clip=new AbortController();
           const relay=()=>clip.abort(signal.reason);

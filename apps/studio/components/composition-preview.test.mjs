@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import {createBackgroundPlayback} from '../../../packages/presentation/runtime/background-playback.mjs';
-import {defaultBackgroundRule} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {defaultBackgroundRule,defaultLayerRule} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
@@ -15,13 +15,13 @@ const {code}=transformSync(readFileSync(source,'utf8'),{filename:fileURLToPath(s
   jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 function nodes(tree,predicate){if(Array.isArray(tree))return tree.flatMap(node=>nodes(node,predicate));if(!tree||typeof tree!=='object')return [];return [...(predicate(tree)?[tree]:[]),...nodes(tree.props?.children,predicate)];}
 const text=tree=>Array.isArray(tree)?tree.map(text).join(''):tree&&typeof tree==='object'?text(tree.props?.children):String(tree??'');
-const id='00000000-0000-4000-8000-000000000002';
+const id='00000000-0000-4000-8000-000000000002',tableId='00000000-0000-4000-8000-000000000003';
 
 // Render the actual transpiled component, including dependency-sensitive effect
 // cleanup. The browser boundary supplies controllable media promises and time;
 // the real background scheduler retains its rolling budget and cancellation.
-function fixture(t){
-  let time=0,serial=0,cursor=0,dirty=true,mounted=true,tree,props,renderedBackground=null;
+function fixture(t,{table=false}={}){
+  let time=0,serial=0,cursor=0,dirty=true,mounted=true,tree,props,renderedBackground=null,renderedTable=null;
   const slots=[],pending=new Map(),timers=new Map(),frames=new Map(),videos=[],renderers=[],players=[],draws=[];
   const schedule=(fn,ms)=>{const token=++serial;timers.set(token,{fn,at:time+ms});return token;};
   const cancel=token=>timers.delete(token);
@@ -46,7 +46,7 @@ function fixture(t){
   class Compositor {
     released=[];disposed=false;
     constructor(){renderers.push(this);}
-    render(_scene,_actor,assets){renderedBackground=assets.get('background')?.el??null;}
+    render(_scene,_actor,assets){renderedBackground=assets.get('background')?.el??null;renderedTable=assets.get('table')?.el??null;}
     release(video){this.released.push(video);}
     dispose(){this.disposed=true;}
   }
@@ -61,7 +61,7 @@ function fixture(t){
     '../../../packages/presentation/contracts/dealer-framing.mjs':{drawDealerFrame(_context,source,width,height,framing){draws.push({source,width,height,framing});}},
     '../../../packages/presentation/runtime/background-playback.mjs':{createBackgroundPlayback(policy,options){
       const player=createBackgroundPlayback(policy,{...options,now:()=>time,setTimeout:schedule,clearTimeout:cancel});
-      const observed={starts:0,closes:0};players.push(observed);
+      const observed={starts:0,closes:0,role:options.role??'background'};players.push(observed);
       return {...player,start(){observed.starts++;player.start();},close(){observed.closes++;player.close();}};
     }},'/preview/compositor.js':{Compositor},
   };
@@ -75,7 +75,10 @@ function fixture(t){
     background:{url:'/base.png',label:'Base',contentType:'image/png'},table:null,
     settings:defaultCompositionSettings(),layout:'desktop',show:{dealer:true,background:true,table:false},
     backgroundPlayback:{schemaVersion:1,rules:[defaultBackgroundRule(id,'celebrate')]},
-    backgroundAssets:[{id,url:'/event.mp4',label:'Celebration',contentType:'video/mp4'}]};
+    backgroundAssets:[{id,url:'/event.mp4',label:'Celebration',contentType:'video/mp4'}],
+    ...(table?{table:{url:'/table.png',label:'Table',contentType:'image/png'},show:{dealer:true,background:true,table:true},
+      tablePlayback:{schemaVersion:1,rules:[defaultLayerRule(tableId,'flower',{role:'table'})]},
+      tableAssets:[{id:tableId,url:'/flower.mp4',label:'Flower',contentType:'video/mp4'}]}:{})};
   let canvasKey,stage;
   function render(){
     if(!mounted)return;cursor=0;dirty=false;tree=CompositionPreview(props);
@@ -94,13 +97,13 @@ function fixture(t){
   function advance(ms){const end=time+ms;let loops=0;for(;;){const next=[...timers.entries()].filter(([,row])=>row.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next)break;assert.ok(++loops<100,'timer spin');time=next[1].at;timers.delete(next[0]);next[1].fn();}time=end;}
   function unmount(){if(!mounted)return;mounted=false;for(const slot of slots)slot?.cleanup?.();pending.clear();}
   t.after(unmount);
-  return {async ready(){await flush();assert.equal(button('Spela').props.disabled,false);assert.equal(players.length,1);},
+  return {async ready(){await flush();assert.equal(button('Spela').props.disabled,false);assert.equal(players.length,table?2:1);},
     click(label){const value=button(label);assert.equal(Boolean(value.props.disabled),false);value.props.onClick();},
     async update(patch){props={...props,...patch};dirty=true;await flush();},flush,frame,advance,unmount,
     hide(){document.hidden=true;document.dispatchEvent(new Event('visibilitychange'));},
     show(){document.hidden=false;document.dispatchEvent(new Event('visibilitychange'));},
     get dealer(){return videos.find(video=>video.src==='/dealer.mp4');},get eventVideos(){return videos.filter(video=>video.playCalls&&video!==this.dealer);},
-    videos,players,renderers,draws,button,get background(){return renderedBackground;},get pendingTimers(){return timers.size;},get pendingFrames(){return frames.size;}};
+    videos,players,renderers,draws,button,get tree(){return tree;},get now(){return time;},get roles(){return players.map(player=>player.role);},get background(){return renderedBackground;},get table(){return renderedTable;},get pendingTimers(){return timers.size;},get pendingFrames(){return frames.size;}};
 }
 
 test('keystone draws once, reframes without reload and switches to video and back without stale playback',async t=>{
@@ -161,4 +164,27 @@ test('two manual background plays restore a still base and release each event wi
   await h.update({settings:{...defaultCompositionSettings(),tableFront:true},previewBackgroundRequest:3});
   assert.equal(h.videos.length,before,'placement change and third immediate request cannot reset cooldown');
   assert.equal(h.players.length,1);assert.equal(h.pendingTimers,0);
+});
+
+test('a table clip swaps only the table layer and returns to the base table while the background channel keeps its own budget',async t=>{
+  const h=fixture(t,{table:true});await h.ready();h.frame();
+  const baseTable=h.table,baseBackground=h.background,dealer=h.dealer;assert.equal(baseTable.src,'/table.png');assert.equal(baseBackground.src,'/base.png');
+  assert.deepEqual(h.roles,['background','table'],'one scheduler per layer, each bound to its role');
+  await h.update({previewTableRuleId:'flower',previewTableRequest:1});h.frame();
+  const clip=h.table;assert.notEqual(clip,baseTable);assert.equal(clip.src,'/flower.mp4');assert.equal(clip.muted,true);assert.equal(clip.loop,false);
+  assert.equal(h.background,baseBackground,'background untouched while the table clip plays');
+  assert.match(text(h.tree),/Bordsklipp: Flower/);
+  clip.dispatchEvent(new Event('ended'));await h.flush();h.frame();
+  assert.equal(h.table,baseTable);assert.equal(clip.paused,true);assert.equal(clip.src,'');assert.ok(h.renderers[0].released.includes(clip));
+  assert.match(text(h.tree),/Grundbordet visas\./);
+  // The background preview still runs independently with its own scheduler.
+  await h.update({previewBackgroundRuleId:'celebrate',previewBackgroundRequest:1});h.frame();
+  assert.equal(h.background.src,'/event.mp4');assert.equal(h.table,baseTable);
+  // Timer automation: the table rule is due roughly every 195 s ± 74 s once playback runs.
+  h.click('Spela');await h.flush();assert.equal(h.players[1].starts,1);
+  // Step the clock so the clip's loadeddata microtask can run before its 10 s deadline passes.
+  const started=h.now;for(let step=0;step<60&&h.table===baseTable;step++){h.advance(5000);await h.flush();h.frame();}
+  assert.equal(h.table.src,'/flower.mp4','the table clip started by its timer');
+  const elapsed=h.now-started;assert.ok(elapsed>=195000-74000&&elapsed<=195000+74000+5000,`started after ${elapsed} ms, inside 195 s ± 74 s`);
+  assert.equal(dealer.playCalls,1);assert.equal(h.players.length,2);
 });
