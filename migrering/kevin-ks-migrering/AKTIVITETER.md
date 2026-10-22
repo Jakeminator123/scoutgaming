@@ -99,7 +99,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K04 — Spelklient och presentation från händelser
 
-**IN_PROGRESS 22 oktober:** aktuell PR333/head `23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540`. BindLine-fyndet är stängt efter oberoende fyrfilsreview,9 verifierade Gitblobbar och egna4/4 rena Nodeprov. Nya8 PG-servermodulgrupper/totalt34/34 och hooks är Kevinrapporterade, inte rootomkörning eller klient-/visuell acceptans. Tidigare metadata10/10 mot K05/159cc och stängda mouth/idle/readtimeoutfynd består. Root har importerat24 filer i PR336/d008;22 är exakta källblobbar, medan parser+regression rättar reproducerad Windows-CRLF. **Nästa Kevinansvar är monterat klientflöde genom J07 enligt kriterierna nedan.** Produktion/GPU/full K05 är inga nya förhandsgrindar. Root äger publik transport. Full K04 är inte accepterad.
+**IN_PROGRESS 22 oktober:** PR333/head eb6ab45509fad539463bbcb6930cc46d2d0844c2, refill oberoende granskad och inkluderad i rootc5/2f/8504. Ansvar korrigerat i #312/6333671448 enligt6331165483/6332583473: ROOT äger klientmontering och rumsväg, Kevin äger tre K04acceptansprov när körbar isolerad väg med rätt media finns. Våra senare6333117918/6333517759 var ingen accepterad ägaröverlämning; Kevin har ingen klientleveransskuld. Hans refill eb6 är redan oberoende granskad och inkluderad. Rootmontering på PR336/8504c6e83497c03fff55a34d0762e9faa37b41fb har normalhook239/239, isolerad Chrome1440/390 och PG46/46. Browsermedia är ersatt; de tre verkliga K04proven nedan återstår. Full K04 är inte accepterad, PR333merge är inte godkänd.
 
 **Etapp/beroenden:** E3; K03 och J07.
 **Mål:** utvalda förbättringar av idle, tal, kort och layout återger committade spelhändelser utan att styra spelutfallet.
