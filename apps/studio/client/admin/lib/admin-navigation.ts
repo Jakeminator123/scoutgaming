@@ -8,7 +8,7 @@ export const adminNavigationGroups: {id:string;label:string;description:string;l
     {label:'Bord & bakgrunder',href:'/admin/assets',description:'Hantera material till scenens lager.'},
     {label:'Provspelning',href:'/admin/rehearsal',description:'Följ vad som visas och hörs i spelaren.'},
   ]},
-  {id:'business',label:'Verksamhet',description:'Spelbolag, rum och löpande drift.',links:[
+  {id:'business',label:'Administration',description:'Spelbolag, rum och löpande drift.',links:[
     {label:'Spelbolag & rum',href:'/admin/rooms',description:'Öppna ett rum och granska dess tillåtna val.'},
     {label:'Bolag & team',href:'/admin/companies',description:'Hantera bolag, medlemmar och deras åtkomst.'},
     {label:'Spelarkonton',href:'/admin/players',description:'Spelarnas konton, saldon och status.'},

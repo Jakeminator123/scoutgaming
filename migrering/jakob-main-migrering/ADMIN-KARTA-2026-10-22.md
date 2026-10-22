@@ -208,7 +208,7 @@ Totalt ca 11 komponenter och 19 lib-moduler.
 
 Avsnitt 1–5 ovan är kodinventeringen före denna ändring. Detta avsnitt beskriver den avgränsade leveransen på codex/admin-en-ingang, från main 7afae4260c28f1e2a18625879f28a95156fa13e0.
 
-- Studion heter **Studio** i menyn och **Din spelstudio** på startsidan. Tre dekorativa, skalbara illustrationer gör arbetsvalen visuella; System visar en platt lista utan extra smårubriker. Illustrationerna är inga nya kontroller eller produktdata.
+- Studion heter **Studio** i menyn och åtskiljs från **Administration** i både meny och startsida. Tre dekorativa, skalbara illustrationer gör arbetsvalen visuella; System visar en platt lista utan extra smårubriker. Illustrationerna är inga nya kontroller eller produktdata.
 - Översikten har tre stora val: **Skapa dealer**, **Fortsätt redigera**, **Hantera spelbolag**. Pilrader och den parallella länksamlingen är borttagna. Skapa öppnar det befintliga formuläret; klicket sparar ingenting.
 - **Dealers** äger registret och dealerns verktyg. Klippkartans extra registerflik är borttagen. Befintlig klippredigering och uppladdning finns kvar.
 - **Ekonomi** samlar översikt och betalningar. **Bolag & team** visar befintlig ändringsjournal på valt aktivt bolag, med exakt bolags-ID/slug och ny komponentidentitet när bolag byts. Mellansidan för Bolagsjournal är borttagen.
@@ -254,6 +254,8 @@ Dokumentomdirigeringarna är samlade i admin-workspace-routes.mjs. Serverns GET/
 ## 7. Förslag till senare flöde — endast produktförslag, ingen kod i PR1
 
 Utgå från TERMINOLOGI: dealer, klipp, lager, sammansättning, spel, bolag och rum har separata identiteter. En dealer ska kunna återanvändas i flera kompatibla scener utan att kopieras för varje bakgrund.
+
+**Ansvarsfördelning i arbetsytan:** Studio är utvecklarens/skaparens plats för dealers, klippkartor, scener och spelupplägg. Administration hanterar bolag, konton, tillgängligt spelutbud, drift, ekonomi och system. Studio producerar de återanvändbara delarna; administrationen kopplar dem till bolagens erbjudanden. Detta är en uppdelning av arbetsuppgifter och navigation, inte nya roller, behörigheter eller parallella appar i PR1.
 
 Jakobs förtydligade visuella hierarki: **Spelbolag/domän → spel (Blackjack, Roulette, …) → valbara dealers och spelspecifika bord**. Bakgrunder utgör ett **gemensamt, speloberoende bibliotek** vid sidan av trädet och kan växlas mellan spelen. Spelregler avgör dealer-/bordskompatibilitet; bakgrunder ska inte kategoriseras eller låsas efter spel. Det är arbetsytans relationer, inte ett beslut att införa en ny datamodell i denna PR.
 

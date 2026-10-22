@@ -41,7 +41,7 @@ function ActionArtwork({kind}:{kind:string}) {
 
 export function AdminHome() {
   return <section className="admin-home" aria-labelledby="admin-home-title">
-    <header className="admin-home-heading"><p className="sg-eyebrow">Scoutgaming · Admin</p><h1 id="admin-home-title">Din spelstudio</h1><p>Dealers, bord och bakgrunder. Samlade för dina spelbolag.</p></header>
+    <header className="admin-home-heading"><p className="sg-eyebrow">Scoutgaming · Admin</p><h1 id="admin-home-title">Studio & administration</h1><p>Dealers, bord och bakgrunder. Samlade för dina spelbolag.</p></header>
     <nav className="admin-home-actions" aria-label="Börja arbeta">{actions.map(({kind,label,href,description,Icon})=><Link key={href} href={href} className={'admin-home-link admin-home-'+kind}><ActionArtwork kind={kind}/><div className="admin-home-action-copy"><h2><Icon size={21} aria-hidden="true"/>{label}</h2><p>{description}</p></div></Link>)}</nav>
   </section>;
 }
