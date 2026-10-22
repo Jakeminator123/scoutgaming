@@ -10,8 +10,14 @@ granskningsbar; monterad klient och produktionsschema är kvarvarande grindar.
 
 **Arbetskopia/bas:** C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier,
 codex/shared-room-transport, draft PR336. J08:s produktdelta finns redan här.
-Etappen bygger på c5d470b98e017ace54bdbc20ccf798d3ce0ecb09. Dess CI39724650872
-är färskverifierad completed/success. CI på c5 täcker inte denna senare etapp.
+Backend levererad på2f479f52a90586965210aae8fbebaa5160274a9f (parentc5),
+normalhook152/152,0skip och isolerad PG42/42,clusterStopped:true.
+CI39727259718 på exakt2f blev failure: appearance-integration-fixturen saknade
+handleSharedRoomHttp/sharedRoomCommand i den verkliga callbackens bindings.
+Denna smala fixturrättning importerar riktig helper och injicerar command:null;
+produktionen/testförväntningarna ändras inte. Root23/23 integration+HTTP,0skip;
+runtime_audit oberoende tvåhunksreview utan blockerare. Ny head-CI måste läsas.
+Föregående c5-CI39724650872 är success men täcker inte denna senare head.
 Primary och andras filer/index/config lämnas orörda; ingen merge/deploy/aktivering.
 
 **Same-PG-behörighet och sparning:** repository, produktstorage och shared-table
@@ -69,6 +75,11 @@ försäkring, next/refill/pause, bevara commandId/payload vid osäkert nätfel o
 återställa snapshot före K04 utan presentationsreplay. Ingen ny leverans var läst
 vid denna skrivning; hans senaste frysta head är eb6ab45509fad539463bbcb6930cc46d2d0844c2.
 Root äger serverns entrypointval och player-ui-builds importkö efter klientreview.
+I6333517759 avgränsades ytterligare parallellt arbete: roots underagent äger endast
+public/shared-room-command-client.mjs och test/shared-room-command-client.mjs,
+med explicit same-ID/identisk-payload-retry efter osäkert HTTP-utfall. Kevin äger
+fortsatt shared-room-app/vy/handlers/K04 och ombeds lämna dessa två paths orörda.
+Det är pågående arbete, inte en färdig monterad klient eller ny Kevinleverans.
 Därefter behövs verkligt monterade mobil-/dator-/felvägsprov och samlad slutreview.
 Kevins tidigare smala refillfix är redan oberoende granskad och inkluderad i c5.
 Hans egen kod räknas inte som oberoende granskad av honom. Inga PR333merger godkända.

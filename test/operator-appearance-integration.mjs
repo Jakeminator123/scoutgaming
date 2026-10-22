@@ -6,6 +6,7 @@ import {createOperatorAppearanceApi} from '../services/game/operator-appearance-
 import {createOperatorPackageReader} from '../services/game/storage/operator-package-reader.mjs';
 import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../services/game/public/operator-appearance-boundary.mjs';
 import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
+import {handleSharedRoomHttp} from '../services/game/shared-room-http.mjs';
 
 const {parse}=createRequire(new URL('../apps/studio/package.json',import.meta.url))('next/dist/compiled/acorn');
 const [serverSource,appSource]=await Promise.all(['../services/game/server.mjs','../services/game/public/app.mjs'].map(path=>readFile(new URL(path,import.meta.url),'utf8')));
@@ -42,7 +43,7 @@ async function serverFixture({authenticated=true,available=true}={}){
   const server=declaration(serverTree,'server').declarations.find(row=>row.id.name==='server');
   assert.equal(server.init.callee.name,'createServer');const handlerNode=server.init.arguments[0];assert.equal(handlerNode.type,'ArrowFunctionExpression');
   const handler=compile({URL,Request,Response,Buffer,process:{env:{}},gameOrigin:'https://game.example.invalid',frontendOrigin:'https://frontend.example.invalid',
-    nativeP6QaRouter:null,studioPreview:null,movingSpeechService:null,sharedRoomsEnabled:false,studioPolicyRuntime:available?{}:null,neonStudioEnabled:true,studioGameCommand:null,
+    nativeP6QaRouter:null,studioPreview:null,movingSpeechService:null,sharedRoomsEnabled:false,handleSharedRoomHttp,sharedRoomCommand:null,studioPolicyRuntime:available?{}:null,neonStudioEnabled:true,studioGameCommand:null,
     presentationCapabilitiesResponse:()=>null,compositionRuntimeResponse:async()=>null,layerPacksRoute:async()=>false,isRetiredBackofficePost:()=>false,
     boGameAuth:async()=>false,boLabAuth:async()=>false,auth:{handle:async()=>false},legacyBackofficeRedirect:()=>null,
     playerSession:async()=>authenticated?{playerId:'isolated-player'}:null,guestPreview:false,lissabonProfiles:{handle:async()=>false,enabled:false},
