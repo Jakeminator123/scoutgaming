@@ -5,6 +5,7 @@ import {createBackgroundPlayback} from '../packages/presentation/runtime/backgro
 import {createLayerComposition,validateComposition} from '../packages/presentation/runtime/presentation-composition.mjs';
 
 const baseId='10000000-0000-4000-8000-000000000001',eventId='10000000-0000-4000-8000-000000000002';
+const tableId='10000000-0000-4000-8000-000000000003',tableClipId='10000000-0000-4000-8000-000000000004';
 const rule=(changes={})=>({id:'celebrate',assetId:eventId,trigger:{eventId:'speak.blackjack'},maxDurationMs:10000,
   cooldownMs:0,maxPerMinute:12,maxSecondsPerMinute:60,...changes});
 function clock(){let at=0,id=0;const timers=new Map();return{now:()=>at,
@@ -73,8 +74,8 @@ test('callback failure restores base and closed controllers never replay events'
   player.close();assert.equal(timer.size(),0);assert.equal(player.event('speak.blackjack','two'),false);
 });
 
-function compositionFixture({videoBase=false,dealerEnabled=true}={}){
-  const timer=clock(),nodes=new Set(),renders=[],released=[];
+function compositionFixture({videoBase=false,dealerEnabled=true,table=false}={}){
+  const timer=clock(),nodes=new Set(),renders=[],tableRenders=[],released=[];
   class Node extends EventTarget{constructor(tag){super();Object.assign(this,{tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:720,naturalHeight:1280,
     videoWidth:720,videoHeight:1280,readyState:2,paused:false,playCount:0,pauseCount:0});}
     setAttribute(){}removeAttribute(){}append(node){nodes.add(node);}remove(){nodes.delete(this);}
@@ -84,13 +85,17 @@ function compositionFixture({videoBase=false,dealerEnabled=true}={}){
   const document={hidden:false,documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>{
     const node=new Node(tag);if(tag==='video'&&(!videoBase||[...nodes].some(node=>node.tagName==='VIDEO')))node.readyState=0;return node;}};
   const descriptor={schemaVersion:1,background:{enabled:true,mode:videoBase?'video':'image',allowed:[baseId,eventId],default:baseId},
-    table:{enabled:false,allowed:[],default:null},dealer:{enabled:dealerEnabled,compatibility:'per-clip'},
+    table:table?{enabled:true,allowed:[tableId,tableClipId],default:tableId}:{enabled:false,allowed:[],default:null},dealer:{enabled:dealerEnabled,compatibility:'per-clip'},
     assets:[{id:baseId,role:'background',label:'Base',contentType:videoBase?'video/mp4':'image/png',src:'/api/presentation/layers/north/'+baseId},
-      {id:eventId,role:'background',label:'Event',contentType:'video/mp4',src:'/api/presentation/layers/north/'+eventId}],
-    backgroundPlayback:{schemaVersion:1,rules:[rule()]}};
-  class Compositor{constructor(canvas){this.canvas=canvas;}dispose(){}release(source){released.push(source);}render(scene,actor,assets){renders.push(assets.get('background')?.el);}}
+      {id:eventId,role:'background',label:'Event',contentType:'video/mp4',src:'/api/presentation/layers/north/'+eventId},
+      ...(table?[{id:tableId,role:'table',label:'Bord',contentType:'image/png',src:'/api/presentation/layers/north/'+tableId},
+        {id:tableClipId,role:'table',label:'Levande bord',contentType:'video/mp4',src:'/api/presentation/layers/north/'+tableClipId}]:[])],
+    backgroundPlayback:{schemaVersion:1,rules:[rule()]},
+    ...(table?{tablePlayback:{schemaVersion:1,rules:[rule({id:'living',assetId:tableClipId,trigger:{everyMs:5000},maxDurationMs:5000})]}}:{})};
+  class Compositor{constructor(canvas){this.canvas=canvas;}dispose(){}release(source){released.push(source);}render(scene,actor,assets){renders.push(assets.get('background')?.el);tableRenders.push(assets.get('table')?.el);}}
   const composition=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor}),backgroundPlaybackOptions:timer});
-  return{composition,descriptor,nodes,renders,released,timer,base:[...nodes].find(node=>node.dataset.layerAsset===baseId)};
+  return{composition,descriptor,nodes,renders,tableRenders,released,timer,base:[...nodes].find(node=>node.dataset.layerAsset===baseId),
+    tableBase:[...nodes].find(node=>node.dataset.layerAsset===tableId)};
 }
 
 test('runtime validates exact background grants and requires an enabled base',()=>{
@@ -140,4 +145,34 @@ test('game background notifications precede speech mute admission and never awai
   const say=source.slice(source.indexOf('say(t, { force'),source.indexOf('speechPoseGate = createSpeechPoseGate'));
   assert.ok(say.indexOf("backgroundEvent('speak.'+t")<say.indexOf('if (this.muted'));
   assert.doesNotMatch(say,/await\s+layerComposition/);assert.match(say,/clientSessionRevision.*roomId.*DEALER.key.*tableVersion/);
+});
+
+test('runtime validates table playback against enabled table grants and table-role videos',()=>{
+  const f=compositionFixture({table:true});assert.doesNotThrow(()=>validateComposition(f.descriptor));
+  for(const change of [v=>v.table.enabled=false,v=>v.tablePlayback.rules[0].assetId=eventId,v=>v.assets[3].role='background',
+    v=>v.assets[3].contentType='image/png',v=>v.table.allowed.pop(),v=>v.table.default=null]){
+    const bad=structuredClone(f.descriptor);change(bad);assert.throws(()=>validateComposition(bad),'table rule rejected: '+change.toString());
+  }
+  const none=structuredClone(f.descriptor);none.tablePlayback={schemaVersion:1,rules:[]};none.table.enabled=false;assert.doesNotThrow(()=>validateComposition(none));
+  f.composition.close();
+});
+
+test('table timer starts a silent living clip over the base table and restores it on ended and close',async()=>{
+  const f=compositionFixture({table:true});await f.composition.prepareClip();f.composition.renderFrame({videoWidth:720,videoHeight:1280});
+  assert.equal(typeof f.composition.tableEvent,'function');assert.equal(f.tableRenders.at(-1),f.tableBase);
+  f.timer.advance(4999);assert.equal([...f.nodes].some(node=>node.className?.includes('presentation-table-event')),false);
+  f.timer.advance(1);const clip=[...f.nodes].find(node=>node.className?.includes('presentation-table-event'));
+  assert.ok(clip);assert.equal(clip.dataset.layerAsset,tableClipId);assert.match(clip.className,/^presentation-plane presentation-table presentation-table-event$/);
+  assert.equal(clip.muted,true);assert.equal(clip.loop,false);assert.equal(clip.style.visibility,'hidden','loading keeps the base table');
+  assert.equal(f.tableRenders.at(-1),f.tableBase,'undecoded clip is not drawn');
+  assert.equal(await f.composition.prepareClip(),true,'table clip is not in dealer pending loads');
+  clip.dispatchEvent(new Event('loadeddata'));await Promise.resolve();f.composition.hold();
+  assert.equal(f.tableRenders.at(-1),clip,'compositor draws the living clip as the table');assert.equal(f.renders.at(-1),f.base,'background is untouched');
+  clip.dispatchEvent(new Event('ended'));assert.equal(f.tableRenders.at(-1),f.tableBase);assert.equal(f.nodes.has(clip),false);assert.deepEqual(f.released,[clip]);
+  f.timer.advance(5000);const second=[...f.nodes].find(node=>node.className?.includes('presentation-table-event'));assert.ok(second);
+  f.composition.setBackgroundVisible(false);assert.equal(f.nodes.has(second),false,'hidden page stops table clips too');
+  f.composition.setBackgroundVisible(true);f.timer.advance(5000);const third=[...f.nodes].find(node=>node.className?.includes('presentation-table-event'));assert.ok(third);
+  f.composition.setTable(tableId);assert.equal(f.nodes.has(third),false,'base table change restarts the table player');
+  f.timer.advance(5000);const fourth=[...f.nodes].find(node=>node.className?.includes('presentation-table-event'));assert.ok(fourth);
+  f.composition.close();assert.equal(f.nodes.has(fourth),false);assert.equal(f.timer.size(),0);
 });

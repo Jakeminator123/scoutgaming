@@ -7,6 +7,7 @@ import {createSeedProject,defaultPresentationLane,validateProject} from '../../.
 import * as anchors from '../../../../../packages/presentation/runtime/composition-anchors.mjs';
 import * as settings from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import {defaultLayerRule} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {rouletteReferencePreview} from './roulette-clip-map.mjs';
 import {setTemplateDealers} from './dealer-directory.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -17,7 +18,7 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
+  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
   runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>{
     if(name==='react')return hooks;
     if(name.includes('studio-model.mjs'))return {validateProject};
@@ -164,4 +165,29 @@ test('roulette uses the player desktop format and zoom requires explicit shared-
   assert.deepEqual(h.props.project.layerAssets,original.layerAssets);
   assert.equal(h.edits.length,1);assert.equal(h.props.room.id,'room-a');
   h.props.blocked=true;tree=h.render();assert.equal(nodes(tree,node=>node.type===h.CompositionZoomControls)[0].props.disabled,true);
+});
+
+test('table clips edit lanes[0].tablePlayback behind template edit ownership and reach the preview beside the background rules',()=>{
+  const h=panelHarness(),still={schemaVersion:1,id:'00000000-0000-4000-8000-000000000011',role:'table',game:'blackjack',label:'Oak',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
+  const clip={...still,id:'00000000-0000-4000-8000-000000000012',label:'Flower',contentType:'video/mp4',width:1920,height:1080};
+  h.props.project.layerAssets=[still,clip].map(row=>({...row,pathname:layerAssetPath(row)}));
+  const lane=h.props.project.lanes[0];lane.layers.table={enabled:true,default:still.id,allowed:[still.id,clip.id]};
+  let tree=h.render(),editor=nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0];
+  assert.equal(editor.props.disabled,true);assert.equal(editor.props.baseSelected,true);assert.deepEqual(editor.props.allowed,[still.id,clip.id]);
+  const policy={schemaVersion:1,rules:[defaultLayerRule(clip.id,'table-1',{role:'table'})]};
+  editor.props.onChange(policy);assert.equal(h.edits.length,0,'preview mode never writes');
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+  editor=nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0];assert.equal(editor.props.disabled,false);
+  editor.props.onChange(policy);assert.equal(h.edits.length,1);
+  assert.deepEqual(h.edits[0].lanes[0].tablePlayback,policy);assert.equal(h.edits[0].lanes[0].backgroundPlayback,undefined);
+  // With a blackjack table the preview is rendered through the placement editor's render prop.
+  const previewOf=tree=>nodes(tree,node=>node.type===h.CompositionPreview)[0]??nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview();
+  tree=h.render();let preview=previewOf(tree);
+  assert.deepEqual(preview.props.tablePlayback,policy);assert.deepEqual(preview.props.tableAssets.map(row=>row.id),[still.id,clip.id]);
+  assert.equal(preview.props.previewTableRequest,0);assert.equal(preview.props.previewBackgroundRequest,0);
+  nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0].props.onPreview('table-1');tree=h.render();
+  preview=previewOf(tree);assert.equal(preview.props.previewTableRuleId,'table-1');assert.equal(preview.props.previewTableRequest,1);
+  assert.equal(preview.props.previewBackgroundRequest,0,'the table preview does not trigger the background preview');
+  nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0].props.onChange(undefined);
+  assert.equal(h.edits.at(-1).lanes[0].tablePlayback,undefined);assert.equal(h.edits.length,2);
 });

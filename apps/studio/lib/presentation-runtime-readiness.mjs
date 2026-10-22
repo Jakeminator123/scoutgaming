@@ -5,6 +5,7 @@ import { BASE_DEALER_IDS } from '../../../packages/presentation/contracts/dealer
 import {extendedDealerMediaFeatures} from '../../../packages/presentation/contracts/dealer-media-features.mjs';
 import {maxVariantsForEvent} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
+import {playbackUsesJitter} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';
 export const PRESENTATION_RUNTIME_UPDATE_MESSAGE = 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.';
@@ -66,6 +67,9 @@ function documentFeatures(kind, value) {
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
   const compositionLanes=['project','presentation-package','dealer-archive'].includes(kind)
     ?[...(value?.lanes??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.compositions??[])]:[];
+  // v24: a table playback policy or a jittered timer is rejected by older strict readers.
+  const layerPlayback=compositionLanes.some(lane=>object(lane)&&(Object.hasOwn(lane,'tablePlayback')
+    ||playbackUsesJitter(lane.backgroundPlayback)||playbackUsesJitter(lane.tablePlayback)));
   const blackjackTableGeometry=compositionLanes.some(lane=>object(lane?.composition)&&Object.hasOwn(lane.composition,'blackjackTables'));
   // Presence matters even if validation later rejects the value: older readers
   // do not accept this optional field in either active or archived geometry.
@@ -81,8 +85,8 @@ function documentFeatures(kind, value) {
   // Unrelated lifecycle operations retain their existing capability requirement.
   const speechSlots=lines.some(line=>Array.isArray(line?.variants)
     &&(line.eventId==='speak.other'&&line.variants.length>5||line.variants.some(variant=>typeof variant?.id==='string'&&variant.id.includes('.slot-'))));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || filmedDealVariants || presentationCompression || speechSlots || blackjackAnchors || clipPoses || roomGameConfigs,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,filmedDealVariants,presentationCompression,speechSlots,blackjackAnchors,clipPoses,roomGameConfigs };
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || filmedDealVariants || presentationCompression || speechSlots || blackjackAnchors || clipPoses || roomGameConfigs || layerPlayback,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,filmedDealVariants,presentationCompression,speechSlots,blackjackAnchors,clipPoses,roomGameConfigs,layerPlayback };
 }
 function mediaFeatures(metadata) {
   const {mediaAlpha,rouletteMedia,recordedSpeech,clipPoses}=extendedDealerMediaFeatures(metadata);
@@ -124,6 +128,7 @@ function mutationFeatures(input) {
     blackjackAnchors:features.some(value=>value.blackjackAnchors),
     clipPoses:features.some(value=>value.clipPoses),
     roomGameConfigs:features.some(value=>value.roomGameConfigs),
+    layerPlayback:features.some(value=>value.layerPlayback),
   };
 }
 function trustedOrigin(env) {
@@ -184,6 +189,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.blackjackAnchors || active.features.blackjackAnchors)
       && (!features.clipPoses || active.features.clipPoses)
       && (!features.roomGameConfigs || active.features.roomGameConfigs)
+      && (!features.layerPlayback || active.features.layerPlayback)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -197,7 +203,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.roomGameConfigs ? 23 : features.clipPoses ? 22 : features.blackjackAnchors ? 21 : features.speechSlots ? 20 : features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.layerPlayback ? 24 : features.roomGameConfigs ? 23 : features.clipPoses ? 22 : features.blackjackAnchors ? 21 : features.speechSlots ? 20 : features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

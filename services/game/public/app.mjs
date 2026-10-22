@@ -174,7 +174,8 @@ const voice = {
   say(t, { force = false } = {}) {
     // Decorative events follow the already selected game outcome even when
     // speech is muted. No background Promise enters the speech/game queues.
-    try{layerComposition?.backgroundEvent('speak.'+t,`${clientSessionRevision}:${entrySelection.roomId??entrySelection.lane}:${DEALER.key}:${tableVersion}:${t}`);}catch{}
+    // Living layers react to the same scoped speech event; each layer keeps its own budget.
+    for(const layerEvent of ['backgroundEvent','tableEvent'])try{layerComposition?.[layerEvent]?.('speak.'+t,`${clientSessionRevision}:${entrySelection.roomId??entrySelection.lane}:${DEALER.key}:${tableVersion}:${t}`);}catch{}
     if (this.muted || speechQueue.pending > 0 && !force) return;
     return speechTurn(signal => localPresentation?.present({ type: 'speak', line: t }, { signal }));
   },
