@@ -92,6 +92,75 @@ atomisk rollback med syntetiska data. Befintlig lokal PG-harness äger ett
 loopbackkluster och fysisk omstart; rikta den inte direkt mot Neon. Verifiera
 separat PG18/målanslutning innan K06/K07-integrationsacceptans.
 
+## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
+
+Detta är ett granskningsunderlag för den befintliga speldatabasen. Det ger inget
+mandat för produktions-DDL, merge, deploy eller aktivering och skapar ingen betald
+resurs eller stagingmiljö. På en redan installerad produktbas ska
+`product-schema.sql` inte köras igen; endast tilläggen 008 → 009 → 010 förbereds.
+
+Read-only metadata verifierades 22 oktober 2026 för Neonprojekt
+`wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, compute
+`ep-fragrant-meadow-b1qzb0qv`: PostgreSQL 18.6, databas och roll `croupier_game`,
+med `croupier_game` som schema- och tabellägare. Där fanns sex spelare,
+`invalidbalance=0`, och samtliga objekt för 008/009/010 saknades. Installerad
+`product-v1` har checksumma
+`831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a`.
+Detta är daterad metadata; identitet och förutsättningar måste läsas om inför en
+framtida uttryckligen godkänd åtgärd. PITR-retention sex timmar är metadata,
+inte bevis på en fungerande återställning eller en återställningsgaranti.
+
+Offlineverktyget `tools/prepare-shared-schema.mjs` är implementerat. Dess API är
+`prepareSharedSchema({expectedDatabase,expectedRole,minimumServerMajor=18})`
+och returnerar `{sql,manifest}` utan databasanslutning. CLI-kontraktet är
+`node tools/prepare-shared-schema.mjs --database croupier_game --role croupier_game --sql`;
+det skriver SQL till stdout och applicerar ingenting. Exportens SQL, manifest,
+verktygsrevision och LF-normaliserade källhashar ska frysas och granskas ihop.
+Hasharna för produktbasen och tilläggen finns i tabellen ovan.
+
+Den förberedda SQL-filen ska ha följande spärrar och ordning:
+
+1. En yttersta transaktion omfattar förkontroller, 008 → 009 → 010 och
+   efterkontroller. Kontrollera explicit databas, roll, serverns majorversion
+   (minst 18), schema-/tabellägare och installerad `product-v1`-checksumma.
+   Verktyget ska neka ändrade källhashar och annan målidentitet.
+2. Kräv en helt oinstallerad uppsättning tillägg: alla shared-objekt samt nya
+   kolumner `players.wallet_gen`, `transactions.source_key` och
+   `transactions.source_fingerprint` ska saknas. Partiellt eller redan
+   installerat schema ska nekas, även där käll-DDL använder `IF NOT EXISTS`.
+   Detta är ingen reparations- eller omkörningsprocedur.
+3. Ta exklusiva lås på `croupier_game.players` och
+   `croupier_game.transactions` innan förkontrollerna används för DDL.
+   Använd `lock_timeout=2s`, `statement_timeout=30s` och
+   `idle_in_transaction_session_timeout=10s`; låsväntan ska avbryta, inte vänta
+   obegränsat på en aktiv walletwriter. 30s gäller per statement, inte total
+   transaktionstid. Behåll låsen genom commit.
+4. Applicera endast den hashbundna käll-DDL:n i ordningen 008 → 009 → 010.
+   Lägg inte till journal-/ledgerposter eller andra DML-writes. Kontrollera före
+   commit skapad struktur, ägare, triggers, index och att nya tabeller är tomma.
+
+Fel före commit ska återställa hela transaktionen atomiskt, inklusive tidigare
+DDL i samma fil. Efter commit finns ingen blind DOWN-väg: bevara tillagda
+objekt och data. En kodrollback tar inte bort schema eller återställer walletdata.
+En separat plan för stopp/drain, kompatibel kodåtergång och eventuell
+schemaåterställning måste vara granskad före aktivering; PITR-metadata ersätter
+inte den planen.
+
+Kört isolerat: slutliga `node tools/run-shared-table-qa.mjs --schema-upgrade
+--download-postgres` gav **10/10**, Node22.22/PostgreSQL16.15, `clusterStopped:true`.
+Proven täcker befolkad produktbas, fel mål/checksumma/saldo/partiellt schema,
+verklig låsväntan, rollback mitt i DDL, framgång med oförändrade äldre data,
+legacy receipt/replay/ny debit, separat begränsad roll och nekad återapplicering.
+Runtime-rollen i produktion var vid metadataavläsningen också tabellägare; den
+separata provrollen visar vilka nya SELECT-grants en annan runtime-roll behöver.
+Privat slutkvitto: denna chatts `recovery-replay/shared-schema-upgrade/final-cli/manifest.json`.
+Samma avgränsade CLI är registrerad i ordinarie CI. Offlinehelperns tre prov och
+oberoende källgranskning är gröna; detta är förberedelse, inte produktionsacceptans.
+
+Röda grindar: PostgreSQL18-acceptans, färsk faktisk runtimeidentitet/ACL,
+verifierad återställningsberedskap och uttryckligt produktions-DDL-mandat saknas. Game-schemagrinden inför merge/aktivering förblir blockerad tills
+kraven faktiskt är uppfyllda; grön Studio-CI eller offlinegenererad SQL räcker inte.
+
 ## Byggdelar och Node-versioner
 
 | Källmapp | Ansvar | Node |

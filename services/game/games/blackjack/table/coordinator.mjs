@@ -271,6 +271,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       // same transaction; calling a separate auth/repository pool here is unsafe.
       if (authorizeCommand && await authorizeCommand(tx, Object.freeze({
         actorId, roomId: input.roomId, commandId: input.commandId, authority: ctx.authority,
+        lockedPlayers: Object.freeze([...plan.players]),
       })) !== true) fail('AUTHORITY_REJECTED', 'Command authority rejected');
       const prior = await tx.receipts.get(key);
       if (prior) {
@@ -525,11 +526,13 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     return [];
   }
 
-  async function tick(desc) {
-    return withLocks(async () => {
+  async function tick(desc, { captureActors } = {}) {
+    if (captureActors !== undefined && typeof captureActors !== 'function') throw new TypeError('Invalid tick actor capture');
+    let actors;
+    const result = await withLocks(async () => {
       const r = await store.read.room(desc.roomId);
       return { global: false, rooms: [desc.roomId], players: sorted([...(r ? tickPlayers(r, desc.kind, desc.playerId) : []), ...(desc.blockedPlayers ?? [])]) };
-    }, async tx => {
+    }, async (tx, plan) => {
       const stored = await tx.ticks.get(desc.tickId);
       if (stored) return { ...stored, replay: true };          // same tickId never runs twice
       const t = now(), base = desc.baseTickId ?? desc.tickId;
@@ -587,8 +590,17 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       }
       r.version++;
       await tx.rooms.write(r.roomId, r);
+      actors = Object.freeze([...plan.players]);
       return record('applied', result);
     });
+    // Metadata only; a nested caller may still own an outer transaction. The
+    // runtime publishes only when its independently owned tick has committed.
+    if (result.outcome === 'applied' && !result.replay) {
+      // The durable tick already succeeded. Neither a synchronous diagnostic
+      // failure nor a rejected observer promise can turn it into a failed tick.
+      try { await captureActors?.(actors); } catch { /* Non-authoritative metadata observer. */ }
+    }
+    return result;
   }
 
   // ---- reads and delivery ---------------------------------------------------------------

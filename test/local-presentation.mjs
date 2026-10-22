@@ -12,6 +12,7 @@ import { addDealer, createSeedProject as historicalProject } from '../packages/p
 import { playLocalFilm } from '../services/game/public/local-film-player.mjs';
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
+import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
@@ -1392,4 +1393,44 @@ for(const late of ['response','json'])test('aborted rule observation cannot offe
   const current=f.jobs.at(-1);current.options.onReceipt({state:'start'});current.options.onReceipt({state:'presented'});current.resolve();await new Promise(resolve=>setImmediate(resolve));
   assert.equal(f.jobs.at(-1).take.media.src,videos[0].src,'cancelled optional rule never replaces the saved baseline');
   f.controller.close();globalThis.fetch=original;
+});
+
+
+test('shared media progress covers long before and after transitions without moving the main card cursor',async t=>{
+  const before={id:'to-long',sha256:'1'.repeat(64),fileName:'to-long.mp4'},after={id:'from-long',sha256:'2'.repeat(64),fileName:'from-long.mp4'};
+  let ports;t.after(()=>ports?.close());
+  const f=await controllerFixture(t,{transitions:{before,after}});t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const progress=[],frames=[],selections=[];
+  const media={...f.controller,present:(event,options)=>f.controller.present(event,{...options,onProgress:value=>{progress.push(value);options.onProgress?.(value);}})};
+  const cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){},begin(video){selections.push(video.id);return 1;},frame(_token,time){frames.push(time);},finish(){}};
+  ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});
+  const connection=new AbortController(),state={roomId:'long-transitions',roundId:'round-a',round:null,presentationVer:1,players:[],me:{id:'alice'},serverNow:1000};
+  ports.restoreSnapshot(state,{signal:connection.signal});ports.restoreSnapshot({...state,presentationVer:2},{signal:connection.signal});
+  const jobStart=f.jobs.length; // Snapshot restoration may have started an idle that present() cancels.
+  const result=ports.present({roomId:state.roomId,ver:2,talkId:'long-transition-plan',kind:'plan',endAt:300000,events:[source]},{signal:connection.signal});result.catch(()=>{});
+  await new Promise(resolve=>setImmediate(resolve));
+  for(let second=5;second<=45;second+=5){t.mock.timers.tick(5000);f.jobs[jobStart].options.onFrame?.(second);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs[jobStart].options.signal.aborted,false,'a progressing before transition stays live');}
+  assert.deepEqual(selections,[]);assert.deepEqual(frames,[]);f.jobs[jobStart].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,jobStart+2);f.jobs[jobStart+1].options.onFrame(.4);assert.deepEqual(frames,[.4]);assert.equal(selections.length,1);
+  f.jobs[jobStart+1].resolve();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,jobStart+3);
+  for(let second=5;second<=45;second+=5){t.mock.timers.tick(5000);f.jobs[jobStart+2].options.onFrame?.(second);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs[jobStart+2].options.signal.aborted,false,'a progressing after transition stays live');}
+  assert.deepEqual(frames,[.4]);assert.equal(selections.length,1);f.jobs[jobStart+2].resolve();await result;
+  assert.deepEqual([...new Set(progress.map(row=>row.clip))],[1,2,3]);
+  for(const clip of [1,2,3])assert.deepEqual(progress.filter(row=>row.clip===clip&&row.phase!=='frame').map(row=>row.phase),['prepare','play','complete']);
+});
+
+
+test('repeated frozen transition frames cannot renew shared playback liveness or reach the card film',async t=>{
+  const before={id:'frozen-before',sha256:'1'.repeat(64),fileName:'frozen-before.mp4'};
+  let ports;t.after(()=>ports?.close());
+  const f=await controllerFixture(t,{transitions:{before}});t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const cards=Object.fromEntries(['restore','sync','clear','show','reveal','close'].map(key=>[key,()=>{}]));
+  ports=createSharedRoomPresentationPorts({media:f.controller,cards,clock:Date.now});
+  const signal=new AbortController().signal,state={roomId:'frozen-transition',roundId:'round-a',round:null,presentationVer:1,players:[],me:{id:'alice'},serverNow:1000};
+  ports.restoreSnapshot(state,{signal});ports.restoreSnapshot({...state,presentationVer:2},{signal});
+  const jobStart=f.jobs.length;
+  const pending=assert.rejects(ports.present({roomId:state.roomId,ver:2,talkId:'frozen-plan',kind:'plan',endAt:300000,events:[source]},{signal}),error=>error.rendererTimeout===true);
+  await new Promise(resolve=>setImmediate(resolve));f.jobs[jobStart].options.onFrame(0);
+  for(let i=0;i<5;i++){t.mock.timers.tick(5000);f.jobs[jobStart].options.onFrame(0);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,jobStart+1);}
+  t.mock.timers.tick(5000);await pending;assert.equal(f.jobs[jobStart].options.signal.aborted,true);assert.equal(f.jobs.length,jobStart+1);
 });

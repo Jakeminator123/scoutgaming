@@ -5,8 +5,9 @@ import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 
 // K04's public instructions are rendered through the existing exact media/card ports.
 // A reconnect restores authoritative cards and consumes its historical presentation.
-export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {} }) {
-  let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia;
+export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000 }) {
+  if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
+  let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
   return Object.freeze({
     restoreSnapshot(snapshot,{signal} = {}) {
       signal?.throwIfAborted(); if(closed)return;
@@ -28,34 +29,63 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       if(presentation.ver!==state.presentationVer||presentation.roomId!==state.roomId)throw new Error('shared_room_presentation_mismatch');
       onPresentation(presentation);
       if(presentation.ver<=restoredThrough)return;
-      if(presentation.endAt<=clock()+offset){cards.restore(state.round);restoredThrough=presentation.ver;return;}
+      if(presentation.kind==='plan'&&presentation.endAt<=clock()+offset){cards.restore(state.round);restoredThrough=presentation.ver;return;}
       media.prepareSequence?.([...presentation.events]);
       media.state({action:true,speech:false});
       void Promise.resolve(media.observeEvents?.([...presentation.events],{signal})).catch(()=>onError('shared_room_media_unavailable'));
+      let completedSequence=false;
       try {
         for(const event of presentation.events){
           signal?.throwIfAborted();if(closed)return;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
           composition?.backgroundEvent?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
-          let token,completed=false;
+          let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1;
+          const clip=new AbortController();
+          const relay=()=>clip.abort(signal.reason);
+          signal?.addEventListener('abort',relay,{once:true});
+          let rejectStall;
+          const stalled=new Promise((_,reject)=>{rejectStall=reject;});
+          const arm=()=>{clearTimeout(timer);timer=setTimeout(()=>{
+            const error=Object.assign(new Error('shared_room_media_stalled'),{rendererTimeout:true});
+            rejectStall(error);clip.abort(error);
+          },mediaStallTimeoutMs);};
+          const cancel=()=>{clearTimeout(timer);const reason=new DOMException('Presentation closed','AbortError');rejectStall(reason);clip.abort(reason);};
+          const progress=value=>{
+            if(clip.signal.aborted||closed||!accepting||!Number.isInteger(value?.clip)||value.clip<1||value.clip>4)return;
+            if(value.phase==='prepare'&&value.clip===progressClip+1){progressClip=value.clip;progressPhase='prepare';lastProgressFrame=-1;arm();}
+            else if(value.clip===progressClip){
+              if(value.phase==='play'&&progressPhase==='prepare'){progressPhase='play';arm();}
+              else if(value.phase==='frame'&&progressPhase==='play'&&Number.isFinite(value.time)&&value.time>=0&&value.time>lastProgressFrame){lastProgressFrame=value.time;arm();}
+              else if(value.phase==='complete'&&progressPhase==='play'){progressPhase='complete';arm();}
+            }
+          };
+          cancelCurrentClip=cancel;arm();
           try {
-            completed=await media.present(event,{signal,
-              onSelected:(video,source)=>{signal?.throwIfAborted();if(event.type==='deal'||event.type==='reveal')token=cards.begin(video,source);},
-              onFrame:time=>{if(!signal?.aborted&&token!==undefined)cards.frame(token,time);}});
-            signal?.throwIfAborted();
+            completed=await Promise.race([stalled,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,
+              onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
+                if(video?.id!==selectedId){selectedId=video?.id;lastFrame=-1;}
+                if(event.type==='deal'||event.type==='reveal')token=cards.begin(video,source);},
+              onFrame:time=>{if(clip.signal.aborted||closed||!accepting)return;
+                // Repeated frozen frames do not prove a live clip. A new verified
+                // fallback may start at zero, but selection alone renews no lease.
+                if(Number.isFinite(time)&&time>=0&&time>lastFrame){lastFrame=time;arm();}
+                if(token!==undefined)cards.frame(token,time);}});})]);
+            clip.signal.throwIfAborted();
             if(completed===false)onError('shared_room_media_unavailable');
           } finally {
-            if(!signal?.aborted&&!closed){
+            accepting=false;clearTimeout(timer);signal?.removeEventListener('abort',relay);
+            if(cancelCurrentClip===cancel)cancelCurrentClip=null;
+            if(!clip.signal.aborted&&!closed){
               if(token!==undefined)cards.finish(token,event.shoeDraw,completed===true);
               else if(event.type==='deal')cards.show(event.shoeDraw);
               if(event.type==='reveal')cards.reveal(state.round);
             }
           }
         }
-        restoredThrough=presentation.ver;
-      } finally {if(!closed&&!signal?.aborted){media.state({action:false,speech:false});}}
+        restoredThrough=presentation.ver;completedSequence=true;
+      } finally {if(completedSequence&&!closed&&!signal?.aborted){media.state({action:false,speech:false});}}
     },
-    close(){if(closed)return;closed=true;previousSignal?.removeEventListener('abort',abortMedia);media.close();cards.close();composition?.close();},
+    close(){if(closed)return;closed=true;previousSignal?.removeEventListener('abort',abortMedia);cancelCurrentClip?.();media.close();cards.close();composition?.close();},
   });
 }
 

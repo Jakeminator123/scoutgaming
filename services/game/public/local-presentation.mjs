@@ -108,7 +108,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
-  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent } = {}) {
+  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress } = {}) {
     const own = new AbortController(); active = own;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
@@ -117,6 +117,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     host.dataset.presentationRevision = String(config.projectRevision || config.revision || '');
     host.dataset.presentationPackageRevision = String(context?.packageRevision ?? '');
     try {
+      onProgress?.({phase:'prepare'});
       if (context || preview) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
         if (current.status === 409) throw packageError();
@@ -125,12 +126,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing,video.framing ?? video.classification?.framing,{kind});
       if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
       onPrepared?.();
+      onProgress?.({phase:'play'});
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
-        signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
+        signal: own.signal, muted: kind !== 'speech' || muted(), hold,
+        onFrame: onMediaFrame || onProgress ? time => { onProgress?.({phase:'frame',time}); onMediaFrame?.(time); } : undefined,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
         onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
+      onProgress?.({phase:'complete'});
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
   function retainRule(result, requestVersion, sourceType) {
@@ -225,7 +229,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     offerPendingRule();
     if (action || speech) onBusy(); else resumeIdle();
   }
-  async function present(event, { signal, onPresented, onSelected, onFrame } = {}) {
+  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress } = {}) {
     if (packageChanged) return false;
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
@@ -233,6 +237,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     ++serial; stop(); onBusy();
     status.textContent = '';
     const token = serial;
+    let progressClip = 0;
+    const progress = () => {
+      if (typeof onProgress !== 'function') return undefined;
+      const clip = ++progressClip;
+      return value => {
+        if (clip === progressClip && token === serial && requestVersion === version() && !signal?.aborted)
+          onProgress({clip,...value});
+      };
+    };
     let result;
     try {
       const selected = await request('/api/presentation/select', { method: 'POST', cache: 'no-store', signal,
@@ -280,7 +293,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         }))) throw new Error('Talfilmens granskning eller identitet stämmer inte');
         const current = ++attempt;
         try {
-          await film(video, { kind, signal, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
+          await film(video, { kind, signal, onProgress:progress(), onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
             onFrame: () => { if (owns(current)) onPresented?.(); },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
@@ -289,7 +302,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const transition = async (video, direction) => {
         if (!video) return;
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
-        await film(video, { kind: 'transition', signal, details: { direction, shoeDraw: event.shoeDraw,
+        await film(video, { kind: 'transition', signal, onProgress:progress(), details: { direction, shoeDraw: event.shoeDraw,
           requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource } });
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
       };

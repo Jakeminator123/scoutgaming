@@ -118,8 +118,13 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false, 
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
+  const schemaUpgrade = args[0] === '--schema-upgrade';
+  if (schemaUpgrade) args.shift();
   const options = args.length === 1 && args[0] === '--download-postgres' ? { downloadPostgres: true }
     : args.length === 2 && args[0] === '--postgres-bin' ? { postgresBin: args[1] } : null;
-  if (!options) { console.error('Usage: node tools/run-shared-table-qa.mjs --download-postgres | --postgres-bin /absolute/bin'); process.exitCode = 1; }
-  else runSharedTableQa(options).catch(error => { console.error(error.stack); process.exitCode = 1; });
+  if (!options) { console.error('Usage: node tools/run-shared-table-qa.mjs [--schema-upgrade] --download-postgres | --postgres-bin /absolute/bin'); process.exitCode = 1; }
+  else {
+    if (schemaUpgrade) options.runChecks = (await import('../test/shared-schema-upgrade.mjs')).runSharedSchemaUpgradeChecks;
+    runSharedTableQa(options).catch(error => { console.error(error.stack); process.exitCode = 1; });
+  }
 }

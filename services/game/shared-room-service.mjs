@@ -5,6 +5,7 @@ import { parseSharedRoomCommand, projectSharedRoomCommandResult } from './shared
 import { createSharedRoomUpgrade } from './shared-room-upgrade.mjs';
 import { createPostgresTableRuntime } from './games/blackjack/table/postgres-runtime.mjs';
 import { createPostgresPresentationReceiver } from './games/blackjack/presentation/postgres-receiver.mjs';
+import { assertSharedPostgresOwner } from '../../packages/storage/server/postgres-transaction-context.mjs';
 
 const unavailable = () => Object.assign(new Error('shared_room_service_unavailable'), { statusCode: 503 });
 const stopped = () => new DOMException('Shared room service stopped', 'AbortError');
@@ -43,8 +44,15 @@ export function createSharedRoomService({
       await access.revalidateLocked(admission.binding, { signal: admission.signal });
       const before = await tx.rooms.read(context.roomId);
       admission.presentationVer = before?.presentationVer ?? 0;
+      if (!Array.isArray(context.lockedPlayers) || !context.lockedPlayers.includes(context.actorId)
+        || context.lockedPlayers.some(actor => typeof actor !== 'string' || !actor)) throw unavailable();
+      admission.actors = context.lockedPlayers;
       admission.signal.throwIfAborted(); requireReady();
       return true;
+    }, onTickCommitted: ({ roomId, actors }) => {
+      if (state !== 'running') return;
+      channel.emitCommitted(roomId);
+      channel.emitActorsCommitted(actors, { exceptRoom: roomId });
     }, sink: async row => {
       // receiver.sink owns presentationForRow + the atomic receiver transaction.
       // Replayed 'applied' is only a reread hint, never a second application.
@@ -80,6 +88,9 @@ export function createSharedRoomService({
     const parsed = parseSharedRoomCommand(roomId, body);
     const combined = request?.signal && signal ? AbortSignal.any([request.signal, signal]) : request?.signal ?? signal;
     return read(async active => {
+      // This service owns the outer commit. A nested repository callback could
+      // return before its caller commits, so it must never publish hints here.
+      assertSharedPostgresOwner();
       const binding = await access.authorize(request, { roomId, signal: active });
       active.throwIfAborted(); requireReady();
       const admission = { binding, signal: active, presentationVer: 0 }, token = Object.freeze({});
@@ -108,6 +119,7 @@ export function createSharedRoomService({
         // durable version commits. Ordinary state-only changes can notify now.
         if (!response.replay && response.snapshot && response.snapshot.presentationVer === admission.presentationVer) notifyRooms.add(roomId);
         for (const room of notifyRooms) channel.emitCommitted(room);
+        if (!response.replay) channel.emitActorsCommitted(admission.actors, { exceptRoom: roomId });
         return response;
       } finally { admissions.delete(token); }
     }, combined);

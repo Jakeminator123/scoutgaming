@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-chain.mjs';
-import { createPresentationGate, tickIdOf, WalletDenied } from '../services/game/games/blackjack/table/ports.mjs';
+import { createPresentationGate, tickIdOf, WalletDenied, LockSetExceeded } from '../services/game/games/blackjack/table/ports.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 
@@ -58,6 +58,30 @@ function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
   return t;
 }
 const rejects = (promise, code) => assert.rejects(promise, e => e.code === code || assert.fail(`expected ${code}, got ${e.code}: ${e.message}`));
+
+test('tick actor metadata is captured once from the successful lock attempt, never rollback or replay',async()=>{
+  const h=setup();await h.join('kevin',[0]);await h.bet('kevin',0,25);
+  h.time=(await h.snap()).deadline;const desc=(await h.table.dueTicks()).find(row=>row.kind==='window.close');
+  const original=h.store.runLocked;let attempts=0;
+  h.store.runLocked=(plan,work)=>original(plan,async tx=>{const result=await work(tx);if(++attempts===1)throw new LockSetExceeded({players:['kevin']});return result;});
+  const captures=[];const result=await h.table.tick(desc,{captureActors:actors=>captures.push(actors)});
+  assert.equal(result.outcome,'applied');assert.equal(attempts,2);assert.deepEqual(captures,[['kevin']]);assert.ok(Object.isFrozen(captures[0]));
+  await h.table.tick(desc,{captureActors:actors=>captures.push(actors)});assert.equal(captures.length,1);
+  assert.equal(h.store.test.ledger().length,1,'the rolled-back attempt did not debit twice');
+});
+
+test('post-commit actor observers cannot reject a durable tick on sync throw or async rejection',async()=>{
+  for(const asynchronous of [false,true]){
+    const h=setup();await h.join('kevin',[0]);await h.bet('kevin',0,25);
+    h.time=(await h.snap()).deadline;const desc=(await h.table.dueTicks()).find(row=>row.kind==='window.close');
+    const failure=Error('capture observer failed');let calls=0;
+    const captureActors=()=>{calls++;if(asynchronous)return Promise.reject(failure);throw failure;};
+    const result=await h.table.tick(desc,{captureActors});assert.equal(result.outcome,'applied');
+    assert.equal(h.store.test.ledger().length,1);assert.equal((await h.snap()).phase,'round');
+    const replay=await h.table.tick(desc,{captureActors});assert.equal(replay.replay,true);assert.equal(calls,1);
+    assert.equal(h.store.test.ledger().length,1);
+  }
+});
 
 test('two players in two rooms: shared shoe and deadline per room, isolated rooms, one global chain', async () => {
   const t = setup();

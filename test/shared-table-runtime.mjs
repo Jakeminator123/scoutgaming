@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createPostgresTableRuntime } from '../services/game/games/blackjack/table/postgres-runtime.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { runPostgresTransactionOwner } from '../packages/storage/server/postgres-transaction-context.mjs';
 
 const deferred = () => {
   let resolve, reject;
@@ -10,6 +11,36 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 const flush = () => new Promise(setImmediate);
+
+test('tick actor hints wait for commit, skip rollback/replay/refusal, and reject an outer transaction owner',async t=>{
+  const gate=deferred(),captured=deferred(),hints=[];let mode='wait';
+  const h=setup({coordinator:{async dueTicks(){return [{roomId:'room-a',tickId:'tick-a'}];},
+    async tick(_,{captureActors}){captureActors(Object.freeze(['alice','bob']));captured.resolve();
+      if(mode==='wait')await gate.promise;if(mode==='fail')throw Error('COMMIT failed');
+      return {outcome:mode==='blocked'?'blocked':'applied',replay:mode==='replay'};}},
+    options:{onTickCommitted:context=>hints.push(context)}});t.after(()=>h.runtime.stop());await h.runtime.start();
+  const owner={closed:false,failed:null};assert.throws(()=>runPostgresTransactionOwner(owner,()=>h.runtime.pump()),/must own the outer unit/);
+  assert.equal(h.calls.due,0);const pending=h.runtime.pump();await captured.promise;assert.deepEqual(hints,[]);
+  gate.resolve();await pending;assert.deepEqual(hints,[{roomId:'room-a',actors:['alice','bob']}]);
+  for(mode of ['fail','replay','blocked']){if(mode==='fail')await assert.rejects(h.runtime.pump(),/COMMIT failed/);else await h.runtime.pump();assert.equal(hints.length,1);}
+});
+
+test('post-commit tick observers report separately and never fail pump health or retry durable effects',async t=>{
+  for(const asynchronous of [false,true])for(const brokenReporter of [false,true]){
+    const observerFailure=Error('hint unavailable'),reports=[];let committed=false,effects=0,callbacks=0;
+    const h=setup({coordinator:{async dueTicks(){return [{roomId:'room-a',tickId:'durable-tick'}];},
+      async tick(_,{captureActors}){if(committed)return {outcome:'applied',replay:true};
+        effects++;committed=true;captureActors(Object.freeze(['alice']));return {outcome:'applied',replay:false};}},
+      options:{onTickCommitted(){callbacks++;if(asynchronous)return Promise.reject(observerFailure);throw observerFailure;},
+        onError(error){reports.push(error);if(brokenReporter)return Promise.reject(Error('reporter unavailable'));}}});
+    t.after(()=>h.runtime.stop());await h.runtime.start();
+    const first=await h.runtime.pump();assert.equal(first.ticks[0].outcome,'applied');
+    assert.equal(h.runtime.health().failed,false);assert.equal(h.runtime.health().lastErrorAt,null);
+    assert.equal(reports.length,1);assert.equal(reports[0].code,'shared_table_commit_observer_failed');assert.equal(reports[0].cause,observerFailure);
+    const second=await h.runtime.pump();assert.equal(second.ticks[0].replay,true);
+    assert.equal(effects,1);assert.equal(callbacks,1);assert.equal(reports.length,1);assert.equal(h.runtime.health().failed,false);
+  }
+});
 function timers() {
   let next = 0;
   const pending = new Map();

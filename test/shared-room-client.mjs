@@ -296,3 +296,35 @@ test('completion of an old generation cannot replenish the current connection re
     assert.equal(h.sockets.length, 2); assert.deepEqual(h.errors, [{ code: 'shared_room_reconnect_exhausted' }]);
   }
 });
+
+test('presentation deadline is frozen before renderer mutation and legacy callbacks keep their bounded fallback',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const h=setup(t,{present:async p=>{p.endAt=Number.MAX_VALUE;p.events.push(...Array(126).fill({type:'speak',line:'fake'}));await new Promise(()=>{});}});
+  h.client.start();h.sockets[0].message(frame());await turn();
+  t.mock.timers.tick(386499);await turn();assert.deepEqual(h.errors,[]);
+  t.mock.timers.tick(1);await turn();assert.deepEqual(h.errors,[{code:'shared_room_renderer_timeout'}]);
+  const legacy=setup(t,{present:()=>new Promise(()=>{})});legacy.client.start();const row=frame();
+  row.presentation={roomId:'room-a',ver:1,talkId:'legacy-1',auditSeq:1,status:'legacy',kind:null,events:[],lines:[]};
+  legacy.sockets[0].message(row);await turn();t.mock.timers.tick(500);await turn();
+  assert.deepEqual(legacy.errors,[{code:'shared_room_renderer_timeout'}]);
+});
+
+test('extreme finite server timestamps cannot overflow or remove the bounded presentation timer',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});const h=setup(t,{present:()=>new Promise(()=>{})}),row=frame();
+  row.presentation.startAt=-Number.MAX_VALUE;row.presentation.endAt=Number.MAX_VALUE;
+  h.client.start();h.sockets[0].message(row);await turn();
+  // One speech instruction: 10s select + two (128s film + 30s preparation + 30s buffer/startup) + 500ms callback margin.
+  t.mock.timers.tick(386499);await turn();assert.deepEqual(h.errors,[]);
+  t.mock.timers.tick(1);await turn();assert.deepEqual(h.errors,[{code:'shared_room_renderer_timeout'}]);
+});
+
+
+test('the maximum validated event count has a finite film-derived total deadline',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});const h=setup(t,{present:()=>new Promise(()=>{})}),row=frame();
+  row.presentation.events=Array.from({length:128},()=>({type:'deal'}));row.presentation.lines=[];
+  row.presentation.startAt=-Number.MAX_VALUE;row.presentation.endAt=Number.MAX_VALUE;
+  h.client.start();h.sockets[0].message(row);await turn();
+  const deadline=128*(10000+3*(128000+2*30000))+500;
+  assert.ok(deadline<2147483647);t.mock.timers.tick(deadline-1);await turn();assert.deepEqual(h.errors,[]);
+  t.mock.timers.tick(1);await turn();assert.deepEqual(h.errors,[{code:'shared_room_renderer_timeout'}]);
+});

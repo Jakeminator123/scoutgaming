@@ -30,6 +30,7 @@ function setup(t, hooks = {}) {
     createChannel(value) { ports.channel = value; return {
       async prepare(req) { calls.push(['prepare']); const accepted = await value.authorize(req, { roomId: 'room-a', signal: req.signal }); return { attach: () => accepted }; },
       emitCommitted(room) { calls.push(['hint', room]); },
+      emitActorsCommitted(actors, options) { calls.push(['actor-hint', actors, options]); },
       close() { calls.push(['channel-close']); hooks.channelClose?.(); },
     }; },
     createUpgrade(value) { config.upgrade = value; return {

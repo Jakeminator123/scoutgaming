@@ -1,10 +1,30 @@
 import { reconnectPresentation } from '../../../packages/presentation/contracts/shared-room-replay.mjs';
+import { MAX_RECORDED_SPEECH_SECONDS } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const integer = value => Number.isSafeInteger(value) && value >= 0;
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const eventTypes = new Set(['speak', 'idle', 'deal', 'reveal', 'settle', 'turn']);
 const invalid = () => { throw new TypeError('shared_room_invalid_state'); };
+
+// Freeze the complete upper bound before any renderer can mutate the frame.
+// playLocalFilm permits 120s plus 8s startup. Each film also gets two 30s
+// inactivity-bounded phases: configuration/composition preparation, then the
+// verified buffer and startup. Buffer acquisition precedes the film deadline.
+// Shared selection returns either three filmed parts (before/main/after) or
+// main+fallback. Speech conservatively permits that same two-attempt fallback.
+// The wire contract already limits the event array to 128; legacy has no times.
+function presentationTimeout(presentation, stallMs) {
+  if (presentation?.status !== 'ready') return stallMs;
+  let mediaBudget = 0;
+  for (const event of presentation.events) {
+    const parts = event.type === 'speak' ? 2 : ['deal', 'reveal'].includes(event.type) ? 3 : 0;
+    if (parts) mediaBudget += 10000 + parts * ((MAX_RECORDED_SPEECH_SECONDS + 8) * 1000 + 2 * 30000);
+  }
+  if (!mediaBudget) return stallMs;
+  const planned = Math.min(Math.max(0, presentation.endAt - presentation.startAt), (presentation.events.length + 1) * 60000);
+  return Math.ceil(Math.max(planned, mediaBudget) + stallMs);
+}
 
 function readState(data, roomId, maxMessageBytes) {
   // Browser WebSocket delivers the server's JSON text. Binary frames are never
@@ -101,9 +121,9 @@ export function createSharedRoomClient({
     else if ([1002, 1003, 1007, 1009].includes(code)) finish('shared_room_invalid_state');
     else retry();
   }
-  async function render(port, value, candidate) {
+  async function render(port, value, candidate, timeoutMs = callbackTimeoutMs) {
     const timeout = new Promise((_, reject) => {
-      renderTimer = setTimeout(() => reject(Object.assign(new Error('shared_room_renderer_timeout'), { rendererTimeout: true })), callbackTimeoutMs);
+      renderTimer = setTimeout(() => reject(Object.assign(new Error('shared_room_renderer_timeout'), { rendererTimeout: true })), timeoutMs);
     });
     const work = Promise.resolve().then(() => {
       if (!current(candidate)) throw new DOMException('Shared room disconnected', 'AbortError');
@@ -123,6 +143,7 @@ export function createSharedRoomClient({
         const s = frame.snapshot, p = frame.presentation;
         if (s.version < snapshotVersion || s.presentationVer < snapshotPresentationVer || s.presentationVer < appliedVer) continue;
         const replay = reconnectPresentation(s, p, { appliedVer });
+        const presentationBudget = presentationTimeout(p, callbackTimeoutMs);
         // Capture monotonic floors before handing mutable data to the renderer.
         snapshotVersion = s.version; snapshotPresentationVer = s.presentationVer;
         try {
@@ -130,7 +151,7 @@ export function createSharedRoomClient({
           if (!current(candidate)) continue;
           if (replay.apply) {
             appliedVer = p.ver;
-            await render(present, p, candidate);
+            await render(present, p, candidate, presentationBudget);
           }
           // Renew the allowance per outage only after current state was fully
           // rendered. A retired socket completing late cannot renew this budget.

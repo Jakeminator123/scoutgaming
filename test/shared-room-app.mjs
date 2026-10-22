@@ -7,6 +7,10 @@ import { createSharedRoomPresentationPorts, mountSharedRoomPresentation } from '
 import { createSharedRoomCommandClient } from '../services/game/public/shared-room-command-client.mjs';
 import { createSharedRoomClient } from '../services/game/public/shared-room-client.mjs';
 import { mountSharedRoomApp } from '../services/game/public/shared-room-app.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
+import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
+import { presentationForRow } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
+import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 const roomId='room-a',actor='alice';
 const deferred=()=>{let resolve;const promise=new Promise(done=>resolve=done);return{promise,resolve};};
 function snapshot(version=0,extra={}){
@@ -249,7 +253,7 @@ test('fresh rule events are observed once; history, expiry and reconnect cannot 
   const media={state:value=>states.push(value),observeEvents:(events,options)=>{observed.push({events,options});},present:()=>gate.promise,close(){}};
   const cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){}};
   const ports=createSharedRoomPresentationPorts({media,cards,clock:()=>1000});
-  const p={roomId,ver:1,talkId:'rules-1',endAt:2000,events:[{type:'turn',box:0,handIndex:0}]};
+  const p={roomId,ver:1,talkId:'rules-1',kind:'plan',endAt:2000,events:[{type:'turn',box:0,handIndex:0}]};
   ports.restoreSnapshot(seated(1,{presentationVer:1}),{signal:connection.signal});await ports.present(p,{signal:connection.signal});assert.equal(observed.length,0);
   ports.restoreSnapshot(seated(2,{presentationVer:2}),{signal:connection.signal});
   const events=[{type:'settle'},{type:'speak',line:'win'}];const presenting=ports.present({...p,ver:2,events},{signal:connection.signal});
@@ -261,4 +265,141 @@ test('fresh rule events are observed once; history, expiry and reconnect cannot 
   ports.restoreSnapshot(seated(4,{phase:'bets',windowId:'window-2',presentationVer:3}),{signal:fresh.signal});
   assert.equal(observed.length,2);assert.deepEqual(observed[1].events,[]);assert.equal(observed[1].options.command,'collect');assert.equal(observed[1].options.previousVersion,2);
   await ports.present({...p,ver:3,endAt:900},{signal:fresh.signal});assert.equal(observed.length,2,'expired presentation cannot trigger a rule');ports.close();
+});
+
+async function sevenSeatPlan() {
+  const store=createMemoryTableStore(),table=createTableCoordinator({store,clock:{now:()=>1000},random:deterministicRandom('shared-long-seven')});
+  store.test.fund(actor,1000);let n=0;
+  const send=(op,extra={})=>table.command({actorId:actor},{roomId,op,commandId:`long-${++n}`,...extra});
+  await send('join',{seats:[0,1,2,3,4,5,6],memberGen:0,seatGens:{0:0,1:0,2:0,3:0,4:0,5:0,6:0}});
+  const windowId=(await table.snapshot(roomId,actor)).windowId;
+  for(let seat=0;seat<7;seat++)await send('bet',{seat,field:'main',chip:5,windowId});
+  await send('ready',{windowId});
+  const state=await table.snapshot(roomId,actor),row=store.test.outbox().findLast(row=>row.payload.presentation?.kind==='plan');
+  const presentation=presentationForRow(row);
+  assert.equal(presentation.events.filter(event=>event.type==='deal').length,16);
+  return{snapshot:state,presentation};
+}
+async function flushRender(){await turn();await turn();}
+function timedPresentation(t,mediaPresent){
+  const sockets=[],errors=[],seen=[],restores=[];
+  class Socket extends EventTarget {
+    readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(value){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,...value})}));}
+    ended(){this.readyState=3;this.dispatchEvent(Object.assign(new Event('close'),{code:1001}));}
+  }
+  const cards=Object.fromEntries(['restore','sync','clear','show','reveal','close'].map(key=>[key,()=>{}]));
+  const media={state(){},prepareSequence(){},async present(event,options){seen.push(event);return mediaPresent(event,options);},close(){}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});
+  const client=createSharedRoomClient({roomId,browserOrigin:'https://game.invalid',WebSocket:Socket,callbackTimeoutMs:30000,reconnectDelayMs:250,
+    restoreSnapshot:(value,meta)=>{restores.push(value.version);return ports.restoreSnapshot(value,meta);},present:ports.present,onError:error=>errors.push(error)});
+  t.after(()=>{client.stop();ports.close();});client.start();
+  return{client,ports,sockets,errors,seen,restores};
+}
+
+test('seven-seat committed K04 plan renders every serial three-second clip beyond thirty seconds',async t=>{
+  const plan=await sevenSeatPlan();t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const h=timedPresentation(t,async(event,{onFrame})=>{onFrame?.(0);await new Promise(resolve=>setTimeout(resolve,3000));onFrame?.(3);return true;});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();
+  h.sockets[0].message(plan);await flushRender();
+  const count=plan.presentation.events.filter(event=>['speak','deal','reveal'].includes(event.type)).length;
+  assert.ok(count*3000>30000);
+  for(let i=0;i<count;i++){t.mock.timers.tick(3000);await flushRender();assert.deepEqual(h.errors,[]);}
+  assert.equal(h.seen.filter(event=>event.type==='deal').length,16);assert.equal(h.seen.length,count);
+  assert.equal(h.client.status().state,'running');
+});
+
+test('a zero-duration committed new window still plays placebets while reconnect history stays consumed',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const h=timedPresentation(t,async()=>true),connection=h.sockets[0];
+  connection.message({snapshot:seated(1,{phase:'settled'}),presentation:null});await flushRender();
+  const p={roomId,ver:1,talkId:'window-new',auditSeq:1,status:'ready',kind:'window',windowId:'window-2',configVersion:'cfg-1',language:'sv',
+    startAt:1000,endAt:1000,events:[{type:'speak',line:'placebets'},{type:'idle'}],lines:[]};
+  const next={snapshot:seated(2,{phase:'bets',windowId:'window-2',presentationVer:1}),presentation:p};
+  connection.message(next);await flushRender();assert.deepEqual(h.seen.map(event=>event.line),['placebets']);
+  connection.ended();t.mock.timers.tick(250);await flushRender();h.sockets[1].message(next);await flushRender();
+  assert.deepEqual(h.seen.map(event=>event.line),['placebets']);assert.deepEqual(h.errors,[]);
+});
+
+for(const frozenFrame of [false,true])test('long plan still terminates a '+(frozenFrame?'frozen-frame':'silent')+' clip after thirty seconds',async t=>{
+  const plan=await sevenSeatPlan();t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  let context;const h=timedPresentation(t,async(_event,options)=>{context=options;if(frozenFrame)options.onFrame(0);return new Promise(()=>{});});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();h.sockets[0].message(plan);await flushRender();
+  assert.equal(h.seen.length,1);
+  for(let i=0;i<5;i++){t.mock.timers.tick(5000);context.onFrame(frozenFrame?0:NaN);await flushRender();assert.deepEqual(h.errors,[]);}
+  t.mock.timers.tick(5000);await flushRender();
+  assert.deepEqual(h.errors,[{code:'shared_room_renderer_timeout'}]);assert.equal(context.signal.aborted,true);assert.equal(h.seen.length,1);
+});
+
+test('an advancing clip may run longer than thirty seconds without extending the frozen total budget',async t=>{
+  const plan=await sevenSeatPlan();plan.presentation.events=[{type:'speak',line:'goodluck'}];plan.presentation.lines=[];plan.presentation.endAt=61000;
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context;const done=deferred();
+  const h=timedPresentation(t,async(_event,options)=>{context=options;options.onFrame(0);await done.promise;return true;});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();h.sockets[0].message(plan);await flushRender();
+  for(let i=1;i<=6;i++){t.mock.timers.tick(10000);context.onFrame(i*10);await flushRender();assert.deepEqual(h.errors,[]);}
+  done.resolve();await flushRender();assert.equal(h.client.status().state,'running');assert.equal(h.seen.length,1);
+});
+
+test('disconnect aborts the clip but waits for its async renderer before restoring a consumed long plan',async t=>{
+  const plan=await sevenSeatPlan();t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context;const done=deferred();
+  const h=timedPresentation(t,async(_event,options)=>{context=options;await done.promise;return true;});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();h.sockets[0].message(plan);await flushRender();
+  h.sockets[0].ended();assert.equal(context.signal.aborted,true);t.mock.timers.tick(250);await flushRender();
+  h.sockets[1].message(plan);await flushRender();assert.equal(h.restores.length,2,'new renderer must wait for the old asynchronous port');
+  context.onFrame(100);done.resolve();await flushRender();
+  assert.equal(h.restores.length,3);assert.equal(h.seen.length,1,'the interrupted presentation remains consumed');assert.deepEqual(h.errors,[]);
+  assert.throws(()=>context.onSelected({id:'late'},plan.presentation.events[0]),{name:'AbortError'});
+  assert.equal(h.client.status().state,'running');
+});
+
+
+test('completed media callbacks cannot reacquire the card cursor or renew a discarded timer',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context,begins=0,frames=0;
+  const cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){},begin(){begins++;return begins;},frame(){frames++;},finish(){}};
+  const media={state(){},prepareSequence(){},present:async(_event,options)=>{context=options;options.onSelected({id:'exact'},{shoeDraw:1});return true;},close(){}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});t.after(()=>ports.close());
+  const signal=new AbortController().signal;ports.restoreSnapshot(seated(1),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1}),{signal});
+  await ports.present({roomId,ver:1,talkId:'late-clips',kind:'plan',endAt:2000,events:[{type:'deal',shoeDraw:1}]},{signal});
+  context.onSelected({id:'late'},{shoeDraw:9});context.onFrame(100);
+  assert.equal(begins,1);assert.equal(frames,0);t.mock.timers.tick(60000);await flushRender();
+});
+
+test('a media stall cannot resume idle before the client fails closed',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});const states=[];
+  const cards=Object.fromEntries(['restore','sync','clear','show','reveal','close'].map(key=>[key,()=>{}]));
+  const media={state:value=>states.push(value),prepareSequence(){},present:()=>new Promise(()=>{}),close(){}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});t.after(()=>ports.close());
+  const signal=new AbortController().signal;ports.restoreSnapshot(seated(1),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1}),{signal});
+  const count=states.length;const pending=assert.rejects(ports.present({roomId,ver:1,talkId:'stall-idle',kind:'plan',endAt:2000,
+    events:[{type:'speak',line:'goodluck'}]},{signal}),error=>error.rendererTimeout===true);
+  await flushRender();t.mock.timers.tick(30000);await pending;
+  assert.equal(states.slice(count).some(value=>value.action===false),false);
+});
+
+
+test('zero-duration window permits ninety seconds of progressing speech through the real client and presentation ports',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context;const done=deferred();
+  const h=timedPresentation(t,async(_event,options)=>{context=options;options.onFrame(0);await done.promise;return true;});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();
+  const p={roomId,ver:1,talkId:'window-long-speech',auditSeq:1,status:'ready',kind:'window',windowId:'window-long',configVersion:'cfg-1',language:'sv',
+    startAt:1000,endAt:1000,events:[{type:'speak',line:'placebets'}],lines:[]};
+  h.sockets[0].message({snapshot:seated(2,{windowId:'window-long',presentationVer:1}),presentation:p});await flushRender();
+  for(let second=10;second<=90;second+=10){t.mock.timers.tick(10000);context.onFrame(second);await flushRender();assert.deepEqual(h.errors,[]);}
+  done.resolve();await flushRender();assert.equal(h.client.status().state,'running');assert.equal(h.seen.length,1);
+});
+
+
+test('the frozen total includes preparation and buffer startup for every before main and after part',async t=>{
+  const plan=await sevenSeatPlan();plan.presentation.events=[plan.presentation.events.find(event=>event.type==='deal')];plan.presentation.lines=[];
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context;const done=deferred();
+  const h=timedPresentation(t,async(_event,options)=>{context=options;await done.promise;return true;});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();h.sockets[0].message(plan);await flushRender();
+  for(const clip of [1,2,3]){
+    context.onProgress({clip,phase:'prepare'});t.mock.timers.tick(29000);await flushRender();assert.deepEqual(h.errors,[]);
+    context.onProgress({clip,phase:'play'});t.mock.timers.tick(29000);await flushRender();assert.deepEqual(h.errors,[]);
+    context.onProgress({clip,phase:'frame',time:0});
+    for(let second=5;second<=125;second+=5){t.mock.timers.tick(5000);context.onProgress({clip,phase:'frame',time:second});await flushRender();assert.deepEqual(h.errors,[]);}
+    context.onProgress({clip,phase:'complete'});
+  }
+  done.resolve();await flushRender();assert.equal(h.client.status().state,'running');assert.equal(h.seen.length,1);
 });

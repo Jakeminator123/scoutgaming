@@ -117,7 +117,7 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
     ||!Number.isSafeInteger(maxBufferedBytes)||maxBufferedBytes<256||maxBufferedBytes>1024*1024
     ||!Number.isSafeInteger(maxReadAttempts)||maxReadAttempts<1||maxReadAttempts>5
     ||!Number.isSafeInteger(maxConnections)||maxConnections<1||maxConnections>10000)fail();
-  const rooms=new Map(),connections=new Set();let stopped=false;
+  const rooms=new Map(),actors=new Map(),connections=new Set();let stopped=false;
   async function prepare(request) {
     if(stopped)fail();
     const header=request?.headers?.get?.bind(request.headers);
@@ -141,6 +141,7 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);operation?.abort();
         socket.off('message',inbound);socket.off('close',cleanup);socket.off('error',broken);
         connections.delete(connection);const group=rooms.get(roomId);group?.delete(connection);if(!group?.size)rooms.delete(roomId);
+        const own=actors.get(binding.actorId);own?.delete(connection);if(!own?.size)actors.delete(binding.actorId);
       };
       const close=(code=1000,reason='shared_room_closed')=>{if(closed)return;cleanup();try{socket.close(code,reason);}catch{}};
       const inbound=()=>close(1008,'shared_room_read_only'),broken=()=>close(1011,'shared_room_unavailable');
@@ -193,14 +194,23 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         finally {running=false;operation=null;}
       }
       const requestRefresh=()=>{if(closed)return;generation++;dirty=true;if(!running)queueMicrotask(refresh);};
-      const connection={close,requestRefresh};
+      const connection={close,requestRefresh,roomId};
       connections.add(connection);if(!rooms.has(roomId))rooms.set(roomId,new Set());rooms.get(roomId).add(connection);
+      if(!actors.has(binding.actorId))actors.set(binding.actorId,new Set());actors.get(binding.actorId).add(connection);
       socket.on('message',inbound);socket.on('close',cleanup);socket.on('error',broken);
       expire();requestRefresh();return Object.freeze({close});
     }});
   }
   return Object.freeze({prepare,
     emitCommitted(roomId){if(!id(roomId))fail('shared_room_request_rejected',400);for(const connection of rooms.get(roomId)??[])connection.requestRefresh();},
+    // Private invalidation only: every connection rereads its own authorized
+    // room through the same before/after revalidation and projection path.
+    emitActorsCommitted(actorIds,{exceptRoom}={}){
+      if(!Array.isArray(actorIds)||actorIds.some(actor=>typeof actor!=='string'||!actor)
+        ||exceptRoom!==undefined&&!id(exceptRoom))fail('shared_room_request_rejected',400);
+      for(const actor of new Set(actorIds))for(const connection of actors.get(actor)??[])
+        if(connection.roomId!==exceptRoom)connection.requestRefresh();
+    },
     close(){if(stopped)return;stopped=true;for(const connection of [...connections])connection.close();}
   });
 }

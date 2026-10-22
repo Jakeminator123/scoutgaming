@@ -74,7 +74,9 @@ test('authority is awaited on the locked ports before receipts and receives serv
   const gate = deferred(), entered = deferred();
   const h = fixture(async (tx, request) => {
     assert.equal(Object.isFrozen(request), true);
-    assert.deepEqual(request, { actorId: 'alice', roomId: 'party', commandId: 'join-1', authority: identity.authority });
+    assert.deepEqual(request, { actorId: 'alice', roomId: 'party', commandId: 'join-1', authority: identity.authority, lockedPlayers: ['alice'] });
+    assert.equal(Object.isFrozen(request.lockedPlayers),true);
+    assert.throws(()=>request.lockedPlayers.push('not-locked'),TypeError);
     assert.equal(tx.query, undefined, 'no raw SQL client is exposed');
     assert.equal(await tx.config.latest('party'), 'v1');
     assert.equal(await tx.wallet.available('alice'), 1000);

@@ -1,6 +1,7 @@
 import { secureRandom } from '../secure-random.mjs';
 import { createTableCoordinator } from './coordinator.mjs';
 import { createPostgresTableStore } from './postgres-store.mjs';
+import { assertSharedPostgresOwner } from '../../../../../packages/storage/server/postgres-transaction-context.mjs';
 
 // Owns scheduling only, never the supplied pool or authentication. The application
 // awaits start() before accepting commands through coordinator; start checks the
@@ -12,7 +13,7 @@ import { createPostgresTableStore } from './postgres-store.mjs';
 export function createPostgresTableRuntime({
   pool, walletMode, clock = { now: Date.now }, random = secureRandom(), sink,
   intervalMs = 250, onError = error => process.emitWarning(error),
-  lockTimeoutMs, statementTimeoutMs, authorizeCommand,
+  lockTimeoutMs, statementTimeoutMs, authorizeCommand, onTickCommitted,
 } = {}, {
   createStore = createPostgresTableStore, createCoordinator = createTableCoordinator,
   setTimer = setTimeout, clearTimer = clearTimeout,
@@ -20,7 +21,8 @@ export function createPostgresTableRuntime({
   if (!Number.isInteger(intervalMs) || intervalMs < 1 || intervalMs > 2147483647)
     throw new TypeError('intervalMs must be a positive timer interval');
   if (typeof clock?.now !== 'function' || typeof onError !== 'function'
-    || (sink !== undefined && typeof sink !== 'function')) throw new TypeError('Invalid runtime ports');
+    || (sink !== undefined && typeof sink !== 'function')
+    || (onTickCommitted !== undefined && typeof onTickCommitted !== 'function')) throw new TypeError('Invalid runtime ports');
   const checkedClock = { now() {
     const at = clock.now();
     if (!Number.isSafeInteger(at) || at < 0) throw new TypeError('Invalid shared table clock');
@@ -49,8 +51,23 @@ export function createPostgresTableRuntime({
     // One snapshot, one attempt per descriptor. A failed transaction remains due;
     // only the coordinator can record a domain-level blocked receipt.
     for (const descriptor of due) {
-      try { ticks.push(await coordinator.tick(descriptor)); }
-      catch (error) { errors.push(error); }
+      let actors, result;
+      try {
+        result = await coordinator.tick(descriptor, { captureActors: value => { actors = value; } });
+        ticks.push(result);
+      } catch (error) { errors.push(error); continue; }
+      if (onTickCommitted && result.outcome === 'applied' && !result.replay) {
+        try {
+          if (!Array.isArray(actors)) throw new Error('Committed tick actors missing');
+          await onTickCommitted(Object.freeze({ roomId: descriptor.roomId, actors }));
+        } catch (error) {
+          // An invalidation is an observer of a committed effect. Report it
+          // separately; even a broken reporter cannot mark that SQL unit failed.
+          const failure = Object.assign(new Error('Shared table commit observer failed', { cause: error }),
+            { code: 'shared_table_commit_observer_failed' });
+          try { await onError(failure); } catch { /* Reporting never retries a committed tick. */ }
+        }
+      }
     }
     let outbox = null;
     if (sink) {
@@ -65,6 +82,8 @@ export function createPostgresTableRuntime({
   }
 
   function pump() {
+    // A tick return is an outer COMMIT only when this pump owns its transaction.
+    if (onTickCommitted) assertSharedPostgresOwner();
     if (state !== 'running') return Promise.reject(new Error('Shared table runtime is not running'));
     if (!inFlight) inFlight = Promise.resolve().then(runPass).then(result => {
       lastSuccessAt = healthTime(); failed = false; return result;

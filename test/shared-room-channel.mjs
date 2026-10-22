@@ -38,6 +38,42 @@ function setup(t,options={}) {
 }
 const clean=socket=>{for(const event of ['message','error','close'])assert.equal(socket.listenerCount(event),0,event);};
 
+test('actor wallet hints cross rooms for inactive members without waking another actor or retaining closed sockets',async t=>{
+  let available=100;const reads=[];
+  const h=setup(t,{
+    authorize:async(req,{roomId})=>({...binding(roomId),actorId:req.headers.get('x-fixture-actor')??'player-a'}),
+    revalidate:async b=>b,
+    readSnapshot:async(room,actor)=>{reads.push([room,actor]);const s=snapshot(room);s.me={...s.me,id:actor,available:actor==='player-a'?available:100};
+      if(room==='room-b'){s.me.active=false;s.me.seats=[];s.players=[];s.owners=Array(7).fill(null);}return s;},
+  });
+  const a=await h.attach(),b=await h.attach('room-b');
+  const other=new Socket();(await h.channel.prepare(new Request(`${origin}/shared-room/room-b`,{headers:{origin,'x-fixture-actor':'player-b'}}))).attach(other);
+  await until(()=>a.frames.length===1&&b.frames.length===1&&other.frames.length===1);
+  available=0;h.channel.emitCommitted('room-a');h.channel.emitActorsCommitted(['player-a','player-a'],{exceptRoom:'room-a'});
+  await until(()=>a.frames.length===2&&b.frames.length===2);
+  assert.equal(a.frames.at(-1).snapshot.me.available,0);assert.equal(b.frames.at(-1).snapshot.me.available,0);
+  assert.equal(b.frames.at(-1).snapshot.me.active,false);assert.equal(other.frames.length,1);
+  assert.ok(b.frames.every(f=>f.roomId==='room-b'&&f.snapshot.roomId==='room-b'));
+  b.close(1000,'done');clean(b);const before=reads.filter(([,actor])=>actor==='player-a').length;
+  available=25;h.channel.emitActorsCommitted(['player-a']);await until(()=>a.frames.length===3);
+  assert.equal(reads.filter(([,actor])=>actor==='player-a').length,before+1);
+  assert.equal(b.frames.length,2);assert.equal(other.frames.length,1);
+  h.channel.close();clean(a);clean(other);h.channel.emitActorsCommitted(['player-a']);await turn();assert.equal(a.frames.length,3);
+});
+
+test('actor wallet hints revalidate each target room before reading and again before publishing',async t=>{
+  for(const revokeAt of ['before-read','after-read']){
+    let revoked=false,armed=false,reads=0;
+    const h=setup(t,{revalidate:async b=>revoked?null:b,
+      readSnapshot:async room=>{reads++;if(armed&&revokeAt==='after-read')revoked=true;return snapshot(room);}});
+    const b=await h.attach('room-b');await until(()=>b.frames.length===1);
+    const before=reads;armed=true;if(revokeAt==='before-read')revoked=true;
+    h.channel.emitActorsCommitted(['player-a'],{exceptRoom:'room-a'});await until(()=>b.closed.length===1);
+    assert.equal(b.closed[0].code,1008);assert.equal(b.frames.length,1);
+    assert.equal(reads,before+(revokeAt==='after-read'?1:0));clean(b);
+  }
+});
+
 test('required ports, exact origin and strict route fail closed before authorization/data',async t=>{
   assert.throws(()=>createSharedRoomChannel({origin}),{code:'shared_room_unavailable'});
   const h=setup(t);

@@ -43,6 +43,7 @@ run_node_tests admin roulette-start-editor apps/studio/client/admin/lib/roulette
 run_node_tests admin admin-routing apps/studio/client/runtime/admin-routing.test.mjs apps/studio/client/runtime/navigation.test.mjs
 run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs
 run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs
+run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs
 run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
 run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
 run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs

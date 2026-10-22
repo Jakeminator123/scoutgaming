@@ -1,5 +1,10 @@
 [
   {
+    "path": "test/shared-schema-upgrade.mjs",
+    "kind": "helper",
+    "reason": "Exports populated product-v1 upgrade checks invoked by tools/run-shared-table-qa.mjs --schema-upgrade in croupier.yml's isolated SQL step; requires the runner-owned loopback cluster."
+  },
+  {
     "path": "test/postgres-shared-table.mjs",
     "kind": "helper",
     "reason": "Exports real PostgreSQL checks invoked by tools/run-shared-table-qa.mjs in croupier.yml's isolated SQL step; requires that runner's owned cluster and is not a direct node:test suite."
