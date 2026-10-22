@@ -396,6 +396,10 @@
           "sourceSha256": "e4705a244e427ec26de5d8cbf9c680f3ccb52568b0e309b56c10271b7bc7cb8e"
         },
         {
+          "path": "public/images/dealers/paow.jpg",
+          "sourceSha256": "328b2a15e685d413dd385befae9275c69549c4eebb76e126d8e51f550139b068"
+        },
+        {
           "path": "public/images/lobby/detail-chips.png",
           "sourceSha256": "59ca96366ae6d176b23a9a66723225ee3e8b74ca00e21a5dd810133ed76595d9"
         },
@@ -450,6 +454,10 @@
         {
           "path": "public/videos/dealers/marten-look.mp4",
           "sourceSha256": "d60ea587d855c9d2577ee1bfec17d0139910bb8c501f2cad2b03c7f6a6065cf1"
+        },
+        {
+          "path": "public/videos/dealers/paow-hair.mp4",
+          "sourceSha256": "9f066c7829fb3c19252a5bba3461f7d75705aaf416909adacc0076a4fdb3b1cc"
         },
         {
           "path": "public/videos/hero-end.mp4",

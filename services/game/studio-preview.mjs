@@ -80,6 +80,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       dealer:{enabled:lane.layers.dealer.enabled,compatibility:'per-clip'},
       ...(lane.composition?{settings:lane.composition}:{}),
       ...(lane.backgroundPlayback?{backgroundPlayback:structuredClone(lane.backgroundPlayback)}:{}),
+      ...(lane.tablePlayback?{tablePlayback:structuredClone(lane.tablePlayback)}:{}),
       assets:s.assets.map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/studio-preview/${s.id}/layers/${id}`}))};
     return {lane:lane.id,dealer,presentation,...(presentation==='local'?{localDealer:dealer}:{}),registeredDealers:registry,choices,composition};
   }

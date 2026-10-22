@@ -118,6 +118,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
         dealer:{enabled:layers.dealer.enabled,compatibility:next.presentation !== 'original' && presentationLane.composition?'per-clip':'full-frame'},
         ...(presentationLane.composition?{settings:structuredClone(presentationLane.composition)}:{}),
         ...(presentationLane.backgroundPlayback?{backgroundPlayback:structuredClone(presentationLane.backgroundPlayback)}:{}),
+        ...(presentationLane.tablePlayback?{tablePlayback:structuredClone(presentationLane.tablePlayback)}:{}),
         assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(asset=>({id:asset.id,role:asset.role,label:materialLabel(asset),contentType:asset.contentType,src:`/api/presentation/layers/${slug}/${asset.id}`}))};
     }
     if (room) next.roomId = room.id;

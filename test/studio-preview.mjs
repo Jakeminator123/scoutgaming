@@ -9,7 +9,7 @@ import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/
 import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
-import {defaultBackgroundRule} from '../packages/presentation/contracts/background-playback-policy.mjs';
+import {defaultBackgroundRule,defaultLayerRule} from '../packages/presentation/contracts/background-playback-policy.mjs';
 import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 
 const origin='https://studio.example.invalid',scope={environment:'fixture',workspaceId:'croupier'};
@@ -84,6 +84,22 @@ test('rehearsal freezes background rules and serves their captured layers throug
   assert.equal((await f.api.handle(f.request(`/api/studio-preview/${session.sessionId}/layers/${id}`))).status,200);
   f.state.actor='another-admin';
   assert.equal((await f.api.handle(f.request(`/api/studio-preview/${session.sessionId}/layers/${id}`))).status,404);
+});
+
+test('rehearsal composition carries the frozen table rules beside the background rules',async t=>{
+  const f=fixture(t),id='20000000-0000-4000-8000-000000000003';
+  const clip={...f.layer,id,label:'Levande bord',contentType:'video/mp4'};clip.pathname=layerAssetPath(clip);
+  f.project.layerAssets.push(clip);
+  const lane=f.project.lanes[0];lane.layers.table={enabled:true,default:layerId,allowed:[layerId,id]};
+  lane.tablePlayback={schemaVersion:1,rules:[defaultLayerRule(id,'living',{role:'table'})]};
+  const captured=structuredClone(lane.tablePlayback),session=await start(f);
+  lane.tablePlayback.rules=[];
+  const response=await f.api.handle(f.request(session.entryUrl));assert.equal(response.status,200);
+  const html=await response.text(),raw=html.match(/data-game-composition="([^"]+)"/)[1];
+  const composition=JSON.parse(raw.replaceAll('&quot;','"').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&'));
+  assert.deepEqual(composition.tablePlayback,captured);assert.equal(Object.hasOwn(composition,'backgroundPlayback'),false);
+  assert.deepEqual(composition.table.allowed,[layerId,id]);assert.equal(composition.table.default,layerId);
+  assert.equal(composition.assets.find(asset=>asset.id===id).src,`/api/studio-preview/${session.sessionId}/layers/${id}`);
 });
 
 test('preview captures saved project and media once without consulting legacy policy or publishing',async t=>{

@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import {createSeedProject,defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {defaultBackgroundRule,validateBackgroundPlayback,BACKGROUND_EVENT_IDS} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {defaultBackgroundRule,defaultLayerRule,validateBackgroundPlayback,validateLayerPlayback,BACKGROUND_EVENT_IDS} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
@@ -26,19 +26,23 @@ const text=tree=>Array.isArray(tree)?tree.map(text).join(''):tree&&typeof tree==
 const button=(tree,label)=>{const found=nodes(tree,node=>node.type==='button'&&text(node)===label)[0];assert.ok(found,label);return found;};
 const field=(tree,label)=>{const found=nodes(tree,node=>node.props?.['aria-label']===label)[0];assert.ok(found,label);return found;};
 const asset=(n,role='background',contentType='video/mp4')=>{const row={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:`Media ${n}`,sha256:'a'.repeat(64),size:32,contentType,width:640,height:360};return {...row,pathname:layerAssetPath(row)};};
-const assets=[asset(1,'background','image/png'),asset(2),asset(3),asset(4,'table')];
-const {BackgroundPlaybackEditor}=load('./background-playback-editor.tsx');
+const assets=[asset(1,'background','image/png'),asset(2),asset(3),asset(4,'table'),asset(5,'table','image/png'),asset(6,'table')];
+const {BackgroundPlaybackEditor,LayerPlaybackEditor}=load('./background-playback-editor.tsx');
 function editor(extra={}){
   let policy=extra.policy,calls=0;const previews=[];
   const props={assets,allowed:[assets[0].id,assets[1].id,assets[3].id],baseSelected:true,...extra,onChange(value){calls++;policy=value?structuredClone(value):undefined;if(policy)validateBackgroundPlayback(policy,{assets,allowed:props.allowed,defaultAssetId:assets[0].id});},onPreview:id=>previews.push(id)};
   return {render:()=>BackgroundPlaybackEditor({...props,policy}),get policy(){return policy;},get calls(){return calls;},previews,props};
 }
 
-test('background editor creates only allowed video rules and previews without saving, using the shared defaults',()=>{
+test('background editor creates only allowed video rules and previews without saving, using the living-layer defaults',()=>{
   const h=editor();button(h.render(),'Lägg till bakgrundsklipp').props.onClick();
-  assert.deepEqual(h.policy.rules,[defaultBackgroundRule(assets[1].id,'background-1')]);
+  assert.deepEqual(h.policy.rules,[defaultLayerRule(assets[1].id,'background-1',{role:'background'})]);
+  assert.deepEqual(h.policy.rules[0].trigger,{everyMs:195000,jitterMs:74000});
   const tree=h.render(),choices=nodes(field(tree,'Video för bakgrundsklipp 1'),node=>node.type==='option').map(node=>node.props.value);
-  assert.equal(field(tree,'Minsta tid mellan starter för bakgrundsklipp 1').props.value,25);assert.match(text(tree),/Minsta tid mellan starter \(sekunder\)/);assert.doesNotMatch(text(tree),/Minsta paus/);
+  assert.equal(field(tree,'Minsta tid mellan starter för bakgrundsklipp 1').props.value,60);assert.match(text(tree),/Minsta tid mellan starter \(sekunder\)/);assert.doesNotMatch(text(tree),/Minsta paus/);
+  assert.equal(field(tree,'Intervall för bakgrundsklipp 1').props.value,195);assert.equal(field(tree,'Variation för bakgrundsklipp 1').props.value,74);
+  assert.match(text(tree),/Variation ± \(sekunder\)/);assert.match(text(tree),/Spelas ungefär var 195:e sekund, ± 74 s, högst 1 gång per minut\./);
+  assert.match(text(tree),/återgår bakgrunden till standardbilden eller grundloopen/);
   assert.deepEqual(choices,[assets[1].id]);
   button(tree,'Prova klipp 1').props.onClick();assert.deepEqual(h.previews,['background-1']);assert.equal(h.calls,1);
   field(tree,'Video för bakgrundsklipp 1').props.onChange({target:{value:assets[2].id}});assert.equal(h.calls,1,'foreign asset rejected');
@@ -47,7 +51,44 @@ test('background editor creates only allowed video rules and previews without sa
   assert.deepEqual(nodes(field(h.render(),'Händelse för bakgrundsklipp 1'),node=>node.type==='option').map(node=>node.props.value),[...BACKGROUND_EVENT_IDS]);
   field(h.render(),'Händelse för bakgrundsklipp 1').props.onChange({target:{value:'speak.win'}});assert.deepEqual(h.policy.rules[0].trigger,{eventId:'speak.win'});
   field(h.render(),'Händelse för bakgrundsklipp 1').props.onChange({target:{value:'unknown'}});assert.deepEqual(h.policy.rules[0].trigger,{eventId:'speak.win'});
+  field(h.render(),'Start för bakgrundsklipp 1').props.onChange({target:{value:'automatic'}});assert.deepEqual(h.policy.rules[0].trigger,{everyMs:195000,jitterMs:74000},'returning to a timer restores the living-layer defaults');
   button(h.render(),'Ta bort klipp 1').props.onClick();assert.equal(h.policy,undefined);
+});
+
+test('variation stays within the contract: 0..120 s, below the interval, and absent when zero',()=>{
+  const h=editor({policy:{schemaVersion:1,rules:[defaultLayerRule(assets[1].id,'background-1')]}});
+  for(const [value,expected] of [[999,120000],[-5,undefined],[Infinity,undefined],[30.4,30000],[194,120000]]){
+    field(h.render(),'Variation för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:value}});assert.equal(h.policy.rules[0].trigger.jitterMs,expected,String(value));
+  }
+  assert.equal(h.policy.rules[0].trigger.everyMs,195000);
+  assert.match(text(h.render()),/var 195:e sekund, ± 120 s/);
+  // Shrinking the interval pulls the variation down so jitterMs stays below everyMs.
+  field(h.render(),'Intervall för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:60}});assert.deepEqual(h.policy.rules[0].trigger,{everyMs:60000,jitterMs:59000});
+  field(h.render(),'Intervall för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:5}});assert.deepEqual(h.policy.rules[0].trigger,{everyMs:5000,jitterMs:4000});
+  assert.equal(field(h.render(),'Variation för bakgrundsklipp 1').props.max,4);
+  field(h.render(),'Variation för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:0}});assert.deepEqual(h.policy.rules[0].trigger,{everyMs:5000});
+  assert.match(text(h.render()),/Spelas ungefär var 5:e sekund, högst 1 gång per minut\./);assert.doesNotMatch(text(h.render()),/sekund, ±/);
+  field(h.render(),'Starter per minut för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:2}});assert.match(text(h.render()),/högst 2 gånger per minut/);
+  field(h.render(),'Intervall för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:21}});assert.match(text(h.render()),/var 21:a sekund/);
+});
+
+test('table role lists only allowed table videos, names its texts for the table and validates as a table policy',()=>{
+  let policy,calls=0;const previews=[];
+  const props={role:'table',assets,allowed:[assets[1].id,assets[3].id,assets[4].id],baseSelected:true,onChange(value){calls++;policy=value?structuredClone(value):undefined;if(policy)validateLayerPlayback(policy,{role:'table',assets,allowed:props.allowed,defaultAssetId:assets[4].id});},onPreview:id=>previews.push(id)};
+  const render=()=>LayerPlaybackEditor({...props,policy});
+  let tree=render();assert.equal(tree.props['aria-label'],'Bordsklipp');assert.match(text(tree),/Bordsklipp/);assert.doesNotMatch(text(tree),/bakgrund/i);
+  assert.match(text(tree),/återgår bordet till standardbilden eller grundloopen/);
+  button(tree,'Lägg till bordsklipp').props.onClick();
+  assert.deepEqual(policy.rules,[defaultLayerRule(assets[3].id,'table-1',{role:'table'})]);
+  assert.throws(()=>validateLayerPlayback(policy,{role:'background',assets,allowed:props.allowed,defaultAssetId:assets[0].id}),'a table policy never validates as a background policy');
+  tree=render();
+  assert.deepEqual(nodes(field(tree,'Video för bordsklipp 1'),node=>node.type==='option').map(node=>node.props.value),[assets[3].id],'background video and table still are excluded');
+  assert.equal(nodes(tree,node=>node.type==='fieldset')[0].props['aria-label'],'Bordsklipp 1');
+  field(tree,'Video för bordsklipp 1').props.onChange({target:{value:assets[1].id}});assert.equal(calls,1,'background video rejected for the table layer');
+  field(tree,'Variation för bordsklipp 1').props.onChange({target:{valueAsNumber:10}});assert.deepEqual(policy.rules[0].trigger,{everyMs:195000,jitterMs:10000});
+  button(render(),'Prova klipp 1').props.onClick();assert.deepEqual(previews,['table-1']);
+  const noBase=LayerPlaybackEditor({...props,baseSelected:false});assert.match(text(noBase),/Välj och aktivera ett standardbord först\./);assert.equal(button(noBase,'Lägg till bordsklipp').props.disabled,true);
+  const noVideos=LayerPlaybackEditor({...props,allowed:[assets[4].id]});assert.match(text(noVideos),/tillåtet bord/);assert.equal(button(noVideos,'Lägg till bordsklipp').props.disabled,true);
 });
 
 test('background editor bounds timer and playback budgets and preserves disabled or missing-base drafts',()=>{
@@ -55,6 +96,7 @@ test('background editor bounds timer and playback budgets and preserves disabled
   for(const [label,value,expected] of [['Intervall',Infinity,25000],['Intervall',1,5000],['Intervall',999,300000]]){
     field(h.render(),`${label} för bakgrundsklipp 1`).props.onChange({target:{valueAsNumber:value}});assert.equal(h.policy.rules[0].trigger.everyMs,expected);
   }
+  assert.deepEqual(h.policy.rules[0].trigger,{everyMs:300000},'a legacy rule without variation stays without it');
   field(h.render(),'Maxlängd för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:59}});assert.equal(h.policy.rules[0].maxDurationMs,20000);
   field(h.render(),'Sekunder per minut för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:1}});assert.equal(h.policy.rules[0].maxSecondsPerMinute,20);
   field(h.render(),'Starter per minut för bakgrundsklipp 1').props.onChange({target:{valueAsNumber:99}});assert.equal(h.policy.rules[0].maxPerMinute,12);

@@ -1,6 +1,6 @@
 import {validateFrozenDealerPlayback} from './frozen-dealer-playback.mjs';
 import {validateCompositionSettings} from './composition-settings.mjs';
-import {validateBackgroundPlayback} from './background-playback-policy.mjs';
+import {validateBackgroundPlayback, validateLayerPlayback} from './background-playback-policy.mjs';
 import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
 import {validateManagedStudioMedia} from '../../studio-registry/server/managed-media-contract.mjs';
 import {validateFrozenRouletteIdle} from './roulette-idle-contract.mjs';
@@ -54,7 +54,7 @@ function layer(value, role, authorisedDealers = dealers) {
 }
 export function validatePresentationLane(value, {dealerIds = [...dealers]} = {}) {
   const authorisedDealers = new Set(list(dealerIds, isDealerId, MAX_DEALERS));
-  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback']);
+  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback']);
   if (typeof value.id !== 'string' || value.id.length > 63 || !token.test(value.id)
     || ['original', 'constructor', 'prototype'].includes(value.id)) reject();
   text(value.label);
@@ -83,6 +83,11 @@ export function validatePresentationLane(value, {dealerIds = [...dealers]} = {})
     const policy = validateBackgroundPlayback(value.backgroundPlayback,
       { allowed: layers.background.allowed, defaultAssetId: layers.background.default });
     if (policy.rules.length && !layers.background.enabled) reject();
+  }
+  if (Object.hasOwn(value, 'tablePlayback')) {
+    const policy = validateLayerPlayback(value.tablePlayback,
+      { role: 'table', allowed: layers.table.allowed, defaultAssetId: layers.table.default });
+    if (policy.rules.length && !layers.table.enabled) reject();
   }
   return { ...structuredClone(value), layers };
 }
@@ -150,6 +155,10 @@ export function validatePresentationPackage(value) {
   for (const lane of lanes) if (Object.hasOwn(lane, 'backgroundPlayback')) {
     validateBackgroundPlayback(lane.backgroundPlayback, { assets,
       allowed: lane.layers.background.allowed, defaultAssetId: lane.layers.background.default });
+  }
+  for (const lane of lanes) if (Object.hasOwn(lane, 'tablePlayback')) {
+    validateLayerPlayback(lane.tablePlayback, { role: 'table', assets,
+      allowed: lane.layers.table.allowed, defaultAssetId: lane.layers.table.default });
   }
   const selectedDealers = [...new Set(lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))];
   if (v2) registry = validateFrozenRegisteredDealers(registry, {dealerIds:selectedDealers});

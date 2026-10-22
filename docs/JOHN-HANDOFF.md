@@ -159,7 +159,11 @@ Verklig runtime-ACL och återställningsberedskap återstår före konkret DDL-b
 Senast lästa K05PR314/head9ab3701179d5edf46beee505752cd6080dad708e tillför
 talgranskningsunderlag ovanpå tidigare metadata/validator; faktisk registry-/
 Blobbindning och talgodkännande är fortsatt ofullständiga.
-Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
+Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ~~ingen Paowrestore~~
+ersatt av Jakobs beslut 22 oktober 2026 (PR #342): Paow är återställd och visas
+med Mårten som låst lobbyporträtt, se
+[Lobbyns dealerporträtt](#lobbyns-dealerporträtt-tillbaka-i-steg-3--22-oktober-2026).
+Ta inte bort Paow igen.
 Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
 sourceverified/monitoringactive, incidentcompleteforthissource,
 locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
@@ -233,6 +237,41 @@ fortsätter i samma GitHubissue312 vid återupptaget arbete; senaste aktuella
 uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
+
+## Levande lager: bord och variation (capability 24) — 22 oktober 2026
+
+Branch `codex/levande-lager` ovanpå `codex/admin-ux-klippkarta` (PR340).
+Jakobs beställning: var tredje minut och femton sekunder, med 74 sekunders
+variation, ska ett kort mp4-klipp spelas över bakgrunden; en mp4 ska kunna
+vara basen; samma för bordet och dealern.
+
+- **Kontrakt.** Intervallregler i `backgroundPlayback` får `jitterMs`
+  (0–120 000, kortare än `everyMs`); starter dras ur `everyMs ± jitterMs`.
+  Nytt valfritt `tablePlayback` på sammansättningen med samma form, mot
+  bordslagrets tillåtna videor. Standardregel 195 s ± 74 s, 10 s max, 1/min.
+  Capability 24 `layerPlayback: table-and-jitter-v1`; readiness kräver 24 för
+  fälten och avvisar dem mot äldre spelservrar. Inget schema, ingen SQL.
+- **Runtime.** `background-playback.mjs` tar `role` och injicerbar `random`.
+  `presentation-composition.mjs` kör en scheduler per lager; bordsklipp
+  ritas som bordslager medan de spelas och basen återställs efteråt.
+  `tablePlayback` följer med i frysta paket (game-entry-selector) och
+  Studio-prov; papperskorgen tar bort bordsregler som refererar filen; båda
+  spelklienterna skickar spelhändelser även till bordslagret (`tableEvent`).
+- **Admin.** `LayerPlaybackEditor` för bakgrund och bord med Variation ± och
+  klartextsammanfattning; Scen & lager, Sammansättning och förhandsvisningen
+  (bordsklipp provas i CompositionPreview) använder den. Dealerns beteendeklipp
+  är oförändrat vilopolicyn i Körregel.
+- **Verifiering.** 505/505 i de berörda sviterna (kontrakt, scheduler,
+  komposition, studio-preview, entry-selector, material-trash, readiness,
+  room-api, editor, preview, panel) plus 552 befintliga modell-/lagersviter;
+  Admin-bygge (tsc admin+lobby, esbuild) och Studio-tsc passerar. Ingen
+  produktion berörd. Efter deploy måste spelservern svara capability 24 innan
+  Admin kan spara variation eller bordsklipp; tills dess fungerar fasta
+  intervall som förut.
+- **Midnight-bakgrunden.** Skript för Jakob: `C:\Users\jakem\CroupierBackups\
+  midnight-background-2026-10-22\KOR-MIDNIGHT.cmd` registrerar stillbild,
+  loop och två varianter via Admins ordinarie lageruppladdning och binder dem
+  till vald sammansättning med intervall 195/255 s; `--jitter` efter deploy.
 
 ## Admin UX-pass 1: klippkartan — 22 oktober 2026
 
@@ -1252,6 +1291,24 @@ Privata SQL-/browserkvitton och skärmbild finns utanför Git i HUVUDAGENT6:s
 visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
 `admin-drift-after.png`.
+
+## Lobbyns dealerporträtt tillbaka i steg 3 — 22 oktober 2026
+
+Jakob bad om porträtten igen. Steg 3 visar åter Astrid, Mårten, Dragge, Anna
+och Paow som låsta förhandsporträtt under glaset innan bolag och rum är valda;
+den 13 oktober tömdes listan i e3404cf4. Efter rumsval kommer rummets
+publicerade dealers först, sedan de porträtt rummet saknar som låsta kort.
+Porträttkort ger aldrig val eller startlänk. Exakta ID-alias, ingen
+namnmatchning: `dragan` visar Dragge (Kevin-importens `dragge` → `dragan`) och
+`paow-v2` visar Paow. Paows bild och film togs bort i 2f7b891a och är
+återställda med samma bytes; filmen är identisk med Jakobs råfil. Jakob bad
+uttryckligen om Paow. Kevin har bara stillbild och läggs inte till.
+Tomgångsvideon upprepas 45 s efter avslutad uppspelning, även under glaset.
+
+Verifierat: lobbyns enhetstester, `test/public-lobby.mjs` med lokal Chrome,
+bygge med typkontroll och skärmdumpar på 1440 och 390 px av byggd lobby med
+syntetisk katalog (video spelar under glaset och i dialogen, ingen
+horisontell överströmning). Ingen livekatalog eller produktion är provad.
 
 ## Spelarlobby J04 — 22 oktober 2026
 

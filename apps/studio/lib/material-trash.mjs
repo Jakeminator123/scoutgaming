@@ -10,15 +10,16 @@ import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
 import {retainBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 const fail=(code='studio_material_missing')=>{throw new StudioStorageError(code,409);};
-export const materialUsedBy=(lane,id)=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))
-  ||lane.backgroundPlayback?.rules.some(rule=>rule.assetId===id)||lane.composition?.blackjackTables?.some(row=>row.tableId===id);
+// Background and table rules share one policy shape under `${role}Playback`.
+export const materialUsedBy=(lane,id)=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id)
+  ||lane[`${role}Playback`]?.rules.some(rule=>rule.assetId===id))||lane.composition?.blackjackTables?.some(row=>row.tableId===id);
 function detach(lane,id){
  for(const role of ['background','table']){
   const layer=lane.layers[role];layer.allowed=layer.allowed.filter(value=>value!==id);
   if(layer.default===id){layer.default=null;layer.enabled=false;}
+  const playback=lane[`${role}Playback`];
+  if(playback)playback.rules=layer.enabled&&layer.default?playback.rules.filter(rule=>rule.assetId!==id):[];
  }
- if(lane.backgroundPlayback)lane.backgroundPlayback.rules=lane.layers.background.enabled&&lane.layers.background.default
-  ?lane.backgroundPlayback.rules.filter(rule=>rule.assetId!==id):[];
  retainBlackjackTableGeometry(lane.composition,lane.layers.table.allowed);
 }
 export function changeMaterialTrash(project,{id,archived,now=Date.now}){
