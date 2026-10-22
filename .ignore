@@ -72,6 +72,12 @@ vendor/
 # Canonical recovery archive; inspect only when needed.
 /arkiv/
 
+# Retired local roots: never stage if an old checkout still has them
+/lab/data/
+/apps/studio/data/
+/web/data/
+/services/game/data/
+
 # Director/Gateway local state (the Director adapter defaults to open-claw/lab).
 /open-claw/lab/data/
 /open-claw/lab/runtime/

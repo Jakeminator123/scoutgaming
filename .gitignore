@@ -50,6 +50,12 @@ __pycache__/
 /apps/studio/public/public-assistant.js
 /apps/studio/public/did-chunks/
 
+# Retired local roots: never stage if an old checkout still has them
+/lab/data/
+/apps/studio/data/
+/web/data/
+/services/game/data/
+
 # Director/Gateway local state: the Director adapter defaults to the relative
 # open-claw/lab root when LAB_DATA_DIR is unset (Render sets it).
 /open-claw/lab/data/
