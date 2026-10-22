@@ -2,10 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {playerAreaPage} from '../lib/player-area.mjs';
 import {backendPlatformPath} from '../../../packages/navigation/server/platform-routing.mjs';
-import {
-  OPERATOR_STORAGE_KEY, clearedOperatorLocation, lobbyOperatorName, operatorChoice, operatorPlayPath,
-} from '../lib/player-operator.mjs';
-import { choicesStorageKey, lobbyChoiceText, parseStoredChoices } from '../lib/player-choices.mjs';
+import { choicesStorageKey, lobbyChoiceText, parseStoredChoices } from '../../../packages/presentation/runtime/player-choices.mjs';
 
 const env = {
   CROUPIER_VERCEL_UI: '1',
@@ -15,7 +12,6 @@ const env = {
   CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3),
 };
 const request = new Request('https://preview.example.test/play', {headers: {cookie: 'player_session=fixture'}});
-const company = {slug: 'sg-test', name: 'SG test game provider'};
 
 function sessionFetch(extra) {
   return async (url, init) => {
@@ -54,20 +50,6 @@ test('profile without the columns says it is not available yet and still shows t
   assert.match(page.html, /Inte tillgängligt än/);
   assert.match(page.html, /data-field="Saldo"/);
   assert.doesNotMatch(page.html, /bg-lime|name="displayName"|secret-stack-trace/);
-});
-
-test('lobby operator choice prefers the query, then storage, and drops an unknown slug', () => {
-  assert.equal(OPERATOR_STORAGE_KEY, 'croupier.operator');
-  assert.equal(operatorChoice({search: '?operator=sg-test', stored: 'demo-north'}), 'sg-test');
-  assert.equal(operatorChoice({search: '', stored: 'sg-test'}), 'sg-test');
-  assert.equal(operatorChoice({search: '?operator=play', stored: 'sg-test'}), '');
-  assert.equal(operatorChoice({search: '?operator=sg-test&operator=demo-north', stored: 'sg-test'}), '');
-  assert.equal(lobbyOperatorName({search: '', stored: 'sg-test', payload: company}), 'SG test game provider');
-  assert.equal(lobbyOperatorName({search: '?operator=sg-test', stored: null, payload: {...company, status: 'active'}}), '');
-  assert.equal(lobbyOperatorName({search: '?operator=missing', stored: 'sg-test', payload: null}), '');
-  assert.equal(operatorPlayPath('sg-test'), '/play/blackjack?operator=sg-test');
-  assert.equal(clearedOperatorLocation('https://preview.example.test/play?operator=sg-test&dealer=astrid'), '/play?dealer=astrid');
-  assert.equal(clearedOperatorLocation('/play?operator=sg-test'), '/play');
 });
 
 test('legacy stored choices remain readable while the lobby uses verified room and dealer names', () => {

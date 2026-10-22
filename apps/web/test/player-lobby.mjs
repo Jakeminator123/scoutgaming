@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validatePublicOperatorRooms} from '../../../packages/presentation/contracts/operator-rooms-contract.mjs';
-import {loadOperatorCatalogue,loadRoomCatalogue} from '../lib/player-catalog.mjs';
+import {createPlayerCatalog} from '../../../packages/player-catalog/index.mjs';
+import {isOperatorSlug} from '../../../packages/navigation/operator-slug.mjs';
 import {roomSelection,roomLaunch,rememberRoomSelection} from '../../../packages/player-catalog/room-selection.mjs';
+
+const {loadRoomCatalogue}=createPlayerCatalog({isOperatorSlug,validatePublicOperatorRooms});
 
 const table1='11111111-1111-4111-8111-111111111111',table2='22222222-2222-4222-8222-222222222222';
 const background1='33333333-3333-4333-8333-333333333333',background2='44444444-4444-4444-8444-444444444444';

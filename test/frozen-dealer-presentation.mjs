@@ -18,7 +18,8 @@ function fixture(dealerId = 'julia') {
       situation: '', label: `${label} Grundloop`, notes: 'Frozen baseline',
       compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
   const presentation = { schemaVersion: 2, projectRevision: 'published-project', assets: [],
-    lanes: [{ id: 'vip-presentation', dealers: [dealerId], layers: { dealer: { allowed: [dealerId], default: dealerId } } }],
+    lanes: [{ id: 'vip-presentation', dealers: [dealerId], layers: { dealer: { allowed: [dealerId], default: dealerId } },
+      openclaw: { idle: 'rules', deal: 'off', reveal: 'off', speak: 'active', probe: 'off' } }],
     registeredDealers: [{ id: dealerId, label, idle }] };
   const saved = { operator: { id: 'north-id', slug: 'north', status: 'active' },
     package: { operatorId: 'north-id', revision: 7, lanes: ['vip-presentation'], tables: [`room-${dealerId}`], frozen: presentation },
@@ -61,6 +62,8 @@ test('Julia receives only her frozen public descriptor, display label and exact 
   assert.equal(configuration.dealerIdle.julia.id, id); assert.equal(configuration.dealerIdle.julia.sha256, sha256);
   assert.equal(configuration.dealerIdle.julia.src, new URL(mediaUrl(input)).pathname);
   assert.deepEqual(configuration.dealerIdle.julia.compositing, f.idle.classification.compositing);
+  // The published player follows the composition's saved per-phase clip modes.
+  assert.deepEqual(configuration.openclaw, { idle: 'rules', deal: 'off', reveal: 'off', speak: 'active', probe: 'off' });
   assert.equal(JSON.stringify(configuration).includes('pathname'), false);
   assert.equal(JSON.stringify(configuration).includes('Frozen baseline'), false);
   assert.deepEqual(f.reads, ['north']); assert.equal(f.served.length, 0);

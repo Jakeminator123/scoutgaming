@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { sharedPostgresTransaction, sharedPostgresClient, poisonSharedPostgresTransaction, runPostgresTransactionOwner } from '../../../../../packages/storage/server/postgres-transaction-context.mjs';
 import { GENESIS, chainRow, verifyChain } from './audit-chain.mjs';
 import { LockSetExceeded, fingerprint } from './ports.mjs';
 import { createPostgresTableWallet } from './postgres-wallet.mjs';
@@ -28,13 +29,57 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
   // Use transaction-local server timeouts for every query, including poll reads,
   // presence and outbox delivery. A caller-owned pool need not set query_timeout.
   // Locked work keeps this same client throughout; no nested pool checkout.
-  async function transaction(work) {
+  async function transaction(work, lockPlan) {
+    const shared = sharedPostgresTransaction(pool);
+    if (shared) {
+      if (shared.readOnly) throw poisonSharedPostgresTransaction(new Error('Shared table transaction must be writable'), shared);
+      const before = shared.tablePlan ?? null;
+      if (lockPlan && (lockPlan.global && !shared.serialize
+        || before && (lockPlan.global && !before.global || lockPlan.rooms.some(id => !before.rooms.includes(id))
+          || lockPlan.players.some(id => !before.players.includes(id))))) {
+        throw poisonSharedPostgresTransaction(new Error('Shared table lock escalation'), shared);
+      }
+      const client = sharedPostgresClient(pool);
+      if (!lockPlan) {
+        try { return await work(client); }
+        catch (error) { throw poisonSharedPostgresTransaction(error, shared); }
+      }
+      const savepoint = 'shared_table_unit_' + (shared.tableSavepointSeq = (shared.tableSavepointSeq ?? 0) + 1);
+      await client.query('SAVEPOINT ' + savepoint);
+      let attemptOpen = true;
+      const attemptClient = Object.freeze({ query(sql, values) {
+        if (!attemptOpen) throw poisonSharedPostgresTransaction(new Error('Shared table attempt is closed'), shared);
+        return client.query(sql, values);
+      } });
+      try {
+        const value = await work(attemptClient);
+        if (shared.failed) throw shared.failed;
+        attemptOpen = false;
+        await client.query('RELEASE SAVEPOINT ' + savepoint);
+        return value;
+      } catch (error) {
+        attemptOpen = false;
+        // Only a declared lock-plan retry may recover inside the outer S unit.
+        // Rollback releases this attempt's R/P/A locks, while S remains held.
+        let rollbackError;
+        try {
+          await shared.client.query('ROLLBACK TO SAVEPOINT ' + savepoint);
+          await shared.client.query('RELEASE SAVEPOINT ' + savepoint);
+        } catch (failure) { rollbackError = failure; }
+        shared.tablePlan = before;
+        if (rollbackError) throw poisonSharedPostgresTransaction(rollbackError, shared);
+        if (!(error instanceof LockSetExceeded)) poisonSharedPostgresTransaction(error, shared);
+        throw error;
+      } finally { attemptOpen = false; }
+    }
     const client = await pool.connect();
     let releaseError;
+    const owner = { pool, client, failed: null, closed: false };
     try {
       await client.query('BEGIN');
       await client.query("SELECT set_config('lock_timeout',$1,true),set_config('statement_timeout',$2,true)", [`${lockTimeoutMs}ms`, `${statementTimeoutMs}ms`]);
-      const value = await work(client);
+      const value = await runPostgresTransactionOwner(owner, () => work(client));
+      if (owner.failed) throw owner.failed;
       const result = await client.query('COMMIT');
       if (result.command === 'ROLLBACK') throw new Error('PostgreSQL transaction rolled back');
       return value;
@@ -43,6 +88,7 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
       catch (rollbackError) { releaseError = rollbackError; }
       throw error; // Preserve SQL/infrastructure errors; never turn them into wallet refusals.
     } finally {
+      owner.closed = true;
       // A connection that could not roll back must not re-enter the pool.
       client.release(releaseError);
     }
@@ -56,24 +102,41 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
     return row ? safeNumber(row.seen) : null;
   };
   const readTick = (client, id) => body(client, `SELECT body FROM ${schema}.shared_table_ticks WHERE tick_id=$1`, [id]);
+  const configHead = async (client, room) => {
+    const row = await first(client, `SELECT version FROM ${schema}.shared_table_config_heads WHERE room_id=$1`, [room]);
+    if (!row) throw new Error('No published table configuration');
+    return row.version;
+  };
+  const frozenConfig = async (client, room, version) => {
+    const value = await body(client, `SELECT body FROM ${schema}.shared_table_configs WHERE room_id=$1 AND version=$2`, [room, version]);
+    if (!value) throw new Error('Published table configuration is missing');
+    return value;
+  };
   const pausedUntil = async (client, id) => safeNumber((await first(client, `SELECT until_ms FROM ${schema}.shared_table_pauses WHERE player_id=$1`, [id]))?.until_ms ?? 0);
   // Read-only wallet operations do not acquire or mutate anything. Mutating port
   // operations are only exposed on tx, whose declared P locks have been taken.
   const readWallet = () => createPostgresTableWallet({ client: queryClient, assertPlayer() {}, assertRoom() {} });
 
   async function runLocked(input, work) {
-    if (!input || !Array.isArray(input.rooms) || !Array.isArray(input.players)) throw new TypeError('Declared lock plan required');
-    const plan = { global: Boolean(input.global), rooms: sorted(input.rooms), players: sorted(input.players) };
-    if ([...plan.rooms, ...plan.players].some(id => typeof id !== 'string' || !id)) throw new TypeError('Invalid lock identity');
+    let plan;
+    try {
+      if (!input || !Array.isArray(input.rooms) || !Array.isArray(input.players)) throw new TypeError('Declared lock plan required');
+      plan = { global: Boolean(input.global), rooms: sorted(input.rooms), players: sorted(input.players) };
+      if ([...plan.rooms, ...plan.players].some(id => typeof id !== 'string' || !id)) throw new TypeError('Invalid lock identity');
+    } catch (error) { throw poisonSharedPostgresTransaction(error); }
     return transaction(async client => {
-      // G is the existing main game lock. R -> actual main player row P -> A.
-      if (plan.global) await client.query('SELECT pg_advisory_xact_lock(1129467984)');
-      for (const id of plan.rooms) await advisory(client, 'room', id);
-      for (const id of plan.players) {
-        const row = await first(client, `SELECT id FROM ${schema}.players WHERE id=$1 FOR UPDATE`, [id]);
-        if (!row) throw new Error('Authenticated player no longer exists');
+      // In a shared unit S (and optional G) already precedes these locks.
+      const shared = sharedPostgresTransaction(pool);
+      if (!shared?.tablePlan) {
+        if (plan.global && !shared) await client.query('SELECT pg_advisory_xact_lock(1129467984)');
+        for (const id of plan.rooms) await advisory(client, 'room', id);
+        for (const id of plan.players) {
+          const row = await first(client, `SELECT id FROM ${schema}.players WHERE id=$1 FOR UPDATE`, [id]);
+          if (!row) throw new Error('Authenticated player no longer exists');
+        }
+        await advisory(client, 'audit', 'global');
+        if (shared) shared.tablePlan = plan;
       }
-      await advisory(client, 'audit', 'global');
       const assertRoom = id => { if (!plan.rooms.includes(id)) throw new LockSetExceeded({ rooms: [id] }); };
       const assertPlayer = id => { if (!plan.players.includes(id)) throw new LockSetExceeded({ players: [id] }); };
       const wallet = createPostgresTableWallet({ client, assertPlayer, assertRoom });
@@ -162,20 +225,16 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
         config: {
           async latest(room) {
             assertRoom(room);
-            const row = await first(client, `SELECT version FROM ${schema}.shared_table_config_heads WHERE room_id=$1`, [room]);
-            if (!row) throw new Error('No published table configuration');
-            return row.version;
+            return configHead(client, room);
           },
           async frozen(room, version) {
             assertRoom(room);
-            const value = await body(client, `SELECT body FROM ${schema}.shared_table_configs WHERE room_id=$1 AND version=$2`, [room, version]);
-            if (!value) throw new Error('Published table configuration is missing');
-            return value;
+            return frozenConfig(client, room, version);
           },
         },
       };
       return work(tx);
-    });
+    }, plan);
   }
 
   return {
@@ -190,6 +249,9 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
     },
     read: {
       room: id => readRoom(queryClient, id),
+      // Capture the head and its immutable body on one client, including when
+      // the caller already holds the shared Studio transaction.
+      config: (room, version) => transaction(async client => frozenConfig(client, room, version === undefined ? await configHead(client, room) : version)),
       rooms: async () => (await queryClient.query(`SELECT room_id FROM ${schema}.shared_table_rooms ORDER BY room_id`)).rows.map(r => r.room_id),
       members: id => members(queryClient, id), memberRooms: id => memberRooms(queryClient, id),
       presence: (room, player) => presence(queryClient, room, player), tick: id => readTick(queryClient, id),

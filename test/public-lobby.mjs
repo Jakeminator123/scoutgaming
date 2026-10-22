@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { publicLobbyFile, servePublicLobby, serveDesignPreview } from '../apps/studio/lib/design-preview.mjs';
 import {playerAreaModel, renderPlayerAreaHtml} from '../apps/web/lib/player-area.mjs';
-import { platformConfiguration, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
+import { platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders } from '../packages/navigation/server/platform-routing.mjs';
 import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from '../apps/studio/client/runtime/public-lobby-catalog.mjs';
 
 function publication(slug, game = 'blackjack') {
@@ -294,3 +294,22 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     assert.equal(await page.locator('a[href^="/play/blackjack"]').count(),0);
     assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
   });
+
+test('shared room command transport routes only its exact HTTP path through the existing signed backend', () => {
+  const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
+  const path = '/api/shared-room/room-1/command';
+  assert.equal(backendPlatformPath(path), true);
+  assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + path });
+  const headers = platformBackendHeaders(new Headers({ cookie: 'player_session=browser', origin: config.publicOrigin,
+    'x-croupier-vercel-secret': 'forged', 'x-croupier-public-origin': 'forged' }), config);
+  assert.equal(headers.get('cookie'), 'player_session=browser'); assert.equal(headers.get('origin'), config.publicOrigin);
+  assert.equal(headers.get('x-croupier-vercel-secret'), config.secret); assert.equal(headers.get('x-croupier-public-origin'), config.publicOrigin);
+  for (const invalid of ['/api/shared-room', '/api/shared-room/', path + '/', path + '?actorId=other', path + '#part',
+    '/api/shared-room/ROOM/command', '/api/shared-room/%72oom-1/command', '/api/shared-room/%2572oom-1/command',
+    '/api/shared-room//room-1/command', '/api/shared-room/' + 'a'.repeat(129) + '/command', '/api/shared-room/room-1/other']) {
+    assert.equal(backendPlatformPath(invalid), false, invalid);
+    assert.notEqual(platformRoute(new URL(invalid, config.publicOrigin), config).kind, 'backend', invalid);
+  }
+});

@@ -12,6 +12,7 @@ import { addDealer, createSeedProject as historicalProject } from '../packages/p
 import { playLocalFilm } from '../services/game/public/local-film-player.mjs';
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
+import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
@@ -661,16 +662,16 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
-  const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
+  const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   const visibilityHandlers = new Set();
   globalThis.document = { hidden: false, createElement: element,
     addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
     removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0, tableVersion = 2;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
@@ -740,6 +741,29 @@ test('a missing exact position skips every video, keeps the committed card and d
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(jobs.length, 1, 'a skipped position must not block the next recorded event');
   jobs[0].resolve({ completed: true }); assert.equal(await next, true);
+});
+
+test('a published room follows the composition clip modes per phase and has no player-side mode control', async t => {
+  const entry = { operator: 'north', roomId: 'room-astrid', packageRevision: 4 };
+  const modes = { idle: 'rules', deal: 'random', reveal: 'off', speak: 'active', probe: 'off' };
+  const f = await controllerFixture(t, { entry, openclaw: modes });
+  assert.equal(f.receipts[0].mode, 'rules'); assert.equal(f.receipts[0].modeSource, 'composition');
+  const host = f.elements.find(el => el.appended.some(child => child.className === 'local-presentation-status'));
+  assert.equal(host.appended.some(child => child.className === 'local-presentation-mode'), false, 'the published player has no clip-mode control');
+  const result = f.controller.present(source); await new Promise(resolve => setImmediate(resolve));
+  const select = f.requests.find(row => new URL(row.url, 'https://game.invalid').pathname === '/api/presentation/select');
+  assert.equal(JSON.parse(select.options.body).mode, 'random', 'deal selection uses the composition deal mode');
+  assert.deepEqual(JSON.parse(select.options.body).presentationContext, { operatorSlug: 'north', roomId: 'room-astrid', packageRevision: 4, dealerId: 'astrid' });
+  f.jobs[0].options.onReceipt({ state: 'start' }); f.jobs[0].options.onReceipt({ state: 'presented' }); f.jobs[0].options.onReceipt({ state: 'end' });
+  f.jobs[0].resolve({ completed: true }); assert.equal(await result, true);
+  assert.equal(f.receipts.find(row => row.event === 'deal' && row.state === 'selected').mode, 'random');
+});
+
+test('Studio rehearsal without a published room keeps its local clip-mode control', async t => {
+  const local = await controllerFixture(t, { defaultMode: 'off' });
+  const localHost = local.elements.find(el => el.appended.some(child => child.className === 'local-presentation-status'));
+  assert.equal(localHost.appended.some(child => child.className === 'local-presentation-mode'), true);
+  assert.equal(local.receipts[0].modeSource, undefined);
 });
 
 test('a film error keeps the selection correlation when reporting a 2D fallback, never an end receipt', async t => {
@@ -1096,10 +1120,12 @@ test('frozen event selection uses only the published own-dealer snapshot and com
   const record={id,dealer:'linnea',fileName:'own-box3.mp4',sha256:'e'.repeat(64),available:true,
     classification:{dealerId:'linnea',eventId:'deal.player.centre',kind:'action',role:'standard',situation:'box3',playback:'once',label:'Linnea box3',notes:''}};
   const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:9,dealerId:'linnea'};
-  const frozen={project,inventory:{videos:[record],families:[]},projectRevision:'frozen-events',configurationSource:'operator-package-v3'};
-  let reads=0;
+  const frozen={project,inventory:{videos:[record],families:[]},projectRevision:'frozen-events',configurationSource:'operator-package-v3',
+    lane:{openclaw:{idle:'off',deal:'random',reveal:'off',speak:'off',probe:'off'}}};
+  let reads=0;const selectedModes=[];
   const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
     store:{load:async()=>{throw Error('live Studio must not be read');}},registryLoader:async()=>{throw Error('live inventory must not be read');},
+    select:async(body,options)=>{selectedModes.push(body.mode);return selectPresentation(body,options);},
     frozenDealerContext:{resolve:async supplied=>{assert.deepEqual(supplied,context);reads++;return frozen;},
       publicVideo:(_frozen,mediaId)=>mediaId===id?{id,sha256:record.sha256,fileName:record.fileName,src:'/api/presentation/registered-video/north/room-linnea/9/linnea/'+id}:null}});
   const response=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'linnea',version:2,mode:'off',
@@ -1109,10 +1135,39 @@ test('frozen event selection uses only the published own-dealer snapshot and com
   assert.equal(response.body.video.id,id);assert.equal(response.body.standard.id,id);
   assert.match(response.body.video.src,/registered-video\/north\/room-linnea\/9\/linnea\//);
   assert.equal(response.body.configurationSource,'operator-package-v3');assert.equal(reads,2);
+  assert.deepEqual(selectedModes,['random','off'],'the saved composition deal mode overrides the request mode, with the exact standard as fallback');
   const absent=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'linnea',version:2,mode:'off',
     event:{type:'speak',line:'goodluck'},presentationContext:context});
   assert.equal(absent.status,200);assert.equal(absent.body.video,null);assert.equal(absent.body.standard,null);
   assert.equal(absent.body.decision.media.reason,'frozen_clip_missing');
+});
+
+test('published selection modes come from the composition lane and fail closed without one', async () => {
+  const { publishedSelectionMode } = await import('../services/game/shared-room-presentation-selection.mjs');
+  const lane = { openclaw: { idle: 'rules', deal: 'random', reveal: 'off', speak: 'active', probe: 'off' } };
+  assert.equal(publishedSelectionMode(lane, { type: 'deal' }, 'active'), 'random');
+  assert.equal(publishedSelectionMode(lane, { type: 'speak' }, 'off'), 'active');
+  assert.equal(publishedSelectionMode(lane, { type: 'reveal' }, 'active'), 'off');
+  assert.equal(publishedSelectionMode(lane, { type: 'turn' }, 'active'), 'rules', 'turn and settle are idle conditions');
+  assert.equal(publishedSelectionMode({ openclaw: { deal: 'bogus' } }, { type: 'deal' }, 'active'), 'active', 'the caller decides the fallback');
+  assert.equal(publishedSelectionMode({ openclaw: { deal: 'bogus' } }, { type: 'deal' }), 'off');
+  assert.equal(publishedSelectionMode(undefined, { type: 'deal' }), 'off');
+  assert.equal(publishedSelectionMode(null, { type: 'idle' }), 'off');
+});
+
+test('idle advice for a published room is refused when the composition keeps OpenClaw off for idle', async () => {
+  const project = addDealer(directorProject(), 'linnea', 'Linnea');
+  const context = { operatorSlug: 'north', roomId: 'room-linnea', packageRevision: 7, dealerId: 'linnea' };
+  let advised = 0;
+  const handler = createPresentationApi({ env: {}, store: { load: async () => { throw Error('live Studio must not be read'); } },
+    registryLoader: async () => { advised++; return { videos: [], families: [] }; },
+    frozenDealerContext: { resolve: async () => ({ project, inventory: { videos: [], families: [] }, idleInventory: { videos: [], families: [] }, context,
+      projectRevision: 'frozen-idle', configurationSource: 'operator-package-v3', lane: { openclaw: { idle: 'off', deal: 'active', reveal: 'off', speak: 'off', probe: 'off' } } }), publicVideo: () => null } });
+  const response = await presentationFixtureRequest(handler, 'fixture', { requestId: 'advice-1', dealerId: 'linnea', mode: 'active', version: 2, project: {},
+    sourceRef: {}, observedChat: {}, presentationContext: context }, '/api/presentation/idle-advice');
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  assert.deepEqual(response.body, { videoId: null, provider: 'idle_openclaw_off', projectRevision: 'frozen-idle' });
+  assert.equal(advised, 0, 'no adviser or registry work for a room that keeps OpenClaw off');
 });
 
 test('an own dealer with only idle resumes that same film behind a missing card-position animation', async t=>{
@@ -1158,7 +1213,9 @@ test('own OpenClaw idle advice forwards the exact package context and plays only
     variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null}]};
   const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'d':'c').repeat(64),src:'/frozen/'+id}));
   const customInventory={videos,families:[{id:familyId,dealerId:'linnea',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
-  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy,customInventory,defaultMode:'active',
+  // A published room takes OpenClaw idle advice from the composition's saved idle mode, never from a client default.
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy,customInventory,defaultMode:'off',
+    openclaw:{idle:'active',deal:'off',reveal:'off',speak:'off',probe:'off'},
     entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
   const original=globalThis.fetch;let adviceBody;
   globalThis.fetch=async(url,options)=>url==='/api/presentation/idle-advice'
@@ -1196,7 +1253,7 @@ test('own idle advice binds cached decisions and director rereads to each curren
   const handler=createPresentationApi({env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
     store:{load:async()=>{throw Error('live project must not be read');}},registryLoader:async()=>{throw Error('live registry must not be read');},
     frozenDealerContext:{resolve:async context=>{reads++;if(revoked)throw Object.assign(Error('republished'),{statusCode:409,code:'studio_presentation_idle_package_changed'});
-      return {project:structuredClone(project),context,idleInventory,configurationSource:'operator-package-v3'};}},
+      return {project:structuredClone(project),context,idleInventory,configurationSource:'operator-package-v3',lane:{openclaw:{idle:'active',deal:'off',reveal:'off',speak:'off',probe:'off'}}};}},
     directorFetchFactory:async context=>{
       assert.deepEqual(await context.readProject(),context.project);
       const owned=async (_url,options)=>{calls++;const projected=JSON.parse(options.body);
@@ -1279,7 +1336,7 @@ test('saved idle rules cross the API with committed event and exact package owne
   const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
   let published=source;
   const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
-    frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}});
+    frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3',lane:{openclaw:{idle:'rules',deal:'off',reveal:'off',speak:'off',probe:'off'}}}),publicVideo:()=>null}});
   const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'linnea',mode:'rules',version:2,event:source,presentationContext:context});
   assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.idleRule.videoId,alt);
   assert.equal(response.body.idleRule.requestId,response.body.decision.requestId);assert.equal(response.body.idleRule.version,2);
@@ -1292,7 +1349,7 @@ test('saved idle rules cross the API with committed event and exact package owne
       ?{path:'event.box',op:'eq',value:3}:{path:'event.hands.outcome',op:'includes',value:'win'});
     const api=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory,
       db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([published])})})},
-      ...(frozen?{frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}}:{})});
+      ...(frozen?{frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3',lane:{openclaw:{idle:'rules',deal:'off',reveal:'off',speak:'off',probe:'off'}}}),publicVideo:()=>null}}:{})});
     const body={dealerId:'linnea',mode:'rules',version:2,event:{...published,dealerTotal:99,hands:[{box:3,outcome:'lose'}]},...(frozen?{presentationContext:context}:{})};
     const observed=await presentationFixtureRequest(api,'fixture',body);
     assert.equal(observed.status,200,JSON.stringify(observed.body));assert.equal(observed.body.idleRule.videoId,alt);
@@ -1367,4 +1424,69 @@ test('new unreviewed speech metadata never reaches the live media player', async
   const f=await controllerFixture(t,{selectedVideo:{id:'unreviewed',sha256:'a'.repeat(64),recordedSpeech:{review:{status:'pending'}}}});
   assert.equal(await f.controller.present({type:'speak',line:'goodluck'}),false);
   assert.equal(f.jobs.length,0);assert.match(f.status.textContent,/granskning eller identitet/);
+});
+
+
+for(const late of ['response','json'])test('aborted rule observation cannot offer stale idle after '+late,async t=>{
+  const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='linnea/idle.ready/ready';
+  const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]};
+  const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
+  const inventory={videos,families:[{id:familyId,dealerId:'linnea',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true});
+  const original=globalThis.fetch,connection=new AbortController();let release,entered;
+  const gate=new Promise(resolve=>{release=resolve;}),started=new Promise(resolve=>{entered=resolve;});
+  globalThis.fetch=async(url,options)=>{
+    const response=await original(url,options);if(url!=='/api/presentation/select')return response;
+    assert.equal(options.signal,connection.signal);
+    const result=await response.json(),body=JSON.parse(options.body);
+    const value={...result,idleRule:{videoId:alt,requestId:result.decision.requestId,mode:'rules',version:body.version,presentationContext:null,expiresAt:new Date(Date.now()+30000).toISOString()}};
+    if(late==='response'){entered();await gate;return Response.json(value);}
+    return{ok:true,json:async()=>{entered();await gate;return value;}};
+  };
+  const control=f.elements.find(row=>row.className==='local-presentation-mode');control.value='rules';control.onchange();
+  f.controller.state({action:true});const observing=f.controller.observeEvents([{type:'turn',box:3,handIndex:0}],{signal:connection.signal});
+  await started;connection.abort();release();await observing;f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+  const current=f.jobs.at(-1);current.options.onReceipt({state:'start'});current.options.onReceipt({state:'presented'});current.resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.at(-1).take.media.src,videos[0].src,'cancelled optional rule never replaces the saved baseline');
+  f.controller.close();globalThis.fetch=original;
+});
+
+
+test('shared media progress covers long before and after transitions without moving the main card cursor',async t=>{
+  const before={id:'to-long',sha256:'1'.repeat(64),fileName:'to-long.mp4'},after={id:'from-long',sha256:'2'.repeat(64),fileName:'from-long.mp4'};
+  let ports;t.after(()=>ports?.close());
+  const f=await controllerFixture(t,{transitions:{before,after}});t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const progress=[],frames=[],selections=[];
+  const media={...f.controller,present:(event,options)=>f.controller.present(event,{...options,onProgress:value=>{progress.push(value);options.onProgress?.(value);}})};
+  const cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){},begin(video){selections.push(video.id);return 1;},frame(_token,time){frames.push(time);},finish(){}};
+  ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});
+  const connection=new AbortController(),state={roomId:'long-transitions',roundId:'round-a',round:null,presentationVer:1,players:[],me:{id:'alice'},serverNow:1000};
+  ports.restoreSnapshot(state,{signal:connection.signal});ports.restoreSnapshot({...state,presentationVer:2},{signal:connection.signal});
+  const jobStart=f.jobs.length; // Snapshot restoration may have started an idle that present() cancels.
+  const result=ports.present({roomId:state.roomId,ver:2,talkId:'long-transition-plan',kind:'plan',endAt:300000,events:[source]},{signal:connection.signal});result.catch(()=>{});
+  await new Promise(resolve=>setImmediate(resolve));
+  for(let second=5;second<=45;second+=5){t.mock.timers.tick(5000);f.jobs[jobStart].options.onFrame?.(second);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs[jobStart].options.signal.aborted,false,'a progressing before transition stays live');}
+  assert.deepEqual(selections,[]);assert.deepEqual(frames,[]);f.jobs[jobStart].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,jobStart+2);f.jobs[jobStart+1].options.onFrame(.4);assert.deepEqual(frames,[.4]);assert.equal(selections.length,1);
+  f.jobs[jobStart+1].resolve();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,jobStart+3);
+  for(let second=5;second<=45;second+=5){t.mock.timers.tick(5000);f.jobs[jobStart+2].options.onFrame?.(second);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs[jobStart+2].options.signal.aborted,false,'a progressing after transition stays live');}
+  assert.deepEqual(frames,[.4]);assert.equal(selections.length,1);f.jobs[jobStart+2].resolve();await result;
+  assert.deepEqual([...new Set(progress.map(row=>row.clip))],[1,2,3]);
+  for(const clip of [1,2,3])assert.deepEqual(progress.filter(row=>row.clip===clip&&row.phase!=='frame').map(row=>row.phase),['prepare','play','complete']);
+});
+
+
+test('repeated frozen transition frames cannot renew shared playback liveness or reach the card film',async t=>{
+  const before={id:'frozen-before',sha256:'1'.repeat(64),fileName:'frozen-before.mp4'};
+  let ports;t.after(()=>ports?.close());
+  const f=await controllerFixture(t,{transitions:{before}});t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const cards=Object.fromEntries(['restore','sync','clear','show','reveal','close'].map(key=>[key,()=>{}]));
+  ports=createSharedRoomPresentationPorts({media:f.controller,cards,clock:Date.now});
+  const signal=new AbortController().signal,state={roomId:'frozen-transition',roundId:'round-a',round:null,presentationVer:1,players:[],me:{id:'alice'},serverNow:1000};
+  ports.restoreSnapshot(state,{signal});ports.restoreSnapshot({...state,presentationVer:2},{signal});
+  const jobStart=f.jobs.length;
+  const pending=assert.rejects(ports.present({roomId:state.roomId,ver:2,talkId:'frozen-plan',kind:'plan',endAt:300000,events:[source]},{signal}),error=>error.rendererTimeout===true);
+  await new Promise(resolve=>setImmediate(resolve));f.jobs[jobStart].options.onFrame(0);
+  for(let i=0;i<5;i++){t.mock.timers.tick(5000);f.jobs[jobStart].options.onFrame(0);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,jobStart+1);}
+  t.mock.timers.tick(5000);await pending;assert.equal(f.jobs[jobStart].options.signal.aborted,true);assert.equal(f.jobs.length,jobStart+1);
 });

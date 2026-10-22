@@ -1,0 +1,1779 @@
+{
+ "startbild": "/media/startbild.png",
+ "format": "1080x1920, 24 fps, H.264 BT.709 — alla klipp börjar och slutar exakt i startbilden",
+ "rost": {
+  "leverantor": "Cartesia sonic-3.5",
+  "namn": "Freja – Informative Host (svensk brytning)",
+  "id": "bcdcad6d-4eb6-4a71-89fd-1ae2ce9f95d8"
+ },
+ "idle": [
+  {
+   "id": "still",
+   "url": "/media/idle/still.mp4",
+   "vikt": 40,
+   "beskrivning": "stilla, andas",
+   "dur": 3.04
+  },
+  {
+   "id": "breath",
+   "url": "/media/idle/breath.mp4",
+   "vikt": 14,
+   "beskrivning": "djupare andetag",
+   "dur": 3.04
+  },
+  {
+   "id": "glance",
+   "url": "/media/idle/glance.mp4",
+   "vikt": 12,
+   "beskrivning": "blicken åt sidan",
+   "dur": 3.04
+  },
+  {
+   "id": "cheek",
+   "url": "/media/idle/cheek.mp4",
+   "vikt": 3,
+   "beskrivning": "handen till kinden",
+   "dur": 3.04
+  },
+  {
+   "id": "insulted",
+   "url": "/media/idle/insulted.mp4",
+   "vikt": 1,
+   "beskrivning": "kort förnärmad min",
+   "dur": 3.04
+  }
+ ],
+ "repliker": [
+  {
+   "id": "greeting_1",
+   "event": "greeting",
+   "url": "/media/repliker/greeting_1.mp4",
+   "text": "Good evening, and welcome to the table. I'm Astrid, take any seat you like.",
+   "handelse": "spelaren kommer in",
+   "dur": 5.21
+  },
+  {
+   "id": "greeting_2",
+   "event": "greeting",
+   "url": "/media/repliker/greeting_2.mp4",
+   "text": "Welcome in. Pull up a chair, the cards are fresh and the table is yours.",
+   "handelse": "spelaren kommer in",
+   "dur": 5.54
+  },
+  {
+   "id": "greeting_3",
+   "event": "greeting",
+   "url": "/media/repliker/greeting_3.mp4",
+   "text": "A new face at the table. Welcome, I'm Astrid, and I'll be dealing for you tonight.",
+   "handelse": "spelaren kommer in",
+   "dur": 5.29
+  },
+  {
+   "id": "placebets_1",
+   "event": "placebets",
+   "url": "/media/repliker/placebets_1.mp4",
+   "text": "Bets are open. Place your chips whenever you're ready.",
+   "handelse": "ny runda, insatser öppna",
+   "dur": 3.71
+  },
+  {
+   "id": "placebets_2",
+   "event": "placebets",
+   "url": "/media/repliker/placebets_2.mp4",
+   "text": "New round, fresh cards. The betting circle is all yours.",
+   "handelse": "ny runda, insatser öppna",
+   "dur": 4.75
+  },
+  {
+   "id": "placebets_3",
+   "event": "placebets",
+   "url": "/media/repliker/placebets_3.mp4",
+   "text": "The table is open. Take your time, and place your bets.",
+   "handelse": "ny runda, insatser öppna",
+   "dur": 4.58
+  },
+  {
+   "id": "goodluck_1",
+   "event": "goodluck",
+   "url": "/media/repliker/goodluck_1.mp4",
+   "text": "No more bets. Here come the cards.",
+   "handelse": "insatserna stängs",
+   "dur": 3.38
+  },
+  {
+   "id": "goodluck_2",
+   "event": "goodluck",
+   "url": "/media/repliker/goodluck_2.mp4",
+   "text": "Bets are closed. Good luck, everyone.",
+   "handelse": "insatserna stängs",
+   "dur": 3.38
+  },
+  {
+   "id": "goodluck_3",
+   "event": "goodluck",
+   "url": "/media/repliker/goodluck_3.mp4",
+   "text": "That's all the bets. Let's see what the shoe has for us.",
+   "handelse": "insatserna stängs",
+   "dur": 3.75
+  },
+  {
+   "id": "sidebet_1",
+   "event": "sidebet",
+   "url": "/media/repliker/sidebet_1.mp4",
+   "text": "Your side bet comes in. That one pays straight away.",
+   "handelse": "en sidobet vinner",
+   "dur": 4.0
+  },
+  {
+   "id": "sidebet_2",
+   "event": "sidebet",
+   "url": "/media/repliker/sidebet_2.mp4",
+   "text": "Side bet's a winner. Nice way to start the hand.",
+   "handelse": "en sidobet vinner",
+   "dur": 3.75
+  },
+  {
+   "id": "sidebet_3",
+   "event": "sidebet",
+   "url": "/media/repliker/sidebet_3.mp4",
+   "text": "And the side bet lands. Paid before we've even begun.",
+   "handelse": "en sidobet vinner",
+   "dur": 4.08
+  },
+  {
+   "id": "insurance_1",
+   "event": "insurance",
+   "url": "/media/repliker/insurance_1.mp4",
+   "text": "Ace showing. Would anyone like insurance?",
+   "handelse": "försäkring erbjuds",
+   "dur": 3.21
+  },
+  {
+   "id": "insurance_2",
+   "event": "insurance",
+   "url": "/media/repliker/insurance_2.mp4",
+   "text": "I have an ace. Insurance is open, and it pays two to one.",
+   "handelse": "försäkring erbjuds",
+   "dur": 4.58
+  },
+  {
+   "id": "insurance_3",
+   "event": "insurance",
+   "url": "/media/repliker/insurance_3.mp4",
+   "text": "Ace up, so insurance is on offer. Entirely your call.",
+   "handelse": "försäkring erbjuds",
+   "dur": 4.67
+  },
+  {
+   "id": "double_1",
+   "event": "double",
+   "url": "/media/repliker/double_1.mp4",
+   "text": "Doubling down. One card, and one card only.",
+   "handelse": "spelaren dubblar",
+   "dur": 4.17
+  },
+  {
+   "id": "double_2",
+   "event": "double",
+   "url": "/media/repliker/double_2.mp4",
+   "text": "Double it is. Here's your one card.",
+   "handelse": "spelaren dubblar",
+   "dur": 2.88
+  },
+  {
+   "id": "double_3",
+   "event": "double",
+   "url": "/media/repliker/double_3.mp4",
+   "text": "Doubled. One card to settle it.",
+   "handelse": "spelaren dubblar",
+   "dur": 3.29
+  },
+  {
+   "id": "bust_1",
+   "event": "bust",
+   "url": "/media/repliker/bust_1.mp4",
+   "text": "Over twenty-one, I'm afraid. That hand is done.",
+   "handelse": "spelarens hand över 21",
+   "dur": 4.25
+  },
+  {
+   "id": "bust_2",
+   "event": "bust",
+   "url": "/media/repliker/bust_2.mp4",
+   "text": "That's a bust. Unlucky card.",
+   "handelse": "spelarens hand över 21",
+   "dur": 3.29
+  },
+  {
+   "id": "bust_3",
+   "event": "bust",
+   "url": "/media/repliker/bust_3.mp4",
+   "text": "Too many, I'm sorry. That one goes to the house.",
+   "handelse": "spelarens hand över 21",
+   "dur": 3.46
+  },
+  {
+   "id": "blackjack_1",
+   "event": "blackjack",
+   "url": "/media/repliker/blackjack_1.mp4",
+   "text": "Blackjack! Beautifully done. That pays three to two.",
+   "handelse": "spelaren får blackjack och vinner",
+   "dur": 4.5
+  },
+  {
+   "id": "blackjack_2",
+   "event": "blackjack",
+   "url": "/media/repliker/blackjack_2.mp4",
+   "text": "Blackjack, straight off the deal. Paid three to two.",
+   "handelse": "spelaren får blackjack och vinner",
+   "dur": 4.0
+  },
+  {
+   "id": "blackjack_3",
+   "event": "blackjack",
+   "url": "/media/repliker/blackjack_3.mp4",
+   "text": "Now that's how you open a hand. Blackjack, three to two.",
+   "handelse": "spelaren får blackjack och vinner",
+   "dur": 4.42
+  },
+  {
+   "id": "dealerblackjack_1",
+   "event": "dealerblackjack",
+   "url": "/media/repliker/dealerblackjack_1.mp4",
+   "text": "Dealer has blackjack. I'm sorry, everyone.",
+   "handelse": "dealern har blackjack",
+   "dur": 3.75
+  },
+  {
+   "id": "dealerblackjack_2",
+   "event": "dealerblackjack",
+   "url": "/media/repliker/dealerblackjack_2.mp4",
+   "text": "Blackjack for the house this time. It happens to the best of us.",
+   "handelse": "dealern har blackjack",
+   "dur": 4.5
+  },
+  {
+   "id": "dealerblackjack_3",
+   "event": "dealerblackjack",
+   "url": "/media/repliker/dealerblackjack_3.mp4",
+   "text": "I'm afraid it's blackjack for me. That round goes to the house.",
+   "handelse": "dealern har blackjack",
+   "dur": 4.5
+  },
+  {
+   "id": "dealerbust_1",
+   "event": "dealerbust",
+   "url": "/media/repliker/dealerbust_1.mp4",
+   "text": "Dealer busts! Everyone still in the hand gets paid.",
+   "handelse": "dealern över 21",
+   "dur": 4.25
+  },
+  {
+   "id": "dealerbust_2",
+   "event": "dealerbust",
+   "url": "/media/repliker/dealerbust_2.mp4",
+   "text": "Too many for me. The house busts. Congratulations, table.",
+   "handelse": "dealern över 21",
+   "dur": 4.88
+  },
+  {
+   "id": "dealerbust_3",
+   "event": "dealerbust",
+   "url": "/media/repliker/dealerbust_3.mp4",
+   "text": "And that's over twenty-one for the dealer. Winners all round.",
+   "handelse": "dealern över 21",
+   "dur": 4.17
+  },
+  {
+   "id": "win_1",
+   "event": "win",
+   "url": "/media/repliker/win_1.mp4",
+   "text": "Well played. That hand is yours.",
+   "handelse": "spelare vinner",
+   "dur": 3.29
+  },
+  {
+   "id": "win_2",
+   "event": "win",
+   "url": "/media/repliker/win_2.mp4",
+   "text": "You beat me on that one. Congratulations.",
+   "handelse": "spelare vinner",
+   "dur": 3.29
+  },
+  {
+   "id": "win_3",
+   "event": "win",
+   "url": "/media/repliker/win_3.mp4",
+   "text": "A winning hand. Paid in full.",
+   "handelse": "spelare vinner",
+   "dur": 3.46
+  },
+  {
+   "id": "push_1",
+   "event": "push",
+   "url": "/media/repliker/push_1.mp4",
+   "text": "Same total. It's a push, your stake stays with you.",
+   "handelse": "oavgjort",
+   "dur": 4.67
+  },
+  {
+   "id": "push_2",
+   "event": "push",
+   "url": "/media/repliker/push_2.mp4",
+   "text": "We're level. A push, nobody wins and nobody loses.",
+   "handelse": "oavgjort",
+   "dur": 4.33
+  },
+  {
+   "id": "push_3",
+   "event": "push",
+   "url": "/media/repliker/push_3.mp4",
+   "text": "Push. Your bet comes back.",
+   "handelse": "oavgjort",
+   "dur": 3.12
+  },
+  {
+   "id": "lose_1",
+   "event": "lose",
+   "url": "/media/repliker/lose_1.mp4",
+   "text": "Dealer wins. That one goes to the house.",
+   "handelse": "spelaren förlorar",
+   "dur": 3.38
+  },
+  {
+   "id": "lose_2",
+   "event": "lose",
+   "url": "/media/repliker/lose_2.mp4",
+   "text": "Not this time, I'm afraid. The house holds.",
+   "handelse": "spelaren förlorar",
+   "dur": 3.71
+  },
+  {
+   "id": "lose_3",
+   "event": "lose",
+   "url": "/media/repliker/lose_3.mp4",
+   "text": "Close, but the house has it this round.",
+   "handelse": "spelaren förlorar",
+   "dur": 3.38
+  },
+  {
+   "id": "peek_1",
+   "event": "peek",
+   "url": "/media/repliker/peek_1.mp4",
+   "text": "One moment while I check for blackjack.",
+   "handelse": null,
+   "dur": 3.29
+  },
+  {
+   "id": "peek_2",
+   "event": "peek",
+   "url": "/media/repliker/peek_2.mp4",
+   "text": "Dealer checks for blackjack.",
+   "handelse": null,
+   "dur": 2.5
+  },
+  {
+   "id": "peek_3",
+   "event": "peek",
+   "url": "/media/repliker/peek_3.mp4",
+   "text": "Checking for blackjack. Nothing up my sleeve.",
+   "handelse": null,
+   "dur": 3.75
+  },
+  {
+   "id": "farewell_1",
+   "event": "farewell",
+   "url": "/media/repliker/farewell_1.mp4",
+   "text": "Thank you for playing. It was a pleasure dealing for you.",
+   "handelse": null,
+   "dur": 3.75
+  },
+  {
+   "id": "farewell_2",
+   "event": "farewell",
+   "url": "/media/repliker/farewell_2.mp4",
+   "text": "All done for tonight? Thank you, it was lovely having you at the table.",
+   "handelse": null,
+   "dur": 4.67
+  },
+  {
+   "id": "farewell_3",
+   "event": "farewell",
+   "url": "/media/repliker/farewell_3.mp4",
+   "text": "Good night, and thank you for the company at my table.",
+   "handelse": null,
+   "dur": 3.62
+  },
+  {
+   "id": "chatter1_1",
+   "event": "chatter1",
+   "url": "/media/repliker/chatter1_1.mp4",
+   "text": "Quiet night at the table. Those are my favourite.",
+   "handelse": null,
+   "dur": 3.54
+  },
+  {
+   "id": "chatter1_2",
+   "event": "chatter1",
+   "url": "/media/repliker/chatter1_2.mp4",
+   "text": "Eight decks, shuffled fresh every round. Every hand starts from nothing.",
+   "handelse": null,
+   "dur": 5.75
+  },
+  {
+   "id": "chatter1_3",
+   "event": "chatter1",
+   "url": "/media/repliker/chatter1_3.mp4",
+   "text": "I've dealt a lot of hands at this table. No two ever play out the same.",
+   "handelse": null,
+   "dur": 5.29
+  },
+  {
+   "id": "chatter2_1",
+   "event": "chatter2",
+   "url": "/media/repliker/chatter2_1.mp4",
+   "text": "Take your time. The cards aren't going anywhere.",
+   "handelse": null,
+   "dur": 3.62
+  },
+  {
+   "id": "chatter2_2",
+   "event": "chatter2",
+   "url": "/media/repliker/chatter2_2.mp4",
+   "text": "No rush at all. Think it over.",
+   "handelse": null,
+   "dur": 3.04
+  },
+  {
+   "id": "chatter2_3",
+   "event": "chatter2",
+   "url": "/media/repliker/chatter2_3.mp4",
+   "text": "Whenever you're ready. The decision is yours.",
+   "handelse": null,
+   "dur": 3.54
+  }
+ ],
+ "deal": [
+  {
+   "id": "deal_pos1",
+   "url": "/media/deal/pos1.mp4",
+   "beskrivning": "kort till spelare 1",
+   "kort": {
+    "cx": 110,
+    "cy": 1025
+   },
+   "dur": 3.5
+  },
+  {
+   "id": "deal_pos2",
+   "url": "/media/deal/pos2.mp4",
+   "beskrivning": "kort till spelare 2",
+   "kort": {
+    "cx": 253,
+    "cy": 1075
+   },
+   "dur": 3.33
+  },
+  {
+   "id": "deal_pos3",
+   "url": "/media/deal/pos3.mp4",
+   "beskrivning": "kort till spelare 3",
+   "kort": {
+    "cx": 396,
+    "cy": 1105
+   },
+   "dur": 3.38
+  },
+  {
+   "id": "deal_pos4",
+   "url": "/media/deal/pos4.mp4",
+   "beskrivning": "kort till spelare 4",
+   "kort": {
+    "cx": 540,
+    "cy": 1115
+   },
+   "dur": 3.29
+  },
+  {
+   "id": "deal_pos5",
+   "url": "/media/deal/pos5.mp4",
+   "beskrivning": "kort till spelare 5",
+   "kort": {
+    "cx": 684,
+    "cy": 1105
+   },
+   "dur": 3.08
+  },
+  {
+   "id": "deal_pos6",
+   "url": "/media/deal/pos6.mp4",
+   "beskrivning": "kort till spelare 6",
+   "kort": {
+    "cx": 827,
+    "cy": 1075
+   },
+   "dur": 3.12
+  },
+  {
+   "id": "deal_pos7",
+   "url": "/media/deal/pos7.mp4",
+   "beskrivning": "kort till spelare 7",
+   "kort": {
+    "cx": 970,
+    "cy": 1025
+   },
+   "dur": 3.38
+  },
+  {
+   "id": "deal_posdealer",
+   "url": "/media/deal/posdealer.mp4",
+   "beskrivning": "dealerns eget kort",
+   "kort": {
+    "cx": 540,
+    "cy": 895
+   },
+   "dur": 2.71
+  },
+  {
+   "id": "deal_hole",
+   "url": "/media/deal/hole.mp4",
+   "beskrivning": "dealerns dolda kort, baksidan upp",
+   "kort": {
+    "cx": 540,
+    "cy": 895
+   },
+   "dur": 2.79
+  },
+  {
+   "id": "deal_flip",
+   "url": "/media/deal/flip.mp4",
+   "beskrivning": "dealern vänder sitt dolda kort",
+   "kort": {
+    "cx": 540,
+    "cy": 895
+   },
+   "dur": 2.33
+  }
+ ],
+ "kort_storlek": {
+  "bredd": 63,
+  "hojd": 85
+ },
+ "handelser": {
+  "greeting": {
+   "handelse": "spelaren kommer in",
+   "varianter": [
+    "greeting_1",
+    "greeting_2",
+    "greeting_3"
+   ]
+  },
+  "placebets": {
+   "handelse": "ny runda, insatser öppna",
+   "varianter": [
+    "placebets_1",
+    "placebets_2",
+    "placebets_3"
+   ]
+  },
+  "goodluck": {
+   "handelse": "insatserna stängs",
+   "varianter": [
+    "goodluck_1",
+    "goodluck_2",
+    "goodluck_3"
+   ]
+  },
+  "sidebet": {
+   "handelse": "en sidobet vinner",
+   "varianter": [
+    "sidebet_1",
+    "sidebet_2",
+    "sidebet_3"
+   ]
+  },
+  "insurance": {
+   "handelse": "försäkring erbjuds",
+   "varianter": [
+    "insurance_1",
+    "insurance_2",
+    "insurance_3"
+   ]
+  },
+  "double": {
+   "handelse": "spelaren dubblar",
+   "varianter": [
+    "double_1",
+    "double_2",
+    "double_3"
+   ]
+  },
+  "bust": {
+   "handelse": "spelarens hand över 21",
+   "varianter": [
+    "bust_1",
+    "bust_2",
+    "bust_3"
+   ]
+  },
+  "blackjack": {
+   "handelse": "spelaren får blackjack och vinner",
+   "varianter": [
+    "blackjack_1",
+    "blackjack_2",
+    "blackjack_3"
+   ]
+  },
+  "dealerblackjack": {
+   "handelse": "dealern har blackjack",
+   "varianter": [
+    "dealerblackjack_1",
+    "dealerblackjack_2",
+    "dealerblackjack_3"
+   ]
+  },
+  "dealerbust": {
+   "handelse": "dealern över 21",
+   "varianter": [
+    "dealerbust_1",
+    "dealerbust_2",
+    "dealerbust_3"
+   ]
+  },
+  "win": {
+   "handelse": "spelare vinner",
+   "varianter": [
+    "win_1",
+    "win_2",
+    "win_3"
+   ]
+  },
+  "push": {
+   "handelse": "oavgjort",
+   "varianter": [
+    "push_1",
+    "push_2",
+    "push_3"
+   ]
+  },
+  "lose": {
+   "handelse": "spelaren förlorar",
+   "varianter": [
+    "lose_1",
+    "lose_2",
+    "lose_3"
+   ]
+  },
+  "peek": {
+   "handelse": null,
+   "varianter": [
+    "peek_1",
+    "peek_2",
+    "peek_3"
+   ]
+  },
+  "farewell": {
+   "handelse": null,
+   "varianter": [
+    "farewell_1",
+    "farewell_2",
+    "farewell_3"
+   ]
+  },
+  "chatter1": {
+   "handelse": null,
+   "varianter": [
+    "chatter1_1",
+    "chatter1_2",
+    "chatter1_3"
+   ]
+  },
+  "chatter2": {
+   "handelse": null,
+   "varianter": [
+    "chatter2_1",
+    "chatter2_2",
+    "chatter2_3"
+   ]
+  }
+ },
+ "repliker_sprak": {
+  "es": [
+   {
+    "id": "greeting_1",
+    "event": "greeting",
+    "url": "/media/repliker-es/greeting_1_es.mp4",
+    "text": "Buenas noches y bienvenido a la mesa. Soy Astrid, siéntese donde prefiera.",
+    "dur": 6.42
+   },
+   {
+    "id": "greeting_2",
+    "event": "greeting",
+    "url": "/media/repliker-es/greeting_2_es.mp4",
+    "text": "Adelante, bienvenido. Tome asiento: las cartas están recién barajadas y la mesa es toda suya.",
+    "dur": 9.21
+   },
+   {
+    "id": "greeting_3",
+    "event": "greeting",
+    "url": "/media/repliker-es/greeting_3_es.mp4",
+    "text": "Una cara nueva en la mesa. Bienvenido, soy Astrid y esta noche seré su crupier.",
+    "dur": 7.04
+   },
+   {
+    "id": "placebets_1",
+    "event": "placebets",
+    "url": "/media/repliker-es/placebets_1_es.mp4",
+    "text": "Se abren las apuestas. Coloquen sus fichas cuando quieran.",
+    "dur": 5.21
+   },
+   {
+    "id": "placebets_2",
+    "event": "placebets",
+    "url": "/media/repliker-es/placebets_2_es.mp4",
+    "text": "Nueva ronda, cartas nuevas. La casilla de apuestas es toda suya.",
+    "dur": 7.46
+   },
+   {
+    "id": "placebets_3",
+    "event": "placebets",
+    "url": "/media/repliker-es/placebets_3_es.mp4",
+    "text": "La mesa está abierta. Tómense su tiempo y hagan sus apuestas.",
+    "dur": 6.25
+   },
+   {
+    "id": "goodluck_1",
+    "event": "goodluck",
+    "url": "/media/repliker-es/goodluck_1_es.mp4",
+    "text": "No va más. Allá van las cartas.",
+    "dur": 3.83
+   },
+   {
+    "id": "goodluck_2",
+    "event": "goodluck",
+    "url": "/media/repliker-es/goodluck_2_es.mp4",
+    "text": "Apuestas cerradas. Mucha suerte a todos.",
+    "dur": 4.75
+   },
+   {
+    "id": "goodluck_3",
+    "event": "goodluck",
+    "url": "/media/repliker-es/goodluck_3_es.mp4",
+    "text": "No va más. Veamos qué nos trae el sabot.",
+    "dur": 5.12
+   },
+   {
+    "id": "sidebet_1",
+    "event": "sidebet",
+    "url": "/media/repliker-es/sidebet_1_es.mp4",
+    "text": "Su apuesta lateral ha entrado. Esa se paga al momento.",
+    "dur": 6.08
+   },
+   {
+    "id": "sidebet_2",
+    "event": "sidebet",
+    "url": "/media/repliker-es/sidebet_2_es.mp4",
+    "text": "La apuesta lateral es ganadora. Buena forma de empezar la mano.",
+    "dur": 5.83
+   },
+   {
+    "id": "sidebet_3",
+    "event": "sidebet",
+    "url": "/media/repliker-es/sidebet_3_es.mp4",
+    "text": "Y entra la apuesta lateral. Cobrada antes incluso de empezar.",
+    "dur": 6.25
+   },
+   {
+    "id": "insurance_1",
+    "event": "insurance",
+    "url": "/media/repliker-es/insurance_1_es.mp4",
+    "text": "Tengo un as. ¿Alguien quiere seguro?",
+    "dur": 4.17
+   },
+   {
+    "id": "insurance_2",
+    "event": "insurance",
+    "url": "/media/repliker-es/insurance_2_es.mp4",
+    "text": "Tengo un as a la vista. El seguro está abierto y paga dos a uno.",
+    "dur": 6.25
+   },
+   {
+    "id": "insurance_3",
+    "event": "insurance",
+    "url": "/media/repliker-es/insurance_3_es.mp4",
+    "text": "As a la vista, así que se ofrece seguro. La decisión es suya.",
+    "dur": 7.21
+   },
+   {
+    "id": "double_1",
+    "event": "double",
+    "url": "/media/repliker-es/double_1_es.mp4",
+    "text": "Dobla la apuesta. Una carta, y solo una.",
+    "dur": 5.29
+   },
+   {
+    "id": "double_2",
+    "event": "double",
+    "url": "/media/repliker-es/double_2_es.mp4",
+    "text": "Doblamos, entonces. Aquí tiene su carta.",
+    "dur": 5.29
+   },
+   {
+    "id": "double_3",
+    "event": "double",
+    "url": "/media/repliker-es/double_3_es.mp4",
+    "text": "Apuesta doblada. Una sola carta lo decide.",
+    "dur": 4.58
+   },
+   {
+    "id": "bust_1",
+    "event": "bust",
+    "url": "/media/repliker-es/bust_1_es.mp4",
+    "text": "Se ha pasado de veintiuno, lo siento. Esa mano termina aquí.",
+    "dur": 6.17
+   },
+   {
+    "id": "bust_2",
+    "event": "bust",
+    "url": "/media/repliker-es/bust_2_es.mp4",
+    "text": "Se ha pasado. Qué mala suerte con esa carta.",
+    "dur": 4.96
+   },
+   {
+    "id": "bust_3",
+    "event": "bust",
+    "url": "/media/repliker-es/bust_3_es.mp4",
+    "text": "Demasiado, lo siento. Esa se la lleva la banca.",
+    "dur": 5.71
+   },
+   {
+    "id": "blackjack_1",
+    "event": "blackjack",
+    "url": "/media/repliker-es/blackjack_1_es.mp4",
+    "text": "¡Blackjack! Muy bien jugado. Se paga tres a dos.",
+    "dur": 5.46
+   },
+   {
+    "id": "blackjack_2",
+    "event": "blackjack",
+    "url": "/media/repliker-es/blackjack_2_es.mp4",
+    "text": "Blackjack nada más repartir. Se paga tres a dos.",
+    "dur": 5.54
+   },
+   {
+    "id": "blackjack_3",
+    "event": "blackjack",
+    "url": "/media/repliker-es/blackjack_3_es.mp4",
+    "text": "Así se empieza una mano. Blackjack, tres a dos.",
+    "dur": 5.46
+   },
+   {
+    "id": "dealerblackjack_1",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-es/dealerblackjack_1_es.mp4",
+    "text": "La banca tiene blackjack. Lo siento por todos.",
+    "dur": 4.5
+   },
+   {
+    "id": "dealerblackjack_2",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-es/dealerblackjack_2_es.mp4",
+    "text": "Esta vez el blackjack es para la banca. Le pasa hasta al mejor.",
+    "dur": 5.83
+   },
+   {
+    "id": "dealerblackjack_3",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-es/dealerblackjack_3_es.mp4",
+    "text": "Me temo que tengo blackjack. Esta ronda es para la banca.",
+    "dur": 5.12
+   },
+   {
+    "id": "dealerbust_1",
+    "event": "dealerbust",
+    "url": "/media/repliker-es/dealerbust_1_es.mp4",
+    "text": "¡La banca se pasa! Todos los que siguen en juego cobran.",
+    "dur": 5.62
+   },
+   {
+    "id": "dealerbust_2",
+    "event": "dealerbust",
+    "url": "/media/repliker-es/dealerbust_2_es.mp4",
+    "text": "Demasiado para mí. La banca se pasa. Enhorabuena a toda la mesa.",
+    "dur": 7.12
+   },
+   {
+    "id": "dealerbust_3",
+    "event": "dealerbust",
+    "url": "/media/repliker-es/dealerbust_3_es.mp4",
+    "text": "Y la banca se pasa de veintiuno. Ganan todos.",
+    "dur": 5.04
+   },
+   {
+    "id": "win_1",
+    "event": "win",
+    "url": "/media/repliker-es/win_1_es.mp4",
+    "text": "Bien jugado. Esa mano es suya.",
+    "dur": 4.0
+   },
+   {
+    "id": "win_2",
+    "event": "win",
+    "url": "/media/repliker-es/win_2_es.mp4",
+    "text": "Esta vez me ha ganado. Enhorabuena.",
+    "dur": 3.92
+   },
+   {
+    "id": "win_3",
+    "event": "win",
+    "url": "/media/repliker-es/win_3_es.mp4",
+    "text": "Mano ganadora, pagada íntegramente.",
+    "dur": 4.5
+   },
+   {
+    "id": "push_1",
+    "event": "push",
+    "url": "/media/repliker-es/push_1_es.mp4",
+    "text": "Mismo total. Es un empate, su apuesta se queda con usted.",
+    "dur": 5.54
+   },
+   {
+    "id": "push_2",
+    "event": "push",
+    "url": "/media/repliker-es/push_2_es.mp4",
+    "text": "Estamos igualados. Empate: nadie gana y nadie pierde.",
+    "dur": 6.88
+   },
+   {
+    "id": "push_3",
+    "event": "push",
+    "url": "/media/repliker-es/push_3_es.mp4",
+    "text": "Empate. Recupera su apuesta.",
+    "dur": 3.92
+   },
+   {
+    "id": "lose_1",
+    "event": "lose",
+    "url": "/media/repliker-es/lose_1_es.mp4",
+    "text": "Gana la banca. Esa mano es para la casa.",
+    "dur": 4.33
+   },
+   {
+    "id": "lose_2",
+    "event": "lose",
+    "url": "/media/repliker-es/lose_2_es.mp4",
+    "text": "Esta vez no, me temo. La banca aguanta.",
+    "dur": 4.5
+   },
+   {
+    "id": "lose_3",
+    "event": "lose",
+    "url": "/media/repliker-es/lose_3_es.mp4",
+    "text": "Ha estado cerca, pero esta ronda es para la banca.",
+    "dur": 5.12
+   },
+   {
+    "id": "peek_1",
+    "event": "peek",
+    "url": "/media/repliker-es/peek_1_es.mp4",
+    "text": "Un momento, compruebo si tengo blackjack.",
+    "dur": 4.33
+   },
+   {
+    "id": "peek_2",
+    "event": "peek",
+    "url": "/media/repliker-es/peek_2_es.mp4",
+    "text": "La banca comprueba si tiene blackjack.",
+    "dur": 3.46
+   },
+   {
+    "id": "peek_3",
+    "event": "peek",
+    "url": "/media/repliker-es/peek_3_es.mp4",
+    "text": "Compruebo si hay blackjack. No escondo nada en la manga.",
+    "dur": 4.79
+   },
+   {
+    "id": "farewell_1",
+    "event": "farewell",
+    "url": "/media/repliker-es/farewell_1_es.mp4",
+    "text": "Gracias por jugar. Ha sido un placer repartirle las cartas.",
+    "dur": 4.79
+   },
+   {
+    "id": "farewell_2",
+    "event": "farewell",
+    "url": "/media/repliker-es/farewell_2_es.mp4",
+    "text": "¿Ya se retira por esta noche? Gracias, ha sido un placer tenerle en la mesa.",
+    "dur": 6.67
+   },
+   {
+    "id": "farewell_3",
+    "event": "farewell",
+    "url": "/media/repliker-es/farewell_3_es.mp4",
+    "text": "Buenas noches, y gracias por la compañía en mi mesa.",
+    "dur": 4.5
+   },
+   {
+    "id": "chatter1_1",
+    "event": "chatter1",
+    "url": "/media/repliker-es/chatter1_1_es.mp4",
+    "text": "Noche tranquila en la mesa. Son mis favoritas.",
+    "dur": 4.75
+   },
+   {
+    "id": "chatter1_2",
+    "event": "chatter1",
+    "url": "/media/repliker-es/chatter1_2_es.mp4",
+    "text": "Ocho barajas, mezcladas de nuevo en cada ronda. Cada mano empieza de cero.",
+    "dur": 7.21
+   },
+   {
+    "id": "chatter1_3",
+    "event": "chatter1",
+    "url": "/media/repliker-es/chatter1_3_es.mp4",
+    "text": "He repartido muchas manos en esta mesa. Nunca hay dos iguales.",
+    "dur": 5.92
+   },
+   {
+    "id": "chatter2_1",
+    "event": "chatter2",
+    "url": "/media/repliker-es/chatter2_1_es.mp4",
+    "text": "Tómese su tiempo. Las cartas no se van a ninguna parte.",
+    "dur": 5.46
+   },
+   {
+    "id": "chatter2_2",
+    "event": "chatter2",
+    "url": "/media/repliker-es/chatter2_2_es.mp4",
+    "text": "Sin ninguna prisa. Piénselo con calma.",
+    "dur": 4.42
+   },
+   {
+    "id": "chatter2_3",
+    "event": "chatter2",
+    "url": "/media/repliker-es/chatter2_3_es.mp4",
+    "text": "Cuando usted quiera. La decisión es suya.",
+    "dur": 4.96
+   }
+  ],
+  "fr": [
+   {
+    "id": "greeting_1",
+    "event": "greeting",
+    "url": "/media/repliker-fr/greeting_1_fr.mp4",
+    "text": "Bonsoir, et bienvenue à la table. Je suis Astrid, installez-vous où vous voulez.",
+    "dur": 4.96
+   },
+   {
+    "id": "greeting_2",
+    "event": "greeting",
+    "url": "/media/repliker-fr/greeting_2_fr.mp4",
+    "text": "Entrez, bienvenue. Prenez place, les cartes sont neuves et la table est à vous.",
+    "dur": 5.12
+   },
+   {
+    "id": "greeting_3",
+    "event": "greeting",
+    "url": "/media/repliker-fr/greeting_3_fr.mp4",
+    "text": "Un nouveau visage à la table. Bienvenue, je suis Astrid, et c'est moi qui distribue ce soir.",
+    "dur": 5.92
+   },
+   {
+    "id": "placebets_1",
+    "event": "placebets",
+    "url": "/media/repliker-fr/placebets_1_fr.mp4",
+    "text": "Faites vos jeux. Placez vos jetons quand vous êtes prêts.",
+    "dur": 3.71
+   },
+   {
+    "id": "placebets_2",
+    "event": "placebets",
+    "url": "/media/repliker-fr/placebets_2_fr.mp4",
+    "text": "Nouvelle donne, cartes neuves. La case de mise est à vous.",
+    "dur": 4.17
+   },
+   {
+    "id": "placebets_3",
+    "event": "placebets",
+    "url": "/media/repliker-fr/placebets_3_fr.mp4",
+    "text": "La table est ouverte. Prenez votre temps, et faites vos jeux.",
+    "dur": 4.42
+   },
+   {
+    "id": "goodluck_1",
+    "event": "goodluck",
+    "url": "/media/repliker-fr/goodluck_1_fr.mp4",
+    "text": "Rien ne va plus. Voici les cartes.",
+    "dur": 3.12
+   },
+   {
+    "id": "goodluck_2",
+    "event": "goodluck",
+    "url": "/media/repliker-fr/goodluck_2_fr.mp4",
+    "text": "Les jeux sont faits. Bonne chance à tous.",
+    "dur": 3.12
+   },
+   {
+    "id": "goodluck_3",
+    "event": "goodluck",
+    "url": "/media/repliker-fr/goodluck_3_fr.mp4",
+    "text": "Rien ne va plus. Voyons ce que le sabot nous réserve.",
+    "dur": 3.92
+   },
+   {
+    "id": "sidebet_1",
+    "event": "sidebet",
+    "url": "/media/repliker-fr/sidebet_1_fr.mp4",
+    "text": "Votre mise annexe est gagnante. Elle est payée tout de suite.",
+    "dur": 4.0
+   },
+   {
+    "id": "sidebet_2",
+    "event": "sidebet",
+    "url": "/media/repliker-fr/sidebet_2_fr.mp4",
+    "text": "La mise annexe est gagnante. Belle façon de commencer la main.",
+    "dur": 4.08
+   },
+   {
+    "id": "sidebet_3",
+    "event": "sidebet",
+    "url": "/media/repliker-fr/sidebet_3_fr.mp4",
+    "text": "Et la mise annexe passe. Payée avant même d'avoir commencé.",
+    "dur": 4.25
+   },
+   {
+    "id": "insurance_1",
+    "event": "insurance",
+    "url": "/media/repliker-fr/insurance_1_fr.mp4",
+    "text": "J'ai un as. Quelqu'un souhaite-t-il s'assurer ?",
+    "dur": 3.62
+   },
+   {
+    "id": "insurance_2",
+    "event": "insurance",
+    "url": "/media/repliker-fr/insurance_2_fr.mp4",
+    "text": "J'ai un as. L'assurance est ouverte, elle paie deux contre un.",
+    "dur": 4.42
+   },
+   {
+    "id": "insurance_3",
+    "event": "insurance",
+    "url": "/media/repliker-fr/insurance_3_fr.mp4",
+    "text": "As visible, l'assurance vous est proposée. C'est à vous de voir.",
+    "dur": 4.33
+   },
+   {
+    "id": "double_1",
+    "event": "double",
+    "url": "/media/repliker-fr/double_1_fr.mp4",
+    "text": "Vous doublez. Une carte, et une seule.",
+    "dur": 3.75
+   },
+   {
+    "id": "double_2",
+    "event": "double",
+    "url": "/media/repliker-fr/double_2_fr.mp4",
+    "text": "Doublé, donc. Voici votre carte.",
+    "dur": 3.21
+   },
+   {
+    "id": "double_3",
+    "event": "double",
+    "url": "/media/repliker-fr/double_3_fr.mp4",
+    "text": "Mise doublée. Une seule carte pour trancher.",
+    "dur": 3.75
+   },
+   {
+    "id": "bust_1",
+    "event": "bust",
+    "url": "/media/repliker-fr/bust_1_fr.mp4",
+    "text": "Plus de vingt et un, j'en ai bien peur. Cette main est terminée.",
+    "dur": 4.08
+   },
+   {
+    "id": "bust_2",
+    "event": "bust",
+    "url": "/media/repliker-fr/bust_2_fr.mp4",
+    "text": "Vous sautez. Pas de chance avec cette carte.",
+    "dur": 3.21
+   },
+   {
+    "id": "bust_3",
+    "event": "bust",
+    "url": "/media/repliker-fr/bust_3_fr.mp4",
+    "text": "Trop, je suis désolée. Celle-ci revient à la banque.",
+    "dur": 4.17
+   },
+   {
+    "id": "blackjack_1",
+    "event": "blackjack",
+    "url": "/media/repliker-fr/blackjack_1_fr.mp4",
+    "text": "Blackjack ! Superbe. C'est payé trois pour deux.",
+    "dur": 4.33
+   },
+   {
+    "id": "blackjack_2",
+    "event": "blackjack",
+    "url": "/media/repliker-fr/blackjack_2_fr.mp4",
+    "text": "Blackjack dès la distribution. Payé trois pour deux.",
+    "dur": 3.83
+   },
+   {
+    "id": "blackjack_3",
+    "event": "blackjack",
+    "url": "/media/repliker-fr/blackjack_3_fr.mp4",
+    "text": "Voilà comment on ouvre une main. Blackjack, trois pour deux.",
+    "dur": 4.25
+   },
+   {
+    "id": "dealerblackjack_1",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-fr/dealerblackjack_1_fr.mp4",
+    "text": "La banque a blackjack. Je suis désolée pour vous tous.",
+    "dur": 3.83
+   },
+   {
+    "id": "dealerblackjack_2",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-fr/dealerblackjack_2_fr.mp4",
+    "text": "Blackjack pour la banque cette fois. Ça arrive aux meilleurs.",
+    "dur": 3.75
+   },
+   {
+    "id": "dealerblackjack_3",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-fr/dealerblackjack_3_fr.mp4",
+    "text": "J'ai bien peur d'avoir blackjack. Cette manche revient à la banque.",
+    "dur": 4.0
+   },
+   {
+    "id": "dealerbust_1",
+    "event": "dealerbust",
+    "url": "/media/repliker-fr/dealerbust_1_fr.mp4",
+    "text": "La banque saute ! Tous ceux encore en jeu sont payés.",
+    "dur": 3.75
+   },
+   {
+    "id": "dealerbust_2",
+    "event": "dealerbust",
+    "url": "/media/repliker-fr/dealerbust_2_fr.mp4",
+    "text": "Trop pour moi. La banque saute. Félicitations à toute la table.",
+    "dur": 4.88
+   },
+   {
+    "id": "dealerbust_3",
+    "event": "dealerbust",
+    "url": "/media/repliker-fr/dealerbust_3_fr.mp4",
+    "text": "Et la banque dépasse vingt et un. Tout le monde gagne.",
+    "dur": 3.71
+   },
+   {
+    "id": "win_1",
+    "event": "win",
+    "url": "/media/repliker-fr/win_1_fr.mp4",
+    "text": "Bien joué. Cette main est pour vous.",
+    "dur": 2.79
+   },
+   {
+    "id": "win_2",
+    "event": "win",
+    "url": "/media/repliker-fr/win_2_fr.mp4",
+    "text": "Vous m'avez battue sur celle-là. Félicitations.",
+    "dur": 3.46
+   },
+   {
+    "id": "win_3",
+    "event": "win",
+    "url": "/media/repliker-fr/win_3_fr.mp4",
+    "text": "Main gagnante. Payée intégralement.",
+    "dur": 3.54
+   },
+   {
+    "id": "push_1",
+    "event": "push",
+    "url": "/media/repliker-fr/push_1_fr.mp4",
+    "text": "Même total. C'est une égalité, votre mise vous reste.",
+    "dur": 4.33
+   },
+   {
+    "id": "push_2",
+    "event": "push",
+    "url": "/media/repliker-fr/push_2_fr.mp4",
+    "text": "Nous sommes à égalité. Personne ne gagne, personne ne perd.",
+    "dur": 4.42
+   },
+   {
+    "id": "push_3",
+    "event": "push",
+    "url": "/media/repliker-fr/push_3_fr.mp4",
+    "text": "Égalité. Votre mise vous est rendue.",
+    "dur": 3.54
+   },
+   {
+    "id": "lose_1",
+    "event": "lose",
+    "url": "/media/repliker-fr/lose_1_fr.mp4",
+    "text": "La banque gagne. Cette main est pour la maison.",
+    "dur": 3.62
+   },
+   {
+    "id": "lose_2",
+    "event": "lose",
+    "url": "/media/repliker-fr/lose_2_fr.mp4",
+    "text": "Pas cette fois, j'en ai bien peur. La banque tient bon.",
+    "dur": 3.83
+   },
+   {
+    "id": "lose_3",
+    "event": "lose",
+    "url": "/media/repliker-fr/lose_3_fr.mp4",
+    "text": "C'était serré, mais la banque l'emporte cette manche.",
+    "dur": 3.71
+   },
+   {
+    "id": "peek_1",
+    "event": "peek",
+    "url": "/media/repliker-fr/peek_1_fr.mp4",
+    "text": "Un instant, je vérifie si j'ai blackjack.",
+    "dur": 3.54
+   },
+   {
+    "id": "peek_2",
+    "event": "peek",
+    "url": "/media/repliker-fr/peek_2_fr.mp4",
+    "text": "La banque vérifie le blackjack.",
+    "dur": 3.12
+   },
+   {
+    "id": "peek_3",
+    "event": "peek",
+    "url": "/media/repliker-fr/peek_3_fr.mp4",
+    "text": "Je vérifie le blackjack. Rien dans les manches.",
+    "dur": 3.71
+   },
+   {
+    "id": "farewell_1",
+    "event": "farewell",
+    "url": "/media/repliker-fr/farewell_1_fr.mp4",
+    "text": "Merci d'avoir joué. Ce fut un plaisir de distribuer pour vous.",
+    "dur": 4.08
+   },
+   {
+    "id": "farewell_2",
+    "event": "farewell",
+    "url": "/media/repliker-fr/farewell_2_fr.mp4",
+    "text": "C'est fini pour ce soir ? Merci, ce fut un plaisir de vous avoir à la table.",
+    "dur": 5.21
+   },
+   {
+    "id": "farewell_3",
+    "event": "farewell",
+    "url": "/media/repliker-fr/farewell_3_fr.mp4",
+    "text": "Bonne nuit, et merci pour votre compagnie à ma table.",
+    "dur": 3.54
+   },
+   {
+    "id": "chatter1_1",
+    "event": "chatter1",
+    "url": "/media/repliker-fr/chatter1_1_fr.mp4",
+    "text": "Soirée calme à la table. Ce sont mes préférées.",
+    "dur": 3.54
+   },
+   {
+    "id": "chatter1_2",
+    "event": "chatter1",
+    "url": "/media/repliker-fr/chatter1_2_fr.mp4",
+    "text": "Huit jeux, mélangés à neuf à chaque manche. Chaque main repart de zéro.",
+    "dur": 5.04
+   },
+   {
+    "id": "chatter1_3",
+    "event": "chatter1",
+    "url": "/media/repliker-fr/chatter1_3_fr.mp4",
+    "text": "J'ai distribué beaucoup de mains à cette table. Jamais deux ne se ressemblent.",
+    "dur": 4.58
+   },
+   {
+    "id": "chatter2_1",
+    "event": "chatter2",
+    "url": "/media/repliker-fr/chatter2_1_fr.mp4",
+    "text": "Prenez votre temps. Les cartes ne vont nulle part.",
+    "dur": 3.62
+   },
+   {
+    "id": "chatter2_2",
+    "event": "chatter2",
+    "url": "/media/repliker-fr/chatter2_2_fr.mp4",
+    "text": "Rien ne presse. Réfléchissez bien.",
+    "dur": 3.12
+   },
+   {
+    "id": "chatter2_3",
+    "event": "chatter2",
+    "url": "/media/repliker-fr/chatter2_3_fr.mp4",
+    "text": "Quand vous voulez. La décision vous appartient.",
+    "dur": 3.38
+   }
+  ],
+  "zh": [
+   {
+    "id": "greeting_1",
+    "event": "greeting",
+    "url": "/media/repliker-zh/greeting_1_zh.mp4",
+    "text": "晚上好，欢迎来到牌桌。我是阿斯特丽德，您随便坐。",
+    "dur": 5.75
+   },
+   {
+    "id": "greeting_2",
+    "event": "greeting",
+    "url": "/media/repliker-zh/greeting_2_zh.mp4",
+    "text": "欢迎光临。请坐，牌都是新的，这张桌子归您了。",
+    "dur": 5.83
+   },
+   {
+    "id": "greeting_3",
+    "event": "greeting",
+    "url": "/media/repliker-zh/greeting_3_zh.mp4",
+    "text": "牌桌上来了新朋友。欢迎，我是阿斯特丽德，今晚由我为您发牌。",
+    "dur": 6.96
+   },
+   {
+    "id": "placebets_1",
+    "event": "placebets",
+    "url": "/media/repliker-zh/placebets_1_zh.mp4",
+    "text": "开始下注。您准备好了就请放筹码。",
+    "dur": 4.25
+   },
+   {
+    "id": "placebets_2",
+    "event": "placebets",
+    "url": "/media/repliker-zh/placebets_2_zh.mp4",
+    "text": "新的一局，新的牌。下注区归您了。",
+    "dur": 5.04
+   },
+   {
+    "id": "placebets_3",
+    "event": "placebets",
+    "url": "/media/repliker-zh/placebets_3_zh.mp4",
+    "text": "牌桌开放了。不用着急，请下注。",
+    "dur": 4.42
+   },
+   {
+    "id": "goodluck_1",
+    "event": "goodluck",
+    "url": "/media/repliker-zh/goodluck_1_zh.mp4",
+    "text": "买定离手。开始发牌。",
+    "dur": 3.54
+   },
+   {
+    "id": "goodluck_2",
+    "event": "goodluck",
+    "url": "/media/repliker-zh/goodluck_2_zh.mp4",
+    "text": "停止下注。祝大家好运。",
+    "dur": 3.62
+   },
+   {
+    "id": "goodluck_3",
+    "event": "goodluck",
+    "url": "/media/repliker-zh/goodluck_3_zh.mp4",
+    "text": "下注结束。看看牌靴给我们准备了什么。",
+    "dur": 4.5
+   },
+   {
+    "id": "sidebet_1",
+    "event": "sidebet",
+    "url": "/media/repliker-zh/sidebet_1_zh.mp4",
+    "text": "您的边注中了，马上赔付。",
+    "dur": 3.62
+   },
+   {
+    "id": "sidebet_2",
+    "event": "sidebet",
+    "url": "/media/repliker-zh/sidebet_2_zh.mp4",
+    "text": "边注赢了。这一手开得真不错。",
+    "dur": 4.17
+   },
+   {
+    "id": "sidebet_3",
+    "event": "sidebet",
+    "url": "/media/repliker-zh/sidebet_3_zh.mp4",
+    "text": "边注中了。还没开始就先赢了。",
+    "dur": 4.17
+   },
+   {
+    "id": "insurance_1",
+    "event": "insurance",
+    "url": "/media/repliker-zh/insurance_1_zh.mp4",
+    "text": "我的明牌是A。有人要买保险吗？",
+    "dur": 4.42
+   },
+   {
+    "id": "insurance_2",
+    "event": "insurance",
+    "url": "/media/repliker-zh/insurance_2_zh.mp4",
+    "text": "我的明牌是A。现在可以买保险，保险二赔一。",
+    "dur": 5.21
+   },
+   {
+    "id": "insurance_3",
+    "event": "insurance",
+    "url": "/media/repliker-zh/insurance_3_zh.mp4",
+    "text": "明牌是A，所以可以买保险。完全由您决定。",
+    "dur": 5.12
+   },
+   {
+    "id": "double_1",
+    "event": "double",
+    "url": "/media/repliker-zh/double_1_zh.mp4",
+    "text": "加倍下注。只发一张牌。",
+    "dur": 3.71
+   },
+   {
+    "id": "double_2",
+    "event": "double",
+    "url": "/media/repliker-zh/double_2_zh.mp4",
+    "text": "好的，加倍。这是您的一张牌。",
+    "dur": 3.92
+   },
+   {
+    "id": "double_3",
+    "event": "double",
+    "url": "/media/repliker-zh/double_3_zh.mp4",
+    "text": "已加倍。一张牌定胜负。",
+    "dur": 3.62
+   },
+   {
+    "id": "bust_1",
+    "event": "bust",
+    "url": "/media/repliker-zh/bust_1_zh.mp4",
+    "text": "很遗憾，超过二十一点了。这手牌结束了。",
+    "dur": 4.96
+   },
+   {
+    "id": "bust_2",
+    "event": "bust",
+    "url": "/media/repliker-zh/bust_2_zh.mp4",
+    "text": "爆牌了。这张牌运气不好。",
+    "dur": 3.62
+   },
+   {
+    "id": "bust_3",
+    "event": "bust",
+    "url": "/media/repliker-zh/bust_3_zh.mp4",
+    "text": "点数太多了，抱歉。这一手归庄家。",
+    "dur": 4.5
+   },
+   {
+    "id": "blackjack_1",
+    "event": "blackjack",
+    "url": "/media/repliker-zh/blackjack_1_zh.mp4",
+    "text": "黑杰克！打得漂亮。三赔二。",
+    "dur": 4.25
+   },
+   {
+    "id": "blackjack_2",
+    "event": "blackjack",
+    "url": "/media/repliker-zh/blackjack_2_zh.mp4",
+    "text": "一发牌就是黑杰克。三赔二。",
+    "dur": 4.33
+   },
+   {
+    "id": "blackjack_3",
+    "event": "blackjack",
+    "url": "/media/repliker-zh/blackjack_3_zh.mp4",
+    "text": "这才叫开门红。黑杰克，三赔二。",
+    "dur": 4.67
+   },
+   {
+    "id": "dealerblackjack_1",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-zh/dealerblackjack_1_zh.mp4",
+    "text": "庄家是黑杰克。各位，很抱歉。",
+    "dur": 4.58
+   },
+   {
+    "id": "dealerblackjack_2",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-zh/dealerblackjack_2_zh.mp4",
+    "text": "这次是庄家拿到黑杰克。高手也难免遇到。",
+    "dur": 5.38
+   },
+   {
+    "id": "dealerblackjack_3",
+    "event": "dealerblackjack",
+    "url": "/media/repliker-zh/dealerblackjack_3_zh.mp4",
+    "text": "恐怕我拿到黑杰克了。这一局归庄家。",
+    "dur": 4.88
+   },
+   {
+    "id": "dealerbust_1",
+    "event": "dealerbust",
+    "url": "/media/repliker-zh/dealerbust_1_zh.mp4",
+    "text": "庄家爆牌！还在局中的各位都赢了。",
+    "dur": 4.33
+   },
+   {
+    "id": "dealerbust_2",
+    "event": "dealerbust",
+    "url": "/media/repliker-zh/dealerbust_2_zh.mp4",
+    "text": "我的点数太多了，庄家爆牌。恭喜各位。",
+    "dur": 5.12
+   },
+   {
+    "id": "dealerbust_3",
+    "event": "dealerbust",
+    "url": "/media/repliker-zh/dealerbust_3_zh.mp4",
+    "text": "庄家超过二十一点。大家都赢了。",
+    "dur": 4.0
+   },
+   {
+    "id": "win_1",
+    "event": "win",
+    "url": "/media/repliker-zh/win_1_zh.mp4",
+    "text": "打得好。这手牌您赢了。",
+    "dur": 3.54
+   },
+   {
+    "id": "win_2",
+    "event": "win",
+    "url": "/media/repliker-zh/win_2_zh.mp4",
+    "text": "这一手您赢了我。恭喜。",
+    "dur": 3.71
+   },
+   {
+    "id": "win_3",
+    "event": "win",
+    "url": "/media/repliker-zh/win_3_zh.mp4",
+    "text": "赢了这一手，全额赔付。",
+    "dur": 3.04
+   },
+   {
+    "id": "push_1",
+    "event": "push",
+    "url": "/media/repliker-zh/push_1_zh.mp4",
+    "text": "点数相同，平局，您的筹码原数退还。",
+    "dur": 5.04
+   },
+   {
+    "id": "push_2",
+    "event": "push",
+    "url": "/media/repliker-zh/push_2_zh.mp4",
+    "text": "我们打平了。平局，没有输赢。",
+    "dur": 4.42
+   },
+   {
+    "id": "push_3",
+    "event": "push",
+    "url": "/media/repliker-zh/push_3_zh.mp4",
+    "text": "平局。退还您的注码。",
+    "dur": 3.46
+   },
+   {
+    "id": "lose_1",
+    "event": "lose",
+    "url": "/media/repliker-zh/lose_1_zh.mp4",
+    "text": "庄家赢。这一手归庄家。",
+    "dur": 4.0
+   },
+   {
+    "id": "lose_2",
+    "event": "lose",
+    "url": "/media/repliker-zh/lose_2_zh.mp4",
+    "text": "很遗憾，这次不行。庄家赢了。",
+    "dur": 4.08
+   },
+   {
+    "id": "lose_3",
+    "event": "lose",
+    "url": "/media/repliker-zh/lose_3_zh.mp4",
+    "text": "差一点，不过这一局庄家赢了。",
+    "dur": 4.0
+   },
+   {
+    "id": "peek_1",
+    "event": "peek",
+    "url": "/media/repliker-zh/peek_1_zh.mp4",
+    "text": "请稍等，我看一下是不是黑杰克。",
+    "dur": 4.0
+   },
+   {
+    "id": "peek_2",
+    "event": "peek",
+    "url": "/media/repliker-zh/peek_2_zh.mp4",
+    "text": "庄家检查是否有黑杰克。",
+    "dur": 3.29
+   },
+   {
+    "id": "peek_3",
+    "event": "peek",
+    "url": "/media/repliker-zh/peek_3_zh.mp4",
+    "text": "检查黑杰克。我可没藏牌。",
+    "dur": 3.83
+   },
+   {
+    "id": "farewell_1",
+    "event": "farewell",
+    "url": "/media/repliker-zh/farewell_1_zh.mp4",
+    "text": "感谢您的光临。很荣幸为您发牌。",
+    "dur": 4.25
+   },
+   {
+    "id": "farewell_2",
+    "event": "farewell",
+    "url": "/media/repliker-zh/farewell_2_zh.mp4",
+    "text": "今晚就到这里吗？谢谢您，很高兴您来到我的牌桌。",
+    "dur": 5.38
+   },
+   {
+    "id": "farewell_3",
+    "event": "farewell",
+    "url": "/media/repliker-zh/farewell_3_zh.mp4",
+    "text": "晚安，感谢您今晚的陪伴。",
+    "dur": 3.38
+   },
+   {
+    "id": "chatter1_1",
+    "event": "chatter1",
+    "url": "/media/repliker-zh/chatter1_1_zh.mp4",
+    "text": "今晚牌桌很安静。我最喜欢这样的夜晚。",
+    "dur": 4.75
+   },
+   {
+    "id": "chatter1_2",
+    "event": "chatter1",
+    "url": "/media/repliker-zh/chatter1_2_zh.mp4",
+    "text": "八副牌，每一局都重新洗牌。每一手都从零开始。",
+    "dur": 6.0
+   },
+   {
+    "id": "chatter1_3",
+    "event": "chatter1",
+    "url": "/media/repliker-zh/chatter1_3_zh.mp4",
+    "text": "我在这张桌上发过很多手牌，从来没有两手是一样的。",
+    "dur": 5.46
+   },
+   {
+    "id": "chatter2_1",
+    "event": "chatter2",
+    "url": "/media/repliker-zh/chatter2_1_zh.mp4",
+    "text": "慢慢来，牌不会跑掉的。",
+    "dur": 2.96
+   },
+   {
+    "id": "chatter2_2",
+    "event": "chatter2",
+    "url": "/media/repliker-zh/chatter2_2_zh.mp4",
+    "text": "一点也不急，您好好想想。",
+    "dur": 3.21
+   },
+   {
+    "id": "chatter2_3",
+    "event": "chatter2",
+    "url": "/media/repliker-zh/chatter2_3_zh.mp4",
+    "text": "您准备好就行，由您决定。",
+    "dur": 3.62
+   }
+  ]
+ }
+}

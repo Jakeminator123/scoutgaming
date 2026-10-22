@@ -5,7 +5,7 @@ const browserContracts = [
   'recorded-speech', 'composition-settings', 'background-playback-policy',
   'roulette-idle-contract', 'roulette-start-contract', 'speech-slot-bindings',
   'speech-lines', 'material-catalog', 'background-materials',
-  'speech-package', 'astrid-voice-profile',
+  'speech-package', 'astrid-voice-profile', 'shared-room-replay',
 ];
 // One canonical source per browser module; legacy URLs keep resolving its imports.
 export const presentationPublicModules = Object.freeze([

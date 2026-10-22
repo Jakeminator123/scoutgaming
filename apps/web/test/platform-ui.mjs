@@ -8,7 +8,6 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/navigation/server/platform-routing.mjs';
 import {platformUiDocument} from '../lib/server-ui.mjs';
-import {operatorPlayPath} from '../lib/player-operator.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {createRequire} from 'node:module';
 
@@ -280,7 +279,6 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   const unified=platformConfiguration(unifiedEnv);
   const partner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({partner:'key-1',sub:'player-1'})).toString('base64url')}.sig`;
   const notPartner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({operator:'sg-test',sub:'player-1'})).toString('base64url')}.sig`;
-  assert.equal(operatorPlayPath('sg-test'),'/play/blackjack?operator=sg-test');
   assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
     {kind:'backend',destination:unified.backendOrigin+'/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1'});
   assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=play&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
@@ -302,11 +300,11 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   };
   const request=path=>new Request(unified.publicOrigin+path,{headers:{cookie:'game_session=fixture'}});
   const options={env:unifiedEnv,directory,fetchImpl};
-  const played=await platformUiDocument(request(operatorPlayPath('sg-test')+'&table=room-1'),options);
+  const played=await platformUiDocument(request('/play/blackjack?operator=sg-test&table=room-1'),options);
   assert.equal(played.status,200);assert.match(await played.text(),/data-game-operator="sg-test"/);
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session',unified.backendOrigin+'/blackjack?table=room-1&operator=sg-test']);
   calls.length=0;authenticated=false;
-  const login=await platformUiDocument(request(operatorPlayPath('sg-test')+'&table=room-1'),options);
+  const login=await platformUiDocument(request('/play/blackjack?operator=sg-test&table=room-1'),options);
   assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?table=room-1&operator=sg-test');
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
   calls.length=0;authenticated=true;

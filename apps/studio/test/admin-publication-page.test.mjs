@@ -63,12 +63,12 @@ function harness(options={}) {
     const url=new URL(href,window.location.href);Object.assign(window.location,{pathname:url.pathname,search:url.search,hash:url.hash,href:url.href});
   }},confirm:()=>false,
     addEventListener:(name,cb)=>events.set(name,cb),removeEventListener:(name)=>events.delete(name)};
-  const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null,GameConfig=()=>null;let merged,saved;
+  const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null,GameConfig=()=>null,Appearance=()=>null;let merged,saved;
   const {AdminPublicationPage}=loadTs(sourceUrl,{react,window,
     './studio-session':{useStudioProjectSession:()=>({project,dirty:options.dirty??false,saving:options.saving??false,conflict:options.conflict??false,
       savedJson:JSON.stringify(options.savedProject??project),setError(){},setNotice(){},setConflict(){},setProject:value=>merged=value,setSavedJson:value=>saved=value})},
     './room-game-config':{RoomGameConfig:GameConfig},'./presentation-room-create':{PresentationRoomCreate:Room},'./control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle},
-    './control-operator-directory':{ControlOperatorDirectory:Directory},'./project-conflict':{ProjectConflict:Conflict},
+    './control-operator-directory':{ControlOperatorDirectory:Directory},'./project-conflict':{ProjectConflict:Conflict},'./partner-appearance-loader.mjs':{PartnerAppearanceLoader:Appearance},
     fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve}))});
   const render=()=>{cursor=0;effects.length=0;return AdminPublicationPage(props);};
   const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
@@ -78,6 +78,7 @@ function harness(options={}) {
     checkbox:id=>nodes(node=>node.type==='input'&&node.props.value===id)[0],
     submit:()=>nodes(node=>node.type==='form')[0].props.onSubmit({preventDefault(){}}),
     gameConfig:()=>nodes(node=>node.type===GameConfig)[0],room:()=>nodes(node=>node.type===Room)[0],lifecycle:()=>nodes(node=>node.type===Lifecycle)[0],directory:()=>nodes(node=>node.type===Directory)[0],
+    appearance:()=>nodes(node=>node.type===Appearance)[0],
     conflict:()=>nodes(node=>node.type===Conflict)[0],get merge(){return merged;},get saved(){return saved;},
     async reply(index,payload,status=200){requests[index].resolve(Response.json(payload,{status}));await new Promise(resolve=>setImmediate(resolve));}};
 }
@@ -401,6 +402,106 @@ test('a newer package readback clears the previous publication confirmation',asy
   h.lifecycle().props.onChanged(snapshot(refreshed));
   assert.doesNotMatch(h.html(),/Publiceringen är bekräftad/,'a different revision is not this action receipt');
   assert.match(h.html(),/Senast publicerat · version 6/);
+});
+
+function verifiedRoomHarness(){
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',search:'?operator=north&room=room-evening&composition=evening'});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  return h;
+}
+
+test('a verified published room shows its own layer choices beside the game settings with a scoped clip-map link',()=>{
+  const h=verifiedRoomHarness();
+  const appearance=h.appearance();
+  assert.equal(appearance.props.operatorId,'north');assert.equal(appearance.props.operatorSlug,'north');
+  assert.equal(appearance.props.roomId,'room-evening');assert.equal(appearance.props.roomLayout,true);
+  assert.match(appearance.props.apiBase,/^(?:\/studio)?\/api\/partner$/);assert.equal(appearance.props.disabled,false);
+  assert.equal(h.gameConfig().props.roomId,'room-evening');
+  assert.match(h.html(),/Rummets lager · Kvällsrummet/);
+  const link=h.nodes(node=>node.type==='a'&&String(node.props.children).startsWith('Öppna klippkartan'))[0];
+  const target=new URL(link.props.href,'https://test.invalid');
+  assert.equal(target.pathname,'/admin/clips');
+  assert.equal(target.searchParams.get('operator'),'north');assert.equal(target.searchParams.get('table'),'room-evening');
+  assert.equal(target.searchParams.get('composition'),'evening');
+  assert.equal(h.requests.length,0,'showing the room never saves or publishes');
+  assert.equal(harness({initialOperatorId:'north'}).appearance(),undefined,'no room, no room layers');
+  const unpublished=harness({initialOperatorId:'north',initialRoomId:'room-evening'});
+  unpublished.lifecycle().props.onChanged(roomContextSnapshot({published:false}));
+  assert.equal(unpublished.appearance(),undefined,'an unpublished room has no package to adjust');
+  const stale=verifiedRoomHarness();stale.lifecycle().props.onRefreshNeeded();
+  assert.equal(stale.appearance(),undefined,'an unverified room is withdrawn until readback');
+});
+
+test('room layer callbacks keep a stable identity so re-rendering cannot reset busy or dirty state',()=>{
+  const h=verifiedRoomHarness();
+  const first=h.appearance().props;h.render();const second=h.appearance().props;
+  assert.equal(first.onDirtyChange,second.onDirtyChange);assert.equal(first.onBusyChange,second.onBusyChange);
+});
+
+test('room layer drafts block navigation, package publication, reopening and sibling room writers until saved',()=>{
+  const h=verifiedRoomHarness();
+  h.appearance().props.onDirtyChange(true);
+  h.composition().props.onChange({target:{value:'mobile-phone'}});assert.equal(h.composition().props.value,'evening');
+  h.operator().props.onChange({target:{value:'south'}});assert.equal(h.operator().props.value,'north');
+  const picker=h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Spelrum för spelinställningar')[0];
+  picker.props.onChange({target:{value:''}});assert.equal(h.appearance().props.roomId,'room-evening');
+  assert.equal(h.nodes(node=>node.type==='button'&&node.props.children==='Återöppna sparat läge')[0].props.disabled,true);
+  assert.equal(h.gameConfig().props.disabled,true,'one room draft at a time');
+  assert.equal(h.lifecycle().props.disabled,true,'pausing or archiving the edited room would discard the draft');
+  assert.equal(h.room().props.interactionDisabled,true,'creating a room republishes the package');
+  assert.equal(h.appearance().props.disabled,false,'the editor holding the draft stays editable');
+  h.submit();assert.equal(h.requests.length,0,'unsaved room layers block the company package publication');
+  assert.match(h.html(),/Spara rummets ändringar först/);
+  h.render();h.effects.forEach(effect=>effect());let prevented=false;
+  h.events.get('beforeunload')({preventDefault(){prevented=true;},returnValue:undefined});assert.equal(prevented,true);
+  h.appearance().props.onDirtyChange(false);
+  assert.equal(h.gameConfig().props.disabled,false);assert.equal(h.lifecycle().props.disabled,false);assert.equal(h.room().props.interactionDisabled,false);
+  assert.match(h.html(),/Redo att publicera/);
+  h.submit();assert.equal(h.requests.length,1,'a saved room draft no longer blocks publication');
+  const other=verifiedRoomHarness();other.gameConfig().props.onDirtyChange(true);
+  assert.equal(other.appearance().props.disabled,true,'a game settings draft locks the layer editor the same way');
+  assert.equal(other.gameConfig().props.disabled,false);
+  other.gameConfig().props.onDirtyChange(false);assert.equal(other.appearance().props.disabled,false);
+});
+
+test('room layer writes lock sibling room actions and a room publication reloads both room editors on the new package revision',async()=>{
+  const h=verifiedRoomHarness();
+  h.appearance().props.onBusyChange(true);
+  assert.equal(h.appearance().props.disabled,false,'the active editor must finish its own request');
+  assert.equal(h.gameConfig().props.disabled,true);assert.equal(h.room().props.interactionDisabled,true);assert.equal(h.lifecycle().props.disabled,true);
+  h.operator().props.onChange({target:{value:'south'}});assert.equal(h.operator().props.value,'north');
+  h.submit();assert.equal(h.requests.length,0,'a busy room editor blocks the package publication');
+  h.appearance().props.onBusyChange(false);assert.equal(h.gameConfig().props.disabled,false);
+  h.gameConfig().props.onBusyChange(true);assert.equal(h.appearance().props.disabled,true);h.gameConfig().props.onBusyChange(false);
+  h.submit();await h.reply(0,receipt('north',5,['mobile-phone','evening']));
+  assert.match(h.html(),/Publiceringen är bekräftad/);
+  const generation=h.lifecycle().props.refreshKey,layerKey=h.appearance().key,gameKey=h.gameConfig().key;
+  h.appearance().props.onSaved({operatorId:'north',packageRevision:6});
+  assert.equal(h.lifecycle().props.refreshKey,generation+1);
+  assert.notEqual(h.appearance().key,layerKey,'the layer editor reloads on the new package revision');
+  assert.notEqual(h.gameConfig().key,gameKey,'the game settings reload on the new package revision');
+  assert.doesNotMatch(h.html(),/Publiceringen är bekräftad/,'an older package receipt is not this publication');
+  assert.match(h.html(),/Uppgifterna behöver kontrolleras/);
+  h.submit();assert.equal(h.requests.length,1,'a changed package cannot be published before readback');
+  const refreshed=roomContextSnapshot();refreshed.operators[0].packageRevision=6;
+  h.lifecycle().props.onChanged(refreshed);
+  h.submit();assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',lanes:['mobile-phone','evening'],expectedPackageRevision:6});
+});
+
+test('an accepted room switch moves both room editors to the new room without saving or publishing',()=>{
+  const h=verifiedRoomHarness();
+  const resources=roomContextSnapshot();
+  resources.rooms.push({...resources.rooms[0],id:'room-other',name:'Annat rum',presentationLaneId:'mobile-phone'});
+  h.lifecycle().props.onChanged(resources);
+  h.appearance().props.onDirtyChange(true);
+  let prompts=0;h.window.confirm=()=>{prompts++;return true;};
+  const picker=()=>h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Spelrum för spelinställningar')[0];
+  picker().props.onChange({target:{value:'room-other'}});
+  assert.equal(prompts,1,'leaving an unsaved room draft asks first');
+  assert.equal(h.appearance().props.roomId,'room-other');assert.equal(h.gameConfig().props.roomId,'room-other');
+  assert.match(h.appearance().key,/room-other/);
+  assert.match(h.html(),/Rummets lager · Annat rum/);
+  assert.equal(h.requests.length,0);
 });
 
 test('room game drafts protect context navigation and their writes lock sibling room actions',()=>{

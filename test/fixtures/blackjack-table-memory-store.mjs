@@ -132,6 +132,11 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
     runLocked,
     read: {
       room: async id => clone(db.rooms[id]) ?? null,
+      config: async (room, version) => {
+        const value = db.configs.versions[version === undefined ? db.configs.latest : version];
+        if (!value) throw new Error('Published table configuration is missing');
+        return clone(value);
+      },
       rooms: async () => Object.keys(db.rooms).sort(),
       members: async roomId => Object.values(clone(db.members)).filter(m => m.roomId === roomId),
       memberRooms: async a => Object.values(db.members).filter(m => m.actorId === a && m.active).map(m => m.roomId).sort(),

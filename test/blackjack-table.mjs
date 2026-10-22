@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-chain.mjs';
-import { createPresentationGate, tickIdOf } from '../services/game/games/blackjack/table/ports.mjs';
+import { createPresentationGate, tickIdOf, WalletDenied, LockSetExceeded } from '../services/game/games/blackjack/table/ports.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 
@@ -58,6 +58,30 @@ function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
   return t;
 }
 const rejects = (promise, code) => assert.rejects(promise, e => e.code === code || assert.fail(`expected ${code}, got ${e.code}: ${e.message}`));
+
+test('tick actor metadata is captured once from the successful lock attempt, never rollback or replay',async()=>{
+  const h=setup();await h.join('kevin',[0]);await h.bet('kevin',0,25);
+  h.time=(await h.snap()).deadline;const desc=(await h.table.dueTicks()).find(row=>row.kind==='window.close');
+  const original=h.store.runLocked;let attempts=0;
+  h.store.runLocked=(plan,work)=>original(plan,async tx=>{const result=await work(tx);if(++attempts===1)throw new LockSetExceeded({players:['kevin']});return result;});
+  const captures=[];const result=await h.table.tick(desc,{captureActors:actors=>captures.push(actors)});
+  assert.equal(result.outcome,'applied');assert.equal(attempts,2);assert.deepEqual(captures,[['kevin']]);assert.ok(Object.isFrozen(captures[0]));
+  await h.table.tick(desc,{captureActors:actors=>captures.push(actors)});assert.equal(captures.length,1);
+  assert.equal(h.store.test.ledger().length,1,'the rolled-back attempt did not debit twice');
+});
+
+test('post-commit actor observers cannot reject a durable tick on sync throw or async rejection',async()=>{
+  for(const asynchronous of [false,true]){
+    const h=setup();await h.join('kevin',[0]);await h.bet('kevin',0,25);
+    h.time=(await h.snap()).deadline;const desc=(await h.table.dueTicks()).find(row=>row.kind==='window.close');
+    const failure=Error('capture observer failed');let calls=0;
+    const captureActors=()=>{calls++;if(asynchronous)return Promise.reject(failure);throw failure;};
+    const result=await h.table.tick(desc,{captureActors});assert.equal(result.outcome,'applied');
+    assert.equal(h.store.test.ledger().length,1);assert.equal((await h.snap()).phase,'round');
+    const replay=await h.table.tick(desc,{captureActors});assert.equal(replay.replay,true);assert.equal(calls,1);
+    assert.equal(h.store.test.ledger().length,1);
+  }
+});
 
 test('two players in two rooms: shared shoe and deadline per room, isolated rooms, one global chain', async () => {
   const t = setup();
@@ -604,6 +628,30 @@ test('ledger keys are scoped per room: the same commandId in two rooms gives two
   const rows = t.store.test.ledger().filter(r => r.kind === 'refill');
   assert.equal(rows.length, 2); assert.notEqual(rows[0].key, rows[1].key);
   assert.equal(t.store.test.balance('kevin'), 3000);
+});
+
+test('refill on a blocked account is a TableError like other wallet refusals; nothing is written; infrastructure errors propagate', async () => {
+  const t = setup();
+  await t.join('kevin', [3]);
+  // The wallet refuses the credit as the PG wallet does for a non-active account.
+  const runLocked = t.store.runLocked;
+  t.store.runLocked = (plan, work) => runLocked(plan, tx => work({ ...tx, wallet: { ...tx.wallet,
+    credit: async (p, input) => { if (p === 'kevin' && input.kind === 'refill') throw new WalletDenied({ playerId: p, walletGen: 1, reason: 'player account is inactive' }); return tx.wallet.credit(p, input); } } }));
+  const state = async () => ({ balance: t.store.test.balance('kevin'), ledger: t.store.test.ledger(), reservations: t.store.test.reservations(),
+    receipts: t.store.test.receipts(), audit: t.store.test.audit().length, snap: await t.snap() });
+  const before = await state();
+  await rejects(t.send('kevin', 'refill', {}, 'party', 'r1'), 'REFILL_REFUSED');
+  assert.deepEqual(await state(), before, 'no balance, ledger, reservation, receipt or audit change');
+  // Like every rejected command there is no receipt, so the same id is refused the same way again.
+  await rejects(t.send('kevin', 'refill', {}, 'party', 'r1'), 'REFILL_REFUSED');
+  assert.deepEqual(await state(), before);
+  // A real infrastructure error is not converted.
+  t.store.runLocked = runLocked;
+  t.store.test.failOnce('wallet.credit');
+  await assert.rejects(t.send('kevin', 'refill', {}, 'party', 'r1'), e => !e.code && /injected failure: wallet.credit/.test(e.message));
+  assert.deepEqual(await state(), before);
+  const ok = await t.send('kevin', 'refill', {}, 'party', 'r1');
+  assert.equal(ok.replay, false); assert.equal(t.store.test.balance('kevin'), 2000);
 });
 
 test('audit: a failed insert rolls back wallet, ledger and receipt; concurrent appends keep one verifiable global chain', async () => {

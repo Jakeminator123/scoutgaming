@@ -6,6 +6,17 @@ PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
+## Delade Blackjackrum — avgränsad inkoppling
+
+Transportbranchen stödjer explicit `CROUPIER_SHARED_TABLE_ENABLED=1`. Flaggan
+är inte satt av leveransen. Endast Postgres, befintlig Studio-repository/scope
+och samma appägda gamePool tillåts, med explicit demowallet. Saknade schema008/009/010
+stoppar start; startup installerar inget. Ursprung och kanonisk Host följer befintliga
+`CROUPIER_VERCEL_FRONTEND_ORIGIN` och `CROUPIER_PUBLIC_ORIGIN`/`PUBLIC_URL`.
+Ingen Partner→operatör/rumrelation gissas. Gateway/Vercelrumsväg och klient är ännu
+inte inkopplade; flaggan ska inte aktiveras före separat verifierad mål/readiness.
+Ingen ny tjänst, molnvariabel, schemaapplicering eller driftsättning ingår.
+
 ## Driftväljarens API
 
 <a id="driftvaljarens-api"></a>

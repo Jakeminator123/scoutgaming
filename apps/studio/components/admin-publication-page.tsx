@@ -6,6 +6,7 @@ import { type StudioLane, type StudioProject } from '../../../packages/presentat
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
 import { PresentationRoomCreate } from './presentation-room-create';
 import { RoomGameConfig } from './room-game-config';
+import { PartnerAppearanceLoader } from './partner-appearance-loader.mjs';
 import { ControlResourceLifecycle, type LifecycleSnapshot } from './control-resource-lifecycle';
 import { compositionLabel } from '../../../packages/navigation/control-flow.mjs';
 import { initialPartnerRoomSelection } from '../lib/partner-room-selection.mjs';
@@ -114,7 +115,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   }
   function chooseOperator(id: string) {
     if (writeLock.current || interactionBusy || Object.values(childLocks.current).some(Boolean)) return;
-    if (id !== operatorId && (roomDraft.current||gameConfigDraft.current) && !window.confirm('Lämna osparade rumsändringar och byta bolag?')) return;
+    if (id !== operatorId && (roomDraft.current||gameConfigDraft.current||appearanceDraft.current) && !window.confirm('Lämna osparade rumsändringar och byta bolag?')) return;
     if(id!==operatorId)setRequestedRoomId(undefined);
     setOperatorId(id);
     if (typeof window !== 'undefined') {
@@ -128,12 +129,22 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   }
   const [busy, setBusy] = useState<'publish' | ''>('');
   const writeLock = useRef(false);
-  const [childBusy, setChildBusy] = useState({room:false,lifecycle:false,directory:false,gameConfig:false});
+  const [childBusy, setChildBusy] = useState({room:false,lifecycle:false,directory:false,gameConfig:false,appearance:false});
   const childLocks = useRef(childBusy);
   const roomDraft = useRef(false);
   const gameConfigDraft=useRef(false);
   const [gameConfigDirty,setGameConfigDirty]=useState(false);
   const [roomDirty,setRoomDirty] = useState(false);
+  const appearanceDraft=useRef(false);
+  const [appearanceDirty,setAppearanceDirty]=useState(false);
+  // One room draft at a time: a dirty room editor locks its sibling, room creation and the rooms lifecycle,
+  // so a publish or readback can never remount the other editor over unsaved edits.
+  const roomEditorDirty=appearanceDirty||gameConfigDirty;
+  // The layer panel resets busy/dirty in effect cleanup whenever a callback identity changes, so these stay stable.
+  const appearanceCallbacks=useRef({
+    dirty:(value:boolean)=>{appearanceDraft.current=value;setAppearanceDirty(value);},
+    busy:(value:boolean)=>setChildBusyFor('appearance',value),
+  });
   function setChildBusyFor(source:keyof typeof childBusy,value:boolean) {
     childLocks.current={...childLocks.current,[source]:value};
     setChildBusy(current=>current[source]===value?current:{...current,[source]:value});
@@ -156,16 +167,17 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   const shownError = [publishError, error].filter(Boolean).join(' ');
   const selectionDirty = Object.values(packages).some(pack => JSON.stringify([...pack.chosen].sort()) !== JSON.stringify([...pack.baseline].sort()));
   const currentSelectionDirty = JSON.stringify([...chosen].sort()) !== JSON.stringify([...selectedPackage.baseline].sort());
-  const publishBlocked = writesOff || dirty || gameConfigDirty || !publishSelectionReady || needsRefresh || conflict;
+  const publishBlocked = writesOff || dirty || gameConfigDirty || appearanceDirty || !publishSelectionReady || needsRefresh || conflict;
   const publicationStatus = needsRefresh ? 'Läs in aktuell publicering' : dirty || conflict ? 'Spara ändringarna först'
+    : gameConfigDirty || appearanceDirty ? 'Spara rummets ändringar först'
     : currentSelectionDirty ? 'Urvalet är inte publicerat' : message ? 'Publicerat · version '+revision : 'Redo att publicera';
   useEffect(() => {
-    const guard = (event: BeforeUnloadEvent) => {if(selectionDirty || roomDirty || gameConfigDirty || interactionBusy){event.preventDefault();event.returnValue='';}};
+    const guard = (event: BeforeUnloadEvent) => {if(selectionDirty || roomDirty || gameConfigDirty || appearanceDirty || interactionBusy){event.preventDefault();event.returnValue='';}};
     window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);
-  },[selectionDirty,roomDirty,gameConfigDirty,interactionBusy]);
+  },[selectionDirty,roomDirty,gameConfigDirty,appearanceDirty,interactionBusy]);
   function chooseRoom(id:string) {
     if(interactionBusy || writeLock.current || Object.values(childLocks.current).some(Boolean))return;
-    if(gameConfigDraft.current&&!window.confirm('Lämna osparade spelinställningar och byta rum?'))return;
+    if((gameConfigDraft.current||appearanceDraft.current)&&!window.confirm('Lämna osparade rumsändringar och byta rum?'))return;
     setRequestedRoomId(id||undefined);
     if(typeof window!=='undefined') {
       const query=new URLSearchParams(window.location.search);
@@ -226,7 +238,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
   }
   function chooseComposition(id:string) {
     if(interactionBusy||writeLock.current||Object.values(childLocks.current).some(Boolean))return;
-    if(id!==selectedLane?.id&&(roomDraft.current||gameConfigDraft.current)&&!window.confirm('Lämna osparade rumsändringar och byta sammansättning?'))return;
+    if(id!==selectedLane?.id&&(roomDraft.current||gameConfigDraft.current||appearanceDraft.current)&&!window.confirm('Lämna osparade rumsändringar och byta sammansättning?'))return;
     if(id!==selectedLane?.id)setRequestedRoomId(undefined);
     setSelectedLaneId(id);
     const query=new URLSearchParams(window.location.search);query.set('composition',id);query.delete('lane');
@@ -294,8 +306,8 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
       {conflict?<ProjectConflict base={JSON.parse(savedJson) as StudioProject} draft={project} onResolve={(remote,merged)=>{setProject(merged);setSavedJson(JSON.stringify(remote));setConflict(false);setError('');setNotice('Senaste projektet är inläst. Dina ändringar har behållits.');}}/>:null}
       {companiesOnly?<>
         <ControlOperatorDirectory directory={directory??null} selectedOperatorId={operatorId} onSelect={chooseOperator} lifecycleStatuses={lifecycleStatuses} lifecycleArchives={lifecycleArchives}
-          disabled={!storeAvailable||parentBusy||childBusy.room||childBusy.lifecycle||childBusy.gameConfig} onBusyChange={value=>setChildBusyFor('directory',value)} onCreated={companyCreated}/>
-        <ControlResourceLifecycle operatorId={operatorId} kind="operator" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory||childBusy.gameConfig} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
+          disabled={!storeAvailable||parentBusy||childBusy.room||childBusy.lifecycle||childBusy.gameConfig||childBusy.appearance} onBusyChange={value=>setChildBusyFor('directory',value)} onCreated={companyCreated}/>
+        <ControlResourceLifecycle operatorId={operatorId} kind="operator" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory||childBusy.gameConfig||childBusy.appearance} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
       </>:<>
         <ol className={styles.steps} aria-label="Arbetsgång för publicering">
           <li aria-current={!selectedOperator?'step':undefined}><span>1</span><div><strong>Välj bolag</strong><small>Rätt sammanhang</small></div></li>
@@ -347,27 +359,36 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
                     <button className={message?"sg-btn sg-btn-secondary":"sg-btn sg-btn-primary"} type="submit" disabled={publishBlocked}>{busy==='publish'?'Publicerar…':message?'Publicera igen':'Publicera för '+selectedOperator.name}</button></div>
                 </form>
                 {message?<div className={styles.receipt} role="status"><strong>Publiceringen är bekräftad</strong><p>{message}</p></div>:null}
-                <div className={styles.actions}><button type="button" className={message?"sg-btn sg-btn-primary":"sg-btn sg-btn-secondary"} disabled={interactionBusy||dirty||selectionDirty||roomDirty||gameConfigDirty} onClick={()=>window.location.reload()}>Återöppna sparat läge</button>
+                <div className={styles.actions}><button type="button" className={message?"sg-btn sg-btn-primary":"sg-btn sg-btn-secondary"} disabled={interactionBusy||dirty||selectionDirty||roomDirty||gameConfigDirty||appearanceDirty} onClick={()=>window.location.reload()}>Återöppna sparat läge</button>
                   {!roomUnavailable?<a href={'/partner/'+encodeURIComponent(selectedOperator.slug)+'/rooms'+(selectedRoom?'?'+new URLSearchParams({room:selectedRoom.id}):'')}>Öppna partnerportalen →</a>:null}</div>
               </section>
             </div>
             {selectedLane?<PresentationRoomCreate operator={selectedOperator} presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
-              projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory||childBusy.gameConfig} hideExisting
+              projectSaved={!dirty&&!conflict&&!selectedLane.unsaved} storeAvailable={storeAvailable} disabled={conflict} interactionDisabled={parentBusy||childBusy.lifecycle||childBusy.directory||childBusy.gameConfig||childBusy.appearance||roomEditorDirty} hideExisting
               onDraftChange={value=>{roomDraft.current=value;setRoomDirty(value);}} onBusyChange={value=>setChildBusyFor('room',value)} onCreated={receipt=>{updatePackage(receipt.room.operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>:null}
             {roomChoices.length?<section className={styles.card} aria-label="Välj rum för spelinställningar">
               <label className={styles.field}>Spelrum<select aria-label="Spelrum för spelinställningar" value={roomChoices.some(room=>room.id===requestedRoomId)?requestedRoomId as string:''} disabled={interactionBusy} onChange={event=>chooseRoom(event.target.value)}>
                 <option value="">Välj ett publicerat spelrum</option>{roomChoices.map(room=><option key={room.id} value={room.id}>{room.name}</option>)}
               </select></label>
-              <p>Bordsspråk och insatsprofil gäller delade blackjackrum. Rummets utseende hanteras via befintliga tillåtna val.</p>
+              <p>Välj det rum du vill ändra. Lager och spelinställningar nedan gäller bara det valda rummet, inte bolagets andra rum. Bordsspråk och insatsprofil gäller delade blackjackrum. Spara ett rumsutkast i taget.</p>
             </section>:null}
-            {selectedRoom&&roomChoices.some(room=>room.id===selectedRoom.id)?<RoomGameConfig key={operatorId+':'+selectedRoom.id} operatorId={operatorId} roomId={selectedRoom.id} roomName={selectedRoom.name}
-              disabled={parentBusy||childBusy.room||childBusy.lifecycle||childBusy.directory||resourceStale}
+            {selectedRoom?<section className={styles.card} aria-label="Rummets lager">
+              <div className={styles.cardHeading}><div><span className={styles.eyebrow}>VALT RUM</span><h2>Rummets lager · {selectedRoom.name}</h2></div>
+                <a href={studioNavigationHref('/admin/clips',editorContext)}>Öppna klippkartan för rummet →</a></div>
+              <p>Bakgrund, dealer och bord väljs bland de alternativ som rummets sammansättning tillåter. Placering för mobil och desktop hör till borddesignen i <a href={compositionHref}>sammansättningen</a>.</p>
+              <PartnerAppearanceLoader key={operatorId+':'+selectedRoom.id+':'+resourcesRevision} apiBase={labBasePath()+'/api/partner'} operatorId={operatorId} operatorSlug={selectedOperator.slug} roomId={selectedRoom.id} roomLayout
+                disabled={parentBusy||childBusy.room||childBusy.lifecycle||childBusy.directory||childBusy.gameConfig||gameConfigDirty}
+                onBusyChange={appearanceCallbacks.current.busy} onDirtyChange={appearanceCallbacks.current.dirty}
+                onSaved={saved=>{updatePackage(operatorId,current=>({...current,revision:saved.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>
+            </section>:null}
+            {selectedRoom&&roomChoices.some(room=>room.id===selectedRoom.id)?<RoomGameConfig key={operatorId+':'+selectedRoom.id+':'+resourcesRevision} operatorId={operatorId} roomId={selectedRoom.id} roomName={selectedRoom.name}
+              disabled={parentBusy||childBusy.room||childBusy.lifecycle||childBusy.directory||childBusy.appearance||appearanceDirty||resourceStale}
               onBusyChange={value=>setChildBusyFor('gameConfig',value)}
               onDirtyChange={value=>{gameConfigDraft.current=value;setGameConfigDirty(value);}}
-              onPublished={receipt=>{updatePackage(operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true}));setResourcesRevision(value=>value+1);}}/>:null}
+              onPublished={receipt=>{updatePackage(operatorId,current=>({...current,revision:receipt.packageRevision,needsRefresh:true,message:'',error:''}));setResourcesRevision(value=>value+1);}}/>:null}
           </>:null}
         </>:null}
-        <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory||childBusy.gameConfig} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
+        <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory||childBusy.gameConfig||childBusy.appearance||roomEditorDirty} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
       </>}
     </div>
   </PageTemplate>;

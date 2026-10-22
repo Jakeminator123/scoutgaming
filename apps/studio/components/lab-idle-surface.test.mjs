@@ -40,10 +40,11 @@ test('only a primary base presented frame opens the speech gate; playback start 
   assert.deepEqual(f.receipts.map(item => item.phase), ['started', 'presented']); f.unmount();
 });
 
-test('idle variants and secondary weighted bases never issue a standard-position proof', async () => {
-  for (const props of [{ kind: 'variant' }, { kind: 'base', standardBase: false }]) {
+test('idle variants, server-chain clips and secondary weighted bases never issue a standard-position proof', async () => {
+  for (const props of [{ kind: 'variant' }, { kind: 'server' }, { kind: 'base', standardBase: false }]) {
     const f = fixture(props); await flush(); f.frame();
     assert.deepEqual(f.ready, [false]); assert.equal(f.receipts.at(-1).phase, 'presented');
+    assert.ok(f.receipts.every(receipt => receipt.kind === props.kind), 'receipts preserve the actual clip kind');
     f.end(); assert.equal(f.receipts.at(-1).phase, 'completed');
     assert.ok(f.ready.every(value => value === false)); f.unmount();
   }

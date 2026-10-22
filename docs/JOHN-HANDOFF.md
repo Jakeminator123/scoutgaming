@@ -1,5 +1,313 @@
 # Aktuell handoff — Scoutgaming
 
+## J05/J07/J08 — aktuell leverans — 22 oktober 2026
+
+**Mål/status:** huvudprioriteten är begripligt Admin för Blackjack: Jakobs
+befintliga klippkarta, tre separat valbara kompatibla lager och sparade val som
+når rätt operatör/rum och spelets presentation. Produktmodellen finns enbart i
+TERMINOLOGI. Kevin/Emils videor och övergångar anpassas till main; tvålagersmodellen
+ska inte införas. Bevara fungerande transport, ingen total omskrivning.
+[Masterplanen](../migrering/MASTERPLAN.md) och status.json är kanoniska:
+9/20 hela aktiviteter VERIFIED (45%),55% kvar; ingen tids-/kod-/driftsprocent.
+Förenkling J05/J06/J09/J10 är inte färdig. Nya flerspelarutökningar och QA-seeds
+är pausade som aktiv prioritet. RunPod/lipsync ligger sist manuellt med Jakob/Kevin.
+Driftflaggan är fortsatt AV; inga nya godkännanden eller produktionsåtgärder.
+
+**Integration:** draft PR336, codex/shared-room-transport, arbetskopia
+C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier. Senast levererad
+head83f5810d33c483868ac0ce2bab728efb813d51b4 har verifierad grönCI39753242313,
+mainbas47756bdf1df372c7aa5047dc165a2d721614c4a2. Server/klient/command/select,
+manifestbunden readonlyfixture och konstruktorbundna testportar är levererade.
+Produktionsdefaults, behörigheter och deployspärr består. Gröna tester bevisar
+inte färdig Admin-UX, full medieacceptans eller slutförd förenkling.
+
+Separata mergeagenten har levererat PR334/head24e9f0264bc244e2ddabdac0cc12b1537ab164bd:
+mainintegration39a348b4 och rumsreturrättning. Agentrapporterad CI39757805089
+success attempt1, normalhook43/43 respektive40/40 och oberoende slutreview.
+Root reproducerade rumsfelet2/2 och verifierade rättningen68/68,0skip; exact-byte
+review utan blockerare. Val av rum B bär table till Klippkarta och tappar gammal
+composition/lane/game, utan återställt formulärutkast. Rootpatchen togs bort ur
+transport först sedan samma bytes säkrats i J08. Den rättade334-versionen ska
+integreras kontrollerat före nästa beroende slutattest. Root mergar inga PR:ar.
+
+**Oförändrade skydd och rättningar i63c:** samma-PG G → S → sorterade R/P/A,
+låst session/credential/epoch/proveniens före receipt/replay, säker svarsläsning
+före COMMIT. Strikt14-operationers POST och readonly WS; snapshot före presentation,
+samma commandId/bytes vid osäkert nätutfall. Två låsta selectfångster runt olåst
+mediaarbete omkontrollerar session/version/material; inga nativejournalwrites.
+Exakt dealer/språk/hash och talgodkännande gäller. Global walletavisering till
+samma aktörs andra rum sker först efter yttersta COMMIT, även tick utan outbox.
+Observerfel ändrar inte durable resultat/health. Fryst total presentationsbudget
+och separat stallstopp stöder långa tal/övergångar, färskt zero-window placebets,
+korrekt kortcursor, abort och reconnect. Ingen legacy/shared-writerblandning.
+
+**Ny lokal QA-port:** tools/run-shared-room-k04-qa.mjs startar verklig server via
+en separat sanitiserad barnprocess och engångscapability. Ingen miljöflagga eller
+HTTP-route kan avaktivera ordinarie TLS/Neon-vakter. Före fixtureimport verifieras
+literal127.0.0.1, faktisk PG-address/port/DB/roll/system-ID och syntetisk testscope;
+prod-/provider-/molnkontext nekas. Produkt-/Studio-readiness och saved-policy
+kontrolleras, sedan färsk identitet före capabilitykonsumtion. Serverns listener,
+origin, storage/policy och privata media bindas till dessa explicita testportar.
+Inga migrations-/seed-/mediaimportskrivningar i launchern. Befintlig graceful
+shutdown används. Körkommando/fixturekontrakt står i ENVIRONMENT-RESTORATION.
+Detta är en isolerad verifieringsväg; inget parallellt produktregister.
+
+**Verifierad transportbas83f:** normalhook106/106,0skip,Node24.21,max4;
+shared/frozen-presentation35/35; Studio tsc --noEmit grön;573 kandidater/0orphan.
+Oberoende slutreview utan blockerare. Fixture11/11 använder syntetiska bytes och
+instrumenterad SQLpool; mediesvit7/7 innehåller två nya verkliga loopbackfall.
+Ingen ny full PG/server/K04-mediaacceptans eller visuell Adminacceptans.
+Oförändrade63c-bevis PG46/46 och Chrome1440/390 med syntetiska media återanvänds.
+c39:s capability/identityprov5/5 är verklig PG16.15 men instrumenterad policy/media.
+Tidigare appearance-fixturfel rättades i4b0 med grönCI39745790572; produktcallbacken
+hade redan rätt bindning. Taskservrar, kluster, pooler och browser är stoppade.
+
+**Slutcheckpointens förenkling:** STÄD levererade ett avgränsat sjufilsdelta: fyra gamla
+apps/web/lib-wrappers utan produktkonsumenter bort, tre tester använder aktiva
+shared-moduler direkt. 65pass/0fail/1valfrittbrowserskip av66 enligt STÄD;
+oberoende exakt review utan blockerare. Auth/rum/redirect-negativprov består.
+Detta är ett J06-delsteg; full J06 är inte klar. Slutcheckpointens normalhook,
+fulla commit och push/CI-status dokumenteras i PR336 och det privata stoppkvittot.
+Inga raderingar av aktiva appar, register, authadaptrar eller mediehistorik.
+
+Den kort påbörjade nya seedfunktionen är pausad, privat hashbevarad som
+partial/unreviewed i seed-paused. Root tog bara bort dess två egna otrackade
+arbetsfiler efter verifierad backup. PrepareCLI skrevs inte. Ingen PG-/medie-
+acceptans eller produktleverans av detta arbete. Återuppta inte automatiskt.
+
+**Schemaförslaget:** tools/prepare-shared-schema.mjs är offline utan driver/apply,
+för exakt008→009→010 i en transaktion med identitet/ägare/product-v1-ledger,
+fresh-only/balans/ägargrindar, begränsade lås och slutkontroller. Ägarens ACL-kontroll
+är inte bevis på driftens credential/roll. Ingen produkt-DML/
+nyledger. Privat schema-preparation/game008-010-review.sql SHA256
+585db737e9732cf0d5ab8fcefa8b24e8b0615bceaf51825ce75669088f098e34.
+Nu faktiskt provat10/10 även på PostgreSQL18.6 (Node22.22), oförändrad63c-kod.
+Samtliga11källkopior/27artifacthashar oberoende verifierade; clusterStopped:true,
+port35437 ECONNREFUSED, ägda binärer/temp borttagna. Testets minimum-major16
+behölls; faktisk motor18.6. Separat syntetisk dump/restore är nu klar8/8 på
+PG18.6/Node22.22: 47 tabeller/fyra sekvenser, data/ledger/reservation/receipt,
+ägare/ACL och replay efter ny anslutning utan dubbel effekt. Elva readonly
+preflightfrågor körda före008 och efterrestore. Första försökets rena NUMERIC-
+textassert rättades smalt efter review; slutprovet grönt. Privat
+recovery-shared-restore/manifest.json + probe.log; PID608/port36911 stängda,
+kluster/binärer/temp borttagna. Roller förskapades; ingen Neon/PITR/prodrestore.
+Detta stänger det syntetiska återställningsprovet, inte liveACL/operativ restore/DDL.
+Faktisk runtimecredential är ännu obestyrkt: Render saknar env-read, browser use
+är avstängd och SSH nekade befintliga nycklar efter verifierad Frankfurt-värdnyckel.
+Granskningsplanen och rättad skillnad mellan DDL-ägare och driftroll finns i
+ENVIRONMENT-RESTORATION; inga produktionsåtgärder har gjorts.
+Tidigare PG46/46 och Chrome1440/3901/1 på63c består. Chrome använder isolerade
+data/mediaersättningar;27moduler, cleanuptrue, inte K04-mediaacceptans.
+Bevis privat under denna chatts visualizations/2026/10/22/
+01a161cd-294a-7951-8190-5cf396ab8c13/{recovery-pg18-schema,recovery-qa-identity,
+recovery-shared-room-qa-context,recovery-shared-room-k04-qa,qa-entry-focused.log}.
+Körningar överlappar; inga nya hela aktivitetsbockar.
+
+**Nästa rekommenderade synliga leverans (första steget levererat av Claude,
+se avsnittet ”Admin: rummets lager” nedan):** gör befintliga
+Admin-flödet för ETT Blackjackrum sammanhängande: Klippkarta → val av kompatibel
+bakgrund/dealer/bord och mobil-/widescreenpreset → spara → återöppna samma rum
+med samma val → ordinarie publiceringssteg/förhandsvisning. Visa tydligt vilket
+rum som ändras och skillnaden mellan sparat utkast och publicerad version.
+Utgå från befintliga komponenter och servicekontrakt; kartlägg endast luckorna
+i detta flöde innan en liten ändring. Ingen ny trelagersbugg är belagd av den
+avbrutna reviewn. Det kända rumsreturfelet är redan rättat i PR334/24e; återinför
+inte rättningen dubbelt i336. Ingen ny QA-plattform eller omskrivning av spelet.
+
+Kevin har ingen klientleveransskuld; refill eb6ab455 är redan granskad/inkluderad.
+Ny läst6337164200 rapporterar81 lokala Draganfiler, isoleratPG16 med schema men
+utan seed och två förberedda nonspeechprov. Detta är inte utförd acceptans.
+Root tog först seedhindret i6337875026, men Jakobs senare direkta prioritering
+ersätter det i6337998848: inga fler seed-/spelarprovsuppdrag nu. Kevin får lämna
+befintliga övergångsfunktioner/klippsekvenser med exakt head och de beroenden till
+tvålagersrenderern som måste anpassas till tre lager. Main är gemensam produktgrund.
+
+Talunderlag6337159642 på9ab3701179d5edf46beee505752cd6080dad708e och RunPod-
+underlag6337071717 på134c3b6997bb5d6d00a51451c2d46b49a84d2963 är bevarade för
+sista manuella etappen. Inga godkännanden eller nya GPU/API-/benchmarkjobb.
+Oberoende läsning visar att endpointbyte inte räcker och versions-/framekontrakt
+behöver jämföras senare. Hashtest är ingen lipsyncacceptans. Inga approvalundantag.
+PR333 saknar mergemandat. Svara endast på faktiska nya leveranser/beslut/blockerare,
+inte på egna poster eller mottagningskvittenser.
+
+**Merge/produktion:** separat chatt01a1624f-b0af-7202-bda5-9a3c06566976 äger alla
+PR-merger. PR311 är mergad98174fd8 och PR337 är mergad47756bdf; root mergar inga
+PR:ar. Mergeagenten verifierar PR337:s main-CI39750982149 completed/success,
+identiskt träd med granskad a04. Inga nya deployer observerade. Eftermerge-CI
+39740157570 attempt1 föll på rapporterad250ms timingflake; attempt2 startade
+inga tester pga Billing/spending. Efter Jakobs budgethöjning rapporterar
+merge-agenten attempt3 completed/success utan teständring. Den äger separat
+Actions-kostnadsuppdrag och ensam plankopian/workflowändringar; root gör inga
+överlappande CI-/hookoptimeringar. c39:s eget fixturefel är redan rättat i4b0.
+334/336 har dessutom schema/liveACL/restore/
+K04- och integrationsgrindar. Exakt-head grön obligatorisk CI och fräsch
+owner/source/headkontroll gäller; inga bypass/force/queue/automerge/branchraderingar.
+**Rättat deploybeslut 22 oktober (Jakob direkt):** main ska deployas till
+produktion som förut; endast förhandsgrenar ska inte få deployments. Den
+tidigare tolkningen ”ingen deploy alls” var ett missförstånd. `vercel.json` i
+PR336 sätter `git.deploymentEnabled` till main=true och alla andra grenar
+false; Render croupier-v2 får autoDeploy åter på för main genom Jakobs egen
+CLI-körning (`render services update srv-datg3j6gekts73amgli0 --auto-deploy`),
+eftersom agentsessionen inte får göra produktionsändringar.
+Övriga spärrar kvarstår: ingen produktion-DDL, env-/flaggaktivering, GPU eller
+betald drift utan separat beslut. Mediaimport av Kevins verifierade tagningar
+är beslutad av Jakob och körs genom Admins ordinarie uppladdning.
+
+Produktion wandering-hill-60561912/br-flat-fog-b161a6r8/croupier_game är PG18.6,
+6players/0ogiltiga balanser; game008–010 saknas. Studio-readiness täcker inte dessa.
+Verklig runtime-ACL och återställningsberedskap återstår före konkret DDL-beslut.
+Senast lästa K05PR314/head9ab3701179d5edf46beee505752cd6080dad708e tillför
+talgranskningsunderlag ovanpå tidigare metadata/validator; faktisk registry-/
+Blobbindning och talgodkännande är fortsatt ofullständiga.
+Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
+Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
+sourceverified/monitoringactive, incidentcompleteforthissource,
+locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
+GitGuardian-åtkomst; connectorn bekräftar nya main47756bdf med queued
+GitGuardian-suite utan checkrun. Aktuell incident-/platsläsning är därför ofullständig;
+tidigare kvitto eller queued suite är inte full incidentfrihet. Mergeagentens nya
+källbundna läsning på477 rapporterar0open/23ignored/monitoringactive, med fortsatt
+locationspartial/historicaltoo_large; detta är tillskrivet bevis. Inga incidenter ändrade.
+
+**Arbetskopior:** arkivering, inte merge, tog gamla kopior. De är återställda på
+exakt gamla paths och Gitlåsta; app-attach ownerless nekas ännu. Ursprungschatt
+01a15e6b-61f9-7843-aa06-3a47dee6a194 ska vara oarkiverad. Inga extra kopior/brancher.
+Primarymain028a199b tillhör andra och förblir orörd. Godkända TOMMA Neonstaging
+PG18/Frankfurt/fast0.25CU/300s är oskapad eftersom Vercelmanaged-parametrarna ännu
+inte kan verifieras; fråga inte igen eller skapa okända defaults. Render förblir en instans.
+
+
+**Stopp och överlämning till nästa agent — 22 oktober 2026:** Jakob begär en
+ren checkpoint och överlämning till Claude i annan IDE på samma dator. Root
+slutför bara detta elvafilsdelta (sju städfiler och fyra befintliga plan-/
+handofffiler) med normalhook och normalpush. Inget nästa produktarbete startas.
+Automationen synka-migreringen-med-kevin är PAUSED, target
+01a161cd-294a-7951-8190-5cf396ab8c13; femminutersregeln är bevarad. Återstarta
+inte automatiskt. Inga chattar eller arbetskopior arkiveras.
+
+- **Mergat:** PR311 plan/regler/deployspärr och PR337 CI-kostnadsändring.
+  GitHub-main är47756bdf1df372c7aa5047dc165a2d721614c4a2, nyss verifierad med grönCI.
+- **Levererat men inte mergat:** PR334/24e (Admin/versionerad konfiguration
+  och rumsretur) samt PR336/83f (delat spel, behörighet/sparning, klient-/
+  mediekoppling och schemaförslag). Detta städ-/checkpointdelta är förberett;
+  dess leverans fastställs först av slutkvittot efter normalcommit och normalpush.
+  PR332:s arbete ingår i334; öppna inte ett parallellt integrationsspår för det.
+- **Gjort i sista checkpointen:** fyra oanvända testwrappers bort, tre tester
+  pekar på aktiva moduler; aktuell plan/status prioriterar Admin och tre lager.
+  Den större avvecklingen och Admin-acceptansen är fortfarande ofärdiga.
+- **Varför det återstår:** transport, SQL-lås, auth, sparning och återställning
+  behövde integreras och granskas. QA-anslutningen tog ett separat delspår men
+  full medieacceptans uppnåddes inte. Jakob prioriterar nu synligt Adminflöde;
+  mer QA-seedarbete är parkerat och får inte användas som ny förhandsgrind för
+  en oberoende UI-förbättring. Faktiska schema-/auth-/sparningskrav består.
+- **Återstår i planen:** J05/J06 runtime-/testrensning, J08 Adminintegration,
+  K04 presentation/övergångar, K05 exakta mediekopplingar; sedan J09/J10
+  verifierad avveckling/återställning, K06/K07 integration/spelbeteende och
+  O02/O03 oberoende slutgranskning/verifierad drift. STATUS.md anger fulla
+  beroenden. 45% betyder nio helt verifierade aktiviteter, ingen tidsprognos.
+- **Parkerat:** nya QA-seeds/spelarprov/flerspelarutökning; RunPod/lipsync
+  sista manuella etappen med Jakob/Kevin. seed-paused innehåller partiellt,
+  ogranskat underlag, inte en färdig leverans. PrepareCLI skrevs aldrig.
+- **Blockerat före produktintegration/drift:** game008–010 saknas i rätt
+  Neonproduktion; deployed runtime-ACL och operativ backup/restore saknar
+  bevis. Offlineförslag och syntetiska prov är klara, produktions-DDL/deploy
+  kräver separat beslut. Saknad talgranskning får aldrig ersättas med QA-undantag.
+
+**Exakt övertagande:** använd samma befintliga
+C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier, branch
+codex/shared-room-transport, origin git@github.com:Jakeminator123/scoutgaming.git.
+Kontrollera git status/HEAD och agent-talk innan writes; läs AGENTS, denna första
+sektion, ENVIRONMENT-RESTORATION och migrering/MASTERPLAN.md/status.json/STATUS.md.
+Ingen ny clone/worktree/branch, checkout/reset/stash eller ändring i primarymain.
+Slutligt fullHEAD och renhets-/CI-kvitto ska dokumenteras efter commit/push i
+PR336 och privat stop-checkpoint/manifest.json under denna chatts befintliga
+evidensrot. Ny CI är ännu inte verifierad;83f:s gröna CI gäller inte nya bytes.
+Privata underlag får inte kopieras till Git; bara kanoniska guider gäller som plan.
+
+STÄD (chatt01a16304-a4b9-7250-8c2f-0bec74573ac4) har släppt paketA och startar
+inte paketB. Rootunderagenterna är färdiga; ingen ny trelagersreview pågår.
+Mergeagenten01a1624f-b0af-7202-bda5-9a3c06566976 äger ensam PR-merger samt
+J08-kopian och migrering-masterplan-kopian; den får ingen konkurrerande writer.
+Ingen transportöverlämning till mergeagenten har gjorts. Kontakt med Kevin
+fortsätter i samma GitHubissue312 vid återupptaget arbete; senaste aktuella
+uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
+poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
+nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
+
+## Admin: rummets lager på Spelrum & publicering — 22 oktober 2026
+
+Claude (annan IDE) tog över från rootens checkpoint `4e094fbb` på samma
+arbetskopia och branch; CI39762134151 på den checkpointen är verifierad grön.
+Luckkartan för flödet ”ett Blackjackrum” visade att rummets val låg på tre
+ytor med tre skilda utkast: sammansättning/paketpublicering och J08:s
+spelinställningar på `/admin/rooms` (`admin-publication-page.tsx`), rummets
+bakgrund/dealer/bord (`roomOverrides` via `partner-branding-api`) bara i
+klippkartans rumspanel (`registered-studio.tsx`) och partnerportalen, samt
+mobil-/desktopplacering per borddesign i sammansättningspanelen. Rumssidan
+hänvisade bara till ”befintliga tillåtna val”.
+
+Ändring: `/admin/rooms` monterar nu befintliga `PartnerAppearanceLoader` i
+rumsläge för det valda verifierade publicerade rummet, i ett eget kort
+”Rummets lager · <rum>” ovanför spelinställningarna, med länk till klippkartan
+för samma rum och till sammansättningen för placering. Panelen visar själv
+publicerad version och sparat utkast och sparar/granskar/publicerar genom
+oförändrat branding-API med befintlig N1-behörighet och revisions-CAS.
+Panelens utkast och pågående skrivning ingår i sidans befintliga skydd:
+bekräftelse före byte av bolag/sammansättning/rum, beforeunload, spärrad
+”Återöppna sparat läge” och spärrad paketpublicering med statusen ”Spara
+rummets ändringar först”. Regeln är ett rumsutkast i taget: ett osparat eller
+pågående rumskort låser syskonkortet, rumsskapandet och rummens livscykel,
+så att en publicering eller omläsning aldrig kan montera om det andra kortet
+över osparade ändringar. Båda rumskorten nycklas på resursrevisionen och
+laddar därför om på den nya paketrevisionen efter en publicering; kvittot för
+en äldre paketpublicering nollställs samtidigt (gällde tidigare även J08-kortet).
+Inga nya writers, API:er, kontrakt eller schema. `chooseRoom`:s URL-hantering
+är orörd: rumsreturrättningen finns bara i PR334 och integreras av mergeagenten.
+
+Verifiering: `apps/studio/test/admin-publication-page.test.mjs` 38 → 43 prov,
+0 skip, Node 24.21.0, högst fyra workers; `admin-publication-workspace.test.mjs`
+1 pass och 1 valfritt browserprov överhoppat (ingen Playwright i arbetskopian);
+`control-operator-directory`/`lane-editor` 27/27; Studio `tsc --noEmit` exit 0.
+Oberoende läsreview av diffen: inga blockerande fynd; tre bör-fixar (stale
+paketrevision mellan rumskorten, osparat utkast låste inte syskonwriters,
+kvarstående paketkvitto) är rättade enligt ovan och täckta av proven.
+Ingen browser-/visuell acceptans, ingen PG-, live- eller mediekörning.
+Kvar i flödet: mobil-/widescreenförval per rum saknar kontrakt (placeringen
+ligger per borddesign), ett ovisst resursläsningssvar avmonterar rumskortet på
+samma sätt som J08-kortet, Kevins övergångssekvenser är inte kartlagda mot tre
+lager (begärt i #312/6337998848, obesvarat) och Kevins mandat om sex svenska
+talrepliker (#312/6338036945) väntar på Jakobs beslut om uppladdning.
+
+**Senare samma dag, tre commits på samma branch (Claude):**
+
+- Spelvyn i delat rum: retry-knappen låg i den klickdöda statusrutan, gamla
+  enspelarkontroller syntes trots `hidden` (stilregler vann), dollargränsen kom
+  från gamla HUD:en och platskontrollerna krympte under 44 px och överlappade.
+  Rättat i `shared-room-view.mjs` och `styles.css`: retry i kontrollraden,
+  display:none på gamla ytor, rummets gränser i kr från serverns inställningar,
+  insatsknappar bara på egen plats, kontrollskala aldrig under 0,8. 27/27 prov.
+  Motsvarar Kevins B1/B2/C1/C2 i #312/6339094902; hans omkörning återstår.
+- Klippval styrs av Admin, inte av spelaren: det frysta rumspaketet exponerar
+  sammansättningens sparade OpenClaw-lägen per fas (idle/deal/reveal/speak),
+  servern härleder läget för select, idle-regler och idle-advice från den
+  publicerade sammansättningen i stället för klientens begäran, och den
+  publicerade spelaren döljer rullgardinen ”Klippval”. Studio-prov utan rum
+  behåller kontrollen. 271 prov över presentation, selection och vy.
+- QA-launchern: Kevins tre startrader (ingen `LAB_PUBLIC_URL`, slumpad
+  ingress-hemlighet per process, Lab-sessionskontroll av) är bundna till
+  engångskapabiliteten `sharedRoomQa`; inga produktionsvakter ändrade.
+
+Välkomstfilm: Kevins `dragge/repliker/{sv,en}/greeting_1–3.mp4` samt svenska
+`win_1`, `dealerbust_1` och `placebets_1` är hämtade från frysta `5aa7ed10`,
+verifierade mot mains importunderlag (gitblob och storlek), sha256-hashade och
+probade med ffprobe (1080×1920, CFR 24, AAC) i privat arbetsyta utanför Git.
+Registrering via ordinarie upload-API är inte utförd: klippkartans uppladdning
+nekar talmedia, identiteten kräver audio-/indexhash enligt recorded-speech v1,
+och sessionen saknar tillstånd för produktionsanrop. Attestation är begärd av
+Kevin i #312/6339673965. Kvarstående luckor: K04:s serverkedja för idle
+(`room-idle.mjs`) saknar automatiska intervall och OpenClaw-val, och mobil-/
+widescreenförval per rum saknar kontrakt.
+
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 
 **Integration inför PR334:** tidigare granskad head
