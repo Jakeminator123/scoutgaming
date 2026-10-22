@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto';
 import { fingerprint } from '../table/ports.mjs';
 import { presentationForRow } from './outbox-presentation.mjs';
+import { sharedPostgresTransaction, sharedPostgresClient, poisonSharedPostgresTransaction } from '../../../../../packages/storage/server/postgres-transaction-context.mjs';
 
 const table = 'croupier_game.shared_table_presentation_receiver';
 const lockId = id => {
@@ -67,6 +68,13 @@ export function createPostgresPresentationReceiver({ pool, lockTimeoutMs = 5000,
     async current(roomId) {
       const value = await read(`SELECT body FROM ${table} WHERE room_id=$1`, [roomId]);
       return value ? JSON.parse(value.body).presentation : null;
+    },
+    async currentLocked(roomId) {
+      const shared = sharedPostgresTransaction(pool);
+      if (!shared || !shared.serialize || !shared.tablePlan?.rooms.includes(roomId)) throw poisonSharedPostgresTransaction(new Error('Shared presentation read requires its locked room'), shared);
+      const value = (await sharedPostgresClient(pool).query(`SELECT body FROM ${table} WHERE room_id=$1 FOR SHARE`, [roomId])).rows[0];
+      try { return value ? JSON.parse(value.body).presentation : null; }
+      catch (error) { throw poisonSharedPostgresTransaction(error, shared); }
     },
   };
 }

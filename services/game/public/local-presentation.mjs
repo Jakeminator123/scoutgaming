@@ -57,7 +57,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
   const behaviourVersion = (value,type) => type==='settle' && settlementContinuation?.from===value ? settlementContinuation.to : value;
-  async function observeEvents(events, {command,previousVersion} = {}) {
+  async function observeEvents(events, {command,previousVersion,signal} = {}) {
+    if(signal?.aborted)return;
     // Successful collection completes the same settled round. Carry only its
     // verified result across that one version change, including a late response.
     if(command==='collect') {
@@ -73,12 +74,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     lastBehaviour=key;
     const own=++behaviourRequest;
     try {
-      const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+      const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json'},
         body:JSON.stringify({dealerId,version:requestVersion,mode:'rules',event:{type:event.type,
           ...(event.type==='turn'?{box:event.box,handIndex:event.handIndex}:{})},...(context?{presentationContext:context}:{})})});
-      if (!response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || !response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
       const result=await response.json();
-      if (own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
       retainRule(result,requestVersion,event.type);offerPendingRule();
     } catch { /* Optional behaviour never blocks cards, speech or the player's turn. */ }
   }

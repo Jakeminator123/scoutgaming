@@ -1368,3 +1368,28 @@ test('new unreviewed speech metadata never reaches the live media player', async
   assert.equal(await f.controller.present({type:'speak',line:'goodluck'}),false);
   assert.equal(f.jobs.length,0);assert.match(f.status.textContent,/granskning eller identitet/);
 });
+
+
+for(const late of ['response','json'])test('aborted rule observation cannot offer stale idle after '+late,async t=>{
+  const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='linnea/idle.ready/ready';
+  const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]};
+  const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
+  const inventory={videos,families:[{id:familyId,dealerId:'linnea',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true});
+  const original=globalThis.fetch,connection=new AbortController();let release,entered;
+  const gate=new Promise(resolve=>{release=resolve;}),started=new Promise(resolve=>{entered=resolve;});
+  globalThis.fetch=async(url,options)=>{
+    const response=await original(url,options);if(url!=='/api/presentation/select')return response;
+    assert.equal(options.signal,connection.signal);
+    const result=await response.json(),body=JSON.parse(options.body);
+    const value={...result,idleRule:{videoId:alt,requestId:result.decision.requestId,mode:'rules',version:body.version,presentationContext:null,expiresAt:new Date(Date.now()+30000).toISOString()}};
+    if(late==='response'){entered();await gate;return Response.json(value);}
+    return{ok:true,json:async()=>{entered();await gate;return value;}};
+  };
+  const control=f.elements.find(row=>row.className==='local-presentation-mode');control.value='rules';control.onchange();
+  f.controller.state({action:true});const observing=f.controller.observeEvents([{type:'turn',box:3,handIndex:0}],{signal:connection.signal});
+  await started;connection.abort();release();await observing;f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+  const current=f.jobs.at(-1);current.options.onReceipt({state:'start'});current.options.onReceipt({state:'presented'});current.resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.at(-1).take.media.src,videos[0].src,'cancelled optional rule never replaces the saved baseline');
+  f.controller.close();globalThis.fetch=original;
+});

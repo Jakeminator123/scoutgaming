@@ -31,10 +31,10 @@ function fixture(t, hooks = {}) {
         return actual;
       },
     }),
-    createReceiver: () => ({ async assertInstalled() {}, async current() { return null; }, async sink() { return 'applied'; } }),
+    createReceiver: () => ({ async assertInstalled() {}, async current() { return null; }, async currentLocked() { return null; }, async sink() { return 'applied'; } }),
     createRuntime(options) {
       runtimeOptions = options;
-      return { async start() { running = true; }, async stop() { running = false; },
+      return { async start() { running = true; }, async stop() { running = false; }, withLockedRead() { assert.fail('Unexpected direct reader'); },
         health: () => ({running, failed:false}),
         coordinator: { async command(context, input) {
           assert.equal(state.active, true); assert.equal(input.roomId, 'room-a');
@@ -47,6 +47,10 @@ function fixture(t, hooks = {}) {
         } },
       };
     },
+    createPresentationAccess: ports => ({ async withSharedCommittedReceipt(args,select) {
+      assert.equal(typeof ports.withLockedRead,'function'); assert.equal(typeof ports.readPresentationLocked,'function');
+      return hooks.presentation(args,select);
+    } }),
     createChannel: () => ({ emitCommitted(room) { assert.equal(state.active, false); trace.push('hint'); hinted.push(room); }, close() {} }),
     createUpgrade: () => ({ handleUpgrade() {}, close() {} }),
   });
@@ -129,4 +133,31 @@ test('global pause privately notifies all server-selected affected rooms only af
   assert.deepEqual(h.hinted,['room-a','room-b']);
   assert.equal(Object.hasOwn(result.result,'rooms'),false);
   assert.ok(h.trace.indexOf('commit')<h.trace.indexOf('hint'));
+});
+
+test('shared presentation service forwards authenticated request and lifecycle signal to its composed read port',async t=>{
+  let calls=0;
+  const h=fixture(t,{presentation:async(args,select)=>{
+    calls++; assert.equal(args.playerId,'alice'); assert.equal(args.request.headers.get('cookie'),'fixture=opaque');
+    assert.equal(args.signal.aborted,false); return select({sourceEvent:{type:'speak',line:'placebets'}},{signal:args.signal});
+  }});
+  const request=new Request('https://player.invalid/api/presentation/select',{method:'POST',headers:{cookie:'fixture=opaque'}});
+  await assert.rejects(h.service.withSharedCommittedReceipt({request,playerId:'alice',body:{}},()=>({})),{statusCode:503});
+  assert.equal(calls,0);await h.service.start();
+  const result=await h.service.withSharedCommittedReceipt({request,playerId:'alice',body:{}},async(capture,{signal})=>{
+    signal.throwIfAborted(); assert.equal(capture.sourceEvent.line,'placebets');return {video:null};
+  });
+  assert.deepEqual(result,{video:null});assert.equal(calls,1);assert.equal(h.service.health().inFlight,false);
+});
+
+test('shutdown aborts and drains a shared presentation selection and refuses late success',async t=>{
+  const entered=deferred(),release=deferred();let signal;
+  const h=fixture(t,{presentation:async(args)=>{signal=args.signal;entered.resolve();await release.promise;args.signal.throwIfAborted();return {video:null};}});
+  await h.service.start();
+  const request=new Request('https://player.invalid/api/presentation/select',{method:'POST'});
+  const pending=h.service.withSharedCommittedReceipt({request,playerId:'alice',body:{}},()=>({}));
+  const rejected=assert.rejects(pending,error=>error?.name==='AbortError');await entered.promise;
+  assert.equal(h.service.health().inFlight,true);let done=false;
+  const closing=h.service.close().then(()=>{done=true;});await turn();assert.equal(done,false);assert.equal(signal.aborted,true);
+  release.resolve();await rejected;await closing;assert.equal(done,true);assert.equal(h.service.health().inFlight,false);
 });

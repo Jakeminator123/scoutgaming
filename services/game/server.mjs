@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { MOVING_TRIAL_BUDGET } from './moving-speech-budget.mjs';
 import { handleSharedRoomHttp } from './shared-room-http.mjs';
+import { withSharedRoomEntry } from './shared-room-entry.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from '../../packages/navigation/player-handoff.mjs';
@@ -951,6 +952,17 @@ const server = createServer(async (req, res) => {
   if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || presentationPublicSource(pathname)) {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
+        withSharedCommittedReceipt: ({request,playerId,body,signal},selectFrozen) => {
+          if (!sharedRoomsEnabled || !sharedRoomService || request.method!=='POST' || request.url!=='/api/presentation/select')
+            throw Object.assign(Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+          const engineOrigin=process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin;
+          const url=new URL(request.url,engineOrigin);
+          if(request.headers.origin!==frontendOrigin || request.headers.host!==url.host
+            || ['authorization','upgrade','sec-websocket-protocol','x-worker-id'].some(key=>request.headers[key]!==undefined))
+            throw Object.assign(Error('shared_room_presentation_forbidden'),{code:'shared_room_presentation_forbidden',statusCode:403});
+          const authenticatedRequest=new Request(url,{method:'POST',headers:request.headers,signal});
+          return sharedRoomService.withSharedCommittedReceipt({request:authenticatedRequest,playerId,body,signal},selectFrozen);
+        },
         beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
           if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
@@ -1344,7 +1356,7 @@ const server = createServer(async (req, res) => {
       }
       selection = entry.selection;
     }
-    const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);
+    const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection),{enabled:sharedRoomsEnabled,selection});
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }

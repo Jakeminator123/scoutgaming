@@ -8,6 +8,9 @@ import { createStudioRepository } from '../packages/studio-registry/server/docum
 import { canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
+import { createPostgresTableRuntime } from '../services/game/games/blackjack/table/postgres-runtime.mjs';
+import { createPostgresPresentationReceiver } from '../services/game/games/blackjack/presentation/postgres-receiver.mjs';
+import { createSharedRoomPresentationAccess } from '../services/game/shared-room-presentation-access.mjs';
 import { createSharedCommandAuth } from '../services/game/storage/shared-command-auth.mjs';
 import { projectSharedRoomCommandResult } from '../services/game/shared-room-command-contract.mjs';
 import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
@@ -94,7 +97,7 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
   assert.deepEqual((await secondPool.query(targetSql)).rows[0], target, 'both participants use the same isolated cluster');
   const check = async (name, work) => { await work(); checks.push(name); console.log(`ok - ${name}`); };
 
-  async function fixture() {
+  async function fixture({ presentation = false } = {}) {
     const id = randomUUID(), actorId = `command-${id}`, roomId = `command_${id.replaceAll('-', '')}`;
     const scope = { environment: 'test', workspaceId: `command-${id}` };
     const digest = createHash('sha256').update(`synthetic-session:${id}`).digest('hex');
@@ -129,7 +132,13 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
         return true;
       },
     });
-    await store.config.publish(roomId, 'v1', structuredClone(DEFAULT_CONFIG));
+    const publication = { roomId, operatorId: `operator-${id}`, packageRevision: 1 };
+    const config = structuredClone(DEFAULT_CONFIG);
+    if (presentation) Object.assign(config, publication, { material: {
+      revision: 'synthetic-material-v1', dealerId: 'astrid', language: config.language,
+      leadMs: config.leadMs, cardMs: config.cardMs, media: [{ id: 'synthetic-video', sha256: 'a'.repeat(64) }],
+    } });
+    await store.config.publish(roomId, 'v1', config);
     let sequence = 0;
     const input = (op, fields = {}) => ({ roomId, commandId: `command-${++sequence}`, op, ...fields });
     async function invoke(command, { onStarted, afterMutation } = {}) {
@@ -168,7 +177,8 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
       for (const [key, [sql, values]] of Object.entries(queries)) result[key] = (await pool.query(sql, values)).rows;
       return result;
     }
-    return { actorId, roomId, userId, digest, scope, store, storage, invoke, input, join, durable, admissions };
+    return { actorId, roomId, userId, digest, sessionId, expires, scope, store, storage, repository, auth, traced, publication,
+      invoke, input, join, durable, admissions };
   }
 
   await check('shared-command-real-pg-one-transaction-auth-before-receipt-and-replay', async () => {
@@ -330,6 +340,129 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
       } finally {
         release.resolve();
         await pending?.catch(() => {}); await publishing?.catch(() => {});
+      }
+    });
+  }
+  // Publication admission is injected here; session/provenance, both captures,
+  // the coordinator's committed presentation and every SQL lock are real PG.
+  for (const change of ['none', 'session', 'material', 'version']) {
+    await check(`shared-select-real-pg-unlocked-callback-${change === 'none' ? 'returns-after-revalidation' : change + '-change-rejects-before-response'}`, async () => {
+      const h = await fixture({ presentation: true }), joined = await h.join();
+      const windowId = joined.response.snapshot.windowId;
+      await h.invoke(h.input('bet', { seat: 0, field: 'main', chip: 5, windowId }));
+      const ready = await h.invoke(h.input('ready', { windowId }));
+      assert.equal(ready.response.result.started, true);
+      const runtime = createPostgresTableRuntime({ pool: h.storage.gamePool, walletMode: 'demo', random: deterministicRandom('select-reader') });
+      const receiver = createPostgresPresentationReceiver({ pool: h.storage.gamePool });
+      const rows = (await pool.query('SELECT body FROM croupier_game.shared_table_outbox WHERE room_id=$1 ORDER BY ver', [h.roomId])).rows;
+      assert.equal(rows.length, 1, 'the real ready command committed exactly one plan');
+      await receiver.sink(JSON.parse(rows[0].body));
+      const presentation = await receiver.current(h.roomId);
+      assert.equal(presentation.status, 'ready'); assert.equal(presentation.ver, 1);
+      assert.equal(presentation.events.filter(event => event.type === 'speak' && event.line === 'goodluck').length, 1);
+      const context = { operatorSlug: 'synthetic-operator', roomId: h.roomId, packageRevision: 1, dealerId: 'astrid' };
+      const binding = { actorId: h.actorId, sessionId: h.sessionId, expiresAt: h.expires, ...h.publication };
+      const body = { dealerId: 'astrid', mode: 'rules', version: presentation.ver, event: { type: 'speak', line: 'goodluck' },
+        presentationContext: context, sharedRoom: { roomId: h.roomId, ver: presentation.ver, talkId: presentation.talkId } };
+      const entered = deferred(), release = deferred(), phases = [];
+      const hashKey = value => { const hash = createHash('sha256').update(value).digest(); return [hash.readInt32BE(0), hash.readInt32BE(4)]; };
+      const keys = [hashKey(`croupier-studio\0${canonicalStudioJson(h.scope)}`),
+        hashKey(`croupier-shared-table\0room\0${h.roomId}`), hashKey('croupier-shared-table\0audit\0global')];
+      const transactions = [], start = h.traced.trace.length, before = await h.durable();
+      let active = false, pending, writer, responseReleased = false, callbackCount = 0;
+      try {
+        writer = await secondPool.connect();
+        const helper = createSharedRoomPresentationAccess({ repository: h.repository, withLockedRead: runtime.withLockedRead,
+          // Only the already-admitted publication binding is synthetic. Revalidation
+          // uses the production session/provenance reader after real R/P/A locks.
+          access: { async authorize() { return structuredClone(binding); }, async revalidateLocked(value, { signal }) {
+            assert.deepEqual(value, binding);
+            transactions.push(await h.storage.db.prepare('SELECT pg_backend_pid() AS pid,txid_current()::text AS txid').get());
+            const fresh = await h.auth.bindingById(value.sessionId, { actorId: value.actorId, signal });
+            if (!fresh) return null;
+            assert.deepEqual(fresh, { actorId: h.actorId, sessionId: h.sessionId, expiresAt: h.expires, partnerKeyId: null });
+            return { actorId: fresh.actorId, sessionId: fresh.sessionId, expiresAt: fresh.expiresAt, ...h.publication };
+          } },
+          async readPresentationLocked(roomId) {
+            const current = await receiver.currentLocked(roomId), transaction = transactions.at(-1);
+            assert.notEqual(transaction.pid, writer.processID);
+            assert.deepEqual(await advisoryLocks(writer, transaction.pid, { classId: 0, objectId: 1129467984, subId: 1 }),
+              [{ mode: 'ExclusiveLock', granted: true }], 'each capture really holds G');
+            for (const key of keys) assert.deepEqual(await advisoryLocks(writer, transaction.pid,
+              { classId: key[0] >>> 0, objectId: key[1] >>> 0, subId: 2 }), [{ mode: 'ExclusiveLock', granted: true }],
+            'each capture really holds its S, R and A advisory locks');
+            phases.push(transaction); return current;
+          },
+        });
+        pending = observe(helper.withSharedCommittedReceipt({ request: new Request('http://127.0.0.1/shared-select'), playerId: h.actorId, body },
+          async (capture, { signal }) => {
+            callbackCount++; assert.equal(signal.aborted, false); assert.equal(phases.length, 1);
+            assert.equal(Object.isFrozen(capture.material.media[0]), true);
+            assert.deepEqual(capture.sourceEvent, presentation.events.find(event => event.type === 'speak' && event.line === 'goodluck'));
+            entered.resolve(); await release.promise;
+            return { video: { id: capture.material.media[0].id, sha256: capture.material.media[0].sha256 } };
+          }).then(result => { responseReleased = true; return result; }));
+        await bounded(Promise.race([entered.promise, pending.then(() => assert.fail('selector gate was skipped'))]), 'shared selector callback timeout');
+        const first = transactions[0];
+        assert.equal((await writer.query('SELECT xact_start FROM pg_stat_activity WHERE pid=$1', [first.pid])).rows[0].xact_start, null);
+        assert.deepEqual((await writer.query('SELECT locktype,mode FROM pg_locks WHERE pid=$1', [first.pid])).rows, [],
+          'first capture has committed and released every SQL lock while media work is pending');
+        assert.equal(responseReleased, false);
+        await writer.query('BEGIN'); active = true;
+        await writer.query("SET LOCAL lock_timeout='1000ms'; SET LOCAL statement_timeout='3000ms'");
+        assert.equal((await writer.query('SELECT pg_try_advisory_xact_lock(1129467984) AS acquired')).rows[0].acquired, true);
+        for (const key of keys) assert.equal((await writer.query('SELECT pg_try_advisory_xact_lock($1::integer,$2::integer) AS acquired', key)).rows[0].acquired, true);
+        // A second client can take the exact write locks while the callback waits.
+        for (const [sql, values] of [
+          ['SELECT id FROM croupier_game.players WHERE id=$1 FOR UPDATE NOWAIT', [h.actorId]],
+          ['SELECT player_id FROM croupier_game.craig_player_links WHERE player_id=$1 FOR UPDATE NOWAIT', [h.actorId]],
+          ['SELECT id FROM croupier_auth.users WHERE id=$1 FOR UPDATE NOWAIT', [h.userId]],
+          ['SELECT user_id FROM croupier_auth.bo_auth_epochs WHERE user_id=$1 FOR UPDATE NOWAIT', [h.userId]],
+          ['SELECT digest FROM croupier_game.player_sessions WHERE digest=$1 FOR UPDATE NOWAIT', [h.digest]],
+          ['SELECT room_id FROM croupier_game.shared_table_presentation_receiver WHERE room_id=$1 FOR UPDATE NOWAIT', [h.roomId]],
+        ]) assert.equal((await writer.query(sql, values)).rowCount, 1);
+        if (change === 'session') {
+          assert.equal((await writer.query('DELETE FROM croupier_game.player_sessions WHERE digest=$1', [h.digest])).rowCount, 1);
+        } else if (change === 'material') {
+          // Deliberately change this synthetic frozen row to prove the selector
+          // refuses a hash change even when version and media id are unchanged.
+          const config = JSON.parse((await writer.query('SELECT body FROM croupier_game.shared_table_configs WHERE room_id=$1 AND version=$2 FOR UPDATE NOWAIT', [h.roomId, 'v1'])).rows[0].body);
+          config.material.media[0].sha256 = 'b'.repeat(64);
+          assert.equal((await writer.query('UPDATE croupier_game.shared_table_configs SET body=$3 WHERE room_id=$1 AND version=$2', [h.roomId, 'v1', JSON.stringify(config)])).rowCount, 1);
+        } else if (change === 'version') {
+          const accepted = JSON.parse((await writer.query('SELECT body FROM croupier_game.shared_table_presentation_receiver WHERE room_id=$1', [h.roomId])).rows[0].body);
+          const room = JSON.parse((await writer.query('SELECT body FROM croupier_game.shared_table_rooms WHERE room_id=$1 FOR UPDATE NOWAIT', [h.roomId])).rows[0].body);
+          accepted.row.ver++; accepted.presentation.ver++; room.presentationVer++;
+          assert.equal((await writer.query('UPDATE croupier_game.shared_table_presentation_receiver SET ver=$2,body=$3 WHERE room_id=$1', [h.roomId, accepted.presentation.ver, JSON.stringify(accepted)])).rowCount, 1);
+          assert.equal((await writer.query('UPDATE croupier_game.shared_table_rooms SET body=$2 WHERE room_id=$1', [h.roomId, JSON.stringify(room)])).rowCount, 1);
+        }
+        await writer.query('COMMIT'); active = false;
+        assert.equal(responseReleased, false, 'a selected value cannot escape before the second capture');
+        release.resolve();
+        if (change === 'none') assert.deepEqual(await bounded(pending, 'shared selector final capture timeout'),
+          { video: { id: 'synthetic-video', sha256: 'a'.repeat(64) } });
+        else await assert.rejects(bounded(pending, 'shared selector denial timeout'), error => {
+          assert.equal(error.code, change === 'session' ? 'shared_room_presentation_forbidden' : 'shared_room_presentation_stale');
+          assert.equal(error.statusCode, change === 'session' ? 403 : 409); return true;
+        });
+        assert.equal(responseReleased, change === 'none'); assert.equal(callbackCount, 1);
+        assert.equal(transactions.length, 2); assert.notEqual(transactions[0].txid, transactions[1].txid);
+        assert.equal(phases.length, change === 'session' ? 1 : 2);
+        const trace = h.traced.trace.slice(start), sql = trace.filter(row => row.kind === 'sql');
+        assert.equal(trace.filter(row => row.kind === 'connect').length, 2);
+        assert.equal(trace.filter(row => row.kind === 'release').length, 2);
+        assert.equal(trace.filter(row => row.kind === 'pool').length, 0);
+        assert.equal(sql.filter(row => row.sql === 'BEGIN').length, 2);
+        assert.equal(sql.filter(row => row.sql === 'COMMIT').length, change === 'none' ? 2 : 1);
+        assert.equal(sql.filter(row => row.sql === 'ROLLBACK').length, change === 'none' ? 0 : 1);
+        const after = await h.durable();
+        for (const key of ['balance', 'ledger', 'reservations', 'receipts', 'members', 'presence', 'audit', 'outbox'])
+          assert.deepEqual(after[key], before[key], 'selection and denied selection cannot write game/wallet/receipts');
+        if (change !== 'version') assert.deepEqual(after.room, before.room);
+      } finally {
+        if (active) await writer.query('ROLLBACK').catch(() => {});
+        release.resolve(); await pending?.catch(() => {});
+        writer?.release(); await runtime.stop();
       }
     });
   }

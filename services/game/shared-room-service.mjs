@@ -1,4 +1,5 @@
 import { createSharedRoomAccess } from './shared-room-access.mjs';
+import { createSharedRoomPresentationAccess } from './shared-room-presentation-access.mjs';
 import { createSharedRoomChannel, projectSharedRoomSnapshot } from './shared-room-channel.mjs';
 import { parseSharedRoomCommand, projectSharedRoomCommandResult } from './shared-room-command-contract.mjs';
 import { createSharedRoomUpgrade } from './shared-room-upgrade.mjs';
@@ -24,7 +25,7 @@ export function createSharedRoomService({
 } = {}, {
   createAccess = createSharedRoomAccess, createChannel = createSharedRoomChannel,
   createUpgrade = createSharedRoomUpgrade, createRuntime = createPostgresTableRuntime,
-  createReceiver = createPostgresPresentationReceiver,
+  createReceiver = createPostgresPresentationReceiver, createPresentationAccess = createSharedRoomPresentationAccess,
 } = {}) {
   if (walletMode !== 'demo' || typeof pool?.connect !== 'function' || typeof pool?.query !== 'function'
     || typeof clock?.now !== 'function') throw unavailable();
@@ -111,6 +112,15 @@ export function createSharedRoomService({
       } finally { admissions.delete(token); }
     }, combined);
   }
+  let presentationAccess;
+  function withSharedCommittedReceipt(args = {}, selectFrozen) {
+    if (typeof runtime.withLockedRead !== 'function' || typeof receiver.currentLocked !== 'function') throw unavailable();
+    presentationAccess ??= createPresentationAccess({ access, repository,
+      withLockedRead: (...values) => runtime.withLockedRead(...values),
+      readPresentationLocked: (...values) => receiver.currentLocked(...values) });
+    const signal = args.request?.signal && args.signal ? AbortSignal.any([args.request.signal,args.signal]) : args.request?.signal ?? args.signal;
+    return read(active => presentationAccess.withSharedCommittedReceipt({...args,signal:active},selectFrozen),signal);
+  }
   channel = createChannel({ origin, now: () => clock.now(), readTimeoutMs,
     authorize: (request, { roomId, signal }) => read(active => access.authorize(request, { roomId, signal: active }), signal),
     revalidate: (binding, { signal }) => read(active => access.revalidate(binding, { signal: active }), signal),
@@ -175,6 +185,6 @@ export function createSharedRoomService({
     });
     return closing;
   }
-  return Object.freeze({ start, close, stop: close, health, command,
+  return Object.freeze({ start, close, stop: close, health, command, withSharedCommittedReceipt,
     handleUpgrade: (request, socket, head) => upgrade.handleUpgrade(request, socket, head) });
 }

@@ -117,5 +117,17 @@ export function createPostgresTableRuntime({
     return stopping;
   }
 
-  return { start, stop, pump, health, coordinator, store };
+  async function withLockedRead({ rooms, players }, work) {
+    if (typeof work !== 'function') throw new TypeError('Locked reader callback required');
+    return store.runLocked({ rooms, players }, async tx => {
+      let open = true;
+      const check = () => { if (!open) throw new Error('Shared table read is closed'); };
+      const reader = Object.freeze({
+        room(id) { check(); return tx.rooms.read(id); },
+        config(roomId, version) { check(); return tx.config.frozen(roomId, version); },
+      });
+      try { return await work(reader); } finally { open = false; }
+    });
+  }
+  return { start, stop, pump, health, coordinator, store, withLockedRead };
 }

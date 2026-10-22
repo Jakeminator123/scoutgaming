@@ -1,3 +1,5 @@
+import { cloneStudioJson } from '../../packages/studio-registry/server/storage-contract.mjs';
+import { idleRuleFor, selectSharedRoomPresentation } from './shared-room-presentation-selection.mjs';
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
@@ -27,11 +29,6 @@ const publicVideo = item => item ? {
   ...recordedSpeechProjection(item),
 } : null;
 
-function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
-  const choice = selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode:body.mode,requestId},{inventory});
-  return choice && typeof requestId === 'string' ? {...choice,requestId,mode:body.mode,version:body.version,presentationContext:body.presentationContext ?? null,
-    expiresAt:new Date(Date.now()+30000).toISOString()} : null;
-}
 
 const modes = new Set(['off', 'rules', 'random', 'shadow', 'active']);
 const committedTypes = new Set(['deal','reveal','turn','settle']);
@@ -61,7 +58,7 @@ export function presentationInput(event, published) {
 export function createPresentationApi({ db, env = process.env, store = createLocalProjectReader(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  recordedSpeechPreview = false, beforeActionPresentation = () => {} } = {}) {
+  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
@@ -76,6 +73,7 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       res.end(req.method === 'HEAD' ? undefined : content); return true;
     }
     if (!pathname.startsWith('/api/presentation/')) return false;
+    let sharedRequest=false,sharedSignal;
     try {
       if(pathname==='/api/presentation/native-p6-playback-context'){
         if(typeof nativeP6PlaybackContext!=='function')fail('Unknown presentation endpoint',404);
@@ -134,6 +132,26 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
       let raw = '';
       for await (const chunk of req) { raw += chunk; if (raw.length > 16384) fail('Presentation request too large', 413); }
       const body = JSON.parse(raw);
+      sharedRequest=body!==null&&typeof body==='object'&&Object.hasOwn(body,'sharedRoom');
+      if(sharedRequest){
+        const plain=value=>value&&Object.getPrototypeOf(value)===Object.prototype;
+        const marker=body.sharedRoom;
+        if(pathname!=='/api/presentation/select'||!plain(body)||!plain(marker)||Object.keys(marker).sort().join(',')!=='roomId,talkId,ver'
+          ||typeof marker.roomId!=='string'||!/^[a-z0-9_-]{1,128}$/.test(marker.roomId)||typeof marker.talkId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(marker.talkId)
+          ||!Number.isSafeInteger(marker.ver)||marker.ver<1||body.version!==marker.ver||!modes.has(body.mode)||!isDealerId(body.dealerId)||!plain(body.presentationContext))
+          throw Object.assign(new Error('shared_room_presentation_invalid'),{code:'shared_room_presentation_invalid',statusCode:400});
+        if(typeof withSharedCommittedReceipt!=='function'||typeof frozenDealerContext?.resolve!=='function'||typeof frozenDealerContext?.publicVideo!=='function')
+          throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+        const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};
+        sharedSignal=controller.signal;res.once('close',disconnected);
+        try{
+          const value=await withSharedCommittedReceipt({request:req,playerId,body,signal:controller.signal},(capture,{signal})=>
+            selectSharedRoomPresentation({capture,body,frozenDealerContext,select,settings,directorFetchFactory,request:req,playerId,signal}));
+          controller.signal.throwIfAborted();
+          if(!value||Object.getPrototypeOf(value)!==Object.prototype)throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+          json(200,cloneStudioJson(value,{maxBytes:256*1024}));return true;
+        }finally{res.removeListener('close',disconnected);}
+      }
       if (pathname === '/api/presentation/idle-advice') {
         let frozen = null;
         if (body.presentationContext !== undefined) {
@@ -279,7 +297,11 @@ export function createPresentationApi({ db, env = process.env, store = createLoc
         // the gate to this request's fresh registry even for a cached decision.
         json(200, projectOwned(await decisions.get(key)));
       } finally { res.removeListener('close', disconnected); }
-    } catch (error) { json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }
+    } catch (error) { if(sharedRequest){
+      const known={shared_room_presentation_invalid:400,shared_room_presentation_unavailable:503,shared_room_presentation_stale:409,shared_room_presentation_forbidden:403,shared_room_authentication_required:401};
+      const code=Object.hasOwn(known,error?.code)?error.code:error?.statusCode===401?'shared_room_authentication_required':error?.statusCode===403?'shared_room_presentation_forbidden':typeof error?.code==='string'&&error.code.startsWith('studio_presentation_idle_')&&error.statusCode===409?'shared_room_presentation_stale':'shared_room_presentation_unavailable';
+      if(!res.destroyed&&!sharedSignal?.aborted)json(known[code],{error:code});return true;
+    } json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }
     return true;
   };
 }
