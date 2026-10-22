@@ -28,7 +28,8 @@ fungerar utan game008–010, eftersom publiceringen är stängd utan resolver. F
 äldre Studio och spelserver att neka hela administrationsdokumentet (503) vid
 versionsglapp eller återställning. Rättat med v23 enligt befintligt mönster, se
 [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md). Dessutom visar rumsväljaren bara
-live-rum som API:t godtar, länken till sammansättningen bär inte längre ett rum
+live-blackjackrum som API:t godtar, och spelinställningarna öppnas inte för andra
+rum (en andra oberoende granskning hittade kvarvarande rouletterum), länken till sammansättningen bär inte längre ett rum
 från en annan sammansättning, och ett skobevis med intakt men för lång auditkedja
 visas som `incomplete` i stället för `failed`. Kvar som uppföljning: läsningarna
 tar Studios skrivlås eftersom repositoryt inte lämnar SQL-klient i läsläge;

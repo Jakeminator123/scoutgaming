@@ -429,12 +429,18 @@ test('the game settings room picker lists only rooms the room configuration acce
   const resources=roomContextSnapshot(),base=resources.rooms[0];
   resources.rooms.push({...base,id:'room-pending',name:'Väntande',state:'pending'},{...base,id:'room-gone',name:'Utan sammansättning',presentationLaneId:'gone'},
     {...base,id:'room-unpublished',name:'Opublicerat',published:false},{...base,id:'room-archived',name:'Arkiverat',archivedAt:'2026-10-14'},
-    {...base,id:'room-south',name:'Söder',operatorId:'south'});
+    {...base,id:'room-south',name:'Söder',operatorId:'south'},{...base,id:'room-roulette',name:'Roulette',game:'roulette'},{...base,id:'room-blackjack',name:'Blackjack',game:'blackjack'});
   h.lifecycle().props.onChanged(resources);
   const picker=()=>h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Spelrum för spelinställningar')[0];
-  assert.deepEqual([picker().props.children].flat(Infinity).filter(Boolean).map(child=>child.props.value),['','room-evening']);
+  assert.deepEqual([picker().props.children].flat(Infinity).filter(Boolean).map(child=>child.props.value),['','room-evening','room-blackjack']);
   h.lifecycle().props.onChanged(roomContextSnapshot({state:'pending'}));
   assert.equal(picker(),undefined,'no picker when the room configuration accepts no room');
+  // A requested room the API rejects keeps its navigation context but never opens the game settings editor.
+  for(const change of [{game:'roulette'},{state:'pending'}]){
+    const direct=harness({initialOperatorId:'north',initialRoomId:'room-evening'});
+    direct.lifecycle().props.onChanged(roomContextSnapshot(change));
+    assert.equal(direct.gameConfig(),undefined);
+  }
 });
 
 for(const roomAlias of ['table','room'])test('publication room switching retains its room through the clip-map return from '+roomAlias,()=>{

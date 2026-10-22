@@ -59,11 +59,13 @@ function requestedPublicationRoom(snapshot: LifecycleSnapshot | null, operatorId
     .map(room=>({...room,status:room.state==='live'?'active':room.state}))},requestedRoomId);
   return snapshot?.rooms.find(room=>room.id===selection.roomId&&room.operatorId===operatorId);
 }
-// Offer only rooms the room-game-config API accepts: live, published and on a composition in the current package.
+// Offer only rooms the room-game-config API accepts: live blackjack rooms, published
+// on a composition in the current package. A room without `game` is blackjack.
+const blackjackRoom=(room:object)=>!Object.hasOwn(room,'game')||(room as {game?:unknown}).game==='blackjack';
 function gameConfigRoomChoices(snapshot: LifecycleSnapshot | null, operatorId: string, lanes: readonly {id:string}[]) {
   const operator=snapshot?.operators.find(row=>row.id===operatorId);
   if(!snapshot||!operator||operator.status!=='active'||operator.archivedAt)return [];
-  return snapshot.rooms.filter(room=>room.operatorId===operatorId&&room.published&&!room.archivedAt&&room.state==='live'
+  return snapshot.rooms.filter(room=>room.operatorId===operatorId&&room.published&&!room.archivedAt&&room.state==='live'&&blackjackRoom(room)
     &&operator.lanes.includes(room.presentationLaneId)&&lanes.some(lane=>lane.id===room.presentationLaneId));
 }
 export function AdminPublicationPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialRoomId, onContextChange, initialTab = 'publish' }: {
@@ -358,7 +360,7 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
               </select></label>
               <p>Bordsspråk och insatsprofil gäller delade blackjackrum. Rummets utseende hanteras via befintliga tillåtna val.</p>
             </section>:null}
-            {selectedRoom?<RoomGameConfig key={operatorId+':'+selectedRoom.id} operatorId={operatorId} roomId={selectedRoom.id} roomName={selectedRoom.name}
+            {selectedRoom&&roomChoices.some(room=>room.id===selectedRoom.id)?<RoomGameConfig key={operatorId+':'+selectedRoom.id} operatorId={operatorId} roomId={selectedRoom.id} roomName={selectedRoom.name}
               disabled={parentBusy||childBusy.room||childBusy.lifecycle||childBusy.directory||resourceStale}
               onBusyChange={value=>setChildBusyFor('gameConfig',value)}
               onDirtyChange={value=>{gameConfigDraft.current=value;setGameConfigDirty(value);}}
