@@ -159,7 +159,11 @@ Verklig runtime-ACL och återställningsberedskap återstår före konkret DDL-b
 Senast lästa K05PR314/head9ab3701179d5edf46beee505752cd6080dad708e tillför
 talgranskningsunderlag ovanpå tidigare metadata/validator; faktisk registry-/
 Blobbindning och talgodkännande är fortsatt ofullständiga.
-Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ingen Paowrestore.
+Bevara exakta media, Astridlegacy, MårtenPUBLIC_HIDDEN; ~~ingen Paowrestore~~
+ersatt av Jakobs beslut 22 oktober 2026 (PR #342): Paow är återställd och visas
+med Mårten som låst lobbyporträtt, se
+[Lobbyns dealerporträtt](#lobbyns-dealerporträtt-tillbaka-i-steg-3--22-oktober-2026).
+Ta inte bort Paow igen.
 Senast fullständigt lästa GitGuardian-underlag på98174fd8:0open/23ignored,
 sourceverified/monitoringactive, incidentcompleteforthissource,
 locationspartial/historicaltoo_large. Denna körnings CLI saknar GitHub/protected
