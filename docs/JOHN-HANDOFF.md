@@ -9,9 +9,10 @@ J05/J08/K04/K05 är fortfarande IN_PROGRESS.
 
 **Arbetskopia:** `C:/Users/jakem/.codex/worktrees/shared-room-transport/croupier`,
 `codex/shared-room-transport`, draft PR336. J08:s produktdelta finns redan här.
-Primary main och andras filer/index/config är orörda. Produktbas012f4de6 hade grön
-CI39718902798/GitGuardian119627549002; detta är historiskt exakt-head-bevis,
-inte CI för den nya routingleveransen.
+Primary main och andras filer/index/config är orörda. Routing/replay är pushad på
+673e9707b9bf1b97b79252e76673a9ca7719c87a. Dess CI39723734608 pågick vid senaste
+läsningen; GitGuardian success. Äldre grön CI39718902798 gäller012f4de6.
+Ingen tidigare kontroll påstås täcka nya kontrakts-/authoritydeltan.
 
 **Publik routing:** strikt `/shared-room/<roomId>` går via Vercels speech-service,
 signerad ingress och befintlig Gateway till spelets loopback. Kanonisk Host/Origin,
@@ -27,6 +28,23 @@ asynkrona callbacks serialiseras/avbryts. En verklig P2 rättades: tre normala
 först efter färdigrenderat giltigt state från aktuell anslutning. Ingen appmontering,
 ny command-/walletwriter eller aktivering ingår; CROUPIER_SHARED_TABLE_ENABLED är osatt.
 
+**Kommandokontrakt:** separat ren parser/projektor accepterar14 explicita operationer,
+nekar klientvalda identiteter/okända fält och bevarar idempotensindata. Resultat
+innehåller inga ledger-ID, audit-, shoeproof- eller tvärrumsuppgifter. Root körde
+12/12,0skip på Node24.21/fyra workers; faktisk isolerad minneskoordinator ingår.
+Oberoende runtime_audit läste hela tvåfilsdeltat utan blockerande fynd.
+
+**Intern authority-port/refill:** en serverkonfigurerad, ännu oanvänd port körs i
+coordinatorns låsta arbetsenhet före kvittoläsning, också vid replay/låsomtag.
+Endast exakt true tillåter fortsatt behandling. Detta är en integrationspunkt,
+inte färdig sessions-/publiceringsauth. Nekat kvitto, full rollback, väntan och
+felidentitet täcks av8nya prov. Skribentens samkörning39/39,0skip består av dessa
+och31coordinatorprov; den tidigare40/40-regressionen överlappar. SQL-ordningsprovet
+använder verklig adapter med instrumenterad falsk klient, inte riktig PostgreSQL.
+Kevins exakta refillhunks från eb6ab45509fad539463bbcb6930cc46d2d0844c2
+återanvändes: endast WalletDenied blir REFILL_REFUSED; infrastrukturfel bevaras.
+runtime_audit granskade samlat slutdelta och testregistrering utan blockerande fynd.
+
 **Verifiering/review:** root körde samlad service/scheduler/upgrade/dispatcher/
 serverstopp39/39,0skip. Routingskribenten körde15/15 nya nätverks-/grindprov,
 24/24 närliggande regressioner,7/7 webb-socket,7/7 native-Speech samt Speechs
@@ -38,7 +56,9 @@ runtime_audit läste hela routingdeltat, hela replayadaptern och sista tvåfilsf
 oberoende utan kvarvarande blockerande fynd. Ingen ny PG-/browser-/visuell
 produktacceptans, deploy eller produktionsaktivering påstås.
 
-**Nästa sammanhängande produktsteg:** publik shared-commandadapter med befintlig
+**Nästa sammanhängande produktsteg:** bind S-lås före sorterade R/P/A till samma
+pg-klient, transaktionsbunden session/FOR SHARE, full proveniens/publicering och
+skyddad svarsläsning. Därefter publik shared-commandadapter med befintlig
 sessions-/rums-/revision-/idempotensgräns, därefter byte av kommandokontroller och
 montering i `services/game/public/app.mjs` tillsammans. Nuvarande `/api/table`
 är en annan spelwriter. Att visa shared-state framför legacy DEAL/ACT är inte en
@@ -46,10 +66,12 @@ färdig klient. Schema008 har DB-skydd för reserverat saldo när det är instal
 detta ersätter inte korrekt UI-/commandkoppling. Samlad verklig PG/start/readiness/
 drain och Kevins monterade mobil-/dator-/felvägsbevis återstår för integrationen.
 
-**Kevin:** aktiv kontakt verifierad i #312/6332600144, K04 PR333/head
+**Kevin:** aktiv kontakt verifierad i #312/6332600144, K04 PR333/tidigare granskad head
 `6a124410a39e168b078921f6d70507cb0ba42c14`. Tidigare oberoende tvåfilsreview från23d4
 utan blockerare består; Kevins24/24,140pass/1codecskip,34/34PG är rapporterade bevis.
-Root6332629581 ger Kevin en avgränsad läsgranskning av publika commandkontraktet.
+Kevin levererade commandgranskning6332783679 och beställd refillfix6332927259 på
+eb6ab45509fad539463bbcb6930cc46d2d0844c2. Den smala fixen är separat oberoende
+granskad och återanvänd här; inga PR333merger eller nya ägargodkännanden antas.
 Han behåller de tre återstående monterade K04-/mobil-/felvägsproven. K05 PR314/head
 159cc134 har granskad metadata/validator; verklig import/registry/talgodkännande
 saknas. Endast J08:s beroende native-materialbindning väntar. Ingen mediaimport,
@@ -83,10 +105,14 @@ snapshot7402403aaa069de35a6cdc0e25cab42f5c0f0caa,parented12034e. Alla15taskfiler
 bevarades och säkrades i en verifierad privat Git-bundle utanför kopian. Replay4/4
 matchade den privata rekonstruktionen efter enbartLF-normalisering; slutfix2/2
 matchar egna SHA256. Ignorerat gammalt routingarkiv och privata loggar återställdes
-inte; dessa får inte beskrivas som fortfarande läsbara. Plan/J08:s rena lokalkopior
-kunde appen inte återställa; deras pushade heads4bd3a6dd/d7d139b9 finns kvar.
-Appens ägarregistrering är olöst; ursprungschatten hålls oarkiverad. Ingen ny
-checkout/worktree har skapats och primary har inte ändrats.
+inte; dessa får inte beskrivas som fortfarande läsbara. Appens snapshots för rena
+plan/J08 saknades. Efter Jakobs uttryckliga undantag22oktober återregistrerades
+endast dessa två arbetskopior med Git på exakt samma gamla sökvägar/brancher,
+heads4bd3a6dd9a812fd49049e67cc0da49b39602236e respektive
+d7d139b9f7bf59b1bd924280ab456af12e1c8b5a. Båda verifierades rena med rätt origin
+och låstes i Git; inga nya brancher eller extra kopior skapades. Appens attach
+nekas fortfarande för ownerless kopior. Ursprungschatten hålls därför oarkiverad;
+ingen unsupported ägarregistrering eller primaryändring har gjorts.
 
 Samma automation är ACTIVE/femminuter i nya chatten01a161cd-294a-7951-8190-5cf396ab8c13;
 tyst vid oförändrat läge. Ingen parallell produktwriter finns i ursprungschatten.

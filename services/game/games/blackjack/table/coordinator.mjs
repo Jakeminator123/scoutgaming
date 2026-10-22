@@ -26,8 +26,9 @@ const insuranceReservation = (r, p) => `${r.roomId}:${r.roundId}:${p}:insurance`
 // Ticks whose wallet refusal (reservation or consume) is recorded as `blocked` (O01 2.5).
 const BLOCKABLE = new Set(['window.close', 'insurance.timeout']);
 
-export function createTableCoordinator({ store, clock, random, absentMs = 120000, onlineMs = 15000, maxLockAttempts = 4 }) {
+export function createTableCoordinator({ store, clock, random, absentMs = 120000, onlineMs = 15000, maxLockAttempts = 4, authorizeCommand }) {
   if (!store?.runLocked || typeof clock?.now !== 'function' || !random) throw new TypeError('store, clock and random are required');
+  if (authorizeCommand !== undefined && typeof authorizeCommand !== 'function') throw new TypeError('Command authority must be a function');
   const now = () => clock.now();
 
   // ---- shared helpers -------------------------------------------------------------------
@@ -261,6 +262,14 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const key = { roomId: input.roomId, actorId, commandId: input.commandId };
     const print = fingerprint({ actorId, input });
     const outcome = await withLocks(() => lockPlanFor(actorId, input), async (tx, plan) => {
+      // Optional internal admission port; the existing runtime does not wire it.
+      // It runs inside this exact unit after its declared locks, even on replay
+      // and each lock-plan retry. Only an explicit true permits receipt access.
+      // A future public adapter must bind S/session/publication authority to this
+      // same transaction; calling a separate auth/repository pool here is unsafe.
+      if (authorizeCommand && await authorizeCommand(tx, Object.freeze({
+        actorId, roomId: input.roomId, commandId: input.commandId, authority: ctx.authority,
+      })) !== true) fail('AUTHORITY_REJECTED', 'Command authority rejected');
       const prior = await tx.receipts.get(key);
       if (prior) {
         if (prior.fingerprint !== print) fail('REQUEST_REUSED', 'Request ID reused with different input');
@@ -322,8 +331,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (r.phase === 'round') { if (!r.leaving.includes(actorId)) r.leaving.push(actorId); }
         else await releaseSeats(tx, r, actorId);
       } else if (op === 'refill') {
-        result.ledgerId = (await tx.wallet.credit(actorId, { amount: cfg.refill, kind: 'refill',
-          key: ledgerKey({ ...origin, roomId, playerId: actorId, effect: 'refill' }) })).ledgerId;
+        try {
+          result.ledgerId = (await tx.wallet.credit(actorId, { amount: cfg.refill, kind: 'refill',
+            key: ledgerKey({ ...origin, roomId, playerId: actorId, effect: 'refill' }) })).ledgerId;
+        } catch (e) { if (e instanceof WalletDenied) fail('REFILL_REFUSED', 'Demo refill is not available for this account'); throw e; }
       } else if (BET_OPS.has(op)) {
         if (r.phase !== 'bets') fail('BETTING_CLOSED', 'Betting is closed');
         if (input.windowId !== r.windowId) fail('STALE_COMMAND', 'This betting window has closed');
