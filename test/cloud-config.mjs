@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile, mkdir, rm, symlink, realpath } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -141,10 +141,11 @@ test('Render config loads from source without frontend or speech dependency inst
       await copySource(dependency);
     }
   }
-  // Copy the real boot-config source closure and the Lab dependencies that
-  // Render already installs. Frontend and speech dependencies stay absent.
+  // Copy the real boot-config source closure. The game-only image
+  // (ops/cloud/Dockerfile.game) installs no Studio, frontend or speech
+  // dependencies, so the closure must stay outside apps/ and load without node_modules.
   await copySource('ops/cloud/config.mjs');
-  await symlink(await realpath(join(sourceRoot, 'apps/studio/node_modules')), join(root, 'apps/studio/node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+  assert.deepEqual([...copied].filter(path => path.startsWith('apps/')), []);
   const isolated = await import(pathToFileURL(join(root, 'ops/cloud/config.mjs')).href);
   const env = base();
   assert.deepEqual(isolated.validateCloudConfig(env, {repository:root}), validateCloudConfig(env, {repository:root}));

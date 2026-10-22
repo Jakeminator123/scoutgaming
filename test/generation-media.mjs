@@ -14,7 +14,8 @@ async function freePort(host) {
   const server = createServer(); await new Promise(resolve => server.listen(0, host, resolve));
   const port = server.address().port; await new Promise(resolve => server.close(resolve)); return port;
 }
-const catalog = JSON.parse(readFileSync(new URL('../services/game/public/bo/generations.json', import.meta.url)));
+// Synthetic catalogue entries: the retired BO catalogue file no longer ships with the server.
+const catalog = [{ id: 'c01866d1-7c93-43a4-9493-73f7c66d3725' }, { id: '15777d5f-4085-484e-a170-eb5c9a13d7b0' }];
 const [first, second] = catalog;
 
 test('media resolver allows only catalogue names and refuses symlink escapes', async () => {

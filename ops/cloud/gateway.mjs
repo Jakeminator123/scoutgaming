@@ -47,7 +47,14 @@ export function studioAliasRedirect({ headers, method, url }, config) {
   return STUDIO_ALIASES.has(path) ? `/control${queryAt < 0 ? '' : url.slice(queryAt)}` : null;
 }
 
-export function upstreamForRequest({ headers, method, url }, config) {
+export function upstreamForRequest(request, config) {
+  const port = upstreamForChild(request, config);
+  // Without a Lab child (CROUPIER_CLOUD_LAB_CHILD=0) every /studio or Lab-host
+  // document/API is misdirected; Web-owned Lab auth paths are unaffected.
+  return port === LAB_PORT && config.labChild === false ? null : port;
+}
+
+function upstreamForChild({ headers, method, url }, config) {
   const host = headers?.host;
   const path = routePath(url, config);
   if (!path) return null;

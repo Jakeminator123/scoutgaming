@@ -88,3 +88,17 @@ for (const mode of ['natural', 'cancel', 'timeout']) test(`Linux SIGTERM chain w
       assert.equal(web.child.exitCode, 0); assert.equal(web.child.signalCode, null);
     }
   });
+
+test('a game-only runtime stops its single child and the gateway together', async () => {
+  const gateway = createCloudGateway({ gameOrigin: 'https://game.example.test', boOrigin: 'https://game.example.test',
+    labOrigin: 'https://game.example.test', singleOrigin: true, labChild: false, streaming: false },
+  { labInternalSecret: 'fixture-gateway-secret-at-least-32-characters' });
+  trackServerConnections(gateway);
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  let stops = 0;
+  const group = { stop: () => { stops++; return Promise.resolve(); }, lab: null };
+  await stopCloudRuntime(gateway, group);
+  assert.equal(stops, 1); assert.equal(gateway.listening, false);
+  await stopCloudRuntime(gateway, undefined); // Idempotent after the children are gone.
+  assert.equal(gateway.listening, false);
+});
