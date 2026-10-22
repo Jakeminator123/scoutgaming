@@ -4,11 +4,22 @@
 
 **Integration inför PR334:** tidigare granskad head
 `d7d139b9f7bf59b1bd924280ab456af12e1c8b5a` förenas med betrodd main
-`47756bdf1df372c7aa5047dc165a2d721614c4a2`. Produktfilerna behålls;
+`47756bdf1df372c7aa5047dc165a2d721614c4a2`. J08:s funktioner bevaras;
 mainens CI-konsolidering, policyprov, arbetsregler och deployspärr följer med.
 Endast handoffen behövde konfliktlösning. Oberoende slutreview, normalhook och
 exakt-head-CI krävs före merge. Ingen GitHub-merge, produktions-DDL, deploy,
 flaggaktivering eller ny medieacceptans ingår i denna lokala integration.
+
+**Rättad returkontext vid rumsbyte:** publiceringen skriver nu kanoniskt
+`table=<valt rum>` och tar bort aliaset `room`. Vid byte till ett annat rum
+tas gammal `composition/lane/game` bort ur länken, så Klippkarta kan lösa
+det nya rummets kontext. Formulärets fristående sammansättningsutkast behålls;
+behörigheter och spar-/publiceringsvägar ändras inte. Samma två filer som i
+huvudagentens frysta leverans har hashverifierats före övertagandet. Rootens
+riktade regressionsbevis är två röda fall före rättning och 68/68 gröna efter,
+0 skip/Node24.21/max1 worker över publication, routing och workspace-tools.
+Det är huvudagentens körning med instrumenterad UI, inte verklig K04-media
+eller ny browser-/PG-acceptans. Rättningen samlas före PR334:s enda slutpush.
 
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
 `4852f92f11635e20edd974c3261e0fc179ab7d1b`, med samlad Admin och J07 integrerade.

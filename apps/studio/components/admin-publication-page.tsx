@@ -156,7 +156,9 @@ export function AdminPublicationPage({ initialProject, initialVideos, initialSta
     setRequestedRoomId(id||undefined);
     if(typeof window!=='undefined') {
       const query=new URLSearchParams(window.location.search);
-      query.delete('table');if(id)query.set('room',id);else query.delete('room');
+      query.delete('room');if(id)query.set('table',id);else query.delete('table');
+      // Navigation follows the chosen room without resetting the composition draft.
+      if(id&&id!==requestedRoomId){query.delete('composition');query.delete('lane');query.delete('game');}
       studioHistory(window).replaceContext(window.location.pathname+'?'+query+window.location.hash);
       onContextChange?.();
     }
