@@ -103,7 +103,8 @@ Bevis privat under denna chatts visualizations/2026/10/22/
 recovery-shared-room-qa-context,recovery-shared-room-k04-qa,qa-entry-focused.log}.
 Körningar överlappar; inga nya hela aktivitetsbockar.
 
-**Nästa rekommenderade synliga leverans (inte påbörjad):** gör befintliga
+**Nästa rekommenderade synliga leverans (första steget levererat av Claude,
+se avsnittet ”Admin: rummets lager” nedan):** gör befintliga
 Admin-flödet för ETT Blackjackrum sammanhängande: Klippkarta → val av kompatibel
 bakgrund/dealer/bord och mobil-/widescreenpreset → spara → återöppna samma rum
 med samma val → ordinarie publiceringssteg/förhandsvisning. Visa tydligt vilket
@@ -226,6 +227,50 @@ fortsätter i samma GitHubissue312 vid återupptaget arbete; senaste aktuella
 uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
+
+## Admin: rummets lager på Spelrum & publicering — 22 oktober 2026
+
+Claude (annan IDE) tog över från rootens checkpoint `4e094fbb` på samma
+arbetskopia och branch; CI39762134151 på den checkpointen är verifierad grön.
+Luckkartan för flödet ”ett Blackjackrum” visade att rummets val låg på tre
+ytor med tre skilda utkast: sammansättning/paketpublicering och J08:s
+spelinställningar på `/admin/rooms` (`admin-publication-page.tsx`), rummets
+bakgrund/dealer/bord (`roomOverrides` via `partner-branding-api`) bara i
+klippkartans rumspanel (`registered-studio.tsx`) och partnerportalen, samt
+mobil-/desktopplacering per borddesign i sammansättningspanelen. Rumssidan
+hänvisade bara till ”befintliga tillåtna val”.
+
+Ändring: `/admin/rooms` monterar nu befintliga `PartnerAppearanceLoader` i
+rumsläge för det valda verifierade publicerade rummet, i ett eget kort
+”Rummets lager · <rum>” ovanför spelinställningarna, med länk till klippkartan
+för samma rum och till sammansättningen för placering. Panelen visar själv
+publicerad version och sparat utkast och sparar/granskar/publicerar genom
+oförändrat branding-API med befintlig N1-behörighet och revisions-CAS.
+Panelens utkast och pågående skrivning ingår i sidans befintliga skydd:
+bekräftelse före byte av bolag/sammansättning/rum, beforeunload, spärrad
+”Återöppna sparat läge” och spärrad paketpublicering med statusen ”Spara
+rummets ändringar först”. Regeln är ett rumsutkast i taget: ett osparat eller
+pågående rumskort låser syskonkortet, rumsskapandet och rummens livscykel,
+så att en publicering eller omläsning aldrig kan montera om det andra kortet
+över osparade ändringar. Båda rumskorten nycklas på resursrevisionen och
+laddar därför om på den nya paketrevisionen efter en publicering; kvittot för
+en äldre paketpublicering nollställs samtidigt (gällde tidigare även J08-kortet).
+Inga nya writers, API:er, kontrakt eller schema. `chooseRoom`:s URL-hantering
+är orörd: rumsreturrättningen finns bara i PR334 och integreras av mergeagenten.
+
+Verifiering: `apps/studio/test/admin-publication-page.test.mjs` 38 → 43 prov,
+0 skip, Node 24.21.0, högst fyra workers; `admin-publication-workspace.test.mjs`
+1 pass och 1 valfritt browserprov överhoppat (ingen Playwright i arbetskopian);
+`control-operator-directory`/`lane-editor` 27/27; Studio `tsc --noEmit` exit 0.
+Oberoende läsreview av diffen: inga blockerande fynd; tre bör-fixar (stale
+paketrevision mellan rumskorten, osparat utkast låste inte syskonwriters,
+kvarstående paketkvitto) är rättade enligt ovan och täckta av proven.
+Ingen browser-/visuell acceptans, ingen PG-, live- eller mediekörning.
+Kvar i flödet: mobil-/widescreenförval per rum saknar kontrakt (placeringen
+ligger per borddesign), ett ovisst resursläsningssvar avmonterar rumskortet på
+samma sätt som J08-kortet, Kevins övergångssekvenser är inte kartlagda mot tre
+lager (begärt i #312/6337998848, obesvarat) och Kevins mandat om sex svenska
+talrepliker (#312/6338036945) väntar på Jakobs beslut om uppladdning.
 
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 
