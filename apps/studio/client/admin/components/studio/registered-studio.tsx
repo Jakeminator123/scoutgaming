@@ -73,7 +73,8 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const [stateRequest,setStateRequest] = useState('');
   const [confirmedNavigation,setConfirmedNavigation] = useState<Record<string,string>|null>(null);
   const anyBusy = roomBusy || gameBusy || createBusy || lifecycleBusy || publishBusy;
-  const anyDraft = roomDirty || gameDirty || createDraft || Object.values(packages).some(packageSelectionDirty);
+  // Package selections are retained per company; only mounted editors need a leave guard.
+  const anyDraft = roomDirty || gameDirty || createDraft;
   function mayLeave() { return !anyBusy && (!anyDraft || confirm('Lämna rummets osparade val? Sparade utkast och publicerad version behålls.')); }
   function selectContext(next: Record<string,string>) {
     if (!showCreate && selectedRoom && next.table === selectedRoom.id && next.operator === operator?.id) return;
