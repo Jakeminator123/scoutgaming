@@ -662,7 +662,7 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, prepared = null} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -677,7 +677,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
-  }); } };
+  }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
@@ -1489,4 +1489,77 @@ test('repeated frozen transition frames cannot renew shared playback liveness or
   await new Promise(resolve=>setImmediate(resolve));f.jobs[jobStart].options.onFrame(0);
   for(let i=0;i<5;i++){t.mock.timers.tick(5000);f.jobs[jobStart].options.onFrame(0);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,jobStart+1);}
   t.mock.timers.tick(5000);await pending;assert.equal(f.jobs[jobStart].options.signal.aborted,true);assert.equal(f.jobs.length,jobStart+1);
+});
+
+
+// Kevin's timed playback in the film player (K public/app.js:180-246 @ 5aa7ed10).
+test('a timed film hands over on its last frames and holds the frame instead of waiting for ended', async t => {
+  const { media, host } = filmFixture(t); const receipts = []; let held = 0, complete = false;
+  const finished = playLocalFilm({ host, src: '/timed', handoverAt: 2.6875, onReceipt: r => receipts.push(r), hold() { held++; } }).then(() => { complete = true; });
+  const video = media[0]; video.emit('playing'); video.frame(0); video.frame(2.6); await Promise.resolve();
+  assert.equal(complete, false); assert.equal(video.frames.size, 1, 'frames keep coming for the handover without onFrame');
+  video.frame(2.6875); await finished;
+  assert.deepEqual(receipts.map(r => [r.state, r.handover ?? false]), [['start', false], ['presented', false], ['end', true]]);
+  assert.equal(held, 1); assert.equal(video.removed, true); assert.equal(video.ended, false);
+});
+
+test('a step reached late seeks into phase before play, plays at the fitted rate and follows the table clock', async t => {
+  const { media, host } = filmFixture(t); let clock = 0;
+  const result = playLocalFilm({ host, src: '/late', startOffset: .4, playbackRate: 1.25, clockTime: () => clock, onFrame() {} });
+  const video = media[0];
+  assert.equal(video.playbackRate, 1.25); assert.equal(video.currentTime, 0, 'no metadata yet: the seek waits for it');
+  video.duration = 2.75; video.emit('loadedmetadata'); assert.equal(video.currentTime, .4);
+  video.emit('playing'); clock = .5; video.frame(.4); assert.equal(video.currentTime, .4, 'drift under 0.4 s is left alone');
+  clock = 1.5; video.frame(.6); assert.equal(video.currentTime, 1.5, 'catches up after buffering (K app.js:184)');
+  clock = 2.74; video.frame(2.5); assert.equal(video.currentTime, 1.5, 'a 0.24 s drift is tolerated');
+  clock = 3; video.frame(2.6); const outcome = await result;
+  assert.deepEqual(outcome, { completed: true }); assert.equal(video.ended, false, 'the step ended on the table clock, not on the media');
+  const prepared = new Video(); prepared.readyState = 1; prepared.duration = 1; const capped = [];
+  const second = playLocalFilm({ host, src: '/capped', video: prepared, startOffset: 5, onReceipt: r => capped.push(r.state) });
+  assert.ok(Math.abs(prepared.currentTime - .96) < 1e-9, 'never into the last 0.04 s (K video-preloader.js:19)');
+  prepared.emit('playing'); prepared.frame(.97); prepared.ended = true; prepared.emit('ended'); await second;
+  assert.deepEqual(capped, ['start', 'presented', 'end']);
+  const plain = playLocalFilm({ host, src: '/plain', onReceipt() {} }); const untouched = media.at(-1);
+  assert.equal(untouched.playbackRate, 1); assert.equal(untouched.currentTime, 0); assert.equal(untouched.frames.size, 1);
+  untouched.emit('playing'); untouched.frame(); assert.equal(untouched.frames.size, 0, 'without timing the frame loop still stops after the first frame');
+  untouched.ended = true; untouched.emit('ended'); await plain;
+});
+
+test('shared step timing reaches the exact take only: shoe clips play whole and the fallback standard is untimed', async t => {
+  const before={id:'to',sha256:'1'.repeat(64),fileName:'to.mp4'},clockTime=()=>0;
+  const withShoe=await controllerFixture(t,{transitions:{before}});
+  const first=withShoe.controller.present(source,{startOffset:.4,handoverAt:2.6,playbackRate:1.2,clockTime});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(withShoe.jobs[0].take.media.sha256,before.sha256);
+  for(const key of ['startOffset','handoverAt','playbackRate','clockTime'])assert.equal(withShoe.jobs[0].options[key],undefined,`${key} is not for the shoe clip`);
+  withShoe.jobs[0].options.onReceipt({state:'end'});withShoe.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(withShoe.jobs[1].options.handoverAt,2.6);assert.equal(withShoe.jobs[1].options.playbackRate,1.2);
+  assert.equal(withShoe.jobs[1].options.startOffset,undefined,'a shoe clip already played before the take: no seek into it');assert.equal(withShoe.jobs[1].options.clockTime,undefined);
+  withShoe.jobs[1].resolve();assert.equal(await first,true);
+});
+
+test('shared step timing is dropped for the fallback standard, which has its own length', async t => {
+  const clockTime=()=>0,inventory=await loadVideoRegistry(),standard=inventory.videos.find(video=>video.fileName==='deal_pos1.mp4');
+  const plain=await controllerFixture(t,{standardVideo:standard});
+  const second=plain.controller.present(source,{startOffset:.4,handoverAt:2.6,clockTime});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(plain.jobs[0].options.startOffset,.4);assert.equal(plain.jobs[0].options.handoverAt,2.6);assert.equal(plain.jobs[0].options.clockTime,clockTime);
+  assert.equal(plain.jobs[0].options.playbackRate,undefined);
+  plain.jobs[0].reject(new Error('decode'));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(plain.jobs[1].take.media.sha256,standard.sha256);
+  for(const key of ['startOffset','handoverAt','clockTime'])assert.equal(plain.jobs[1].options[key],undefined,`the fallback standard has its own length: no ${key}`);
+  plain.jobs[1].resolve();assert.equal(await second,true);
+});
+
+test('the lookahead prepares a planned step exact take instead of the family standard', async t => {
+  const inventory=await loadVideoRegistry(),prepared=[];
+  const exact=inventory.videos.find(video=>video.fileName==='deal_pos1.mp4'),standard=inventory.videos.find(video=>video.fileName==='deal_pos4.mp4');
+  assert.notEqual(exact.sha256,standard.sha256);
+  const {controller}=await controllerFixture(t,{prepared});
+  controller.prepareSequence([{...source,filmedTake:{profileId:'profile',takeKey:'4:i',sha256:exact.sha256}}]);
+  assert.deepEqual(prepared.map(take=>take.media),[{src:`/api/presentation/videos/${exact.id}`,sha256:exact.sha256}]);
+  controller.prepareSequence([source]);
+  assert.deepEqual(prepared.map(take=>take.media.sha256),[exact.sha256,standard.sha256],'without a planned take the family standard is prepared as before');
+  controller.prepareSequence([{...source,filmedTake:{sha256:'0'.repeat(64)}}]);
+  assert.deepEqual(prepared.map(take=>take.media.sha256),[exact.sha256,standard.sha256,standard.sha256],'a take outside the inventory falls back to the standard');
 });

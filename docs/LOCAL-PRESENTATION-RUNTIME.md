@@ -961,6 +961,8 @@ Planeringen använder hela den serverbekräftade händelselistan. Vid act normal
 
 Källans clearFrame är en landningsgräns, inte ett visuellt intyg om att fingrarna släppt kortet. Projektion mot ett annat bord måste granskas i verklig uppspelning, särskilt kvarvarande fysiska rekvisitakort och händer vid förflyttningen.
 
+Tidsättning per tagning (K04, från Kevins `readyTimeline` i `server/shared-table.mjs:114-135` @ 5aa7ed10): `packages/presentation/runtime/filmed-deal-timeline.mjs` ger varje planerat steg `startMs`/`endMs` ur profilens bildantal (24 fps), fogar REDO→REDO-tagningar rygg mot rygg, lämnar 80 ms mellan tagningar som inte fogas och öppnar 700 ms efter kommandot (1500 ms när planen öppnar på vändningen). Spelets fönster (`startAt + leadMs + draws·cardMs`, `material-revision.mjs`) flyttas aldrig: planeraren rapporterar `deviationMs` och en `fit`-takt (högst 2×) när kedjan skulle gå över fönstret. Den delade spelaren (`shared-room-presentation.mjs`) räknar tiderna själv ur den publicerade planen och profilen, inga nya fält i payloaden: ett steg startar på sin egen tid på bordsklockan, ett sent steg söker in i fas (över 0,15 s), ett steg vars tid är slut visar sitt committade kort utan film, nästa exakta tagning förbereds i det dolda elementet och överlämningen sker på de sista 1,5 bildrutorna (`local-film-player.mjs`). Tal har ingen publicerad längd, så en filmkedja efter tal ankras där den börjar. Återanslutning återställer fortfarande auktoritativa kort utan omspelning.
+
 recordedSpeech v1 binder dealer, replik-ID, tagning, språk, exakt text, video-/audio-/indexhash, fps, bildantal, ljudförskjutning, start-/slutpose och kalibreringsrevision. Inspelningsbevis och ljud-/bildgodkännande måste båda referera till samma tuple. Sparad variant-UUID väljer take och språk. Vanligt/fryst spel stoppar pending/rejected eller ändrad identitet. En serverägd inställning enbart i den autentiserade isolerade Studio-previewn tillåter verified-recording med pending review. Ingen klientflagga ger det undantaget. Originalets eget ljud spelas en gång, utan talvideo på loop eller byte till en annan replik som reserv. ASR och filhashar ersätter aldrig visuell/hörbar acceptans.
 
 ### Publicering av större filmurval
@@ -2033,9 +2035,10 @@ genererat tal bevaras; det finns ingen automatisk fallback till lokal talbank.
 
 ## Adresser och verktyg efter repo-ordning våg 2, 12 oktober 2026
 
-`/casino.html` svarar 308 till `/play` för GET och HEAD. Query följer med.
-Kasinogolvet och dess GLB-filer är borta. `/v2` är kvar som 307-omdirigering,
-inte en egen spelare. De fem granskningssidorna svarar 404. Registrerad video
+`/casino.html`, `/demo`, `/v2` och `/bo` är borttagna och svarar 404; kasinogolvet
+och dess GLB-filer är borta. Spelstarten är `/game?game=…`; `/play/blackjack`
+är 308 dit under en release och roulettrummet öppnas på spelmotorns `/play/roulette`.
+De fem granskningssidorna svarar 404. Registrerad video
 spelas på den gemensamma scenen. Studios originalmediareserv är pensionerad;
 ett hanterat klipp utan spelbar fil visar den befintliga statustexten.
 Partnerns levande vyer (översikt, spelrum, integration och skal) renderas från
@@ -2289,7 +2292,7 @@ Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
 I molnet finns personal på [/control](https://www.scoutgaming.tech/control),
 operatör på [/partner](https://www.scoutgaming.tech/partner) och spel på
-[/play/blackjack](https://www.scoutgaming.tech/play/blackjack), samma origin
+[/game](https://www.scoutgaming.tech/game) (`?game=blackjack|roulette&operator=…&table=…`), samma origin
 www.scoutgaming.tech. Apex `scoutgaming.tech` är en 308 till www.
 Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
 repo/main: `web` bygger `apps/web`, `studio` bygger `lab`.
@@ -2325,7 +2328,7 @@ Tabellen här anger fungerande tekniska ingångar under övergången.
 | --- | --- | --- |
 | Intern personal | `/admin`; äldre `/control` | Hanterar Studio, bolag, publicering och drift. Äldre länkar och sparade konfigurationer fortsätter fungera. Kräver intern behörighet. |
 | Operatörens personal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Ser endast bolag där medlemskapet är aktivt. Publicerade alternativ och rättigheter kontrolleras på servern. |
-| Spelare | `/lobby`; äldre `/play`, `/play/blackjack` och Renders `/blackjack` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
+| Spelare | `/lobby` och spelstarten `/game`; roulettrummet öppnas på spelmotorns `/play/roulette?operator=&table=`; `/play`, `/play/blackjack`, `/blackjack` och `/roulette` är 308 till `/game` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
 | Spelarresultat | `/api/history` | Egna aggregerade resultat i samma session som `/api/player`. |
 
 ### Lagring
@@ -2340,7 +2343,7 @@ grundloop, bakgrund och urvalsregler. Fältet och dess sparade ID:n behålls
 för frysta paket och länkar; användartermen är **sammansättning**. Ett
 **operatörspaket** är de publicerade sammansättningar, spel, rums-ID:n och
 varumärkesval ett bolag tilldelas. Fixturförhandsvisningen använder exempeldata. Operatörens snapshot
-kan visa ett sparat pakets revision. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser det publicerade paketet; slugen bärs genom spelarinloggningen och dealerraden följer paketet.
+kan visa ett sparat pakets revision. Renders `/blackjack?operator=` och Vercels `/game?operator=` läser det publicerade paketet; slugen bärs genom spelarinloggningen och dealerraden följer paketet.
 
 ```mermaid
 flowchart LR
@@ -2637,6 +2640,9 @@ Verifiering och kvarstående arbete dokumenteras vid leverans i
 
 
 ## Kamera och mikrofon
+
+Kamera och röst är en behållen produktfunktion (Jakobs beslut 22 oktober 2026),
+idag Astrid-märkt och styrd av `CROUPIER_ASTRID_CAMERA`; storstädningen rör den inte.
 
 Record aktiverar lokal lyssning efter den valda dealerns namn (Astrid, Vera,
 Amira, Mei, PAOW, Dragge eller en publicerad dealerpost); Play styr spelljudet.

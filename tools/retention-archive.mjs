@@ -7,9 +7,15 @@ import { dirname, join, resolve, relative, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const locations = { projectHistory: 'apps/studio/data/history', observations: 'apps/studio/data/observations' };
-// Restore schema-v1 archives to their recorded source; new archives use locations above.
-const legacyLocations = { projectHistory: 'lab/data/history', observations: 'lab/data/observations' };
+// The checkout keeps no local Studio data folder. Callers name the checkout-relative
+// data directory whose history/observations should rotate; nothing is implied.
+const categoryDirectories = { projectHistory: 'history', observations: 'observations' };
+function locationsFor(dataDir) {
+  if (typeof dataDir !== 'string' || !dataDir || isAbsolute(dataDir) || dataDir.split(/[\\/]/).some(part => ['', '.', '..'].includes(part))) fail('retention_data_dir_invalid');
+  const base = dataDir.split(/[\\/]/).join('/');
+  return Object.fromEntries(Object.entries(categoryDirectories).map(([category, directory]) => [category, `${base}/${directory}`]));
+}
+const sourceName = /^(?:[^/]+\/)+(history|observations)\/([^/]+)$/;
 const snapshotName = /^\d{13}-[a-f0-9-]{36}\.json$/;
 const sessionName = /^\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z$/;
 const observationFiles = new Set(['verify.json', 'mapping.json', 'partner-events.jsonl', 'error.json', 'session.json', 'STOP']);
@@ -43,7 +49,7 @@ export async function readPolicy(root = repositoryRoot) {
   return value;
 }
 
-async function entryInventory(root, category, name, { digest = false } = {}) {
+async function entryInventory(root, locations, category, name, { digest = false } = {}) {
   if (!(category === 'projectHistory' ? snapshotName : sessionName).test(name)) return null;
   const source = `${locations[category]}/${name}`, path = await checkedPath(root, source), stat = await lstat(path);
   let names;
@@ -69,7 +75,8 @@ async function entryInventory(root, category, name, { digest = false } = {}) {
   return { category, source, bytes: files.reduce((sum, file) => sum + file.bytes, 0), files };
 }
 
-export async function previewRetention({ root = repositoryRoot, categories = Object.keys(locations) } = {}) {
+export async function previewRetention({ root = repositoryRoot, dataDir, categories = Object.keys(categoryDirectories) } = {}) {
+  const locations = locationsFor(dataDir);
   const policy = await readPolicy(root), groups = [];
   if (!Array.isArray(categories) || categories.some(key => !Object.hasOwn(locations, key))) fail('retention_category_invalid');
   for (const category of categories) {
@@ -77,7 +84,7 @@ export async function previewRetention({ root = repositoryRoot, categories = Obj
     const names = await readdir(directory).catch(error => { if (error.code !== 'ENOENT') throw error; return []; });
     const entries = [];
     for (const name of names.sort()) {
-      const entry = await entryInventory(root, category, name);
+      const entry = await entryInventory(root, locations, category, name);
       if (entry) entries.push(entry);
     }
     let count = entries.length, bytes = entries.reduce((sum, entry) => sum + entry.bytes, 0);
@@ -100,9 +107,10 @@ async function withArchiveLock(root, operation) {
   try { return await operation(); } finally { await rmdir(lock); }
 }
 
-export async function archiveRetention({ root = repositoryRoot, categories } = {}) {
+export async function archiveRetention({ root = repositoryRoot, dataDir, categories } = {}) {
+  const locations = locationsFor(dataDir);
   return withArchiveLock(root, async () => {
-    const plan = await previewRetention({ root, categories });
+    const plan = await previewRetention({ root, dataDir, categories });
     const selected = plan.groups.flatMap(group => group.selected);
     if (!selected.length) return { ...plan, batch: null, archivedEntries: 0 };
     const batch = `arkiv/${new Date().toISOString().slice(0, 10)}/retention-${randomUUID()}`;
@@ -110,14 +118,14 @@ export async function archiveRetention({ root = repositoryRoot, categories } = {
     await mkdir(directory, { recursive: true });
     const entries = [];
     for (const entry of selected) {
-      const current = await entryInventory(root, entry.category, entry.source.split('/').at(-1));
+      const current = await entryInventory(root, locations, entry.category, entry.source.split('/').at(-1));
       if (JSON.stringify(current) !== JSON.stringify(entry)) fail('retention_source_changed');
-      entries.push(await entryInventory(root, entry.category, entry.source.split('/').at(-1), { digest: true }));
+      entries.push(await entryInventory(root, locations, entry.category, entry.source.split('/').at(-1), { digest: true }));
     }
     const manifest = { schemaVersion: 1, createdAt: new Date().toISOString(), state: 'planned', entries };
     await writeFile(join(directory, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
     for (const entry of entries) {
-      const current = await entryInventory(root, entry.category, entry.source.split('/').at(-1), { digest: true });
+      const current = await entryInventory(root, locations, entry.category, entry.source.split('/').at(-1), { digest: true });
       if (JSON.stringify(current) !== JSON.stringify(entry)) fail('retention_source_changed');
       const source = await checkedPath(root, entry.source), target = await checkedPath(root, `${batch}/${entry.source}`);
       await mkdir(dirname(target), { recursive: true });
@@ -139,8 +147,11 @@ export async function restoreRetention({ root = repositoryRoot, batch, apply = f
     if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.entries) || !['planned', 'complete'].includes(manifest.state)) fail('retention_manifest_invalid');
     const result = [];
     for (const entry of manifest.entries) {
-      const base = locations[entry.category], name = entry.source?.split('/').at(-1);
-      if (!Object.hasOwn(locations, entry.category) || !base || ![base, legacyLocations[entry.category]].some(directory => entry.source === `${directory}/${name}`) || !(entry.category === 'projectHistory' ? snapshotName : sessionName).test(name)
+      // Entries restore to their recorded checkout-relative source, whatever data
+      // directory produced them; the shape and the leaf name stay allowlisted.
+      const match = typeof entry.source === 'string' ? sourceName.exec(entry.source) : null, name = match?.[2];
+      if (!Object.hasOwn(categoryDirectories, entry.category) || !match || match[1] !== categoryDirectories[entry.category]
+        || entry.source.split('/').some(part => ['.', '..'].includes(part)) || !(entry.category === 'projectHistory' ? snapshotName : sessionName).test(name)
         || !Array.isArray(entry.files) || !entry.files.length) fail('retention_manifest_invalid');
       const expectedFiles = entry.category === 'projectHistory' ? [''] : entry.files.map(file => file.path);
       if (entry.category === 'projectHistory' && entry.files.length !== 1
@@ -178,18 +189,11 @@ export async function restoreRetention({ root = repositoryRoot, batch, apply = f
   return apply ? withArchiveLock(root, run) : run();
 }
 
-export async function autoArchiveLocalArtifacts(category, { dataDir, root = repositoryRoot, warn = console.warn } = {}) {
-  // Temporary fixtures, external data locations and cloud repositories do not opt in.
-  if (dataDir && resolve(dataDir) !== join(root, 'apps/studio/data')) return { skipped: true };
-  try { return await archiveRetention({ root, categories: [category] }); }
-  catch (error) { if (error.code !== 'retention_busy') warn('Lokal arkivering kunde inte slutföras. Sparade data är kvar; kör node tools/retention-archive.mjs för kontroll.'); return { deferred: true }; }
-}
-
 export async function main(args = process.argv.slice(2)) {
-  const apply = args.includes('--apply'), restoreIndex = args.indexOf('--restore');
-  const expected = restoreIndex < 0 ? (apply ? ['--apply'] : []) : ['--restore', args[restoreIndex + 1], ...(apply ? ['--apply'] : [])];
-  if (args.length !== expected.length || args.some(arg => !expected.includes(arg))) fail('Usage: node tools/retention-archive.mjs [--apply] | --restore arkiv/YYYY-MM-DD/retention-ID [--apply]');
-  const result = restoreIndex < 0 ? await (apply ? archiveRetention() : previewRetention()) : await restoreRetention({ batch: args[restoreIndex + 1], apply });
+  const apply = args.includes('--apply'), restoreIndex = args.indexOf('--restore'), dataIndex = args.indexOf('--data-dir');
+  const expected = restoreIndex < 0 ? ['--data-dir', args[dataIndex + 1], ...(apply ? ['--apply'] : [])] : ['--restore', args[restoreIndex + 1], ...(apply ? ['--apply'] : [])];
+  if (args.length !== expected.length || args.some(arg => !expected.includes(arg)) || expected.includes(undefined)) fail('Usage: node tools/retention-archive.mjs --data-dir <checkout-relative-dir> [--apply] | --restore arkiv/YYYY-MM-DD/retention-ID [--apply]');
+  const result = restoreIndex < 0 ? await (apply ? archiveRetention({ dataDir: args[dataIndex + 1] }) : previewRetention({ dataDir: args[dataIndex + 1] })) : await restoreRetention({ batch: args[restoreIndex + 1], apply });
   console.log(JSON.stringify(result, null, 2));
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => { console.error(error.code ?? 'retention_failed'); process.exitCode = 1; });

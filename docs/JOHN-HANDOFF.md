@@ -1,5 +1,55 @@
 # Aktuell handoff — Scoutgaming
 
+## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
+
+**Gren:** `codex/spelklient-legacy` (bas main `7afae426`), PR #356. Underlag: `migrering/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md`.
+Varje kandidat fick en konsumentkarta med `git grep` (route, UI, tjänst, adapter,
+data, build, test, doc) innan radering; `node tools/raderingsgrind.mjs main --strict`
+ger IMPORT 0 / REGISTRY 0 och `node tools/check-orphan-tests.mjs` 0 orphans.
+
+**Raderat (med exklusiva tester, verktyg, flaggor, CSS, README-rader):**
+`public/lab/`, `public/bo/emails/`, `public/bo/generations.json`
+(`test/generation-media.mjs` använder syntetiska katalogposter);
+`public/docs/partner-api.html` + `build-docs.py` + `test/partner-docs.mjs`
+(`partner-api.md` flyttad till `docs/games/partner-api.md`); `/roulette-test`
+(`games/roulette/preview.mjs`, `public/roulette-test/`, servergrenen,
+`test/roulette-preview.mjs`, `tools/roulette-ui-fixture.mjs`,
+`tools/roulette-scene-fixture.mjs`); Lissabon-gästprofiler (`lissabon-profiles.mjs`, `public/lissabon-profile.mjs`,
+`CROUPIER_LISSABON_PROFILES`, `test/lissabon-profiles.mjs`); de oanvända
+Astrid-modulerna `astrid-green-dealer/speak`, `astrid-speech-join`,
+`astrid-folded-rest`, `astrid-idle-scheduler` med fyra opt-in-prov i
+`tools/media` samt `rigged-review.css` (ingen kod sätter `html.rigged-review`).
+
+**Behållet med bevis:** `card-presentation/` (app.mjs → `renderer-support.js`,
+`local-card-overlay.mjs`), `vendor/three/`, `shared-room-*`,
+`layered-presentation.mjs`, `performance-player.mjs`, `local-presentation.mjs`,
+`dealer-version-switcher.mjs` (app.mjs + fyra tester), `calibrate.mjs`
+(lazy import i app.mjs, serverns APPLY-route), `bo/speech-qa.*` och `/bo`-redirects (J05).
+**Kamera och röst behålls som produktfunktion** (Jakobs beslut 22 oktober):
+`public/astrid-camera-*.mjs`, `astrid-wake-word.mjs`, `astrid-voice-*.css`,
+`astrid-transcription.mjs`, `/api/{astrid,dealer}/{observation,transcription}`,
+`CROUPIER_ASTRID_CAMERA`/`CROUPIER_ASTRID_TRANSLATION_KEY` och testgruppen
+`speech/astrid-camera`. En första radering på grenen återställdes med revert.
+Kameran är fortfarande Astrid-märkt och flaggstyrd; att göra den dealer-generisk
+och styrbar från Admin är ett separat, ej påbörjat arbete.
+
+**Verifiering:** `node --test` grönt för de berörda sviterna i gameplay/speech
+samt `table-http`, `game-entry-*`, `shared-room-app`, `local-presentation`,
+`layered-presentation`, `product-chat-http`, `apps/web/test/player-ui-build`;
+pre-commit-hooken kördes på varje commit; `check-environment-variables` grön.
+Lokal Studio-start kräver junction till arkivets `apps/studio/node_modules`.
+
+**Kvar för andra ägare (inte redigerat här):** `ops/cloud/config.mjs` rader
+101 och 378 (`CROUPIER_LISSABON_PROFILES`), `ops/cloud/vercel-ingress.mjs:63`
+(`/roulette-test`); `packages/navigation/server/platform-routing.mjs` rad 44
+(`ROULETTE_PREVIEW`) och 62 (`ROULETTE_PREVIEW.has`) — rad 68–69
+(`/api/dealer/observation`, `/api/dealer/transcription`) och kameraflaggorna i
+ops/cloud ska **stå kvar**; `services/openclaw/lab/deploy/local-connection.mjs`
+(`CROUPIER_LISSABON_PROFILES`); `docs/environment-variables.json`
+(`CROUPIER_LISSABON_PROFILES` kvarstår tills ops/cloud slutar läsa den); `apps/studio/README.md:361` länkar
+`bettalotto.se/docs/partner-api.html` som inte längre serveras;
+`apps/studio/docs/README.md:450` nämner `/roulette-test`.
+
 ## J05/J07/J08 — aktuell leverans — 22 oktober 2026
 
 **Mål/status:** huvudprioriteten är begripligt Admin för Blackjack: Jakobs
@@ -238,7 +288,39 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
-## Admin UX-pass 2: inga dubbletter, ett rumsflöde, en OpenClaw-sida — 22 oktober 2026
+## K04: Kevins matte och tidsättning per tagning på mains treskiktsruntime — 22 oktober 2026
+
+Branch `codex/k04-chain`, direkt på main enligt Jakobs besked. Taget ur
+kevin/croupier-scoutgg 5aa7ed10 och anpassat till mains givningsprofil,
+kompositionsruntime och delade rumsportar. Inga nya payloadfält, kontrakt
+eller capability-versioner; Kevins mediekatalog, outbox, room-idle och DDL
+togs inte.
+
+- **Matte (kompositor).** Fast alfa med mjukat 5-punktskors, unspill av
+  kvarvarande grönstick mot dealerns hudton (median hue/mättnad ur den keyade
+  bilden, cachad 1 s), kantrensning med liten choke och hudskydd framför det
+  filmade propkortet. Sparade threshold/softness/despill är fortfarande de enda
+  rattarna. Den syntetiska fixturen kan inte bedöma matten (färgbalkar, ingen
+  green screen); kontrollera dealerkanterna i produktion efter deploy och
+  återställ med `git revert c426fac9` om de blivit sämre.
+- **Tidsättning.** `packages/presentation/runtime/filmed-deal-timeline.mjs`
+  (ren planerare): steglängd ur tagningens bildrutor vid profilens fps, REDO
+  rygg mot rygg, annars 80 ms lucka, öppningsförsprång 700 ms (1500 ms när
+  planen börjar med vändningen), överlämning på sista 1,5 bildrutorna men
+  aldrig före clear-rutan, sök in i fasen förbi 0,15 s och aldrig in i sista
+  0,04 s, ikappkörning över 0,4 s drift, anpassning med playbackRate 0,6–2 när
+  fönstret är kortare än materialet. `shared-room-presentation.mjs` tidsätter
+  varje filmat steg mot bordsklockan (startAt/endAt), väntar in stegets tid,
+  söker vid sen start, visar statiskt kort när tiden gått; en kedja efter tal
+  ankras där den börjar. `local-presentation.mjs` och `local-film-player.mjs`
+  spelar den exakta tagningen med startOffset/handoverAt/playbackRate/clockTime
+  och är oförändrade utan de alternativen.
+- **Kvar.** Taltidsättning (scheduleTalks, lipsync-fönster) och Kevins
+  1000 ms "talar"-försprång väntar på talspår med känd längd; återanslutning
+  mitt i en plan behåller mains regel (ögonblicksbild, aldrig omspelning).
+- **Verifiering.** 320 prov i presentation-, levande lager- och
+  rumssviterna efter merge med main; pre-commit 208 fokuserade prov.
+
 
 Branch `codex/admin-ux-pass-2`. Jakobs besked: Admin var fullt av dubbletter och
 gammal partnerlogik läckte in i rumssidan. Ingen regel eller test förbjöd att ta
@@ -274,6 +356,19 @@ en. Detta pass väljer en plats per funktion och omdirigerar resten.
   "skrivningar omdirigeras aldrig"-prov behållna. Ingen ny API, writer, schema
   eller capability. Kvar: zoom och placering per rum är ett eget kontraktspass
   (rumsöverstyrning + spelkonsument + paketbudget).
+- **Leverans direkt på main.** Jakob bad 22 okt ~18:00 om direkt push till
+  main i stället för PR (flera agenter och worktrees skapade förvirring).
+  UX-pass 2 landade som main cea6ab3e; branchen `codex/admin-ux-pass-2` finns
+  på origin men behöver ingen merge. Vercel-bygget av cea6ab3e rapporterade
+  fail medan samma commit bygger grönt lokalt (`npm run build` i apps/studio,
+  traces sanerade); loggen finns bara i Vercel
+  (`npx vercel inspect dpl_4g4jjNGcX8SR8JKR36f4qHRo4eMQ --logs`). Föregående
+  deployment (712be3e8) är kvar i produktion tills ett bygge går igenom.
+- **Kvar efter passet.** Playwright-sviten `apps/studio/test/admin-ai-browser.test.mjs`
+  (bara lokal, kräver `CROUPIER_BROWSER_FIXTURE_MODULE`) monterar fortfarande de
+  gamla OpenClaw-sidorna och behöver en fixtur mot `/admin/openclaw`; CI kör den
+  inte. Dealerns agent-flik visar ännu chattsidans egna flikar (Agentmodeller,
+  Chatt) under OpenClaw-sidans flikrad.
 
 ## Levande lager: bord och variation (capability 24) — 22 oktober 2026
 

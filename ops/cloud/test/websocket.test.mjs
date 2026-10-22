@@ -43,7 +43,7 @@ function connect(url, path, { host = 'game.example.test', clientOrigin, authoriz
 
 const rejected = ws => new Promise(resolve => ws.once('error', error => resolve(error.message)));
 
-test('cloud gateway admits only owned game WebSockets and preserves relay cancellation', { timeout: 10000 }, async t => {
+for (const labChild of [true, false]) test(`cloud gateway admits only owned game WebSockets and preserves relay cancellation; labChild=${labChild}`, { timeout: 10000 }, async t => {
   const web = createServer();
   const authenticate = ticketAuthenticator(ticketSecret);
   const relay = attachSpeechRelay(web, { workerSecret, allowedOrigins: [origin],

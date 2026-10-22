@@ -32,7 +32,7 @@ Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.
 `node apps/studio/start.mjs --no-open` skriver den publicerade produktens adress;
 endast `--offline` startar ett isolerat, tillfälligt serverpar.
-Äldre `lab/data` bevaras som authoring-/återställningsunderlag.
+Checkouten har inget lokalt produktregister; Neon är registret.
 [Väg- och strömkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
@@ -180,8 +180,8 @@ projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna
   På chattfliken finns också **Prova rösten**: tre standardfraser, egen text eller en
   kopia av det senaste operatörssvaret. Explicit knapptryck genererar Victoria-röst
   via Cartesia (kan kosta krediter); återanvändning av samma prov kostar inget
-  nytt modellanrop. `node tools/elevenlabs-lab-preview.mjs` är ett separat prov,
-  inte panelen. Detta är separat ljud, inte spelarchatt eller videosynk.
+  nytt modellanrop; provet mellanlagras i OS-tempkatalogen, inte i repot.
+  Detta är separat ljud, inte spelarchatt eller videosynk.
 
 ## Var finns chatten och vad täcker 2D?
 
@@ -215,29 +215,20 @@ apps/studio/
   lib/activity-log.mjs         tillfällig händelselogg och förloppskoppling
   lib/partner-observer.mjs     läsande, signerad Partner-SSE på lokal server
   lib/social-playback.mjs      en talägare, sexsekundersgräns och stopp
-  data/project.json           ditt sparade projekt (lokalt, Git-ignorerat)
-  data/history/               tidigare sparade revisioner (Git-ignorerat)
-  data/social-policy.json     sparad social policy, separat från eventprojektet
-  data/social-history/        tidigare sociala policyrevisioner
-  data/voice-cache/            text/röst/modell-indexerade MP3-prov och metadata
   test/                       automatiska regler-, lagrings-, API- och videotester
   app/                        Next.js-sidor och lokalt API
   components/                 editor, scen, videobank och OpenClaw-panel
 ```
 
 `policies` betyder här regler och kontrakt; `schemas` beskriver strukturkraven.
-`data/` skapas vid lokal sparning och ersätter inte reglerna i Git. Ingen separat
-projektmanifest behövs. Rörelsebibliotekets lilla `animations/index.json`
+Projekt och social policy ligger i Neon; offline-fixturen skriver sin kopia i en
+tillfällig mapp som tas bort vid stopp. Ingen separat projektmanifest behövs. Rörelsebibliotekets lilla `animations/index.json`
 listar däremot vilka rörelsefiler som ingår. `.next/` och `node_modules/` är
 genererade verktygsmappar. `preview-build/` och `design-preview-build/` skapas
 också av byggverktygen. Alla är Git-ignorerade; de ersätter inte källan i
 `app/`, `lib/`, `components/` eller `packages/`. [Rörelsernas format](animations/README.md).
 
-Fristående ElevenLabs-prov (inte scen-/chattintegration):
-`node tools/elevenlabs-lab-preview.mjs --check` från repots rot, eller
-`--generate` för ett kort debiterbart röstprov. MP3 + text/röst/hash-metadata
-sparas lokalt i `lab/data/voice-previews/`, utanför Git. Ingen produktmedia
-eller lipsync ersätts. [Status och urvalsmodell](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[Status och urvalsmodell](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 Signal → event + relevant kontext → urval → material → uppspelningskvitto.
 Signal är samlingsordet för indata, till exempel spelfakta, ett chattmeddelande

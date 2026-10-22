@@ -1,46 +1,38 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, rm, access } from 'node:fs/promises';
+import { mkdtemp, rm, access, readdir, realpath } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { join, dirname, basename, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
-import { acquireLocalSession, matchesLocalSessionProcess } from './local-session.mjs';
+import { acquireLocalSession, localSessionFile, matchesLocalSessionProcess } from './local-session.mjs';
 import { startIsolatedConnection } from './local-connection.mjs';
 import { startLocalComparison } from '../../../../tools/start-local-comparison.mjs';
-import { startLabSession } from '../../../../tools/start-lab-session.mjs';
 
 const moduleUrl = new URL('./local-session.mjs', import.meta.url).href;
 
-test('retired live session blocks canonical guard and a released one never recreates the old directory', async t => {
-  for (const legacyRoot of ['lissabon', 'lab']) {
+test('the guard lives outside the checkout and never creates a data directory inside it', async t => {
   const repoRoot = await testRoot(t), pair = await ports();
-  const legacyDir = join(repoRoot, legacyRoot, 'data');
-  await mkdir(legacyDir, { recursive: true });
-  const file = join(legacyDir, '.local-session.sqlite');
-  const db = new DatabaseSync(file);
-  try {
-    db.exec('CREATE TABLE local_session(id INTEGER PRIMARY KEY,token TEXT,revision INTEGER,payload TEXT)');
-    db.prepare('INSERT INTO local_session VALUES(1,?,1,?)').run('legacy', JSON.stringify({ ownerPid: process.pid, childPids: [], ...pair }));
-    await assert.rejects(acquireLocalSession({ repoRoot, ...await ports() }), { code: 'CROUPIER_SESSION_ACTIVE' });
-    db.prepare('DELETE FROM local_session').run();
-  } finally { db.close(); }
-  const migrated = await acquireLocalSession({ repoRoot, ...pair }); await migrated.release();
-  await rm(join(repoRoot, legacyRoot), { recursive: true });
-  const next = await acquireLocalSession({ repoRoot, ...pair }); await next.release();
-  await assert.rejects(access(join(repoRoot, legacyRoot)), { code: 'ENOENT' });
-  await access(join(repoRoot, 'apps/studio/data/.local-session.sqlite'));
-  }
+  const session = await acquireLocalSession({ repoRoot, ...pair }); await session.release();
+  const file = localSessionFile(await realpath(repoRoot));
+  assert.equal(dirname(dirname(dirname(file))), resolve(tmpdir()));
+  await access(file);
+  assert.deepEqual(await readdir(repoRoot), [], 'No apps/studio/data, lab/data or other state appears in the repository.');
+  const again = await acquireLocalSession({ repoRoot, ...pair }); await again.release();
+  assert.deepEqual(await readdir(repoRoot), []);
 });
 
 async function testRoot(t) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-session-test-'));
+  const guardDir = dirname(localSessionFile(await realpath(root)));
   t.after(async () => {
     assert.equal(dirname(resolve(root)), resolve(tmpdir()));
     assert.ok(basename(root).startsWith('croupier-session-test-'));
     await rm(root, { recursive: true, force: true });
+    await rm(guardDir, { recursive: true, force: true });
   });
   return root;
 }
@@ -54,7 +46,7 @@ async function ports() {
 }
 
 function changeSession(root, change) {
-  const db = new DatabaseSync(join(root, 'apps', 'studio', 'data', '.local-session.sqlite'));
+  const db = new DatabaseSync(localSessionFile(realpathSync(root)));
   try {
     const row = db.prepare('SELECT payload FROM local_session WHERE id=1').get();
     const state = JSON.parse(row.payload);
@@ -236,7 +228,6 @@ test('all launchers refuse before preparation and startup failure releases the s
   try {
     await assert.rejects(startIsolatedConnection(options), { code: 'CROUPIER_SESSION_ACTIVE' });
     await assert.rejects(startLocalComparison({ repoRoot, gamePort: next.productPort, labPort: next.labPort }), { code: 'CROUPIER_SESSION_ACTIVE' });
-    await assert.rejects(startLabSession({ repoRoot, port: next.labPort }), { code: 'CROUPIER_SESSION_ACTIVE' });
     assert.equal(preparations, 0);
   } finally { await session.release(); }
   await assert.rejects(startIsolatedConnection(options), /fixture preparation failed/);

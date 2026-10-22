@@ -144,7 +144,8 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
   const dataDir = join(runDir, 'game');
   const studioDir = join(runDir, 'studio');
   const gameUrl = `http://localhost:${gamePort}`, labUrl = `http://127.0.0.1:${labPort}`;
-  const urls = Object.freeze({ game: `${gameUrl}/?dealer=astrid&rehearsal=1`, original: `${gameUrl}/?dealer=astrid&rehearsal=1`, v2: `${gameUrl}/v2/?dealer=astrid&rehearsal=1`, backoffice: `${gameUrl}/bo/`, lab: labUrl });
+  // /game is the one game start; the retired /v2 alias is neither served nor redirected any more.
+  const urls = Object.freeze({ game: `${gameUrl}/game?dealer=astrid&rehearsal=1`, original: `${gameUrl}/?dealer=astrid&rehearsal=1`, backoffice: `${gameUrl}/bo/`, lab: labUrl });
   const password = randomBytes(24).toString('base64url'), username = 'comparison-qa', email = 'comparison@example.invalid';
   const readToken = randomBytes(32).toString('base64url');
   const env = session.environment(isolatedEnv(runDir, [gamePort, labPort]));

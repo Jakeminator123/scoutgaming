@@ -45,6 +45,7 @@
       ],
       "conditional": [
         "CROUPIER_CLOUD_DATA_ROOT",
+        "CROUPIER_CLOUD_LAB_CHILD",
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
@@ -155,7 +156,6 @@
     },
     "vercel-frontend-production": {
       "sources": [
-        "apps/web/lib/game-url.ts",
         "packages/navigation/server/platform-routing.mjs",
         "packages/server-transport/configuration.mjs"
       ],
@@ -171,7 +171,6 @@
       "required": [],
       "firstBoot": [],
       "conditional": [
-        "CROUPIER_GAME_URL",
         "CROUPIER_VERCEL_UI",
         "CROUPIER_VERCEL_UNIFIED_UI",
         "CROUPIER_STUDIO_NATIVE_ADMIN",

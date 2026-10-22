@@ -31,11 +31,7 @@ vendor/
 .croupier-inbox/
 /agent-talk/state.json
 /agent-talk/write.lock
-/web/data/
-/lab/data/
 /media/.migration/
-/lissabon/data/
-/random-stuff-jakob/jakob-log-files/
 
 # Binary media/data: JSON manifests, calibration and source stay searchable.
 *.mp4
@@ -76,16 +72,14 @@ vendor/
 # Canonical recovery archive; inspect only when needed.
 /arkiv/
 
-# Relocated Studio: retain old private/build guards for files left in place.
+# Retired local roots: never stage if an old checkout still has them
+/lab/data/
 /apps/studio/data/
+/web/data/
+/services/game/data/
 
-# OpenClaw source move: local state/media remain at the old protected root.
+# Director/Gateway local state (the Director adapter defaults to open-claw/lab).
 /open-claw/lab/data/
 /open-claw/lab/runtime/
 /open-claw/lab/media/*
 /services/openclaw/lab/data/
-/services/openclaw/lab/runtime/
-
-# Game source moved; retain the old private state and protect the new source root.
-/web/data/
-/services/game/data/
