@@ -35,7 +35,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J07 | Postgres-adapter för delat bord | jakob | VERIFIED |
 | K04 | Spelklient och presentation från händelser | kevin | IN_PROGRESS |
 | J08 | Admin styr versionerad spelkonfiguration | jakob | IN_PROGRESS |
-| K05 | Exakt mediakoppling till Neon och Blob | kevin | TODO |
+| K05 | Exakt mediakoppling till Neon och Blob | kevin | IN_PROGRESS |
 | J09 | Förbered avveckling av oanvända databaskontrakt | jakob | TODO |
 | K06 | Verifiera Admin till spel efter omstart | kevin | TODO |
 | K07 | Verifiera spelbeteenden och samtidighet | kevin | TODO |
