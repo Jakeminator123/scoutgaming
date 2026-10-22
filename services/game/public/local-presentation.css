@@ -30,19 +30,6 @@ html[data-presentation="local"] #chat-log {
 }
 #chat-status { position: absolute; top: calc(100% + 5px); right: 0; max-width: 175px; color: #e6ede5; background: #101618e6; border-radius: 5px; padding: 3px 6px; font: 11px/1.4 Inter, sans-serif; text-align: right; }
 #chat-status:empty { display: none; }
-html[data-stream-lane="lissabon-stream-lane"] #dealer-picker > :not(.lissabon-profile-bar),
-html[data-stream-lane="lissabon-stream-lane"] #sign-out { display: none; }
-.lissabon-profile-bar { display: flex; align-items: center; gap: 16px; font: 12px Inter, sans-serif; }
-.lissabon-profile-bar button, #lissabon-profile button { border: 1px solid #52605e; background: #172420; color: #d0ec55; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-#lissabon-profile { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; box-sizing: border-box; background: #111b1a; color: #e6ede5; border: 1px solid #52605e; border-radius: 16px; font: 14px/1.5 Inter, sans-serif; }
-#lissabon-profile::backdrop { background: #0009; }
-#lissabon-profile h2 { margin-top: 0; font-size: 22px; }
-#lissabon-profile form { display: grid; gap: 8px; margin: 18px 0; }
-#lissabon-profile form[hidden] { display: none; }
-#lissabon-profile input, #lissabon-profile select { min-width: 0; width: 100%; box-sizing: border-box; background: #172420; color: inherit; border: 1px solid #52605e; border-radius: 8px; padding: 10px; font: inherit; }
-#lissabon-profile small { display: block; margin-top: 18px; color: #acbdb2; }
-#lissabon-profile-error { color: #ffe8ab; }
-#lissabon-profile button:disabled { opacity: .5; cursor: wait; }
 @media (max-width: 860px) {
   html[data-presentation="local"] #hud-top { flex-wrap: wrap; }
   html[data-presentation="local"] #game-title { flex: 1 0 100%; }

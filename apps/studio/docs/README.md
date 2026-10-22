@@ -641,8 +641,8 @@ idlepolicy eller presentationsspelarens klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är bevarad historik och visas inte som importerbara val i Dealers & klipp.
 Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
-Äldre lokala data i `lab/data` bevaras som
-historik och är inte produktionspolicy.
+Checkouten har inget lokalt `lab/data`; Neon är registret och Blob
+lagrar mediebyte.
 Se [vägar och strömmar](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 

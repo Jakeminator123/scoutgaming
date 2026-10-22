@@ -73,10 +73,9 @@ Valfritt `rouletteStart` kopplar filmens egen tid till hjulstart/kulsläpp och
 underkändes; se [granskningen](UTFALLSFILMER.md#ny-startfilm-och-variationsspelning).
 Godkänt material ska gå via mediebank och Vercel Blob, inte Runways tillfälliga URL.
 
-`tools/roulette-ui-fixture.mjs --scene-manifest <privat JSON>` återspelar samma
-kedja utan produktionskonto. Manifestet anger explicit lokala filer och SHA-256,
-framing, foregroundPolygons samt vanliga composition settings. Test-UUID:n är
-isolerade och får inte användas som produktionsregistrets identiteter.
+Den tidigare isolerade fixturen `tools/roulette-ui-fixture.mjs` och den separata
+testytan `/roulette-test` är avvecklade (22 oktober 2026); provspel sker i ett
+publicerat rum via `/play/roulette` eller det isolerade `--offline`-fixturparet.
 
 [Signaler, materialinventering och klippkarta](KLIPPKARTA.md) beskriver de
 separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår
@@ -223,7 +222,7 @@ POST /api/roulette/table hanterar state och spin. Servern kontrollerar session, 
 
 Spelingång: /play/roulette?operator=<slug>&table=<room-id>&dealer=<dealer-id>. Native demo/inloggning delas med blackjack, men roulette har egna regler och ingen sko. Detta är personliga rundor, inte ett gemensamt tidsstyrt multiplayerhjul. Partner-launch-konton är spärrade tills roulette stöds i deras plånbokskontrakt.
 
-Den separata /roulette-test är en publik noindex-testyta utan spelkonton, insatser eller databassaldo. Blanda inte dess stateless provsnurr med rummets beständiga kommandon.
+Den tidigare separata testytan `/roulette-test` (stateless provsnurr utan konton) är borttagen; endast rummets beständiga kommandon finns kvar.
 
 ## Scen och kodägande
 

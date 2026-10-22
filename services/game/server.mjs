@@ -29,7 +29,6 @@ import { createDealerSpeechReferenceService } from './dealer-speech-reference.mj
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
-import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
 import { serveGenerationMedia } from './generation-media.mjs';
@@ -52,7 +51,6 @@ import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { presentationPublicSource } from '../../packages/presentation/public-modules.mjs';
-import { createRoulettePreview } from './games/roulette/preview.mjs';
 import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
 
@@ -647,12 +645,7 @@ const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSessi
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
   labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
-const lissabonProfiles = postgres ? { enabled: false, session: () => null, handle: () => false } : createLissabonProfiles({ db, createPlayer: apiPlayer,
-  enabled: !playerAccounts && guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
-    && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
-  onSwitch: async playerId => { speechStreamService?.cancelPlayer(playerId); (await probeRuntime.cancel({playerId,dealerId:'astrid'})); cancelPlayerChats(activePlayerChats,playerId,'demo_profile_changed'); },
-});
-const playerSession = async req => lissabonProfiles.session(req) ?? (await auth.session(req));
+const playerSession = async req => (await auth.session(req));
 if (!postgres) db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
 async function previewPlayer(req,res) {
   const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -666,8 +659,6 @@ async function previewPlayer(req,res) {
   return p.id;
 }
 async function chatSessionOwner(req, playerId) {
-  const localProfile = lissabonProfiles.session(req);
-  if (localProfile?.playerId === playerId) return localProfile.owner;
   const playerToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   if (playerToken && (await auth.session(req))?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
   const previewToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -752,7 +743,6 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
   });
 })() : null;
-const roulettePreview = createRoulettePreview({ origin: gameOrigin });
 const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
@@ -764,8 +754,6 @@ const server = createServer(async (req, res) => {
     res.writeHead(health.ready ? 200 : 503, { 'Content-Type':'application/json', 'Cache-Control':'private, no-store' });
     res.end(JSON.stringify(health)); return;
   }
-  if ((pathname === '/roulette-test' || pathname.startsWith('/roulette-test/') || pathname === '/api/roulette-test/spin')
-      && await roulettePreview(req, res)) return;
   if (pathname==='/api/studio-preview'||pathname.startsWith('/api/studio-preview/')||pathname.startsWith('/studio-preview/')) {
     if(!studioPreview){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"error":"studio_preview_unavailable"}');return;}
     const request=new Request((process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin)+req.url,{method:req.method,headers:req.headers,
@@ -864,8 +852,7 @@ const server = createServer(async (req, res) => {
   }
   const guest=guestPreview && !authenticated && !backoffice && !backofficeHandoff && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
-  if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method)){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}

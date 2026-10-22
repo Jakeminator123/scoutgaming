@@ -19,6 +19,14 @@ instructions below. Isolated QA and separate Director/Gateway state can still
 have disks. No runtime mode, environment value or provider setting is changed
 by this documentation.
 
+`Dockerfile.game` is the game-only image for a separate Render service
+(`croupier-v3`): the same gateway, ingress validation, health and version
+routes, but no `apps/studio` dependencies or Next build. It bakes
+`CROUPIER_CLOUD_LAB_CHILD=0`, which makes `start.mjs` run only the Web child
+and misdirect every `/studio` upstream. Unset or `1` keeps the two-child
+runtime of `Dockerfile` unchanged. Service recipe, environment names and the
+blue/green switch are in [RENDER-V3.md](RENDER-V3.md).
+
 ## Retained single-origin compatibility mode
 
 Set `CROUPIER_CLOUD_LAYOUT=single-origin`. The exact game origin is taken from

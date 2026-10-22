@@ -211,3 +211,36 @@ test('published company directory uses the exact existing signed public transpor
     assert.equal(vercelIngressRequest({...request(path),method:'GET'},ingress).accepted,false,path);
   }
 });
+
+test('game-only gateway keeps the Web-backed Vercel session check and misdirects the signed Lab API without contacting any Lab port', async () => {
+  let checks = 0, labRequests = 0, webRequests = 0;
+  const web = createServer((req, res) => { webRequests++; assert.equal(req.headers.host, 'preview.example.test'); res.writeHead(401); res.end(); });
+  const lab = createServer((_req, res) => { labRequests++; res.writeHead(200); res.end(); });
+  const servers = [web, lab];
+  try {
+    for (const server of servers) { server.listen(0, '127.0.0.1'); await once(server, 'listening'); }
+    const gateway = createCloudGateway({ singleOrigin: true, gameOrigin: ingress.publicOrigin, boOrigin: ingress.publicOrigin, labOrigin: ingress.publicOrigin, labChild: false, streaming: false }, {
+      webPort: web.address().port, labPort: lab.address().port, vercelIngress: ingress, labInternalSecret: 'lab-fixture-internal-secret-'.repeat(3),
+      sessionCheck: async () => { checks++; return { available: true, authorized: true }; },
+    });
+    servers.push(gateway); gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+    const get = (path, headers = {}) => new Promise((resolve, reject) => {
+      const req = httpRequest({ host: '127.0.0.1', port: gateway.address().port, method: 'GET', path, headers: request(path, headers).headers }, res => {
+        res.resume(); res.on('end', () => resolve(res.statusCode));
+      });
+      req.on('error', reject); req.setTimeout(2000, () => req.destroy(Error('Fixture timed out.'))); req.end();
+    });
+    assert.equal(await get('/__vercel/lab/session'), 200); assert.equal(checks, 1);
+    for (const path of ['/studio/api/inputs/events', '/studio/api/project', '/studio/api/videos']) assert.equal(await get(path), 421, path);
+    assert.equal(await get('/api/table'), 401);
+    assert.equal(await get('/api/auth/lab/start?next=%2Fstudio'), 401);
+    assert.equal(labRequests, 0); assert.equal(checks, 1); assert.equal(webRequests, 2);
+    const direct = await new Promise((resolve, reject) => {
+      const req = httpRequest({ host: '127.0.0.1', port: gateway.address().port, method: 'GET', path: '/studio', headers: { host: 'isolated.onrender.com' } }, res => { res.resume(); res.on('end', () => resolve(res)); });
+      req.on('error', reject); req.end();
+    });
+    assert.equal(direct.statusCode, 307); assert.equal(direct.headers.location, 'https://preview.example.test/studio', 'old Render bookmarks still lead to the canonical UI');
+  } finally {
+    for (const server of servers.reverse()) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+  }
+});
