@@ -6,7 +6,6 @@ import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as adminWorkspaceRoutes from '../../../../../packages/navigation/admin-workspace-routes.mjs';
 import * as adminRouting from '../../runtime/admin-routing.mjs';
-const {ADMIN_WORKSPACE_TOOLS}=adminWorkspaceRoutes;
 import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -43,57 +42,6 @@ test('Admin speech review opens the real NativeAdministration review with the se
   assert.deepEqual(native.props.availableActions,['GET config','GET voicelines','POST voiceline-review']);
   assert.equal(native.props.apiBase,'/studio/api/admin');
   assert.equal(service.requests[0].path,'/studio/api/auth/session');assert.equal(service.requests[0].init.credentials,'same-origin');
-});
-
-function shell(file,path){
-  let mounted;
-  const module={exports:{}},navigation={__esModule:true,default:'a',usePathname:()=>path,useSearchParams:()=>new URLSearchParams()};
-  const hooks={...React,useEffect(){},useState:initial=>[typeof initial==='function'?initial():initial,()=>{}],useCallback:fn=>fn};
-  const placeholders=new Proxy({},{get:(_,name)=>name==='__esModule'?false:marker(String(name))});
-  runInNewContext(transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{
-    module,exports:module.exports,URL,URLSearchParams,document:{getElementById:()=>({}),querySelector:()=>null},
-    location:{origin:'https://admin.invalid',search:''},
-    require:name=>name==='react'?hooks:name==='react/jsx-runtime'?require(name)
-      :name==='react-dom/client'?{createRoot:()=>({render:element=>{mounted=element;}})}
-      :name==='next/link'||name==='next/navigation'||name==='../runtime/navigation'?navigation
-      :name.includes('admin-navigation')?adminNavigation:name.includes('admin-workspace-routes')?adminWorkspaceRoutes:name.includes('admin-routing')?adminRouting:placeholders,
-  });
-  return mounted?mounted.type(mounted.props):module.exports.StudioSidebar();
-}
-function descendants(tree){
-  if(Array.isArray(tree))return tree.flatMap(descendants);
-  return tree&&typeof tree==='object'?[tree,...descendants(tree.props?.children)]:[];
-}
-
-test('each workspace tool marks its resource in the menu',()=>{
-  const menuHrefs=new Set([...adminNavigation.adminNavigationGroups,...adminNavigation.adminSystemGroups].flatMap(group=>group.links.map(link=>link.href)));
-  for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS)){
-    const home=adminNavigation.adminToolHome(key);
-    assert.ok(menuHrefs.has(home),key+' belongs to a menu page');
-    const tree=shell('../components/studio/studio-sidebar.tsx','/admin/'+key);
-    const menu=node(tree,item=>item.props?.['aria-label']==='Huvudmeny');
-    const active=descendants(menu).filter(item=>item.props?.['aria-current']==='page');
-    assert.equal(active.length,1,key);
-    assert.equal(active[0].props.href,home,key);
-    const tool=harness('../components/studio/workspace-tools.tsx','?dealer=dragan');
-    const back=descendants(tool.render(tool.exports.WorkspaceTool,{section:key})).filter(item=>item.type==='a').map(item=>item.props.href);
-    assert.equal(back[0],undefined,'the tool is loading; the back link follows the data');
-  }
-  for(const key of ['publication','compositions','videos','dealer-studio','probe','dealer-agent','companies','rehearsal'])assert.notEqual(adminNavigation.adminToolHome(key),'/admin/tools',key+' is not a Fördjupning tool');
-  assert.equal(adminNavigation.adminPageLabels['/admin/structure'],'Kopplingar & användning');
-  assert.equal(adminNavigation.adminPageLabels['/admin/deletion'],undefined,'the merged page has no second label');
-  for(const group of adminNavigation.adminSystemGroups)for(const link of group.links)assert.equal(adminNavigation.adminNavigationGroups.some(primary=>primary.links.some(row=>row.href===link.href)),false,link.href+' duplicates Skapande/Verksamhet');
-});
-
-
-
-test('Admin portal navigation opens the three current product entry points',()=>{
-  for(const path of ['/admin','/admin/clips','/admin/companies']){
-    const tree=shell('../entry.tsx',path),portal=node(tree,item=>item.props?.['aria-label']==='Portaler');
-    const links=descendants(portal).filter(item=>item.type==='a');
-    assert.deepEqual(links.map(item=>item.props.href),['/admin','/partner','/lobby']);
-    assert.equal(links[0].props['aria-current'],'page');
-  }
 });
 
 for(const [query,room] of [

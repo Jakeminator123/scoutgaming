@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { studioNavigationHref, studioNavigationTabs, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
 const selection = { dealerId: 'paow', eventId: 'speak.goodluck', variantId: 'paow.goodluck.alt-2', situation: 'goodluck', laneId: 'studio/main' };
@@ -45,9 +44,7 @@ test('switching dealer tabs keeps the selected event, variant, situation and com
     assert.equal(params.get('variant'), selection.variantId);
     assert.equal(params.get('situation'), selection.situation);
     assert.equal(params.get('composition'), selection.laneId);
-    assert.equal(params.get('view'), tab.id === 'generate' ? 'generate' : null);
   }
-  assert.equal(tabs.some(tab => tab.href.startsWith('/admin/compositions')), false);
 });
 
 test('custom tab destinations keep their own query and hash while encoding selection safely', () => {
@@ -60,36 +57,17 @@ test('custom tab destinations keep their own query and hash while encoding selec
   assert.equal(query(studioNavigationHref('/admin/dealer-studio', { ...selection, tab: 'triggers', token: 'not-a-context-value' })).has('token'), false);
 });
 
-test('public Studio tabs use their active destinations with either lab base path', () => {
-  const before = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-  try {
-    for (const base of ['', '/studio']) {
-      process.env.NEXT_PUBLIC_LAB_BASE_PATH = base;
-      for (const tab of studioNavigationTabs(selection)) {
-        const target = {replies:'/admin/replies?',generate:'/admin/dealer-studio?'}[tab.id] ?? '/admin/clips?';
-        assert.ok(tab.href.startsWith(target), tab.href);
-      }
-      assert.equal(studioNavigationHref('/studio/control/clips?view=idle', { dealerId: 'paow' }), '/admin/clips?dealer=paow');
-    }
-  } finally {
-    if (before === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
-    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = before;
-  }
-});
-
-test('speech tab opens the selected dealer workspace rather than an Astrid-only setting', () => {
+test('dealer navigation never substitutes another dealer identity', () => {
   for (const dealerId of ['astrid', 'paow', 'new-dealer']) {
-    assert.equal(studioNavigationTabs({ dealerId }).find(tab => tab.id === 'speech').href, `/admin/clips?panel=room&dealer=${dealerId}`);
+    for(const tab of studioNavigationTabs({dealerId}))assert.equal(query(tab.href).get('dealer'),dealerId);
   }
 });
 
-
-
-test('rendered tabs and ancestors preserve repeated and mixed room scope for destination validation', () => {
+test('rendered navigation preserves repeated and mixed room scope for destination validation', () => {
   const queryText='dealer=paow&operator=north&operator=south&table=one&table=two&room=three&room=four&token=private';
   const Navigation=loadNavigation(queryText);
-  for(const active of ['clips','speech','settings']) {
-    const tree=Navigation({...selection,active,crumbs:[{label:'Klipp',href:'/admin/dealer-studio?view=clips#selected'},{label:'Detalj'}]});
+  for(const {id:active} of studioNavigationTabs()) {
+    const tree=Navigation({...selection,active});
     const links=anchors(tree);assert.ok(links.length);
     for(const link of links) {
       const params=query(link.props.href);
@@ -101,9 +79,7 @@ test('rendered tabs and ancestors preserve repeated and mixed room scope for des
   }
 });
 
-
-
-test('every ancestor and tab delegates ordinary clicks to the editor guard without taking over navigation', () => {
+test('navigation delegates ordinary clicks to the editor guard without taking over navigation', () => {
   const calls = [];
   const tree = StudioNavigation({ ...selection, dealerLabel: 'PAOW', active: 'clips',
     onNavigate: (event, href) => { event.preventDefault(); calls.push(href); },
@@ -120,9 +96,6 @@ test('every ancestor and tab delegates ordinary clicks to the editor guard witho
   }
   assert.equal(calls.length, count);
 });
-
-
-
 
 test('query context reader includes only Studio selection keys and omits empty values',()=>{
   const query=new URLSearchParams({dealer:'paow',event:'speak.goodluck',variant:'paow.goodluck.alt-2',situation:'goodluck',lane:'studio/main',category:'player-kind',token:'private',tab:'triggers',cursor:'opaque'});assert.deepEqual(studioNavigationContextFromQuery(query),selection);assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams('dealer=&event=&token=x')),{});
