@@ -4,23 +4,26 @@
 import { readFile, realpath } from 'node:fs/promises';
 import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createFrozenKevinImportPlan, frozenKevinImportSource, verifyImportSourceBytes } from '../apps/studio/lib/dealer-import-plan.mjs';
+import { createFrozenKevinImportPlan, frozenKevinImportSource, summarizeDealerImportPlan, verifyImportSourceBytes, FROZEN_IMPORT_SOURCE_ALIASES } from '../apps/studio/lib/dealer-import-plan.mjs';
 
-const usage = 'node tools/dealer-import-plan.mjs --plan --project <project.json> --dealer <registered-id> --source-alias dragge [--inventory <inventory.json>] [--source-root <existing-kevin-checkout> | --source-map <local-path-map.json>]';
+const usage = `node tools/dealer-import-plan.mjs --plan --project <project.json> --dealer <registered-id> --source-alias <${FROZEN_IMPORT_SOURCE_ALIASES.join('|')}> [--inventory <inventory.json>] [--source-root <existing-kevin-checkout> | --source-map <local-path-map.json>] [--summary]`;
 const fail = code => { throw Object.assign(Error(code), { code }); };
 export async function runDealerImportPlan(args) {
   const options = {};
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--plan') { if (options.plan) fail('duplicate_option'); options.plan = true; }
+    if (arg === '--plan' || arg === '--summary') { if (options[arg]) fail('duplicate_option'); options[arg] = true; }
     else if (['--project', '--dealer', '--source-alias', '--inventory', '--source-root', '--source-map'].includes(arg)) {
       if (options[arg] !== undefined || !args[i + 1] || args[i + 1].startsWith('--')) fail('invalid_option');
       options[arg] = args[++i];
     } else fail('unknown_option');
   }
-  if (!options.plan || !options['--project'] || !options['--dealer'] || !options['--source-alias']) fail('plan_project_dealer_alias_required');
+  if (!options['--plan'] || !options['--project'] || !options['--dealer'] || !options['--source-alias']) fail('plan_project_dealer_alias_required');
   if (options['--source-root'] && options['--source-map']) fail('conflicting_source_options');
-  const json = async path => JSON.parse((await readFile(path, 'utf8')).replace(/^\uFEFF/, ''));
+  if (!FROZEN_IMPORT_SOURCE_ALIASES.includes(options['--source-alias'])) fail('unknown_source_alias');
+  // Local bytes are verified against the chosen source's own frozen file list.
+  const sourceFiles = frozenKevinImportSource(options['--source-alias']).files;
+  const json = async path => JSON.parse((await readFile(path, 'utf8')).replace(/^﻿/, ''));
   const project = await json(options['--project']);
   const inventory = options['--inventory'] ? await json(options['--inventory']) : undefined;
   const verifiedFiles = {};
@@ -32,7 +35,7 @@ export async function runDealerImportPlan(args) {
   };
   if (options['--source-root']) {
     const root = await realpath(resolve(options['--source-root']));
-    for (const entry of frozenKevinImportSource().files) {
+    for (const entry of sourceFiles) {
       const candidate = resolve(root, ...entry.path.split('/'));
       try { await readSource(root, entry, candidate); }
       catch (error) { if (error.code === 'ENOENT') continue; throw error; }
@@ -44,14 +47,15 @@ export async function runDealerImportPlan(args) {
     const map = await json(options['--source-map']);
     if (!map || Object.keys(map).sort().join(',') !== 'files,root,schemaVersion' || map.schemaVersion !== 1
       || typeof map.root !== 'string' || !isAbsolute(map.root) || !map.files || typeof map.files !== 'object' || Array.isArray(map.files)) fail('invalid_source_map');
-    const root = await realpath(map.root), entries = frozenKevinImportSource().files;
+    const root = await realpath(map.root);
     for (const [path, local] of Object.entries(map.files)) {
-      const entry = entries.find(file => file.path === path);
+      const entry = sourceFiles.find(file => file.path === path);
       if (!entry || typeof local !== 'string' || !local) fail('invalid_source_map');
       await readSource(root, entry, resolve(root, local));
     }
   }
-  return createFrozenKevinImportPlan({ project, dealerId: options['--dealer'], sourceAlias: options['--source-alias'], inventory, verifiedFiles });
+  const plan = createFrozenKevinImportPlan({ project, dealerId: options['--dealer'], sourceAlias: options['--source-alias'], inventory, verifiedFiles });
+  return options['--summary'] ? summarizeDealerImportPlan(plan) : plan;
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {

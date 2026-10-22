@@ -1398,6 +1398,27 @@ en begränsad projektion av verklig dealer-/fackkatalog, inga ekonomi-, drift-
 eller rumsregister. Den måste skilja allmänna råd från tillgängliga Studiouppgifter.
 Utan modell används tydligt märkta filnamnsregler för mapping. Chatt rapporterar
 otillgänglig AI; den kör inte filnamnsregler eller applicerar rader som ett svar.
+
+Frysta Kevin-källor i `apps/studio/lib/dealer-import-sources.mjs` delas av
+planen och assistenten: `dragge → dragan` (`kevin` @ 31f50618, sv/en) och
+`paow → paow` (`kevin-staging` @ c7138759, 414 filer, sv/en/pt/ko; samma
+Paow-bytes som K05-frysningen 5aa7ed10). Paow-källan bär Git-blob, storlek,
+SHA-256 beräknad ur blobens bytes, K05-matrisens urval per fil (matris
+`f00a8c2d…`), Kevins klipplista 2026-10-22 (talstatus och text), `PAOW_READY`
+och de 23 H3-idletagningarna ur `dealers.js`. En uppladdad fil med exakt samma
+filnamn och storlek som en fryst fil får fack, poskedja, språk och tagning från
+källan med hög konfidens; källträffen ersätter filnamns- och AI-förslag för just
+den filen, raden bär `evidence` (källa, ref, sökväg, sha256, K05-urval, Kevins
+talstatus) och API-svaret noterar antalet igenkända filer. Saknar klippkartan
+facket (G13-repliker som `twentyone`) lämnas raden utan fack med facket namngivet;
+pt/ko, uppskjutna och ej K05-valda filer placeras som alternativ med varning.
+Dealern måste redan vara registrerad, och importen ger ingen operatörs-, bolags-
+eller rumstilldelning. Paow saknar filmprofil (kortspår och kontaktruta) i main:
+utdelningstagningarna placeras, men planen markerar dem
+`pose-calibration-not-bound-to-verified-bytes` tills K04 binder dem.
+`node tools/dealer-import-plan.mjs --plan --project <export> --dealer paow
+--source-alias paow [--source-root <lokal kopia>] --summary` är fortsatt enbart
+förhandsgranskning utan apply.
 Kartläggningens 60-sekunderstimeout ryms i routens 75-sekundersgräns. Ingen
 automatisk modellväxling eller omkörning görs vid fel eller avbruten begäran.
 

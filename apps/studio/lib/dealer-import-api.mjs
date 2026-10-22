@@ -4,6 +4,19 @@ import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 import { dealerImportCatalog, validateDealerImportInput, filenameDealerImportRows, validateDealerImportAdvice, finishDealerImportRows, DEALER_IMPORT_STORAGE_WARNING } from './dealer-import-catalog.mjs';
 import { dealerImportModelConfiguration, dealerImportProviderStatus, dealerImportSelectedModel, askDealerImportModel } from './dealer-import-model.mjs';
+import { frozenImportSourcesSummary } from './dealer-import-sources.mjs';
+
+// Files recognised by a frozen Kevin source are placed from that source, not
+// from the model. Say so, and say which of them still lack a slot in the map.
+export function frozenImportNote(rows) {
+  const recognised = rows.filter(row => row.evidence?.source);
+  if (!recognised.length) return null;
+  const placed = recognised.filter(row => row.slotId).length, missing = recognised.length - placed;
+  const sources = [...new Set(recognised.map(row => row.evidence.source))].join(', ');
+  return `${recognised.length} av ${rows.length} filer känns igen på namn och storlek i ${sources}. ${placed} fick fack automatiskt enligt källan`
+    + (missing ? `; ${missing} saknar fack i klippkartan och väntar på ett nytt fack eller manuellt val` : '')
+    + '. Källträffar ersätter filnamns- och AI-förslag för de filerna; innehållet är fortfarande inte verifierat, och dealern får ingen operatörs- eller rumstilldelning av importen.';
+}
 
 const fail = (code, status = 403) => { throw new StudioStorageError(code, status); };
 const json = value => Response.json(value, { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -50,7 +63,7 @@ export function createDealerImportApi({ repository, authorize, config }, { env =
       if (!['GET', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store' } });
       const original = await principal(request);
       request.signal.throwIfAborted();
-      if (request.method === 'GET') return json({ ...await readCatalog(), provider, warnings });
+      if (request.method === 'GET') return json({ ...await readCatalog(), provider, warnings, frozenSources: frozenImportSourcesSummary() });
       if (request.headers.get('origin') !== url.origin || !['same-origin', 'none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected');
       const catalog = await readCatalog();
       const input = validateDealerImportInput(await readStudioDocumentJson(request), catalog);
@@ -78,8 +91,11 @@ export function createDealerImportApi({ repository, authorize, config }, { env =
       const fresh = await readCatalog();
       if (canonicalStudioJson(fresh) !== canonicalStudioJson(catalog)) fail('studio_conflict', 409);
       request.signal.throwIfAborted();
+      const finished = chat ? [] : finishDealerImportRows(rows, input, fresh);
+      const frozenNote = frozenImportNote(finished);
+      if (frozenNote) notes.push(frozenNote);
       return json({ dealerId: input.dealerId, intent: input.intent, selectedModel, source, assistantMessage,
-        rows: chat ? [] : finishDealerImportRows(rows, input, fresh), warnings: notes, provider });
+        rows: finished, warnings: notes, provider });
     } catch (error) {
       if (request.signal.aborted) return Response.json({ error: 'studio_import_cancelled' },
         { status: 499, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });

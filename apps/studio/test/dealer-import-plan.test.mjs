@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve, sep } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { createSeedProject, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { createFrozenKevinImportPlan, frozenKevinImportSource, reviewDealerImportFilenames, verifyImportSourceBytes } from '../lib/dealer-import-plan.mjs';
 import { DRAGAN_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
@@ -236,6 +236,115 @@ test('CLI local path map verifies bytes, rejects unknown paths and keeps reads i
     await assert.rejects(() => runDealerImportPlan(argv), { code: 'invalid_source_map' });
     await writeFile(mapPath, JSON.stringify({ ...map, files: { [path]: import.meta.filename } }));
     await assert.rejects(() => runDealerImportPlan(argv), { code: 'source_path_outside_root' });
+  } finally {
+    assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + sep + 'dealer-import-plan-'));
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// Paow: Kevin's kevin-staging head, frozen with every language and the K05 selection.
+const paowSource = frozenKevinImportSource('paow');
+const paowProject = addDealer(createSeedProject(), 'paow', 'Paow');
+const paowPlan = options => createFrozenKevinImportPlan({ project: paowProject, dealerId: 'paow', sourceAlias: 'paow', ...options });
+const paowEntry = tail => paowSource.files.find(row => row.path.endsWith('/' + tail));
+const paowProof = tail => { const { path, gitBlobSha, size, sha256 } = paowEntry(tail); return { [path]: { gitBlobSha, size, sha256 } }; };
+
+test('Paow source freezes kevin-staging c7138759 with declared SHA-256, K05 selection, Kevin runtime constants and all four languages', () => {
+  assert.equal(paowSource.id, 'kevin-paow-c7138759'); assert.equal(paowSource.branch, 'kevin-staging');
+  assert.equal(paowSource.ref, 'c713875923cd854b26f89c1db0d0f47064619c1d');
+  assert.equal(paowSource.sourceDealerId, 'paow'); assert.equal(paowSource.targetDealerId, 'paow');
+  assert.equal(paowSource.files.length, 414);
+  assert.ok(paowSource.files.every(row => /^[a-f0-9]{64}$/.test(row.sha256) && /^[a-f0-9]{40}$/.test(row.gitBlobSha) && Number.isSafeInteger(row.size)));
+  assert.equal(new Set(paowSource.files.map(row => row.path)).size, 414);
+  assert.equal(paowSource.k05.matrixSha256, 'f00a8c2d275cd584809e6a9668269ac3c99383ada7d32ff987178bf9733ce319');
+  assert.equal(paowSource.k05.ref, '5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc');
+  assert.deepEqual(paowSource.languages, ['sv', 'en']); assert.deepEqual(paowSource.additionalLanguages, ['pt', 'ko']);
+  for (const language of ['sv', 'en', 'pt', 'ko']) assert.equal(Object.keys(paowSource.texts[language]).length, 81);
+  assert.equal(paowSource.runtime.idles.length, 23); assert.equal(paowSource.runtime.ready.in, 21); assert.equal(paowSource.runtime.lipsyncAvatar, 'paow_vila2x');
+  assert.equal(paowSource.files.filter(row => row.k05?.selection === 'vald').length, 157);
+  assert.equal(paowSource.files.filter(row => row.clipList?.status === 'ej-godkand').length, 324);
+  assert.throws(() => frozenKevinImportSource('marten'), { code: 'unknown_source_alias' });
+  assert.throws(() => createFrozenKevinImportPlan({ project: paowProject, dealerId: 'paow', sourceAlias: 'dragge' }), { code: 'import_source_dealer_mismatch' });
+  assert.throws(() => createFrozenKevinImportPlan({ project, dealerId: 'dragan', sourceAlias: 'paow' }), { code: 'import_source_dealer_mismatch' });
+  assert.throws(() => createFrozenKevinImportPlan({ project, dealerId: 'astrid', sourceAlias: 'paow' }), { code: 'import_source_dealer_mismatch' });
+});
+
+test('Paow plan places poses, H3 idles and K05-selected speech; deferred, unselected and pt/ko rows are excluded with their reasons', () => {
+  const result = paowPlan();
+  assert.equal(result.rows.length, 414); assert.equal(result.source.filmedProfile, null); assert.equal(result.source.k05.review, '6329902583');
+  assert.equal(result.dynamicSpeech.sourceAvatar, 'paow_vila2x');
+  assert.deepEqual(result.counts, { catalogSpeechPerLanguage: 81, manifestSpeechIds: 0, playbackOrFallbackSpeechIds: 37, additionalWorkerPreloadSpeechIds: 0, posePaths: 56 });
+  const poses = result.rows.filter(row => row.placement.category === 'pose-version');
+  assert.equal(poses.length, 56);
+  assert.ok(poses.every(row => row.decision === 'review' && row.reasons.includes('pose-calibration-not-bound-to-verified-bytes') && row.placement.calibration.runtimeProfile === null));
+  assert.equal(rowAt(result, 'v2/pos4-iv.mp4').placement.slotId, 'deal.player.centre/box3');
+  assert.equal(rowAt(result, 'v2/pos4-iv.mp4').placement.calibration.frameCount, 60);
+  assert.deepEqual(rowAt(result, 'v2/hole.mp4').placement.pose, { entry: 'REDO', exit: 'VILA', version: 'base' });
+  assert.equal(rowAt(result, 'v2/flip.mp4').sourceByteAliases.length, 3);
+  const idles = result.rows.filter(row => row.placement.category === 'idle');
+  assert.equal(idles.length, 23);
+  assert.ok(idles.every(row => row.placement.slotId === 'idle.ready/' && row.placement.runtimeUses.includes('playback') && row.k05.selection === 'vald'));
+  assert.equal(rowAt(result, 'v2/andas.mp4').placement.idle.calm, true); assert.equal(rowAt(result, 'v2/nick6101.mp4').placement.idle.calm, false);
+  assert.equal(rowAt(result, 'idle-v2/breath.mp4').decision, 'excluded'); assert.ok(rowAt(result, 'idle-v2/breath.mp4').reasons.includes('not-referenced-by-frozen-runtime'));
+  for (const language of ['sv', 'en']) {
+    const speech = result.rows.filter(row => row.placement.speech?.language === language);
+    assert.equal(speech.length, 81);
+    assert.equal(speech.filter(row => row.placement.runtimeUses.includes('playback')).length, 37);
+    assert.equal(speech.filter(row => row.reasons.includes('deferred-by-k05-review-6329902583')).length, 22);
+    assert.equal(speech.filter(row => row.reasons.includes('not-in-k05-activation-set')).length, 22);
+    assert.ok(speech.every(row => row.placement.speech.exactText === paowSource.texts[language][row.placement.speech.takeId]));
+  }
+  for (const language of ['pt', 'ko']) {
+    const speech = result.rows.filter(row => row.placement.speech?.language === language);
+    assert.equal(speech.length, 81);
+    assert.ok(speech.every(row => row.decision === 'excluded' && row.reasons.includes('language-outside-k05-selection')));
+  }
+  const deferred = rowAt(result, 'repliker/sv/twentyone_1.mp4');
+  assert.equal(deferred.placement.slotId, null); assert.equal(deferred.placement.proposedSlotId, 'speak.other/twentyone');
+  assert.equal(deferred.k05.selection, 'uppskjuten:G13'); assert.equal(deferred.kevinClipList.status, 'ej-godkand');
+  assert.equal(rowAt(result, 'repliker/sv/goodluck_1.mp4').placement.slotId, 'speak.goodluck/goodluck');
+  assert.equal(rowAt(result, 'repliker/sv/goodluck_1.mp4').classification.role, 'alternative');
+  assert.equal(rowAt(result, 'v2/vila.png').decision, 'reference-only'); assert.equal(rowAt(result, 'v2/redo.png').decision, 'excluded');
+  assert.equal(rowAt(result, 'faces/paow.jpg').decision, 'reference-only'); assert.equal(rowAt(result, 'repliker/ko/texter.json').decision, 'reference-only');
+  assert.ok(result.rows.every(row => row.applyAllowed === false && row.sha256 === null && row.provenance.declaredSha256 === paowEntry(row.provenance.path.split('/').slice(-2).join('/')).sha256));
+  assert.equal(result.applyAllowed, false);
+});
+
+test('Paow declared SHA-256 must agree with verified bytes; verified idle takes become importable and same bytes elsewhere stay protected', () => {
+  const tail = 'v2/andas.mp4', entry = paowEntry(tail), verifiedFiles = paowProof(tail);
+  assert.throws(() => paowPlan({ verifiedFiles: { [entry.path]: { ...verifiedFiles[entry.path], sha256: 'a'.repeat(64) } } }), { code: 'import_source_bytes_mismatch' });
+  const bytes = Buffer.from('paow verification fixture');
+  const gitBlobSha = createHash('sha1').update(Buffer.from('blob ' + bytes.length + '\0')).update(bytes).digest('hex');
+  const digest = createHash('sha256').update(bytes).digest('hex');
+  assert.throws(() => verifyImportSourceBytes({ gitBlobSha, size: bytes.length, sha256: 'b'.repeat(64) }, bytes), { code: 'import_source_bytes_mismatch' });
+  assert.equal(verifyImportSourceBytes({ gitBlobSha, size: bytes.length, sha256: digest }, bytes).sha256, digest);
+  const row = rowAt(paowPlan({ verifiedFiles, inventory: { videos: [] } }), tail);
+  assert.equal(row.decision, 'import'); assert.equal(row.sha256, entry.sha256); assert.equal(row.provenance.declaredSha256, entry.sha256);
+  const archivedOwner = { id: 'paow-kevin-media', sha256: entry.sha256, available: true, classification: { ...row.classification, dealerId: 'paow-kevin' } };
+  assert.equal(rowAt(paowPlan({ verifiedFiles, inventory: { videos: [archivedOwner] } }), tail).decision, 'keep-protected');
+  const pose = rowAt(paowPlan({ verifiedFiles: paowProof('v2/pos4.mp4'), inventory: { videos: [] } }), 'v2/pos4.mp4');
+  assert.equal(pose.decision, 'review'); assert.ok(pose.reasons.includes('pose-calibration-not-bound-to-verified-bytes'));
+  const speech = rowAt(paowPlan({ verifiedFiles: paowProof('repliker/sv/goodluck_1.mp4'), inventory: { videos: [] } }), 'repliker/sv/goodluck_1.mp4');
+  assert.equal(speech.decision, 'review'); assert.ok(speech.reasons.includes('recorded-audio-index-calibration-required'));
+  assert.equal(speech.placement.speech.videoSha256, speech.sha256);
+});
+
+test('CLI verifies local bytes against the chosen alias and offers a summary, never Dragan\'s list for Paow', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'dealer-import-plan-'));
+  try {
+    const projectPath = join(dir, 'project.json'); await writeFile(projectPath, JSON.stringify(paowProject));
+    const argv = ['--plan', '--project', projectPath, '--dealer', 'paow', '--source-alias', 'paow'];
+    await assert.rejects(() => runDealerImportPlan([...argv.slice(0, -1), 'marten']), { code: 'unknown_source_alias' });
+    await assert.rejects(() => runDealerImportPlan([...argv, '--summary', '--summary']), { code: 'duplicate_option' });
+    const result = await runDealerImportPlan([...argv, '--source-root', dir]);
+    assert.equal(result.source.id, paowSource.id); assert.equal(result.targetCoverage, 'not-read'); assert.equal(result.planId, paowPlan().planId);
+    const summary = await runDealerImportPlan([...argv, '--summary']);
+    assert.equal(summary.planId, paowPlan().planId); assert.equal(summary.rows, 414); assert.equal(summary.verifiedBytes, 0);
+    assert.equal(summary.decisions.excluded, paowPlan().rows.filter(row => row.decision === 'excluded').length);
+    assert.equal(summary.missingSlots['speak.other/twentyone'], 28);
+    const entry = paowEntry('v2/andas.mp4'), local = join(dir, ...entry.path.split('/'));
+    await mkdir(dirname(local), { recursive: true }); await writeFile(local, 'not the frozen bytes');
+    await assert.rejects(() => runDealerImportPlan([...argv, '--source-root', dir]), { code: 'import_source_bytes_mismatch' });
   } finally {
     assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + sep + 'dealer-import-plan-'));
     await rm(dir, { recursive: true, force: true });
