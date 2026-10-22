@@ -58,6 +58,25 @@ Den verkliga K05-identitetsmappningen och nativebindningen återstår. Saknad ma
 nekas; inga 700/500-fallbacks. Native publicering är fortsatt nekad utan resolvern.
 Ingen K04-import, live transport-/spelinkoppling eller produktions-DDL har utförts.
 
+**K05-katalogkompatibilitet, 22 oktober:** rättat underlag159cc134d3a57db4ccbe3a871a3a5eb16fec3656
+och K04afba9dc22e77aecb89c1527fde37088d0ad1b7a4 behåller producentens API men
+byter materialmängd/revisionshashar. Äldre planningrevisions återanvänds inte.
+J08 tillåter nu `still`/`keyed-still` via exakt validerad PNG-katalogpost,
+null media-ID/tal och fryst identitetskarta/katalogrevision/paketpresentation;
+ingen påhittad videopost. Video- och inspelat-talgodkännanden består.
+Före6pass/1fail på korrektPNG, efter20/20adapter/API,0skip. Samtidigt nekar
+media-layouts historiska fyrnamnslista giltiga `dealers/dragan/...`-poster.
+Den använder nu delad `isDealerId` för sökvägssyntax, med befintligt traversal-,
+alias- och privatskydd. Giltig syntax registrerar ingen dealer och ger ingen
+paket-/speltillgång. Reproföre1/1fel; slut23/23layout/katalog/importprov,0skip.
+Ett negativt testfall rättades från giltig dealerx med underkatalogy till en
+faktiskt ogiltig kodad dealerkomponent; ingen produkträttning av det testfelet.
+Oberoende j04_resume läste hela fyrfilsdeltat och loggar utan blockerare; root
+läste kod/loggar. Node24.21.0,max4workers. Loggar:
+`arkiv/2026-10-22/j08/png-binding-{commands,before,after}.log` och
+`dealer-path-{before,after,final}.log`. Detta är kontrakts-/fixturbevis,
+inte egen Blobbyte-/K04-/fullnativeacceptans. Ingen import, DDL eller aktivering.
+
 **Verifiering:** tidigare serverprov 73/73 och senare 27/27 API/HTTP-prov,
 UI-agentens 162/162 fokusprov och Studio `tsc`, rootens 7/7 proof-prov samt
 12/12 UI/server-proof-prov efter numerisk timestampfix. Körningar överlappar.
@@ -77,9 +96,10 @@ Fjärr-main `6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad` (J04/lobby) är nu
 integrerad konfliktfritt från denna head. De identiska lobbylänksändringarna
 sammanföll; J04:s och J08:s separata handoff-/fullhookblock är bevarade.
 Importerade mainfiler är jämförda mot det frysta källträdet; inga produktfiler
-avviker. Diffkontroll passerar. Den gröna CI:n gäller före mainintegrationen;
+avviker. Diffkontroll passerar. CI39701503691 och GitGuardian119571576203 är nu
+verifierat completed/success på exakt9b43e3e7f7cde871cdba9efe81800bf8b5c4d329;
 kevin_plan har oberoende läst hela integrationsdeltat utan blockerande fynd.
-Root har läst överlappen; ny integrations-CI återstår. Ingen K04-/K05-aktivering,
+Root har läst överlappen. Denna gröna CI gäller basen före PNG-/dealersökvägsdeltat; ny CI krävs för den nya headen. Ingen K04-/K05-aktivering,
 produktions-DDL eller tung omkörning följer av integrationen.
 
 Nu även **9/9 riktiga PostgreSQL-grupper**, Node24.21.0/PostgreSQL16.15 i ägt
