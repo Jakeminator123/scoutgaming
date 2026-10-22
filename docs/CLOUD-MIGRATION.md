@@ -101,6 +101,10 @@ Neon-/Blob-migreringen.
 | Director/Gateway | Aktiva OpenClaw-tjänster med egen konfiguration/sessioner på `/data/catalog` respektive `/data/openclaw`; inga alternativa produktregister. |
 | Isolerade tester | Egna tillfälliga data/scope. QA/Preview-utbyggnad är pausad; ingen automatisk återstart eller produktionsfallback. |
 
+Ett recept för en ny Render-tjänst `croupier-v3` som bara kör spelmotorn (ingen
+Studio-process, inget `/studio`) finns i [ops/cloud/RENDER-V3.md](../ops/cloud/RENDER-V3.md)
+med `ops/cloud/Dockerfile.game` och `CROUPIER_CLOUD_LAB_CHILD=0`; ingen tjänst är skapad av receptet.
+
 Normal start `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns
 adress. Endast explicit `--offline` skapar en isolerad, tillfällig fixture.
 Lokala arbetsfiler, katalogexporter och SQLite-backuper är authoring/historik,
