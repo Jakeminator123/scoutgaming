@@ -2,6 +2,14 @@
 
 ## J08 — Admins rumsutkast och skobevis — 22 oktober 2026
 
+**Integration inför PR334:** tidigare granskad head
+`d7d139b9f7bf59b1bd924280ab456af12e1c8b5a` förenas med betrodd main
+`47756bdf1df372c7aa5047dc165a2d721614c4a2`. Produktfilerna behålls;
+mainens CI-konsolidering, policyprov, arbetsregler och deployspärr följer med.
+Endast handoffen behövde konfliktlösning. Oberoende slutreview, normalhook och
+exakt-head-CI krävs före merge. Ingen GitHub-merge, produktions-DDL, deploy,
+flaggaktivering eller ny medieacceptans ingår i denna lokala integration.
+
 **IN_PROGRESS, utkast på `codex/admin-room-config-j08`.** Arbetskopian utgår från
 `4852f92f11635e20edd974c3261e0fc179ab7d1b`, med samlad Admin och J07 integrerade.
 Aktiviteten är inte VERIFIED; delverifieringen ger ingen ny färdigbock.
@@ -182,7 +190,80 @@ kandidater/0 orphans; de nyregistrerade proven plus orphan-verktygets prov passe
 56/56, 0 skips, med Node24.21.0. Loggar: `arkiv/2026-10-22/j07/ci-fix-{before,after,tests}.log`.
 Ingen ny fullbuild, SQL-körning eller fjärr-CI har gjorts för denna registerrättning.
 
-## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
+## Migreringsplan och ansvar — 22 oktober 2026
+
+[Masterplanen](../migrering/MASTERPLAN.md) och [status.json](../migrering/status.json)
+är kanoniska. **45% (9/20 hela aktiviteter) är VERIFIED; 55% återstår.**
+J01, J02, K01, O01, J03, J04, K02, K03 och J07 är verifierade.
+Detta är aktivitetsandel, inte tids-, kod- eller produktionsprocent.
+J03/PR331 och J04/PR335 ingår sedan tidigare i main. PR311 och PR337 är nu
+mergade som `98174fd8cc906137783ea842e529f711e06cfadb` respektive
+`47756bdf1df372c7aa5047dc165a2d721614c4a2`. Båda har grön eftermerge-CI.
+
+J05/J08/K04/K05 är fortfarande IN_PROGRESS. Root äger klientmontering, rumsväg,
+server och byggkedja. Kevin har ingen utestående klientleveransskuld; hans
+refill `eb6ab45509fad539463bbcb6930cc46d2d0844c2` är granskad och återanvänd.
+Transport-PR336:s aktuella frysta head är
+`83f5810d33c483868ac0ce2bab728efb813d51b4`. Tidigare P2-fynd är rättade;
+hela nya deltat är oberoende slutgranskat utan blockerande fynd och dess
+CI39753242313 är completed/success på exakt denna head. Den generella lokala
+QA-fixturen är levererad. Kevin fortsätter touch/layout och fullflöde med
+skärmbilder utan speech; verkliga körresultat återstår. Lipsync/RunPodval och
+nya jobb i det spåret är pausade till sista manuella etappen med Jakob/Kevin.
+Detta är ingen tal- eller K04-acceptans.
+
+Game008/009/010 saknas i daterat verifierad Neonproduktion. Faktisk deployed
+runtimeidentitet/ACL, operativ återställningsberedskap och produktions-DDL-mandat
+är fortfarande öppna. Isolerade PG18.6-uppgraderingsprov10/10 och syntetisk
+restore8/8 är granskade bevis; de ersätter inte dessa produktionsgrindar eller
+verkliga K04-medieprov. Planprocenten ändras inte av nya dokument eller delprov.
+
+Jakobs separata mergeagent äger sekventiell integration, #334 före #336.
+#332 ingår i #334; #333 saknar mergemandat. PR334:s lokala mainintegration är
+förberedelse: ny fryst head, oberoende slutreview, normalhook och exakt-head-CI
+krävs. Ingen schemaberoende produktmerge sker innan föreskrivna grindar är gröna.
+Ingen produktions-DDL, deploy, env-/flaggaktivering eller medieimport är godkänd.
+
+Vercels `git.deploymentEnabled:false` följer med från main och bevaras.
+Mergeagenten har tidigare verifierat Render autoDeploy=no/triggeroff,
+not_suspended samt repo delete_branch_on_merge=false; detta är ingen ny
+providerändring eller driftverifiering från Adminintegrationen. Spärrarna får
+inte återaktiveras automatiskt. Aktuell samordning sker i
+[GitHub #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
+
+## Förenklade agentinstruktioner — 21 oktober 2026
+
+På Jakobs begäran förenklas AGENTS i PR #311: masterplanen erkänns,
+Control avvecklas enligt aktiviteterna och sakdetaljer hänvisas till befintliga
+guider. Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap
+kvarstår. Oberoende regelgranskning har inga blockerande fynd. Denna
+regeländring godkänner ingen produktion eller ändring av CI-/branchskydd.
+
+## Lägre CI- och byggkostnad — 22 oktober 2026
+
+Lipsync-proven återanvänder nu regressionsjobbets Node 24, FFmpeg och låsta
+gateway-beroenden. Alla fyra workerprov behålls: gatewaytest, Python-unittest,
+Python-compileall och Bash-syntax. Python 3.11 väljs separat utan att ändra
+övriga provs Pythonmiljö. Slutgrinden kräver ett uttryckligt slutförandekvitto;
+saknat kvitto, fel, avbrott och oväntat överhoppade jobb blockerar fortfarande.
+Klassificeringen använder slims förinstallerade Node 24 med blockerande
+majorkontroll och åtta nödvändiga filer via sparse checkout. Hela commitdiffen
+klassificeras fortfarande, även för filer som inte checkats ut. Separat
+Node-hämtning tas bort efter mätningen 24 s setup av totalt 53 s; ny starttid
+måste mätas på den nya headen. Slutgrinden CI behåller ubuntu-slim; full
+regression, Moving och produktionsledgergrindens urval är oförändrade.
+
+Historiska stegtider för 1 101 matchade körningar uppskattar 1 281 färre
+avrundade VM-minuter med konsolideringen (cirka 7,69 USD brutto vid 0,006
+USD/minut); detta är ingen verifierad minskning av fakturan. Lokalt passerar
+13/13 CI-policyprov med Node 24 och fyra workers, inklusive simulerat fel i
+vart och ett av de fyra workerkommandona, felaktig/saknad Node och en verklig
+sparse Git-fixture med kod, worker, borttagning och rename utanför worktree.
+Policyn körs också från de åtta filerna; saknat importberoende blockerar.
+Den separata testprocessen rensar ärvd `NODE_TEST_CONTEXT` och verifierar
+faktiskt antal körda prov; exitkod noll ensam räcker inte som kvitto.
+Ny exakt-head-CI krävs före merge.
+Budgetar, behörigheter, deployspärrar och produktionsdata ändras inte.
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
 vanlig kodändring kan återanvända installationslagret. En selektiv CI-kontroll

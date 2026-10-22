@@ -1,3 +1,13 @@
+# Tillämpning i detta repo
+
+Next.js-blocket nedan är verktygsgenererat. Dess läskrav gäller arbete med
+Next-routing, serverkomponenter, Next-API:er och Next-konfiguration. Ren esbuild-
+klientkod i `client/`, delade kontrakt, dokumentation och tester kräver inte
+Next-guider om ändringen inte berör en sådan integration. Denna avgränsning
+gäller även formuleringen "before writing any code" i det genererade blocket.
+Blocket behålls oförändrat eftersom `next dev` återställer det; repoets
+avgränsning ligger utanför och bevaras av den installerade generatorn.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
