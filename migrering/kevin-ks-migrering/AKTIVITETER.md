@@ -132,6 +132,8 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 **Klart när:** samtliga valda runtimeposter löses till exakt accepterat material; avvisade/okända poster kan inte väljas. Visuell acceptans gäller endast oförändrade godkända bytes och sammanhang.
 **Verifiering/bevis:** manifestmatris `käll-SHA/sökväg → hash → Neon-ID → Blob-identitet → paket/händelse → acceptans`; valideringsresultat och negativa fall. Registreringsbevis, mediehämtning och visuell granskning hålls åtskilda.
 
+K05-källhashning i kommentar6330456172 är Kevinrapporterad: separat byggserveragent uppger1293/1293 mot fryst5aa och28/28V1 mot238d6dd6,0avvikelser. Detta är inte roots egna binär-/Neon-/Blobprov. K04:s nya bindLine-fråga hanteras som avgränsad urvalsrättning: samma uppskjuten-predikat som activationSet/planningRevision, med kataloghistorik och grundrepliker bevarade; Kevin lämnar fryst rättningshead.
+
 ## K06 — Verifiera Admin till spel efter omstart
 
 **Etapp/beroenden:** E4; J08 och K05.

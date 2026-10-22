@@ -131,7 +131,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J05 — Förenkla runtime och byggkedja
 
-**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`4dcc3bed0c4e7840a89e54e7a55fc1f30b7268f8` från grön J08/9b43. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. Senare auth/upgradedelta60/60,0skip med riktig HTTP/ws; GranskadJ08d7 integrerad utan produktavvikelse,12/12normalhook;CI39708474070pågår/GitGuardiangrön.
+**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`4dcc3bed0c4e7840a89e54e7a55fc1f30b7268f8` från grön J08/9b43. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. Senare auth/upgradedelta60/60,0skip med riktig HTTP/ws; GranskadJ08d7 integrerad utan produktavvikelse,12/12normalhook;CI39708474070 och GitGuardian completed/success på oförändrad4dcc; tillämpliga jobb körda, endast documentation förväntat skipped. Ingen produktlistener eller ny merge.
 
 - [x] Verifiera separat rumskanalport: serverauth/Origin/rumsisolering, publika fält, samtidiga hints, återläsning/version, timeout/buffer och cleanup med syntetiska sockets. Ingen listener/PGnotifiering/klientreplayacceptans.
 - [x] Verifiera sanerad skrivfri schedulerhälsa och dokumentera återanvändning av befintlig Renderinstans/start/readiness/drain-gräns.
@@ -174,7 +174,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 - [x] Bestäm och prova återstart/recovery och konfliktbeteende med samma kommando-ID samt med ändrad payload. Rum och operatörer får inte dela tillstånd genom fel nyckel.
 - [x] Håll walletimplementationen utanför spelkärnan och API-transport utanför koordinatorns spelregler. Behåll extern-wallet-spärren; ingen SQLite-genväg eller tyst demofallback vid extern konfiguration. Dokumentera framtida aggregators idempotens-/status-/återhämtningsgräns utan att bygga en overifierad HTTP-adapter.
 - [x] Runtimehealth i PR336/`f34f8e38a6386635958f8610ba39d07beacca35a` verifierad10/10 med oberoende review; ingen bootstrap-/gatewayinkoppling.
-- [ ] Isolerad Neonstaging: godkänd PG18/Frankfurt, fast0.25CU/autosuspend300s och cirka24aktivatimmar. En Verceladministrationsväg som kan verifiera inställningarna återstår. Inget projekt/DDL skapat; root återupptar när samma mål/värden kan verifieras.
+- [ ] Isolerad Neonstaging: godkänd PG18/Frankfurt, fast0.25CU/autosuspend300s och cirka24aktivatimmar. Vercel API/CLI och administration är inloggade, men skapandeformuläret saknar PGversion/CU/autosuspend; samma godkända inställningar måste fortfarande verifieras före Create. Inget projekt/DDL skapat; root återupptar när samma mål/värden kan verifieras.
 **Startfiler:** `services/game/postgres-native-table.mjs`, `native-table.mjs`, `storage/postgres-store.mjs`, `packages/storage/server/postgres-store.mjs`, `ops/neon-game/`. Källjämförelse efter K01: `kevin/croupier-scoutgg/server/shared-table.mjs` och `transactions.mjs` på fryst Kevin-SHA.
 **Radera:** ersatta SQLite-kopplingar och dubbla wallet-/transaktionsvägar ur den portade produktkedjan; lämna inte en tyst SQLite-fallback.
 **Klart/verifiera:** isolerade PostgreSQL-prov med två samtidiga klienter: samma rum, olika rum, samma spelare, dubbelkommando, timeout, rollback och processomstart. Kontrollera exakt saldo/journal, inga dubbla utbetalningar och samma sparade bord efter återläsning.
@@ -188,7 +188,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J08 — Admin styr versionerad spelkonfiguration
 
-- [x] K05-katalogrättning PR334/`d7d139b9f7bf59b1bd924280ab456af12e1c8b5a`: exakt PNGstill utan videoID,frystrevision och canonicaldealerIDsyntax utan registrygrant;20/20adapterAPI,23/23catalogue,12/12hook0skip och oberoende review. CI39708223137pågår/GGgrön,ingen import/aktivering.
+- [x] K05-katalogrättning PR334/`d7d139b9f7bf59b1bd924280ab456af12e1c8b5a`: exakt PNGstill utan videoID,frystrevision och canonicaldealerIDsyntax utan registrygrant;20/20adapterAPI,23/23catalogue,12/12hook0skip och oberoende review. CI39708223137 och GitGuardian completed/success på oförändrad d7; tillämpliga jobb körda, endast documentation förväntat skipped. Ingen import/aktivering.
 
 - [x] Native kostnadsfri negativdryrun i PR336/`f34f8e38a6386635958f8610ba39d07beacca35a`: båda APIbasvägar, 422fast materialkod, inga delskrivningar/provideranrop och auth/origin före dataread.15/15,0skip och oberoende review. Det verifierar nekad publicering, inte bindning/aktivering.
 
