@@ -51,7 +51,15 @@ guider. Skydd för data, ekonomi, media, behörighet, schema och mergeägarskap
 kvarstår. Oberoende regelgranskning har inga blockerande fynd. Denna
 regeländring godkänner ingen produktion eller ändring av CI-/branchskydd.
 
-## Lägre byggkostnad för oförändrade beroenden och Moving-kod — 21 oktober 2026
+## Lägre CI- och byggkostnad — 22 oktober 2026
+
+De små Git-/Node-jobben `changes` och slutgrinden `CI` använder `ubuntu-slim`.
+Tunga byggen och regressioner ligger kvar på `ubuntu-24.04`; testurval,
+negativa grindprov, migrationsberedskap, säkerhetskontroller och branchskydd
+är oförändrade. GitHubs publicerade minutpris för de två små jobben är
+0,002 USD i stället för 0,006 USD; detta är pris per minut, ingen verifierad
+minskning av hela fakturan. Lokalt passerar 10/10 befintliga CI-grindprov;
+exakt-head-CI krävs före merge. Budgetar, behörigheter, deployspärrar och produktionsdata ändras inte.
 
 Produktcontainern installerar nu låsta beroenden före källkopieringen, så en
 vanlig kodändring kan återanvända installationslagret. En selektiv CI-kontroll

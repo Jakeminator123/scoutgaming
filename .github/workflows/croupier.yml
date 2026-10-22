@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    # Git/Node policy checks do not need a full build VM.
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
@@ -202,7 +203,7 @@ jobs:
     name: CI
     needs: [changes, documentation, dealer-regression, lipsync-worker, moving-worker]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
       - name: Require every applicable check to pass
