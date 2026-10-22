@@ -222,11 +222,11 @@ varken repliktext, transportticket eller ett visuellt godkännande.
 
 `test/moving-speech-deal-integration.mjs` driver verklig blackjack-commit och
 beständig presentation i ett eget SQLite-minne vidare till talets WebSocket.
-Det tidigare mikrofonprovet (`test/microphone-openclaw-integration.mjs`) togs
-bort med kamerastacken 22 oktober 2026. Provet skyddar kort-/saldobehörighet,
-isolering och avbrott men använder syntetiska enheter, modell, TTS, GPU och
-mediebytes. Det ersätter inte ett inspelat prov av den registrerade
-Dragan-banken och hela livekedjan.
+`test/microphone-openclaw-integration.mjs` kopplar mikrofonkontroll, WAV,
+transkriptions-API, Director, NDJSON, röstadapter och moving-runtime i loopback.
+De skyddar kort-/saldobehörighet, isolering, originalspråk och avbrott men
+använder syntetiska enheter, modell, TTS, GPU och mediebytes. De ersätter inte
+ett inspelat prov av den registrerade Dragan-banken och hela livekedjan.
 
 Det finns flera olika former av varm/kall lagring och beräkning:
 
@@ -2640,13 +2640,30 @@ Verifiering och kvarstående arbete dokumenteras vid leverans i
 
 ## Kamera och mikrofon
 
-Webbspelarens kamera-, mikrofon- och wake-word-stack (`astrid-camera-*.mjs`,
-`astrid-wake-word.mjs`, `astrid-transcription.mjs`, `/api/dealer/observation`,
-`/api/dealer/transcription` och Astrid-aliasen) togs bort 22 oktober 2026.
-Spelarens chatt är textbaserad; `/chat` avvisar `observation` med 403
-`observation_disabled`. Mobilens chattlogg är hopfälld och textfältet öppnas
-med Chatt. Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst;
-nycklar finns enbart på servern.
+Kamera och röst är en behållen produktfunktion (Jakobs beslut 22 oktober 2026),
+idag Astrid-märkt och styrd av `CROUPIER_ASTRID_CAMERA`; storstädningen rör den inte.
+
+Record aktiverar lokal lyssning efter den valda dealerns namn (Astrid, Vera,
+Amira, Mei, PAOW, Dragge eller en publicerad dealerpost); Play styr spelljudet.
+Kamera väljs separat och är av från början. `/api/dealer/observation` och
+`/api/dealer/transcription` delar spelarens autentisering och validerar
+registrerade dealers mot aktuell publicering. De gamla Astrid-adresserna finns
+kvar för kompatibilitet. Uppspelning/chatt kan pausa namnväckningen med synlig
+status; ett upptaget bord blockerar den inte ensamt. Mobilens chattlogg är
+hopfälld och textfältet öppnas med Chatt.
+Efter aktiveringsordet skickas turen vid 1 150 ms tystnad. Ljudbufferten är
+högst tre sekunder i RAM; turen högst 30 sekunder. Kamerabilder tas först
+efter aktivering. Dold flik, spelarbyte och Record av avbryter. Första
+aktiveringen begär samtycke. Text/bilder visas i en tillfällig logg via
+fem sekunders långtryck, inte i normalvyn.
+
+Webbläsarens lokala talstöd krävs för aktiveringsordet. Produktservern
+använder Whisper `whisper-1` via `audio/transcriptions` och behåller talets
+originalspråk utan påtvingad översättning eller förvalt inmatningsspråk.
+Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst. Nycklar
+finns enbart på servern. Modell- och
+bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
+inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
 
 Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
 `media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `packages/presentation/runtime/`.

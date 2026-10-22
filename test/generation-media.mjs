@@ -91,6 +91,7 @@ test('retired generation aliases cannot fall through to static files through Win
     const source = new URL('../services/game/', import.meta.url);
     for (const file of await readdir(source)) if (file.endsWith('.mjs')) await copyFile(new URL(file, source), join(web, file));
     await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
+    await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));
     // Shared browser contracts are copied once by copyOpenClawRuntime.
     await copyFile(new URL('public/game-entry-contract.mjs', source), join(web, 'public/game-entry-contract.mjs'));
     // An inactive catalog must import without optional Studio public modules.

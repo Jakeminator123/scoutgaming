@@ -9,6 +9,7 @@ import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from '../../../packages/presentation/contracts/speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
+import { createAstridCameraControl } from './astrid-camera-control.mjs';
 import { createSpeechPoseGate } from '../../../packages/presentation/runtime/speech-pose-gate.mjs';
 import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from '../../../packages/presentation/runtime/generated-speech-player.mjs';
@@ -240,6 +241,7 @@ function setMuted(muted) {
   updatePoseState({ muted }, muted ? 'muted' : 'unmuted');
   if (muted) { tableAudio.reset(); sfx.stopAmbience(); }
   else { tableAudio.unlock(); sfx.startAmbience(); }
+  astridCamera?.refreshPlayback();
 }
 soundBtn.onclick = () => setMuted(!voice.muted);
 const tableAudio=createTableAudio({createContext:()=>new AudioContext(),canPlay:()=>!voice.muted&&!document.hidden,
@@ -1748,6 +1750,20 @@ if(localPresentationEnabled&&!studioPreview){
   $('#chat-input').addEventListener('input',()=>{if(nextDealChat&&$('#chat-input').value.trim()!==nextDealChat.message)cancelNextDealChat();});
   window.addEventListener('pagehide',cancelNextDealChat,{once:true});
 }
+const astridCamera = !studioPreview
+  ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
+    dealerName: DEALER.name, wakeNames: [...new Set([DEALER.name, DEALER.key])],
+    presentationContext: () => chatPresentationContext(entrySelection, DEALER.key),
+    canStart: () => !chatBusy && !speaking,
+    onActivity: () => probeClient?.activity(),
+    onPlaybackToggle: () => setMuted(!voice.muted),
+    onPlaybackEnable: () => setMuted(false),
+    getPlaybackEnabled: () => !voice.muted,
+    send: ({ message, images, profileRevision }) => sendChat({ message, images, profileRevision }) }) : null;
+if (astridCamera) {
+  document.body.classList.add('astrid-voice-ui');
+  const voiceStyle = document.createElement('link'); voiceStyle.rel = 'stylesheet'; voiceStyle.href = '/astrid-voice-shell.css'; document.head.append(voiceStyle);
+}
 
 // Memory belongs to the authenticated server player, not this tab's display log.
 const chatMemory = document.createElement('details');
@@ -1761,6 +1777,7 @@ const memoryForget = document.createElement('button'); memoryForget.type = 'butt
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
 memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
 if(studioPreview){chatMemory.hidden=true;memoryForget.disabled=true;}
+if (astridCamera) setChatOpen(false);
 chatMemory.addEventListener('toggle', async () => {
   if (studioPreview || !chatMemory.open) return;
   try {
@@ -2068,7 +2085,7 @@ if (new URLSearchParams(location.search).get('rehearsal') === '1') {
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
 tableReady.then(() => settleRehearsalInitialization?.(false), () => settleRehearsalInitialization?.(true));
-document.querySelector('#sign-out').onclick=async()=>{if(studioPreview)return;await api('/api/auth/logout',{});location.reload();};
+document.querySelector('#sign-out').onclick=async()=>{if(studioPreview)return;astridCamera?.stop('Utloggad · Av');await api('/api/auth/logout',{});location.reload();};
 
 // Separate explicit chat capability for the bound local lab. It cannot issue
 // table commands or supply cards/identity. Only this authenticated native server
@@ -2107,7 +2124,7 @@ if (!studioPreview && DEALER.key === 'astrid') {
     flags: ownJobId => ({ present: !document.hidden, sound: !voice.muted,
       // Focus already starts a fresh inactivity period. An empty field must
       // not veto every later initiative just because focus remained after Send.
-      typing: Boolean($('#chat-input').value.trim()),
+      typing: Boolean($('#chat-input').value.trim()) || Boolean(astridCamera?.busy),
       quiet: probePresentationQuiet({busy,round,chatBusy,speaking,pending:speechQueue.pending,gate:speechPoseGate,ownJobId,idleBackground:localPresentation?.idleBackground}) }),
     mount: memoryPanel,
     report: ({state,...entry}) => nativeObservation.emit('status', { ...entry, state:'probe', stage:state }),
