@@ -92,6 +92,6 @@ Granska: [sv-mappen](https://staging.37-27-199-225.sslip.io/klipp.html?q=dragge/
 - `audioSha256` och `indexSha256` saknas i källan, eftersom Kevins mp4 har ljudet inbäddat och det inte finns någon separat ljudfil eller indexfil. Main har ingen producent för dem (`dealer-import-plan.mjs:173`). Producenten måste definieras i K05-registreringen och en ägare utses. Kevin attesterar.
 - `audioDelayMs`, entry/exitPose och `calibrationRevision` saknas. Förväntad pose är VILA → VILA (`K04-mappning.md:154`), men den är inte attesterad.
 - `recording` och `review` saknas helt, alltså inte ens pending.
-- **K05-lucka:** greeting_2 och greeting_3 (sv och en) finns inte i K05-matrisen c024d9bc. Bara greeting_1 finns där och i `k04-media.tsv`, som ny-post-planerad. De fyra raderna måste läggas till i K05 innan de kan registreras.
+- **K05:** alla sex finns i K05-matrisen f00a8c2d…ce319 som ny-post-planerad, ej accepterad (saknar registerpost). greeting_2 och greeting_3 (sv och en) lades till 22 okt och finns inte i K04 `k04-media.tsv` @ 4e094fbb (k04_lika=nej).
 
 **win_1, dealerbust_1, placebets_1:** de finns redan ovan med allt som källan har. Det som fattas där fattas också i källan (audio-/indexhash, poser, kalibrering, recording och review). Det finns inget nytt att lägga till.
