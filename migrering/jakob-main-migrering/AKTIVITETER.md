@@ -131,11 +131,12 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J05 — Förenkla runtime och byggkedja
 
-**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`f34f8e38a6386635958f8610ba39d07beacca35a` från grön J08/9b43. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. CI39705014885 pågår; GitGuardian grön.
+**IN_PROGRESS 22 oktober:** [PR336](https://github.com/Jakeminator123/scoutgaming/pull/336), `codex/shared-room-transport`, head`a80a80e059df5a2ee09d13a5481c23b1c7b3c24a` från grön J08/9b43. Läsande kanaladapter9/9, schedulerhealth10/10 och native negativpublicering15/15; normalhook87/87,0skip. Oberoende kevin_plan/j04_resume-review utan blockerare. Det är en förberedelse, inte aktiv listener eller full runtime-/byggförenkling. Senare auth/upgradedelta60/60,0skip med riktig HTTP/ws; CI39706959105 köad på aktuell head,GitGuardian grön.
 
 - [x] Verifiera separat rumskanalport: serverauth/Origin/rumsisolering, publika fält, samtidiga hints, återläsning/version, timeout/buffer och cleanup med syntetiska sockets. Ingen listener/PGnotifiering/klientreplayacceptans.
 - [x] Verifiera sanerad skrivfri schedulerhälsa och dokumentera återanvändning av befintlig Renderinstans/start/readiness/drain-gräns.
-- [ ] Koppla faktisk auth/HTTP-upgrade, K04-version/notifiering samt scheduler till gameboot/gateway-readiness utan ny tjänst.
+- [x] Interna validerade sessionsbindningar och faktisk Node-upgradegräns iPR336/a80a80e0: authföre101,Host/Origin/rum,abort/timeout/headbytes/cleanup. Oberoende reviews,normalhook60/60,0skip och riktigloopbackportstängning. Ingen aktiv app/gatewayroute.
+- [ ] Koppla room→publiceringsbindning, enskild appdispatcher/gateway/Vercelrouting, K04-version/notifiering samt scheduler till gameboot/readiness utan ny tjänst.
 
 **Etapp:** E2. **Beroenden:** J03, J04.
 **Mål:** en begriplig produktkedja utan överflödiga UI-processer, API-proxyer eller alternativa starter.
