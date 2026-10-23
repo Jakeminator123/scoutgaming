@@ -14,7 +14,7 @@ import { ASTRID2_FACE_TRACKS } from './dealer-card-tracks-astrid2.js';
 //   pos4.mp4 REDO -> card   pos4-i.mp4 VILA -> in -> card   pos4-u.mp4 card -> ut -> VILA   pos4-iu.mp4 both
 // Built by croupier-dealer-dragge/build_ready_dealer.py (meta.json next to the clips).
 // Media is cached for a day (server.mjs), so rebuilt files get a new version here.
-const V = '?v=20261021a';   // bumped 21 Oct: huvud/huvudb were re-rendered under the same names, and the new takes arrived; a phone with a day-old cache fetches them anew
+const V = '?v=20261023a';   // bumped 23 Oct: Kevin's rejected idles left the rotation (dealers.js changes for every phone); bumped 21 Oct: huvud/huvudb were re-rendered under the same names, and the new takes arrived; a phone with a day-old cache fetches them anew
 
 // Frame of the deal take (without the in-transition) from which the filmed card no longer moves (its planar track,
 // review/2026-10-10-card-tracking); until then the game's card follows the track, from there it rests on its seat.
@@ -50,17 +50,16 @@ const H3_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], [
 // Paow 16 x 6 = 96 against 64).
 const NEW_IDLE_WEIGHT = 6;
 const extraIdles = (id, list) => list.map(([k, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/v2/${k}.mp4${V}`, vikt: NEW_IDLE_WEIGHT, beskrivning, dur: 1.625, calm: calmIdle(k) }));
-const DRAGGE_NEW_IDLES = [['axlar6101', 'axlarna sjunker lätt'], ['axlar6103', 'axlarna sjunker lätt'], ['blicksvep6101', 'blicken sveper över spelarna'],
-  ['nick6101', 'liten nick'], ['rakrygg6101', 'rätar på ryggen'], ['rakrygg6103', 'rätar på ryggen'], ['vikt6101', 'viktförskjutning på stolen'],
-  ['vikt6103', 'viktförskjutning på stolen'], ['vikt7105', 'viktförskjutning på stolen'], ['vridhoger6101', 'vrider huvudet åt höger'],
-  ['vridhoger7105', 'vrider huvudet åt höger'], ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6103', 'vrider huvudet åt vänster']];
-const PAOW_NEW_IDLES = [['axlar6101', 'axlarna sjunker lätt'], ['axlar6103', 'axlarna sjunker lätt'], ['axlar6104', 'axlarna sjunker lätt'],
-  ['axlar6105', 'axlarna sjunker lätt, ler med slutna ögon'], ['lutfram6103', 'lutar sig lätt fram'], ['nick6101', 'liten nick'], ['nick6103', 'liten nick'],
-  ['nick6105', 'liten nick'], ['rakrygg6101', 'rätar på ryggen'], ['rakrygg6105', 'rätar på ryggen'], ['vikt6101', 'viktförskjutning på stolen'],
-  ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'], ['vridhoger6101', 'vrider huvudet åt höger'],
-  ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6105', 'vrider huvudet åt vänster']];
+// Kevin 23 Oct (clip studio on staging): rejected and out of the rotation, their files stay. Dragan: andasb, huvud (below),
+// axlar6101, axlar6103, blicksvep6101, nick6101, rakrygg6103, vikt6101, vikt7105, vridhoger6101, vridvanster6103.
+// Paow: axlar6101, axlar6103, axlar6104, axlar6105, lutfram6103, nick6101, nick6103, nick6105, rakrygg6105, vikt6101.
+// Astrid: andas, andasb, blickhoger, blickhogerb, blickvanster, djupandetag.
+const DRAGGE_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'viktförskjutning på stolen'],
+  ['vridhoger7105', 'vrider huvudet åt höger'], ['vridvanster6101', 'vrider huvudet åt vänster']];
+const PAOW_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'],
+  ['vridhoger6101', 'vrider huvudet åt höger'], ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6105', 'vrider huvudet åt vänster']];
 const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur, calm: calmIdle(k) }));
-const ASTRID2_IDLES = h3IdlesFor('astrid2');
+const ASTRID2_IDLES = h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']);
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
 export const DEALERS = {
@@ -68,7 +67,7 @@ export const DEALERS = {
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: [...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)], handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: [...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)], handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
