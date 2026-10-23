@@ -37,6 +37,9 @@ import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
 import { RorligLipsync, kartaFor, mp4Duration } from './rorlig-lipsync.mjs';
+import { createAlerts } from './alerts.mjs';
+// Kevin 23 Oct: lip-sync and callback failures to the webhook in ALERT_WEBHOOK_URL (server/alerts.mjs), else to the log
+const alerts = createAlerts();
 import { DEALERS } from '../public/dealers.js';   // the dealers' idle lists (which takes a chain at rest is laid from)
 
 loadEnv();
@@ -113,6 +116,7 @@ const savedKeys = () => { try { return existsSync(RORLIG_KEYS) ? JSON.parse(read
 for (const [k, name] of Object.entries(KEY_ENV)) { const v = savedKeys()[k]; if (v && !process.env[name]) process.env[name] = v; }
 const rorligOn = () => process.env.RORLIG !== "0" && Boolean(process.env.RORLIG_ENDPOINT_ID || process.env.RORLIG === "1" || /(^|\/\/|\.)staging\./.test(publicOrigin));
 const makeRorlig = apiKey => new RorligLipsync({
+  alert: alerts,
   endpointId: process.env.RORLIG_ENDPOINT_ID ?? "mq7eiwanda72fg",
   apiKey,
   publicBase: () => publicOrigin,
@@ -126,7 +130,7 @@ const makeRorlig = apiKey => new RorligLipsync({
 // the key Paow's voice already uses (local QA disables only Astrid's); given later on /studio/lipsync.html it starts then
 let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
 const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
-  talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language),idle:rorlig.idleTakes(d)}:null;},   // idle: the idle takes a connected worker can map (the chain at rest is laid from these)
+  talk:room=>{const d=dealerOf(room);stillCheck(d);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language),idle:rorlig.idleTakes(d)}:null;},   // idle: the idle takes a connected worker can map (the chain at rest is laid from these)
   // the winners of a round by name, live in his voice over whatever he shows (Emil 14 Oct); without a warm worker the table
   // plays his recorded "congratulations to the winners" instead
   winners:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)&&hasVoice(d)&&draggeVoiceReady(d)?(names,language,notBefore)=>{cheerWinners(room,d,names,language,notBefore).catch(e=>console.log(`vinnarna: ${e.message}`));}:null;},
@@ -241,9 +245,17 @@ async function speakOnTalkTrack(room, dealer, text, language) {
 // at the shared table, the decision is seen by all). A player's private lines (his hand facts, his own round result) never
 // come here. The same line within 8 s at one table is said once (several viewers ask for it).
 const REMARK_TALK = /^((chatter[12]|placebets)_[1-3]|table_(trust|cash)_1|banter_1|remark_(hit17_[12]|hit20_1|stand11_1)|greet_[a-z]{2,16})$/, lastRemark = new Map();
+// A dealer the moving lip sync serves, at a table now, with no worker ready: his lines fall back to the still (alerts)
+function stillCheck(dealer) {
+  if (!(rorlig && rorligOn() && rorlig.dealers.includes(dealer))) return;
+  if (rorlig.ready(dealer)) alerts.ok('stillbild', dealer);
+  else alerts.fail('stillbild', dealer, 'repliker faller tillbaka till stillbild: ingen läppsynksarbetare redo');
+}
+
 function speakRemark(room, id) {
   if (typeof id !== 'string' || !REMARK_TALK.test(id)) return false;
   const dealer = dealerOf(room);
+  stillCheck(dealer);
   if (!(rorlig && rorligOn() && rorlig.ready(dealer))) return false;
   const key = `${room}:${id.replace(/_\d+$/, '')}`;
   if (Date.now() - (lastRemark.get(key) ?? 0) < 8000) return true;
@@ -282,6 +294,7 @@ async function talkReply(ws, text, dealer) {
       const spoken=await speakOnTalkTrack(ws.session,dealer,reply,language);
       out({t:'answer',id,to:ws.name,text:reply,dealer,talk:spoken.id});
       send(ws,{t:'thinking',on:false,queued:0});
+      alerts.ok('chatt_utan_rost',dealer);
       return;
     }catch(e){console.log(`läppsynk rörlig: svaret tar den vanliga vägen (${e.message})`);}
   }
@@ -290,6 +303,7 @@ async function talkReply(ws, text, dealer) {
   const voiced=clip?await Promise.race([clip,new Promise(r=>setTimeout(()=>r(null),VOICE_WAIT_MS))]):null;
   out({t:'answer',id,to:ws.name,text:reply,dealer,...(voiced?{url:voiced.url}:{})});
   send(ws,{t:'thinking',on:false,queued:0});
+  if(hasVoice(dealer)){if(voiced)alerts.ok('chatt_utan_rost',dealer);else alerts.fail('chatt_utan_rost',dealer,clip?`svaret kom bara som text: rösten blev inte klar på ${VOICE_WAIT_MS/1000} s`:'svaret kom bara som text: ingen röst eller läppsynk redo');}
 }
 
 // "Grattis Anders och Emil!": the names of the players up on the round, said once the last card has landed
@@ -742,7 +756,7 @@ const room = new WebSocketServer({ noServer: true, maxPayload:4096 });
 const workers = new WebSocketServer({ noServer: true });
 http.on("upgrade", (req, socket, head) => {
   let url; try { url = new URL(req.url, "http://x"); } catch { socket.destroy(); return; }
-  if (url.pathname === "/lipsync-worker") workers.handleUpgrade(req, socket, head, (ws) => (pod ?? lip).adoptWorker(ws, url));
+  if (url.pathname === "/lipsync-worker") workers.handleUpgrade(req, socket, head, (ws) => { ws.on("error", e => alerts.fail("callback_fel", url.searchParams.get("avatar") ?? "astrid", `lipsync-worker: ${e?.message ?? "socketfel"}`)); (pod ?? lip).adoptWorker(ws, url); });
   else if (url.pathname === "/lipsync-rorlig" && rorlig) workers.handleUpgrade(req, socket, head, (ws) => rorlig.adoptWorker(ws, url));
   else {
     try { if(!sameOrigin(req)){socket.destroy();return;} }

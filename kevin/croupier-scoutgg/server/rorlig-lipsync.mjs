@@ -145,7 +145,7 @@ const MIN_FPS = 30;
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
     onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500, maxLanes = 1,
-    podToken = null, podGraceMs = 120_000 }) {
+    podToken = null, podGraceMs = 120_000, alert = null, sessionWaitMs = 90_000 }) {
     // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
     // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
     // horizonMs: a line is made no earlier than this before it is needed (a line takes ~1.5 s, its first patch ~0.5 s).
@@ -158,6 +158,8 @@ export class RorligLipsync {
     // and they have not dialed back yet)
     Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs, maxLanes, podGraceMs });
     this.fixedPodToken = podToken;
+    // alert: server/alerts.mjs (Kevin 23 Oct: every failure in the lip sync or a worker's callback goes to the webhook)
+    this.alert = alert ?? { fail() {}, ok() {} }; this.sessionWaitMs = sessionWaitMs;
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
     this.startedAt = Date.now();
     const none = () => ({ ws: null, info: null, pod: null, running: 0, waiters: [] });   // the lane of "no worker": its lines fail at once
@@ -283,7 +285,7 @@ export class RorligLipsync {
       const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, worker: w.pod ?? 'serverless', queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
       // a worker that hangs (15 s without an answer) gets no lines for a minute while another one works (14 Oct: a pod far
       // from the server fell behind and every line it took after that timed out)
-      const finish = (err) => { if (err === 'timeout') { w.badUntil = Date.now() + 60_000; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: timeout — vilar 60 s`); } rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20);
+      const finish = (err) => { if (err === 'timeout') { w.badUntil = Date.now() + 60_000; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: timeout — vilar 60 s`); this.alert.fail('timeout', dealer, `${talk.event ?? talk.kind}: inget svar på 15 s från ${w.pod ?? 'serverless'}`); } rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20);
         // the worker with his idle takes hung or went away mid-line: once more on another worker, with those frames as rest
         // (it has only the deals), rather than no mouth at all for the line
         if ((err === 'timeout' || err === 'worker gone') && job.idle.length && !job.retried && rec === this.talks.get(talk.id) && Date.now() < (talk.endAt ?? Infinity) && s.workers.some(o => o !== w && this.#ok(o))) {
@@ -301,8 +303,8 @@ export class RorligLipsync {
         let m; try { m = JSON.parse(String(data)); } catch { return; }
         if (m.id !== jid) return;
         if (m.t === 'lapp') pending = { del: m.del, fran: m.fran, till: m.till, rutor: m.rutor };
-        else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
-        else if (m.t === 'error') { if (m.reason !== 'avbruten') this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); finish(m.reason); }
+        else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); this.alert.ok('timeout', dealer); this.alert.ok('fel_i_worker', dealer); finish(null); }
+        else if (m.t === 'error') { if (m.reason !== 'avbruten') { this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); this.alert.fail('fel_i_worker', dealer, `${talk.event ?? talk.kind}: ${m.reason}`); } finish(m.reason); }
       };
       // a worker that goes away mid-line (terminated, its machine lost) ends the line at once: the queue behind it waited
       // 30 s before; a line takes under 4 s, so 15 s means the worker hangs
@@ -407,20 +409,22 @@ export class RorligLipsync {
     const dealer = url.searchParams.get('avatar') ?? '';
     const s = this.s.get(dealer), token = url.searchParams.get('token');
     const pod = (url.searchParams.get('pod') ?? '').replace(/[^\w.-]/g, '').slice(0, 40) || null;
-    if (!s || !(token === this.token || (pod && token && token === this.podToken()))) { ws.close(4403, 'fel token'); return; }
+    if (!s || !(token === this.token || (pod && token && token === this.podToken()))) { this.alert.fail('callback_fel', dealer || 'okänd', `lipsync-rorlig nekad: ${s ? 'fel token' : 'okänd avatar'} (${pod ?? 'serverless'})`); ws.close(4403, 'fel token'); return; }
     const name = `${dealer}${pod ? ' ' + pod : ''}`;
     ws.once('message', data => {
-      let m; try { m = JSON.parse(String(data)); } catch { ws.close(); return; }
-      if (m.t !== 'pong') { ws.close(); return; }
+      let m; try { m = JSON.parse(String(data)); } catch { this.alert.fail('callback_fel', dealer, `lipsync-rorlig: första meddelandet är inte JSON (${name})`); ws.close(); return; }
+      if (m.t !== 'pong') { this.alert.fail('callback_fel', dealer, `lipsync-rorlig: väntade pong, fick ${String(m.t).slice(0, 20)} (${name})`); ws.close(); return; }
       // a slow machine (14.5 frames/s on 13 Oct) must not take over from a working worker: it is sent away (a serverless
       // one is replaced by RunPod and a new session is ordered in ~15 s; a pod measures again and dials back)
       if ((m.rutor_per_s ?? 0) < MIN_FPS) {
         this.log(`läppsynk rörlig [${name}]: arbetaren för långsam (${m.gpu}, ${m.rutor_per_s} rutor/s) — skickas bort${pod ? '' : ', ny beställs'}`);
+        this.alert.fail('worker_for_langsam', dealer, `${name}: ${m.gpu}, ${m.rutor_per_s} rutor/s (minst ${MIN_FPS})`);
         try { ws.send(JSON.stringify({ t: 'bye' })); } catch {}
         if (!pod) s.askedAt = Date.now() - 225_000;
         return;
       }
       this.addWorker(dealer, ws, m, pod);
+      for (const typ of ['worker_nere', 'session_uteblir', 'worker_for_langsam', 'callback_fel']) this.alert.ok(typ, dealer);
       this.log(`läppsynk rörlig [${name}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);
       // the lines said at round start have the least time to spare: the worker fetches their sound now, not then
       const base = this.publicBase();
@@ -430,8 +434,10 @@ export class RorligLipsync {
       const before = s.workers.length;
       s.workers = s.workers.filter(w => w.ws !== ws);
       if (s.workers.length < before) this.log(`läppsynk rörlig [${name}]: arbetaren kopplade ner`);
+      // the last one gone, not a session this server let go of (released, or sent away as too slow)
+      if (s.workers.length < before && !s.workers.length && !(Date.now() - (s.releasedAt ?? 0) < 30_000)) this.alert.fail('worker_nere', dealer, `${name} kopplade ner, ingen arbetare kvar`);
     });
-    ws.on('error', () => {});
+    ws.on('error', e => this.alert.fail('callback_fel', dealer, `lipsync-rorlig (${name}): ${e?.message ?? 'socketfel'}`));
   }
 
   #roundStartLines(dealer) {
@@ -463,8 +469,8 @@ export class RorligLipsync {
     s.askedAt = Date.now();
     const ws_url = `${base.replace(/^http/, 'ws')}/lipsync-rorlig?token=${this.token}&avatar=${encodeURIComponent(dealer)}`;
     this.#api('run', { method: 'POST', body: JSON.stringify({ input: { op: 'session', ws_url, ttl: this.ttlS, avatar: dealer } }) })
-      .then(r => r.json()).then(j => { if (j.id) { s.orders.push(j.id); this.log(`läppsynk rörlig [${dealer}]: session beställd (${j.id})`); } else this.log(`läppsynk rörlig [${dealer}]: beställningen misslyckades ${JSON.stringify(j).slice(0, 200)}`); })
-      .catch(e => { s.askedAt = 0; this.log(`läppsynk rörlig [${dealer}]: RunPod svarar inte (${e.message})`); });
+      .then(r => r.json()).then(j => { if (j.id) { s.orders.push(j.id); this.log(`läppsynk rörlig [${dealer}]: session beställd (${j.id})`); this.alert.ok('bestallning', dealer); } else this.alert.fail('bestallning', dealer, `RunPod: ${JSON.stringify(j).slice(0, 160)}`), this.log(`läppsynk rörlig [${dealer}]: beställningen misslyckades ${JSON.stringify(j).slice(0, 200)}`); })
+      .catch(e => { s.askedAt = 0; this.log(`läppsynk rörlig [${dealer}]: RunPod svarar inte (${e.message})`); this.alert.fail('bestallning', dealer, `RunPod svarar inte (${e.message})`); });
   }
 
   #tick() {
@@ -473,10 +479,12 @@ export class RorligLipsync {
       const inUse = s.active && now - s.active < this.inactivityMs;
       const sessions = s.workers.filter(w => !w.pod);
       if (inUse) {
+        if (!s.workers.length && s.askedAt && now - s.askedAt > this.sessionWaitMs) this.alert.fail('session_uteblir', dealer, `ingen arbetare ${Math.round((now - s.askedAt) / 1000)} s efter beställningen`);
         if (!s.workers.length) this.#order(dealer);
         else if (sessions.some(w => now - w.at > (this.ttlS - 150) * 1000)) this.#order(dealer, true);   // renew before the session's ttl
       } else if (sessions.length || s.orders.length) {
         // pods stay: only the serverless sessions are released
+        if (sessions.length) s.releasedAt = now;
         for (const w of sessions) try { w.ws.send(JSON.stringify({ t: 'bye' })); } catch {}
         for (const id of s.orders.splice(0)) this.#api(`cancel/${id}`, { method: 'POST' }).catch(() => {});
         if (sessions.length) this.log(`läppsynk rörlig [${dealer}]: ingen vid bordet på ${Math.round(this.inactivityMs / 60000)} min — arbetaren släpps`);
