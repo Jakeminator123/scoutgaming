@@ -1,4 +1,5 @@
 import { DRAGGE_FACE_TRACKS } from './dealer-card-tracks-dragge.js';
+import { isHead } from './idle-chain.js';
 import { PAOW_FACE_TRACKS } from './dealer-card-tracks-paow.js';
 import { MARTEN_FACE_TRACKS } from './dealer-card-tracks-marten.js';
 import { ASTRID2_FACE_TRACKS } from './dealer-card-tracks-astrid2.js';
@@ -59,14 +60,15 @@ const DRAGGE_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'vi
 const PAOW_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'],
   ['vridhoger6101', 'vrider huvudet åt höger'], ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6105', 'vrider huvudet åt vänster']];
 const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur, calm: calmIdle(k) }));
-// Kevin 23 Oct: "his head is moving too much": the takes that turn, glance, nod or lean (not calm) show about one time in
-// ten in a chain under speech; the calm takes keep their weights and the lively ones share the rest.
-const HEAD_SHARE = .1;
+// Kevin 23 Oct: "his head is moving too much": the head takes (idle-chain.js isHead: turns, glances, nods) are weighted
+// down to a fifth of a dealer's idle weight, so the calm ones dominate; idle-chain.js keeps two head takes at least four
+// apart and never in a row. The other takes keep their weights.
+const HEAD_SHARE = .2;
 const headMovesRarely = idles => {
-  const calm = idles.filter(i => i.calm).reduce((n, i) => n + i.vikt, 0), lively = idles.filter(i => !i.calm).reduce((n, i) => n + i.vikt, 0);
-  if (!calm || !lively) return idles;
-  const k = calm * HEAD_SHARE / (1 - HEAD_SHARE) / lively;
-  return idles.map(i => i.calm ? i : { ...i, vikt: Math.round(i.vikt * k * 1000) / 1000 });
+  const rest = idles.filter(i => !isHead(i.id)).reduce((n, i) => n + i.vikt, 0), head = idles.filter(i => isHead(i.id)).reduce((n, i) => n + i.vikt, 0);
+  if (!rest || !head) return idles;
+  const k = rest * HEAD_SHARE / (1 - HEAD_SHARE) / head;
+  return idles.map(i => !isHead(i.id) ? i : { ...i, vikt: Math.round(i.vikt * k * 1000) / 1000 });
 };
 const ASTRID2_IDLES = headMovesRarely(h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']));
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
@@ -90,7 +92,7 @@ export const DEALERS = {
   // of all three): browsers fetch them anew, not the cached ones
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es', 'pt'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es', 'pt'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: headMovesRarely(idlesFor('marten')), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.

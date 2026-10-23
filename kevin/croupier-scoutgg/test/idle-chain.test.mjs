@@ -74,8 +74,12 @@ test('the weighted pick never returns the clip last picked, even one that outwei
   assert.ok(seen.andas > 150 && seen.nick6101 > 40 && seen.vikt6103 > 40, JSON.stringify(seen));
   assert.equal(pickWeighted([{ id: 'only', vikt: 1 }], 'only').id, 'only', 'one clip: it repeats, there is nothing else');
   assert.equal(pickWeighted([{ id: 'a', vikt: 5 }, { id: 'b', vikt: 1 }], 'a', () => 0.99).id, 'b', 'a lone candidate is taken whatever the draw');
-  const chain = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'nick6101', frames: 39, vikt: 6 }], 0, 60000, 'seed');
+  const chain = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'vikt6103', frames: 39, vikt: 6 }], 0, 60000, 'seed');
   for (let i = 1; i < chain.length; i++) assert.notEqual(chain[i].take, chain[i - 1].take, 'a chain never repeats either');
+  // Kevin 23 Oct: with one calm take and one head take the calm one may repeat; the head take keeps its distance
+  const lone = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'nick6101', frames: 39, vikt: 6 }], 0, 120000, 'seed');
+  const heads = lone.map((c, i) => c.take === 'nick6101' ? i : -1).filter(i => i >= 0);
+  for (let k = 1; k < heads.length; k++) assert.ok(heads[k] - heads[k - 1] >= 4, `head takes at ${heads[k - 1]} and ${heads[k]}`);
 });
 
 test('at rest he draws from the calm takes only; the lively ones are left for a chain under speech; a dealer without calm takes keeps all of his', () => {

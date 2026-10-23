@@ -148,12 +148,25 @@ test('the 27 idles Kevin rejected never play, and their files are kept', () => {
   }
 });
 
-// Kevin 23 Oct: "his head is moving too much": the turns, glances, nods and leans show about one time in ten
-test('the head-movement takes are about one idle in ten; the calm takes keep their weights', () => {
-  for (const id of ['dragge', 'paow', 'astrid2']) {
-    const idles = DEALERS[id].idles, calm = idles.filter(i => i.calm).reduce((n, i) => n + i.vikt, 0), lively = idles.filter(i => !i.calm).reduce((n, i) => n + i.vikt, 0);
-    assert.ok(Math.abs(lively / (calm + lively) - .1) < .005, `${id}: ${(lively / (calm + lively)).toFixed(3)}`);
+// Kevin 23 Oct: "his head is moving too much": head takes (turns, glances, nods) at most about every 4th-5th idle, never two
+// in a row, the calm ones dominate; all four dealers. The head takes stay in the rotation.
+test('head takes are a fifth of the weight, never two in a row and at least four apart, in chains and random idles alike', async () => {
+  const { layChain, isHead, pickWeighted, restingPool } = await import('../public/idle-chain.js');
+  for (const id of ['dragge', 'paow', 'astrid2', 'marten']) {
+    const idles = DEALERS[id].idles, head = idles.filter(i => isHead(i.id)).reduce((n, i) => n + i.vikt, 0), all = idles.reduce((n, i) => n + i.vikt, 0);
+    assert.ok(idles.some(i => isHead(i.id)), `${id} keeps head takes`);
+    assert.ok(Math.abs(head / all - .2) < .005, `${id}: ${(head / all).toFixed(3)}`);
+    const takes = idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt }));
+    for (let s = 0; s < 60; s++) {
+      const chain = layChain(takes, 0, 30000, `${id}${s}`), at = chain.map((c, i) => isHead(c.take) ? i : -1).filter(i => i >= 0);
+      for (let k = 1; k < at.length; k++) assert.ok(at[k] - at[k - 1] >= 4, `${id} chain ${s}: head takes at ${at[k - 1]} and ${at[k]}`);
+    }
+    let last = '', since = Infinity, prevHeadAt = -99;
+    for (let k = 0; k < 600; k++) {
+      const c = pickWeighted(restingPool(idles), last, Math.random, x => x.id, { sinceHead: since });
+      if (isHead(c.id)) { assert.ok(k - prevHeadAt >= 4, `${id} random idles: head at ${prevHeadAt} and ${k}`); prevHeadAt = k; since = 0; } else since++;
+      last = c.id;
+    }
   }
-  assert.equal(DEALERS.dragge.idles.find(i => i.id === 'andas').vikt, 20);
-  assert.equal(DEALERS.paow.idles.find(i => i.id === 'rakrygg6101').vikt, 6);
+  assert.equal(DEALERS.dragge.idles.find(i => i.id === 'andas').vikt, 20, 'calm weights unchanged');
 });
