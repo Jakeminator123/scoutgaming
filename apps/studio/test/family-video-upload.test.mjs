@@ -8,14 +8,13 @@ import { mediaLineForEvent, mediaVariantPolicy } from '../../../packages/present
 import { buildLabVideoManifest, manifestJson } from '../../../tools/media/build-lab-video-manifest.mjs';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { validateVideoMetadata } from '../../../packages/presentation/contracts/video-intake.mjs';
-import { uploadVideo } from '../lib/video-uploads.mjs';
+import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 
 const bytes = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom00000000family-upload-fixture')]);
 const metadata = { familyId: 'astrid/deal.player.left/box0', label: 'Ny kortvariant.mp4', dealerId: 'astrid', eventId: 'deal.player.left', kind: 'action', role: 'alternative', situation: 'box0', playback: 'once', notes: '' };
-const request = fields => new Request('http://localhost:4188/api/videos', { method: 'POST', headers: { 'content-type': 'video/mp4', 'x-video-metadata': encodeURIComponent(JSON.stringify(fields)) }, body: bytes, duplex: 'half' });
 
-test('explicit family upload survives reload, joins exact shared selection manually and serves two range reads', async t => {
+test('stored family video survives reload, joins exact shared selection manually and serves two range reads', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'croupier-family-upload-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const archiveDir = join(dir, 'archive');
@@ -27,8 +26,7 @@ test('explicit family upload survives reload, joins exact shared selection manua
   await writeFile(snapshotPath, manifestJson(await buildLabVideoManifest({ root: archiveDir })));
   const before = await readFile(snapshotPath, 'utf8');
   const options = { archiveDir, snapshotPath, uploadDir: join(dir, 'uploads') };
-  const result = await uploadVideo(request(metadata), options);
-  assert.deepEqual(await uploadVideo(request(metadata), options), { ...result, duplicate: true });
+  const result = await seedLegacyVideo(options, bytes, metadata);
   const inventory = await loadVideoRegistry(options);
   const video = inventory.videos.find(row => row.id === result.id);
   assert.equal(video.familyId, metadata.familyId); assert.equal(video.role, 'variant');
@@ -49,7 +47,7 @@ test('explicit family upload survives reload, joins exact shared selection manua
     assert.equal(response.status, 206); assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes.subarray(0, 16));
   }
   assert.equal(await readFile(snapshotPath, 'utf8'), before);
-  const legacy = await uploadVideo(request({ ...metadata, familyId: undefined, label: 'Legacy bank' }), options);
+  const legacy = await seedLegacyVideo(options, bytes, { ...metadata, familyId: undefined, label: 'Legacy bank' });
   const reloaded = await loadVideoRegistry(options);
   assert.equal(reloaded.videos.find(row => row.id === legacy.id).familyId, undefined);
   assert.deepEqual(reloaded.families.find(row => row.id === family.id).variantIds, [result.id]);

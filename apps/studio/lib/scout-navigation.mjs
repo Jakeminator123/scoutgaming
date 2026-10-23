@@ -1,31 +1,12 @@
 import { labBasePath } from './lab-url.mjs';
 import { canonicalControlHref } from '../../../packages/navigation/control-flow.mjs';
 
-// Labels used by the active guide. Query-specific destinations take precedence.
-export const SCOUT_NAVIGATION = Object.freeze([
-  { id: 'studio', label: 'Studio', items: [
-    { href: '/admin/dealer-studio', label: 'Dealers & klipp' },
-    { href: '/admin/assets', label: 'Bord & bakgrunder' },
-    { href: '/admin/compositions', label: 'Sammansättningar' },
-  ] },
-  { id: 'companies', label: 'Spelbolag', items: [
-    { href: '/admin/companies', label: 'Bolag & team' },
-    { href: '/admin/rooms', label: 'Spelbolag & rum' },
-  ] },
-  { id: 'operations', label: 'Drift', items: [
-    { href: '/admin/drift', label: 'Spelstatus & integritet' },
-    { href: '/admin/ekonomi', label: 'Betalningar & journal' },
-  ] },
-  { id: 'system', label: 'System', items: [
-    { href: '/admin/admin/accounts', label: 'Konton & åtkomst' },
-    { href: '/admin/admin/api', label: 'API & integrationer' },
-    { href: '/admin/openclaw', label: 'OpenClaw' },
-  ] },
-].map(group => Object.freeze({...group, items: Object.freeze(group.items.map(item => Object.freeze(item)))})));
+import {adminNavigationGroups,adminSystemGroups} from '../../../packages/navigation/admin-navigation.mjs';
+
+export const SCOUT_NAVIGATION=Object.freeze([...adminNavigationGroups,...adminSystemGroups].map(group=>Object.freeze({label:group.label,items:Object.freeze(group.links.map(({href,label})=>Object.freeze({href,label})))})));
 
 export const SCOUT_FOOTER_NAVIGATION = Object.freeze([
   Object.freeze({ href: '/admin', label: 'Översikt' }),
-  Object.freeze({ href: '/admin/guide', label: 'Guide & hjälp' }),
 ]);
 
 const items = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
@@ -34,31 +15,31 @@ const items = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTE
 const legacyPaths = new Map([
   ['/control', '/admin'],
   ['/control/library', '/admin/assets'],
-  ['/', '/admin/dealer-studio'],
-  ['/clips', '/admin/dealer-studio'],
-  ['/videos', '/admin/dealer-studio'],
-  ['/admin/videos', '/admin/dealer-studio'],
-  ['/control/replies', '/admin/dealer-studio'],
-  ['/admin/replies', '/admin/dealer-studio'],
-  ['/zones', '/admin/compositions'],
-  ['/control/zones', '/admin/compositions'],
-  ['/control/backgrounds', '/admin/compositions'],
-  ['/events', '/admin/dealer-studio'],
-  ['/control/events', '/admin/dealer-studio'],
-  ['/admin/events', '/admin/dealer-studio'],
-  ['/probe', '/admin/openclaw?tab=probe'],
-  ['/control/probe', '/admin/openclaw?tab=probe'],
-  ['/admin/probe', '/admin/openclaw?tab=probe'],
-  ['/admin/ai/models', '/admin/openclaw?tab=models'],
-  ['/admin/ai/chat', '/admin/openclaw?tab=assistant'],
-  ['/admin/dealer-agent', '/admin/openclaw?tab=agent'],
+  ['/', '/admin/clips'],
+  ['/clips', '/admin/clips'],
+  ['/videos', '/admin/clips'],
+  ['/admin/videos', '/admin/clips'],
+  ['/control/replies', '/admin/clips'],
+  ['/admin/replies', '/admin/clips'],
+  ['/zones', '/admin/clips'],
+  ['/control/zones', '/admin/clips'],
+  ['/control/backgrounds', '/admin/clips'],
+  ['/events', '/admin/clips'],
+  ['/control/events', '/admin/clips'],
+  ['/admin/events', '/admin/clips'],
+  ['/probe', '/admin/clips'],
+  ['/control/probe', '/admin/clips'],
+  ['/admin/probe', '/admin/clips'],
+  ['/admin/ai/models', '/admin/ai/models'],
+  ['/admin/ai/chat', '/admin'],
+  ['/admin/dealer-agent', '/admin/clips'],
   ['/administration', '/control/administration'],
   ['/openclaw', '/control/openclaw'],
-  ['/operator-chat', '/admin/openclaw?tab=agent'],
-  ['/tree', '/admin/dealer-studio'],
-  ['/control/tree', '/admin/dealer-studio'],
-  ['/activity', '/admin/dealer-studio'],
-  ['/admin/rehearsal', '/admin/dealer-studio'],
+  ['/operator-chat', '/admin/clips'],
+  ['/tree', '/admin/clips'],
+  ['/control/tree', '/admin/clips'],
+  ['/activity', '/admin/rooms'],
+  ['/admin/rehearsal', '/admin/rooms'],
   ['/guide', '/admin/guide'],
 ]);
 
@@ -87,7 +68,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
   mapped = hrefParts(canonicalControlHref(mapped.path + (params.size ? '?' + params : '')));
-  if (mapped.path === '/admin/media-review') return items.find(item => item.href === '/admin/dealer-studio') ?? null;
+  if (['/admin/media-review','/admin/dealer-agent','/admin/dealer-studio','/admin/replies','/admin/events'].includes(mapped.path)) return items.find(item => item.href === '/admin/clips') ?? null;
   const matches = items.filter(item => {
     const parts = hrefParts(item.href);
     if (parts.path !== mapped.path) return false;

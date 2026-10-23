@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { labBasePath, labUrl } from '../lib/lab-url.mjs';
 import type { OperatorDirectoryEntry, OperatorDirectoryMember } from '../lib/studio-native-runtime.mjs';
 import styles from './control-operator-directory.module.css';
+import {PartnerJournal} from './partner-journal-loader.mjs';
 
 export type StandardOperatorRole = { id: string; label: string; permissions: string[] };
 export type OperatorDirectory = { operators: OperatorDirectoryEntry[]; standardRoles: StandardOperatorRole[] };
@@ -199,7 +200,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
       const add = adds[operator.id] ?? { contact: '', roleId: '' };
       const selectedRole = operator.roles.find(role => role.id === (add.roleId || defaultRole(operator)));
       return <article className={styles.card} aria-labelledby={`operator-${operator.id}`}>
-        <header className={styles.heading}><div><span className={styles.eyebrow}>BOLAGETS ARBETSYTA</span><h2 id={`operator-${operator.id}`}>{operator.name}</h2><p className={styles.muted}>/partner/{operator.slug}</p></div><a className="sg-btn sg-btn-secondary" href={labUrl('/admin/rooms?' + new URLSearchParams({ operator: operator.id }))}>Spelrum & publicering →</a></header>
+        <header className={styles.heading}><div><span className={styles.eyebrow}>BOLAGETS ARBETSYTA</span><h2 id={`operator-${operator.id}`}>{operator.name}</h2><p className={styles.muted}>/partner/{operator.slug}</p></div><a className="sg-btn sg-btn-secondary" href={labUrl('/admin/rooms?' + new URLSearchParams({ operator: operator.id }))}>Spelrum & publicering</a></header>
         {operator.status!=='active'?<p className={styles.feedback} role="status">{lifecycleArchives[operator.id]?'Bolaget är arkiverat. Återställ bolaget nedan för att ändra teamet.':'Bolaget är avstängt. Teamet visas i läsläge.'}</p>:null}
         {operator.missingRoles.length ? <div className={styles.feedback}><p role="status">Standardroller saknas: {operator.missingRoles.join(', ')}.</p><button className="sg-btn sg-btn-ghost" type="button" disabled={teamUnavailable} onClick={() => { void restoreRoles(operator); }}>Skapa saknade standardroller</button></div> : null}
         <section className={styles.invite} aria-label="Lägg till i teamet">
@@ -229,6 +230,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
                 {member.status === 'suspended' ? <button className="sg-btn sg-btn-ghost" type="button" disabled={teamUnavailable} onClick={() => { void change(operator, member, { roleId: member.roleId, status: 'active' }, `${who} är återaktiverad.`); }}>Återaktivera</button> : null}
               </div></td></tr>;
           })}</tbody></table></div> : <p className={styles.empty}>Teamet är tomt. Lägg till bolagets första administratör ovan.</p>}
+        {operator.status==='active'&&<div className={styles.journal}><PartnerJournal key={operator.id} base={labUrl('/api/partner')} operatorSlug={operator.slug} operatorId={operator.id}/></div>}
         <details className={styles.roles}><summary>Vad får rollerna göra?</summary>{operator.roles.map(role => <div key={role.id}><strong>{roleLabel(role)}</strong><p className={styles.muted}>{role.permissions.map(permission => PERMISSION_LABELS[permission] ?? permission).join(' · ') || 'Inga behörigheter'}</p></div>)}</details>
       </article>;
     })() : <div className={styles.empty}><span className={styles.eyebrow}>BOLAG → TEAM → SPELRUM</span><h2>Samla arbetet kring ett bolag</h2><p>Välj ett bolag i listan eller skapa ett nytt. Här sköter du medlemskap och roller; under Spelrum & publicering väljer du vad bolagets spelare får möta.</p></div>}

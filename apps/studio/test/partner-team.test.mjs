@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { readPartnerPreviewFixture } from '../lib/partner-preview-fixtures.mjs';
+import { readPartnerPreviewFixture } from './fixtures/partner-preview.mjs';
 import { createPartnerPreviewContext } from '../lib/partner-preview-policy.mjs';
 
 const require = createRequire(new URL('../package.json', import.meta.url));

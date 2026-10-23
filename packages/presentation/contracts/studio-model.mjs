@@ -41,7 +41,7 @@ export const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
 export const LANE_PROBE_MODES = Object.freeze(['off', 'shadow', 'active']);
 export const OPERATOR_ADJUSTABLE = ['table.color', 'table', 'background', 'dealer', 'branding'];
 export const MAX_LANES = 32;
-// Same id rule as validateZones in lab/lib/zone-cloud-store.mjs. The lane stores ids only.
+// A lane stores zone identifiers only; zone assets have an independent lifecycle.
 const ZONE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const PROBE_MODEL_IDS = new Set(PROBE_MODELS.map(model => model.id));

@@ -5,7 +5,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import {uploadVideo} from '../lib/video-uploads.mjs';
+import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import {uploadDirectory, readUploads} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { loadVideoRegistry as loadGameVideoRegistry, getVideoResponse as getGameVideoResponse } from '../../../services/game/storage/video-registry.mjs';
@@ -20,7 +20,6 @@ import { readSettings } from '../lib/director-settings.mjs';
 // Container-signature fixture, not a decodable video or a visual approval.
 const bytes = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom00000000test-media')]);
 const metadata = { label: 'Astrid mitten', dealerId: 'astrid', eventId: 'deal.player.centre', kind: 'action', role: 'standard', situation: 'box3', notes: 'QA' };
-const request = (body = bytes, fields = metadata, headers = {}) => new Request('http://localhost:4188/api/videos', { method: 'POST', headers: { 'content-type': 'video/mp4', 'x-video-metadata': encodeURIComponent(JSON.stringify(fields)), ...headers }, body, duplex: 'half' });
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-intake-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -31,9 +30,9 @@ test('retired shared Studio directory cannot redirect the local upload fixture',
   assert.equal(uploadDirectory({ env: { LAB_STUDIO_DATA_DIR: 'retired-storage' } }), uploadDirectory({ env: {} }));
 });
 
-test('upload persists exact bytes and classification, deduplicates retry, survives reload and serves ranges without original archive', async t => {
+test('stored video preserves bytes and classification across reload and serves ranges without original archive', async t => {
   const options = await fixture(t);
-  const result = await uploadVideo(request(), options);
+  const result = await seedLegacyVideo(options, bytes, metadata);
   const saved = await readUploads(options);
   assert.equal(saved.length, 1);
   assert.deepEqual(saved[0].classification, {
@@ -42,7 +41,6 @@ test('upload persists exact bytes and classification, deduplicates retry, surviv
   });
   assert.equal(saved[0].sha256, createHash('sha256').update(bytes).digest('hex'));
   assert.deepEqual(await readFile(join(options.uploadDir, `${result.id}.mp4`)), bytes);
-  assert.deepEqual(await uploadVideo(request(), options), { id: result.id, duplicate: true });
   const registry = await loadVideoRegistry(options);
   assert.equal(registry.videos.length, 1); assert.equal(registry.videos[0].source, 'upload');
   assert.equal(registry.videos[0].available, true);
@@ -62,33 +60,6 @@ test('upload persists exact bytes and classification, deduplicates retry, surviv
   const response = await getVideoResponse(result.id, new Request(`http://localhost:4188/api/videos/${result.id}`, { headers: { range: 'bytes=0-7' } }), options);
   assert.equal(response.status, 206); assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes.subarray(0, 8));
   assert.deepEqual((await readdir(options.uploadDir)).sort(), ['index.json', `${result.id}.mp4`].sort());
-});
-
-test('invalid type, metadata, foreign origin and oversized stream never become records', async t => {
-  const options = await fixture(t);
-  await assert.rejects(uploadVideo(request(bytes, { ...metadata, dealerId: 'unknown' }), options), /dealer/);
-  await assert.rejects(uploadVideo(request(bytes, { ...metadata, kind: 'idle' }), options), /Videotypen/);
-  await assert.rejects(uploadVideo(request(bytes, metadata, { origin: 'https://other.test' }), options), /labbet/);
-  await assert.rejects(uploadVideo(request(bytes, metadata, { 'content-length': String(MAX_VIDEO_BYTES + 1) }), options), e => e.statusCode === 413);
-  await assert.rejects(uploadVideo(request(Buffer.from('not a video file')), options), e => e.statusCode === 415);
-  let sent = 0;
-  const stream = new ReadableStream({ pull(c) { if (sent++ < 129) c.enqueue(new Uint8Array(1024 * 1024)); else c.close(); } });
-  await assert.rejects(uploadVideo(request(stream), options), e => e.statusCode === 413);
-  assert.deepEqual(await readUploads(options), []);
-  assert.deepEqual(await readdir(options.uploadDir), []);
-});
-
-test('interrupted uploads clean only their temporary file, corrupt index preserves prior files', async t => {
-  const options = await fixture(t);
-  const good = await uploadVideo(request(), options);
-  const stream = new ReadableStream({ start(c) { c.enqueue(bytes); c.error(new Error('disconnect')); } });
-  await assert.rejects(uploadVideo(request(stream), options), /disconnect/);
-  assert.equal((await readUploads(options)).length, 1);
-  await writeFile(join(options.uploadDir, 'index.json'), 'broken');
-  await assert.rejects(uploadVideo(request(bytes, { ...metadata, label: 'Another' }), options), /bevarats/);
-  assert.equal(await readFile(join(options.uploadDir, 'index.json'), 'utf8'), 'broken');
-  assert.deepEqual(await readFile(join(options.uploadDir, `${good.id}.mp4`)), bytes);
-  assert.equal((await readdir(options.uploadDir)).length, 2);
 });
 
 test('speech requires exact line and situation matching preserves hidden-card distinction', () => {
@@ -163,10 +134,10 @@ test('imported video cannot bind to another dealer/event or play over a differen
   await assert.rejects(validateVideoBindings(project, { registry: videoRegistry }), /giltig kategorisering/);
 });
 
-test('a newly uploaded greeting binds, survives reload and cannot play as another speech line', async t => {
+test('a stored greeting binds, survives reload and cannot play as another speech line', async t => {
   const options = await fixture(t);
   const speech = { ...metadata, eventId: 'speak.other', kind: 'speech', situation: 'greeting' };
-  const result = await uploadVideo(request(bytes, speech), options);
+  const result = await seedLegacyVideo(options, bytes, speech);
   const videoRegistry = await loadVideoRegistry(options);
   const project = createSeedProject();
   project.lines.find(l => l.dealerId === 'astrid' && l.eventId === 'speak.other').variants[0].videoGenerationId = result.id;

@@ -58,7 +58,7 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
     await writeFile(cjsFile, cjs.outputFiles[0].text);
     const imported = await import(pathToFileURL(cjsFile).href);
     const config = imported.default.default;
-    plugins = [tailwind3({ ...config, content: [source.replaceAll('\\', '/') + '/**/*.{ts,tsx}'] })];
+    plugins = [tailwind3({ ...config, content: [source.replaceAll('\\', '/') + '/**/*.{ts,tsx}', resolve(root,'../components').replaceAll('\\','/')+'/**/*.{ts,tsx,mjs}'] })];
     css += '\n' + await readFile(resolve(source, 'app/studio.css'), 'utf8');
   } else {
     css = css.replace("@import 'tailwindcss';", "@import 'tailwindcss' source(none);\n@source '../components';\n@source '../app';\n@source '../entry.tsx';");

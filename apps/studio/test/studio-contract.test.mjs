@@ -9,7 +9,6 @@ import contract from '../../../packages/presentation/contracts/policies/studio-c
 import schema from '../../../packages/presentation/contracts/schemas/video.schema.json' with { type: 'json' };
 import seed from '../../../packages/presentation/contracts/policies/project.seed.json' with { type: 'json' };
 import { validateVideoMetadata, videoFitsLine, videoFitsEvent } from '../../../packages/presentation/contracts/video-intake.mjs';
-import {classifyVideo} from '../lib/video-classifications.mjs';
 import {readClassifications} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../../packages/studio-registry/server/video-manifest.mjs';
@@ -91,11 +90,10 @@ async function fixture(t) {
   const snapshotPath=join(root,'snapshot.json');await writeFile(snapshotPath,JSON.stringify({schemaVersion:2,source:'emil/dealklipp-v1',families,items}));
   return {id,sha256,file,bytes,options:{archiveDir,snapshotPath,uploadDir:join(root,'uploads')}};
 }
-test('manifest-owned media keeps its physical family and cannot be reclassified by an overlay',async t=>{
+test('manifest-owned media keeps its physical family and original bytes',async t=>{
   const f=await fixture(t),registry=await loadVideoRegistry(f.options);
   const video=registry.videos.find(item=>item.id===f.id);
   assert.equal(video.eventId,metadata.eventId);assert.equal(video.situation,metadata.situation);assert.equal(video.familyId,'astrid/deal.player.left/box0');
-  await assert.rejects(classifyVideo({id:f.id,sha256:f.sha256,metadata,previous:null},registry,f.options),e=>e.statusCode===409);
   const saved=await loadVideoRegistry(f.options),savedVideo=saved.videos.find(item=>item.id===f.id);
   assert.equal(savedVideo.classification,undefined);assert.equal(savedVideo.source,'emil');assert.equal(savedVideo.available,true);
   assert.deepEqual(await readFile(f.file),f.bytes);

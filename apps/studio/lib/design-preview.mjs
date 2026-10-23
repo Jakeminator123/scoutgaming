@@ -99,9 +99,10 @@ export async function serveDesignPreview(request, segments, { authorize, root = 
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
   if (typeof authorize !== 'function') throw new Error('design_preview_authorization_required');
   await authorize(new Request(request.url, { method: 'GET', headers: request.headers, signal: request.signal }));
-  if (segments.length === 1 && segments[0] === 'material-library') {
-    const url = new URL(request.url);
-    const target = adminDocumentHref('/admin/material-library' + url.search + url.hash);
+  const url = new URL(request.url);
+  const source = '/admin' + (segments.length ? '/' + segments.join('/') : '') + url.search + url.hash;
+  const target = adminDocumentHref(source);
+  if (target !== source) {
     return new Response(null, { status: 307, headers: { ...designPreviewHeaders, Location: target } });
   }
   const path = designPreviewFile(segments);

@@ -30,7 +30,7 @@ run_node_tests() {
 # Exact equivalent of the frontend package's non-incremental typecheck.
 run_check studio frontend-typecheck 180 node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.json --noEmit --incremental false
 # Discover Studio tests once, without a second hand-maintained registry.
-run_node_tests studio studio-tests apps/studio/test/*.test.mjs apps/studio/components/*.test.mjs apps/studio/lib/background-zone-schedule.test.mjs
+run_node_tests studio studio-tests apps/studio/test/*.test.mjs apps/studio/components/*.test.mjs
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
 run_node_tests admin clip-guide apps/studio/client/admin/lib/clip-guide.test.mjs
 run_node_tests admin saved-scene-preview apps/studio/client/admin/lib/saved-scene-preview.test.mjs
@@ -41,7 +41,7 @@ run_node_tests admin room-environment test/room-environment.mjs
 run_node_tests admin economy-journal apps/studio/client/admin/lib/economy-journal.test.mjs
 run_node_tests admin roulette-start-editor apps/studio/client/admin/lib/roulette-start-editor.test.mjs apps/studio/client/admin/lib/roulette-media-review.test.mjs apps/studio/client/admin/lib/roulette-idle-editor.test.mjs apps/studio/client/admin/lib/registered-material-library.test.mjs
 run_node_tests admin admin-routing apps/studio/client/runtime/admin-routing.test.mjs apps/studio/client/runtime/navigation.test.mjs
-run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs apps/studio/client/admin/lib/openclaw-page.test.mjs apps/studio/client/admin/lib/accounts-pages.test.mjs
+run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs apps/studio/client/admin/lib/service-navigation.test.mjs apps/studio/client/admin/lib/accounts-pages.test.mjs
 run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs
 run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs test/shared-room-k04-qa.mjs

@@ -85,13 +85,13 @@ function applyWhenValid(project: StudioProject, onEdit: Edit, change: (current: 
   after();
 }
 
-export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, onSelect, disabled = false }: {
-  project: StudioProject; onEdit: Edit; selectedId: string; onSelect: (id: string) => void; disabled?: boolean;
+export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, onSelect, disabled = false, showSelector = true, canRename = true }: {
+  project: StudioProject; onEdit: Edit; selectedId: string; onSelect: (id: string) => void; disabled?: boolean; showSelector?: boolean; canRename?: boolean;
 }) {
   const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
   const dealers = activeStudioDealers(project);
   const lanes = project.lanes ?? [];
-  const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
+  const selected = lanes.find(lane => lane.id === selectedId) ?? null;
   const [draftLabel, setDraftLabel] = useState('');
   const [draftDealer, setDraftDealer] = useState('');
   const creating = useRef(false);
@@ -112,18 +112,18 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
     }
   }
   function rename(value: string) {
-    if (!selected || disabled) return;
+    if (!selected || disabled || !canRename) return;
     onEdit(current => { const lane = current.lanes?.find(item => item.id === selected.id);
       return lane ? replaceLane(current, lane.id, { ...lane, label: value }) : current; });
   }
   return <fieldset className={styles.editor} disabled={disabled} aria-label="Välj och namnge sammansättning">
     <section className={styles.card}>
       {selected ? <div className={styles.create}>
-        <label className={styles.field}>Sammansättning<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{compositionLabel(lane.label)}</option>)}</select></label>
-        <label className={styles.field}>Sammansättningens namn<input value={compositionLabel(selected.label)} maxLength={80} onChange={event => rename(event.target.value)} /></label>
+        {showSelector&&<label className={styles.field}>Sammansättning<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{compositionLabel(lane.label)}</option>)}</select></label>}
+        <label className={styles.field}>Sammansättningens namn<input disabled={!canRename} value={compositionLabel(selected.label)} maxLength={80} onChange={event => rename(event.target.value)} /></label>
       </div> : <div className={styles.suggestion}>
-        <p>Ingen sparad sammansättning. Välj ett namn och en dealer nedan.</p>
-        {!dealers.length ? <p>Registrera först en dealer under Dealers &amp; klipp.</p> : null}
+        <p>Ingen scen vald. Välj en scen i arbetsytan eller skapa en ny nedan.</p>
+        {!dealers.length ? <p>Registrera först en dealer under Dealers.</p> : null}
       </div>}
     </section>
     <details className={styles.card} open={!selected || undefined}><summary>Ny sammansättning</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">

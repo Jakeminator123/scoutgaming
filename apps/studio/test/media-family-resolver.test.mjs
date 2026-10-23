@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mediaSituationForEvent, resolveMediaFamily, resolveMediaFamilySelection } from '../lib/media-family-resolver.mjs';
+import { mediaSituationForEvent, resolveMediaFamily, resolveMediaFamilySelection } from '../../../packages/presentation/runtime/media-family-resolver.mjs';
 
 const families = [
   { id: 'astrid/deal.player.centre/box2', dealerId: 'astrid', eventId: 'deal.player.centre', situation: 'box2', playbackType: 'once', standardIds: ['standard'], variantIds: ['variant'] },
