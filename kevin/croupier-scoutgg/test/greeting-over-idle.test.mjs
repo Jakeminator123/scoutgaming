@@ -35,6 +35,8 @@ test('the server greets in the dealer\'s own voice: moving over his idles when w
   assert.match(body, /if\(canTalkMoving\(dealer\)\)\{[\s\S]*speakOnTalkTrack\(session,dealer,text,lang\)[\s\S]*broadcast\(\{t:'answer',id,to:name,text,dealer,talk:spoken\.id\},session\)/);
   assert.match(body, /if\(hasVoice\(dealer\)&&draggeVoiceReady\(dealer\)\)\{[\s\S]*draggeSay\(text,lang,ANSWERS,\{dealer\}\)/, 'cold worker: his own clip, never Astrid\'s');
   assert.match(body, /astrid\.enqueue\(\{kind:'greeting',name,lang\}\)/, 'Astrid classic keeps her pipeline');
+  // staging runs with RUNPOD_API_KEY=local-qa-disabled (localQA): that switches off only Astrid's pipeline, so Dragan and Paow still greet
+  assert.ok(body.indexOf('if(localQA)') > body.indexOf('speakOnTalkTrack(session'), 'localQA is checked only after the moving and own-clip paths');
 });
 
 test('chat answers share the same moving path; private hand facts and the mixed round result are unchanged', () => {
