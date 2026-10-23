@@ -390,5 +390,5 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     get idleChain(){const n=time();const r=chainClipAt(state?.talk,n,t=>t.flex&&!spoken.has(t.id)?null:(spoken.get(t.id)??0))??waitClipAt(state?.waits,n,state?.talk);if(!r)return null;const {shift}=r;const clip=c=>({talk:r.talk.chain?.seed??r.talk.id,take:c.take,frames:c.frames,startAt:c.startAt+shift,endAt:c.endAt+shift,offset:Math.max(0,time()-shift-c.startAt)/1000,timelineTime:()=>Math.max(0,time()-shift-c.startAt)/1000});const cur=clip(r.clip);if(r.next)cur.next=clip(r.next);return cur;},
     // How long the table surely leaves the screen alone (ms): none while a plan runs or a round is on (anyone may act),
     // the betting countdown while it runs, otherwise open-ended. A chat answer starts only if it ends within this.
-    get talking(){return talking();},get quietMs(){if(busy()||sending||state?.phase==='round'||talking())return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};
+    get clock(){return time();},get talking(){return talking();},get quietMs(){if(busy()||sending||state?.phase==='round'||talking())return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};
 }

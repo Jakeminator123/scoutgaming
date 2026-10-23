@@ -56,3 +56,15 @@ test('in the wait for the player the flat hands and the lean dominate (phasePool
     assert.ok(Math.abs(w(pool.filter(i => i.fas === 'decide')) / w(pool) - PHASE_SHARE.decide) < .01, id);
   }
 });
+
+test('a plan that comes while his hands are clasped makes him unclasp first (knapput, sped up to fit before the first take)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /warmPlan:plan=>\{unclaspFor\(plan\);/);
+  const fn = app.slice(app.indexOf('function unclaspFor'), app.indexOf('const idleItem'));
+  assert.match(fn, /onItem\.to === 'knappt'/);
+  assert.match(fn, /i\.from === 'knappt' && i\.to === 'vila'/);
+  assert.match(fn, /Math\.min\(2\.5, Math\.max\(1, out\.dur \/ Math\.max\(\.3, lead\)\)\)/);
+  assert.match(app, /if \(item\.rate\) v\.playbackRate = item\.rate;/);
+  assert.match(app, /idlePose = item\.kind === 'idle' && !item\.chain && \(v\.ended/);
+});

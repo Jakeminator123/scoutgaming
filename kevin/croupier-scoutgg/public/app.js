@@ -111,6 +111,19 @@ function pickIdle(pose = idlePose) {
   lastIdle = c.id; idleSinceHead = c.head ? 0 : idleSinceHead + 1; return c;
 }
 
+// Kevin 23 Oct: a plan comes while his hands are clasped (a run of the betting idles, a player pressed ready): he unclasps
+// them now (knapput, faster when the first take is near, at most 2.5x), so the first take starts on VILA instead of
+// jumping out of the pose
+function unclaspFor(plan) {
+  const onItem = playing?.item ?? currentItem, first = plan?.steps?.find(s => s.clip)?.startAt;
+  if (!(onItem?.kind === 'idle' && !onItem.chain && onItem.to === 'knappt') || !first || !gameTable) return;
+  const outs = (dealer.idles ?? []).filter(i => i.from === 'knappt' && i.to === 'vila');
+  if (!outs.length) return;
+  const out = outs[Math.floor(Math.random() * outs.length)], lead = (first - gameTable.clock - 150) / 1000;
+  const item = { ...idleItem(out), rate: Math.min(2.5, Math.max(1, out.dur / Math.max(.3, lead))) };
+  if (finishCurrent) { const v = cur; finishCurrent(true); v?.classList.remove('on'); }
+  nextIdle = null; running = true; play(item);
+}
 const idleItem = c => ({ url: c.url, sound: false, kind: "idle", from: c.from ?? 'vila', to: c.to ?? 'vila' });
 // a chain clip is one of the dealer's own idles (dealers.js: Dragan's in v2/, Astrid 2.0's in idle-v2/), by its take name
 const chainItem = c => ({ url: dealer.idles?.find(i => i.id === c.take)?.url ?? dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime });
@@ -217,6 +230,7 @@ async function play(item) {
   const start = () => {
     if (started || done || token !== playToken) return;
     started = true;
+    if (item.rate) v.playbackRate = item.rate;   // a quick unclasp before a card (unclaspFor)
     // A ready dealer's take runs a little slower so it ends with its slot: no frozen gap before the next card.
     // Card faces follow the clip's own time (onFrame), so they stay with his hand.
     if (item.fit && Number.isFinite(v.duration) && Math.abs(v.duration - item.fit) > 0.02) {
@@ -538,7 +552,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     // with the dealer's own lines (not Astrid's) so none has to download mid-round.
     prepareMedia:async(seats,onProgress,language)=>{await videoBuffer.prepare(tableVideoSources(m,seats,language).filter(url=>!unusedLine(url)).map(url=>dealerLineUrl(url,language)??url).flatMap(dealerClipVariants),onProgress);tableMediaReady=true;warmIdle();for(const c of manifest.idle)videoBuffer.load(c.url,10).catch(()=>{});},   // all his idles follow at low priority (nine short takes, Kevin 20 Oct): the whole pool to pick from, no clip fetched at its switch
     preloadNext:clip=>{if(loading||!cur||unusedLine(clip.url))return;videoPreloader.prepare(cur===A?B:A,dealerLineUrl(clip.url,$('#dealerLanguage').value)??dealerClipUrl(clip.url,clip.variant)).catch(()=>{});},
-    warmPlan:plan=>{for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
+    warmPlan:plan=>{unclaspFor(plan);for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
     playNow:item=>{yieldAnswer();if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
     // A line over the clips: its sound plays on top of the deal, no idle starts until it ends. True when this viewer hears
     // the language the mouth was synced to (else the line plays without the mouth).
