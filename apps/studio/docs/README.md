@@ -121,20 +121,28 @@ hos innehållet i klippkartans Körregel och i Scen & lager.
 återställer osparade val. Byte från konton, integrationer eller modellval går
 via sidnavigering, så befintliga varningar för osparade formulär används.
 Engångsresultat för integrationer döljs när sidan lämnas.
-**Spelbolag & rum** (`/admin/rooms`) är det enda rumsflödet. Överst syns rummets
-förhandsvisning i full bredd med Desktop/Mobil; bredvid ligger **Rummets val**
-(bakgrund, dealer och bord bland det sammansättningen tillåter, bordsfärg nedtonad
-under) och **Spelinställningar** (bordsspråk och insatsprofil). Rubriken visar
-publicerad version, sparat utkast och vad spelaren möter nu. Under rummet finns
-bolagets **Publicering** (vilka sammansättningar paketet tillåter), **Skapa rum**
-och **Spelrum** (pausa, öppna, arkivera). Ett rumsutkast åt gången låser de andra
-korten. Som Admin väljer du fritt bland mallens tillåtna lager; bolagets egna
-behörigheter gäller bara i partnerportalen. Välj bolag
-och rum. När bolaget har flera rum visas kort med spel och faktisk rums-/
-publiceringsstatus på större skärmar; mobilens rumsväljare har samma val och
-bytesregler. Ett enda rum behöver inget extra rumskort. Osparade ändringar
-skyddas vid byte. Adressen rensar äldre `dealer`-val; rummets publicerade
-paket bestämmer vilka dealer-, bakgrunds- och bordslager som visas.
+**Spelbolag & rum** (`/admin/rooms`) är det enda rumsflödet. Välj bolag i
+rubriken; dess spel visas som kort med aktuell status och tilldelade dealers.
+Välj ett kort för att redigera. **Lägg till spel** öppnar val av sparad spelmall,
+blackjack/roulette och namn. Ett bekräftat nytt spel öppnas direkt i redigeraren.
+**Ta bort** på kortet stänger spelet och tar bort det ur bolagets utbud efter
+bekräftelse. Gemensamma media och historik behålls. **Återställ borttaget spel**
+visar bara borttagna spel; återställda spel är pausade tills **Öppna spel** används.
+
+Redigeraren visar scenen och tre separata väljare: **Bakgrund**, **Dealer** och
+**Bord**. Materialkort använder förhandsbilder från det publicerade paketet när
+dessa finns. Ett bakgrundsbyte ändrar endast bakgrunden för det valda rummet;
+dealer, bord, andra rum och bolagets standard behålls. Admin väljer bland mallens
+tillåtna alternativ, medan partnerns befintliga behörigheter gäller i partnerportalen.
+Inbakad bakgrund kan inte växlas separat och förklaras som låst. Nya rum kräver
+fortfarande en sparad kompatibel spelmall med fast utgångsmiljö; denna UI-ändring
+utökar inte det publicerade paketets materialurval eller skapar nya medier.
+
+**Spelinställningar**, versionshistorik och **Utbud och publicering** öppnas vid
+behov. Rubriken visar publicerad version, sparat utkast och vad spelaren möter nu.
+Osparade val skyddas vid byte av bolag, spel eller arbetsyta, och pågående skrivning
+låser andra åtgärder. Studio skapar och godkänner det delade materialet; Admin
+sätter ihop bolagets spelutbud med befintliga rum och publiceringskontrakt.
 
 Scenen och de tillåtna rumsvalen visas tillsammans. **Låst i publicerat paket**
 betyder att valet ändras genom den gemensamma mallen, inte genom rumsvalen.
@@ -145,8 +153,8 @@ bara utkastet; live ändras först efter publicering. Rumsval sparas bara för
 valt rum. **Hämta senaste version** bevarar egen redigering tills du väljer
 hur den senaste versionen ska läsas in.
 
-Länken **Granska publicering** vid rumsrubriken öppnar det separata
-publiceringsverktyget med rätt bolag och rum. **Gemensam mall och tillåtna
+Knappen **Publicering** vid rumsrubriken öppnar **Utbud och publicering** på
+samma sida med rätt bolag och rum. **Gemensam mall och tillåtna
 alternativ** ligger i en separat detaljsektion; mallredigeraren visar vilka
 andra rum som kan påverkas. Gamla länkar med `view=registered` fungerar men
 behövs inte längre.

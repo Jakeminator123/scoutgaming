@@ -552,3 +552,17 @@ test('temporary sibling locks retain a verified room receipt and never report it
   assert.equal(h.requests.length,count);assert.equal(drafts.at(-1),false);
   assert.match(renderToStaticMarkup(tree),/Mitt rum är klart/);ui.unmount();
 });
+
+test('visual game cards use the selected game preflight and preserve the entered name',async()=>{
+  const h=fixture(),ui=componentHarness(h.controller),props={...context,visual:true};
+  ui.render(props);h.reply(0,prepared());await tick();
+  let tree=ui.render(props);find(tree,'input').props.onChange({target:{value:'Roulette VIP'}});
+  function buttons(node){return !node||typeof node!=='object'?[]:[...(node.type==='button'?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(buttons)];}
+  const roulette=buttons(tree).find(button=>button.props.children==='◉ Roulette');roulette.props.onClick();
+  assert.equal(new URL(h.requests[1].path,'https://studio.invalid').searchParams.get('game'),'roulette');
+  tree=ui.render(props);assert.equal(buttons(tree).find(button=>button.props.children==='◉ Roulette').props.disabled,true);
+  h.reply(1,prepared(context,{capabilities:rouletteCapability}));await tick();tree=ui.render(props);
+  assert.equal(find(tree,'input').props.value,'Roulette VIP');
+  assert.equal(buttons(tree).find(button=>button.props.children==='◉ Roulette').props['aria-pressed'],true);
+  ui.unmount();
+});
