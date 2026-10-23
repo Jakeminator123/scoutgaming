@@ -11,8 +11,8 @@ import { ConfirmAcknowledgement, ConfirmDialog } from './confirm-dialog';
 const client = createStudioClient(), lifecycle = createLifecycleClient();
 const dealerSlug = (name:string) => name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40).replace(/-$/,'');
 // One confirmation per action. The server check runs inside the open dialog and
-// is bound to the project revision that was visible when it started.
-type Review = { id:string; name:string; revision:string; kind:'archive'|'restore'|'delete'; checking:boolean; impact?:DealerArchiveImpact; eligibility?:DeletionPlan; acknowledged:boolean; error:string };
+// is bound to one dialog request as well as its project revision and target.
+type Review = { request:number; id:string; name:string; revision:string; kind:'archive'|'restore'|'delete'; checking:boolean; impact?:DealerArchiveImpact; eligibility?:DeletionPlan; acknowledged:boolean; error:string };
 
 export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{active:boolean;blocked?:boolean;refreshKey?:number;onChanged:()=>void}) {
   const [workspace,setWorkspace] = useState<Workspace|null>(null);
@@ -21,6 +21,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const [name,setName] = useState(''), [id,setId] = useState(''), [idEdited,setIdEdited] = useState(false);
   const [creating,setCreating] = useState(false), [review,setReview] = useState<Review|null>(null);
   const [refresh,setRefresh] = useState(0);
+  const reviewSequence = useRef(0);
   const lock = useRef(false), current = useRef(workspace), createButton = useRef<HTMLButtonElement>(null);
   current.current = workspace;
   const query = useSearchParams(), selectedId = query.get('dealer') ?? '';
@@ -62,19 +63,19 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
     } finally {lock.current=false;setBusy(false);}
     if(confirmed){setName('');setId('');setIdEdited(false);setCreating(false);setNotice(`${targetName} är sparad. Välj Lägg till klipp för att börja.`);onChanged();navigate('/admin/dealers?dealer='+encodeURIComponent(targetId));}
   }
-  function patchReview(revision:string,patch:Partial<Review>) {
-    setReview(value=>value&&value.revision===revision&&value.checking?{...value,checking:false,...patch}:value);
+  function patchReview(request:number,patch:Partial<Review>) {
+    setReview(value=>value&&value.request===request&&value.checking?{...value,checking:false,...patch}:value);
   }
   async function openReview(dealerId:string,label:string,kind:Review['kind']) {
     if(disabled || lock.current || !workspace)return;
-    const revision=workspace.project.revision;
+    const revision=workspace.project.revision, request=++reviewSequence.current;
     setError('');setNotice('');
-    setReview({id:dealerId,name:label,revision,kind,checking:kind!=='restore',acknowledged:false,error:''});
+    setReview({request,id:dealerId,name:label,revision,kind,checking:kind!=='restore',acknowledged:false,error:''});
     if(kind==='restore')return;
     try {
-      if(kind==='archive')patchReview(revision,{impact:await lifecycle.checkDealerArchive(workspace.project,dealerId)});
-      else patchReview(revision,{eligibility:await lifecycle.checkDealerDeletion(workspace.project,dealerId)});
-    } catch(cause){patchReview(revision,{error:lifecycleMessage(cause)});}
+      if(kind==='archive')patchReview(request,{impact:await lifecycle.checkDealerArchive(workspace.project,dealerId)});
+      else patchReview(request,{eligibility:await lifecycle.checkDealerDeletion(workspace.project,dealerId)});
+    } catch(cause){patchReview(request,{error:lifecycleMessage(cause)});}
   }
   async function applyReview() {
     if(disabled||lock.current||!workspace||!review||review.checking||review.error||review.revision!==workspace.project.revision)return;

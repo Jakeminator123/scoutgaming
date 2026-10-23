@@ -25,4 +25,4 @@ export function intakeConfidenceLabel(row:IntakeRow):string;
 export function intakeUploadRows(rows:IntakeRow[]):IntakeRow[];
 export function intakeRowIssue(row:IntakeRow,dealerId:string,catalog:ImportCatalog):string;
 export function intakeSummary(rows:IntakeRow[],dealerId:string,catalog:ImportCatalog):{total:number;unsaved:number;ready:number;saved:number;unplaced:number;issues:{row:IntakeRow;message:string}[]};
-export function collectDroppedFiles(dataTransfer:DataTransfer|null|undefined,options?:{limit?:number}):Promise<{files:{file:File;path?:string}[];truncated:boolean}>;
+export function collectDroppedFiles(dataTransfer:DataTransfer|null|undefined,options?:{limit?:number;signal?:AbortSignal}):Promise<{files:{file:File;path?:string}[];truncated:boolean}>;

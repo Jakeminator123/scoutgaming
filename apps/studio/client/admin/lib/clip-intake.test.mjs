@@ -150,3 +150,14 @@ test('dropped folders are read recursively with their relative paths and bounded
   assert.equal(fallback.files.length, 1); assert.equal(fallback.files[0].path, undefined);
   assert.deepEqual(await collectDroppedFiles(null), { files: [], truncated: false });
 });
+
+
+test('a delayed folder read is discarded after the target context cancels it',async()=>{
+  const abort=new AbortController();let release;
+  const entry={isFile:true,file:resolve=>{release=resolve;}};
+  const pending=collectDroppedFiles({items:[{webkitGetAsEntry:()=>entry}]},{signal:abort.signal});
+  const rejected=assert.rejects(pending,{name:'AbortError'});
+  abort.abort();release(file('dealer-a.mp4'));await rejected;
+  const next=await collectDroppedFiles({files:[file('dealer-b.mp4')]});
+  assert.equal(next.files[0].file.name,'dealer-b.mp4');
+});

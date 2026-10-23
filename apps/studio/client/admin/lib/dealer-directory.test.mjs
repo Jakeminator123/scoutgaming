@@ -20,6 +20,7 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
   let cursor=0,saveFailure='',readFailure=false,eligibility={allowed:true,count:2};
   const props={active:true,onChanged:()=>changes.push(true)};
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};},useEffect(fn,deps){const index=cursor++;if(!slots[index]||deps.some((dep,i)=>dep!==slots[index].deps[i])){effects.push(()=>{slots[index]?.cleanup?.();slots[index]={deps,cleanup:fn()};});}}};
+  let archiveCheck=null;
   const impact={dealerId:'dragan',token:'a'.repeat(64),mediaCount:0,speechEnabled:false,operators:[],rooms:[],compositions:[]};
   const client={load:async()=>{if(readFailure)throw Error('read unavailable');return structuredClone(remote);},save:async project=>{
     saves.push(project);
@@ -27,7 +28,7 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
     remote={...remote,project:{...project,revision:'studio.project.2'}};
     if(saveFailure==='lost')throw Error('lost response');return remote.project;
   }};
-  const lifecycle={checkDealerArchive:async(project,id)=>{checks.push({id,revision:project.revision});return impact;},dealerLifecycle:async(project,id,archived,plan,current)=>{
+  const lifecycle={checkDealerArchive:async(project,id)=>{checks.push({id,revision:project.revision});return archiveCheck?archiveCheck(project,id):impact;},dealerLifecycle:async(project,id,archived,plan,current)=>{
     assert.equal(current(),true);archives.push({id,archived,plan,revision:project.revision});
     remote={...remote,project:{...remote.project,revision:'studio.project.3',dealers:[],dealerTrash:[{dealer:{id,label:'Dragan'},lines:[],compositions:restoreCompositions}]}};
   },checkDealerDeletion:async(project,id)=>{deletionChecks.push({id,revision:project.revision});return eligibility;},deleteDealer:async(project,id,current)=>{
@@ -47,7 +48,7 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
     if(name.includes('runtime/navigation'))return{useSearchParams:()=>new URLSearchParams(search),navigate:href=>navigations.push(href)};
     return require(name);
   }});
-  const h={props,saves,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
+  const h={setArchiveCheck:handler=>archiveCheck=handler,props,saves,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
     render(){cursor=0;return module.exports.DealerDirectory(props);},
     async settle(){for(let i=0;i<5;i++){h.render();while(effects.length)effects.shift()();await new Promise(resolve=>setImmediate(resolve));}},
     button(label){return nodes(h.render(),node=>node.type==='button'&&text(node)===label)[0];},
@@ -181,4 +182,22 @@ test('home create link opens the existing dealer form without a write and contex
   assert.ok(destinations.some(url=>url.searchParams.get('panel')==='intake'),'clip intake is reachable');
   assert.ok(destinations.some(url=>!url.searchParams.has('panel')),'dealer editor is reachable');
   for(const url of destinations)assert.equal(url.searchParams.get('dealer'),'dragan');
+});
+
+
+test('late lifecycle checks cannot fill a reopened dialog for the same or another dealer',async()=>{
+  for(const target of ['dragan','nora']){
+    const h=harness([],[{id:'nora',label:'Nora'}]),pending=[];
+    h.setArchiveCheck((_project,id)=>new Promise(resolve=>pending.push({id,resolve})));
+    await h.settle();
+    const open=id=>nodes(nodes(h.render(),node=>node.type==='li'&&node.key===id)[0],node=>node.type==='button')[0].props.onClick();
+    open('dragan');await h.settle();h.dialog().props.onCancel({preventDefault(){}});
+    open(target);await h.settle();assert.equal(pending[1].id,target);
+    pending[0].resolve({...h.impact,mediaCount:99});await h.settle();
+    assert.equal(h.dialog().props['aria-busy'],true);
+    assert.equal(h.dialogButton('Flytta till papperskorgen'),undefined);
+    pending[1].resolve({...h.impact,dealerId:target,mediaCount:0});await h.settle();
+    assert.ok(h.dialogButton('Flytta till papperskorgen'));
+    assert.equal(h.archives.length,0);
+  }
 });

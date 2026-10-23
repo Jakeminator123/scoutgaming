@@ -89,6 +89,7 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
   const [panel, setPanel] = useState<'scene'|'clip'|'room'|'dealer'|'layers'|'policy'|'intake'|'roulette-start'|'roulette-media'|null>(()=>routePanel(new URLSearchParams(location.search).get('panel')));
   // Intake rows live in the panel; the map only knows what is being dragged and how many files await approval.
   const intakeApi=useRef<ClipIntakeHandle|null>(null);
+  const intakeDrop=useRef<AbortController|null>(null);
   const dealerSelect=useRef<HTMLSelectElement|null>(null);
   const [intakeDrag,setIntakeDrag]=useState<string|null>(null);
   const [intakePending,setIntakePending]=useState(0);
@@ -277,11 +278,13 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
     if(!data||!base)return;
     await work(async signal=>{const remote=await client.load(signal);const result=rebaseProjectDraft(base,data.project,remote.project);const project=validateProject(result.project);setData({...remote,project});setBase(structuredClone(remote.project));setConflictPaths(result.conflicts);setRevisionConflict(false);setAuthorized(true);setNotice('Senaste revisionen är jämförd; dina utkaständringar är kvar.');},true);
   }
+  useEffect(()=>()=>intakeDrop.current?.abort(),[active,dealer?.id,game,operator?.id,room?.id,compositionId]);
   function changeContext(action:()=>void) {
     if (busyRef.current) return false;
     if (configDirty && !confirm('Det finns formulärändringar som ännu inte har lagts i utkastet. Kasta dem och byt kontext?')) return false;
     if (pending && !confirm('Kasta videovalet som ännu inte har laddats upp och byt kontext?')) return false;
     if (intakePending>0 && !confirm('Listan med klipp att lägga till är inte sparad. Byt kontext ändå? Vid byte av dealer töms listan.')) return false;
+    intakeDrop.current?.abort();
     setPending(null);setIntakeDrag(null);setLocalReference(null); setSelected({}); setVariants({}); setPanel(current=>routePanel(current));setSettingsSlot(null);setActiveGroupId('');setPreviewCompositionId('');setPositions({}); action();
     if (dirty) setNotice('Det gemensamma projektutkastet är kvar, även för tidigare vald dealer och sammansättning.');
     return true;
@@ -416,7 +419,7 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
     {data&&dealer&&<div ref={canvasRef} className={`studio-canvas ${canvasDrop?'is-file-drop':''}`}
       onDragOver={event=>{if(game==='blackjack'&&!locked&&Array.from(event.dataTransfer.types).includes('Files')){event.preventDefault();setCanvasDrop(true);}}}
       onDragLeave={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setCanvasDrop(false);}}
-      onDrop={event=>{setCanvasDrop(false);if(game!=='blackjack'||locked||!Array.from(event.dataTransfer.types).includes('Files'))return;event.preventDefault();void collectDroppedFiles(event.dataTransfer).then(result=>{queueIntake(result.files);if(result.truncated)setError(`Bara de första ${result.files.length} filerna lästes från mappen.`);});}}>
+      onDrop={event=>{setCanvasDrop(false);if(game!=='blackjack'||locked||!Array.from(event.dataTransfer.types).includes('Files'))return;event.preventDefault();intakeDrop.current?.abort();const abort=new AbortController();intakeDrop.current=abort;void collectDroppedFiles(event.dataTransfer,{signal:abort.signal}).then(result=>{if(abort.signal.aborted)return;queueIntake(result.files);if(result.truncated)setError(`Bara de första ${result.files.length} filerna lästes från mappen.`);}).catch(cause=>{if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Mappen kunde inte läsas.');});}}>
       {canvasDrop&&<div className="studio-canvas-drop" aria-hidden="true"><Upload size={22}/>Släpp för att lägga till klipp hos {dealer.label}</div>}
       <ReactFlow key={`${dealer.id}:${game}`} defaultViewport={{x:24,y:24,zoom:1}} onMove={(_event,viewport)=>setZoom(viewport.zoom)} nodes={flowNodes} edges={[]} nodeTypes={nodeTypes} nodesDraggable={!locked} onNodesChange={changes=>{onFlowNodesChange(changes);if(!changes.some(change=>change.type==='position'&&change.position))return;setPositions(current=>{const next={...current};let moved=false;for(const change of changes)if(change.type==='position'&&change.position&&(!current[change.id]||current[change.id].x!==change.position.x||current[change.id].y!==change.position.y)){next[change.id]=change.position;moved=true;}return moved?next:current;});}} nodesConnectable={false} edgesReconnectable={false} minZoom={0.2} maxZoom={1.5} colorMode="dark" proOptions={{hideAttribution:true}}><Background variant={BackgroundVariant.Dots} gap={22} color="#33363b"/></ReactFlow></div>}
     </div>

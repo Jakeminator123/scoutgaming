@@ -174,7 +174,8 @@ export function intakeSummary(rows, dealerId, catalog) {
 // Dropped items may be files or folders. Folders are read recursively with the
 // browser's entry API; the folder-relative path follows each file. The count
 // is bounded so a stray drop of a large tree cannot stall the page.
-export async function collectDroppedFiles(dataTransfer, { limit = INTAKE_MAX_DROPPED_FILES } = {}) {
+export async function collectDroppedFiles(dataTransfer, { limit = INTAKE_MAX_DROPPED_FILES, signal } = {}) {
+  signal?.throwIfAborted();
   const files = []; let truncated = false;
   const push = (file, path) => { if (files.length >= limit) { truncated = true; return false; } files.push({ file, ...(path ? { path } : {}) }); return true; };
   const readAll = reader => new Promise((resolve, reject) => {
@@ -183,12 +184,15 @@ export async function collectDroppedFiles(dataTransfer, { limit = INTAKE_MAX_DRO
     next();
   });
   async function walk(entry, prefix) {
+    signal?.throwIfAborted();
     if (files.length >= limit) { truncated = true; return; }
     if (entry.isFile) {
       const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+      signal?.throwIfAborted();
       push(file, prefix ? `${prefix}/${file.name}` : '');
     } else if (entry.isDirectory) {
       const entries = await readAll(entry.createReader());
+      signal?.throwIfAborted();
       for (const child of entries) await walk(child, prefix ? `${prefix}/${entry.name}` : entry.name);
     }
   }
@@ -203,5 +207,6 @@ export async function collectDroppedFiles(dataTransfer, { limit = INTAKE_MAX_DRO
       else if (loose[index]) push(loose[index], '');
     }
   } else for (const file of Array.from(dataTransfer?.files ?? [])) push(file, intakeRelativePath(file) ?? '');
+  signal?.throwIfAborted();
   return { files, truncated };
 }

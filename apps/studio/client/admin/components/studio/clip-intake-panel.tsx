@@ -194,7 +194,7 @@ export function ClipIntakePanel({ref,dealer,groups,active,blocked,hasStandard,on
         <IntakeThumb file={row.file} kind={row.kind}/>
         <div className="studio-intake-body">
           <header><GripVertical size={16} aria-hidden="true" className="studio-intake-grip"/><strong title={row.file.name}>{row.file.name}</strong>{folder&&<small title={row.path}>{folder}/</small>}
-            <button type="button" className="studio-intake-remove" aria-label={`Ta bort ${row.file.name} ur listan`} disabled={row.state==='saving'} onClick={()=>setRows(items=>items.filter(item=>item.id!==row.id))}><X size={15}/>Ta bort ur listan</button></header>
+            <button type="button" className="studio-intake-remove" aria-label={`Ta bort ${row.file.name} ur listan`} disabled={locked||row.state==='saving'} onClick={()=>{if(!busyRef.current&&!blocked&&!loading)setRows(items=>items.filter(item=>item.id!==row.id));}}><X size={15}/>Ta bort ur listan</button></header>
           {!row.blocked&&<p className="studio-intake-destination">{destination?<><span className="studio-intake-eyebrow">Fack</span><strong>{destination.label}</strong></>:<strong className="studio-intake-unsure">Osäker · välj fack</strong>}
             {role&&<span className={`studio-intake-badge is-${role}`}>{role==='standard'?'Standard':'Variant'}</span>}
             <span className={`studio-intake-badge is-${row.slotId?row.confidence??'proposed':'low'}`}>{intakeConfidenceLabel(row)}</span></p>}

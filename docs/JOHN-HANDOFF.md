@@ -4,7 +4,13 @@
 
 Klippkartan får fil-/mappsläpp, dragbara placeringsförslag och uttryckligt godkännande före uppladdning. Gemensamma dialoger används för befintliga arkiverings- och permanenta raderingskontrakt. Inga writers, scheman eller behörigheter ändras; publicerade beroenden prövas fortfarande på servern.
 
-Konflikterna med main löses med nuvarande Admin-navigation kvar, utan återinförd OpenClaw-sida. Frysta importkällor, exakta pose-/språk-/tagningsförslag och nuvarande dealerregistrering bevaras. Slutlig granskning och verifiering redovisas nedan när synken är klar.
+Konflikterna med main är lösta med nuvarande Admin-navigation kvar, utan återinförd OpenClaw-sida. Frysta importkällor, exakta pose-/språk-/tagningsförslag och nuvarande dealerregistrering bevaras. PR #366 är integrerad för att behålla den granskade operatörsytan; merga #366 före #347.
+
+**Bugggranskning:** tre samtidighetsfel är rättade. Sena beroendekontroller får inte fylla en nyöppnad raderingsdialog, köade filer kan inte tas bort under uppladdning och pågående mappavläsning avbryts vid byte av dealer/spel/rum. Beteendeprov verifierar dessa gränser. Oberoende omgranskning fann inga blockerande fel. Rena CSS-lås i dialogtesterna är borttagna; behörighet, blockering och tillgänglighetsbeteende provas fortfarande.
+
+**Verifiering:** Node 24.21.0, högst fyra testarbetare. Full Studio: **2 116 godkända / 17 överhoppade** efter main-synk. Full Admin efter samtidighetsfixarna: **373 godkända / 1 överhoppat**. Klientbygge inklusive Admin-/lobbytyper godkänt. Föräldralösa tester: **0/566**. Produktionsdata och drift är inte ändrade. Ny CI krävs på den publicerade headen; GitHubs kontobetalning/utgiftsgräns blockerar för närvarande Actions.
+
+**GitGuardian:** källbindning till remote main cbc0acd3 verifierad; incidentrapporten anger 0 öppna och 23 ignorerade. Historisk skanning och platsmetadata är ofullständiga, och kontrollernas status kunde inte bekräftas av denna säkerhetsläsning. Ingen fullständig historisk säkerhetstäckning påstås.
 
 ## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
 
