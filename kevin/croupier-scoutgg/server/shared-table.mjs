@@ -158,7 +158,10 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // Emil 13 Oct: while the dealer speaks, a card asked for gives the lip-sync worker 1 s (not 0.7) to remake the mouth
     // over the new take; without speech the pace is as before
     const speaking=Boolean(talker)&&(r.talk??[]).some(t=>t.startAt<=now()&&t.endAt>now()+300);
-    const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
+    // Kevin 23 Oct: a dealer with the clasped-hands idles may be in that pose on any viewer's screen when the round starts
+    // (each viewer's betting idles are his own): the first card comes 1.4 s after ready, time to unclasp (app.js unclaspFor)
+    const unclasp=opening&&(ready?.idle??[]).some(i=>i.from==='knappt')?1400:0;
+    const steps=[];let at=Math.max(now()+Math.max(unclasp,!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
     // Kevin 20 Oct: a wait's idle chain is running: the next take starts on its next clip boundary (at most one short take
     // later), from VILA, so there is no jump in his face; the wait then ends there (until)
     const open=(r.waits??[]).find(w=>!w.until);

@@ -658,3 +658,15 @@ test('the wait lays the decide takes the worker lacks, and a line over them rest
     assert.ok(talk.idle?.length&&talk.idle.every(c=>c.take==='andas'),'a chain at rest never takes a clasped-hands take');
   }finally{t.close();}
 });
+
+test('a dealer with the clasped-hands idles deals the round\'s first card 1.4 s after ready (time to unclasp); others as before', () => {
+  for(const [idle,lead] of [[[{take:'andas',frames:39,vikt:20,calm:true},{take:'knappin5101',frames:39,vikt:6,calm:true,fas:'bets',to:'knappt'},{take:'knapput5101',frames:39,vikt:2,calm:true,fas:'bets',from:'knappt'}],1400],[[{take:'andas',frames:39,vikt:20,calm:true}],700]]){
+    const t=talkTable({idle});
+    try{
+      t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});
+      const at=t.box.time;t.send('paow','ready');
+      const first=t.st('paow').plan.steps.find(s=>s.clip).startAt;
+      assert.ok(first-at>=lead&&first-at<lead+1300,`first take ${first-at} ms after ready (lead ${lead})`);
+    }finally{t.close();}
+  }
+});

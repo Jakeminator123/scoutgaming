@@ -121,7 +121,8 @@ function unclaspFor(plan) {
   if (!outs.length) return;
   const out = outs[Math.floor(Math.random() * outs.length)], lead = (first - gameTable.clock - 150) / 1000;
   const item = { ...idleItem(out), rate: Math.min(2.5, Math.max(1, out.dur / Math.max(.3, lead))) };
-  if (finishCurrent) { const v = cur; finishCurrent(true); v?.classList.remove('on'); }
+  // the clasped take stays on screen until knapput replaces it (play shows the new layer before it starts): no still between
+  finishCurrent?.(true);
   nextIdle = null; running = true; play(item);
 }
 const idleItem = c => ({ url: c.url, sound: false, kind: "idle", from: c.from ?? 'vila', to: c.to ?? 'vila' });
