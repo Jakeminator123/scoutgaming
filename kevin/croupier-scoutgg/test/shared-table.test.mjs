@@ -26,7 +26,7 @@ test('joining claims multiple boxes atomically, enforces names and isolates sess
  assert.throws(()=>t.send('other','join',{name:'<img>',seats:[5]}),/name/);
  assert.throws(()=>t.send('other','join',{name:'Other',seats:[5,5]}),/boxes/);
  assert.equal(t.state('kevin','different').players.length,0);
- await Promise.resolve();assert.deepEqual(t.welcome.map(x=>x.text),['Hi Kevin, how are you today?','Hi John, how are you today?']);
+ await Promise.resolve();assert.deepEqual(t.welcome.map(x=>x.text),['Hi Kevin, welcome, how are you today?','Hi John, welcome, how are you today?']);
  t.send('kevin','join',{name:'Kevin',seats:[2,3]});await Promise.resolve();assert.equal(t.welcome.length,2);
  }finally{t.close();}
 });
