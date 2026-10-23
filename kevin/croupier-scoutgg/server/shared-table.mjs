@@ -461,7 +461,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       const start=Math.round(Math.max(t+ANSWER_LEAD,input.notBefore??0,...speaking.map(x=>x.endAt+250)));
       const {notBefore,...said}=input;
       const ready=readyFor(id),steg=[...(r.prevSteps??[]),...(r.plan?.steps??[])],talker=ready?talkFor(id):null;   // talkFor: the hook (talk below is the answer)
-      const talk=withIdle(r,ready,{id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`},steg,talker);
+      const talk=withIdle(r,ready,{id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,...(said.kind==='line'?{}:{ljud:`/api/lip/${tid}/ljud`})},steg,talker);   // a recorded line (kind line) is fetched by its clip, an answer's voice from /api/lip
       let free=talk.endAt+250;const later=[],moved=[];
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
         if(x.startAt>=free){later.push(x);continue;}

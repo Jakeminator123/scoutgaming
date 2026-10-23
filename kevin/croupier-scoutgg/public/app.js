@@ -261,8 +261,15 @@ async function play(item) {
 
 // The alternative dealer's own lines (greeting, remarks, banter) in the table's language.
 let greeted = false;   // Kevin 23 Oct: a dealer the server greets by name (dealers.js serverGreets) plays no recorded greeting too
+const pendingRemarks = new Set();
 function remarkNow(id) {
   if (gameTable?.talking) return;   // he is already speaking over his clips (state.talk): no second voice on top
+  // Kevin 23 Oct: a dealer with moving speech says his chatter over his idles (the server's talk track); the recorded clip
+  // on his still plays only when the server answers that his lip-sync worker is not warm
+  if (dealer.serverGreets && /^chatter[12]_/.test(id ?? '') && ws?.readyState === 1) { pendingRemarks.add(id); ws.send(JSON.stringify({ t: 'remark', id })); return; }
+  playRemark(id);
+}
+function playRemark(id) {
   const url = id && dealerExtraLineUrl(id, $('#dealerLanguage').value);
   if (url) enqueue({ url, sound: true, kind: 'remark', text: null });
 }
@@ -417,6 +424,9 @@ function connect() {
       case "said": render(j); break;
       case "reply":   // håll texten tills den färdiga röst/läppsynken kan börja spelas
         pending.set(j.id, j.text);
+        break;
+      case "remark":
+        if (pendingRemarks.delete(j.id) && !j.talk) playRemark(j.id);
         break;
       case "answer": {
         pending.delete(j.id);

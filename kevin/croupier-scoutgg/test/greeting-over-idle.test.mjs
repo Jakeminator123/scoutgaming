@@ -54,3 +54,29 @@ test('Dragan and Paow are greeted by the server only: the recorded greet_guest i
   const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
   assert.match(app, /if\(!greeted\)\{greeted=true;if\(!dealer\.serverGreets\)remarkNow\(greetingFor\(name\)\);\}/);
 });
+
+test('the dealer\'s chatter ("Take your time…") goes on the talk track over his idles when his worker is warm, else the recorded clip', () => {
+  const remark = server.slice(server.indexOf('const REMARK_TALK'), server.indexOf('async function talkReply'));
+  assert.match(remark, /\/\^chatter\[12\]_\[1-3\]\$\//, 'only the chatter lines');
+  assert.match(remark, /if \(!\(rorlig && rorligOn\(\) && rorlig\.ready\(dealer\)\)\) return false;/, 'cold worker: the viewer plays the clip');
+  assert.match(remark, /shared\.addTalk\(room, \{ kind: 'line', event: [^}]*clip, line: line\.url, lang: line\.lang, dur: line\.dur \}\)/);
+  assert.match(server, /else if \(j\.t === "remark"\)/);
+  const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /if \(dealer\.serverGreets && \/\^chatter\[12\]_\/\.test\(id \?\? ''\) && ws\?\.readyState === 1\)/);
+  assert.match(app, /case "remark":\s*if \(pendingRemarks\.delete\(j\.id\) && !j\.talk\) playRemark\(j\.id\);/);
+});
+
+test('a recorded line on the talk track carries its clip and no answer voice; it runs over the idle chain between rounds', () => {
+  const take = {'-':39,'-i':60,'-u':60,'-iu':81,'-v':39,'-iv':60}, frames = Object.fromEntries(['1','2','3','4','5','6','7','dealer'].map(k => [k, take]));
+  frames.hole = {'-':39,'-i':60,'-u':39,'-iu':60}; frames.flip = {'-':56,'-i':56,'-u':56,'-iu':56};
+  const idle = [{take:'andas',frames:39,vikt:20,calm:true},{take:'fingrar',frames:39,vikt:4,calm:true}];
+  const manifest = {deal:[1,2,3,4,5,6,7,'dealer'].map(i => ({id:`deal_pos${i}`,url:`/media/deal/pos${i}.mp4`,dur:.1})), repliker:[{id:'goodluck_1',event:'goodluck',url:'/x.mp4',dur:1}], idle:[]};
+  const dir = mkdtempSync(join(tmpdir(), 'remark-'));
+  const s = createSharedTable(join(dir, 't.sqlite'), {manifest, now:()=>100000, readyFor:()=>({frames, restEnd:['hole','flip'], restStart:['flip'], idle, variants:{}, durs:{}}), talk:()=>({idle:['andas','fingrar'], line:()=>null})});
+  try {
+    s.run('dragge', {session:'v', op:'join', name:'Anna', seats:[3], requestId:'r1', version:0});
+    const {talk} = s.addTalk('dragge', {kind:'line', event:'chatter2', clip:{id:'chatter2_1', url:'/media/repliker/chatter2_1.mp4'}, line:'/media/dealers/dragge/repliker/en/chatter2_1.mp4', lang:'en', dur:2.2});
+    assert.equal(talk.kind, 'line'); assert.equal(talk.clip.id, 'chatter2_1'); assert.equal(talk.ljud, undefined, 'no answer voice: the clip is the voice');
+    assert.ok(talk.idle?.length > 0, 'over his idle chain, not the still');
+  } finally { s.close(); rmSync(dir, {recursive:true, force:true}); }
+});

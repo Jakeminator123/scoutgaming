@@ -221,14 +221,32 @@ const VOICE_WAIT_MS = 12000;
 // over the chain of his idle takes, shared-table.mjs withIdle): the voice joins the table's talk track and the worker
 // syncs his mouth to those very frames (rorlig-lipsync.mjs). Recorded lines pushed back by it are re-sent.
 const canTalkMoving = dealer => Boolean(rorlig && rorligOn() && rorlig.ready(dealer) && hasVoice(dealer) && draggeVoiceReady(dealer));
-async function speakOnTalkTrack(room, dealer, text, language) {
-  const pcm = await draggeVoice(text, language, { dealer });
-  const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000 });
+function sendTalk(room, dealer, { talk: spoken, moved, steg, ready }, pcm = null) {
   rorlig.activity(dealer);
   const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [], idle: t.idle ?? [] });
-  rorlig.speak(dealer, room, spoken, karta(spoken), { pcm });
+  rorlig.speak(dealer, room, spoken, karta(spoken), pcm ? { pcm } : {});
   for (const t of moved) rorlig.speak(dealer, room, t, karta(t));   // recorded lines that now come after it
   return spoken;
+}
+async function speakOnTalkTrack(room, dealer, text, language) {
+  const pcm = await draggeVoice(text, language, { dealer });
+  return sendTalk(room, dealer, shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000 }), pcm);
+}
+// Kevin 23 Oct: the dealer's own chatter ("Take your time. The cards aren't going anywhere.", chatter2 on the player's turn;
+// chatter1 after a quiet betting window) is said over his idle or wait chain on the moving clips, not on his still: his
+// recorded line on the talk track, the worker fetching its voice. Only when his worker is warm; else the viewer plays the
+// recorded clip as before. One per table at a time: a second viewer's chatter within 8 s is the same line, not another.
+const REMARK_TALK = /^chatter[12]_[1-3]$/, lastRemark = new Map();
+function speakRemark(room, id) {
+  if (typeof id !== 'string' || !REMARK_TALK.test(id)) return false;
+  const dealer = dealerOf(room);
+  if (!(rorlig && rorligOn() && rorlig.ready(dealer))) return false;
+  if (Date.now() - (lastRemark.get(room) ?? 0) < 8000) return true;
+  const clip = { id, url: `/media/repliker/${id}.mp4` }, line = rorlig.line(dealer, clip.url, shared.language(room));
+  if (!line) return false;
+  lastRemark.set(room, Date.now());
+  sendTalk(room, dealer, shared.addTalk(room, { kind: 'line', event: id.replace(/_\d+$/, ''), clip, line: line.url, lang: line.lang, dur: line.dur }));
+  return true;
 }
 
 async function talkReply(ws, text, dealer) {
@@ -713,6 +731,9 @@ room.on("connection", (ws) => {
       if (clean) { ws.name = clean; send(ws,{t:"named",name:clean}); }
     } else if (j.t === "warm") {
       if (hasVoice(j.dealer)) draggeWarm(j.dealer);   // a Dragge or Paow viewer arrived: take the GPU warm-up now
+    } else if (j.t === "remark") {
+      let talk = false; try { talk = speakRemark(ws.session, j.id); } catch (e) { console.log(`läppsynk rörlig: småpratet tar den vanliga vägen (${e.message})`); }
+      send(ws, { t: 'remark', id: String(j.id ?? '').slice(0, 40), talk });
     } else if (j.t === "roundResult") {
       roundResultReply(ws, j.roundId, j.dealer).catch(() => {});
     } else if (j.t === "say") {
