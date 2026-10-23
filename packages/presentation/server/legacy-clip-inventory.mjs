@@ -38,13 +38,16 @@ function stagedParts(take) {
   return []; // An action direction alone never proves an exact destination.
 }
 
+// Legacy review overlays live next to the fixture's player data. Without an
+// explicit directory the read fails; no repository-relative default exists.
+const legacyDataDirectory = directory => { if (typeof directory !== 'string' || !directory) throw new StudioStorageError('studio_legacy_data_directory_required'); return directory; };
 async function loadLegacyClipInventory({ repository = repositoryRoot, publicRoot = join(repository, 'web/public'), dataDirectory = defaultDataDirectory(repository), administration, mediaAvailable, readMetadata = readLocalJson } = {}) {
   const readJson = path => readOptionalJson(readMetadata, path);
   const clips = [];
   const native = typeof mediaAvailable === 'function';
   const available = file => native ? mediaAvailable(file) : safeFile(publicRoot,file);
   const bo = administration !== undefined ? (typeof administration === 'function' ? await administration() : administration)
-    : native ? null : await readJson(join(dataDirectory, 'bo.json')) ?? {};
+    : native ? null : await readJson(join(legacyDataDirectory(dataDirectory), 'bo.json')) ?? {};
   if (!bo || typeof bo !== 'object' || Array.isArray(bo)) throw new StudioStorageError('studio_invalid_game_policy');
   // Native callers must supply an explicitly verified migration/read decision
   // for legacy review restrictions. Missing receipt is never an empty overlay.

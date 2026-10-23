@@ -78,8 +78,9 @@ test('Studio permission denial explains the admin boundary without echoing serve
 
 test('dealer workspace returns preserve only bounded view, category and shared context after login', () => {
   const value='/admin/dealer-studio?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
-  assert.equal(studioLoginReturnTo(value),value);
-  assert.equal(studioLoginReturnTo(value.replace('/admin/dealer-studio','/control/clips')),value);
+  const canonical=value.replace('/admin/dealer-studio','/admin/clips').replace('&view=clips','');
+  assert.equal(studioLoginReturnTo(value),canonical);
+  assert.equal(studioLoginReturnTo(value.replace('/admin/dealer-studio','/control/clips')),canonical);
   for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/admin');
 });
 

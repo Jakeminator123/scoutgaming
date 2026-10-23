@@ -1,9 +1,11 @@
-import {approvedGameQuery} from '../../packages/navigation/game-entry.mjs';
+import {approvedGameQuery, GAME_START_PATH} from '../../packages/navigation/game-entry.mjs';
 import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 
 // Document returns only: never an API, login loop, external URL or bearer token.
+// The retired game addresses stay accepted because the engine still names them
+// when it starts a handoff; they redirect to /game once the player returns.
 export function playerHandoffPath(value,{origin='https://player.invalid'}={}) {
-  if(typeof value!=='string' || value.length>2048 || !value.startsWith('/') || value.startsWith('//') || /[\\#\x00-\x20]/.test(value)) return null;
+  if(typeof value!=='string' || value.length>2048 || !value.startsWith('/') || value.startsWith('//') || /[\#\x00-\x20]/.test(value)) return null;
   const url=new URL(value,origin);
   if(url.origin!==new URL(origin).origin || value.split('?')[0]!==url.pathname) return null;
   if(['/play/profil','/play/historik'].includes(url.pathname)) return url.search ? null : url.pathname;
@@ -11,7 +13,7 @@ export function playerHandoffPath(value,{origin='https://player.invalid'}={}) {
     if(!url.search) return url.pathname;
     return url.searchParams.size===1 && url.searchParams.has('operator') && isOperatorSlug(url.searchParams.get('operator')) ? url.pathname+url.search : null;
   }
-  if(!['/blackjack','/play/blackjack','/roulette','/play/roulette'].includes(url.pathname)) return null;
+  if(![GAME_START_PATH,'/blackjack','/play/blackjack','/roulette','/play/roulette'].includes(url.pathname)) return null;
   const query=approvedGameQuery(url.searchParams,{origin:url.origin,includeLaunch:false}).toString();
   return url.pathname+(query?'?'+query:'');
 }

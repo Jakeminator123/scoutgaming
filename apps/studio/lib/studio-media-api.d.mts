@@ -1,4 +1,4 @@
-import type { NativeStudioSession } from './studio-native-auth.mjs';
+import type { NativeStudioSession } from '../../../packages/studio-access/studio-native-auth.mjs';
 import type { NativeStudioConfiguration } from './studio-native-runtime.mjs';
 import type { VideoRegistry } from '../../../packages/studio-registry/server/registry-core.mjs';
 import type { StudioUploads } from './studio-upload-service.mjs';

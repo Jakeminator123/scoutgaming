@@ -22,3 +22,11 @@
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }.actions :global(.sg-btn), .form :global(.sg-btn), .stack :global(.sg-btn) { width: fit-content; }
 .feedback { padding: 14px 18px; border: 1px solid var(--sg-border); border-radius: 10px; }.roles { border-top: 1px solid var(--sg-border); padding-top: 16px; }.roles > div { margin: 14px 0; overflow-wrap: anywhere; }.empty { color: var(--sg-muted); line-height: 1.6; }.empty h2 { color: var(--sg-text); }.company:focus-visible, .create summary:focus-visible, .roles summary:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
 @media (max-width: 850px) { .workspace { grid-template-columns: 1fr; }.sidebar { position: static; }.companyList { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }.card, .empty { padding: 18px; } }
+
+.journal{min-width:0;border-top:1px solid var(--sg-border);padding-top:20px}
+.journal :global(.panel-h){display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.journal h2{margin:0 auto 0 0;font-size:16px}.journal :global(.note){color:var(--sg-muted);font-size:13px}
+.journal :global(.btn){min-height:38px;padding:8px 12px;border:1px solid var(--sg-border);border-radius:7px;color:var(--sg-text);background:var(--sg-surface);cursor:pointer}
+.journal :global(.btn):disabled{opacity:.5;cursor:default}.journal :global(.btn):focus-visible{outline:2px solid var(--sg-mark);outline-offset:3px}
+.journal :global(.scroll-x){overflow-x:auto}.journal table{width:100%;border-collapse:collapse;font-size:13px}
+.journal :is(th,td){padding:12px 10px;text-align:left;border-bottom:1px solid var(--sg-border);overflow-wrap:anywhere}

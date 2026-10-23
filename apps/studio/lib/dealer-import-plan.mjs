@@ -1,18 +1,24 @@
 // Import preparation only: no registry, network, upload, publication or deletion writes.
 import { createHash } from 'node:crypto';
-import source from './dealer-import-kevin-source.json' with { type: 'json' };
 import { dealerImportCatalog, filenameDealerImportRows, finishDealerImportRows, validateDealerImportInput } from './dealer-import-catalog.mjs';
+import { DEFAULT_FROZEN_IMPORT_SOURCE_ALIAS, FROZEN_IMPORT_SOURCE_ALIASES, frozenImportPlacement, frozenImportRuntime, frozenImportSource } from './dealer-import-sources.mjs';
 import { validateVideoMetadata } from '../../../packages/presentation/contracts/video-intake.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../../packages/presentation/contracts/dealer-compositing.mjs';
 import { recordedSpeechForVideo } from '../../../packages/presentation/contracts/recorded-speech.mjs';
-import { DRAGAN_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { cloneStudioJson } from '../../../packages/studio-registry/server/storage-contract.mjs';
 
 export const DEALER_IMPORT_PLAN_VERSION = 1;
+export { FROZEN_IMPORT_SOURCE_ALIASES };
 const hash = value => createHash('sha256').update(value).digest('hex');
+// A whole plan or inventory export is far larger than a saved document; it
+// gets the same canonical form with wider limits, never the document cap.
+const largeHash = value => hash(JSON.stringify(cloneStudioJson(value, { maxNodes: 2_000_000, maxBytes: 256 * 1024 * 1024, maxDepth: 24 })));
 const sha256 = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const fail = code => { throw Object.assign(Error(code), { code }); };
-export function frozenKevinImportSource() { return structuredClone(source); }
+// The Dragan source stays the default for existing callers; every other
+// source is chosen by its explicit alias (the Kevin dealer id).
+export function frozenKevinImportSource(alias = DEFAULT_FROZEN_IMPORT_SOURCE_ALIAS) { return frozenImportSource(alias); }
 
 // File SHA-256 is never inferred from a Git object ID. This accepts bytes supplied
 // locally by the caller; the CLI neither downloads nor rewrites their source.
@@ -21,59 +27,12 @@ export function verifyImportSourceBytes(entry, bytes) {
     || !/^[a-f0-9]{40}$/.test(entry?.gitBlobSha ?? '')) fail('import_source_bytes_mismatch');
   const gitBlobSha = createHash('sha1').update(Buffer.from('blob ' + bytes.length + '\0')).update(bytes).digest('hex');
   if (gitBlobSha !== entry.gitBlobSha) fail('import_source_bytes_mismatch');
-  return { gitBlobSha, size: bytes.length, sha256: hash(bytes) };
+  const digest = hash(bytes);
+  // A source that declares its SHA-256 must agree with the bytes it froze.
+  if (sha256(entry.sha256) && entry.sha256 !== digest) fail('import_source_bytes_mismatch');
+  return { gitBlobSha, size: bytes.length, sha256: digest };
 }
-
-const manifestLines = ['goodluck_1', 'sidebet_2', 'insurance_1', 'double_1', 'bust_1', 'blackjack_1',
-  'dealerblackjack_1', 'dealerbust_1', 'win_1', 'push_1', 'lose_1'];
-const playedLines = new Set([...manifestLines, ...['bust', 'blackjack', 'twentyone'].flatMap(e => Array.from({ length: 7 }, (_, n) => e + '_' + (n + 1))),
-  'win_2', 'win_3', ...['placebets', 'chatter1', 'chatter2'].flatMap(e => [1, 2, 3].map(n => e + '_' + n)),
-  'banter_1', 'remark_hit17_1', 'remark_hit17_2', 'remark_hit20_1', 'remark_stand11_1', 'table_cash_1', 'table_trust_1',
-  ...['axel', 'emil', 'fredrik', 'guest', 'ian', 'jakob', 'john', 'kevin'].map(n => 'greet_' + n)]);
-const warmedLines = new Set(['goodluck_2', 'goodluck_3']);
 const videoType = path => path.endsWith('.mp4') ? 'video/mp4' : path.endsWith('.png') ? 'image/png' : path.endsWith('.jpg') ? 'image/jpeg' : 'application/json';
-
-function placementFor(entry, catalog, dealerId) {
-  const relative = entry.path.startsWith(source.sourceRoot) ? entry.path.slice(source.sourceRoot.length) : entry.path;
-  const base = { category: 'unreferenced', runtimeUses: [], slotId: null, selection: 'unassigned', audioPolicy: 'preserve-source',
-    pose: null, speech: null, calibration: null };
-  const match = /^v2\/(pos([1-7]|dealer)|hole|flip)(?:-(i|u|iu|v|iv))?\.mp4$/.exec(relative);
-  if (match) {
-    const target = match[2] ?? match[1], version = match[3] ?? '';
-    const slotId = /^[1-7]$/.test(target)
-      ? 'deal.player.' + (Number(target) <= 2 ? 'left' : Number(target) <= 5 ? 'centre' : 'right') + '/box' + (Number(target) - 1)
-      : target === 'dealer' ? 'deal.dealer/dealer-up' : target === 'hole' ? 'deal.dealer/dealer-hole' : 'reveal.dealer/dealer-hole';
-    const pose = { entry: target === 'flip' || version.includes('i') ? 'VILA' : 'REDO',
-      exit: ['hole', 'flip'].includes(target) || /[uv]/.test(version) ? 'VILA' : 'REDO', version: version || 'base' };
-    // Normal server plans replace u/iu with v/iv for numbered/dealer draws.
-    // All four original variants are still referenced by client preloading/fallback.
-    const normal = ['hole', 'flip'].includes(target) ? !/[uv]/.test(version) && (target !== 'flip' || !version) : !version.includes('u');
-    return { ...base, category: 'pose-version', slotId, selection: 'required-pose-version', pose, audioPolicy: 'game-action',
-      runtimeUses: normal ? ['playback', ...(/v/.test(version) ? [] : ['preload'])] : ['preload', 'fallback'],
-      calibration: { sourceRef: source.ref, metadataPath: source.sourceRoot + 'v2/meta.json',
-        frameCount: source.poseMetadata.frames[target]?.['-' + version] ?? null, fps: 24,
-        runtimeProfile: DRAGAN_KEVIN_PROFILE.id } };
-  }
-  if (relative === 'v2/vila.png') return { ...base, category: 'pose-reference', slotId: 'pose/vila',
-    selection: 'base-pose', pose: { entry: 'VILA', exit: 'VILA', version: 'vila' }, runtimeUses: ['playback', 'external-worker'] };
-  if (relative.endsWith('/faces/dragge.jpg')) return { ...base, category: 'portrait', runtimeUses: ['dealer-picker'] };
-  if (/^idle-v2\/(breath|glance|smile)\.mp4$/.test(relative)) return { ...base, category: 'idle', slotId: 'idle.ready/',
-    selection: 'optional-variation', pose: { entry: 'VILA', exit: 'VILA', version: 'idle-v2' }, audioPolicy: 'silent',
-    runtimeUses: ['playback'] };
-  const speech = /^repliker\/(sv|en)\/([a-z0-9_]+)\.mp4$/.exec(relative);
-  if (speech) {
-    const [, language, takeId] = speech, lineId = takeId.replace(/_\d+$/, '');
-    const eventId = ['goodluck', 'insurance', 'double'].includes(lineId) ? 'speak.' + lineId : 'speak.other';
-    const slotId = eventId + '/' + lineId;
-    return { ...base, category: 'recorded-speech', slotId: catalog.slots.some(s => s.id === slotId) ? slotId : null,
-      proposedSlotId: slotId, selection: 'recorded-take', audioPolicy: 'preserve-recorded-audio',
-      speech: { language, lineId, takeId, exactText: source.texts[language]?.[takeId] ?? null, videoSha256: null, audioSha256: null, indexSha256: null },
-      runtimeUses: playedLines.has(takeId) ? ['playback', ...(manifestLines.includes(takeId) ? ['manifest', 'preload'] : [])]
-        : warmedLines.has(takeId) ? ['worker-preload'] : [] };
-  }
-  if (relative === 'v2/meta.json' || /^repliker\/(sv|en)\/texter\.json$/.test(relative)) return { ...base, category: 'source-metadata', runtimeUses: ['server-metadata'] };
-  return base;
-}
 
 // Used by the normal assistant's contract, never an alternative filename parser.
 // Explicit aliases belong to the frozen source; arbitrary uploaded names get no
@@ -143,7 +102,8 @@ function targetInventoryCoverage(inventory) {
 export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, inventory, verifiedFiles = {} } = {}) {
   const catalog = dealerImportCatalog(project);
   if (!catalog.dealers.some(d => d.id === dealerId)) fail('import_registered_dealer_required');
-  if (sourceAlias !== source.sourceDealerId) fail('import_explicit_source_alias_required');
+  if (!FROZEN_IMPORT_SOURCE_ALIASES.includes(sourceAlias)) fail('import_explicit_source_alias_required');
+  const source = frozenImportSource(sourceAlias), runtime = frozenImportRuntime(source);
   if (dealerId !== source.targetDealerId) fail('import_source_dealer_mismatch');
   const targetCoverage = targetInventoryCoverage(inventory);
   const inventoryBlocker = targetCoverage === 'supplied-inventory' ? null : 'target-inventory-' + targetCoverage;
@@ -151,24 +111,28 @@ export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, in
   for (const [path, proof] of Object.entries(verifiedFiles)) {
     const entry = files.find(f => f.path === path);
     if (!entry || !sha256(proof?.sha256) || proof.gitBlobSha !== entry.gitBlobSha || proof.size !== entry.size) fail('import_invalid_content_proof');
+    if (sha256(entry.sha256) && proof.sha256 !== entry.sha256) fail('import_source_bytes_mismatch');
   }
   const rows = files.map(entry => {
-    const placement = placementFor(entry, catalog, dealerId);
+    const placement = frozenImportPlacement(source, entry, catalog);
     const contentSha256 = verifiedFiles[entry.path]?.sha256 ?? null;
     if (placement.speech) placement.speech.videoSha256 = contentSha256;
     const classification = metadataFor(placement, entry, catalog, dealerId);
+    const { k05, clipList, sha256: declaredSha256, ...identity } = entry;
     const row = { key: hash(canonicalStudioJson({ version: 1, repository: source.repository, ref: source.ref, path: entry.path, dealerId })),
-      provenance: { repository: source.repository, ref: source.ref, ...entry }, sha256: contentSha256,
+      provenance: { repository: source.repository, ref: source.ref, ...identity, ...(sha256(declaredSha256) ? { declaredSha256 } : {}) },
+      sha256: contentSha256,
       sourceByteAliases: files.filter(file => file.path !== entry.path && file.gitBlobSha === entry.gitBlobSha).map(file => file.path),
-      placement, classification, decision: 'review', mediaId: null, candidateMediaIds: [], reasons: [], applyAllowed: false };
-    if (!placement.runtimeUses.length) { row.decision = 'excluded'; row.reasons.push('not-referenced-by-frozen-runtime'); return row; }
+      placement, classification, ...(k05 ? { k05 } : {}), ...(clipList ? { kevinClipList: clipList } : {}),
+      decision: 'review', mediaId: null, candidateMediaIds: [], reasons: [], applyAllowed: false };
+    if (!placement.runtimeUses.length) { row.decision = 'excluded'; row.reasons.push(placement.exclusion ?? 'not-referenced-by-frozen-runtime'); return row; }
     if (['source-metadata', 'portrait', 'pose-reference'].includes(placement.category)) {
       row.decision = 'reference-only'; row.reasons.push('not-supported-by-video-import'); return row;
     }
     if (!placement.slotId || !classification) row.reasons.push('manual-placement-required');
     if (!contentSha256) row.reasons.push('source-sha256-not-verified');
     if (inventoryBlocker) row.reasons.push(inventoryBlocker);
-    const profileClip = DRAGAN_KEVIN_PROFILE.takes.find(c => c.repositoryPath === entry.path && c.sha256 === contentSha256);
+    const profileClip = runtime.profile?.takes.find(c => c.repositoryPath === entry.path && c.sha256 === contentSha256) ?? null;
     if (placement.category === 'pose-version' && !profileClip) row.reasons.push('pose-calibration-not-bound-to-verified-bytes');
     if (placement.speech) row.reasons.push('recorded-audio-index-calibration-required');
     const sameBytes = contentSha256 ? videos.filter(v => v.sha256 === contentSha256) : [];
@@ -191,15 +155,34 @@ export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, in
     else if (!row.reasons.length) row.decision = 'import';
     return row;
   });
+  const language = source.languages[0], speechRows = rows.filter(row => row.placement.speech?.language === language);
   const plan = { schemaVersion: DEALER_IMPORT_PLAN_VERSION, mode: 'plan', dealerId,
-    source: { id: source.id, repository: source.repository, ref: source.ref, branch: source.branch, sourceAlias, languages: [...source.languages] },
+    source: { id: source.id, repository: source.repository, ref: source.ref, branch: source.branch, sourceAlias, languages: [...source.languages],
+      ...(source.additionalLanguages ? { additionalLanguages: [...source.additionalLanguages] } : {}), ...(source.k05 ? { k05: structuredClone(source.k05) } : {}),
+      filmedProfile: runtime.profile?.id ?? null },
     targetCoverage,
     targetProjectSha256: hash(canonicalStudioJson(project)),
-    targetInventorySha256: inventory === undefined ? null : hash(canonicalStudioJson(inventory)),
-    counts: { catalogSpeechPerLanguage: 81, manifestSpeechIds: 11, playbackOrFallbackSpeechIds: playedLines.size,
-      additionalWorkerPreloadSpeechIds: 2, posePaths: 56 },
+    targetInventorySha256: inventory === undefined ? null : largeHash(inventory),
+    counts: { catalogSpeechPerLanguage: speechRows.length,
+      manifestSpeechIds: speechRows.filter(row => row.placement.runtimeUses.includes('manifest')).length,
+      playbackOrFallbackSpeechIds: speechRows.filter(row => row.placement.runtimeUses.some(use => ['playback', 'fallback'].includes(use))).length,
+      additionalWorkerPreloadSpeechIds: speechRows.filter(row => row.placement.runtimeUses.includes('worker-preload')).length,
+      posePaths: rows.filter(row => row.placement.category === 'pose-version').length },
     dynamicSpeech: { textSource: 'openclaw', separateFromRecordedSpeech: true, bank: 'external-unverified',
-      sourceAvatar: 'dragan_vila2x', applyAllowed: false },
+      sourceAvatar: runtime.lipsyncAvatar, applyAllowed: false },
     applyAllowed: false, blockers: ['plan-only-no-apply', 'publication-and-audiovisual-acceptance-not-implied', ...(inventoryBlocker ? [inventoryBlocker] : [])], rows };
-  return { ...plan, planId: hash(canonicalStudioJson(plan)) };
+  return { ...plan, planId: largeHash(plan) };
+}
+
+// Compact, human-readable view of a plan for the CLI; the plan itself is authoritative.
+export function summarizeDealerImportPlan(plan) {
+  const tally = (list, key) => list.reduce((acc, item) => { const k = key(item); acc[k] = (acc[k] ?? 0) + 1; return acc; }, {});
+  const rows = plan.rows;
+  return { planId: plan.planId, dealerId: plan.dealerId, source: plan.source, targetCoverage: plan.targetCoverage, blockers: plan.blockers,
+    rows: rows.length, verifiedBytes: rows.filter(row => row.sha256).length,
+    decisions: tally(rows, row => row.decision), categories: tally(rows, row => row.placement.category),
+    reasons: tally(rows.flatMap(row => row.reasons), reason => reason),
+    speechByLanguage: tally(rows.filter(row => row.placement.speech), row => `${row.placement.speech.language}:${row.decision}`),
+    slots: tally(rows.filter(row => row.placement.slotId), row => row.placement.slotId),
+    missingSlots: tally(rows.filter(row => row.placement.proposedSlotId && !row.placement.slotId), row => row.placement.proposedSlotId) };
 }

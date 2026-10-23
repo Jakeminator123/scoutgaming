@@ -1,19 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createSocialPolicy, createSocialStore } from '../lib/social-store.mjs';
+import { createSocialPolicy, createMemorySocialStore } from '../lib/social-store.mjs';
 import { createSocialService, socialEndpoint } from '../lib/social-server.mjs';
 import { speechVisitor } from '../lib/generated-speech-server.mjs';
 
 const settings = { remoteUrl: 'https://director.example.test', remoteToken: 'fixture-only-secret' };
 const noCall = () => assert.fail('No external call allowed.');
-async function fixture(t) {
-  const dir = await mkdtemp(join(tmpdir(), 'croupier-social-test-'));
-  t.after(() => rm(dir, { recursive: true, force: true }));
-  return { dir, store: createSocialStore(dir) };
-}
+// The live policy is a Neon document; tests use the in-memory adapter.
+async function fixture() { return { store: createMemorySocialStore() }; }
 const input = (patch = {}) => ({ requestId: 'request_123', conversationId: 'conversation_123', message: 'Du är otrevlig.', history: [], policyRevision: createSocialPolicy().revision, scene: { dealerId: 'astrid', eventId: 'idle.ready' }, voice: true, ...patch });
 function response(body, patch = {}) { return { requestId: body.requestId, policyRevision: body.policy.revision, reply: body.policy.response.fixedText, triggerId: 'social.ledsen', confidence: 0.95, provider: 'responded', ...patch }; }
 function fakeModel(patch = {}, observe = () => {}) { return async (url, options) => {
@@ -25,25 +19,20 @@ function fakeModel(patch = {}, observe = () => {}) { return async (url, options)
 const audio = text => ({ id: 'audio-test', audioUrl: '/api/voice/audio-test', text, cached: false });
 function request(path, method, body, headers = {}) { return new Request(`http://127.0.0.1:4188${path}`, { method, headers: { 'Content-Type': 'application/json', Origin: 'http://127.0.0.1:4188', ...headers }, ...(body ? { body: JSON.stringify(body) } : {}) }); }
 
-test('separate seed is editable and never creates or changes the main project', async t => {
-  const { store, dir } = await fixture(t);
-  await writeFile(join(dir, 'project.json'), 'user project bytes');
+test('separate seed is editable in memory with revision checks and no disk writes', async t => {
+  const { store } = await fixture(t);
   const seed = await store.load(); assert.equal(seed.trigger.label, 'Ledsen'); assert.equal(seed.response.mode, 'free');
   const next = structuredClone(seed); next.trigger.directive = 'Endast vid tydliga förolämpningar.';
   const saved = await store.save(next, seed.revision);
   assert.notEqual(saved.revision, seed.revision);
   assert.equal((await store.load()).trigger.directive, next.trigger.directive);
-  assert.equal(await readFile(join(dir, 'project.json'), 'utf8'), 'user project bytes');
-  assert.equal((await readdir(join(dir, 'social-history'))).length, 1);
   await assert.rejects(store.save(next, seed.revision), error => error.statusCode === 409);
 });
 
-test('invalid saved policy is preserved, not silently reset', async t => {
-  const { store, dir } = await fixture(t);
-  await writeFile(join(dir, 'social-policy.json'), 'broken original');
-  await assert.rejects(store.load(), error => error.statusCode === 422);
-  await assert.rejects(store.save(createSocialPolicy(), 'x'), error => error.statusCode === 422);
-  assert.equal(await readFile(join(dir, 'social-policy.json'), 'utf8'), 'broken original');
+test('an invalid policy is rejected before it replaces the current one', async t => {
+  const { store } = await fixture(t); const before = await store.load();
+  await assert.rejects(store.save({ broken: true }, before.revision), error => error.statusCode === 422);
+  assert.deepEqual(await store.load(), before);
 });
 
 test('saved fixed text is canonical before it reaches the model and voice cache', async t => {

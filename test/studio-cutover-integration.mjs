@@ -18,7 +18,7 @@ import { createStudioRepository } from '../packages/studio-registry/server/docum
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createRenderStudioPolicy } from '../services/game/storage/studio-runtime.mjs';
 import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { createStudioNativeAuth } from '../apps/studio/lib/studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../packages/studio-access/studio-native-auth.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createStudioAdminData } from '../apps/studio/lib/studio-admin-data.mjs';
 import { createStudioAdminReadouts } from '../apps/studio/lib/studio-admin-readouts.mjs';

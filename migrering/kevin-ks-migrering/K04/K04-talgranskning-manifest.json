@@ -10,7 +10,7 @@
   ],
   "kalla": {
     "commit": "5aa7ed10df63 (kevin-merge-admin)",
-    "k05Matris": "migrering/kevin-ks-migrering/K05/K05-matris.tsv (sha256 c024d9bc…)",
+    "k05Matris": "migrering/kevin-ks-migrering/K05/K05-matris.tsv (sha256 f00a8c2d…ce319)",
     "texter": {
       "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/texter.json",
       "gitBlob": "d7453d87d06731b9904f099b6b342b415876f82d",
@@ -477,8 +477,8 @@
       "registrering": {
         "neonMediaId": null,
         "blobPathname": null,
-        "k05status": "saknas i K05",
-        "k05acceptans": "saknas i K05",
+        "k05status": "ny-post-planerad",
+        "k05acceptans": "ej accepterad (saknar registerpost)",
         "recordedSpeech_i_neon": "ingen post"
       },
       "nuvarande_status": {
@@ -486,7 +486,7 @@
         "review": "saknas"
       },
       "saknas": [
-        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "K05: raden finns i K05-matrisen f00a8c2d…ce319 (tillagd 22 okt, ny-post-planerad) men inte i K04 k04-media.tsv @ 4e094fbb (k04_lika=nej)",
         "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
         "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
         "recording: verified-recording (by/at/identity) – människa",
@@ -544,8 +544,8 @@
       "registrering": {
         "neonMediaId": null,
         "blobPathname": null,
-        "k05status": "saknas i K05",
-        "k05acceptans": "saknas i K05",
+        "k05status": "ny-post-planerad",
+        "k05acceptans": "ej accepterad (saknar registerpost)",
         "recordedSpeech_i_neon": "ingen post"
       },
       "nuvarande_status": {
@@ -553,7 +553,7 @@
         "review": "saknas"
       },
       "saknas": [
-        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "K05: raden finns i K05-matrisen f00a8c2d…ce319 (tillagd 22 okt, ny-post-planerad) men inte i K04 k04-media.tsv @ 4e094fbb (k04_lika=nej)",
         "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
         "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
         "recording: verified-recording (by/at/identity) – människa",
@@ -677,8 +677,8 @@
       "registrering": {
         "neonMediaId": null,
         "blobPathname": null,
-        "k05status": "saknas i K05",
-        "k05acceptans": "saknas i K05",
+        "k05status": "ny-post-planerad",
+        "k05acceptans": "ej accepterad (saknar registerpost)",
         "recordedSpeech_i_neon": "ingen post"
       },
       "nuvarande_status": {
@@ -686,7 +686,7 @@
         "review": "saknas"
       },
       "saknas": [
-        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "K05: raden finns i K05-matrisen f00a8c2d…ce319 (tillagd 22 okt, ny-post-planerad) men inte i K04 k04-media.tsv @ 4e094fbb (k04_lika=nej)",
         "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
         "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
         "recording: verified-recording (by/at/identity) – människa",
@@ -744,8 +744,8 @@
       "registrering": {
         "neonMediaId": null,
         "blobPathname": null,
-        "k05status": "saknas i K05",
-        "k05acceptans": "saknas i K05",
+        "k05status": "ny-post-planerad",
+        "k05acceptans": "ej accepterad (saknar registerpost)",
         "recordedSpeech_i_neon": "ingen post"
       },
       "nuvarande_status": {
@@ -753,7 +753,7 @@
         "review": "saknas"
       },
       "saknas": [
-        "K05-LUCKA: raden saknas i K05-matrisen c024d9bc (bara greeting_1 finns där och i k04-media.tsv) – måste läggas till i K05 innan registrering",
+        "K05: raden finns i K05-matrisen f00a8c2d…ce319 (tillagd 22 okt, ny-post-planerad) men inte i K04 k04-media.tsv @ 4e094fbb (k04_lika=nej)",
         "media_records-post för dealerId dragan med fack speak.other/greeting (K05-mappning steg 3)",
         "recordedSpeech-tuple: audioSha256, indexSha256, entryPose/exitPose, audioDelayMs och calibrationRevision. Källan har ingen separat ljudfil och inget index (ljudet är inbäddat i mp4), och main har ingen producent för Kevins muxade mp4 (dealer-import-plan.mjs:173 recorded-audio-index-calibration-required). Producenten måste definieras i K05-registreringen (ägare att utse); Kevin attesterar",
         "recording: verified-recording (by/at/identity) – människa",

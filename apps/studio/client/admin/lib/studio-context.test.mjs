@@ -88,11 +88,14 @@ async function registeredStudioHtml(path,search='',{fetch:customFetch,...overrid
     rooms:catalog.administration.rooms.map(row=>({...row,name:row.id,state:row.state??'live',published:true,playable:true,
       dealerIds:row.game==='roulette'?['paow-v2']:['astrid'],dealers:[],dealerSource:'published'})),compositions:[],revisions:{project:'p1',administration:'a1'},...overrides}};
   const source=readFileSync(new URL('../components/studio/registered-studio.tsx',import.meta.url),'utf8');
+  const boardSource=readFileSync(new URL('../components/studio/operator-game-board.tsx',import.meta.url),'utf8');
+  const boardModule={exports:{}};
+  runInNewContext(transformSync(boardSource,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module:boardModule,exports:boardModule.exports,require:name=>name.endsWith('.css')?{default:{}}:require(name)});
   const output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),module={exports:{}},slots=[],effects=[];let cursor=0;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(value){return slots[cursor++]??={current:value};},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
-  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{}},
-    fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
+  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{},getElementById:()=>null},
+    fetch:customFetch??(async()=>Response.json(value)),require:name=>name==='./operator-game-board'?boardModule.exports:name==='./registered-studio.module.css'?{}:name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
       :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout,'data-admin-choices':String(Boolean(props.adminChoices)),'data-disabled':String(Boolean(props.disabled))},props.children)}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('admin-routing.mjs')?routing:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle
       :name.endsWith('components/control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('components/room-game-config')?{RoomGameConfig:stub('data-game-config',props=>props.roomId)}
       :name.endsWith('components/presentation-room-create')?{PresentationRoomCreate:stub('data-room-create',props=>props.presentation?.id??'')}:name.startsWith('.')?componentRequire(name):require(name)});
@@ -101,6 +104,7 @@ async function registeredStudioHtml(path,search='',{fetch:customFetch,...overrid
   if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get hash(){return currentHash;},get confirms(){return confirms;},get notifications(){return notifications;}};
   return renderToStaticMarkup(render());
 }
+const gameBoard=tree=>walk(tree,node=>Array.isArray(node.props?.rooms)&&typeof node.props?.onSelect==='function'&&typeof node.props?.onAdd==='function')[0];
 const hrefs=html=>[...html.matchAll(/href="([^"]+)"/g)].map(match=>match[1].replaceAll('&amp;','&'));
 const compositions=[{id:'one',name:'Standard',dealerIds:['astrid'],defaultDealerId:'astrid'},{id:'two',name:'Kväll',dealerIds:['paow-v2'],defaultDealerId:'paow-v2'}];
 const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
@@ -116,12 +120,17 @@ test('registered room view embeds the exact scoped Admin editor with publication
   assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);assert.match(html,/data-admin-choices="true"/);
   assert.doesNotMatch(html,/data-game-config=/,'roulette rooms have no blackjack game settings');
   assert.match(html,/aria-label="Publicering"/);assert.match(html,/Sammansättningar som bolaget får använda/);
-  assert.match(html,/data-room-create="two"/,'a new room defaults to the selected room\'s composition');
+  assert.doesNotMatch(html,/data-room-create=/,'room creation opens only on request');
   assert.match(html,/data-lifecycle="rooms"/);assert.doesNotMatch(html,/data-lifecycle="operator"/);
   assert.doesNotMatch(html,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"/);
-  assert.match(html,/Papperskorg och återställning/);assert.match(html,/Gemensam mall och tillåtna alternativ/);
+  assert.match(html,/Återställ borttaget spel/);assert.match(html,/Gemensam mall och tillåtna alternativ/);
   const blackjack=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions});
-  assert.match(blackjack,/data-game-config="bj"/);assert.match(blackjack,/data-room-create="one"/);
+  assert.match(blackjack,/data-game-config="bj"/);
+  for(const [room,composition] of [['roulette','two'],['bj','one']]){
+    const h=await registeredStudioHtml('/admin/rooms','?operator=a&table='+room,{compositions},true);
+    gameBoard(h.render()).props.onAdd();
+    assert.equal(walk(h.render(),node=>typeof node.props?.onCreated==='function')[0].props.presentation.id,composition);
+  }
 });
 
 test('invalid explicit owner or cross-owner room never mounts another room editor',async()=>{
@@ -139,9 +148,11 @@ test('unpublished rooms lead to the existing template and publication without a 
 });
 
 test('an active company without registered rooms can still create its first room in Admin',async()=>{
-  const html=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[],compositions});
+  const h=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[],compositions},true);
+  const html=renderToStaticMarkupOf(h);
   assert.equal(hrefs(html).some(href=>href.startsWith('/admin/publication')),false);
-  assert.match(html,/Skapa rum/);assert.match(html,/data-room-create="one"/);assert.match(html,/aria-label="Publicering"/);
+  assert.match(html,/Lägg till spel/);assert.doesNotMatch(html,/data-room-create=/);assert.match(html,/aria-label="Publicering"/);
+  gameBoard(h.render()).props.onAdd();assert.match(renderToStaticMarkupOf(h),/data-room-create="one"/);
   assert.doesNotMatch(html,/data-room-editor=|data-game-config=/);
 });
 test('company team editor links to the supported Admin workspace',async()=>{
@@ -158,14 +169,14 @@ test('room navigation protects local edits and in-flight operations, then carrie
   const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette',{},true);
   const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
   const editor=tree=>walk(tree,node=>node.props?.apiBase==='/studio/api/partner')[0];
-  const rooms=tree=>walk(tree,node=>node.props?.['aria-label']==='Välj rum')[0];
+  const rooms=tree=>gameBoard(tree);
   editor(h.render()).props.onDirtyChange(true);h.render();
   let denied=false;h.listeners.get('scout:navigate')({preventDefault:()=>{denied=true;}});assert.equal(denied,true);
-  rooms(h.render()).props.onChange({target:{value:'bj'}});assert.equal(new URLSearchParams(h.search).get('table'),'roulette');
+  rooms(h.render()).props.onSelect('bj');assert.equal(new URLSearchParams(h.search).get('table'),'roulette');
   editor(h.render()).props.onBusyChange(true);h.render();const before=h.confirms;
-  assert.equal(rooms(h.render()).props.disabled,true);rooms(h.render()).props.onChange({target:{value:'bj'}});assert.equal(h.confirms,before);
+  assert.equal(rooms(h.render()).props.disabled,true);rooms(h.render()).props.onSelect('bj');assert.equal(h.confirms,before);
   editor(h.render()).props.onBusyChange(false);h.render();h.allowLeave(true);
-  rooms(h.render()).props.onChange({target:{value:'bj'}});
+  rooms(h.render()).props.onSelect('bj');
   assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'a',table:'bj',composition:'one',game:'blackjack'});
   assert.equal(editor(h.render()).props.roomId,'bj');
 });
@@ -183,10 +194,10 @@ test('a clean room selection notifies real shared history subscribers and does n
  const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette&dealer=paow-v2',{},true);
  const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
  const initialNotifications=h.notifications;
- walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:'bj'}});
+ gameBoard(h.render()).props.onSelect('bj');
  assert.equal(h.notifications,initialNotifications+1);assert.equal(h.confirms,0);
  assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'a',table:'bj',composition:'one',game:'blackjack'});
- walk(h.render(),node=>node.props?.['aria-label']==='Välj spelbolag')[0].props.onChange({target:{value:'b'}});
+ gameBoard(h.render()).props.onCompanyChange('b');
  assert.equal(h.notifications,initialNotifications+2);assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'b'});
 });
 
@@ -213,9 +224,9 @@ test('library context accepts only the explicitly selected room and its register
 test('room cards list only the active owner and preserve dirty/busy guards before exact room navigation',async()=>{
   const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=roulette',{},true);
   const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
-  const cards=()=>walk(h.render(),node=>node.type==='button'&&node.props?.['aria-label']?.startsWith('Öppna rum '));
+  const cards=()=>{const board=gameBoard(h.render()).props;return Array.from(board.rooms,room=>({props:{'aria-label':'Redigera '+room.name,'aria-pressed':board.selectedId===room.id,disabled:board.disabled,onClick:()=>board.onSelect(room.id)}}));};
   const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
-  assert.deepEqual(cards().map(node=>node.props['aria-label']),['Öppna rum bj','Öppna rum roulette']);
+  assert.deepEqual(cards().map(node=>node.props['aria-label']),['Redigera bj','Redigera roulette']);
   assert.equal(cards()[1].props['aria-pressed'],true);
   editor().props.onDirtyChange(true);h.render();cards()[0].props.onClick();
   assert.equal(new URLSearchParams(h.search).get('table'),'roulette');assert.equal(h.confirms,1);
@@ -242,12 +253,12 @@ test('selecting the active room is inert and preserves dirty guards even without
   for(const search of ['?dealer=astrid&game=blackjack','?operator=a&table=roulette']){
     const h=await registeredStudioHtml('/admin/rooms',search,{},true);
     const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
-    const cards=()=>walk(h.render(),node=>node.type==='button'&&node.props?.['aria-label']?.startsWith('Öppna rum '));
+    const cards=()=>{const board=gameBoard(h.render()).props;return Array.from(board.rooms,room=>({props:{'aria-label':'Redigera '+room.name,'aria-pressed':board.selectedId===room.id,disabled:board.disabled,onClick:()=>board.onSelect(room.id)}}));};
     const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
     const activeRoom=editor().props.roomId,initialSearch=h.search,initialNotifications=h.notifications;
     editor().props.onDirtyChange(true);h.render();h.allowLeave(true);
     cards().find(node=>node.props['aria-pressed']).props.onClick();
-    walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:activeRoom}});
+    gameBoard(h.render()).props.onSelect(activeRoom);
     assert.equal(h.confirms,0);assert.equal(h.notifications,initialNotifications);assert.equal(h.search,initialSearch);
     assert.equal(editor().props.roomId,activeRoom);
     const unload={prevented:false,returnValue:undefined,preventDefault(){this.prevented=true;}};
@@ -282,7 +293,8 @@ test('the publication card publishes the acknowledged company package with the l
   editor().props.onDirtyChange(true);h.render();
   assert.equal(submit().props.disabled,true);assert.equal(status(),'Spara rummets ändringar först');
   assert.equal(gameConfig().props.disabled,true,'one room draft at a time');assert.equal(lifecycle().props.disabled,true);
-  assert.equal(walk(h.render(),node=>node.props?.onCreated)[0].props.interactionDisabled,true,'creating a room republishes the package');
+  gameBoard(h.render()).props.onAdd();h.render();
+  assert.equal(walk(h.render(),node=>node.props?.onCreated).length,0,'a room draft requires accepted discard before creating a game');
   editor().props.onDirtyChange(false);h.render();
   gameConfig().props.onDirtyChange(true);h.render();assert.equal(editor().props.disabled,true,'a game settings draft locks the layer editor');
   gameConfig().props.onDirtyChange(false);h.render();assert.equal(editor().props.disabled,false);

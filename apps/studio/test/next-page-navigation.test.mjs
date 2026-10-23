@@ -1,3 +1,4 @@
+import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -133,7 +134,7 @@ test('actual native page guard returns every current view after public, standalo
   }
 });
 
-test('retired AI documents reach their OpenClaw tab across flags and mounts without redirecting writes', () => {
+test('retired AI documents reach their resource across flags and mounts without redirecting writes', () => {
   const platform = require('../../../packages/navigation/server/platform-routing.mjs');
   const headers = {host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   for (const basePath of ['', '/studio']) for (const unified of [false,true]) for (const nativeStudio of [false,true]) {
@@ -147,9 +148,9 @@ test('retired AI documents reach their OpenClaw tab across flags and mounts with
       for (const method of ['GET','HEAD']) {
         const request = new Request(url,{headers,method});
         const response = middleware(request), destination = new URL(response.headers.get('location'));
-        assert.equal(response.status,307);assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/openclaw');
+        assert.equal(response.status,307);assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,({agent:'/admin/dealer-agent',drift:'/admin/drift',models:'/admin/ai/models'})[target]);
         // The OpenClaw page owns its tab; a legacy tab never competes with it.
-        assert.deepEqual(destination.searchParams.getAll('tab'),[target]);
+        assert.deepEqual(destination.searchParams.getAll('tab'),target==='drift'?['speech']:[]);
         for (const [key,value] of Object.entries(context)) if (key !== 'tab') assert.equal(destination.searchParams.get(key==='lane'?'composition':key),value);
         assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.hash,'#selection');
         if(section.startsWith('/control/')) assert.equal(platform.platformRoute(new URL(url),config,request).destination,destination.href);
@@ -281,7 +282,7 @@ test('Activity bookmarks retain only unambiguous observation identities across n
         const request=new Request(url,{method,headers});
         const response=middleware(request);assert.equal(response.status,307);
         const destination=new URL(response.headers.get('location'));
-        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/rehearsal');
+        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,"/admin/rooms");
         assert.equal(destination.hash,'#observation');assert.equal(destination.searchParams.get('composition'),'portrait');
         for(const key of ['dealer','operator','table','room','game'])assert.equal(destination.searchParams.get(key),duplicate?null:query.get(key));
         for(const key of ['event','token','unknown','lane'])assert.equal(destination.searchParams.has(key),false);
@@ -297,8 +298,8 @@ test('Activity bookmarks retain only unambiguous observation identities across n
 
 test('old activity URLs retain only observation context and canonicalize the composition alias', () => {
   const destination=query=>legacyStudioDocumentHref(new Request('https://qa.invalid/control/activity?'+query));
-  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), '/admin/rehearsal?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone');
-  assert.equal(destination('dealer=vera&dealer=mei&composition=chosen&lane=stale'), '/admin/rehearsal?composition=chosen');
+  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), "/admin/rooms?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone");
+  assert.equal(destination('dealer=vera&dealer=mei&composition=chosen&lane=stale'), "/admin/rooms?composition=chosen");
 });
 
 
@@ -314,7 +315,7 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
     });
-      for(const section of [{path:'/control/clips',target:'/admin/dealer-studio'}, {path:'/control/administration',target:'/admin/media-review',tab:'media-review'}]) for(const legacy of [false,true]) {
+      for(const section of [{path:'/control/clips',target:'/admin/clips'}, {path:'/control/administration',target:'/admin/media-review',tab:'media-review'}]) for(const legacy of [false,true]) {
         const query={...(section.tab?{tab:section.tab}:{}),[legacy&&section.path==='/control/clips'?'dealerId':'dealer']:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid',view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'};
         const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+section.path+'?'+new URLSearchParams(query)),{basePath});
         assert.equal(new URL(target,'https://game.fixture.invalid').pathname,section.target);
@@ -327,7 +328,7 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
           assert.equal(destination.pathname,section.target);
           assert.equal(destination.searchParams.get('dealer'),'vera');assert.equal(destination.searchParams.get('operator'),'operator-42');assert.equal(destination.searchParams.get('table'),'room-7');assert.equal(destination.searchParams.get('composition'),'desktop-wide');
           assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.searchParams.has('token'),false);assert.equal(destination.searchParams.has('returnTo'),false);
-          assert.equal(destination.searchParams.get('view'),'settings');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');
+          assert.equal(destination.searchParams.get('view'),section.path==='/control/clips'?null:'settings');if(section.path==='/control/clips')assert.equal(destination.searchParams.get('panel'),'dealer');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');
           return true;
         });
       }
@@ -383,7 +384,7 @@ test('actual Admin middleware preserves document access with Node transport befo
     }
     return transported;
   };
-  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/rooms?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/ai/models?operator=north&dealer=dragan','/studio/admin/ai/models','/admin/clips?dealer=dragan','/studio/admin/clips','/admin/dealer-studio?dealer=dragan&view=clips&event=idle.ready&category=speech&game=roulette','/studio/admin/dealer-studio?dealer=astrid&composition=portrait&operator=north&table=room-1','/admin/dealer-agent?dealer=dragan&event=idle.ready','/studio/admin/dealer-agent?dealer=astrid&composition=portrait&operator=north&table=room-1']) {
+  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers','/admin/rooms?operator=north&room=room-1&composition=portrait&game=roulette','/studio/admin/companies?operator=north','/admin/compositions?dealer=dragan&composition=portrait&operator=north&table=room-1&game=roulette','/studio/admin/rehearsal?dealer=astrid&composition=portrait&operator=north&table=room-1&game=roulette','/admin/events?dealer=dragan','/studio/admin/events?dealer=astrid&event=idle.ready&tab=triggers&variant=take-1&operator=north&table=room-1&composition=portrait','/admin/guide?dealer=dragan','/studio/admin/videos?dealer=dragan&event=idle.ready&variant=take-2&composition=portrait','/admin/probe?dealer=dragan&event=idle.ready','/studio/admin/probe?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/replies?dealer=dragan&category=greeting','/studio/admin/replies?dealer=astrid&operator=north&table=room-1&composition=portrait','/admin/ai/models?operator=north&dealer=dragan','/studio/admin/ai/models','/admin/clips?dealer=dragan','/studio/admin/clips','/admin/clips?dealer=dragan&view=clips&event=idle.ready&category=speech&game=roulette','/studio/admin/clips?dealer=astrid&composition=portrait&operator=north&table=room-1','/admin/dealer-agent?dealer=dragan&event=idle.ready','/studio/admin/dealer-agent?dealer=astrid&composition=portrait&operator=north&table=room-1'].map(adminDocumentHref)) {
     let incoming = new Headers({host:new URL(publicOrigin).host,cookie:f.auth.admin,
       'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'});
     if(position==='before') incoming = await throughTransport(incoming);
@@ -410,7 +411,7 @@ test('actual Admin middleware preserves document access with Node transport befo
 });
 
 test('retired Control URLs use the central Admin destination with room and material context intact',()=>{
-  for(const [section,destination] of [['library','assets'],['lanes','companies'],['preview','compositions'],['zones','compositions']]){
+  for(const [section,destination] of [['library','assets'],['lanes','companies'],['preview','clips'],['zones','clips']]){
     const query='dealer=dragan&operator=north&room=one&room=two&game=roulette&lane=portrait&role=background&token=private&tab='+(section==='lanes'?'companies':'backgrounds');
     for(const basePath of ['','/studio']) {
       const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+'/control/'+section+'?'+query),{basePath});
@@ -434,17 +435,17 @@ test('actual middleware centralizes exact legacy documents without changing nati
     const request=(path,options={})=>new Request('https://game.fixture.invalid'+basePath+path,{headers,...options});
     if(unified && basePath==='/studio') {
       const response=middleware(request('/videos',{headers:{host:'studio.fixture.invalid','x-forwarded-host':'other.fixture.invalid','x-forwarded-proto':'http'}}));
-      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/admin/videos');
+      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/admin/clips');
     }
     // Unified routing historically only admits these old Studio documents under /studio.
     if(!unified || basePath==='/studio') for(const [path,target] of [
       ['activity','activity'],['administration','administration'],['events','events'],['guide','guide'],
-      ['lissabon',''],['openclaw','openclaw'],['operator-chat','operator-chat'],['probe','probe'],
-      ['tree','tree'],['videos','videos'],['zones','preview'],
+      ['lissabon',''],['openclaw','openclaw'],['operator-chat','operator-chat'],['probe','clips?panel=room'],
+      ['tree','tree'],['videos','clips'],['zones','preview'],
     ]) for(const method of ['GET','HEAD']) {
       const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
       assert.equal(response.status,307,path);
-      const admin=({tree:'events',activity:'rehearsal',zones:'compositions',administration:'drift',openclaw:'openclaw?tab=models','operator-chat':'openclaw?tab=agent',probe:'openclaw?tab=probe'}[path]??path);
+      const admin=({tree:'events',activity:'rooms',zones:'clips?panel=layers',administration:'drift',openclaw:'ai/models','operator-chat':'dealer-agent',probe:'clips?panel=room',videos:'clips'}[path]??path);
       assert.equal(response.headers.get('location'),['guide','videos','probe','events','tree','activity','zones','openclaw','operator-chat','administration'].includes(path)?'https://game.fixture.invalid/admin/'+admin+(admin.includes('?')?'&':'?')+'dealer=dragan':'https://game.fixture.invalid/control'+(target?'/'+target:''));
     }
     const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
@@ -472,14 +473,14 @@ test('retired publication and tool documents redirect with context in every nati
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target]of [['rooms','rooms'],['companies','companies'],['lanes','rooms'],['guide','guide'],['videos','videos'],['probe','openclaw?tab=probe'],['replies','replies'],['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']]){
+    for(const [section,target]of [['rooms','rooms'],['companies','companies'],['lanes','rooms'],['guide','guide'],['videos','clips'],['probe','clips?panel=room'],['replies','replies'],['events','events'],['tree','events'],['compositions','clips?panel=layers'],['rehearsal','rooms'],['preview','clips?panel=layers'],['zones','clips?panel=layers'],['clips','clips']]){
       const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
       for(const method of ['GET','HEAD']){
         const response=middleware(new Request(url,{headers,method}));
         assert.equal(response.status,307);const destination=new URL(response.headers.get('location'));
-        const [pathname,tab]=target.split('?tab=');
+        const [pathname,query]=target.split('?');
         assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/'+pathname);
-        if(tab)assert.deepEqual(destination.searchParams.getAll('tab'),[tab]);
+        for(const [key,value]of new URLSearchParams(query))assert.deepEqual(destination.searchParams.getAll(key),[value]);
         for(const [key,value]of Object.entries({operator:'north',room:'room-1',table:'room-1',dealer:'dragan',game:'roulette',composition:'portrait',event:'idle.ready',variant:'take-2',situation:'dealer-hole',category:'greeting'}))assert.equal(destination.searchParams.get(key),value);
         assert.equal(destination.searchParams.has('lane'),false);
       }
@@ -497,14 +498,14 @@ test('historical tool documents reach Admin with context before unified frontend
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target] of [['events','events'],['tree','events'],['compositions','compositions'],['rehearsal','rehearsal'],['preview','compositions'],['zones','compositions'],['clips','dealer-studio']])for(const selected of [false,true]){
+    for(const [section,target] of [['events','events'],['tree','events'],['compositions','clips?panel=layers'],['rehearsal','rooms'],['preview','clips?panel=layers'],['zones','clips?panel=layers'],['clips','clips']])for(const selected of [false,true]){
       const context={dealer:'saga',operator:'north',table:'room-1',game:'roulette',lane:'portrait',...(selected?{event:'idle.ready',variant:'take-2',situation:'box1',tab:'variants'}:{})};
       const query=new URLSearchParams({...context,token:'private',unknown:'omit'});query.append('room','one');query.append('room','two');
       const url='https://game.fixture.invalid'+basePath+'/'+section+'?'+query;
       for(const method of ['GET','HEAD']){
         const response=middleware(new Request(url,{method,headers}));assert.equal(response.status,307);
         const destination=new URL(response.headers.get('location'));
-        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/'+target);
+        assert.equal(destination.origin,config.publicOrigin);assert.equal(destination.pathname,'/admin/'+target.split('?')[0]);for(const [key,value]of new URLSearchParams(target.split('?')[1]))assert.equal(destination.searchParams.get(key),value);
         for(const [key,value]of Object.entries(context))assert.equal(destination.searchParams.get(key==='lane'?'composition':key),value);
         assert.deepEqual(destination.searchParams.getAll('room'),['one','two']);
         assert.equal(destination.searchParams.has('event'),selected);

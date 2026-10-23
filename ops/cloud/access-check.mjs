@@ -28,14 +28,17 @@ export async function verifyCloudAccess(config, { gatewayPort, labPort = LAB_POR
     'X-Croupier-Public-Origin': config.vercelIngress.publicOrigin,
     'X-Forwarded-Host': game, 'X-Forwarded-Proto': 'https',
   } : {};
+  // Without a Lab child the mounted Lab is misdirected (421) for everyone and
+  // there is no Next process to probe; the Web-owned identity route stays closed.
+  const labChild = config.labChild !== false;
   const probes = [
     ['gateway health', game, '/__cloud/health', 200],
     ['unknown host', 'cloud-access-probe.invalid', '/__cloud/health', 421],
     ['player authentication', game, '/api/table', 401],
     ['BO speech QA authentication', bo, '/api/bo/speech-qa', 403],
     ['BO host boundary', game, '/api/bo/speech-qa', config.singleOrigin ? 403 : 421],
-    ['Lab anonymous access', lab, `${config.labBasePath || ''}/api/project`, 401],
-    ['Lab forged session', lab, `${config.labBasePath || ''}/api/project`, 401, { Cookie: 'lab_session=invalid-cloud-start-probe' }],
+    ['Lab anonymous access', lab, `${config.labBasePath || ''}/api/project`, labChild ? 401 : 421],
+    ['Lab forged session', lab, `${config.labBasePath || ''}/api/project`, labChild ? 401 : 421, { Cookie: 'lab_session=invalid-cloud-start-probe' }],
     ['Lab internal route', lab, '/api/auth/lab/check', 421],
   ];
   for (const [label, host, path, expected, headers] of probes) {
@@ -44,6 +47,7 @@ export async function verifyCloudAccess(config, { gatewayPort, labPort = LAB_POR
       path, headers: { ...(!unknown ? ingressHeaders : {}), ...headers } });
     if (status !== expected) throw new Error(`Cloud access check failed: ${label}.`);
   }
+  if (!labChild) return;
   // Check the actual Lab guard, not just the gateway's cookie rejection.
   const status = await probeStatus({ port: labPort, host: lab, path: `${config.labBasePath || ''}/api/project`,
     headers: { 'X-Forwarded-Host': lab, 'X-Forwarded-Proto': 'https',

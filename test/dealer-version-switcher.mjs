@@ -16,7 +16,7 @@ afterEach(()=>{globalThis.document=oldDocument;globalThis.location=oldLocation;}
 test('every registered dealer stays on one player and the saved room',()=>{
  for(const dealer of ['astrid','elin','linnea','nora'])for(const version of ['original','v2']){
   const url=new URL(dealerVersionPath(dealer,version,'?launch=private&operator=foreign&table=foreign&performance=staged&rehearsal=1'),'https://game.invalid');
-  assert.equal(url.pathname,'/blackjack');assert.equal(url.searchParams.get('dealer'),dealer);
+  assert.equal(url.pathname,'/game');assert.equal(url.searchParams.get('game'),'blackjack');assert.equal(url.searchParams.get('dealer'),dealer);
   assert.equal(url.searchParams.get('lane'),'chosen');assert.equal(url.searchParams.get('table'),'room-north');assert.equal(url.searchParams.get('operator'),'north');
   assert.equal(url.searchParams.get('presentation'),'local');assert.equal(url.searchParams.get('rehearsal'),'1');
   assert.equal(url.searchParams.has('launch'),false);assert.equal(url.searchParams.has('performance'),false);

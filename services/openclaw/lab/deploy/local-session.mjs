@@ -1,13 +1,21 @@
 import { mkdir, realpath } from 'node:fs/promises';
-import { existsSync, readFileSync, readlinkSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { readFileSync, readlinkSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { createServer } from 'node:net';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { execFileSync } from 'node:child_process';
 
 const SESSION_DB = 'CROUPIER_LOCAL_SESSION_DB';
 const SESSION_TOKEN = 'CROUPIER_LOCAL_SESSION_TOKEN';
+
+// One guard per checkout, stored outside it. The fixture must not create data
+// directories in the repository; the location is derived, never configurable.
+export function localSessionFile(realRoot) {
+  const key = createHash('sha256').update(String(realRoot)).digest('hex').slice(0, 32);
+  return join(tmpdir(), 'croupier-local-session', key, '.local-session.sqlite');
+}
 
 function database(file, action) {
   const db = new DatabaseSync(file);
@@ -156,19 +164,8 @@ export async function acquireLocalSession({ repoRoot, productPort = null, labPor
     throw new Error('Croupier requires two distinct valid local ports.');
   }
   const root = await realpath(resolve(repoRoot));
-  // An older launcher can still own the retired guard. Inspect it without
-  // creating the old directory or writing to its database during migration.
-  for (const legacyRoot of ['lissabon', 'lab']) {
-    const legacyFile = join(root, legacyRoot, 'data', '.local-session.sqlite');
-    if (!existsSync(legacyFile)) continue;
-    const legacy = new DatabaseSync(legacyFile, { readOnly: true });
-    let state;
-    try { state = read(legacy); } finally { legacy.close(); }
-    if (state && await occupied(state)) throw conflict(state);
-  }
-  const directory = join(root, 'apps', 'studio', 'data');
-  await mkdir(directory, { recursive: true });
-  const file = join(directory, '.local-session.sqlite');
+  const file = localSessionFile(root);
+  await mkdir(dirname(file), { recursive: true, mode: 0o700 });
   const token = randomUUID();
   const identity = processIdentity(process.pid);
   const initial = { ownerPid: process.pid, childPids: [], productPort, labPort, processIdentities: identity ? { [process.pid]: identity } : {} };

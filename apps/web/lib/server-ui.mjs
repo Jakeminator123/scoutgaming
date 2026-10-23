@@ -1,42 +1,27 @@
 import {playerHandoffDestination} from '../../../packages/navigation/player-handoff.mjs';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
+import {platformConfiguration,platformBackendHeaders,gameLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
 import {decorateGameEntryHtml} from '../../../services/game/public/game-entry-contract.mjs';
-import {gameEntryEnabled, gameEntryRedirect, approvedGameQuery, playerLoginDestination} from '../../../packages/navigation/game-entry.mjs';
+import {gameEntryEnabled, approvedGameQuery, playerLoginDestination, requestedGame, rouletteDocumentPath, GAME_START_PATHS} from '../../../packages/navigation/game-entry.mjs';
 import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 
-const DOCUMENTS = new Map([
-  ['/game', 'game.html'], ['/game/', 'game.html'], ['/blackjack', 'blackjack.html'], ['/blackjack/', 'blackjack.html'],
-  ['/v2', 'game.html'], ['/v2/', 'game.html'],
-]);
-
-const HANDOFF = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
-function legacyStudioLocation(url) {
-  if (['/bo','/bo/','/bo/index.html'].includes(url.pathname)) return '/control/administration';
-  if (url.pathname === '/bo/login.html') {
-    const returnTo = url.searchParams.get('returnTo');
-    const allowed = ['/studio','/studio/administration','/control','/control/administration'];
-    return returnTo && (allowed.includes(returnTo) || HANDOFF.test(returnTo))
-      ? `/control/login?returnTo=${encodeURIComponent(returnTo)}` : '/control/login';
-  }
-  if (url.pathname === '/bo/set-password.html') {
-    const token = url.searchParams.get('t');
-    return token && /^[A-Za-z0-9_-]{32,128}$/.test(token) ? `/control/set-password?t=${encodeURIComponent(token)}` : '/control/set-password';
-  }
-  return null;
-}
+// /game is the only game document this frontend serves. /player-login is the
+// player sign-in shell that the engine, the player area and roulette return to.
+const LOGIN_PATHS = ['/player-login','/player-login/'];
 
 function safeGameLocation(location) {
   if (typeof location !== 'string' || location.length > 2048 || !location.startsWith('/') || location.startsWith('//') || location.includes('\\') || /[\r\n]/.test(location)) return null;
   return location;
 }
 
-// Every authenticated game entry uses the engine document and its saved dealer/media context.
+// Every authenticated blackjack start uses the engine document and its saved dealer/media context.
 async function proxyOperatorGame(request, url, config, fetchImpl, headers) {
   const unavailable = () => new Response(request.method === 'HEAD' ? null : 'Spelet kunde inte öppnas. Försök igen om en stund.',
     {status:503,headers:{...headers,'Content-Type':'text/plain; charset=utf-8'}});
-  const query = approvedGameQuery(url.searchParams,{origin:url.origin}).toString();
+  const approved = approvedGameQuery(url.searchParams,{origin:url.origin});
+  approved.delete('game'); // The engine's blackjack document knows room selectors, not the public game selector.
+  const query = approved.toString();
   const upstreamHeaders = platformBackendHeaders(new Headers({Accept:'text/html',
     ...(request.headers.get('cookie') ? {Cookie:request.headers.get('cookie')} : {})}),config);
   let upstream;
@@ -63,24 +48,23 @@ async function proxyOperatorGame(request, url, config, fetchImpl, headers) {
 export async function platformUiDocument(request, {env = process.env, directory = resolve(process.cwd(), 'runtime-ui'), fetchImpl = fetch} = {}) {
   const config = platformConfiguration(env);
   const url = new URL(request.url);
-  // The public address changes; the existing session/lane/media contract does not.
-  const path = config?.unifiedUi && ['/play/blackjack','/play/blackjack/'].includes(url.pathname) ? '/blackjack' : url.pathname;
-  const legacy = legacyStudioLocation(url);
+  const path = url.pathname;
   const headers = {'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer'};
-  if (legacy) {
-    if (!['GET','HEAD'].includes(request.method)) return new Response(null,{status:405,headers:{...headers,Allow:'GET, HEAD'}});
-    return new Response(null,{status:308,headers:{...headers,Location:legacy}});
-  }
   const canonical = gameEntryEnabled(env);
-  const file = canonical && ['/blackjack','/blackjack/'].includes(path) ? 'game.html'
-    : canonical && ['/player-login','/player-login/'].includes(path) ? 'blackjack.html' : DOCUMENTS.get(path);
+  const gameStart = GAME_START_PATHS.includes(path);
+  const file = gameStart ? 'game.html' : canonical && LOGIN_PATHS.includes(path) ? 'blackjack.html' : null;
   if (!config || !file) return new Response(null, {status: 404, headers});
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, {status: 405, headers: {...headers, Allow: 'GET, HEAD'}});
-  const lobby = blackjackLobbyDestination(url,config);
-  if (lobby) return new Response(null,{status:303,headers:{...headers,Location:lobby}});
-  const destination = gameEntryRedirect(url,env);
-  if (destination) return new Response(null,{status:307,headers:{...headers,Location:destination}});
-  if (canonical && ['/blackjack','/blackjack/'].includes(path)) {
+  if (gameStart) {
+    const game = requestedGame(url.searchParams);
+    if (game === null) return new Response(null, {status: 404, headers}); // An unknown game is no game.
+    const lobby = gameLobbyDestination(url,config);
+    if (lobby) return new Response(null,{status:303,headers:{...headers,Location:lobby}});
+    // A roulette room opens the engine's document address (the middleware
+    // normally answers this before the route runs).
+    if (game === 'roulette') return new Response(null,{status:307,headers:{...headers,Location:rouletteDocumentPath(url.searchParams,{origin:url.origin})}});
+  }
+  if (canonical && gameStart) {
     // The public UI uses the same live account session and saved policy as the
     // engine. No cached/default player shell is served while access is unknown.
     const upstreamHeaders = platformBackendHeaders(new Headers({Accept:'application/json',

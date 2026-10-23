@@ -1398,6 +1398,27 @@ en begränsad projektion av verklig dealer-/fackkatalog, inga ekonomi-, drift-
 eller rumsregister. Den måste skilja allmänna råd från tillgängliga Studiouppgifter.
 Utan modell används tydligt märkta filnamnsregler för mapping. Chatt rapporterar
 otillgänglig AI; den kör inte filnamnsregler eller applicerar rader som ett svar.
+
+Frysta Kevin-källor i `apps/studio/lib/dealer-import-sources.mjs` delas av
+planen och assistenten: `dragge → dragan` (`kevin` @ 31f50618, sv/en) och
+`paow → paow` (`kevin-staging` @ c7138759, 414 filer, sv/en/pt/ko; samma
+Paow-bytes som K05-frysningen 5aa7ed10). Paow-källan bär Git-blob, storlek,
+SHA-256 beräknad ur blobens bytes, K05-matrisens urval per fil (matris
+`f00a8c2d…`), Kevins klipplista 2026-10-22 (talstatus och text), `PAOW_READY`
+och de 23 H3-idletagningarna ur `dealers.js`. En uppladdad fil med exakt samma
+filnamn och storlek som en fryst fil får fack, poskedja, språk och tagning från
+källan med hög konfidens; källträffen ersätter filnamns- och AI-förslag för just
+den filen, raden bär `evidence` (källa, ref, sökväg, sha256, K05-urval, Kevins
+talstatus) och API-svaret noterar antalet igenkända filer. Saknar klippkartan
+facket (G13-repliker som `twentyone`) lämnas raden utan fack med facket namngivet;
+pt/ko, uppskjutna och ej K05-valda filer placeras som alternativ med varning.
+Dealern måste redan vara registrerad, och importen ger ingen operatörs-, bolags-
+eller rumstilldelning. Paow saknar filmprofil (kortspår och kontaktruta) i main:
+utdelningstagningarna placeras, men planen markerar dem
+`pose-calibration-not-bound-to-verified-bytes` tills K04 binder dem.
+`node tools/dealer-import-plan.mjs --plan --project <export> --dealer paow
+--source-alias paow [--source-root <lokal kopia>] --summary` är fortsatt enbart
+förhandsgranskning utan apply.
 Kartläggningens 60-sekunderstimeout ryms i routens 75-sekundersgräns. Ingen
 automatisk modellväxling eller omkörning görs vid fel eller avbruten begäran.
 
@@ -2068,9 +2089,10 @@ genererat tal bevaras; det finns ingen automatisk fallback till lokal talbank.
 
 ## Adresser och verktyg efter repo-ordning våg 2, 12 oktober 2026
 
-`/casino.html` svarar 308 till `/play` för GET och HEAD. Query följer med.
-Kasinogolvet och dess GLB-filer är borta. `/v2` är kvar som 307-omdirigering,
-inte en egen spelare. De fem granskningssidorna svarar 404. Registrerad video
+`/casino.html`, `/demo`, `/v2` och `/bo` är borttagna och svarar 404; kasinogolvet
+och dess GLB-filer är borta. Spelstarten är `/game?game=…`; `/play/blackjack`
+är 308 dit under en release och roulettrummet öppnas på spelmotorns `/play/roulette`.
+De fem granskningssidorna svarar 404. Registrerad video
 spelas på den gemensamma scenen. Studios originalmediareserv är pensionerad;
 ett hanterat klipp utan spelbar fil visar den befintliga statustexten.
 Partnerns levande vyer (översikt, spelrum, integration och skal) renderas från
@@ -2324,7 +2346,7 @@ Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
 I molnet finns personal på [/control](https://www.scoutgaming.tech/control),
 operatör på [/partner](https://www.scoutgaming.tech/partner) och spel på
-[/play/blackjack](https://www.scoutgaming.tech/play/blackjack), samma origin
+[/game](https://www.scoutgaming.tech/game) (`?game=blackjack|roulette&operator=…&table=…`), samma origin
 www.scoutgaming.tech. Apex `scoutgaming.tech` är en 308 till www.
 Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
 repo/main: `web` bygger `apps/web`, `studio` bygger `lab`.
@@ -2360,7 +2382,7 @@ Tabellen här anger fungerande tekniska ingångar under övergången.
 | --- | --- | --- |
 | Intern personal | `/admin`; äldre `/control` | Hanterar Studio, bolag, publicering och drift. Äldre länkar och sparade konfigurationer fortsätter fungera. Kräver intern behörighet. |
 | Operatörens personal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Ser endast bolag där medlemskapet är aktivt. Publicerade alternativ och rättigheter kontrolleras på servern. |
-| Spelare | `/lobby`; äldre `/play`, `/play/blackjack` och Renders `/blackjack` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
+| Spelare | `/lobby` och spelstarten `/game`; roulettrummet öppnas på spelmotorns `/play/roulette?operator=&table=`; `/play`, `/play/blackjack`, `/blackjack` och `/roulette` är 308 till `/game` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
 | Spelarresultat | `/api/history` | Egna aggregerade resultat i samma session som `/api/player`. |
 
 ### Lagring
@@ -2375,7 +2397,7 @@ grundloop, bakgrund och urvalsregler. Fältet och dess sparade ID:n behålls
 för frysta paket och länkar; användartermen är **sammansättning**. Ett
 **operatörspaket** är de publicerade sammansättningar, spel, rums-ID:n och
 varumärkesval ett bolag tilldelas. Fixturförhandsvisningen använder exempeldata. Operatörens snapshot
-kan visa ett sparat pakets revision. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser det publicerade paketet; slugen bärs genom spelarinloggningen och dealerraden följer paketet.
+kan visa ett sparat pakets revision. Renders `/blackjack?operator=` och Vercels `/game?operator=` läser det publicerade paketet; slugen bärs genom spelarinloggningen och dealerraden följer paketet.
 
 ```mermaid
 flowchart LR
@@ -2672,6 +2694,9 @@ Verifiering och kvarstående arbete dokumenteras vid leverans i
 
 
 ## Kamera och mikrofon
+
+Kamera och röst är en behållen produktfunktion (Jakobs beslut 22 oktober 2026),
+idag Astrid-märkt och styrd av `CROUPIER_ASTRID_CAMERA`; storstädningen rör den inte.
 
 Record aktiverar lokal lyssning efter den valda dealerns namn (Astrid, Vera,
 Amira, Mei, PAOW, Dragge eller en publicerad dealerpost); Play styr spelljudet.

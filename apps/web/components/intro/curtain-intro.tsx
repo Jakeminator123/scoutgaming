@@ -64,7 +64,7 @@ const SEAT = {
 const HERO_RATIO = 440 / 720
 
 // Survives client-side navigation and resets with a full page load: the intro is a loading screen,
-// so coming back from /demo should not replay it.
+// so coming back from /lobby should not replay it.
 let introPlayed = false
 
 const Retro = memo(RetroSite)

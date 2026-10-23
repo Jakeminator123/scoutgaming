@@ -2,14 +2,12 @@ import { labUrl } from './lab-url.mjs';
 import { canonicalControlHref } from '../../../packages/navigation/control-flow.mjs';
 
 export const STUDIO_DEALER_TABS = Object.freeze([
-  { id: 'idle', label: 'Grundloop', href: '/admin/dealer-studio?view=idle' },
-  { id: 'clips', label: 'Klipp', href: '/admin/dealer-studio?view=clips' },
-  { id: 'generate', label: 'Skapa material', href: '/admin/dealer-studio?view=generate' },
-  { id: 'speech', label: 'Tal & automatik', href: '/admin/dealer-studio?view=speech' },
-  { id: 'replies', label: 'Svarsbibliotek', href: '/admin/replies' },
-  { id: 'playback', label: 'Provspelning & logg', href: '/admin/rehearsal' },
-  { id: 'settings', label: 'Inställningar', href: '/admin/dealer-studio?view=settings' },
-].map(tab => Object.freeze(tab)));
+  {id:'clips',label:'Klippkarta',href:'/admin/clips'},
+  {id:'speech',label:'Röst & tal',href:'/admin/clips?panel=room'},
+  {id:'replies',label:'Svarsbibliotek',href:'/admin/replies'},
+  {id:'generate',label:'Skapa material',href:'/admin/dealer-studio?view=generate'},
+  {id:'settings',label:'Inställningar',href:'/admin/clips?panel=dealer'},
+].map(tab=>Object.freeze(tab)));
 
 const CONTEXT_PARAMETERS = Object.freeze({
   dealerId: 'dealer', eventId: 'event', variantId: 'variant', situation: 'situation', laneId: 'composition', operatorId: 'operator', tableId: 'table', game: 'game',
@@ -42,20 +40,4 @@ export function studioNavigationHref(path, context = {}) {
 
 export function studioNavigationTabs(context = {}, hrefs = {}) {
   return STUDIO_DEALER_TABS.map(tab => ({ ...tab, href: studioNavigationHref(hrefs[tab.id] ?? tab.href, context) }));
-}
-
-export function studioNavigationCrumbs({ dealerId, dealerLabel, active, crumbs = [], ...context } = {}) {
-  const selection = { ...context, dealerId };
-  const result = [{ label: 'Studio', href: studioNavigationHref('/admin/dealer-studio', selection) }];
-  if (active === 'scene') {
-    result.push({ label: 'Sammansättningar', href: studioNavigationHref('/admin/compositions', selection) });
-  } else {
-    result.push({ label: 'Dealers', href: studioNavigationHref('/admin/dealer-studio', selection) });
-    if (dealerId) result.push({ label: dealerLabel || dealerId, href: studioNavigationHref('/admin/dealer-studio?view=idle', selection) });
-    const tab = STUDIO_DEALER_TABS.find(row => row.id === active);
-    if (tab) result.push({ label: tab.label, href: studioNavigationHref(tab.href, selection) });
-  }
-  result.push(...crumbs.map(crumb => ({ label: crumb.label, ...(crumb.href ? { href: labUrl(crumb.href) } : {}) })));
-  // The final breadcrumb identifies this page; ancestors remain navigable.
-  return result.map((crumb, index) => index === result.length - 1 ? { label: crumb.label } : crumb);
 }

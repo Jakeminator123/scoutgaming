@@ -1,22 +1,42 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {decorateGameEntryHtml} from '../services/game/public/game-entry-contract.mjs';
-import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination} from '../packages/navigation/game-entry.mjs';
+import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination, requestedGame, gameStartPath, legacyGameStartRedirect, rouletteRoomSearch, rouletteDocumentPath} from '../packages/navigation/game-entry.mjs';
 import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
 const env = {CROUPIER_STUDIO_NEON_POLICY:'1'},origin = 'https://game.example.invalid';
-test('canonical game address is gated and aliases preserve only unambiguous public selectors',() => {
+test('canonical game address is /game and aliases preserve only unambiguous public selectors',() => {
   assert.equal(publicGamePath({}),'/');assert.equal(publicGamePath({CROUPIER_PUBLIC_GAME_PATH:'/game'}),'/game');
-  assert.equal(publicGamePath({...env,CROUPIER_PUBLIC_GAME_PATH:'/game'}),'/blackjack');
+  assert.equal(publicGamePath({...env,CROUPIER_PUBLIC_GAME_PATH:'/game'}),'/game');assert.equal(publicGamePath(env),'/game');
   assert.throws(() => publicGamePath({CROUPIER_PUBLIC_GAME_PATH:'/blackjack'}));
   const url = new URL('/game?dealer=linnea&presentation=local&performance=staged&motion=smooth60&rehearsal=1&table=bj-1&returnTo=https://evil.invalid&playerId=forged#secret',origin);
   assert.equal(gameEntryRedirect(url,{}),null);
-  assert.equal(gameEntryRedirect(url,env),'/blackjack?dealer=linnea&presentation=local&rehearsal=1&table=bj-1');
-  assert.equal(canonicalGameDestination(new URL('/game?dealer=astrid&dealer=elin&presentation=evil&rehearsal=true&launch=a.b.c&launch=x.y.z',origin)),'/blackjack');
-  assert.equal(gameEntryRedirect(new URL('/blackjack?dealer=elin',origin),env),null);
+  assert.equal(gameEntryRedirect(url,env),null,'the game start with context is served, not redirected');
+  assert.equal(canonicalGameDestination(url),'/game?dealer=linnea&presentation=local&rehearsal=1&table=bj-1');
+  assert.equal(canonicalGameDestination(new URL('/game?dealer=astrid&dealer=elin&presentation=evil&rehearsal=true&launch=a.b.c&launch=x.y.z',origin)),'/game');
+  assert.equal(canonicalGameDestination(new URL('/play/roulette?game=roulette&operator=alpha&table=r-1&game=roulette',origin)),'/game?table=r-1&operator=alpha','a repeated game selector is ambiguous');
+  assert.equal(canonicalGameDestination(new URL('/play/roulette?game=roulette&operator=alpha&table=r-1',origin)),'/game?game=roulette&table=r-1&operator=alpha');
+  assert.equal(gameEntryRedirect(new URL('/game',origin),env),'/lobby');
+  assert.equal(gameEntryRedirect(new URL('/game/?operator=alpha&game=roulette&table=r-1',origin),env),null);
+  assert.equal(gameEntryRedirect(new URL('/game?operator=alpha&room=r-1',origin),env),'/lobby?operator=alpha&room=r-1');
   assert.equal(gameEntryRedirect(new URL('/',origin),env),null);
-  assert.equal(gameEntryRedirect(new URL('/?dealer=elin',origin),env),'/blackjack?dealer=elin');
-  assert.equal(gameEntryRedirect(new URL('/?rehearsal=1&motion=smooth60',origin),env),'/blackjack?rehearsal=1');
+  assert.equal(gameEntryRedirect(new URL('/?dealer=elin',origin),env),'/game?dealer=elin');
+  assert.equal(gameEntryRedirect(new URL('/?rehearsal=1&motion=smooth60',origin),env),'/game?rehearsal=1');
   assert.equal(approvedGameQuery('launch=a.b.c',{includeLaunch:false}).toString(),'');
+  assert.equal(approvedGameQuery('game=poker&dealer=elin').toString(),'dealer=elin');
+});
+
+test('the game selector is strict and the one game start is built, not guessed',() => {
+  assert.equal(requestedGame(''),'blackjack');assert.equal(requestedGame('game=roulette'),'roulette');assert.equal(requestedGame(new URLSearchParams('game=blackjack&dealer=elin')),'blackjack');
+  for (const query of ['game=poker','game=','game=Roulette','game=roulette&game=roulette','game=blackjack&game=roulette','game=roulette/']) assert.equal(requestedGame(query),null,query);
+  assert.equal(gameStartPath({game:'blackjack',operator:'alpha',table:'room-1',dealer:'nora'}),'/game?game=blackjack&operator=alpha&table=room-1&dealer=nora');
+  assert.equal(gameStartPath({game:'roulette',operator:'alpha',table:'r&1'}),'/game?game=roulette&operator=alpha&table=r%261');
+  assert.equal(gameStartPath({operator:'alpha',lane:'mobile-phone'}),'/game?game=blackjack&operator=alpha&lane=mobile-phone');
+  assert.throws(() => gameStartPath({game:'poker',operator:'alpha'}));assert.throws(() => gameStartPath({game:'roulette',operator:''}));
+  assert.equal(rouletteRoomSearch('game=roulette&operator=alpha&table=r-1&dealer=astrid&lane=mobile-phone&launch=a.b.c&returnTo=https://evil.invalid'),'?operator=alpha&table=r-1&dealer=astrid');
+  assert.equal(rouletteRoomSearch('operator=alpha&operator=beta'),'');
+  // The roulette document keeps the engine's address: its client posts the page query as the room context.
+  assert.equal(rouletteDocumentPath('game=roulette&operator=alpha&table=r-1&dealer=astrid&returnTo=https://evil.invalid'),'/play/roulette?operator=alpha&table=r-1&dealer=astrid');
+  assert.equal(rouletteDocumentPath('game=roulette'),'/play/roulette');
 });
 test('observer survives only as complete valid same-cloud or loopback pair; launch remains a bounded opaque credential',() => {
   const channel = '00000000-0000-4000-8000-000000000001';
@@ -42,8 +62,8 @@ test('server marker changes player links without new browser flags and keeps off
   globalThis.document = {documentElement:{dataset:{gamePath:'/blackjack',gameLane:'saved',gamePresentation:'local',gameRegisteredDealers:JSON.stringify(['elin','astrid','linnea'].map(id=>({id,label:id})))}}};
   for (const dealer of ['elin','astrid','linnea']) assert.equal(new URL(dealerVersionPath(dealer,'original'),'https://example.test').searchParams.get('dealer'),dealer);
   for(const dealer of ['vera','mei','amira','johanna','unknown'])assert.throws(()=>dealerVersionPath(dealer,'original'));
-  assert.equal(dealerVersionPath('linnea','original','?performance=staged&motion=smooth60&labObserverOrigin=https://evil.invalid&labObserverChannel=00000000-0000-4000-8000-000000000001&launch=a.b.c'),'/blackjack?dealer=linnea&presentation=local&lane=saved');
-  assert.equal(dealerVersionPath('astrid','v2'),'/blackjack?dealer=astrid&presentation=local&lane=saved');
+  assert.equal(dealerVersionPath('linnea','original','?performance=staged&motion=smooth60&labObserverOrigin=https://evil.invalid&labObserverChannel=00000000-0000-4000-8000-000000000001&launch=a.b.c'),'/game?game=blackjack&dealer=linnea&presentation=local&lane=saved');
+  assert.equal(dealerVersionPath('astrid','v2','?game=roulette&game=poker'),'/game?game=blackjack&dealer=astrid&presentation=local&lane=saved','the switch stays in blackjack');
   globalThis.document.documentElement.dataset = {};
   assert.throws(()=>dealerVersionPath('linnea','original'));
 });
@@ -79,11 +99,15 @@ test('isolated comparison documents are visibly labelled only with server-owned 
 });
 
 
-test('all retired V2 aliases choose the one canonical entry and drop experiment flags', () => {
-  for (const path of ['/v2','/v2/','/v2/index.html']) {
-    const url=new URL(path+'?dealer=elin&rehearsal=1&performance=staged&motion=smooth60&scene=rigged-review',origin);
-    assert.equal(gameEntryRedirect(url,env),'/blackjack?dealer=elin&rehearsal=1');
-    assert.equal(gameEntryRedirect(url,{}),'/?dealer=elin&rehearsal=1');
+test('retired document addresses redirect permanently to /game by game and drop experiment flags; V2 is gone', () => {
+  for (const [path,game] of [['/play/blackjack','blackjack'],['/play/blackjack/','blackjack'],['/blackjack','blackjack'],['/blackjack/','blackjack'],['/roulette','roulette'],['/roulette/','roulette']]) {
+    const url=new URL(path+'?dealer=elin&rehearsal=1&performance=staged&motion=smooth60&scene=rigged-review&game=poker',origin);
+    assert.equal(legacyGameStartRedirect(url),'/game?game='+game+'&dealer=elin&rehearsal=1',path);
+    assert.equal(legacyGameStartRedirect(new URL(path,origin)),'/game?game='+game,path);
+  }
+  for (const path of ['/v2','/v2/','/v2/index.html','/game','/','/play','/play/profil','/play/roulette','/play/roulette/','/blackjack/extra','/casino.html','/demo']) {
+    assert.equal(legacyGameStartRedirect(new URL(path+'?dealer=elin',origin)),null,path);
+    assert.equal(gameEntryRedirect(new URL(path+'?dealer=elin',origin),env),path==='/'?'/game?dealer=elin':null,path);
   }
 });
 
@@ -118,4 +142,15 @@ test('only the selected first frame can reveal the scene and a redirect prevents
   assert.equal(target,'/blackjack?dealer=linnea');assert.equal(redirected.startup.ready('paow'),false);
   await Promise.resolve();assert.equal(continued,false);assert.equal(redirected.startup.state,'navigating');
   const closed=make();closed.startup.close();assert.equal(closed.startup.ready('paow'),false);
+});
+test('the engine names the game on every /game return and never carries a launch credential',async () => {
+  const {publicGameStart} = await import('../services/game/game-start.mjs');
+  const channel = '00000000-0000-4000-8000-000000000001';
+  assert.equal(publicGameStart('dealer=linnea&table=bj-1&launch=a.b.c&returnTo=https://evil.invalid',{origin}),'/game?game=blackjack&dealer=linnea&table=bj-1');
+  assert.equal(publicGameStart('game=roulette&operator=north&table=r-1',{origin}),'/game?game=roulette&table=r-1&operator=north');
+  assert.equal(publicGameStart('labObserverOrigin='+encodeURIComponent(origin)+'&labObserverChannel='+channel,{origin}),'/game?game=blackjack&labObserverOrigin='+encodeURIComponent(origin)+'&labObserverChannel='+channel);
+  for (const query of ['game=poker','game=','game=Roulette','game=roulette&game=roulette','game=blackjack&game=roulette']) assert.equal(publicGameStart(query,{origin}),null,query);
+  // A partner launch is blackjack only; a roulette launch is refused instead of opening another game.
+  assert.equal(publicGameStart('game=roulette&table=r-1',{origin,games:['blackjack']}),null);
+  assert.equal(publicGameStart(new URLSearchParams('game=blackjack&dealer=astrid'),{origin,games:['blackjack']}),'/game?game=blackjack&dealer=astrid');
 });
