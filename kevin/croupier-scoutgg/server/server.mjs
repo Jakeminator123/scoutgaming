@@ -233,10 +233,11 @@ async function speakOnTalkTrack(room, dealer, text, language) {
   return sendTalk(room, dealer, shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000 }), pcm);
 }
 // Kevin 23 Oct: the dealer's own chatter ("Take your time. The cards aren't going anywhere.", chatter2 on the player's turn;
-// chatter1 after a quiet betting window) is said over his idle or wait chain on the moving clips, not on his still: his
+// chatter1 after a quiet betting window) and his line as a new round opens ("Ny runda, nya kort. Insatsrutan är din.",
+// placebets_1..3) are said over his idle or wait chain on the moving clips, not on his still: his
 // recorded line on the talk track, the worker fetching its voice. Only when his worker is warm; else the viewer plays the
 // recorded clip as before. One per table at a time: a second viewer's chatter within 8 s is the same line, not another.
-const REMARK_TALK = /^chatter[12]_[1-3]$/, lastRemark = new Map();
+const REMARK_TALK = /^(chatter[12]|placebets)_[1-3]$/, lastRemark = new Map();
 function speakRemark(room, id) {
   if (typeof id !== 'string' || !REMARK_TALK.test(id)) return false;
   const dealer = dealerOf(room);

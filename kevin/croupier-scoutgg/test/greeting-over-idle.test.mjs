@@ -57,12 +57,12 @@ test('Dragan and Paow are greeted by the server only: the recorded greet_guest i
 
 test('the dealer\'s chatter ("Take your time…") goes on the talk track over his idles when his worker is warm, else the recorded clip', () => {
   const remark = server.slice(server.indexOf('const REMARK_TALK'), server.indexOf('async function talkReply'));
-  assert.match(remark, /\/\^chatter\[12\]_\[1-3\]\$\//, 'only the chatter lines');
+  assert.match(remark, /\/\^\(chatter\[12\]\|placebets\)_\[1-3\]\$\//, 'only the chatter lines and the new-round line');
   assert.match(remark, /if \(!\(rorlig && rorligOn\(\) && rorlig\.ready\(dealer\)\)\) return false;/, 'cold worker: the viewer plays the clip');
   assert.match(remark, /shared\.addTalk\(room, \{ kind: 'line', event: [^}]*clip, line: line\.url, lang: line\.lang, dur: line\.dur \}\)/);
   assert.match(server, /else if \(j\.t === "remark"\)/);
   const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-  assert.match(app, /if \(dealer\.serverGreets && \/\^chatter\[12\]_\/\.test\(id \?\? ''\) && ws\?\.readyState === 1\)/);
+  assert.match(app, /if \(dealer\.serverGreets && \/\^\(chatter\[12\]\|placebets\)_\/\.test\(id \?\? ''\) && ws\?\.readyState === 1\)/);
   assert.match(app, /case "remark":\s*if \(pendingRemarks\.delete\(j\.id\) && !j\.talk\) playRemark\(j\.id\);/);
 });
 
