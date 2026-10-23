@@ -175,3 +175,10 @@ test('restoring a group restores its autoScale flags and adjustments without cha
  const automatic=structuredClone(saved);automatic.desktop.autoScale={landing:true,cardSize:true,chips:false,adjust:{cards:{scale:1.3}}};
  assert.deepEqual(restoreGeometryGroup(saved,automatic,'desktop','cards').desktop.autoScale,automatic.desktop.autoScale);
 });
+
+test('restoring cards restores saved display depth but restoring chips leaves it untouched',()=>{
+ const saved=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002'),current=structuredClone(saved);current.mobile.cardView='raised';
+ assert.equal(restoreGeometryGroup(current,saved,'mobile','bets').mobile.cardView,'raised');
+ assert.equal(restoreGeometryGroup(current,saved,'mobile','cards').mobile.cardView,undefined);
+ saved.mobile.cardView='table';assert.equal(restoreGeometryGroup(current,saved,'mobile','cards').mobile.cardView,'table');
+});

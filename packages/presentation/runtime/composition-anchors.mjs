@@ -53,6 +53,7 @@ export function moveCompositionLayer(settings,layout,role,field,value,together=f
 export function restoreGeometryGroup(current,saved,layout,group){
   const next=structuredClone(current),dest=next[layout],source=saved[layout];
   if(group==='cards'){
+    if(source.cardView)dest.cardView=source.cardView;else delete dest.cardView;
     dest.cardWidth=source.cardWidth;dest.dealer=structuredClone(source.dealer);
     dest.seats.forEach((seat,i)=>{seat.card=structuredClone(source.seats[i].card);});
   }else{

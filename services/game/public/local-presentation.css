@@ -36,7 +36,6 @@ html[data-presentation="local"] #chat-log {
   html[data-presentation="local"] #top-right { flex: 1 1 100%; min-width: 0; }
   html[data-presentation="local"] #chat { flex: 1; min-width: 0; max-width: none; }
   html[data-presentation="local"] #chat input { min-width: 0; width: 100%; }
-  html[data-presentation="local"] #cal-btn { display: none; }
   html[data-presentation="local"] .local-presentation-mode { top: 104px; }
 }
 

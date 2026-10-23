@@ -1988,8 +1988,6 @@ for (const dealer of Object.values(DEALERS)) {
 
 buildChips();
 $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
-// calibration overlay: applies any saved tweaks, then lies dormant until `C`
-if(!studioPreview) import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});
 
 $('#pitboss')?.remove();
 $('#supervisor')?.remove();
