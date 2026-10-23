@@ -7,7 +7,7 @@ import { faceAtTime, firstFaceTime } from '/card-face-projection.js';
 import { dealer } from '/dealers.js';
 
 const $ = s => document.querySelector(s), film = $('#film'), stage = $('#stage'), edit = $('#edit');
-if (!dealer.ready) { $('#frame').textContent = 'Open this page with ?dealer=paow (or dragge, marten).'; throw Error('not a ready dealer'); }
+if (!dealer.ready) { $('#frame').textContent = 'Open this page with ?dealer=paow (or dragge, astrid2).'; throw Error('not a ready dealer'); }
 const clips = await (await fetch('/api/clips')).json();
 const manifest = { ...clips, kort_storlek: { bredd: dealer.ready.card[0], hojd: dealer.ready.card[1] } };
 const at = Object.fromEntries(clips.deal.map(d => [d.id.replace('deal_pos', '').replace('deal_', ''), [d.kort.cx, d.kort.cy]]));

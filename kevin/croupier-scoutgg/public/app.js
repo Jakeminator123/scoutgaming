@@ -19,7 +19,7 @@ import { createMediaFetch } from "./media-fetch.js";
 import { createLipTracks } from "./lip-layer.js";
 import { createVideoPreloader, initialVideoOffset } from "./video-preloader.js";
 import { createPlaybackRecovery } from "./playback-recovery.js";
-import { dealer, isAlternative, dealerClipUrl, dealerClipVariants, readyVariant, dealerLineUrl, dealerExtraLineUrl, unusedLine, chooseDealer, DEALERS, ROOMS, savedRoom, chooseRoom, tableDealer, PUBLIC_HIDDEN } from "./dealers.js";
+import { dealer, isAlternative, dealerClipUrl, dealerClipVariants, readyVariant, dealerLineUrl, dealerExtraLineUrl, unusedLine, chooseDealer, DEALERS, ROOMS, savedRoom, chooseRoom, tableDealer } from "./dealers.js";
 import { createDealerLayer } from "./dealer-layer.js";
 import { greetingFor } from "./dealer-remarks.js";
 import { faceAtTime } from "./card-face-projection.js";
@@ -159,7 +159,7 @@ async function play(item) {
     // His recorded lines play in the table's language (Swedish or English); anything else he has no take for is skipped.
     const line = item.kind === 'remark' || item.own ? item.url : dealerLineUrl(item.url, document.querySelector('#dealerLanguage')?.value);
     // Not played (no take of it): the caller shows a chat reply as plain text instead. A dealer with no recorded lines
-    // at all (Mårten) shows a game line's words as the caption for as long as the line would have run.
+    // at all shows a game line's words as the caption for as long as the line would have run.
     if (!line && (item.kind === 'answer' || item.sound)) {
       if (!dealer.lines && item.text && item.kind !== 'answer') { const ms = Math.max(2500, (Number(item.dur) || 3) * 1000); showCaption(item.text); captionUntil = Date.now() + ms; setTimeout(() => { if (Date.now() >= captionUntil) showCaption(null); }, ms + 50); }
       item.complete?.(false); setTimeout(() => { if (!running && !loading) next(); }, 0); running = false; return; }
@@ -236,7 +236,7 @@ async function play(item) {
       if (cur && cur !== v) { cur.classList.remove("on"); cur.pause(); }
       cur = v; currentItem = item; loading = false; audio.speech(Boolean(item.sound) || voiceOvers.size > 0); if (playing?.item === item) playing.started = true;
       if(item.kind==='idle'){warmIdle();prepareNextIdle(item);}
-      // A dealer with a voice is heard, not captioned over the table (Kevin 10 Oct); Mårten (no voice yet) keeps his words.
+      // A dealer with a voice is heard, not captioned over the table (Kevin 10 Oct); one without a voice keeps his words.
       playbackFeedback(); tableBoxes?.setActive(item.id); if (item.text || Date.now() >= captionUntil) showCaption(isAlternative && !dealer.lines ? item.text : null);
       gameTable?.sourceStarted(item.id);
       item.onStart?.();
@@ -632,7 +632,7 @@ syncChatIcon();
       keyHalf: dealer.ready?.card ? [Math.ceil(dealer.ready.card[0] / 2) + 4, Math.ceil(dealer.ready.card[1] / 2) + 4] : [38, 48], lips });
   }).catch(() => {});
   // A studio table keeps the dealer it was built with (its deals are timed on his takes).
-  const dealerChoices = tableDealer ? [DEALERS[tableDealer]] : Object.values(DEALERS).filter(d => !PUBLIC_HIDDEN.includes(d.id));   // Mårten only on his own studio tables
+  const dealerChoices = tableDealer ? [DEALERS[tableDealer]] : Object.values(DEALERS);
   const picker = document.querySelector("#dealerPick");
   if (picker) {
     picker.innerHTML = dealerChoices.map(d => `<option value="${d.id}">${d.label ?? d.name}</option>`).join("");

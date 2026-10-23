@@ -5,15 +5,13 @@
   // The still has no src in the HTML: a browser may paint while this file loads, and it must not paint Astrid then.
   // Same choice as dealers.js pick() and savedRoom(): ?dealer / ?room first, then the viewer's saved one. Keep V and the
   // lists in step with dealers.js.
-  var V = '?v=20261021a', KEYED = ['dragge', 'paow', 'marten', 'astrid2'], ROOMS = ['darkhall', 'mahogany', 'golden', 'azure'];
+  var V = '?v=20261021a', KEYED = ['dragge', 'paow', 'astrid2'], ROOMS = ['darkhall', 'mahogany', 'golden', 'azure'];
   var st = document.getElementById('stage'), im = st && st.querySelector('.still');
   if (!st || !im) return;
   var d = 'astrid', room = 'darkhall';
   try {
     var q = new URLSearchParams(location.search), asked = q.get('dealer'), saved = localStorage.getItem('dealer');
-    // Mårten only on a Table Studio table (?table=), like dealers.js PUBLIC_HIDDEN.
-    var keyed = q.has('table') ? KEYED : KEYED.filter(function (k) { return k !== 'marten'; });
-    d = asked === 'astrid' || keyed.indexOf(asked) >= 0 ? asked : keyed.indexOf(saved) >= 0 ? saved : 'astrid';
+    d = asked === 'astrid' || KEYED.indexOf(asked) >= 0 ? asked : KEYED.indexOf(saved) >= 0 ? saved : 'astrid';
     var r = q.get('room'); if (ROOMS.indexOf(r) < 0) r = localStorage.getItem('room'); if (ROOMS.indexOf(r) >= 0) room = r;
   } catch (e) {}
   if (d === 'astrid') { im.src = '/media/startbild.png'; im.alt = 'Astrid at the blackjack table'; return; }

@@ -32,7 +32,6 @@ test('Dragan, Paow and Astrid 2.0 have all their lines in Korean, each with what
   // each introduces himself by his own name, in Hangul
   for (const [id, name] of [['dragge', '드라간'], ['paow', '파오'], ['astrid2', '아스트리드']])
     assert.match(JSON.parse(readFileSync(pub(`/media/dealers/${id}/repliker/ko/texter.json`), 'utf8')).greeting_1, new RegExp(`저는 ${name}`));
-  assert.ok(!DEALERS.marten.lines.includes('ko'));
 });
 
 test('a studio table can be Korean, and Astrid 2.0 answers in her Korean Freja', () => {

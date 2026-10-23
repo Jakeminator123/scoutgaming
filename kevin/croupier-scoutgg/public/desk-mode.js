@@ -9,7 +9,7 @@
 // ?layout=desk|mobile forces it (a test). A classic script in the stage, before the first paint, like stage-pending.js,
 // so the page never flashes the other layout. desk.css draws it from the custom properties set here.
 (function () {
-  var html = document.documentElement, KEYED = ['dragge', 'paow', 'marten', 'astrid2'];
+  var html = document.documentElement, KEYED = ['dragge', 'paow', 'astrid2'];
   // the rooms widened for the desktop table so far (dealers.js ROOMS .wide); the others show their own plate in the
   // frame over a blurred copy of it until they get one
   var WIDE = { darkhall: '/media/dealers/rooms-wide/darkhall.jpg?v=20261016' };

@@ -17,13 +17,16 @@ const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 export const LOGO_MAX = 400000;
 
 export const STUDIO_CHOICES = Object.freeze({
-  dealer: ["astrid", "dragge", "paow", "marten", "astrid2"],
+  dealer: ["astrid", "dragge", "paow", "astrid2"],
   room: ["darkhall", "mahogany", "golden", "azure"],
   felt: ["prive", "emerald", "midnight", "burgundy", "custom"],
   lang: ["en", "es", "fr", "sv", "zh", "pt", "ko"],
   limit: Object.keys(LIMIT_PRESETS),
   logoPos: ["both", "felt", "header"],
 });
+
+// Kevin 16 Oct: Mårten is not in prod. His tables play on with Paow (he was built on her plate: same table, shoe and seats).
+export const RETIRED_DEALERS = Object.freeze({ marten: "paow" });
 
 const slugOf = name => name.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim()
   .replace(/[\s_]+/g, "-").replace(/-+/g, "-").slice(0, 32).replace(/^-|-$/g, "") || "table";
@@ -33,6 +36,7 @@ const slugOf = name => name.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g,
 export function createStudioTables(file, { reserved = () => false } = {}) {
   let tables = {};
   try { tables = JSON.parse(readFileSync(file, "utf8")); } catch {}
+  for (const t of Object.values(tables)) if (Object.hasOwn(RETIRED_DEALERS, t.dealer)) t.dealer = RETIRED_DEALERS[t.dealer];
   const persist = () => { writeFileSync(file + ".tmp", JSON.stringify(tables)); renameSync(file + ".tmp", file); };
 
   // owner: the back office account that built it (Kevin 12 Oct: an aggregator only sees its own account).

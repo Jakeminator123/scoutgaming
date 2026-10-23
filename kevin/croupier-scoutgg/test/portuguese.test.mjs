@@ -16,7 +16,7 @@ const { draggeSay } = await import('../server/dragge-voice.mjs');
 const { STUDIO_CHOICES } = await import('../server/studio-tables.mjs');
 const { LANGS } = await import('../server/cartesia.mjs');
 
-const READY = ['dragge', 'paow', 'marten', 'astrid2'];
+const READY = ['dragge', 'paow', 'astrid2'];
 const pub = p => new URL(`../public${p}`, import.meta.url);
 
 test('every ready dealer has all his lines in Portuguese, each with what he says in it, the same lines as in English', () => {
@@ -30,7 +30,7 @@ test('every ready dealer has all his lines in Portuguese, each with what he says
     assert.deepEqual(Object.keys(texts).sort(), en.map(f => f.slice(0, -4)), id);
   }
   // he introduces himself by his own name
-  for (const [id, name] of [['dragge', 'Dragan'], ['paow', 'Paow'], ['marten', 'Mårten'], ['astrid2', 'Astrid']])
+  for (const [id, name] of [['dragge', 'Dragan'], ['paow', 'Paow'], ['astrid2', 'Astrid']])
     assert.match(JSON.parse(readFileSync(pub(`/media/dealers/${id}/repliker/pt/texter.json`), 'utf8')).greeting_1, new RegExp(`Eu sou ${name}`));
 });
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createStudioTables } from '../server/studio-tables.mjs';
@@ -72,4 +72,14 @@ test('a table can open in the mobile view on a computer (Kevin 20 Oct); the desk
   assert.equal(desk.layout, 'desk'); assert.equal(odd.layout, 'desk');
   assert.equal(new URL(tables.gameUrl(desk), 'http://x').searchParams.get('layout'), null);
   assert.equal(new URL(tables.gameUrl(mobile), 'http://x').searchParams.get('layout'), 'mobile');
+});
+
+test('Mårten is not in prod (Kevin 16 Oct): no new table gets him, and his saved tables open with Paow', () => {
+  const file = path.join(mkdtempSync(path.join(tmpdir(), 'studio-')), 'tables.json');
+  const old = { ...table, dealer: 'marten', lang: 'sv', slug: 'prive-blackjack-19', created: '2026-10-10T16:38:32.179Z' };
+  writeFileSync(file, JSON.stringify({ 'prive-blackjack-19': old }));
+  const tables = createStudioTables(file);
+  assert.throws(() => tables.create({ ...table, dealer: 'marten' }), /Invalid dealer/);
+  assert.equal(tables.get('prive-blackjack-19').dealer, 'paow');
+  assert.equal(tables.gameUrl(tables.get('prive-blackjack-19')), '/?dealer=paow&room=azure&lang=sv&session=prive-blackjack-19&table=prive-blackjack-19');
 });
