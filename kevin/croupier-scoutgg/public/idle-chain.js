@@ -10,10 +10,13 @@ export const LEAD = 100;
  * null when it has not started here yet. → {talk, clip, next, shift} or null.
  */
 export function chainClipAt(talks, now, shiftOf = () => 0) {
-  for (const t of talks ?? []) {
-    if (!t.idle?.length) continue;
-    const shift = shiftOf(t);
+  for (const line of talks ?? []) {
+    if (!line.idle?.length) continue;
+    const shift = shiftOf(line);
     if (shift === null || shift === undefined) continue;
+    // lines that share one chain (shared-table.mjs withIdle: a line at rest goes on with the chain on screen) are one chain:
+    // the one laid furthest holds every clip of the others and the ones after them
+    const t = line.chain ? talks.filter(o => o.chain?.seed === line.chain.seed && o.idle?.length && shiftOf(o) === shift).reduce((a, b) => (b.idle.at(-1).endAt > a.idle.at(-1).endAt ? b : a), line) : line;
     const at = now - shift;
     let i = -1;
     for (let k = 0; k < t.idle.length; k++) if (at >= t.idle[k].startAt - LEAD) i = k;
@@ -118,6 +121,34 @@ export function waitClipAt(waits, now, talks = []) {
  * hit or stand): the calm takes only (dealers.js calm). A dealer without calm takes keeps all of his. The lively takes
  * (turns of the head, glances, nods, leaning) play only in a chain under speech, where they look natural.
  */
+/**
+ * Kevin 23 Oct: a phase's own takes dominate it (fas bets: hands clasped while the table bets; fas decide: hands flat or
+ * leaning forward while the player decides). Takes of the other phase are left out; the ones of this phase that start on
+ * VILA get `share` of the weight picked at VILA, the plain takes (no fas) keep theirs. → the pool, reweighted.
+ */
+export const PHASE_SHARE = { bets: .32, decide: .7 };
+export function phasePool(idles, fas, share = PHASE_SHARE[fas]) {
+  const w = i => (i.vikt > 0 ? i.vikt : 1), pool = (idles ?? []).filter(i => !i.fas || i.fas === fas);
+  const entry = i => i.fas === fas && (i.from ?? 'vila') === 'vila';
+  const plain = pool.filter(i => !i.fas).reduce((n, i) => n + w(i), 0), own = pool.filter(entry).reduce((n, i) => n + w(i), 0);
+  if (!plain || !own || !(share > 0 && share < 1)) return pool;
+  const k = plain * share / (1 - share) / own;
+  return pool.map(i => (entry(i) ? { ...i, vikt: Math.round(w(i) * k * 1000) / 1000 } : i));
+}
+
+/**
+ * The random idles he may play next while the table bets, from the pose the last one left him in (dealers.js from/to:
+ * VILA or the clasped hands). The clasped hands dominate (phasePool bets); a run ends on VILA before the table may need
+ * the screen (quietMs; a card cut into it would jump): none starts within 8 s of it, and within 4 s he goes back.
+ */
+export function bettingIdles(idles, pose = 'vila', quietMs = Infinity) {
+  const resting = restingPool(idles);
+  let pool = phasePool(resting, 'bets').filter(c => (c.from ?? 'vila') === pose);
+  const toVila = pool.filter(c => (c.to ?? 'vila') === 'vila');
+  if (quietMs < (pose === 'vila' ? 8000 : 4000) && toVila.length) pool = toVila;
+  return pool.length ? pool : resting.filter(c => !c.fas && !c.from && !c.to);
+}
+
 export function restingPool(idles) {
   const calm = (idles ?? []).filter(i => i.calm);
   return calm.length ? calm : (idles ?? []);

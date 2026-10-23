@@ -203,6 +203,18 @@ export class RorligLipsync {
   workers(dealer) { return this.s.get(dealer)?.workers ?? []; }
 
   /** A table with this dealer is in use: keep (or get) a warm worker. */
+  /**
+   * Whether a worker for this dealer is up or on its way: connected, or a serverless session ordered on a server no pod
+   * serves (where pods serve, a dealer whose avatar no pod carries gets none: Mårten on staging, 23 Oct).
+   */
+  coming(dealer) {
+    const s = this.s.get(dealer);
+    if (!s) return false;
+    if (s.workers.length) return true;
+    const pods = [...this.s.values()].some(x => x.workers.some(w => w.pod));
+    return !pods && Boolean(s.askedAt) && Date.now() - s.askedAt < 240_000;
+  }
+
   activity(dealer) {
     const s = this.s.get(dealer);
     if (!s) return;

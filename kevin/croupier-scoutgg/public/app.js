@@ -1,4 +1,4 @@
-import { pickWeighted, restingPool } from "./idle-chain.js";
+import { pickWeighted, restingPool, bettingIdles } from "./idle-chain.js";
 import { createVoicePool } from "./voice-pool.js";
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
@@ -51,7 +51,7 @@ const queue = [];           // { url, sound, text, kind }
 let cur = null;             // synlig video
 let running = false;        // ett klipp spelas
 let holdUntil = 0;          // ingen ny idle före denna tid (Astrid tänker)
-let lastIdle = "", idleSinceHead = Infinity;   // Kevin 23 Oct: head takes at least HEAD_GAP apart (idle-chain.js)
+let lastIdle = "", idleSinceHead = Infinity, idlePose = "vila";   // idlePose: the pose the last random idle left him in (clasped hands: knappt)   // Kevin 23 Oct: head takes at least HEAD_GAP apart (idle-chain.js)
 let currentItem = null;
 let loading = false;
 let playToken = 0;
@@ -66,7 +66,7 @@ const mediaFetch=createMediaFetch(mediaUrl,()=>{if(mediaBase)console.warn('clip 
 const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:mediaFetch});
 const videoPreloader=createVideoPreloader(videoBuffer);
 let tableMediaReady=false;
-function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const next=restingPool(manifest.idle).find(c=>!videoBuffer.has(c.url))??manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}   // the calm ones first: they are what he rests on
+function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const unclasp=manifest.idle.filter(c=>c.from==='knappt'&&c.to==='vila'),next=unclasp.find(c=>!videoBuffer.has(c.url))??restingPool(manifest.idle).find(c=>!videoBuffer.has(c.url))??manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}   // the way out of the clasped hands first (unclaspFor, before a card), then the calm ones: they are what he rests on
 
 const audio = createGameAudio({onChange: settings => {
   for(const v of [A,B]) {v.muted=!(v===cur && currentItem?.sound && unlocked && settings.enabled);v.volume=settings.voice;}
@@ -100,15 +100,32 @@ function playbackFeedback() {
     : gameTable?.preview ? "Choose a box to preview its deal." : "Shared table connected · recorded dealer voice";
 }
 
-function pickIdle() {
+function pickIdle(pose = idlePose) {
   // Kevin 21 Oct: all waiting is calm (the betting countdown, between rounds, hit or stand): the random idles come from the
   // calm takes only; the lively ones play only in a chain under speech (restingPool)
-  const pool = restingPool(manifest.idle), cached = pool.filter(c=>videoBuffer.has(c.url));
+  // Kevin 23 Oct: clasped hands while the table bets, in pose order (idle-chain.js bettingIdles)
+  const pool = bettingIdles(manifest.idle, pose, gameTable?.quietMs ?? Infinity);
+  const cached = pool.filter(c=>videoBuffer.has(c.url));
   // never the same gesture twice in a row, whatever its weight (Kevin 21 Oct; before, a heavy one could repeat)
   const c = pickWeighted(cached.length ? cached : pool.slice(0, 1), lastIdle, Math.random, x => x.id, { sinceHead: idleSinceHead });
   lastIdle = c.id; idleSinceHead = c.head ? 0 : idleSinceHead + 1; return c;
 }
 
+// Kevin 23 Oct: a plan comes while his hands are clasped (a run of the betting idles, a player pressed ready): he unclasps
+// them now (knapput, faster when the first take is near, at most 2.5x), so the first take starts on VILA instead of
+// jumping out of the pose
+function unclaspFor(plan) {
+  const onItem = playing?.item ?? currentItem, first = plan?.steps?.find(s => s.clip)?.startAt;
+  if (!(onItem?.kind === 'idle' && !onItem.chain && onItem.to === 'knappt') || !first || !gameTable) return;
+  const outs = (dealer.idles ?? []).filter(i => i.from === 'knappt' && i.to === 'vila');
+  if (!outs.length) return;
+  const out = outs[Math.floor(Math.random() * outs.length)], lead = (first - gameTable.clock - 150) / 1000;
+  const item = { ...idleItem(out), rate: Math.min(2.5, Math.max(1, out.dur / Math.max(.3, lead))) };
+  // the clasped take stays on screen until knapput replaces it (play shows the new layer before it starts): no still between
+  finishCurrent?.(true);
+  nextIdle = null; running = true; play(item);
+}
+const idleItem = c => ({ url: c.url, sound: false, kind: "idle", from: c.from ?? 'vila', to: c.to ?? 'vila' });
 // a chain clip is one of the dealer's own idles (dealers.js: Dragan's in v2/, Astrid 2.0's in idle-v2/), by its take name
 const chainItem = c => ({ url: dealer.idles?.find(i => i.id === c.take)?.url ?? dealerClipUrl(`/media/deal/${c.take}.mp4`), sound: false, kind: "idle", chain: c.talk, id: `idle_${c.take}`, startAt: c.startAt, dur: c.frames / 24, timelineTime: c.timelineTime, untilStart: c.untilStart });
 // The idle to play after the one on screen, prepared in the hidden video while this one plays (e2e 20 Oct: setting src
@@ -119,7 +136,7 @@ function prepareNextIdle(item) {
   const other = cur === A ? B : A;
   let n = null;
   if (item.chain) { const c = gameTable?.idleChain; if (c?.next && c.talk === item.chain) n = chainItem(c.next); }
-  if (!n && manifest.idle.length && !(dealer.ready && gameTable?.playing)) n = { url: pickIdle().url, sound: false, kind: "idle" };
+  if (!n && manifest.idle.length && !(dealer.ready && gameTable?.playing)) n = idleItem(pickIdle(item.chain ? 'vila' : (item.to ?? 'vila')));
   nextIdle = n ? { item: n, video: other } : null;
   if (n) videoPreloader.prepare(other, n.url).catch(() => { if (nextIdle?.item === n) nextIdle = null; });
 }
@@ -150,7 +167,7 @@ function next() {
     if (c) item = prepared?.chain === c.talk && prepared.startAt === c.startAt ? prepared : chainItem(c);
     else {
       if (!manifest.idle.length || Date.now() < holdUntil || (dealer.ready && gameTable?.playing)) { running = false; return; }   // står på stillbilden
-      item = prepared && !prepared.chain ? prepared : { url: pickIdle().url, sound: false, kind: "idle" };
+      item = prepared && !prepared.chain && (prepared.from ?? 'vila') === idlePose ? prepared : idleItem(pickIdle());
     }
   }
   running = true;
@@ -199,6 +216,9 @@ async function play(item) {
     if (frameId != null) v.cancelVideoFrameCallback?.(frameId);
     v.onended = v.oncanplay = v.onerror = v.ontimeupdate = null;
     finishCurrent = null;
+    // the pose he is left in: a random idle played to its end leaves him in its end pose, anything else (cut, a deal, a
+    // chain, a line) on VILA
+    idlePose = item.kind === 'idle' && !item.chain && (v.ended || (Number.isFinite(v.duration) && v.currentTime >= v.duration - 2 / 24)) ? (item.to ?? 'vila') : 'vila';
     if (Date.now() >= captionUntil) showCaption(null); audio.speech(false);
     item.complete?.(ok);
     // An idle handing over to its prepared successor starts it in this same task (before its own 'ended', while its last
@@ -218,6 +238,7 @@ async function play(item) {
     const early = item.untilStart?.() ?? 0;
     if (early > 8 && early < 600) { setTimeout(start, early); return; }
     started = true;
+    if (item.rate) v.playbackRate = item.rate;   // a quick unclasp before a card (unclaspFor)
     // A ready dealer's take runs a little slower so it ends with its slot: no frozen gap before the next card.
     // Card faces follow the clip's own time (onFrame), so they stay with his hand.
     if (item.fit && Number.isFinite(v.duration) && Math.abs(v.duration - item.fit) > 0.02) {
@@ -548,7 +569,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     // with the dealer's own lines (not Astrid's) so none has to download mid-round.
     prepareMedia:async(seats,onProgress,language)=>{await videoBuffer.prepare(tableVideoSources(m,seats,language).filter(url=>!unusedLine(url)).map(url=>dealerLineUrl(url,language)??url).flatMap(dealerClipVariants),onProgress);tableMediaReady=true;warmIdle();for(const c of manifest.idle)videoBuffer.load(c.url,10).catch(()=>{});},   // all his idles follow at low priority (nine short takes, Kevin 20 Oct): the whole pool to pick from, no clip fetched at its switch
     preloadNext:clip=>{if(loading||!cur||unusedLine(clip.url))return;videoPreloader.prepare(cur===A?B:A,dealerLineUrl(clip.url,$('#dealerLanguage').value)??dealerClipUrl(clip.url,clip.variant)).catch(()=>{});},
-    warmPlan:plan=>{for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
+    warmPlan:plan=>{unclaspFor(plan);for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
     playNow:item=>{yieldAnswer();if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
     // A line over the clips: its sound plays on top of the deal, no idle starts until it ends. True when this viewer hears
     // the language the mouth was synced to (else the line plays without the mouth).

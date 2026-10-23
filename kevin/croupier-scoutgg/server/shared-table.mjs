@@ -7,11 +7,11 @@ import {readOperations} from './operations.mjs';
 import {readBackofficeWorkspace} from './bo-workspace.mjs';
 import { createGameAudit } from './game-audit.mjs';
 import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
-import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
+import {dealerLanguage,availableLanguages,speechForEvent,RETIRED_LINES} from '../public/dealer-language.js';
 import {personalizedGreeting} from './dealer-responses-localized.mjs';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
 import {scheduleTalks,LJUD_FORE,idleFrom,idleChain} from './rorlig-lipsync.mjs';
-import {waitClips,waitBoundary} from '../public/idle-chain.js';
+import {waitClips,waitBoundary,phasePool} from '../public/idle-chain.js';
 
 const emptyBets = () => Array.from({length:7},()=>({main:0,pp:0,tp:0}));
 const sum = b => b.main+b.pp+b.tp;
@@ -62,20 +62,31 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // (his last take ends at rest and he talks about the result). Mid-round he waits in his pose as before (11 Oct).
   // Only the idle takes a connected lip-sync worker announced (talker.idle, rorlig-lipsync.mjs idleTakes) go into the
   // chain: with a worker that has the deals only (ko2) he rests on his still with the mouth on it, as before.
-  function withIdle(r,ready,t,steg,talker) {
-    const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take));
+  // Kevin 23 Oct (dealerblackjack, mouth still): a line at rest that starts while an earlier line's chain is on screen (the
+  // side-bet line, then the result) goes on with that chain: same start and seed, so the same clips (layChain only extends
+  // it), instead of a chain of its own from its first frame. Viewers keep showing the first chain; the mouth was mapped on
+  // the second, so not one patch landed. prior: the talks before it (the room's, and this plan's earlier lines).
+  function withIdle(r,ready,t,steg,talker,prior=r.talk??[]) {
+    // a talk's own chain: takes from VILA to VILA the worker announced (a take into or out of the clasped hands, dealers.js
+    // from/to, never joins a chain laid at rest)
+    const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take)&&!i.from&&!i.to);
     if(!takes.length)return t;
-    // Kevin 20 Oct: during a wait for a player the talk runs over the wait's own chain, the body every viewer shows anyway
+    // Kevin 20 Oct: during a wait for a player the talk runs over the wait's own chain, the body every viewer shows anyway.
+    // Kevin 23 Oct: not over a wait clip the worker has not announced (the new idles): the talk then rests on his still
     const w=(r.waits??[]).find(w=>w.from<t.endAt+600&&(!w.until||w.until>t.kartaStart));
-    if(w){const idle=waitClips(w,t.kartaStart,t.endAt+600);return idle.length?{...t,idle}:t;}
+    if(w){const idle=waitClips(w,t.kartaStart,t.endAt+600);return idle.length&&idle.every(c=>talker.idle.includes(c.take))?{...t,idle}:t;}
     if(r.phase==='round'&&r.round?.phase!=='settled')return t;
     const from=idleFrom(steg,t,{restEnd:ready.restEnd??[]});
-    const idle=from===null?[]:idleChain(takes,from,t.endAt+600,t.id);
-    return idle.length?{...t,idle}:t;
+    if(from===null)return t;
+    const on=prior.find(o=>o.id!==t.id&&o.chain&&o.idle?.length&&o.kartaStart<t.kartaStart&&o.idle[0].startAt<=from&&o.idle.at(-1).endAt>from);
+    const chain=on?on.chain:{from,seed:t.id};
+    const idle=idleChain(takes,chain.from,t.endAt+600,chain.seed);
+    return idle.length?{...t,idle,chain}:t;
   }
   function variantOf(r,clip,ready){
     const n=ready.variants[clip.event],last=r.lastVariant?.[clip.event];
-    const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>n<2||i!==last);
+    const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>!RETIRED_LINES.has(`${clip.event}_${i}`)&&(n<2||i!==last));
+    if(!pick.length)return clip;   // every variant retired: the event's active line (dealer-language.js activeLine)
     const k=pick[Math.floor(Math.random()*pick.length)];
     r.lastVariant={...(r.lastVariant??{}),[clip.event]:k};
     const id=`${clip.event}_${k}`;
@@ -148,7 +159,10 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // Emil 13 Oct: while the dealer speaks, a card asked for gives the lip-sync worker 1 s (not 0.7) to remake the mouth
     // over the new take; without speech the pace is as before
     const speaking=Boolean(talker)&&(r.talk??[]).some(t=>t.startAt<=now()&&t.endAt>now()+300);
-    const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
+    // Kevin 23 Oct: a dealer with the clasped-hands idles may be in that pose on any viewer's screen when the round starts
+    // (each viewer's betting idles are his own): the first card comes 1.4 s after ready, time to unclasp (app.js unclaspFor)
+    const unclasp=opening&&(ready?.idle??[]).some(i=>i.from==='knappt')?1400:0;
+    const steps=[];let at=Math.max(now()+Math.max(unclasp,!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
     // Kevin 20 Oct: a wait's idle chain is running: the next take starts on its next clip boundary (at most one short take
     // later), from VILA, so there is no jump in his face; the wait then ends there (until)
     const open=(r.waits??[]).find(w=>!w.until);
@@ -189,7 +203,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
     if(ready&&steps.length)at=readyTimeline(steps,ready);
-    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps],talker)):[];
+    const spoken=[];for(const t of talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}):[])spoken.push(withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps],talker,[...(r.talk??[]),...spoken]));
     if(spoken.length)r.talkUntil=spoken.at(-1).endAt+250;
     const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
     const live=(r.talk??[]).filter(t=>t.endAt>now()),omplanera=live.filter(t=>t.endAt+600>firstFrame);
@@ -208,8 +222,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const known=talker?.idle?.length?(ready?.idle??[]).filter(i=>talker.idle.includes(i.take)):(ready?.idle??[]);
     // Kevin 21 Oct: while he waits for the player only the calm takes (dealers.js calm: breathing, shoulders, back, weight,
     // fingers): too much head movement before. None calm among the announced: his plain breathing take, if he has it
-    const calm=known.filter(i=>i.calm);
-    const pool=calm.length?calm:(ready?.idle??[]).filter(i=>i.take==='andas');
+    // Kevin 23 Oct: the hands flat on the felt and the lean forward (dealers.js fas decide) dominate this wait, announced by
+    // the worker or not (a line over a wait clip the worker cannot map rests on his still, withIdle); the clasped hands
+    // (fas bets) are the betting's
+    const calm=known.filter(i=>i.calm&&!i.fas),decide=(ready?.idle??[]).filter(i=>i.fas==='decide');
+    const pool=calm.length||decide.length?phasePool([...calm,...decide],'decide'):(ready?.idle??[]).filter(i=>i.take==='andas');
     const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&pool.length);
     r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:pool.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
@@ -466,7 +483,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
         if(x.startAt>=free){later.push(x);continue;}
         if(x.kind==='line'&&x.event==='goodluck')continue;
-        const d=x.endAt-x.startAt,{idle:_,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg,talker);
+        const d=x.endAt-x.startAt,{idle:_,chain:__,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg,talker,[...speaking,talk,...later]);
         later.push(y);moved.push(y);free=y.endAt+250;
       }
       r.talk=[...speaking,talk,...later];r.talkUntil=Math.max(r.talkUntil??0,...r.talk.map(x=>x.endAt+250));

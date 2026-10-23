@@ -4,8 +4,10 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createSharedTable} from '../server/shared-table.mjs';
-import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE,idleFrom,idleChain} from '../server/rorlig-lipsync.mjs';
+import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE,idleFrom,idleChain,RorligLipsync} from '../server/rorlig-lipsync.mjs';
 import {splitAccessUnits} from '../public/lip-layer.js';
+import {DatabaseSync} from 'node:sqlite';
+import {waitClips} from '../public/idle-chain.js';
 
 // Emil 12 Oct: a ready dealer says his lines while he deals; the mouth is a patch per frame, tagged with take and frame.
 
@@ -70,7 +72,7 @@ function talkTable(opts={}){
   const st=room=>s.run('kevin',{session:room,op:'state'});
   const send=(room,op,extra={})=>s.run('kevin',{session:room,op,version:st(room).version,requestId:crypto.randomUUID(),...extra});
   const deal=room=>{send(room,'join',{name:'Kevin',seats:[3]});send(room,'bet',{seat:3,field:'main',chip:5});send(room,'ready');return st(room);};
-  return{s,box,st,send,deal,close(){s.close();rmSync(dir,{recursive:true,force:true});}};
+  return{s,box,st,send,deal,file:join(dir,'t.sqlite'),close(){s.close();rmSync(dir,{recursive:true,force:true});}};
 }
 
 test("a ready dealer who can speak over his clips gets his lines on the talk track, not as steps; without a worker they stay steps", () => {
@@ -599,4 +601,84 @@ test('while the player decides only the calm takes play (Kevin 21 Oct), among th
   const between=talkTable({idle,workerIdle:['andas','vikt6101','nick6101','huvud']});
   try{between.send('paow','join',{name:'Kevin',seats:[3]});const a=between.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:40});
     assert.ok(a.talk.idle.some(c=>c.take==='nick6101'||c.take==='huvud'),'between rounds the lively takes still play under speech');}finally{between.close();}
+});
+
+// Kevin 23 Oct (staging): on a dealer blackjack the line was heard but his mouth did not move. The side-bet line before it
+// laid a chain of idles from the flip's end, the result line one of its own (another seed) from its first frame: viewers
+// showed the first chain, the worker mapped the mouth on the second, and no patch landed. Rigged shoe: 9 K 9 A.
+test('a result line said right after another line at rest goes on with its idle chain, so the mouth lands on the clips viewers show', async () => {
+  const {chainClipAt,LEAD}=await import('../public/idle-chain.js');
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true},{take:'fingrar',frames:39,vikt:4,calm:true}];
+  const t=talkTable({idle,workerIdle:['andas','fingrar']});
+  try{
+    t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','bet',{seat:3,field:'pp',chip:5});
+    const db=new DatabaseSync(t.file),r=JSON.parse(db.prepare("SELECT state FROM shared_rooms WHERE id='paow'").get().state);
+    const card=r.game.shoe.cards.at(-1);r.game.shoe.cards.push(...['A','9','K','9'].map(rank=>({...card,r:rank})));   // drawn from the end: 9 K 9 A
+    db.prepare("UPDATE shared_rooms SET state=? WHERE id='paow'").run(JSON.stringify(r));db.close();
+    t.send('paow','ready');
+    const talks=t.box.planned.flatMap(p=>p.nya??[]),side=talks.find(x=>x.event==='sidebet'),dbj=talks.find(x=>x.event==='dealerblackjack');
+    assert.ok(side?.idle?.length&&dbj?.idle?.length,'both lines rest after the flip, each with a chain');
+    assert.deepEqual(dbj.chain,side.chain,'the result line goes on with the side-bet line\'s chain');
+    for(const c of side.idle)assert.ok(dbj.idle.some(d=>d.take===c.take&&d.startAt===c.startAt),'the same clips where they overlap');
+    const steg=t.box.planned.at(-1).steg,all=t.st('paow').talk;
+    for(let n=dbj.kartaStart;n<dbj.endAt;n+=40){
+      if(dbj.idle.some(c=>c.startAt>n&&c.startAt-n<=LEAD))continue;   // the player takes the next clip LEAD early, to load it
+      const shown=chainClipAt(all,n),k=kartaFor(steg,n,1,{restEnd:['hole','flip'],idle:dbj.idle})[0];
+      assert.equal(shown?.clip.take,k[0],`at ${n} viewers show the clip the mouth is mapped on`);
+    }
+    // the player can prepare the clip after the side-bet chain's last one: it comes from the result line's chain
+    const lastSide=side.idle.at(-1),at=chainClipAt(all,lastSide.startAt+10);
+    if(dbj.idle.some(c=>c.startAt===lastSide.endAt))assert.equal(at.next?.startAt,lastSide.endAt);
+  }finally{t.close();}
+});
+
+// Kevin 23 Oct: the new H3 v2 idles. The wait for the player lays the flat hands and the lean (fas decide) even when the
+// worker has not announced them; a line over such a wait clip is not lip-synced on it, it rests on his still. A take into
+// or out of the clasped hands (from/to) never joins a talk's chain.
+test('the wait lays the decide takes the worker lacks, and a line over them rests on his still; announced ones carry the mouth', () => {
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true},{take:'plattaxlar5101',frames:39,vikt:6,calm:true,fas:'decide'},{take:'lutfram5101',frames:39,vikt:6,calm:true,fas:'decide'},
+    {take:'knappin5101',frames:39,vikt:6,calm:true,fas:'bets',to:'knappt'},{take:'knapput5101',frames:39,vikt:2,calm:true,fas:'bets',from:'knappt'}];
+  for(const [workerIdle,lips] of [[['andas'],false],[['andas','plattaxlar5101','lutfram5101','knappin5101','knapput5101'],true]]){
+    const t=talkTable({idle,workerIdle});
+    try{
+      t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
+      const view=t.st('paow');
+      if(!['decisions','insurance'].includes(view.round?.phase))continue;   // a dealt blackjack: no wait
+      const takes=view.waits[0].takes.map(x=>x.take);
+      assert.deepEqual(takes.sort(),['andas','lutfram5101','plattaxlar5101'],'calm and decide takes; no clasped ones');
+      t.box.time=view.plan.endAt+3000;
+      const a=t.s.addTalk('paow',{text:'Take your time',lang:'en',dur:2});
+      const clips=waitClips(view.waits[0],a.talk.kartaStart,a.talk.endAt+600).map(c=>c.take);
+      if(lips||clips.every(c=>workerIdle.includes(c)))assert.ok(a.talk.idle?.length,'a wait the worker can map carries the mouth');
+      else assert.ok(!a.talk.idle,'a wait clip the worker lacks: the line rests on his still');
+    }finally{t.close();}
+  }
+  const t=talkTable({idle,workerIdle:['andas','knappin5101','knapput5101']});
+  try{
+    const {talk}=t.s.addTalk('paow',{text:'Hi',lang:'en',dur:3});
+    assert.ok(talk.idle?.length&&talk.idle.every(c=>c.take==='andas'),'a chain at rest never takes a clasped-hands take');
+  }finally{t.close();}
+});
+
+test('a dealer with the clasped-hands idles deals the round\'s first card 1.4 s after ready (time to unclasp); others as before', () => {
+  for(const [idle,lead] of [[[{take:'andas',frames:39,vikt:20,calm:true},{take:'knappin5101',frames:39,vikt:6,calm:true,fas:'bets',to:'knappt'},{take:'knapput5101',frames:39,vikt:2,calm:true,fas:'bets',from:'knappt'}],1400],[[{take:'andas',frames:39,vikt:20,calm:true}],700]]){
+    const t=talkTable({idle});
+    try{
+      t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});
+      const at=t.box.time;t.send('paow','ready');
+      const first=t.st('paow').plan.steps.find(s=>s.clip).startAt;
+      assert.ok(first-at>=lead&&first-at<lead+1300,`first take ${first-at} ms after ready (lead ${lead})`);
+    }finally{t.close();}
+  }
+});
+
+test('a worker is coming for a dealer when one is connected, or a serverless session was ordered where no pod serves (Mårten on staging: none)', () => {
+  const r=new RorligLipsync({endpointId:'x',apiKey:'k',publicBase:()=>'https://x',publicDir:'/tmp',dealers:['dragge','marten'],log:()=>{}});
+  assert.equal(r.coming('nobody'),false);
+  assert.equal(r.coming('marten'),false,'nothing ordered, nothing connected');
+  r.s.get('marten').askedAt=Date.now();
+  assert.equal(r.coming('marten'),true,'a serverless order on a server without pods');
+  r.s.get('dragge').workers.push({pod:'e2e'});
+  assert.equal(r.coming('marten'),false,'pods serve this server and none carries his avatar');
+  assert.equal(r.coming('dragge'),true);
 });

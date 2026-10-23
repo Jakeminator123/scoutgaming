@@ -5,9 +5,18 @@ export function speechBank(manifest,language='en') {
   return dealerLanguage(language)==='en' ? manifest.repliker : manifest.repliker_sprak?.[language] ?? manifest.repliker;
 }
 
+// Serhiy (Axelio fdec6f40): "Dealer busts! Everyone still in the hand gets paid" sounds unnatural. Its clips stay in
+// every bank; the game just never picks them.
+export const RETIRED_LINES = Object.freeze(new Set(['dealerbust_1']));
+
+// The line the game plays for an event: the reviewed sidebet_2, else the event's first variant that is not retired.
+export function activeLine(repliker,event) {
+  return (event==='sidebet'?repliker.find(c=>c.id==='sidebet_2'):null)??repliker.find(c=>c.event===event&&!RETIRED_LINES.has(c.id));
+}
+
 // Keep the reviewed canonical variant, including sidebet_2, in every language.
 export function speechForEvent(manifest,event,language='en') {
-  const canonical=(event==='sidebet'?manifest.repliker.find(c=>c.id==='sidebet_2'):null)??manifest.repliker.find(c=>c.event===event);
+  const canonical=activeLine(manifest.repliker,event);
   return canonical && (speechBank(manifest,language).find(c=>c.id===canonical.id) ?? canonical);
 }
 

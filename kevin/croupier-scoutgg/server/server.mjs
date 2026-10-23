@@ -78,7 +78,7 @@ const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // rest runs over a chain of them instead of the still (shared-table.mjs withIdle, rorlig-lipsync.mjs idleChain). Frames
 // are read from each file; a dealer with Kling loops (dur 5.04, not rest-to-rest takes) or missing files rests on the
 // still as before. The worker image must carry these takes under the same names.
-const idleTakes=id=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/(v2|idle-v2)/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m||!(i.dur<5))return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(PUBLIC,'media','dealers',id,m[1],m[2]+'.mp4')))??0)*24);return frames>0?[{take:m[2],frames,vikt:i.vikt??1,calm:Boolean(i.calm),head:Boolean(i.head),once:Boolean(i.once)}]:[];}catch{return [];}});
+const idleTakes=id=>(DEALERS[id]?.idles??[]).flatMap(i=>{const m=new RegExp(`^/media/dealers/${id}/(v2|idle-v2)/([a-z0-9]+)\\.mp4`).exec(i.url);if(!m||!(i.dur<5))return [];try{const frames=Math.round((mp4Duration(readFileSync(path.join(PUBLIC,'media','dealers',id,m[1],m[2]+'.mp4')))??0)*24);return frames>0?[{take:m[2],frames,vikt:i.vikt??1,calm:Boolean(i.calm),head:Boolean(i.head),once:Boolean(i.once),...(i.fas?{fas:i.fas}:{}),...(i.from&&i.from!=='vila'?{from:i.from}:{}),...(i.to&&i.to!=='vila'?{to:i.to}:{})}]:[];}catch{return [];}});
 const READY_TAKES=Object.fromEntries(['dragge','paow','astrid2'].map(id=>{try{const dir=path.join(PUBLIC,'media','dealers',id,'v2');return [id,{...JSON.parse(readFileSync(path.join(dir,'meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`,idle:idleTakes(id)}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
@@ -87,7 +87,8 @@ const dealerOf = room => studioTables.get(room)?.dealer ?? room;
 // Emil 14 Oct: a ready dealer's variants of the lines that repeat most (bust_1 … bust_7, blackjack and twentyone called as the
 // card lands, win = "congratulations to the winners"): one at random each time (shared-table.mjs variantOf). Counted over
 // all the languages he has, with their length in his first language (the step's length when no lip-sync worker is warm).
-const VARIED = ['bust', 'blackjack', 'twentyone', 'win'];
+// dealerbust (Axelio fdec6f40): its variants 2 and 3 alternate, the retired dealerbust_1 never (shared-table.mjs variantOf)
+const VARIED = ['bust', 'blackjack', 'twentyone', 'win', 'dealerbust'];
 for (const [id, t] of Object.entries(READY_TAKES)) {
   if (!t) continue;
   const dir = path.join(PUBLIC, 'media', 'dealers', id, 'repliker');
@@ -364,17 +365,44 @@ function event(requested,session="astrid") {
   return msg;
 }
 
+// Kevin 23 Oct (prod, cold worker): the first visitor at an empty table joins ~3 s before the lip-sync worker the page
+// woke is up; the greeting then took the old lip-synced clip, missed VOICE_WAIT_MS and came as text only. It waits for
+// the moving worker this long (it is ordered now if it was not), then plays the dealer's own recorded greeting.
+const WELCOME_WORKER_MS = 8000;
+async function movingWorkerFor(dealer, ms = WELCOME_WORKER_MS) {
+  if (canTalkMoving(dealer)) return true;
+  if (!(rorlig && rorligOn() && rorlig.dealers.includes(dealer) && READY_TAKES[dealer] && hasVoice(dealer) && draggeVoiceReady(dealer))) return false;
+  rorlig.activity(dealer);
+  // Kevin 23 Oct: only for a worker that is up or on its way (Mårten's table waited 8 s for one no pod carried)
+  if (!rorlig.coming(dealer)) return false;
+  for (const end = Date.now() + ms; Date.now() < end;) { await new Promise(r => setTimeout(r, 250)); if (canTalkMoving(dealer)) return true; }
+  return false;
+}
+// The dealer's own recorded greeting (repliker/<lang>/greet_guest.mp4, no name) with its caption, or null.
+function recordedGreeting(dealer, language) {
+  const texts = READY_TAKES[dealer]?.texts ?? {}, lang = texts[language] ? language : 'en';
+  if (!texts[lang] || !existsSync(path.join(PUBLIC, 'media', 'dealers', dealer, 'repliker', lang, 'greet_guest.mp4'))) return null;
+  return { url: `/media/dealers/${dealer}/repliker/${lang}/greet_guest.mp4`, text: texts[lang].greet_guest ?? null };
+}
+
 async function welcomeGuest({session,name}) {
   const lang=shared.presentationContext(session).language,text=personalizedGreeting(name,lang),id=`g${randomId()}`,dealer=dealerOf(session);
   // Kevin 23 Oct: Dragan and Paow greet in their own voice too (the greeting was Astrid's only, so their tables just read
-  // it): over their idle takes on the moving clips when the worker is warm, else in their own lip-synced clip, never late.
-  if(canTalkMoving(dealer)){
+  // it): over their idle takes on the moving clips when the worker is warm (or within WELCOME_WORKER_MS), else in their
+  // own recorded greeting, never late and never as text only.
+  if(await movingWorkerFor(dealer)){
     try{
       const spoken=await speakOnTalkTrack(session,dealer,text,lang);
       remember({who:'astrid',text},session);
       broadcast({t:'answer',id,to:name,text,dealer,talk:spoken.id},session);
       return;
     }catch(e){console.log(`läppsynk rörlig: hälsningen tar den vanliga vägen (${e.message})`);}
+  }
+  const recorded=recordedGreeting(dealer,lang);
+  if(recorded){
+    remember({who:'astrid',text:recorded.text??text,url:recorded.url},session);
+    broadcast({t:'answer',id,to:name,text:recorded.text??text,dealer,url:recorded.url},session);
+    return;
   }
   if(hasVoice(dealer)&&draggeVoiceReady(dealer)){
     const clip=draggeSay(text,lang,ANSWERS,{dealer}).catch(()=>null);
