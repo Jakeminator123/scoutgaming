@@ -73,17 +73,20 @@ const headMovesRarely = idles => {
 const ASTRID2_IDLES = headMovesRarely(h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']));
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
+// serverGreets (Kevin 23 Oct): the server greets the player by nickname in this dealer's own voice (server.mjs welcomeGuest,
+// over his idle takes when the lip-sync worker is warm), so the recorded greet_guest without a name is not played as well:
+// the two met at the table at once.
 export const DEALERS = {
   astrid: { id: 'astrid', name: 'Astrid', label: 'Astrid (classic)', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)]), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)]), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS, serverGreets: true },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]), handMatte: false, faceTracks: PAOW_FACE_TRACKS, serverGreets: true },
   // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card

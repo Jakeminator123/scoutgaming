@@ -260,7 +260,7 @@ async function play(item) {
 }
 
 // The alternative dealer's own lines (greeting, remarks, banter) in the table's language.
-let greeted = false;
+let greeted = false;   // Kevin 23 Oct: a dealer the server greets by name (dealers.js serverGreets) plays no recorded greeting too
 function remarkNow(id) {
   if (gameTable?.talking) return;   // he is already speaking over his clips (state.talk): no second voice on top
   const url = id && dealerExtraLineUrl(id, $('#dealerLanguage').value);
@@ -555,7 +555,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     warmTakes:takes=>{for(const t of takes)videoBuffer.load(dealer.idles?.find(i=>i.id===t)?.url??dealerClipUrl(`/media/deal/${t}.mp4`),0).catch(()=>{});},
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),
-    onEnter:name=>{me=name;who.value=name;store.set('astrid.name',name);if(ws?.readyState===1)ws.send(JSON.stringify({t:'name',name}));if(!greeted){greeted=true;remarkNow(greetingFor(name));}},
+    onEnter:name=>{me=name;who.value=name;store.set('astrid.name',name);if(ws?.readyState===1)ws.send(JSON.stringify({t:'name',name}));if(!greeted){greeted=true;if(!dealer.serverGreets)remarkNow(greetingFor(name));}},
     isReady:()=>$("#gate").classList.contains("off") && !loading && (!running || currentItem?.kind==='idle'),
     onBusy: busy => {
       for (const button of document.querySelectorAll('.grid button')) button.disabled = busy;
