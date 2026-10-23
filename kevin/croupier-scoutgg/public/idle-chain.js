@@ -10,10 +10,13 @@ export const LEAD = 100;
  * null when it has not started here yet. → {talk, clip, next, shift} or null.
  */
 export function chainClipAt(talks, now, shiftOf = () => 0) {
-  for (const t of talks ?? []) {
-    if (!t.idle?.length) continue;
-    const shift = shiftOf(t);
+  for (const line of talks ?? []) {
+    if (!line.idle?.length) continue;
+    const shift = shiftOf(line);
     if (shift === null || shift === undefined) continue;
+    // lines that share one chain (shared-table.mjs withIdle: a line at rest goes on with the chain on screen) are one chain:
+    // the one laid furthest holds every clip of the others and the ones after them
+    const t = line.chain ? talks.filter(o => o.chain?.seed === line.chain.seed && o.idle?.length && shiftOf(o) === shift).reduce((a, b) => (b.idle.at(-1).endAt > a.idle.at(-1).endAt ? b : a), line) : line;
     const at = now - shift;
     let i = -1;
     for (let k = 0; k < t.idle.length; k++) if (at >= t.idle[k].startAt - LEAD) i = k;

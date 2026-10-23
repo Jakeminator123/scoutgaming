@@ -62,7 +62,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // (his last take ends at rest and he talks about the result). Mid-round he waits in his pose as before (11 Oct).
   // Only the idle takes a connected lip-sync worker announced (talker.idle, rorlig-lipsync.mjs idleTakes) go into the
   // chain: with a worker that has the deals only (ko2) he rests on his still with the mouth on it, as before.
-  function withIdle(r,ready,t,steg,talker) {
+  // Kevin 23 Oct (dealerblackjack, mouth still): a line at rest that starts while an earlier line's chain is on screen (the
+  // side-bet line, then the result) goes on with that chain: same start and seed, so the same clips (layChain only extends
+  // it), instead of a chain of its own from its first frame. Viewers keep showing the first chain; the mouth was mapped on
+  // the second, so not one patch landed. prior: the talks before it (the room's, and this plan's earlier lines).
+  function withIdle(r,ready,t,steg,talker,prior=r.talk??[]) {
     const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take));
     if(!takes.length)return t;
     // Kevin 20 Oct: during a wait for a player the talk runs over the wait's own chain, the body every viewer shows anyway
@@ -70,8 +74,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     if(w){const idle=waitClips(w,t.kartaStart,t.endAt+600);return idle.length?{...t,idle}:t;}
     if(r.phase==='round'&&r.round?.phase!=='settled')return t;
     const from=idleFrom(steg,t,{restEnd:ready.restEnd??[]});
-    const idle=from===null?[]:idleChain(takes,from,t.endAt+600,t.id);
-    return idle.length?{...t,idle}:t;
+    if(from===null)return t;
+    const on=prior.find(o=>o.id!==t.id&&o.chain&&o.idle?.length&&o.kartaStart<t.kartaStart&&o.idle[0].startAt<=from&&o.idle.at(-1).endAt>from);
+    const chain=on?on.chain:{from,seed:t.id};
+    const idle=idleChain(takes,chain.from,t.endAt+600,chain.seed);
+    return idle.length?{...t,idle,chain}:t;
   }
   function variantOf(r,clip,ready){
     const n=ready.variants[clip.event],last=r.lastVariant?.[clip.event];
@@ -189,7 +196,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
     if(ready&&steps.length)at=readyTimeline(steps,ready);
-    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps],talker)):[];
+    const spoken=[];for(const t of talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}):[])spoken.push(withIdle(r,ready,{id:randomUUID(),kind:'line',...t},[...(r.plan?.steps??[]),...steps],talker,[...(r.talk??[]),...spoken]));
     if(spoken.length)r.talkUntil=spoken.at(-1).endAt+250;
     const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
     const live=(r.talk??[]).filter(t=>t.endAt>now()),omplanera=live.filter(t=>t.endAt+600>firstFrame);
@@ -466,7 +473,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
         if(x.startAt>=free){later.push(x);continue;}
         if(x.kind==='line'&&x.event==='goodluck')continue;
-        const d=x.endAt-x.startAt,{idle:_,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg,talker);
+        const d=x.endAt-x.startAt,{idle:_,chain:__,...rest}=x,y=withIdle(r,ready,{...rest,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000},steg,talker,[...speaking,talk,...later]);
         later.push(y);moved.push(y);free=y.endAt+250;
       }
       r.talk=[...speaking,talk,...later];r.talkUntil=Math.max(r.talkUntil??0,...r.talk.map(x=>x.endAt+250));
