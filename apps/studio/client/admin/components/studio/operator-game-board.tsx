@@ -34,19 +34,17 @@ export function OperatorGameBoard({company, companies, rooms, selectedId, disabl
         <button type="button" className={styles.open} aria-label={'Redigera ' + room.name} aria-pressed={selectedId === room.id} disabled={disabled} onClick={() => onSelect(room.id)}>
           <span className={styles.art} data-game={room.game}>
             {room.environment?.image && <img src={room.environment.image} alt="" loading="lazy"/>}
-            <span className={styles.symbol}>{room.game === 'roulette' ? <CircleDot size={56} strokeWidth={1}/> : <Spade size={50} strokeWidth={1}/>}</span>
-            <span className={styles.gameType}>{room.game === 'roulette' ? 'ROULETTE' : 'BLACKJACK'}</span>
-            <span className={styles.state} data-live={room.playable}>{room.playable ? 'Öppet' : room.state === 'pending' ? 'Pausat' : room.published ? 'Inte spelbart' : 'Ej publicerat'}</span>
+            <span className={styles.symbol}>{room.game === 'roulette' ? <CircleDot size={32} strokeWidth={1.3}/> : <Spade size={30} strokeWidth={1.3}/>}</span>
           </span>
           <span className={styles.description}>
+            <span className={styles.cardHeading}><span className={styles.gameType}>{room.game === 'roulette' ? 'Roulette' : 'Blackjack'}</span><span className={styles.state} data-live={room.playable}>{room.playable ? 'Öppet' : room.state === 'pending' ? 'Pausat' : room.published ? 'Inte spelbart' : 'Ej publicerat'}</span></span>
             <strong>{room.name}</strong><span>{room.dealers.map(dealer => dealer.name).join(' · ') || 'Välj dealer'}</span>
-            <span className={styles.edit}>{selectedId === room.id ? 'Redigeras nedan' : 'Redigera spel'}</span>
+            <span className={styles.edit}>{selectedId === room.id ? 'Valt spel' : 'Redigera'}</span>
           </span>
         </button>
         <button type="button" className={styles.remove} disabled={removeDisabled} onClick={() => onRemove(room.id)} aria-label={'Ta bort ' + room.name + ' från bolagets utbud'}><Trash2 size={14}/> Ta bort</button>
       </article>)}
       {!rooms.length && <div className={styles.empty}><Layers size={32}/><strong>Här börjar bolagets spelutbud</strong><span>Välj Lägg till spel för att börja.</span></div>}
     </div>
-    <p className={styles.note}><Layers size={16}/> Dealer och bord väljs för varje spel. Bakgrunden väljer du separat.</p>
   </section>;
 }

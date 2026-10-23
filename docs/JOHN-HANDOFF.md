@@ -6,15 +6,27 @@
 
 Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib/studio-context.test.mjs` godkända lokalt med Node 24.19 och högst fyra testarbetare. Ingen produktkod är ändrad av denna rättning. Full CI krävs på den nya headen före merge; ingen produktionsacceptans påstås.
 
-## Visuell operatörsyta — 23 oktober 2026
+## Operatörsytan: sammanhållen redigering — 23 oktober 2026
 
-**Leverans:** `codex/visuell-operator` innehåller den separata visuella ändringen mot main. Den utvecklades tillsammans med PR #359; integrera #359 först för gemensam CSS och navigation. Bolagsvalet ligger i rubriken; spelkort samlar utbudet. Lägg till öppnar spelmall, spel och namn. Bekräftat skapande öppnar rätt rum; borttagning lämnar det återstående utbudet valt. Återställningsvyn visar enbart borttagna spel. Paus/öppning finns för valt spel.
+**Leverans:** `codex/operator-arbetsyta`, från main `cbc0acd3` efter mergade #359 och #364. Produktionsgranskningen på /admin/rooms visade att ett enda spelkort fyllde bredden med en tom affisch och sköt redigeraren långt ned. Korten har nu kompakt storlek. På bredare arbetsytor ligger scen och materialval sida vid sida; på mindre ytor staplas de. Neutralare ytor ersätter stora gröna paneler.
 
-**Tre lager:** bakgrund och bord har materialkort med paketets verifierade förhandsbilder, dealer har tydligt valkort. Ett bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Samma roomOverrides, save-draft/review/publish, behörigheter och CAS används. Inbakad bakgrund är låst; nya rum kräver fortfarande en kompatibel sparad spelmall med fast utgångsmiljö. Paketets urval och godkänt mediematerial utökas inte automatiskt.
+**Förenkling:** en rad för sparstatus, Spara utkast och Granska publicering. Granskningspanelen visas först efter begärd granskning. Versionsnummer finns i historiken; färg/standardval är hopfällda. Den dubbla Publicering-knappen i rumsrubriken är borta. Studio-mallar tilldelas under Spelmallar för bolaget. Befintliga adresser och bokmärken är oförändrade.
 
-**Verifiering:** 98 riktade beteendeprov och Admin 351 godkända/1 överhoppat; byggd Admin-/lobbyklient inklusive typer. Studio gav 2 102 godkända/17 överhoppade samt två laddningsfel i en testadapter. Adaptern har rättats och dess 12 beteendeprov passerar i omprov. Föräldralösa tester: 0/562. Samlad CI-status följer PR:ens slutliga head. Isolerat UI-prov med syntetiska data verifierar bolagsbyte, skydd av osparade val, tre separata val, spara/omladdning, skapa med rätt spel och direkt öppning, borttagning samt rätt återställningslista. Inga produktionsdata eller tjänster är ändrade. Slutlig PR/head anges vid leveransen.
+**Rättelse efter #364:** pausa/öppna och ta bort skickas som en enda typad begäran med både åtgärd och roomId. En ny avsikt kan inte kombinera föregående korts id med en annan åtgärd. Beteendeprovet verifierar endpoint, bolag, rum och revisionsvillkor efter sådana klick. Behörighet, roomOverrides, CAS och save-draft/review/publish är oförändrade.
 
-**Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
+**Verifiering:** Node 24.21.0; full Studio **2 111 godkända / 17 överhoppade**, full Admin **351 godkända / 1 överhoppat**, klientbygge inklusive Admin-/lobbytyper godkänt. Efter slutjusteringarna passerar 14/14 förhandsvisningsprov och 18/18 livscykelprov. Föräldralösa tester **0/562**. Bygget har befintliga CSS-composes-varningar i andra komponenter. Isolerat webbläsarprov med syntetiska data verifierar separata lager, bakgrundsbyte utan dealer-/bordsbyte, spara/omladdning, granskning av rätt rum, publicering, bolagsbyte och byte mellan pausa- och borttagningsbekräftelse. Detta är klient-/fixturbevis, inte produktionsskrivning eller ny mediaacceptans.
+
+**CI:** #364 är mergad som `8a3551c8`; [slutlig CI på f201d52c är grön](https://github.com/Jakeminator123/scoutgaming/actions/runs/39877455580). Det senare [CI-jobbet på main cbc0acd3](https://github.com/Jakeminator123/scoutgaming/actions/runs/39879449512/job/120175758677) startade inte: GitHubs annotation anger misslyckad kontobetalning eller för låg utgiftsgräns. Nya PR:ens kontroller bedöms separat. Inga workflow- eller betalningsändringar ingår.
+
+**GitGuardian vid start:** källbindning verifierad, monitorering aktiv. Incidenttäckning komplett för källan: 0 öppna / 23 ignorerade. Historisk skanning ofullständig (`too_large`), platsmetadata delvis saknad. Full historisk säkerhetstäckning påstås inte.
+
+## Visuell operatörsyta — PR #364, mergad 23 oktober 2026
+
+#359 och #364 ligger på main. #364 tillförde bolagsval, spelkort, skapa/ta bort/återställ och tre separata lagerval. [Slutlig full CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39877455580) är grön på `f201d52c`. Paus/öppning finns för valt spel.
+
+Bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Befintliga roomOverrides, behörigheter och revisionsvillkor används. Inbakad bakgrund är låst; nya rum kräver en kompatibel sparad spelmall. Paketets materialurval utökas inte automatiskt.
+
+J08:s fulla runtime-/materialbindning, produktionsacceptans med godkända medier och separat permanent radering kvarstår i sina egna arbeten. Ingen aktivitet i status.json markeras klar av dessa UI-leveranser.
 
 ## Mergegranskning — assistentens bolagslänkar i PR #359 — 23 oktober 2026
 

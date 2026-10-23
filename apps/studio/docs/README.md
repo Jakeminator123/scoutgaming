@@ -138,8 +138,11 @@ Inbakad bakgrund kan inte växlas separat och förklaras som låst. Nya rum krä
 fortfarande en sparad kompatibel spelmall med fast utgångsmiljö; denna UI-ändring
 utökar inte det publicerade paketets materialurval eller skapar nya medier.
 
-**Spelinställningar**, versionshistorik och **Utbud och publicering** öppnas vid
-behov. Rubriken visar publicerad version, sparat utkast och vad spelaren möter nu.
+Spelkorten behåller kompakt storlek även när bolaget bara har ett spel.
+Förhandsvisningen och de tre materialvalen ligger bredvid varandra när bredden
+räcker och staplas på mindre skärmar. Rubriken visar vad spelaren möter nu.
+**Spelinställningar**, **Färg och standardval**, versionshistorik och
+**Spelmallar för bolaget** öppnas vid behov. Versionsnumren finns i historiken.
 Osparade val skyddas vid byte av bolag, spel eller arbetsyta, och pågående skrivning
 låser andra åtgärder. Studio skapar och godkänner det delade materialet; Admin
 sätter ihop bolagets spelutbud med befintliga rum och publiceringskontrakt.
@@ -148,14 +151,16 @@ Scenen och de tillåtna rumsvalen visas tillsammans. **Låst i publicerat paket*
 betyder att valet ändras genom den gemensamma mallen, inte genom rumsvalen.
 Ändra tillåtna alternativ → **Spara utkast** → **Granska publicering** i
 rumseditorn → kontrollera skillnaden och berörda rum → **Publicera granskat
-utkast**. Granskningsytan visas när ett sparat utkast finns. Sparning ändrar
+utkast**. Sparstatus och Spara/Granska ligger samlade; själva granskningen
+visas först när du väljer **Granska publicering**. Sparning ändrar
 bara utkastet; live ändras först efter publicering. Rumsval sparas bara för
 valt rum. **Hämta senaste version** bevarar egen redigering tills du väljer
 hur den senaste versionen ska läsas in.
 
-Knappen **Publicering** vid rumsrubriken öppnar **Utbud och publicering** på
-samma sida med rätt bolag och rum. **Gemensam mall och tillåtna
-alternativ** ligger i en separat detaljsektion; mallredigeraren visar vilka
+**Spelmallar för bolaget** tilldelar bolaget mallar från Studio och är skilt från
+rummets materialval. Den extra Publicering-knappen vid rumsrubriken är borttagen.
+**Gemensam mall och tillåtna alternativ** ligger i en separat detaljsektion;
+mallredigeraren visar vilka
 andra rum som kan påverkas. Gamla länkar med `view=registered` fungerar men
 behövs inte längre.
 
