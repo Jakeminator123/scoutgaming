@@ -52,16 +52,27 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
     return {box,...(auto?.chips?{x:card.x+chips.dx*1080*dealerPlane.scale,y:card.y+betGap+chips.dy*1920*dealerPlane.scale}
       :followCards?{x:card.x,y:card.y+betGap}:screen(seat.bet,betsRect))};
   });
-  const inside=(x,y,left,right,top,bottom)=>x-left>=bounds.left&&x+right<=bounds.right&&y-top>=bounds.top&&y+bottom<=bounds.bottom;
+  // Touch targets may spread independently; film contacts and server box IDs stay fixed.
+  // Apply an explicit Admin offset after fitting, so it remains an actual override.
+  const touchScale=compact?Math.max(1,controlScale):controlScale;
+  if(compact&&auto?.chips){
+    const half=49*touchScale,gap=2*half,dx=chips.dx*1080*dealerPlane.scale;
+    const left=bounds.left+half,right=bounds.right-half;
+    if(right-left>=gap*(seats.length-1)){
+      seats.forEach((seat,i)=>{seat.x=Math.max(left+i*gap,Math.min(right-(seats.length-1-i)*gap,seat.x-dx));
+        if(i)seat.x=Math.max(seat.x,seats[i-1].x-dx+gap);seat.x+=dx;});
+    }
+  }
+  const inside=(x,y,left,right,top,bottom)=>x-left>=bounds.left-1e-6&&x+right<=bounds.right+1e-6&&y-top>=bounds.top-1e-6&&y+bottom<=bounds.bottom+1e-6;
   // A filmed landing keeps the film's box spacing, which never leaves room for
   // a worst-case fan on a phone. Check the landed card and the touch row then.
   const [hand,dealerHand]=auto?.landing?Array(2).fill([calibration.width/2,calibration.width/2,calibration.height/2,calibration.height/2])
     :[[144,90,230,55],[310,45,130,55]];
   const fits=seats.every((seat,index)=>{
     const card=positions[String(seat.box+1)],x=origin.x+card.cx*scale,y=origin.y+card.cy*scale;
-    return inside(seat.x,seat.y,49*(compact?1:controlScale),49*(compact?1:controlScale),45*controlScale,45*controlScale)
+    return inside(seat.x,seat.y,49*touchScale,49*touchScale,45*controlScale,45*controlScale)
       &&inside(x,y,...hand.map(value=>value*scale))
-      &&(!index||seat.x-seats[index-1].x>=98*(compact?1:controlScale));
+      &&(!index||seat.x-seats[index-1].x>=98*touchScale-1e-6);
   });
   const dealer=cardAt('dealer',geometry.dealer);
   return {x:origin.x,y:origin.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,cardView,followCards,

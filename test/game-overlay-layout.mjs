@@ -182,12 +182,15 @@ test('phone autoScale: three seats land on their own filmed boxes, resumed outer
   for(const boxes of [[0,1,2],[2,3,4],[4,5,6]]){
     const r=run(.8,boxes),d=plane(.8);assert.deepEqual(r.seats.map(s=>s.box),boxes);
     boxes.forEach((box,i)=>{const seat=String(box+1),x=d.x+calibration.positions[seat].cx*d.scale;
-      close(r.x+r.positions[seat].cx*r.scale,x);close(r.y+r.positions[seat].cy*r.scale,d.y+calibration.positions[seat].cy*d.scale);close(r.seats[i].x,x);});
+      close(r.x+r.positions[seat].cx*r.scale,x);close(r.y+r.positions[seat].cy*r.scale,d.y+calibration.positions[seat].cy*d.scale);if(boxes[0]===2)close(r.seats[i].x,x);});
     // Never moved off its filmed box: a hand outside the zoomed phone frame is reported.
     assert.equal(r.geometryWarning,boxes[0]===2?'':'Kort eller insatsplatser ryms inte. Justera dealerns placering i Sammansättning.');
   }
   // At the plate's own size the filmed boxes are 52 px apart: the touch row overlaps.
-  assert.match(run(.36,[2,3,4]).geometryWarning,/ryms inte/);
+  const small=run(.36,[2,3,4]);assert.equal(small.geometryWarning,'');
+  for(let i=1;i<small.seats.length;i++)assert.ok(small.seats[i].x-small.seats[i-1].x>=98);
+  const shifted=run(.36,[2,3,4],{chips:{dx:.1,dy:0,scale:1}});
+  small.seats.forEach((seat,i)=>close(shifted.seats[i].x-seat.x,.1*1080*.36));
   close(run(.36,[2,3,4]).controlScale,.8);close(run(1.2,[2,3,4]).controlScale,1.2);
   close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:.5}}).controlScale,.8);close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:1.5}}).controlScale,1.8);
 });
@@ -203,4 +206,11 @@ test('published card display wins over a browser preference and stays format-spe
  }
  delete board.mobile.cardView;
  assert.equal(layoutGameOverlay({rect:{x:0,y:0,width:390,height:500},tableGeometry:board,tableLayout:'mobile'},[2,3,4],{left:0,right:390,top:0,bottom:844},{compact:true}).cardView,'table');
+});
+
+test('fractional manual offsets on a 320px phone do not create false overlap warnings',()=>{
+ const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+ board.mobile.autoScale={...defaultBlackjackAutoScale(),adjust:{chips:{dx:-.005,dy:0,scale:1}}};
+ const result=layoutGameOverlay({tableGeometry:board,tableLayout:'mobile',rect:{x:0,y:420,width:320,height:180},dealerPlane:{x:160-540*.34,y:422-960*.34,scale:.34}},[2,3,4],{left:12,right:308,top:80,bottom:800},{compact:true});
+ assert.equal(result.geometryWarning,'');[61.164,159.164,257.164].forEach((x,i)=>close(result.seats[i].x,x));
 });
