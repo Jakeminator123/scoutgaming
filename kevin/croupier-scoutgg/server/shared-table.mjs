@@ -8,7 +8,6 @@ import {readBackofficeWorkspace} from './bo-workspace.mjs';
 import { createGameAudit } from './game-audit.mjs';
 import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
 import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
-import {personalizedGreeting} from './dealer-responses-localized.mjs';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
 import {scheduleTalks,LJUD_FORE,idleFrom,idleChain} from './rorlig-lipsync.mjs';
 import {waitClips,waitBoundary} from '../public/idle-chain.js';
@@ -362,7 +361,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
               const previousWallet=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='demo_tables'").get();
               // A studio table opens with its preset's balance; only the original demo room carries a solo-wallet balance over.
               const L=limitsFor(id),balance=previousWallet&&!L.preset?db.prepare('SELECT balance FROM demo_tables WHERE session=?').get(key)?.balance??L.balance:L.balance;
-              const uid=randomUUID();db.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,NULL)').run(id,key,uid,name,balance,now());p=player(id,key);transactions.record(id,p,null,'opening_credit',0,balance);welcome={session:id,name,text:personalizedGreeting(name,'en')};
+              const uid=randomUUID();db.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,NULL)').run(id,key,uid,name,balance,now());p=player(id,key);transactions.record(id,p,null,'opening_credit',0,balance);welcome={session:id,name,text:`Hi ${name}, how are you today?`};
             } else db.prepare('UPDATE shared_players SET name=? WHERE room=? AND token=?').run(name,id,key);
             // feedback #7: mid-round, a box that still holds a hand is released after the round, never refused
             const inPlay=new Set(r.phase==='bets'?[]:(r.round?.hands??[]).map(h=>h.box));

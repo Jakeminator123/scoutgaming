@@ -55,7 +55,7 @@ test('a Portuguese player in distress or sharing personal data gets the reviewed
   assert.equal(localResponse('minha senha é 1234'), 'privacy');
   assert.match(localizeResponse(RESPONSES.support, 'pt'), /pausa de 24 horas/);
   assert.match(localizeResponse(RESPONSES.social, 'sv'), /Tack/);   // a Swedish table's fallback no longer throws
-  assert.equal(personalizedGreeting('Ana', 'pt'), 'Oi Ana, bem-vindo, como você está hoje?');
+  assert.equal(personalizedGreeting('Ana', 'pt'), 'Oi Ana, como você está hoje?');
 });
 
 test('the ElevenLabs dealers read Portuguese with the Portuguese language code', async () => {

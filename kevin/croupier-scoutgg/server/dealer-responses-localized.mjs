@@ -70,20 +70,16 @@ export function localizeResponse(canonical,language='en') {
 }
 
 const VALID_NAME=/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} '.-]{0,17}$/u;
-// Kevin 23 Oct: the greeting welcomes the player by the nickname they chose; an automatic guest name ("Guest 465",
-// shared-table.js guestName) is never said, the greeting then has no name.
-const AUTO_GUEST=/^guest\s*\d*$/i;
 export function personalizedGreeting(name,language='en') {
   const clean=String(name??'').normalize('NFC').trim().replace(/\s+/g,' ');
   if(!VALID_NAME.test(clean))throw new Error('Greeting name is invalid');
-  const said=AUTO_GUEST.test(clean)?null:clean;
   switch(dealerLanguage(language)) {
-    case 'sv': return said?`Hej ${said}, välkommen, hur mår du idag?`:'Hej, välkommen, hur mår du idag?';   // Svenska Spel demo 15 Oct: a Swedish table greeted in English text
-    case 'es': return said?`Hola, ${said}, bienvenido. ¿Cómo estás hoy?`:'Hola, bienvenido. ¿Cómo estás hoy?';
-    case 'fr': return said?`Bonjour ${said}, bienvenue, comment allez-vous aujourd’hui ?`:'Bonjour, bienvenue, comment allez-vous aujourd’hui ?';
-    case 'zh': return said?`你好，${said}，欢迎！今天过得怎么样？`:'你好，欢迎！今天过得怎么样？';
-    case 'pt': return said?`Oi ${said}, bem-vindo, como você está hoje?`:'Oi, bem-vindo, como você está hoje?';
-    case 'ko': return said?`안녕하세요 ${said}님, 환영합니다! 오늘 기분 어떠세요?`:'안녕하세요, 환영합니다! 오늘 기분 어떠세요?';
-    default: return said?`Hi ${said}, welcome, how are you today?`:'Hi there, welcome, how are you today?';
+    case 'sv': return `Hej ${clean}, hur mår du idag?`;   // Svenska Spel demo 15 Oct: a Swedish table greeted in English text
+    case 'es': return `Hola, ${clean}. ¿Cómo estás hoy?`;
+    case 'fr': return `Bonjour ${clean}, comment allez-vous aujourd’hui ?`;
+    case 'zh': return `你好，${clean}。今天过得怎么样？`;
+    case 'pt': return `Oi ${clean}, como você está hoje?`;
+    case 'ko': return `안녕하세요 ${clean}님, 오늘 기분 어떠세요?`;
+    default: return `Hi ${clean}, how are you today?`;
   }
 }

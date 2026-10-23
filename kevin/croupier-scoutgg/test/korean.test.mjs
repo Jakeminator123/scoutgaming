@@ -55,7 +55,7 @@ test('a Korean player in distress or sharing personal data gets the reviewed res
   assert.equal(localResponse('저 16살이에요'), 'support');
   assert.equal(localResponse('제 비밀번호는 1234예요'), 'privacy');
   assert.match(localizeResponse(RESPONSES.support, 'ko'), /24시간/);
-  assert.equal(personalizedGreeting('Ana', 'ko'), '안녕하세요 Ana님, 환영합니다! 오늘 기분 어떠세요?');
+  assert.equal(personalizedGreeting('Ana', 'ko'), '안녕하세요 Ana님, 오늘 기분 어떠세요?');
 });
 
 test('the ElevenLabs dealers read Korean with the Korean language code', async () => {
