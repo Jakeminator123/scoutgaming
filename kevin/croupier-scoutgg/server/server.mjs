@@ -364,17 +364,42 @@ function event(requested,session="astrid") {
   return msg;
 }
 
+// Kevin 23 Oct (prod, cold worker): the first visitor at an empty table joins ~3 s before the lip-sync worker the page
+// woke is up; the greeting then took the old lip-synced clip, missed VOICE_WAIT_MS and came as text only. It waits for
+// the moving worker this long (it is ordered now if it was not), then plays the dealer's own recorded greeting.
+const WELCOME_WORKER_MS = 8000;
+async function movingWorkerFor(dealer, ms = WELCOME_WORKER_MS) {
+  if (canTalkMoving(dealer)) return true;
+  if (!(rorlig && rorligOn() && READY_TAKES[dealer] && hasVoice(dealer) && draggeVoiceReady(dealer))) return false;
+  rorlig.activity(dealer);
+  for (const end = Date.now() + ms; Date.now() < end;) { await new Promise(r => setTimeout(r, 250)); if (canTalkMoving(dealer)) return true; }
+  return false;
+}
+// The dealer's own recorded greeting (repliker/<lang>/greet_guest.mp4, no name) with its caption, or null.
+function recordedGreeting(dealer, language) {
+  const texts = READY_TAKES[dealer]?.texts ?? {}, lang = texts[language] ? language : 'en';
+  if (!texts[lang] || !existsSync(path.join(PUBLIC, 'media', 'dealers', dealer, 'repliker', lang, 'greet_guest.mp4'))) return null;
+  return { url: `/media/dealers/${dealer}/repliker/${lang}/greet_guest.mp4`, text: texts[lang].greet_guest ?? null };
+}
+
 async function welcomeGuest({session,name}) {
   const lang=shared.presentationContext(session).language,text=personalizedGreeting(name,lang),id=`g${randomId()}`,dealer=dealerOf(session);
   // Kevin 23 Oct: Dragan and Paow greet in their own voice too (the greeting was Astrid's only, so their tables just read
-  // it): over their idle takes on the moving clips when the worker is warm, else in their own lip-synced clip, never late.
-  if(canTalkMoving(dealer)){
+  // it): over their idle takes on the moving clips when the worker is warm (or within WELCOME_WORKER_MS), else in their
+  // own recorded greeting, never late and never as text only.
+  if(await movingWorkerFor(dealer)){
     try{
       const spoken=await speakOnTalkTrack(session,dealer,text,lang);
       remember({who:'astrid',text},session);
       broadcast({t:'answer',id,to:name,text,dealer,talk:spoken.id},session);
       return;
     }catch(e){console.log(`läppsynk rörlig: hälsningen tar den vanliga vägen (${e.message})`);}
+  }
+  const recorded=recordedGreeting(dealer,lang);
+  if(recorded){
+    remember({who:'astrid',text:recorded.text??text,url:recorded.url},session);
+    broadcast({t:'answer',id,to:name,text:recorded.text??text,dealer,url:recorded.url},session);
+    return;
   }
   if(hasVoice(dealer)&&draggeVoiceReady(dealer)){
     const clip=draggeSay(text,lang,ANSWERS,{dealer}).catch(()=>null);

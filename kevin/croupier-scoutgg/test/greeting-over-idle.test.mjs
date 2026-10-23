@@ -29,10 +29,17 @@ test('a greeting at the table goes on the talk track over the dealer\'s idle cha
   } finally { s.close(); rmSync(dir, {recursive:true, force:true}); }
 });
 
-test('the server greets in the dealer\'s own voice: moving over his idles when warm, else his own clip; Astrid classic as before', () => {
+test('the server greets in the dealer\'s own voice: moving over his idles when warm (waiting a little for a cold worker), else his own recorded greeting; Astrid classic as before', () => {
   const body = server.slice(server.indexOf('async function welcomeGuest'), server.indexOf('function randomId'));
   assert.match(body, /dealer=dealerOf\(session\)/);
-  assert.match(body, /if\(canTalkMoving\(dealer\)\)\{[\s\S]*speakOnTalkTrack\(session,dealer,text,lang\)[\s\S]*broadcast\(\{t:'answer',id,to:name,text,dealer,talk:spoken\.id\},session\)/);
+  assert.match(body, /if\(await movingWorkerFor\(dealer\)\)\{[\s\S]*speakOnTalkTrack\(session,dealer,text,lang\)[\s\S]*broadcast\(\{t:'answer',id,to:name,text,dealer,talk:spoken\.id\},session\)/);
+  // Kevin 23 Oct (prod, cold worker): it waits for the worker the page woke, then his own recorded greeting with voice, not text only
+  const wait = server.slice(server.indexOf('const WELCOME_WORKER_MS'), server.indexOf('async function welcomeGuest'));
+  assert.match(wait, /WELCOME_WORKER_MS = 8000/);
+  assert.match(wait, /rorlig\.activity\(dealer\)/, 'the worker is ordered if the page has not done it yet');
+  assert.match(wait, /greet_guest\.mp4/);
+  assert.match(body, /const recorded=recordedGreeting\(dealer,lang\);\s*if\(recorded\)\{[\s\S]*broadcast\(\{t:'answer',id,to:name,text:recorded\.text\?\?text,dealer,url:recorded\.url\},session\)/);
+  assert.ok(body.indexOf('recordedGreeting(dealer,lang)') < body.indexOf('draggeSay(text,lang'), 'his recorded greeting comes before the slow lip-synced clip');
   assert.match(body, /if\(hasVoice\(dealer\)&&draggeVoiceReady\(dealer\)\)\{[\s\S]*draggeSay\(text,lang,ANSWERS,\{dealer\}\)/, 'cold worker: his own clip, never Astrid\'s');
   assert.match(body, /astrid\.enqueue\(\{kind:'greeting',name,lang\}\)/, 'Astrid classic keeps her pipeline');
   // staging runs with RUNPOD_API_KEY=local-qa-disabled (localQA): that switches off only Astrid's pipeline, so Dragan and Paow still greet
