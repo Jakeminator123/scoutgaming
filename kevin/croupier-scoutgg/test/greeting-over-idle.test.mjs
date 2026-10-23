@@ -49,8 +49,8 @@ test('chat answers share the same moving path; private hand facts and the mixed 
 
 test('Dragan and Paow are greeted by the server only: the recorded greet_guest is not played on top (they met at the table at once)', async () => {
   const { DEALERS } = await import('../public/dealers.js');
-  assert.equal(DEALERS.dragge.serverGreets, true); assert.equal(DEALERS.paow.serverGreets, true);
-  assert.ok(!DEALERS.astrid2.serverGreets && !DEALERS.marten.serverGreets, 'the others keep their recorded greeting');
+  assert.equal(DEALERS.dragge.serverGreets, true); assert.equal(DEALERS.paow.serverGreets, true); assert.equal(DEALERS.astrid2.serverGreets, true, 'Astrid 2.0 greets once, by name (e2e 23 Oct: twice within 0.3 s)');
+  assert.ok(!DEALERS.marten.serverGreets, 'Mårten keeps his recorded greeting');
   const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
   assert.match(app, /if\(!greeted\)\{greeted=true;if\(!dealer\.serverGreets\)remarkNow\(greetingFor\(name\)\);\}/);
 });

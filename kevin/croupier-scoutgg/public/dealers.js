@@ -79,7 +79,7 @@ const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30,
 
 // serverGreets (Kevin 23 Oct): the server greets the player by nickname in this dealer's own voice (server.mjs welcomeGuest,
 // over his idle takes when the lip-sync worker is warm), so the recorded greet_guest without a name is not played as well:
-// the two met at the table at once.
+// the two met at the table at once. Astrid 2.0 too (e2e 23 Oct: she greeted twice within 0.3 s).
 export const DEALERS = {
   astrid: { id: 'astrid', name: 'Astrid', label: 'Astrid (classic)', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
@@ -105,7 +105,7 @@ export const DEALERS = {
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
   astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg?v=20261014',
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
-    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
+    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt', 'ko'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS, serverGreets: true },
 };
 
 // Kevin 12 Oct: Mårten is for Svenska Spel. The public demo never shows him; a Table Studio table built with him
