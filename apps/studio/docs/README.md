@@ -82,8 +82,7 @@ från fri chatt; ett filnamn eller röstval godkänner inte deras synk.
 **Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
 **Redigera gemensam mall**. **Zooma in scenen** och
 **Zooma ut scenen** skalar bakgrund, dealer och bord tillsammans runt bildens
-mitt. Finjustera ett lager under **Storlek och placering**. Samma scenzoom finns
-under **Avancerad sammansättning** i Scen & lager, där du också kan skapa en ny sammansättning.
+mitt. Finjustera ett lager under **Storlek och placering**. Scenzoom och skapande av sammansättningar finns i **Scen & lager** i samma arbetsyta.
 Roulette använder Desktop 16:9 även på mobil; dessa editorer visar därför det
 format som roulette använder. Detta ändrar sparad geometri i den gemensamma
 mallens utkast, inte tillfällig visningszoom eller rummets `roomOverrides`.
@@ -91,14 +90,7 @@ Granska vilka rum som delar mallen, spara utkastet och publicera via det
 befintliga rumsflödet för att ändringen ska nå spelaren. Ett zoomsteg stoppas
 helt om ett lager når sin placeringsgräns.
 
-**Admin är den samlade interna arbetsytan på huvuddomänen.** Ingen funktion finns
-på två ställen: huvudmenyn har Skapande och Verksamhet, och **System** har
-**Fördjupning** (Talgranskning, Svarsbibliotek, Spelhändelser & regler, Guide),
-**Kopplingar & användning**, **OpenClaw** och åtkomst/historik. Gamla `/control`-
-länkar och gamla Admin-adresser leder till motsvarande sida med dealer och rum
-kvar. Sparade uppgifter och behörigheter är desamma.
-`apps/studio/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
-är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
+**Admin är den samlade interna arbetsytan på huvuddomänen.** Sidomenyn skiljer **Studio** (dealers, klipp och scener) från **Administration** (bolag, rum, konton, drift och ekonomi). **System** innehåller inställningar, kopplingar, integrationer, åtkomst och hjälp. Gamla dokumentadresser omdirigeras till funktionens hem; de skapar ingen parallell editor. `/studio` är teknisk montering och `apps/studio` källkod, inte ett extra produktregister.
 
 **Drift → Driftläge** (`/admin/drift`) skiljer sparat önskemål från faktisk drift.
 Välj Av, Sparläge eller Varm och en tillgänglig GPU-profil; servern avgör vilka
@@ -167,19 +159,7 @@ alternativ** ligger i en separat detaljsektion; mallredigeraren visar vilka
 andra rum som kan påverkas. Gamla länkar med `view=registered` fungerar men
 behövs inte längre.
 
-**Hitta rätt i Admin:** Startsidan och menyn delar arbetet i **Skapande** och
-**Verksamhet**. Under Skapande finns **Klippkarta**, **Dealerregister**,
-**Bord & bakgrunder** och **Provspelning**. Verksamhet samlar **Spelbolag & rum**,
-**Bolag & team**, **Drift** och **Ekonomi**. **System** samlar övriga verktyg
-och åtkomst. Samma grupper och namn finns i mobilens sidväljare.
-**Klippkarta** samlar situationer och klipp. Flikarna
-**Klippkarta**, **Dealerregister** och **Lägg till dealer eller filmer** håller
-relaterat arbete tillsammans. **Bord & bakgrunder** har ett gemensamt bibliotek;
-bord filtreras efter spel och bakgrunder kan återanvändas. **Spelarkonton** under
-Verksamhet visar spelarnas konton, saldon och status; **System** samlar Fördjupning,
-Kopplingar & användning, OpenClaw, Konton & åtkomst (adminpersonal) och Integrationer.
-Portalraden går till Admin (`/admin`), Spelbolag (`/partner`) och Spelarlobby
-(`/lobby`). Spelstarten `/play/{game}` behåller sitt kontrakt.
+Huvudmenyn har **Studio** och **Administration**. **Dealers** äger registret och skapar nya dealers; **Klippkarta** är arbetsytan för vald dealer och spel. Där finns flikarna **Klippkarta**, **Röst & tal**, **Svarsbibliotek**, **Skapa material** och **Inställningar**. **Scen & lager** öppnar den gemensamma sceneditorn. **Bord & bakgrunder** är materialbiblioteket. Betalningar finns under **Ekonomi**, journalen på valt bolag. Samma menynamn används i hjälp och mobilens sidväljare. Portalraden leder till Admin, Spelbolag och Spelarlobby; `/play/{game}` behåller sitt launchkontrakt.
 
 Välj dealer och spel i klippkartan. Klippbanken fungerar även utan spelbolag
 eller rum. Öppna **Rum och publicering** när du vill välja dessa uttryckligen. Ett
@@ -211,7 +191,7 @@ revisionskonflikt ligger lokala ändringar kvar för jämförelse. Materialets
 papperskorg visar konsekvenser innan borttagning; att en fil inte är vald i
 ett utkast bevisar inte att den är oanvänd.
 
-Under **Dealerregister** väljer du **Skapa dealer**, anger namn och väljer
+Under **Dealers** väljer du **Skapa dealer**, anger namn och väljer
 **Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt
 dealer vald, även utan rum. Välj eller dra in upp till 30 filmer, välj bakgrund
 för omgången och **Sortera klippen**. Granska facken och välj
@@ -301,14 +281,14 @@ interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
 | Befintlig adress | Nuvarande mål |
 | --- | --- |
 | `/control` | `/admin` |
-| `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås direkt på `/admin/videos`; äldre `/control/videos` omdirigeras |
+| `/control/clips`, `/control/videos` | `/admin/clips`; äldre speech/settings väljer motsvarande panel, generate går till materialskapandet |
 | `/control/companies` | `/admin/companies` |
 | `/control/rooms`, `/control/lanes`, `/admin/publication` | `/admin/rooms`; `lanes?tab=companies` leder till `/admin/companies` |
-| `/control/library`, `/control/compositions` | `/admin/material-library` respektive `/admin/compositions` |
-| `/control/openclaw`, `/admin/ai/models`, `/admin/ai/chat`, `/admin/dealer-agent`, `/admin/probe` | `/admin/openclaw` med rätt flik; `?tab=chat` går till fliken Dealerns agent |
+| `/control/library`, `/control/compositions` | `/admin/assets` respektive `/admin/clips?panel=layers` |
+| `/admin/openclaw` | drift → `/admin/drift?tab=speech`, modeller → `/admin/ai/models`, agent → `/admin/dealer-agent`, probe → `/admin/clips?panel=room` |
 | `/control/guide` | `/admin/guide` |
 | `/control/administration` | `/admin/drift`; `?tab=accounts` leder till `/admin/admin/accounts` |
-| `/studio` | 308 till `/admin` utan query; äldre bokmärken med query går direkt till `/admin/dealer-studio`. `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
+| `/studio` | 308 till `/admin` utan query; äldre bokmärken med query går till rätt panel i `/admin/clips` (eller materialskapandet för view=generate). `/studio/guide` går direkt till `/admin/guide` med navigationskontexten bevarad |
 | `/lab`, `/labb`, `/bo` | `/lab` och `/labb` går via `/control` till `/admin`; `/bo` går via `/control/administration` till `/admin/drift` |
 | `/lissabon` | Ingen aktiv publik ingång: svarade 404 vid kontrollen |
 
@@ -340,7 +320,7 @@ ersätter inte spelmotorn eller dessa startkontrakt.
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
 ```text
-Dealers & klipp: välj dealer → Grundloop / Klipp / Sammansättning / Tal & automatik / Svarsbibliotek / Provspelning & logg / Inställningar
+Studio: välj dealer → Klippkarta / Röst & tal / Svarsbibliotek / Skapa material / Inställningar; Scen & lager öppnas i samma arbetsyta
 Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
@@ -348,7 +328,7 @@ Spelbolag & rum: välj bolag → rum, eller skapa rum och publicera på samma si
 /lobby: välj bolag → spel → rum → tillåten bakgrund, dealer och bord → spela
 ```
 
-**Byt basklipp** är synligt för egna dealers under Grundloop. Även ett uppladdat idle-klipp som används som variation kan väljas. Det ersätter det valda basklippet och behåller övriga basklipp, deras andelar och andra variationer. Den tidigare videon finns kvar bland uppladdade klipp. AI-talets referensbild ändras separat under Tal & automatik. Spara inställningar och publicera paketet igen för att använda bytet i spelet.
+**Byt basklipp** är synligt för egna dealers under Grundloop. Även ett uppladdat idle-klipp som används som variation kan väljas. Det ersätter det valda basklippet och behåller övriga basklipp, deras andelar och andra variationer. Den tidigare videon finns kvar bland uppladdade klipp. AI-talets referensbild ändras separat under Röst & tal. Spara inställningar och publicera paketet igen för att använda bytet i spelet.
 
 **Svarsbibliotek** under vald dealer visar sparade AI-svar med exakt text, ljud och video. Filtrera på kategori, lyssna eller förhandsvisa och spara en eller flera kategorier. Materialet är privat. Om någon ändrar samma svar samtidigt behålls dina val tills du har läst den senaste versionen. Biblioteket startar ingen generering eller återanvändning och publicerar inga klipp. Talgranskning av inspelade klipp nås från Klipp → Tal-klipp & ljud för vald dealer.
 
@@ -360,11 +340,11 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 **Automatik eller OpenClaw?** Automatiska grundloopvariationer styrs av tid, slumpmarginal, minsta paus och maxantal utan AI-anrop. OpenClaws klippval får den publika spelhändelsen och de tillåtna varianternas beskrivningar/villkor; ogiltigt råd ger standardklippet. Skuggläge spelar standard och loggar rådet. Eventtestets chattsignal, språk, återkomst, vinster/förluster och framtoning är simulerade testvärden, inte automatiskt hämtade spelaruppgifter. Den separata OpenClaw-reaktionen i grundloopen använder observerad chatt, högst 8 meddelanden och 3 200 tecken. Den skapar ingen ny talreplik. Astrids utdelningsfrekvenser väljer lokalt på sparade procentandelar för exakt plats.
 
-**AI-tal och uppföljning:** AI-småprat vid inaktivitet skapar ny text och har för närvarande stöd för Astrid. Röst och läppsynk är separata steg och kräver aktiverad talintegration. **Provspelning & logg** visar separata förlopp för inspelade klipp och AI-tal. Ett urvalsbeslut bevisar inte att en bild visats eller att läppsynken är godkänd.
+**AI-tal:** **Röst & tal** samlar inspelade svar, generering och realtidstal för vald dealer. Inställningen för tal vid inaktivitet visas för Astrid, där runtime-stödet finns. Sparad röstprofil eller klippval är inte ett bevis på fungerande eller visuellt godkänd läppsynk.
 
 **Standardfilm per talfack:** för en nyregistrerad dealer, öppna **Klipp → Tal-klipp & ljud**, välj exempelvis **Välkomsthälsning** eller **Blackjack** och välj dess **Standardklipp**. Endast den dealerns tillgängliga filmer för exakt replik visas. Spara inställningarna; övriga talfack behåller sina val. **Inget standardklipp** lossar valet utan att radera filen. Finns en äldre exakt standard visas den uttryckligen som reserv när det egna valet lossas. Bibliotekets status visar vad som valts i utkastet, inte att filmen är publicerad eller har godkänd läppsynk. Filmen ska ha munrörelser som följer dess eget tal. Granska ljud och bild tillsammans före publicering till rummet. Upprepa uppspelningen när återstart eller städning är det som ska verifieras; det finns inget fast antal uppspelningar som publiceringskrav.
 
-**Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Tal & automatik** och är fortfarande begränsat till Astrid.
+**Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Röst & tal** och är fortfarande begränsat till Astrid.
 
 **Scenens storlek:** öppna **Klippkarta → Scen & lager → Redigera gemensam mall**. Där delar alla klipp samma sparade skalning och placering för dealer, bord och bakgrund inom vald sammansättning. Mobil och desktop har egna formatinställningar. Detta är ännu inte en ärvd dealerstandard för alla sammansättningar, och mobil/desktop får inte automatiskt gemensam beskärning. I verktyget **Sammansättningar** finns **Hantera sammansättning → Ta bort sammansättning**; det tar bort utkastets profil. Media och redan publicerade paket behålls.
 
@@ -374,7 +354,7 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 Under **Hantera dealers** kan egna dealers läggas till och tas bort ur utkastet. Det gemensamma biblioteket **Bord & bakgrunder** har synliga flikar för respektive filtyp, uppladdning och information om vilka sammansättningar som använder filerna. Uppladdning där ändrar inga scenval. Samma hantering finns även under Bord/Bakgrund i Sammansättning. Oanvända lagerfiler kan tas bort ur projektbiblioteket och ångras medan sidan är öppen. Sparade paket och Blob-filer raderas inte. Koppla först loss filen från standardval och tillåtna alternativ i alla presentationer som anges. Spara projektet efter ändringen.
 
-**Egen röst och läppsynk:** Under dealerns **Tal & automatik** finns **Röst och läppsynk**. Välj röstleverantör, ett röst-ID som vårt konto har tillgång till och modell. ElevenLabs-profiler kan också spara språkavsikt och uttryckliga värden för stabilitet, röstlikhet, stil och speaker boost under Avancerade röstinställningar. Lämna värden tomma för leverantörens standard. Eleven v3 och Multilingual v2 läser språket ur svarstexten. Välj sedan en av dealerns egna videor och granska en neutral bildruta med tydligt ansikte. **Använd grundloopens första bildruta** väljer bildruta noll ur det verifierade grundklippet när det finns. Granska bilden innan den används; knappen sparar eller aktiverar inget automatiskt. En annan egen video och bildposition kan väljas. Servern tar stillbilden från den sparade positionen; ingen separat bilduppladdning behövs. Markera **Använd egen röst och läppsynk för chattsvar**, lägg profilen i utkastet och spara projektet. Samma fält finns för nya dealers. Sparandet gör inget betalt talprov och är inte ett bevis på fungerande eller visuellt godkänd läppsynk. Driften måste stödja den valda leverantören och förbereda exakt rätt avatar innan tal kan börja.
+**Egen röst och läppsynk:** Öppna **Röst & tal → Realtidstal · röst och referens**. Välj röst, språk och en egen verifierad referensvideo, och lägg ändringen i projektutkastet. Sparande gör inget betalt talprov och innebär inte visuellt godkänd läppsynk. Driften måste stödja profilen innan realtidstal kan användas.
 
 Grundloopen spelas mellan repliker. Under tal används en genererad video med synkroniserat ljud. En stillbild ger inte naturlig andning eller kroppsrörelse; **Video med naturlig rörelse** är därför bara förberedelse och kan ännu inte aktiveras. Filens Fullbild/grönskärm-inställning används även för talbilden tillsammans med bolagets befintliga scen. Rösten är ett separat val: ett namn som PAOW ger inte automatiskt åtkomst till personens ursprungliga röst. Granska ett verkligt chattsvar, läppsynken och återgången till grundloopen innan spelaranvändning. Standarddealernas befintliga talflöden behålls.
 
@@ -708,20 +688,7 @@ kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 Tekniska fördjupningar finns i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
-**Provspelning & logg** på `/admin/rehearsal` skiljer källa, eventdata, kontext, beslut och
-uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
-originalsession och startar läsande observation.
-`/control/rehearsal` är en äldre kompatibilitetslänk.
-Observation startar ingen separat Lab-spelare. Native-kedjan visar mottaget
-event, klippval och verkliga start-/bild-/slutkvitton med sparad revision.
-Partner-SSE visas som separat diagnostik. För övriga dealers kräver separat
-Lab-preview ett uttryckligt val; dess kvitton är tydligt skilda från spelets.
-För Astrid öppnas nu `?dealer=astrid&presentation=local`: Web är ensam spelare
-och Lab visar **En spelare · Web**. Spela och chatta i spelfliken. Valfri
-bilddelning speglar just den fliken; speldata fungerar även utan bilden.
-Grundläget **Standard** gör inga AI-klippval; välj OpenClaw eller Skuggläge
-i spelets klippväljare om du vill prova modellval.
-Chattsvar är ett separat val och påverkas inte av denna klippväljare.
+Den separata sidan **Provspelning & logg** är avvecklad. Prova en sparad scen i klippkartans **Scenförhandsvisning** och öppna publicerat spel från **Spelbolag & rum**. Ett klippval bevisar inte faktisk uppspelning eller godkänd läppsynk; diagnostiska kvitton följer runtimekontraktet.
 
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
 Aktuella kontroller och provgränser beskrivs i
@@ -740,7 +707,7 @@ På **Spelbolag & rum** kan du pausa/öppna rum samt arkivera dem. Växla till a
 
 På **Dealers & klipp** leder **Arkivera & återställ** till dealerns hantering. Använda eller skyddade dealers visar varför arkivering eller permanent borttagning hindras. Att ta bort en sammansättning ändrar Studio-utkastet; publicerade rum behåller sin frysta version tills de hanteras separat.
 
-**Provspelning & logg** visar vald dealer, bolag och rum. Den aktuella observationen hålls åtskild från tidigare logg och importerade protokoll. Att välja ett klipp är inte bevis för att klippet visats; följ uppspelningskvittot. Namnet **lane** används inte som ett separat produktsteg.
+
 
 ## Översikt och rätt arbetsyta
 
@@ -882,16 +849,7 @@ Director måste kvittera kontextkontrakt v2; äldre tjänst ger synlig
 standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
 `node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
 
-**Diagnostik** samlar verifiering, videokarta, import/export och särskilda
-videolägen. Sekvenssteg öppnar befintlig editor. Loggen i Provspelning & logg håller högst 150
-poster i `sessionStorage`, följer med vid sidbyte och töms när fliken stängs.
-Observationsprotokollet håller högst 300 meddelanden/4 MiB i
-flikens minne och stannar vid gränsen.
-Exportera före omladdning. Native-observation kräver den nya
-spelarkoden på vald server; lokal merge är inte Bettalotto-deploy.
-Vid full historik: exportera och välj **Ny observation** i Diagnostik.
-Det ersätter protokollet och gamla labbkön men behåller spelet och anslutningen.
-Konfiguration och gränser finns i [labbets README](../README.md#läsande-partner-ström).
+Diagnostiska transport- och uppspelningskvitton beskrivs i runtimeguiden. Den pensionerade sidans sessionslogg är inte längre en del av Admin-navigationen.
 
 Källklippen från Emil är 1080×1920 (9:16). Det beskriver filens pixelformat,
 inte att Händelser eller spelet har en enda låst mobil layout. Respektive

@@ -116,7 +116,7 @@ test('fresh native N1 login reaches its own profile through the actual isolated 
   const {spawn}=await import('node:child_process'),{once}=await import('node:events'),{createServer}=await import('node:net'),{request:httpRequest}=await import('node:http');
   const {fileURLToPath}=await import('node:url');
   const {createStudioNativeAuthActions}=await import('../apps/studio/lib/studio-native-auth-actions.mjs');
-  const {createStudioNativeAuth}=await import('../apps/studio/lib/studio-native-auth.mjs');
+  const {createStudioNativeAuth}=await import('../packages/studio-access/studio-native-auth.mjs');
   const {playerAreaPage}=await import('../apps/web/lib/player-area.mjs');
   const directory=await mkdtemp(join(tmpdir(),'n1-session-'));
   const listener=createServer();listener.listen(0,'127.0.0.1');await once(listener,'listening');const port=listener.address().port;await new Promise(done=>listener.close(done));

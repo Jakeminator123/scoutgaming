@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes, scryptSync, createHash } from 'node:crypto';
-import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 import { createStudioNativeAuthActions } from '../lib/studio-native-auth-actions.mjs';
 import { createStudioAdminAccounts } from '../lib/studio-admin-accounts.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';

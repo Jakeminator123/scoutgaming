@@ -47,7 +47,7 @@ const props = {
   initialDealerId: 'astrid',
 };
 
-test('chat panel receives the studio session props and opens playback with a full page load', () => {
+test('chat panel receives the studio session props and opens the room with a full page load', () => {
   let panel;
   function GatewayPanel(next) { panel = next; return React.createElement('div', { id: 'gateway-stub' }); }
   const { ControlOpenClawChat } = loadTs(new URL('./control-openclaw-chat.tsx', import.meta.url), {
@@ -71,7 +71,7 @@ test('chat panel receives the studio session props and opens playback with a ful
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
-  assert.deepEqual(assigned, [labUrl('/admin/rehearsal?dealer=elin')]);
+  assert.deepEqual(assigned, [labUrl('/admin/rooms?dealer=elin')]);
 });
 
 // Explicit active dealers used by this isolated component fixture.

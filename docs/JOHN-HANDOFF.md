@@ -11,6 +11,19 @@
 **Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
 
 
+## Admin / Studio — PR #359 — 23 oktober 2026
+
+**Leverans för Claudes granskning:** branch codex/admin-en-ingang, worktree scout-wt/admin-en-ingang. Senaste main 8e34d4a382e7539fe3c7c42ca7f54d9df91f72b1 är integrerad, inklusive #349, #345 och #350. Sista synken gick utan konflikter; båda tidigare leveransavsnitten är bevarade. #354 inklusive Docker-skyddet ingår i basen. #358 är nu mergad och integrerad från main; denna PR gör inga egna ändringar i dess skyddade filer.
+
+**Ändrat:** CSS för dialogpanelen följer nu komponenten och Admin-bygget inkluderar klassanvändningen i återanvända Studio-komponenter. Sidomeny och hjälp delar menykarta. Studio och Administration är tydliga grupper; brödsmulor, små pilrader och extra verktygs-/importflikar är borttagna. Klippkartan samlar vald dealers klipp, tal, inställningar och sceneditor. LabStudio, gamla video-/sceneditorerna samt separata Probe och Provspelning & logg är pensionerade. Materialskapandet har en fokuserad sida med egna utkastspärrar. Äldre dokument och inloggningsreturer går till rätt arbetsyta. De gamla läs-API-namnen behålls för redan laddade klienter; datamodell och skrivkontrakt är oförändrade.
+
+**Verifiering:** hela [CI-körningen på ecf2c8fe](https://github.com/Jakeminator123/scoutgaming/actions/runs/39869956525) är grön: Studio 2 100 godkända/17 överhoppade, Admin 351 godkända/1 överhoppat, frontendtyper, produktionsbygge, åtkomst, spelregler och isolerad lagring/återstart. Sex rena URL-/menylås är borttagna; 49 kvarvarande riktade prov för behörighet, kontext och utkast passerar. Sista main-synkens commitkontroller och aktuella CI-resultat redovisas i PR #359. Föräldralösa tester: 0 av 558 kandidater. Separat UI-prov av byggd klient verifierade den samlade talvyn, dialoglayouten, flikbyten och skapande/val av scen i minnesutkast, med syntetiska data och nekade serverskrivningar. Strikt raderingsgrind: 42 borttagna filer, 0 kvarvarande importer och 0 registerreferenser. Enda textreferensen är den historiska ADMIN-KARTA. Testserver och provflik är stängda.
+
+**Kvar:** den visuella operatörsytan enligt bolag → spel → kompatibla dealers/bord och gemensamma bakgrunder; fullständig produktionsacceptans efter integration; separat avgränsning av permanent radering/frikoppling av aktiva beroenden. Varken databas, media, drifttjänster, rumssidan eller produktion är ändrade. Specialiserad regelredigering och talgranskning finns kvar. Ingen planaktivitet är markerad klar.
+
+**Säkerhet:** befintlig skyddad GitGuardian-koppling kunde inte läsa incidenter/platsmetadata. Källbindning och monitorering är inte verifierade i denna kontroll; ingen full historisk täckning påstås. GitGuardians commitkontroll för den fullverifierade committen ecf2c8fe är godkänd; det ersätter inte incidentsynlighet. Slutlig CI-status för PR:ns aktuella head redovisas i GitHub.
+
+Karta, rotorsak, bokmärken och kvarvarande målbild: [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr-359--rättad-css-och-samlad-navigation--23-oktober-2026).
 
 ## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
 

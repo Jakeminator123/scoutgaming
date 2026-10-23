@@ -31,14 +31,15 @@ function harness({search='',data=session,status=200}={}){
       {...context,module,exports:module.exports,require:name=>name==='react'?hooks:name==='react/jsx-runtime'?require(name):resolve(name)});
     return module.exports;
   }
-  const connected=compile('../components/studio/connected-services.tsx',name=>name.includes('studio-navigation')?studioNavigation:name.includes('studio-resource-lifecycle')?{isActiveOperator:()=>true}:name.endsWith('.module.css')?{__esModule:true,default:{embedded:'embedded-theme'}}:admin);
+  const auth=compile('./admin-session.ts',()=>admin);
+  const connected=compile('../components/studio/connected-services.tsx',name=>name.includes('admin-session')?auth:name.includes('studio-navigation')?studioNavigation:name.includes('studio-resource-lifecycle')?{isActiveOperator:()=>true}:name.endsWith('.module.css')?{__esModule:true,default:{embedded:'embedded-theme'}}:admin);
   const pages=compile('../components/studio/accounts-pages.tsx',()=>({ConnectedServices:markers.ConnectedServices}));
   return {connected,pages,requests,markers,
     render(fn,props={}){cursor=0;return fn(props);},
     async settle(){const pending=queue;queue=[];for(const item of pending){effects[item.index]=item.deps;item.effect();}await new Promise(setImmediate);}};
 }
 // ConnectedServices has no hooks of its own; the inner Administration owns the slots.
-async function administration(h,props){const entry=h.connected.ConnectedServices(props);h.render(entry.type,entry.props);await h.settle();return h.render(entry.type,entry.props);}
+async function administration(h,props){let entry=h.connected.ConnectedServices(props);if(entry.type===h.connected.ServiceTabs)entry=entry.props.tabs.find(tab=>tab.id===(props.tab??entry.props.tabs[0].id)).content;h.render(entry.type,entry.props);await h.settle();return h.render(entry.type,entry.props);}
 
 test('both account pages describe their routes and read the one accounts document through the native reader',()=>{
   const h=harness();
@@ -69,12 +70,12 @@ test('the section prop selects one part of the accounts document without a secon
   }
   // Other groups never carry an accounts view.
   const h=harness();
-  const payments=await administration(h,{path:'/admin/admin/payments',section:'players'});
+  const payments=await administration(h,{path:'/admin/ekonomi',tab:'payments',section:'players'});
   assert.equal(payments.props['data-admin-view'],undefined);
   assert.equal(node(payments,item=>item.type===h.markers.NativeAdministration).props.initialGroup,'finance');
 });
 
-test('Drift keeps game status, shoe proof and integrity through the native reader and sends taldrift to OpenClaw',async()=>{
+test('Drift keeps game status, shoe proof and integrity through the native reader under its game-status tab',async()=>{
   const h=harness();
   const tree=await administration(h,{path:'/admin/drift'});
   const reader=node(tree,item=>item.type===h.markers.StudioAdministration);
@@ -87,8 +88,8 @@ test('Drift keeps game status, shoe proof and integrity through the native reade
   assert.equal(node(tree,item=>item.type===h.markers.NativeAdministration),null);
   assert.equal(node(tree,item=>item.type===h.markers.MovingDriftControls),null);
   assert.equal(node(tree,item=>item.props?.className==='embedded-theme')?.type,'div','the native embedded theme wraps the reader');
-  const link=node(tree,item=>item.type==='a');
-  assert.equal(link.props.href,'/admin/openclaw?tab=drift');
+
+
   // The reader's write preflight reads a fresh session with the native options.
   assert.deepEqual(h.requests.map(row=>row.path),['/studio/api/auth/session']);
   await reader.props.session();

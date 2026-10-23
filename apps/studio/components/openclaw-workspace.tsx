@@ -64,13 +64,6 @@ async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, bo
   return value;
 }
 
-function OpenClawModelTabs({navigation}:{navigation?:{models:string;chat:string;studio:string}}) {
-  return <>
-    <a href={navigation?.models??labUrl('/admin/openclaw?tab=models')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
-    <a href={navigation?.chat??labUrl('/admin/openclaw?tab=agent')}>{navigation ? 'Dealerns agent' : 'Chatt'}</a>
-  </>;
-}
-
 export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { dashboardUrl?: unknown;navigation?:{models:string;chat:string;studio:string};embedded?:boolean }) {
   const url = openClawDashboardUrl(dashboardUrl);
   const [data, setData] = useState<Snapshot | null>(null);
@@ -217,9 +210,8 @@ export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { 
   return <Shell id="main-content" className={styles.shell}>
     <PageTemplate
       eyebrow="System"
-      title="Agentmodeller"
+      title="Systeminställningar"
       intro="Välj modell och spara en agent i taget. Du använder din Studio-inloggning."
-      tabs={<OpenClawModelTabs navigation={navigation}/>}
     />
     <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">

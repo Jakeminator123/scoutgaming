@@ -44,7 +44,7 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
 // global model settings are separate Admin documents.
 export const viewPaths: Record<StudioView, string> = {
   tree: '/admin/events', lab: '/admin/events', videos: '/admin/videos', activity: '/admin/rehearsal',
-  openclaw: '/admin/openclaw?tab=agent', guide: '/admin/guide', probe: '/admin/openclaw?tab=probe',
+  openclaw: '/admin/dealer-agent', guide: '/admin/guide', probe: '/admin/probe',
 };
 
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
@@ -105,6 +105,7 @@ export function studioViewForPath(path: string): StudioView {
   // The OpenClaw page: the dealer agent and idle speech are studio views; models, drift and the assistant are not.
   if (pathname === '/admin/openclaw') return tab === 'agent' ? 'openclaw' : tab === 'probe' ? 'probe' : 'lab';
   if (pathname === '/admin/dealer-agent') return 'openclaw';
+  if (pathname === '/admin/probe') return 'probe';
   const parts = pathname.split('/').filter(Boolean);
   const segment = parts[0] === 'control' ? parts[1] : parts[0];
   if (segment === 'operator-chat' || (segment === 'openclaw' && tab === 'chat')) return 'openclaw';

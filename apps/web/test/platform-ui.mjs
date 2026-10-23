@@ -75,7 +75,7 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
   try {
     const headers = {cookie:'bo_session=isolated-fixture', 'x-croupier-vercel-secret':'spoof',
       'x-croupier-lab-authorized':'spoof', forwarded:'host=foreign.example'};
-    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin/replies', '/studio/admin/login']) {
+    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin', '/studio/admin/login']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
       assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
       assert.equal(response.headers.get('x-middleware-request-cookie'), headers.cookie);
@@ -85,9 +85,9 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
     }
     for (const prefix of ['', '/studio']) for (const old of ['/login','/control/login']) {
-      const response = module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin/publication?room=room-7'),{nextConfig:{basePath:'/studio'}}));
+      const response = module.exports.middleware(new NextRequest(config.publicOrigin+prefix+old+'?returnTo='+encodeURIComponent('/admin?room=room-7'),{nextConfig:{basePath:'/studio'}}));
       assert.equal(response.status,307);
-      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin/rooms?room=room-7'));
+      assert.equal(response.headers.get('location'),config.publicOrigin+'/admin/login?returnTo='+encodeURIComponent('/admin?room=room-7'));
       assert.equal(response.headers.get('referrer-policy'),'no-referrer');
       assert.equal(response.headers.get('cache-control'),'no-store');
     }
@@ -107,36 +107,20 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       const response=module.exports.middleware(new NextRequest(config.publicOrigin+old,{method:'POST',body:'password=discard'}));
       assert.equal(response.status,400);assert.equal(response.headers.get('location'),null);
     }
-    // Retired documents redirect before transport headers are applied. Follow
-    // their public destinations with the cookie a browser retains on this origin.
-    let legacyUrl = config.publicOrigin + '/studio/activity';
-    for (const target of ['/admin/rehearsal']) {
-      const response = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
-      assert.equal(response.status, 307, legacyUrl);
-      assert.equal(response.headers.get('location'), config.publicOrigin + target);
-      legacyUrl = response.headers.get('location');
-    }
-    const rehearsal = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
-    assert.equal(rehearsal.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin/rehearsal');
-    assert.equal(rehearsal.headers.get('x-middleware-request-cookie'), headers.cookie);
-    assert.equal(rehearsal.headers.get('x-middleware-request-x-croupier-lab-authorized'), null);
     const navigation = {...headers, 'sec-fetch-site':'cross-site', 'sec-fetch-mode':'navigate', 'sec-fetch-dest':'document'};
-    const compatibility = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies?dealer=paow', {headers:navigation}));
-    assert.equal(compatibility.status,307);
-    assert.equal(compatibility.headers.get('location'),config.publicOrigin+'/admin/replies?dealer=paow');
-    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin/replies?dealer=paow', {headers:navigation}));
-    assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin/replies?dealer=paow');
+    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin?dealer=paow', {headers:navigation}));
+    assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin?dealer=paow');
     // Known document metadata is normalized before a fetch hop can replace navigate with cors.
     assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), null);
     assert.equal(document.headers.get('x-middleware-request-cookie'), headers.cookie);
-    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin/replies', {headers:{...navigation,origin:'https://foreign.example'}}));
+    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin', {headers:{...navigation,origin:'https://foreign.example'}}));
     assert.equal(foreign.headers.get('x-middleware-request-origin'), 'https://foreign.example');
     for (const [path, init] of [
       ['/studio/api/project', {headers:navigation}],
       ['/admin/_data/catalog', {headers:navigation}],
-      ['/admin/replies', {headers:{...navigation,'sec-fetch-dest':'iframe'}}],
-      ['/admin/replies', {headers:{...navigation,'next-action':'fixture'}}],
-      ['/admin/replies', {method:'POST',headers:navigation,body:'mutation'}],
+      ['/admin', {headers:{...navigation,'sec-fetch-dest':'iframe'}}],
+      ['/admin', {headers:{...navigation,'next-action':'fixture'}}],
+      ['/admin', {method:'POST',headers:navigation,body:'mutation'}],
       ['/control/replies', {method:'POST',headers:navigation,body:'mutation'}],
       ['/control/replies', {headers:{...navigation,'next-action':'fixture'}}],
     ]) {
@@ -189,21 +173,8 @@ test('generated workspace chunks allow encoded bracket folders without widening 
   ]) assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'reject', path);
 });
 
-test('new document surfaces rewrite to native Studio without creating customer or API aliases', () => {
+test('unknown document paths cannot create customer or API aliases', () => {
   const native = platformConfiguration({...env, CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
-  for (const [path, destination] of [['/admin','/studio/admin'], ['/admin/replies','/studio/admin/replies'],
-    ['/partner','/studio/partner'], ['/partner/demo-north','/studio/partner/demo-north'], ['/partner/demo-south/team','/studio/partner/demo-south/team']]) {
-    assert.deepEqual(platformRoute(new URL(path + '?_rsc=fixture', native.publicOrigin), native),
-      {kind:'lab', destination:native.labUiOrigin + destination + '?_rsc=fixture'}, path);
-    if(!path.startsWith('/admin'))assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', 'native preview remains opt-in');
-    assert.equal(backendPlatformPath(path), false, path);
-  }
-  for(const [path,destination]of [['/control','/admin'],['/control/speech','/admin/dealer-studio?view=speech'],['/control/studio','/admin/clips'],['/control/admin','/admin/drift'],['/control/ops','/admin/openclaw?tab=drift'],['/control/lab','/admin/clips'],['/studio/control','/admin']]){
-    const expected=new URL(destination,native.publicOrigin);expected.searchParams.set('_rsc','fixture');
-    assert.deepEqual(platformRoute(new URL(path+'?_rsc=fixture',native.publicOrigin),native),{kind:'redirect',destination:expected.href});
-    if(path==='/control/ops')assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:config.publicOrigin+'/admin/openclaw?tab=drift'});
-    else assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'redirect',destination:new URL(destination,config.publicOrigin).href});
-  }
   for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',
     '/partner/demo-north/api/users', '/control/unknown', '/partner/demo-north/unknown']) {
     assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, path.startsWith('/control/')?'reject':'frontend', path);
@@ -213,15 +184,6 @@ test('new document surfaces rewrite to native Studio without creating customer o
   for (const path of ['/studio/api/admin/users', '/studio/api/partner-preview', '/studio/partner', '/studio/admin']) {
     assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'lab', path);
   }
-});
-
-test('old workspace slugs redirect to one canonical document without granting another surface',()=>{
-  const native=platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
-  for(const [old,path]of [['/control/voice','/admin/dealer-studio?view=speech'],['/control/overview','/admin'],['/partner/demo-north/overview','/partner/demo-north'],['/partner/demo-south/theme','/partner/demo-south/presentation'],['/partner/demo-south/bj','/partner/demo-south/rooms']]){
-    assert.deepEqual(platformRoute(new URL(old,native.publicOrigin),native),{kind:'redirect',destination:native.publicOrigin+path});
-    assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab');
-  }
-  assert.equal(platformRoute(new URL('/partner/demo-south/presentation-events',native.publicOrigin),native).kind,'frontend');
 });
 
 test('catalogue aliases keep scoped choices and reject mutation requests',()=>{
@@ -628,9 +590,7 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
     process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1';
-    const compatibility=module.exports.middleware(new NextRequest(config.publicOrigin+'/control/speech?_rsc=fixture',{headers:{rsc:'1'}}));
-    assert.equal(compatibility.status,307);assert.equal(compatibility.headers.get('location'),config.publicOrigin+'/admin/dealer-studio?view=speech&_rsc=fixture');
-    for (const path of ['/admin/replies', '/partner/demo-north']) {
+    for (const path of ['/admin', '/partner/demo-north']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path + '?_rsc=fixture', {headers:{
         cookie:'bo_session=isolated-admin-fixture', rsc:'1', 'x-croupier-vercel-secret':'spoof', 'x-croupier-lab-authorized':'spoof',
       }}));
@@ -673,7 +633,6 @@ test('frozen event media has one exact authenticated backend route',()=>{
   assert.equal(headers.get('cookie'),'player_session=fixture');assert.equal(headers.get('range'),'bytes=0-15');
   for(const bad of [path+'/',path+'/record',path.replace('/7/','/0/'),path.replace('/johanna/','/%6aohanna/'),path.replace(/83$/,'xyz'),path.replace('/north/','/../')]) assert.equal(backendPlatformPath(bad),false,bad);
 });
-
 
 test('published room catalogue uses an exact operator route through existing backend transport',()=>{
   const path='/api/operators/sg-test/rooms';
@@ -779,24 +738,15 @@ test('shared dealer voice has only two exact transport paths and preserves untru
   assert.equal(headers.get('x-croupier-lab-authorized'),null);assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
 });
 
-test('legacy lab aliases go straight to Admin with query preserved and auth contracts unchanged',async()=>{
+test('static redirects leave credentials and APIs to their authenticated handlers',async()=>{
  const require=createRequire(new URL('../package.json',import.meta.url));
  const {unstable_getResponseFromNextConfig,getRedirectUrl}=require('next/experimental/testing/server');
  const keys=Object.keys(env),saved=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
- const aliases=[['/lab','/admin'],['/labb','/admin'],['/studio-astrid','/admin'],['/studio-lissabon','/admin'],['/labb-lissabon','/admin'],['/labb/filmer','/admin/videos'],['/labb/zoner','/admin/compositions'],['/labb/guide','/admin/guide']];
- const search='?dealer=dragan&operator=example&table=room-evening&lane=evening&game=blackjack';
  try{
   for(const native of [true,false]){
    Object.assign(process.env,env,{CROUPIER_STUDIO_NATIVE_ADMIN:native?'1':'0',CROUPIER_VERCEL_UNIFIED_UI:native?'1':'0'});
    const {default:nextConfig}=await import('../next.config.mjs?return-navigation-'+native);
-   for(const [from,to] of aliases){
-    const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+from+search,nextConfig});
-    assert.equal(response.status,307,from);
-    const actual=new URL(getRedirectUrl(response));
-    assert.equal(actual.origin,config.publicOrigin);assert.equal(actual.pathname,to,from);
-    assert.deepEqual([...actual.searchParams],[...new URLSearchParams(search)],from);
-   }
-   for(const path of ['/control/login?returnTo=%2Fcontrol%2Fclips','/control/set-password?t=fixture','/api/auth/session','/api/table','/game?game=roulette&operator=alpha','/play/blackjack','/studio','/v2','/blackjack']){
+   for(const path of ['/control/login?returnTo=%2Fadmin','/control/set-password?t=fixture','/api/auth/session','/api/table']){
     const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+path,nextConfig});
     assert.equal(getRedirectUrl(response),null,path);
    }

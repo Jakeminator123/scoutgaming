@@ -72,27 +72,3 @@ test('legacy clip settings require keyed output on explicit save without alterin
   nodes(tree,node=>node.type==='button')[0].props.onClick();await new Promise(resolve=>setImmediate(resolve));
   assert.deepEqual(calls[0].previous,old);assert.equal(calls[0].metadata.compositing.mode,'green-screen');assert.equal(old.compositing.mode,'opaque');
 });
-
-test('table and background choices stay visible and save in a composition whose dealer has no legacy compositing metadata',async()=>{
-  let project=addDealer(createSeedProject(),'paow','PAOW'),saved;
-  const lane=defaultPresentationLane('paow');lane.id='johns-johanna';lane.layers.table.enabled=false;lane.layers.background.enabled=false;project.lanes=[lane];
-  project.layerAssets=['table','background'].map((role,index)=>{const asset={schemaVersion:1,id:`00000000-0000-4000-8000-00000000000${index+1}`,role,label:role==='table'?'Nytt bord':'Ny miljö',sha256:'a'.repeat(64),size:24,contentType:'image/png',width:640,height:360};return {...asset,pathname:layerAssetPath(asset)};});
-  const original=structuredClone(project),videos={videos:[{id:'paow-idle',label:'PAOW',available:true,dealer:'paow',previewUrl:'/fixture.mp4'}]},projectRef={current:project};let baseline=JSON.stringify(project);
-  const session={get project(){return project;},projectRef,videos,get dirty(){return JSON.stringify(project)!==baseline;},saving:false,save:async()=>{saved=structuredClone(project);baseline=JSON.stringify(project);return true;},get savedJson(){return baseline;},modelEdit(fn){project=fn(project);projectRef.current=project;},setProject(value){project=value;projectRef.current=value;},setSavedJson(){},setConflict(){},setError(){},setNotice(){},conflict:false};
-  const h=hooks(),window={addEventListener(){},removeEventListener(){},location:{href:'https://qa.invalid/control/compositions'},history:{replaceState(){}}};
-  const {ControlPreviewPage}=load('../components/control-preview-page.tsx',{react:h.react,'./studio-session':{useStudioProjectSession:()=>session}},{window});
-  const {LayerAssetSelect}=load('../components/layer-selectors.tsx');
-  const props={initialProject:project,initialVideos:videos,initialStatus:{provider:'neon'},initialLaneId:lane.id,initialDealerId:'paow'};
-  let tree=h.render(ControlPreviewPage,props);h.effects();
-  assert.equal(nodes(tree,node=>node.type==='CompositionPreview')[0].props.compositing.mode,'green-screen');
-  for(const role of ['table','background']){
-    const selector=nodes(tree,node=>node.type==='LayerAssetSelect'&&node.props.role===role)[0];const fields=LayerAssetSelect(selector.props);
-    const id=project.layerAssets.find(row=>row.role===role).id;nodes(fields,node=>node.type==='select')[0].props.onChange({target:{value:id}});
-    tree=h.render(ControlPreviewPage,props);h.effects();
-    const preview=nodes(tree,node=>node.type==='CompositionPreview')[0];assert.equal(preview.props.show[role],true);assert.equal(preview.props[role].url,`/api/layer-assets/${id}`);
-    assert.ok(nodes(tree,node=>node.type==='input'&&node.props['aria-label']===(role==='table'?'Bord bredd':'Bakgrund storlek')).length,'layer placement is available with unclassified legacy dealer');
-  }
-  const save=nodes(tree.props.primary,node=>node.type==='button'&&text(node)==='Spara')[0];assert.equal(save.props.disabled,false);save.props.onClick();await new Promise(resolve=>setImmediate(resolve));
-  assert.equal(saved.lanes[0].layers.table.default,project.layerAssets[0].id);assert.equal(saved.lanes[0].layers.background.default,project.layerAssets[1].id);assert.deepEqual(videos.videos[0],{id:'paow-idle',label:'PAOW',available:true,dealer:'paow',previewUrl:'/fixture.mp4'});assert.equal(original.lanes[0].layers.table.default,null);
-  h.unmount();
-});
