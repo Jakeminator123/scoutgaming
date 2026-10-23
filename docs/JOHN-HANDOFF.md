@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## Mergegranskning — assistentens bolagslänkar i PR #359 — 23 oktober 2026
+
+Serverns `companies` och `audit` pekar på `/admin/companies`, men widgetens tillåtlista saknade adressen. Länkarna doldes därför. `apps/studio/public/assistant-widget.js` tillåter nu denna exakta sökväg; samma-origin-kontroll, fragmentspärr och äldre tillåtna adresser är kvar.
+
+Verifierat lokalt med Node 24.19 (paketet kräver 24.x): syntaxkontroll och 7/7 körda navigationsfall ur widgetens faktiska kodblock. Bolagslänk med/utan query samt befintliga klipp-/operatörslänkar visas; extern origin, fragment och okänd sökväg nekas. Ingen full lokal regression eller webbläsaracceptans har körts. Ny CI måste vara grön på ändringens head före merge. GitGuardian-kontrollen på föregående PR-head var grön; incidentlista, källbindning, övervakning och historik är inte verifierade här.
+
 ## Admin / Studio — PR #359 — 23 oktober 2026
 
 **Leverans för Claudes granskning:** branch codex/admin-en-ingang, worktree scout-wt/admin-en-ingang. Senaste main 8e34d4a382e7539fe3c7c42ca7f54d9df91f72b1 är integrerad, inklusive #349, #345 och #350. Sista synken gick utan konflikter; båda tidigare leveransavsnitten är bevarade. #354 inklusive Docker-skyddet ingår i basen. #358 är nu mergad och integrerad från main; denna PR gör inga egna ändringar i dess skyddade filer.
