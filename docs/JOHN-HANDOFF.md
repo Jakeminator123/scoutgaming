@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## PR #352: rådgivande Claude-granskning — 23 oktober 2026
+
+Två granskningsfynd är rättade: raderingsgrinden tillåts som exakt Bash-kommando, och actionen får workflowens GitHub-token med läsrätt till kod i stället för en separat App-token med skrivrätt. OIDC-rätten är borttagen; filredigering och Git-skrivkommandon spärras, checkout sparar inte credentials. Node följer repots 24.21.0. Fork- och utkastvillkor behålls.
+
+Workflowen är synkad med main. YAML parsad utan fel; faktisk token, fork-/utkastvillkor och exakt kommandotillstånd kontrollerade i den parsade konfigurationen. Raderingsgrinden passerar och separat omgranskning bekräftar att båda fynden är lösta. Ingen API-nyckel, App-installation, betald körning eller inställningsändring har gjorts. Hemlighetens närvaro kunde inte verifieras via tillgänglig åtkomst. PR:n kvarstår som utkast tills API-nyckel och en riktig rådgivande granskning är verifierade; grön produkt-CI på den gamla headen verifierade inte detta utkastjobb.
+
 ## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
 
 `studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.

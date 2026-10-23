@@ -16,7 +16,6 @@ permissions:
   contents: read
   pull-requests: write
   issues: read
-  id-token: write
 
 jobs:
   review:
@@ -28,8 +27,14 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.21.0'
       - uses: anthropics/claude-code-action@v1
         with:
+          # Använd workflowens begränsade token, inte en bredare App-token.
+          github_token: ${{ github.token }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
           prompt: |
@@ -46,4 +51,7 @@ jobs:
             4. Ägarskap: branchprefix, författare och om PR:en rör filer som en annan öppen PR också rör.
 
             Avsluta med en rad: GODKÄNN / ÄNDRA / BLOCKERA och varför. Ändra inga filer.
-          claude_args: "--max-turns 30"
+          claude_args: >-
+            --max-turns 30
+            --allowedTools "Bash(node tools/raderingsgrind.mjs origin/main --strict)"
+            --disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*),mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files"
