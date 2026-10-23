@@ -232,21 +232,26 @@ async function speakOnTalkTrack(room, dealer, text, language) {
   const pcm = await draggeVoice(text, language, { dealer });
   return sendTalk(room, dealer, shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000 }), pcm);
 }
-// Kevin 23 Oct: the dealer's own chatter ("Take your time. The cards aren't going anywhere.", chatter2 on the player's turn;
-// chatter1 after a quiet betting window) and his line as a new round opens ("Ny runda, nya kort. Insatsrutan är din.",
-// placebets_1..3) are said over his idle or wait chain on the moving clips, not on his still: his
-// recorded line on the talk track, the worker fetching its voice. Only when his worker is warm; else the viewer plays the
-// recorded clip as before. One per table at a time: a second viewer's chatter within 8 s is the same line, not another.
-const REMARK_TALK = /^(chatter[12]|placebets)_[1-3]$/, lastRemark = new Map();
+// Kevin 23 Oct: the dealer's own recorded remarks, which played as clips lip-synced on his still, are said over his idle or
+// wait chain on the moving clips instead: his recorded line on the talk track, the worker fetching its voice. Only when
+// his worker is warm; else the viewer plays the clip as before. The table hears them all: chatter ("Take your time…"),
+// the new round ("Ny runda, nya kort…", placebets), table talk, the win-streak banter, the recorded greeting of a dealer
+// the server does not greet (Astrid 2.0), and the remarks on a hit or a stand (remark_*: every player's cards are face up
+// at the shared table, the decision is seen by all). A player's private lines (his hand facts, his own round result) never
+// come here. The same line within 8 s at one table is said once (several viewers ask for it).
+const REMARK_TALK = /^((chatter[12]|placebets)_[1-3]|table_(trust|cash)_1|banter_1|remark_(hit17_[12]|hit20_1|stand11_1)|greet_[a-z]{2,16})$/, lastRemark = new Map();
 function speakRemark(room, id) {
   if (typeof id !== 'string' || !REMARK_TALK.test(id)) return false;
   const dealer = dealerOf(room);
   if (!(rorlig && rorligOn() && rorlig.ready(dealer))) return false;
-  if (Date.now() - (lastRemark.get(room) ?? 0) < 8000) return true;
-  const clip = { id, url: `/media/repliker/${id}.mp4` }, line = rorlig.line(dealer, clip.url, shared.language(room));
+  const key = `${room}:${id.replace(/_\d+$/, '')}`;
+  if (Date.now() - (lastRemark.get(key) ?? 0) < 8000) return true;
+  const language = shared.language(room), clip = { id, url: `/media/repliker/${id}.mp4` };
+  const line = rorlig.line(dealer, clip.url, language) ?? rorlig.extraLine(dealer, id, language);
   if (!line) return false;
-  lastRemark.set(room, Date.now());
-  sendTalk(room, dealer, shared.addTalk(room, { kind: 'line', event: id.replace(/_\d+$/, ''), clip, line: line.url, lang: line.lang, dur: line.dur }));
+  lastRemark.set(key, Date.now());
+  // ljud: the viewer plays the line's own file (an extra line has no shared clip its language lookup knows)
+  sendTalk(room, dealer, shared.addTalk(room, { kind: 'line', event: id.replace(/_\d+$/, ''), clip, line: line.url, lang: line.lang, dur: line.dur, ljud: line.url }));
   return true;
 }
 

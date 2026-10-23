@@ -57,12 +57,16 @@ test('Dragan and Paow are greeted by the server only: the recorded greet_guest i
 
 test('the dealer\'s chatter ("Take your time…") goes on the talk track over his idles when his worker is warm, else the recorded clip', () => {
   const remark = server.slice(server.indexOf('const REMARK_TALK'), server.indexOf('async function talkReply'));
-  assert.match(remark, /\/\^\(chatter\[12\]\|placebets\)_\[1-3\]\$\//, 'only the chatter lines and the new-round line');
+  const REMARK = new RegExp(remark.match(/const REMARK_TALK = \/(.+)\/, lastRemark/)[1]);
+  for (const id of ['chatter1_2', 'chatter2_1', 'placebets_2', 'table_trust_1', 'table_cash_1', 'banter_1', 'remark_hit17_1', 'remark_hit20_1', 'remark_stand11_1', 'greet_guest']) assert.ok(REMARK.test(id), id);
+  for (const id of ['../x', 'goodluck_1', 'result', 'chatter3_1', 'greet_']) assert.ok(!REMARK.test(id), `${id} refused`);
+  assert.doesNotMatch(remark, /roundResult|tableFact/, 'a player\'s private lines never go on the talk track');
   assert.match(remark, /if \(!\(rorlig && rorligOn\(\) && rorlig\.ready\(dealer\)\)\) return false;/, 'cold worker: the viewer plays the clip');
-  assert.match(remark, /shared\.addTalk\(room, \{ kind: 'line', event: [^}]*clip, line: line\.url, lang: line\.lang, dur: line\.dur \}\)/);
+  assert.match(remark, /rorlig\.line\(dealer, clip\.url, language\) \?\? rorlig\.extraLine\(dealer, id, language\)/);
+  assert.match(remark, /shared\.addTalk\(room, \{ kind: 'line', event: [^}]*clip, line: line\.url, lang: line\.lang, dur: line\.dur, ljud: line\.url \}\)/);
   assert.match(server, /else if \(j\.t === "remark"\)/);
   const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-  assert.match(app, /if \(dealer\.serverGreets && \/\^\(chatter\[12\]\|placebets\)_\/\.test\(id \?\? ''\) && ws\?\.readyState === 1\)/);
+  assert.match(app, /if \(dealer\.keyed && ws\?\.readyState === 1\) \{ pendingRemarks\.add\(id\); ws\.send\(JSON\.stringify\(\{ t: 'remark', id \}\)\); return; \}/);
   assert.match(app, /case "remark":\s*if \(pendingRemarks\.delete\(j\.id\) && !j\.talk\) playRemark\(j\.id\);/);
 });
 

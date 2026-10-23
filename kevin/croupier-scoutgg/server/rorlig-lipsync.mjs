@@ -234,6 +234,20 @@ export class RorligLipsync {
     return dur ? { ...l, dur } : null;
   }
 
+  /** A recorded line of the dealer's own by its take id (greet_guest, table_trust_1, remark_hit17_1 …: outside the shared
+   *  /media/repliker set dealerLine reads), in the table's language or English. → {id, lang, url, dur} or null. */
+  extraLine(dealer, id, language) {
+    if (!/^[a-z0-9_]{3,40}$/.test(id ?? '')) return null;
+    const langs = this.#langs(dealer), lang = langs.includes(language) ? language : 'en', url = `/media/dealers/${dealer}/repliker/${lang}/${id}.mp4`;
+    let dur = this.durations.get(url);
+    if (dur === undefined) {
+      const file = path.join(this.publicDir, ...url.split('/').filter(Boolean));
+      try { dur = existsSync(file) ? mp4Duration(readFileSync(file)) : null; } catch { dur = null; }
+      this.durations.set(url, dur);
+    }
+    return dur ? { id, lang, url, dur } : null;
+  }
+
   /**
    * Lip-syncs one line or answer over a map of frames; patches go to onPiece(room, talkId, meta) as they come.
    * pcm: an answer's voice (s16le 24 kHz), kept for a new map; without it the worker fetches the line (talk.line).

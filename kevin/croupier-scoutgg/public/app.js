@@ -264,9 +264,9 @@ let greeted = false;   // Kevin 23 Oct: a dealer the server greets by name (deal
 const pendingRemarks = new Set();
 function remarkNow(id) {
   if (gameTable?.talking) return;   // he is already speaking over his clips (state.talk): no second voice on top
-  // Kevin 23 Oct: a dealer with moving speech says his chatter over his idles (the server's talk track); the recorded clip
-  // on his still plays only when the server answers that his lip-sync worker is not warm
-  if (dealer.serverGreets && /^(chatter[12]|placebets)_/.test(id ?? '') && ws?.readyState === 1) { pendingRemarks.add(id); ws.send(JSON.stringify({ t: 'remark', id })); return; }
+  // Kevin 23 Oct: a dealer on the moving clips says his remarks over his idles (the server's talk track, server.mjs
+  // speakRemark); the recorded clip on his still plays only when the server answers that his lip-sync worker is not warm
+  if (dealer.keyed && ws?.readyState === 1) { pendingRemarks.add(id); ws.send(JSON.stringify({ t: 'remark', id })); return; }
   playRemark(id);
 }
 function playRemark(id) {
