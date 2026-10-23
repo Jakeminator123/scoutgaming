@@ -737,6 +737,7 @@ room.on("connection", (ws) => {
       if (clean) { ws.name = clean; send(ws,{t:"named",name:clean}); }
     } else if (j.t === "warm") {
       if (hasVoice(j.dealer)) draggeWarm(j.dealer);   // a Dragge or Paow viewer arrived: take the GPU warm-up now
+      if (rorlig && rorligOn() && READY_TAKES[j.dealer]) rorlig.activity(j.dealer);   // and the lip-sync worker, before the first chat (~55 s cold)
     } else if (j.t === "remark") {
       let talk = false; try { talk = speakRemark(ws.session, j.id); } catch (e) { console.log(`läppsynk rörlig: småpratet tar den vanliga vägen (${e.message})`); }
       send(ws, { t: 'remark', id: String(j.id ?? '').slice(0, 40), talk });
