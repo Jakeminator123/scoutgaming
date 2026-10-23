@@ -28,6 +28,15 @@ Flerspelarutökning, nya QA-seeds och spelarprov är **pausade som aktiv priorit
 
 **Förenklingen i J05/J06/J09/J10 återstår.** STÄD arbetar med paket A:s sju utpekade webblobbywrapper-/testfiler; det är ett pågående delarbete, inte hel J06-acceptans eller skäl att radera aktiva gemensamma adaptrar. AdminBlackjack, Jakobs klippkarta och operatörflödet styr nästa avgränsade leverans. J08:s fulla material-/paketbindning och K05:s verkliga register-/Blobidentiteter/talgodkännande är fortfarande öppna. Fryst metadataunderlag159cc och senare läppsynkunderlag bevaras utan nya godkännanden. Ingen automatisk dealeråterställning, nytt rum, grundloopbyte, molnimport eller schemautökning beställs här.
 
+**J08, visuell operatörsyta beställd 23 oktober:** avgränsad fortsättning på
+`codex/visuell-operator` efter navigationsarbetet i PR #359. Bolagsval och
+spelkort samlar skapa/ta bort, paus/öppning och separata val av bakgrund, dealer
+och bord. Befintliga publicerade materiallistor, rumsspecifika overrides,
+behörigheter och revisionskontroller gäller. Verifiera sparning/återöppning,
+bolagsisolering, osparade val och korrekt val av nyskapat/kvarvarande spel.
+Ingen ny datamodell, molnimport eller produktionsskrivning ingår. Denna del ändrar
+inte aktiviteternas verifieringsstatus; J08:s återstående runtimeacceptans kvarstår.
+
 **Merge och produktionsgrindar:** befintligt villkorat mandat för verifierat Jakobägda PR:ar ändrar inte dagens prioritering och ger ingen automatisk merge. Färsk PRauthor/source/branch/fullhead, trusted-mainägarkarta, oberoende granskning, exakt-head grön obligatorisk CI samt integrations-/schema-/säkerhetsgrindar krävs; vanlig merge binds till granskad head och följs av verifierad main/CI. Kevin/John/Emil/okänd eller konfliktägare kräver separat uttryckligt mänskligt godkännande för exakt PR/ägare/oförändrad head. Ingen bypass/force/automerge/queue/grendeletion eller parallellmerge. **Game008/009/010-productionblock består** tills separat auktoriserad migration och readiness är verifierade; Studio-readiness ersätter inte detta. Produktionsflaggan är AV och produktions-DDL/deploy/env-aktivering är inte godkända. GitGuardian incident-/historiktäckning är ofullständig. Primary, planarbetskopian och andra ägares arbete lämnas orörda; root äger Git och integration.
 
 ## Frysta utgångspunkter

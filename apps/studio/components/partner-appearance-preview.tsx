@@ -8,8 +8,8 @@ import type {PublicOperatorPreview} from '../../../packages/presentation/contrac
 import type {EditableBranding,PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 import styles from './partner-appearance.module.css';
 
-export function PartnerAppearancePreview({server,branding,scope,operatorSlug,language='sv',onStale,active=true,initiallyEnabled=false,compact=false}: {
-  server:PartnerAppearanceInitial;branding:EditableBranding;scope:string;operatorSlug:string;language?:string;onStale:()=>void;active?:boolean;initiallyEnabled?:boolean;compact?:boolean;
+export function PartnerAppearancePreview({server,branding,scope,operatorSlug,language='sv',onStale,active=true,initiallyEnabled=false,compact=false,onMedia}: {
+  server:PartnerAppearanceInitial;branding:EditableBranding;scope:string;operatorSlug:string;language?:string;onStale:()=>void;active?:boolean;initiallyEnabled?:boolean;compact?:boolean;onMedia?:(payload:PublicOperatorPreview|null)=>void;
 }) {
   const en=language==='en',t=(sv:string,english:string)=>en?english:sv;
   const [attempt,setAttempt]=useState(0);
@@ -53,6 +53,8 @@ export function PartnerAppearancePreview({server,branding,scope,operatorSlug,lan
   },[identity,enabled,attempt]);
   const current=state.identity===identity?state:{identity,status:'loading' as const};
   const payload=current.status==='ready'?current.payload:null;
+  const mediaCallback=useRef(onMedia);mediaCallback.current=onMedia;
+  useEffect(()=>{mediaCallback.current?.(payload??null);},[payload]);
   const tableId=selected.table??lane?.layers.table.default,backgroundId=selected.background??lane?.layers.background.default;
   const table=payload?.media.tables.find(row=>row.id===tableId),background=payload?.media.backgrounds.find(row=>row.id===backgroundId);
   const media=(row:typeof table)=>row?{url:row.src,label:row.label,contentType:row.contentType}:null;

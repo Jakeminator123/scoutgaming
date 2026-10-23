@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
+
+`studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.
+
+Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib/studio-context.test.mjs` godkända lokalt med Node 24.19 och högst fyra testarbetare. Ingen produktkod är ändrad av denna rättning. Full CI krävs på den nya headen före merge; ingen produktionsacceptans påstås.
+
+## Visuell operatörsyta — 23 oktober 2026
+
+**Leverans:** `codex/visuell-operator` innehåller den separata visuella ändringen mot main. Den utvecklades tillsammans med PR #359; integrera #359 först för gemensam CSS och navigation. Bolagsvalet ligger i rubriken; spelkort samlar utbudet. Lägg till öppnar spelmall, spel och namn. Bekräftat skapande öppnar rätt rum; borttagning lämnar det återstående utbudet valt. Återställningsvyn visar enbart borttagna spel. Paus/öppning finns för valt spel.
+
+**Tre lager:** bakgrund och bord har materialkort med paketets verifierade förhandsbilder, dealer har tydligt valkort. Ett bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Samma roomOverrides, save-draft/review/publish, behörigheter och CAS används. Inbakad bakgrund är låst; nya rum kräver fortfarande en kompatibel sparad spelmall med fast utgångsmiljö. Paketets urval och godkänt mediematerial utökas inte automatiskt.
+
+**Verifiering:** 98 riktade beteendeprov och Admin 351 godkända/1 överhoppat; byggd Admin-/lobbyklient inklusive typer. Studio gav 2 102 godkända/17 överhoppade samt två laddningsfel i en testadapter. Adaptern har rättats och dess 12 beteendeprov passerar i omprov. Föräldralösa tester: 0/562. Samlad CI-status följer PR:ens slutliga head. Isolerat UI-prov med syntetiska data verifierar bolagsbyte, skydd av osparade val, tre separata val, spara/omladdning, skapa med rätt spel och direkt öppning, borttagning samt rätt återställningslista. Inga produktionsdata eller tjänster är ändrade. Slutlig PR/head anges vid leveransen.
+
+**Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
+
 ## Mergegranskning — assistentens bolagslänkar i PR #359 — 23 oktober 2026
 
 Serverns `companies` och `audit` pekar på `/admin/companies`, men widgetens tillåtlista saknade adressen. Länkarna doldes därför. `apps/studio/public/assistant-widget.js` tillåter nu denna exakta sökväg; samma-origin-kontroll, fragmentspärr och äldre tillåtna adresser är kvar.
