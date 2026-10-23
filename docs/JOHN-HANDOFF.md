@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
+
+`studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.
+
+Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib/studio-context.test.mjs` godkända lokalt med Node 24.19 och högst fyra testarbetare. Ingen produktkod är ändrad av denna rättning. Full CI krävs på den nya headen före merge; ingen produktionsacceptans påstås.
+
 ## Visuell operatörsyta — 23 oktober 2026
 
 **Leverans:** `codex/visuell-operator` innehåller den separata visuella ändringen mot main. Den utvecklades tillsammans med PR #359; integrera #359 först för gemensam CSS och navigation. Bolagsvalet ligger i rubriken; spelkort samlar utbudet. Lägg till öppnar spelmall, spel och namn. Bekräftat skapande öppnar rätt rum; borttagning lämnar det återstående utbudet valt. Återställningsvyn visar enbart borttagna spel. Paus/öppning finns för valt spel.
