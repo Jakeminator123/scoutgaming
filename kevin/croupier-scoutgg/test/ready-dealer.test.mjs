@@ -107,7 +107,7 @@ test('Dragan idles on his H3 takes in his own take folder, without the ones Kevi
   const d = DEALERS.dragge;
   assert.deepEqual(d.idles.slice(0, 6).map(i => i.id), ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar'], 'no glance to the left (Kevin 20 Oct), no andasb or huvud (23 Oct)');
   assert.deepEqual(d.idles.slice(6).map(i => i.id), ['rakrygg6101', 'vikt6103', 'vridhoger7105', 'vridvanster6101'], 'the new takes he kept');
-  for (const idle of d.idles.slice(6)) assert.equal(idle.vikt, 6, idle.id);
+  for (const idle of d.idles.slice(6).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/dragge/v2/'), idle.id); assert.equal(idle.dur, 1.625, 'Emil\'s length, 39 frames'); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
   assert.ok(d.idles[0].vikt >= 10);
 });
@@ -117,7 +117,7 @@ test('Paow idles on her seven H3 takes in v2/ (the two glances to the right dera
   assert.deepEqual(d.idles.slice(0, 7).map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']);
   assert.deepEqual(d.idles.slice(7).map(i => i.id), ['rakrygg6101', 'vikt6103', 'vikt6105', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105'], 'the new takes she kept (Kevin 23 Oct)');
   //ridvanster6105'], 'plus the sixteen Kevin picked (21 Oct), axlar6105 included');
-  for (const idle of d.idles.slice(7)) assert.equal(idle.vikt, 6, idle.id);
+  for (const idle of d.idles.slice(7).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/paow/v2/'), idle.id); assert.equal(idle.dur, 1.625); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
   assert.equal(d.idles.find(i => i.id === 'andas').vikt, 20);
 });
@@ -146,4 +146,14 @@ test('the 27 idles Kevin rejected never play, and their files are kept', () => {
     }
     assert.ok(DEALERS[dealer].idles.length >= 3 && DEALERS[dealer].idles.some(i => i.calm), `${dealer} keeps idles and a calm one for the wait`);
   }
+});
+
+// Kevin 23 Oct: "his head is moving too much": the turns, glances, nods and leans show about one time in ten
+test('the head-movement takes are about one idle in ten; the calm takes keep their weights', () => {
+  for (const id of ['dragge', 'paow', 'astrid2']) {
+    const idles = DEALERS[id].idles, calm = idles.filter(i => i.calm).reduce((n, i) => n + i.vikt, 0), lively = idles.filter(i => !i.calm).reduce((n, i) => n + i.vikt, 0);
+    assert.ok(Math.abs(lively / (calm + lively) - .1) < .005, `${id}: ${(lively / (calm + lively)).toFixed(3)}`);
+  }
+  assert.equal(DEALERS.dragge.idles.find(i => i.id === 'andas').vikt, 20);
+  assert.equal(DEALERS.paow.idles.find(i => i.id === 'rakrygg6101').vikt, 6);
 });

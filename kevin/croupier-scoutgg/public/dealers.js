@@ -59,7 +59,16 @@ const DRAGGE_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'vi
 const PAOW_NEW_IDLES = [['rakrygg6101', 'rätar på ryggen'], ['vikt6103', 'viktförskjutning på stolen'], ['vikt6105', 'viktförskjutning på stolen'],
   ['vridhoger6101', 'vrider huvudet åt höger'], ['vridvanster6101', 'vrider huvudet åt vänster'], ['vridvanster6105', 'vrider huvudet åt vänster']];
 const h3IdlesFor = (id, dir = 'idle-v2', dur = 3.04, only = null) => H3_IDLES.filter(([k]) => !only || only.includes(k)).map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/${dir}/${k}.mp4${V}`, vikt, beskrivning, dur, calm: calmIdle(k) }));
-const ASTRID2_IDLES = h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']);
+// Kevin 23 Oct: "his head is moving too much": the takes that turn, glance, nod or lean (not calm) show about one time in
+// ten in a chain under speech; the calm takes keep their weights and the lively ones share the rest.
+const HEAD_SHARE = .1;
+const headMovesRarely = idles => {
+  const calm = idles.filter(i => i.calm).reduce((n, i) => n + i.vikt, 0), lively = idles.filter(i => !i.calm).reduce((n, i) => n + i.vikt, 0);
+  if (!calm || !lively) return idles;
+  const k = calm * HEAD_SHARE / (1 - HEAD_SHARE) / lively;
+  return idles.map(i => i.calm ? i : { ...i, vikt: Math.round(i.vikt * k * 1000) / 1000 });
+};
+const ASTRID2_IDLES = headMovesRarely(h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']));
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
 export const DEALERS = {
@@ -67,12 +76,12 @@ export const DEALERS = {
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: [...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)], handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)]), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: [...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)], handMatte: false, faceTracks: PAOW_FACE_TRACKS },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
   // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card
