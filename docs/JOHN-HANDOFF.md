@@ -16,6 +16,11 @@ Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib
 
 **Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
 
+## Mergegranskning — assistentens bolagslänkar i PR #359 — 23 oktober 2026
+
+Serverns `companies` och `audit` pekar på `/admin/companies`, men widgetens tillåtlista saknade adressen. Länkarna doldes därför. `apps/studio/public/assistant-widget.js` tillåter nu denna exakta sökväg; samma-origin-kontroll, fragmentspärr och äldre tillåtna adresser är kvar.
+
+Verifierat lokalt med Node 24.19 (paketet kräver 24.x): syntaxkontroll och 7/7 körda navigationsfall ur widgetens faktiska kodblock. Bolagslänk med/utan query samt befintliga klipp-/operatörslänkar visas; extern origin, fragment och okänd sökväg nekas. Ingen full lokal regression eller webbläsaracceptans har körts. Ny CI måste vara grön på ändringens head före merge. GitGuardian-kontrollen på föregående PR-head var grön; incidentlista, källbindning, övervakning och historik är inte verifierade här.
 
 ## Admin / Studio — PR #359 — 23 oktober 2026
 
