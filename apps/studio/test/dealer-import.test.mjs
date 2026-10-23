@@ -5,6 +5,7 @@ import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlot
 import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
 import { createDealerImportApi, createDealerImportLimiter } from '../lib/dealer-import-api.mjs';
+import { frozenKevinImportSource } from '../lib/dealer-import-plan.mjs';
 
 const origin = 'https://studio.example.invalid', scope = { environment: 'test', workspaceId: 'studio-test' };
 const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/auth', allowedOrigins: ['https://public.example.invalid', origin], publicHosts: ['public.example.invalid', 'studio.example.invalid'] };
@@ -436,6 +437,60 @@ test('request cancellation before or during either role never becomes a successf
       assert.equal(calls, phase === 'before' ? 0 : 1); assert.equal(active, 0);
       if (phase === 'during') assert.equal(providerSignal.aborted, true);
     }
+  }
+});
+
+test('frozen Paow files are recognised by exact name and size and placed from the source with chain, language, take and warnings', () => {
+  const source = frozenKevinImportSource('paow'), size = tail => source.files.find(row => row.path.endsWith('/' + tail)).size;
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'paow', 'Paow'));
+  const files = [['pos4-iv.mp4', 'v2/pos4-iv.mp4'], ['hole.mp4', 'v2/hole.mp4'], ['andas.mp4', 'v2/andas.mp4'], ['goodluck_1.mp4', 'repliker/sv/goodluck_1.mp4'],
+    ['goodluck_1.mp4', 'repliker/en/goodluck_1.mp4'], ['twentyone_1.mp4', 'repliker/sv/twentyone_1.mp4'], ['peek_1.mp4', 'repliker/sv/peek_1.mp4'],
+    ['goodluck_1.mp4', 'repliker/pt/goodluck_1.mp4'], ['breath.mp4', 'idle-v2/breath.mp4'], ['pos4-iv.mp4', null]]
+    .map(([name, tail], index) => ({ id: `f${index}`, name, size: tail ? size(tail) : 4321, type: 'video/mp4' }));
+  files.push({ id: 'img', name: 'vila.png', size: size('v2/vila.png'), type: 'image/png' });
+  const body = validateDealerImportInput({ dealerId: 'paow', files, context: '' }, catalog);
+  const rows = finishDealerImportRows(filenameDealerImportRows(body, catalog), body, catalog);
+  assert.deepEqual(rows.map(row => row.slotId), ['deal.player.centre/box3', 'deal.dealer/dealer-hole', 'idle.ready/', 'speak.goodluck/goodluck', 'speak.goodluck/goodluck',
+    null, 'speak.other/peek', 'speak.goodluck/goodluck', null, 'deal.player.centre/box3', 'pose/vila']);
+  assert.deepEqual(rows.map(row => row.confidence), ['high', 'high', 'high', 'high', 'high', 'low', 'high', 'high', 'low', 'high', 'high']);
+  assert.deepEqual(rows[0].poses, { start: 'VILA', end: 'VILA' }); assert.deepEqual(rows[1].poses, { start: 'REDO', end: 'VILA' }); assert.equal(rows[2].poses, undefined);
+  assert.equal(rows[0].classification.startPose, 'VILA'); assert.equal(rows[1].classification.endPose, 'VILA'); assert.equal(rows[2].classification.kind, 'idle');
+  assert.match(rows[3].classification.notes, /från kevin-paow-c7138759/); assert.match(rows[3].classification.notes, /Språk i källan: sv\. Tagning 1 enligt källan/);
+  assert.match(rows[4].classification.notes, /Språk i källan: en/);
+  assert.deepEqual(rows[3].evidence, { source: 'kevin-paow-c7138759', ref: 'c713875923cd854b26f89c1db0d0f47064619c1d', path: 'kevin/croupier-scoutgg/public/media/dealers/paow/repliker/sv/goodluck_1.mp4',
+    sha256: source.files.find(row => row.path.endsWith('/repliker/sv/goodluck_1.mp4')).sha256, k05: 'vald', kevinClipStatus: 'ej-godkand' });
+  assert.match(rows[3].warnings.join(' '), /ingen talgranskning gjord/); assert.match(rows[3].warnings.join(' '), /exakt manus/);
+  assert.match(rows[5].reason, /saknar facket speak\.other\/twentyone/); assert.match(rows[5].warnings.join(' '), /uppskjuten:G13/); assert.equal(rows[5].classification, null);
+  assert.match(rows[6].warnings.join(' '), /ej i K05-matrisen/); assert.match(rows[7].warnings.join(' '), /sprak-utanfor-en\/sv/);
+  assert.match(rows[8].reason, /använder den inte/); assert.equal(rows[8].classification, null);
+  assert.match(rows[0].warnings.join(' '), /Ingen filmprofil/); assert.doesNotMatch(rows[2].warnings.join(' '), /Ingen filmprofil/);
+  // Same name but other bytes: ordinary filename rules, without any source evidence.
+  assert.equal(rows[9].evidence, undefined); assert.match(rows[9].reason, /Filnamnet matchar/);
+  assert.equal(rows[10].classification, null); assert.equal(rows[10].evidence.source, 'kevin-paow-c7138759');
+  assert.ok(rows.every(row => row.classification === null || row.classification.role === 'alternative'));
+  // Another registered dealer never inherits Paow's evidence.
+  const other = dealerImportCatalog(addDealer(createSeedProject(), 'dragan', 'Dragan'));
+  const foreign = validateDealerImportInput({ dealerId: 'dragan', files: [files[0]], context: '' }, other);
+  assert.equal(finishDealerImportRows(filenameDealerImportRows(foreign, other), foreign, other)[0].evidence, undefined);
+});
+
+test('frozen source evidence overrides model advice and the API reports recognised files without granting any assignment', async () => {
+  const entry = frozenKevinImportSource('paow').files.find(row => row.path.endsWith('/v2/pos4-iv.mp4'));
+  const body = { dealerId: 'paow', files: [{ id: 'known', name: 'pos4-iv.mp4', size: entry.size, type: 'video/mp4' }, { id: 'other', name: 'mystery.mp4', size: 1000, type: 'video/mp4' }], context: '' };
+  for (const state of ['disabled', 'ai']) {
+    const { api, setProject } = fixture({ env: state === 'ai' ? env : {}, fetchImpl: async () => modelResponse(validAdvice(body, ['idle.ready/', 'idle.ready/'])) });
+    setProject(addDealer(createSeedProject(), 'paow', 'Paow'));
+    const catalogue = await (await api.handle(request())).json();
+    assert.ok(catalogue.frozenSources.some(row => row.id === 'kevin-paow-c7138759' && row.targetDealerId === 'paow' && row.files === 414));
+    assert.ok(catalogue.frozenSources.every(row => !('files' in row && Array.isArray(row.files)) && !('texts' in row)));
+    const result = await (await api.handle(request(body))).json();
+    assert.equal(result.source, state === 'ai' ? 'ai' : 'filename-rules');
+    const known = result.rows.find(row => row.fileId === 'known'), other = result.rows.find(row => row.fileId === 'other');
+    assert.equal(known.slotId, 'deal.player.centre/box3'); assert.equal(known.confidence, 'high'); assert.equal(known.evidence.source, 'kevin-paow-c7138759');
+    assert.deepEqual(known.poses, { start: 'VILA', end: 'VILA' });
+    assert.equal(other.slotId, state === 'ai' ? 'idle.ready/' : null); assert.equal(other.evidence, undefined);
+    assert.ok(result.warnings.some(note => /1 av 2 filer känns igen/.test(note) && /1 fick fack automatiskt/.test(note) && /ingen operatörs- eller rumstilldelning/.test(note)));
+    assert.ok(result.warnings.includes(DEALER_IMPORT_STORAGE_WARNING));
   }
 });
 

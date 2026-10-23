@@ -15,14 +15,18 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
   let upcoming = [], queueVersion;
+  const owned = row => [row.dealer, row.dealerId, row.classification?.dealerId].includes(dealerId);
   const prepare = event => {
     if (!event || queueVersion !== version() || closed) return;
-    const family = config.inventory.families?.find(row => row.dealerId === dealerId && (
+    // A planned filmed step names its exact take (shared-room-presentation.mjs timeline): that file is prepared in
+    // the hidden element before its time (K public/shared-table.js:310, app.js:118-125), not the family's standard.
+    const exact = event.filmedTake?.sha256 ? config.inventory.videos.find(row => row.sha256 === event.filmedTake.sha256 && row.available && owned(row)) : null;
+    const family = exact ? null : config.inventory.families?.find(row => row.dealerId === dealerId && (
       event.type === 'speak' ? row.eventId.startsWith('speak.') && row.situation === event.line :
       event.type === 'reveal' ? row.eventId === 'reveal.dealer' :
       event.to === 'dealer' ? row.eventId === 'deal.dealer' && row.situation === (event.faceDown ? 'dealer-hole' : 'dealer-up') :
       row.eventId.startsWith('deal.player.') && row.situation === `box${event.box}`));
-    const video = config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
+    const video = exact ?? config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
     if (video) player.prepareLocalClip?.({ media: { src: mediaUrl(video), sha256: video.sha256 } });
   };
   // A published room follows the composition's saved per-phase clip modes from
@@ -117,7 +121,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
-  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress } = {}) {
+  // timing: Kevin's per-step playback options for the exact take (startOffset, handoverAt, playbackRate, clockTime),
+  // passed through to playLocalFilm; the shared ports derive them from the published plan and the profile.
+  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {} } = {}) {
     const own = new AbortController(); active = own;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
@@ -137,7 +143,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onPrepared?.();
       onProgress?.({phase:'play'});
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
-        signal: own.signal, muted: kind !== 'speech' || muted(), hold,
+        signal: own.signal, muted: kind !== 'speech' || muted(), hold, ...timing,
         onFrame: onMediaFrame || onProgress ? time => { onProgress?.({phase:'frame',time}); onMediaFrame?.(time); } : undefined,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
         onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
@@ -238,7 +244,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     offerPendingRule();
     if (action || speech) onBusy(); else resumeIdle();
   }
-  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress } = {}) {
+  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, startOffset, handoverAt, playbackRate, clockTime } = {}) {
     if (packageChanged) return false;
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
@@ -296,14 +302,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (!result.video) throw new Error('Exakt film saknas');
       let attempt = 0;
       const owns = current => current === attempt && token === serial && requestVersion === version() && !signal?.aborted;
-      const play = async video => {
+      const play = async (video, timing = {}) => {
         const speech = video.recordedSpeech ?? video.classification?.recordedSpeech;
         if (speech !== undefined && (kind !== 'speech' || !recordedSpeechForVideo(video, {
           dealerId, lineId: event.line, language: speech?.language, takeId: speech?.takeId, requireApproved: !preview,
         }))) throw new Error('Talfilmens granskning eller identitet stämmer inte');
         const current = ++attempt;
         try {
-          await film(video, { kind, signal, onProgress:progress(), onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
+          await film(video, { kind, signal, onProgress:progress(), timing, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
             onFrame: () => { if (owns(current)) onPresented?.(); },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
@@ -316,8 +322,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
           requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource } });
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
       };
+      // Kevin's clock applies to the exact take only (K app.js:214-246): a separate shoe clip before it plays whole,
+      // so the seek and the clock stay off then; the fallback standard has its own length and is not timed.
+      const timing = Object.fromEntries(Object.entries({ handoverAt, playbackRate, ...(result.transitions?.before ? {} : { startOffset, clockTime }) })
+        .filter(([, value]) => value !== undefined && value !== null));
       await transition(result.transitions?.before, 'to-shoe');
-      try { await play(result.video); }
+      try { await play(result.video, timing); }
       catch (error) { if (error.code === 'local_film_stalled' || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }

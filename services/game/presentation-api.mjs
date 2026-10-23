@@ -10,7 +10,7 @@ import { registeredIdlePolicy, registeredIdleInventory } from '../../packages/pr
 import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
 import { createLocalProjectReader } from '../../packages/studio-registry/server/local-project-reader.mjs';
@@ -55,8 +55,14 @@ export function presentationInput(event, published) {
   fail('Unsupported presentation request');
 }
 
-export function createPresentationApi({ db, env = process.env, store = createLocalProjectReader(join(root, 'lab/data')),
-  registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
+// The checkout holds no product register. Neon supplies the store in production;
+// the offline fixture names its temporary CROUPIER_DATA_DIR; otherwise project
+// reads fail explicitly instead of touching a default directory on disk.
+const fixtureDataDir = env => typeof env?.CROUPIER_DATA_DIR === 'string' && isAbsolute(env.CROUPIER_DATA_DIR) ? env.CROUPIER_DATA_DIR : null;
+const unavailableStore = Object.freeze({ configurationSource: 'unavailable',
+  load: async () => { throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 }); } });
+export function createPresentationApi({ db, env = process.env, store = fixtureDataDir(env) ? createLocalProjectReader(join(fixtureDataDir(env), 'studio')) : unavailableStore,
+  registryOptions = { env, repositoryRoot: root },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, qaPublicOrigin = null } = {}) {
   // Only the verified server QA capability supplies this constructor port.

@@ -11,6 +11,7 @@ import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { presentationForRow } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DRAGAN_KEVIN_PROFILE as dragan } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 const roomId='room-a',actor='alice';
 const deferred=()=>{let resolve;const promise=new Promise(done=>resolve=done);return{promise,resolve};};
 function snapshot(version=0,extra={}){
@@ -412,4 +413,90 @@ test('the frozen total includes preparation and buffer startup for every before 
     context.onProgress({clip,phase:'complete'});
   }
   done.resolve();await flushRender();assert.equal(h.client.status().state,'running');assert.equal(h.seen.length,1);
+});
+
+// Kevin's table clock in the shared ports (K public/shared-table.js:304-328, app.js:214-246) with the Dragan profile.
+const filmedBox=(box,shoeDraw)=>({type:'deal',to:'box',box,shoeDraw,faceDown:false});
+const dragonTake=key=>dragan.takes.find(take=>take.key===key);
+const frameMs=frames=>frames*1000/dragan.plane.fps;
+// The fake media never selects a video, so the ports' static fallback (cards.show) follows every played deal; `shown`
+// before any media.present call is therefore the expired-step path alone. The snapshot clock is the mocked Date.
+function timedPorts(t,{present,startAt,endAt,events,enableTimers=true}){
+  if(enableTimers)t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  startAt??=Date.now();endAt??=startAt+30000;
+  const seen=[],shown=[],prepared=[],revealed=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal:()=>revealed.push(Date.now()),begin:(_video,source)=>source.shoeDraw,frame(){},finish(){}};
+  const media={state(){},prepareSequence(value){prepared.push(value);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile:dragan,dealerId:'dragan'});t.after(()=>ports.close());
+  const signal=new AbortController().signal;
+  ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1,serverNow:Date.now()}),{signal});
+  const plan={roomId,ver:1,talkId:'timed',kind:'plan',startAt,endAt,events};
+  return {seen,shown,prepared,revealed,plan,start:()=>ports.present(plan,{signal})};
+}
+
+test('a filmed step starts at its own time on the table clock, names its exact take for the lookahead and carries the handover',async t=>{
+  const h=timedPorts(t,{events:[filmedBox(0,9)]});
+  const result=h.start();await flushRender();
+  assert.equal(h.seen.length,0,'700 ms lead before the first take (K shared-table.mjs:150)');
+  assert.deepEqual(h.prepared[0][0].filmedTake,{profileId:dragan.id,takeKey:'1:iv',sha256:dragonTake('1:iv').sha256});
+  t.mock.timers.tick(699);await flushRender();assert.equal(h.seen.length,0);
+  t.mock.timers.tick(1);await flushRender();assert.equal(h.seen.length,1);assert.equal(h.seen[0].at,1700);
+  const options=h.seen[0].options;
+  assert.equal(options.startOffset,0);assert.ok(Math.abs(options.handoverAt-frameMs(66-1.5)/1000)<1e-9);assert.equal(options.playbackRate,undefined);
+  assert.equal(options.clockTime(),0);t.mock.timers.tick(1000);assert.ok(Math.abs(options.clockTime()-1)<1e-9,'the clock is the table clock from the step start');
+  await result;
+});
+
+test('joined takes chain back to back: an early handover waits for the boundary before the next take',async t=>{
+  const h=timedPorts(t,{events:[filmedBox(6,1),filmedBox(0,2)]});
+  const result=h.start();t.mock.timers.tick(700);await flushRender();assert.equal(h.seen.length,1);
+  assert.deepEqual(h.prepared[0].map(event=>event.filmedTake.takeKey),['7:i','1:v']);
+  t.mock.timers.tick(frameMs(66)-1);await flushRender();assert.equal(h.seen.length,1,'the second take is not started before its time');
+  t.mock.timers.tick(1);await flushRender();assert.equal(h.seen.length,2);assert.equal(h.seen[1].at,1000+700+frameMs(66));
+  assert.equal(h.seen[1].options.startOffset,0);await result;
+});
+
+test('a step reached late joins in phase and one whose time is over shows its committed card without film',async t=>{
+  const late=timedPorts(t,{events:[filmedBox(0,9)]});
+  t.mock.timers.tick(1100);const first=late.start();await flushRender();
+  assert.equal(late.seen.length,1);assert.equal(late.seen[0].at,2100);assert.ok(Math.abs(late.seen[0].options.startOffset-.4)<1e-9,'400 ms late: seek into phase');
+  await first;
+  const expired=timedPorts(t,{events:[filmedBox(0,9),{type:'reveal',to:'dealer',shoeDraw:8}],enableTimers:false});
+  // 1:iv (66 frames) then the flip after an 80 ms gap: arrive 300 ms into the flip's time
+  t.mock.timers.tick(700+frameMs(66)+80+300);const second=expired.start();await flushRender();
+  assert.equal(expired.seen.length,1,'no film for the take whose time is over (K app.js:182); the reveal that follows plays');
+  assert.deepEqual(expired.shown,[9],'the expired deal shows its committed card at once');
+  assert.equal(expired.seen[0].event.type,'reveal');assert.ok(Math.abs(expired.seen[0].options.startOffset-.3)<1e-9,'the reveal joins in phase');
+  await second;assert.equal(expired.revealed.length,1,'the committed reveal is applied once, by the step itself');
+});
+
+test('a filmed chain after speech anchors where it begins and keeps the clock inside the chain',async t=>{
+  const h=timedPorts(t,{events:[{type:'speak',line:'goodluck'},filmedBox(6,1),filmedBox(0,2)],
+    present:event=>event.type==='speak'?new Promise(resolve=>setTimeout(()=>resolve(true),2500)):true});
+  const result=h.start();await flushRender();
+  assert.equal(h.seen.length,1);assert.equal(h.seen[0].at,1000,'speech is not on the take clock');assert.equal(h.seen[0].options.startOffset,undefined);
+  t.mock.timers.tick(2500);await flushRender();
+  assert.equal(h.seen.length,2);assert.equal(h.seen[1].at,3500,'the first take starts when the speech is over, with no seek');assert.equal(h.seen[1].options.startOffset,0);
+  t.mock.timers.tick(frameMs(66)-1);await flushRender();assert.equal(h.seen.length,2);
+  t.mock.timers.tick(1);await flushRender();assert.equal(h.seen.length,3);assert.equal(h.seen[2].at,3500+frameMs(66));
+  await result;
+});
+
+test('a chain longer than the game window plays at the fitted rate on a fitted clock; the window itself is untouched',async t=>{
+  const h=timedPorts(t,{events:[filmedBox(0,9)],endAt:1000+2000});
+  const result=h.start();t.mock.timers.tick(700);await flushRender();
+  assert.equal(h.seen.length,1);assert.equal(h.seen[0].options.playbackRate,2);
+  t.mock.timers.tick(500);assert.ok(Math.abs(h.seen[0].options.clockTime()-1)<1e-9,'take time runs twice as fast');
+  await result;
+});
+
+test('without a profile, a start time or a matching filmed order the steps play untimed as before',async t=>{
+  const order=timedPorts(t,{events:[{type:'deal',to:'dealer',box:null,shoeDraw:7,faceDown:false},filmedBox(0,6)]});
+  const first=order.start();await flushRender();
+  assert.equal(order.seen.length,2,'both steps start at once: the published order is not the filmed chain');
+  assert.equal(order.seen[0].options.startOffset,undefined);assert.equal(order.prepared[0][0].filmedTake,undefined);
+  await first;
+  const untimed=timedPorts(t,{events:[filmedBox(0,9)],enableTimers:false});delete untimed.plan.startAt;
+  const second=untimed.start();await flushRender();assert.equal(untimed.seen.length,1);assert.equal(untimed.seen[0].options.handoverAt,undefined);
+  await second;
 });

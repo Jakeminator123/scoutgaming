@@ -2,6 +2,8 @@
 
 import {useEffect, useRef, useState, type ReactNode} from 'react';
 import styles from './partner-appearance.module.css';
+import {AppearanceLayerPicker} from './appearance-layer-picker';
+import type {PublicOperatorPreview} from '../../../packages/presentation/contracts/operator-preview-contract.mjs';
 import {PartnerAppearancePreview} from './partner-appearance-preview';
 import {adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices} from '../lib/partner-package-view.mjs';
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
@@ -38,6 +40,8 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const [problem, setProblem] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [previewMedia,setPreviewMedia] = useState<PublicOperatorPreview|null>(null);
+  const visual=roomLayout&&adminChoices;
   const busyRef = useRef(false);
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
@@ -161,10 +165,10 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       : t('Senaste sparade version är inläst.','Latest saved version loaded.'));
   }
 
-  const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={branding} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
+  const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview onMedia={visual?setPreviewMedia:undefined} compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={branding} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
   const revisions = <div className={styles.revisions}><span>{t('Publicerad version','Published version')} <strong>{server.packageRevision}</strong></span><span>{server.draft ? t(`Sparat utkast ${draftRevision}`,`Saved draft ${draftRevision}`) : t('Inget sparat utkast','No saved draft')}</span></div>;
   const statusBar = <div className={styles.statusBar}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (dirty ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && revisions}<button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button></div>;
-  return <section className={roomLayout ? styles.panel + ' ' + styles.roomPanel : styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
+  return <section className={roomLayout ? styles.panel + ' ' + styles.roomPanel + (visual?' '+styles.visualPanel:'') : styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
     {roomLayout ? preview : <header className={styles.heading}><div><h3>{t('Sammansättning','Composition')}</h3><p className={styles.hint}>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
       {revisions}
     </header>}
@@ -190,6 +194,11 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
         const token = key === 'color' ? 'table.color' : key;
         const layer = key === 'color' ? lane?.layers.table : lane?.layers[key];
         const effective = selected[key] ?? inherited[key] ?? (key !== 'color' ? layer?.default : undefined);
+        if(visual&&key!=='color'){
+          const ids:readonly string[]=allowed.has(token)?(key==='dealer'?dealerChoices:lane?partnerLayerChoices(lane,key):[]):effective&&!(key==='dealer'&&!dealerChoices.length)?[effective]:[];
+          const media=key==='background'?previewMedia?.media.backgrounds:key==='table'?previewMedia?.media.tables:[];
+          return <AppearanceLayerPicker key={key} kind={key} label={labels[key]} value={selected[key]??''} effective={effective} locked={!allowed.has(token)} lockedReason={key==='background'&&lane?.layers.background.mode==='baked'?'Bakgrunden är inbakad i dealerfilmen. Välj en spelmall med separata lager för att byta den.':key==='dealer'&&!dealerChoices.length?'Det saknas en tillåten dealer för detta spel.':undefined} choices={ids.map(id=>({id,label:labelOf(id),...media?.find(item=>item.id===id)}))} onChange={id=>change(key,id)}/>;
+        }
         if (!allowed.has(token)) return roomLayout ? <div className={styles.lockedChoice} key={key}><span>{labels[key]}</span><strong>{effective ? labelOf(effective) : t('Inget valt','None selected')}</strong><small>{adminChoices ? t('Fast i sammansättningen','Fixed by the composition') : t('Låst i publicerat paket','Locked in published package')}</small></div> : <label className={styles.row} key={key}>{labels[key]}<input disabled readOnly value={t('Inte tillgängligt i denna presentation','Unavailable in this presentation')} /></label>;
         const values: readonly string[] = key === 'dealer' ? dealerChoices : key === 'color' ? lane?.layers.table.colors ?? [] : lane ? partnerLayerChoices(lane, key) : [];
         if (key === 'color' && !values.length) return <div className={styles.row} key={key}><label>{labels[key]}<input type="color" aria-label={labels[key]} value={/^#[a-f0-9]{6}$/i.test(selected.color ?? '') ? selected.color : '#000000'} onChange={event => change('color',event.target.value.toLowerCase())} /></label><button type="button" className="sg-btn" disabled={!selected.color} onClick={() => change('color','')}>{t('Använd standardfärg','Use default colour')}</button><span className={styles.hint}>{selected.color || t('Standard','Default')}</span></div>;
@@ -219,7 +228,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       <button type="button" className="sg-btn sg-btn-primary" data-action="publish" disabled={!canPublish || busy} onClick={() => command('publish')}>{t('Publicera granskat utkast','Publish reviewed draft')}</button>
     </section>
       </div>
-      {roomLayout && children ? <div className={styles.asideColumn}>{children}</div> : null}
+      {roomLayout && children ? visual ? <details className={styles.gameSettings}><summary>Spelinställningar</summary>{children}</details> : <div className={styles.asideColumn}>{children}</div> : null}
     </div>
     <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary><p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>
       <ul>{server.history?.map(row => <li key={row.revision}><span><strong>{t('Version','Version')} {row.revision}</strong>{row.revision === server.packageRevision ? ` · ${t('publicerad nu','currently published')}` : ''}{row.publishedAt ? <small>{new Date(row.publishedAt).toLocaleString(en ? 'en-GB' : 'sv-SE')}</small> : null}</span><button type="button" className="sg-btn" data-action={`restore-${row.revision}`} disabled={!editable || busy || dirty} onClick={() => command('restore',row.revision)}>{t('Återställ till utkast','Restore to draft')}</button></li>)}</ul>

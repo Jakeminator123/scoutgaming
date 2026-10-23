@@ -1,11 +1,18 @@
 // Full-frame MP4 support for PerformancePlayer. Consumers may attach calibration
 // to the verified asset; motion must use presented mediaTime, never wall time.
 import {MAX_RECORDED_SPEECH_SECONDS} from '../../../packages/presentation/contracts/recorded-speech.mjs';
-export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, renderFrame, hold = () => {} }) {
+import {FILMED_CATCH_UP_S, FILMED_SEEK_END_MARGIN_S} from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
+// Kevin's timed playback (K public/app.js @ 5aa7ed10), per option: startOffset seeks a step reached late into
+// phase before its first frame (:234); handoverAt hands over on the last frames instead of 'ended' (:192);
+// playbackRate is the chain's fitted rate (:223-227); clockTime() is the table clock in take seconds, to catch
+// up after buffering and to end a step whose time is over (:180-185). Card motion still follows mediaTime.
+export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, renderFrame, hold = () => {},
+  startOffset = 0, handoverAt = null, playbackRate = null, clockTime = null }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
-    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog;
+    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false;
+    const seekable = seconds => Number.isFinite(video.duration) && video.duration > 0 ? Math.min(seconds, Math.max(0, video.duration - FILMED_SEEK_END_MARGIN_S)) : seconds;
     let lastMediaTime = Number.isFinite(video.currentTime) ? video.currentTime : 0;
     const listeners = [];
     const listen = (target, type, callback) => {
@@ -16,7 +23,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     // the existing progress watchdog rather than cutting valid speech at 60 s.
     const deadline = setTimeout(() => finish(new Error('Film exceeded playback limit')), (MAX_RECORDED_SPEECH_SECONDS + 8) * 1000);
     const emit = (state, error) => onReceipt({ state, evidence: state === 'presented' ? 'video-frame' : 'media-lifecycle',
-      ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
+      ...(handedOver ? { handover: true } : {}), ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
     const clean = () => {
       clearTimeout(watchdog); clearTimeout(deadline); signal?.removeEventListener('abort', abort);
       for (const remove of listeners) remove();
@@ -32,7 +39,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     });
     const finish = error => {
       if (terminal) return; terminal = true;
-      if (!error && (!started || !presented || !video.ended)) {
+      if (!error && (!started || !presented || !(video.ended || handedOver))) {
         error = playbackError('Film ended without a presented frame',
           started && video.ended && !presented ? 'local_film_no_presented_frame' : 'local_film_incomplete');
       }
@@ -76,13 +83,27 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
         if (renderFrame && !composed) throw new Error('Dealer background removal unavailable');
         if (!presented) { presented = true; video.style.visibility = composed ? 'hidden' : ''; emit('presented'); }
         onFrame?.(metadata.mediaTime);
+        // The successor is prepared: hand over on the last frames, the held frame covers the switch.
+        if (handoverAt !== null && metadata.mediaTime + 1e-6 >= handoverAt) { handedOver = true; finish(); return; }
+        if (clockTime) {
+          const target = clockTime();
+          if (Number.isFinite(target)) {
+            if (Number.isFinite(video.duration) && target >= video.duration) { handedOver = true; finish(); return; }
+            if (!video.seeking && Math.abs(metadata.mediaTime - target) > FILMED_CATCH_UP_S) video.currentTime = seekable(target);
+          }
+        }
       } catch (error) { finish(error); return; }
-      if (!terminal && (onFrame || renderFrame)) frame = video.requestVideoFrameCallback(presentedFrame);
+      if (!terminal && (onFrame || renderFrame || handoverAt !== null || clockTime)) frame = video.requestVideoFrameCallback(presentedFrame);
     };
     frame = video.requestVideoFrameCallback(presentedFrame);
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) { abort(); return; }
     video.style.visibility = 'hidden'; host.append(video); if (video.src !== src) video.src = src; arm();
+    if (Number.isFinite(playbackRate) && playbackRate > 0) video.playbackRate = playbackRate;
+    if (Number.isFinite(startOffset) && startOffset > 0) {
+      const seek = () => { video.currentTime = seekable(startOffset); };
+      if (video.readyState >= 1) seek(); else listen(video, 'loadedmetadata', seek);
+    }
     video.play().catch(finish);
   });
 }

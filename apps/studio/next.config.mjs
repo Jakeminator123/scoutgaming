@@ -15,8 +15,8 @@ export default {
   outputFileTracingRoot: resolve(root, '../..'),
   // Production obtains credentials/state from scoped env and Neon. Private
   // local config, QA evidence and old writable state must never be bundled.
-  outputFileTracingExcludes: { '/*': ['../../.env*', './.env*', './data/**', '../../lab/data/**', '../../lab/.env*', '../../lab/tsconfig.probe.json', '../../web/data/**', '../../services/game/data/**',
-    '../../open-claw/lab/data/**', '../../open-claw/lab/runtime/**', '../../services/openclaw/lab/data/**', '../../services/openclaw/lab/runtime/**', '../../agent-talk/**', '../../.croupier-inbox/**', '../../random/**', '../../media/dealers/**',
+  outputFileTracingExcludes: { '/*': ['../../.env*', './.env*', '../../open-claw/lab/data/**', '../../services/openclaw/lab/data/**',
+    '../../agent-talk/**', '../../.croupier-inbox/**', '../../arkiv/**', '../../media/dealers/**',
     '../../media/layout.json', '../../media/blob-index.json', '../../media/catalog/**'] },
   outputFileTracingIncludes: appTraceRoutes({
     ...Object.fromEntries(['/api/replies/**', '/api/layer-assets/**', '/', '/administration', '/partner/[[...path]]', '/partner/login', '/partner/set-password', '/api/partner-preview', '/api/partner/[...action]', '/admin/login', '/admin/set-password', '/api/assistant', '/api/openclaw/admin', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**', '/api/dealers/**', '/api/zones/reference']

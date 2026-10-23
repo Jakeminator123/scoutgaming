@@ -1,0 +1,27 @@
+# Game-only image for Render croupier-v3. Build from the repository root:
+#   docker build -f ops/cloud/Dockerfile.game .
+# No apps/studio dependencies and no Next build. CROUPIER_CLOUD_LAB_CHILD=0 keeps
+# ops/cloud/start.mjs to the Web child (services/game/server.mjs) behind the same
+# gateway, ingress validation, health and version routes as ops/cloud/Dockerfile.
+FROM node:24-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+# Keep locked dependency installation reusable when only product source changes.
+COPY services/astrid-gpu-worker/gateway/package.json services/astrid-gpu-worker/gateway/package-lock.json services/astrid-gpu-worker/gateway/
+COPY services/game/package.json services/game/package-lock.json services/game/
+RUN npm --prefix services/astrid-gpu-worker/gateway ci --omit=dev --ignore-scripts \
+    && npm --prefix services/game ci --omit=dev --ignore-scripts
+# Only what the game server and the cloud launcher resolve. The static closure
+# is checked by ops/cloud/test/game-image.test.mjs against this COPY list.
+COPY packages/ packages/
+COPY tools/media-layout.mjs tools/runtime-media-catalog.mjs tools/media-blob-index-reader.mjs tools/
+COPY ops/neon-game/ ops/neon-game/
+COPY ops/neon-studio/ ops/neon-studio/
+COPY ops/cloud/ ops/cloud/
+COPY services/astrid-gpu-worker/gateway/ services/astrid-gpu-worker/gateway/
+COPY services/game/ services/game/
+ENV NODE_ENV=production
+ENV CROUPIER_CLOUD_LAB_CHILD=0
+# The entrypoint drops to node (1000:1000) before any listener or database client.
+CMD ["node", "ops/cloud/container-entry.mjs"]

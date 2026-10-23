@@ -2,7 +2,10 @@ import { BETS, BET_BY_ID, LIMITS, pocketColor } from '/roulette-rules.mjs';
 import {TABLE_ARTWORK,tableArtwork,tableBetGeometry,polygonButtonStyle,chipBreakdown} from './table-layout.mjs';
 
 const $ = id => document.getElementById(id);
-const context = Object.fromEntries(new URL(location.href).searchParams);
+// Table commands carry the room selectors only, each at most once. The public
+// game selector and any other address key are not room context; the engine refuses them.
+const roomQuery = new URLSearchParams(location.search);
+const context = Object.fromEntries(['operator','table','dealer'].filter(key=>roomQuery.getAll(key).length===1).map(key=>[key,roomQuery.get(key)]));
 const colourNames = { red:'Röd', black:'Svart', green:'Grön' };
 let state, pending, pendingKey, busy = true, chip = 5;
 let displayedRound;
@@ -222,7 +225,9 @@ async function init() {
     if(error.status===401) $('login').hidden=false;
   }
 }
-$('login').href='/player-login?returnTo='+encodeURIComponent(location.pathname+location.search);
+// The room's public address is /game?game=roulette; only its room selectors return through sign-in.
+const roomReturn=new URLSearchParams([['game','roulette'],...Object.entries(context)]);
+$('login').href='/player-login?returnTo='+encodeURIComponent('/game?'+roomReturn);
 function openOption(id){$('more').close();$(id).showModal();}
 $('show-rules').addEventListener('click',()=>openOption('rules'));
 $('show-inside').addEventListener('click',()=>openOption('inside'));

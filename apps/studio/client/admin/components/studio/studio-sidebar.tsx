@@ -9,7 +9,7 @@ const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Cla
 export function StudioSidebar() {
   const pathname=usePathname(),search=useSearchParams().toString();
   // A deep tool marks the menu page it belongs to, so exactly one entry is current.
-  const path=isStudioAdminRoute(pathname,search)?'/admin/clips':pathname==='/admin/admin/players'?'/admin/players':pathname==='/admin/ai/models'||pathname==='/admin/ai/chat'?'/admin/openclaw':adminToolHome(adminToolName(pathname))??pathname;
+  const path=isStudioAdminRoute(pathname,search)?'/admin/clips':pathname==='/admin/admin/players'?'/admin/players':adminToolHome(adminToolName(pathname))??pathname;
   const systemActive=adminSystemGroups.some(group=>group.links.some(link=>link.href===path));
   return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>ADMIN</small></Link>
     <nav aria-label="Huvudmeny">
@@ -18,7 +18,7 @@ export function StudioSidebar() {
         <p id={'nav-'+group.id} className="studio-nav-label">{group.label}</p>
         {group.links.map(({label,href})=>{const Icon=icons[href];return <Link key={href} href={href} aria-label={label} title={label} aria-current={path===href?'page':undefined}><Icon size={17} aria-hidden="true"/><span>{label}</span></Link>;})}
       </div>)}
-      <details key={systemActive?'active-system':'system'} open={systemActive||undefined} className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17} aria-hidden="true"/><span>System</span></summary>{adminSystemGroups.map(group=><div className="studio-system-group" key={group.label}><p>{group.label}</p>{group.links.map(({label,href})=><Link key={href} href={href} aria-current={path===href?'page':undefined}>{label}</Link>)}</div>)}</details>
+      <details key={systemActive?'active-system':'system'} open={systemActive||undefined} className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17} aria-hidden="true"/><span>System</span></summary><div className="studio-system-group">{adminSystemGroups.flatMap(group=>group.links).map(({label,href})=><Link key={href} href={href} aria-current={path===href?'page':undefined}>{label}</Link>)}</div></details>
     </nav><div className="studio-sidebar-foot"><Cpu size={14} aria-hidden="true"/><span>Intern arbetsyta</span></div>
   </aside>;
 }

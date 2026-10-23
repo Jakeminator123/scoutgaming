@@ -250,15 +250,12 @@ test('clip policy remains in Studio and advanced dashboard keeps browser-approva
   assert.doesNotMatch(html, /Starta om|Stoppa Gateway/);
 });
 
-test('embedded models share the Admin landmark and identify the dealer agent link', () => {
+test('embedded settings share the Admin landmark', () => {
   const standalone = render();
   assert.match(standalone, /<main\b[^>]*id="main-content"/);
-  assert.match(standalone, />Chatt<\/a>/);
   const embedded = render({ embedded: true, navigation: { models: '/admin/ai/models', chat: '/admin/ai/openclaw', studio: '/admin/clips' } });
   assert.doesNotMatch(embedded, /<main\b/);
   assert.match(embedded, /<section\b[^>]*id="main-content"/);
-  assert.match(embedded, /href="\/admin\/ai\/openclaw">Dealerns agent<\/a>/);
-  assert.match(embedded, /href="\/admin\/ai\/models" aria-current="page"/);
 });
 
 test('invalid explicit dashboard is not replaced with the default or reflected', () => {

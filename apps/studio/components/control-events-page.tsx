@@ -303,7 +303,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
     </>}
   >
     <div className="sg-page-body">
-    <StudioNavigation dealerId={dealerId} dealerLabel={dealer.label} active={event.id === 'idle.ready' ? 'idle' : 'clips'} eventId={event.id} variantId={variant.id} situation={exampleSituation || undefined} crumbs={[{label: exampleSituation ? clipSituationLabel(event.id, exampleSituation) : event.label}, {label: editorTab === 'triggers' ? 'Villkor' : editorTab === 'variants' ? 'Varianter' : 'Klipp'}]} />
+    <StudioNavigation dealerId={dealerId} dealerLabel={dealer.label} active="clips" eventId={event.id} variantId={variant.id} situation={exampleSituation || undefined} />
     <a className="skip-link" href="#workspace">Hoppa till arbetsytan</a>
     <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
     {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
@@ -313,7 +313,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
     </div> : null}
     {invalidVideoBindings.length ? <div className="feedback error" role="alert">
       <span>{invalidVideoBindings.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span>
-      <a className="text-button" href={videoHref}>Granska i Videobanken →</a>
+      <a className="text-button" href={videoHref}>Granska klippet</a>
     </div> : null}
     <div className="workspace view-lab" id="workspace">
       <EventsCatalog project={{...project,dealers:activeStudioDealers(project)}} videos={videos} dealerId={dealerId} eventId={event.id} situation={exampleSituation || undefined} familyId={media.family?.id} managed={managed} filter={filter} onFilter={setFilter} onSelectDealer={selectDealer} onSelectEvent={openEvent} />

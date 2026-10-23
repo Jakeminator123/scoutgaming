@@ -13,7 +13,7 @@ const expand=node=>node&&typeof node==='object'&&typeof node.type==='function'?n
 const nodes=(raw,predicate)=>{const node=expand(raw);return !node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];};
 const text=raw=>{const node=expand(raw);return typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';};
 const tsx=name=>transformSync(readFileSync(new URL('../components/studio/'+name+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
-function harness(restoreCompositions=[],additionalDealers=[]) {
+function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dragan') {
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
   for(const dealer of additionalDealers){remote.project=addDealer(remote.project,dealer.id,dealer.label);remote.catalog.administration.dealers.push({id:dealer.id,name:dealer.label});}
   const saves=[],changes=[],navigations=[],archives=[],checks=[],deletionChecks=[],deletions=[],slots=[],effects=[],module={exports:{}},dialogModule={exports:{}};
@@ -44,7 +44,7 @@ function harness(restoreCompositions=[],additionalDealers=[]) {
     if(name.includes('studio-model'))return{addDealer};
     if(name.includes('connected-studio'))return{createStudioClient:()=>client};
     if(name.includes('studio-lifecycle'))return{createLifecycleClient:()=>lifecycle,lifecycleMessage};
-    if(name.includes('runtime/navigation'))return{useSearchParams:()=>new URLSearchParams('?dealer=dragan'),navigate:href=>navigations.push(href)};
+    if(name.includes('runtime/navigation'))return{useSearchParams:()=>new URLSearchParams(search),navigate:href=>navigations.push(href)};
     return require(name);
   }});
   const h={props,saves,archives,checks,deletionChecks,deletions,changes,navigations,impact,setSaveFailure:value=>saveFailure=value,setReadFailure:value=>readFailure=value,setEligibility:value=>eligibility=value,
@@ -171,4 +171,14 @@ test('template dealer choices remain explicit, preserve unrelated state and requ
   assert.deepEqual(project,before);assert.deepEqual(next.lanes[0].dealers,['nora','dragan']);assert.equal(next.lanes[0].layers.dealer.default,'nora');
   assert.deepEqual(next.lines,before.lines);assert.deepEqual(next.lanes[0].layers.background,before.lanes[0].layers.background);
   for(const [ids,defaultId] of [[[],'nora'],[['missing'],'missing'],[['nora'],'dragan'],[['nora','nora'],'nora']])assert.throws(()=>setTemplateDealers(project,id,ids,defaultId));
+});
+
+test('home create link opens the existing dealer form without a write and contextual tools retain their dealer',async()=>{
+  const h=harness([],[],'?view=create');await h.settle();
+  assert.ok(h.input('Dealerns namn'));assert.equal(h.saves.length,0);
+  const links=nodes(h.render(),row=>row.type==='a');
+  const destinations=links.map(link=>new URL(link.props.href,'https://test.invalid')).filter(url=>url.pathname==='/admin/clips');
+  assert.ok(destinations.some(url=>url.searchParams.get('panel')==='intake'),'clip intake is reachable');
+  assert.ok(destinations.some(url=>!url.searchParams.has('panel')),'dealer editor is reachable');
+  for(const url of destinations)assert.equal(url.searchParams.get('dealer'),'dragan');
 });

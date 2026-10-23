@@ -99,13 +99,6 @@ try {
     server.stderr.on('data', chunk => { startupError ||= String(chunk).match(/(?:Error|SyntaxError|TypeError)(?: \[[A-Z_]+\])?:[^\n]*/)?.[0] ?? ''; });
   });
 
-  const roulettePage = await request(game + '/roulette-test');
-  assert.equal(roulettePage.status, 200);
-  const rouletteSpin = await request(game + '/api/roulette-test/spin', {
-    method: 'POST', headers: { Origin: game, 'X-Roulette-Preview': '1' },
-  });
-  assert.equal(rouletteSpin.status, 200);
-  assert.equal((await rouletteSpin.json()).event.operatorId, 'roulette-demo');
   const rouletteStateResponse = await request(game + '/api/roulette/table', {body:{op:'state'}});
   assert.equal(rouletteStateResponse.status,200);
   const rouletteCookie = cookies(rouletteStateResponse).join('; '), rouletteState = await rouletteStateResponse.json();
@@ -124,7 +117,6 @@ try {
   assert.equal((await request(game + '/api/roulette/table',{cookie:rouletteCookie})).status,405);
   assert.equal((await request(game + '/api/balance',{cookie:rouletteCookie,body:{balance:999999}})).status,400);
 
-  assert.equal(rouletteSpin.headers.has('set-cookie'), false, 'roulette demo does not create a guest player');
   const offlinePreview = await request(game + '/api/studio-preview');
   assert.equal(offlinePreview.status, 503, 'offline preview refuses before loading Studio or creating a player');
   assert.deepEqual(await offlinePreview.json(), {error:'studio_preview_unavailable'});

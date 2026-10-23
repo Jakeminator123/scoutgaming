@@ -31,7 +31,7 @@ test('comparison keeps isolated BO/Partner data and refuses a game without a pub
   try {
     assert.ok(fixture.gameUrl.startsWith('http://localhost:'));
     assert.ok(fixture.labUrl.startsWith('http://127.0.0.1:'));
-    for (const name of ['game','original','v2']) {
+    for (const name of ['game','original']) {
       assert.equal(new URL(fixture.urls[name]).searchParams.get('rehearsal'),'1');
       const response = await fetch(fixture.urls[name]);
       assert.equal(response.status,503);
@@ -40,6 +40,7 @@ test('comparison keeps isolated BO/Partner data and refuses a game without a pub
       assert.match(html,/Starta ett publicerat bord/);
       assert.doesNotMatch(html,/<video|<script|data-game-entry/);
     }
+    assert.equal('v2' in fixture.urls, false, 'the retired V2 alias is not a comparison address');
     const partner = fixture.credentials.partner;
     const ts = String(Math.floor(Date.now() / 1000)), body = '{}', path = '/api/v1/ping';
     const response = await post(path, {}, {

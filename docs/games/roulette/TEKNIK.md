@@ -42,19 +42,11 @@ misslyckas. Modulens frysning skyddar objekten i processen, inte datatransporten
 `ops/cloud/Dockerfile` kopierar redan `services/game/` till samma Node 24-image som
 blackjack. Ingen ny Render-tjänst, port eller miljövariabel behövs.
 
-Testytan finns på `/roulette-test`, via samma signerade Vercel → Render-väg
-som blackjack. Render-bokmärket omdirigerar till den kanoniska sajten.
-`preview.mjs` kopplar `POST /api/roulette-test/spin` till generatorn; HTML,
-CSS och klientkod finns under `services/game/public/roulette-test/`. Ytan är publik,
-olänkad från produktmenyerna och märkt `noindex`. Den läser/skriver inga
-konton, satsningar, saldon eller databaser. Historiken lever bara i fliken.
-
-Anropet är en tom POST med `X-Roulette-Preview: 1` och exakt samma Origin
-som sidan. Servern väljer demooperatör, demorums-ID och ett nytt rund-ID.
-Svaret är `{ demo: true, event }`; eventkontraktet ovan är oförändrat.
-Klienten återförsöker aldrig automatiskt. En processlokal begränsning till
-30 anrop i en burst, därefter ett nytt tillgängligt anrop per sekund, ger
-429 vid för hög belastning. Den är inte ett beständigt rundskydd.
+Den separata testytan `/roulette-test` (`games/roulette/preview.mjs`,
+`public/roulette-test/`, `POST /api/roulette-test/spin`) togs bort 22 oktober
+2026. Spelserverns enda roulettekontrakt är rummets `POST /api/roulette/table`
+och spelingången `/play/roulette`. Vercel-ingressens och plattformsroutingens
+kvarvarande `/roulette-test`-poster tas bort av respektive ägare (J05/C).
 ## Spelrum
 
 Studio erbjuder Blackjack eller Roulette när ett rum skapas per bolag.
@@ -269,7 +261,7 @@ som återförsök av en redan avgjord runda. Certifiering och riktiga pengar ing
 Använd Node 24 för hela repo-/Studio-flödet. Kör från reporoten:
 
 ```sh
-node --test --test-concurrency=4 test/roulette.mjs test/roulette-preview.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
+node --test --test-concurrency=4 test/roulette.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
 ```
 
 Tester för generator och testyta kontrollerar

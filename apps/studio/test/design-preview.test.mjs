@@ -262,3 +262,20 @@ test('retired library login returns to canonical assets without accepting invali
     assert.equal(studioLoginReturnTo(prefix+'/material-library?returnTo=https://outside.invalid'),'/admin');
   }
 });
+
+test('retired Admin pages authenticate before redirecting and retain explicit resource context',async()=>{
+  const cases=[['tools','/admin/dealers'],['admin/payments','/admin/ekonomi'],['admin/log','/admin/companies'],
+    ['openclaw?tab=models','/admin/ai/models'],['openclaw?tab=agent','/admin/dealer-agent'],
+    ['openclaw?tab=probe','/admin/clips'],['openclaw?tab=drift','/admin/drift'],['openclaw?tab=assistant','/admin'],['ai/chat','/admin']];
+  for(const [old,destination] of cases)for(const method of ['GET','HEAD']){
+    const url=new URL('https://studio.test/admin/'+old);
+    url.searchParams.append('dealer','nora');url.searchParams.append('operator','north');url.searchParams.append('room','one');url.searchParams.append('room','two');
+    const segments=url.pathname.slice('/admin/'.length).split('/');
+    await assert.rejects(serveDesignPreview(new Request(url,{method}),segments,{authorize:async()=>{throw Error('denied');}}),/denied/);
+    let authorized=0;const response=await serveDesignPreview(new Request(url,{method}),segments,{authorize:async()=>{authorized++;}});
+    assert.equal(authorized,1);assert.equal(response.status,307);
+    const target=new URL(response.headers.get('location'),url);assert.equal(target.pathname,destination);
+    assert.equal(target.searchParams.get('dealer'),'nora');assert.equal(target.searchParams.get('operator'),'north');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
+    assert.equal(response.headers.get('cache-control'),'private, no-store');
+  }
+});

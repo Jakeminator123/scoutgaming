@@ -25,6 +25,8 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   current.current = workspace;
   const query = useSearchParams(), selectedId = query.get('dealer') ?? '';
   const disabled = blocked || busy || loading || !workspace;
+  const createRequested=query.get('view')==='create';
+  useEffect(()=>{if(active&&createRequested)setCreating(true);},[active,createRequested]);
   useEffect(() => {
     if(!active)return;
     const abort = new AbortController(); setLoading(true); setReview(null); setError('');
@@ -105,7 +107,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const reviewError=stale?'Registret har ändrats sedan dialogen öppnades. Stäng och försök igen.':review?.error||plan?.error||'';
   const confirmLabel=review&&!review.checking&&!reviewError?plan?.confirmLabel:undefined;
   return <section className="dealer-import" aria-labelledby="dealer-directory-title">
-    <header className="dealer-import-header"><div><p className="dealer-import-eyebrow">Nivå 1 · Bibliotek</p><h1 id="dealer-directory-title">Dealers</h1><p>Skapa en dealer, lägg in filmklipp och se var personen används.</p></div>
+    <header className="dealer-import-header"><div><p className="dealer-import-eyebrow">Studio</p><h1 id="dealer-directory-title">Dealers</h1><p>Skapa en dealer, lägg in filmklipp och se var personen används.</p></div>
       <div className="dealer-import-actions"><button ref={createButton} className="dealer-import-primary" disabled={disabled} onClick={()=>setCreating(true)}><Plus size={16}/>Skapa dealer</button><button aria-label="Uppdatera dealers" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={16}/></button></div>
     </header>
     {blocked&&<p role="note">Spara ditt öppna Studio-utkast eller avsluta den pågående importen innan du ändrar dealerregistret.</p>}
@@ -122,7 +124,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
       const count=workspace!.inventory.videos.filter(video=>(video.classification?.dealerId??(video as {dealer?:string}).dealer)===dealer.id&&!video.classification?.archived).length;
       return <li key={dealer.id} className={'dealer-import-panel '+(selectedId===dealer.id?'border-sg-lime':'')}><h2><Users size={18}/>{dealer.label}</h2><p>{count} klipp · {rooms.length?`${rooms.length} kopplade rum`:'Inga rum kopplade ännu'}</p>
         {dealer.id==='astrid'&&<p><strong>Legacyreferens</strong> · Astrid är inkopplad via legacy och saknar trelagersversion. Befintliga OpenClaw- och talflöden kan användas som referens.</p>}
-        <div className="dealer-import-actions"><a className="dealer-import-primary" href={'/admin/clips?dealer='+encodeURIComponent(dealer.id)+'&panel=intake'}><Upload size={15}/>Lägg till klipp</a><button disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(dealer.id,dealer.label,'archive')}><Trash2 size={15}/>Ta bort</button></div>
+        <div className="dealer-import-actions"><a className="dealer-import-primary" href={'/admin/clips?dealer='+encodeURIComponent(dealer.id)}>Redigera dealer</a><a href={'/admin/clips?dealer='+encodeURIComponent(dealer.id)+'&panel=intake'}><Upload size={15}/>Lägg till klipp</a><button disabled={disabled} aria-haspopup="dialog" onClick={()=>void openReview(dealer.id,dealer.label,'archive')}><Trash2 size={15}/>Ta bort</button></div>
         {!!rooms.length&&<details><summary>Visa kopplingar</summary><ul>{rooms.map(room=><li key={room.id}><a href={'/admin/structure?operator='+encodeURIComponent(room.operatorId)+'&table='+encodeURIComponent(room.id)}>{workspace!.catalog.administration.operators.find(row=>row.id===room.operatorId)?.name} · {room.name}</a></li>)}</ul></details>}
       </li>;
     })}</ul>

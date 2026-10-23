@@ -1,11 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { labCompanionIdentity } from '../lib/companion-server.mjs';
 import { createSocialService, socialEndpoint } from '../lib/social-server.mjs';
-import { createSocialStore } from '../lib/social-store.mjs';
+import { createMemorySocialStore } from '../lib/social-store.mjs';
 
 const settings = { remoteUrl: 'https://director.example.test', remoteToken: 'fixture-remote-token', companionEnabled: true };
 const request = (cookie, path = '/api/social/profile', body) => new Request(`http://127.0.0.1:4188${path}`, {
@@ -35,10 +32,8 @@ test('local profile endpoint derives identity itself and rejects injected IDs an
   assert.equal((await socialEndpoint(foreign, options)).status, 403); assert.equal(calls, 1);
 });
 
-test('companion poem uses the existing exact-text social TTS path once', async t => {
-  const directory = await mkdtemp(join(tmpdir(), 'companion-local-'));
-  t.after(() => rm(directory, { recursive: true, force: true }));
-  const store = createSocialStore(directory), policy = await store.load();
+test('companion poem uses the existing exact-text social TTS path once', async () => {
+  const store = createMemorySocialStore(), policy = await store.load();
   let calls = 0, voices = 0;
   const service = createSocialService({ store, settings, fetchImpl: async (url, options) => {
     calls++; assert.equal(String(url), 'https://director.example.test/api/studio/companion');

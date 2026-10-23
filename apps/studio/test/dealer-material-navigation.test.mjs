@@ -62,29 +62,7 @@ test('legacy material URL redirects safe dealer and room context into the existi
   assert.equal(destination('dealer=https://other.invalid&operator=bad/value&table=room-7'),'/admin/dealer-studio?table=room-7&view=generate');
 });
 
-test('material draft stays mounted across tabs and blocks dealer, history and native account departure',()=>{
-  const h=hooks(),window=browser('https://qa.invalid/admin/dealer-studio?dealer=paow&view=generate&composition=scene-a&operator=north&table=room-7&game=roulette');
-  const {LabStudio}=load('../components/lab-studio.tsx',{react:h.react},{window});
-  const props={initialProject:addDealer(createSeedProject(),'paow','PAOW'),initialVideos:{videos:[]},initialDealerId:'paow',initialView:'generate',initialLaneId:'scene-a',initialOperatorId:'north',initialTableId:'room-7',initialGame:'roulette',connectedLane:true};
-  let tree=h.render(LabStudio,props);h.effects();tree=h.render(LabStudio,props);h.effects();
-  const creator=nodes(tree,node=>node.type==='DealerMaterialCreator')[0];
-  assert.equal(creator.props.dealerId,'paow');assert.equal(creator.key,'paow');
-  assert.deepEqual(JSON.parse(JSON.stringify(creator.props.navigationContext)),{laneId:'scene-a',operatorId:'north',tableId:'room-7',game:'roulette'});
-  creator.props.onPendingChange({dirty:true,busy:false});tree=h.render(LabStudio,props);h.effects();
-  const nav=nodes(tree,node=>node.type==='StudioNavigation')[0];
-  nav.props.onNavigate({preventDefault(){}},'/admin/dealer-studio?dealer=paow&view=clips');
-  tree=h.render(LabStudio,props);h.effects();
-  const hidden=nodes(tree,node=>node.type==='DealerMaterialCreator')[0];assert.equal(hidden.key,creator.key);assert.equal(hidden.props.active,false);
-  const astrid=nodes(tree,node=>node.type==='button'&&text(node)==='A Astrid')[0];assert.ok(astrid);astrid.props.onClick();
-  tree=h.render(LabStudio,props);h.effects();assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator')[0].props.dealerId,'paow');
-  let prevented=false;window.listeners.get('beforeunload')({preventDefault(){prevented=true;}});assert.equal(prevented,true,'native links including account/logout preserve guard');
-  window.history.pushState(null,'','/admin/dealer-studio?dealer=astrid&view=clips');window.listeners.get('popstate')(new Event('popstate'));
-  tree=h.render(LabStudio,props);h.effects();assert.equal(new URL(window.location.href).searchParams.get('dealer'),'paow');
-  nodes(tree,node=>node.type==='DealerMaterialCreator')[0].props.onPendingChange({dirty:false,busy:false});tree=h.render(LabStudio,props);h.effects();
-  nodes(tree,node=>node.type==='button'&&text(node)==='A Astrid')[0].props.onClick();tree=h.render(LabStudio,props);h.effects();tree=h.render(LabStudio,props);
-  assert.equal(new URL(window.location.href).searchParams.get('dealer'),'astrid');assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator')[0].props.dealerId,'astrid');
-  h.unmount();assert.equal(window.listeners.size,0);
-});
+
 
 test('failed material writes freeze controls, preserve a profile draft and recover by read only retry',async()=>{
   const {service}=fixture(),state=await service.state('paow');const h=hooks(),window=browser('https://qa.invalid/admin/dealer-studio?dealer=paow&view=generate'),requests=[],pending=[];
@@ -119,4 +97,34 @@ test('material reads ignore an older dealer response and stop job polling when t
   const props={dealerId:'paow',initialState:{...paow,jobs:[{jobId:'existing',status:'running',taskId:'provider-task',request:{}}]}};
   polling.render(Polling,props);polling.effects();assert.equal(window.timers.size,1,'active mounted tab schedules its existing job');
   polling.render(Polling,{...props,active:false});polling.effects();assert.equal(window.timers.size,0,'leaving the tab cancels polling');polling.unmount();
+});
+
+test('the dedicated material page preserves dealer scope and guards pending work on every exit',()=>{
+  const h=hooks(),window=browser('https://qa.invalid/admin/dealer-studio?dealer=paow&view=generate');
+  const {DealerMaterialPage}=load('../components/dealer-material-page.tsx',{react:h.react},{window});
+  const context={laneId:'scene-a',operatorId:'north',tableId:'room-7',game:'roulette'};
+  const props={project:addDealer(createSeedProject(),'paow','PAOW'),dealerId:'paow',navigationContext:context,disabled:false};
+  const render=()=>{const tree=h.render(DealerMaterialPage,props);h.effects();return tree;};
+  let tree=render(),creator=nodes(tree,node=>node.type==='DealerMaterialCreator')[0];
+  assert.equal(creator.props.dealerId,'paow');assert.equal(creator.key,'paow');
+  assert.deepEqual(creator.props.navigationContext,context);
+  for(const pending of [{dirty:true,busy:false},{dirty:false,busy:true}]){
+    creator.props.onPendingChange(pending);tree=render();
+    const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
+    window.listeners.get('studio:before-navigate')(event);assert.equal(event.defaultPrevented,true);
+    let warned=false;window.listeners.get('beforeunload')({preventDefault(){warned=true;}});assert.equal(warned,true);
+    assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator')[0].key,'paow');
+  }
+  creator.props.onPendingChange({dirty:false,busy:false});render();
+  const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
+  window.listeners.get('studio:before-navigate')(event);assert.equal(event.defaultPrevented,false);
+  h.unmount();assert.equal(window.listeners.size,0);
+});
+test('material page does not mount a creator for a missing or archived dealer',()=>{
+  for(const dealerId of [undefined,'missing']){
+    const h=hooks(),window=browser('https://qa.invalid/admin/dealer-studio?view=generate');
+    const {DealerMaterialPage}=load('../components/dealer-material-page.tsx',{react:h.react},{window});
+    const tree=h.render(DealerMaterialPage,{project:createSeedProject(),dealerId,navigationContext:{},disabled:false});
+    assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator').length,0);h.effects();h.unmount();
+  }
 });

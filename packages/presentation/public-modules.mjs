@@ -30,6 +30,8 @@ export const presentationPublicModules = Object.freeze([
   {source: 'packages/presentation/runtime/speech-pose-gate.mjs', paths: ['/speech-pose-gate.mjs', '/packages/presentation/runtime/speech-pose-gate.mjs']},
   {source: 'packages/presentation/contracts/chat-response.mjs', paths: ['/chat-response.mjs', '/packages/presentation/contracts/chat-response.mjs']},
   {source: 'packages/presentation/contracts/filmed-profile.mjs', paths: ['/card-presentation/filmed-profile.mjs', '/packages/presentation/contracts/filmed-profile.mjs']},
+  {source: 'packages/presentation/runtime/filmed-deal-sequence.mjs', paths: ['/packages/presentation/runtime/filmed-deal-sequence.mjs']},
+  {source: 'packages/presentation/runtime/filmed-deal-timeline.mjs', paths: ['/packages/presentation/runtime/filmed-deal-timeline.mjs']},
   {source: 'packages/presentation/contracts/game-selection.mjs', paths: ['/game-lanes.mjs', '/packages/presentation/contracts/game-selection.mjs']},
   {source: 'packages/presentation/contracts/dealer-voice-catalog.json', paths: ['/dealer-voice-catalog.json', '/packages/presentation/contracts/dealer-voice-catalog.json']},
   {source: 'packages/presentation/runtime/speech-stream-client.mjs', paths: ['/speech-stream-client.mjs', '/packages/presentation/runtime/speech-stream-client.mjs']},

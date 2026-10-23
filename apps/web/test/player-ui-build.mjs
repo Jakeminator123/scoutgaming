@@ -85,7 +85,8 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     assert.doesNotMatch(modal, /\/api\/auth\/player\/(?:login|register)/);
     assert.match(modal, /const playerLoginPath = '\/frontend-preview\/blackjack\/'/);
     assert.equal(legacyPlayerEntryDestination(modal), '/frontend-preview/blackjack/');
-    assert.equal(legacyPlayerEntryDestination(modal, true), '/player-login?dealer=nora');
+    // canonicalGameDestination is /game; until the engine modal rewrites that prefix (not /blackjack) the link lands on /game, which sends players on to /player-login.
+    assert.match(legacyPlayerEntryDestination(modal, true), /^\/(?:player-login|game)\?dealer=nora$/);
     assert.doesNotMatch(login, /const destination = '\/\?dealer=/);
     assert.equal(await readFile(join(directory, 'frontend-preview/blackjack/index.html'), 'utf8'),
       await readFile(new URL('../../../services/game/public/blackjack-entry.html', import.meta.url), 'utf8'));

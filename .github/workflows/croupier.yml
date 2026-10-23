@@ -59,7 +59,7 @@ jobs:
       - name: Environment registry and documentation contracts
         run: |
           node tools/check-environment-variables.mjs
-          node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs test/partner-docs.mjs
+          node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
 
   dealer-regression:

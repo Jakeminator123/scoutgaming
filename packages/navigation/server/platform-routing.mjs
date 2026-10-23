@@ -1,5 +1,5 @@
 import { presentationPublicSource } from '../../presentation/public-modules.mjs';
-import { gameEntryRedirect, approvedGameQuery } from '../game-entry.mjs';
+import { gameEntryRedirect, approvedGameQuery, requestedGame, legacyGameStartRedirect, rouletteRoomSearch, rouletteDocumentPath, GAME_START_PATHS, GAME_CONTEXT_KEYS, ROULETTE_DOCUMENT_PATH, ROULETTE_DOCUMENT_PATHS } from '../game-entry.mjs';
 import { playerLobbyPath } from '../player-lobby.mjs';
 import {adminDocumentHref} from '../admin-workspace-routes.mjs';
 import {legacyActivityDocumentHref} from '../control-flow.mjs';
@@ -40,9 +40,8 @@ const AUTH = new Set([
 const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
 const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
-// Public, unlisted roulette diagnostics; exact files only, no game/server source.
-const ROULETTE_PREVIEW = new Set(['/roulette-test', '/roulette-test/', '/roulette-test/app.mjs', '/roulette-test/style.css', '/api/roulette-test/spin']);
-const ROULETTE_ROOM = new Set(['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
+// /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
+const ROULETTE_ROOM = new Set(['/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
@@ -59,7 +58,7 @@ const STUDIO_PREVIEW = new RegExp('^(?:/studio-preview/' + PREVIEW_UUID
 export function backendPlatformPath(value) {
   const path = canonicalPlatformPath(value);
   if (!path) return false;
-  return (path.startsWith('/packages/') && Boolean(presentationPublicSource(path))) || AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
+  return (path.startsWith('/packages/') && Boolean(presentationPublicSource(path))) || AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_ROOM.has(path)
     || path === '/api/operators'
     || path === '/api/studio-game/command'
     || (value === path && SHARED_ROOM_COMMAND.test(path))
@@ -83,18 +82,18 @@ export function backendPlatformPath(value) {
     || ['/scene.jpg', '/dealer-fallback.png', '/speech-media.json'].includes(path);
 }
 
-// A bare public Blackjack address is a lobby entry, not a global dealer choice.
-// Explicit selectors (even malformed ones) keep their existing validation/auth path.
-export function blackjackLobbyDestination(url, config) {
-  if (!config?.unifiedUi || !config.canonicalGame
-    || !['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/','/game','/game/','/v2','/v2/'].includes(url.pathname)) return null;
-  const context = ['table','dealer','lane','presentation','launch','rehearsal',
-    'performance','motion','labObserverOrigin','labObserverChannel'];
+// A bare game start is a lobby entry, not a global dealer choice. Explicit
+// selectors (even malformed ones) keep their existing validation/auth path.
+export function gameLobbyDestination(url, config) {
+  if (!config?.canonicalGame || !GAME_START_PATHS.includes(url.pathname)) return null;
+  const context = [...GAME_CONTEXT_KEYS, 'performance','motion'];
   if (context.some(key => url.searchParams.has(key))) return null;
   const operator = requestedOperator(url.searchParams);
   if (operator === null) return null; // Preserve the existing invalid/duplicate selector handling.
   return playerLobbyPath(url.searchParams, url.hash);
 }
+
+const isMutation = request => Boolean(request) && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'));
 
 export function platformRoute(url, config, request) {
   const retiredDocument = /^\/(?:studio\/)?control(?:\/|$)/.test(url.pathname);
@@ -123,27 +122,34 @@ export function platformRoute(url, config, request) {
   if(config.unifiedUi && ['/administration','/administration/'].includes(path) && (!request || ['GET','HEAD'].includes(request.method) && !request.body && !request.headers.has('next-action'))){
     return {kind:'redirect',destination:config.publicOrigin+adminDocumentHref('/control/administration'+url.search+url.hash)};
   }
-  if (['/play', '/play/', '/demo', '/demo/', '/casino.html'].includes(path)) {
-    if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};
+  if (['/play', '/play/'].includes(path)) {
+    if (isMutation(request)) return {kind:'reject'};
     return {kind:'redirect',destination:config.publicOrigin+playerLobbyPath(url.searchParams,url.hash)};
   }
-  const lobby = blackjackLobbyDestination(url, config);
-  if (lobby) {
-    if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};
-    return {kind:'redirect',destination:config.publicOrigin+lobby};
+  // /play/blackjack, /blackjack and /roulette are permanent redirects for one release.
+  const legacyStart = legacyGameStartRedirect(url);
+  if (legacyStart) {
+    if (isMutation(request)) return {kind:'reject'};
+    return {kind:'redirect',status:308,destination:config.publicOrigin+legacyStart};
   }
-  if(config.unifiedUi && config.canonicalGame){
-    const previous=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:'1'});
-    if(previous||['/blackjack','/blackjack/','/play/blackjack/'].includes(path)){
-      const query=approvedGameQuery(url.searchParams,{origin:url.origin});
-      if(launchHasPartnerClaim(query.get('launch'))) query.delete('operator');
-      const text=query.toString();
-      return {kind:'redirect',destination:`${config.publicOrigin}/play/blackjack${text?'?'+text:''}`};
-    }
-    if(path==='/play/blackjack'&&url.searchParams.has('launch')){
-      // Preserve the existing signed launch handler and game-session audience.
-      return {kind:'backend',destination:`${config.backendOrigin}/blackjack${launchBackendSearch(url)}`};
-    }
+  // The roulette document keeps the engine's address with exactly the room
+  // selectors in the browser URL; without a room it is a lobby entry via /game.
+  if (ROULETTE_DOCUMENT_PATHS.includes(path)) {
+    if (isMutation(request)) return {kind:'reject'};
+    const search = rouletteRoomSearch(url.searchParams,{origin:url.origin});
+    if (!search) return {kind:'redirect',status:308,destination:`${config.publicOrigin}/game?game=roulette`};
+    if (path !== ROULETTE_DOCUMENT_PATH || url.search !== search) return {kind:'redirect',destination:config.publicOrigin+ROULETTE_DOCUMENT_PATH+search};
+    return {kind:'backend',destination:config.backendOrigin+ROULETTE_DOCUMENT_PATH+search};
+  }
+  if (GAME_START_PATHS.includes(path)) {
+    if (isMutation(request) || requestedGame(url.searchParams) === null) return {kind:'reject'};
+    const lobby = gameLobbyDestination(url, config);
+    if (lobby) return {kind:'redirect',destination:config.publicOrigin+lobby};
+    // Preserve the existing signed launch handler and game-session audience.
+    if (url.searchParams.has('launch')) return {kind:'backend',destination:`${config.backendOrigin}${path}${launchBackendSearch(url)}`};
+    // A roulette room opens the engine's document address; blackjack is proxied by the frontend route with its session check.
+    if (requestedGame(url.searchParams) === 'roulette') return {kind:'redirect',destination:config.publicOrigin+rouletteDocumentPath(url.searchParams,{origin:url.origin})};
+    return {kind:'frontend'};
   }
   if (path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
     return {kind: 'frontend'};
@@ -154,7 +160,7 @@ export function platformRoute(url, config, request) {
   // A direct browser/API request must not create an alternative public route.
   if (Object.values(PLATFORM_SOCKET_ENDPOINTS).includes(path)) return {kind: 'reject'};
   if (Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, path)) return {kind: 'socket', destination: `${config.publicOrigin}${PLATFORM_SOCKET_ENDPOINTS[path]}${url.search}`};
-  if ((path === '/' || path === '/game' || path === '/game/' || config.canonicalGame && ['/blackjack','/blackjack/'].includes(path)) && url.searchParams.has('launch')) {
+  if (path === '/' && url.searchParams.has('launch')) {
     return { kind: 'backend', destination: `${config.backendOrigin}${path}${launchBackendSearch(url)}` };
   }
   if (path === '/' && ['dealer', 'presentation', 'performance'].some(key => url.searchParams.has(key))) return {kind: 'redirect', destination: `${config.publicOrigin}/game${url.search}`};

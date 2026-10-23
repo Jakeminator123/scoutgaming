@@ -22,10 +22,10 @@ export function validLifecycleSnapshot(value:unknown):value is LifecycleSnapshot
       && typeof row.canArchive==='boolean' && typeof row.canRestore==='boolean' && Array.isArray(row.restoreBlockers)));
 }
 
-export function ControlResourceLifecycle({operatorId,kind,available,disabled=false,refreshKey=0,onChanged,onBusyChange,onRefreshNeeded,navigation}:{
+export function ControlResourceLifecycle({operatorId,kind,available,disabled=false,refreshKey=0,onChanged,onBusyChange,onRefreshNeeded,navigation,compact=false,archiveOnly=false,archiveRequest,stateRequest,onArchiveRequestHandled}:{
   operatorId:string;kind:'operator'|'rooms';available:boolean;disabled?:boolean;refreshKey?:number;
   onChanged?:(snapshot:LifecycleSnapshot)=>void;onBusyChange?:(busy:boolean)=>void;onRefreshNeeded?:()=>void;
-  navigation?:ResourceLifecycleNavigation;
+  navigation?:ResourceLifecycleNavigation; compact?:boolean; archiveOnly?:boolean; archiveRequest?:string; stateRequest?:string; onArchiveRequestHandled?:()=>void;
 }) {
   const [snapshot,setSnapshot]=useState<LifecycleSnapshot|null>(null);
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[stale,setStale]=useState(false),[problem,setProblem]=useState(''),[notice,setNotice]=useState('');
@@ -59,8 +59,16 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
   useEffect(()=>()=>{epoch.current++;callbacks.current.onBusyChange?.(false);},[]);
   const operator=snapshot?.operators.find(row=>row.id===operatorId);
   const rooms=snapshot?.rooms.filter(row=>row.operatorId===operatorId)??[];
-  const visible=rooms.filter(room=>Boolean(room.archivedAt)===showArchive);
+  const visible=rooms.filter(room=>Boolean(room.archivedAt)===(archiveOnly||showArchive));
   const writesOff=disabled||busy||loading||stale;
+  useEffect(()=>{
+    if((!archiveRequest&&!stateRequest)||!snapshot||writesOff)return;
+    const target=snapshot.rooms.find(row=>row.id===(archiveRequest||stateRequest)&&row.operatorId===operatorId);
+    if(stateRequest&&target?.published&&operator?.status==='active'&&!target.archivedAt)setIntent({kind:'state',operatorId,id:target.id,name:target.name,state:target.state==='live'?'pending':'live'});
+    else if(archiveRequest&&target?.canArchive)setIntent({kind:'room',operatorId,id:target.id,name:target.name,archived:true});
+    else setProblem('Spelet kan inte ändras just nu. Uppdatera och kontrollera bolaget.');
+    onArchiveRequestHandled?.();
+  },[archiveRequest,stateRequest,snapshot,writesOff,operatorId,onArchiveRequestHandled]);
 
   async function apply() {
     if(!intent||!snapshot||!operator||intent.operatorId!==operatorId||lock.current||writesOff)return;
@@ -96,22 +104,27 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
         ||value.administrationRevision!==result.administrationRevision||(intent.kind!=='operator'&&nextTarget?.packageRevision!==result.packageRevision))throw Error('Ändringen är sparad men aktuella uppgifter kunde inte bekräftas. Uppdatera vyn innan du fortsätter.');
       if(ticket!==epoch.current)return;
       setSnapshot(value);setIntent(null);setStale(false);callbacks.current.onChanged?.(value);
-      setNotice(intent.kind==='state'?(intent.state==='live'?'Spelrummet är öppet.':'Spelrummet är pausat.'):intent.archived?intent.name+' är arkiverat.':intent.kind==='room'?'Rummet är återställt och pausat. Öppna det när det är klart.':'Bolaget är återställt.');
+      setNotice(intent.kind==='state'?(intent.state==='live'?'Spelrummet är öppet.':'Spelrummet är pausat.'):intent.archived?intent.name+(compact?' har tagits bort från bolagets utbud.':' är arkiverat.'):intent.kind==='room'?'Rummet är återställt och pausat. Öppna det när det är klart.':'Bolaget är återställt.');
     } catch(error){if(ticket===epoch.current){setStale(true);setIntent(null);setProblem(error instanceof Error&&!['invalid','unavailable'].includes(error.message)?error.message:'Ändringen kunde inte läsas tillbaka. Uppdatera vyn innan du fortsätter.');callbacks.current.onRefreshNeeded?.();}}
     finally {lock.current=false;if(ticket===epoch.current)setBusy(false);callbacks.current.onBusyChange?.(false);}
   }
   if(!available)return null;
+  if(compact)return <section aria-label="Ta bort spel från bolaget">
+    {problem&&<p role="alert">{problem} <button className="sg-btn" type="button" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></p>}
+    {notice&&<p role="status">{notice}</p>}
+    {intent&&intent.operatorId===operatorId&&<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna ':'Pausa '):'Ta bort '}{intent.name} hos {operator?.name}?</legend><p>{intent.kind==='state'?(intent.state==='live'?'Spelet öppnas för bolagets spelare med sina publicerade inställningar.':'Spelet stängs tillfälligt för nya spelare. Inställningar och historik behålls.'):'Spelet försvinner från bolagets utbud och stängs för spelare. Gemensamma dealers, bord, bakgrunder och historik behålls. Spelet går att återställa.'}</p><div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" onClick={()=>void apply()}>{busy?'Sparar…':intent.kind==='state'?(intent.state==='live'?'Öppna spel':'Pausa spel'):'Ta bort spel'}</button><button type="button" className="sg-btn" onClick={()=>setIntent(null)}>Avbryt</button></div></fieldset>}
+  </section>;
   if(!operatorId)return problem?<p role="alert">{problem} <button type="button" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Försök igen</button></p>:null;
   return <section className={styles.panel} aria-label={kind==='rooms'?'Bolagets spelrum':'Bolagets papperskorg'}>
-    <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{kind==='rooms'?'Spelrum':'Papperskorg & återställning'}</h2></div>
+    <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{archiveOnly?'Borttagna spel':kind==='rooms'?'Spelrum':'Papperskorg & återställning'}</h2></div>
       <button className="sg-btn sg-btn-ghost" type="button" disabled={disabled||busy||loading} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></header>
     {loading?<p role="status">Hämtar aktuella uppgifter…</p>:null}
     {problem?<p role="alert" className={styles.feedback}>{problem}</p>:null}
     {notice?<p role="status" className={styles.feedback}>{notice}</p>:null}
     {!loading&&snapshot&&!operator?<p role="status">Bolaget finns inte i den aktuella förteckningen.</p>:null}
     {kind==='rooms'&&operator?<>
-      <div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Papperskorg ({rooms.filter(room=>room.archivedAt).length})</button></div>
-      {!visible.length?<p>{showArchive?'Inga spelrum i papperskorgen.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
+      {!archiveOnly&&<div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Papperskorg ({rooms.filter(room=>room.archivedAt).length})</button></div>}
+      {!visible.length?<p>{archiveOnly?'Inga borttagna spel.':showArchive?'Inga spelrum i papperskorgen.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
         <div><h3>{room.name}</h3><p>{room.archivedAt?'I papperskorgen':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
         <div className={styles.actions}>
           {!room.archivedAt?<>

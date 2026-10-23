@@ -9,7 +9,7 @@ import {validateComposition,createLayerComposition,clipCompositing} from '../pac
 import {compositionRuntimeResponse} from '../services/game/composition-runtime.mjs';
 import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
 import {zoomComposition} from '../apps/studio/lib/composition-zoom.mjs';
-import {Compositor} from '../packages/presentation/compositor/compositor.js';
+import {Compositor,pickSkin,DEFAULT_SKIN} from '../packages/presentation/compositor/compositor.js';
 import {createSeedProject,addDealer,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
@@ -225,6 +225,114 @@ test('compositor uses the same actor frame with explicit table order and never p
     Compositor.prototype.render.call(compositor,scene,actor,new Map([['table',table]]),[],null);
     assert.deepEqual(calls,tableFront?['actor','table','project-cards']:['table','project-cards','actor']);}
 });
+
+test('render forwards the per-frame prop card to dealer passes only, and nothing when absent',()=>{
+  const settings=defaultCompositionSettings();settings.tableFront=false;
+  const scene=sceneForComposition(settings,'mobile',{background:false},{enabled:true});scene.layerMode='split';
+  const actor={},table={el:{table:true},width:720,height:1280},calls=[];
+  const compositor={ready:true,gl:{COLOR_BUFFER_BIT:1,viewport(){},clearColor(){},clear(){}},canvas:{},geometry:stageGeometry,
+    draw:(source,rect,options)=>calls.push([source===actor?'actor':'table',options?.propCard??null,options?.pass??0]),paintCards(){}};
+  const propCard={x:870,y:416,width:191,height:68};scene.propCard=propCard;
+  Compositor.prototype.render.call(compositor,scene,actor,new Map([['table',table]]),[],null);
+  assert.deepEqual(calls,[['actor',propCard,1],['table',null,0],['actor',propCard,2]]);
+  delete scene.propCard;calls.length=0;
+  Compositor.prototype.render.call(compositor,scene,actor,new Map([['table',table]]),[],null);
+  assert.deepEqual(calls,[['actor',null,1],['table',null,0],['actor',null,2]]);
+});
+
+test("skin eyedropper takes the median hue and saturation of skin pixels and keeps Kevin's default below fifty",()=>{
+  assert.deepEqual([...DEFAULT_SKIN],[.07,.45]);assert.ok(Object.isFrozen(DEFAULT_SKIN));
+  const px=(r,g,b,n)=>Array.from({length:n},()=>[r,g,b,255]).flat();
+  const few=Uint8ClampedArray.from(px(200,140,110,49));
+  assert.deepEqual(pickSkin(few),[.07,.45]);assert.deepEqual(pickSkin(few,[.1,.2]),[.1,.2]);
+  assert.notEqual(pickSkin(few),DEFAULT_SKIN,'a copy, never the frozen default itself');
+  // 30 + 31 skin pixels of two tones; green screen, black suit, white shirt and magenta are not skin.
+  const data=Uint8ClampedArray.from([...px(200,140,110,30),...px(220,120,100,31),...px(30,200,40,40),...px(20,20,25,40),...px(250,250,250,40),...px(250,50,250,40)]);
+  const [hue,sat]=pickSkin(data);
+  assert.ok(Math.abs(hue-1/36)<1e-9,'median hue is the 31st sorted value: tone (220,120,100)');
+  assert.ok(Math.abs(sat-120/220)<1e-9,'median saturation is likewise the second tone');
+});
+
+function withGlCompositor(run) {
+  const names=['document','HTMLVideoElement'],previous=names.map(name=>Object.getOwnPropertyDescriptor(globalThis,name));
+  const calls=[],shaders=[];let samples=0,samplePixels=[];
+  const gl={COLOR_BUFFER_BIT:1,VERTEX_SHADER:'vertex',FRAGMENT_SHADER:'fragment',COMPILE_STATUS:1,LINK_STATUS:1,ARRAY_BUFFER:1,STATIC_DRAW:1,FLOAT:1,BLEND:1,ONE:1,ONE_MINUS_SRC_ALPHA:1,
+    UNPACK_PREMULTIPLY_ALPHA_WEBGL:1,TEXTURE_2D:1,RGBA:1,UNSIGNED_BYTE:1,TEXTURE0:0,TEXTURE_MIN_FILTER:1,TEXTURE_MAG_FILTER:1,TEXTURE_WRAP_S:1,TEXTURE_WRAP_T:1,LINEAR:1,CLAMP_TO_EDGE:1,TRIANGLES:4,
+    createShader:type=>({type}),shaderSource:(shader,source)=>shaders.push([shader.type,source]),compileShader(){},getShaderParameter:()=>true,createProgram:()=>({}),attachShader(){},linkProgram(){},deleteShader(){},getProgramParameter:()=>true,useProgram(){},
+    getUniformLocation:(program,name)=>name,createBuffer:()=>({}),bindBuffer(){},bufferData(){},getAttribLocation:()=>0,enableVertexAttribArray(){},vertexAttribPointer(){},enable(){},blendFunc(){},pixelStorei(){},
+    createTexture:()=>({}),bindTexture(){},texImage2D(){},texParameteri(){},activeTexture(){},deleteTexture(){},deleteProgram(){},viewport(){},clearColor(){},clear(){},
+    uniform1i:(name,value)=>calls.push([name,value]),uniform1f:(name,value)=>calls.push([name,value]),uniform2f:(name,...value)=>calls.push([name,value]),uniform4f:(name,...value)=>calls.push([name,value]),drawArrays:()=>calls.push(['drawArrays'])};
+  class Canvas {width=0;height=0;addEventListener(){}
+    getContext(kind){return kind==='webgl'?gl:{clearRect(){},drawImage(){},getImageData(){samples++;return {data:Uint8ClampedArray.from(samplePixels)};}};}}
+  try {
+    globalThis.document={createElement:()=>new Canvas()};globalThis.HTMLVideoElement=class {};
+    const compositor=new Compositor(new Canvas(),()=>{});compositor.logical=[1080,1920];
+    // Uniforms recorded since the caller last cleared calls, by name.
+    const uniforms=()=>Object.fromEntries(calls.filter(call=>call[0]!=='drawArrays'));
+    return run({compositor,calls,shaders,uniforms,get samples(){return samples;},sample(pixels){samplePixels=pixels;}});
+  } finally {names.forEach((name,index)=>{if(previous[index])Object.defineProperty(globalThis,name,previous[index]);else delete globalThis[name];});}
+}
+
+test('WebGL shader keeps the stored key, its uniforms and the hand passes, and adds Kevin\'s matte clean-up',()=>withGlCompositor(f=>{
+  const fragment=f.shaders.find(([type])=>type==='fragment')[1];
+  for(const expected of [
+    'uniform float keyOn,threshold,softness,despill,debugMode,pass,splitY,hasHand,hasMask,opacity;',
+    'uniform vec2 skin;','uniform vec2 sourcePx;','uniform vec4 propCard;','uniform float propCardOn;',
+    'smoothstep(threshold,threshold+softness,dominance)*smoothstep(.012,.065,k.g)', // the stored key, unchanged
+    'clamp((1.-keyed(t)-.04)/.92,0.,1.)', // black/white clip (dealer-layer.js:21)
+    'vec2 d=1.5*sourcePx;', // 5-tap cross softening (:50-52)
+    'smoothstep(.17,.22,h.x)*(1.-smoothstep(.45,.50,h.x))','rgb(vec3(skin.x,min(h.y,skin.y),h.z))', // unspill toward skin (:29-30)
+    'c.g=min(c.g,mix(max(c.r,c.b)+.02,(c.r+c.b)*.5,edgeW));', // green clamp (:62)
+    'step(.1,gx(uv+dir*3.*sourcePx))','iuv=uv+inward*6.*sourcePx','a*=1.-.3*near;', // edge cleaning 3 px / 6 px and choke (:63-80)
+    'float skinPx=step(.2,c.r)*step(c.g,c.r)*step(.06,c.r-c.b)*step(.42*c.r,c.g);','a*=1.-inCard*(1.-skinPx);', // skin in front of the card (:54, :98)
+    'if(hasMask>.5) alpha*=texture2D(mask,uv).r;','if(pass>.5&&pass<1.5)alpha*=1.-hands;','if(pass>1.5)alpha*=hands;', // hand passes exactly
+    'if(debugMode>1.5){c.rgb=vec3(alpha);alpha=1.;}','alpha*=opacity;gl_FragColor=vec4(c.rgb*alpha,alpha);'])
+    assert.ok(fragment.includes(expected),`fragment shader keeps ${expected}`);
+  assert.ok(/#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif/.test(fragment),'preprocessor lines stand alone');
+  assert.deepEqual(Object.keys(f.compositor.u),['rect','res','image','mask','hand','keyOn','threshold','softness','despill','debugMode','pass','splitY','hasHand','hasMask','opacity','skin','sourcePx','propCard','propCardOn']);
+}));
+
+test('draw keys every green-screen clip with Kevin\'s defaults, samples the skin tone once a second and leaves alpha clips untouched',()=>withGlCompositor(f=>{
+  const actor={src:'frame-1',width:1920,height:1080};
+  f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key:{enabled:false,mode:'composite'}});
+  let u=f.uniforms();
+  assert.equal(u.keyOn,0);assert.equal(f.samples,0,'alpha clips never run the eyedropper');
+  assert.deepEqual(u.skin,[.07,.45]);assert.equal(u.propCardOn,0);assert.deepEqual(u.propCard,[0,0,0,0]);
+  assert.deepEqual(u.sourcePx,[(1080/1920)/1920,1/1920]);
+  f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key:{enabled:true,threshold:.23,softness:.15,despill:0}});
+  u=f.uniforms();
+  assert.deepEqual([u.keyOn,u.threshold,u.softness,u.despill,u.pass,u.splitY,u.opacity,u.debugMode,u.hasMask,u.hasHand],[1,.23,.15,0,0,.4,1,0,0,0]);
+  assert.equal(f.samples,1);assert.deepEqual(u.skin,[.07,.45],'fewer than fifty skin pixels keep Kevin\'s default');
+  assert.deepEqual(u.propCard,[0,0,0,0]);assert.equal(u.propCardOn,0,'no prop card unless given');
+  assert.equal(f.calls.at(-1)[0],'drawArrays');
+  // Within a second the pick is reused; a stale pick re-reads the frame and takes its skin.
+  f.sample(Array.from({length:60},()=>[220,120,100,255]).flat());
+  f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key:{enabled:true,threshold:.3,softness:.2,despill:.5},pass:2,hand:{src:'hand',width:1,height:1},splitY:.5});
+  u=f.uniforms();assert.equal(f.samples,1);assert.deepEqual(u.skin,[.07,.45]);
+  assert.deepEqual([u.threshold,u.softness,u.despill,u.pass,u.hasHand,u.splitY],[.3,.2,.5,2,1,.5]);
+  f.compositor.skinAt=-Infinity;f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key:{enabled:true,threshold:.23,softness:.15,despill:0}});
+  u=f.uniforms();assert.equal(f.samples,2);assert.ok(Math.abs(u.skin[0]-1/36)<1e-9&&Math.abs(u.skin[1]-120/220)<1e-9);
+  assert.deepEqual(f.compositor.skin,u.skin);
+  // An explicit skin override skips the eyedropper.
+  f.compositor.skinAt=-Infinity;f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key:{enabled:true,threshold:.23,softness:.15,despill:0},skin:[.05,.4]});
+  assert.deepEqual(f.uniforms().skin,[.05,.4]);assert.equal(f.samples,2);
+  // A raw 1080x1920 clip gets Kevin's exact pixel distances; the actor frame scales them by its height.
+  const video=Object.assign(new globalThis.HTMLVideoElement(),{videoWidth:1080,videoHeight:1920,readyState:2,currentSrc:'clip',currentTime:0});
+  f.calls.length=0;f.compositor.draw(video,[0,0,1080,1920],{key:{enabled:true,threshold:.23,softness:.15,despill:0}});
+  assert.deepEqual(f.uniforms().sourcePx,[1/1080,1/1920]);
+}));
+
+test('draw keys the prop card out only while a valid rect is given, in pixels of the dealer frame',()=>withGlCompositor(f=>{
+  const actor={src:'frame-1',width:1920,height:1080},key={enabled:true,threshold:.23,softness:.15,despill:0};
+  f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key,propCard:{x:870,y:416,width:191,height:68}});
+  let u=f.uniforms();assert.equal(u.propCardOn,1);assert.deepEqual(u.propCard,[870/1920,416/1080,191/1920,68/1080]);
+  for(const bad of [null,undefined,{x:1,y:1,width:0,height:5},{x:1,y:1,width:5,height:-1},{x:NaN,y:1,width:5,height:5},{x:1,y:1,width:5}]){
+    f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key,propCard:bad});
+    u=f.uniforms();assert.equal(u.propCardOn,0,`rect ${JSON.stringify(bad)} is off`);assert.deepEqual(u.propCard,[0,0,0,0]);}
+  // An alpha clip has nothing to key: the card rect is ignored.
+  f.calls.length=0;f.compositor.draw(actor,[-1166,0,3413,1920],{key:{enabled:false,mode:'composite'},propCard:{x:870,y:416,width:191,height:68}});
+  u=f.uniforms();assert.equal(u.keyOn,0);assert.equal(u.propCardOn,0);
+}));
 
 function withCpuCompositor(run) {
   const names=['document','HTMLVideoElement','ImageData'],previous=names.map(name=>Object.getOwnPropertyDescriptor(globalThis,name));
