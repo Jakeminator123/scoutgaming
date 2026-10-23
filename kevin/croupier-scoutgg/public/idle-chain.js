@@ -35,17 +35,21 @@ const FPS = 24;
  * from (Kevin 21 Oct: never the same clip twice in a row, whatever its weight). rnd: a number in [0, 1).
  */
 // Kevin 23 Oct: head movement is rare: a take that turns, glances or nods the head (huvud*, nick*, vrid*, blick*, Mårten's
-// glance and smile) never follows another one, and at least HEAD_GAP other takes come between two of them.
+// glance and smile) never follows another one, and at least HEAD_GAP other takes come between two of them. Only takes
+// marked head (dealers.js headMovesRarely: Paow, Astrid 2.0, Mårten) follow the rule; Dragan's are plain idles (Kevin).
 export const HEAD_TAKE = /^(huvud|nick|vrid|blick|glance|smile)/;
 export const HEAD_GAP = 3;
 export const isHead = id => HEAD_TAKE.test(String(id ?? ''));
 // sinceHead: takes picked since the last head take (Infinity: none yet). When the gap leaves only the last take, it repeats.
-export function pickWeighted(pool, last, rnd = Math.random, idOf = x => x.id, { sinceHead = Infinity } = {}) {
-  const allowed = sinceHead < HEAD_GAP ? pool.filter(x => !isHead(idOf(x))) : pool;
-  const base = allowed.length ? allowed : pool;
+// used: takes marked once already picked in this idle period (Kevin 23 Oct: Dragan's blickhoger once, never again).
+export function pickWeighted(pool, last, rnd = Math.random, idOf = x => x.id, { sinceHead = Infinity, used = null } = {}) {
+  const open = used ? pool.filter(x => !(x.once && used.has(idOf(x)))) : pool;
+  const fresh = open.length ? open : pool;
+  const allowed = sinceHead < HEAD_GAP ? fresh.filter(x => !x.head) : fresh;
+  const base = allowed.length ? allowed : fresh;
   let cand = base.length > 1 ? base.filter(x => idOf(x) !== last) : base;
   // never twice in a row gives way to a calm take when the only other takes move the head (Astrid 2.0 and Mårten have one)
-  if (cand.length && cand.every(x => isHead(idOf(x))) && !isHead(last)) cand = base;
+  if (cand.length && cand.every(x => x.head) && !base.find(x => idOf(x) === last)?.head) cand = base;
   const w = x => (x.vikt > 0 ? x.vikt : 1);
   let r = rnd() * cand.reduce((n, x) => n + w(x), 0), t = cand[cand.length - 1];
   for (const c of cand) if ((r -= w(c)) < 0) { t = c; break; }
@@ -60,9 +64,11 @@ export function layChain(idles, from, to, seed = '', { max = 64 } = {}) {
   const rnd = () => { h = (Math.imul(h ^ (h >>> 15), 2246822519) + 0x9e3779b9) >>> 0; return h / 2 ** 32; };
   const out = [];
   let at = from, last = null, sinceHead = Infinity;
+  const used = new Set();   // one chain is one idle period
   while (at < to && out.length < max) {
-    const t = pickWeighted(takes, last, rnd, x => x.take, { sinceHead });
-    sinceHead = isHead(t.take) ? 0 : sinceHead + 1;
+    const t = pickWeighted(takes, last, rnd, x => x.take, { sinceHead, used });
+    sinceHead = t.head ? 0 : sinceHead + 1;
+    if (t.once) used.add(t.take);
     const endAt = at + t.frames * 1000 / FPS;
     out.push({ take: t.take, startAt: Math.round(at * 10) / 10, endAt: Math.round(endAt * 10) / 10, frames: t.frames });
     last = t.take; at = endAt;

@@ -1,4 +1,4 @@
-import { pickWeighted, restingPool, isHead } from "./idle-chain.js";
+import { pickWeighted, restingPool } from "./idle-chain.js";
 import { createVoicePool } from "./voice-pool.js";
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
@@ -106,7 +106,7 @@ function pickIdle() {
   const pool = restingPool(manifest.idle), cached = pool.filter(c=>videoBuffer.has(c.url));
   // never the same gesture twice in a row, whatever its weight (Kevin 21 Oct; before, a heavy one could repeat)
   const c = pickWeighted(cached.length ? cached : pool.slice(0, 1), lastIdle, Math.random, x => x.id, { sinceHead: idleSinceHead });
-  lastIdle = c.id; idleSinceHead = isHead(c.id) ? 0 : idleSinceHead + 1; return c;
+  lastIdle = c.id; idleSinceHead = c.head ? 0 : idleSinceHead + 1; return c;
 }
 
 // a chain clip is one of the dealer's own idles (dealers.js: Dragan's in v2/, Astrid 2.0's in idle-v2/), by its take name

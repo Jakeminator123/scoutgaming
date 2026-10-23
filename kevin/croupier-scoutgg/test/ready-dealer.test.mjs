@@ -105,9 +105,9 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
 
 test('Dragan idles on his H3 takes in his own take folder, without the ones Kevin rejected (23 Oct): rest to rest, so a line he says at rest can run over a chain of them', () => {
   const d = DEALERS.dragge;
-  assert.deepEqual(d.idles.slice(0, 5).map(i => i.id), ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'fingrar'], 'no glance to the left (Kevin 20 Oct), no andasb, huvud or huvudb (23 Oct)');
-  assert.deepEqual(d.idles.slice(5).map(i => i.id), ['vikt6103', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103'], 'the new takes he kept (vridvanster6103 back, his later pick)');
-  for (const idle of d.idles.slice(5).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
+  assert.deepEqual(d.idles.slice(0, 4).map(i => i.id), ['andas', 'djupandetag', 'blickhoger', 'fingrar'], 'no glance to the left (Kevin 20 Oct), no andasb, blickhogerb, huvud or huvudb (23 Oct)');
+  assert.deepEqual(d.idles.slice(4).map(i => i.id), ['vikt6103', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103'], 'the new takes he kept (vridvanster6103 back, his later pick)');
+  for (const idle of d.idles.slice(4)) assert.equal(idle.vikt, 6, `${idle.id}: plain weight, no head rule for Dragan (Kevin 23 Oct)`);
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/dragge/v2/'), idle.id); assert.equal(idle.dur, 1.625, 'Emil\'s length, 39 frames'); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
   assert.ok(d.idles[0].vikt >= 10);
 });
@@ -125,18 +125,18 @@ test('Paow idles on her seven H3 takes in v2/ (the two glances to the right dera
 test('the calm takes are marked for the wait while the player decides (Kevin 21 Oct): breathing, shoulders, back, weight, fingers; not turns, glances, nods or leaning', () => {
   const calmOf = d => DEALERS[d].idles.filter(i => i.calm).map(i => i.id), livelyOf = d => DEALERS[d].idles.filter(i => !i.calm).map(i => i.id);
   assert.deepEqual(calmOf('dragge'), ['andas', 'djupandetag', 'fingrar', 'vikt6103']);
-  assert.deepEqual(livelyOf('dragge'), ['blickhoger', 'blickhogerb', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103']);
+  assert.deepEqual(livelyOf('dragge'), ['blickhoger', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103']);
   assert.deepEqual(calmOf('paow'), ['andas', 'andasb', 'djupandetag', 'fingrar', 'rakrygg6101', 'vikt6103', 'vikt6105']);
   assert.deepEqual(livelyOf('paow'), ['blickvanster', 'huvud', 'huvudb', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105']);
   assert.deepEqual(calmOf('astrid2'), ['fingrar'], 'her only calm take left (Kevin 23 Oct)');
 });
 
 // Kevin 23 Oct (clip studio on staging): 27 rejected idles are out of every rotation; their files stay on disk.
-test('the 28 idles Kevin rejected never play, and their files are kept', () => {
+test('the 29 idles Kevin rejected never play, and their files are kept', () => {
   const rejected = { astrid2: ['idle-v2/andas', 'idle-v2/andasb', 'idle-v2/blickhoger', 'idle-v2/blickhogerb', 'idle-v2/blickvanster', 'idle-v2/djupandetag'],
-    dragge: ['v2/andasb', 'v2/axlar6101', 'v2/axlar6103', 'v2/blicksvep6101', 'v2/huvud', 'v2/huvudb', 'v2/nick6101', 'v2/rakrygg6101', 'v2/rakrygg6103', 'v2/vikt6101', 'v2/vikt7105', 'v2/vridhoger6101'],
+    dragge: ['v2/andasb', 'v2/axlar6101', 'v2/axlar6103', 'v2/blickhogerb', 'v2/blicksvep6101', 'v2/huvud', 'v2/huvudb', 'v2/nick6101', 'v2/rakrygg6101', 'v2/rakrygg6103', 'v2/vikt6101', 'v2/vikt7105', 'v2/vridhoger6101'],
     paow: ['v2/axlar6101', 'v2/axlar6103', 'v2/axlar6104', 'v2/axlar6105', 'v2/lutfram6103', 'v2/nick6101', 'v2/nick6103', 'v2/nick6105', 'v2/rakrygg6105', 'v2/vikt6101'] };
-  assert.equal(Object.values(rejected).flat().length, 28);
+  assert.equal(Object.values(rejected).flat().length, 29);
   for (const [dealer, takes] of Object.entries(rejected)) {
     const played = new Set(DEALERS[dealer].idles.map(i => i.url.split('?')[0]));
     for (const take of takes) {
@@ -152,11 +152,12 @@ test('the 28 idles Kevin rejected never play, and their files are kept', () => {
 // in a row, the calm ones dominate; all four dealers. The head takes stay in the rotation.
 test('head takes are a fifth of the weight, never two in a row and at least four apart, in chains and random idles alike', async () => {
   const { layChain, isHead, pickWeighted, restingPool } = await import('../public/idle-chain.js');
-  for (const id of ['dragge', 'paow', 'astrid2', 'marten']) {
+  for (const id of ['paow', 'astrid2', 'marten']) {
     const idles = DEALERS[id].idles, head = idles.filter(i => isHead(i.id)).reduce((n, i) => n + i.vikt, 0), all = idles.reduce((n, i) => n + i.vikt, 0);
     assert.ok(idles.some(i => isHead(i.id)), `${id} keeps head takes`);
     assert.ok(Math.abs(head / all - .2) < .005, `${id}: ${(head / all).toFixed(3)}`);
-    const takes = idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt }));
+    const takes = idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt, head: i.head }));
+    assert.ok(idles.filter(i => isHead(i.id)).every(i => i.head), `${id}: its head takes are marked`);
     for (let s = 0; s < 60; s++) {
       const chain = layChain(takes, 0, 30000, `${id}${s}`), at = chain.map((c, i) => isHead(c.take) ? i : -1).filter(i => i >= 0);
       for (let k = 1; k < at.length; k++) assert.ok(at[k] - at[k - 1] >= 4, `${id} chain ${s}: head takes at ${at[k - 1]} and ${at[k]}`);
@@ -168,5 +169,19 @@ test('head takes are a fifth of the weight, never two in a row and at least four
       last = c.id;
     }
   }
-  assert.equal(DEALERS.dragge.idles.find(i => i.id === 'andas').vikt, 20, 'calm weights unchanged');
+  assert.equal(DEALERS.paow.idles.find(i => i.id === 'andas').vikt, 20, 'calm weights unchanged');
+});
+
+// Kevin 23 Oct, for Dragan instead of the head rule: blickhoger at most once in an idle period, his other idles plain
+test('Dragan: blickhoger is said at most once in a chain and never twice in a row; his other idles are plain ones', async () => {
+  const { layChain } = await import('../public/idle-chain.js');
+  const idles = DEALERS.dragge.idles, takes = idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt, calm: i.calm, head: i.head, once: i.once }));
+  assert.ok(idles.find(i => i.id === 'blickhoger').once); assert.ok(!idles.some(i => i.head), 'no head rule for Dragan');
+  let seen = 0;
+  for (let s = 0; s < 200; s++) {
+    const chain = layChain(takes, 0, 60000, `d${s}`);
+    const n = chain.filter(c => c.take === 'blickhoger').length;
+    assert.ok(n <= 1, `chain ${s}: blickhoger ${n} times`); seen += n;
+  }
+  assert.ok(seen > 20, 'it does come, once in a period');
 });

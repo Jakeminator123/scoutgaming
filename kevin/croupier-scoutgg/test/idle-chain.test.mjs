@@ -77,7 +77,7 @@ test('the weighted pick never returns the clip last picked, even one that outwei
   const chain = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'vikt6103', frames: 39, vikt: 6 }], 0, 60000, 'seed');
   for (let i = 1; i < chain.length; i++) assert.notEqual(chain[i].take, chain[i - 1].take, 'a chain never repeats either');
   // Kevin 23 Oct: with one calm take and one head take the calm one may repeat; the head take keeps its distance
-  const lone = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'nick6101', frames: 39, vikt: 6 }], 0, 120000, 'seed');
+  const lone = layChain([{ take: 'andas', frames: 39, vikt: 20 }, { take: 'nick6101', frames: 39, vikt: 6, head: true }], 0, 120000, 'seed');
   const heads = lone.map((c, i) => c.take === 'nick6101' ? i : -1).filter(i => i >= 0);
   for (let k = 1; k < heads.length; k++) assert.ok(heads[k] - heads[k - 1] >= 4, `head takes at ${heads[k - 1]} and ${heads[k]}`);
 });
