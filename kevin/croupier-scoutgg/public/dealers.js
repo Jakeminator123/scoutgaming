@@ -94,7 +94,8 @@ const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30,
 
 // serverGreets (Kevin 23 Oct): the server greets the player by nickname in this dealer's own voice (server.mjs welcomeGuest,
 // over his idle takes when the lip-sync worker is warm), so the recorded greet_guest without a name is not played as well:
-// the two met at the table at once. Astrid 2.0 too (e2e 23 Oct: she greeted twice within 0.3 s).
+// the two met at the table at once. Astrid 2.0 too (e2e 23 Oct: she greeted twice within 0.3 s), and Mårten (Kevin 23 Oct:
+// the server plays his own recorded greeting at once, he has no moving lip sync).
 export const DEALERS = {
   astrid: { id: 'astrid', name: 'Astrid', label: 'Astrid (classic)', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
@@ -114,7 +115,7 @@ export const DEALERS = {
   // of all three): browsers fetch them anew, not the cached ones
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es', 'pt'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: headMovesRarely(idlesFor('marten')), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es', 'pt'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: headMovesRarely(idlesFor('marten')), handMatte: false, faceTracks: MARTEN_FACE_TRACKS, serverGreets: true },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
