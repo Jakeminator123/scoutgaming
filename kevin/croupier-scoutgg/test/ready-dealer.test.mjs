@@ -105,9 +105,9 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
 
 test('Dragan idles on his H3 takes in his own take folder, without the ones Kevin rejected (23 Oct): rest to rest, so a line he says at rest can run over a chain of them', () => {
   const d = DEALERS.dragge;
-  assert.deepEqual(d.idles.slice(0, 6).map(i => i.id), ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'huvudb', 'fingrar'], 'no glance to the left (Kevin 20 Oct), no andasb or huvud (23 Oct)');
-  assert.deepEqual(d.idles.slice(6).map(i => i.id), ['rakrygg6101', 'vikt6103', 'vridhoger7105', 'vridvanster6101'], 'the new takes he kept');
-  for (const idle of d.idles.slice(6).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
+  assert.deepEqual(d.idles.slice(0, 5).map(i => i.id), ['andas', 'djupandetag', 'blickhoger', 'blickhogerb', 'fingrar'], 'no glance to the left (Kevin 20 Oct), no andasb, huvud or huvudb (23 Oct)');
+  assert.deepEqual(d.idles.slice(5).map(i => i.id), ['vikt6103', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103'], 'the new takes he kept (vridvanster6103 back, his later pick)');
+  for (const idle of d.idles.slice(5).filter(i => i.calm)) assert.equal(idle.vikt, 6, idle.id);
   for (const idle of d.idles) { assert.ok(idle.url.startsWith('/media/dealers/dragge/v2/'), idle.id); assert.equal(idle.dur, 1.625, 'Emil\'s length, 39 frames'); assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id); }
   assert.ok(d.idles[0].vikt >= 10);
 });
@@ -124,19 +124,19 @@ test('Paow idles on her seven H3 takes in v2/ (the two glances to the right dera
 
 test('the calm takes are marked for the wait while the player decides (Kevin 21 Oct): breathing, shoulders, back, weight, fingers; not turns, glances, nods or leaning', () => {
   const calmOf = d => DEALERS[d].idles.filter(i => i.calm).map(i => i.id), livelyOf = d => DEALERS[d].idles.filter(i => !i.calm).map(i => i.id);
-  assert.deepEqual(calmOf('dragge'), ['andas', 'djupandetag', 'fingrar', 'rakrygg6101', 'vikt6103']);
-  assert.deepEqual(livelyOf('dragge'), ['blickhoger', 'blickhogerb', 'huvudb', 'vridhoger7105', 'vridvanster6101']);
+  assert.deepEqual(calmOf('dragge'), ['andas', 'djupandetag', 'fingrar', 'vikt6103']);
+  assert.deepEqual(livelyOf('dragge'), ['blickhoger', 'blickhogerb', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103']);
   assert.deepEqual(calmOf('paow'), ['andas', 'andasb', 'djupandetag', 'fingrar', 'rakrygg6101', 'vikt6103', 'vikt6105']);
   assert.deepEqual(livelyOf('paow'), ['blickvanster', 'huvud', 'huvudb', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105']);
   assert.deepEqual(calmOf('astrid2'), ['fingrar'], 'her only calm take left (Kevin 23 Oct)');
 });
 
 // Kevin 23 Oct (clip studio on staging): 27 rejected idles are out of every rotation; their files stay on disk.
-test('the 27 idles Kevin rejected never play, and their files are kept', () => {
+test('the 28 idles Kevin rejected never play, and their files are kept', () => {
   const rejected = { astrid2: ['idle-v2/andas', 'idle-v2/andasb', 'idle-v2/blickhoger', 'idle-v2/blickhogerb', 'idle-v2/blickvanster', 'idle-v2/djupandetag'],
-    dragge: ['v2/andasb', 'v2/axlar6101', 'v2/axlar6103', 'v2/blicksvep6101', 'v2/huvud', 'v2/nick6101', 'v2/rakrygg6103', 'v2/vikt6101', 'v2/vikt7105', 'v2/vridhoger6101', 'v2/vridvanster6103'],
+    dragge: ['v2/andasb', 'v2/axlar6101', 'v2/axlar6103', 'v2/blicksvep6101', 'v2/huvud', 'v2/huvudb', 'v2/nick6101', 'v2/rakrygg6101', 'v2/rakrygg6103', 'v2/vikt6101', 'v2/vikt7105', 'v2/vridhoger6101'],
     paow: ['v2/axlar6101', 'v2/axlar6103', 'v2/axlar6104', 'v2/axlar6105', 'v2/lutfram6103', 'v2/nick6101', 'v2/nick6103', 'v2/nick6105', 'v2/rakrygg6105', 'v2/vikt6101'] };
-  assert.equal(Object.values(rejected).flat().length, 27);
+  assert.equal(Object.values(rejected).flat().length, 28);
   for (const [dealer, takes] of Object.entries(rejected)) {
     const played = new Set(DEALERS[dealer].idles.map(i => i.url.split('?')[0]));
     for (const take of takes) {
