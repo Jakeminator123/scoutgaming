@@ -15,6 +15,13 @@ som standard. En vanlig källändring kan därför återanvända beroendelagret;
 lagringskontroller och byte till användaren `node`. `apps/studio/` är Studios
 källmapp; Lissabon är ingen separat produkt eller image.
 
+`ops/cloud/Dockerfile.game` (Render `croupier-v3`, se [RENDER-V3.md](RENDER-V3.md))
+använder samma byggkontext men kopierar bara en uttrycklig lista: `packages/`,
+tre `tools/`-moduler, `ops/cloud`, `ops/neon-game`, `ops/neon-studio`,
+`services/astrid-gpu-worker/gateway` och `services/game`. Inget `apps/`
+följer med och ingen Studio byggs; `ops/cloud/test/game-image.test.mjs`
+kontrollerar att spelserverns statiska importstängning ryms i listan.
+
 CI-kontrollen `Product container cache check` körs för ändringar i Dockerfil,
 byggkontextfilter och de berörda manifesten/låsfilerna, samt manuellt. Den
 bygger imagen två gånger med en isolerad källändring mellan byggena och

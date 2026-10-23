@@ -29,7 +29,6 @@ import { createDealerSpeechReferenceService } from './dealer-speech-reference.mj
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
-import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
 import { serveGenerationMedia } from './generation-media.mjs';
@@ -52,7 +51,6 @@ import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { presentationPublicSource } from '../../packages/presentation/public-modules.mjs';
-import { createRoulettePreview } from './games/roulette/preview.mjs';
 import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
 
@@ -89,7 +87,8 @@ const storage = sharedRoomQa?.storage ?? (postgres ? createPostgresStore({ conne
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
-const { gameEntryRedirect, canonicalGameDestination, playerLoginDestination } = await import('../../packages/navigation/game-entry.mjs');
+const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
+const { publicGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
@@ -342,7 +341,7 @@ let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root,
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(process.env), root,
   nativeMode:!localMediaEnabled,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
@@ -647,12 +646,7 @@ const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSessi
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
   labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
-const lissabonProfiles = postgres ? { enabled: false, session: () => null, handle: () => false } : createLissabonProfiles({ db, createPlayer: apiPlayer,
-  enabled: !playerAccounts && guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
-    && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
-  onSwitch: async playerId => { speechStreamService?.cancelPlayer(playerId); (await probeRuntime.cancel({playerId,dealerId:'astrid'})); cancelPlayerChats(activePlayerChats,playerId,'demo_profile_changed'); },
-});
-const playerSession = async req => lissabonProfiles.session(req) ?? (await auth.session(req));
+const playerSession = async req => (await auth.session(req));
 if (!postgres) db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
 async function previewPlayer(req,res) {
   const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -666,8 +660,6 @@ async function previewPlayer(req,res) {
   return p.id;
 }
 async function chatSessionOwner(req, playerId) {
-  const localProfile = lissabonProfiles.session(req);
-  if (localProfile?.playerId === playerId) return localProfile.owner;
   const playerToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   if (playerToken && (await auth.session(req))?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
   const previewToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -752,7 +744,6 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
   });
 })() : null;
-const roulettePreview = createRoulettePreview({ origin: gameOrigin });
 const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
@@ -764,8 +755,6 @@ const server = createServer(async (req, res) => {
     res.writeHead(health.ready ? 200 : 503, { 'Content-Type':'application/json', 'Cache-Control':'private, no-store' });
     res.end(JSON.stringify(health)); return;
   }
-  if ((pathname === '/roulette-test' || pathname.startsWith('/roulette-test/') || pathname === '/api/roulette-test/spin')
-      && await roulettePreview(req, res)) return;
   if (pathname==='/api/studio-preview'||pathname.startsWith('/api/studio-preview/')||pathname.startsWith('/studio-preview/')) {
     if(!studioPreview){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"error":"studio_preview_unavailable"}');return;}
     const request=new Request((process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin)+req.url,{method:req.method,headers:req.headers,
@@ -803,15 +792,17 @@ const server = createServer(async (req, res) => {
   }
   if((await boLabAuth(req,res)))return;
   { const u=new URL(req.url,neonStudioEnabled ? gameOrigin : 'http://local'); const launch=u.searchParams.get('launch');
-    if(['/', '/v2', '/v2/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
+    if(['/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
-      if (neonStudioEnabled) { const destination=canonicalGameDestination(u,{includeLaunch:false}); u.pathname='/blackjack'; u.search=new URL(destination,u).search; }
-      else if (gamePath === '/game') u.pathname = '/game';
+      // A partner launch is a blackjack start and lands on the one public game start.
+      const destination = neonStudioEnabled ? publicGameStart(u.searchParams,{origin:u.origin,games:['blackjack']})
+        : (gamePath === '/game' ? '/game' : u.pathname)+u.search;
+      if(!destination){res.writeHead(400,{'Content-Type':'text/plain','Cache-Control':'no-store'});res.end('This launch opens blackjack only');return;}
       let sessionCookie;
       try { sessionCookie = await auth.fromPartner(req,claims); }
       catch { res.writeHead(403, {'Content-Type':'text/plain','Cache-Control':'no-store'}); res.end('Launch token invalid or expired'); return; }
-      res.writeHead(303,{Location:u.pathname+u.search,'Set-Cookie':sessionCookie});res.end();return; } }
+      res.writeHead(303,{Location:destination,'Set-Cookie':sessionCookie});res.end();return; } }
   try {
     const loggingOut=pathname==='/api/auth/logout'?(await auth.session(req)):null;
     if(await auth.handle(req,res)){
@@ -864,8 +855,7 @@ const server = createServer(async (req, res) => {
   }
   const guest=guestPreview && !authenticated && !backoffice && !backofficeHandoff && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
-  if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method)){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}

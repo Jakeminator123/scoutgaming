@@ -46,7 +46,7 @@ async function serverFixture({authenticated=true,available=true}={}){
     nativeP6QaRouter:null,studioPreview:null,movingSpeechService:null,sharedRoomsEnabled:false,handleSharedRoomHttp,sharedRoomCommand:null,sharedRoomQa:null,studioLabSession:null,studioPolicyRuntime:available?{}:null,neonStudioEnabled:true,studioGameCommand:null,
     presentationCapabilitiesResponse:()=>null,compositionRuntimeResponse:async()=>null,layerPacksRoute:async()=>false,isRetiredBackofficePost:()=>false,
     boGameAuth:async()=>false,boLabAuth:async()=>false,auth:{handle:async()=>false},legacyBackofficeRedirect:()=>null,
-    playerSession:async()=>authenticated?{playerId:'isolated-player'}:null,guestPreview:false,lissabonProfiles:{handle:async()=>false,enabled:false},
+    playerSession:async()=>authenticated?{playerId:'isolated-player'}:null,guestPreview:false,
     playerPostOriginOk:()=>true,playerAccounts:true,...initialized},`return (${text(serverSource,handlerNode)});`);
   async function invoke(path='/api/operator/appearance?operator=north&table=qa-room',method='GET'){
     let body='';const headers={};const res={statusCode:0,headersSent:false,writableEnded:false,destroyed:false,

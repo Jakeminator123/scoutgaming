@@ -7,7 +7,7 @@ import { MEDIA_FAMILY_DEFINITIONS } from '../../../packages/presentation/runtime
 import { mediaLineForEvent, mediaVariantPolicy } from '../../../packages/presentation/runtime/media-family-policy.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../../tools/media/build-lab-video-manifest.mjs';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import {uploadVideo} from '../lib/video-uploads.mjs';
+import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
 import {readUploads} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse, getLabVideoResponse } from '../lib/video-registry.mjs';
 import { createPresentationApi } from '../../../services/game/presentation-api.mjs';
@@ -15,7 +15,6 @@ import { NextRequest } from '../node_modules/next/server.js';
 
 const bytes = Buffer.from('0000ftypisom00000private-video-fixture-exact-bytes');
 const metadata = { familyId: 'astrid/deal.player.left/box0', label: 'Privat kortvariant', dealerId: 'astrid', eventId: 'deal.player.left', kind: 'action', role: 'alternative', situation: 'box0', playback: 'once', notes: '' };
-const request = (fields = metadata, headers = {}) => new Request('http://localhost:4188/api/videos', { method: 'POST', headers: { 'content-type': 'video/mp4', 'x-video-metadata': encodeURIComponent(JSON.stringify(fields)), ...headers }, body: bytes, duplex: 'half' });
 
 async function fixture(t) {
   const dir = await mkdtemp(join(tmpdir(), 'croupier-cloud-upload-'));
@@ -43,16 +42,20 @@ async function fixture(t) {
   };
   const options = { env: { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-only' }, blobClient,
     archiveDir, snapshotPath, uploadDir: join(dir, 'uploads'), cacheDir: join(dir, 'cache') };
-  return { options, objects, calls };
+  async function seed(fields=metadata,cloud=true) {
+    const row=await seedLegacyVideo(options,bytes,fields,{cloud});
+    if(cloud)objects.set(row.storage.pathname,bytes);
+    return row;
+  }
+  return { options, objects, calls, seed };
 }
 
-test('private family upload and legacy disk upload coexist, reload and select exact family without policy activation', async t => {
-  const { options, objects, calls } = await fixture(t);
-  const disk = await uploadVideo(request({ ...metadata, label: 'Legacy disk' }), { ...options, env: {} });
+test('stored private and disk videos coexist, reload and select exact family without policy activation', async t => {
+  const { options, objects, calls, seed } = await fixture(t);
+  const disk = await seed({ ...metadata, label: 'Legacy disk' },false);
   const before = await readFile(join(options.uploadDir, `${disk.id}.mp4`));
-  const cloud = await uploadVideo(request(), options);
-  assert.equal(objects.size, 1); assert.deepEqual(calls, ['put', 'get']);
-  assert.deepEqual(await uploadVideo(request(), options), { id: cloud.id, duplicate: true });
+  const cloud = await seed();
+  assert.equal(objects.size, 1); assert.deepEqual(calls, []);
   assert.equal(objects.size, 1);
   assert.deepEqual((await readdir(options.uploadDir)).sort(), [`${disk.id}.mp4`, 'index.json'].sort());
   const saved = await readUploads(options);
@@ -74,39 +77,17 @@ test('private family upload and legacy disk upload coexist, reload and select ex
   assert.deepEqual(await readFile(join(options.uploadDir, `${disk.id}.mp4`)), before);
 });
 
-test('missing configured token and invalid origins fail closed before staging or cloud writes', async t => {
-  const { options, calls } = await fixture(t);
-  await assert.rejects(uploadVideo(request(), { ...options, env: { CROUPIER_MEDIA_STORAGE: 'blob' } }), /inte konfigurerad/);
-  await assert.rejects(uploadVideo(request(metadata, { origin: 'https://foreign.example' }), options), error => error.statusCode === 403);
-  assert.equal(calls.length, 0);
-  const response = {};
-  const api = createPresentationApi({ env: {}, registryOptions: options, db: {} });
-  await api({ method: 'GET', headers: {} }, { writeHead(status) { response.status = status; }, end(value) { response.body = value; } }, '/api/presentation/videos/00000000-0000-0000-0000-000000000000', null);
-  assert.equal(response.status, 401); assert.equal(calls.length, 0);
-});
-
-test('provider failure preserves existing disk/index, leaves no staged candidate and redacts errors', async t => {
-  const { options, objects } = await fixture(t);
-  const disk = await uploadVideo(request({ ...metadata, label: 'Preserved' }), { ...options, env: {} });
-  const before = await readFile(join(options.uploadDir, 'index.json'));
-  options.blobClient.get = async () => { throw new Error('sensitive provider detail fixture-only'); };
-  await assert.rejects(uploadVideo(request(), options), error => !error.message.includes('fixture-only') && error.statusCode === 503);
-  assert.equal(objects.size, 0);
-  assert.deepEqual(await readFile(join(options.uploadDir, 'index.json')), before);
-  assert.deepEqual((await readdir(options.uploadDir)).sort(), ['index.json', `${disk.id}.mp4`].sort());
-});
-
-test('provider rejecting before consuming the upload closes its staged stream', { timeout: 3000 }, async t => {
-  const { options } = await fixture(t);
-  options.blobClient.put = async () => { throw new Error('provider unavailable'); };
-  await assert.rejects(uploadVideo(request(), options), /kunde inte sparas/);
-  assert.deepEqual(await readdir(options.uploadDir), []);
+test('anonymous presentation API cannot reach stored private media', async t => {
+  const {options,calls}=await fixture(t),response={};
+  const api=createPresentationApi({env:{},registryOptions:options,db:{}});
+  await api({method:'GET',headers:{}},{writeHead(status){response.status=status;},end(value){response.body=value;}},'/api/presentation/videos/00000000-0000-0000-0000-000000000000',null);
+  assert.equal(response.status,401);assert.equal(calls.length,0);
 });
 
 test('corrupt cloud registry cannot redirect storage access; old disk remains readable when cloud disabled', async t => {
-  const { options, calls } = await fixture(t);
-  const disk = await uploadVideo(request({ ...metadata, label: 'Disk' }), { ...options, env: {} });
-  const cloud = await uploadVideo(request(), options);
+  const { options, calls, seed } = await fixture(t);
+  const disk = await seed({ ...metadata, label: 'Disk' },false);
+  const cloud = await seed();
   const disabled = { ...options, env: {} };
   const diskResponse = await getVideoResponse(disk.id, new Request('http://localhost/'), disabled);
   assert.equal(diskResponse.status, 200); await diskResponse.arrayBuffer();
@@ -121,9 +102,9 @@ test('corrupt cloud registry cannot redirect storage access; old disk remains re
 });
 
 test('real NextRequest keeps public-origin Range for both disk and private Blob behind the authenticated Lab gateway', async t => {
-  const { options, calls } = await fixture(t);
-  const disk = await uploadVideo(request({ ...metadata, label: 'Disk proxy' }), { ...options, env: {} });
-  const cloud = await uploadVideo(request(), options);
+  const { options, calls, seed } = await fixture(t);
+  const disk = await seed({ ...metadata, label: 'Disk proxy' },false);
+  const cloud = await seed();
   const env = { LAB_PUBLIC_URL: 'https://game.example', CROUPIER_LAB_INTERNAL_SECRET: 'fixture-proxy-secret-at-least-32-characters', CROUPIER_LAB_BASE_PATH: '/studio' };
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);

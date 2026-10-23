@@ -177,3 +177,19 @@ test('foreign mutation receipts cannot replace another company or erase the pend
   await h.reply(0,{operator:directory.operators[1]});assert.match(h.html(),/kunde inte bekräftas/);
   assert.equal(h.input().props.value,'person@example.test');assert.equal(busy.at(-1),false);
 });
+
+
+test('company selection binds its journal to the exact operator and resets it on switch',()=>{
+  const h=directoryHarness();
+  const journal=()=>h.nodes(node=>typeof node.type==='function'&&node.type.name==='PartnerJournal')[0];
+  assert.equal(journal(),undefined);
+  h.select('Nordic Bet');
+  assert.equal(journal().props.operatorId,'nordic-bet');
+  assert.equal(journal().props.operatorSlug,'nordic-bet');
+  const firstJournalKey=journal().key;
+  h.select('Amber House');
+  assert.equal(journal().props.operatorId,'amber-house');
+  assert.equal(journal().props.operatorSlug,'amber-house');
+  assert.notEqual(journal().key,firstJournalKey);
+  assert.equal(h.requests.length,0);
+});

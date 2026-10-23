@@ -1,12 +1,15 @@
 import {ADMIN_WORKSPACE_TOOLS} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {STANDARD_OPERATOR_ROLES} from './operator-admin-api.mjs';
 
+// Preserve the deployed read contract while old document editors are retired.
+const workspaceReadSections=new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'compositions','videos','rehearsal','probe']);
+
 // A read adapter for the existing editors, never another store or write path.
 export async function serveAdminWorkspaceData(request,{authorize,runtime,connectedLane=false}) {
   await authorize(request);
   const url=new URL(request.url);
   const section=url.pathname.match(/^\/(?:studio\/)?api\/admin\/workspace\/([a-z-]+)$/)?.[1];
-  if(request.method!=='GET'||url.search||!Object.hasOwn(ADMIN_WORKSPACE_TOOLS,section))return new Response(null,{status:400});
+  if(request.method!=='GET'||url.search||!workspaceReadSections.has(section))return new Response(null,{status:400});
   const native=await runtime();
   const [saved,videos]=await Promise.all([native.gamePolicy.readSaved(),native.videoRegistry()]);
   let operators=[],directory=null;

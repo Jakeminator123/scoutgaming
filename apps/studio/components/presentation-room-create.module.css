@@ -29,3 +29,11 @@
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }.eyebrow { display: block; color: var(--sg-muted); font-size: 10px; letter-spacing: .12em; margin-bottom: 7px; }.count { color: var(--sg-muted); font-size: 12px; }
 .card > p { font-size: 13px; color: var(--sg-muted); }.card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }.card li a { display: block; padding: 14px 16px; border: 1px solid var(--sg-border); border-radius: 10px; text-decoration: none; }.card li a:hover { border-color: var(--sg-mark); }
 .create { border-top: 1px solid var(--sg-border); padding-top: 16px; }.create summary { cursor: pointer; font-size: 14px; font-weight: 600; }.create > p { margin: 12px 0 16px; font-size: 13px; color: var(--sg-muted); }.create summary:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
+
+.visual { background: transparent; padding: 0; border: 0; }
+.visual .create { border: 0; padding: 0; }
+.visual .create > summary, .visual .create > p { display: none; }
+.gameChoices { display: flex; flex-wrap: wrap; gap: 12px; }
+.gameChoices button { flex: 1; min-width: 145px; min-height: 72px; font-size: 18px; }
+.gameChoices button[aria-pressed="true"] { border-color: #c8f044; background: #303b22; color: #efffb9; }
+.gameChoices button:focus-visible { outline: 2px solid #c8f044; outline-offset: 3px; }

@@ -6,6 +6,7 @@ import { registeredDealerIds } from '../../../packages/presentation/contracts/de
 import { DEFAULT_DEALER_COMPOSITING } from '../../../packages/presentation/contracts/dealer-compositing.mjs';
 import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { parseClipFilename, clipNamingGuide, CLIP_POSE_VARIANTS } from '../../../packages/presentation/contracts/clip-naming.mjs';
+import { frozenImportFileMatch, frozenImportProposal, frozenImportWarnings } from './dealer-import-sources.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
   maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, vision: false });
@@ -136,21 +137,37 @@ export function validateDealerImportAdvice(value, input, catalog) {
   return { assistantMessage: value.assistantMessage, rows };
 }
 
+// A frozen Kevin source recognises its own files by exact name and size. That
+// evidence replaces filename and model proposals for those files, but it is
+// still advice: a person reviews the slot and saves through the normal upload.
+export function frozenDealerImportMatches(input, catalog) {
+  const matches = new Map();
+  for (const file of input.files) {
+    const match = frozenImportFileMatch(input.dealerId, file, catalog);
+    if (match) matches.set(file.id, match);
+  }
+  return matches;
+}
+
 export function finishDealerImportRows(rows, input, catalog) {
+  const matches = frozenDealerImportMatches(input, catalog);
+  const proposals = rows.map(row => matches.has(row.fileId) ? { ...frozenImportProposal(matches.get(row.fileId), catalog), fileId: row.fileId } : row);
   const counts = new Map();
-  for (const row of rows) if (row.slotId) counts.set(row.slotId, (counts.get(row.slotId) ?? 0) + 1);
+  for (const row of proposals) if (row.slotId) counts.set(row.slotId, (counts.get(row.slotId) ?? 0) + 1);
   return input.files.map(file => {
-    const row = rows.find(item => item.fileId === file.id);
+    const row = proposals.find(item => item.fileId === file.id), frozen = matches.get(file.id) ?? null;
     const slot = catalog.slots.find(item => item.id === row.slotId);
     let classification = null;
     // Advice is not storage support. Keep this server-owned warning even when
     // the model omits it, the slot is unknown, or another guard rejects the row.
     const warnings = ['video/mp4', 'video/webm'].includes(file.type) ? [] : [DEALER_IMPORT_STORAGE_WARNING];
+    if (frozen) warnings.push(...frozenImportWarnings(frozen));
     const name = `-${normalizedName(file.name)}-`;
     const namedOtherDealer = catalog.dealers.find(dealer => dealer.id !== input.dealerId
       && [dealer.id, dealer.label].some(label => name.includes(`-${normalizedName(label)}-`)));
-    if (namedOtherDealer) return { ...row, slotId: null, confidence: 'low', classification,
+    if (namedOtherDealer && !frozen) return { ...row, slotId: null, confidence: 'low', classification,
       warnings: [...warnings, `Filnamnet nämner ${namedOtherDealer.label}, men du har valt en annan dealer. Kontrollera identiteten innan du väljer fack.`] };
+    if (namedOtherDealer) warnings.push(`Filnamnet nämner ${namedOtherDealer.label}, men namn och storlek matchar ${frozen.source.id}. Kontrollera identiteten innan du sparar.`);
     const image = file.type.startsWith('image/'), audio = file.type.startsWith('audio/');
     if (slot && (image !== (slot.kind === 'pose') || audio && slot.kind !== 'speech')) {
       return { ...row, slotId: null, confidence: 'low', classification, warnings: [...warnings, 'Filtypen passar inte det föreslagna facket. Välj ett kompatibelt fack.'] };
@@ -159,10 +176,15 @@ export function finishDealerImportRows(rows, input, catalog) {
     else if (slot) {
       // Pose, language and take are read from the filename for the same slot only;
       // a model may pick another slot, and then the name's chain does not apply.
-      const advice = filenameClipAdvice(file, catalog), named = advice.slotId === slot.id;
-      const poses = named && !audio && advice.poses ? { startPose: advice.poses.start, endPose: advice.poses.end } : {};
-      const notes = ['Importförslag · innehållet är inte visuellt godkänt.',
-        ...(named && advice.language ? [`Språk i filnamnet: ${advice.language}.`] : []), ...(named && advice.take !== null ? [`Tagning ${advice.take} enligt filnamnet.`] : [])].join(' ');
+      // A frozen source declares them for its own exact file instead.
+      const advice = filenameClipAdvice(file, catalog), named = !frozen && advice.slotId === slot.id;
+      const chain = frozen ? row.poses ?? null : named && advice.poses ? advice.poses : null;
+      const poses = chain && !audio ? { startPose: chain.start, endPose: chain.end } : {};
+      const language = frozen ? row.language ?? null : named ? advice.language : null;
+      const take = frozen ? row.take ?? null : named ? advice.take : null;
+      const origin = frozen ? 'källan' : 'filnamnet';
+      const notes = [frozen ? `Importförslag från ${frozen.source.id} · innehållet är inte visuellt godkänt.` : 'Importförslag · innehållet är inte visuellt godkänt.',
+        ...(language ? [`Språk i ${origin}: ${language}.`] : []), ...(take !== null ? [`Tagning ${take} enligt ${origin}.`] : [])].join(' ');
       classification = validateVideoMetadata({ dealerId: input.dealerId, eventId: slot.eventId, situation: slot.situation,
         kind: slot.kind, role: 'alternative', playback: 'once', label: file.name.slice(0, 120), notes, ...poses,
         ...(audio ? { mediaType: 'audio' } : { compositing: { ...DEFAULT_DEALER_COMPOSITING } }) }, { forWrite: true });

@@ -20,7 +20,7 @@ test('published names and parent-scoped choices survive colliding room IDs witho
   assert.deepEqual(catalog.rooms.map(row => row.key), ['alpha:shared-table', 'beta:shared-table']);
   const selection = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'nora' });
   assert.equal(selection.dealer.name, 'Nora Studio');
-  assert.equal(playUrlFor(selection), '/play/blackjack?operator=alpha&table=shared-table&dealer=nora');
+  assert.equal(playUrlFor(selection), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=nora');
   assert.equal('image' in selection.dealer, false);
   assert.equal('limits' in selection.room, false);
 });
@@ -34,13 +34,13 @@ test('roulette rooms preserve their game and launch endpoint alongside blackjack
   const catalog = parseLobbyCatalog(payload([{ ...original, rooms: [...original.rooms, roulette] }]));
   const selection = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:roulette-room', dealerId: 'anna' });
   assert.equal(selection.room.game, 'roulette');
-  assert.equal(playUrlFor(selection), '/play/roulette?operator=alpha&table=roulette-room&dealer=anna');
+  assert.equal(playUrlFor(selection), '/game?game=roulette&operator=alpha&table=roulette-room&dealer=anna');
   assert.equal(catalog.rooms[0].game, 'blackjack');
   assert.equal(portraitFor(selection.dealer).id, 'anna');
   assert.equal('clips' in selection.dealer, false, 'lobby video never becomes gameplay configuration');
   assert.equal(playUrlFor({ ...selection, room: { ...selection.room, game: 'blackjack' } }), undefined,
     'the same dealer cannot change a roulette room into a blackjack launch');
-  assert.equal(playUrlFor(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'anna' })), '/play/blackjack?operator=alpha&table=shared-table&dealer=anna');
+  assert.equal(playUrlFor(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'anna' })), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=anna');
 });
 
 test('room artwork comes from a single published background, never an editable default or admin image', () => {
@@ -133,7 +133,7 @@ test('registered Dragan shows the Dragge portrait under the published ID, by exa
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'dragan', 'Dragan')]));
   const chosen = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'dragan' });
   assert.equal(portraitFor(chosen.dealer).id, 'dragge');
-  assert.equal(playUrlFor(chosen), '/play/blackjack?operator=alpha&table=shared-table&dealer=dragan');
+  assert.equal(playUrlFor(chosen), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=dragan');
   assert.deepEqual(dealerCards(chosen.availableDealers).map(row => [row.id, row.available]),
     [['dragan', true], ['astrid', false], ['marten', false], ['anna', false], ['paow', false]], 'no second, locked Dragge card');
   assert.equal(portraitFor({ id: 'dragan-2', name: 'Dragan' }), undefined);
@@ -148,7 +148,7 @@ test('PAOW keeps her published ID paow-v2 with her portrait and cannot be unlock
   assert.ok(!dealerCards(chosen.availableDealers).some(row => row.id === 'paow'), 'no second, locked Paow card');
   assert.equal(portraitFor(chosen.dealer).id, 'paow');
   assert.equal(portraitFor({ id: 'paow-v3', name: 'PAOW' }), undefined);
-  assert.equal(playUrlFor(chosen), '/play/blackjack?operator=alpha&table=shared-table&dealer=paow-v2');
+  assert.equal(playUrlFor(chosen), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=paow-v2');
   assert.equal(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow' }).dealer, null);
   const other = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'beta:shared-table', dealerId: 'paow-v2' });
   assert.equal(other.dealer, null);

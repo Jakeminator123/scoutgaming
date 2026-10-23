@@ -375,13 +375,14 @@ bedömda separat från aktiva runtime-läsare.
 | Namn | Konsument och fas | Beslut |
 | --- | --- | --- |
 | `BETTALOTTO_API`, `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET` | partner-reference.mjs, partner-observer.mjs, ops/cloud/config.mjs | Behåll kanoniska namn. |
-| `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE`, `CROUPIER_ZONES_DATABASE_URL` | cloud-media-store.mjs, zone-cloud-store.mjs | Driftens Blob-/zoninställningar; vanliga lokala starter kopplar inte in dessa tjänster. |
+| `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE` | cloud-media-store.mjs | Driftens Blob-inställningar; vanliga lokala starter kopplar inte in tjänsten. |
+| `CROUPIER_ZONES_DATABASE_URL` | Pensionerade zonroutes | Kodkonsumenten är borttagen. Extern databas och miljövariabler har inte raderats; hanteras separat i O03. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
 | `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och apps/studio/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
 | `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_VERCEL_UI`, `CROUPIER_VERCEL_UNIFIED_UI` | Next-konfiguration, middleware och serverrouting; base path/native-admin även bygge | Behåll; ändring kan kräva nytt bygge. |
 | `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
-| `CROUPIER_LISSABON_PROFILES`, `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | services/game/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. |
+| `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | services/game/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. `CROUPIER_LISSABON_PROFILES` läses inte längre av spelservern (22 oktober 2026); ops/cloud och local-connection städas av J05. |
 | `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_DEALER_SPEECH_PROFILES`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_PREVIEW`, `CROUPIER_GENERATED_SPEECH_STREAMING` | ops/cloud/config.mjs och services/game/server.mjs | Behåll; förekomst är inte aktivering/acceptans av ny läppsynk. |
 | `CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY` | services/game/server.mjs, ops/cloud/config.mjs, local-connection.mjs | Behåll befintlig Astrid-väg. |
 | `CARTESIA_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY` | ops/cloud/config.mjs och explicit providerverktyg; Cartesia även Studio | Behåll kompletta Scoutgaming-par; återinför inte borttagna Vercel-kopior. |
@@ -394,6 +395,7 @@ bedömda separat från aktiva runtime-läsare.
 | `CROUPIER_STUDIO_MAIL_FROM`, `RESEND_API_KEY` | studio-native-mail.mjs | Behåll; isolerad start stänger av skarpa utskick. |
 | `CROUPIER_CLOUD_LAUNCH`, `CROUPIER_CLOUD_LAYOUT`, `HOST`, `NODE_ENV`, `PORT` | ops/cloud/config.mjs, Director/plattform; NODE_ENV även bygge | Behåll. PORT är värdhanterad där plattformen sätter den. |
 | `CROUPIER_CLOUD_DATA_ROOT` | Färskt verifierad endast på äldre QA med 1 GiB-disk; ops/cloud/config.mjs | Behåll QA:s återställningsunderlag. Återinför inte i produktion och radera inte den äldre disken. |
+| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; inbakad som `0` i `ops/cloud/Dockerfile.game` (Render `croupier-v3`, se [RENDER-V3](../ops/cloud/RENDER-V3.md)) | Ny 22 oktober 2026. `0` = bara Web-barnet, ingen Lab-byggkontroll, `/studio` svarar 421. Osatt eller `1` = oförändrat tvåbarnsläge på `croupier-v2`. Inget molnvärde är satt. |
 | `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_URL` | ops/cloud/config.mjs | Behåll separat presentationsanslutning. |
 | `CROUPIER_QA_LOGIN_PASSWORD`, `CROUPIER_QA_LOGIN_USERNAME` | Privata autentiserade verifieringsverktyg; ingen aktiv produktläsare hittad | Behåll verifieringsunderlag. |
 | `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY`, `GITGUARDIAN_API_TOKEN` | Ingen aktiv produktläsare verifierad. DID-träffen är kommentar; ElevenLabs-video har ett negativt vidarebefordringstest. Extern användning oklar | Behåll tills exakt verktygsägare/konsument är klarlagd. |
@@ -830,8 +832,8 @@ behåller `verify-full`. CROOT ska vara **unset**, inte en tom sträng.
 
 Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
 `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN` och serverhemligheten
-`CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` bevaras för äldre
-flagga-av-kompatibilitet. Gemensamt Neon-läge använder dess serverägda
+`CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` och Render-standardadressen
+är borttagna; spelstarten är `/game`. Gemensamt Neon-läge använder dess serverägda
 policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
 Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
@@ -1163,12 +1165,12 @@ Render-spelets villkorliga grupper:
   ersätter produktens gamla `videos/index.json` på Render-disk. Den gamla
   produktdisken är avvecklad och dess externa backup bevaras. QA:s separata
   disk och lokala filprofiler har egna livscykler.
-- Bakgrundszoner: `CROUPIER_ZONES_DATABASE_URL` kräver aktiv privat media
-  och en separat TLS-skyddad Postgres-anslutning. Den skickas endast till
-  Lab. Schemat i `apps/studio/lib/zone-cloud-schema.sql` installeras uttryckligen;
-  det är installerat i zonprojektet efter separat QA den 29 september.
-  Generella `DATABASE_URL`/`POSTGRES_URL` används aldrig som reserv.
-  Spelkonton och saldon använder en separat game/auth-Neon-databas.
+- Bakgrundszoner: de oanropade `/api/zones*`-rutterna och deras privata
+  databasadapter är pensionerade i PR1 för Admin-navigationen.
+  `CROUPIER_ZONES_DATABASE_URL` har ingen kvarvarande produktkonsument.
+  Den externa zoninstansen och dess historik är inte raderade eller verifierade
+  av denna kodändring; eventuell rensning kräver separat O03-mandat.
+  Spelkonton och saldon använder fortsatt en separat game/auth-Neon-databas.
 - Lokal provkörning: `node apps/studio/start.mjs --offline --no-open` startar endast
   isolerade temporära testdata, utan externa lagringstjänster. Tidigare
   `--cloud-storage` avvisas; den privata profilfilen bevaras. Render/Vercel

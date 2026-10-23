@@ -1,5 +1,91 @@
 # Aktuell handoff — Scoutgaming
 
+## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
+
+`studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.
+
+Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib/studio-context.test.mjs` godkända lokalt med Node 24.19 och högst fyra testarbetare. Ingen produktkod är ändrad av denna rättning. Full CI krävs på den nya headen före merge; ingen produktionsacceptans påstås.
+
+## Visuell operatörsyta — 23 oktober 2026
+
+**Leverans:** `codex/visuell-operator` innehåller den separata visuella ändringen mot main. Den utvecklades tillsammans med PR #359; integrera #359 först för gemensam CSS och navigation. Bolagsvalet ligger i rubriken; spelkort samlar utbudet. Lägg till öppnar spelmall, spel och namn. Bekräftat skapande öppnar rätt rum; borttagning lämnar det återstående utbudet valt. Återställningsvyn visar enbart borttagna spel. Paus/öppning finns för valt spel.
+
+**Tre lager:** bakgrund och bord har materialkort med paketets verifierade förhandsbilder, dealer har tydligt valkort. Ett bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Samma roomOverrides, save-draft/review/publish, behörigheter och CAS används. Inbakad bakgrund är låst; nya rum kräver fortfarande en kompatibel sparad spelmall med fast utgångsmiljö. Paketets urval och godkänt mediematerial utökas inte automatiskt.
+
+**Verifiering:** 98 riktade beteendeprov och Admin 351 godkända/1 överhoppat; byggd Admin-/lobbyklient inklusive typer. Studio gav 2 102 godkända/17 överhoppade samt två laddningsfel i en testadapter. Adaptern har rättats och dess 12 beteendeprov passerar i omprov. Föräldralösa tester: 0/562. Samlad CI-status följer PR:ens slutliga head. Isolerat UI-prov med syntetiska data verifierar bolagsbyte, skydd av osparade val, tre separata val, spara/omladdning, skapa med rätt spel och direkt öppning, borttagning samt rätt återställningslista. Inga produktionsdata eller tjänster är ändrade. Slutlig PR/head anges vid leveransen.
+
+**Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
+
+## Mergegranskning — assistentens bolagslänkar i PR #359 — 23 oktober 2026
+
+Serverns `companies` och `audit` pekar på `/admin/companies`, men widgetens tillåtlista saknade adressen. Länkarna doldes därför. `apps/studio/public/assistant-widget.js` tillåter nu denna exakta sökväg; samma-origin-kontroll, fragmentspärr och äldre tillåtna adresser är kvar.
+
+Verifierat lokalt med Node 24.19 (paketet kräver 24.x): syntaxkontroll och 7/7 körda navigationsfall ur widgetens faktiska kodblock. Bolagslänk med/utan query samt befintliga klipp-/operatörslänkar visas; extern origin, fragment och okänd sökväg nekas. Ingen full lokal regression eller webbläsaracceptans har körts. Ny CI måste vara grön på ändringens head före merge. GitGuardian-kontrollen på föregående PR-head var grön; incidentlista, källbindning, övervakning och historik är inte verifierade här.
+
+## Admin / Studio — PR #359 — 23 oktober 2026
+
+**Leverans för Claudes granskning:** branch codex/admin-en-ingang, worktree scout-wt/admin-en-ingang. Senaste main 8e34d4a382e7539fe3c7c42ca7f54d9df91f72b1 är integrerad, inklusive #349, #345 och #350. Sista synken gick utan konflikter; båda tidigare leveransavsnitten är bevarade. #354 inklusive Docker-skyddet ingår i basen. #358 är nu mergad och integrerad från main; denna PR gör inga egna ändringar i dess skyddade filer.
+
+**Ändrat:** CSS för dialogpanelen följer nu komponenten och Admin-bygget inkluderar klassanvändningen i återanvända Studio-komponenter. Sidomeny och hjälp delar menykarta. Studio och Administration är tydliga grupper; brödsmulor, små pilrader och extra verktygs-/importflikar är borttagna. Klippkartan samlar vald dealers klipp, tal, inställningar och sceneditor. LabStudio, gamla video-/sceneditorerna samt separata Probe och Provspelning & logg är pensionerade. Materialskapandet har en fokuserad sida med egna utkastspärrar. Äldre dokument och inloggningsreturer går till rätt arbetsyta. De gamla läs-API-namnen behålls för redan laddade klienter; datamodell och skrivkontrakt är oförändrade.
+
+**Verifiering:** hela [CI-körningen på ecf2c8fe](https://github.com/Jakeminator123/scoutgaming/actions/runs/39869956525) är grön: Studio 2 100 godkända/17 överhoppade, Admin 351 godkända/1 överhoppat, frontendtyper, produktionsbygge, åtkomst, spelregler och isolerad lagring/återstart. Sex rena URL-/menylås är borttagna; 49 kvarvarande riktade prov för behörighet, kontext och utkast passerar. Sista main-synkens commitkontroller och aktuella CI-resultat redovisas i PR #359. Föräldralösa tester: 0 av 558 kandidater. Separat UI-prov av byggd klient verifierade den samlade talvyn, dialoglayouten, flikbyten och skapande/val av scen i minnesutkast, med syntetiska data och nekade serverskrivningar. Strikt raderingsgrind: 42 borttagna filer, 0 kvarvarande importer och 0 registerreferenser. Enda textreferensen är den historiska ADMIN-KARTA. Testserver och provflik är stängda.
+
+**Kvar:** den visuella operatörsytan enligt bolag → spel → kompatibla dealers/bord och gemensamma bakgrunder; fullständig produktionsacceptans efter integration; separat avgränsning av permanent radering/frikoppling av aktiva beroenden. Varken databas, media, drifttjänster, rumssidan eller produktion är ändrade. Specialiserad regelredigering och talgranskning finns kvar. Ingen planaktivitet är markerad klar.
+
+**Säkerhet:** befintlig skyddad GitGuardian-koppling kunde inte läsa incidenter/platsmetadata. Källbindning och monitorering är inte verifierade i denna kontroll; ingen full historisk täckning påstås. GitGuardians commitkontroll för den fullverifierade committen ecf2c8fe är godkänd; det ersätter inte incidentsynlighet. Slutlig CI-status för PR:ns aktuella head redovisas i GitHub.
+
+Karta, rotorsak, bokmärken och kvarvarande målbild: [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr-359--rättad-css-och-samlad-navigation--23-oktober-2026).
+
+## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
+
+**Gren:** `codex/spelklient-legacy` (bas main `7afae426`), PR #356. Underlag: `migrering/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md`.
+Varje kandidat fick en konsumentkarta med `git grep` (route, UI, tjänst, adapter,
+data, build, test, doc) innan radering; `node tools/raderingsgrind.mjs main --strict`
+ger IMPORT 0 / REGISTRY 0 och `node tools/check-orphan-tests.mjs` 0 orphans.
+
+**Raderat (med exklusiva tester, verktyg, flaggor, CSS, README-rader):**
+`public/lab/`, `public/bo/emails/`, `public/bo/generations.json`
+(`test/generation-media.mjs` använder syntetiska katalogposter);
+`public/docs/partner-api.html` + `build-docs.py` + `test/partner-docs.mjs`
+(`partner-api.md` flyttad till `docs/games/partner-api.md`); `/roulette-test`
+(`games/roulette/preview.mjs`, `public/roulette-test/`, servergrenen,
+`test/roulette-preview.mjs`, `tools/roulette-ui-fixture.mjs`,
+`tools/roulette-scene-fixture.mjs`); Lissabon-gästprofiler (`lissabon-profiles.mjs`, `public/lissabon-profile.mjs`,
+`CROUPIER_LISSABON_PROFILES`, `test/lissabon-profiles.mjs`); de oanvända
+Astrid-modulerna `astrid-green-dealer/speak`, `astrid-speech-join`,
+`astrid-folded-rest`, `astrid-idle-scheduler` med fyra opt-in-prov i
+`tools/media` samt `rigged-review.css` (ingen kod sätter `html.rigged-review`).
+
+**Behållet med bevis:** `card-presentation/` (app.mjs → `renderer-support.js`,
+`local-card-overlay.mjs`), `vendor/three/`, `shared-room-*`,
+`layered-presentation.mjs`, `performance-player.mjs`, `local-presentation.mjs`,
+`dealer-version-switcher.mjs` (app.mjs + fyra tester), `calibrate.mjs`
+(lazy import i app.mjs, serverns APPLY-route), `bo/speech-qa.*` och `/bo`-redirects (J05).
+**Kamera och röst behålls som produktfunktion** (Jakobs beslut 22 oktober):
+`public/astrid-camera-*.mjs`, `astrid-wake-word.mjs`, `astrid-voice-*.css`,
+`astrid-transcription.mjs`, `/api/{astrid,dealer}/{observation,transcription}`,
+`CROUPIER_ASTRID_CAMERA`/`CROUPIER_ASTRID_TRANSLATION_KEY` och testgruppen
+`speech/astrid-camera`. En första radering på grenen återställdes med revert.
+Kameran är fortfarande Astrid-märkt och flaggstyrd; att göra den dealer-generisk
+och styrbar från Admin är ett separat, ej påbörjat arbete.
+
+**Verifiering:** `node --test` grönt för de berörda sviterna i gameplay/speech
+samt `table-http`, `game-entry-*`, `shared-room-app`, `local-presentation`,
+`layered-presentation`, `product-chat-http`, `apps/web/test/player-ui-build`;
+pre-commit-hooken kördes på varje commit; `check-environment-variables` grön.
+Lokal Studio-start kräver junction till arkivets `apps/studio/node_modules`.
+
+**Kvar för andra ägare (inte redigerat här):** `ops/cloud/config.mjs` rader
+101 och 378 (`CROUPIER_LISSABON_PROFILES`), `ops/cloud/vercel-ingress.mjs:63`
+(`/roulette-test`); `packages/navigation/server/platform-routing.mjs` rad 44
+(`ROULETTE_PREVIEW`) och 62 (`ROULETTE_PREVIEW.has`) — rad 68–69
+(`/api/dealer/observation`, `/api/dealer/transcription`) och kameraflaggorna i
+ops/cloud ska **stå kvar**; `services/openclaw/lab/deploy/local-connection.mjs`
+(`CROUPIER_LISSABON_PROFILES`); `docs/environment-variables.json`
+(`CROUPIER_LISSABON_PROFILES` kvarstår tills ops/cloud slutar läsa den); `apps/studio/README.md:361` länkar
+`bettalotto.se/docs/partner-api.html` som inte längre serveras;
+`apps/studio/docs/README.md:450` nämner `/roulette-test`.
+
 ## J05/J07/J08 — aktuell leverans — 22 oktober 2026
 
 **Mål/status:** huvudprioriteten är begripligt Admin för Blackjack: Jakobs
@@ -237,6 +323,52 @@ fortsätter i samma GitHubissue312 vid återupptaget arbete; senaste aktuella
 uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
+
+## Paow från kevin-staging: fryst källa och automatisk placering — 23 oktober 2026
+
+**Beställning (Jakob, 23 oktober):** hämta hela Paow-paketet från Kevins
+`kevin-staging`, låt Admins Klippassistent/Adminrobot placera det rätt i
+klippkartan, och registrera annars Paow som ny dealer utan operatörs- eller
+bolagstilldelning. Branch `jakob/paow-kevin-staging-import` (Claude).
+
+**Levererat:**
+- `apps/studio/lib/dealer-import-kevin-source-paow.json`: 414 filer från
+  `origin/kevin-staging` @ c7138759 (56 utdelningstagningar, 23 H3-idle och
+  3 utfasade idle-v2, 81 repliker × sv/en/pt/ko, vila/redo, meta, texter,
+  porträtt) med gitBlob, storlek, SHA-256 ur blobbytes, K05-matrisens urval per
+  fil (318/318 hashar lika med matris f00a8c2d), Kevins klipplista 2026-10-22
+  (alla 324 repliker `ej-godkand`) samt `PAOW_READY` och idlelistan ur
+  `dealers.js`. Paow-bytes är oförändrade sedan K05-frysningen 5aa7ed10.
+- `apps/studio/lib/dealer-import-sources.mjs` delar frysta källor mellan planen
+  och assistenten; `createFrozenKevinImportPlan` tar `--source-alias paow`,
+  CLI:t verifierar lokala bytes mot vald källa och har `--summary`.
+- Klippassistenten och Adminroboten (`finishDealerImportRows`) känner igen
+  frysta filer på exakt filnamn och storlek och sätter fack, poskedja, språk och
+  tagning automatiskt med `evidence` på raden och en notering i API-svaret.
+  Saknat fack (G13-repliker), pt/ko och ej K05-valda filer får varning i stället
+  för tyst placering. Importen ger aldrig operatörs-, bolags- eller rumstilldelning.
+- Lokal byte-exakt kopia för Admins uppladdning och `--source-root`:
+  `lab/data/kevin-import/paow-c7138759/` (gitignorerad, 414 filer, 264 MB).
+
+**Verifiering (Node 24.21, max 4 arbetare):** `node --test` på
+dealer-import, dealer-import-plan, dealer-import-integration, clip-naming och
+test/filmed-profile: 71/71. `tools/dealer-import-plan.mjs --source-alias paow
+--source-root lab/data/kevin-import/paow-c7138759 --summary` mot seed-projekt
+med Paow registrerad: 414/414 bytes verifierade, 56 utdelningstagningar,
+23 idle och 37 sv- plus 37 en-repliker placerade i befintliga fack (review:
+inventarie ej läst, ingen filmprofil), 254 exkluderade med skäl (pt/ko 162,
+G13 44, ej i K05-matrisen 44, idle-v2/redo 4), 7 referensfiler. Inga Neon-,
+Blob-, Render- eller Vercel-skrivningar. Ingen visuell eller talacceptans påstås.
+
+**Kvarstår, kräver Jakob:**
+- Registrera Paow i Neon via Admin → Dealers → **Skapa ny dealer** (id `paow`,
+  namn Paow) med N1-session; registreringen tilldelar inget bolag eller rum.
+  Agenten har inte gjort produktskrivningen.
+- Ingen filmprofil för Paow: Dragans kontaktrutor gick inte att härleda ur
+  Kevins kortspår (0/33 i prov), så kortöverläggningen väntar på K04.
+- Åtta Paow-tagningar finns redan i Neon under arkiverade `paow-kevin` (K05);
+  planen markerar samma bytes `keep-protected` för en ny `paow`. pt/ko- och
+  G13-repliker ligger kvar i källan med skäl, inte valda.
 
 ## K04: Kevins matte och tidsättning per tagning på mains treskiktsruntime — 22 oktober 2026
 

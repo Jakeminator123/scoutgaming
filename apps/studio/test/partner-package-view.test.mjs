@@ -48,7 +48,7 @@ test('real preview links to the actual scoped player and contains no invented ta
   assert.match(html,/Bordbild/);
   assert.match(html,/Bakgrundsfilm/);
   assert.doesNotMatch(html,/image\/png|video\/webm/);
-  assert.match(html,/\/play\/blackjack\?operator=north&amp;lane=mobile-phone/);
+  assert.match(html,/\/game\?game=blackjack&amp;operator=north&amp;lane=mobile-phone/);
   assert.doesNotMatch(html,/<svg|<iframe|1,000|10 000|localStorage/);
 });
 test('old package requests republication rather than pretending that prototype assets are assigned',()=>{
@@ -65,7 +65,7 @@ for (const schemaVersion of [1,2]) test('owned room preview ignores guessed runt
     row('room-live','north-id'),row('room-other-owner','south-id'),row('room-preview','north-id','preview'),
     {...row('room-other-presentation','north-id'),presentationId:'other'}]};
   const html=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test'}));
-  assert.match(html,/\/play\/blackjack\?operator=north&amp;table=room-live/);
+  assert.match(html,/\/game\?game=blackjack&amp;operator=north&amp;table=room-live/);
   assert.doesNotMatch(html,/lane=|room-other-owner|room-preview|room-other-presentation/);
   const empty=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot:{...snapshot,tables:[]},view:'test'}));
   assert.match(empty,/Inget publicerat spelrum/);

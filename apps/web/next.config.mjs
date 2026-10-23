@@ -1,35 +1,24 @@
-import { platformConfiguration } from '../../packages/navigation/server/platform-routing.mjs';
 import { fileURLToPath } from 'node:url';
 import {adminDocumentHref} from '../../packages/navigation/admin-workspace-routes.mjs';
-const platform = platformConfiguration();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Keep local Windows builds responsive while other apps and agents are running.
   ...(process.platform === 'win32' && !process.env.CI ? { experimental: { cpus: 4 } } : {}),
   outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
-  outputFileTracingIncludes: platform ? { '/game': ['./runtime-ui/game.html'], '/v2': ['./runtime-ui/game.html'], '/blackjack': ['./runtime-ui/blackjack.html'], '/play/blackjack': ['./runtime-ui/game.html'], '/player-login': ['./runtime-ui/blackjack.html'] } : {},
+  // /game serves the engine document in canonical mode; the local shell is the non-Neon fallback.
+  outputFileTracingIncludes: { '/game': ['./runtime-ui/game.html'], '/player-login': ['./runtime-ui/blackjack.html'] },
   images: {
     unoptimized: true,
   },
   async redirects() {
-    if (platform) return [
-      ...['/lab', '/labb', '/studio-astrid', '/studio-lissabon', '/labb-lissabon'].map(source => ({source, destination: '/control', permanent: false})),
-      {source: '/labb/filmer', destination: '/control/videos', permanent: false},
-      {source: '/labb/zoner', destination: '/control/zones', permanent: false},
-      {source: '/labb/guide', destination: '/control/guide', permanent: false},
-    ].map(route=>platform.nativeStudio?{...route,destination:adminDocumentHref(route.destination)}:route);
-    // Legacy lab names go to staff control. /studio stays the Render lab mount.
+    // Retired lab bookmarks go straight to the Admin workspace. Game, lobby,
+    // Admin and Partner routing is owned by middleware and the Services config.
     return [
-      { source: "/studio", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
-      { source: "/lab", destination: "https://www.scoutgaming.tech/control", permanent: false },
-      { source: "/studio-astrid", destination: "https://www.scoutgaming.tech/control", permanent: false },
-      { source: "/studio-lissabon", destination: "https://www.scoutgaming.tech/control", permanent: false },
-      { source: "/labb", destination: "https://www.scoutgaming.tech/control", permanent: false },
-      { source: "/labb-lissabon", destination: "https://www.scoutgaming.tech/control", permanent: false },
-      { source: "/labb/filmer", destination: "https://www.scoutgaming.tech/control/videos", permanent: false },
-      { source: "/labb/zoner", destination: "https://www.scoutgaming.tech/control/zones", permanent: false },
-      { source: "/labb/guide", destination: "https://www.scoutgaming.tech/control/guide", permanent: false },
-    ]
+      ...['/lab', '/labb', '/studio-astrid', '/studio-lissabon', '/labb-lissabon'].map(source => ({source, destination: adminDocumentHref('/control'), permanent: false})),
+      {source: '/labb/filmer', destination: adminDocumentHref('/control/videos'), permanent: false},
+      {source: '/labb/zoner', destination: adminDocumentHref('/control/zones'), permanent: false},
+      {source: '/labb/guide', destination: adminDocumentHref('/control/guide'), permanent: false},
+    ];
   },
   async headers() {
     return [
@@ -41,11 +30,8 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000" },
         ],
       },
-      {source: '/:path((?!game|blackjack|v2|play/blackjack).*)', headers: [{key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()'}]},
+      {source: '/:path((?!game).*)', headers: [{key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()'}]},
       {source: '/game/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
-      {source: '/v2/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
-      {source: '/blackjack/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
-      {source: '/play/blackjack/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
     ]
   },
 }
