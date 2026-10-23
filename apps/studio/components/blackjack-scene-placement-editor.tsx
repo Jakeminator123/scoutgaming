@@ -5,7 +5,8 @@ import {compositionAnchorFrames,resolveAnchorRect,rebindAnchor,restoreGeometryGr
 import {layoutGameOverlay} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import styles from './blackjack-scene-placement-editor.module.css';
 type Layout='mobile'|'desktop';
-type Scene={settings:CompositionSettings;width:number;height:number};
+type Framing={scale:number;x:number;y:number};
+type Scene={framing?:Framing;settings:CompositionSettings;width:number;height:number};
 type Mark={id:string;x:number;y:number;width:number;label:string;kind:'card'|'bet'};
 // Filmed landings and automatic chips are not dragged; manual points are kept.
 const locked=(geometry:BlackjackTableGeometry[Layout],id:string)=>id.startsWith('bet')?geometry.betMode==='under-cards'||!!geometry.autoScale?.chips:!!geometry.autoScale?.landing;
@@ -19,11 +20,11 @@ function withAutoScale(value:BlackjackTableGeometry,layout:Layout,choice?:Blackj
   return next;
 }
 
-function SceneOverlay({value,layout,frames,selected,disabled,onSelect,onPlace}:{value:BlackjackTableGeometry;layout:Layout;frames:AnchorFrames;selected:string;disabled:boolean;onSelect:(id:string)=>void;onPlace:(id:string,p:TablePoint)=>void}){
+function SceneOverlay({framing,value,layout,frames,selected,disabled,onSelect,onPlace}:{framing?:Framing;value:BlackjackTableGeometry;layout:Layout;frames:AnchorFrames;selected:string;disabled:boolean;onSelect:(id:string)=>void;onPlace:(id:string,p:TablePoint)=>void}){
   const svg=useRef<SVGSVGElement>(null),drag=useRef<string|null>(null);
   const [viewport,setViewport]=useState({width:layout==='mobile'?390:960,height:layout==='mobile'?693:540});
   useEffect(()=>{const node=svg.current;if(!node)return;const read=()=>{const r=node.getBoundingClientRect();if(r.width&&r.height)setViewport({width:r.width,height:r.height});};read();const observer=new ResizeObserver(read);observer.observe(node);return()=>observer.disconnect();},[layout]);
-  const planes=projectAnchorRects(value[layout],frames,viewport),boxes=layout==='mobile'?[2,3,4]:[0,1,2,3,4,5,6];
+  const planes=projectAnchorRects(value[layout],frames,viewport,framing),boxes=layout==='mobile'?[2,3,4]:[0,1,2,3,4,5,6];
   const result=layoutGameOverlay({tableGeometry:value,tableLayout:layout,rect:planes.cardsRect,...planes},boxes,{left:0,right:viewport.width,top:0,bottom:viewport.height},{compact:layout==='mobile'});
   // 63 = the calibration card width that the layout scale refers to.
   const cardWidth=result.scale*63;
@@ -37,7 +38,7 @@ function SceneOverlay({value,layout,frames,selected,disabled,onSelect,onPlace}:{
     if(!drag.current)return;const r=event.currentTarget.getBoundingClientRect(),fit=Math.min(r.width/frames.scene.width,r.height/frames.scene.height);
     onPlace(drag.current,{x:(event.clientX-r.left-(r.width-frames.scene.width*fit)/2)/fit,y:(event.clientY-r.top-(r.height-frames.scene.height*fit)/2)/fit});
   }
-  return <svg ref={svg} className={styles.overlay} viewBox={`0 0 ${viewport.width} ${viewport.height}`} aria-label="Kort och marker i scenen"
+  return <><svg ref={svg} className={styles.overlay} viewBox={`0 0 ${viewport.width} ${viewport.height}`} aria-label="Kort och marker i scenen"
     onPointerDown={event=>{if(disabled)return;const id=(event.target as Element).closest('[data-mark]')?.getAttribute('data-mark');if(id&&!locked(value[layout],id)){onSelect(id);drag.current=id;event.currentTarget.setPointerCapture(event.pointerId);}}}
     onPointerMove={event=>{if(!disabled&&drag.current)place(event);}}
     onPointerUp={event=>{if(!disabled&&drag.current)place(event);drag.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);}}
@@ -46,7 +47,7 @@ function SceneOverlay({value,layout,frames,selected,disabled,onSelect,onPlace}:{
       {mark.kind==='card'?<rect x={-mark.width/2} y={-mark.width*85/126} width={mark.width} height={mark.width*85/63} rx={3} fill="#f8fafc" stroke={selected===mark.id?'#22d3ee':'#475569'} strokeWidth={selected===mark.id?3:1}/>:<ellipse rx={mark.width/2} ry={mark.width*.34} fill="#fbbf24" stroke={selected===mark.id?'#22d3ee':'#78350f'} strokeWidth={selected===mark.id?3:1}/>}
       <text textAnchor="middle" dominantBaseline="central" fontSize={Math.max(8,Math.min(12,mark.width*.6))} fill="#0f172a">{mark.label}</text>
     </g>)}
-  </svg>;
+  </svg>{result.geometryWarning&&<p className={styles.warning} role="status">{result.geometryWarning}</p>}</>;
 }
 
 export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,disabled,onChange,scene,renderPreview,children}:{tableId:string;value?:BlackjackTableGeometry;savedValue?:BlackjackTableGeometry;layout:Layout;disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void;scene:Scene;renderPreview:(overlay?:ReactNode)=>ReactNode;children?:ReactNode}){
@@ -69,7 +70,7 @@ export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,d
   }
   function placeInScene(id:string,p:TablePoint){if(!geometry)return;const rect=resolveAnchorRect(geometry.anchors?.[id.startsWith('bet')?'bets':'cards'],frames);place(id,{x:(p.x-rect.x)/rect.width,y:(p.y-rect.y)/rect.height});}
   return <div className={styles.editor}>
-    <div className={styles.preview}>{renderPreview(value?<SceneOverlay value={value} frames={frames} layout={layout} selected={selected?.id??''} disabled={disabled} onSelect={setTarget} onPlace={placeInScene}/>:undefined)}</div>
+    <div className={styles.preview}>{renderPreview(value?<SceneOverlay framing={scene.framing} value={value} frames={frames} layout={layout} selected={selected?.id??''} disabled={disabled} onSelect={setTarget} onPlace={placeInScene}/>:undefined)}</div>
     <div className={styles.controls}>{children}
     <fieldset disabled={disabled}><legend>Kort och marker · {layout==='mobile'?'mobil':'desktop'}</legend>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>{

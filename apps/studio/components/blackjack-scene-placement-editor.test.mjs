@@ -78,3 +78,15 @@ test('filmed landings and automatic chips are not dragged; the scene marks follo
   scene.props.onPlace('card:2',{x:100,y:100});scene.props.onPlace('dealer',{x:100,y:100});scene.props.onPlace('bet:2',{x:100,y:100});
   assert.deepEqual(h.props.value,before);
 });
+
+test('Admin projects the same reference framing as the player and exposes unresolved geometry warnings',()=>{
+ const h=fixture();h.props.value.desktop.autoScale=contract.defaultBlackjackAutoScale();
+ h.props.scene.framing={scale:1.4,x:2,y:.05};
+ const tree=h.render(),scene=nodes(tree,n=>typeof n.type==='function'&&n.type.name==='SceneOverlay')[0];
+ const rendered=scene.type(scene.props),viewport={width:960,height:540};
+ const planes=anchors.projectAnchorRects(h.props.value.desktop,scene.props.frames,viewport,h.props.scene.framing);
+ const runtime=overlay.layoutGameOverlay({tableGeometry:h.props.value,tableLayout:'desktop',rect:planes.cardsRect,...planes},[0,1,2,3,4,5,6],{left:0,right:960,top:0,bottom:540});
+ const dealer=nodes(rendered,n=>n.props?.['data-mark']==='dealer')[0];
+ assert.equal(dealer.props.transform,'translate('+runtime.dealer.x+' '+runtime.dealer.y+')');
+ assert.ok(runtime.geometryWarning);assert.equal(text(nodes(rendered,n=>n.props?.role==='status')[0]),runtime.geometryWarning);
+});

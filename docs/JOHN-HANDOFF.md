@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## Granskningsrättningar för PR #361 — 23 oktober 2026
+
+Tre verifierade fel är rättade: automatiska mobilmarker får separata tryckytor utan ändrade filmkontakter/boxidentiteter; grundklippets inramning når både scenbild och placeringslager; gruppåterställning återställer respektive automatiks val och justeringar. Manuella punkter, explicit markerförskjutning och andra format/grupper bevaras. Admin visar kvarstående platskonflikter.
+
+Verifiering: 63 riktade beteendeprov, inklusive bråkdelsoffset vid320px, presentationssviten och klientbygge med Admin/lobby-typer godkända. PR #367 kompletterar med gemensam Draganprofil, sparad kortvisning och chatt. Ingen produktionsdata ändrad. GitHubs CI-/betalningsspärr kvarstår; ingen merge eller produktionsacceptans påstås.
+
 ## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
 
 `studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.

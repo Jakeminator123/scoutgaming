@@ -132,7 +132,8 @@ for(const [width,height]of [[390,844],[1920,1080]]){
     for(const [i,box]of boxes.entries()){
       const seat=String(box+1),p=filmed(d,seat),a=result.positions[seat];
       close(result.x+a.cx*result.scale,p.x);close(result.y+a.cy*result.scale,p.y);
-      close(result.seats[i].x,p.x);assert.ok(result.seats[i].y>p.y+calibration.height/2*result.scale);
+      if(!compact)close(result.seats[i].x,p.x);else {assert.ok(result.seats[i].x>=bounds.left+49&&result.seats[i].x<=bounds.right-49);if(i)assert.ok(result.seats[i].x-result.seats[i-1].x>=98);}
+      assert.ok(result.seats[i].y>p.y+calibration.height/2*result.scale);
     }
     const dealer=filmed(d,'dealer');close(result.dealer.x,dealer.x);close(result.dealer.y,dealer.y);
     close(result.controlScale,Math.max(compact?.8:0,d.scale));
@@ -155,10 +156,22 @@ for(const [width,height]of [[390,844],[1920,1080]]){
     const adjust={cards:{scale:1.2},chips:{dx:.05,dy:-.02,scale:1.5}};
     const j=await referencePlaneFor(scene(moved,{adjust}),{width,height}),plain=overlay(await referencePlaneFor(scene(moved),{width,height})),r=overlay(j),d=j.dealerPlane;
     close(r.scale/plain.scale,1.2);close(r.controlScale,Math.max(compact?.8:0,d.scale*1.5));
+    const neutral=overlay(await referencePlaneFor(scene(moved,{adjust:{cards:adjust.cards,chips:{...adjust.chips,dx:0,dy:0}}}),{width,height}));
     for(const [i,box]of boxes.entries()){
       const seat=String(box+1),p=filmed(d,seat);
       close(r.x+r.positions[seat].cx*r.scale,p.x);close(r.y+r.positions[seat].cy*r.scale,p.y);
-      close(r.seats[i].x-p.x,.05*1080*d.scale);
+      close(r.seats[i].x-neutral.seats[i].x,.05*1080*d.scale);
     }
   });
 }
+
+test('restoring a group restores its autoScale flags and adjustments without changing the other group or format',()=>{
+ const saved=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002'),current=structuredClone(saved);
+ current.desktop.autoScale={landing:true,cardSize:true,chips:true,adjust:{cards:{scale:1.4},chips:{dx:.1,dy:.2,scale:1.2}}};
+ const cards=restoreGeometryGroup(current,saved,'desktop','cards');
+ assert.deepEqual(cards.desktop.autoScale,{landing:false,cardSize:false,chips:true,adjust:{chips:{dx:.1,dy:.2,scale:1.2}}});
+ assert.deepEqual(cards.mobile,current.mobile);
+ const both=restoreGeometryGroup(cards,saved,'desktop','bets');assert.equal(both.desktop.autoScale,undefined);
+ const automatic=structuredClone(saved);automatic.desktop.autoScale={landing:true,cardSize:true,chips:false,adjust:{cards:{scale:1.3}}};
+ assert.deepEqual(restoreGeometryGroup(saved,automatic,'desktop','cards').desktop.autoScale,automatic.desktop.autoScale);
+});

@@ -59,6 +59,12 @@ export function restoreGeometryGroup(current,saved,layout,group){
     dest.seats.forEach((seat,i)=>{seat.bet=structuredClone(source.seats[i].bet);});
     if(source.betMode)dest.betMode=source.betMode;else delete dest.betMode;
   }
+  const auto={landing:false,cardSize:false,chips:false,...dest.autoScale};
+  for(const key of group==='cards'?['landing','cardSize']:['chips'])auto[key]=source.autoScale?.[key]??false;
+  const part=group==='cards'?'cards':'chips',savedAdjust=source.autoScale?.adjust?.[part];
+  if(savedAdjust){auto.adjust??={};auto.adjust[part]=structuredClone(savedAdjust);}
+  else if(auto.adjust){delete auto.adjust[part];if(!Object.keys(auto.adjust).length)delete auto.adjust;}
+  if(auto.landing||auto.cardSize||auto.chips)dest.autoScale=auto;else delete dest.autoScale;
   if(source.anchors?.[group]){dest.anchors??={};dest.anchors[group]=structuredClone(source.anchors[group]);}
   else if(dest.anchors){delete dest.anchors[group];if(!Object.keys(dest.anchors).length)delete dest.anchors;}
   return next;
