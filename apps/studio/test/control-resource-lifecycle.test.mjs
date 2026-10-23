@@ -211,13 +211,13 @@ test('restoring a room requires readback of the same room as paused and unarchiv
 });
 
 test('a game card removal confirms the scoped room, keeps CAS and ignores foreign rooms',async()=>{
-  const h=harness({compact:true,onArchiveRequestHandled:()=>{h.input.archiveRequest='';}});await h.ready();
-  h.input.archiveRequest='room-one';h.render();h.render();
+  const h=harness({compact:true,onRequestHandled:()=>{h.input.request=undefined;}});await h.ready();
+  h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
   assert.ok(h.button('Ta bort spel'));assert.equal(h.requests.length,1);
   h.button('Avbryt').props.onClick();assert.equal(h.button('Ta bort spel'),undefined);assert.equal(h.requests.length,1);
-  h.input.operatorId='south';h.input.archiveRequest='room-one';h.render();h.render();
+  h.input.operatorId='south';h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
   assert.equal(h.button('Ta bort spel'),undefined);assert.equal(h.requests.length,1);
-  h.input.operatorId='north';h.input.archiveRequest='room-one';h.render();h.render();
+  h.input.operatorId='north';h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
   h.button('Ta bort spel').props.onClick();
   assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,archived:true});
 });
@@ -225,7 +225,22 @@ test('a game card removal confirms the scoped room, keeps CAS and ignores foreig
 test('restore view only offers archived rooms and compact opening keeps the scoped state contract',async()=>{
   const h=harness({archiveOnly:true});await h.ready(snapshot({rooms:[room(),room({id:'archived',name:'Borttaget',state:'archived',archivedAt:'2026-10-12',canArchive:false,canRestore:true})]}));
   assert.equal(h.button('Flytta till papperskorgen'),undefined);assert.ok(h.button('Återställ rum'));
-  const open=harness({compact:true,stateRequest:'room-one',onArchiveRequestHandled:()=>{open.input.stateRequest='';}});
+  const open=harness({compact:true,request:{kind:'state',roomId:'room-one'},onRequestHandled:()=>{open.input.request=undefined;}});
   await open.ready(snapshot({rooms:[room({state:'pending'})]}));open.render();open.button('Öppna spel').props.onClick();
   assert.deepEqual(JSON.parse(open.requests[1].options.body),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,state:'live'});
+});
+
+test('a pending card action is replaced as one room and action, never mixed with another card',async()=>{
+  const h=harness({compact:true,onRequestHandled:()=>{h.input.request=undefined;}});
+  await h.ready(snapshot({rooms:[room(),room({id:'room-two',name:'Andra spelet',state:'pending'})]}));
+  h.input.request={kind:'archive',roomId:'room-one'};h.render();h.render();
+  assert.ok(h.button('Ta bort spel'));assert.equal(h.requests.length,1);
+  h.input.request={kind:'state',roomId:'missing'};h.render();h.render();
+  assert.equal(h.button('Ta bort spel'),undefined);assert.equal(h.requests.length,1);
+  h.input.request={kind:'state',roomId:'room-two'};h.render();h.render();
+  assert.equal(h.button('Ta bort spel'),undefined);
+  assert.match(h.html(),/Öppna Andra spelet hos North/);
+  h.button('Öppna spel').props.onClick();
+  assert.equal(h.requests[1].path.endsWith('/room-state'),true);
+  assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',roomId:'room-two',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,state:'live'});
 });
