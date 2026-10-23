@@ -66,5 +66,6 @@ test('a plan that comes while his hands are clasped makes him unclasp first (kna
   assert.match(fn, /i\.from === 'knappt' && i\.to === 'vila'/);
   assert.match(fn, /Math\.min\(2\.5, Math\.max\(1, out\.dur \/ Math\.max\(\.3, lead\)\)\)/);
   assert.match(app, /if \(item\.rate\) v\.playbackRate = item\.rate;/);
+  assert.match(app, /const unclasp=manifest\.idle\.filter\(c=>c\.from==='knappt'&&c\.to==='vila'\),next=unclasp\.find/, 'knapput is preloaded first');
   assert.match(app, /idlePose = item\.kind === 'idle' && !item\.chain && \(v\.ended/);
 });

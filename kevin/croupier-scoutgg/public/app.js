@@ -66,7 +66,7 @@ const mediaFetch=createMediaFetch(mediaUrl,()=>{if(mediaBase)console.warn('clip 
 const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:mediaFetch});
 const videoPreloader=createVideoPreloader(videoBuffer);
 let tableMediaReady=false;
-function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const next=restingPool(manifest.idle).find(c=>!videoBuffer.has(c.url))??manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}   // the calm ones first: they are what he rests on
+function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const unclasp=manifest.idle.filter(c=>c.from==='knappt'&&c.to==='vila'),next=unclasp.find(c=>!videoBuffer.has(c.url))??restingPool(manifest.idle).find(c=>!videoBuffer.has(c.url))??manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}   // the way out of the clasped hands first (unclaspFor, before a card), then the calm ones: they are what he rests on
 
 const audio = createGameAudio({onChange: settings => {
   for(const v of [A,B]) {v.muted=!(v===cur && currentItem?.sound && unlocked && settings.enabled);v.volume=settings.voice;}
