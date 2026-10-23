@@ -117,9 +117,7 @@ const makeRorlig = apiKey => new RorligLipsync({
   apiKey,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
-  // Kevin 23 Oct: not Mårten: no worker carries his avatar (4090 pod or serverless), so a session for him was ordered and
-  // never came, and his table waited for it; he plays his own recorded clips
-  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2").split(",").map(s => s.trim()).filter(Boolean),
+  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2,marten").split(",").map(s => s.trim()).filter(Boolean),
   log: s => console.log(s),
   // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
   // round queued behind the clip downloads and came too late for the first frames
@@ -375,6 +373,8 @@ async function movingWorkerFor(dealer, ms = WELCOME_WORKER_MS) {
   if (canTalkMoving(dealer)) return true;
   if (!(rorlig && rorligOn() && rorlig.dealers.includes(dealer) && READY_TAKES[dealer] && hasVoice(dealer) && draggeVoiceReady(dealer))) return false;
   rorlig.activity(dealer);
+  // Kevin 23 Oct: only for a worker that is up or on its way (Mårten's table waited 8 s for one no pod carried)
+  if (!rorlig.coming(dealer)) return false;
   for (const end = Date.now() + ms; Date.now() < end;) { await new Promise(r => setTimeout(r, 250)); if (canTalkMoving(dealer)) return true; }
   return false;
 }

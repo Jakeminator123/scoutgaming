@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createSharedTable} from '../server/shared-table.mjs';
-import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE,idleFrom,idleChain} from '../server/rorlig-lipsync.mjs';
+import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE,idleFrom,idleChain,RorligLipsync} from '../server/rorlig-lipsync.mjs';
 import {splitAccessUnits} from '../public/lip-layer.js';
 import {DatabaseSync} from 'node:sqlite';
 import {waitClips} from '../public/idle-chain.js';
@@ -669,4 +669,15 @@ test('a dealer with the clasped-hands idles deals the round\'s first card 1.4 s 
       assert.ok(first-at>=lead&&first-at<lead+1300,`first take ${first-at} ms after ready (lead ${lead})`);
     }finally{t.close();}
   }
+});
+
+test('a worker is coming for a dealer when one is connected, or a serverless session was ordered where no pod serves (Mårten on staging: none)', () => {
+  const r=new RorligLipsync({endpointId:'x',apiKey:'k',publicBase:()=>'https://x',publicDir:'/tmp',dealers:['dragge','marten'],log:()=>{}});
+  assert.equal(r.coming('nobody'),false);
+  assert.equal(r.coming('marten'),false,'nothing ordered, nothing connected');
+  r.s.get('marten').askedAt=Date.now();
+  assert.equal(r.coming('marten'),true,'a serverless order on a server without pods');
+  r.s.get('dragge').workers.push({pod:'e2e'});
+  assert.equal(r.coming('marten'),false,'pods serve this server and none carries his avatar');
+  assert.equal(r.coming('dragge'),true);
 });

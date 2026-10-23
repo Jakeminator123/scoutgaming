@@ -58,8 +58,8 @@ test('Dragan and Paow are greeted by the server only: the recorded greet_guest i
   const { DEALERS } = await import('../public/dealers.js');
   assert.equal(DEALERS.dragge.serverGreets, true); assert.equal(DEALERS.paow.serverGreets, true); assert.equal(DEALERS.astrid2.serverGreets, true, 'Astrid 2.0 greets once, by name (e2e 23 Oct: twice within 0.3 s)');
   assert.equal(DEALERS.marten.serverGreets, true, 'Mårten: the server plays his recorded greeting once (Kevin 23 Oct)');
-  assert.match(server, /dealers: \(process\.env\.RORLIG_DEALERS \?\? "paow,dragge,astrid2"\)/, 'no moving lip sync ordered for Mårten');
-  assert.match(server, /rorlig\.dealers\.includes\(dealer\) && READY_TAKES\[dealer\]/, 'the greeting waits only for a dealer the moving lip sync serves');
+  assert.match(server, /dealers: \(process\.env\.RORLIG_DEALERS \?\? "paow,dragge,astrid2,marten"\)/, 'Mårten has the moving lip sync (his worker dials in as marten)');
+  assert.match(server, /if \(!rorlig\.coming\(dealer\)\) return false;/, 'the greeting waits only for a worker that is up or on its way');
   const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
   assert.match(app, /if\(!greeted\)\{greeted=true;if\(!dealer\.serverGreets\)remarkNow\(greetingFor\(name\)\);\}/);
 });
