@@ -4,7 +4,7 @@ import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { stripTypeScriptTypes } from 'node:module';
-import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 import { handlePartnerAuth, authorizePartner, isPartnerAuthConfig, partnerSessionDigest } from '../lib/partner-session.mjs';
 import { partnerWorkspaceData, partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
 

@@ -1,4 +1,4 @@
-import type { NativeStudioSession } from './studio-native-auth.mjs';
+import type { NativeStudioSession } from '../../../packages/studio-access/studio-native-auth.mjs';
 export interface NativeStudioConfiguration {
   scope: Readonly<{environment: string; workspaceId: string}>;
   connectionString: string; allowedOrigins: string[]; publicHosts: string[];

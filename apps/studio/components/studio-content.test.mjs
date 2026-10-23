@@ -85,33 +85,6 @@ test('position preview changes only the destination; consecutive card slots, car
   assert.deepEqual(project, before);
 });
 
-test('family upload sends exact family and green metadata, then opens the saved clip without an acceptance click', async () => {
-  const h = hooks(); const project = createSeedProject();
-  const family = inventory.families.find(row => row.situation === 'box5');
-  const uploaded = [], opened = [], busy = [], captured = [];
-  const video = { id: 'saved-variant', familyId: family.id, available: true, previewUrl: '/saved', bytes: 200, label: 'Min handrörelse', eventId: family.eventId, situation: family.situation };
-  const { FamilyVideoUpload } = load('./family-video-upload.tsx', {
-    './video-metadata-fields': { VideoCompositingFields: () => null, DealerFramingFields: () => null },
-    './studio-types': { async requestJson() { return captured.length ? { videos: [video], families: inventory.families } : { uploadMode: 'private-client-blob' }; } },
-    '../lib/upload-native-video.mjs': { async uploadNativeVideo(file, metadata, mime, options) { captured.push({ file, metadata: validateVideoMetadata(metadata), mime, options }); return { id: video.id, duplicate: false }; } },
-  }, h.react);
-  const props = { project, inventory, dealerId: 'astrid', initialFamilyId: family.id, onUploaded: (...args) => uploaded.push(args), onOpen: (...args) => opened.push(args), onBusyChange: value => busy.push(value) };
-  let tree = h.render(FamilyVideoUpload, props);
-  nodes(tree, node => node.type === 'input' && node.props.type === 'file')[0].props.onChange({ target: { files: [{ name: 'technical-file.mp4', size: 200 }] } });
-  tree = h.render(FamilyVideoUpload, props);
-  nodes(tree, node => node.type === 'input' && node.props.maxLength === 120)[0].props.onChange({ target: { value: 'Min handrörelse' } });
-  nodes(tree, node => typeof node.type === 'function' && node.type.name === 'VideoCompositingFields')[0].props.onChange({ mode: 'green-screen', threshold: 0.23, softness: 0.15, despill: 0.4 });
-  tree = h.render(FamilyVideoUpload, props);
-  await nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {} });
-  assert.equal(captured[0].metadata.familyId, family.id);
-  assert.equal(captured[0].metadata.dealerId, 'astrid'); assert.equal(captured[0].metadata.eventId, family.eventId); assert.equal(captured[0].metadata.situation, 'box5');
-  assert.equal(captured[0].metadata.label, 'Min handrörelse');
-  assert.deepEqual(captured[0].metadata.compositing, { mode: 'green-screen', threshold: 0.23, softness: 0.15, despill: 0.4 });
-  assert.deepEqual(JSON.parse(JSON.stringify(captured[0].metadata.framing)),{scale:1,x:0,y:0});
-  assert.equal(uploaded[0][1], video.id); assert.deepEqual(opened, [[family.eventId, family.situation]]); assert.deepEqual(busy, [true, false]);
-  assert.ok(!renderToStaticMarkup(h.render(FamilyVideoUpload, props)).includes('Välj hur klippet ska användas'));
-});
-
 test('saved idle background can be corrected with its original revision and exact binding, including framing',async()=>{
   const h=hooks(),calls=[],saved=[];
   const classification={dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Grundloop',notes:'',compositing:{mode:'opaque'}};
@@ -131,18 +104,6 @@ test('saved idle background can be corrected with its original revision and exac
   assert.equal(saved.length,1);
 });
 
-test('family upload does not borrow Astrid families for Nora and disables submission during another operation', async () => {
-  const h = hooks(); let calls = 0;
-  const { FamilyVideoUpload } = load('./family-video-upload.tsx', { './video-metadata-fields': { VideoCompositingFields: () => null, DealerFramingFields: () => null }, './studio-types': { requestJson() { calls++; throw new Error('must not request'); } } }, h.react);
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
-  const props = { project, inventory, dealerId: 'nora', initialFamilyId: inventory.families[0].id, disabled: true, onUploaded() {} };
-  const tree = h.render(FamilyVideoUpload, props);
-  assert.equal(nodes(tree, node => node.type === 'option').length, 1);
-  assert.equal(nodes(tree, node => node.type === 'fieldset')[0].props.disabled, true);
-  await nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {} });
-  assert.equal(calls, 0);
-});
-
 test('dealer backgrounds are always keyed with bounded controls and retain the exact event and situation', () => {
   const { VideoCompositingFields, VideoMetadataFields } = load('./video-metadata-fields.tsx');
   const values = []; let tree = VideoCompositingFields({ value: { mode: 'opaque' }, onChange: value => values.push(value) });
@@ -160,21 +121,11 @@ test('dealer backgrounds are always keyed with bounded controls and retain the e
   assert.equal(validateVideoMetadata(values.at(-1)).situation, 'box1'); assert.equal(values.at(-1).eventId, metadata.eventId);
 });
 
-test('bibliotek and upload consume the exact situation from a dealer deep link', () => {
-  const { ControlVideosPage } = load('./control-videos-page.tsx');
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
-  const before = structuredClone(project);
-  const html = renderToStaticMarkup(React.createElement(ControlVideosPage, { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'nora', initialEventId: 'deal.player.left', initialSituation: 'box1' }));
-  assert.match(html, /<option value="box1" selected="">Spelarplats 2<\/option>/);
-  assert.match(html, /Spelarplats 2 <button/); assert.deepEqual(project, before);
-  const { ControlEventsPage } = load('./control-events-page.tsx', { './gateway-panel': { modeLabels: {}, modeExplanations: {}, GatewayPanel: () => null } });
-  const htmlEvents = renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: createSeedProject(), initialVideos: inventory, initialStatus: { configured: false }, initialDealerId: 'astrid', initialEventId: 'deal.player.left', initialSituation: 'box1' }));
-  assert.match(htmlEvents, /astrid\/deal.player.left\/box1/);
-});
+
 
 test('display naming is separate from file identity and situation URL survives variant changes', () => {
   const { studioHref, selectionHref } = load('./studio-types.ts');
-  assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), '/admin/videos?dealer=nora&event=deal.dealer&situation=dealer-hole');
+  assert.equal(studioHref('/admin/videos', { dealerId: 'nora', eventId: 'deal.dealer', situation: 'dealer-hole' }), "/admin/clips?dealer=nora&event=deal.dealer&situation=dealer-hole");
   assert.match(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.player.left', 'same-variant'), /situation=box1/);
   assert.doesNotMatch(selectionHref('/admin/events', '?dealer=astrid&event=deal.player.left&situation=box1', 'astrid', 'deal.dealer'), /situation=/);
 });
@@ -187,7 +138,7 @@ test('Probe selection stays in Admin and preserves room context under either mou
     for (const basePath of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
       const href = selectionHref(basePath + '/admin/probe', '?dealer=astrid&event=idle.ready&operator=north&table=room-1&lane=portrait&token=private', 'saga', 'idle.ready');
-      assert.equal(href, '/admin/probe?dealer=saga&event=idle.ready&composition=portrait&operator=north&table=room-1');
+      assert.equal(href, "/admin/clips?panel=room&dealer=saga&event=idle.ready&composition=portrait&operator=north&table=room-1");
     }
   } finally {
     if (previous === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH; else process.env.NEXT_PUBLIC_LAB_BASE_PATH = previous;

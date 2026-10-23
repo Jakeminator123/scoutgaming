@@ -104,8 +104,8 @@ test('Gateway preserves operator chat while forwarding the server voice capabili
       status: {configured: true}, mode: 'off', onModeChange() {}, dealerId: 'astrid', dirty: false,
       onPlayerChat() {}, ...(available === undefined ? {} : {standaloneVoicePreviewAvailable: available}),
     }));
-    assert.equal(voiceProps.length, 1, 'voice capability reaches the preview once');
-    assert.equal(voiceProps[0].available, available === undefined ? true : available);
+    assert.equal(voiceProps.length, available===false?0:1, 'unavailable voice preview has no second UI');
+    if(available!==false)assert.equal(voiceProps[0].available,true);
     assert.equal((html.match(/<form(?:\s|>)/g) ?? []).length, 1, 'operator chat stays available');
     assert.match(html, /<textarea\b[^>]*\bid="operator-message"/);
   }

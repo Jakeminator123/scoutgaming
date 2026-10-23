@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {adminHref,adminPathname,hasAdminContext,isInternalAdminPathname,isStudioAdminRoute,withAdminContext,adminRoomHref} from './admin-routing.mjs';
 
-test('plain admin root is home but old context bookmarks still open Studio',()=>{
+test('admin overview stays home even when old bookmarks contain a dealer or room',()=>{
   assert.equal(isStudioAdminRoute('/admin',''),false);
   assert.equal(isStudioAdminRoute('/admin','?view=registered'),false);
   for(const search of ['?dealer=anna','?operator=north&table=north-roulette','?composition=scene','?lane=legacy']){
     assert.equal(hasAdminContext(search),true);
-    assert.equal(isStudioAdminRoute('/admin',search),true);
+    assert.equal(isStudioAdminRoute('/admin',search),false);
   }
   assert.equal(isStudioAdminRoute('/admin/clips',''),true);
 });
@@ -66,7 +66,7 @@ test('old design links translate root queries and fragments without changing ext
   for(const suffix of ['', '?dealer=astrid', '#clips']){
     assert.equal(adminHref('/control'+suffix),'/admin'+suffix);
   }
-  assert.equal(adminHref('/control/clips?dealer=astrid#speech'),'/admin/dealer-studio?dealer=astrid#speech');
+  assert.equal(adminHref('/control/clips?dealer=astrid#speech'),"/admin/clips?dealer=astrid#speech");
   for(const href of ['/admin/clips','/controller','https://outside.invalid/control','//outside.invalid/control']){
     assert.equal(adminHref(href),href);
   }

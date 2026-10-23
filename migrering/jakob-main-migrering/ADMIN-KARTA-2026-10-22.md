@@ -202,3 +202,93 @@ Totalt ca 11 komponenter och 19 lib-moduler.
 11. Redirects: vill du ha en enda tabell (`admin-workspace-routes.mjs`) och radera de andra nio (D10) samt `vercel.json`-routen `/control/*` och `apps/web`-redirectarna, eller ska bokmärken leva en release till?
 12. Lobbyn länkar fortfarande `/play/{game}`; underlaget säger `/game`. Ska Admin-sidorna (Provspelning, Rum) också peka om?
 13. Ska `studio-administration.tsx` städas från de döda sektionerna och åtgärderna (4d), eller behålls kontraktet för `croupier_game`-konfig?
+
+
+## 6. PR #359 — rättad CSS och samlad navigation — 23 oktober 2026
+
+Jakobs utökade uppdrag ersätter PR1:s ursprungliga begränsning till yttre navigation. Branch `codex/admin-en-ingang` har integrerat main 7e51bb550ed078e75e561a0ca00fc5d79bc7a842, inklusive #354. Konflikten i JOHN-HANDOFF är löst med båda ägarnas avsnitt bevarade. #358 är nu mergad och integrerad från main. Denna PR gör inga egna ändringar i dess lobbyfiler eller rumssidan.
+
+### Rotorsak och åtgärd
+
+- Admin använder en separat esbuild-klient. GatewayPanel förlitade sig på gamla globala CSS-regler som inte laddades där. Komponenten har nu egen CSS-modul. Tailwind-bygget söker också i återanvända Studio-komponenter, så deras layoutklasser följer med.
+- Gamla hela editorsidor låg inbäddade i nya skal. LabStudio, ControlVideosPage, ControlPreviewPage, ControlActivityPage och ControlProbePage samt deras exklusiva tester är borttagna. Den befintliga klippkartan äger nu tal, dealerinställningar och scenredigering. Materialskapandet har en egen fokuserad sida med bevarat skydd för osparat arbete.
+- Brödsmulor, verktygens extra länkrad, registret i klippkartan och den extra importflikraden är borta. Kartans zoomkontroller visas endast i kartvyn. Hela editorsidor får full bredd. System har en enda enkel grupp med länkar.
+- Hjälpens separata menykarta hade andra namn och adresser. Hjälp och sidomeny läser nu samma definition i packages/navigation/admin-navigation.mjs. /admin förblir översikt även om ett gammalt bokmärke har dealer- eller rumsparametrar.
+
+### Nuvarande karta
+
+```text
+/admin  Översikt: Skapa dealer | Fortsätt redigera | Hantera spelbolag
+|
++-- Studio
+|   +-- Dealers /admin/dealers: skapa, välj, arkivera/återställ
+|   +-- Klippkarta /admin/clips: vald dealer + valt spel
+|   |   +-- Klippkarta: standardklipp, varianter, uppladdning
+|   |   +-- Röst & tal ?panel=room: inspelat, generering, realtid
+|   |   |   +-- Dialogtest /admin/dealer-agent
+|   |   |   +-- Tal vid inaktivitet: bara där stödet finns (Astrid)
+|   |   +-- Svarsbibliotek /admin/replies: vald dealers svar
+|   |   +-- Skapa material /admin/dealer-studio?view=generate
+|   |   +-- Inställningar ?panel=dealer: dealer och användning
+|   |   +-- Scen & lager ?panel=layers: en gemensam mallredigerare
+|   +-- Bord & bakgrunder /admin/assets: gemensamt materialbibliotek
+|
++-- Administration
+|   +-- Spelbolag & rum /admin/rooms
+|   +-- Bolag & team /admin/companies: journal på valt bolag
+|   +-- Spelarkonton /admin/players
+|   +-- Drift /admin/drift: även taldrift
+|   +-- Ekonomi /admin/ekonomi: även betalningar
+|
++-- System: Systeminställningar | Kopplingar & användning
+            Integrationer | Konton & åtkomst | Hjälp
+```
+
+Spelhändelser/regler och talgranskning behåller sina specialiserade kontroller. De är inga extra huvudmenyer. Datamodell, behörighet, lagringsägare och publiceringskontrakt är oförändrade.
+
+### Bokmärken
+
+| Gammal adress | Destination |
+| --- | --- |
+| /admin/dealer-studio utan view=generate | /admin/clips; speech → panel=room, settings → panel=dealer |
+| /admin/videos | /admin/clips |
+| /admin/compositions | /admin/clips?panel=layers |
+| /admin/probe | /admin/clips?panel=room |
+| /admin/rehearsal | /admin/rooms |
+| /admin/tools | /admin/dealers |
+| /admin/admin/payments | /admin/ekonomi?tab=payments |
+| /admin/admin/log | /admin/companies |
+| /admin/ai/chat | /admin |
+| /admin/openclaw, tab=drift | /admin/drift?tab=speech |
+| /admin/openclaw?tab=models | /admin/ai/models |
+| /admin/openclaw?tab=agent | /admin/dealer-agent |
+| /admin/openclaw?tab=probe | /admin/clips?panel=room |
+| /admin/openclaw?tab=assistant | /admin |
+
+Motsvarande gamla /control- och /studio/control-bokmärken leder direkt till samma destinationer. Endast dokumentläsning omdirigeras; API:er och mutationer gör det inte. Dealer, spel, sammansättning, rums-/bolagsval och fragment bevaras. Upprepade identiteter behålls för mottagarens validering. lane normaliseras till composition; pensionerade view/tab-parametrar förbrukas när målpanelen ersätter dem. Inloggningsreturer accepterar bara avsedda lokala dokument och tillåtna parametrar.
+
+### Raderingsgräns och verifiering
+
+Den ursprungliga städningen av 7 oanvända lib-moduler, 2 komponenter och 6 oanropade API-routes ingår. Social-store städades separat i #354; dealer-import-plan har aktiv verktygsanropare och behålls. De senare editorborttagningarna avlägsnar deras exklusiva tester; behörighet, CAS, rumsisolering, osparade utkast och sparade förhandsvisningsrevisioner testas i de aktiva ytorna.
+
+Faktiska slutkontroller och produktionsgräns finns i [JOHN-HANDOFF](../../docs/JOHN-HANDOFF.md). Webview-provet använder byggda produktionsfiler och syntetiska, skrivskyddade serversvar. Det verifierade dialoglayout, flikbyten, scenval och skapande av scen i minnesutkast; det är inte produktionsacceptans. Ingen databas, media, drifttjänst eller produktion har ändrats. Ingen planaktivitet markeras klar.
+
+## 7. Visuell målbild och återstående produktarbete
+
+Utgå från TERMINOLOGI: dealer, klipp, lager, sammansättning, spel, bolag och rum har separata identiteter. En dealer ska kunna återanvändas i flera kompatibla scener utan att kopieras för varje bakgrund.
+
+**Ansvarsfördelning i arbetsytan:** Studio är utvecklarens/skaparens plats för dealers, klippkartor, scener och spelupplägg. Administration hanterar bolag, konton, tillgängligt spelutbud, drift, ekonomi och system. Studio producerar de återanvändbara delarna; administrationen kopplar dem till bolagens erbjudanden. Detta är en uppdelning av arbetsuppgifter och navigation, inte nya roller, behörigheter eller parallella appar i PR1.
+
+Jakobs förtydligade visuella hierarki: **Spelbolag/domän → spel (Blackjack, Roulette, …) → valbara dealers och spelspecifika bord**. Bakgrunder utgör ett **gemensamt, speloberoende bibliotek** vid sidan av trädet och kan växlas mellan spelen. Spelregler avgör dealer-/bordskompatibilitet; bakgrunder ska inte kategoriseras eller låsas efter spel. Det är arbetsytans relationer, inte ett beslut att införa en ny datamodell i denna PR.
+
+1. **Skapa dealer.** Namnge dealern och öppna dess klippkarta direkt. Behåll en enda ingång för personens namn och identitet.
+2. **Sätt klippen.** Arbeta med kategori, situation, standardklipp och varianter på klippkartan. Posevarianter, idlepool och talfack ska följa samma modell efter K05-besluten. Grundloop, Klipp och Vila blir delar av denna editor.
+3. **Sätt scenen.** Välj dealer och bord som passar spelet, och en bakgrund från det gemensamma speloberoende biblioteket, i en gemensam sceneditor. Scen & lager och Avancerad sammansättning förenas här; separata lagers identiteter och sparade kompatibilitetsregler bevaras.
+4. **Tilldela alternativen.** Ange vilket spel och vilket bolag/rum som får använda vilka dealers, bakgrunder och bord. Rumsspecifika val följer roomOverrides; ett valt rum får inte ändra en gemensam mall av misstag.
+5. **Prova och publicera.** Visa exakt vad som är valt, vad operatören får byta och vad som saknas. Återanvänd befintlig publicering/versionering och speltransport. Inga nya parallella register eller launchvägar.
+
+**Visuell målbild för operatören:** välj bolag/domän och se dess spel som stora kort eller noder i en mindmap med verklig förhandsvisning. Dealers och bord visas under respektive spel; det gemensamma bakgrundsbiblioteket ligger vid sidan om och kan användas över spelgränserna. Varje kort visar bakgrund, dealer och bord som valbara lager. Lägg till/ta bort tillåtna spel och alternativ direkt med tydliga knappar; drag och släpp kan vara ett komplement, med tangentbordsalternativ. Sparat, osparat och publicerat ska vara lätt att skilja åt. Inga små pilrader som ersättning för arbetsytan. Detta är ett kommande gränssnitt, inte en funktion som PR1 påstår sig leverera.
+
+Exempel: ett Blackjack-erbjudande kan tillåta **två dealers och tre bakgrunder**, tillsammans med angivna kompatibla bord. Operatören väljer bland godkända alternativ. Det kräver inte sex kopior av dealern eller automatiskt alla tänkbara kombinationer; kompatibiliteten styr.
+
+Den sammanhållna operatörsytan och ändrade kombinationsregler kräver K05-besluten; #358 är nu integrerad. CSS- och navigationsstädningen i avsnitt 6 ingår redan i #359. Innan kodstart ska omfattning och acceptanskriterier tas in som en aktivitet i den befintliga masterplanen med status.json som enda statuskälla. Detta förslag skapar ingen separat tracker och ändrar inte nuvarande datamodell.

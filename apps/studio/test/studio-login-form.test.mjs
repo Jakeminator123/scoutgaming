@@ -180,7 +180,7 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
   const { playerAuth } = await import('../../../services/game/player-auth.mjs');
   const { backofficeGameAuth } = await import('../../../services/game/bo-game-auth.mjs');
   const { backofficeLabAuth } = await import('../../../services/game/bo-lab-auth.mjs');
-  const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
+  const { createStudioNativeAuth } = await import('../../../packages/studio-access/studio-native-auth.mjs');
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   const navigation = require('next/dist/client/components/redirect.js');
   const publicOrigin = 'https://game.fixture.invalid', labOrigin = 'https://studio.fixture.invalid';
@@ -326,7 +326,7 @@ test('actual browser expired Admin login restores the real room view through his
   const { scryptSync } = await import('node:crypto');
   const { mkdtemp, mkdir, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
-  const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
+  const { createStudioNativeAuth } = await import('../../../packages/studio-access/studio-native-auth.mjs');
   const { assertNativeStudioRequest } = await import('../lib/studio-native-runtime.mjs');
   const { createSeedProject, defaultPresentationLane, validateProject, addDealer } = await import('../../../packages/presentation/contracts/studio-model.mjs');
   const catalog = await import('../lib/design-preview-catalog.mjs');

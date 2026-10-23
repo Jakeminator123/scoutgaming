@@ -2,16 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
-import * as legacyAuth from '../lib/studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 import * as sharedAuth from '../../../packages/studio-access/studio-native-auth.mjs';
 import * as sharedScope from '../../../packages/studio-access/studio-scope.mjs';
 import { StudioStorageError, studioStorageFailure, validateStudioEnvironmentId, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { createPostgresStore } from '../../../services/game/storage/postgres-store.mjs';
 
-test('legacy imports retain the shared auth, scope and error identities', async () => {
-  assert.deepEqual(Object.keys(legacyAuth), Object.keys(sharedAuth));
-  for (const name of Object.keys(sharedAuth)) assert.equal(legacyAuth[name], sharedAuth[name]);
+test('shared auth retains scope and error identities', async () => {
   assert.equal(StudioStorageError, sharedScope.StudioStorageError);
   assert.equal(validateStudioEnvironmentId, sharedScope.validateStudioEnvironmentId);
   assert.equal(validateStudioScope, sharedScope.validateStudioScope);
@@ -24,7 +21,7 @@ test('legacy imports retain the shared auth, scope and error identities', async 
   });
   const authorize = sharedAuth.createStudioNativeAuth({ boDb: { prepare() { throw Error('must not query'); } }, scope });
   await assert.rejects(authorize(new Request('https://studio.example.invalid/')), error => {
-    assert.ok(error instanceof legacyAuth.NativeStudioAuthError);
+    assert.ok(error instanceof sharedAuth.NativeStudioAuthError);
     assert.equal(error.code, 'studio_login_required');
     assert.equal(error.statusCode, 401);
     return true;

@@ -45,7 +45,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       "packages/presentation/server/legacy-clip-inventory.mjs",
       "packages/studio-registry/server/local-video-readers.mjs",
       "packages/studio-registry/server/media-runtime.mjs",
-      'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'apps/studio/lib/video-local-readers.mjs', 'apps/studio/lib/video-alpha-reader.mjs', 'services/game/blob-media.mjs', 'services/game/media-blob-index.mjs', 'services/game/package.json', 'services/game/package-lock.json',
+      'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'apps/studio/lib/video-local-readers.mjs', 'services/game/blob-media.mjs', 'services/game/media-blob-index.mjs', 'services/game/package.json', 'services/game/package-lock.json',
 
       'packages/director/admin-error.mjs',
       'packages/director/astrid-observation.mjs',
@@ -109,7 +109,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-registry/server/repository.mjs',
       'services/game/storage/postgres-store.mjs', 'packages/studio-registry/server/document-contract.mjs', 'packages/studio-registry/server/stored-media-types.mjs', 'packages/shared/media-file-types.mjs', 'packages/studio-registry/server/document-repository.mjs', 'packages/presentation/server/saved-game-policy.mjs', 'services/game/storage/studio-runtime.mjs',
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
-      'packages/storage/server/player-administration.mjs', 'services/game/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'apps/studio/lib/studio-game-authority.mjs', 'apps/studio/lib/studio-native-auth.mjs',
+      'packages/storage/server/player-administration.mjs', 'services/game/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'apps/studio/lib/studio-game-authority.mjs',
       'apps/studio/lib/studio-native-auth-actions.mjs', 'apps/studio/lib/studio-admin-accounts.mjs', 'apps/studio/lib/studio-admin-data.mjs', 'apps/studio/lib/studio-admin-api.mjs', 'apps/studio/lib/studio-document-api.mjs',
       'apps/studio/lib/studio-admin-readouts.mjs', 'apps/studio/lib/studio-voice-lines.mjs', 'apps/studio/lib/studio-access-policy.mjs', 'apps/studio/lib/studio-admin-contract.mjs',
       'apps/studio/lib/voice-preview.mjs', 'apps/studio/lib/media-blob-index.mjs', 'services/game/shoe-game.mjs', 'packages/shared/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',

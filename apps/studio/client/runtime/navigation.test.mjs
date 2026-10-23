@@ -152,7 +152,7 @@ test('existing navigation vetoes cancel native service pushes and replacements b
 test('read-only native service views retain normal SPA Back and Forward',()=>{
   const h=harness('/admin/assets');
   for(const route of ['/admin/drift','/admin/admin/payments','/admin/ekonomi'])assert.equal(h.api.navigate(route),true);
-  const before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/drift');h.go(1);assert.equal(h.location.pathname,'/admin/admin/payments');
+  const before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/drift');h.go(1);assert.equal(h.location.pathname,'/admin/ekonomi');assert.equal(new URLSearchParams(h.location.search).get('tab'),'payments');
   assert.deepEqual(h.snapshot(),before);assert.deepEqual(h.native,[]);
 });
 
@@ -249,7 +249,7 @@ async function mountClipMap(h,{scene=false}={}){
       :name==='../../lib/connected-studio.mjs'?{...componentRequire(name),clipSlots:()=>[],createStudioClient:()=>({load:async()=>structuredClone(workspace),save:async next=>{
         if(next.revision!==workspace.project.revision)throw Object.assign(new Error('Revision conflict'),{statusCode:409});
         workspace.project=structuredClone({...next,revision:'fixture.scene.saved'});return structuredClone(workspace.project);}})}
-      :name==='lucide-react'||name.startsWith('./')?components:componentRequire(name)});
+      :name==='lucide-react'||name.startsWith('./')||name==='../../../../components/studio-navigation'||name==='../../../../components/probe-editor'?components:componentRequire(name)});
   const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
   let scenePanel=null,sceneMounts=0;
   const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children,tree=element.type(element.props);

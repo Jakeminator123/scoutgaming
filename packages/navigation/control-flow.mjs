@@ -42,7 +42,7 @@ export function canonicalControlHref(value) {
   if (url.pathname === '/control/videos') url.pathname = '/admin/videos';
   if (url.pathname === '/control/compositions') url.pathname = '/admin/compositions';
   if (url.pathname === '/control/rehearsal') url.pathname = '/admin/rehearsal';
-  // OpenClaw is one Admin page; Control's chat, ops and operator chat open its tabs.
+  // Legacy OpenClaw bookmarks resolve through the shared document mapper.
   const openClawTab = url.pathname === '/control/openclaw' ? (url.searchParams.get('tab') === 'chat' ? 'agent' : 'models')
     : url.pathname === '/control/ops' ? 'drift' : url.pathname === '/control/operator-chat' ? 'agent' : null;
   if (openClawTab) {
@@ -51,7 +51,7 @@ export function canonicalControlHref(value) {
     url.search = 'tab=' + openClawTab + (url.search ? '&' + url.search.slice(1) : '');
   }
   const href = url.pathname + url.search + url.hash;
-  return url.pathname === '/control/administration' ? adminDocumentHref(href) : href;
+  return url.pathname === '/control/administration' || url.pathname.startsWith('/admin/') ? adminDocumentHref(href) : href;
 }
 
 // Activity bookmarks accept only one value for each observation identity.
@@ -64,5 +64,5 @@ export function legacyActivityDocumentHref(value) {
   }
   const lanes = url.searchParams.getAll('lane');
   if (!query.has('composition') && lanes.length === 1 && lanes[0]) query.set('composition', lanes[0]);
-  return '/admin/rehearsal' + (query.size ? '?' + query : '') + url.hash;
+  return adminDocumentHref('/control/rehearsal' + (query.size ? '?' + query : '') + url.hash);
 }

@@ -1,4 +1,4 @@
-import type { NativeStudioSession } from './studio-native-auth.mjs';
+import type { NativeStudioSession } from '../../../packages/studio-access/studio-native-auth.mjs';
 import type { StudioAdminScope } from './studio-admin-api.mjs';
 export type ExistingCraigCredentialRole = 'reader'|'staff'|'player'|'admin'|'superadmin';
 export interface StudioPasswordInvitation { to:string; kind:'invite'|'reset'; role:ExistingCraigCredentialRole; link:string; }

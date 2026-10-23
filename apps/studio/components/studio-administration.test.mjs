@@ -11,7 +11,7 @@ import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
 import * as gameLanes from '../../../packages/presentation/contracts/game-lane-id.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
-import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
 const DealerClipPreview = () => React.createElement('div', {'data-keyed-preview': true});
