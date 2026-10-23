@@ -74,6 +74,21 @@ const headMovesRarely = idles => {
 // Kevin 23 Oct, for Dragan instead of the head rule: of the glances to the right only blickhoger stays, said at most once
 // in an idle period (a chain under speech), never again in it; his other idles are plain ones with their usual weights.
 const oncePerPeriod = (idles, ids) => idles.map(i => ids.includes(i.id) ? { ...i, once: true } : i);
+// Kevin 23 Oct: the H3 v2 idles e2e made from Emil's rest image after the Evolution references, colour-matched to the game
+// (/root/qa/h3-idle-ingest). Hands clasped: into the pose from VILA (knappin), takes that stay in it (knappandas,
+// knappaxlar), back to VILA (knapput); from/to name the pose a take starts and ends in, so a run of them always starts and
+// ends on VILA. They play while the table bets (fas bets). Hands flat on the felt (plattandas, plattaxlar) and leaning
+// forward (lutfram), VILA to VILA, play in the wait while the player decides (fas decide). idle-chain.js phasePool lets
+// a phase's takes dominate it.
+const POSES = { knappin: ['vila', 'knappt'], knappandas: ['knappt', 'knappt'], knappaxlar: ['knappt', 'knappt'], knapput: ['knappt', 'vila'] };
+// in the clasped pose: stay 3 to 1 against going back to VILA (a run of about five takes, 8 s)
+const POSE_WEIGHT = { knappin: 6, knappandas: 6, knappaxlar: 6, knapput: 2, plattandas: 6, plattaxlar: 6, lutfram: 6 };
+const evolutionIdles = (id, takes) => takes.map(k => {
+  const base = k.replace(/\d+$/, ''), [from, to] = POSES[base] ?? ['vila', 'vila'];
+  return { id: k, url: `/media/dealers/${id}/v2/${k}.mp4${V}`, vikt: POSE_WEIGHT[base], dur: 1.625, calm: true, fas: base.startsWith('knapp') ? 'bets' : 'decide', from, to };
+});
+const DRAGGE_EVOLUTION_IDLES = ['knappin5101', 'knappin5102', 'knappandas5102', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattaxlar5101', 'lutfram5101'];
+const PAOW_EVOLUTION_IDLES = ['knappin5101', 'knappin5102', 'knappandas5101', 'knappandas5102', 'knappaxlar5101', 'knappaxlar5102', 'knapput5101', 'knapput5102', 'plattandas5101', 'plattandas5102', 'plattaxlar5101'];
 const ASTRID2_IDLES = headMovesRarely(h3IdlesFor('astrid2', 'idle-v2', 3.04, ['huvud', 'huvudb', 'fingrar']));
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
@@ -85,12 +100,12 @@ export const DEALERS = {
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: oncePerPeriod([...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)], ['blickhoger']), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS, serverGreets: true },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: oncePerPeriod([...h3IdlesFor('dragge', 'v2', 1.625, ['andas', 'djupandetag', 'blickhoger', 'fingrar']), ...extraIdles('dragge', DRAGGE_NEW_IDLES)], ['blickhoger']).concat(evolutionIdles('dragge', DRAGGE_EVOLUTION_IDLES)), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS, serverGreets: true },   // Kevin 20 Oct: no glance to the left; huvud/huvudb re-rendered with the milder smile
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]), handMatte: false, faceTracks: PAOW_FACE_TRACKS, serverGreets: true },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt', 'ko'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: headMovesRarely([...h3IdlesFor('paow', 'v2', 1.625, ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']), ...extraIdles('paow', PAOW_NEW_IDLES)]).concat(evolutionIdles('paow', PAOW_EVOLUTION_IDLES)), handMatte: false, faceTracks: PAOW_FACE_TRACKS, serverGreets: true },
   // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card

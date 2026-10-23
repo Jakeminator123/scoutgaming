@@ -11,7 +11,7 @@ import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer
 import {personalizedGreeting} from './dealer-responses-localized.mjs';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
 import {scheduleTalks,LJUD_FORE,idleFrom,idleChain} from './rorlig-lipsync.mjs';
-import {waitClips,waitBoundary} from '../public/idle-chain.js';
+import {waitClips,waitBoundary,phasePool} from '../public/idle-chain.js';
 
 const emptyBets = () => Array.from({length:7},()=>({main:0,pp:0,tp:0}));
 const sum = b => b.main+b.pp+b.tp;
@@ -67,11 +67,14 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // it), instead of a chain of its own from its first frame. Viewers keep showing the first chain; the mouth was mapped on
   // the second, so not one patch landed. prior: the talks before it (the room's, and this plan's earlier lines).
   function withIdle(r,ready,t,steg,talker,prior=r.talk??[]) {
-    const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take));
+    // a talk's own chain: takes from VILA to VILA the worker announced (a take into or out of the clasped hands, dealers.js
+    // from/to, never joins a chain laid at rest)
+    const takes=(ready?.idle??[]).filter(i=>talker?.idle?.includes(i.take)&&!i.from&&!i.to);
     if(!takes.length)return t;
-    // Kevin 20 Oct: during a wait for a player the talk runs over the wait's own chain, the body every viewer shows anyway
+    // Kevin 20 Oct: during a wait for a player the talk runs over the wait's own chain, the body every viewer shows anyway.
+    // Kevin 23 Oct: not over a wait clip the worker has not announced (the new idles): the talk then rests on his still
     const w=(r.waits??[]).find(w=>w.from<t.endAt+600&&(!w.until||w.until>t.kartaStart));
-    if(w){const idle=waitClips(w,t.kartaStart,t.endAt+600);return idle.length?{...t,idle}:t;}
+    if(w){const idle=waitClips(w,t.kartaStart,t.endAt+600);return idle.length&&idle.every(c=>talker.idle.includes(c.take))?{...t,idle}:t;}
     if(r.phase==='round'&&r.round?.phase!=='settled')return t;
     const from=idleFrom(steg,t,{restEnd:ready.restEnd??[]});
     if(from===null)return t;
@@ -215,8 +218,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const known=talker?.idle?.length?(ready?.idle??[]).filter(i=>talker.idle.includes(i.take)):(ready?.idle??[]);
     // Kevin 21 Oct: while he waits for the player only the calm takes (dealers.js calm: breathing, shoulders, back, weight,
     // fingers): too much head movement before. None calm among the announced: his plain breathing take, if he has it
-    const calm=known.filter(i=>i.calm);
-    const pool=calm.length?calm:(ready?.idle??[]).filter(i=>i.take==='andas');
+    // Kevin 23 Oct: the hands flat on the felt and the lean forward (dealers.js fas decide) dominate this wait, announced by
+    // the worker or not (a line over a wait clip the worker cannot map rests on his still, withIdle); the clasped hands
+    // (fas bets) are the betting's
+    const calm=known.filter(i=>i.calm&&!i.fas),decide=(ready?.idle??[]).filter(i=>i.fas==='decide');
+    const pool=calm.length||decide.length?phasePool([...calm,...decide],'decide'):(ready?.idle??[]).filter(i=>i.take==='andas');
     const waiting=Boolean(r.round&&['decisions','insurance'].includes(r.round.phase)&&pool.length);
     r.waits=[...(r.waits??[]).filter(w=>w.until&&w.until>now()-2000),...(waiting?[{from:at,until:null,seed:r.plan.id,takes:pool.map(({take,frames,vikt})=>({take,frames,vikt:vikt??1}))}]:[])];
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);

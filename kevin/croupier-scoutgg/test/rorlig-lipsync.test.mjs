@@ -7,6 +7,7 @@ import {createSharedTable} from '../server/shared-table.mjs';
 import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE,idleFrom,idleChain} from '../server/rorlig-lipsync.mjs';
 import {splitAccessUnits} from '../public/lip-layer.js';
 import {DatabaseSync} from 'node:sqlite';
+import {waitClips} from '../public/idle-chain.js';
 
 // Emil 12 Oct: a ready dealer says his lines while he deals; the mouth is a patch per frame, tagged with take and frame.
 
@@ -627,5 +628,33 @@ test('a result line said right after another line at rest goes on with its idle 
     // the player can prepare the clip after the side-bet chain's last one: it comes from the result line's chain
     const lastSide=side.idle.at(-1),at=chainClipAt(all,lastSide.startAt+10);
     if(dbj.idle.some(c=>c.startAt===lastSide.endAt))assert.equal(at.next?.startAt,lastSide.endAt);
+  }finally{t.close();}
+});
+
+// Kevin 23 Oct: the new H3 v2 idles. The wait for the player lays the flat hands and the lean (fas decide) even when the
+// worker has not announced them; a line over such a wait clip is not lip-synced on it, it rests on his still. A take into
+// or out of the clasped hands (from/to) never joins a talk's chain.
+test('the wait lays the decide takes the worker lacks, and a line over them rests on his still; announced ones carry the mouth', () => {
+  const idle=[{take:'andas',frames:39,vikt:20,calm:true},{take:'plattaxlar5101',frames:39,vikt:6,calm:true,fas:'decide'},{take:'lutfram5101',frames:39,vikt:6,calm:true,fas:'decide'},
+    {take:'knappin5101',frames:39,vikt:6,calm:true,fas:'bets',to:'knappt'},{take:'knapput5101',frames:39,vikt:2,calm:true,fas:'bets',from:'knappt'}];
+  for(const [workerIdle,lips] of [[['andas'],false],[['andas','plattaxlar5101','lutfram5101','knappin5101','knapput5101'],true]]){
+    const t=talkTable({idle,workerIdle});
+    try{
+      t.send('paow','join',{name:'Kevin',seats:[3]});t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
+      const view=t.st('paow');
+      if(!['decisions','insurance'].includes(view.round?.phase))continue;   // a dealt blackjack: no wait
+      const takes=view.waits[0].takes.map(x=>x.take);
+      assert.deepEqual(takes.sort(),['andas','lutfram5101','plattaxlar5101'],'calm and decide takes; no clasped ones');
+      t.box.time=view.plan.endAt+3000;
+      const a=t.s.addTalk('paow',{text:'Take your time',lang:'en',dur:2});
+      const clips=waitClips(view.waits[0],a.talk.kartaStart,a.talk.endAt+600).map(c=>c.take);
+      if(lips||clips.every(c=>workerIdle.includes(c)))assert.ok(a.talk.idle?.length,'a wait the worker can map carries the mouth');
+      else assert.ok(!a.talk.idle,'a wait clip the worker lacks: the line rests on his still');
+    }finally{t.close();}
+  }
+  const t=talkTable({idle,workerIdle:['andas','knappin5101','knapput5101']});
+  try{
+    const {talk}=t.s.addTalk('paow',{text:'Hi',lang:'en',dur:3});
+    assert.ok(talk.idle?.length&&talk.idle.every(c=>c.take==='andas'),'a chain at rest never takes a clasped-hands take');
   }finally{t.close();}
 });

@@ -103,8 +103,10 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
     assert.ok(existsSync(new URL(`../public${f.split('?')[0]}`, import.meta.url)), f);
 });
 
+// the takes without a phase (the H3 v2 ones of 23 Oct have fas bets/decide and their own test)
+const plainIdles = id => DEALERS[id].idles.filter(i => !i.fas);
 test('Dragan idles on his H3 takes in his own take folder, without the ones Kevin rejected (23 Oct): rest to rest, so a line he says at rest can run over a chain of them', () => {
-  const d = DEALERS.dragge;
+  const d = { ...DEALERS.dragge, idles: plainIdles('dragge') };
   assert.deepEqual(d.idles.slice(0, 4).map(i => i.id), ['andas', 'djupandetag', 'blickhoger', 'fingrar'], 'no glance to the left (Kevin 20 Oct), no andasb, blickhogerb, huvud or huvudb (23 Oct)');
   assert.deepEqual(d.idles.slice(4).map(i => i.id), ['vikt6103', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103'], 'the new takes he kept (vridvanster6103 back, his later pick)');
   for (const idle of d.idles.slice(4)) assert.equal(idle.vikt, 6, `${idle.id}: plain weight, no head rule for Dragan (Kevin 23 Oct)`);
@@ -113,7 +115,7 @@ test('Dragan idles on his H3 takes in his own take folder, without the ones Kevi
 });
 
 test('Paow idles on her seven H3 takes in v2/ (the two glances to the right derailed and are left out), weighted like the others', () => {
-  const d = DEALERS.paow;
+  const d = { ...DEALERS.paow, idles: plainIdles('paow') };
   assert.deepEqual(d.idles.slice(0, 7).map(i => i.id), ['andas', 'andasb', 'djupandetag', 'blickvanster', 'huvud', 'huvudb', 'fingrar']);
   assert.deepEqual(d.idles.slice(7).map(i => i.id), ['rakrygg6101', 'vikt6103', 'vikt6105', 'vridhoger6101', 'vridvanster6101', 'vridvanster6105'], 'the new takes she kept (Kevin 23 Oct)');
   //ridvanster6105'], 'plus the sixteen Kevin picked (21 Oct), axlar6105 included');
@@ -123,7 +125,7 @@ test('Paow idles on her seven H3 takes in v2/ (the two glances to the right dera
 });
 
 test('the calm takes are marked for the wait while the player decides (Kevin 21 Oct): breathing, shoulders, back, weight, fingers; not turns, glances, nods or leaning', () => {
-  const calmOf = d => DEALERS[d].idles.filter(i => i.calm).map(i => i.id), livelyOf = d => DEALERS[d].idles.filter(i => !i.calm).map(i => i.id);
+  const calmOf = d => plainIdles(d).filter(i => i.calm).map(i => i.id), livelyOf = d => plainIdles(d).filter(i => !i.calm).map(i => i.id);
   assert.deepEqual(calmOf('dragge'), ['andas', 'djupandetag', 'fingrar', 'vikt6103']);
   assert.deepEqual(livelyOf('dragge'), ['blickhoger', 'vridhoger7105', 'vridvanster6101', 'vridvanster6103']);
   assert.deepEqual(calmOf('paow'), ['andas', 'andasb', 'djupandetag', 'fingrar', 'rakrygg6101', 'vikt6103', 'vikt6105']);
@@ -153,7 +155,7 @@ test('the 29 idles Kevin rejected never play, and their files are kept', () => {
 test('head takes are a fifth of the weight, never two in a row and at least four apart, in chains and random idles alike', async () => {
   const { layChain, isHead, pickWeighted, restingPool } = await import('../public/idle-chain.js');
   for (const id of ['paow', 'astrid2', 'marten']) {
-    const idles = DEALERS[id].idles, head = idles.filter(i => isHead(i.id)).reduce((n, i) => n + i.vikt, 0), all = idles.reduce((n, i) => n + i.vikt, 0);
+    const idles = plainIdles(id), head = idles.filter(i => isHead(i.id)).reduce((n, i) => n + i.vikt, 0), all = idles.reduce((n, i) => n + i.vikt, 0);
     assert.ok(idles.some(i => isHead(i.id)), `${id} keeps head takes`);
     assert.ok(Math.abs(head / all - .2) < .005, `${id}: ${(head / all).toFixed(3)}`);
     const takes = idles.map(i => ({ take: i.id, frames: 39, vikt: i.vikt, head: i.head }));
