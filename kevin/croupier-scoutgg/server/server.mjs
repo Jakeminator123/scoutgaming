@@ -342,7 +342,6 @@ function event(requested,session="astrid") {
 
 async function welcomeGuest({session,name}) {
   const lang=shared.presentationContext(session).language,text=personalizedGreeting(name,lang),id=`g${randomId()}`,dealer=dealerOf(session);
-  if(localQA){broadcast({t:'notice',text},session);return;}
   // Kevin 23 Oct: Dragan and Paow greet in their own voice too (the greeting was Astrid's only, so their tables just read
   // it): over their idle takes on the moving clips when the worker is warm, else in their own lip-synced clip, never late.
   if(canTalkMoving(dealer)){
@@ -360,6 +359,8 @@ async function welcomeGuest({session,name}) {
     broadcast({t:'answer',id,to:name,text,dealer,...(voiced?{url:voiced.url}:{})},session);
     return;
   }
+  // localQA only switches off Astrid's own pipeline (RUNPOD_API_KEY placeholder); the moving path above has its own keys
+  if(localQA){broadcast({t:'notice',text},session);return;}
   try {
     const result=await astrid.enqueue({kind:'greeting',name,lang});
     remember({who:'astrid',text:result.text,url:result.url,ms:result.ms},session);
