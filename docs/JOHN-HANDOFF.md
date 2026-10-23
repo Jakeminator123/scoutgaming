@@ -324,6 +324,52 @@ uppdraget är6337998848. Läs nya ID och ändrat innehåll, aldrig svar på egna
 poster/kvittens. agent-talk når enbart samma checkout. Root startade inga
 nya testservrar/PG/browser i stoppet; tidigare ägda resurser är stängda.
 
+## Paow från kevin-staging: fryst källa och automatisk placering — 23 oktober 2026
+
+**Beställning (Jakob, 23 oktober):** hämta hela Paow-paketet från Kevins
+`kevin-staging`, låt Admins Klippassistent/Adminrobot placera det rätt i
+klippkartan, och registrera annars Paow som ny dealer utan operatörs- eller
+bolagstilldelning. Branch `jakob/paow-kevin-staging-import` (Claude).
+
+**Levererat:**
+- `apps/studio/lib/dealer-import-kevin-source-paow.json`: 414 filer från
+  `origin/kevin-staging` @ c7138759 (56 utdelningstagningar, 23 H3-idle och
+  3 utfasade idle-v2, 81 repliker × sv/en/pt/ko, vila/redo, meta, texter,
+  porträtt) med gitBlob, storlek, SHA-256 ur blobbytes, K05-matrisens urval per
+  fil (318/318 hashar lika med matris f00a8c2d), Kevins klipplista 2026-10-22
+  (alla 324 repliker `ej-godkand`) samt `PAOW_READY` och idlelistan ur
+  `dealers.js`. Paow-bytes är oförändrade sedan K05-frysningen 5aa7ed10.
+- `apps/studio/lib/dealer-import-sources.mjs` delar frysta källor mellan planen
+  och assistenten; `createFrozenKevinImportPlan` tar `--source-alias paow`,
+  CLI:t verifierar lokala bytes mot vald källa och har `--summary`.
+- Klippassistenten och Adminroboten (`finishDealerImportRows`) känner igen
+  frysta filer på exakt filnamn och storlek och sätter fack, poskedja, språk och
+  tagning automatiskt med `evidence` på raden och en notering i API-svaret.
+  Saknat fack (G13-repliker), pt/ko och ej K05-valda filer får varning i stället
+  för tyst placering. Importen ger aldrig operatörs-, bolags- eller rumstilldelning.
+- Lokal byte-exakt kopia för Admins uppladdning och `--source-root`:
+  `lab/data/kevin-import/paow-c7138759/` (gitignorerad, 414 filer, 264 MB).
+
+**Verifiering (Node 24.21, max 4 arbetare):** `node --test` på
+dealer-import, dealer-import-plan, dealer-import-integration, clip-naming och
+test/filmed-profile: 71/71. `tools/dealer-import-plan.mjs --source-alias paow
+--source-root lab/data/kevin-import/paow-c7138759 --summary` mot seed-projekt
+med Paow registrerad: 414/414 bytes verifierade, 56 utdelningstagningar,
+23 idle och 37 sv- plus 37 en-repliker placerade i befintliga fack (review:
+inventarie ej läst, ingen filmprofil), 254 exkluderade med skäl (pt/ko 162,
+G13 44, ej i K05-matrisen 44, idle-v2/redo 4), 7 referensfiler. Inga Neon-,
+Blob-, Render- eller Vercel-skrivningar. Ingen visuell eller talacceptans påstås.
+
+**Kvarstår, kräver Jakob:**
+- Registrera Paow i Neon via Admin → Dealers → **Skapa ny dealer** (id `paow`,
+  namn Paow) med N1-session; registreringen tilldelar inget bolag eller rum.
+  Agenten har inte gjort produktskrivningen.
+- Ingen filmprofil för Paow: Dragans kontaktrutor gick inte att härleda ur
+  Kevins kortspår (0/33 i prov), så kortöverläggningen väntar på K04.
+- Åtta Paow-tagningar finns redan i Neon under arkiverade `paow-kevin` (K05);
+  planen markerar samma bytes `keep-protected` för en ny `paow`. pt/ko- och
+  G13-repliker ligger kvar i källan med skäl, inte valda.
+
 ## K04: Kevins matte och tidsättning per tagning på mains treskiktsruntime — 22 oktober 2026
 
 Branch `codex/k04-chain`, direkt på main enligt Jakobs besked. Taget ur

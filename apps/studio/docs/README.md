@@ -226,7 +226,12 @@ bakgrund och fack innan filerna sparas.
 I **Adminroboten** kan du dra in samma filmer direkt i chatten, välja dealer och
 bakgrund och **Sortera och placera**. Det är själva importuppdraget; inga extra
 godkännanderutor tillkommer. Oklara fack visas i chatten för rättning innan
-uppladdningen börjar. MP4 och WebM stöds, högst 128 MiB per fil. Zip behövs inte
+uppladdningen börjar. Kevins frysta Dragan- och Paow-filer känns igen på exakt
+filnamn och storlek och får fack, poskedja, språk och tagning automatiskt från
+källan; filer utanför K05-urvalet eller utan fack i klippkartan visas med en
+varning för manuellt val. Dealern måste finnas i registret först (**Skapa ny
+dealer**), och importen kopplar den inte till något bolag, rum eller operatör.
+MP4 och WebM stöds, högst 128 MiB per fil. Zip behövs inte
 och stöds inte i denna version. Filerna sparas som alternativ i klippbanken;
 provspelning och publicering görs separat. Transparenta klipp väntar fortfarande
 på stöd i importassistenten. Befintliga alpha-klipp bevaras.
