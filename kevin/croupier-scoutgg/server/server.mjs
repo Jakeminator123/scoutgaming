@@ -217,6 +217,20 @@ function chat(who, text, session="astrid", guestToken=null) {
  *  of the visitor. Text and his lip-synced voice arrive together; the clip only plays for viewers
  *  who chose him. Anything about the asker's own game goes to the asker only (it can hold a balance). */
 const VOICE_WAIT_MS = 12000;
+// Emil 12 Oct: a dealer with a warm lip-sync worker on the moving clips speaks over whatever he shows (between rounds
+// over the chain of his idle takes, shared-table.mjs withIdle): the voice joins the table's talk track and the worker
+// syncs his mouth to those very frames (rorlig-lipsync.mjs). Recorded lines pushed back by it are re-sent.
+const canTalkMoving = dealer => Boolean(rorlig && rorligOn() && rorlig.ready(dealer) && hasVoice(dealer) && draggeVoiceReady(dealer));
+async function speakOnTalkTrack(room, dealer, text, language) {
+  const pcm = await draggeVoice(text, language, { dealer });
+  const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000 });
+  rorlig.activity(dealer);
+  const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [], idle: t.idle ?? [] });
+  rorlig.speak(dealer, room, spoken, karta(spoken), { pcm });
+  for (const t of moved) rorlig.speak(dealer, room, t, karta(t));   // recorded lines that now come after it
+  return spoken;
+}
+
 async function talkReply(ws, text, dealer) {
   const language=shared.language(ws.session), id=`r${Date.now().toString(36)}`;
   broadcast({ t: "said", who: ws.name, text },ws.session);
@@ -238,14 +252,9 @@ async function talkReply(ws, text, dealer) {
   // Emil 12 Oct: with a warm lip-sync worker on the moving clips he answers over whatever he shows, also while he deals:
   // the voice joins the table's talk track and the worker syncs his mouth to those very frames (rorlig-lipsync.mjs).
   // A fact about the asker's own game stays private (his clip, to him only), so it keeps the old path.
-  if(!fid&&talk&&rorlig&&rorligOn()&&rorlig.ready(dealer)&&hasVoice(dealer)&&draggeVoiceReady(dealer)){
+  if(!fid&&talk&&canTalkMoving(dealer)){
     try{
-      const pcm=await draggeVoice(reply,language,{dealer});
-      const {talk:spoken,moved,steg,ready}=shared.addTalk(ws.session,{text:reply,lang:language,dur:pcm.length/48000});
-      rorlig.activity(dealer);
-      const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[],idle:t.idle??[]});
-      rorlig.speak(dealer,ws.session,spoken,karta(spoken),{pcm});
-      for(const t of moved)rorlig.speak(dealer,ws.session,t,karta(t));   // recorded lines that now come after the answer
+      const spoken=await speakOnTalkTrack(ws.session,dealer,reply,language);
       out({t:'answer',id,to:ws.name,text:reply,dealer,talk:spoken.id});
       send(ws,{t:'thinking',on:false,queued:0});
       return;
@@ -332,8 +341,25 @@ function event(requested,session="astrid") {
 }
 
 async function welcomeGuest({session,name}) {
-  const lang=shared.presentationContext(session).language,text=personalizedGreeting(name,lang),id=`g${randomId()}`;
+  const lang=shared.presentationContext(session).language,text=personalizedGreeting(name,lang),id=`g${randomId()}`,dealer=dealerOf(session);
   if(localQA){broadcast({t:'notice',text},session);return;}
+  // Kevin 23 Oct: Dragan and Paow greet in their own voice too (the greeting was Astrid's only, so their tables just read
+  // it): over their idle takes on the moving clips when the worker is warm, else in their own lip-synced clip, never late.
+  if(canTalkMoving(dealer)){
+    try{
+      const spoken=await speakOnTalkTrack(session,dealer,text,lang);
+      remember({who:'astrid',text},session);
+      broadcast({t:'answer',id,to:name,text,dealer,talk:spoken.id},session);
+      return;
+    }catch(e){console.log(`läppsynk rörlig: hälsningen tar den vanliga vägen (${e.message})`);}
+  }
+  if(hasVoice(dealer)&&draggeVoiceReady(dealer)){
+    const clip=draggeSay(text,lang,ANSWERS,{dealer}).catch(()=>null);
+    const voiced=await Promise.race([clip,new Promise(r=>setTimeout(()=>r(null),VOICE_WAIT_MS))]);
+    remember({who:'astrid',text,...(voiced?{url:voiced.url}:{})},session);
+    broadcast({t:'answer',id,to:name,text,dealer,...(voiced?{url:voiced.url}:{})},session);
+    return;
+  }
   try {
     const result=await astrid.enqueue({kind:'greeting',name,lang});
     remember({who:'astrid',text:result.text,url:result.url,ms:result.ms},session);
