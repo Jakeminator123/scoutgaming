@@ -87,7 +87,8 @@ const dealerOf = room => studioTables.get(room)?.dealer ?? room;
 // Emil 14 Oct: a ready dealer's variants of the lines that repeat most (bust_1 … bust_7, blackjack and twentyone called as the
 // card lands, win = "congratulations to the winners"): one at random each time (shared-table.mjs variantOf). Counted over
 // all the languages he has, with their length in his first language (the step's length when no lip-sync worker is warm).
-const VARIED = ['bust', 'blackjack', 'twentyone', 'win'];
+// dealerbust (Axelio fdec6f40): its variants 2 and 3 alternate, the retired dealerbust_1 never (shared-table.mjs variantOf)
+const VARIED = ['bust', 'blackjack', 'twentyone', 'win', 'dealerbust'];
 for (const [id, t] of Object.entries(READY_TAKES)) {
   if (!t) continue;
   const dir = path.join(PUBLIC, 'media', 'dealers', id, 'repliker');

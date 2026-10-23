@@ -86,6 +86,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   function variantOf(r,clip,ready){
     const n=ready.variants[clip.event],last=r.lastVariant?.[clip.event];
     const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>!RETIRED_LINES.has(`${clip.event}_${i}`)&&(n<2||i!==last));
+    if(!pick.length)return clip;   // every variant retired: the event's active line (dealer-language.js activeLine)
     const k=pick[Math.floor(Math.random()*pick.length)];
     r.lastVariant={...(r.lastVariant??{}),[clip.event]:k};
     const id=`${clip.event}_${k}`;
