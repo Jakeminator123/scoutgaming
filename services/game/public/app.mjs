@@ -1,4 +1,3 @@
-import {readCardView,saveCardView} from '../../../packages/presentation/contracts/card-view.mjs';
 import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE, requestEmbeddedStudioPreviewClose } from './studio-preview-client.mjs';
@@ -670,13 +669,6 @@ for (let i = 0; i < SEATS; i++) {
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
 // Presentation only: changing this never deals, submits a stake or reveals a card.
-let cardView=readCardView({getItem:key=>localStorage.getItem(key)});
-const cardViewChoice=document.createElement('label');cardViewChoice.className='card-view-choice';cardViewChoice.hidden=true;
-cardViewChoice.append(document.createTextNode('Kort'));
-const cardViewSelect=document.createElement('select');cardViewSelect.id='card-view';cardViewSelect.setAttribute('aria-label','Kortvisning');
-for(const [value,label]of [['raised','Upplyfta'],['table','På bordet']]){const option=document.createElement('option');option.value=value;option.textContent=label;cardViewSelect.append(option);}
-cardViewSelect.value=cardView;cardViewChoice.append(cardViewSelect);$('#scene').append(cardViewChoice);
-cardViewSelect.addEventListener('change',()=>{cardView=saveCardView({setItem:(key,value)=>localStorage.setItem(key,value)},cardViewSelect.value);layoutSeats();});
 const COMPACT_BOXES = [2, 3, 4];
 const compactQuery = matchMedia(BLACKJACK_COMPACT_QUERY);
 let compactSeats = compactQuery.matches;
@@ -698,12 +690,11 @@ function layoutSeats() {
     const banner=$('#banner');
     Object.assign(banner.style,{top:'',bottom:''});
     const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
-    cardViewChoice.hidden=!localCards||!plane;
     if(plane){
       const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
       const hud=$('#hud-bottom').getBoundingClientRect(),filmedProfile=registeredFilmedProfile(DEALER.key);
       const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
-        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,cardView,filmedProfile});
+        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,filmedProfile});
       $('#scene').dataset.betPlacement=layout.followCards?'under-cards':'manual';
       let geometryNotice=$('#table-geometry-warning');
       if(!geometryNotice&&layout.geometryWarning){
@@ -965,7 +956,7 @@ function layoutDealControl() {
   control.style.visibility='';
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
   const targets=seatEls.filter(el=>!el.classList.contains('seat-off')).flatMap(el=>[...el.querySelectorAll('.spot,.sidearcs,.bet-target,.clear-box,.stake')]).filter(visible).map(el=>el.getBoundingClientRect());
-  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,.card-view-choice,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
+  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
   const placement=placeDealControl({width:control.offsetWidth,height:control.offsetHeight,
     viewport:{width:innerWidth,top:0,bottom:$('#dealer-picker').getBoundingClientRect().top},targets,obstacles});
   if(placement)Object.assign(control.style,{position:'fixed',left:placement.x+'px',top:placement.y+'px',bottom:'auto',transform:'none'});
@@ -1640,15 +1631,19 @@ if (!studioPreview) {
   chatToggle.type = 'button'; chatToggle.textContent = 'Chatt';
   chatToggle.setAttribute('aria-label', 'Visa eller dölj chattloggen');
   chatToggle.setAttribute('aria-controls', 'chat-log'); chatToggle.setAttribute('aria-expanded', 'false');
-  chatToggle.onclick = () => { clearTimeout(chatLog.t); setChatOpen(!$('#chat-log').classList.contains('open')); };
+  chatToggle.onclick = () => setChatOpen(!$('#chat-log').classList.contains('open'));
   $('#chat').append(chatToggle);
   chatStatus = document.createElement('span'); chatStatus.id = 'chat-status';
   chatElapsed = document.createElement('span'); chatElapsed.setAttribute('aria-hidden', 'true');
   chatStatus.setAttribute('role', 'status'); $('#chat').append(chatStatus);
   $('#chat').addEventListener('keydown', event => { if (event.key === 'Escape') setChatOpen(false); });
-  matchMedia('(max-width: 860px)').addEventListener('change', event => { if (event.matches) setChatOpen(false); });
 }
 
+function noteChatMessage(role) {
+  if(studioPreview)return;
+  if (role === 'user') setChatOpen(true);
+  else if (!$('#chat-log').classList.contains('open') && chatToggle) chatToggle.dataset.unread = 'true';
+}
 function chatLog(role, text, pending = false) {
   const panel = $('#chat-log');
   const row = document.createElement('div');
@@ -1658,12 +1653,9 @@ function chatLog(role, text, pending = false) {
   const message = document.createElement('p'); message.textContent = text;
   row.append(name, message);
   panel.appendChild(row);
-  setChatOpen(!compactChat());
-  if (compactChat() && role !== 'user' && chatToggle) chatToggle.dataset.unread = 'true';
+  noteChatMessage(role);
   panel.scrollTop = panel.scrollHeight;
   while (panel.children.length > 24) panel.firstChild.remove();
-  clearTimeout(chatLog.t);
-  chatLog.t = setTimeout(() => setChatOpen(false), 26000);
   return row;
 }
 
@@ -1741,7 +1733,7 @@ function chatDecisionRuntime() {
 $('#chat-send').onclick = () => void sendChat();
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') void sendChat(); });
 if(localPresentationEnabled&&!studioPreview){
-  nextDealControls=document.createElement('div');nextDealControls.hidden=!movingSpeechAvailable;
+  nextDealControls=document.createElement('div');nextDealControls.id='chat-next-deal-controls';nextDealControls.hidden=!movingSpeechAvailable;
   const label=document.createElement('label'),toggle=document.createElement('input'),cancel=document.createElement('button');
   toggle.type='checkbox';toggle.id='chat-next-deal';label.append(toggle,document.createTextNode(' Svara under nästa utdelning'));
   cancel.type='button';cancel.textContent='Avbryt';cancel.hidden=true;cancel.onclick=()=>{cancelNextDealChat();setChatStatus('Planerat svar avbrutet. Texten finns kvar.');};

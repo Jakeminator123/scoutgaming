@@ -71,7 +71,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
     {game==='roulette'&&<><p>Roulette använder Desktop 16:9 även på mobil.</p><CompositionZoomControls settings={settings} disabled={locked} onChange={composition=>change({...lane,composition})}/></>}
     {game==='roulette'?<p>Förhandsvisningen använder dealerns roulette-VILA, annars första tillgängliga roulette-idle. Detta är ett materialprov; spelkoppling och godkännande återstår.</p>:null}
     {game==='blackjack'&&tableAsset?<BlackjackScenePlacementEditor tableId={tableAsset.id} layout={layout} disabled={locked}
-      scene={{settings,width:tableAsset.width,height:tableAsset.height}} renderPreview={preview}
+      scene={{dealerId,settings,width:tableAsset.width,height:tableAsset.height}} renderPreview={preview}
       value={settings.blackjackTables?.find(row=>row.tableId===tableAsset.id)}
       savedValue={savedProject?.lanes?.find(row=>row.id===lane.id)?.composition?.blackjackTables?.find(row=>row.tableId===tableAsset.id)}
       onChange={value=>{const next=structuredClone(settings),rows=(next.blackjackTables??[]).filter(row=>row.tableId!==tableAsset.id);

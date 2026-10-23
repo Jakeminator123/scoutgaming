@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  width: min(260px, calc(100vw - 24px));
+  width: auto;
   min-width: 0;
   max-width: calc(100vw - 24px);
   padding: 8px;
@@ -21,7 +21,7 @@
 }
 .astrid-voice-ui #chat-log-toggle {
   order: 0;
-  flex: 1 0 64px;
+  flex: 1 0 100%;
   width: auto;
   height: 44px;
   padding: 0 12px;
@@ -83,7 +83,7 @@
 .astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-send,
 .astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-memory { display: none; }
 .astrid-voice-ui #chat:has(#chat-log.open) {
-  width: min(440px, calc(100vw - 24px));
+  width: min(360px, calc(100vw - 24px));
   max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -100,11 +100,29 @@
     z-index: 60;
   }
   .astrid-voice-ui #chat:has(#chat-log.open) {
-    width: min(420px, calc(100vw - 20px));
-    max-height: calc(100dvh - 76px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    left: max(10px, env(safe-area-inset-left, 0px));
+    width: auto;
+    max-height: calc(100dvh - 88px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
+  .astrid-voice-ui #chat #chat-log { max-height: min(280px, 35dvh); }
   .astrid-voice-ui #chat-input { font-size: 16px; }
 }
 
 /* The open dock must sit above the independently positioned table controls. */
 .astrid-voice-ui #hud-top:has(#chat-log.open) {z-index:80;}
+
+/* Closed means one entry; text, voice and image controls belong to the open conversation. */
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-next-deal-controls,
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-status,
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #astrid-camera > .astrid-voice-error,
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #astrid-camera > .astrid-voice-button { display: none; }
+/* Active microphone/camera controls remain available for immediate stop. */
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #astrid-camera > .astrid-voice-button[aria-pressed="true"] { display: inline-flex; }
+.astrid-voice-ui #chat #chat-next-deal-controls { order: 6; flex: 0 0 100%; font: 12px/1.4 'Inter', sans-serif; }
+.astrid-voice-ui #chat #chat-next-deal-controls[hidden] { display: none; }
+.astrid-voice-ui #chat #chat-next-deal-controls label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.astrid-voice-ui #chat #chat-next-deal { width: 18px; min-width: 18px; height: 18px; margin: 0; accent-color: #d6ff3a; }
+.astrid-voice-ui #chat #astrid-camera > .astrid-voice-button { flex: 1 1 28%; width: auto; min-width: 44px; font-size: 12px; }
+.astrid-voice-ui #chat-memory { order: 7; }

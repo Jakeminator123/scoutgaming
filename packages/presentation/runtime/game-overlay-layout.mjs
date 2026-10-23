@@ -74,8 +74,12 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
 // desktop hand on a phone. A heavily cropped actor must not crop game controls.
 // An adjusted plane is static presentation, never evidence of filmed contact.
 // filmedProfile only supplies an autoScale layout's prop card size and landings.
-export function layoutGameOverlay(plane, boxes, bounds, {compact=false,cardView='raised',filmedProfile=null}={}) {
-  cardView=normalizeCardView(cardView);
+/** @param {{compact?:boolean, cardView?:string, filmedProfile?:{positions:Record<string,{cx:number,cy:number}>,card:{width:number}}|null}} [options] */
+export function layoutGameOverlay(plane, boxes, bounds, options={}) {
+  const {compact=false,filmedProfile=null}=options;
+  let {cardView}=options;
+  const format=plane.tableLayout??(compact?'mobile':'desktop');
+  cardView=normalizeCardView(plane.tableGeometry?.[format]?.cardView??cardView??'table');
   if(plane.tableGeometry)return layoutTableGameOverlay(plane,boxes,bounds,compact,cardView,filmedProfile);
   const anchors = boxes.map(box => ({ box, ...calibration.positions[String(box + 1)] }));
   const left = Math.min(calibration.positions.dealer.cx - 310,...anchors.map(p => p.cx - 144));

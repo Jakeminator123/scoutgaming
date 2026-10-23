@@ -6,6 +6,8 @@ import {runInNewContext} from 'node:vm';
 import * as contract from '../../../packages/presentation/contracts/composition-settings.mjs';
 import * as anchors from '../../../packages/presentation/runtime/composition-anchors.mjs';
 import * as overlay from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
+import * as profiles from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import * as cardView from '../../../packages/presentation/contracts/card-view.mjs';
 const require=createRequire(new URL('../client/package.json',import.meta.url)),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,p)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(n=>nodes(n,p)):[...(p(node)?[node]:[]),...nodes(node.props?.children,p)];
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
@@ -16,7 +18,7 @@ function fixture(){
   runInNewContext(transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,structuredClone,require:name=>{
     if(name==='react')return hooks;if(name.endsWith('.css'))return {};
     if(name.includes('composition-settings'))return contract;if(name.includes('composition-anchors'))return anchors;
-    if(name.includes('game-overlay-layout'))return overlay;return require(name);
+    if(name.includes('game-overlay-layout'))return overlay;if(name.includes('filmed-profiles/registry'))return profiles;if(name.includes('card-view'))return cardView;return require(name);
   }});
   const value=contract.defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002'),settings=contract.defaultCompositionSettings();settings.blackjackTables=[value];
   const edits=[],props={tableId:value.tableId,value,savedValue:structuredClone(value),layout:'desktop',disabled:false,scene:{settings,width:1672,height:941},renderPreview:overlay=>React.createElement('div',{},overlay),onChange:next=>{next=structuredClone(next);const settings={...props.scene.settings,blackjackTables:next?[next]:[]};contract.validateCompositionSettings(settings);edits.push(next);props.value=next;props.scene.settings=settings;}};
@@ -77,4 +79,24 @@ test('filmed landings and automatic chips are not dragged; the scene marks follo
   const scene=nodes(tree,n=>typeof n.type==='function'&&n.type.name==='SceneOverlay')[0];
   scene.props.onPlace('card:2',{x:100,y:100});scene.props.onPlace('dealer',{x:100,y:100});scene.props.onPlace('bet:2',{x:100,y:100});
   assert.deepEqual(h.props.value,before);
+});
+
+test('card display changes only the active format, preserves manual placements and cannot edit a locked scene',()=>{
+  const h=fixture(),before=structuredClone(h.props.value);
+  h.field(h.render(),'Kortvisning').props.onChange({target:{value:'raised'}});
+  assert.equal(h.props.value.desktop.cardView,'raised');
+  const expected=structuredClone(before);expected.desktop.cardView='raised';assert.deepEqual(h.props.value,expected);
+  h.props.layout='mobile';h.field(h.render(),'Kortvisning').props.onChange({target:{value:'table'}});
+  assert.equal(h.props.value.mobile.cardView,'table');assert.equal(h.props.value.desktop.cardView,'raised');
+  h.props.disabled=true;const locked=structuredClone(h.props.value);
+  h.field(h.render(),'Kortvisning').props.onChange({target:{value:'raised'}});assert.deepEqual(h.props.value,locked);
+});
+test('Admin uses the player film calibration and published card depth for each dealer',()=>{
+  const h=fixture();h.props.value.desktop.autoScale=contract.defaultBlackjackAutoScale();
+  const rect=()=>{const scene=nodes(h.render(),n=>typeof n.type==='function'&&n.type.name==='SceneOverlay')[0];
+    return nodes(scene.type(scene.props),n=>n.type==='rect')[0].props;};
+  const generic=rect();h.props.scene.dealerId='dragan';const dragan=rect();
+  assert.ok(Math.abs(dragan.width/generic.width-78/63)<1e-8,'Dragan has a 78px prop, not the 63px default');
+  h.props.value.desktop.cardView='raised';const raised=rect();
+  assert.equal(raised.width,dragan.width);assert.ok(Math.abs(dragan.height/raised.height-.62)<1e-8);
 });

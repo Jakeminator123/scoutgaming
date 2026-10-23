@@ -191,3 +191,16 @@ test('phone autoScale: three seats land on their own filmed boxes, resumed outer
   close(run(.36,[2,3,4]).controlScale,.8);close(run(1.2,[2,3,4]).controlScale,1.2);
   close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:.5}}).controlScale,.8);close(run(1.2,[2,3,4],{chips:{dx:0,dy:0,scale:1.5}}).controlScale,1.8);
 });
+
+test('published card display wins over a browser preference and stays format-specific',()=>{
+ const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+ board.mobile.cardView='table';board.desktop.cardView='raised';
+ for(const layout of ['mobile','desktop']){
+  const compact=layout==='mobile',boxes=compact?[2,3,4]:[0,1,2,3,4,5,6];
+  const plane={rect:{x:0,y:0,width:900,height:500},tableGeometry:board,tableLayout:layout};
+  const result=layoutGameOverlay(plane,boxes,{left:0,right:900,top:0,bottom:1000},{compact,cardView:compact?'raised':'table'});
+  assert.equal(result.cardView,board[layout].cardView);assert.deepEqual(result.boxes,boxes);
+ }
+ delete board.mobile.cardView;
+ assert.equal(layoutGameOverlay({rect:{x:0,y:0,width:390,height:500},tableGeometry:board,tableLayout:'mobile'},[2,3,4],{left:0,right:390,top:0,bottom:844},{compact:true}).cardView,'table');
+});

@@ -3,9 +3,11 @@ import {useState,useRef,useEffect,type ReactNode,type PointerEvent} from 'react'
 import {defaultBlackjackTableGeometry,defaultBlackjackAutoScale,type BlackjackTableGeometry,type BlackjackAutoScale,type TablePoint,type CompositionSettings,type AnchorTarget} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {compositionAnchorFrames,resolveAnchorRect,rebindAnchor,restoreGeometryGroup,projectAnchorRects,type AnchorFrames} from '../../../packages/presentation/runtime/composition-anchors.mjs';
 import {layoutGameOverlay} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
+import {cardViewDepth} from '../../../packages/presentation/contracts/card-view.mjs';
+import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 import styles from './blackjack-scene-placement-editor.module.css';
 type Layout='mobile'|'desktop';
-type Scene={settings:CompositionSettings;width:number;height:number};
+type Scene={dealerId?:string;settings:CompositionSettings;width:number;height:number};
 type Mark={id:string;x:number;y:number;width:number;label:string;kind:'card'|'bet'};
 // Filmed landings and automatic chips are not dragged; manual points are kept.
 const locked=(geometry:BlackjackTableGeometry[Layout],id:string)=>id.startsWith('bet')?geometry.betMode==='under-cards'||!!geometry.autoScale?.chips:!!geometry.autoScale?.landing;
@@ -19,14 +21,14 @@ function withAutoScale(value:BlackjackTableGeometry,layout:Layout,choice?:Blackj
   return next;
 }
 
-function SceneOverlay({value,layout,frames,selected,disabled,onSelect,onPlace}:{value:BlackjackTableGeometry;layout:Layout;frames:AnchorFrames;selected:string;disabled:boolean;onSelect:(id:string)=>void;onPlace:(id:string,p:TablePoint)=>void}){
+function SceneOverlay({dealerId,value,layout,frames,selected,disabled,onSelect,onPlace}:{dealerId?:string;value:BlackjackTableGeometry;layout:Layout;frames:AnchorFrames;selected:string;disabled:boolean;onSelect:(id:string)=>void;onPlace:(id:string,p:TablePoint)=>void}){
   const svg=useRef<SVGSVGElement>(null),drag=useRef<string|null>(null);
   const [viewport,setViewport]=useState({width:layout==='mobile'?390:960,height:layout==='mobile'?693:540});
   useEffect(()=>{const node=svg.current;if(!node)return;const read=()=>{const r=node.getBoundingClientRect();if(r.width&&r.height)setViewport({width:r.width,height:r.height});};read();const observer=new ResizeObserver(read);observer.observe(node);return()=>observer.disconnect();},[layout]);
   const planes=projectAnchorRects(value[layout],frames,viewport),boxes=layout==='mobile'?[2,3,4]:[0,1,2,3,4,5,6];
-  const result=layoutGameOverlay({tableGeometry:value,tableLayout:layout,rect:planes.cardsRect,...planes},boxes,{left:0,right:viewport.width,top:0,bottom:viewport.height},{compact:layout==='mobile'});
+  const result=layoutGameOverlay({tableGeometry:value,tableLayout:layout,rect:planes.cardsRect,...planes},boxes,{left:0,right:viewport.width,top:0,bottom:viewport.height},{compact:layout==='mobile',filmedProfile:dealerId?registeredFilmedProfile(dealerId):null});
   // 63 = the calibration card width that the layout scale refers to.
-  const cardWidth=result.scale*63;
+  const cardWidth=result.scale*63,cardDepth=cardViewDepth(result.cardView);
   const positions=(result as {positions:Record<string,{cx:number;cy:number}>}).positions;
   const marks:Mark[]=[{id:'dealer',...result.dealer,width:cardWidth,label:'D',kind:'card'},...boxes.flatMap((box,i)=>{
     const p=positions[String(box+1)],bet=result.seats[i];return [
@@ -43,7 +45,7 @@ function SceneOverlay({value,layout,frames,selected,disabled,onSelect,onPlace}:{
     onPointerUp={event=>{if(!disabled&&drag.current)place(event);drag.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);}}
     onPointerCancel={()=>{drag.current=null;}}>
     {marks.map(mark=><g key={mark.id} data-mark={mark.id} transform={`translate(${mark.x} ${mark.y})`}>
-      {mark.kind==='card'?<rect x={-mark.width/2} y={-mark.width*85/126} width={mark.width} height={mark.width*85/63} rx={3} fill="#f8fafc" stroke={selected===mark.id?'#22d3ee':'#475569'} strokeWidth={selected===mark.id?3:1}/>:<ellipse rx={mark.width/2} ry={mark.width*.34} fill="#fbbf24" stroke={selected===mark.id?'#22d3ee':'#78350f'} strokeWidth={selected===mark.id?3:1}/>}
+      {mark.kind==='card'?<rect x={-mark.width/2} y={-mark.width*85/126*cardDepth} width={mark.width} height={mark.width*85/63*cardDepth} rx={3} fill="#f8fafc" stroke={selected===mark.id?'#22d3ee':'#475569'} strokeWidth={selected===mark.id?3:1}/>:<ellipse rx={mark.width/2} ry={mark.width*.34} fill="#fbbf24" stroke={selected===mark.id?'#22d3ee':'#78350f'} strokeWidth={selected===mark.id?3:1}/>}
       <text textAnchor="middle" dominantBaseline="central" fontSize={Math.max(8,Math.min(12,mark.width*.6))} fill="#0f172a">{mark.label}</text>
     </g>)}
   </svg>;
@@ -69,7 +71,7 @@ export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,d
   }
   function placeInScene(id:string,p:TablePoint){if(!geometry)return;const rect=resolveAnchorRect(geometry.anchors?.[id.startsWith('bet')?'bets':'cards'],frames);place(id,{x:(p.x-rect.x)/rect.width,y:(p.y-rect.y)/rect.height});}
   return <div className={styles.editor}>
-    <div className={styles.preview}>{renderPreview(value?<SceneOverlay value={value} frames={frames} layout={layout} selected={selected?.id??''} disabled={disabled} onSelect={setTarget} onPlace={placeInScene}/>:undefined)}</div>
+    <div className={styles.preview}>{renderPreview(value?<SceneOverlay dealerId={scene.dealerId} value={value} frames={frames} layout={layout} selected={selected?.id??''} disabled={disabled} onSelect={setTarget} onPlace={placeInScene}/>:undefined)}</div>
     <div className={styles.controls}>{children}
     <fieldset disabled={disabled}><legend>Kort och marker · {layout==='mobile'?'mobil':'desktop'}</legend>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>{
@@ -77,6 +79,7 @@ export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,d
       const next=defaultBlackjackTableGeometry(tableId);for(const format of ['mobile','desktop'] as const)next[format].autoScale=defaultBlackjackAutoScale();update(next);
     }}>Placera på detta bord</button></>:geometry?<>
       <p>{layout==='mobile'?'Mobil · tre synliga platser, här visas 3–5':'Desktop · sju platser'}. Placeringen hör till denna borddesign och detta format.</p>
+      <label>Kortvisning<select aria-label="Kortvisning" value={geometry.cardView??'table'} onChange={event=>{const next=structuredClone(value);next[layout].cardView=event.target.value as 'table'|'raised';update(next);}}><option value="table">På bordet</option><option value="raised">Upplyfta</option></select></label>
       <fieldset className={styles.group}><legend>Autoskala efter dealern</legend>
         <label className={styles.toggle}><input type="checkbox" aria-label="Autoskala efter dealern" checked={!!auto} onChange={event=>update(withAutoScale(value,layout,event.target.checked?defaultBlackjackAutoScale():undefined))}/> Autoskala efter dealern</label>
         {auto?<>

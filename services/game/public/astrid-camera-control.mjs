@@ -70,16 +70,16 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   }
   function render() {
     const playing = getPlaybackEnabled() === true;
-    playback.textContent = playing ? '❚❚' : '▶';
-    playback.setAttribute('aria-label', playing ? 'Mute ' + dealerName + ' playback' : 'Enable ' + dealerName + ' playback');
+    playback.textContent = playing ? 'Ljud på' : 'Ljud av';
+    playback.setAttribute('aria-label', playback.textContent);
     playback.setAttribute('aria-pressed', String(playing)); playback.title = `${playing ? 'Mute' : 'Enable'} ${dealerName} playback. Hold 5 seconds for the log.`;
-    record.textContent = mode || modeStarting || busy() ? '■' : '●';
-    record.setAttribute('aria-label', mode || modeStarting || busy() ? 'Stop voice listening'
-      : recordingMode === 'manual' ? 'Record one message' : 'Enable voice listening');
+    record.textContent = mode || modeStarting || busy() ? 'Stoppa mick' : 'Mikrofon';
+    record.setAttribute('aria-label', record.textContent);
     record.setAttribute('aria-pressed', String(mode || modeStarting || busy()));
     record.title = `${blockedReason || lastStatus}${visionReason ? ` ${visionReason}` : ''} Hold 5 seconds for the log.`;
     record.setAttribute('data-error', String(Boolean(blockedReason || statusIsError)));
-    camera.setAttribute('aria-label', cameraOptIn ? 'Turn camera off' : 'Include optional camera images');
+    camera.textContent = cameraOptIn ? 'Kamera på' : 'Kamera av';
+    camera.setAttribute('aria-label', camera.textContent);
     camera.setAttribute('aria-pressed', String(cameraOptIn));
     camera.title = cameraOptIn ? 'Camera images enabled for the next recording' : 'Camera off; click to include images';
     status.textContent = blockedReason || lastStatus; status.hidden = false;

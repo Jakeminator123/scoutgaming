@@ -974,3 +974,32 @@ test('a preflight without autoScale cannot acquire it inside its transaction',as
   await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:scaled}),{fixture:true,presentationMutation:plain}),blocked);
   assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'21');
 });
+
+test('v26 blocks saved card display on old engines before writing any active or archived layout',async()=>{
+ for(const layout of ['mobile','desktop'])for(const version of [25,26]){
+  const lane={composition:{blackjackTables:[{[layout]:{cardView:'table'}}]}};
+  for(const descriptor of [{kind:'project',value:{lanes:[lane]}},{kind:'project',value:{dealerTrash:[{compositions:[lane]}]}}]){
+   const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+   const work=()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value});
+   if(version===25)await assert.rejects(work,blocked);else await work();
+   assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'26');assert.equal(f.writes.length,version===26?1:0);
+  }
+ }
+});
+
+test('v26 checks a valid frozen card layout and cannot be acquired inside an older transaction',async()=>{
+ const tableId='30000000-0000-4000-8000-000000000001';
+ const value=frozenPackage(pack=>{
+  const sha256='d'.repeat(64),contentType='image/png';
+  pack.assets.push({schemaVersion:1,id:tableId,sha256,contentType,size:4096,width:720,height:1280,role:'table',label:'Table',pathname:layerAssetPath({id:tableId,sha256,contentType,role:'table'})});
+  Object.assign(pack.lanes[0].layers.table,{enabled:true,allowed:[tableId],default:tableId});
+  const board=defaultBlackjackTableGeometry(tableId);board.desktop.cardView='raised';
+  pack.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};
+ });
+ assert.doesNotThrow(()=>validatePresentationPackage(value));
+ for(const version of [25,26]){const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});const work=()=>f.wrapped.saveDocument('presentation-package',{value});if(version===25)await assert.rejects(work,blocked);else await work();assert.equal(f.writes.length,version===26?1:0);}
+ const plain={kind:'project',value:{lanes:[{composition:{blackjackTables:[{desktop:{autoScale:{}}}]}}]}};
+ const changed=structuredClone(plain.value);changed.lanes[0].composition.blackjackTables[0].desktop.cardView='table';
+ const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+ await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:changed}),{fixture:true,presentationMutation:plain}),blocked);assert.equal(f.writes.length,0);
+});
