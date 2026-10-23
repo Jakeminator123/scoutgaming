@@ -40,7 +40,8 @@
   }
   function apply() {
     var w = innerWidth, h = innerHeight;
-    var want = forced === true || forced !== false && keyed && w > 820;
+    // Kevin 23 Oct: the desktop table is retracted until DESKTOP_LAYOUT=1 (server.mjs /layout-flag.js): the phone layout for all
+    var want = globalThis.DESKTOP_LAYOUT === true && (forced === true || forced !== false && keyed && w > 820);
     if (want) {
       var g = layout(w, h), s = html.style;
       s.setProperty('--sh', g.sh + 'px'); s.setProperty('--fx', g.fx + 'px'); s.setProperty('--col', g.col + 'px'); s.setProperty('--gut', g.gut + 'px');

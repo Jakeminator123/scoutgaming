@@ -92,3 +92,10 @@ test('a recorded line on the talk track carries its clip and no answer voice; it
     assert.ok(talk.idle?.length > 0, 'over his idle chain, not the still');
   } finally { s.close(); rmSync(dir, {recursive:true, force:true}); }
 });
+
+test('the desktop table is retracted until DESKTOP_LAYOUT=1: every visitor gets the phone layout, ?layout=desk too (Kevin 23 Oct)', () => {
+  const desk = readFileSync(new URL('../public/desk-mode.js', import.meta.url), 'utf8'), html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+  assert.match(desk, /var want = globalThis\.DESKTOP_LAYOUT === true && \(forced === true \|\| forced !== false && keyed && w > 820\);/);
+  assert.ok(html.indexOf('<script src="/layout-flag.js"></script>') >= 0 && html.indexOf('/layout-flag.js') < html.indexOf('/desk-mode.js'), 'the flag loads before desk-mode.js');
+  assert.match(server, /if \(p === "\/layout-flag\.js"\) \{[^\n]*DESKTOP_LAYOUT=\$\{process\.env\.DESKTOP_LAYOUT === "1"\}/);
+});

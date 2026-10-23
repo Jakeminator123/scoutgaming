@@ -680,6 +680,9 @@ async function handleHttp(req, res) {
   // the lip-sync worker dials this server back: remember the public https origin visitors reach it on (Caddy in front)
   if (!process.env.RORLIG_PUBLIC_URL && req.headers["x-forwarded-proto"] === "https" && /^[a-z0-9.-]+(:\d+)?$/i.test(req.headers.host ?? "")) publicOrigin = `https://${req.headers.host}`;
   if (p.startsWith("/api/")) { api(req, res, p.slice(5)).catch(() => json(res, 500, { error: "Request could not be completed" })); return; }
+  // Kevin 23 Oct: "retract the desktop only phone until i say so": the desktop table only with DESKTOP_LAYOUT=1 in the env
+  // (desk-mode.js), else every visitor gets the phone layout, ?layout=desk too
+  if (p === "/layout-flag.js") { res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${process.env.DESKTOP_LAYOUT === "1"};`); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.
     if(!/^\/answers\/[a-f0-9-]{36}\.mp4$/.test(p))return json(res,404,{error:'Not found'});
