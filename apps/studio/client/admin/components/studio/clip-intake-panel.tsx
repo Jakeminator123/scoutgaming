@@ -5,8 +5,8 @@ import { uploadNativeVideo } from '../../../../lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../lib/media-upload-batch.mjs';
 import { labUrl, importClassification, importContentType, importErrorMessage, importRowPoses, slotAcceptsPoses, compatibleImportSlot,
   CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses, type ImportCatalog } from '../../lib/dealer-import.mjs';
-import { INTAKE_DRAG_TYPE, applyIntakeProposals, collectDroppedFiles, intakeConfidenceLabel, intakeDescriptors, intakeDestination, intakeDropCheck, intakeRole, intakeRowIssue, intakeSummary, intakeUploadRows, placeIntakeRow, planIntakeFiles,
-  type IntakeEntry, type IntakeProposal, type IntakeRow } from '../../lib/clip-intake.mjs';
+import { INTAKE_DRAG_TYPE, applyIntakeProposals, collectDroppedFiles, intakeConfidenceLabel, intakeDescriptors, intakeDestination, intakeDropCheck, intakeRole, intakeRowIssue, intakeSummary, intakeUploadRows, placeIntakeRow, planIntakeFiles, validateIntakeNoteRepairs, restoreIntakeNotes,
+  type IntakeEntry, type IntakeProposal, type IntakeRow, type IntakeNoteRepairPlan, type IntakeNoteRepairResult } from '../../lib/clip-intake.mjs';
 import type { ClipGroup } from '../../lib/studio-layout.mjs';
 import type { VideoInventory } from '../../lib/connected-studio.mjs';
 
@@ -58,11 +58,14 @@ function IntakeThumb({file,kind}:{file:File;kind:string}) {
 export function ClipIntakePanel({ref,dealer,groups,contextKey='',active,blocked,hasStandard,onBusyChange,onPendingChange,onInventory,onDragChange,onBind,onOpenSlot,onChooseDealer}:Props) {
   const [catalog,setCatalog]=useState<ImportCatalog|null>(null),[loadCount,setLoadCount]=useState(0),[loading,setLoading]=useState(true);
   const [rows,setRows]=useState<IntakeRow[]>([]),[context,setContext]=useState(''),[background,setBackground]=useState<'green-screen'|'alpha'>('green-screen');
-  const [busy,setBusy]=useState<'propose'|'upload'|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[dragging,setDragging]=useState(''),[dropHover,setDropHover]=useState(false);
+  const [busy,setBusy]=useState<'propose'|'upload'|'notes'|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[dragging,setDragging]=useState(''),[dropHover,setDropHover]=useState(false);
+  const [notePlan,setNotePlan]=useState<IntakeNoteRepairPlan|null>(null),[noteResult,setNoteResult]=useState<IntakeNoteRepairResult|null>(null);
+  const noteController=useRef<AbortController|null>(null);
   const busyRef=useRef(false),controller=useRef<AbortController|null>(null),rowsRef=useRef(rows),catalogRef=useRef(catalog);
   const fileInput=useRef<HTMLInputElement>(null),folderInput=useRef<HTMLInputElement>(null);
   rowsRef.current=rows;catalogRef.current=catalog;
   const dealerId=dealer?.id??'';
+  useEffect(()=>{setNotePlan(null);setNoteResult(null);return()=>noteController.current?.abort();},[dealerId,contextKey,active,blocked]);
   const dropController=useRef<AbortController|null>(null),dropScope=useRef('');
   dropScope.current=JSON.stringify([dealerId,contextKey,active,blocked]);
   useEffect(()=>()=>dropController.current?.abort(),[dealerId,contextKey,active,blocked]);
@@ -83,6 +86,23 @@ export function ClipIntakePanel({ref,dealer,groups,contextKey='',active,blocked,
   useEffect(()=>{onPendingChange(rows.filter(row=>row.state!=='saved').length);},[rows,onPendingChange]);
 
   function update(id:string,patch:Partial<IntakeRow>) {setRows(items=>items.map(row=>row.id===id?{...row,...patch}:row));}
+  async function repairSourceNotes(save=false) {
+    if(busyRef.current||blocked||!active||!dealerKnown||!dealer)return;
+    if(save&&(!notePlan||notePlan.dealerId!==dealer.id||!notePlan.candidates.length))return;
+    busyRef.current=true;setBusy('notes');setError('');setNoteResult(null);
+    const abort=new AbortController();noteController.current=abort;
+    try {
+      if(!save){
+        setNotePlan(null);
+        const value=await jsonRequest<unknown>('/api/dealers/import-proposal',{method:'POST',signal:abort.signal,body:JSON.stringify({operation:'repair-notes',dealerId:dealer.id})});
+        if(!abort.signal.aborted)setNotePlan(validateIntakeNoteRepairs(value,dealer.id));
+      }else{
+        const result=await restoreIntakeNotes(notePlan!,{fetchImpl:fetch,signal:abort.signal,onProgress:value=>{if(!abort.signal.aborted)setNoteResult(value);}});
+        if(!abort.signal.aborted){setNoteResult(result);setNotePlan(null);if(result.inventory)onInventory(result.inventory);}
+      }
+    }catch(cause){if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Källnotiserna kunde inte återställas. Kontrollera på nytt innan du försöker igen.');}
+    finally{if(noteController.current===abort){noteController.current=null;busyRef.current=false;setBusy(null);}}
+  }
   async function propose(targets:IntakeRow[]) {
     const current=catalogRef.current;
     if(busyRef.current||!current||!dealer||!targets.length)return;
@@ -168,6 +188,14 @@ export function ClipIntakePanel({ref,dealer,groups,contextKey='',active,blocked,
   const groupTitle=(slotId:string)=>intakeDestination(slotId,catalog,groups)?.title??'Övrigt';
   return <section className="studio-intake" aria-label="Lägg till klipp">
     <p className="studio-intake-intro">Dra in filer eller en hel mapp. Du får ett förslag på fack per klipp, kan dra om kortet till rätt kategori i kartan och godkänner sedan. Bara MP4 och WebM sparas.</p>
+    {dealerKnown&&<details className="studio-intake-context"><summary>Källnotiser för sparade klipp</summary>
+      <p>Återställ tomma notiser från en exakt källträff. Filer, kopplingar och godkännanden ändras inte.</p>
+      <button type="button" className="studio-button" disabled={locked||!active} onClick={()=>void repairSourceNotes()}>Kontrollera källnotiser</button>
+      {notePlan&&<><p role="status">{notePlan.candidates.length} tomma källnotiser kan återställas. {notePlan.skipped} klipp hoppades över.</p>
+        <button type="button" className="studio-button" disabled={locked||!active||!notePlan.candidates.length} onClick={()=>void repairSourceNotes(true)}>Återställ {notePlan.candidates.length} källnotiser</button></>}
+      {noteResult&&<p role={noteResult.failed||noteResult.conflicts||noteResult.remaining?'alert':'status'}>{noteResult.saved} av {noteResult.total} notiser sparade. {noteResult.conflicts} konflikter, {noteResult.failed} ej bekräftade, {noteResult.remaining} inte försökta.{!busy&&(noteResult.failed||noteResult.conflicts||noteResult.remaining)?' Kontrollera på nytt före nästa försök.':''}</p>}
+      {busy==='notes'&&!noteResult&&<p role="status">Kontrollerar källnotiser…</p>}
+    </details>}
     {!dealer&&<p role="alert" className="studio-intake-alert">Välj dealer i raden ovanför kartan. <button type="button" className="studio-button" onClick={onChooseDealer}>Välj dealer</button></p>}
     <div className={`studio-intake-drop ${dropHover?'is-hover':''}`} onDragOver={event=>{if(active&&!locked&&event.dataTransfer.types.includes('Files')){event.preventDefault();setDropHover(true);}}} onDragLeave={()=>setDropHover(false)} onDrop={event=>{void dropFiles(event);}}>
       <Upload size={22} aria-hidden="true"/>

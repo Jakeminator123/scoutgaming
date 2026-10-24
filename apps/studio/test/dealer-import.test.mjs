@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
+import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, frozenImportNoteRepairs, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
 import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
 import { createDealerImportApi, createDealerImportLimiter } from '../lib/dealer-import-api.mjs';
 import { frozenKevinImportSource } from '../lib/dealer-import-plan.mjs';
+import {createStudioMediaApi} from '../lib/studio-media-api.mjs';
+import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
+import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
+import {seedSavedVideoProject} from './fixtures/video-dealer-project.mjs';
+import {restoreIntakeNotes} from '../client/admin/lib/clip-intake.mjs';
 
 const origin = 'https://studio.example.invalid', scope = { environment: 'test', workspaceId: 'studio-test' };
 const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/auth', allowedOrigins: ['https://public.example.invalid', origin], publicHosts: ['public.example.invalid', 'studio.example.invalid'] };
@@ -22,10 +27,94 @@ function fixture(options = {}) {
   let project = createSeedProject(), reads = 0;
   const repository = new Proxy({ readDocument: async kind => { assert.equal(kind, 'project'); reads++; return { value: structuredClone(project) }; } },
     { get(target, key) { if (!(key in target)) throw Error(`Unexpected repository capability: ${String(key)}`); return target[key]; } });
-  const api = createDealerImportApi({ repository, config, authorize: options.authorize ?? (async () => ({ user: 'Importer', role: 'admin', scope })) },
+  const api = createDealerImportApi({ repository, config, videoRegistry:options.videoRegistry, authorize: options.authorize ?? (async () => ({ user: 'Importer', role: 'admin', scope })) },
     { env: {}, limit: createDealerImportLimiter(), ...options });
   return { api, reads: () => reads, setProject: next => { project = next; }, project: () => structuredClone(project) };
 }
+
+function repairFixture() {
+  const source=frozenKevinImportSource('paow'),project=addDealer(createSeedProject(),'paow','Paow'),catalog=dealerImportCatalog(project);
+  function video(tail='repliker/en/bust_2.mp4',id='11111111-1111-4111-8111-111111111111'){
+    const entry=source.files.find(row=>row.path.endsWith('/'+tail));
+    const input={dealerId:'paow',files:[{id,name:tail.split('/').at(-1),size:entry.size,type:'video/mp4'}]};
+    const expected=finishDealerImportRows(filenameDealerImportRows(input,catalog),input,catalog)[0].classification;
+    return {id,dealer:'paow',sha256:entry.sha256,bytes:entry.size,available:true,storage:'private-blob',source:'upload',integrity:'unchecked',classification:{...expected,notes:''}};
+  }
+  return {source,project,catalog,video};
+}
+
+test('source note repair uses exact frozen bytes, skips ambiguity and protects current classifications',()=>{
+  const f=repairFixture(),original=f.video();
+  const result=frozenImportNoteRepairs('paow',{videos:[original]},f.catalog);
+  assert.equal(result.candidates.length,1);assert.equal(result.skipped,0);
+  assert.deepEqual(result.candidates[0].previous,original.classification);
+  assert.match(result.candidates[0].notes,/kevin-paow-c7138759.*Språk i källan: en.*Tagning 2/);
+  assert.match(result.candidates[0].notes,/inte visuellt godkänt/);assert.equal(original.classification.notes,'');
+  assert.equal(original.integrity,'unchecked','private Blob inventory does not rehash bytes while listing');
+  assert.equal(frozenImportNoteRepairs('paow',{videos:[{...original,integrity:'verified'}]},f.catalog).candidates.length,1);
+  const denied=[{sha256:'0'.repeat(64)},{bytes:original.bytes+1},{dealer:'astrid'},
+    {classification:{...original.classification,dealerId:'astrid'}},{classification:{...original.classification,notes:'Behåll mig'}},
+    {classification:{...original.classification,situation:'win'}},{classification:{...original.classification,archived:true}},
+    {retainedBank:true},{familyId:'protected'},{available:false},{deletion:{}},{storage:'disk'},
+    ...['unavailable','failed','unsafe','mismatch',undefined,null].map(integrity=>({integrity})),
+    {classification:{...original.classification,recordedSpeech:{recording:{status:'approved'}}}}];
+  for(const patch of denied)assert.equal(frozenImportNoteRepairs('paow',{videos:[{...original,...patch}]},f.catalog).candidates.length,0,JSON.stringify(patch));
+  assert.throws(()=>frozenImportNoteRepairs('paow-kevin',{videos:[original]},f.catalog),/studio_dealer_unknown/);
+  assert.equal(frozenImportNoteRepairs('paow',{videos:[original,original]},f.catalog).candidates.length,0,'duplicate inventory IDs are ambiguous');
+  const duplicate=f.source.files.find(entry=>entry.sha256&&f.source.files.filter(other=>other.sha256===entry.sha256&&other.size===entry.size).length>1);
+  assert.ok(duplicate);
+  assert.equal(frozenImportNoteRepairs('paow',{videos:[{...original,sha256:duplicate.sha256,bytes:duplicate.size}]},f.catalog).candidates.length,0,'byte aliases are not guessed');
+  for(const tail of ['v2/flip.mp4','v2/flip-i.mp4','v2/flip-u.mp4','v2/flip-iu.mp4']){
+    const alias=f.video(tail);alias.classification.label=tail.split('/').at(-1).replace('.mp4','');
+    assert.equal(frozenImportNoteRepairs('paow',{videos:[alias]},f.catalog).candidates.length,1,'exact preserved names disambiguate identical-byte pose variants');
+    assert.equal(frozenImportNoteRepairs('paow',{videos:[{...alias,classification:{...alias.classification,startPose:'OTHER'}}]},f.catalog).candidates.length,0,'the name never overrides current pose metadata');
+  }
+});
+
+test('source note repair read is N1 scoped, reauthorizes after inventory and never invokes the model',async()=>{
+  const f=repairFixture();let reads=0;
+  const h=fixture({videoRegistry:async()=>{reads++;return{videos:[f.video()]};},fetchImpl:()=>assert.fail('repair must not invoke AI')});h.setProject(f.project);
+  const body={operation:'repair-notes',dealerId:'paow'};
+  const response=await h.api.handle(request(body));assert.equal(response.status,200);assert.equal((await response.json()).candidates.length,1);assert.equal(reads,1);
+  assert.equal((await h.api.handle(request({...body,ids:[]}))).status,400);
+  assert.equal((await h.api.handle(request({...body,dealerId:'paow-kevin'}))).status,404);
+  const denied=fixture({authorize:async()=>null,videoRegistry:()=>assert.fail('anonymous inventory read')});denied.setProject(f.project);
+  assert.equal((await denied.api.handle(request(body))).status,403);
+  for(const session of [{user:'Partner',role:'partner',scope},{user:'Other',role:'admin',scope:{...scope,workspaceId:'foreign'}}]){
+    const forbidden=fixture({authorize:async()=>session,videoRegistry:()=>assert.fail('foreign inventory read')});forbidden.setProject(f.project);
+    assert.equal((await forbidden.api.handle(request(body))).status,403);
+  }
+  assert.equal((await h.api.handle(request(body,{headers:{origin:'https://foreign.invalid'}}))).status,403);
+  let valid=true;const revoked=fixture({authorize:async()=>valid?{user:'Importer',role:'admin',scope}:null,videoRegistry:async()=>{valid=false;return{videos:[f.video()]};}});revoked.setProject(f.project);
+  assert.equal((await revoked.api.handle(request(body))).status,403);
+  const moved=fixture({videoRegistry:async()=>{moved.setProject(createSeedProject());return{videos:[f.video()]};}});moved.setProject(f.project);
+  assert.equal((await moved.api.handle(request(body))).status,409);
+});
+
+test('note restoration uses the ordinary writer CAS and a fresh partial retry preserves prior successes',async()=>{
+  const f=repairFixture(),pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+  seedSavedVideoProject(pool,scope,f.project);
+  const originals=[f.video(),f.video('repliker/sv/bust_2.mp4','22222222-2222-4222-8222-222222222222')];
+  for(const video of originals)await repository.registerMedia({id:video.id,sha256:video.sha256,size:video.bytes,contentType:'video/mp4',
+    pathname:`croupier/media/dealers/paow/review/uploads/${video.id}/${video.sha256}.mp4`,classification:video.classification},{actor:'Importer'});
+  const inventory=async()=>({videos:(await repository.listMedia()).map(row=>({...originals.find(video=>video.id===row.id),classification:row.classification,revision:row.revision}))});
+  const api=createStudioMediaApi({repository,config,authorize:async()=>({user:'Importer',role:'admin',scope}),videoRegistry:inventory,mutationTransaction:async work=>work()});
+  const fetchImpl=(url,options)=>api.handle(new Request(origin+url,{...options,headers:{...options.headers,origin,'sec-fetch-site':'same-origin'}}));
+  const plan=frozenImportNoteRepairs('paow',await inventory(),f.catalog);
+  const changed=await repository.getMedia(originals[1].id);
+  await repository.classifyMedia(changed.id,{sha256:changed.sha256,expectedRevision:changed.revision,metadata:{...changed.classification,label:'Manuellt namn'},actor:'Importer'});
+  const first=await restoreIntakeNotes(plan,{fetchImpl});
+  assert.deepEqual([first.saved,first.conflicts,first.failed,first.remaining],[1,1,0,0]);
+  const savedRevision=(await repository.getMedia(originals[0].id)).revision;
+  const next=frozenImportNoteRepairs('paow',await inventory(),f.catalog);
+  assert.deepEqual(next.candidates.map(row=>row.id),[changed.id]);
+  const second=await restoreIntakeNotes(next,{fetchImpl});
+  assert.deepEqual([second.saved,second.conflicts,second.failed],[1,0,0]);
+  assert.equal((await repository.getMedia(originals[0].id)).revision,savedRevision,'the first success is never rewritten');
+  assert.equal((await repository.getMedia(changed.id)).classification.label,'Manuellt namn');
+  assert.equal(frozenImportNoteRepairs('paow',await inventory(),f.catalog).candidates.length,0);
+  for(const original of originals){const saved=await repository.getMedia(original.id);assert.equal(saved.sha256,original.sha256);assert.equal(saved.size,original.bytes);assert.equal(saved.classification.recordedSpeech,undefined);}
+});
 
 test('filename rules preserve seat offsets, alternate suffixes, face-down deal and separate reveal', () => {
   const catalog = dealerImportCatalog(createSeedProject());

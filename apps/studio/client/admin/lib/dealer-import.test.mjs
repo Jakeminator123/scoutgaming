@@ -145,6 +145,25 @@ test('proposal cannot change saved rows, files, dealer or upload classification'
   assert.ok(importFileError({name:'unknown.svg',size:100})); assert.ok(importFileError({name:'idle.mp4',size:134217729}));
 });
 
+test('proposal notes survive as text only, with current catalogue capabilities and the reviewed name',()=>{
+  const original=row({label:'Eget granskat namn'}),saved=row({id:'saved',state:'saved',notes:'Sparad notis'});
+  const notes='Importförslag · innehållet är inte visuellt godkänt. Språk i filnamnet: sv. Tagning 2 enligt filnamnet.';
+  const proposal={fileId:original.id,slotId:original.slotId,classification:{notes,label:'Annat namn',dealerId:'other',eventId:'speak.other',situation:'bust',role:'standard',recordedSpeech:{recording:{status:'approved'}}}};
+  const [mapped,receipt]=applyImportProposals([original,saved],[proposal,{...proposal,fileId:saved.id}],catalog.slots);
+  const metadata=importClassification(mapped,'nora',catalog);
+  assert.equal(metadata.notes,notes);assert.equal(metadata.label,'Eget granskat namn');
+  assert.equal(metadata.dealerId,'nora');assert.equal(metadata.eventId,'deal.player.left');assert.equal(metadata.situation,'box0');
+  assert.equal(metadata.role,'alternative');assert.equal(metadata.recordedSpeech,undefined);assert.equal(receipt,saved);
+  assert.equal(mapped.classification,undefined);
+  for(const next of [{fileId:original.id,slotId:original.slotId},{...proposal,slotId:'invented'}]){
+    assert.equal(applyImportProposals([mapped],[next],catalog.slots)[0].notes,'','replaced advice must not retain stale source notes');
+  }
+  for(const bad of ['x'.repeat(1501),'bad\u0000notes']){
+    const [invalid]=applyImportProposals([original],[{...proposal,classification:{notes:bad}}],catalog.slots);
+    assert.throws(()=>importClassification(invalid,'nora',catalog),/notes/);
+  }
+});
+
 async function importAssistantHarness(dealers=catalog.dealers,props={},options={}){
   if(props.props||props.request){options={...options,request:props.request};props=props.props??{};}
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');

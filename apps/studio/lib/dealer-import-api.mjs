@@ -2,7 +2,7 @@ import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioS
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
-import { dealerImportCatalog, validateDealerImportInput, filenameDealerImportRows, validateDealerImportAdvice, finishDealerImportRows, DEALER_IMPORT_STORAGE_WARNING } from './dealer-import-catalog.mjs';
+import { dealerImportCatalog, validateDealerImportInput, filenameDealerImportRows, validateDealerImportAdvice, finishDealerImportRows, frozenImportNoteRepairs, DEALER_IMPORT_STORAGE_WARNING } from './dealer-import-catalog.mjs';
 import { dealerImportModelConfiguration, dealerImportProviderStatus, dealerImportSelectedModel, askDealerImportModel } from './dealer-import-model.mjs';
 import { frozenImportSourcesSummary } from './dealer-import-sources.mjs';
 
@@ -39,7 +39,7 @@ export function createDealerImportLimiter({ now = Date.now } = {}) {
 }
 const limiter = createDealerImportLimiter();
 
-export function createDealerImportApi({ repository, authorize, config }, { env = process.env, fetchImpl = fetch, limit = limiter } = {}) {
+export function createDealerImportApi({ repository, authorize, config, videoRegistry }, { env = process.env, fetchImpl = fetch, limit = limiter } = {}) {
   const model = dealerImportModelConfiguration(env), provider = dealerImportProviderStatus(model);
   if (typeof authorize !== 'function' || !config || !['/api/admin', '/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration', 503);
   const scope = validateStudioScope(config.scope), base = config.apiBase === '/api/admin' ? '/api' : '/studio/api';
@@ -65,8 +65,18 @@ export function createDealerImportApi({ repository, authorize, config }, { env =
       request.signal.throwIfAborted();
       if (request.method === 'GET') return json({ ...await readCatalog(), provider, warnings, frozenSources: frozenImportSourcesSummary() });
       if (request.headers.get('origin') !== url.origin || !['same-origin', 'none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected');
-      const catalog = await readCatalog();
-      const input = validateDealerImportInput(await readStudioDocumentJson(request), catalog);
+      const catalog = await readCatalog(), body = await readStudioDocumentJson(request);
+      if (body?.operation === 'repair-notes') {
+        if (Object.keys(body).sort().join(',') !== 'dealerId,operation') fail('studio_invalid_request', 400);
+        if (!catalog.dealers.some(row => row.id === body.dealerId)) fail('studio_dealer_unknown', 404);
+        if (typeof videoRegistry !== 'function') fail('studio_media_registry_unavailable', 503);
+        const inventory = await videoRegistry(), current = await principal(request);
+        if (current.actor !== original.actor || current.role !== original.role) fail('studio_request_rejected');
+        if (canonicalStudioJson(await readCatalog()) !== canonicalStudioJson(catalog)) fail('studio_conflict', 409);
+        request.signal.throwIfAborted();
+        return json(frozenImportNoteRepairs(body.dealerId, inventory, catalog));
+      }
+      const input = validateDealerImportInput(body, catalog);
       request.signal.throwIfAborted();
       release = limit.enter(original.actor);
       const chat = input.intent === 'chat', selectedModel = dealerImportSelectedModel(input.intent);

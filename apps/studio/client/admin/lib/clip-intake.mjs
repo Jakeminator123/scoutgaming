@@ -3,12 +3,53 @@
 // cards and approves. Only MP4/WebM video is saved; model text, filenames and
 // folder paths are advice. Upload rights always come from the registered
 // catalogue through importClassification, never from a proposal.
-import { applyImportProposals, compatibleImportSlot, importContentType, importFileError, importRowError, slotAcceptsPoses } from './dealer-import.mjs';
+import { applyImportProposals, compatibleImportSlot, importContentType, importFileError, importRowError, slotAcceptsPoses, labUrl } from './dealer-import.mjs';
+import { validateVideoMetadata } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { slotCaption } from './studio-layout.mjs';
 
 export const INTAKE_DRAG_TYPE = 'application/x-scout-intake';
 export const INTAKE_PATH_LIMIT = 240;
 export const INTAKE_MAX_DROPPED_FILES = 400;
+
+export function validateIntakeNoteRepairs(value, dealerId) {
+  if (value?.dealerId !== dealerId || !Array.isArray(value.candidates) || value.candidates.length > 10000
+    || !Number.isSafeInteger(value.skipped) || value.skipped < 0) throw Error('Källnotiserna kunde inte verifieras.');
+  const ids = new Set();
+  for (const row of value.candidates) {
+    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(row.id) || ids.has(row.id)
+      || !/^[a-f0-9]{64}$/.test(row.sha256) || row.previous?.dealerId !== dealerId
+      || typeof row.previous.notes !== 'string' || row.previous.notes.trim() || row.previous.archived || row.previous.familyId
+      || row.previous.recordedSpeech || typeof row.notes !== 'string' || !row.notes.trim()) throw Error('Källnotiserna kunde inte verifieras.');
+    validateVideoMetadata({ ...row.previous, notes: row.notes }, { forWrite: true }); ids.add(row.id);
+  }
+  return value;
+}
+
+// One existing CAS write at a time, never an automatic retry. A failed reply
+// is not a successful write; a fresh candidate read resolves uncertain results.
+export async function restoreIntakeNotes(plan, { fetchImpl = fetch, signal, onProgress = () => {} } = {}) {
+  validateIntakeNoteRepairs(plan, plan.dealerId);
+  const result = { total: plan.candidates.length, saved: 0, conflicts: 0, failed: 0, remaining: plan.candidates.length, inventory: null };
+  for (const row of plan.candidates) {
+    if (signal?.aborted) break;
+    let stop = false;
+    try {
+      const response = await fetchImpl(labUrl('/api/videos/classify'), { method: 'POST', credentials: 'same-origin', signal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, sha256: row.sha256, previous: row.previous, metadata: { ...row.previous, notes: row.notes } }) });
+      if (!response.ok) {
+        if (response.status === 409) result.conflicts++; else result.failed++;
+        stop = [401, 403].includes(response.status);
+      } else {
+        const inventory = await response.json(), saved = inventory?.videos?.find(video => video.id === row.id);
+        if (!saved || saved.sha256 !== row.sha256 || saved.classification?.dealerId !== plan.dealerId || saved.classification?.notes !== row.notes) throw Error('unverified_repair');
+        result.saved++; result.inventory = inventory;
+      }
+    } catch { result.failed++; stop = Boolean(signal?.aborted); }
+    result.remaining--; onProgress({ ...result });
+    if (stop) break;
+  }
+  return result;
+}
 
 export function intakeFileKind(name) {
   const type = importContentType(name);

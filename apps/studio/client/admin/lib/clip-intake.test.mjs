@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyIntakeProposals, collectDroppedFiles, intakeDescriptors, intakeDestination, intakeDropCheck, intakeRelativePath, intakeRole, intakeRowIssue, intakeSummary, intakeUploadRows, placeIntakeRow, planIntakeFiles, INTAKE_DRAG_TYPE } from './clip-intake.mjs';
+import { applyIntakeProposals, collectDroppedFiles, intakeDescriptors, intakeDestination, intakeDropCheck, intakeRelativePath, intakeRole, intakeRowIssue, intakeSummary, intakeUploadRows, placeIntakeRow, planIntakeFiles, validateIntakeNoteRepairs, restoreIntakeNotes, INTAKE_DRAG_TYPE } from './clip-intake.mjs';
 import { importClassification } from './dealer-import.mjs';
 import { createSeedProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { clipSlots } from './connected-studio.mjs';
@@ -17,6 +17,21 @@ const catalog = { dealers: [{ id: 'paow', label: 'Paow' }], limits: { maxFiles: 
 const file = (name, extra = {}) => new File([new Uint8Array(64)], name, { type: '', lastModified: 7, ...extra });
 let counter = 0;
 const plan = (entries, rows = [], options = {}) => planIntakeFiles(entries, rows, catalog.limits, { id: () => `row-${++counter}`, ...options });
+
+test('note restoration rejects foreign or nonempty metadata and reports failed or uncertain responses without retry',async()=>{
+  const candidate={id:'11111111-1111-4111-8111-111111111111',sha256:'a'.repeat(64),previous:importClassification({file:file('idle.mp4'),slotId:'idle.ready/',background:'green-screen',label:'Original'},'paow',catalog),notes:'Importförslag · inte visuellt godkänt.'};
+  const plan={dealerId:'paow',candidates:[candidate],skipped:0};
+  assert.equal(validateIntakeNoteRepairs(plan,'paow'),plan);
+  assert.throws(()=>validateIntakeNoteRepairs(plan,'astrid'));
+  for(const patch of [{notes:'Sparad'},{dealerId:'astrid'},{archived:true},{recordedSpeech:{}}])assert.throws(()=>validateIntakeNoteRepairs({...plan,candidates:[{...candidate,previous:{...candidate.previous,...patch}}]},'paow'));
+  for(const response of [Response.json({},{status:500}),Response.json({videos:[]}),null]){
+    let calls=0;const result=await restoreIntakeNotes(plan,{fetchImpl:async()=>{calls++;if(!response)throw Error('lost response');return response;}});
+    assert.equal(calls,1);assert.equal(result.saved,0);assert.equal(result.failed,1);assert.equal(result.remaining,0);
+  }
+  const cancelled=new AbortController();cancelled.abort();
+  const result=await restoreIntakeNotes(plan,{signal:cancelled.signal,fetchImpl:()=>assert.fail('cancelled')});
+  assert.equal(result.saved,0);assert.equal(result.remaining,1);
+});
 
 test('intake plans files with folder paths, dedupes, bounds the batch and explains unsupported files', () => {
   const clip = file('paow_pos1.mp4');
