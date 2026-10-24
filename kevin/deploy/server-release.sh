@@ -33,8 +33,20 @@ healthy() {
   systemctl is-active -q astrid-scout-demo &&
     curl -sf -m 5 http://127.0.0.1:8620/api/health | grep -q '"ok":true' &&
     curl -sf -m 5 -o /dev/null http://127.0.0.1:8620/dealers.js &&
-    curl -sf -m 5 -X POST http://127.0.0.1:8620/api/table -H 'content-type: application/json' \
-      -H 'Origin: http://127.0.0.1:8620' -d '{"session":"astrid","op":"state"}' | grep -q '"phase"'
+    table_ok
+}
+# The table answers its state; with the strict demo gate on (DEMO_GATE_STRICT=1 in the env file, Kevin o1792873491724) an
+# unsigned request is answered 401 "Enter the demo password first" by design, and that answer is the healthy one then.
+table_ok() {
+  local out code
+  out=$(curl -s -m 5 -w '\n%{http_code}' -X POST http://127.0.0.1:8620/api/table -H 'content-type: application/json' \
+    -H 'Origin: http://127.0.0.1:8620' -d '{"session":"astrid","op":"state"}') || return 1
+  code=${out##*$'\n'}
+  if grep -q '^DEMO_GATE_STRICT=1$' /etc/astrid-scout-demo.env 2>/dev/null; then
+    [ "$code" = 401 ] && grep -q 'Enter the demo password first' <<<"$out"
+  else
+    [ "$code" = 200 ] && grep -q '"phase"' <<<"$out"
+  fi
 }
 # Five healthy probes in a row, 2 s apart, from the same process: a crash loop cannot pass.
 stable() {
