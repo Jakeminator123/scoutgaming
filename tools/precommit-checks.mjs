@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { basename, dirname, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDocumentationPath } from './documentation-paths.mjs';
 
@@ -63,6 +63,75 @@ export function parseArgs(args) {
   return { forceFull: args.includes('--full'), planOnly: args.includes('--plan') };
 }
 
+// Static ESM only: do not evaluate helpers, dynamic imports or require calls.
+// Keep quoted strings as tokens so comments and example code cannot add edges.
+function staticRelativeImports(source) {
+  const tokens = [...source.matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[\w$]+|[^\s]/g)]
+    .map(match => match[0]).filter(token => !token.startsWith('//') && !token.startsWith('/*'));
+  const imports = [];
+  const add = token => {
+    if (/^["']\.\.?\//.test(token) && !token.includes('\\')) imports.push(token.slice(1, -1));
+  };
+  for (let i = 0; i < tokens.length; i++) {
+    const kind = tokens[i], next = tokens[i + 1];
+    if (!['import', 'export'].includes(kind) || tokens[i - 1] === '.' || !next) continue;
+    if (kind === 'import' && /^["']/.test(next)) { add(next); continue; }
+    if (kind === 'import' ? !/^(?:\w|[$*{])/.test(next) : !['*', '{'].includes(next)) continue;
+    for (let j = i + 2; j < tokens.length && ![';', 'import', 'export'].includes(tokens[j]); j++) {
+      if (tokens[j] === 'from' && /^["']/.test(tokens[j + 1] ?? '')) { add(tokens[j + 1]); break; }
+    }
+  }
+  return imports;
+}
+
+function fixtureConsumerTests(changes, root) {
+  const changed = new Set(changes.map(change => change.path));
+  if (![...changed].some(path => /\.[cm]?js$/.test(path))) return [];
+  // Check every path component before reading. In particular, a fixture folder
+  // may be a Windows junction even when the final module looks like a file.
+  function safePath(path, { missing = false, directory = false } = {}) {
+    let target = root;
+    const parts = path.split('/');
+    for (let i = 0; i < parts.length; i++) {
+      target = resolve(target, parts[i]);
+      let info;
+      try { info = lstatSync(target); }
+      catch (error) { if (error.code === 'ENOENT') return missing; throw error; }
+      if (info.isSymbolicLink()) return false;
+      if (i < parts.length - 1 || directory) { if (!info.isDirectory()) return false; }
+      else if (!info.isFile()) return false;
+    }
+    return true;
+  }
+  if (!safePath('test', { directory: true })) return [];
+  const dependencies = new Map();
+  const forbidden = new Set(['node_modules', 'arkiv', 'random-stuff-jakob']);
+  function imports(path) {
+    if (dependencies.has(path)) return dependencies.get(path);
+    const found = staticRelativeImports(readFileSync(resolve(root, path), 'utf8'))
+      .map(specifier => posix.normalize(posix.join(posix.dirname(path), specifier)))
+      .filter(target => !target.startsWith('../') && !target.split('/').some(part => forbidden.has(part) || part.startsWith('.')));
+    dependencies.set(path, found);
+    return found;
+  }
+  function reachesChange(path, seen = new Set()) {
+    if (seen.has(path)) return false;
+    seen.add(path);
+    for (const target of imports(path)) {
+      const fixture = target.startsWith('test/fixtures/') && /\.[cm]?js$/.test(target);
+      if (fixture && !safePath(target, { missing: true })) continue;
+      // Missing targets still count: deleting a used helper must run its tests.
+      // Production modules are leaf dependencies and are never opened here.
+      if (changed.has(target) && (fixture || path.startsWith('test/fixtures/'))) return true;
+      if (fixture && safePath(target) && reachesChange(target, seen)) return true;
+    }
+    return false;
+  }
+  return readdirSync(resolve(root, 'test'), { withFileTypes: true })
+    .filter(entry => entry.isFile() && entry.name.endsWith('.mjs'))
+    .map(entry => `test/${entry.name}`).filter(path => reachesChange(path));
+}
+
 export function focusedTests(changes, root = repositoryRoot) {
   const selected = new Set();
   const add = path => { if (existsSync(resolve(root, path))) selected.add(path); };
@@ -99,6 +168,7 @@ export function focusedTests(changes, root = repositoryRoot) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
   }
+  for (const path of fixtureConsumerTests(changes, root)) selected.add(path);
   return [...selected].sort();
 }
 

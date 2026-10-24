@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -225,6 +225,62 @@ test('focused selection follows changed and deleted sources without running unre
 test('focused selection rejects traversal and option-like paths', () => {
   for (const path of ['../outside.mjs', 'web/../outside.mjs', '/outside.mjs', '--help', 'web\\outside.mjs']) {
     assert.throws(() => checkPlan('focused', {changes: [change(path)]}), /Invalid changed path/);
+  }
+});
+
+test('focused selection follows static fixture imports, including cycles and deleted targets, without executing helpers', async () => {
+  await fixture(async root => {
+    await mkdir(join(root, 'test', 'fixtures'), { recursive: true });
+    const files = {
+      'test/direct.mjs': "import './fixtures/shared.mjs';\n",
+      'test/transitive.mjs': "import { helper } from './fixtures/wrapper.mjs';\n",
+      'test/fixtures/wrapper.mjs': "export { helper } from './shared.mjs';\n",
+      'test/fixtures/shared.mjs': "import './wrapper.mjs';\nimport '../../services/widget.mjs';\nthrow Error('fixture must only be read');\nexport const helper = 1;\n",
+      'test/unrelated.mjs': "// import './fixtures/shared.mjs';\nconst example = `import './fixtures/shared.mjs';`;\nimport './fixtures/other.mjs';\n",
+      'test/fixtures/other.mjs': 'export {};\n',
+    };
+    for (const [path, content] of Object.entries(files)) await writeFile(join(root, path), content);
+    const expected = ['test/direct.mjs', 'test/transitive.mjs'];
+    for (const changed of ['test/fixtures/shared.mjs', 'services/widget.mjs']) {
+      assert.deepEqual(focusedTests([change(changed)], root), expected);
+    }
+    await rm(join(root, 'test', 'fixtures', 'shared.mjs'));
+    assert.deepEqual(focusedTests([change('test/fixtures/shared.mjs', 'D')], root), expected);
+    const commands = checkPlan('focused', { changes: [change('test/fixtures/shared.mjs', 'D')], root });
+    assert.deepEqual(commands.find(args => args.includes('--test')), [process.execPath, '--test', '--test-concurrency=4', ...expected]);
+    assert.ok(commands.every(args => !args.includes('.githooks/pre-commit-full')));
+  });
+});
+
+test('fixture discovery does not follow linked directories, linked files or production imports', async () => {
+  await fixture(async root => {
+    const outside = await mkdtemp(join(tmpdir(), 'croupier-hook-outside-'));
+    try {
+      await mkdir(join(root, 'test', 'fixtures'), { recursive: true });
+      await mkdir(join(root, 'services'));
+      await writeFile(join(root, 'test', 'linked.mjs'), "import './fixtures/linked/helper.mjs';\nimport './fixtures/file.mjs';\n");
+      await writeFile(join(root, 'test', 'production.mjs'), "import '../services/widget.mjs';\n");
+      await writeFile(join(root, 'services', 'widget.mjs'), "import '../test/fixtures/target.mjs';\n");
+      await writeFile(join(outside, 'helper.mjs'), "import '../../../target.mjs';\n");
+      await symlink(outside, join(root, 'test', 'fixtures', 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
+      // A directory link at a module filename catches file-path traversal too,
+      // and works on Windows without the privilege required for file symlinks.
+      await symlink(outside, join(root, 'test', 'fixtures', 'file.mjs'), process.platform === 'win32' ? 'junction' : 'dir');
+      assert.deepEqual(focusedTests([change('test/fixtures/linked/helper.mjs')], root), []);
+      assert.deepEqual(focusedTests([change('test/fixtures/file.mjs')], root), []);
+      assert.deepEqual(focusedTests([change('test/fixtures/target.mjs')], root), []);
+      assert.deepEqual(focusedTests([change('services/widget.mjs')], root), []);
+    } finally {
+      await rm(join(root, 'test', 'fixtures', 'linked'), { force: true, recursive: true });
+      await rm(join(root, 'test', 'fixtures', 'file.mjs'), { force: true, recursive: true });
+      await rm(outside, { force: true, recursive: true });
+    }
+  });
+});
+
+test('focused selection includes the microphone consumer for fixture and camera changes', () => {
+  for (const path of ['test/fixtures/microphone-control.mjs', 'services/game/public/astrid-camera-control.mjs']) {
+    assert.ok(focusedTests([change(path)]).includes('test/microphone-openclaw-integration.mjs'), path);
   }
 });
 
