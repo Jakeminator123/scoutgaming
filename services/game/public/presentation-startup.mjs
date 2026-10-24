@@ -6,6 +6,8 @@ export function createPresentationStartup({ document, dealerId, timeoutMs = 3000
   const status = document.querySelector('#presentation-loading');
   const loadingText = status?.textContent ?? '';
   let state = 'pending', gestureWaiting = false, timer, timerGeneration = 0;
+  let resolveReady;
+  const whenReady = new Promise(resolve => { resolveReady = resolve; });
   root.dataset.presentationStartup = state;
   const stopTimer = () => { ++timerGeneration; if (timer !== undefined) clearTimer(timer); timer = undefined; };
   const armTimer = () => {
@@ -28,6 +30,7 @@ export function createPresentationStartup({ document, dealerId, timeoutMs = 3000
   }
   return {
     get state() { return state; },
+    whenReady,
     waitForGesture(presentedDealer, waiting) {
       if (presentedDealer !== dealerId || state !== 'pending' || typeof waiting !== 'boolean') return false;
       if (gestureWaiting === waiting) return true;
@@ -42,6 +45,7 @@ export function createPresentationStartup({ document, dealerId, timeoutMs = 3000
       if (presentedDealer !== dealerId || ['ready','navigating','closed'].includes(state)) return false;
       stopTimer(); gestureWaiting = false; state = 'ready'; root.dataset.presentationStartup = state;
       if (status) { status.textContent = ''; status.hidden = true; }
+      resolveReady();
       return true;
     },
     fail,

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {placeActions,placeDealControl} from '../services/game/public/action-placement.mjs';
+import {createPresentationStartup} from '../services/game/public/presentation-startup.mjs';
 const box=(left,top,width,height)=>({left,top,right:left+width,bottom:top+height});
 const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
 test('controls stay clear of a seven-seat fan, totals and wallet at each active seat',()=>{
@@ -56,8 +57,8 @@ test('action panels too large for the available viewport have no out-of-bounds p
   }
 });
 
-test('actual action controls recover from a stale phone position using visible cards and a touch-sized compact row',()=>{
-  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
+function actionControlsFixture(){
+  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
   const fragment=source.slice(source.indexOf('function showActions(seat)'),source.indexOf("$('#deal-now').onclick"));
   const classes=()=>{const values=new Set();return {contains:key=>values.has(key),add:key=>values.add(key),remove:key=>values.delete(key),toggle:(key,on)=>on?values.add(key):values.delete(key)};};
   const node=(selectors,rect,opacity='1')=>({selectors,rect,opacity,style:{},getClientRects(){return [this.rect];},getBoundingClientRect(){return {...this.rect,width:this.rect.right-this.rect.left,height:this.rect.bottom-this.rect.top};}});
@@ -81,19 +82,25 @@ test('actual action controls recover from a stale phone position using visible c
   const context=vm.createContext({innerWidth:320,innerHeight:568,$:selector=>nodes[selector],balance:5,
     round:{active:0,legal:()=>['hit','stand','double'],live:()=>[{stake:10,box:3}]},seatOfLive:()=>activeSeat,placeActions,
     getComputedStyle:element=>({display:element===bar?'none':'block',visibility:'visible',opacity:element.opacity??'1'}),
-    document:{querySelectorAll:query=>obstacles.filter(element=>query.split(',').some(selector=>element.selectors.includes(selector.trim()))),createElement:()=>({setAttribute(){},style:{}})}});
-  vm.runInContext(fragment+';showActions()',context);
+    document:{documentElement:{dataset:{gameDealer:'dragan'}},querySelector:selector=>nodes[selector],querySelectorAll:query=>obstacles.filter(element=>query.split(',').some(selector=>element.selectors.includes(selector.trim()))),createElement:()=>({setAttribute(){},style:{}})}});
+  vm.runInContext(fragment,context);
   const bounds=()=>box(parseFloat(top.style.left),parseFloat(top.style.top),top.offsetWidth,top.offsetHeight);
+  return {source,context,bar,top,node,nodes,obstacles,hiddenTotal,visibleCards,activeTotal,bounds,setPickerTop:value=>{pickerTop=value;}};
+}
+
+test('actual action controls recover from a stale phone position using visible cards and a touch-sized compact row',()=>{
+  const {context,top,node,nodes,obstacles,hiddenTotal,visibleCards,activeTotal,bounds,setPickerTop}=actionControlsFixture();
+  vm.runInContext('showActions()',context);
   assert.ok(bounds().bottom<=568&&bounds().right<=320,'resizing must replace stale offscreen coordinates');
   assert.equal(top.classList.contains('action-compact'),true,'the full panel does not fit in the measured gap');
   assert.notEqual(top.style.visibility,'hidden');assert.ok(top.offsetHeight>=44);
   assert.ok(obstacles.filter(element=>element.opacity!=='0'&&element.rect.right>element.rect.left&&element.rect.bottom>element.rect.top).every(element=>!overlaps(bounds(),element.rect)));
   assert.deepEqual(top.buttons.map(button=>button.disabled),[true,false,false,true],'layout cannot enable an illegal or unaffordable move');
-  context.innerWidth=180;context.innerHeight=160;pickerTop=160;
+  context.innerWidth=180;context.innerHeight=160;setPickerTop(160);
   obstacles.push(node(['#wallet'],box(0,0,180,160)));vm.runInContext('showActions()',context);
   assert.equal(top.style.visibility,'hidden');assert.equal(top.style.left,'');assert.equal(top.style.top,'');
   assert.equal(nodes['#action-placement-warning'].hidden,false,'a genuinely impossible viewport is disclosed');
-  obstacles.pop();context.innerWidth=390;context.innerHeight=844;pickerTop=797;
+  obstacles.pop();context.innerWidth=390;context.innerHeight=844;setPickerTop(797);
   vm.runInContext('showActions()',context);
   assert.notEqual(top.style.visibility,'hidden');assert.equal(top.classList.contains('action-compact'),false);
   assert.equal(nodes['#action-placement-warning'].hidden,true);assert.ok(bounds().bottom<=797&&bounds().right<=390);
@@ -115,6 +122,54 @@ test('actual action controls recover from a stale phone position using visible c
   vm.runInContext('showActions()',context);
   assert.equal(top.classList.contains('action-compact'),true);assert.notEqual(top.style.visibility,'hidden');
   assert.ok(bounds().bottom<193.18&&obstacles.every(element=>!overlaps(bounds(),element.rect)));
+});
+
+test('fresh phone entry places restored actions after both the selected first frame and layout initialization',async()=>{
+  for(const firstFrameBeforeLayout of [false,true]){
+    const {source,context,top,nodes,obstacles,bounds}=actionControlsFixture();
+    for(const obstacle of obstacles)obstacle.parentElement=nodes['#scene'];
+    const computed=context.getComputedStyle;
+    context.getComputedStyle=element=>element===nodes['#scene']&&context.document.documentElement.dataset.presentationStartup!=='ready'
+      ? {...computed(element),visibility:'hidden',opacity:'0'}:computed(element);
+    const startup=createPresentationStartup({document:context.document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
+    context.presentationStartup=startup;
+    let layoutInitialized=false,refreshes=0;
+    context.layoutSeats=()=>{assert.ok(layoutInitialized,'ready must not touch uninitialized round/seat layout');};
+    context.activeBoxHighlight=()=>{refreshes++;context.layoutSeats();context.showActions();};
+    context.layerComposition={onGeometryChange(){}};context.compactQuery={addEventListener(){}};context.addEventListener=()=>{};
+    const layoutStart=source.indexOf('\nlayoutSeats();\nlayerComposition?.onGeometryChange(layoutSeats);');
+    assert.ok(layoutStart>=0,'the actual layout initialization must be included');
+    const layoutInitialization=source.slice(layoutStart,source.indexOf("\ndocument.querySelector('#tableimg')",layoutStart));
+    if(firstFrameBeforeLayout){startup.ready('dragan');await Promise.resolve();assert.equal(refreshes,0);}
+    layoutInitialized=true;vm.runInContext(layoutInitialization+'\nshowActions();',context);
+    if(!firstFrameBeforeLayout){
+      assert.equal(top.classList.contains('action-compact'),false,'the hidden scene initially reports no obstacles');
+      assert.equal(startup.ready('other'),false);await Promise.resolve();assert.equal(refreshes,0);
+      startup.ready('dragan');
+    }
+    await Promise.resolve();
+    assert.equal(top.classList.contains('action-compact'),true,'fresh 320px entry must measure visible obstacles');
+    assert.equal(refreshes,1,'first visible frame must refresh once, even without a resize');
+    assert.ok(bounds().bottom<=568&&obstacles.filter(element=>element.opacity!=='0'&&element.rect.right>element.rect.left&&element.rect.bottom>element.rect.top).every(element=>!overlaps(bounds(),element.rect)));
+    startup.ready('dragan');await Promise.resolve();assert.equal(refreshes,1,'repeated idle frames cannot relayout the active hand');
+  }
+});
+
+test('queued first-frame layout cannot run after page close or navigation',async()=>{
+  for(const stop of ['close','navigate']){
+    const {source,context}=actionControlsFixture();
+    const startup=createPresentationStartup({document:context.document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
+    context.presentationStartup=startup;
+    let refreshes=0;
+    context.layoutSeats=()=>{};context.activeBoxHighlight=()=>{refreshes++;};
+    context.layerComposition={onGeometryChange(){}};context.compactQuery={addEventListener(){}};context.addEventListener=()=>{};
+    const layoutStart=source.indexOf('\nlayoutSeats();\nlayerComposition?.onGeometryChange(layoutSeats);');
+    assert.ok(layoutStart>=0,'the actual layout initialization must be included');
+    vm.runInContext(source.slice(layoutStart,source.indexOf("\ndocument.querySelector('#tableimg')",layoutStart)),context);
+    startup.ready('dragan');
+    if(stop==='close')startup.close();else startup.navigate('/other',()=>{});
+    await Promise.resolve();assert.equal(refreshes,0);
+  }
 });
 
 test('a deal button moved above the bets still clears the remove-stake control',()=>{

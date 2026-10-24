@@ -154,6 +154,27 @@ test('mobile recovery exposes a reload button outside the hidden scene after tim
   assert.equal(startup.ready('other'),false); assert.equal(startup.ready('paow'),true);
 });
 
+test('first-frame readiness is one-shot, follows scene reveal, and supports late layout initialization',async()=>{
+  const {createPresentationStartup}=await import('../services/game/public/presentation-startup.mjs');
+  const status={hidden:false,textContent:'loading',setAttribute(){},append(){}};
+  const document={documentElement:{dataset:{}},querySelector:()=>status,createElement:()=>({})};
+  const startup=createPresentationStartup({document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
+  let readyCount=0;
+  startup.whenReady.then(()=>{assert.equal(document.documentElement.dataset.presentationStartup,'ready');assert.equal(status.hidden,true);readyCount++;});
+  assert.equal(startup.ready('other'),false);startup.waitForGesture('dragan',true);
+  await Promise.resolve();assert.equal(readyCount,0,'a tap prompt is not a presented frame');
+  startup.fail();await Promise.resolve();assert.equal(readyCount,0,'failure cannot reveal a scene');
+  assert.equal(startup.ready('dragan'),true);await Promise.resolve();assert.equal(readyCount,1);
+  assert.equal(startup.ready('dragan'),false);await Promise.resolve();assert.equal(readyCount,1);
+  let lateReady=false;startup.whenReady.then(()=>{lateReady=true;});await Promise.resolve();assert.equal(lateReady,true);
+  for(const stop of ['close','navigate']){
+    const stopped=createPresentationStartup({document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
+    let notified=false;stopped.whenReady.then(()=>{notified=true;});
+    if(stop==='close')stopped.close();else stopped.navigate('/other',()=>{});
+    assert.equal(stopped.ready('dragan'),false);await Promise.resolve();assert.equal(notified,false);
+  }
+});
+
 test('gesture waits pause only the selected pending startup and resume a fresh bounded load watch', async()=>{
   const {createPresentationStartup}=await import('../services/game/public/presentation-startup.mjs');
   const timers=[],cleared=[],buttons=[],status={hidden:false,textContent:'loading',setAttribute(){},append:button=>buttons.push(button)};

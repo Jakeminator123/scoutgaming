@@ -744,6 +744,12 @@ compactQuery.addEventListener('change', e => {
   layoutSeats(); renderBets(); activeBoxHighlight();
 });
 addEventListener('resize', () => { layoutSeats(); activeBoxHighlight(); });
+// A restored round can be measured while startup still hides every obstacle.
+// Subscribe after layout initialization so even an early first frame is safe.
+presentationStartup.whenReady.then(() => {
+  if (presentationStartup.state !== 'ready') return;
+  layoutSeats(); activeBoxHighlight();
+});
 document.querySelector('#tableimg')?.addEventListener('load', layoutSeats);
 
 // ---------- chip picker ----------
