@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {labBasePath,labUrl} from '../lib/lab-url.mjs';
 import styles from './control-resource-lifecycle.module.css';
+import {ConfirmDialog} from '../client/admin/components/studio/confirm-dialog';
 
 type Operator = {id:string;slug:string;name:string;status:string;lanes:string[];packageRevision:number|null;archivedAt:string|null;roomCount:number;archivedRoomCount:number};
 type Room = {id:string;name:string;operatorId:string;presentationLaneId:string;state:string;archivedAt:string|null;packageRevision:number|null;published:boolean;canArchive:boolean;canRestore:boolean;restoreBlockers:string[]};
@@ -142,9 +143,8 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
       <p>{operator.status==='active'?`Flytta bolaget och dess ${operator.roomCount} spelrum till papperskorgen. Rummen kopplas loss från den aktiva strukturen. Team, gemensamma media och historik bevaras.`:operator.archivedAt?'Bolaget ligger i papperskorgen. Team, media och publiceringshistorik finns kvar.':'Bolaget är avstängt sedan tidigare och kan inte återställas via arkivet.'}</p>
       {operator.status==='active'||operator.archivedAt?<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Flytta bolag till papperskorgen':'Återställ bolag'}</button>:null}
     </div>:null}
-    {intent&&intent.operatorId===operatorId?<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Flytta till papperskorgen:':'Återställ'} {intent.name}</legend>
-      <p>{intent.kind==='operator'?(intent.archived?'Bolagets portal stängs och alla dess spelrum avpubliceras och flyttas till papperskorgen. Återställning sker uttryckligen, ett rum i taget.':'Bolagets åtkomst återställs. Spelrummen stannar i papperskorgen tills du återställer dem som pausade rum.'):intent.kind==='state'?(intent.state==='live'?'Rummet blir tillgängligt i bolagets spellobby.':'Rummet döljs från spellobbyn.'):intent.archived?'Rummet avpubliceras och flyttas till papperskorgen. Media och historik behålls.':'Rummet återställs som pausat, så att du kan granska det innan det öppnas.'}</p>
-      <div className={styles.actions}><button className="sg-btn sg-btn-primary" type="button" onClick={()=>void apply()}>{busy?'Sparar…':'Bekräfta'}</button><button className="sg-btn sg-btn-ghost" type="button" onClick={()=>setIntent(null)}>Avbryt</button></div>
-    </fieldset>:null}
+    {intent&&intent.operatorId===operatorId?<ConfirmDialog open title={`${intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Flytta till papperskorgen:':'Återställ'} ${intent.name}`} danger={intent.kind!=='state'&&Boolean(intent.archived)}
+      description={intent.kind==='operator'?(intent.archived?'Bolagets portal stängs och alla dess spelrum avpubliceras och flyttas till papperskorgen. Återställning sker uttryckligen, ett rum i taget.':'Bolagets åtkomst återställs. Spelrummen stannar i papperskorgen tills du återställer dem som pausade rum.'):intent.kind==='state'?(intent.state==='live'?'Rummet blir tillgängligt i bolagets spellobby.':'Rummet döljs från spellobbyn.'):intent.archived?'Rummet avpubliceras och flyttas till papperskorgen. Media och historik behålls.':'Rummet återställs som pausat, så att du kan granska det innan det öppnas.'}
+      busy={busy} busyLabel="Sparar…" confirmLabel="Bekräfta" confirmDisabled={writesOff} onConfirm={()=>void apply()} onCancel={()=>setIntent(null)}/>:null}
   </section>;
 }

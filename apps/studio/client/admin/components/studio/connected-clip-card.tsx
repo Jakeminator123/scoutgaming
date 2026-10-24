@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react';
 import { Film, Upload, Check } from 'lucide-react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { ClipGuide } from './clip-guide';
@@ -7,10 +7,17 @@ import { clipPoseChain } from '../../../../components/clip-pose-chain.mjs';
 import type { ClipSlot, VideoEntry } from '../../lib/connected-studio.mjs';
 import type { StudioClipUsage } from '../../lib/studio-policy.mjs';
 import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup, type ClipLibraryGroup } from '../../lib/studio-layout.mjs';
+import { INTAKE_DRAG_TYPE } from '../../lib/clip-intake.mjs';
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
   localPreviewUrl?:string; usage?:StudioClipUsage; usageChanged?:boolean; active?:boolean; onOpen?:()=>void;
   library?:ClipLibraryGroup[]; variants:{id:string;label:string;baseline?:boolean}[]; variantId:string; selectedId:string; onSelect:(id:string)=>void; onSlot:(id:string)=>void;
-  onVariant:(id:string)=>void; onBind:(asAlternative?:boolean)=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onSettings:()=>void; };
+  onVariant:(id:string)=>void; onBind:(asAlternative?:boolean)=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onFiles?:(files:File[])=>void; onSettings:()=>void;
+  // Intake rows dragged from the panel: the parent says which slots accept the dragged row.
+  intakeDrag?:{rowId:string;check:(slotId:string)=>{accepted:boolean;reason:string}}|null; onIntakeDrop?:(rowId:string,slotId:string)=>void;
+  // Mount point for actions owned elsewhere, such as a deletion button.
+  actions?:ReactNode; };
+const isIntakeDrag=(event:DragEvent)=>Array.from(event.dataTransfer.types).includes(INTAKE_DRAG_TYPE);
+function droppedFiles(data:CardData,files:FileList){const list=Array.from(files);if(!list.length)return;if(data.onFiles)data.onFiles(list);else data.onFile(list[0]);}
 export type CardNode = Node<CardData, 'registeredClip'>;
 export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{data:CardData;settingsOpen?:boolean;active?:boolean}) {
   const [drag,setDrag]=useState(false);
@@ -42,7 +49,7 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
   return <article className={`studio-clip-detail ${drag?'is-dragging':''}`} style={{'--clip-color':data.group.color} as CSSProperties}
     aria-label={`${data.group.title} ${data.group.subtitle}`} data-slot={data.slot.id} data-card={data.group.id}
     onDragOver={event=>{event.preventDefault();event.stopPropagation();if(!data.busy)setDrag(true);}} onDragLeave={()=>setDrag(false)}
-    onDrop={event=>{event.preventDefault();event.stopPropagation();setDrag(false);const file=event.dataTransfer.files[0];if(file&&!data.busy)data.onFile(file);}}>
+    onDrop={event=>{event.preventDefault();event.stopPropagation();setDrag(false);if(!data.busy)droppedFiles(data,event.dataTransfer.files);}}>
     <header className="studio-card-heading"><span className="studio-card-dot"/><strong>{data.group.title}</strong><span>{data.group.subtitle}</span></header>
     <div className="studio-card-body nodrag nowheel">
       <section className="studio-card-situation"><span className="studio-card-eyebrow">Situation</span><h2>{slotCaption(data.slot)}</h2><p>{slotExplanation(data.slot)}</p></section>
@@ -58,7 +65,8 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
       {data.variants.length>1&&<label className="studio-card-select">Standard och varianter<select aria-label={`Variant ${data.slot.id}`} value={data.variantId} disabled={data.busy} onChange={event=>data.onVariant(event.target.value)}>{data.variants.map(row=><option key={row.id} value={row.id}>{row.baseline?'Standardklipp':row.label}</option>)}</select></label>}
       {!planned&&data.slot.game!=='roulette'&&data.library?.length?<div className="studio-clip-library" aria-label="Klipp i vald situation">{data.library.map(group=><section key={group.id}><h3>{group.label}<span>{group.clips.length}</span></h3><div>{group.clips.map(clip=><button key={clip.id} type="button" disabled={data.busy} aria-pressed={clip.id===data.selectedId} onClick={()=>data.onSelect(clip.id)}><Film size={15} aria-hidden="true"/><span>{clip.label}<small>{clip.id===data.selectedId?'Visas i förhandsvisningen':data.boundIds.includes(clip.id)?'Ingår i utkastet':'Välj för att förhandsvisa'}</small></span></button>)}</div></section>)}</div>:!planned&&<label className="studio-card-select">Välj klipp<select aria-label={`Befintligt klipp ${data.slot.id}`} value={data.selectedId} disabled={data.busy} onChange={event=>data.onSelect(event.target.value)}><option value="">Välj registrerad video…</option>{data.clips.map(row=><option key={row.id} value={row.id}>{row.label}{data.boundIds.includes(row.id)?' · används i utkast':''}</option>)}</select></label>}
       {!planned&&<div className="studio-card-actions">
-        {data.slot.sourceType==='speak'?<button disabled={data.busy} onClick={data.onSettings}>Talset</button>:<label><Upload size={12}/>{data.slot.localOnly?'Prova PNG lokalt':'Ladda upp'}<input aria-label={`${data.slot.localOnly?'Prova lokalt':'Ladda upp'} ${data.slot.id}`} type="file" accept={image?'.png,image/png':'.mp4,.webm,video/mp4,video/webm'} disabled={data.busy} onChange={event=>{const file=event.target.files?.[0];if(file)data.onFile(file);event.target.value='';}}/></label>}</div>}
+        {data.slot.sourceType==='speak'?<button disabled={data.busy} onClick={data.onSettings}>Talset</button>:<label><Upload size={12}/>{data.slot.localOnly?'Prova PNG lokalt':'Ladda upp'}<input aria-label={`${data.slot.localOnly?'Prova lokalt':'Ladda upp'} ${data.slot.id}`} type="file" multiple={Boolean(data.onFiles)&&!image} accept={image?'.png,image/png':'.mp4,.webm,video/mp4,video/webm'} disabled={data.busy} onChange={event=>{if(event.target.files)droppedFiles(data,event.target.files);event.target.value='';}}/></label>}
+        {data.actions}</div>}
       {wheelStart&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Kalibrera startfilm</button>}
       {selected&&!settingsOpen&&data.slot.game==='roulette'&&data.slot.eventId==='roulette.idle'&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Granska poser och inramning</button>}
       {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind()}>Koppla till utkast</button>}
@@ -85,14 +93,22 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
   const exactBinding=!data.slot.family&&data.slot.eventId!=='idle.ready'&&data.slot.game!=='roulette';
   const ready=Boolean(selected&&(exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
   const rendered=isRenderedOutcome(data.slot);
-  return <article className={`studio-clip-card studio-map-card ${data.active?'is-selected':''} ${drag?'is-dragging':''}`} style={{'--clip-color':data.group.color} as CSSProperties} aria-label={`${data.group.title} ${data.group.subtitle}`} data-slot={data.slot.id} data-card={data.group.id}
-    onDragOver={event=>{event.preventDefault();event.stopPropagation();if(!data.busy&&!rendered)setDrag(true);}} onDragLeave={()=>setDrag(false)}
-    onDrop={event=>{event.preventDefault();event.stopPropagation();setDrag(false);const file=event.dataTransfer.files[0];if(file&&!data.busy&&!rendered)data.onFile(file);}}>
+  const intake=data.intakeDrag&&!rendered?data.intakeDrag.check(data.slot.id):null;
+  const intakeAccepts=(slotId:string)=>Boolean(data.intakeDrag&&!rendered&&data.intakeDrag.check(slotId).accepted);
+  function dropIntake(event:DragEvent,slotId:string){
+    const rowId=event.dataTransfer.getData(INTAKE_DRAG_TYPE);
+    event.preventDefault();event.stopPropagation();setDrag(false);
+    if(rowId&&intakeAccepts(slotId))data.onIntakeDrop?.(rowId,slotId);
+  }
+  return <article className={`studio-clip-card studio-map-card ${data.active?'is-selected':''} ${drag?'is-dragging':''} ${intake?intake.accepted?'is-intake-target':'is-intake-rejected':''}`} style={{'--clip-color':data.group.color} as CSSProperties} aria-label={`${data.group.title} ${data.group.subtitle}`} data-slot={data.slot.id} data-card={data.group.id}
+    onDragOver={event=>{if(isIntakeDrag(event)){if(intake?.accepted){event.preventDefault();event.stopPropagation();setDrag(true);}return;}event.preventDefault();event.stopPropagation();if(!data.busy&&!rendered)setDrag(true);}} onDragLeave={()=>setDrag(false)}
+    onDrop={event=>{if(isIntakeDrag(event)){dropIntake(event,data.slot.id);return;}event.preventDefault();event.stopPropagation();setDrag(false);if(!data.busy&&!rendered)droppedFiles(data,event.dataTransfer.files);}}>
     <header className="studio-card-heading"><span className="studio-card-dot"/><strong>{data.group.title}</strong><span>{data.group.subtitle}</span></header>
     <div className="studio-card-body nodrag nowheel">
       <h2>{slotCaption(data.slot)}</h2>
       <p className="studio-map-card-description">{slotExplanation(data.slot)}</p>
-      {data.slot.game!=='roulette'&&data.group.slots.length>1&&data.group.slots.length<=7&&<div className="studio-slot-choices" role="group" aria-label={`Situation i ${data.group.title}`}>{data.group.slots.map(slot=><button key={slot.id} type="button" disabled={data.busy} aria-pressed={slot.id===data.slot.id&&Boolean(data.active)} onClick={()=>data.onSlot(slot.id)}>{slotCaption(slot)}</button>)}</div>}
+      {data.slot.game!=='roulette'&&data.group.slots.length>1&&data.group.slots.length<=7&&<div className="studio-slot-choices" role="group" aria-label={`Situation i ${data.group.title}`}>{data.group.slots.map(slot=><button key={slot.id} type="button" disabled={data.busy} aria-pressed={slot.id===data.slot.id&&Boolean(data.active)} className={data.intakeDrag?intakeAccepts(slot.id)?'is-intake-target':'is-intake-rejected':undefined} onClick={()=>data.onSlot(slot.id)}
+        onDragOver={event=>{if(isIntakeDrag(event)&&intakeAccepts(slot.id)){event.preventDefault();event.stopPropagation();}}} onDrop={event=>{if(isIntakeDrag(event))dropIntake(event,slot.id);}}>{slotCaption(slot)}</button>)}</div>}
       <div className="studio-map-card-row">
         <ClipThumb url={data.slot.game==='roulette'||data.slot.planned||data.slot.intakeOnly?undefined:selected?.previewUrl}/>
         <div>
@@ -102,6 +118,6 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
       </div>
       <button id={`studio-card-open-${data.group.id}`} type="button" className="studio-card-open" aria-controls="studio-clip-inspector" disabled={data.busy} aria-expanded={Boolean(data.active)} onClick={data.onOpen}><Film size={17}/>{rendered?'Visa funktion':'Förhandsvisa och redigera'}</button>
     </div>
-    <footer><span>{data.group.slots.length} fack</span><span>{data.clips.length} filer i valt fack</span></footer>
+    <footer>{intake?<span className={intake.accepted?'studio-intake-hint is-ok':'studio-intake-hint'}>{intake.accepted?`Släpp här: ${slotCaption(data.slot)}`:intake.reason}</span>:<><span>{data.group.slots.length} fack</span><span>{data.clips.length} filer i valt fack</span></>}</footer>
   </article>;
 }

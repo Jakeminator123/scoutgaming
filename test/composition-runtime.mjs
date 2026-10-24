@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createPresentationApi} from '../services/game/presentation-api.mjs';
 import {presentationCapabilitiesResponse} from '../services/game/presentation-capabilities.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateCompositionSettings,sceneForComposition} from '../packages/presentation/contracts/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry,defaultBlackjackAutoScale,validateCompositionSettings,sceneForComposition} from '../packages/presentation/contracts/composition-settings.mjs';
 import {validateComposition,createLayerComposition,clipCompositing} from '../packages/presentation/runtime/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../services/game/composition-runtime.mjs';
 import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
@@ -559,4 +559,52 @@ test('historical v2 room entry rejects a drifted portrait adapter even when both
   assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'linnea');
   f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
   await assert.rejects(select('operator=north&table=room-overlap&dealer=nora'),error=>error.statusCode===503&&error.message==='presentation_dealer_mismatch');
+});
+
+test('autoScale is optional per board layout, strictly validated and preserved in the frozen package',()=>{
+  for(const layout of ['mobile','desktop']){
+    const settings=defaultCompositionSettings(),tableId=asset('table',2).id,board=defaultBlackjackTableGeometry(tableId);
+    assert.equal(Object.hasOwn(board[layout],'autoScale'),false);
+    board[layout].autoScale={...defaultBlackjackAutoScale(),adjust:{cards:{scale:1.1},chips:{dx:-.02,dy:.03,scale:.9}}};settings.blackjackTables=[board];
+    assert.deepEqual(validateCompositionSettings(settings,{tableIds:[tableId],assets:[asset('table',2)]}),settings);
+    const {project,pack,descriptor}=fixture('nora','Nora',settings),saved=structuredClone(board[layout].autoScale);
+    assert.deepEqual(validateComposition(descriptor).settings.blackjackTables[0][layout].autoScale,saved);
+    delete project.lanes[0].composition.blackjackTables[0][layout].autoScale;
+    assert.deepEqual(readPackagePresentation(pack).lanes[0].composition.blackjackTables[0][layout].autoScale,saved);
+    const auto=defaultBlackjackAutoScale();
+    for(const value of [undefined,null,{},true,'dealer',{landing:false,cardSize:false,chips:false},{landing:true,cardSize:true},{...auto,extra:true},{...auto,landing:1},
+      {...auto,adjust:{}},{...auto,adjust:null},{...auto,adjust:{table:{scale:1}}},{...auto,adjust:{cards:{scale:2.01}}},{...auto,adjust:{cards:{scale:.49}}},
+      {...auto,adjust:{cards:{scale:1,dx:0}}},{...auto,adjust:{chips:{dx:.51,dy:0,scale:1}}},{...auto,adjust:{chips:{dx:0,dy:NaN,scale:1}}},{...auto,adjust:{chips:{dx:0,dy:0}}}]){
+      const invalid=structuredClone(settings);invalid.blackjackTables[0][layout].autoScale=value;assert.throws(()=>validateCompositionSettings(invalid));
+    }
+  }
+});
+
+test('frozen packages without autoScale keep their exact table layout; a later autoScale draft follows the dealer and never reaches them',async()=>{
+  const tableId=asset('table',2).id,settings=defaultCompositionSettings();
+  settings.blackjackTables=[defaultBlackjackTableGeometry(tableId)];settings.desktop.dealer={scale:1.4,x:.1,y:.05};settings.desktop.table.y=.35;
+  const {project,pack}=fixture('nora','Nora',settings),frozen=structuredClone(readPackagePresentation(pack));
+  project.lanes[0].composition.blackjackTables[0].desktop.autoScale=defaultBlackjackAutoScale();validateProject(project);
+  assert.deepEqual(readPackagePresentation(pack),frozen);
+  assert.equal(Object.hasOwn(frozen.lanes[0].composition.blackjackTables[0].desktop,'autoScale'),false);
+  async function plane(composition){
+    const {descriptor}=fixture('nora','Nora',composition),host={dataset:{},clientWidth:1920,clientHeight:1080,append(){}};
+    const document={defaultView:{matchMedia:()=>({matches:false})},documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:1672,naturalHeight:941,
+      setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage(){}})})};
+    class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}tableGeometry(scene,image){return tableRect(scene,image,this.geometry(scene));}render(){}dispose(){}}
+    const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
+    await c.prepareClip(key,{scale:1.2,x:0,y:.02},{kind:'idle'});c.renderFrame({videoWidth:1080,videoHeight:1920});const value=c.referencePlane();c.close();return value;
+  }
+  const boxes=[0,1,2,3,4,5,6],bounds={left:12,right:1908,top:80,bottom:980},close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
+  const published=await plane(frozen.lanes[0].composition),result=layoutGameOverlay(published,boxes,bounds);
+  assert.equal(Object.hasOwn(published,'dealerPlane'),false);
+  // Exactly the earlier static geometry: table points, cardWidth on the table rectangle.
+  const board=frozen.lanes[0].composition.blackjackTables[0].desktop,rect=published.rect;
+  close(result.scale,rect.width*board.cardWidth/63);close(result.x,rect.x);close(result.y,rect.y);
+  boxes.forEach(box=>{close(result.seats[box].x,rect.x+board.seats[box].bet.x*rect.width);close(result.seats[box].y,rect.y+board.seats[box].bet.y*rect.height);});
+  close(result.dealer.x,rect.x+board.dealer.x*rect.width);
+  const draft=await plane(project.lanes[0].composition),moved=layoutGameOverlay(draft,boxes,bounds);
+  // The draft follows the idle clip's dealer instead: its landing, prop size and chips.
+  close(moved.scale,draft.dealerPlane.scale);close(moved.dealer.x,draft.dealerPlane.x+540*draft.dealerPlane.scale);
+  close(draft.dealerPlane.scale,draft.sourcePlane.scale);
 });

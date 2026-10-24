@@ -191,3 +191,13 @@ test('table clips edit lanes[0].tablePlayback behind template edit ownership and
   nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0].props.onChange(undefined);
   assert.equal(h.edits.at(-1).lanes[0].tablePlayback,undefined);assert.equal(h.edits.length,2);
 });
+
+test('composition background preview and placement overlay receive the same baseline framing',()=>{
+ const h=panelHarness(),line=h.props.project.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready');
+ const framing={scale:1.4,x:.1,y:.05};line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId='reference-film';
+ h.props.inventory.videos=[{id:'reference-film',available:true,previewUrl:'/reference.mp4',contentType:'video/mp4',classification:{framing}}];
+ const lane=h.props.project.lanes[0];lane.layers.table.default='00000000-0000-4000-8000-000000000002';
+ h.props.project.layerAssets=[{id:lane.layers.table.default,role:'table',width:1672,height:941,game:'blackjack',contentType:'image/png',label:'Table'}];
+ const editor=nodes(h.render(),n=>n.type===h.BlackjackScenePlacementEditor)[0];assert.ok(editor);
+ assert.deepEqual(editor.props.scene.framing,framing);assert.deepEqual(editor.props.renderPreview().props.framing,framing);
+});

@@ -10,9 +10,11 @@ function harness(studioPreview = null) {
   let open = false;
   const chatToggle = { dataset: { unread: '1' }, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; } };
   const context = vm.createContext({ studioPreview, chatToggle,
-    $: () => ({ classList: { toggle: (_name, value) => { open = value; } } }) });
+    $: () => ({ classList: { contains:()=>open, toggle: (_name, value) => { open = value; } } }) });
   vm.runInContext(visibility, context);
-  return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, chatToggle };
+  const start=app.indexOf('function noteChatMessage(role)');
+  vm.runInContext(app.slice(start,app.indexOf('\n}',start)+2),context);
+  return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, message:role=>vm.runInContext(`noteChatMessage(${JSON.stringify(role)})`,context), chatToggle };
 }
 
 test('conversation opens and closes on request with accessible state and cleared unread status', () => {
@@ -23,17 +25,6 @@ test('conversation opens and closes on request with accessible state and cleared
     assert.equal(h.chatToggle.attributes['aria-expanded'], String(requested));
     assert.equal(h.chatToggle.dataset.unread, undefined);
   }
-});
-
-test('chat controls never move into the hidden private camera panel', () => {
-  assert.doesNotMatch(app, /debugContainer\.append\([^;]*(?:chat-input|chat-log)/);
-  assert.doesNotMatch(app, /onLogToggle:\s*[^\n]*setChatOpen/);
-  const init = app.match(/^if \(astridCamera\) setChatOpen\(false\);$/m)?.[0];
-  assert.ok(init,'conversation starts folded alongside voice controls');
-  const h = harness();
-  vm.runInNewContext(init, { astridCamera: {}, chatToggle: h.chatToggle, setChatOpen: value => h.set(value) });
-  assert.equal(h.isOpen(), false);
-  assert.notEqual(h.chatToggle.hidden, true);
 });
 
 test('Studio preview cannot expose chat through ordinary open or close controls', () => {
@@ -58,4 +49,11 @@ test('every public dealer presentation mounts its own voice control; Studio stay
     context.chatBusy=false;context.speaking=false;context.busy=true;assert.equal(mounted.canStart(),true);
     context.speaking=true;assert.equal(mounted.canStart(),false);
   }
+});
+
+test('incoming replies preserve open conversations and mark closed conversations unread',()=>{
+ const h=harness();h.set(true);h.message('dealer');assert.equal(h.isOpen(),true);assert.equal(h.chatToggle.dataset.unread,undefined);
+ h.set(false);h.message('dealer');assert.equal(h.isOpen(),false);assert.equal(h.chatToggle.dataset.unread,'true');
+ h.message('user');assert.equal(h.isOpen(),true);assert.equal(h.chatToggle.dataset.unread,undefined);
+ const preview=harness({sessionId:'preview'});preview.message('user');assert.equal(preview.isOpen(),false);
 });

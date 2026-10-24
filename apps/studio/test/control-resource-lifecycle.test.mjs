@@ -54,7 +54,8 @@ function harness(props={}) {
     useEffect(fn,deps){const i=cursor++,old=effects[i];if(!old||deps.some((value,index)=>value!==old.deps[index]))queued.push(()=>{old?.cleanup?.();effects[i]={deps,cleanup:fn()};});}};
   const {ControlResourceLifecycle}=loadTs(source,{react,fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve}))});
   const render=()=>{cursor=0;queued=[];const tree=ControlResourceLifecycle(input);for(const fn of queued)fn();return tree;};
-  const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
+  // The shared ConfirmDialog is a function component; expand it so its buttons are inspectable.
+  const all=(node,predicate)=>!node||typeof node!=='object'?[]:typeof node.type==='function'?all(node.type(node.props),predicate):[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
   const nodes=predicate=>all(render(),predicate);
   const button=label=>nodes(node=>node.type==='button'&&node.props.children===label)[0];
   return {input,requests,changed,busy,uncertain,render,nodes,button,html:()=>renderToStaticMarkup(render()),

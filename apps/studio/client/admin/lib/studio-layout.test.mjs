@@ -170,6 +170,8 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
     {module,exports:module.exports,require:name=>{
       if(name==='../../lib/studio-layout.mjs')return {slotCaption,slotExplanation,isRenderedOutcome};
+      // Intake drag targets have their own coverage in clip-intake.test.mjs.
+      if(name==='../../lib/clip-intake.mjs')return {INTAKE_DRAG_TYPE:'application/x-scout-intake'};
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
       if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');

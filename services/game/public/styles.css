@@ -26,7 +26,7 @@
   --tilt: 55deg;
   /* responsive knobs (media queries below retune these) */
   --chip-size: 44px;
-  /* --- calibratable seat geometry (see calibrate.mjs, open with ?cal=1) --- */
+  /* --- seat geometry defaults; published Admin placement takes precedence --- */
   --spot-x: 33px; --spot-y: 39px; --spot-w: 54px; --spot-h: 40px;
   --arc-x: 60px; --arc-y: 59px; --arc-w: 106px; --arc-h: 83px; --arc-rot: 0deg;
   --pp-rot: 0deg; --tp-rot: 0deg; --label-size: 10px; --tp-size: 8.5px;
@@ -880,43 +880,6 @@ body.in-round #table-pick { opacity: .3; pointer-events: none; }
   #hint { bottom: 27vh; }
 }
 
-/* ---------- calibration overlay (press C, or ?cal=1) ---------- */
-#calibrator {
-  position: fixed; top: 64px; right: 14px; z-index: 200; width: 306px;
-  max-height: calc(100vh - 90px); display: flex; flex-direction: column;
-  background: rgba(10,11,13,.96); border: 1px solid rgba(214,255,58,.35); border-radius: 14px;
-  box-shadow: 0 24px 60px rgba(0,0,0,.6); color: #F2F1ED;
-  font-family: 'Inter', system-ui, sans-serif;
-}
-#calibrator header { display: flex; align-items: center; gap: 8px; padding: 11px 13px 9px; border-bottom: 1px solid rgba(242,241,237,.10); }
-#calibrator header b { font-family: 'Space Grotesk', sans-serif; font-size: 12px; letter-spacing: .16em; color: #D6FF3A; }
-#calibrator .cal-note { flex: 1; font-size: 9px; color: #5A6470; line-height: 1.3; }
-#calibrator .cal-x { background: none; border: none; color: #5A6470; font-size: 19px; cursor: pointer; line-height: 1; }
-#calibrator .cal-x:hover { color: #F2F1ED; }
-#calibrator .cal-body { overflow-y: auto; padding: 4px 13px 10px; }
-#calibrator h4 {
-  margin: 12px 0 6px; font-family: 'Space Grotesk', sans-serif; font-size: 9px;
-  font-weight: 700; letter-spacing: .18em; color: #5A6470; text-transform: uppercase;
-}
-#calibrator .cal-row { display: grid; grid-template-columns: 68px 1fr 50px 20px; align-items: center; gap: 6px; margin-bottom: 5px; }
-#calibrator .cal-label { font-size: 10px; color: #8b8d96; }
-#calibrator .cal-unit { font-size: 9px; color: #5A6470; }
-#calibrator input[type="range"] { width: 100%; accent-color: #D6FF3A; height: 16px; }
-#calibrator input[type="number"] {
-  width: 100%; background: rgba(242,241,237,.06); border: 1px solid rgba(242,241,237,.14);
-  color: #F2F1ED; border-radius: 5px; padding: 3px 5px;
-  font-family: 'JetBrains Mono', monospace; font-size: 10px; outline: none;
-}
-#calibrator input[type="number"]:focus { border-color: rgba(214,255,58,.6); }
-#calibrator footer { display: flex; gap: 8px; padding: 10px 13px; border-top: 1px solid rgba(242,241,237,.10); }
-#calibrator footer button {
-  flex: 1; padding: 8px 0; border-radius: 8px; cursor: pointer; border: 1px solid rgba(242,241,237,.16);
-  background: none; color: #F2F1ED;
-  font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .12em;
-}
-#calibrator .cal-copy { background: #D6FF3A; color: #0A0B0D; border-color: #D6FF3A; }
-#calibrator footer button:hover { border-color: rgba(214,255,58,.7); }
-
 /* ---------- Vera chat: Scout dark glass ---------- */
 #chat { position: relative; }
 #chat input {
@@ -1013,77 +976,6 @@ body.in-round #table-pick { opacity: .3; pointer-events: none; }
   #settlement.show { transform: translateX(-50%) translateY(0); }
 }
 
-/* calibration mode: the pieces on the felt become grabbable */
-body.cal-on .sidearcs, body.cal-on .spot, body.cal-on .seat .cards,
-body.cal-on .side-chip { cursor: grab; }
-body.cal-on .sidearcs:hover .side { stroke: #D6FF3A; stroke-width: 2; fill: rgba(214,255,58,.18); }
-body.cal-on .spot:hover { outline: 2px dashed rgba(214,255,58,.85); outline-offset: 3px; }
-body.cal-on .seat .cards:hover { outline: 2px dashed rgba(214,255,58,.6); }
-body.cal-dragging, body.cal-dragging * { cursor: grabbing !important; user-select: none; }
-#cal-readout {
-  position: fixed; left: 50%; top: 74px; transform: translateX(-50%);
-  z-index: 210; pointer-events: none; padding: 7px 14px; border-radius: 999px;
-  background: rgba(10,11,13,.94); border: 1px solid rgba(214,255,58,.45); color: #D6FF3A;
-  font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  opacity: 0; transition: opacity .15s;
-}
-#cal-readout.show { opacity: 1; }
-
-/* per-box calibration: selection + the rotate handle */
-body.cal-on .seat { cursor: pointer; }
-body.cal-on .seat.cal-sel.mark-arcs .sidearcs .side { stroke: #D6FF3A; stroke-width: 2.2; fill: rgba(214,255,58,.16); }
-body.cal-on .seat.cal-sel.mark-hand .cards .card { outline: 2px solid #FFB020; outline-offset: 2px; }
-body.cal-on .seat.cal-sel.mark-arcs .spot { outline: 2px dashed rgba(214,255,58,.8); outline-offset: 3px; }
-.cal-handle {
-  position: absolute; left: -7px; top: -78px; width: 15px; height: 15px; border-radius: 50%;
-  background: #D6FF3A; border: 2px solid #0A0B0D; cursor: grab; z-index: 60;
-  box-shadow: 0 0 0 3px rgba(214,255,58,.28), 0 3px 10px rgba(0,0,0,.55);
-}
-.cal-handle::before {
-  content: ''; position: absolute; left: 50%; top: 13px; width: 1.5px; height: 26px;
-  background: linear-gradient(rgba(214,255,58,.9), rgba(214,255,58,0)); transform: translateX(-50%);
-}
-body.cal-dragging .cal-handle { cursor: grabbing; }
-#calibrator .cal-all { background: rgba(214,255,58,.12); border-color: rgba(214,255,58,.5); color: #D6FF3A; }
-#cal-btn {
-  pointer-events: auto; cursor: pointer; width: 36px; height: 36px; border-radius: 999px;
-  background: rgba(10,11,13,.72); border: 1px solid rgba(242,241,237,.14); color: #8b8d96;
-  font-size: 15px; line-height: 1;
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-}
-#cal-btn:hover { border-color: rgba(214,255,58,.55); color: #D6FF3A; }
-body.cal-on #cal-btn { border-color: #D6FF3A; color: #0A0B0D; background: #D6FF3A; }
-#calibrator .cal-scope {
-  display: flex; align-items: center; gap: 8px; padding: 8px 13px;
-  border-bottom: 1px solid rgba(242,241,237,.10); background: rgba(242,241,237,.03);
-}
-#calibrator .cal-scope-txt {
-  flex: 1; font-family: 'Space Grotesk', sans-serif; font-size: 10px;
-  letter-spacing: .14em; text-transform: uppercase; color: #8b8d96;
-}
-#calibrator .cal-scope.one { background: rgba(214,255,58,.10); }
-#calibrator .cal-scope.one .cal-scope-txt { color: #D6FF3A; }
-#calibrator .cal-scope-all {
-  padding: 4px 10px; border-radius: 999px; cursor: pointer;
-  background: none; border: 1px solid rgba(242,241,237,.18); color: #8b8d96;
-  font-family: 'Space Grotesk', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em;
-}
-#calibrator .cal-scope-all:hover { border-color: rgba(214,255,58,.6); color: #D6FF3A; }
-#calibrator .cal-scope:not(.one) .cal-scope-all { display: none; }
-body.cal-on .seat.cal-hint .sidearcs .side { stroke: #FFB020; stroke-width: 2.4; fill: rgba(255,176,32,.18); }
-#calibrator footer { flex-wrap: wrap; }
-#calibrator .cal-apply { flex: 1 0 100%; background: #D6FF3A; color: #0A0B0D; border-color: #D6FF3A; }
-#calibrator .cal-apply:hover { background: #e6ff70; }
-#calibrator .cal-copy { background: none; color: #F2F1ED; border-color: rgba(242,241,237,.16); }
-#calibrator header { cursor: move; user-select: none; }
-#calibrator .cal-side, #calibrator .cal-min {
-  background: none; border: none; color: #5A6470; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 3px;
-}
-#calibrator .cal-side:hover, #calibrator .cal-min:hover { color: #D6FF3A; }
-#calibrator.min .cal-body, #calibrator.min footer, #calibrator.min .cal-scope { display: none; }
-#calibrator.min { width: auto; min-width: 210px; }
-
-
 /* ---------- chips on the felt: a real stack, same palette as the rack ------ */
 .chipstack {
   position: relative; width: var(--stack-w, 46px);
@@ -1128,17 +1020,6 @@ body.cal-on .seat.cal-hint .sidearcs .side { stroke: #FFB020; stroke-width: 2.4;
           drop-shadow(0 12px 26px rgba(0,0,0,.5));
 }
 #supervisor.show { opacity: 1; }
-/* in calibration mode a single card is its own handle */
-body.cal-on .seat .cards .card { cursor: grab; }
-body.cal-on .seat .cards .card:hover { outline: 2px dashed rgba(214,255,58,.9); outline-offset: 2px; }
-/* second marker: turns the whole hand as one piece */
-.cal-handle-hand {
-  left: 26px; top: -34px;
-  background: #FFB020;
-  box-shadow: 0 0 0 3px rgba(255,176,32,.28), 0 3px 10px rgba(0,0,0,.55);
-}
-.cal-handle-hand::before { background: linear-gradient(rgba(255,176,32,.9), rgba(255,176,32,0)); }
-
 /* Background 0 -> table 1 -> exact full-frame dealer 2 -> authoritative cards 4. */
 .presentation-plane {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;}
 .presentation-background {z-index:0;}

@@ -1,5 +1,6 @@
 import {stageGeometry,tableRect} from '../../../packages/presentation/compositor/geometry.js';
 import {validateCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {projectGamePlane} from './game-overlay-layout.mjs';
 
 export function compositionAnchorFrames(settings,layout,asset){
   const scene={layout,stage:{mobile:settings.mobile.dealer,desktop:settings.desktop.dealer},tablePlacement:settings[layout].table};
@@ -17,11 +18,15 @@ export function rebindAnchor(anchor,target,frames){
   return {target,rect:{x:(current.x-base.x)/base.width,y:(current.y-base.y)/base.height,
     width:current.width/base.width,height:current.height/base.height}};
 }
-export function projectAnchorRects(geometry,frames,viewport){
+// framing is the reference (idle) clip's source framing. Only an opt-in
+// autoScale layout receives the dealer plane: absent, the result is unchanged.
+export function projectAnchorRects(geometry,frames,viewport,framing){
   const fit=Math.min(viewport.width/frames.scene.width,viewport.height/frames.scene.height);
   const project=r=>({x:(viewport.width-frames.scene.width*fit)/2+r.x*fit,
     y:(viewport.height-frames.scene.height*fit)/2+r.y*fit,width:r.width*fit,height:r.height*fit});
-  return {cardsRect:project(resolveAnchorRect(geometry.anchors?.cards,frames)),betsRect:project(resolveAnchorRect(geometry.anchors?.bets,frames))};
+  const dealer=frames.dealer,stage={dims:[frames.scene.width,frames.scene.height],s:dealer.width/1080,x:dealer.x,y:dealer.y};
+  return {cardsRect:project(resolveAnchorRect(geometry.anchors?.cards,frames)),betsRect:project(resolveAnchorRect(geometry.anchors?.bets,frames)),
+    ...(geometry.autoScale?{dealerPlane:projectGamePlane(stage,viewport,framing)}:{})};
 }
 
 // Group edits apply the same affine movement once to dealer and table. Scene-
@@ -48,12 +53,19 @@ export function moveCompositionLayer(settings,layout,role,field,value,together=f
 export function restoreGeometryGroup(current,saved,layout,group){
   const next=structuredClone(current),dest=next[layout],source=saved[layout];
   if(group==='cards'){
+    if(source.cardView)dest.cardView=source.cardView;else delete dest.cardView;
     dest.cardWidth=source.cardWidth;dest.dealer=structuredClone(source.dealer);
     dest.seats.forEach((seat,i)=>{seat.card=structuredClone(source.seats[i].card);});
   }else{
     dest.seats.forEach((seat,i)=>{seat.bet=structuredClone(source.seats[i].bet);});
     if(source.betMode)dest.betMode=source.betMode;else delete dest.betMode;
   }
+  const auto={landing:false,cardSize:false,chips:false,...dest.autoScale};
+  for(const key of group==='cards'?['landing','cardSize']:['chips'])auto[key]=source.autoScale?.[key]??false;
+  const part=group==='cards'?'cards':'chips',savedAdjust=source.autoScale?.adjust?.[part];
+  if(savedAdjust){auto.adjust??={};auto.adjust[part]=structuredClone(savedAdjust);}
+  else if(auto.adjust){delete auto.adjust[part];if(!Object.keys(auto.adjust).length)delete auto.adjust;}
+  if(auto.landing||auto.cardSize||auto.chips)dest.autoScale=auto;else delete dest.autoScale;
   if(source.anchors?.[group]){dest.anchors??={};dest.anchors[group]=structuredClone(source.anchors[group]);}
   else if(dest.anchors){delete dest.anchors[group];if(!Object.keys(dest.anchors).length)delete dest.anchors;}
   return next;
