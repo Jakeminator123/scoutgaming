@@ -13,13 +13,17 @@ test('the table and the studio load the maintenance flag and the banner', () => 
 test('the banner shows the text and stays away without one', () => {
   const src = readFileSync(new URL('../public/maintenance-notice.js', import.meta.url), 'utf8');
   const run = text => {
-    const added = [];
-    const el = { style: {}, setAttribute() {} };
-    const g = { MAINTENANCE_NOTICE: text };
-    new Function('globalThis', 'document', src)(g, { createElement: () => el, body: { appendChild: e => added.push(e) } });
-    return added;
+    const added = [], cls = [];
+    const make = () => ({ style: {}, setAttribute() {}, getBoundingClientRect: () => ({ height: 36 }) });
+    const root = { appendChild: e => added.push(e), classList: { add: c => cls.push(c) }, style: { setProperty: (k, v) => cls.push(k + '=' + v) } };
+    const doc = { documentElement: root, createElement: make, head: { appendChild() {} }, querySelector: () => ({}), body: { classList: { add: c => cls.push(c) } } };
+    const win = { innerHeight: 844, addEventListener() {} };
+    new Function('globalThis', 'document', 'window', src)({ MAINTENANCE_NOTICE: text }, doc, win);
+    return Object.assign(added, { cls });
   };
   assert.equal(run('').length, 0);
-  const [el] = run('We are currently doing maintenance work');
-  assert.equal(el.textContent, 'We are currently doing maintenance work');
+  const shown = run('We are currently doing maintenance work');
+  assert.equal(shown[0].textContent, 'We are currently doing maintenance work');
+  // the page moves down by the banner's height, the table shrinks to fit
+  assert.ok(shown.cls.includes('maint') && shown.cls.includes('maint-fit') && shown.cls.includes('--maint-h=36px'));
 });
