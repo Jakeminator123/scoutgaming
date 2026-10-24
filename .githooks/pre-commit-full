@@ -36,13 +36,13 @@ run_node_tests admin clip-guide apps/studio/client/admin/lib/clip-guide.test.mjs
 run_node_tests admin saved-scene-preview apps/studio/client/admin/lib/saved-scene-preview.test.mjs
 run_node_tests admin moving-drift-ui apps/studio/client/admin/lib/moving-drift-ui.test.mjs
 run_node_tests admin catalog apps/studio/client/lobby/lib/catalog.test.mjs apps/studio/client/lobby/components/lobby-provider.test.mjs apps/studio/client/admin/lib/dealer-artwork.test.mjs apps/studio/client/admin/lib/dealer-playback.test.mjs apps/studio/client/admin/lib/connected-studio.test.mjs apps/studio/client/admin/lib/studio-composition-panel.test.mjs apps/studio/client/admin/lib/studio-layout.test.mjs apps/studio/client/admin/lib/roulette-clip-map.test.mjs apps/studio/client/admin/lib/studio-policy.test.mjs apps/studio/client/admin/lib/studio-lifecycle.test.mjs apps/studio/client/admin/lib/studio-speech.test.mjs apps/studio/lib/dealer-sets.test.mjs apps/studio/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
-run_node_tests admin dealer-import apps/studio/client/admin/lib/dealer-import.test.mjs
+run_node_tests admin dealer-import apps/studio/client/admin/lib/dealer-import.test.mjs apps/studio/client/admin/lib/clip-intake.test.mjs apps/studio/client/admin/lib/clip-intake-panel.test.mjs
 run_node_tests admin room-environment test/room-environment.mjs
 run_node_tests admin economy-journal apps/studio/client/admin/lib/economy-journal.test.mjs
 run_node_tests admin roulette-start-editor apps/studio/client/admin/lib/roulette-start-editor.test.mjs apps/studio/client/admin/lib/roulette-media-review.test.mjs apps/studio/client/admin/lib/roulette-idle-editor.test.mjs apps/studio/client/admin/lib/registered-material-library.test.mjs
 run_node_tests admin admin-routing apps/studio/client/runtime/admin-routing.test.mjs apps/studio/client/runtime/navigation.test.mjs
 run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tools.test.mjs apps/studio/client/admin/lib/resource-deletion.test.mjs apps/studio/client/admin/lib/service-navigation.test.mjs apps/studio/client/admin/lib/accounts-pages.test.mjs
-run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs
+run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs apps/studio/client/admin/lib/lifecycle-actions.test.mjs apps/studio/client/admin/lib/confirm-dialog.test.mjs
 run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs
 run_node_tests contracts shared-room-qa-entry test/shared-room-qa-context.mjs test/shared-room-k04-qa.mjs
 run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs

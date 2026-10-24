@@ -2,7 +2,7 @@
 
 ## Spelvy: kortvisning och samlad chatt — 24 oktober 2026
 
-**Leverans:** `codex/spelvy-kort-chatt` bygger vidare på PR #361, head `904d3f01`. Integrera geometrin i #361 före denna ändring. Spelarens kortvisningsbubbla och webbläsarval tas bort. **Studio → Scen & lager → Kort och marker → Kortvisning** sparar På bordet/Upplyfta separat för bordets mobil- och desktopformat. Utan eget val gäller På bordet. Manuella kort-/markerplaceringar bevaras; autoskalan från #361 gäller där den valts och för nya placeringar.
+**Leverans:** `codex/spelvy-kort-chatt` bygger vidare på PR #361, head `904d3f01`. Hela #361 ingår i historiken och ska landa tillsammans med profilrättningen här, så main inte får mellanläget med 63 px i Admin men 78 px för Dragan i spelaren. Spelarens kortvisningsbubbla och webbläsarval tas bort. **Studio → Scen & lager → Kort och marker → Kortvisning** sparar På bordet/Upplyfta separat för bordets mobil- och desktopformat. Utan eget val gäller På bordet. Manuella kort-/markerplaceringar bevaras; autoskalan från #361 gäller där den valts och för nya placeringar.
 
 **Rotorsaker rättade:** den gamla spelkalibreringen kunde återläsa webbläsarsparade CSS-värden och separata per-platsregler. Panel, lokala läsare och dess CSS är borttagna; `/calibration` nekar alltid skrivning. `?cal=1` och C öppnar inte längre en konkurrerande editor. Kortvisningen styrdes också lokalt per webbläsare; Admins scenförhandsvisning saknade Dragans filmprofil (78 px rekvisitakort jämfört med standardens 63 px); chatten ändrade öppet läge vid svar, formatbyte och efter en timer. Editor och spel använder nu samma profil och kortdjup. Text, mikrofon och kamera samlas i chatten, med mobil bottenpanel, tydliga knappar och omedelbar stoppknapp för aktiv inspelning. Inkommande svar markerar oläst men ändrar inte användarens öppet/stängt-val.
 
@@ -12,13 +12,29 @@
 
 **Mergegranskning 24 oktober:** delade rum tvingade fortfarande Upplyfta när kompositionen saknade eget kortvisningsval, trots standarden På bordet i Admin och den övriga spelklienten. Både projicerad film/bordsgeometri och reservlayout följer nu samma standard; ett uttryckligt sparat Upplyfta bevaras. Sex felande standardfall reproducerades före rättningen. Efter rättning passerar de nya beteendeproven för alla tio kombinationer av mobil/desktop och layout/sparat val samt samtliga riktade prov i elva testfiler för kort, geometri, delade rum, chatt/kamera och publiceringskapabilitet. Körningen använder Node 24.21.0 och högst fyra testarbetare. De tidigare fullsvitssiffrorna ovan är inte omkörda på denna revision.
 
-**Driftsättning återstår:** frivilligt layoutfält `cardView` kräver spelserverns kapabilitet 26; gamla servrar blockeras före publicering. Ingen databasmigrering. Render behöver byggas från integrerad kod innan inställningen kan publiceras. GitHub Actions slutliga CI-jobb på #361 är fortfarande blockerat av kontots betalnings-/utgiftsgräns. Verklig mobil med skärmtangentbord och produktionsacceptans med publicerade medier återstår; lokalt godkänt är inte produktionsacceptans.
+**Integration 24 oktober:** separat granskning av #361 och återstående #367-diff gav inga blockerande fynd för kombinationen. #366/#347 är lokalt integrerade; enda konflikten var två handoffavsnitt, som båda bevarats. **60/60** riktade prov för rumskontext, livscykel, klippintag och kortvisning passerar. Slutlig full CI måste verifiera kombinationen på aktuell main före merge.
+
+**Driftsättning återstår:** frivilligt layoutfält `cardView` kräver spelserverns kapabilitet 26; gamla servrar blockeras före skrivning, även utkastssparning av det nya valet. Ingen databasmigrering. Render behöver byggas från integrerad kod innan inställningen kan publiceras. Actions-budgeten är upplåst. Full CI krävs på den slutliga kombinationen med #366/#347 innan #367 och dess ingående #361 mergas. Verklig mobil med skärmtangentbord och produktionsacceptans med publicerade medier återstår; lokalt godkänt är inte produktionsacceptans.
 
 ## Granskningsrättningar för PR #361 — 23 oktober 2026
 
 Tre verifierade fel är rättade: automatiska mobilmarker får separata tryckytor utan ändrade filmkontakter/boxidentiteter; grundklippets inramning når både scenbild och placeringslager; gruppåterställning återställer respektive automatiks val och justeringar. Manuella punkter, explicit markerförskjutning och andra format/grupper bevaras. Admin visar kvarstående platskonflikter.
 
-Verifiering: 63 riktade beteendeprov, inklusive bråkdelsoffset vid 320 px, presentationssviten och klientbygge med Admin/lobby-typer godkända. PR #367 kompletterar med gemensam Draganprofil, sparad kortvisning och chatt. Ingen produktionsdata ändrad. GitHubs CI-/betalningsspärr kvarstår; ingen merge eller produktionsacceptans påstås.
+Verifiering: 63 riktade beteendeprov, inklusive bråkdelsoffset vid 320 px, presentationssviten och klientbygge med Admin/lobby-typer godkända. PR #367 kompletterar med gemensam Draganprofil, sparad kortvisning och chatt. Ingen produktionsdata ändrad. #361 ska integreras atomiskt genom #367 efter full CI; separat produktionsacceptans återstår.
+
+## PR #347: klippintag och raderingsdialog — granskning 24 oktober 2026
+
+Klippkartan får fil-/mappsläpp, dragbara placeringsförslag och uttryckligt godkännande före uppladdning. Gemensamma dialoger används för befintliga arkiverings- och permanenta raderingskontrakt. Inga writers, scheman eller behörigheter ändras; publicerade beroenden prövas fortfarande på servern.
+
+Konflikterna med main är lösta med nuvarande Admin-navigation kvar, utan återinförd OpenClaw-sida. Frysta importkällor, exakta pose-/språk-/tagningsförslag och nuvarande dealerregistrering bevaras. PR #366 är mergad som `08f47853` efter grön full CI; main inklusive dess beteendeprovsrättning är integrerad för att behålla den granskade operatörsytan.
+
+**Bugggranskning 24 oktober:** den tidigare kontrollen täckte dealer-dialogen och kartans mappsläpp men missade motsvarande klippdialog och intagspanel. Fyra ytterligare fel är nu rättade: en återöppnad klippdialog accepterar bara sitt eget kontrollsvar; en senare spärr från föräldern blockerar även en tidigare fångad bekräftelse; panelens mappinläsning avbryts vid kontextbyte, stängning och avmontering; katalogsidor läses i begränsade omgångar i stället för att hela mappen läses före filgränsen. Serverns beroende-, behörighets- och revisionskontroller är kvar. Köade filer skyddas fortfarande under uppladdning.
+
+**Verifiering av rättningen:** Node 24.21.0, högst fyra testarbetare. Nya regressioner reproducerade felen före rättningen. Därefter **76/76** riktade prov för klippintag, dialoger, dealerimport och livscykel; både avvisade och godkända åtgärder samt dubbelbekräftelse täcks. Admin-typer passerar med klientens pinnade TypeScript 5.7.3. Föräldralösa tester: **0/566**. Ett första typkommando använde fel pakets TypeScript 7 och avvisade befintligt baseUrl; rätt klientkompilator användes utan konfigurations- eller beroendeändring. Tidigare full Studio **2 116/17**, full Admin **373/1** och klientbygge gäller föregående head, inte denna rättning. Ingen produktionsacceptans påstås.
+
+**Mergegrind:** Actions-budgeten är upplåst och [slutlig full CI för #366](https://github.com/Jakeminator123/scoutgaming/actions/runs/40098197509) är grön på `c6d22790`. Den versionen är nu på main och integrerad här. #347 kräver egen grön full CI på integrationsheaden före merge. Inga skydd har kringgåtts.
+
+**GitGuardian:** källbindning till remote main cbc0acd3 verifierad; incidentrapporten anger 0 öppna och 23 ignorerade. Historisk skanning och platsmetadata är ofullständiga, och kontrollernas status kunde inte bekräftas av denna säkerhetsläsning. Ingen fullständig historisk säkerhetstäckning påstås.
 
 ## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
 
@@ -26,15 +42,31 @@ Verifiering: 63 riktade beteendeprov, inklusive bråkdelsoffset vid 320 px, pres
 
 Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib/studio-context.test.mjs` godkända lokalt med Node 24.19 och högst fyra testarbetare. Ingen produktkod är ändrad av denna rättning. Full CI krävs på den nya headen före merge; ingen produktionsacceptans påstås.
 
-## Visuell operatörsyta — 23 oktober 2026
+## Operatörsytan: sammanhållen redigering — 23 oktober 2026
 
-**Leverans:** `codex/visuell-operator` innehåller den separata visuella ändringen mot main. Den utvecklades tillsammans med PR #359; integrera #359 först för gemensam CSS och navigation. Bolagsvalet ligger i rubriken; spelkort samlar utbudet. Lägg till öppnar spelmall, spel och namn. Bekräftat skapande öppnar rätt rum; borttagning lämnar det återstående utbudet valt. Återställningsvyn visar enbart borttagna spel. Paus/öppning finns för valt spel.
+**Leverans:** `codex/operator-arbetsyta`, från main `cbc0acd3` efter mergade #359 och #364. Produktionsgranskningen på /admin/rooms visade att ett enda spelkort fyllde bredden med en tom affisch och sköt redigeraren långt ned. Korten har nu kompakt storlek. På bredare arbetsytor ligger scen och materialval sida vid sida; på mindre ytor staplas de. Neutralare ytor ersätter stora gröna paneler.
 
-**Tre lager:** bakgrund och bord har materialkort med paketets verifierade förhandsbilder, dealer har tydligt valkort. Ett bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Samma roomOverrides, save-draft/review/publish, behörigheter och CAS används. Inbakad bakgrund är låst; nya rum kräver fortfarande en kompatibel sparad spelmall med fast utgångsmiljö. Paketets urval och godkänt mediematerial utökas inte automatiskt.
+**Förenkling:** en rad för sparstatus, Spara utkast och Granska publicering. Granskningspanelen visas först efter begärd granskning. Versionsnummer finns i historiken; färg/standardval är hopfällda. Den dubbla Publicering-knappen i rumsrubriken är borta. Studio-mallar tilldelas under Spelmallar för bolaget. Befintliga adresser och bokmärken är oförändrade.
 
-**Verifiering:** 98 riktade beteendeprov och Admin 351 godkända/1 överhoppat; byggd Admin-/lobbyklient inklusive typer. Studio gav 2 102 godkända/17 överhoppade samt två laddningsfel i en testadapter. Adaptern har rättats och dess 12 beteendeprov passerar i omprov. Föräldralösa tester: 0/562. Samlad CI-status följer PR:ens slutliga head. Isolerat UI-prov med syntetiska data verifierar bolagsbyte, skydd av osparade val, tre separata val, spara/omladdning, skapa med rätt spel och direkt öppning, borttagning samt rätt återställningslista. Inga produktionsdata eller tjänster är ändrade. Slutlig PR/head anges vid leveransen.
+**Rättelse efter #364:** pausa/öppna och ta bort skickas som en enda typad begäran med både åtgärd och roomId. En ny avsikt kan inte kombinera föregående korts id med en annan åtgärd. Beteendeprovet verifierar endpoint, bolag, rum och revisionsvillkor efter sådana klick. Behörighet, roomOverrides, CAS och save-draft/review/publish är oförändrade.
 
-**Återstår:** integration efter #359 och produktionsacceptans med godkända medier. J08:s runtime-/materialbindning och separat permanent radering är fortsatt egna arbeten. Ingen aktivitet i status.json är markerad klar.
+**Verifiering:** Node 24.21.0; full Studio **2 111 godkända / 17 överhoppade**, full Admin **351 godkända / 1 överhoppat**, klientbygge inklusive Admin-/lobbytyper godkänt. Efter slutjusteringarna passerar 14/14 förhandsvisningsprov och 18/18 livscykelprov. Föräldralösa tester **0/562**. Bygget har befintliga CSS-composes-varningar i andra komponenter. Isolerat webbläsarprov med syntetiska data verifierar separata lager, bakgrundsbyte utan dealer-/bordsbyte, spara/omladdning, granskning av rätt rum, publicering, bolagsbyte och byte mellan pausa- och borttagningsbekräftelse. Detta är klient-/fixturbevis, inte produktionsskrivning eller ny mediaacceptans.
+
+**Bugggranskning 23 oktober:** inga blockerande fynd i sparning, bolags-/rumskontroll eller publicering. Kompakt förhandsvisningsknapp fick ett tillgängligt namn som innehåller den synliga texten Uppdatera/Refresh, så talstyrning fungerar på båda språken. Befintliga förhandsvisningsprov verifierar att dess beteende är kvar.
+
+**CI:** #364 är mergad som `8a3551c8`; [slutlig CI på f201d52c är grön](https://github.com/Jakeminator123/scoutgaming/actions/runs/39877455580). Det senare [CI-jobbet på main cbc0acd3](https://github.com/Jakeminator123/scoutgaming/actions/runs/39879449512/job/120175758677) startade inte: GitHubs annotation anger misslyckad kontobetalning eller för låg utgiftsgräns. Nya PR:ens kontroller bedöms separat. Inga workflow- eller betalningsändringar ingår.
+
+**Mergegranskning 24 oktober:** GitHub Actions kunde åter starta efter Jakobs godkända budgethöjning. [CI på b84f7fda, försök 3](https://github.com/Jakeminator123/scoutgaming/actions/runs/39984045589/attempts/3) hittade två föråldrade text-/versionslås i `studio-context.test.mjs`; övriga regressionsgrupper passerade. Testerna verifierar nu de faktiska publiceringsvalen och publicerat material för rätt rum, inklusive fördröjd status från ett annat rum och tömd status. Produktkod, behörighetsprov, publiceringsrevisioner och kvittokontroller är oförändrade. Riktade prover: **24/24 godkända** med Node 24.21.0 och högst fyra testarbetare. Full CI krävs på rättningens head före merge och redovisas i PR #366.
+
+**GitGuardian vid start:** källbindning verifierad, monitorering aktiv. Incidenttäckning komplett för källan: 0 öppna / 23 ignorerade. Historisk skanning ofullständig (`too_large`), platsmetadata delvis saknad. Full historisk säkerhetstäckning påstås inte.
+
+## Visuell operatörsyta — PR #364, mergad 23 oktober 2026
+
+#359 och #364 ligger på main. #364 tillförde bolagsval, spelkort, skapa/ta bort/återställ och tre separata lagerval. [Slutlig full CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/39877455580) är grön på `f201d52c`. Paus/öppning finns för valt spel.
+
+Bakgrundsbyte bevarar dealer, bord, andra rum och bolagsstandard. Befintliga roomOverrides, behörigheter och revisionsvillkor används. Inbakad bakgrund är låst; nya rum kräver en kompatibel sparad spelmall. Paketets materialurval utökas inte automatiskt.
+
+J08:s fulla runtime-/materialbindning, produktionsacceptans med godkända medier och separat permanent radering kvarstår i sina egna arbeten. Ingen aktivitet i status.json markeras klar av dessa UI-leveranser.
 
 ## Mergegranskning — assistentens bolagslänkar i PR #359 — 23 oktober 2026
 

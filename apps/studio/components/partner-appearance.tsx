@@ -167,12 +167,34 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
 
   const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview onMedia={visual?setPreviewMedia:undefined} compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={branding} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
   const revisions = <div className={styles.revisions}><span>{t('Publicerad version','Published version')} <strong>{server.packageRevision}</strong></span><span>{server.draft ? t(`Sparat utkast ${draftRevision}`,`Saved draft ${draftRevision}`) : t('Inget sparat utkast','No saved draft')}</span></div>;
-  const statusBar = <div className={styles.statusBar}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (dirty ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && revisions}<button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button></div>;
+  const publishActions = <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button><button type="button" className="sg-btn" data-action="review" disabled={!canReview || busy} onClick={() => command('review')}>{t('Granska publicering','Review publication')}</button></div>;
+  const reviewPanel = <section className={styles.review} hidden={visual ? !review : roomLayout && !server.draft && !review} aria-label={t('Granskning före publicering','Review before publishing')}>
+      <h4>{t('Granskning före publicering','Review before publishing')}</h4>
+      {reviewValid && review ? <><p>{t(`Utkast ${review.draftRevision} ersätter publicerad version ${review.packageRevision}.`,`Draft ${review.draftRevision} replaces published version ${review.packageRevision}.`)}</p>
+        {review.changes.length ? <ul className={styles.changes}>{review.changes.map((row,index) => <li key={`${row.roomId}:${row.key}:${index}`}><strong>{roomLabel(row.roomId)} · {row.key.startsWith('roomOverrides.') ? (labels[row.key.slice(14)] ?? row.key) + ' (' + t('rumsval','room override') + ')' : labels[row.key] ?? row.key}</strong><span>{labelOf(row.before)} → {labelOf(row.after)}</span></li>)}</ul> : <p>{t('Inga ändringar att publicera.','No changes to publish.')}</p>}
+        <p><strong>{t('Berörda rum','Affected rooms')}:</strong> {review.affectedRooms.length ? review.affectedRooms.map(roomLabel).join(', ') : t('Inga befintliga rum','No existing rooms')}</p>
+      </> : <p>{t('Spara utkastet och granska för att se skillnaden mot den publicerade versionen.','Save the draft and review it to see changes from the published version.')}</p>}
+      {!roomLayout && preview}
+      <button type="button" className="sg-btn sg-btn-primary" data-action="publish" disabled={!canPublish || busy} onClick={() => command('publish')}>{t('Publicera granskat utkast','Publish reviewed draft')}</button>
+    </section>;
+  const secondaryControls = <>
+      {roomLayout && fields.includes('color') && allowed.has('table.color') && (() => {
+        // Table colour only tints game interface details; it sits small under the three layers.
+        const values = lane?.layers.table.colors ?? [];
+        const selectedValue = selected.color ?? '';
+        return <div className={styles.colorRow}><span>{labels.color}</span>{values.length
+          ? <select aria-label={labels.color} value={selectedValue} disabled={!values.length} onChange={event => change('color',event.target.value)}><option value="">{t('Standard','Default')}</option>{selectedValue && !values.includes(selectedValue) ? <option value={selectedValue}>{selectedValue} — {t('inte längre tillgängligt','no longer available')}</option> : null}{values.map(value => <option key={value} value={value}>{value}</option>)}</select>
+          : <><input type="color" aria-label={labels.color} value={/^#[a-f0-9]{6}$/i.test(selected.color ?? '') ? selected.color : '#000000'} onChange={event => change('color',event.target.value.toLowerCase())} /><button type="button" className="sg-btn" disabled={!selected.color} onClick={() => change('color','')}>{t('Standard','Default')}</button></>}
+          <small>{t('Spelets gränssnittsdetaljer, inte dealerfilmen.','Game interface details, not the dealer video.')}</small></div>;
+      })()}
+      {room ? <button type="button" className="sg-btn" data-action="reset-room" disabled={!branding.roomOverrides?.[room.id]} onClick={resetRoom}>{t('Återställ rummet till standard','Reset room to defaults')}</button> : null}
+  </>;
+  const statusBar = <div className={styles.statusBar+(visual?' '+styles.saveBar:'')}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (dirty ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && !visual && revisions}{visual && publishActions}{!visual && <button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button>}</div>;
   return <section className={roomLayout ? styles.panel + ' ' + styles.roomPanel + (visual?' '+styles.visualPanel:'') : styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
-    {roomLayout ? preview : <header className={styles.heading}><div><h3>{t('Sammansättning','Composition')}</h3><p className={styles.hint}>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
+    {!visual && (roomLayout ? preview : <header className={styles.heading}><div><h3>{t('Sammansättning','Composition')}</h3><p className={styles.hint}>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
       {revisions}
-    </header>}
-    {statusBar}
+    </header>)}
+    {!visual && statusBar}
     {problem ? <p className={styles.problem} role="alert">{problem}</p> : null}
     {!ready ? <p role="alert">{t('Utkast och publicering är inte tillgängliga för det här paketet ännu.','Drafts and publishing are not available for this package yet.')}</p> : null}
     {server.canConfigure !== true ? <p>{t('Din roll kan läsa paketet. Ändring kräver rättigheten att konfigurera presentationer.','Your role can view the package. Editing requires permission to configure presentations.')}</p> : null}
@@ -182,11 +204,12 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       <div className={styles.actions}><button type="button" className="sg-btn" data-action="keep-local" disabled={busy || latest.canConfigure !== true} onClick={() => adopt(true)}>{t('Behåll min redigering','Keep my edits')}</button><button type="button" className="sg-btn" data-action="load-latest" disabled={busy} onClick={() => adopt(false)}>{t('Ersätt min redigering med senaste sparade','Replace my edits with latest saved')}</button></div>
     </aside> : null}
       {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
-    <div className={roomLayout ? styles.roomLayout : undefined} data-aside={roomLayout && Boolean(children) ? 'true' : undefined}>
+    <div className={roomLayout ? styles.roomLayout : undefined} data-aside={roomLayout && !visual && Boolean(children) ? 'true' : undefined}>
+      {visual && preview}
       <div className={roomLayout ? styles.choicesColumn : undefined}>
     <fieldset className={styles.editor} disabled={!editable || busy}>
-      <legend>{roomLayout ? t('Rummets val','Room choices') : t('Val i spelet','In-game choices')}</legend>
-      {roomLayout && <p className={styles.hint}>{t('Bakgrund, dealer och bord bland det sammansättningen tillåter. Spara ett utkast, granska och publicera.','Background, dealer and table among what the composition allows. Save a draft, review and publish.')}</p>}
+      <legend>{visual ? t('Välj material','Choose assets') : roomLayout ? t('Rummets val','Room choices') : t('Val i spelet','In-game choices')}</legend>
+      {roomLayout && <p className={styles.hint}>{visual ? t('Välj dealer och bord till spelet. Bakgrunden byter du separat.','Choose a dealer and table for the game. Change the background separately.') : t('Bakgrund, dealer och bord bland det sammansättningen tillåter. Spara ett utkast, granska och publicera.','Background, dealer and table among what the composition allows. Save a draft, review and publish.')}</p>}
       {!roomLayout && <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{compositionLabel(item.label, language)}</option>)}</select></label>}
       {room && !roomLayout ? <p className={styles.hint}>{t('Rummets sammansättning bestäms av intern personal. Standardval ärvs från bolaget när sammansättningen är samma, annars från rummets sammansättning.','Internal staff set the room composition. Defaults inherit company choices for the same composition, otherwise the room composition defaults.')}</p> : null}
       {lane && !lane.composition ? <p className={styles.hint}>{t('Äldre sammansättning: be intern personal uppdatera separata bord- och bakgrundslager. Dealerklippets gröna bakgrund tas alltid bort.','Legacy composition: ask internal staff to update the separate table and background layers. The dealer clip’s green background is always removed.')}</p> : null}
@@ -205,32 +228,18 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
         const selectedValue = selected[key] ?? '';
         return <label className={styles.row} key={key}>{labels[key]}<select aria-label={labels[key]} value={selectedValue} disabled={!values.length} onChange={event => change(key,event.target.value)}><option value="">{t('Standard','Default')}{key !== 'color' && (room ? inherited[key] ?? layer?.default : layer?.default) ? `: ${labelOf((room ? inherited[key] ?? layer?.default : layer?.default)! )}` : ''}</option>{selectedValue && !values.includes(selectedValue) ? <option value={selectedValue}>{labelOf(selectedValue)} — {t('inte längre tillgängligt','no longer available')}</option> : null}{values.map(value => <option key={value} value={value}>{labelOf(value)}</option>)}</select></label>;
       })}</div>
-      {roomLayout && fields.includes('color') && allowed.has('table.color') && (() => {
-        // Table colour only tints game interface details; it sits small under the three layers.
-        const values = lane?.layers.table.colors ?? [];
-        const selectedValue = selected.color ?? '';
-        return <div className={styles.colorRow}><span>{labels.color}</span>{values.length
-          ? <select aria-label={labels.color} value={selectedValue} disabled={!values.length} onChange={event => change('color',event.target.value)}><option value="">{t('Standard','Default')}</option>{selectedValue && !values.includes(selectedValue) ? <option value={selectedValue}>{selectedValue} — {t('inte längre tillgängligt','no longer available')}</option> : null}{values.map(value => <option key={value} value={value}>{value}</option>)}</select>
-          : <><input type="color" aria-label={labels.color} value={/^#[a-f0-9]{6}$/i.test(selected.color ?? '') ? selected.color : '#000000'} onChange={event => change('color',event.target.value.toLowerCase())} /><button type="button" className="sg-btn" disabled={!selected.color} onClick={() => change('color','')}>{t('Standard','Default')}</button></>}
-          <small>{t('Spelets gränssnittsdetaljer, inte dealerfilmen.','Game interface details, not the dealer video.')}</small></div>;
-      })()}
-      {room ? <button type="button" className="sg-btn" data-action="reset-room" disabled={!branding.roomOverrides?.[room.id]} onClick={resetRoom}>{t('Återställ rummet till standard','Reset room to defaults')}</button> : null}
+      {visual ? <details className={styles.extraChoices}><summary>{t('Färg och standardval','Colour and defaults')}</summary>{secondaryControls}</details> : secondaryControls}
     </fieldset>
     {!roomLayout && <p className={styles.hint}>{t('Bordsfärgen påverkar spelets gränssnittsdetaljer, inte dealerfilmen. Logotyp, spelmarker och knappar saknar ännu koppling till spelet.','Table colour affects game interface details, not the dealer video. Logos, chips and buttons are not yet connected to the game.')}</p>}
-    <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button><button type="button" className="sg-btn" data-action="review" disabled={!canReview || busy} onClick={() => command('review')}>{t('Granska publicering','Review publication')}</button></div>
-    <section className={styles.review} hidden={roomLayout && !server.draft && !review} aria-label={t('Granskning före publicering','Review before publishing')}>
-      <h4>{t('Granskning före publicering','Review before publishing')}</h4>
-      {reviewValid && review ? <><p>{t(`Utkast ${review.draftRevision} ersätter publicerad version ${review.packageRevision}.`,`Draft ${review.draftRevision} replaces published version ${review.packageRevision}.`)}</p>
-        {review.changes.length ? <ul className={styles.changes}>{review.changes.map((row,index) => <li key={`${row.roomId}:${row.key}:${index}`}><strong>{roomLabel(row.roomId)} · {row.key.startsWith('roomOverrides.') ? (labels[row.key.slice(14)] ?? row.key) + ' (' + t('rumsval','room override') + ')' : labels[row.key] ?? row.key}</strong><span>{labelOf(row.before)} → {labelOf(row.after)}</span></li>)}</ul> : <p>{t('Inga ändringar att publicera.','No changes to publish.')}</p>}
-        <p><strong>{t('Berörda rum','Affected rooms')}:</strong> {review.affectedRooms.length ? review.affectedRooms.map(roomLabel).join(', ') : t('Inga befintliga rum','No existing rooms')}</p>
-      </> : <p>{t('Spara utkastet och granska för att se skillnaden mot den publicerade versionen.','Save the draft and review it to see changes from the published version.')}</p>}
-      {!roomLayout && preview}
-      <button type="button" className="sg-btn sg-btn-primary" data-action="publish" disabled={!canPublish || busy} onClick={() => command('publish')}>{t('Publicera granskat utkast','Publish reviewed draft')}</button>
-    </section>
+    {!visual && publishActions}
+    {!visual && reviewPanel}
       </div>
-      {roomLayout && children ? visual ? <details className={styles.gameSettings}><summary>Spelinställningar</summary>{children}</details> : <div className={styles.asideColumn}>{children}</div> : null}
+      {roomLayout && !visual && children ? <div className={styles.asideColumn}>{children}</div> : null}
     </div>
-    <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary><p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>
+    {visual && statusBar}
+    {visual && reviewPanel}
+    {visual && children ? <details className={styles.gameSettings}><summary>Spelinställningar</summary>{children}</details> : null}
+    <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary>{visual && <div className={styles.actions}>{revisions}<button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button></div>}<p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>
       <ul>{server.history?.map(row => <li key={row.revision}><span><strong>{t('Version','Version')} {row.revision}</strong>{row.revision === server.packageRevision ? ` · ${t('publicerad nu','currently published')}` : ''}{row.publishedAt ? <small>{new Date(row.publishedAt).toLocaleString(en ? 'en-GB' : 'sv-SE')}</small> : null}</span><button type="button" className="sg-btn" data-action={`restore-${row.revision}`} disabled={!editable || busy || dirty} onClick={() => command('restore',row.revision)}>{t('Återställ till utkast','Restore to draft')}</button></li>)}</ul>
     </details>
   </section>;

@@ -74,3 +74,21 @@ test('the naming guide covers every importable blackjack slot of the saved proje
     assert.equal(parsed.slotId, row.slotId, `${row.example} should resolve to ${row.slotId}`);
   }
 });
+
+test('Kevin behaviour stems and folder paths advise Vila, language and nothing more', () => {
+  for (const name of ['andas.mp4', 'andasb.mp4', 'axlar6101.mp4', 'blickvanster.mp4', 'djupandetag.mp4', 'fingrar.mp4', 'huvudb.mp4', 'lutfram6103.mp4', 'nick6105.mp4', 'rakrygg6101.mp4', 'vikt6103.mp4', 'vridhoger6101.mp4', 'breath.mp4', 'glance.mp4', 'smile.mp4']) {
+    assert.equal(slot(name), 'idle.ready/', name); assert.equal(parseClipFilename(name).canonical, true, name);
+  }
+  // Digits after a stem are a take, never a seat; a seat token still wins.
+  assert.equal(slot('pos4-iu.mp4'), 'deal.player.centre/box3'); assert.equal(slot('nick6101-pos2.mp4'), 'deal.player.left/box1');
+  for (const name of ['mystery.webm', 'table_cash_1.mp4', 'ko.mp4']) assert.equal(slot(name), null, name);
+  // Folder hints: idle folders place unknown silent takes, speech folders only add the language.
+  assert.equal(parseClipFilename('take01.mp4', { path: 'paow/idle-v2/take01.mp4' }).slotId, 'idle.ready/');
+  assert.equal(parseClipFilename('take01.mp4', { path: 'paow/idle-v2/take01.mp4' }).folderHint, 'idle');
+  assert.equal(parseClipFilename('take01.mp4', { path: 'paow/repliker/sv/take01.mp4' }).slotId, null);
+  const spoken = parseClipFilename('goodluck_1.mp4', { path: 'paow/repliker/ko/goodluck_1.mp4' });
+  assert.equal(spoken.slotId, 'speak.goodluck/goodluck'); assert.equal(spoken.language, 'ko'); assert.equal(spoken.take, 1);
+  assert.equal(parseClipFilename('goodluck_sv_1.mp4', { path: 'repliker/en/goodluck_sv_1.mp4' }).language, 'sv');
+  assert.equal(parseClipFilename('pos4-iu.mp4', { path: 'paow/idle-v2/pos4-iu.mp4' }).slotId, 'deal.player.centre/box3');
+  assert.equal(parseClipFilename('vila.png', { type: 'image/png', path: 'paow/v2/vila.png' }).slotId, 'pose/vila');
+});

@@ -14,11 +14,26 @@ export const CLIP_POSE_VARIANTS = Object.freeze({
   v: Object.freeze({ start: 'REDO', end: 'VILA', label: 'REDO → VILA · sista klippet (ut)' }),
   iv: Object.freeze({ start: 'VILA', end: 'VILA', label: 'VILA → VILA · ensamt klipp (in och ut)' }),
 });
-export const CLIP_LANGUAGES = Object.freeze(['sv', 'en', 'es', 'no', 'da', 'fi', 'de', 'fr']);
+export const CLIP_LANGUAGES = Object.freeze(['sv', 'en', 'es', 'no', 'da', 'fi', 'de', 'fr', 'ko', 'pt']);
 export const SPEECH_LINE_IDS = Object.freeze(Object.keys(SPEECH_LINES));
 const DEDICATED_SPEECH = new Set(['goodluck', 'insurance', 'double']);
 const REACTION_PREFIX = /^(?:settle|reaktion|reaction|resultat)$/;
 const IDLE_TOKENS = new Set(['idle', 'grundloop', 'vila', 'andning', 'breath', 'breathing', 'blink', 'blinkning', 'smile', 'leende', 'glance', 'blick', 'yawn', 'gaspning', 'cheek', 'insulted']);
+// Kevin's silent behaviour takes are named after the movement plus a take
+// number without a separator (axlar6101, nick6103, vridvanster6105, andasb).
+// Match the stem; the digits are a take, not a seat.
+const IDLE_STEMS = Object.freeze(['andas', 'andning', 'axlar', 'blick', 'djupandetag', 'fingrar', 'huvud', 'lutfram', 'lutbak', 'nick', 'rakrygg', 'vikt',
+  'vridhoger', 'vridvanster', 'breath', 'glance', 'smile', 'blink', 'yawn', 'gasp', 'leende', 'suck', 'harsvep']);
+// Folder names of a dropped tree carry the same advice as filename tokens:
+// repliker/<lang>/ holds speech, idle-v2/ and idle/ hold behaviour takes. They
+// never create slots or approve content.
+const IDLE_FOLDERS = new Set(['idle', 'idle-v2', 'vila', 'beteenden', 'behaviour', 'behavior']);
+const SPEECH_FOLDERS = new Set(['repliker', 'speech', 'tal', 'lines', 'replik']);
+const isIdleToken = token => IDLE_TOKENS.has(token) || /^[a-z]+\d*[a-z]?$/.test(token) && IDLE_STEMS.some(stem => token.startsWith(stem));
+export function normalizeClipPath(path) {
+  if (typeof path !== 'string' || !path) return [];
+  return path.split('/').slice(0, -1).map(segment => segment.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()).filter(Boolean);
+}
 // The token right after a destination may describe the pose chain. in/ut are
 // the Swedish spellings; u is Emil's older spelling of v.
 const SUFFIX = Object.freeze({ i: 'i', in: 'i', v: 'v', u: 'v', ut: 'v', iv: 'iv', iu: 'iv', inut: 'iv', base: 'base', bas: 'base' });
@@ -50,9 +65,12 @@ function posesFor(slotId, suffix) {
 
 // Returns every slot the name could mean plus the metadata that is safe to
 // derive from it. Callers filter candidates against the saved catalogue.
-export function parseClipFilename(name, { type = 'video/mp4' } = {}) {
+export function parseClipFilename(name, { type = 'video/mp4', path = '' } = {}) {
   const tokens = normalizeClipName(name), joined = tokens.join('-');
-  const result = { slotIds: [], slotId: null, poses: null, variant: null, explicitPose: false, language: null, take: null, canonical: false };
+  const folders = normalizeClipPath(path);
+  const result = { slotIds: [], slotId: null, poses: null, variant: null, explicitPose: false, language: null, take: null, canonical: false,
+    folderHint: folders.some(folder => IDLE_FOLDERS.has(folder)) ? 'idle' : folders.some(folder => SPEECH_FOLDERS.has(folder)) ? 'speech' : null };
+  const folderLanguage = folders.find(folder => CLIP_LANGUAGES.includes(folder)) ?? null;
   const candidates = new Set();
   if (!tokens.length) return finish(result, candidates);
   if (String(type).startsWith('image/')) {
@@ -95,11 +113,13 @@ export function parseClipFilename(name, { type = 'video/mp4' } = {}) {
       }
     }
     if ([...candidates].some(id => id.startsWith('speak.'))) {
-      result.language = tokens.find(token => CLIP_LANGUAGES.includes(token)) ?? null;
+      result.language = tokens.find(token => CLIP_LANGUAGES.includes(token)) ?? folderLanguage;
       if (tokens.length > 1 && /^\d{1,2}$/.test(tokens.at(-1))) result.take = Number(tokens.at(-1));
     }
   }
-  if (!candidates.size && tokens.some(token => IDLE_TOKENS.has(token))) candidates.add('idle.ready/');
+  // A behaviour folder makes an otherwise unknown silent take an idle proposal.
+  // A speech folder names no line, so it adds nothing on its own.
+  if (!candidates.size && (tokens.some(isIdleToken) || result.folderHint === 'idle')) candidates.add('idle.ready/');
   return finish(result, candidates);
 }
 function finish(result, candidates) {
@@ -113,7 +133,7 @@ function finish(result, candidates) {
 // Suggested filenames per slot, used by the import guide and documentation.
 export function clipNamingGuide() {
   return [
-    { slotId: 'idle.ready/', pattern: '<dealer>_idle[_<beskrivning>]', example: 'dragan_idle_andning.mp4', note: 'Grundloop. Variationer (blink, leende, blick) är separata klipp i samma fack.' },
+    { slotId: 'idle.ready/', pattern: '<dealer>_idle[_<beskrivning>]', example: 'dragan_idle_andning.mp4', note: 'Basloop och tysta beteendeklipp (andas, blick, nick, axlar) i samma fack. Mappen idle-v2/ räknas som beteendeklipp.' },
     { slotId: 'transition.shoe/to-shoe', pattern: '<dealer>_vila_till_redo', example: 'dragan_vila_till_redo.mp4', note: 'Till skon: VILA → REDO.' },
     { slotId: 'transition.shoe/from-shoe', pattern: '<dealer>_redo_till_vila', example: 'dragan_redo_till_vila.mp4', note: 'Från skon: REDO → VILA.' },
     ...[1, 2, 3, 4, 5, 6, 7].map(n => ({ slotId: box(n - 1), pattern: `<dealer>_pos${n}[-i|-iv|-v]`, example: `dragan_pos${n}-iv.mp4`,

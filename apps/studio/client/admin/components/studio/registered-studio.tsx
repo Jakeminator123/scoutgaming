@@ -7,7 +7,7 @@ import {RegisteredResourceLifecycle} from './registered-resource-lifecycle';
 import {lifecycleSnapshotKey, operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {PartnerAppearanceLoader} from '../../../../components/partner-appearance-loader.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
-import {ControlResourceLifecycle, type LifecycleSnapshot} from '../../../../components/control-resource-lifecycle';
+import {ControlResourceLifecycle, type LifecycleSnapshot, type RoomLifecycleRequest} from '../../../../components/control-resource-lifecycle';
 import {RoomGameConfig} from '../../../../components/room-game-config';
 import {PresentationRoomCreate} from '../../../../components/presentation-room-create';
 import {markPackagesStale, packageEditor, packageSelectionDirty, publishOperatorPackage, publishedPackageMessage, rebasePackageEditors, togglePackageLane} from '../../../../lib/operator-package-client.mjs';
@@ -69,8 +69,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const [roomStatus,setRoomStatus] = useState<AppearanceRoomStatus|null>(null);
   const [newRoomComposition,setNewRoomComposition] = useState('');
   const [showCreate,setShowCreate] = useState(false);
-  const [archiveRequest,setArchiveRequest] = useState('');
-  const [stateRequest,setStateRequest] = useState('');
+  const [roomRequest,setRoomRequest] = useState<RoomLifecycleRequest>();
   const [confirmedNavigation,setConfirmedNavigation] = useState<Record<string,string>|null>(null);
   const anyBusy = roomBusy || gameBusy || createBusy || lifecycleBusy || publishBusy;
   // Package selections are retained per company; only mounted editors need a leave guard.
@@ -84,7 +83,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
     const href = path + (params.size ? '?' + params : '');
     const history = studioHistory(window);
     if (!history.canNavigate(href) || !history.push(href,true)) return;
-    setRoomDirty(false); setGameDirty(false); setShowLifecycle(false); setShowCreate(false); setArchiveRequest(''); setStateRequest('');
+    setRoomDirty(false); setGameDirty(false); setShowLifecycle(false); setShowCreate(false); setRoomRequest(undefined);
   }
   function reload() { setRefresh(value => value + 1); setLifecycleRefresh(value => value + 1); }
   useEffect(() => {
@@ -250,9 +249,9 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
             {!data.operators.length && <li className="text-sm text-sg-muted">Inga spelbolag är registrerade.</li>}
             {data.operators.map(row => <li key={row.id} className={cn(panelClass, 'p-4')}><Building2 size={20} className="mb-3 text-sg-lime" /><h2 className="font-semibold">{row.name}</h2><p className="my-2 text-xs text-sg-muted">{row.archivedAt?'I papperskorgen':labels[row.status] ?? row.status} · {data.rooms.filter(room => room.operatorId === row.id).length} rum · {row.packageRevision === null ? 'Inget publicerat paket' : `Paket ${row.packageRevision}`}</p><div className="mt-4 flex flex-wrap gap-4"><a className={linkClass} href={workspaceLink('/admin/companies', row)}>Bolag & team ↗</a>{row.status === 'active' && <a className={linkClass} href={'/partner/' + encodeURIComponent(row.slug)}>Spelbolagsportal ↗</a>}</div></li>)}
           </ul> : roomView ? <div className={styles.operatorWorkspace}>
-            {operator&&<OperatorGameBoard company={operator} companies={data.operators} onCompanyChange={id=>selectContext({operator:id})} rooms={operatorRooms} selectedId={showCreate?undefined:selectedRoom?.id} disabled={disabled||anyBusy} removeDisabled={disabled||anyBusy||anyDraft} onSelect={id=>{const room=operatorRooms.find(row=>row.id===id);if(room){selectContext({operator:operator.id,table:room.id,composition:room.compositionId,game:room.game});scrollTo('operator-game-editor');}}} onAdd={()=>{if(!disabled&&mayLeave()){setShowCreate(true);scrollTo('operator-game-editor');}}} onRemove={id=>{if(!disabled&&!anyBusy&&!anyDraft){setArchiveRequest(id);scrollTo('room-lifecycle');}}}/>}
+            {operator&&<OperatorGameBoard company={operator} companies={data.operators} onCompanyChange={id=>selectContext({operator:id})} rooms={operatorRooms} selectedId={showCreate?undefined:selectedRoom?.id} disabled={disabled||anyBusy} removeDisabled={disabled||anyBusy||anyDraft} onSelect={id=>{const room=operatorRooms.find(row=>row.id===id);if(room){selectContext({operator:operator.id,table:room.id,composition:room.compositionId,game:room.game});scrollTo('operator-game-editor');}}} onAdd={()=>{if(!disabled&&mayLeave()){setShowCreate(true);scrollTo('operator-game-editor');}}} onRemove={id=>{if(!disabled&&!anyBusy&&!anyDraft){setRoomRequest({kind:'archive',roomId:id});scrollTo('room-lifecycle');}}}/>}
 
-              {operator&&<div id="room-lifecycle" className={styles.companyCard}><ControlResourceLifecycle operatorId={operator.id} kind="rooms" available refreshKey={lifecycleRefresh} compact archiveRequest={archiveRequest} stateRequest={stateRequest} onArchiveRequestHandled={()=>{setArchiveRequest('');setStateRequest('');}}
+              {operator&&<div id="room-lifecycle" className={styles.lifecycleSlot}><ControlResourceLifecycle operatorId={operator.id} kind="rooms" available refreshKey={lifecycleRefresh} compact request={roomRequest} onRequestHandled={()=>setRoomRequest(undefined)}
                 disabled={disabled||roomBusy||gameBusy||createBusy||publishBusy||anyDraft}
                 onChanged={lifecycleChanged} onRefreshNeeded={lifecycleUncertain} onBusyChange={value=>lifecycleOperation('rooms',value)} navigation={lifecycleNavigation}/></div>}
 
@@ -260,13 +259,9 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
               {!showCreate&&<>
               <header className={styles.detailHeader}><div><p className={styles.detailEyebrow}>{selectedRoom?'VALT SPEL':'SPELUTBUD'}</p><h2 id="registered-room-title">{selectedRoom?.name??operator?.name??'Välj ett spelbolag'}</h2>{selectedRoom&&<p>{labels[selectedRoom.game]??selectedRoom.game} · {labels[selectedRoom.state]??selectedRoom.state} · {selectedRoom.published?'Publicerat rum':'Inte publicerat'}</p>}
                 {selectedRoom&&roomStatus&&roomStatus.roomId===selectedRoom.id&&<dl className={styles.roomStatus} aria-label="Rummets status">
-                  <div><dt>Publicerad version</dt><dd>{roomStatus.packageRevision}</dd></div>
-                  <div><dt>Sparat utkast</dt><dd>{roomStatus.draft?roomStatus.draftRevision:'Inget'}</dd></div>
-                  <div><dt>Spelaren möter nu</dt><dd>{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div>
+                  <div><dt>Publicerat nu</dt><dd>{liveLabel(roomStatus.live.background,roomStatus.labels.background)} · {liveLabel(roomStatus.live.dealer,roomStatus.labels.dealer)} · {liveLabel(roomStatus.live.table,roomStatus.labels.table)}</dd></div>
                 </dl>}</div>
-                {operator&&<div className={styles.detailActions}>{selectedRoom?.published&&<button type="button" className="studio-button" disabled={disabled||anyBusy||anyDraft} onClick={()=>{setStateRequest(selectedRoom.id);scrollTo('room-lifecycle');}}>{selectedRoom.state==='live'?'Pausa spel':'Öppna spel'}</button>}<a href={workspaceLink('/admin/companies',operator)} className={linkClass}>Bolag & team</a>{selectedRoom?.playUrl&&<a href={selectedRoom.playUrl} target="_blank" rel="noopener" className={linkClass}>Öppna rummet <ArrowUpRight size={13} aria-hidden="true"/></a>}{selectedRoom
-                  ?<button type="button" className="studio-button primary" onClick={()=>{document.getElementById('operator-publication')?.setAttribute('open','');scrollTo('room-publication');}}>Publicering</button>
-                  :<button type="button" className="studio-button primary" onClick={()=>setShowCreate(true)}>Lägg till spel</button>}</div>}
+                {operator&&<div className={styles.detailActions}>{selectedRoom?.published&&<button type="button" className="studio-button" disabled={disabled||anyBusy||anyDraft} onClick={()=>{setRoomRequest({kind:'state',roomId:selectedRoom.id});scrollTo('room-lifecycle');}}>{selectedRoom.state==='live'?'Pausa spel':'Öppna spel'}</button>}<a href={workspaceLink('/admin/companies',operator)} className={linkClass}>Bolag & team</a>{selectedRoom?.playUrl&&<a href={selectedRoom.playUrl} target="_blank" rel="noopener" className={linkClass}>Öppna rummet <ArrowUpRight size={13} aria-hidden="true"/></a>}</div>}
               </header>
               {operator&&!selectedRoom&&!roomId&&<p className={styles.message}>Bolaget har inga spel ännu. Välj Lägg till spel för att skapa det första.</p>}
               {roomId&&!selectedRoom&&<p role="alert" className={styles.message}>Det valda rummet finns inte hos detta aktiva spelbolag. Välj rum uttryckligen för att fortsätta.</p>}
@@ -278,19 +273,19 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
                       onBusyChange={setGameBusy} onDirtyChange={setGameDirty}
                       onPublished={receipt=>{packageAdvanced(receipt.operatorId,receipt.packageRevision);onChanged?.();}}/>}
                   </PartnerAppearanceLoader>
-                  : <div className={styles.unpublished} role="status"><h3>Rummet saknar ett publicerat paket</h3><p>Rummets lager kan väljas när bolagets sammansättningar är publicerade. Kontrollera att rummets sammansättning är vald under Publicering nedan.</p></div>}
+                  : <div className={styles.unpublished} role="status"><h3>Rummet saknar ett publicerat paket</h3><p>Rummets lager kan väljas när bolagets sammansättningar är publicerade. Välj rummets mall under Spelmallar för bolaget nedan.</p></div>}
                 <details className={cn(panelClass,styles.sharedTemplate)}><summary>Gemensam mall och tillåtna alternativ</summary><p>Malländringar kan beröra flera rum. Berörda rum visas i mallredigeraren innan du ändrar eller sparar.</p><div><a href={editHref} className={linkClass}>Öppna gemensam mall för {selectedRoom.name} ↗</a><a href="/admin/assets" className={linkClass}>Bord & bakgrunder · bibliotek</a></div></details>
               </>}
               </>}
-              {operator&&!showCreate&&<details id="operator-publication" className={styles.packageDetails}><summary>Utbud och publicering</summary><section id="room-publication" className={cn(panelClass,styles.companyCard)} aria-label="Publicering">
-                <header><div><p className={styles.detailEyebrow}>Bolaget</p><h3>Publicering · {operator.name}</h3></div>
+              {operator&&!showCreate&&<details id="operator-publication" className={styles.packageDetails}><summary>Spelmallar för bolaget</summary><section id="room-publication" className={cn(panelClass,styles.companyCard)} aria-label="Publicering">
+                <header><div><p className={styles.detailEyebrow}>Bolaget</p><h3>Spelmallar · {operator.name}</h3></div>
                   <span className={styles.version}>{operator.packageRevision===null&&operatorPackage.revision===null?'Ingen publicering ännu':'Senast publicerat · version '+(operatorPackage.revision??operator.packageRevision)}</span></header>
-                <p>Välj vilka sammansättningar bolagets rum får använda. Det sparade innehållet når spelarna först när du publicerar.</p>
+                <p>Här tilldelar du bolaget spelmallar från Studio. Materialval för det enskilda spelet sparar du ovan.</p>
                 {operatorPackage.needsRefresh&&<p role="status" className={styles.problem}>Uppgifterna behöver kontrolleras. <button type="button" className="studio-button" disabled={anyBusy} onClick={()=>{if(roomDraftBlocks&&!confirm('Lämna osparade rumsändringar och läsa in aktuella uppgifter?'))return;reload();}}>Läs in aktuella uppgifter</button></p>}
                 {!compositions.length&&<p role="status">Det finns inga sparade sammansättningar. <a className={linkClass} href="/admin/compositions">Skapa en sammansättning</a> innan du skapar ett rum.</p>}
                 {!operatorPackage.chosen.length&&compositions.length>0&&<p role="status">Välj minst en sammansättning för att publicera. Stäng spelutbudet genom att pausa eller arkivera spelrummen.</p>}
                 <form onSubmit={event=>{event.preventDefault();void publishPackage();}}>
-                  <fieldset className={styles.choices} disabled={disabled||anyBusy||operatorPackage.needsRefresh}><legend>Sammansättningar som bolaget får använda</legend>
+                  <fieldset className={styles.choices} disabled={disabled||anyBusy||operatorPackage.needsRefresh}><legend>Spelmallar som bolaget får använda</legend>
                     {compositions.map(row=><label className={styles.choice} key={row.id}><input type="checkbox" name="lanes" value={row.id} checked={operatorPackage.chosen.includes(row.id)}
                       onChange={event=>{const checked=event.target.checked;updatePackage(operator.id,current=>togglePackageLane(current,row.id,checked));}}/><span><strong>{compositionLabel(row.name)}</strong><br/>{row.dealerIds.map(dealerName).join(', ')||'Inga dealers'}{operatorRooms.some(room=>room.compositionId===row.id)?' · används av '+operatorRooms.filter(room=>room.compositionId===row.id).map(room=>room.name).join(', '):''}</span></label>)}
                     {operatorPackage.chosen.filter(id=>!compositions.some(row=>row.id===id)).map(id=><label className={styles.choice} key={id}><input type="checkbox" value={id} checked onChange={()=>updatePackage(operator.id,current=>togglePackageLane(current,id,false))}/><span>Sammansättning borttagen ur Studio · {id}. Avmarkera efter att berörda rum arkiverats.</span></label>)}
