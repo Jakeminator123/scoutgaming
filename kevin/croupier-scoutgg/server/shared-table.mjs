@@ -42,6 +42,7 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 // null; onPlan(room, plan, ready, {nya, omplanera, steg}) then hands the new lines to the lip-sync worker, and the lines still
 // speaking when the new plan's cards come (their frames changed) for a new map; steg = the previous plan's steps + this one's.
 // The talk track lives on the room (r.talk), so an answer or a line outlives the plan it started in.
+const IDLE_SEAT_MS=90000;
 export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null}={}) {
   const talkFor=talk;
   const db=new DatabaseSync(filename);db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');   // WAL + NORMAL: a bet's COMMIT no longer waits on a full fsync (Kevin 22 Oct)
@@ -282,10 +283,17 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   }
   function advance(id,r) {
     const time=now();r.leaving??=[];
-    for(const p of players(id))if(time-p.seen>120000&&owned(r,p.id).length){
+    // Kevin 24 Oct: "Table is full bugg a player is finished but reserverad all the table". Between rounds a player gone
+    // 60 s (no page asking) gives up his boxes (a round still lets him go after 120 s, standing his hands); one whose page
+    // is still open but who has neither bet nor acted for 90 s while the table bets gives them up too
+    for(const p of players(id))if(time-p.seen>(r.phase==='round'?120000:60000)&&owned(r,p.id).length){
       if(r.phase==='round'){if(!r.leaving.includes(p.id)){r.leaving.push(p.id);r.version++;}}
       else releaseSeats(r,p.id);
     }
+    if(r.phase==='bets'){r.lastAct??={};for(const pid of new Set(r.owners.filter(Boolean))){
+      if(owned(r,pid).some(i=>r.bets[i]?.main))continue;
+      r.lastAct[pid]??=time;if(time-r.lastAct[pid]>IDLE_SEAT_MS)releaseSeats(r,pid);
+    }}
     if(r.phase==='bets')for(const p of players(id))if(pausedUntil(p.token)>time){
       for(const i of owned(r,p.id))r.bets[i]={main:0,pp:0,tp:0};
       r.ready=r.ready.filter(x=>x!==p.id);delete r.history[p.id];
@@ -458,6 +466,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
           r.version++;db.prepare('INSERT INTO shared_requests VALUES (?,?,?,?)').run(id,key,input.requestId,JSON.stringify(input));
         }
       }
+      if(op!=='state'){const me=player(id,key);if(me){r.lastAct??={};r.lastAct[me.id]=now();}}   // idle seats: advance()
       save(id,r);const snapshot=view(id,r,key);db.exec('COMMIT');
       if(welcome)Promise.resolve().then(()=>onWelcome(welcome)).catch(()=>{});
       return snapshot;
