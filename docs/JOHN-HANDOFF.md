@@ -1,6 +1,6 @@
 # Aktuell handoff — Scoutgaming
 
-## Spelvy: kortvisning och samlad chatt — 23 oktober 2026
+## Spelvy: kortvisning och samlad chatt — 24 oktober 2026
 
 **Leverans:** `codex/spelvy-kort-chatt` bygger vidare på PR #361, head `904d3f01`. Integrera geometrin i #361 före denna ändring. Spelarens kortvisningsbubbla och webbläsarval tas bort. **Studio → Scen & lager → Kort och marker → Kortvisning** sparar På bordet/Upplyfta separat för bordets mobil- och desktopformat. Utan eget val gäller På bordet. Manuella kort-/markerplaceringar bevaras; autoskalan från #361 gäller där den valts och för nya placeringar.
 
@@ -9,6 +9,8 @@
 **Verifiering:** klientbygge inklusive Admin/lobby-typer; Studio 2 118 godkända/17 överhoppade; Admin 351/1; presentation 791/4; tal 624/0; spelregler 484/0. Efter separat skrivskyddad granskning rättades tillgängliga knappnamn och 78 berörda prov passerade; tillgänglighetsprovet kördes också separat. Testregistret: 0 föräldralösa av 562 kandidater. Isolerat CSS-prov med syntetisk chatt vid 900×700 och 390×844 verifierade öppna/stängda ytor. Egna provservern och provfliken är stängda. Lokal npm-packning utelämnade en hårdlänkad transportfil; den installerade testkopian återställdes från exakt hashkontrollerad repokälla. Ingen produktionsdata ändrades.
 
 **Slutlig integration:** synken med rättad #361 gav 66 godkända riktade prov. Efter avvecklad lokal kalibrering passerade 71 berörda beteende- och säkerhetsprov, inklusive nekad skrivning i vanlig lokal körning, samt klientbygget. Separat granskning gav inga blockerande fynd. Strikt raderingsgrind godkänd för två filer utan kvarvarande anropare; testregistret har fortfarande 0 föräldralösa av 562 kandidater. Fullsvitssiffrorna ovan avser revisionen före denna sista avveckling.
+
+**Mergegranskning 24 oktober:** delade rum tvingade fortfarande Upplyfta när kompositionen saknade eget kortvisningsval, trots standarden På bordet i Admin och den övriga spelklienten. Både projicerad film/bordsgeometri och reservlayout följer nu samma standard; ett uttryckligt sparat Upplyfta bevaras. Sex felande standardfall reproducerades före rättningen. Efter rättning passerar de nya beteendeproven för alla tio kombinationer av mobil/desktop och layout/sparat val samt samtliga riktade prov i elva testfiler för kort, geometri, delade rum, chatt/kamera och publiceringskapabilitet. Körningen använder Node 24.21.0 och högst fyra testarbetare. De tidigare fullsvitssiffrorna ovan är inte omkörda på denna revision.
 
 **Driftsättning återstår:** frivilligt layoutfält `cardView` kräver spelserverns kapabilitet 26; gamla servrar blockeras före publicering. Ingen databasmigrering. Render behöver byggas från integrerad kod innan inställningen kan publiceras. GitHub Actions slutliga CI-jobb på #361 är fortfarande blockerat av kontots betalnings-/utgiftsgräns. Verklig mobil med skärmtangentbord och produktionsacceptans med publicerade medier återstår; lokalt godkänt är inte produktionsacceptans.
 
