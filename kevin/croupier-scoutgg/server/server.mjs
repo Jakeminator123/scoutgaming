@@ -65,6 +65,7 @@ const API_TOKEN = process.env.API_TOKEN ?? "";   // satt → POST /api/* kräver
 mkdirSync(ANSWERS, { recursive: true });
 mkdirSync(path.join(ROOT, "data"), { recursive: true });
 const tableDb = process.env.TABLE_DB ?? path.join(ROOT, "data", "demo.sqlite");
+const MAINTENANCE_DEFAULT = "We are currently doing maintenance work. The dealer may not speak for a while.";
 // The dealers' memory of each visitor lives next to the table database.
 // A studio slug never takes over a room people already play at (the public "astrid" room included).
 const activity = createStudioActivity(path.join(path.dirname(tableDb), "studio-activity.sqlite"), tableDb);   // per sign-in: studio-activity.mjs
@@ -697,6 +698,9 @@ async function handleHttp(req, res) {
   // Kevin 23 Oct: "retract the desktop only phone until i say so": the desktop table only with DESKTOP_LAYOUT=1 in the env
   // (desk-mode.js), else every visitor gets the phone layout, ?layout=desk too
   if (p === "/layout-flag.js") { res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${process.env.DESKTOP_LAYOUT === "1"};`); return; }
+  // Kevin 24 Oct: "Runpod is down can you add we currently doing maintance work notification in prod": a banner on the
+  // table and the lobby while MAINTENANCE_NOTICE=1 in the env, text from MAINTENANCE_TEXT (maintenance-notice.js)
+  if (p === "/notice.js") { const text = process.env.MAINTENANCE_NOTICE === "1" ? (process.env.MAINTENANCE_TEXT?.trim() || MAINTENANCE_DEFAULT).slice(0, 300) : ""; res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.MAINTENANCE_NOTICE=${JSON.stringify(text)};`); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.
     if(!/^\/answers\/[a-f0-9-]{36}\.mp4$/.test(p))return json(res,404,{error:'Not found'});
