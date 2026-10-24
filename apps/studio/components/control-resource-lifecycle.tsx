@@ -8,6 +8,7 @@ type Room = {id:string;name:string;operatorId:string;presentationLaneId:string;s
 export type LifecycleSnapshot = {administrationRevision:string;operators:Operator[];rooms:Room[]};
 export type ResourceLifecycleNavigation = {compositionHref:(operator:Operator,room:Room)=>string;rehearsalLabel?:string};
 const blockers:Record<string,string> = {operator_archived:'Återställ bolaget först.',room_identity_in_use:'Ett annat rum använder samma identitet.',presentation_not_published:'Publicera rummets sammansättning först.',playback_configuration_changed:'Uppspelningsinställningarna behöver granskas.',playback_configuration_limit:'Gränsen för uppspelningsinställningar är nådd.',dealer_not_available:'Rummets dealer är inte tillgänglig.',presentation_incompatible:'Sammansättningen behöver anpassas för rummet.',room_limit:'Gränsen för antal rum är nådd.'};
+export type RoomLifecycleRequest = {kind:'archive'|'state';roomId:string};
 type Intent = {kind:'operator'|'room'|'state';operatorId:string;id:string;name:string;archived?:boolean;state?:'live'|'pending'};
 const revision = (value:unknown) => value === null || Number.isSafeInteger(value) && Number(value)>0;
 export function validLifecycleSnapshot(value:unknown):value is LifecycleSnapshot {
@@ -21,10 +22,10 @@ export function validLifecycleSnapshot(value:unknown):value is LifecycleSnapshot
       && typeof row.canArchive==='boolean' && typeof row.canRestore==='boolean' && Array.isArray(row.restoreBlockers)));
 }
 
-export function ControlResourceLifecycle({operatorId,kind,available,disabled=false,refreshKey=0,onChanged,onBusyChange,onRefreshNeeded,navigation,compact=false,archiveOnly=false,archiveRequest,stateRequest,onArchiveRequestHandled}:{
+export function ControlResourceLifecycle({operatorId,kind,available,disabled=false,refreshKey=0,onChanged,onBusyChange,onRefreshNeeded,navigation,compact=false,archiveOnly=false,request,onRequestHandled}:{
   operatorId:string;kind:'operator'|'rooms';available:boolean;disabled?:boolean;refreshKey?:number;
   onChanged?:(snapshot:LifecycleSnapshot)=>void;onBusyChange?:(busy:boolean)=>void;onRefreshNeeded?:()=>void;
-  navigation?:ResourceLifecycleNavigation; compact?:boolean; archiveOnly?:boolean; archiveRequest?:string; stateRequest?:string; onArchiveRequestHandled?:()=>void;
+  navigation?:ResourceLifecycleNavigation; compact?:boolean; archiveOnly?:boolean; request?:RoomLifecycleRequest; onRequestHandled?:()=>void;
 }) {
   const [snapshot,setSnapshot]=useState<LifecycleSnapshot|null>(null);
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[stale,setStale]=useState(false),[problem,setProblem]=useState(''),[notice,setNotice]=useState('');
@@ -61,13 +62,14 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
   const visible=rooms.filter(room=>Boolean(room.archivedAt)===(archiveOnly||showArchive));
   const writesOff=disabled||busy||loading||stale;
   useEffect(()=>{
-    if((!archiveRequest&&!stateRequest)||!snapshot||writesOff)return;
-    const target=snapshot.rooms.find(row=>row.id===(archiveRequest||stateRequest)&&row.operatorId===operatorId);
-    if(stateRequest&&target?.published&&operator?.status==='active'&&!target.archivedAt)setIntent({kind:'state',operatorId,id:target.id,name:target.name,state:target.state==='live'?'pending':'live'});
-    else if(archiveRequest&&target?.canArchive)setIntent({kind:'room',operatorId,id:target.id,name:target.name,archived:true});
+    if(!request||!snapshot||writesOff)return;
+    setIntent(null);setProblem('');setNotice('');
+    const target=snapshot.rooms.find(row=>row.id===request.roomId&&row.operatorId===operatorId);
+    if(request.kind==='state'&&target?.published&&operator?.status==='active'&&!target.archivedAt)setIntent({kind:'state',operatorId,id:target.id,name:target.name,state:target.state==='live'?'pending':'live'});
+    else if(request.kind==='archive'&&target?.canArchive)setIntent({kind:'room',operatorId,id:target.id,name:target.name,archived:true});
     else setProblem('Spelet kan inte ändras just nu. Uppdatera och kontrollera bolaget.');
-    onArchiveRequestHandled?.();
-  },[archiveRequest,stateRequest,snapshot,writesOff,operatorId,onArchiveRequestHandled]);
+    onRequestHandled?.();
+  },[request,snapshot,writesOff,operatorId,onRequestHandled]);
 
   async function apply() {
     if(!intent||!snapshot||!operator||intent.operatorId!==operatorId||lock.current||writesOff)return;
@@ -108,7 +110,8 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
     finally {lock.current=false;if(ticket===epoch.current)setBusy(false);callbacks.current.onBusyChange?.(false);}
   }
   if(!available)return null;
-  if(compact)return <section aria-label="Ta bort spel från bolaget">
+  if(compact&&!problem&&!notice&&!intent)return null;
+  if(compact)return <section aria-label="Ändra spel hos bolaget">
     {problem&&<p role="alert">{problem} <button className="sg-btn" type="button" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></p>}
     {notice&&<p role="status">{notice}</p>}
     {intent&&intent.operatorId===operatorId&&<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna ':'Pausa '):'Ta bort '}{intent.name} hos {operator?.name}?</legend><p>{intent.kind==='state'?(intent.state==='live'?'Spelet öppnas för bolagets spelare med sina publicerade inställningar.':'Spelet stängs tillfälligt för nya spelare. Inställningar och historik behålls.'):'Spelet försvinner från bolagets utbud och stängs för spelare. Gemensamma dealers, bord, bakgrunder och historik behålls. Spelet går att återställa.'}</p><div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" onClick={()=>void apply()}>{busy?'Sparar…':intent.kind==='state'?(intent.state==='live'?'Öppna spel':'Pausa spel'):'Ta bort spel'}</button><button type="button" className="sg-btn" onClick={()=>setIntent(null)}>Avbryt</button></div></fieldset>}

@@ -82,8 +82,44 @@
 .previewHelp p { margin-top:8px; line-height:1.55; }
 .roomPanel .preview .actions button[aria-pressed=true] { background:var(--sg-hover,#272d23); color:var(--sg-lime,#c8f044); border-color:var(--sg-lime,#c8f044); }
 
-.visualPanel .hero{border:0;background:#12180f;padding:14px;border-radius:12px;overflow:hidden}.visualPanel .hero .preview>h4{font-size:12px;letter-spacing:.03em}.visualPanel .roomLayout[data-aside]{grid-template-columns:minmax(0,1fr)}.visualPanel .fields{display:grid;grid-template-columns:1fr!important;gap:24px!important}.visualPanel .editor{background:#20281b!important;border:1px solid #3d4a32!important;padding:22px!important}.visualPanel .editor>legend{font-size:17px;font-weight:550;color:#e3ebd8;padding:0 8px}.visualPanel .statusBar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;background:#1d2517;border-color:#3d4a32}.visualPanel .statusBar>p{flex:1}.visualPanel .statusBar>button{background:none;border:0;color:#a8b798;font-size:11px}.visualPanel .revisions{font-size:10px}.visualPanel .revisions span{padding:4px 6px;border-color:#3e4a33}.visualPanel .asideColumn>section{background:#1d2418}.visualPanel .review{border-color:#3d4a32;border-radius:9px}.visualPanel .actions>button{border-radius:7px;min-height:42px}.visualPanel .history{border:0;border-top:1px solid #37432d;border-radius:0;padding:14px 0;background:none}.visualPanel .history summary{font-size:12px;color:#a0b18e}@media(min-width:1100px){.visualPanel .fields{grid-template-columns:repeat(3,minmax(0,1fr))!important}.visualPanel .fields>fieldset{border-right:1px solid #39472d;padding-right:16px!important}.visualPanel .fields>fieldset:last-child{border:0;padding-right:0!important}}
-
-.gameSettings { border-top: 1px solid #34443b; padding-top: 18px; }
-.gameSettings summary { cursor: pointer; font-weight: 600; margin-bottom: 14px; }
-.gameSettings summary:focus-visible { outline: 2px solid #c8f044; outline-offset: 4px; }
+/* Admin: edit the three layers next to the result, with one save/publication bar. */
+.visualPanel .roomLayout { gap:22px; }
+.visualPanel .hero { padding:16px; border:1px solid var(--sg-border,#34383d); background:#17191b; border-radius:10px; overflow:hidden; }
+.visualPanel .previewHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.visualPanel .previewHeader h4 { font-size:13px; color:var(--sg-text,#eef0ec); }
+.visualPanel .previewHeader .actions { padding:0; gap:4px; }
+.visualPanel .previewHeader button { min-height:32px; font-size:11px; padding:5px 9px; }
+.visualPanel .previewHelp { border-top:1px solid var(--sg-border,#34383d); padding-top:10px; }
+.visualPanel .editor { background:var(--sg-surface,#232527); border:1px solid var(--sg-border,#34383d); padding:16px; border-radius:10px; }
+.visualPanel .editor>legend { font-size:14px; font-weight:600; padding:0 7px; }
+.visualPanel .editor>.hint { font-size:12px; line-height:1.5; }
+.visualPanel .fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.visualPanel .extraChoices { border-top:1px solid var(--sg-border,#34383d); padding-top:12px; }
+.visualPanel .extraChoices summary { cursor:pointer; font-size:12px; color:var(--sg-muted,#9ca3af); }
+.visualPanel .extraChoices .colorRow { border:0; margin-bottom:12px; }
+.visualPanel .extraChoices>button { font-size:12px; }
+.visualPanel .saveBar { position:sticky; bottom:12px; z-index:2; gap:12px; padding:12px 16px; border-color:#48513f; background:#232725; box-shadow:0 6px 24px #0004; }
+.visualPanel .saveBar>p { flex:1 1 230px; font-size:12px; }
+.visualPanel .saveBar .actions { padding:0; }
+.visualPanel .actions>button { border-radius:7px; min-height:40px; }
+.visualPanel .revisions { font-size:11px; }
+.visualPanel .revisions span { padding:4px 7px; }
+.visualPanel .review { background:var(--sg-surface,#232527); border-color:#48513f; }
+.visualPanel .history { border:0; border-top:1px solid var(--sg-border,#34383d); border-radius:0; padding:14px 0; background:none; }
+.visualPanel .history summary { font-size:12px; color:var(--sg-muted,#9ca3af); }
+.visualPanel .history>.actions { margin:12px 0; }
+.gameSettings { border-top:1px solid var(--sg-border,#34383d); padding-top:14px; }
+.gameSettings summary { cursor:pointer; font-size:13px; font-weight:550; margin-bottom:14px; }
+.gameSettings summary:focus-visible,.extraChoices summary:focus-visible { outline:2px solid #c8f044; outline-offset:4px; }
+@container(min-width:900px) {
+  .visualPanel .roomLayout { grid-template-columns:minmax(0,1.5fr) minmax(310px,1fr); align-items:start; }
+  .visualPanel .hero { position:sticky; top:20px; }
+  .visualPanel .fields { grid-template-columns:1fr; gap:18px; }
+  .visualPanel .fields>fieldset+fieldset { border-top:1px solid var(--sg-border,#34383d); padding-top:14px!important; }
+}
+@container(max-width:620px) {
+  .visualPanel .fields { grid-template-columns:1fr; }
+  .visualPanel .saveBar { position:static; }
+  .visualPanel .saveBar .actions { width:100%; }
+  .visualPanel .saveBar .actions>button { flex:1 1 140px; }
+}
