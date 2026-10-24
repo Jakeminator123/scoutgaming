@@ -474,7 +474,7 @@ test('new frontend serves its built public module graph when the older backend r
     });
     frontend.listen(0,'127.0.0.1'); await once(frontend,'listening');
     const origin = 'http://127.0.0.1:'+frontend.address().port;
-    const pending = presentationPublicModules.flatMap(row => row.paths);
+    const pending = ['/app.mjs', '/shared-room-app.mjs', ...presentationPublicModules.flatMap(row => row.paths)];
     assert.deepEqual(pending.filter(path => !prepared.files.includes(path)), [], 'every declared public URL must be built');
     for (const path of ['/packages/navigation/game-entry.mjs','/packages/navigation/operator-slug.mjs']) assert.ok(pending.includes(path),path);
     const visited = new Set();
@@ -497,6 +497,7 @@ test('new frontend serves its built public module graph when the older backend r
       for (const match of imports) pending.push(new URL(match[1],origin+path).pathname);
     }
     assert.ok([...visited].some(path => path.endsWith('.json')),'the public JSON contract is exercised');
+    assert.ok(visited.has('/abort-signals.mjs'),'the actual game import graph must serve its signal helper');
     for (const path of ['/packages/navigation/server/platform-routing.mjs','/packages/navigation/operator-entry.mjs',
       '/packages/presentation/server/selection.mjs','/packages/presentation/contracts/studio-model.mjs',
       '/packages/navigation/game-entry.mjs/extra','/packages/navigation/game-entry.mjs.bak']) {

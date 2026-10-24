@@ -43,3 +43,32 @@ test('closing an outstanding fetch prevents a late URL from leaking', async () =
   const pending = cache.acquire(media('aaa')); cache.close(); finish();
   await assert.rejects(pending, { name: 'AbortError' }); assert.equal(minted, 0);
 });
+
+test('mobile recovery verifies a film without AbortSignal.any', async t => {
+  const descriptor = Object.getOwnPropertyDescriptor(AbortSignal, 'any');
+  Object.defineProperty(AbortSignal, 'any', { value: undefined, configurable: true });
+  t.after(() => Object.defineProperty(AbortSignal, 'any', descriptor));
+  const { cache } = fixture();
+  t.after(() => cache.close());
+  const lease = await cache.acquire(media('aaa'));
+  assert.equal(lease.cached, false); lease.release();
+});
+
+test('mobile recovery keeps the fetch timeout and retries the exact hash after it', async t => {
+  const timeout = new AbortController();
+  t.mock.method(AbortSignal, 'timeout', ms => { assert.equal(ms, 15000); return timeout.signal; });
+  let attempts = 0;
+  const { cache, fetched } = fixture({ fetchImpl: (src, {signal}) => {
+    fetched.push(src);
+    if (++attempts > 1) return Promise.resolve(new Response('aaa'));
+    return new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason), {once:true}));
+  } });
+  t.after(() => cache.close());
+  const first = cache.acquire(media('aaa'));
+  timeout.abort(new DOMException('Timed out', 'TimeoutError'));
+  await assert.rejects(first, {name:'TimeoutError'});
+  assert.deepEqual(cache.snapshot(), {bytes:0,entries:0});
+  t.mock.method(AbortSignal, 'timeout', () => new AbortController().signal);
+  const retried = await cache.acquire(media('aaa'));
+  assert.deepEqual(fetched, ['/aaa','/aaa']); retried.release();
+});

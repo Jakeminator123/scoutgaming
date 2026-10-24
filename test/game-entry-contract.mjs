@@ -126,8 +126,8 @@ test('the initial document selects the presentation before client JavaScript run
 test('only the selected first frame can reveal the scene and a redirect prevents startup',async()=>{
   const {createPresentationStartup}=await import('../services/game/public/presentation-startup.mjs');
   const make=()=>{
-    const status={hidden:false,textContent:'loading',setAttribute(){}};
-    const document={documentElement:{dataset:{}},querySelector:()=>status};
+    const status={hidden:false,textContent:'loading',setAttribute(){},append(){}};
+    const document={documentElement:{dataset:{}},querySelector:()=>status,createElement:()=>({})};
     let timeout,cleared=0;
     const startup=createPresentationStartup({document,dealerId:'paow',setTimer:fn=>(timeout=fn,1),clearTimer:()=>cleared++});
     return {startup,document,status,get cleared(){return cleared;},timeout:()=>timeout()};
@@ -142,6 +142,16 @@ test('only the selected first frame can reveal the scene and a redirect prevents
   assert.equal(target,'/blackjack?dealer=linnea');assert.equal(redirected.startup.ready('paow'),false);
   await Promise.resolve();assert.equal(continued,false);assert.equal(redirected.startup.state,'navigating');
   const closed=make();closed.startup.close();assert.equal(closed.startup.ready('paow'),false);
+});
+test('mobile recovery exposes a reload button outside the hidden scene after timeout', async()=>{
+  const {createPresentationStartup}=await import('../services/game/public/presentation-startup.mjs');
+  const buttons=[],status={hidden:false,textContent:'loading',setAttribute(){},append:button=>buttons.push(button)};
+  const document={documentElement:{dataset:{}},querySelector:selector=>{assert.equal(selector,'#presentation-loading');return status;},createElement:tag=>{assert.equal(tag,'button');return {};}};
+  let timeout,reloads=0;
+  const startup=createPresentationStartup({document,dealerId:'paow',setTimer:fn=>(timeout=fn,1),clearTimer(){},reload:()=>reloads++});
+  timeout(); assert.equal(startup.state,'failed'); assert.equal(buttons.length,1);
+  assert.equal(buttons[0].textContent,'Ladda om'); buttons[0].onclick(); assert.equal(reloads,1);
+  assert.equal(startup.ready('other'),false); assert.equal(startup.ready('paow'),true);
 });
 test('the engine names the game on every /game return and never carries a launch credential',async () => {
   const {publicGameStart} = await import('../services/game/game-start.mjs');

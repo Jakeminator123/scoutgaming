@@ -459,12 +459,82 @@ class Video extends EventTarget {
 }
 function filmFixture(t) {
   const original = globalThis.document, originalWindow = globalThis.window;
-  const media = [];
-  const page = globalThis.document = Object.assign(new EventTarget(), { hidden: false, createElement: () => { const video = new Video(); media.push(video); return video; } });
+  const media = [], buttons = [];
+  const page = globalThis.document = Object.assign(new EventTarget(), { hidden: false,
+    body: {append: button => buttons.push(button)},
+    createElement: name => {
+      if (name === 'button') return {style:{},setAttribute(){},remove(){this.removed=true;}};
+      const video = new Video(); media.push(video); return video;
+    } });
   const view = globalThis.window = new EventTarget();
   t.after(() => { globalThis.document = original; globalThis.window = originalWindow; });
-  return { media, page, view, host: { append() {} } };
+  return { media, buttons, page, view, host: { append() {} } };
 }
+
+test('mobile recovery starts the same blocked video directly in the user gesture', async t => {
+  const {page,buttons,host} = filmFixture(t), owner = new AbortController(), receipts = [];
+  const video = page.createElement('video'); let gesture = false;
+  video.play = () => {
+    video.playCalls++;
+    if (video.playCalls === 1) return Promise.reject(new DOMException('Blocked', 'NotAllowedError'));
+    assert.equal(gesture, true, 'play is called synchronously by the button');
+    video.paused = false; return Promise.resolve();
+  };
+  const result = playLocalFilm({host,video,src:'blob:verified',signal:owner.signal,onReceipt:r=>receipts.push(r.state)});
+  void result.catch(()=>{}); t.after(()=>owner.abort());
+  await Promise.resolve(); await Promise.resolve();
+  assert.notEqual(video.removed,true); assert.equal(buttons.length,1);
+  assert.equal(video.src,'blob:verified'); assert.equal(video.muted,true);
+  gesture=true; buttons[0].onclick(); gesture=false;
+  assert.equal(video.playCalls,2);
+  video.emit('playing'); assert.equal(receipts.includes('presented'),false);
+  video.frame(); assert.equal(receipts.includes('presented'),true);
+  video.ended=true; video.emit('ended'); await result;
+  assert.equal(buttons[0].removed,true);
+});
+
+test('mobile recovery releases the blocked video and button on cancellation or deadline', async t => {
+  const {page,buttons,host} = filmFixture(t);
+  t.mock.timers.enable({apis:['setTimeout']});
+  for (const ending of ['abort','deadline']) {
+    const owner = new AbortController(), video=page.createElement('video');
+    video.play=()=>{video.playCalls++;return Promise.reject(new DOMException('Blocked','NotAllowedError'));};
+    const result=playLocalFilm({host,video,src:'blob:verified',signal:owner.signal});
+    void result.catch(()=>{}); t.after(()=>owner.abort());
+    await Promise.resolve(); await Promise.resolve();
+    const button=buttons.at(-1); assert.ok(button);
+    if(ending==='abort') owner.abort();
+    else t.mock.timers.tick((MAX_RECORDED_SPEECH_SECONDS+8)*1000);
+    await assert.rejects(result,ending==='abort'?{name:'AbortError'}:/playback limit/);
+    assert.equal(video.removed,true); assert.equal(button.removed,true);
+    button.onclick(); assert.equal(video.playCalls,1,'a stale gesture cannot resume the closed owner');
+  }
+});
+
+test('mobile recovery retains the verified cache lease and rejects changed bytes before playback', async t => {
+  const {page,buttons,host}=filmFixture(t), owner=new AbortController(), revoked=[];
+  const {PerformancePlayer}=await import('../services/game/public/performance-player.mjs');
+  const {createVerifiedVideoBuffer}=await import('../services/game/public/verified-video-buffer.mjs');
+  const exact=text=>({src:'/'+text,sha256:createHash('sha256').update(text).digest('hex')});
+  const cache=createVerifiedVideoBuffer({budget:3,fetchImpl:async src=>new Response(src.slice(1)),
+    createUrl:()=>`blob:${crypto.randomUUID()}`,revokeUrl:url=>revoked.push(url)});
+  t.after(()=>{owner.abort();cache.close();});
+  const warm=await cache.acquire(exact('aaa'));warm.release();
+  const player=Object.assign(Object.create(PerformancePlayer.prototype),{localBuffer:cache});
+  const video=page.createElement('video');
+  video.play=()=>{video.playCalls++;return Promise.reject(new DOMException('Blocked','NotAllowedError'));};
+  const pending=player.playLocalClip({media:exact('aaa')},{host,video,signal:owner.signal});
+  void pending.catch(()=>{});
+  await Promise.resolve();await Promise.resolve();await Promise.resolve();await Promise.resolve();
+  assert.equal(buttons.length,1);assert.equal(video.src,warm.src);
+  const other=await cache.acquire(exact('bbb'));other.release();
+  assert.equal(revoked.includes(warm.src),false,'the blocked video still owns its verified URL');
+  owner.abort();await assert.rejects(pending,{name:'AbortError'});
+  const next=await cache.acquire(exact('bbb'));next.release();
+  assert.equal(revoked.includes(warm.src),true,'cancellation released the pinned URL');
+  await assert.rejects(player.playLocalClip({media:{...exact('ccc'),src:'/bad'}},{host,video}),/changed since review/);
+  assert.equal(video.playCalls,1,'changed bytes cannot reach playback or gesture recovery');
+});
 test('a selected or playing film is not completed until a real presented frame and ended event', async t => {
   const { media, host } = filmFixture(t); const receipts = []; let complete = false;
   const finished = playLocalFilm({ host, src: '/fixture.mp4', onReceipt: r => receipts.push(r), hold() {} }).then(() => { complete = true; });

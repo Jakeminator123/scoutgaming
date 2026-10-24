@@ -18,8 +18,8 @@ Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 Vercelproduktion är `scoutgaming`, projekt
 `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` i team
 `team_Scxorb9qtZHjNae1YEQnFCaT`. Reporoten bygger webb, Studio och taltransport;
-www/apex tillhör detta projekt. Spelmotorn kör på Render `croupier-v2`, tjänst
-`srv-datg3j6gekts73amgli0` i workspace `tea-d19jsa63jp1c73ch0sc0`.
+www/apex tillhör detta projekt. Aktiv spelmotor är Render `croupier-v3`, tjänst
+`srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den bygger `ops/cloud/Dockerfile.game` från main med automatisk deploy avstängd. Verifierat 24 oktober 2026 mot tjänst, requestlogg och versionendpoint. Tidigare `croupier-v2` (`srv-datg3j6gekts73amgli0`) är suspenderad; starta den inte som återställningsgenväg.
 
 1. Frys aktuell main-SHA, faktisk Vercel-/Render-version och avsedd återgångs-SHA.
    Läs både deploymentstatus och Renders `/__cloud/version` samt `/__cloud/health`.
