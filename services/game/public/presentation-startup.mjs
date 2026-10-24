@@ -1,7 +1,7 @@
 // One first-frame boundary for every published dealer and playback adapter.
 // Asset decoding stays with the selected adapter; the page never displays a
 // default dealer while that adapter or a saved player choice is loading.
-export function createPresentationStartup({ document, dealerId, timeoutMs = 30000, setTimer = setTimeout, clearTimer = clearTimeout }) {
+export function createPresentationStartup({ document, dealerId, timeoutMs = 30000, setTimer = setTimeout, clearTimer = clearTimeout, reload = () => globalThis.location?.reload() }) {
   const root = document.documentElement;
   const status = document.querySelector('#presentation-loading');
   let state = 'pending';
@@ -13,6 +13,10 @@ export function createPresentationStartup({ document, dealerId, timeoutMs = 3000
     if (status) {
       status.textContent = 'Spelbordet kunde inte visas. Ladda om sidan för att försöka igen.';
       status.setAttribute('role', 'alert');
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = 'Ladda om';
+      button.onclick = () => { if (state === 'failed') reload(); };
+      status.append(button);
     }
   }
   return {

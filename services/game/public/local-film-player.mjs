@@ -11,7 +11,8 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
-    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false;
+    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, recovery;
+    const clearRecovery = () => { recovery?.remove(); recovery = null; };
     const seekable = seconds => Number.isFinite(video.duration) && video.duration > 0 ? Math.min(seconds, Math.max(0, video.duration - FILMED_SEEK_END_MARGIN_S)) : seconds;
     let lastMediaTime = Number.isFinite(video.currentTime) ? video.currentTime : 0;
     const listeners = [];
@@ -25,6 +26,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     const emit = (state, error) => onReceipt({ state, evidence: state === 'presented' ? 'video-frame' : 'media-lifecycle',
       ...(handedOver ? { handover: true } : {}), ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
     const clean = () => {
+      clearRecovery();
       clearTimeout(watchdog); clearTimeout(deadline); signal?.removeEventListener('abort', abort);
       for (const remove of listeners) remove();
       if (frame != null) video.cancelVideoFrameCallback(frame);
@@ -49,6 +51,28 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     };
     const arm = () => { clearTimeout(watchdog); watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
     const abort = () => finish(new DOMException('Presentation cancelled', 'AbortError'));
+    const startFailed = error => {
+      if (terminal || signal?.aborted) return;
+      if (error?.name !== 'NotAllowedError' || !muted || started || presented) { finish(error); return; }
+      // Retain this verified video's lease while waiting for a real gesture.
+      // No playback has started: suspend only its progress watchdog, never
+      // the absolute deadline or owner cancellation.
+      clearTimeout(watchdog);
+      if (!recovery) {
+        recovery = document.createElement('button');
+        recovery.type = 'button'; recovery.className = 'local-presentation-recovery';
+        recovery.textContent = 'Starta videon';
+        recovery.onclick = () => {
+          if (terminal || signal?.aborted || !recovery || recovery.disabled || document.hidden) return;
+          recovery.disabled = true; arm();
+          // This call must stay synchronous inside the click handler for iOS.
+          try { video.play().catch(startFailed); } catch (error) { startFailed(error); }
+        };
+        // The scene stays hidden until the selected dealer presents a frame.
+        document.body.append(recovery);
+      }
+      recovery.disabled = false;
+    };
     // Adapt Kevin's paused-playback recovery to this film's existing owner.
     // Resume the exact frame, never skip a queued card or silently mute speech.
     // Hidden-tab cancellation remains the presentation controller's decision.
@@ -61,7 +85,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       catch (error) { if (!terminal && !signal?.aborted) finish(error); }
       finally { resuming = false; }
     };
-    listen(video, 'playing', () => { if (terminal || started) return; arm(); started = true; emit('start'); });
+    listen(video, 'playing', () => { if (terminal || started) return; clearRecovery(); arm(); started = true; emit('start'); });
     listen(video, 'timeupdate', () => {
       // Events alone are not progress: browsers may repeat them at one frame.
       if (!terminal && Number.isFinite(video.currentTime) && video.currentTime > lastMediaTime) {
@@ -104,6 +128,6 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       const seek = () => { video.currentTime = seekable(startOffset); };
       if (video.readyState >= 1) seek(); else listen(video, 'loadedmetadata', seek);
     }
-    video.play().catch(finish);
+    try { video.play().catch(startFailed); } catch (error) { startFailed(error); }
   });
 }

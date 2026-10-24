@@ -390,14 +390,15 @@ test('normal stream factory reserves one Neon session with continuation transpor
   const directory=await mkdtemp(join(tmpdir(),'continuation-stream-factory-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   const pool=speechMemoryPool(),journal=await createSpeechJournal({pool,environmentId:'qa_native_abc92154cb15'});
   await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:4748848,confirmation:'verified-new-empty-cost-journal'});
-  let available=0,jobPosts=0,cancels=0;const ops=[];
-  const relay={status:()=>({workers:available,busy:0,available}),workerStatus:id=>({workerId:id,workers:available,busy:0,available}),stopWorker(){available=0;},close(){available=0;}};
+  let available=0,jobPosts=0,cancels=0,providerStatus='IN_PROGRESS';const ops=[],stopped=[];
+  const relay={status:()=>({workers:available,busy:0,available}),workerStatus:id=>({workerId:id,workers:available,busy:0,available}),stopWorker(workerId){stopped.push(workerId);available=0;providerStatus='COMPLETED';return true;},close(){available=0;}};
   const worker={runNativeP6ProductSpeech:async({responsesCreate})=>{await responsesCreate({logicalCallId:'stream-sdk',body:{model:'gpt-5.6-terra',stream:false,store:false,max_output_tokens:32}});return{kind:'generatedText',text:'One normal stream.'};}};
   const router=createBoundedAiQaRouter({manifest:f.continuationManifest,budget:f.continuationBudget,worker,now:()=>10000,endpointId:'endpoint',
     client:{responses:{create:async()=>({status:'completed',usage:{input_tokens:9,output_tokens:3}})}},fetchImpl:async(url,options)=>{
       if(url.endsWith('/run')){jobPosts++;ops.push(JSON.parse(options.body).input.op);available=1;return Response.json({id:'factory-job',status:'IN_PROGRESS'});}
       if(url.includes('/cancel/')){cancels++;return Response.json({id:'factory-job',status:'CANCELLED'});}
-      return Response.json({id:'factory-job',status:'IN_PROGRESS'});
+      assert.equal(new URL(url).pathname,'/v2/endpoint/status/factory-job');assert.equal(options.method,'GET');
+      return Response.json({id:'factory-job',status:providerStatus});
     }});
   const choice=await(await router.fetchForOwnedRequest({streamRequested:true,playerId:'player',owner:'owner',readOwner:async()=> 'owner',
     readEnvelope:async()=>({status:{dealerId:'astrid'},request:{requestId:'stream-one'}})})('')).json();
@@ -409,7 +410,14 @@ test('normal stream factory reserves one Neon session with continuation transpor
   assert.equal(descriptor.kind,'generated-speech-stream');assert.deepEqual(ops,['session']);assert.equal(jobPosts,1);
   assert.equal(pool.state.sessions.size,1);assert.equal([...pool.state.reservations.values()][0].reserved_micro_usd,'1000000');
   assert.equal(pool.state.fileReservations.size,0);assert.equal((await f.continuationBudget.inspect()).counts.tts,1,'prepare does not start the second TTS before attachment');
-  await service.close();assert.equal(cancels,1);assert.equal([...pool.state.sessions.values()][0].state,'terminal');
+  assert.equal(providerStatus,'IN_PROGRESS');assert.deepEqual(stopped,[]);
+  assert.equal([...pool.state.sessions.values()][0].released_at_ms,null);
+  await service.close();
+  const session=[...pool.state.sessions.values()][0];
+  assert.equal(cancels,0,'normal worker shutdown needs no forced provider cancellation');
+  assert.deepEqual(stopped,[session.worker_id]);assert.equal(session.state,'terminal');
+  assert.equal(session.terminal_status,'COMPLETED');assert.equal(session.cancel_requested_at_ms,null);
+  assert.notEqual(session.released_at_ms,null);assert.equal([...pool.state.reservations.values()][0].reserved_micro_usd,'1000000');
 });
 
 async function closedSuccessorFixture(t){

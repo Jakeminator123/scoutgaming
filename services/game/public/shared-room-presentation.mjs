@@ -1,4 +1,5 @@
 import { createLayerComposition } from '../../../packages/presentation/runtime/presentation-composition.mjs';
+import { combineAbortSignals } from './abort-signals.mjs';
 import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 import { calibration } from '../../../packages/presentation/contracts/calibration.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
@@ -151,7 +152,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
       }
       const requestPort=transport?.request??window.fetch.bind(window);
       return requestPort(url,{...options,credentials:'same-origin',mode:'same-origin',redirect:'error',
-        signal:AbortSignal.any([signal,currentConnection,options.signal,AbortSignal.timeout(10000)].filter(Boolean))});
+        signal:combineAbortSignals([signal,currentConnection,options.signal,AbortSignal.timeout(10000)])});
     };
     media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,
       muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:()=>onReady(dealer.id),onBusy:()=>{},onError:()=>onError('shared_room_media_unavailable')});

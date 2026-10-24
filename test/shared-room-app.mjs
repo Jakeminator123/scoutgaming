@@ -213,7 +213,12 @@ test('all seven seats remain selectable through a native control when the visual
   view.close();picker.value='0';picker.dispatchEvent(new Event('change'));assert.equal(calls.length,1);
 });
 
-test('registered local presentation reuses exact media and card ports and disposes its resources',async()=>{
+test('registered local presentation reuses exact media and card ports without AbortSignal.any and disposes its resources',async t=>{
+  const descriptor=Object.getOwnPropertyDescriptor(AbortSignal,'any');
+  Object.defineProperty(AbortSignal,'any',{value:undefined,configurable:true});
+  t.after(()=>Object.defineProperty(AbortSignal,'any',descriptor));
+  const timeout=AbortSignal.timeout;
+  t.mock.method(AbortSignal,'timeout',ms=>{assert.equal(ms,10000);return timeout(ms);});
   const {document,nodes}=documentFixture(),window=new EventTarget(),requests=[];window.matchMedia=()=>({matches:true});window.fetch=(url,init)=>{requests.push({url,init});return Promise.resolve(Response.json({}));};
   nodes.set('table2d',new Element());nodes.get('scene').getBoundingClientRect=nodes.get('table2d').getBoundingClientRect=()=>({left:0,top:0,width:1080,height:1920});
   const events=[];let options,shown;

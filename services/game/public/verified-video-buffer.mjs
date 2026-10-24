@@ -1,6 +1,7 @@
 // Kevin's bounded blob-cache approach, adapted to reviewed SHA-256 assets.
 // A lease pins a URL through decoding/playback. Cancelling one waiter cannot
 // cancel another owner; the last waiter cancels an unfinished fetch.
+import { combineAbortSignals } from './abort-signals.mjs';
 export function createVerifiedVideoBuffer({ budget = 96 * 1024 * 1024, fetchImpl = fetch,
   createUrl = blob => URL.createObjectURL(blob), revokeUrl = url => URL.revokeObjectURL(url) } = {}) {
   const entries = new Map(); let bytes = 0, closed = false;
@@ -21,7 +22,7 @@ export function createVerifiedVideoBuffer({ budget = 96 * 1024 * 1024, fetchImpl
       entry = { pins: 0, size: 0, src: null, controller: new AbortController() };
       entries.set(key, entry);
       entry.job = (async () => {
-        const response = await fetchImpl(media.src, { signal: AbortSignal.any([entry.controller.signal, AbortSignal.timeout(15000)]) });
+        const response = await fetchImpl(media.src, { signal: combineAbortSignals([entry.controller.signal, AbortSignal.timeout(15000)]) });
         if (!response.ok) throw new Error('Local film unavailable');
         const data = await response.arrayBuffer();
         if (data.byteLength > budget) throw new Error('Local film exceeds buffer budget');

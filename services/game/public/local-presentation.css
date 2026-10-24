@@ -19,6 +19,8 @@ html[data-presentation="local"] #pitboss { display: none; }
 #scene[data-local-card-overlay="true"] .hand-total { opacity: 0; }
 .local-presentation-status { pointer-events: none; position: absolute; left: 12px; bottom: 45%; z-index: 30; color: #ffe8ab; background: #101618dd; border-radius: 8px; font: 12px Inter, sans-serif; padding: 6px 10px; max-width: calc(100% - 24px); }
 .local-presentation-status:empty { display: none; }
+.local-presentation-recovery { position: fixed; left: 50%; bottom: max(32px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1001; padding: 14px 24px; border: 1px solid #d6ff3a; border-radius: 24px; background: #d6ff3a; color: #101618; font: 600 16px system-ui, sans-serif; cursor: pointer; }
+.local-presentation-recovery:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 .local-presentation-mode { position: absolute; left: 12px; top: 130px; z-index: 40; padding: 7px; background: #101618; color: #eee; border: 1px solid #52605e; border-radius: 8px; }
 #chat #chat-log-toggle { width: auto; flex-shrink: 0; padding: 0 10px; font-size: 11px; }
 #chat-log-toggle[data-unread="true"]::after { content: ' •'; }
