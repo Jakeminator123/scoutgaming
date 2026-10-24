@@ -799,6 +799,21 @@ body.debug #engine-hud { display: block; }
   #insurance { bottom: 16vh; top: auto; }
 }
 
+/* When the full action panel cannot clear the cards and HUD, labels stay
+   inside the 44px touch targets so the complete row fits a short phone. */
+#actions.action-compact, #actions-top.action-compact {
+  gap: 4px; padding: 2px 4px; border-radius: 12px;
+}
+#actions.action-compact button, #actions-top.action-compact button {
+  width: 44px; height: 44px; min-width: 44px; flex: 0 0 44px; padding: 0;
+}
+#actions-top.action-compact button {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+#actions-top.action-compact button i { width: 24px; height: 24px; font-size: 14px; }
+#actions-top.action-compact button em { margin-top: 1px; font-size: 7px; line-height: 9px; letter-spacing: 0; }
+#actions.action-compact::before { display: none; }
+
 
 /* Player choices sit above the stake tiers. Colour paints the HUD, not the film. */
 #player-choices {
