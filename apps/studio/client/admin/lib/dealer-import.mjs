@@ -114,7 +114,7 @@ export function importClassification(row, dealerId, catalog) {
   if (!audio && row.background !== 'green-screen') throw Error('Bekräfta grön bakgrund för varje video.');
   const poses = importRowPoses(row, slot);
   return validateVideoMetadata({ dealerId, eventId: slot.eventId, situation: slot.situation,
-    kind: slot.kind, label: row.label.trim(), role: 'alternative', playback: 'once', notes: '',
+    kind: slot.kind, label: row.label.trim(), role: 'alternative', playback: 'once', notes: row.notes ?? '',
     ...(poses ? {startPose:poses.start, endPose:poses.end} : {}),
     ...(audio ? {mediaType:'audio'} : {compositing:{...DEFAULT_DEALER_COMPOSITING}}),
   }, {forWrite:true});
@@ -139,7 +139,10 @@ export function applyImportProposals(rows, proposals, slots) {
     const poses = accepted && proposal.poses && ['VILA','REDO'].includes(proposal.poses.start) && ['VILA','REDO'].includes(proposal.poses.end)
       ? {start: proposal.poses.start, end: proposal.poses.end} : undefined;
     const {poses: _previous, ...rest} = row;
-    return {...rest, slotId: accepted ? slot.id : '', ...(poses ? {poses} : {}),
+    // Preserve source/language/take advice as text only. Every write still
+    // rebuilds capabilities from the current catalogue and validates the notes.
+    const notes = accepted && typeof proposal.classification?.notes === 'string' ? proposal.classification.notes : '';
+    return {...rest, slotId: accepted ? slot.id : '', notes, ...(poses ? {poses} : {}),
       reason: proposal.reason, confidence: proposal.confidence, warnings: proposal.warnings ?? []};
   });
 }

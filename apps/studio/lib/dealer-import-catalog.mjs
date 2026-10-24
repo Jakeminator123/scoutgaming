@@ -7,7 +7,7 @@ import { DEFAULT_DEALER_COMPOSITING } from '../../../packages/presentation/contr
 import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { parseClipFilename, clipNamingGuide, CLIP_POSE_VARIANTS } from '../../../packages/presentation/contracts/clip-naming.mjs';
 import { speechSlotStandard } from '../../../packages/presentation/contracts/speech-slot-bindings.mjs';
-import { frozenImportFileMatch, frozenImportProposal, frozenImportWarnings } from './dealer-import-sources.mjs';
+import { frozenImportFileMatch, frozenImportProposal, frozenImportWarnings, frozenImportSourceForDealer } from './dealer-import-sources.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
   maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, maxPath: 240, maxAlternatives: 2, vision: false });
@@ -216,6 +216,51 @@ export function frozenDealerImportMatches(input, catalog) {
     if (match) matches.set(file.id, match);
   }
   return matches;
+}
+
+// Read-only repair advice for existing ordinary uploads. SHA and size identify
+// the frozen file; the normal import generator owns the wording and slot facts.
+// The existing classify writer remains responsible for authority and row CAS.
+export function frozenImportNoteRepairs(dealerId, inventory, catalog) {
+  if (!catalog.dealers.some(row => row.id === dealerId)) throw new StudioStorageError('studio_dealer_unknown', 404);
+  const source = frozenImportSourceForDealer(dealerId), candidates = [];
+  let skipped = 0;
+  if (!source) return { dealerId, candidates, skipped };
+  const files = new Map();
+  for (const file of source.files) {
+    if (!/^[a-f0-9]{64}$/.test(file.sha256 ?? '')) continue;
+    const key = `${file.sha256}:${file.size}`;
+    files.set(key, [...(files.get(key) ?? []), file]);
+  }
+  const videos = inventory?.videos ?? [], ids = new Set(), duplicateIds = new Set();
+  for (const video of videos) { if (ids.has(video.id)) duplicateIds.add(video.id); ids.add(video.id); }
+  for (const video of videos) {
+    const previous = video.classification;
+    if (video.dealer !== dealerId || previous?.dealerId !== dealerId || typeof previous.notes !== 'string' || previous.notes.trim()) continue;
+    // Private Blob inventory reports "unchecked": listing does not rehash the
+    // object. Upload commit already verified its immutable SHA/size before
+    // registration. This repairs text only; it grants no playback acceptance.
+    if (!video.available || video.storage !== 'private-blob' || video.source !== 'upload' || !['unchecked', 'verified'].includes(video.integrity)
+      || video.retainedBank || video.familyId || previous.familyId || previous.archived || video.deletion || previous.recordedSpeech
+      || duplicateIds.has(video.id) || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(video.id)) { skipped++; continue; }
+    let matches = files.get(`${video.sha256}:${video.bytes}`) ?? [];
+    // Byte-identical named variants may carry different pose metadata. Only
+    // the exact preserved source name/stem can disambiguate those aliases.
+    if (matches.length > 1) matches = matches.filter(file => {
+      const name = file.path.slice(file.path.lastIndexOf('/') + 1);
+      return previous.label === name || previous.label === name.replace(/\.[^.]+$/, '');
+    });
+    if (matches.length !== 1) { skipped++; continue; }
+    const file = matches[0], name = file.path.slice(file.path.lastIndexOf('/') + 1);
+    const input = { dealerId, files: [{ id: video.id, name, size: file.size, type: 'video/mp4' }] };
+    const proposal = finishDealerImportRows([{ fileId: video.id, slotId: null }], input, catalog)[0];
+    const expected = proposal.classification;
+    if (!expected || proposal.evidence?.sha256 !== video.sha256
+      || ['dealerId', 'eventId', 'situation', 'kind', 'role', 'playback', 'startPose', 'endPose', 'mediaType'].some(key => previous[key] !== expected[key])) { skipped++; continue; }
+    try { validateVideoMetadata(previous, { forWrite: true }); } catch { skipped++; continue; }
+    candidates.push({ id: video.id, sha256: video.sha256, previous: structuredClone(previous), notes: expected.notes });
+  }
+  return { dealerId, candidates, skipped };
 }
 
 export function finishDealerImportRows(rows, input, catalog) {
