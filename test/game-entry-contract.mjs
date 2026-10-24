@@ -153,6 +153,27 @@ test('mobile recovery exposes a reload button outside the hidden scene after tim
   assert.equal(buttons[0].textContent,'Ladda om'); buttons[0].onclick(); assert.equal(reloads,1);
   assert.equal(startup.ready('other'),false); assert.equal(startup.ready('paow'),true);
 });
+
+test('gesture waits pause only the selected pending startup and resume a fresh bounded load watch', async()=>{
+  const {createPresentationStartup}=await import('../services/game/public/presentation-startup.mjs');
+  const timers=[],cleared=[],buttons=[],status={hidden:false,textContent:'loading',setAttribute(){},append:button=>buttons.push(button)};
+  const document={documentElement:{dataset:{}},querySelector:()=>status,createElement:()=>({})};
+  const startup=createPresentationStartup({document,dealerId:'dragan',
+    setTimer:(callback,ms)=>(timers.push({callback,ms}),timers.length),clearTimer:id=>cleared.push(id)});
+  assert.equal(startup.waitForGesture('other',true),false);assert.equal(startup.waitForGesture('dragan','yes'),false);
+  assert.equal(startup.waitForGesture('dragan',true),true);assert.deepEqual(cleared,[1]);
+  timers[0].callback();assert.equal(startup.state,'pending','a queued cleared timeout cannot report failure');
+  assert.equal(startup.ready('other'),false);assert.equal(status.hidden,false);
+  assert.equal(startup.waitForGesture('dragan',false),true);assert.equal(timers.length,2);assert.equal(timers[1].ms,30000);
+  startup.waitForGesture('dragan',false);assert.equal(timers.length,2,'duplicate callbacks cannot extend the load watch');
+  timers[0].callback();assert.equal(startup.state,'pending','resuming does not revive the old timeout');
+  timers[1].callback();assert.equal(startup.state,'failed');assert.equal(buttons.length,1);
+  assert.equal(startup.waitForGesture('dragan',true),false,'a late gesture callback cannot hide a real failure');
+  assert.equal(startup.ready('dragan'),true);assert.equal(startup.waitForGesture('dragan',true),false);
+  startup.close();assert.equal(startup.waitForGesture('dragan',true),false);
+  const navigating=createPresentationStartup({document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
+  navigating.navigate('/other',()=>{});assert.equal(navigating.waitForGesture('dragan',true),false);
+});
 test('the engine names the game on every /game return and never carries a launch credential',async () => {
   const {publicGameStart} = await import('../services/game/game-start.mjs');
   const channel = '00000000-0000-4000-8000-000000000001';

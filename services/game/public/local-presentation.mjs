@@ -2,7 +2,7 @@ import { isActiveDealerId } from '../../../packages/presentation/contracts/deale
 import { recordedSpeechForVideo } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import { createLiveIdleController } from '../../../packages/presentation/runtime/live-idle.mjs';
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, muted, composition = null, entry = null, transport = null }) {
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
   const preview=Boolean(transport?.context);
   const request=transport?.request??((...args)=>globalThis.fetch(...args));
@@ -65,7 +65,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const retryIdleSoon = () => { clearTimeout(idleRetryTimer); idleRetryTimer = setTimeout(() => { idleRetryTimer = null; if (closed || document.hidden) return; idleRun = 0; resumeIdle(); }, 700); };
   // The retry budget belongs to this configuration's exact idle, not a UI epoch.
   // Visibility/action changes must not turn a broken loop into endless retries.
-  const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; active?.abort(); active = null; };
+  let gestureOwner = null;
+  const releaseGestureWait = owner => {
+    if (!owner || gestureOwner !== owner) return;
+    gestureOwner = null; onGestureWait(false);
+  };
+  const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; releaseGestureWait(active); active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
@@ -125,6 +130,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // passed through to playLocalFilm; the shared ports derive them from the published plan and the profile.
   async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {} } = {}) {
     const own = new AbortController(); active = own;
+    const ownSerial = serial, ownVersion = version();
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
     host.dataset.presentationMedia = video.id; host.dataset.presentationFile = video.fileName; host.dataset.presentationKind = kind;
@@ -144,13 +150,18 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onProgress?.({phase:'play'});
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
         signal: own.signal, muted: kind !== 'speech' || muted(), hold, ...timing,
+        onGestureWait: waiting => {
+          if (active !== own || closed || own.signal.aborted || serial !== ownSerial || version() !== ownVersion) return;
+          if (waiting && gestureOwner !== own) { gestureOwner = own; onGestureWait(true); }
+          else if (!waiting) releaseGestureWait(own);
+        },
         onFrame: onMediaFrame || onProgress ? time => { onProgress?.({phase:'frame',time}); onMediaFrame?.(time); } : undefined,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
         onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
       onProgress?.({phase:'complete'});
-    } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
+    } finally { signal?.removeEventListener('abort', abort); releaseGestureWait(own); if (active === own) active = null; }
   }
   function retainRule(result, requestVersion, sourceType) {
     const rule = result.idleRule;

@@ -10,6 +10,7 @@ import { createPresentationApi as buildPresentationApi, presentationInput } from
 import { createNativeP6OwnedPlaybackContextReader } from '../services/game/native-p6-qa-hook.mjs';
 import { addDealer, createSeedProject as historicalProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { playLocalFilm } from '../services/game/public/local-film-player.mjs';
+import { createPresentationStartup } from '../services/game/public/presentation-startup.mjs';
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { createSharedRoomPresentationPorts } from '../services/game/public/shared-room-presentation.mjs';
@@ -493,26 +494,64 @@ test('mobile recovery starts the same blocked video directly in the user gesture
   assert.equal(buttons[0].removed,true);
 });
 
-test('mobile recovery releases the blocked video and button on cancellation or deadline', async t => {
+test('mobile gesture wait outlasts the page timeout without exposing reload or an unpresented scene', async t => {
+  const {page,buttons,host} = filmFixture(t), owner = new AbortController();
+  t.mock.timers.enable({apis:['setTimeout']});
+  const reloadButtons = [], status = {hidden:false,textContent:'loading',setAttribute(){},append:button=>reloadButtons.push(button)};
+  page.documentElement={dataset:{}}; page.querySelector=()=>status;
+  const startup=createPresentationStartup({document:page,dealerId:'dragan'});
+  t.after(()=>{startup.close();owner.abort();});
+  const video=page.createElement('video'); let gesture=false;
+  video.play=()=>{
+    video.playCalls++;
+    if(video.playCalls===1)return Promise.reject(new DOMException('Blocked','NotAllowedError'));
+    assert.equal(gesture,true,'the real play call stays in the trusted click');
+    video.paused=false;return Promise.resolve();
+  };
+  const result=playLocalFilm({host,video,src:'blob:verified',signal:owner.signal,
+    onGestureWait:waiting=>startup.waitForGesture('dragan',waiting),
+    onReceipt:event=>{if(event.state==='presented')startup.ready('dragan');}});
+  void result.catch(()=>{});
+  await Promise.resolve();await Promise.resolve();
+  t.mock.timers.tick(31000);
+  assert.equal(startup.state,'pending','awaiting a tap is not a page load failure');
+  assert.equal(reloadButtons.length,0);assert.equal(status.hidden,false);
+  assert.equal(video.src,'blob:verified');assert.notEqual(video.removed,true);
+  gesture=true;buttons[0].onclick();gesture=false;
+  video.emit('playing');
+  assert.equal(startup.state,'pending','playing without a frame still hides the scene');
+  video.frame();assert.equal(startup.state,'ready');assert.equal(status.hidden,true);
+  video.ended=true;video.emit('ended');await result;
+});
+
+test('mobile recovery releases the blocked video, waiting signal and button on cancellation, deadline or decoding error', async t => {
   const {page,buttons,host} = filmFixture(t);
   t.mock.timers.enable({apis:['setTimeout']});
-  for (const ending of ['abort','deadline']) {
-    const owner = new AbortController(), video=page.createElement('video');
+  for (const ending of ['abort','deadline','decode']) {
+    const owner = new AbortController(), video=page.createElement('video'),waiting=[];
     video.play=()=>{video.playCalls++;return Promise.reject(new DOMException('Blocked','NotAllowedError'));};
-    const result=playLocalFilm({host,video,src:'blob:verified',signal:owner.signal});
+    const result=playLocalFilm({host,video,src:'blob:verified',signal:owner.signal,onGestureWait:value=>waiting.push(value)});
     void result.catch(()=>{}); t.after(()=>owner.abort());
     await Promise.resolve(); await Promise.resolve();
-    const button=buttons.at(-1); assert.ok(button);
+    const button=buttons.at(-1); assert.ok(button);assert.deepEqual(waiting,[true]);
     if(ending==='abort') owner.abort();
-    else t.mock.timers.tick((MAX_RECORDED_SPEECH_SECONDS+8)*1000);
-    await assert.rejects(result,ending==='abort'?{name:'AbortError'}:/playback limit/);
-    assert.equal(video.removed,true); assert.equal(button.removed,true);
-    button.onclick(); assert.equal(video.playCalls,1,'a stale gesture cannot resume the closed owner');
+    else if(ending==='decode')video.emit('error');
+    else {
+      t.mock.timers.tick(60000);button.onclick();await Promise.resolve();await Promise.resolve();
+      assert.deepEqual(waiting,[true,false,true],'a denied second gesture re-enters waiting');
+      t.mock.timers.tick((MAX_RECORDED_SPEECH_SECONDS+8)*1000-60001);
+      assert.notEqual(video.removed,true);
+      t.mock.timers.tick(1);
+    }
+    await assert.rejects(result,ending==='abort'?{name:'AbortError'}:ending==='decode'?/decoded/:/playback limit/);
+    assert.equal(video.removed,true); assert.equal(button.removed,true);assert.equal(waiting.at(-1),false);
+    const plays=video.playCalls;
+    button.onclick(); assert.equal(video.playCalls,plays,'a stale gesture cannot resume the closed owner');
   }
 });
 
 test('mobile recovery retains the verified cache lease and rejects changed bytes before playback', async t => {
-  const {page,buttons,host}=filmFixture(t), owner=new AbortController(), revoked=[];
+  const {page,buttons,host}=filmFixture(t), owner=new AbortController(), revoked=[],waiting=[];
   const {PerformancePlayer}=await import('../services/game/public/performance-player.mjs');
   const {createVerifiedVideoBuffer}=await import('../services/game/public/verified-video-buffer.mjs');
   const exact=text=>({src:'/'+text,sha256:createHash('sha256').update(text).digest('hex')});
@@ -523,17 +562,18 @@ test('mobile recovery retains the verified cache lease and rejects changed bytes
   const player=Object.assign(Object.create(PerformancePlayer.prototype),{localBuffer:cache});
   const video=page.createElement('video');
   video.play=()=>{video.playCalls++;return Promise.reject(new DOMException('Blocked','NotAllowedError'));};
-  const pending=player.playLocalClip({media:exact('aaa')},{host,video,signal:owner.signal});
+  const pending=player.playLocalClip({media:exact('aaa')},{host,video,signal:owner.signal,onGestureWait:value=>waiting.push(value)});
   void pending.catch(()=>{});
   await Promise.resolve();await Promise.resolve();await Promise.resolve();await Promise.resolve();
-  assert.equal(buttons.length,1);assert.equal(video.src,warm.src);
+  assert.equal(buttons.length,1);assert.equal(video.src,warm.src);assert.deepEqual(waiting,[true]);
   const other=await cache.acquire(exact('bbb'));other.release();
   assert.equal(revoked.includes(warm.src),false,'the blocked video still owns its verified URL');
-  owner.abort();await assert.rejects(pending,{name:'AbortError'});
+  owner.abort();await assert.rejects(pending,{name:'AbortError'});assert.deepEqual(waiting,[true,false]);
   const next=await cache.acquire(exact('bbb'));next.release();
   assert.equal(revoked.includes(warm.src),true,'cancellation released the pinned URL');
-  await assert.rejects(player.playLocalClip({media:{...exact('ccc'),src:'/bad'}},{host,video}),/changed since review/);
+  await assert.rejects(player.playLocalClip({media:{...exact('ccc'),src:'/bad'}},{host,video,onGestureWait:value=>waiting.push(value)}),/changed since review/);
   assert.equal(video.playCalls,1,'changed bytes cannot reach playback or gesture recovery');
+  assert.deepEqual(waiting,[true,false],'unverified bytes cannot pause the startup watchdog');
 });
 test('a selected or playing film is not completed until a real presented frame and ended event', async t => {
   const { media, host } = filmFixture(t); const receipts = []; let complete = false;
@@ -732,7 +772,7 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, prepared = null} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, prepared = null, onGestureWait = () => {}} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -749,10 +789,29 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, muted: () => false });
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
+
+test('only the current presentation owner can notify a gesture wait and stopping releases it', async t => {
+  const waiting=[];
+  const f=await controllerFixture(t,{dealerId:'dragan',ownIdle:{id:'bound',fileName:'idle.mp4',sha256:'a'.repeat(64)},onGestureWait:value=>waiting.push(value)});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));
+  const first=f.jobs[0].options;
+  assert.equal(typeof first.onGestureWait,'function');
+  first.onGestureWait(true);first.onGestureWait(true);assert.deepEqual(waiting,[true]);
+  f.controller.state({speech:true});assert.deepEqual(waiting,[true,false]);
+  first.onGestureWait(true);first.onGestureWait(false);assert.deepEqual(waiting,[true,false]);
+  f.controller.state({speech:false});await new Promise(resolve=>setImmediate(resolve));
+  const second=f.jobs[1].options;
+  second.onGestureWait(true);assert.deepEqual(waiting,[true,false,true]);
+  first.onGestureWait(false);assert.deepEqual(waiting,[true,false,true],'old cleanup cannot release a new video');
+  f.setVersion(3);second.onGestureWait(false);second.onGestureWait(true);
+  assert.deepEqual(waiting,[true,false,true],'a stale table version cannot report new wait state');
+  f.controller.close();assert.deepEqual(waiting,[true,false,true,false]);
+  second.onGestureWait(true);second.onGestureWait(false);assert.deepEqual(waiting,[true,false,true,false]);
+});
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
   const { controller, jobs, receipts } = await controllerFixture(t);

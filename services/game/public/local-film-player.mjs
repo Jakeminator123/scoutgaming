@@ -6,13 +6,14 @@ import {FILMED_CATCH_UP_S, FILMED_SEEK_END_MARGIN_S} from '../../../packages/pre
 // phase before its first frame (:234); handoverAt hands over on the last frames instead of 'ended' (:192);
 // playbackRate is the chain's fitted rate (:223-227); clockTime() is the table clock in take seconds, to catch
 // up after buffering and to end a step whose time is over (:180-185). Card motion still follows mediaTime.
-export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, renderFrame, hold = () => {},
+export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onGestureWait = () => {}, onFrame, renderFrame, hold = () => {},
   startOffset = 0, handoverAt = null, playbackRate = null, clockTime = null }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
-    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, recovery;
-    const clearRecovery = () => { recovery?.remove(); recovery = null; };
+    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, recovery, gestureWaiting = false;
+    const gestureWait = waiting => { if (gestureWaiting !== waiting) { gestureWaiting = waiting; onGestureWait(waiting); } };
+    const clearRecovery = () => { recovery?.remove(); recovery = null; gestureWait(false); };
     const seekable = seconds => Number.isFinite(video.duration) && video.duration > 0 ? Math.min(seconds, Math.max(0, video.duration - FILMED_SEEK_END_MARGIN_S)) : seconds;
     let lastMediaTime = Number.isFinite(video.currentTime) ? video.currentTime : 0;
     const listeners = [];
@@ -49,7 +50,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       emit(error ? signal?.aborted ? 'interrupted' : 'error' : 'end', error); clean();
       error ? reject(error) : resolve({ completed: true });
     };
-    const arm = () => { clearTimeout(watchdog); watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
+    const arm = () => { clearTimeout(watchdog); if (!gestureWaiting) watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
     const abort = () => finish(new DOMException('Presentation cancelled', 'AbortError'));
     const startFailed = error => {
       if (terminal || signal?.aborted) return;
@@ -64,7 +65,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
         recovery.textContent = 'Starta videon';
         recovery.onclick = () => {
           if (terminal || signal?.aborted || !recovery || recovery.disabled || document.hidden) return;
-          recovery.disabled = true; arm();
+          recovery.disabled = true; gestureWait(false); arm();
           // This call must stay synchronous inside the click handler for iOS.
           try { video.play().catch(startFailed); } catch (error) { startFailed(error); }
         };
@@ -72,6 +73,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
         document.body.append(recovery);
       }
       recovery.disabled = false;
+      gestureWait(true);
     };
     // Adapt Kevin's paused-playback recovery to this film's existing owner.
     // Resume the exact frame, never skip a queued card or silently mute speech.
