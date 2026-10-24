@@ -1,5 +1,14 @@
 # Aktuell handoff — Scoutgaming
 
+## Mobil uppföljning: gestväntan och Dragan-placering — 25 oktober 2026
+
+Jakobs verkliga iPhone/Safari-prov visar att spelet öppnas efter **Starta videon**, men **Ladda om** hann visas under väntan. Orsaken är att sidans 30-sekundersvakt inte kände till filmspelarens väntan på användargest. Den vakten pausas nu endast för den aktuella, hashverifierade filmägarens gestväntan och startas om när användaren trycker. Scenen förblir dold tills rätt dealers bild faktiskt presenterats. Filmens absoluta 128-sekundersgräns, avbrott, cachelease och synkrona `video.play()` i klicket är bevarade; fel dealer, gammal timer/film/version och avslutad presentation kan inte återaktivera väntan.
+
+**Verifiering:** tre nya regressioner var röda före rättningen. Underagentens två hela berörda sviter ger **148/148** godkända beteendeprov i Node 24.21.0 med fyra testarbetare. Root har granskat produktdiffen och integrerat callbacken i spelstarten. CI, merge, deploy och nytt iPhone-prov återstår vid denna kodleverans.
+
+**Insatsytorna:** Jakob preciserar Dragan i stående mobil. Publicerad revision 9, rummet `room-8bd056a2-d5c5-a622-2766-faf75dbbcfa2`, använder Oak-bord `f00be01d-fe7c-4a43-85b9-952e378f7331`. Vid faktisk CSS-viewport 390 x 844 ger sparad mobilgeometri insats-Y 476,36/487,88 px; DOM ger 476,349/487,869 px. Placeringen vid framkanten följer alltså kalibreringen, inte ett påvisat projektionsfel. Ingen geometri har ändrats. Det gemensamma projektutkastet har andra, opublicerade scen-/bordsvärden och får inte publiceras som bieffekt av mobilrättningen. Webviewens storleksprov är ingen Safari-acceptans.
+
+
 ## Rättad driftvägledning — 24 oktober 2026
 
 Runtimeguidens aktuella driftstycke beskrev fortfarande Control, Studio från `lab`, två Verceltjänster och gamla Render `croupier-v2`. Det hänvisar nu till aktiva Admin-/lobbyingångar, de tre tjänsterna i `vercel.json` och återställningsguidens exakta resurs-ID:n. Det separata autentiserade `/play/{game}`-kontraktet och historiska mediebeskrivningar är kvar. Verifierat mot `vercel.json`, Admin-/spelroutningen och live tjänstmetadata för `croupier-v3` (rätt repo/main, ej suspenderad, manuell deploy). Endast dokumentation ändrad. Ingen ny iPhone-acceptans eller medieacceptans påstås.

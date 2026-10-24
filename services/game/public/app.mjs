@@ -217,6 +217,7 @@ if (localPresentationEnabled) {
         receipt: entry => nativeObservation.emit('playback', entry),
         onIdle: () => presentStandardIdle('local-primary-frame'),
         onError: () => presentationStartup.fail(),
+        onGestureWait: waiting => presentationStartup.waitForGesture(DEALER.key, waiting),
         onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
       });
       localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:registeredFilmedProfile(DEALER.key)});
