@@ -79,7 +79,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
   const find = text => all(root).find(node => node.textContent === text);
   const dialog = all(root).find(node => node.tag === 'dialog'), debug = all(root).find(node => node.tag === 'section');
   const click = node => node.onclick(event());
-  if (cameraOptIn) click(all(root).find(node => node.attributes['aria-label'] === 'Include optional camera images'));
+  if (cameraOptIn) click(all(root).find(node => node.attributes['aria-label'] === 'Kamera av'));
   const fire = delay => { const entry = [...timers].find(([, timer]) => timer.delay === delay); assert.ok(entry, `missing ${delay} ms timer`); timers.delete(entry[0]); entry[1].fn(); };
   const start = async () => { await tick(); click(record); click(find('Enable voice')); await tick(); await tick(); };
   const startManual = async () => { await tick(); click(record); click(find('Record one message')); await tick(); await tick(); };
@@ -665,4 +665,10 @@ test('ordinary listening status stays visible and explains busy suppression then
     ready=false;h.identityCheck();assert.match(h.status(),/paused while the dealer replies/);assert.equal(h.wakes.at(-1).options.canWake(),false);
     ready=true;h.identityCheck();assert.match(h.status(),/Listening locally for Astrid/);assert.equal(h.wakes.at(-1).options.canWake(),true);
   } finally {h.restore();}
+});
+
+test('visible control names remain the accessible names before and during voice activity',async()=>{
+ const h=harness({cameraOptIn:false});
+ const check=()=>{const buttons=all(h.root).filter(node=>node.className==='astrid-voice-button');assert.equal(buttons.length,3);for(const button of buttons)assert.equal(button.attributes['aria-label'],button.textContent);};
+ try{await tick();check();h.click(h.play);check();h.click(h.find('Kamera av'));check();await h.start();check();h.control.stop();check();}finally{h.restore();}
 });

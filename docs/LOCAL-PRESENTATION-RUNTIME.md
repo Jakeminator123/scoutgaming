@@ -1932,6 +1932,39 @@ på ett klipp faller tillbaka till standardbordet, och Admin avvisar det med
 422. Bordsklipp bör ha samma pixelmått som basbilden; ett klipp med annat
 format flyttar inte spelet men ritas i sitt eget format och linjerar inte.
 
+## Autoskala efter dealern (blackjack), 22 oktober 2026
+
+Varje `blackjackTables[i].mobile|desktop` kan ha
+`autoScale: {landing, cardSize, chips, adjust?}` (minst ett av de tre sant).
+Det följer Kevins modell: filmen är enda koordinatsystemet för korten.
+`referencePlane()` lägger då till `dealerPlane`, referensklippets (idle)
+dealerplan med Admins Dealer·Skala/X/Y och klippets inramning. Tal- och
+variantbeskärning flyttar alltså inga vilande kort.
+
+- `landing`: kortet landar på filmens boxposition (kalibreringen eller den
+  registrerade profilens `positions`), även på mobilens verkliga boxar i stället
+  för de tre fasta platserna. Landningen har ingen offset.
+- `cardSize`: vilande kort i rekvisitakortets storlek, dealerplanets skala ×
+  profilens `card.width` (Dragan 78 px) eller kalibreringens 63 px (Emil).
+- `chips`: markerna under korten; brickskalan följer dealerplanet, mobil minst 0,8.
+- `adjust.cards.scale` och `adjust.chips {dx,dy,scale}` (skala 0,5–2, dx/dy
+  ±0,5 av dealerplanets bredd/höjd) ligger ovanpå. Bord, dealer och bakgrund
+  justeras med befintliga `mobile/desktop.table|dealer|background`.
+
+Med landning kontrolleras att det landade kortet och tryckraden ryms (inte
+värsta solfjädern). Filmens boxavstånd kräver förstorad dealer på mobil: på en
+390 px telefon ryms tre platser vid dealerplanets skala cirka 0,69–0,93
+(Dealer·Skala cirka 1,9–2,6, centrerad på box 4). En återupptagen yttre hand
+utanför bilden varnas och flyttas aldrig från sin filmade box.
+Ett filmat Dragan-kort släpps då på sitt vilande kort (cirka 1 px förflyttning
+mot 238 px med manuella bordspunkter). Saknat fält, eller ett plan utan
+`dealerPlane`, ger exakt tidigare bordsgeometri; frysta paket ändras inte.
+
+Runtime capability **25**, `blackjackAutoScale: 'dealer-source-v1'`, krävs för
+skrivning; readiness kontrollerar aktiva, arkiverade och frysta paket.
+Spelservern läser fältet först, Admin skriver det bakom readiness. Ingen
+SQL-migration eller ny media.
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet

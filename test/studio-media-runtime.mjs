@@ -135,7 +135,7 @@ test('Neon public JSON preserves exact UTF8, HEAD, ETag and Range without local 
   await assert.rejects(media.hasPublicMedia('review/take.json'),error=>error.code==='studio_media_storage_unavailable');
 });
 
-test('Neon-only and cloud calibration routes reject before reading a body or touching local files',async()=>{
+test('retired calibration writer rejects in every mode before reading a body or touching files',async()=>{
   // Exercise the production route in isolation: no database or listening server
   // is needed to prove the early write boundary for each deployment flag.
   const source=await readFile(new URL('../services/game/server.mjs',import.meta.url),'utf8');
@@ -143,7 +143,7 @@ test('Neon-only and cloud calibration routes reject before reading a body or tou
   const begin=source.indexOf("  if (req.method === 'POST' && req.url === '/calibration') {");
   const end=source.indexOf("\n  if (req.method === 'POST' && pathname.startsWith('/api/bo/')",begin);
   assert.ok(policy&&begin>0&&end>begin,'production calibration route exists');
-  for(const env of [{CROUPIER_STUDIO_NEON_POLICY:'1'},{CROUPIER_CLOUD_RUNTIME:'1'}]){
+  for(const env of [{},{CROUPIER_STUDIO_NEON_POLICY:'1'},{CROUPIER_CLOUD_RUNTIME:'1'}]){
     const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};
     const reject=()=>{throw Error('native calibration must not touch body or disk');};
     vm.runInNewContext(`(()=>{${policy}\n${source.slice(begin,end)}\n})()`,{
