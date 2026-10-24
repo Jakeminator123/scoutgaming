@@ -9,6 +9,8 @@ import { createOperatorStore } from '../../../packages/operators/server/operator
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {
@@ -156,6 +158,8 @@ function nativePool(){
   const calls=[],faults=new Set(),clone=v=>structuredClone(v),key=values=>JSON.stringify(values.slice(0,3));
   const result=(rows=[],command='SELECT')=>({rows:clone(rows),command});
   const pool={calls,snapshot:()=>clone(state),failNext:marker=>faults.add(marker),
+    seedBrandingDraft(value){state.brandingDraft=clone(value);},
+    setOperatorStatus(value){state.operatorStatus=value;},
     seedRuntimeCatalog(scope,value){state.catalogs.set(JSON.stringify([scope.environment,scope.workspaceId]),{revision:runtimeCatalogRevision(value),value:clone(value)});},
     async connect(){
       const clientId=++sequence;let working,readOnly,unlock;
@@ -170,7 +174,7 @@ function nativePool(){
         assert.ok(working,'domain reads/writes use a live scoped client');
         if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
         const packages=()=>working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]&&row.operator_id===values[2]);
-        if(marker==='lock-operator'||marker==='operator-by-id')return result(values[2]==='north'?[{environment_id:values[0],workspace_id:values[1],operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1}]:[]);
+        if(marker==='lock-operator'||marker==='operator-by-id')return result(values[2]==='north'?[{environment_id:values[0],workspace_id:values[1],operator_id:'north',slug:'north',name:'North',status:working.operatorStatus??'active',created_at_ms:1}]:[]);
         if(marker==='current-package')return result(packages().sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
         if(marker==='publish-package'){
           const row={environment_id:values[0],workspace_id:values[1],operator_id:values[2],package_revision:Math.max(0,...packages().map(row=>row.package_revision))+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]};
@@ -229,6 +233,159 @@ async function nativeFixture({dealer='linnea'}={}){
   const direct=await createOperatorStore({sql:pool,scope:nativeScope,now:clock});
   return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
 }
+
+const placementTable='f00be01d-fe7c-4a43-85b9-952e378f7331';
+async function placementFixture(){
+  const f=await nativeFixture(),first=await f.publish(),presentation=structuredClone(first.presentation),lane=presentation.lanes[0];
+  const asset={schemaVersion:1,id:placementTable,role:'table',label:'Oak',sha256:'b'.repeat(64),size:4096,contentType:'image/png',width:1672,height:941,
+    pathname:`croupier/media/tables/${placementTable}/${'b'.repeat(64)}.png`};
+  presentation.assets.push(asset);lane.layers.table={enabled:true,default:placementTable,allowed:[placementTable]};
+  lane.composition=defaultCompositionSettings();lane.composition.mobile.table={width:1.75,x:0,y:.35};lane.composition.mobile.dealer.y=.03;
+  const board=defaultBlackjackTableGeometry(placementTable);board.mobile={betMode:'under-cards',cardWidth:.038,dealer:{x:.5,y:.13},seats:[
+    {bet:{x:.32,y:.39},card:{x:.324,y:.26}},{bet:{x:.5,y:.44},card:{x:.5,y:.29}},{bet:{x:.68,y:.39},card:{x:.676,y:.26}}]};
+  lane.composition.blackjackTables=[board];
+  const room={schemaVersion:2,id:'room-mobile',name:'Mobile',operatorId:'north',presentationLaneId:lane.id,gameLaneId:'johns-game',state:'live'};
+  const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];
+  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  for(let revision=1;revision<9;revision++)await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:revision,lanes:[lane.id],games:['blackjack'],tables:[room.id],
+    branding:withPackagePresentation({name:'North',roomOverrides:{[room.id]:{table:placementTable}},privateMetadata:{kept:true}},presentation)});
+  f.pool.seedBrandingDraft({revision:3,basePackageRevision:9,branding:{roomOverrides:{[room.id]:{dealer:'linnea'}}}});
+  const body={action:'adjust-mobile-placement',operatorId:'north',roomId:room.id,tableId:placementTable,expectedPackageRevision:9,offsetY:-.07};
+  const context={...f.context,body};
+  return {...f,presentation,room,body,context,prepare:()=>f.api.preparations.get('POST /studio/api/admin/operator-package')(context),
+    publish:prepared=>f.api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})})};
+}
+
+test('published mobile placement uses frozen revision 9 and preserves project, branding draft, all media and package history',async()=>{
+  const f=await placementFixture(),before=f.pool.snapshot(),original=await f.direct.getCurrentPackage('north'),io=f.io(),offset=f.pool.calls.length;
+  const prepared=await f.prepare(),result=await f.publish(prepared),after=f.pool.snapshot();
+  assert.equal(result.packageRevision,10);assert.deepEqual(result.adjusted,{roomId:f.room.id,tableId:placementTable,offsetY:-.07});
+  const expected=structuredClone(f.presentation);expected.lanes[0].composition.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);
+  assert.deepEqual(result.presentation,expected);
+  assert.deepEqual(readPackagePresentation(await f.direct.getCurrentPackage('north')),expected);
+  assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),publicPackageBranding(original.branding));
+  for(const key of ['documents','media','catalogs','audits','history','brandingDraft'])assert.deepEqual(after[key],before[key],key+' remains untouched');
+  assert.deepEqual(after.packages.slice(0,-1),before.packages);assert.equal(after.operatorAudits.length,before.operatorAudits.length+1);
+  assert.equal(f.io(),io,'no provider or mutable media recapture');
+  assert.equal(f.pool.calls.slice(offset).some(row=>row.marker==='read-document'&&row.values[2]==='project'),false,'handler never reads the project draft');
+});
+
+test('mobile placement helper changes only three card heights, supports preview zero and rejects incompatible or out-of-range geometry',()=>{
+  const settings=defaultCompositionSettings(),board=defaultBlackjackTableGeometry(placementTable);board.mobile.betMode='under-cards';settings.blackjackTables=[board];
+  board.desktop.anchors={cards:{target:'table',rect:{x:0,y:.007349,width:1,height:1}}};
+  const before=structuredClone(settings),next=adjustPublishedMobilePlacement(settings,placementTable,-.07);
+  assert.deepEqual(settings,before);assert.deepEqual(adjustPublishedMobilePlacement(settings,placementTable,0),settings);
+  const expected=structuredClone(before);expected.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);assert.deepEqual(next,expected);
+  for(const offset of [NaN,Infinity,-Infinity,.20001,-.20001,'-.07',null])assert.throws(()=>adjustPublishedMobilePlacement(settings,placementTable,offset),e=>e.statusCode===422);
+  assert.throws(()=>adjustPublishedMobilePlacement(settings,mediaId,-.07),e=>e.statusCode===422);
+  for(const mutate of [b=>delete b.betMode,b=>b.autoScale={landing:true,cardSize:false,chips:false},
+    b=>b.anchors={bets:{target:'table',rect:{x:0,y:0,width:1,height:1}}},b=>b.seats[0].card.y=.01]){
+    const invalid=structuredClone(settings);mutate(invalid.blackjackTables[0].mobile);
+    assert.throws(()=>adjustPublishedMobilePlacement(invalid,placementTable,-.07),e=>e.statusCode===422);
+  }
+  const overflow=structuredClone(settings);overflow.blackjackTables[0].mobile.seats[2].card.y=.95;
+  assert.throws(()=>adjustPublishedMobilePlacement(overflow,placementTable,.07),e=>e.statusCode===422);
+});
+
+test('mobile placement intent is exact, nonzero and scoped; malicious or stale inputs never publish',async()=>{
+  const f=await placementFixture(),before=f.pool.snapshot();
+  for(const patch of [{offsetY:0},{offsetY:.21},{offsetY:'-.07'},{offsetY:null},{expectedPackageRevision:null},{expectedPackageRevision:0},
+    {tableId:'../other'},{roomId:'../other'},{actor:'attacker'},{lanes:[f.lane.id]},{presentation:f.presentation},{expectedPackageRevision:8},
+    {roomId:'room-missing'},{operatorId:'south'},{tableId:mediaId}]){
+    await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:{...f.body,...patch}}),e=>[400,409,422].includes(e.statusCode));
+  }
+  const missing={...f.body};delete missing.expectedPackageRevision;
+  await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:missing}),e=>e.statusCode===400);
+  await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,scope:{...nativeScope,workspaceId:'other'}}),e=>e.statusCode===403);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('mobile placement refuses foreign, inactive, roulette and shared-lane rooms',async()=>{
+  for(const mutation of [admin=>admin.rooms[0].operatorId='south',admin=>admin.rooms[0].state='preview',admin=>admin.rooms[0].game='roulette',
+    admin=>admin.rooms.push({...admin.rooms[0],id:'room-other'})]){
+    const f=await placementFixture(),admin=await f.repository.readDocument('administration');mutation(admin.value);
+    await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+    if(admin.value.rooms.length===2){const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
+      lanes:current.lanes,games:current.games,tables:[...current.tables,'room-other'],branding:current.branding});f.body.expectedPackageRevision=10;}
+    const before=f.pool.snapshot();await assert.rejects(f.prepare(),e=>e.statusCode===409);assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+
+test('mobile placement requires effective frozen room branding and rejects a forged preparation',async()=>{
+  const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.assets[0]);
+  // The uploaded Oak is allowed but a different published room choice is authoritative.
+  const oak=presentation.assets.find(row=>row.id===placementTable);Object.assign(other,oak,{id:mediaId,pathname:`croupier/media/tables/${mediaId}/${oak.sha256}.png`});
+  presentation.assets.push(other);presentation.lanes[0].layers.table.allowed.push(other.id);
+  const branding=withPackagePresentation({...publicPackageBranding(current.branding),roomOverrides:{[f.room.id]:{table:other.id}}},presentation);
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:current.lanes,games:current.games,tables:current.tables,branding});
+  f.body.expectedPackageRevision=10;await assert.rejects(f.prepare(),e=>e.statusCode===409);
+  const clean=await placementFixture(),prepared=await clean.prepare(),before=clean.pool.snapshot();
+  await assert.rejects(clean.publish({...prepared}),e=>e.statusCode===422);
+  await assert.rejects(clean.api.handlers.get('POST /studio/api/admin/operator-package')({...clean.context,body:{...clean.body,offsetY:-.08},prepared}),e=>e.statusCode===422);
+  assert.deepEqual(clean.pool.snapshot(),before);
+});
+
+test('mobile placement retains another published lane and refuses unpublished rooms or suspended operators',async()=>{
+  const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.lanes[0]);
+  other.id='other-published-lane';presentation.lanes.push(other);
+  const admin=await f.repository.readDocument('administration');admin.value.rooms.push({...f.room,id:'room-other-lane',presentationLaneId:other.id});
+  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:presentation.lanes.map(lane=>lane.id),games:current.games,tables:[...current.tables,'room-other-lane'],
+    branding:withPackagePresentation(publicPackageBranding(current.branding),presentation)});
+  f.body.expectedPackageRevision=10;const result=await f.publish();assert.deepEqual(result.presentation.lanes[1],other);assert.deepEqual(result.tables,[f.room.id,'room-other-lane']);
+  const unpublished=await placementFixture(),pack=await unpublished.direct.getCurrentPackage('north');
+  await unpublished.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:pack.lanes,games:pack.games,tables:[],branding:pack.branding});
+  unpublished.body.expectedPackageRevision=10;await assert.rejects(unpublished.prepare(),e=>e.statusCode===409);
+  const suspended=await placementFixture(),prepared=await suspended.prepare();suspended.pool.setOperatorStatus('suspended');
+  const before=suspended.pool.snapshot();await assert.rejects(suspended.prepare(),e=>e.statusCode===409);await assert.rejects(suspended.publish(prepared),e=>e.statusCode===409);
+  assert.deepEqual(suspended.pool.snapshot(),before);
+});
+
+test('mobile placement CAS rejects changed package or administration and rolls back SQL failure',async()=>{
+  for(const change of ['package','administration','failure']){
+    const f=await placementFixture(),prepared=await f.prepare();
+    if(change==='package'){const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
+      lanes:current.lanes,games:current.games,tables:current.tables,branding:{...current.branding,name:'Concurrent branding'}});}
+    if(change==='administration'){const admin=await f.repository.readDocument('administration');admin.value.rooms[0].name='Concurrent room edit';
+      await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});}
+    if(change==='failure')f.pool.failNext('publish-package');
+    const before=f.pool.snapshot();await assert.rejects(f.publish(prepared),e=>change==='failure'||e.statusCode===409);assert.deepEqual(f.pool.snapshot(),before);
+  }
+  const f=await placementFixture(),first=await f.prepare(),second=await f.prepare(),outcomes=await Promise.allSettled([f.publish(first),f.publish(second)]);
+  assert.equal(outcomes.filter(row=>row.status==='fulfilled').length,1);
+  assert.equal(outcomes.find(row=>row.status==='rejected').reason.statusCode,409);assert.equal((await f.direct.getCurrentPackage('north')).revision,10);
+});
+
+function placementAdmin(f,{authorize=async()=>({...session,scope:nativeScope}),preparations=f.api.preparations,mutationTransaction=work=>work()}={}){
+  return createStudioAdminApi({authorize,mutationTransaction,allowedOrigins:[origin],publicHosts:['studio.example'],handlers:f.api.handlers,preparations});
+}
+test('N1 mobile placement negotiates the exact frozen candidate without project draft and rejects unavailable readiness',async()=>{
+  const f=await placementFixture();let descriptor;
+  const api=placementAdmin(f,{mutationTransaction:async(work,options)=>{descriptor=options;return work();}});
+  const response=await api.handle(request('operator-package',f.body));assert.equal(response.status,200);
+  assert.deepEqual(descriptor.presentationDocuments,['administration']);assert.equal(descriptor.presentationMutation.kind,'presentation-package');
+  assert.deepEqual(descriptor.presentationMutation.value,(await response.json()).presentation);
+  const blocked=await placementFixture(),before=blocked.pool.snapshot();
+  const reject=placementAdmin(blocked,{mutationTransaction:async()=>{throw Object.assign(Error('runtime_required'),{statusCode:503});}});
+  assert.equal((await reject.handle(request('operator-package',blocked.body))).status,503);assert.deepEqual(blocked.pool.snapshot(),before);
+  const absent=placementAdmin(blocked,{preparations:new Map(),mutationTransaction:()=>{throw Error('must not enter mutation without prepared candidate');}});
+  assert.equal((await absent.handle(request('operator-package',blocked.body))).status,503);assert.deepEqual(blocked.pool.snapshot(),before);
+  const normal=await nativeFixture();let normalDescriptor;
+  const legacy=placementAdmin(normal,{mutationTransaction:async(work,options)=>{normalDescriptor=options;return work();}});
+  assert.equal((await legacy.handle(request('operator-package',normal.context.body))).status,200);
+  assert.deepEqual(normalDescriptor.presentationDocuments,['project','administration']);
+});
+
+test('N1 mobile placement blocks anonymous, partner, cross-origin and revoked sessions without writes',async()=>{
+  const f=await placementFixture(),before=f.pool.snapshot();
+  for(const actor of [null,{...session,scope:nativeScope,role:'partner'}]){
+    const api=placementAdmin(f,{authorize:async()=>actor});assert.ok([401,403].includes((await api.handle(request('operator-package',f.body))).status));
+  }
+  assert.equal((await placementAdmin(f).handle(request('operator-package',f.body,{origin:'https://foreign.example'}))).status,403);
+  let reads=0;const revoked=placementAdmin(f,{authorize:async()=>++reads<3?{...session,scope:nativeScope}:null});
+  assert.ok([401,403].includes((await revoked.handle(request('operator-package',f.body))).status));
+  assert.deepEqual(f.pool.snapshot(),before);
+});
 test('native package publishing freezes Linnea own UUID and exact metadata with provider work before the bound writer',async()=>{
   const f=await nativeFixture(),prepared=await f.prepare(),offset=f.pool.calls.length;
   const result=await f.publish(prepared);assert.equal(result.presentation.schemaVersion,3);assert.equal(result.packageRevision,1);assert.equal(f.io(),2);

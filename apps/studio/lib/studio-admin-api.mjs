@@ -132,6 +132,10 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // Authorization is refreshed again inside the product transaction.
       const prepare = preparedHandlers.get(`${endpoint.method} ${endpoint.path}`);
       const invocation = prepare ? Object.freeze({ ...context, prepared: await prepare(context) }) : context;
+      // This frozen-package-only command must negotiate its prepared payload,
+      // never fall back to a mutable project or prepare after readiness.
+      const mobilePlacement = endpoint.action === 'operator-package' && body?.action === 'adjust-mobile-placement';
+      if (mobilePlacement && (invocation.prepared?.action !== 'adjust-mobile-placement' || !invocation.prepared.presentation)) throw failure(503);
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
         const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);
@@ -153,7 +157,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
-        : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
+        : endpoint.action === 'operator-package' ? { presentationDocuments: mobilePlacement ? ['administration'] : ['project', 'administration'], ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
       // Mail is an effect of committed identity state. Never send a token whose

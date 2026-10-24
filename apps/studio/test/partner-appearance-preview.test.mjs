@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {previewMediaPath} from '../../../packages/presentation/contracts/operator-preview-contract.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
@@ -131,4 +131,43 @@ test('Admin preview loads the exact frozen descriptor initially, while inactive 
   assert.equal(calls.length,active?1:0);assert.equal(h.compositions(tree).length,active?1:0);
   if(active){assert.equal(calls[0].url,'/api/operators/north/rooms/north-main/preview?dealer=linnea&revision=7');assert.equal(calls[0].request.method??'GET','GET');assert.equal(calls[0].request.body,undefined);}
  }
+});
+
+test('mobile calibration previews only the frozen three-seat offset with actual table aspect and matching betting positions',async()=>{
+  const p=props(),data=descriptor(),calls=[];p.branding={table:table1};
+  p.server.presentation.assets=[{id:table1,role:'table',width:1672,height:941}];
+  data.settings.blackjackTables=[defaultBlackjackTableGeometry(table1)];data.settings.blackjackTables[0].mobile.betMode='under-cards';
+  p.server.presentation.lanes[0].composition.mobile.table.y=.91;
+  const original=structuredClone(data.settings),h=harness(async url=>{calls.push(url);return response(data);});
+  const base={...p,initiallyEnabled:true,mobilePlacement:{tableId:table1,offsetY:0}};
+  h.render(base);await h.flush();let tree=h.render(base),composition=h.compositions(tree)[0];
+  assert.equal(composition.props.layout,'mobile');assert.equal(walk(tree,node=>node.type==='button'&&node.props.children==='Desktop')[0].props.disabled,true);
+  const overlayBefore=composition.props.overlay.type(composition.props.overlay.props);
+  const changed={...base,mobilePlacement:{tableId:table1,offsetY:-.07}};
+  tree=h.render(changed);composition=h.compositions(tree)[0];
+  assert.equal(composition.props.settings.mobile.table.y,original.mobile.table.y,'unpublished settings cannot enter the preview');
+  const expected=structuredClone(original);expected.blackjackTables[0].mobile.seats.forEach(row=>{row.card.y-=.07;});
+  assert.deepEqual(composition.props.settings,expected);assert.deepEqual(data.settings,original);assert.equal(calls.length,1);
+  const overlayAfter=composition.props.overlay.type(composition.props.overlay.props);
+  const cardMarks=tree=>walk(tree,node=>node.props?.['data-mobile-card']!==undefined);
+  const betMarks=tree=>walk(tree,node=>node.props?.['data-mobile-bet']!==undefined);
+  assert.equal(cardMarks(overlayAfter).length,3);assert.equal(betMarks(overlayAfter).length,3);
+  const expectedDelta=-.07*original.mobile.table.width*390*941/1672;
+  for(let index=0;index<3;index++){
+    assert.ok(Math.abs(cardMarks(overlayAfter)[index].props.y-cardMarks(overlayBefore)[index].props.y-expectedDelta)<1e-8);
+    const before=Number(betMarks(overlayBefore)[index].props.transform.match(/ ([^ ]+)\)/)[1]);
+    const after=Number(betMarks(overlayAfter)[index].props.transform.match(/ ([^ ]+)\)/)[1]);
+    assert.ok(Math.abs(after-before-expectedDelta)<1e-8,'bet targets follow the exact same three-card offset');
+  }
+  assert.match(renderToStaticMarkup(overlayAfter),/Mobil · kort och insatsplatser/);
+});
+
+test('invalid calibration or another effective table cannot display a guessed mobile preview',async()=>{
+  for(const placement of [{tableId:table2,offsetY:-.07},{tableId:table1,offsetY:-.21}]){
+    const p=props(),data=descriptor();p.branding={table:table1};p.server.presentation.assets=[{id:table1,role:'table',width:1672,height:941}];
+    data.settings.blackjackTables=[defaultBlackjackTableGeometry(table1)];data.settings.blackjackTables[0].mobile.betMode='under-cards';
+    const h=harness(async()=>response(data)),input={...p,initiallyEnabled:true,mobilePlacement:placement};
+    h.render(input);await h.flush();const tree=h.render(input);assert.equal(h.compositions(tree).length,0);
+    assert.match(renderToStaticMarkup(tree),/Mobilplaceringen kan inte förhandsvisas/);
+  }
 });

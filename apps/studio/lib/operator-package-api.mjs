@@ -1,12 +1,18 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
 import { normalizeProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { buildPresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import { buildPresentationPackage, validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import { BASE_DEALER_IDS } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
-import { withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
+import { withPackagePresentation, readPackagePresentation, publicPackageBranding, encodePresentationPackage, PRESENTATION_PACKAGE_KEY } from '../../../packages/presentation/server/presentation-package.mjs';
+import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
+import {roomGame,isRoomOperatorId} from '../../../packages/presentation/contracts/presentation-room.mjs';
+import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
+import {resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
+import {selectableLayerBases} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
   id: 'sg-test',
@@ -66,6 +72,38 @@ function publicOperator(operator) {
   return { id: operator.id, slug: operator.slug, name: operator.name, status: operator.status };
 }
 
+function mobilePlacementIntent(body){
+  exactKeys(body,['action','operatorId','roomId','tableId','expectedPackageRevision','offsetY']);
+  if(body.action!=='adjust-mobile-placement'||!isRoomOperatorId(body.operatorId)||!isGameLaneId(body.roomId)
+    ||typeof body.tableId!=='string'||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(body.tableId)
+    ||!Number.isSafeInteger(body.expectedPackageRevision)||body.expectedPackageRevision<1
+    ||!Number.isFinite(body.offsetY)||!body.offsetY||Math.abs(body.offsetY)>.2)fail(422);
+  return structuredClone(body);
+}
+const mobileConflict=()=>{throw new StudioStorageError('studio_conflict',409);};
+function adjustedMobilePresentation(current,administration,body){
+  if(!current||current.operatorId!==body.operatorId||current.revision!==body.expectedPackageRevision)mobileConflict();
+  const presentation=readPackagePresentation(current);
+  if(!presentation)mobileConflict();
+  const room=resolvePackageRoom({administration,package:current,operatorId:body.operatorId,roomId:body.roomId});
+  if(!room||room.state!=='live'||roomGame(room)!=='blackjack')mobileConflict();
+  // Geometry is lane-owned. Never relabel a shared lane change as room-local.
+  if(administration.rooms.some(other=>other.id!==room.id&&other.operatorId===body.operatorId
+    &&current.tables.includes(other.id)&&other.presentationLaneId===room.presentationLaneId))mobileConflict();
+  const lane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
+  const branding=resolveRoomBranding({lane:presentation.lanes[0].id,...publicPackageBranding(current.branding)},room.id,lane.id);
+  const table=lane.layers.table,selected=branding.table??table.default;
+  if(!table.enabled||selected!==body.tableId||!selectableLayerBases(table.allowed,lane.tablePlayback,table.default).includes(selected))mobileConflict();
+  lane.composition=adjustPublishedMobilePlacement(lane.composition,body.tableId,body.offsetY);
+  const checked=validatePresentationPackage(presentation);
+  assertPublishedRoomBindings({administration,operatorId:body.operatorId,currentPackage:current,presentation:checked});
+  return checked;
+}
+function freeze(value){
+  if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}
+  return value;
+}
+
 export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory } = {}) {
   const handlers = new Map();
   async function store() {
@@ -73,7 +111,22 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   }
   const preparedValues = new WeakSet();
   const preparations = new Map();
+  async function prepareMobilePlacement(context){
+    const body=mobilePlacementIntent(context.body);
+    if(!repository?.readDocument||!repository.transaction||!repository.withTransactionClient
+      ||canonicalStudioJson(validateStudioScope(repository.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(503);
+    if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
+    const operators=await store(),operator=await operators.getOperatorById(body.operatorId);
+    if(!operator||operator.status!=='active')mobileConflict();
+    const current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration');
+    if(!administration)mobileConflict();
+    const presentation=adjustedMobilePresentation(current,administration.value,body);
+    const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,
+      expectedPackageRevision:body.expectedPackageRevision,administrationRevision:administration.revision,presentation});
+    preparedValues.add(value);return value;
+  }
   async function prepare(context) {
+    if(context.body?.action==='adjust-mobile-placement')return prepareMobilePlacement(context);
     const expectedPackageRevision = requestedPackageRevision(context.body);
     const operatorId = context.body.operatorId;
     if (typeof operatorId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(operatorId)) fail(422);
@@ -114,6 +167,24 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       lanes:[...published.lanes], games:[...published.games], tables:[...published.tables], presentation};
   }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
+    if(context.body?.action==='adjust-mobile-placement'){
+      const body=mobilePlacementIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
+      if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
+      if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
+      return repository.transaction(()=>repository.withTransactionClient(async client=>{
+        const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
+        const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration');
+        if(!operator||operator.status!=='active'||administration?.revision!==prepared.administrationRevision)mobileConflict();
+        const presentation=adjustedMobilePresentation(current,administration.value,body);
+        if(canonicalStudioJson(presentation)!==canonicalStudioJson(prepared.presentation))mobileConflict();
+        // Preserve every other branding field, including unrelated published room choices.
+        // Neither the project draft nor a saved branding draft is read or published.
+        const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(presentation)};
+        const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
+          expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
+        return {...result(published,presentation),adjusted:{roomId:body.roomId,tableId:body.tableId,offsetY:body.offsetY}};
+      }));
+    }
     const expectedPackageRevision = requestedPackageRevision(context.body);
     if (repository) {
       const prepared = context.prepared === undefined ? await prepare(context) : context.prepared;
