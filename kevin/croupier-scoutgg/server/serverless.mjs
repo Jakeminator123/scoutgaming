@@ -96,10 +96,11 @@ export class ServerlessLipsync {
     this.ensureSession();
   }
 
-  /** Rummet rapporterar antal anslutna (anropas vid varje anslutning/frånkoppling). */
+  /** Rummet rapporterar antal anslutna (anropas vid varje anslutning/frånkoppling). Kevin 24 Oct: att någon öppnar
+   *  sidan startar ingen GPU längre (beställs bara när ett svar behöver den); en uppe hålls vid liv medan någon är kvar. */
   notifyPlayers(n) {
     if (n > 0) {
-      this.notifyActivity("någon i rummet");
+      if (this.wanted && this.graceTimer) { clearTimeout(this.graceTimer); this.graceTimer = null; }
     } else if (this.wanted && !this.graceTimer) {
       this.graceTimer = setTimeout(() => this.#shutdown(), this.sessionGraceMs);
       this.graceTimer.unref?.();

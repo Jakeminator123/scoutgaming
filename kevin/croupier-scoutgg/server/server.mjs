@@ -195,7 +195,8 @@ function chat(who, text, session="astrid", guestToken=null) {
   }
   remember({ who, text },session);
   broadcast({ t: "said", who, text },session);
-  if(!localQA)lip.notifyActivity("chattmeddelande");
+  // Kevin 24 Oct: only a chat to the first Astrid starts her lip-sync GPU (the others speak through their own paths)
+  if(!localQA&&!hasVoice(dealerOf(session)))lip.notifyActivity("chattmeddelande");
   const id = `r${randomId()}`;
   const intent=policy==='support'?null:gameStateIntent(text);
   let job;
@@ -785,7 +786,9 @@ room.on("connection", (ws) => {
       const clean = j.name.trim().slice(0, 18);
       if (clean) { ws.name = clean; send(ws,{t:"named",name:clean}); }
     } else if (j.t === "warm") {
-      if (hasVoice(j.dealer)) draggeWarm(j.dealer);   // a Dragge or Paow viewer arrived: take the GPU warm-up now
+      // a Dragge or Paow viewer arrived: take the GPU warm-up now, unless the moving lip sync speaks for him (Kevin 24 Oct:
+      // nothing is ordered that is not needed; the pod lane does his lines)
+      if (hasVoice(j.dealer) && !(rorlig && rorligOn() && rorlig.dealers.includes(j.dealer))) draggeWarm(j.dealer);
       if (rorlig && rorligOn() && READY_TAKES[j.dealer]) rorlig.activity(j.dealer);   // and the lip-sync worker, before the first chat (~55 s cold)
     } else if (j.t === "remark") {
       let talk = false; try { talk = speakRemark(ws.session, j.id); } catch (e) { console.log(`läppsynk rörlig: småpratet tar den vanliga vägen (${e.message})`); }

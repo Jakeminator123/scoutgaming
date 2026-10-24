@@ -145,7 +145,7 @@ const MIN_FPS = 30;
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
     onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500, maxLanes = 1,
-    podToken = null, podGraceMs = 120_000, alert = null, sessionWaitMs = 90_000 }) {
+    podToken = null, podGraceMs = 20_000, alert = null, sessionWaitMs = 90_000 }) {
     // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
     // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
     // horizonMs: a line is made no earlier than this before it is needed (a line takes ~1.5 s, its first patch ~0.5 s).
@@ -154,8 +154,9 @@ export class RorligLipsync {
     // maxLanes/urgentMs: lines at once on ONE worker. A worker that can (pong spar: 2) may take a second line when it is
     // needed within urgentMs. Off: on staging 13 Oct two lines at once on one GPU took 2.5–12 s to a first patch and one
     // hung. A remap after a hit during an answer instead stops the version it replaces (abort), which frees its lane
-    // podGraceMs: no serverless order while pods are expected (one was connected within this, or this server just started
-    // and they have not dialed back yet)
+    // podGraceMs: no serverless order while pods are expected (one is connected or left within this, or this server just
+    // started and they have not dialed back yet). Kevin 24 Oct: serverless only as the reserve when the pod lane has been
+    // gone about 20 s, never next to it
     Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs, maxLanes, podGraceMs });
     this.fixedPodToken = podToken;
     // alert: server/alerts.mjs (Kevin 23 Oct: every failure in the lip sync or a worker's callback goes to the webhook)
@@ -399,7 +400,11 @@ export class RorligLipsync {
     const old = s.workers.filter(o => o.ws !== ws && (pod ? (o.pod === pod || !o.pod) : !o.pod));
     s.workers = [...s.workers.filter(o => !old.includes(o)), w];
     for (const o of old) this.#idle(o).then(() => { try { o.ws.send(JSON.stringify({ t: 'bye' })); } catch {} });
-    if (pod) { s.podAt = Date.now(); s.askedAt = 0; }
+    if (pod) {
+      s.podAt = Date.now(); s.askedAt = 0;
+      // orders still in RunPod's queue would start a GPU next to the pod (Kevin 24 Oct): cancelled
+      for (const id of s.orders.splice(0)) this.#api(`cancel/${id}`, { method: 'POST' }).catch(() => {});
+    }
     this.#pump(dealer);
     return w;
   }
@@ -433,6 +438,7 @@ export class RorligLipsync {
     ws.on('close', () => {
       const before = s.workers.length;
       s.workers = s.workers.filter(w => w.ws !== ws);
+      if (pod && s.workers.length < before) s.podAt = Date.now();   // the 20 s before the reserve count from when it left
       if (s.workers.length < before) this.log(`läppsynk rörlig [${name}]: arbetaren kopplade ner`);
       // the last one gone, not a session this server let go of (released, or sent away as too slow)
       if (s.workers.length < before && !s.workers.length && !(Date.now() - (s.releasedAt ?? 0) < 30_000)) this.alert.fail('worker_nere', dealer, `${name} kopplade ner, ingen arbetare kvar`);

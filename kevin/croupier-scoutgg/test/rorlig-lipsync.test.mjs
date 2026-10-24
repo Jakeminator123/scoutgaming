@@ -307,6 +307,28 @@ test('a pod dials with the pod token, stays when the table goes quiet, and no se
   assert.equal(r.workers('paow').length,1);
 });
 
+test('the serverless reserve only when the pod lane has been gone about 20 s; a pod back cancels the orders in the queue', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const calls=[];
+  const r=new RorligLipsync({endpointId:'x',apiKey:'k',publicBase:()=>'https://x',publicDir:'.',log:()=>{},
+    fetchImpl:async(u)=>{calls.push(u.split('/').slice(-2).join('/'));return {json:async()=>({id:'j'+calls.length})};}});
+  clearInterval(r.timer); r.startedAt=0;
+  const h={};const ws={readyState:1,send(){},once(ev,f){h[ev]=f;},on(ev,f){h['on'+ev]=f;},close(){}};
+  r.adoptWorker(ws,new URL(`https://x/lipsync-rorlig?token=${r.podToken()}&avatar=paow&pod=e2e-prod`));h.message(JSON.stringify({t:'pong',gpu:'4090',rutor_per_s:60}));
+  r.activity('paow');
+  assert.equal(calls.length,0,'no order while the pod lane is up, also when the page opens');
+  h.onclose();   // the lane drops
+  r.activity('paow'); await new Promise(res=>setTimeout(res,5));
+  assert.equal(calls.length,0,'no order in the first 20 s after the lane left');
+  r.s.get('paow').podAt=Date.now()-21_000;
+  r.activity('paow'); await new Promise(res=>setTimeout(res,5));
+  assert.deepEqual(calls,['x/run'],'the reserve after 20 s');
+  const h2={};const ws2={readyState:1,send(){},once(ev,f){h2[ev]=f;},on(){},close(){}};
+  r.adoptWorker(ws2,new URL(`https://x/lipsync-rorlig?token=${r.podToken()}&avatar=paow&pod=e2e-prod`));h2.message(JSON.stringify({t:'pong',gpu:'4090',rutor_per_s:60}));
+  await new Promise(res=>setTimeout(res,5));
+  assert.deepEqual(calls,['x/run','cancel/j1'],'the lane back: the queued order is cancelled');
+});
+
 test('the fastest idle pod takes a line, and a pod that hung rests for a minute while the other one works', async () => {
   const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
