@@ -1,5 +1,7 @@
 // Position controls around measured card/total bounds, never a seat offset.
 export function placeActions({width,height,viewport,anchor,obstacles=[],margin=12,belowAnchor=false}) {
+  if(![width,height,viewport.width,viewport.top,viewport.bottom,anchor.x,anchor.bottom,margin].every(Number.isFinite)||
+    width<=0||height<=0||margin<0||width+2*margin>viewport.width||height+2*margin>viewport.bottom-viewport.top)return null;
   const maxX=viewport.width-width-margin,maxY=viewport.bottom-height-margin;
   const clamp=(n,a,b)=>Math.max(a,Math.min(Math.max(a,b),n));
   const preferred={x:anchor.x-width/2,y:anchor.bottom+margin};

@@ -1275,6 +1275,8 @@ function activeBoxHighlight() {
   document.querySelectorAll('.subhand').forEach(su => su.classList.remove('waiting'));
   $('#actions').hidden = true;
   $('#actions-top').hidden = true;
+  const actionNotice=$('#action-placement-warning');
+  if(actionNotice)actionNotice.hidden=true;
   if (!round || round.phase !== 'decisions') return;
   const seat = seatOfLive(round.active);
   if (!seat) return;
@@ -1293,6 +1295,14 @@ function showActions(seat) {
   bar.hidden = legal.length === 0;
   const top = $('#actions-top');
   top.hidden = legal.length === 0;
+  let notice=$('#action-placement-warning');
+  if(notice)notice.hidden=true;
+  // Measure the current viewport afresh, including after a compact/no-fit layout.
+  for(const panel of [bar,top]){
+    panel.classList.remove('action-compact');
+    panel.classList.remove('above-hand');
+    Object.assign(panel.style,{position:'',left:'',top:'',bottom:'',transform:'',visibility:''});
+  }
   const stake = round?.live()[round.active]?.stake ?? Infinity;
   for (const b of [...bar.querySelectorAll('button'), ...top.querySelectorAll('button')]) {
     b.disabled = !legal.includes(b.dataset.act) ||
@@ -1304,18 +1314,40 @@ function showActions(seat) {
   // Only one action panel is needed. Both layouts keep the same legal moves.
   top.hidden=compact;
   const controls=compact?bar:top;
-  const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
-  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#player-choices,#rehearsal')].filter(visible);
-  const obstacles=protectedEls.map(el=>el.getBoundingClientRect());
-  const totals=[...activeSeat.querySelectorAll('.hand-total')].map(el=>el.getBoundingClientRect());
+  const visibleBounds=el=>{
+    if(!el.getClientRects().length)return null;
+    const bounds=el.getBoundingClientRect();
+    if(bounds.width<=0||bounds.height<=0)return null;
+    for(let current=el;current;current=current.parentElement){
+      const style=getComputedStyle(current);
+      if(style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse'||parseFloat(style.opacity)===0)return null;
+    }
+    return bounds;
+  };
+  // Local presentation hides legacy DOM cards/totals and paints the visible SVG.
+  // Empty results and hidden duplicates must not consume the remaining space.
+  const obstacles=[...document.querySelectorAll('.card,.hand-total,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat][data-hand],.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,#chat,#chat-log,#chat-memory[open] > div')].map(visibleBounds).filter(Boolean);
+  const totals=[...activeSeat.querySelectorAll('.hand-total'),...document.querySelectorAll('#local-card-overlay .card-totals g[data-active="true"]')].map(visibleBounds).filter(Boolean);
   const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
-  const placement=placeActions({width:controls.offsetWidth,height:controls.offsetHeight,
-    viewport:{width:innerWidth,top:Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top),bottom:$('#dealer-picker').getBoundingClientRect().top},anchor,obstacles,belowAnchor:true});
+  const viewport={width:innerWidth,top:Math.max(0,Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top)),bottom:Math.min(innerHeight,$('#dealer-picker').getBoundingClientRect().top)};
+  const locate=(margin,top=viewport.top)=>placeActions({width:controls.offsetWidth,height:controls.offsetHeight,viewport:{...viewport,top},anchor,obstacles,belowAnchor:true,margin});
+  let placement=locate(12);
+  if(!placement){
+    // Keep a complete 44px touch target while bringing each label inside it.
+    controls.classList.add('action-compact');
+    placement=locate(4)??locate(4,0);
+  }
   if(placement){
     controls.style.position='fixed';controls.style.transform='none';controls.style.bottom='auto';
     controls.style.left=`${placement.x}px`;controls.style.top=`${placement.y}px`;
     controls.style.setProperty('--action-pointer-x',`${Math.max(16,Math.min(controls.offsetWidth-16,r.x-placement.x))}px`);
     controls.classList.toggle('above-hand',placement.y<r.y);
+  }else{
+    // Never reuse a stale position or the overlapping CSS fallback.
+    controls.style.visibility='hidden';
+    if(!notice){notice=document.createElement('p');notice.id='action-placement-warning';notice.className='local-presentation-status';notice.setAttribute('role','status');$('#scene').append(notice);}
+    notice.textContent='Spelknapparna ryms inte. Vrid mobilen eller förstora spelytan.';
+    notice.hidden=false;
   }
 }
 
@@ -1495,6 +1527,8 @@ document.querySelectorAll('#actions button, #actions-top button').forEach(btn =>
     } else {
       $('#actions').hidden = true;
       $('#actions-top').hidden = true;
+      const actionNotice=$('#action-placement-warning');
+      if(actionNotice)actionNotice.hidden=true;
       seatEls.forEach(s => s.classList.remove('active'));
       busy = true;
       await dealerRevealChoreo();
@@ -1523,6 +1557,8 @@ async function dealerRevealChoreo() {
 async function finish() {
   $('#actions').hidden = true;
   $('#actions-top').hidden = true;
+  const actionNotice=$('#action-placement-warning');
+  if(actionNotice)actionNotice.hidden=true;
   seatEls.forEach(s => s.classList.remove('active'));
   const live = round.live();
   let ret = 0, sideRet = 0, anyPush = false, anyLose = false;
