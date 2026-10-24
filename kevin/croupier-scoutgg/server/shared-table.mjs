@@ -43,6 +43,8 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 // speaking when the new plan's cards come (their frames changed) for a new map; steg = the previous plan's steps + this one's.
 // The talk track lives on the room (r.talk), so an answer or a line outlives the plan it started in.
 const IDLE_SEAT_MS=90000;
+// Kevin 24 Oct (full table): while someone waits for a place a player keeps at most this many boxes after a round
+const MAX_BOXES_WHEN_WAITING=3,WAITING_MS=30000;
 export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null}={}) {
   const talkFor=talk;
   const db=new DatabaseSync(filename);db.exec('PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL');   // WAL + NORMAL: a bet's COMMIT no longer waits on a full fsync (Kevin 22 Oct)
@@ -272,6 +274,16 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   function resetRound(r) {
     for(const [pid,keep] of Object.entries(r.boxesAfterRound??{}))for(const i of owned(r,pid))if(!keep.includes(i))r.owners[i]=null;
     r.boxesAfterRound={};
+    // Kevin 24 Oct, "Table is full": (a) a box without a bet in the round that just ended is released (one taken during
+    // the round stays); (b) while someone waits for a place (a viewer without a box at a full table, within WAITING_MS) a
+    // player keeps at most MAX_BOXES_WHEN_WAITING boxes, the ones he played first. Nothing is taken from a round in play.
+    if(r.round){const played=new Set(r.round.hands.map(h=>h.box));
+      for(let i=0;i<7;i++)if(r.owners[i]&&!played.has(i)&&!(r.chosenInRound??[]).includes(i))r.owners[i]=null;
+      if(Object.values(r.waiting??{}).some(t=>now()-t<WAITING_MS))for(const pid of new Set(r.owners.filter(Boolean))){
+        const mine=owned(r,pid).sort((a,b)=>played.has(b)-played.has(a)||a-b);
+        for(const i of mine.slice(MAX_BOXES_WHEN_WAITING))r.owners[i]=null;
+      }}
+    r.waiting={};r.chosenInRound=[];
     r.phase='bets';r.round=null;r.plan=null;r.waits=[];r.bets=emptyBets();r.ready=[];r.history={};r.deadline=null;r.insurance={};r.leaving=[];r.actionDeadline=null;
   }
   function releaseSeats(r,playerId) {
@@ -400,6 +412,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
             for(const i of owned(r,p.id))if(!seats.includes(i)){if(inPlay.has(i)){later.push(i);continue;}if(sum(r.bets[i]))throw new Error('Clear your bets before changing boxes');r.owners[i]=null;}
             r.boxesAfterRound??={};if(later.length)r.boxesAfterRound[p.id]=[...seats].sort();else delete r.boxesAfterRound[p.id];
             for(const i of seats)r.owners[i]=p.id;
+            if(r.phase!=='bets')r.chosenInRound=[...new Set([...(r.chosenInRound??[]),...seats])];   // kept after the round (resetRound)
           } else {
             if(!p||!owned(r,p.id).length)throw new Error('Choose your boxes and enter your name first');
             if(r.leaving.includes(p.id)&&op!=='leave')throw new Error('Your current hand is finishing before you leave');
@@ -467,6 +480,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
         }
       }
       if(op!=='state'){const me=player(id,key);if(me){r.lastAct??={};r.lastAct[me.id]=now();}}   // idle seats: advance()
+      else{const me=player(id,key);if(!(me&&owned(r,me.id).length)&&r.owners.every(Boolean))(r.waiting??={})[key.slice(0,16)]=now();}   // waits for a place (resetRound)
       save(id,r);const snapshot=view(id,r,key);db.exec('COMMIT');
       if(welcome)Promise.resolve().then(()=>onWelcome(welcome)).catch(()=>{});
       return snapshot;

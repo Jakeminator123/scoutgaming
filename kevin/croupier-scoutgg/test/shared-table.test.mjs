@@ -143,7 +143,8 @@ test('a seated nonparticipant retains the return of their own last completed rou
  t.send('kevin','join',{name:'Kevin',seats:[3]});t.send('john','join',{name:'John',seats:[4]});
  t.setShoe(['A','10','K','8']);t.send('kevin','bet',{seat:3,field:'main',chip:10});t.advance(20000);t.finish();
  assert.equal(t.state().me.lastReturn,25);
- t.send('kevin','next');t.setShoe(['A','10','K','8']);t.send('john','bet',{seat:4,field:'main',chip:5});t.advance(20000);t.finish();
+ // Kevin 24 Oct: a box not bet on in the round is released after it, so John sits down again
+ t.send('kevin','next');t.send('john','join',{name:'John',seats:[4]});t.setShoe(['A','10','K','8']);t.send('john','bet',{seat:4,field:'main',chip:5});t.advance(20000);t.finish();
  assert.equal(t.state().me.lastReturn,25);assert.equal(t.state().me.lastSettlement.returned,25);assert.equal(t.state('john').me.lastReturn,12.5);
  }finally{t.close();}
 });
