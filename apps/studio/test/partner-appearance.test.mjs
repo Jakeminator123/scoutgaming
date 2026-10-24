@@ -7,7 +7,8 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
 const require = createRequire(import.meta.url);
 const {transformSync} = require('next/dist/build/swc');
 const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url);
@@ -339,4 +340,114 @@ test('changing a visual background preserves the chosen dealer, table, other roo
   assert.deepEqual(calls[0].branding,{...branding,roomOverrides:{...branding.roomOverrides,'north-main':{dealer:'vera',table:'table-two',background:'bg-two'}}});
   assert.equal(calls[0].expectedPackageRevision,7);assert.equal(calls[0].expectedDraftRevision,0);
   assert.equal(initial.branding.roomOverrides['north-main'].background,undefined,'the read snapshot is not mutated');
+});
+
+const mobileTable='00000000-0000-4000-8000-000000000041';
+function mobileState(extra={}) {
+  const initial=initialState(extra),lane=initial.presentation.lanes[0];
+  initial.rooms.forEach(row=>{row.game='blackjack';});
+  lane.layers.table={enabled:true,default:mobileTable,allowed:[mobileTable]};
+  lane.composition.blackjackTables=[defaultBlackjackTableGeometry(mobileTable)];
+  lane.composition.blackjackTables[0].mobile.betMode='under-cards';
+  initial.presentation.assets=[{id:mobileTable,role:'table',label:'Oak',width:1672,height:941}];
+  return initial;
+}
+const mobileOptions={roomId:'north-main',roomLayout:true,adminChoices:true};
+const mobilePreview=tree=>walk(tree,node=>Boolean(node.props?.onMedia&&node.props?.server))[0];
+const mobileInput=tree=>walk(tree,node=>node.type==='input'&&node.props['aria-label']==='Mobilplacering lodrätt i procent')[0];
+function supplyMobilePreview(h,initial,extra={}) {
+  mobilePreview(h.render()).props.onMedia({operatorSlug:'north',roomId:'north-main',packageRevision:initial.packageRevision,dealer:{id:'astrid'},independentLayers:true,
+    settings:structuredClone(initial.presentation.lanes[0].composition),media:{tables:[{id:mobileTable}]},...extra});
+}
+function mobileReceipt(initial,offsetY=-.07) {
+  const presentation=structuredClone(initial.presentation);
+  presentation.lanes[0].composition=adjustPublishedMobilePlacement(presentation.lanes[0].composition,mobileTable,offsetY);
+  return {ok:true,operatorId:initial.operatorId,packageRevision:initial.packageRevision+1,presentation,adjusted:{roomId:'north-main',tableId:mobileTable,offsetY}};
+}
+function chooseMobile(h,initial) {
+  byAction(h.render(),'open-mobile-placement').props.onClick();
+  supplyMobilePreview(h,initial);mobileInput(h.render()).props.onChange({target:{valueAsNumber:-7}});
+}
+
+test('published mobile placement is confined to eligible Admin blackjack rooms and respects local dirty state',()=>{
+  for(const options of [{...mobileOptions,adminChoices:false},{...mobileOptions,roomLayout:false}]){
+    const h=stateful(mobileState(),()=>assert.fail('no write'),options);assert.equal(byAction(h.render(),'open-mobile-placement'),undefined);
+  }
+  for(const mutate of [state=>state.rooms[0].game='roulette',state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.autoScale={landing:false,cardSize:false,chips:false},state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.anchors={},state=>delete state.presentation.lanes[0].composition.blackjackTables[0].mobile.betMode]){
+    const initial=mobileState();mutate(initial);const h=stateful(initial,()=>assert.fail('no write'),mobileOptions);
+    assert.equal(byAction(h.render(),'open-mobile-placement'),undefined);
+  }
+  for(const extra of [{canConfigure:false},{}]){
+    const h=stateful(mobileState(extra),()=>assert.fail('no write'),mobileOptions);
+    if(extra.canConfigure!==false)picker(h.render(),'background').props.onChange('bg-two');
+    assert.equal(byAction(h.render(),'open-mobile-placement').props.disabled,true);
+    byAction(h.render(),'open-mobile-placement').props.onClick();assert.equal(mobileInput(h.render()),undefined);
+  }
+});
+
+test('mobile publication uses published choices, preserves saved material draft and confirms with a separate GET',async()=>{
+  const draft={revision:3,basePackageRevision:7,branding:{dealer:'vera',table:mobileTable},updatedAt:1000};
+  const initial=mobileState({draft,draftRevision:3}),original=structuredClone(initial),receipt=mobileReceipt(initial),calls=[],published=[],busy=[];
+  let finishRead;
+  const h=stateful(initial,async(url,request)=>{
+    calls.push({url,request});if(request.method==='POST')return response(receipt);
+    return new Promise(resolve=>{finishRead=resolve;});
+  },{...mobileOptions,onSaved:value=>published.push(value),onBusyChange:value=>busy.push(value)});
+  chooseMobile(h,initial);
+  assert.deepEqual(JSON.parse(JSON.stringify(mobilePreview(h.render()).props.branding)),initial.branding);
+  assert.equal(byAction(h.render(),'save-draft').props.disabled,true,'the calibration never submits material choices');
+  const saving=byAction(h.render(),'publish-mobile-placement').props.onClick();
+  await byAction(h.render(),'publish-mobile-placement').props.onClick();
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,2);assert.equal(published.length,0);assert.equal(busy.at(-1),true);
+  assert.equal(calls[0].url,'/studio/api/admin/operator-package');assert.equal(calls[0].request.credentials,'same-origin');
+  assert.deepEqual(JSON.parse(calls[0].request.body),{action:'adjust-mobile-placement',operatorId:'op-1',roomId:'north-main',tableId:mobileTable,expectedPackageRevision:7,offsetY:-.07});
+  assert.equal(calls[1].url,'/studio/api/partner/branding?operator=north');assert.equal(calls[1].request.cache,'no-store');
+  finishRead(response({...initial,packageRevision:8,presentation:receipt.presentation}));await saving;
+  assert.equal(published.length,1);assert.deepEqual(published[0].draft,draft);assert.equal(published[0].packageRevision,8);assert.equal(busy.at(-1),false);
+  assert.equal(mobileInput(h.render()),undefined);assert.equal(picker(h.render(),'dealer').props.effective,'vera','saved draft remains editable and is not published');
+  assert.deepEqual(initial,original,'all original frozen data stays immutable');
+});
+
+test('mobile publication blocks on mismatched, missing or out-of-range preview without sending a request',async()=>{
+  const initial=mobileState(),h=stateful(initial,()=>assert.fail('no write'),mobileOptions);
+  byAction(h.render(),'open-mobile-placement').props.onClick();
+  for(const value of [-21,21,NaN])mobileInput(h.render()).props.onChange({target:{valueAsNumber:value}});
+  assert.equal(mobileInput(h.render()).props.value,0);
+  mobileInput(h.render()).props.onChange({target:{valueAsNumber:-7}});
+  for(const extra of [{operatorSlug:'other'},{roomId:'north-vip'},{packageRevision:8},{dealer:{id:'vera'}},{settings:defaultCompositionSettings()}]){
+    supplyMobilePreview(h,initial,extra);assert.equal(byAction(h.render(),'publish-mobile-placement').props.disabled,true);
+    await byAction(h.render(),'publish-mobile-placement').props.onClick();
+  }
+  supplyMobilePreview(h,initial);assert.equal(byAction(h.render(),'publish-mobile-placement').props.disabled,false);
+});
+
+test('mobile publication conflicts and unconfirmed readbacks lock retries until explicit refresh',async()=>{
+  for(const failure of ['conflict','foreign-write','foreign-read','old-read','different-geometry','changed-draft','network-read']){
+    const initial=mobileState(),receipt=mobileReceipt(initial),calls=[],published=[];
+    const h=stateful(initial,async(url,request)=>{
+      calls.push({url,request});
+      if(request.method==='POST')return response(failure==='foreign-write'?{...receipt,operatorId:'foreign'}:receipt,failure==='conflict'?409:200);
+      if(failure==='network-read')throw new Error('offline');
+      return response({...initial,packageRevision:failure==='old-read'?7:8,presentation:failure==='different-geometry'?initial.presentation:receipt.presentation,
+        ...(failure==='foreign-read'?{operatorId:'foreign'}:{}),...(failure==='changed-draft'?{draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:{}}}:{})});
+    },{...mobileOptions,onSaved:value=>published.push(value)});
+    chooseMobile(h,initial);await byAction(h.render(),'publish-mobile-placement').props.onClick();
+    assert.equal(published.length,0,failure);assert.equal(byAction(h.render(),'publish-mobile-placement').props.disabled,true,failure);
+    const count=calls.length;await byAction(h.render(),'publish-mobile-placement').props.onClick();assert.equal(calls.length,count,failure);
+    assert.match(renderToStaticMarkup(h.render()),/Mobilpubliceringen kunde inte bekräftas/);
+  }
+});
+
+test('mobile publication ignores late responses after a room, operator or activity change and unmount',async()=>{
+  for(const leave of ['room','operator','inactive','unmount']){
+    const initial=mobileState(),options={...mobileOptions},calls=[],published=[];let finish;
+    options.onSaved=value=>published.push(value);
+    const h=stateful(initial,(url,request)=>{calls.push({url,request});return new Promise(resolve=>{finish=resolve;});},options);
+    chooseMobile(h,initial);const saving=byAction(h.render(),'publish-mobile-placement').props.onClick();
+    if(leave==='room'){options.roomId='north-vip';h.render();}
+    else if(leave==='operator'){options.initial={...initial,operatorId:'different'};options.operatorSlug='other';h.render();}
+    else if(leave==='inactive'){options.active=false;h.render();}else h.unmount();
+    finish(response(mobileReceipt(initial)));await saving;
+    assert.equal(calls.length,1);assert.equal(published.length,0);
+  }
 });

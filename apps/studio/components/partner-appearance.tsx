@@ -9,6 +9,8 @@ import {adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices}
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
 import {appearanceBranding, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, appearanceRoomStatus, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
+import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
+import type {CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 
 // Plain-language room status for the Admin room header: version, draft and the
@@ -17,6 +19,9 @@ export type AppearanceRoomStatus = {roomId: string; packageRevision: number; dra
 
 const FIELDS = ['background', 'dealer', 'table', 'color'] as const;
 type Action = 'save-draft'|'review'|'publish'|'restore';
+const ordered = (value:unknown):unknown => Array.isArray(value) ? value.map(ordered) : value&&typeof value==='object'
+  ? Object.fromEntries(Object.entries(value).sort(([left],[right])=>left.localeCompare(right)).map(([key,item])=>[key,ordered(item)])) : value;
+const sameValue = (left:unknown,right:unknown) => JSON.stringify(ordered(left))===JSON.stringify(ordered(right));
 
 export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'all', language = 'sv', onSaved, roomId, onRoomChange, onDirtyChange, onBusyChange, onStatus, disabled = false, roomLayout = false, adminChoices = false, active: visible = true, children}: {
   initial: PartnerAppearanceInitial; apiBase: string; operatorSlug: string;
@@ -41,6 +46,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewMedia,setPreviewMedia] = useState<PublicOperatorPreview|null>(null);
+  const [mobileAdjustment,setMobileAdjustment] = useState<{identity:string;percent:number}|null>(null);
   const visual=roomLayout&&adminChoices;
   const busyRef = useRef(false);
   const active = useRef(true);
@@ -50,7 +56,6 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const draftRevision = appearanceDraftRevision(server);
   const dirty = !sameAppearance(branding, appearanceDraftBranding(server));
   const stale = Boolean(server.draft && server.draft.basePackageRevision !== server.packageRevision);
-  useEffect(() => { onDirtyChange?.(dirty); return () => onDirtyChange?.(false); }, [dirty, branding, onDirtyChange]);
   const room = server.rooms?.find(row => row.id === (roomId ?? scope));
   const laneId = room?.presentationLaneId ?? branding.lane ?? server.presentation?.lanes[0]?.id ?? '';
   const lane = server.presentation?.lanes.find(row => row.id === laneId);
@@ -59,14 +64,33 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   if (!dealerChoices.length) allowed.delete('dealer');
   const selected = room ? branding.roomOverrides?.[room.id] ?? {} : branding;
   const inherited = room && laneId === (branding.lane ?? server.presentation?.lanes[0]?.id) ? branding : {};
+  const liveRoom=room?appearanceRoomStatus(server,room.id):null;
+  const mobileIdentity=[initial.operatorId,operatorSlug,server.operatorId,room?.id,server.packageRevision,liveRoom?.live.table].join(':');
+  const publicationContext=useRef('');publicationContext.current=visible?mobileIdentity:'';
+  const mobileEditing=visual&&mobileAdjustment?.identity===mobileIdentity;
+  const mobilePercent=mobileEditing?mobileAdjustment!.percent:0;
+  const frozenTable=server.presentation?.assets.find(row=>row.id===liveRoom?.live.table&&row.role==='table');
+  let mobileSupported=false, mobileSettings:CompositionSettings|null=null;
+  if(visual&&room?.game==='blackjack'&&liveRoom?.live.table&&lane?.composition&&frozenTable&&frozenTable.width>0&&frozenTable.height>0){
+    try{adjustPublishedMobilePlacement(lane.composition,liveRoom.live.table,0);mobileSupported=true;}catch{/* Other geometries use the full composition editor. */}
+    if(previewMedia?.operatorSlug===operatorSlug&&previewMedia.roomId===room.id&&previewMedia.packageRevision===server.packageRevision
+      &&previewMedia.dealer.id===liveRoom.live.dealer&&previewMedia.independentLayers&&previewMedia.settings
+      &&previewMedia.media.tables.some(row=>row.id===liveRoom.live.table)&&sameValue(previewMedia.settings,lane.composition)){
+      try{mobileSettings=adjustPublishedMobilePlacement(previewMedia.settings,liveRoom.live.table,mobilePercent/100);}catch{/* Invalid placement cannot publish. */}
+    }
+  }
+  const canAdjustMobile=editable&&visible&&mobileSupported&&!dirty;
+  const canPublishMobile=canAdjustMobile&&mobileEditing&&mobilePercent!==0&&Boolean(mobileSettings);
+  const unsaved=dirty||mobileEditing&&mobilePercent!==0;
+  useEffect(() => { onDirtyChange?.(unsaved); return () => onDirtyChange?.(false); }, [unsaved, branding, onDirtyChange]);
   const fields = FIELDS.filter(key => section === 'all' || section === 'theme' || section === 'design' && ['table','color'].includes(key) || section === 'background' && key === 'background' || section === 'dealers' && key === 'dealer');
   // The room layout keeps the three layers together and demotes table colour under them.
   const layerFields = roomLayout ? fields.filter(key => key !== 'color') : fields;
   const labels: Record<string, string> = {lane:t('Sammansättning','Composition'),table:t('Bord','Table'),background:t('Bakgrund','Background'),dealer:'Dealer',color:t('Bordsfärg','Table colour')};
   const reviewValid = Boolean(review && server.draft && !dirty && !stale && review.draftRevision === draftRevision && review.packageRevision === server.packageRevision && sameAppearance(review.branding, branding));
-  const canSave = editable && (dirty || stale);
-  const canReview = editable && server.draft && !dirty && !stale;
-  const canPublish = editable && reviewValid && Boolean(review?.changes.length);
+  const canSave = editable && !mobileEditing && (dirty || stale);
+  const canReview = editable && !mobileEditing && server.draft && !dirty && !stale;
+  const canPublish = editable && !mobileEditing && reviewValid && Boolean(review?.changes.length);
   const endpoint = `${apiBase}/branding?operator=${encodeURIComponent(operatorSlug)}`;
   const labelOf = (value: string|null) => {
     if (value === null) return t('Standard','Default');
@@ -90,16 +114,16 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   }, [server, roomId]);
 
   function change(key: string, selection: string) {
-    if (!editable || busyRef.current) return;
+    if (!editable || busyRef.current || mobileEditing) return;
     setBranding(current => changeAppearance(current, {roomId: room?.id ?? null, key, selection}));
     setReview(null); setNotice('');
   }
   function resetRoom() {
-    if (!editable || busyRef.current || !room) return;
+    if (!editable || busyRef.current || mobileEditing || !room) return;
     setBranding(current => resetAppearanceRoom(current, room.id)); setReview(null); setNotice('');
   }
   async function command(action: Action, sourcePackageRevision?: number) {
-    if (!editable || busyRef.current || action === 'save-draft' && !canSave || action === 'review' && !canReview
+    if (!editable || busyRef.current || mobileEditing || action === 'save-draft' && !canSave || action === 'review' && !canReview
       || action === 'publish' && !canPublish || action === 'restore' && dirty) return;
     reportBusy(true); setProblem(''); setNotice(''); setLatest(null);
     const expectedDraftRevision = draftRevision, expectedPackageRevision = server.packageRevision;
@@ -144,6 +168,33 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       if (active.current) reportBusy(false); else busyRef.current = false;
     }
   }
+  async function publishMobilePlacement() {
+    if(!canPublishMobile||busyRef.current||!room||!lane||!liveRoom?.live.table||!mobileSettings||!server.presentation)return;
+    const identity=mobileIdentity,expectedPackageRevision=server.packageRevision,offsetY=mobilePercent/100;
+    const intent={action:'adjust-mobile-placement',operatorId:server.operatorId,roomId:room.id,tableId:liveRoom.live.table,expectedPackageRevision,offsetY};
+    const expectedPresentation={...server.presentation,lanes:server.presentation.lanes.map(row=>row.id===lane.id?{...row,composition:mobileSettings}:row)};
+    const current=()=>active.current&&publicationContext.current===identity;
+    reportBusy(true);setProblem('');setNotice('');setReview(null);setLatest(null);
+    try{
+      const response=await fetch('/studio/api/admin/operator-package',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(intent)});
+      const value:unknown=await response.json().catch(()=>null);if(!current())return;
+      const receipt=value&&typeof value==='object'?value as Record<string,unknown>:null;
+      if(!response.ok||receipt?.operatorId!==server.operatorId||receipt.packageRevision!==expectedPackageRevision+1
+        ||!sameValue(receipt.presentation,expectedPresentation)||!sameValue(receipt.adjusted,{roomId:room.id,tableId:liveRoom.live.table,offsetY}))throw new Error('unconfirmed publication');
+      // A write receipt alone is insufficient: adopt only the separately read
+      // published version, including the unchanged saved material draft.
+      const refreshed=await fetch(endpoint,{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}});
+      const saved:unknown=await refreshed.json().catch(()=>null);if(!current())return;
+      if(!refreshed.ok||!appearanceReceipt(saved,initial.operatorId)||saved.packageRevision!==expectedPackageRevision+1
+        ||!sameValue(saved.presentation,expectedPresentation)||!sameAppearance(saved.branding,server.branding)
+        ||!sameValue(saved.draft,server.draft)||appearanceDraftRevision(saved)!==draftRevision)throw new Error('unconfirmed readback');
+      setServer(saved);setBranding(appearanceDraftBranding(saved));setMobileAdjustment(null);
+      setNotice(t(`Mobilplaceringen är publicerad som version ${saved.packageRevision}. Sparade materialval ligger kvar som utkast.`,`Mobile placement published as version ${saved.packageRevision}. Saved material choices remain a draft.`));
+      onSaved?.(saved);
+    }catch{
+      if(current()){setBlocked(true);setProblem(t('Mobilpubliceringen kunde inte bekräftas. Hämta senaste version innan du försöker igen.','Mobile publication could not be confirmed. Fetch the latest version before retrying.'));}
+    }finally{if(active.current)reportBusy(false);else busyRef.current=false;}
+  }
   async function refresh() {
     if (busyRef.current) return;
     reportBusy(true); setReview(null); setNotice(''); setLatest(null);
@@ -160,12 +211,21 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   function adopt(keepLocal: boolean) {
     if (!latest || busyRef.current) return;
     setServer(latest); if (!keepLocal) setBranding(appearanceDraftBranding(latest));
-    setBlocked(false); setLatest(null); setReview(null); setProblem('');
+    setBlocked(false); setLatest(null); setReview(null); setProblem('');setMobileAdjustment(null);
     setNotice(keepLocal ? t('Din redigering behölls mot senaste version. Spara och granska igen före publicering.','Your edits were kept against the latest version. Save and review again before publishing.')
       : t('Senaste sparade version är inläst.','Latest saved version loaded.'));
   }
 
-  const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview onMedia={visual?setPreviewMedia:undefined} compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={branding} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
+  const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview onMedia={visual?setPreviewMedia:undefined} compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={mobileEditing?appearanceBranding(server.branding):branding} mobilePlacement={mobileEditing&&liveRoom?.live.table?{tableId:liveRoom.live.table,offsetY:mobilePercent/100}:undefined} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
+  const mobilePlacementControls=mobileSupported?<section className={styles.review} aria-label={t('Mobilplacering','Mobile placement')}>
+    <h4>{t('Mobilplacering','Mobile placement')}</h4>
+    <p>{t('Justeringen gäller publicerad version. Sparade materialval behålls som utkast.','The adjustment applies to the published version. Saved material choices remain a draft.')}</p>
+    {mobileEditing?<><label className={styles.row}>{t('Flytta kort och insatsplatser lodrätt (%)','Move cards and betting positions vertically (%)')}<input type="number" min={-20} max={20} step={1} aria-label={t('Mobilplacering lodrätt i procent','Vertical mobile placement percent')} value={mobilePercent} disabled={!canAdjustMobile||busy} onChange={event=>{const value=event.target.valueAsNumber;if(canAdjustMobile&&!busyRef.current&&Number.isFinite(value)&&Math.abs(value)<=20)setMobileAdjustment({identity:mobileIdentity,percent:value});}}/></label>
+      <p className={styles.hint}>{t('Negativt flyttar uppåt. De tre kort- och insatsplatserna visas i mobilbilden.','Negative values move up. The three card and betting positions are shown in the mobile preview.')}</p>
+      {!mobileSettings?<p role="status">{t('Hämta rätt förhandsvisning eller välj en placering inom bordet innan publicering.','Load the matching preview or choose a position within the table before publishing.')}</p>:null}
+      <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="publish-mobile-placement" disabled={!canPublishMobile||busy} onClick={publishMobilePlacement}>{t(`Publicera mobiljustering ${mobilePercent} %`,`Publish mobile adjustment ${mobilePercent}%`)}</button><button type="button" className="sg-btn" data-action="close-mobile-placement" disabled={busy} onClick={()=>{if(!busyRef.current)setMobileAdjustment(null);}}>{t('Avbryt justering','Cancel adjustment')}</button></div>
+    </>:<button type="button" className="sg-btn" data-action="open-mobile-placement" disabled={!canAdjustMobile||busy} onClick={()=>{if(canAdjustMobile&&!busyRef.current){setMobileAdjustment({identity:mobileIdentity,percent:0});setReview(null);}}}>{t('Justera mobilplacering','Adjust mobile placement')}</button>}
+  </section>:null;
   const revisions = <div className={styles.revisions}><span>{t('Publicerad version','Published version')} <strong>{server.packageRevision}</strong></span><span>{server.draft ? t(`Sparat utkast ${draftRevision}`,`Saved draft ${draftRevision}`) : t('Inget sparat utkast','No saved draft')}</span></div>;
   const publishActions = <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button><button type="button" className="sg-btn" data-action="review" disabled={!canReview || busy} onClick={() => command('review')}>{t('Granska publicering','Review publication')}</button></div>;
   const reviewPanel = <section className={styles.review} hidden={visual ? !review : roomLayout && !server.draft && !review} aria-label={t('Granskning före publicering','Review before publishing')}>
@@ -207,7 +267,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     <div className={roomLayout ? styles.roomLayout : undefined} data-aside={roomLayout && !visual && Boolean(children) ? 'true' : undefined}>
       {visual && preview}
       <div className={roomLayout ? styles.choicesColumn : undefined}>
-    <fieldset className={styles.editor} disabled={!editable || busy}>
+    <fieldset className={styles.editor} disabled={!editable || busy || mobileEditing}>
       <legend>{visual ? t('Välj material','Choose assets') : roomLayout ? t('Rummets val','Room choices') : t('Val i spelet','In-game choices')}</legend>
       {roomLayout && <p className={styles.hint}>{visual ? t('Välj dealer och bord till spelet. Bakgrunden byter du separat.','Choose a dealer and table for the game. Change the background separately.') : t('Bakgrund, dealer och bord bland det sammansättningen tillåter. Spara ett utkast, granska och publicera.','Background, dealer and table among what the composition allows. Save a draft, review and publish.')}</p>}
       {!roomLayout && <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{compositionLabel(item.label, language)}</option>)}</select></label>}
@@ -230,6 +290,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       })}</div>
       {visual ? <details className={styles.extraChoices}><summary>{t('Färg och standardval','Colour and defaults')}</summary>{secondaryControls}</details> : secondaryControls}
     </fieldset>
+    {mobilePlacementControls}
     {!roomLayout && <p className={styles.hint}>{t('Bordsfärgen påverkar spelets gränssnittsdetaljer, inte dealerfilmen. Logotyp, spelmarker och knappar saknar ännu koppling till spelet.','Table colour affects game interface details, not the dealer video. Logos, chips and buttons are not yet connected to the game.')}</p>}
     {!visual && publishActions}
     {!visual && reviewPanel}

@@ -1,5 +1,14 @@
 # Aktuell handoff — Scoutgaming
 
+## Avgränsad mobilkalibrering av publicerat rum — 25 oktober 2026
+
+Admins rumsvy kan nu förhandsvisa och publicera en lodrät justering av de tre mobila kortankarna när markerna följer korten. Den utgår från aktuellt fryst paket, inte projektutkastet. Samma rena beräkning används i förhandsvisning och server. Publicering kräver N1, aktivt blackjackrum, dess faktiskt valda bord, en sammansättning utan andra publicerade rum i bolaget och oförändrad paket-/administrationsrevision. Ankare och autoskalning som behöver annan kalibrering avvisas. Readiness granskar den exakta nya presentationen innan befintlig transaktion, audit och ny historikpost används.
+
+Alla andra publicerade värden, media, desktop, projektutkast och sparade materialval bevaras. Efter POST kräver klienten separat GET med exakt presentation, version och bevarat materialutkast. Gamla svar, dubbla klick och samtidiga ändringar kan inte kvittera fel rum eller skriva över en nyare version.
+
+**Verifiering:** backendens regression var röd före implementation; **52/52** backendprov och **47/47** UI-prov passerar, inklusive revisionskonflikt, rollback, behörighet och bevarade utkast. Admin-typkontroll passerar. Root har granskat produktdiff och tester. Förhandsförslaget för Dragan/Oak är −7 procentenheter av bordbildens höjd: endast mobila `seats[0..2].card.y` ändras, cirka 27 px vid 390 px scenbredd. Visuell kontroll, faktisk publicering, full CI och deploy återstår vid denna kodleverans.
+
+
 ## Mobil uppföljning: gestväntan och Dragan-placering — 25 oktober 2026
 
 Jakobs verkliga iPhone/Safari-prov visar att spelet öppnas efter **Starta videon**, men **Ladda om** hann visas under väntan. Orsaken är att sidans 30-sekundersvakt inte kände till filmspelarens väntan på användargest. Den vakten pausas nu endast för den aktuella, hashverifierade filmägarens gestväntan och startas om när användaren trycker. Scenen förblir dold tills rätt dealers bild faktiskt presenterats. Filmens absoluta 128-sekundersgräns, avbrott, cachelease och synkrona `video.play()` i klicket är bevarade; fel dealer, gammal timer/film/version och avslutad presentation kan inte återaktivera väntan.
