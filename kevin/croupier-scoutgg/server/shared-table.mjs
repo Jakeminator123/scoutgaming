@@ -101,7 +101,12 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   // a name the dealer can say: a guest's "Guest 826" is not one
   const spokenName=name=>{const s=String(name??'').replace(/[^\p{L}\p{N} .'-]/gu,'').trim().slice(0,24);return !s||/^guest\s*\d*$/i.test(s)?null:s;};
   const load=id=>{const row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(id);const r=row?JSON.parse(row.state):{language:languages.includes(languageFor(id))?languageFor(id):undefined,game:newGame(),version:0,owners:Array(7).fill(null),bets:emptyBets(),history:{},ready:[],phase:'bets',deadline:null,actionDeadline:null,insurance:{},plan:null,round:null};contexts.set(r,{id,parent:null,engine:null});return r;};
-  const save=(id,r)=>{audit.sync(id,r.game);return db.prepare('INSERT INTO shared_rooms VALUES (?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state').run(id,JSON.stringify(r));};
+  // Kevin 24 Oct, prod at 100 % CPU: tick loaded and saved every room 4 times a second (740 rooms, most of them old Table
+  // Studio tables nobody sits at). A room saved with nothing that advance() acts on (no round, deadline, seat, bet, ready
+  // or leaver) is quiet: tick skips it until something saves it again (every write goes through save)
+  const quiet=new Set();
+  const isQuiet=r=>r.phase==='bets'&&!r.deadline&&!(r.leaving?.length)&&!(r.ready?.length)&&!(r.owners??[]).some(Boolean)&&!(r.bets??[]).some(b=>b&&(b.main||b.pp||b.tp));
+  const save=(id,r)=>{audit.sync(id,r.game);if(isQuiet(r))quiet.add(id);else quiet.delete(id);return db.prepare('INSERT INTO shared_rooms VALUES (?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state').run(id,JSON.stringify(r));};
   const players=id=>db.prepare('SELECT * FROM shared_players WHERE room=?').all(id);
   const pausedUntil=token=>db.prepare('SELECT until_ms FROM demo_breaks WHERE token=?').get(token)?.until_ms??0;
   const player=(id,token)=>db.prepare('SELECT * FROM shared_players WHERE room=? AND token=?').get(id,token);
@@ -458,7 +463,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       return snapshot;
     }catch(e){db.exec('ROLLBACK');throw e;}
   }
-  function tick(){for(const {id} of db.prepare('SELECT id FROM shared_rooms').all()){
+  function tick(){for(const {id} of db.prepare('SELECT id FROM shared_rooms').all()){if(quiet.has(id))continue;
     db.exec('BEGIN IMMEDIATE');try{const r=load(id);advance(id,r);save(id,r);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');}
   }}
   // snapshot: a visitor without a guest cookie (not seated yet) sees the table as a guest.
