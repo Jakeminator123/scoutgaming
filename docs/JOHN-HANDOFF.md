@@ -20,6 +20,8 @@ Normalfallet i `test/activate-native-ai-qa.mjs` returnerade alltid `IN_PROGRESS`
 
 **Integration 24 oktober:** separat granskning av #361 och återstående #367-diff gav inga blockerande fynd för kombinationen. #366 och #347 är mergade efter grön full CI. Main `029aebc7` är integrerad; enda tidigare konflikten var två handoffavsnitt, som båda bevarats. **60/60** riktade prov för rumskontext, livscykel, klippintag och kortvisning samt **227/227** commitkontroller passerar. Slutlig full CI måste verifiera kombinationen på aktuell main före merge.
 
+**CI-rättning 24 oktober:** [första fulla integrationskörningen](https://github.com/Jakeminator123/scoutgaming/actions/runs/40099569933) hittade tre mikrofonprov som fortfarande sökte knappens gamla tillgängliga namn. Testfixturen väljer nu den verkliga knappen Mikrofon; samtyckesdialogen, originalspråk genom STT/Director/PCM och avbruten identitet är oförändrade. Alla tre fel reproducerades lokalt före rättning; efteråt passerar **48/48** integrationer och kamerakontroller. Övriga CI-grupper passerade. Ny full CI krävs på rättningens head; ingen produktkod ändras av denna fixturrättning.
+
 **Driftsättning återstår:** frivilligt layoutfält `cardView` kräver spelserverns kapabilitet 26; gamla servrar blockeras före skrivning, även utkastssparning av det nya valet. Ingen databasmigrering. Render behöver byggas från integrerad kod innan inställningen kan publiceras. Actions-budgeten är upplåst. Full CI krävs på den slutliga kombinationen med #366/#347 innan #367 och dess ingående #361 mergas. Verklig mobil med skärmtangentbord och produktionsacceptans med publicerade medier återstår; lokalt godkänt är inte produktionsacceptans.
 
 ## Granskningsrättningar för PR #361 — 23 oktober 2026

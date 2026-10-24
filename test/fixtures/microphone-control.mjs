@@ -59,7 +59,7 @@ export function microphoneControl({ identity, fetchImpl, send, presentationConte
   });
   const find = text => nodes(root).find(node => node.textContent === text);
   const click = node => { assert.ok(node, 'expected microphone control'); node.onclick({ preventDefault() {} }); };
-  const record = nodes(root).find(node => node.tag === 'button' && node.attributes['aria-label'] === 'Enable voice listening');
+  const record = nodes(root).find(node => node.tag === 'button' && node.attributes['aria-label'] === 'Mikrofon');
   const status = () => nodes(root).find(node => node.attributes.role === 'status').textContent;
   return {
     control, tracks, sent,
