@@ -20,6 +20,8 @@ Verifiering: syntaxkontroll och **24/24 tester** i `apps/studio/client/admin/lib
 
 **CI:** #364 är mergad som `8a3551c8`; [slutlig CI på f201d52c är grön](https://github.com/Jakeminator123/scoutgaming/actions/runs/39877455580). Det senare [CI-jobbet på main cbc0acd3](https://github.com/Jakeminator123/scoutgaming/actions/runs/39879449512/job/120175758677) startade inte: GitHubs annotation anger misslyckad kontobetalning eller för låg utgiftsgräns. Nya PR:ens kontroller bedöms separat. Inga workflow- eller betalningsändringar ingår.
 
+**Mergegranskning 24 oktober:** GitHub Actions kunde åter starta efter Jakobs godkända budgethöjning. [CI på b84f7fda, försök 3](https://github.com/Jakeminator123/scoutgaming/actions/runs/39984045589/attempts/3) hittade två föråldrade text-/versionslås i `studio-context.test.mjs`; övriga regressionsgrupper passerade. Testerna verifierar nu de faktiska publiceringsvalen och publicerat material för rätt rum, inklusive fördröjd status från ett annat rum och tömd status. Produktkod, behörighetsprov, publiceringsrevisioner och kvittokontroller är oförändrade. Riktade prover: **24/24 godkända** med Node 24.21.0 och högst fyra testarbetare. Full CI krävs på rättningens head före merge och redovisas i PR #366.
+
 **GitGuardian vid start:** källbindning verifierad, monitorering aktiv. Incidenttäckning komplett för källan: 0 öppna / 23 ignorerade. Historisk skanning ofullständig (`too_large`), platsmetadata delvis saknad. Full historisk säkerhetstäckning påstås inte.
 
 ## Visuell operatörsyta — PR #364, mergad 23 oktober 2026

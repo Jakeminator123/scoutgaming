@@ -111,7 +111,8 @@ const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(nod
 const lifecycleSnapshot=(extra={})=>({administrationRevision:'admin-1',operators:[{id:'a',slug:'a',name:'a',status:'active',packageRevision:4,lanes:['one'],archivedAt:null,roomCount:2,archivedRoomCount:0},{id:'b',slug:'b',name:'b',status:'active',packageRevision:null,lanes:[],archivedAt:null,roomCount:1,archivedRoomCount:0}],rooms:[],...extra});
 
 test('registered room view embeds the exact scoped Admin editor with publication, room creation and lifecycle on the same page',async()=>{
-  const html=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette',{compositions});
+  const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette',{compositions},true);
+  const html=renderToStaticMarkupOf(h);
   const links=hrefs(html);
   assert.equal(links.some(href=>href.startsWith('/admin/publication')),false,'no function lives only on the older publication page');
   const template=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.searchParams.get('panel')==='layers');
@@ -119,7 +120,9 @@ test('registered room view embeds the exact scoped Admin editor with publication
   assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',panel:'layers'});
   assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);assert.match(html,/data-admin-choices="true"/);
   assert.doesNotMatch(html,/data-game-config=/,'roulette rooms have no blackjack game settings');
-  assert.match(html,/aria-label="Publicering"/);assert.match(html,/Sammansättningar som bolaget får använda/);
+  const publication=walk(h.render(),node=>node.type==='section'&&node.props?.['aria-label']==='Publicering')[0];
+  assert.ok(publication);
+  assert.deepEqual(walk(publication,node=>node.type==='input'&&node.props?.name==='lanes').map(node=>node.props.value),['one','two']);
   assert.doesNotMatch(html,/data-room-create=/,'room creation opens only on request');
   assert.match(html,/data-lifecycle="rooms"/);assert.doesNotMatch(html,/data-lifecycle="operator"/);
   assert.doesNotMatch(html,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"/);
@@ -339,15 +342,20 @@ test('a room draft, a busy editor and an unconfirmed publish receipt all keep th
   assert.equal(requests.length,1,'an unconfirmed package requires readback before the next write');
 });
 
-test('the room header shows the published version, the saved draft and what the player meets now',async()=>{
+test('the room status shows published materials only for the selected room and clears stale status',async()=>{
   const h=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{compositions},true);
   const editor=()=>walk(h.render(),node=>node.props?.apiBase==='/studio/api/partner')[0];
+  const publishedMaterials=()=>walk(h.render(),node=>node.type==='dl'&&node.props?.['aria-label']==='Rummets status')
+    .flatMap(region=>walk(region,node=>node.type==='dd')).map(node=>[node.props.children].flat(Infinity).join(''));
+  assert.deepEqual(publishedMaterials(),[]);
   editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:true,live:{background:null,dealer:'astrid',table:'table-1'},labels:{background:'Standard',dealer:'Astrid',table:'Grön filt'}});
-  let html=renderToStaticMarkupOf(h);
-  assert.match(html,/Publicerad version<\/dt><dd[^>]*>7/);assert.match(html,/Sparat utkast<\/dt><dd[^>]*>2/);
-  assert.match(html,/Spelaren möter nu<\/dt><dd[^>]*>– · Astrid · Grön filt/);
+  assert.deepEqual(publishedMaterials(),['– · Astrid · Grön filt'],'an unpublished background is not presented as live while a draft exists');
   editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:false,live:{background:'bg',dealer:'astrid',table:'table-1'},labels:{background:'Salong',dealer:'Astrid',table:'Grön filt'}});
-  html=renderToStaticMarkupOf(h);assert.match(html,/Sparat utkast<\/dt><dd[^>]*>Inget/);assert.match(html,/Salong · Astrid · Grön filt/);
-  editor().props.onStatus(null);assert.doesNotMatch(renderToStaticMarkupOf(h),/Spelaren möter nu/);
+  assert.deepEqual(publishedMaterials(),['Salong · Astrid · Grön filt']);
+  editor().props.onStatus({roomId:'other',packageRevision:9,draftRevision:0,draft:false,live:{background:'foreign',dealer:'paow-v2',table:'other-table'},labels:{background:'Annat bolag',dealer:'Paow',table:'Annat bord'}});
+  assert.deepEqual(publishedMaterials(),[],'a delayed status from another room cannot describe this room');
+  editor().props.onStatus({roomId:'bj',packageRevision:7,draftRevision:2,draft:false,live:{background:'bg',dealer:'astrid',table:'table-1'},labels:{background:'Salong',dealer:'Astrid',table:'Grön filt'}});
+  assert.deepEqual(publishedMaterials(),['Salong · Astrid · Grön filt']);
+  editor().props.onStatus(null);assert.deepEqual(publishedMaterials(),[]);
 });
 function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;return renderToStaticMarkup(h.render());}
