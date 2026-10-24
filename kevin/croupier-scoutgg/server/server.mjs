@@ -503,6 +503,7 @@ function body(req, limit = 20000) {
 async function api(req, res, route) {
   if(req.headers.origin&&!sameOrigin(req))return json(res,403,{error:'Invalid origin'});
   if(req.method==='OPTIONS')return json(res,405,{error:'Cross-origin integration is disabled'});
+  if(DEMO_GATE_STRICT&&demoGate.on&&['table','chat'].includes(route)){let who=null;try{who=await bo.user(req.headers);}catch{}if(!who)return json(res,401,{error:'Enter the demo password first'});}
   if(route.startsWith('backoffice/'))return json(res,410,{error:'Use the existing backoffice at https://croupier.scoutgg.dev/bo/'});
   if(route.startsWith('internal/game-audit')){
     if(!auditAuthorized(req,AUDIT_TOKEN))return json(res,401,{error:'Internal service authorization required'});
@@ -679,6 +680,13 @@ async function api(req, res, route) {
 // throw out of the handler, because an unhandled rejection stops the process and drops every table (12 Oct).
 // A clip cache in front of this host (MEDIA_BASE_URL, e.g. https://media.scoutgg.dev) must be allowed by the CSP, or no clip
 // loads (12 Oct: turning it on without this left the tables without video). Unset, the CSP is unchanged.
+// DEMO_GATE_STRICT=1 (Kevin o1792873491724: close the password hole in the demo): with the demo gate on, the game page,
+// a Studio table link included, the room's WebSocket and the game API need the signed-in session the password gives,
+// and without it the answer is 401 (no redirect), before any share or canonical redirect. Unset: as before.
+const DEMO_GATE_STRICT = process.env.DEMO_GATE_STRICT === "1";
+const strictDenied = res => { res.writeHead(401, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+  const href = demoGate.passwordPage.replace(/[<>"&]/g, "");
+  res.end(`<!doctype html><meta charset="utf-8"><title>Sign in</title><p>Enter the demo password first: <a href="${href}">${href}</a></p>`); };
 const MEDIA_ORIGIN = /^https:\/\/[a-z0-9.-]+$/.test(process.env.MEDIA_BASE_URL ?? "") ? " " + process.env.MEDIA_BASE_URL : "";
 const http = createServer((req, res) => {
   handleHttp(req, res).catch(e => {
@@ -715,6 +723,7 @@ async function handleHttp(req, res) {
   if(p==="/studio"){res.writeHead(302,{Location:"/studio/","Cache-Control":"no-store"});res.end();return;}
   if(p==="/studio/")return sendFile(req,res,path.join(PUBLIC,"studio","index.html"));
   const shared=/^\/t\/([a-z0-9_-]{1,40})\/?$/.exec(p);
+  if(shared&&DEMO_GATE_STRICT&&demoGate.on){let who=null;try{who=await bo.user(req.headers);}catch{}if(!who)return strictDenied(res);}
   if(shared){const t=studioTables.get(shared[1]);res.writeHead(t?302:404,t?{Location:studioTables.gameUrl(t),"Cache-Control":"no-store"}:{"Content-Type":"text/plain; charset=utf-8"});res.end(t?"":"No such table");return;}
   if(["/backoffice","/backoffice/","/backoffice.html"].includes(p)){res.writeHead(302,{Location:"https://croupier.scoutgg.dev/bo/#shoes","Cache-Control":"no-store"});res.end();return;}
   // Play demo password (Kevin 12 Oct): the website's /demo posts here; the right password gives a signed 30-day pass.
@@ -738,6 +747,7 @@ async function handleHttp(req, res) {
   // A Table Studio table plays its own dealer in its own session (Kevin 12 Oct, edge cases): a shared link edited to
   // another ?dealer=, or pointed at another session, goes back to the table's own link, so a dealer hidden for the
   // account that built the table cannot be called up through it.
+  if(file===path.join(PUBLIC,"index.html")&&DEMO_GATE_STRICT&&demoGate.on){let who=null;try{who=await bo.user(req.headers);}catch{}if(!who)return strictDenied(res);}   // before any redirect
   if(file===path.join(PUBLIC,"index.html")){
     const q=new URL(req.url,"http://x").searchParams, t=studioTables.get(q.get("table")??"");
     if(t&&(q.get("dealer")!==t.dealer||q.get("session")!==t.slug)){res.writeHead(302,{Location:studioTables.gameUrl(t),"Cache-Control":"no-store"});res.end();return;}
@@ -767,7 +777,9 @@ http.on("upgrade", (req, socket, head) => {
     try { if(!sameOrigin(req)){socket.destroy();return;} }
     catch {socket.destroy();return;}
     let session;try{session=sessionName(url.searchParams.get('session')??'astrid');}catch{socket.destroy();return;}
-    room.handleUpgrade(req, socket, head, (ws) => {ws.session=session;ws.address=clientAddress(req);ws.guest=guestToken(req.headers);ws.sid=sidOf(req.headers);ws.ua=req.headers["user-agent"];if(ws.sid)bo.user(req.headers).then(w=>{ws.boUser=w?.user??null;}).catch(()=>{});room.emit("connection",ws);});
+    const join=()=>room.handleUpgrade(req, socket, head, (ws) => {ws.session=session;ws.address=clientAddress(req);ws.guest=guestToken(req.headers);ws.sid=sidOf(req.headers);ws.ua=req.headers["user-agent"];if(ws.sid)bo.user(req.headers).then(w=>{ws.boUser=w?.user??null;}).catch(()=>{});room.emit("connection",ws);});
+    if(!(DEMO_GATE_STRICT&&demoGate.on))return join();
+    bo.user(req.headers).then(w=>{if(w)return join();socket.end("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");},()=>socket.end("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n"));
   }
 });
 
