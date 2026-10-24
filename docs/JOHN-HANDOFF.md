@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## PR #347: klippintag och raderingsdialog — granskning 24 oktober 2026
+
+Klippkartan får fil-/mappsläpp, dragbara placeringsförslag och uttryckligt godkännande före uppladdning. Gemensamma dialoger används för befintliga arkiverings- och permanenta raderingskontrakt. Inga writers, scheman eller behörigheter ändras; publicerade beroenden prövas fortfarande på servern.
+
+Konflikterna med main är lösta med nuvarande Admin-navigation kvar, utan återinförd OpenClaw-sida. Frysta importkällor, exakta pose-/språk-/tagningsförslag och nuvarande dealerregistrering bevaras. PR #366 är mergad som `08f47853` efter grön full CI; main inklusive dess beteendeprovsrättning är integrerad för att behålla den granskade operatörsytan.
+
+**Bugggranskning 24 oktober:** den tidigare kontrollen täckte dealer-dialogen och kartans mappsläpp men missade motsvarande klippdialog och intagspanel. Fyra ytterligare fel är nu rättade: en återöppnad klippdialog accepterar bara sitt eget kontrollsvar; en senare spärr från föräldern blockerar även en tidigare fångad bekräftelse; panelens mappinläsning avbryts vid kontextbyte, stängning och avmontering; katalogsidor läses i begränsade omgångar i stället för att hela mappen läses före filgränsen. Serverns beroende-, behörighets- och revisionskontroller är kvar. Köade filer skyddas fortfarande under uppladdning.
+
+**Verifiering av rättningen:** Node 24.21.0, högst fyra testarbetare. Nya regressioner reproducerade felen före rättningen. Därefter **76/76** riktade prov för klippintag, dialoger, dealerimport och livscykel; både avvisade och godkända åtgärder samt dubbelbekräftelse täcks. Admin-typer passerar med klientens pinnade TypeScript 5.7.3. Föräldralösa tester: **0/566**. Ett första typkommando använde fel pakets TypeScript 7 och avvisade befintligt baseUrl; rätt klientkompilator användes utan konfigurations- eller beroendeändring. Tidigare full Studio **2 116/17**, full Admin **373/1** och klientbygge gäller föregående head, inte denna rättning. Ingen produktionsacceptans påstås.
+
+**Mergegrind:** Actions-budgeten är upplåst och [slutlig full CI för #366](https://github.com/Jakeminator123/scoutgaming/actions/runs/40098197509) är grön på `c6d22790`. Den versionen är nu på main och integrerad här. #347 kräver egen grön full CI på integrationsheaden före merge. Inga skydd har kringgåtts.
+
+**GitGuardian:** källbindning till remote main cbc0acd3 verifierad; incidentrapporten anger 0 öppna och 23 ignorerade. Historisk skanning och platsmetadata är ofullständiga, och kontrollernas status kunde inte bekräftas av denna säkerhetsläsning. Ingen fullständig historisk säkerhetstäckning påstås.
+
 ## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
 
 `studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.

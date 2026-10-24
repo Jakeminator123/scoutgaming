@@ -190,6 +190,27 @@ Spara eller hantera lokala ändringar först. **Stäng provspel** avslutar sessi
 den stängs också när du lämnar ytan eller byter kontext. Roulette har ännu inte
 denna inbäddade provstart.
 
+**Lägg till klipp i klippkartan.** Välj dealer och Blackjack. Dra in filer eller
+en hel mapp på kartans yta, släpp dem på ett kort för ett bestämt fack, eller
+välj **Lägg till klipp** i kontextraden (adress `/admin/clips?panel=intake`).
+Panelen visar varje fil som ett kort med stillbild, föreslaget fack som
+**Kategori › Situation**, roll (**Standard** när facket saknar standardklipp,
+annars **Variant**), hur säkert förslaget är och en kort motivering. Undermappar
+som `repliker/sv` följer med som ledtråd till förslaget. Osäkra klipp är märkta
+**Osäker · välj fack**: välj ett snabbval, byt fack i listan eller dra kortet
+till rätt kategori i kartan; korten visar under draget vilka fack som tar emot
+filen och varför ett fack avvisar den. Bilder och ljud sparas inte här och får
+en förklaring i listan. Bakgrund är grön som förval; transparent bakgrund är
+spärrad för import. **Godkänn och spara** laddar upp klippen som tagningar i
+sina fack, visar förlopp per fil och ett kvitto. Därefter kan du **Sätta som
+standard i facket** när facket saknar standard, **Lägga som variant** för Till /
+Från skon eller **Öppna facket i kartan** och välja klippet där; dessa val hamnar
+i projektutkastet som du sparar med **Spara utkast**. Talklipp sparas som
+tagningar i talfacket; text, ljud och godkännande av talet granskas separat
+under Röst & tal. Filer med fel stannar i listan med sitt fel och försöks inte om
+automatiskt. Ett dealerbyte tömmer listan efter bekräftelse. Roulettefilmer
+laddas fortfarande upp direkt via respektive kort.
+
 **Spara utkast** sparar projektets ändringar med en ny serverrevision; det
 publicerar inget rum. Synliga resultatmeddelanden visar vad som hände. Vid
 revisionskonflikt ligger lokala ändringar kvar för jämförelse. Materialets
@@ -197,14 +218,15 @@ papperskorg visar konsekvenser innan borttagning; att en fil inte är vald i
 ett utkast bevisar inte att den är oanvänd.
 
 Under **Dealers** väljer du **Skapa dealer**, anger namn och väljer
-**Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt
-dealer vald, även utan rum. Välj eller dra in upp till 30 filmer, välj bakgrund
-för omgången och **Sortera klippen**. Granska facken och välj
+**Skapa och spara**. **Lägg till klipp** öppnar klippkartans intag med rätt
+dealer vald, även utan rum. Fliken **Lägg till dealer eller filmer**
+(`?tool=import`) finns kvar som alternativ väg: välj eller dra in upp till 30
+filmer, välj bakgrund för omgången och **Sortera klippen**. Granska facken och välj
 **OK – placera klippen**. Fel visas med filnamn. En tidigare lokal import
 behålls tills du uttryckligen väljer att byta dealer.
 
-**Namnge filerna så sorteras de rätt.** Importassistenten läser filnamnet
-mot en gemensam namnregel som täcker alla 36 fack; **Så namnger du filerna**
+**Namnge filerna så sorteras de rätt.** Klippintaget och importassistenten
+läser filnamnet (och mappens namn) mot en gemensam namnregel som täcker alla 36 fack; **Så namnger du filerna**
 i importpanelen visar mönster och exempel för just den sparade kartan. Mönstret
 är `<dealer>_<fack>[_<poskedja>][_<språk>_<nr>]`, med `_` eller `-` som
 avdelare:
@@ -241,11 +263,13 @@ och stöds inte i denna version. Filerna sparas som alternativ i klippbanken;
 provspelning och publicering görs separat. Transparenta klipp väntar fortfarande
 på stöd i importassistenten. Befintliga alpha-klipp bevaras.
 
-**Ta bort** visar berörda klipp, sammansättningar, rum och bolag före
-**Flytta till papperskorgen**. Återställning finns under **Papperskorg** och
-återöppnar inte rum. Klippkategorier följer med till papperskorgen och återställs
-med dealern. Källfiler och publiceringshistorik bevaras. Användning av samma
-media hos en annan dealer visas som ett hinder som behöver lösas först.
+**Ta bort** öppnar en bekräftelseruta som kontrollerar och listar berörda klipp,
+sammansättningar, rum och bolag innan du väljer **Flytta till papperskorgen**.
+Under **Papperskorg** finns **Återställ** och **Radera permanent** med samma typ
+av ruta; återställning återöppnar inte rum. Klippkategorier följer med till
+papperskorgen och återställs med dealern. Källfiler och publiceringshistorik
+bevaras. Användning av samma media hos en annan dealer visas som ett hinder som
+behöver lösas först.
 
 **System → Kopplingar & användning** är en sida med flikarna Spelbolag, Dealers,
 Bord & bakgrunder och Sammansättningar. Där syns bolag → spel
@@ -711,11 +735,15 @@ befintliga kontroller och provgränser för sådana produktprov.
 
 ## Arkivera, återställa och provspela
 
-På **Bolag & team** kan ett bolag arkiveras efter bekräftelse. Det försvinner från aktiva val, åtkomsten stoppas och spelrummen kopplas loss; historiken bevaras. **Visa arkiverade bolag** visar återställning. Återställning av bolaget öppnar eller återpublicerar inga rum. Återställ varje rum separat och öppna det därefter när beroendena är giltiga.
+Alla borttagningar följer samma mönster: ett klick på knappen öppnar en bekräftelseruta som visar konsekvenserna, kör serverns kontroll medan rutan är öppen och har en tydlig knapp för åtgärden. Du behöver aldrig skriva in något id. Esc eller **Avbryt** stänger rutan utan att något ändras. Nekar servern visas orsaken i rutan och materialet blir kvar där det är.
 
 På **Spelbolag & rum** kan du pausa/öppna rum samt arkivera dem. Växla till arkivet för återställning; ett återställt rum är väntande tills du öppnar det. Saknade eller ändrade publiceringsberoenden visas före återställning. Åtgärderna läser tillbaka serverns aktuella version och kräver en kompatibel spelmotor.
 
-På **Dealers & klipp** leder **Arkivera & återställ** till dealerns hantering. Använda eller skyddade dealers visar varför arkivering eller permanent borttagning hindras. Att ta bort en sammansättning ändrar Studio-utkastet; publicerade rum behåller sin frysta version tills de hanteras separat.
+**Klipp** (klippkartans panel **Dealer → Klipp & dealerarkiv**): **Radera** på ett klipp visar var klippet används och flyttar det sedan till **Arkiv**; filen bevaras och kan återställas. Markera flera klipp och välj **Radera valda** eller **Radera alla** för samma ruta i grupp; servern stoppar gruppen vid första hindret och redan ändrade klipp redovisas. I vyn **Arkiv** finns **Återställ** och **Radera permanent** per klipp. Permanent radering kontrollerar i rutan att klippet är arkiverat, att uppladdningstillåtelsen (15 minuter) har löpt ut, att inga kopplingar eller publiceringar finns och att lagringen kan verifieras; annars visas orsaken och **Behåll i arkivet**. Ett klipp som används någonstans visar användningen och kan inte raderas förrän det kopplats loss och utkastet sparats.
+
+**Dealers** (**Dealerregister**): **Ta bort** kontrollerar klipp, rum, bolag och sammansättningar i rutan och flyttar sedan dealern till papperskorgen med allt material; AI-tal stängs av, berörda rum avpubliceras och källfiler bevaras. Under **Papperskorg** väljer du **Återställ** (dealern återförs som utkast, rum öppnas inte automatiskt) eller **Radera permanent**. Permanent radering kräver att dealern ligger i papperskorgen; när filer raderas måste du dessutom kryssa i **Jag förstår att filerna raderas permanent**. Vid avbruten radering visas **Slutför radering**. Samma knappar finns under **Hela dealeridentiteten** i klippkartans dealerpanel.
+
+**Bolag och rum** (**Bolag & team**, **Spelbolag & rum**): **Flytta till papperskorgen**, **Återställ**, **Pausa** och **Öppna** bekräftas i samma ruta. Ett arkiverat bolag försvinner från aktiva val, åtkomsten stoppas och spelrummen kopplas loss; historiken bevaras. Återställning av bolaget öppnar eller återpublicerar inga rum: återställ varje rum separat (det blir väntande) och öppna det när beroendena är giltiga. Saknade eller ändrade publiceringsberoenden visas före återställning. Åtgärderna läser tillbaka serverns aktuella version och kräver en kompatibel spelmotor. Att ta bort en sammansättning ändrar Studio-utkastet; publicerade rum behåller sin frysta version tills de hanteras separat.
 
 
 
