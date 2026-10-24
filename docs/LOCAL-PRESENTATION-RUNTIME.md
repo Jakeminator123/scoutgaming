@@ -2344,20 +2344,29 @@ inte dagens standardstart. Den gamla Mobile Phone Lane använde Astrids porträt
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
-I molnet finns personal på [/control](https://www.scoutgaming.tech/control),
-operatör på [/partner](https://www.scoutgaming.tech/partner) och spel på
-[/game](https://www.scoutgaming.tech/game) (`?game=blackjack|roulette&operator=…&table=…`), samma origin
-www.scoutgaming.tech. Apex `scoutgaming.tech` är en 308 till www.
-Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
-repo/main: `web` bygger `apps/web`, `studio` bygger `lab`.
-Båda kör i Frankfurt. `/control` och `/partner` skrivs om till labb-servicen;
-`/studio` är den servicens basePath, inte en fjärde produkt och inte namnet i
-gränssnittet. Övriga webbdokument går till web. Render-tjänsten `croupier-v2`
-äger auktoritativ spelmotor och live-transport via den bevarade exakta ingressgränsen.
-Produktion och isolerad native-QA har labbets admin-API på Vercel och sparad
-policy/metadata/journaler i Neon, med separata scopes. Medier ligger i privat
-Blob. Produktionsimport och policybyte är genomförda; aktuell driftversion
-och avvecklingsstatus finns i [driftkartan](CLOUD-MIGRATION.md).
+I molnet finns personal på [/admin](https://www.scoutgaming.tech/admin),
+operatör på [/partner](https://www.scoutgaming.tech/partner), spelkatalog på
+[/lobby](https://www.scoutgaming.tech/lobby) och spelstart på
+[/game](https://www.scoutgaming.tech/game) (`?game=blackjack|roulette&operator=…&table=…`).
+Det separata autentiserade launchkontraktet `/play/{game}` behålls. Kända äldre
+`/control`-dokument omdirigeras enligt
+[Admin-routningen](../packages/navigation/admin-workspace-routes.mjs);
+Control är ingen separat aktiv arbetsyta.
+
+[Vercelkonfigurationen](../vercel.json) anger tre Services i projektet
+`scoutgaming`: `web` från `apps/web`, `studio` från `apps/studio` och `speech`
+från `apps/speech`. `/admin`, `/partner`, `/lobby` och `/studio` går till
+Studio-servicen; `/studio` är teknisk basePath. Spelwebben och övriga
+webbdokument går till web, medan de uttryckliga tal-/worker-/rumssocketarna
+går till speech. Privat Blob levereras via behöriga mediarutter, och Neon
+lagrar policy, metadata och journaler.
+
+Aktiv spelmotor är Render `croupier-v3`, verifierad 24 oktober 2026 mot
+rätt repo, main och avstängd automatisk deploy. Tidigare `croupier-v2`
+är suspenderad. Exakta resurs-ID:n och återgångsordning finns i
+[återställningsguiden](ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
+QA-gränser och runtimeacceptans i [handoffen](JOHN-HANDOFF.md).
+
 **Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
@@ -2380,9 +2389,9 @@ Tabellen här anger fungerande tekniska ingångar under övergången.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| Intern personal | `/admin`; äldre `/control` | Hanterar Studio, bolag, publicering och drift. Äldre länkar och sparade konfigurationer fortsätter fungera. Kräver intern behörighet. |
+| Intern personal | `/admin` | Hanterar Studio, bolag, publicering och drift. Kända äldre `/control`-dokument omdirigeras till motsvarande Admin-vy; okända vägar är ingen alternativ arbetsyta. Kräver intern behörighet. |
 | Operatörens personal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Ser endast bolag där medlemskapet är aktivt. Publicerade alternativ och rättigheter kontrolleras på servern. |
-| Spelare | `/lobby` och spelstarten `/game`; roulettrummet öppnas på spelmotorns `/play/roulette?operator=&table=`; `/play`, `/play/blackjack`, `/blackjack` och `/roulette` är 308 till `/game` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
+| Spelare | `/lobby`, spelstart `/game` och det separata autentiserade launchkontraktet `/play/{game}` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Spelroutningen bevarar bolag, rum och dealer genom login. Den faktiska spelmotorn avgör kort, saldo och utfall. |
 | Spelarresultat | `/api/history` | Egna aggregerade resultat i samma session som `/api/player`. |
 
 ### Lagring
