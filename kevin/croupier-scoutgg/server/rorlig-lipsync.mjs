@@ -396,6 +396,13 @@ export class RorligLipsync {
    */
   addWorker(dealer, ws, info, pod = null) {
     const s = this.s.get(dealer);
+    // a serverless session that comes up after the pod lane is back is not needed next to it (Kevin 24 Oct): sent away
+    if (!pod && s.workers.some(o => o.pod)) {
+      this.log(`läppsynk rörlig [${dealer}]: podden är tillbaka — reservsessionen skickas bort`);
+      s.releasedAt = Date.now();
+      try { ws.send(JSON.stringify({ t: 'bye' })); } catch {}
+      return null;
+    }
     const w = { ws, info, pod, running: 0, waiters: [], at: Date.now() };
     const old = s.workers.filter(o => o.ws !== ws && (pod ? (o.pod === pod || !o.pod) : !o.pod));
     s.workers = [...s.workers.filter(o => !old.includes(o)), w];
@@ -428,7 +435,7 @@ export class RorligLipsync {
         if (!pod) s.askedAt = Date.now() - 225_000;
         return;
       }
-      this.addWorker(dealer, ws, m, pod);
+      if (!this.addWorker(dealer, ws, m, pod)) return;
       for (const typ of ['worker_nere', 'session_uteblir', 'worker_for_langsam', 'callback_fel']) this.alert.ok(typ, dealer);
       this.log(`läppsynk rörlig [${name}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);
       // the lines said at round start have the least time to spare: the worker fetches their sound now, not then

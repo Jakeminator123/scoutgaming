@@ -327,6 +327,11 @@ test('the serverless reserve only when the pod lane has been gone about 20 s; a 
   r.adoptWorker(ws2,new URL(`https://x/lipsync-rorlig?token=${r.podToken()}&avatar=paow&pod=e2e-prod`));h2.message(JSON.stringify({t:'pong',gpu:'4090',rutor_per_s:60}));
   await new Promise(res=>setTimeout(res,5));
   assert.deepEqual(calls,['x/run','cancel/j1'],'the lane back: the queued order is cancelled');
+  // the session it started comes up after all: sent away, the pod keeps the lines
+  const sent=[],h3={};const ws3={readyState:1,send(m){sent.push(JSON.parse(m).t);},once(ev,f){h3[ev]=f;},on(){},close(){}};
+  r.adoptWorker(ws3,new URL(`https://x/lipsync-rorlig?token=${r.token}&avatar=paow`));h3.message(JSON.stringify({t:'pong',gpu:'5090',rutor_per_s:42}));
+  assert.deepEqual(sent,['bye']);
+  assert.deepEqual(r.workers('paow').map(w=>w.pod),['e2e-prod']);
 });
 
 test('the fastest idle pod takes a line, and a pod that hung rests for a minute while the other one works', async () => {
