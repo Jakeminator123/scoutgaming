@@ -1,5 +1,9 @@
 # Aktuell handoff — Scoutgaming
 
+## Rättad driftvägledning — 24 oktober 2026
+
+Runtimeguidens aktuella driftstycke beskrev fortfarande Control, Studio från `lab`, två Verceltjänster och gamla Render `croupier-v2`. Det hänvisar nu till aktiva Admin-/lobbyingångar, de tre tjänsterna i `vercel.json` och återställningsguidens exakta resurs-ID:n. Det separata autentiserade `/play/{game}`-kontraktet och historiska mediebeskrivningar är kvar. Verifierat mot `vercel.json`, Admin-/spelroutningen och live tjänstmetadata för `croupier-v3` (rätt repo/main, ej suspenderad, manuell deploy). Endast dokumentation ändrad. Ingen ny iPhone-acceptans eller medieacceptans påstås.
+
 ## PAOW / West Bet: import och publicerad demonstration — 24 oktober 2026
 
 West Bet (`west-bet`) och rummet PAOW Blackjack (`room-a8ffcb55-46c5-9424-9c1c-39d614383bf3`) är publicerade genom Admins ordinarie rumsflöde. Egen sammansättning: `west-bet-paow-blackjack-dd3977f5-c619-47c1-a877-085c3f21954c`, dealer `paow`, Lounge · varm och Blackjack · Oak. [Delbar lobby](https://www.scoutgaming.tech/lobby?operator=west-bet). Desktop-spelstart och Admins båda scenformat har granskats visuellt; grundloopen visas. Ingen insats eller spelrunda utfördes.
