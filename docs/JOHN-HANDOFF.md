@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## CI: syntetisk strömsession avslutas utan tom timeout — 24 oktober 2026
+
+Normalfallet i `test/activate-native-ai-qa.mjs` returnerade alltid `IN_PROGRESS` även efter att dess syntetiska worker stoppats. Avslutningen väntade därför hela fönstret för naturligt stopp innan cancellation. Fixturen övergår nu till `COMPLETED` först vid stopp av rätt worker och verifierar samma jobbs statusendpoint, GET, ett enda stopp, terminalstatus, frigiven session och oförändrad reservation. Separata prov i `test/speech-journal-runtime.mjs` behåller fallback-cancellation och kravet att invänta terminalstatus/dränering. Produktionskod och tidsgränser är oförändrade.
+
+**Verifiering:** Node 24.21.0, högst fyra testarbetare; båda testfilerna **116/116 godkända**. Det berörda provet tog lokalt **15 227,6 ms före → 87,7 ms efter** (99,4 % kortare tid för detta prov). Tidigare CI mätte 15 057 ms före rättningen. Hela CI-körningens tids- eller dollarbesparing är inte mätt. Oberoende statisk granskning: inga blockerande fynd. Full CI på integrerad head krävs före merge.
+
 ## Mergegranskning — testadapter i PR #364 — 23 oktober 2026
 
 `studio-context.test.mjs` kompilerade endast `RegisteredStudio` och försökte därefter läsa den nya TSX-komponenten `OperatorGameBoard` som vanlig Node-modul. Adaptern kompilerar nu även spelkortskomponenten. Befintliga beteendeprov använder dess rum-/bolagsval och öppnar skapandeformuläret uttryckligen. Proven för ägarisolering, osparade ändringar, pågående skrivningar, publiceringsrevision och kvitto är kvar; inga tester är borttagna.
