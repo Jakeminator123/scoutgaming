@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {runInNewContext} from 'node:vm';
+import {lifecycleFingerprint,lifecycleMessage} from './studio-lifecycle.mjs';
 import { addDealer, createEmptyProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { clipArchivePlan, clipDeletePlan, dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from './lifecycle-actions.mjs';
 
@@ -61,4 +65,44 @@ test('permanent dealer deletion requires the file acknowledgement only when file
   assert.equal(resume.title, 'Slutför raderingen av PAOW?'); assert.equal(resume.confirmLabel, 'Slutför radering');
   const denied = dealerDeletePlan({ label: 'PAOW', mediaCount: 1, eligibility: { allowed: false, reason: 'studio_dealer_published' } });
   assert.equal(denied.confirmLabel, undefined); assert.equal(denied.requiresAcknowledgement, false); assert.equal(denied.cancelLabel, 'Behåll i papperskorgen'); assert.match(denied.error, /publicerat bolagspaket/);
+});
+
+function clipActionHarness(variant='permanent') {
+  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
+  const code=transformSync(readFileSync(new URL('../components/studio/clip-delete-action.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  const states=[],effects=[],checks=[],mutations=[];let cursor=0;
+  const hooks={...React,useState(initial){const i=cursor++;if(!(i in states))states[i]=typeof initial==='function'?initial():initial;return[states[i],value=>states[i]=typeof value==='function'?value(states[i]):value];},useRef(initial){const i=cursor++;return states[i]??={current:initial};},useEffect(fn,deps){const i=cursor++,old=states[i];if(!old||deps?.some((value,j)=>value!==old.deps[j])){states[i]={deps,cleanup:old?.cleanup};effects.push(()=>{states[i].cleanup?.();states[i].cleanup=fn();});}}};
+  const f=fixture(),props={...f,catalog:{source:'registered',administration:{dealers:[{id:'paow-v2'}]}},dealerId:'paow-v2',videoId:a,variant};
+  const client={checkClipDeletion:()=>new Promise((resolve,reject)=>checks.push({resolve,reject})),archiveClips:async input=>{mutations.push(input);},deleteClip:async()=>{mutations.push('delete');return f;}};
+  const module={exports:{}};
+  runInNewContext(code,{module,exports:module.exports,require:name=>name==='react'?hooks:name==='lucide-react'?{Trash2:()=>null}:name.endsWith('studio-lifecycle.mjs')?{createLifecycleClient:()=>client,lifecycleFingerprint,lifecycleMessage}:name.endsWith('lifecycle-actions.mjs')?{clipArchivePlan,clipDeletePlan}:name==='./confirm-dialog'?{ConfirmDialog:'confirmation'}:require(name)});
+  const h={props,checks,mutations,render(){cursor=0;const tree=module.exports.ClipDeleteAction(props);while(effects.length)effects.shift()();return tree;},open(){h.render().props.children[0].props.onClick();},dialog(){return h.render().props.children[1].props;},async settle(){await new Promise(resolve=>setImmediate(resolve));return h.dialog();}};
+  return h;
+}
+
+test('a cancelled deletion check cannot resolve a new dialog for the same clip',async()=>{
+  const h=clipActionHarness();h.open();h.dialog().onCancel();h.open();
+  assert.equal(h.checks.length,2);
+  h.checks[0].resolve({allowed:true});
+  assert.equal((await h.settle()).checking,true,'the reopened dialog must wait for its own check');
+  assert.equal(h.dialog().confirmLabel,undefined);
+  h.checks[1].resolve({allowed:false,reason:'studio_media_published'});
+  assert.equal((await h.settle()).checking,false);
+  assert.equal(h.dialog().confirmLabel,undefined);assert.equal(h.mutations.length,0);
+});
+
+test('disabling a clip action while its dialog is open also blocks its captured confirmation',async()=>{
+  const h=clipActionHarness('archive');h.open();const confirm=h.dialog().onConfirm;
+  h.props.disabled=true;h.render();confirm();await h.settle();
+  assert.equal(h.mutations.length,0,'a parent busy or permission guard must still prevent writes');
+  assert.equal(h.dialog().confirmDisabled,true);
+});
+
+test('only the current check can allow deletion and one confirmation submits at most once',async()=>{
+  const h=clipActionHarness();h.open();h.dialog().onCancel();h.open();
+  h.checks[1].resolve({allowed:true});await h.settle();
+  h.checks[0].reject(Error('old check failed'));await h.settle();
+  assert.equal(h.dialog().error,'');assert.equal(h.dialog().confirmLabel,'Radera permanent');
+  const confirm=h.dialog().onConfirm;confirm();confirm();await h.settle();confirm();
+  assert.equal(h.mutations.length,1);assert.equal(h.dialog().open,false);
 });

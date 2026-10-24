@@ -161,3 +161,14 @@ test('a delayed folder read is discarded after the target context cancels it',as
   const next=await collectDroppedFiles({files:[file('dealer-b.mp4')]});
   assert.equal(next.files[0].file.name,'dealer-b.mp4');
 });
+
+test('folder pagination stops after reaching the file limit',async()=>{
+  let reads=0;
+  const entry={isDirectory:true,name:'clips',createReader:()=>({readEntries(resolve){
+    reads++;
+    resolve(reads<=5?[0,1].map(i=>({isFile:true,file:done=>done(file(`clip-${reads}-${i}.mp4`))})):[]);
+  }})};
+  const result=await collectDroppedFiles({items:[{webkitGetAsEntry:()=>entry}]},{limit:2});
+  assert.equal(result.files.length,2);assert.equal(result.truncated,true);
+  assert.ok(reads<=2,`read ${reads} directory pages although the queue was already full`);
+});

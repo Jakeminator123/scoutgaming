@@ -19,6 +19,7 @@ type Props = {
   ref?:Ref<ClipIntakeHandle>;
   dealer:{id:string;label:string}|null;
   groups:ClipGroup[];
+  contextKey?:string;
   active:boolean;
   blocked:boolean;
   hasStandard:(slotId:string)=>boolean;
@@ -54,7 +55,7 @@ function IntakeThumb({file,kind}:{file:File;kind:string}) {
   return <div className="studio-intake-thumb" aria-hidden="true">{!url?null:kind==='video'?<video src={url+'#t=0.1'} muted playsInline preload="metadata" tabIndex={-1}/>:kind==='image'?<img src={url} alt=""/>:<span>{kind==='audio'?'Ljud':'Fil'}</span>}</div>;
 }
 
-export function ClipIntakePanel({ref,dealer,groups,active,blocked,hasStandard,onBusyChange,onPendingChange,onInventory,onDragChange,onBind,onOpenSlot,onChooseDealer}:Props) {
+export function ClipIntakePanel({ref,dealer,groups,contextKey='',active,blocked,hasStandard,onBusyChange,onPendingChange,onInventory,onDragChange,onBind,onOpenSlot,onChooseDealer}:Props) {
   const [catalog,setCatalog]=useState<ImportCatalog|null>(null),[loadCount,setLoadCount]=useState(0),[loading,setLoading]=useState(true);
   const [rows,setRows]=useState<IntakeRow[]>([]),[context,setContext]=useState(''),[background,setBackground]=useState<'green-screen'|'alpha'>('green-screen');
   const [busy,setBusy]=useState<'propose'|'upload'|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[dragging,setDragging]=useState(''),[dropHover,setDropHover]=useState(false);
@@ -62,6 +63,9 @@ export function ClipIntakePanel({ref,dealer,groups,active,blocked,hasStandard,on
   const fileInput=useRef<HTMLInputElement>(null),folderInput=useRef<HTMLInputElement>(null);
   rowsRef.current=rows;catalogRef.current=catalog;
   const dealerId=dealer?.id??'';
+  const dropController=useRef<AbortController|null>(null),dropScope=useRef('');
+  dropScope.current=JSON.stringify([dealerId,contextKey,active,blocked]);
+  useEffect(()=>()=>dropController.current?.abort(),[dealerId,contextKey,active,blocked]);
   const dealerKnown=Boolean(catalog&&dealer&&catalog.dealers.some(row=>row.id===dealer.id));
   const summary=catalog&&dealer?intakeSummary(rows,dealer.id,catalog):null;
 
@@ -148,10 +152,16 @@ export function ClipIntakePanel({ref,dealer,groups,active,blocked,hasStandard,on
   function endDrag() {setDragging('');onDragChange(null);}
   async function dropFiles(event:DragEvent<HTMLElement>) {
     event.preventDefault();setDropHover(false);
-    if(!event.dataTransfer.types.includes('Files'))return;
-    const result=await collectDroppedFiles(event.dataTransfer);
-    addFiles(result.files);
-    if(result.truncated)setError(`Bara de första ${result.files.length} filerna lästes från mappen.`);
+    if(!active||blocked||busyRef.current||!event.dataTransfer.types.includes('Files'))return;
+    dropController.current?.abort();
+    const abort=new AbortController(),scope=dropScope.current;dropController.current=abort;
+    try {
+      const result=await collectDroppedFiles(event.dataTransfer,{signal:abort.signal});
+      if(abort.signal.aborted||scope!==dropScope.current)return;
+      addFiles(result.files);
+      if(result.truncated)setError(`Bara de första ${result.files.length} filerna lästes från mappen.`);
+    } catch(cause) {if(!abort.signal.aborted&&scope===dropScope.current)setError(cause instanceof Error?cause.message:'Mappen kunde inte läsas.');}
+    finally {if(dropController.current===abort)dropController.current=null;}
   }
   const locked=blocked||Boolean(busy)||loading;
   const unsaved=rows.filter(row=>row.state!=='saved');
@@ -159,7 +169,7 @@ export function ClipIntakePanel({ref,dealer,groups,active,blocked,hasStandard,on
   return <section className="studio-intake" aria-label="Lägg till klipp">
     <p className="studio-intake-intro">Dra in filer eller en hel mapp. Du får ett förslag på fack per klipp, kan dra om kortet till rätt kategori i kartan och godkänner sedan. Bara MP4 och WebM sparas.</p>
     {!dealer&&<p role="alert" className="studio-intake-alert">Välj dealer i raden ovanför kartan. <button type="button" className="studio-button" onClick={onChooseDealer}>Välj dealer</button></p>}
-    <div className={`studio-intake-drop ${dropHover?'is-hover':''}`} onDragOver={event=>{if(event.dataTransfer.types.includes('Files')){event.preventDefault();setDropHover(true);}}} onDragLeave={()=>setDropHover(false)} onDrop={event=>{void dropFiles(event);}}>
+    <div className={`studio-intake-drop ${dropHover?'is-hover':''}`} onDragOver={event=>{if(active&&!locked&&event.dataTransfer.types.includes('Files')){event.preventDefault();setDropHover(true);}}} onDragLeave={()=>setDropHover(false)} onDrop={event=>{void dropFiles(event);}}>
       <Upload size={22} aria-hidden="true"/>
       <strong>{dealer?`Släpp klipp till ${dealer.label} här`:'Släpp klipp här'}</strong>
       <p>{catalog?`${unsaved.length} av ${catalog.limits.maxFiles} platser i omgången används.`:'Importkatalogen läses in…'} Undermappar följer med som ledtråd, till exempel repliker/sv.</p>

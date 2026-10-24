@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { StudioProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type { Catalog, VideoInventory } from '../../lib/connected-studio.mjs';
@@ -20,7 +20,7 @@ export type ClipDeleteActionProps = {
   variant?: 'archive'|'permanent';
   onBusyChange?: (busy: boolean) => void; className?: string; label?: string;
 };
-type Stage = { fingerprint: string; checking: boolean; eligibility?: DeletionPlan; error: string };
+type Stage = { ticket: number; fingerprint: string; checking: boolean; eligibility?: DeletionPlan; error: string };
 
 // One button and one dialog per clip. The check runs inside the dialog; the
 // exact snapshot captured at open must still match when the user confirms.
@@ -28,9 +28,11 @@ export function ClipDeleteAction({ project, inventory, catalog, dealerId, videoI
   const [stage, setStage] = useState<Stage|null>(null);
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
-  const latest = useRef({ project, inventory, dealerId, videoId, onDone, onBusyChange });
-  latest.current = { project, inventory, dealerId, videoId, onDone, onBusyChange };
+  const checkEpoch = useRef(0);
+  useEffect(() => () => { checkEpoch.current++; }, []);
   const registered = catalog.source === 'registered' && catalog.administration.dealers.some(row => row.id === dealerId);
+  const latest = useRef({ project, inventory, dealerId, videoId, disabled, registered, onDone, onBusyChange });
+  latest.current = { project, inventory, dealerId, videoId, disabled, registered, onDone, onBusyChange };
   const video = inventory.videos.find(row => row.id === videoId);
   const fingerprint = lifecycleFingerprint(project, inventory, dealerId, [videoId]);
   const stale = stage !== null && stage.fingerprint !== fingerprint;
@@ -38,16 +40,18 @@ export function ClipDeleteAction({ project, inventory, catalog, dealerId, videoI
   const current = () => lifecycleFingerprint(latest.current.project, latest.current.inventory, latest.current.dealerId, [latest.current.videoId]);
   async function open() {
     if (disabled || lock.current || !video || !registered) return;
-    const captured = fingerprint;
-    if (variant === 'archive') { setStage({ fingerprint: captured, checking: false, error: '' }); return; }
-    setStage({ fingerprint: captured, checking: true, error: '' });
-    const settle = (patch: Partial<Stage>) => setStage(value => value && value.fingerprint === captured ? { ...value, checking: false, ...patch } : value);
+    const captured = fingerprint, ticket = ++checkEpoch.current;
+    if (variant === 'archive') { setStage({ ticket, fingerprint: captured, checking: false, error: '' }); return; }
+    setStage({ ticket, fingerprint: captured, checking: true, error: '' });
+    const settle = (patch: Partial<Stage>) => setStage(value => value && value.ticket === ticket && checkEpoch.current === ticket && current() === captured ? { ...value, checking: false, ...patch } : value);
     try { settle({ eligibility: await client.checkClipDeletion(project, inventory, dealerId, videoId) }); }
     catch (cause) { settle({ error: lifecycleMessage(cause) }); }
   }
   async function confirm() {
-    if (!stage || stage.checking || stale || busy || lock.current || !plan.confirmLabel) return;
+    if (!stage || stage.checking || stale || busy || lock.current || !plan.confirmLabel || latest.current.disabled || !latest.current.registered || stage.ticket !== checkEpoch.current) return;
     const captured = stage.fingerprint, unchanged = () => current() === captured;
+    if (!unchanged()) return;
+    checkEpoch.current++;
     lock.current = true; setBusy(true); latest.current.onBusyChange?.(true);
     let result: ClipDeleteResult;
     try {
@@ -62,7 +66,8 @@ export function ClipDeleteAction({ project, inventory, catalog, dealerId, videoI
     latest.current.onDone?.(result);
   }
   function cancel() {
-    if (busy) return;
+    if (lock.current) return;
+    checkEpoch.current++;
     const denied = stage?.eligibility && !stage.eligibility.allowed ? stage.eligibility.reason ?? 'studio_conflict' : '';
     setStage(null);
     if (denied) latest.current.onDone?.({ kind: 'kept', videoId, dealerId, reason: denied });
@@ -72,7 +77,7 @@ export function ClipDeleteAction({ project, inventory, catalog, dealerId, videoI
     <button type="button" className={className ?? defaultClass} disabled={disabled || busy || !video || !registered} aria-haspopup="dialog" onClick={() => void open()}><Trash2 size={13} />{label ?? (variant === 'archive' ? 'Radera' : 'Radera permanent')}</button>
     <ConfirmDialog open={stage !== null} title={plan.title} description={plan.summary} consequences={plan.items}
       checking={stage?.checking ?? false} checkingLabel="Kontrollerar klippets användning…" error={error}
-      busy={busy} busyLabel={plan.busyLabel} confirmLabel={stale || stage?.error ? undefined : plan.confirmLabel} cancelLabel={stale || stage?.error ? 'Stäng' : plan.cancelLabel}
+      busy={busy} busyLabel={plan.busyLabel} confirmDisabled={disabled || !registered} confirmLabel={stale || stage?.error ? undefined : plan.confirmLabel} cancelLabel={stale || stage?.error ? 'Stäng' : plan.cancelLabel}
       onConfirm={() => void confirm()} onCancel={cancel} />
   </>;
 }

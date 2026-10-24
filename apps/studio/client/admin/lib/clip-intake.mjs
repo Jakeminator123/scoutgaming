@@ -178,11 +178,6 @@ export async function collectDroppedFiles(dataTransfer, { limit = INTAKE_MAX_DRO
   signal?.throwIfAborted();
   const files = []; let truncated = false;
   const push = (file, path) => { if (files.length >= limit) { truncated = true; return false; } files.push({ file, ...(path ? { path } : {}) }); return true; };
-  const readAll = reader => new Promise((resolve, reject) => {
-    const batches = [];
-    const next = () => reader.readEntries(entries => { if (!entries.length) resolve(batches); else { batches.push(...entries); next(); } }, reject);
-    next();
-  });
   async function walk(entry, prefix) {
     signal?.throwIfAborted();
     if (files.length >= limit) { truncated = true; return; }
@@ -191,9 +186,17 @@ export async function collectDroppedFiles(dataTransfer, { limit = INTAKE_MAX_DRO
       signal?.throwIfAborted();
       push(file, prefix ? `${prefix}/${file.name}` : '');
     } else if (entry.isDirectory) {
-      const entries = await readAll(entry.createReader());
-      signal?.throwIfAborted();
-      for (const child of entries) await walk(child, prefix ? `${prefix}/${entry.name}` : entry.name);
+      const reader = entry.createReader();
+      while (true) {
+        signal?.throwIfAborted();
+        const entries = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+        signal?.throwIfAborted();
+        if (!entries.length) break;
+        for (const child of entries) {
+          if (files.length >= limit) { truncated = true; return; }
+          await walk(child, prefix ? `${prefix}/${entry.name}` : entry.name);
+        }
+      }
     }
   }
   // Entries and loose files must be read synchronously inside the drop event;
