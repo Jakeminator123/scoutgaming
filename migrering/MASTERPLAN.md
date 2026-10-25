@@ -23,6 +23,8 @@ PR #333:s sju avvikande filer har granskats som kod, inte bara räknats: replay 
 
 **Rensning utan återinförd legacy, 25 oktober:** v3-kontrollen i [PR #390](https://github.com/Jakeminator123/scoutgaming/pull/390) ersätter CI-bygget av den gamla kombinerade v2-/Studio-imagen och kravet på lokal bootstrapdata. PR390 är mergad som `d9ef40c8` efter full CI; Linux-bygge, cache och nätverksfritt konfigurationsprov har passerat. Den explicita tomma runtimekatalogen gör dessutom en ny molninstallation oberoende av historiska Astrid-/Emil-register. Kodproven går från tom projektmodell till syntetisk dealer, ordinarie uppladdning, fryst publicering och spelentré. Läsarkompatibel deploy ska ske före init. Inget av detta är full Neon/Blob- eller spelacceptans; [installationsordningen](../docs/ENVIRONMENT-RESTORATION.md#konkret-fortsättning-ännu-inte-utförd) och 45 % gäller fortsatt.
 
+**P6-avveckling:** den suspenderade kampanjens särskilda SDK/router/klient och fullfilsundantag är borttagna i kod; 244 riktade prov och 273 commitkontroller passerade utan skip. Aktiva tal-, behörighets- och Neon-budgetkontrakt kvarstår. Tvåprocess-startens återstående avveckling och faktisk molnacceptans följer separat. Detta är ett J05/J06-delsteg, inte avslutad migration.
+
 ## Prioriterad väg till 9/10
 
 Poängen gäller **nytta för main**, inte ekonomisk avkastning eller migrationsprocent. Tabellen beställer bara verifierade luckor. Ingen helmerge av Kevin eller återuppbyggnad av redan fungerande Admin ingår.

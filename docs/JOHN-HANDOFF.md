@@ -1,5 +1,14 @@
 # Aktuell handoff — Scoutgaming
 
+## Pensionerad P6-kedja avvecklad i kod — 25 oktober 2026
+
+Den frusna P6-kampanjens privata SDK-bootstrap, QA-router, aktiveringsverktyg, spelklientkoppling och särskilda fullfilsundantag är borttagna: 27 filer, 129 tillagda och 2 470 borttagna rader i kodleveransen `6cb4ba29` (integrerad som `0358a192`). Tre P6-sviter och två P6-playback-fall är avvecklade med funktionen. Det aktiva miljöregistret beskriver bara kvarvarande kontrakt. Återställningsguidens gamla krav på privat P6-material är borttaget.
+
+**Verifiering:** underagenten körde 244/244 riktade prov och ordinarie hook 273/273 utan skip, inklusive typkontroll, miljöinventering och testregistrering. Root har granskat produkt-, klient-, route-, test- och miljödeltat samt den gamla kedjans exakta service-/scopebindning utan blockerare. Eget integrationsprov av tom katalog, publicering, ingress och talbudget gav 125/125 pass utan skip. Negativa prov visar att gamla endpoints nekas även genom autentiserad Vercel-ingress, att aktiverade P6-flaggor avvisas och att providerinjektion med giltig Neon-journal inte öppnar fullfilsgenerering under streaming. Slutlig CI och deploy redovisas i leverans-PR:en; detta är ännu inte liveacceptans.
+
+Talreläet behövs fortfarande för genererad text, operatörsrepetition och andra aktiva konsumenter även när genererad röst är av. Ordinarie auth, budget, Neon/Blob och registrerade medier består. Den äldre kombinerade tvåprocess-starten är nästa separata avvecklingssteg; den är ännu kvar i denna leverans. Inga gamla QA-resurser öppnas och inga molninställningar, privata journaler, dealers eller bolag ändras. VID arbetar separat med PAOWs filmprofil/varianter och bolagsdemo; P6-/katalogarbetet ändrar inte dessa bindningar. Full migrationsstatus står kvar på 45 %.
+
+
 
 ## Tom molnkatalog utan historiska dealerkrav — 25 oktober 2026
 
