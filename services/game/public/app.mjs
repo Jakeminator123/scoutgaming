@@ -15,7 +15,6 @@ import { playGeneratedSpeech, loadGeneratedSpeech } from '../../../packages/pres
 import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
 import { displayChatDecision, cancelChatDecision, playChatDecision as playProductChatDecision } from './chat-decision-player.mjs';
 import { createNativeSpeechBridge } from '../../../packages/presentation/runtime/lab-speech-bridge.mjs';
-import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6GameAvailability, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import {gameLaneFromDocument} from '../../../packages/presentation/contracts/game-selection.mjs';
 import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelection, writeChoices } from '../../../packages/presentation/runtime/player-choices.mjs';
@@ -2192,32 +2191,4 @@ if (!studioPreview && DEALER.key === 'astrid') {
     play.onclick=async()=>{play.disabled=true;try{await probeClient.test({caseId:params.get('probeCase'),model:params.get('probeModel')??'gateway-default'});}finally{play.disabled=false;}};
     trial.append(title,description,play);memoryPanel.append(trial);chatMemory.open=true;
   }
-}
-
-// Explicit ownQA install. The cookie-owned endpoint must authorize the current
-// user before an API is exposed; ordinary dealer launches perform no QA IO.
-if (!studioPreview && location.origin === NATIVE_P6_GAME_ORIGIN && localPresentationEnabled
-  && new URLSearchParams(location.search).get('nativeP6GamePlayback') === '1') {
-  const readNativeP6Availability = () => {
-    const state = speechPoseGate.state;
-    return {busy:Boolean(busy),hasRound:Boolean(round),chatBusy:Boolean(chatBusy),speaking:Boolean(speaking),
-      muted:Boolean(voice.muted),hidden:Boolean(document.hidden),queuePending:speechQueue.pending,
-      posePending:speechPoseGate.pendingCount,actionNone:state.actionOwner==='none',speechNone:state.speechOwner==='none',
-      standardIdle:state.dealerPose==='standard-idle',idlePresented:state.idlePresented!==null};
-  };
-  const quietForNativeP6 = () => nativeP6GameAvailability(readNativeP6Availability()).quiet;
-  let nativeP6WasDisabled;
-  const deliverNativeP6=createNativeP6GameQueueDelivery({identity:poseIdentity,isAvailable:quietForNativeP6,
-    gate:speechPoseGate,pending:pendingChatReplies,pendingFields:()=>({correlation:nativeObservation.context()}),
-    onAcquire:()=>{nativeP6WasDisabled=$('#chat-send').disabled;chatBusy=true;$('#chat-send').disabled=true;
-      localPresentation?.state({ready:true});},
-    onRelease:()=>{chatBusy=false;$('#chat-send').disabled=nativeP6WasDisabled;
-      if(!pendingChatReplies.size)localPresentation?.state({ready:false});},
-  });
-  void installNativeP6GamePlayback({href:location.href,identity:poseIdentity,isAvailable:quietForNativeP6,
-    readAvailability:readNativeP6Availability,mount:$('#scene'),deliver:deliverNativeP6}).then(api => {
-    if (!api) return;
-    Object.defineProperty(window, 'croupierNativeP6GamePlayback', { value: api, configurable: true });
-    window.addEventListener('pagehide', () => { api.close(); delete window.croupierNativeP6GamePlayback; }, { once: true });
-  }).catch(() => { /* Disabled/unauthorized/stale ownQA installs expose no capability. */ });
 }

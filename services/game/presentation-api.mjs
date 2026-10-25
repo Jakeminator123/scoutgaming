@@ -63,7 +63,7 @@ const unavailableStore = Object.freeze({ configurationSource: 'unavailable',
   load: async () => { throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 }); } });
 export function createPresentationApi({ db, env = process.env, store = fixtureDataDir(env) ? createLocalProjectReader(join(fixtureDataDir(env), 'studio')) : unavailableStore,
   registryOptions = { env, repositoryRoot: root },
-  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
+  select = selectPresentation, directorFetchFactory = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, qaPublicOrigin = null } = {}) {
   // Only the verified server QA capability supplies this constructor port.
   if (qaPublicOrigin !== null && (typeof qaPublicOrigin !== 'string'
@@ -89,14 +89,6 @@ export function createPresentationApi({ db, env = process.env, store = fixtureDa
     if (!pathname.startsWith('/api/presentation/')) return false;
     let sharedRequest=false,sharedSignal;
     try {
-      if(pathname==='/api/presentation/native-p6-playback-context'){
-        if(typeof nativeP6PlaybackContext!=='function')fail('Unknown presentation endpoint',404);
-        if(req.method!=='GET')fail('GET required',405);
-        if(new URL(req.url||pathname,'http://local').search)fail('Playback context query forbidden',400);
-        if(!playerId)fail('Sign in required',401);
-        const project=await store.load();
-        json(200,await nativeP6PlaybackContext({req,playerId,project,readProject:()=>store.load()}));return true;
-      }
       if (!playerId) fail('Sign in required', 401);
       if (qaPublicOrigin && ['/api/presentation/registered-idle/', '/api/presentation/registered-video/', '/api/presentation/videos/']
         .some(prefix => pathname.startsWith(prefix))

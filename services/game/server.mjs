@@ -17,7 +17,6 @@ import { Readable } from 'node:stream';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { createPlayerHistoryHandler } from './player-history.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
-import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
 import { normalizeAstridObservation } from '../../packages/director/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech-runtime.mjs';
@@ -71,7 +70,6 @@ const publicAssetPath = (...parts) => {
 const publicBlobMedia = localMediaEnabled && process.env.CROUPIER_MEDIA_BLOB_INDEX
   ? (await import(pathToFileURL(join(mediaRepository, 'services/game/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
-const nativeP6QaRouter = await initializeNativeP6QaRouter();
 const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
 if (!['sqlite', 'postgres'].includes(databaseBackend)) throw new Error('Invalid CROUPIER_DATABASE.');
 const postgres = databaseBackend === 'postgres';
@@ -137,7 +135,6 @@ const speechJournal = studioPolicyRuntime ? await (await import('./postgres-spee
   pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
 if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
   artifacts: (await import('./speech-blob-artifacts.mjs')).createSpeechBlobArtifacts(),
-  ...(nativeP6QaRouter?.providerFetch ? { providerFetch:nativeP6QaRouter.providerFetch } : {}),
 });
 const { handlePlayerSurface } = await import('./player-surface.mjs');
 const { createPublicOperatorDirectory } = await import('./public-operators.mjs');
@@ -639,9 +636,8 @@ const operatorSpeechQa = createOperatorSpeechQa({
   origin: process.env.PUBLIC_URL ?? gameOrigin,
   authenticate: boSessionOk,
   service: () => speechStreamService,
-  decide: (request, status, signal, ownedContext) => openClawChat(request, status, {
-    fetchImpl: nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request, status, signal, ...ownedContext })
-      ?? ((url, options = {}) => fetch(url, { ...options,
+  decide: (request, status, signal) => openClawChat(request, status, {
+    fetchImpl: ((url, options = {}) => fetch(url, { ...options,
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
@@ -705,7 +701,6 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
 const server = createServer(async (req, res) => {
   try {
   if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
-  if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   if (await handleSharedRoomHttp(req,res,{command:sharedRoomCommand,engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin})) return;
   const pathname=new URL(req.url,'http://local').pathname;
   if (sharedRoomsEnabled && pathname === '/__cloud/shared-room-health') {
@@ -778,8 +773,6 @@ const server = createServer(async (req, res) => {
   if(pathname==='/api/v1/events'&&req.method==='GET'){ (await (await partner()).handleEvents(req,res,new URL(req.url,'http://local'))); return; }
   if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await (await partner()).handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
-  const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
-  if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
   if (pathname === '/api/operators' || pathname.startsWith('/api/operators/')) {
     if (pathname.includes('/preview')) {
       if(!publicOperatorPreview){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"error":"operator_preview_unavailable"}');return;}
@@ -919,25 +912,6 @@ const server = createServer(async (req, res) => {
           return sharedRoomService.withSharedCommittedReceipt({request:authenticatedRequest,playerId,body,signal},selectFrozen);
         },
         beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),
-        ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
-          if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
-          const owner=await chatSessionOwner(request,playerId);
-          return nativeP6OwnedPlaybackContext(nativeP6QaRouter,{playerId,owner,project,readProject,
-            readOwner:async()=>{
-              if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
-              return chatSessionOwner(request,playerId);
-            },readStatus:async()=>authoritativeChatStatus(playerId,await playerSession(request),{
-              dealerId:'astrid',sessionRevision:createHash('sha256').update(owner).digest('hex')},{allowCurrentRound:true})});
-        }}:{}),
-        ...(nativeP6QaRouter ? { directorFetchFactory: async ({ req: request, playerId, project, readProject, signal }) => {
-          const owner = await chatSessionOwner(request, playerId);
-          const initial = await authoritativeChatStatus(playerId, await playerSession(request), {
-            dealerId: 'astrid', sessionRevision: createHash('sha256').update(owner).digest('hex') }, { allowCurrentRound: true });
-          const revision = { dealerId: initial.dealerId, sessionRevision: initial.sessionRevision, roundRevision: initial.roundRevision };
-          return nativeP6OwnedDirectorFetch(nativeP6QaRouter, { playerId, owner, project, readProject, signal,
-            readOwner: () => chatSessionOwner(request, playerId),
-            readStatus: async () => authoritativeChatStatus(playerId, await playerSession(request), revision) });
-        } } : {}),
         ...(studioPolicyRuntime ? { store: studioPolicyRuntime.policy.projectStore(), registryLoader: studioMediaRuntime.videoRegistry,
           videoResponse: studioMediaRuntime.videoResponse } : {}) });
       if (await presentationApi(req, res, pathname, authenticated)) return;
@@ -1114,10 +1088,7 @@ const server = createServer(async (req, res) => {
           signal: controller.signal,
           decide: async (value, state) => {
             const model = probeConfig?.policy.model ?? (observation ? voiceConfig.policy.model : 'gateway-default');
-            const ownedFetch = chatAuthorization.registered ? null : nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
-              playerId: authenticated, owner, readOwner: async () => (await chatSessionOwner(req, authenticated)),
-              readStatus, signal: controller.signal, model, streamRequested: incoming.acceptsSpeechStream === true });
-            return openClawChat(value, state, { model, fetchImpl: ownedFetch ?? ((url, options = {}) => fetch(url, {
+            return openClawChat(value, state, { model, fetchImpl: ((url, options = {}) => fetch(url, {
               ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
             })) });
           },
@@ -1354,7 +1325,6 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
     movingSpeechRoutes:process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1',
     dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
     onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
-    ...(nativeP6QaRouter?.providerFetch ? { fetchImpl:nativeP6QaRouter.providerFetch } : {}),
     ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
     resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
       ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),

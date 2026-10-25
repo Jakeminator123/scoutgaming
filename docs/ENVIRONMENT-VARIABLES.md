@@ -921,26 +921,21 @@ kodändringen. Nya reviewposter/klassificeringar läses ur Neon, utan gamla
 uploads-/klassificeringsfiler. Aktiva bankklipp och deras exakta ID/hash består.
 Tillfällig hashverifierad bytescache är disponibel scratch, inte beständig metadata.
 
-### Äldre QA-kontrakt — inte aktuellt driftkvitto
+### Pensionerad P6-QA-kod
 
-Aktuell återgång och öppna driftkontroller står överst i dokumentet.
-Följande beskriver det tidigare kontraktet, inte bevis för att miljön är stängd.
+Den frusna P6-kedjans router, privata SDK-bootstrap, aktiveringsverktyg,
+spelklientkoppling och särskilda fullfilsundantag är borttagna. Dess källor och
+nycklar ingår inte längre i det aktiva namnregistret. Cloud-start nekar aktiverade
+`CROUPIER_P6_QA_ROUTER` och `CROUPIER_P6_BOUNDED_TEST`; gamla SDK-nycklar förs
+inte vidare till barnprocesserna. Vanlig managed streaming kan inte öppna
+fullfilsgenerering. Ordinarie talrelä, scope, autentisering och beständiga
+Neon-budgetgränser för tal består.
 
-Den isolerade native-QA-miljön har egen backend, databas, scope och hostname.
-AI/GPU/kamera och native-admin är OFF; Cartesia-/RunPodnycklar finns inte där.
-SDK, sourcepins, ursprungliga manifest, journaler och förbrukade reservationer
-bevaras. Varken koddeploy eller återstående generationskvot öppnar ett nytt prov.
-
-Namnregistret behåller de källlästa `CROUPIER_P6_QA_ROUTER`-, SDK- och bounded-
-variablerna. Den avstängda routern laddar inga privata adaptrar. När en sådan
-koppling uttryckligen används kräver koden exakt QA-tjänst/origin/databas/scope,
-manifest- och källhashar, avgränsad giltighet och separata worker/readback/ticket-
-nycklar. Lab får inga QA-nycklar. Processinjektion via NODE_OPTIONS/NODE_PATH/
-LD_PRELOAD eller ändrad TLS-tillit nekas. Ursprungliga tider/poster skrivs inte om.
-Fullfils- och streamkostnader går genom samma beständiga budgetskydd.
-
-Aktuell usage, testtak, okänd kostnad och öppen acceptans finns i
-[handoffen](JOHN-HANDOFF.md#2-öppna-kontroller-och-kända-fel). Äldre installationsdetaljer
+Kodavvecklingen ändrar inga molninställningar, privata manifest, journaler,
+förbrukade reservationer eller registrerade medier. Äldre provkvitton är historik;
+återöppning av den gamla miljön ingår inte i leveransen. Aktuell drift och öppna
+kontroller finns i [handoffen](JOHN-HANDOFF.md#2-öppna-kontroller-och-kända-fel) och
+[återställningsplanen](ENVIRONMENT-RESTORATION.md). Historiska installationsdetaljer
 finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-VARIABLES.md).
 
 ### Origins och privata medier

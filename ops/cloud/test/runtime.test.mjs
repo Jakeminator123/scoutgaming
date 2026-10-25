@@ -28,6 +28,23 @@ const fixture = () => ({
 });
 const LAB_SECRET = '0123456789abcdef'.repeat(4);
 
+test('retired QA switches cannot activate cloud routes or forward private SDK credentials', () => {
+  for (const key of ['CROUPIER_P6_QA_ROUTER', 'CROUPIER_P6_BOUNDED_TEST']) {
+    for (const value of ['1', 'true', '0 ', 'false']) {
+      assert.throws(() => validateCloudConfig({ ...fixture(), [key]: value }), /retired/);
+    }
+    for (const value of [undefined, '', '0']) {
+      const env = { ...fixture(), [key]: value, CROUPIER_P6_SDK_WORKER_TOKEN: 'unused-fixture-private-token',
+        CROUPIER_P6_SDK_OPENAI_API_KEY: 'unused-fixture-provider-token' };
+      const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+      for (const child of Object.values(specs)) {
+        assert.equal(Object.keys(child.env).some(name => name.startsWith('CROUPIER_P6_')), false);
+      }
+      assert.ok(specs.lab, 'retiring QA keeps the existing two-child composition');
+    }
+  }
+});
+
 test('chat deadline reaches only the product relay and does not extend Director advice', () => {
   const env = { ...fixture(), OPENCLAW_TIMEOUT_MS: '8000', OPENCLAW_SPEECH_TIMEOUT_MS: '20000',
     OPENCLAW_SPEECH_ROUTING: 'adaptive', OPENCLAW_SPEECH_DEEP_MODEL: 'gpt-6-sol' };
@@ -412,6 +429,37 @@ test('public gateway rejects misdirected requests before contacting a child', as
   } finally {
     await new Promise((resolve, reject) => gateway.close(error => error ? reject(error) : resolve()));
   }
+});
+
+test('retired provider and playback routes cannot bypass authenticated Vercel ingress', async t => {
+  let forwarded = 0;
+  const child = createServer((req, res) => { forwarded++; res.end('unexpected upstream'); });
+  child.listen(0, '127.0.0.1'); await once(child, 'listening');
+  t.after(() => { child.closeAllConnections(); child.close(); });
+  const origin = 'https://preview.example.test', transportOrigin = 'https://isolated.onrender.com';
+  const ingress = { publicOrigin:origin, transportOrigin, secret:'fixture-private-ingress-'.repeat(3) };
+  const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
+    labOrigin:origin, vercelIngress:ingress };
+  const gateway = createCloudGateway(config, { labInternalSecret:LAB_SECRET, webPort:child.address().port,
+    labPort:child.address().port, sessionCheck:() => assert.fail('retired route cannot acquire Lab access') });
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  t.after(() => { gateway.closeAllConnections(); gateway.close(); });
+  const status = (path, headers, method) => new Promise((resolve, reject) => {
+    const request = httpRequest({ hostname:'127.0.0.1', port:gateway.address().port, method, path,
+      headers:{ host:new URL(transportOrigin).host, ...headers } }, response => {
+      response.resume(); response.on('end', () => resolve(response.statusCode));
+    }); request.on('error', reject); request.end();
+  });
+  const authenticated = { origin, 'x-croupier-vercel-secret':ingress.secret, 'x-croupier-public-origin':origin,
+    'x-forwarded-host':new URL(origin).host, 'x-forwarded-proto':'https' };
+  for (const path of ['/api/product/speech', '/api/studio/advice', '/internal/p6/qa-routing', '/api/presentation/native-p6-playback-context']) {
+    for (const method of ['GET', 'POST']) {
+      assert.equal(await status(path, { authorization:'Bearer unused-fixture-token' }, method), 421, path);
+      assert.equal(await status(path, authenticated, method), 421, path);
+    }
+  }
+  assert.equal(await status('/__cloud/health', {}, 'GET'), 200);
+  assert.equal(forwarded, 0);
 });
 
 test('gateway checks every Lab request with Web before adding its private Lab header', async () => {
