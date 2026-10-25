@@ -214,6 +214,7 @@ if (localPresentationEnabled) {
       localPresentation = await createLocalPresentation({
         player: performancePlayer, host: $('#scene'), dealerId: DEALER.key, entry: entrySelection, transport: gameApi,
         version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
+        idlePhase: () => ['decisions', 'insurance'].includes(round?.phase) ? 'decide' : 'bets',
         receipt: entry => nativeObservation.emit('playback', entry),
         onIdle: () => presentStandardIdle('local-primary-frame'),
         onError: () => presentationStartup.fail(),

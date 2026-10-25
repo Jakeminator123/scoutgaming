@@ -1,14 +1,15 @@
 import { validateIdlePolicy } from './idle-policy.mjs';
+import { createRotationIdle } from './idle-rotation.mjs';
 
 const clone = value => structuredClone(value);
-const sceneDefaults = Object.freeze({ active: false, visible: true, actionBusy: false, speechReady: false, speechPlaying: false, identity: 'initial', revision: '0' });
+const sceneDefaults = Object.freeze({ active: false, visible: true, actionBusy: false, speechReady: false, speechPlaying: false, identity: 'initial', revision: '0', phase: 'bets' });
 const blocked = scene => !scene.active || !scene.visible || scene.actionBusy || scene.speechPlaying;
 const contextual = clip => clip?.reason === 'openclaw' || clip?.reason === 'rules';
 function sceneValue(value) {
   if (!value || typeof value !== 'object' || typeof value.identity !== 'string' || !value.identity || value.identity.length > 256
     || typeof value.revision !== 'string' || !value.revision || value.revision.length > 128
     || ['active', 'visible', 'actionBusy', 'speechReady', 'speechPlaying'].some(key => typeof value[key] !== 'boolean')
-    || Object.keys(value).some(key => !Object.hasOwn(sceneDefaults, key))) throw Error('Invalid live idle scene');
+    || !['bets', 'decide'].includes(value.phase) || Object.keys(value).some(key => !Object.hasOwn(sceneDefaults, key))) throw Error('Invalid live idle scene');
   return { ...value };
 }
 function randomSource(seed) {
@@ -103,6 +104,8 @@ export function createLiveIdleController({ policy, inventory, dealerId = 'astrid
   if (mode !== 'own') throw Error('Invalid live idle mode');
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff || typeof now !== 'function') throw Error('Invalid live idle clock or seed');
   const random = randomSource(seed);
+  if (policy?.rotation) return createRotationIdle({ policy, inventory, dealerId, random, now,
+    scene: sceneValue({ ...sceneDefaults, ...initialScene }), sceneValue, blocked, validate: validateIdlePolicy });
   let currentPolicy, allowed = new Set(), signature, scene = sceneValue({ ...sceneDefaults, ...initialScene });
   let clip = null, serial = 0, closed = false, lastTime = -Infinity, offered = null, adviceStarts = [];
   const history = new Map(), failed = new Set(), offersSeen = new Set();

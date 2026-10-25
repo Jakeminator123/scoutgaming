@@ -10,6 +10,36 @@ Scen & lager kan förhandsvisa varje tillåtet grundbord, bakgrund och dealer ut
 
 **Kvar före liveacceptans:** det publicerade Dragan-paketets manuella kortpunkter ligger högre än önskade bordsrutor. Projektutkastet har andra material än publicerat paket 10; använd den avgränsade layoutredigeringen efter deployment. Ingen produktionsdata eller publicerad kortgeometri ändrades av ovanstående prov.
 
+## PAOW: 24 valda viloklipp — 25 oktober 2026
+
+Jakob beställde uppladdning av elva nya original till mains Blob, återanvändning
+av de tretton befintliga och inkoppling av alla 24 med rätt ordning/övergångar.
+Ordinarie Admin-intag kvitterade **11/11 sparade hos PAOW**. Källurvalet är fryst
+på `kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`, med SHA-256, Git-blob,
+byteantal och 39 bilder/24 fps per klipp. Äldre importerade media behålls.
+
+Admin får en exakt hashmatchad inkoppling till den valfria posepolicyn i den
+gemensamma filmspelaren. Insats-/beslutsfas, knäpp-in/knäpp-ut, huvudrörelser,
+talets standardpose och avbrott omfattas. Saknade/dubbla/avvisade original
+stoppar inkopplingen. Inga kortfilmer eller repliker aktiveras.
+
+Rummets **Publicera PAOWs viloklipp** uppdaterar bara den sparade idlepolicyn
+och dess exakta media i det befintliga publiceringspaketet. Publicerade
+placeringar, andra dealers, repliker, lager, branding, utkast och historik
+behålls. Detta behövs eftersom sparat projekt och publicerad layout skiljer
+sig åt. Behörighet, runtime-readiness och revisioner kontrolleras före skrivning.
+
+**Verifierat lokalt:** 7 nya tester, inklusive 4 000 klippval med full 24/24-täckning,
+exakta poseövergångar, avbrott, talprioritet och publiceringspaket/CAS. Befintliga
+idleprov 23/23, lokalspelarens 136/136 (inklusive nytt integrationsprov),
+relaterade publicerings-/registrerings-/Kevin-paritetsprov och Admins typkontroll
+passerar. Publiceringssviten passerar 36/36, inklusive avgränsning, N1,
+konkurrerande ändringar och rollback. PR #378:s första fulla regression är grön;
+den slutliga avgränsade publiceringen kontrolleras på uppdaterad head.
+**Kvar före runtimekvittens:** slutlig PR/CI, Vercel + Render-version, Admins
+sparade policy och ny publicering av PAOW-rummet samt faktisk videouppspelning.
+MAIN är informerad; dess layoutarbete ligger i annan arbetskopia.
+
 ## Mobilens beslutsknappar på korta skärmar — 25 oktober 2026
 
 Ett extra verkligt webviewprov av Dragan vid 320 × 568 visade att beslutsknapparna behöll gamla koordinater efter resize, eller föll tillbaka till en placering över saldot. Osynliga gamla DOM-kort och totaler samt tomma resultat räknades som hinder, medan synliga SVG-kort saknades i mätningen. Placeringen använder nu synliga kort/totaler och skyddar även HUD och chatt. Gamla koordinater rensas; fullstor knapprad används där den ryms, annars en kompakt 198 × 50 px rad med 44 × 44 px tryckytor. Verklig platsbrist ger en tydlig status i stället för dolda kontroller utanför skärmen; normal layout återställs när utrymmet kommer tillbaka.
