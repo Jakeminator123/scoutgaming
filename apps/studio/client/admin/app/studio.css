@@ -641,9 +641,11 @@
 
 /* Resource tabs share the clip workspace, without squeezing whole editors beside the map. */
 .studio-map-stage.is-resource-editor>.studio-canvas{display:none}
+.studio-workspace-mount,.studio-clip-workspace,.studio-map-stage{min-width:0;max-width:100%}
 .studio-map-stage.is-resource-editor{flex:none}
-.studio-map-stage.is-resource-editor>.studio-drawer{flex:1 1 auto;width:100%;max-width:none;max-height:none;overflow:visible;position:relative;inset:auto;padding:24px clamp(18px,3vw,48px);border-left:0;box-shadow:none}
-.studio-map-stage.is-resource-editor .studio-detail-panel{max-width:1280px;margin-inline:auto}
+.studio-map-stage.is-resource-editor>.studio-drawer{flex:1 1 auto;width:100%;min-width:0;max-width:100%;max-height:none;overflow:visible;position:relative;inset:auto;padding:24px clamp(18px,3vw,48px);border-left:0;box-shadow:none}
+.studio-map-stage.is-resource-editor .studio-detail-panel{width:100%;min-width:0;max-width:1280px;margin-inline:auto;overflow-wrap:anywhere}
+.studio-map-stage.is-resource-editor .studio-detail-panel fieldset{min-width:0;max-width:100%}
 .studio-speech-tools{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}
 .studio-workspace-header>div:last-child{margin-top:16px}
 
