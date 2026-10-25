@@ -81,6 +81,8 @@ export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,d
     }}>Placera på detta bord</button></>:geometry?<>
       <p>{layout==='mobile'?'Mobil · tre synliga platser, här visas 3–5':'Desktop · sju platser'}. Placeringen hör till denna borddesign och detta format.</p>
       <label>Kortvisning<select aria-label="Kortvisning" value={geometry.cardView??'table'} onChange={event=>{const next=structuredClone(value);next[layout].cardView=event.target.value as 'table'|'raised';update(next);}}><option value="table">På bordet</option><option value="raised">Upplyfta</option></select></label>
+      <label>Kortspridning · %<input aria-label="Kortspridning" type="number" min="25" max="150" step="5" value={Math.round((geometry.fanSpread??1)*100)} onChange={event=>{if(!Number.isFinite(event.target.valueAsNumber))return;const next=structuredClone(value);next[layout].fanSpread=event.target.valueAsNumber/100;update(next);}}/></label>
+      <small>Spridningen ändrar avståndet mellan korten i handen. Det nya kortets landningspunkt ligger kvar. Stäng av ”Korten landar där filmen visar” för att flytta kortpunkterna fritt.</small>
       <fieldset className={styles.group}><legend>Autoskala efter dealern</legend>
         <label className={styles.toggle}><input type="checkbox" aria-label="Autoskala efter dealern" checked={!!auto} onChange={event=>update(withAutoScale(value,layout,event.target.checked?defaultBlackjackAutoScale():undefined))}/> Autoskala efter dealern</label>
         {auto?<>

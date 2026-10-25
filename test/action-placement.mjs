@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {placeActions,placeDealControl} from '../services/game/public/action-placement.mjs';
+import {placeActions,placeDealControl,placeChat} from '../services/game/public/action-placement.mjs';
 import {createPresentationStartup} from '../services/game/public/presentation-startup.mjs';
 const box=(left,top,width,height)=>({left,top,right:left+width,bottom:top+height});
 const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
@@ -74,12 +74,12 @@ function actionControlsFixture(){
   const activeTotal=node(['#local-card-overlay .card-totals g[data-seat][data-hand]','#local-card-overlay .card-totals g[data-active="true"]'],box(147.86,275.57,24.28,14.84));
   obstacles.push(...visibleCards,activeTotal,
     node(['.seat .sidearcs'],box(14.05,271.47,95.08,74.45)),node(['.seat .sidearcs'],box(112.46,280.92,95.08,74.45)),node(['.seat .sidearcs'],box(210.86,271.47,95.08,74.45)),
-    node(['#wallet'],box(10.99,446.34,213.76,58.86)),node(['#player-choices'],box(157.13,413.81,68.42,14.54)),node(['#bottom-right'],box(233.74,465.2,137.95,40)),node(['#hud-top'],box(0,0,320,60.88)));
+    node(['#wallet'],box(10.99,446.34,213.76,58.86)),node(['#player-choices'],box(157.13,413.81,68.42,14.54)),node(['#bottom-right'],box(233.74,465.2,137.95,40)),node(['#game-title'],box(0,0,320,60.88)));
   const activeSeat={getBoundingClientRect:()=>({x:160,y:319}),querySelectorAll:()=>[hiddenTotal]};
   let pickerTop=521.28;
   nodes['#table2d']={getBoundingClientRect:()=>({top:193.18})};nodes['#dealer-picker']={getBoundingClientRect:()=>({top:pickerTop})};
   nodes['#scene']={append:element=>{nodes['#'+element.id]=element;}};
-  const context=vm.createContext({innerWidth:320,innerHeight:568,$:selector=>nodes[selector],balance:5,
+  const context=vm.createContext({layoutChat(){},layerComposition:null,innerWidth:320,innerHeight:568,$:selector=>nodes[selector],balance:5,
     round:{active:0,legal:()=>['hit','stand','double'],live:()=>[{stake:10,box:3}]},seatOfLive:()=>activeSeat,placeActions,
     getComputedStyle:element=>({display:element===bar?'none':'block',visibility:'visible',opacity:element.opacity??'1'}),
     document:{documentElement:{dataset:{gameDealer:'dragan'}},querySelector:selector=>nodes[selector],querySelectorAll:query=>obstacles.filter(element=>query.split(',').some(selector=>element.selectors.includes(selector.trim()))),createElement:()=>({setAttribute(){},style:{}})}});
@@ -117,7 +117,7 @@ test('actual action controls recover from a stale phone position using visible c
 
   // If the table area is genuinely full, the compact row can use clear space
   // above it, while preserving the header and the overflowing chat panel.
-  const hud=node(['#hud-top'],box(0,0,390,60.88)),chat=node(['#chat-log'],box(220,64,170,114));
+  const hud=node(['#game-title'],box(0,0,390,60.88)),chat=node(['#chat'],box(220,64,170,114));
   obstacles.splice(0,obstacles.length,hud,chat,node(['#wallet'],box(0,193.18,390,650.82)));
   vm.runInContext('showActions()',context);
   assert.equal(top.classList.contains('action-compact'),true);assert.notEqual(top.style.visibility,'hidden');
@@ -187,7 +187,7 @@ test('the actual deal control warns only for an enabled button and recovers afte
   const nodes={'#deal-now':control,'#dealer-picker':{getBoundingClientRect:()=>({top:682})}};
   nodes['#scene']={dataset:{betPlacement:'under-cards'},append:notice=>{nodes['#'+notice.id]=notice;}};
   let measurements=0;
-  const context=vm.createContext({innerWidth:1280,$:selector=>nodes[selector],
+  const context=vm.createContext({layoutChat(){},innerWidth:1280,$:selector=>nodes[selector],
     seatEls:[{classList:{contains:()=>false},querySelectorAll:()=>[target]}],
     getComputedStyle:()=>({display:'block',visibility:'visible'}),
     document:{querySelectorAll:()=>[],createElement:()=>({setAttribute(){}})},
@@ -208,4 +208,25 @@ test('the actual deal control warns only for an enabled button and recovers afte
   assert.equal(control.style.position,'fixed');
   assert.equal(nodes['#deal-placement-warning'].hidden,true);
   assert.equal(measurements,2,'reenabling measures the current layout again');
+});
+
+test('open chat fits above phone cards and leaves a clear action row at 320 and 390px',()=>{
+ for(const width of [320,390]){
+  const cards=box(width/2-55,250,110,80),hud=box(0,410,width,158),header=box(8,8,width-16,48);
+  const chat=placeChat({width:width-16,height:255,viewport:{width,top:0,bottom:568},obstacles:[cards,hud,header]});
+  assert.ok(chat);const rect=box(chat.x,chat.y,chat.width,chat.height);
+  for(const obstacle of [cards,hud,header])assert.ok(!overlaps(rect,obstacle));
+  const action=placeActions({width:198,height:50,viewport:{width,top:0,bottom:568},anchor:{x:width/2,bottom:330},obstacles:[cards,hud,header,rect],margin:4});
+  assert.ok(action);assert.ok(!overlaps(box(action.x,action.y,198,50),rect));
+ }
+});
+test('Admin action preference is honored in clear space and relocated around a newly opened chat',()=>{
+ const input={width:190,height:50,viewport:{width:1280,top:0,bottom:720},anchor:{x:600,bottom:400},preferred:{x:800,y:100}};
+ const first=placeActions(input);assert.equal(first.x,800);assert.equal(first.y,100);
+ const chat=box(780,80,300,300),moved=placeActions({...input,obstacles:[chat]});assert.ok(moved);assert.ok(!overlaps(box(moved.x,moved.y,190,50),chat));
+});
+test('chat Admin anchors move the panel in an empty viewport without changing its bounded size',()=>{
+ const input={width:300,height:250,viewport:{width:1280,top:0,bottom:720}};
+ const a=placeChat({...input,position:{x:0,y:0}}),b=placeChat({...input,position:{x:1,y:1}});
+ assert.ok(b.x>a.x&&b.y>a.y);assert.equal(a.width,b.width);assert.equal(a.height,b.height);
 });

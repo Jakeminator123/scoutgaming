@@ -488,13 +488,16 @@ body.in-round #deal-now, body.in-round #chip-row { display: none; }
 
 #hud-bottom {
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 45;
-  display: grid; grid-template-columns: 1fr auto 1fr;
-  grid-template-areas: "choices choices choices" "tables tables tables" "wallet chips right";
+  display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  grid-template-areas: "choices choices choices" "wallet chips right";
   align-items: end; gap: clamp(6px, .9vw, 12px) clamp(8px, 1.2vw, 20px);
   padding: 10px clamp(10px, 1.4vw, 20px) 14px;
 }
 #wallet { grid-area: wallet; justify-self: start; align-items: center; display: flex; background: rgba(12,13,17,.85); border-radius: 10px; padding: 9px 16px; gap: clamp(12px, 1.6vw, 26px); border-left: 3px solid #D6FF3A; }
 #bottom-right { grid-area: right; justify-self: end; display: flex; align-items: center; gap: clamp(6px, .8vw, 12px); pointer-events: auto; }
+#wallet {min-width:0;max-width:100%;box-sizing:border-box;flex-wrap:wrap;}
+#bottom-right {min-width:0;max-width:100%;flex-wrap:wrap;justify-content:flex-end;}
+body.in-round #bottom-right {display:none;}
 #wallet label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .16em; color: #8b8d96; }
 #wallet span { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
 #bottom-right button {
@@ -704,14 +707,18 @@ body.debug #engine-hud { display: block; }
 
   /* control bar stacks: wallet + actions on one row, chips on their own */
   #hud-bottom {
-    grid-template-columns: 1fr auto;
-    grid-template-areas: "choices choices" "tables tables" "wallet right" "chips chips";
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-areas: "choices choices" "wallet right" "chips chips";
     gap: 9px; padding: 10px 11px calc(10px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(to top, rgba(6,7,9,.92) 55%, transparent);
   }
   #chip-row { justify-self: center; width: 100%; justify-content: center; overflow-x: auto; padding-bottom: 2px; }
   #chips { flex: 0 1 auto; }
-  #wallet { gap: 14px; padding: 7px 11px; }
+  #wallet {max-width:100%;box-sizing:border-box;flex-wrap:wrap;justify-self:stretch;justify-content:space-between;}
+  #bottom-right {max-width:100%;flex-wrap:wrap;justify-self:center;justify-content:center;}
+  #wallet { gap: 8px; padding: 7px 11px; }
+  #add-funds { margin-left: 0; padding: 0; width: 32px; height: 32px; flex: 0 0 32px; font-size: 0; }
+  #add-funds::before { content: '+'; font-size: 22px; }
   #wallet label { font-size: 8px; letter-spacing: .1em; }
   #wallet span { font-size: 14px; }
   #bottom-right button { width: 40px; height: 40px; padding: 0; }
@@ -755,8 +762,7 @@ body.debug #engine-hud { display: block; }
   #actions-top button i { width: 38px; height: 38px; font-size: 16px; }
   #actions-top button em { font-size: 7px; }
   #actions { display: none !important; }
-  #hud-bottom { grid-template-columns: 1fr auto 1fr; grid-template-areas: "choices choices choices" "tables tables tables" "wallet chips right"; padding: 4px 10px 6px; background: none; gap: 4px 10px; }
-  #table-pick .tbl { padding: 4px 10px; font-size: 9px; }
+  #hud-bottom { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); grid-template-areas: "choices choices choices" "wallet chips right"; padding: 4px 10px 6px; background: none; gap: 4px 10px; }
   #deal-now { top: auto; bottom: 12vh; padding: 9px 26px; font-size: 12px; }
   #banner { top: auto; bottom: 20vh; }
   #undo-btn, #double-btn { width: 30px; height: 30px; }
@@ -859,23 +865,6 @@ body.in-round #player-choices { opacity: .3; pointer-events: none; }
 #layered-rehearsal summary { cursor: pointer; }
 html[data-table-color] #felt-brand { color: var(--table-felt); }
 
-/* table tiers: pick your stakes before you pick your chips */
-#table-pick {
-  grid-area: tables; justify-self: center; display: flex; gap: 6px;
-  pointer-events: auto; padding: 4px; border-radius: 999px;
-  background: rgba(12,13,17,.7); border: 1px solid rgba(242,241,237,.10);
-}
-#table-pick .tbl {
-  cursor: pointer; padding: 6px 14px; border-radius: 999px; border: none; background: none;
-  font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 10px;
-  letter-spacing: .14em; color: #8b8d96; transition: color .15s, background .15s;
-}
-#table-pick .tbl:hover:not(:disabled) { color: #F2F1ED; }
-#table-pick .tbl:disabled { color: #8b8d96; cursor: not-allowed; }
-#table-pick .tbl small { display: block; margin-top: 2px; font-size: 8px; letter-spacing: .06em; }
-#table-pick .tbl.on { background: #D6FF3A; color: #0A0B0D; }
-body.in-round #table-pick { opacity: .3; pointer-events: none; }
-
 /* hint line: what a control just did, or why it stopped */
 #hint {
   position: fixed; left: 50%; bottom: 15.5vh; transform: translateX(-50%) translateY(6px);
@@ -889,9 +878,6 @@ body.in-round #table-pick { opacity: .3; pointer-events: none; }
 #hint span { font-family: 'Inter', sans-serif; font-size: 12px; color: #F2F1ED; }
 
 @media (max-width: 860px) {
-  #table-pick .tbl { padding: 5px 11px; font-size: 9px; letter-spacing: .1em; }
-  /* Stakes cannot change mid-hand; reserve the narrow control area for play. */
-  body.in-round #table-pick { display: none; }
   #hint { bottom: 27vh; }
 }
 

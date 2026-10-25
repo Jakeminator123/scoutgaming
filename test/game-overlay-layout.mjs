@@ -214,3 +214,20 @@ test('fractional manual offsets on a 320px phone do not create false overlap war
  const result=layoutGameOverlay({tableGeometry:board,tableLayout:'mobile',rect:{x:0,y:420,width:320,height:180},dealerPlane:{x:160-540*.34,y:422-960*.34,scale:.34}},[2,3,4],{left:12,right:308,top:80,bottom:800},{compact:true});
  assert.equal(result.geometryWarning,'');[61.164,159.164,257.164].forEach((x,i)=>close(result.seats[i].x,x));
 });
+
+test('Admin UI and card spread are format-specific, validated and reach card poses',async()=>{
+ const {validateCompositionSettings}=await import('../packages/presentation/contracts/composition-settings.mjs');
+ const {cardPose}=await import('../services/game/public/card-presentation/card-table-layout.js');
+ const settings=defaultCompositionSettings(),board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+ settings.blackjackTables=[board];board.mobile.fanSpread=.5;
+ settings.mobile.gameUi={actions:{x:.2,y:.6},chat:{x:1,y:0,width:.9,height:.4}};
+ assert.deepEqual(validateCompositionSettings(settings),settings);assert.equal(settings.desktop.gameUi,undefined);
+ const plane={tableGeometry:board,tableLayout:'mobile',rect:{x:0,y:300,width:390,height:200}};
+ const result=layoutGameOverlay(plane,[2,3,4],{left:0,right:390,top:0,bottom:844},{compact:true});assert.equal(result.fanSpread,.5);
+ const input={index:0,count:2,anchor:{cx:100,cy:200},seat:'dealer'};
+ assert.equal(cardPose({...input,fanSpread:result.fanSpread}).x,67);
+ assert.deepEqual(cardPose({...input,index:1,fanSpread:.5}),{x:100,y:200});
+ for(const mutate of [s=>s.mobile.gameUi.chat.width=0,s=>s.mobile.gameUi.actions.x=2,s=>s.blackjackTables[0].mobile.fanSpread=Infinity]){
+  const invalid=structuredClone(settings);mutate(invalid);assert.throws(()=>validateCompositionSettings(invalid));
+ }
+});

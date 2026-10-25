@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## Admins materialval och responsiva kontroller — 25 oktober 2026
+
+Scen & lager kan förhandsvisa varje tillåtet grundbord, bakgrund och dealer utan att ändra mallens standard eller rummets bindning. Kort/marker redigeras för valt bord och format. Kortspridning samt önskad placering av spelknappar och chatt är validerade inställningar; capability v27 krävs innan de sparas mot en äldre strikt runtime. Saldo och insatskontroller flödar inom skärmen. Oanvändbara High Roller/VIP-val och deras växlingslogik samt den permanent avstängda Autobet-knappen är borttagna. Classic-gränser och serverägda spelregler är bevarade.
+
+**Verifiering:** 280 riktade beteendeprov passerar efter uppdatering av testharnessens importer och fullständig materialfixtur; Admin-typkontroll och klientbygge passerar. Egen buggranskning omfattar materialval, delad mall/rum-isolering, format, gränser, runtime-readiness och placering. Isolerad Admin-fixtur sparade chattbredd 70 % och kortspridning 75 % med ny serverrevision. En komplett Dragan-demorunda med lokal frontendkod i en separat webviewflik: 5 insatt, 0 tillbaka, saldo 967 till 962. Beslut och öppen chatt granskades vid CSS 320×568, 390×600 och 1164×655. Detta är kod-/webviewprov, inte deploy eller fysisk Safari-acceptans.
+
+**Kvar:** det publicerade Dragan-paketets manuella kortpunkter ligger högre än önskade bordsrutor och behöver en separat, revisionsbunden layoutjustering. Projektutkastet har andra material än publicerat paket 10; full publicering skulle därför återinföra gamla val. Ingen produktionsdata eller publicerad kortgeometri ändrades av ovanstående prov. Fortsatt uppdrag omfattar säker layoutjustering och förenklad utkasthantering.
+
 ## Mobilens beslutsknappar på korta skärmar — 25 oktober 2026
 
 Ett extra verkligt webviewprov av Dragan vid 320 × 568 visade att beslutsknapparna behöll gamla koordinater efter resize, eller föll tillbaka till en placering över saldot. Osynliga gamla DOM-kort och totaler samt tomma resultat räknades som hinder, medan synliga SVG-kort saknades i mätningen. Placeringen använder nu synliga kort/totaler och skyddar även HUD och chatt. Gamla koordinater rensas; fullstor knapprad används där den ryms, annars en kompakt 198 × 50 px rad med 44 × 44 px tryckytor. Verklig platsbrist ger en tydlig status i stället för dolda kontroller utanför skärmen; normal layout återställs när utrymmet kommer tillbaka.

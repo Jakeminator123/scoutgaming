@@ -32,7 +32,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
   const cardLayer = svgNode('g', { class: 'card-layer', 'clip-path':filmedProfile?'none':`url(#${prefix}-hands)` }), badges = svgNode('g', { class: 'card-totals' });
   svg.replaceChildren(defs, cardLayer, badges);
   const nodes = new Map();
-  let hands = [], pending = null, cardView='raised', followCards=false;
+  let hands = [], pending = null, cardView='raised', followCards=false, fanSpread=1;
   let handClipPath = dealerHandClip();
 
   function face(card, inkOnly = false) {
@@ -70,7 +70,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
       hand.cards.forEach((card, index) => {
         const pose = cardPose({ index, count, anchor, width,
           incomingIndex: deal ? (incoming < 0 ? count - 1 : incoming) : -1,
-          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat, depth:cardViewDepth(cardView) });
+          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat, depth:cardViewDepth(cardView),fanSpread });
         const entry = nodes.get(card.shoeDraw);
         const layoutKey = `${anchor.cx}:${anchor.cy}:${hand.splitCount}`;
         if (entry.pose && entry.layoutKey !== layoutKey) {
@@ -151,7 +151,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
       });
       if (!hand.cards.length) continue;
       const dealer = hand.seat === 'dealer';
-      const x = dealer ? cx + dealerFanOffset(0, hand.cards.length).x - 73 : cx;
+      const x = dealer ? cx + dealerFanOffset(0, hand.cards.length).x * fanSpread - 73 : cx;
       const split = hand.splitCount > 1;
       const y = dealer ? cy : cy + (followCards ? height/2*cardViewDepth(cardView)+18 : split && hand.splitCount > 2 ? 48 : 60);
       const shown = hand.cards.filter(c => c.r), value = total(shown), label = totalLabel(shown);
@@ -177,7 +177,8 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
     move();
   }
   return {
-    setSeatOffsets(offsets,anchors,view='raised',underCards=false) {
+    setSeatOffsets(offsets,anchors,view='raised',underCards=false,spread=1) {
+      fanSpread=spread;
       cardView=normalizeCardView(view);followCards=underCards;
       for(const [seat,original]of sourcePositions){
         const point=anchors?.[seat]??original;

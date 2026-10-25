@@ -226,6 +226,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   }
   if(current)replace(current);
   return {setBackground:id=>set('background',id),setTable:id=>set('table',id),replace,prepareClip,renderFrame,setMovingSpeechLayer,
+    gameUi:()=>current?.settings?.[(compactQuery?.matches??host.clientWidth<=860)?'mobile':'desktop']?.gameUi,
     referencePlane,onGeometryChange(listener){geometryListeners.add(listener);return()=>geometryListeners.delete(listener);},
     backgroundEvent:(eventId,eventKey)=>players.get('background')?.event(eventId,eventKey)??false,
     tableEvent:(eventId,eventKey)=>players.get('table')?.event(eventId,eventKey)??false,

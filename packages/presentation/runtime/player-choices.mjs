@@ -120,7 +120,6 @@ export function applyTableColor(document, color) {
   paint('#felt-brand', 'color', color);
   paint('#wallet', 'border-left-color', color);
   paint('#chip-row', 'box-shadow', `inset 0 0 0 2px ${color}`);
-  paint('#table-pick', 'border-color', color);
   return true;
 }
 
@@ -136,7 +135,7 @@ export function mountPlayerChoices(document, {
   choices, names = DEALER_NAMES, currentDealer, tableColor, backgroundValue,
   isBusy = () => false, onDealer, onTableColor, onBackground, onTable, tableValue, composition, dealerAvailability = null, summaryLabel = 'Ditt bord',
 } = {}) {
-  const anchor = document.querySelector?.('#table-pick');
+  const anchor = document.querySelector?.('#hud-bottom');
   if (!choices || !anchor) return null;
   const panel = document.createElement('details');
   panel.id = 'player-choices';
@@ -219,6 +218,6 @@ export function mountPlayerChoices(document, {
     }
   }
   panel.append(backgroundRow, status);
-  anchor.before(panel);
+  anchor.append(panel);
   return panel;
 }

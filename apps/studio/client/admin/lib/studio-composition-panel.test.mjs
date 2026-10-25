@@ -7,7 +7,7 @@ import {createSeedProject,defaultPresentationLane,validateProject} from '../../.
 import * as anchors from '../../../../../packages/presentation/runtime/composition-anchors.mjs';
 import * as settings from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {defaultLayerRule} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {defaultLayerRule,selectableLayerBases} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {rouletteReferencePreview} from './roulette-clip-map.mjs';
 import {setTemplateDealers} from './dealer-directory.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -26,6 +26,7 @@ function panelHarness(){
     if(name.includes('composition-anchors.mjs'))return anchors;
     if(name.includes('dealer-compositing.mjs'))return {effectiveDealerCompositing:()=>({})};
     if(name.includes('layer-asset-contract.mjs'))return {layerAssetFitsGame};
+    if(name.includes('background-playback-policy.mjs'))return {selectableLayerBases};
     if(name.includes('roulette-clip-map.mjs'))return {rouletteReferencePreview};
     if(name.includes('dealer-directory.mjs'))return {setTemplateDealers};
     if(name.endsWith('/layer-selectors'))return {LayerAssetSelect};
@@ -99,7 +100,7 @@ test('roulette preview never borrows blackjack idle or a blackjack table and kee
   h.props.project.lines=[{dealerId:'astrid',eventId:'idle.ready',baselineVariantId:'base',variants:[{id:'base',videoGenerationId:'blackjack-idle'}]}];
   h.props.inventory.videos=[{id:'blackjack-idle',label:'BJ',available:true,contentType:'video/mp4',previewUrl:'/blackjack',classification:{dealerId:'astrid',eventId:'idle.ready'}}];
   const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000001',role:'table',label:'Roulette label alone',sha256:'a'.repeat(64),size:128,contentType:'video/webm',width:1920,height:1080};
-  h.props.project.layerAssets=[{...table,pathname:layerAssetPath(table)}];h.props.project.lanes[0].layers.table.default=table.id;
+  h.props.project.layerAssets=[{...table,pathname:layerAssetPath(table)}];h.props.project.lanes[0].layers.table.default=table.id;h.props.project.lanes[0].layers.table.allowed=[table.id];
   let tree=h.render(),preview=nodes(tree,node=>node.type===h.CompositionPreview)[0];
   assert.equal(preview.props.dealer,null);assert.equal(preview.props.table,null);
   assert.ok(nodes(tree,node=>node.type===h.LayerAssetSelect).every(node=>node.props.game==='roulette'));
@@ -184,6 +185,7 @@ test('table clips edit lanes[0].tablePlayback behind template edit ownership and
   const previewOf=tree=>nodes(tree,node=>node.type===h.CompositionPreview)[0]??nodes(tree,node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview();
   tree=h.render();let preview=previewOf(tree);
   assert.deepEqual(preview.props.tablePlayback,policy);assert.deepEqual(preview.props.tableAssets.map(row=>row.id),[still.id,clip.id]);
+  assert.deepEqual(nodes(tree,n=>n.props?.['aria-label']==='Bord att placera kort på').flatMap(select=>nodes(select,n=>n.type==='option').map(option=>option.props.value)),[still.id]);
   assert.equal(preview.props.previewTableRequest,0);assert.equal(preview.props.previewBackgroundRequest,0);
   nodes(tree,node=>node.type===h.LayerPlaybackEditor&&node.props.role==='table')[0].props.onPreview('table-1');tree=h.render();
   preview=previewOf(tree);assert.equal(preview.props.previewTableRuleId,'table-1');assert.equal(preview.props.previewTableRequest,1);
@@ -196,8 +198,39 @@ test('composition background preview and placement overlay receive the same base
  const h=panelHarness(),line=h.props.project.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready');
  const framing={scale:1.4,x:.1,y:.05};line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId='reference-film';
  h.props.inventory.videos=[{id:'reference-film',available:true,previewUrl:'/reference.mp4',contentType:'video/mp4',classification:{framing}}];
- const lane=h.props.project.lanes[0];lane.layers.table.default='00000000-0000-4000-8000-000000000002';
+ const lane=h.props.project.lanes[0];lane.layers.table.default='00000000-0000-4000-8000-000000000002';lane.layers.table.allowed=[lane.layers.table.default];
  h.props.project.layerAssets=[{id:lane.layers.table.default,role:'table',width:1672,height:941,game:'blackjack',contentType:'image/png',label:'Table'}];
  const editor=nodes(h.render(),n=>n.type===h.BlackjackScenePlacementEditor)[0];assert.ok(editor);
  assert.deepEqual(editor.props.scene.framing,framing);assert.deepEqual(editor.props.renderPreview().props.framing,framing);
+});
+
+test('every allowed board can be edited without changing defaults or room bindings, with matching preview',()=>{
+ const h=panelHarness(),base={schemaVersion:1,role:'table',game:'blackjack',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
+ const assets=['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002'].map((id,i)=>{const row={...base,id,label:'Board '+i};return {...row,pathname:layerAssetPath(row)};});
+ h.props.project.layerAssets=assets;const lane=h.props.project.lanes[0];lane.layers.table={enabled:true,default:assets[0].id,allowed:assets.map(a=>a.id)};
+ const room=structuredClone(h.props.room),defaults=structuredClone(lane.layers),original=structuredClone(h.props.project);
+ let tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Bord att placera kort på')[0].props.onChange({target:{value:assets[1].id}});
+ tree=h.render();const editor=nodes(tree,n=>n.type===h.BlackjackScenePlacementEditor)[0];assert.equal(editor.props.tableId,assets[1].id);
+ assert.equal(editor.props.renderPreview().props.table.url,'/studio/api/layer-assets/'+assets[1].id);assert.deepEqual(h.props.project,original);assert.deepEqual(h.props.room,room);
+ nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+ nodes(tree,n=>n.type===h.BlackjackScenePlacementEditor)[0].props.onChange(settings.defaultBlackjackTableGeometry(assets[1].id));
+ assert.equal(h.props.project.lanes[0].composition.blackjackTables[0].tableId,assets[1].id);assert.deepEqual(h.props.project.lanes[0].layers,defaults);
+ tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Chatt width')[0].props.onChange({target:{valueAsNumber:70}});
+ assert.equal(h.props.project.lanes[0].composition.mobile.gameUi.chat.width,.7);assert.equal(h.props.project.lanes[0].composition.desktop.gameUi,undefined);
+});
+
+test('background and dealer preview choices do not edit the shared template or room defaults',()=>{
+ const h=panelHarness(),lane=h.props.project.lanes[0],other={...h.props.project.dealers[0],id:'dragan',label:'Dragan'};
+ h.props.project.dealers.push(other);
+ lane.layers.dealer.allowed.push(other.id);
+ const assets=['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002'].map((id,i)=>({id,role:'background',label:'Background '+i,contentType:'image/png'}));
+ h.props.project.layerAssets=assets;lane.layers.background={enabled:true,default:assets[0].id,allowed:assets.map(row=>row.id)};
+ const line=structuredClone(h.props.project.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready'));line.dealerId=other.id;h.props.project.lines.push(line);
+ line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId='other-idle';
+ h.props.inventory.videos=[{id:'other-idle',available:true,previewUrl:'/other-idle',contentType:'video/mp4'}];
+ const before=structuredClone(h.props.project),room=structuredClone(h.props.room);
+ let tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Bakgrund att förhandsvisa')[0].props.onChange({target:{value:assets[1].id}});
+ tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Dealer att förhandsvisa')[0].props.onChange({target:{value:other.id}});
+ const preview=nodes(h.render(),n=>n.type===h.CompositionPreview)[0];assert.equal(preview.props.background.url,'/studio/api/layer-assets/'+assets[1].id);assert.equal(preview.props.dealer.url,'/other-idle');
+ assert.deepEqual(h.props.project,before);assert.deepEqual(h.props.room,room);assert.equal(h.edits.length,0);
 });
