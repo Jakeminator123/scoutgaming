@@ -27,9 +27,9 @@ PR #333:s sju avvikande filer har granskats som kod, inte bara räknats: replay 
 
 | Delsteg | Verifierad leverans | Kvar |
 | --- | --- | --- |
-| #392 P6 | Main `7910d1b`; full CI `40213762922` | Aktuellt Render-deploykvitto |
+| #392 P6 | Main `7910d1b`; full CI `40213762922`; senare Render `ebb6b91f` återläst via faktisk health/version | Samlad runtime-/restoreacceptans |
 | #394 runtime/QA/CI | Main `9bfb680e`; full CI `40215199058`, Docker/cache/Linux `40215199267` | Samlad start/drain/restore-acceptans |
-| #395 Admin och AI-krav | Main `547c433b`; full CI `40215534400`, Docker `40215534405`, rootintegration 148/148 | Faktisk Vercel-/Admin- och isolerad molnacceptans |
+| #395 Admin och AI-krav | Main `547c433b`; full CI `40215534400`, Docker `40215534405`, rootintegration 148/148; Vercel READY och inloggad Admin-återläsning | Isolerad Admin→spel-/molnacceptans |
 
 Full CI omfattar alla åtta grupper, faktisk SQL/omstart/HTTPS och produktionsledger-readiness. Inga checks undantogs. Dessa är J05/J06/J08/K06-delbevis; 45 % ändras inte. Resursförslaget är uttryckligen godkänt: Render 1 CPU/2 GB, en instans, ingen disk, manuell deploy, stopp efter prov/högst 24 timmar. Ingen produktionsdata eller AI/GPU ingår. Den gamla QA-tjänsten förblir stoppad.
 

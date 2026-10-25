@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Delade bord: explicit flagga till Render-processen — 25 oktober 2026
+
+K07-förberedelsen hittade att `CROUPIER_SHARED_TABLE_ENABLED=1` inte nådde
+spelprocessen från molnstarten. [PR #396](https://github.com/Jakeminator123/scoutgaming/pull/396)
+vidarebefordrar nu den validerade flaggan; standard av och explicit `0` består.
+Ogiltiga värden nekas före start. Underagentens riktade prov kör verkliga
+subprocessmiljöer och verifierar att rå miljö inte kan överstyra validerat beslut:
+26/26 passerade på Node24.21.0, inga skip. Kvar: PR:ens CI/merge, deployment och
+faktiskt K07-samprov. Ingen molnflagga aktiverades och inget schema ändrades.
+
 ## Leveransavstämning efter PR 392/394/395 — 25 oktober 2026
 
 | Leverans | Main-merge | Verifierat på fryst PR-head |
