@@ -804,7 +804,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(303,{Location:playerLoginDestination(new URL(req.url,gameOrigin)), 'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
     res.end(); return;
   }
-  const guest=guestPreview && !authenticated && !backoffice && !backofficeHandoff && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
+  const guest=guestPreview && !authenticated && !backoffice && !backofficeHandoff && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
   if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
