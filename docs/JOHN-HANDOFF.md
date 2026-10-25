@@ -6,9 +6,9 @@ Nästa steg efter [PR #386](https://github.com/Jakeminator123/scoutgaming/pull/3
 
 Negativ readiness stoppar före SQL. Ett verifierat mutationssammanhang kan inte i efterhand få rotationsbehörighet, och gör inget HTTP-anrop inne i transaktionen. Policy utan rotation behåller sitt tidigare krav. Ingen ny writer, lagring, schemaversion eller mediaimport.
 
-**Verifierat lokalt:**71/71 readinessprov,0skip, Node24.21.0. Prov täcker aktiv/arkiverad/fryst policy, verkligt validerbart fryst paket, bevarad data, versionsnedgradering och lifecycle-writer. Oberoende granskning och slutlig CI redovisas i följd-PR:en.
+**Verifierat lokalt:**71/71 readinessprov,0skip, Node24.21.0. Prov täcker aktiv/arkiverad/fryst policy, verkligt validerbart fryst paket, bevarad data, versionsnedgradering och lifecycle-writer. Oberoende kodgranskning av `36979feee4232f6bc36e5f6aa1343203166dfffa` utan blockerande fynd. Slutlig CI och Admin-deploy redovisas i följd-PR:en.
 
-**Driftsordning:** merge/driftsätt #386 och återläs v28 på befintlig Render `croupier-v3` före denna Admin-grind. Grinden är förberedd lokalt, inte påstått driftsatt. Återställning får bara ske till en läsare som hanterar redan sparad rotation; ny skrivning kräver fortsatt v28. Detta är ett avgränsat kompatibilitetsbevis, inte full migrationsacceptans.
+**Runtimeförutsättning klar:** #386 är mergad som `23debde7155346e30ee5a3f3dfbe54cd09ea2789`. Render `dep-dbf1qie7bikc73bsg650` är live; faktisk HTTP-läsning visar samma SHA, health200, v27/200 och v28/200 med `idleRotation: pose-graph-v1`. Admin-grinden levereras därefter via PR och Vercel; ingen full Admin-deploy påstås före dess kvitto. Återställning får bara ske till en läsare som hanterar redan sparad rotation; ny skrivning kräver fortsatt v28. Detta är ett avgränsat kompatibilitetsbevis, inte full migrationsacceptans.
 
 ## Migreringsgrind: runtimeannonsering och obligatoriska K07-prov — 25 oktober 2026
 
@@ -16,9 +16,9 @@ Första kompatibilitetssteget från main `8093797cfb920f31de9e2d775d3bad50d1d7b6
 
 Fyra befintliga K07-sviter körs nu i obligatoriska `gameplay/shared-blackjack`: idleparitet, bordsbeteenden, insatsgränser och återstart. Deras opt-in-undantag är borttagna. Minnesstore-provet bevisar koordinatoråterhämtning, inte verklig process-/Neon-beständighet.
 
-**Verifierat lokalt:**62/62 kontrakts-/HTTP-/CI-/hookprov,18/18 K07-prov,27 äldre kapabilitetssvar bytejämförda,571 testkandidater/0orphan, `git diff --check`. Node24.21.0, högst fyra arbetare. CI, oberoende granskning och driftkvitto redovisas i leveransens PR.
+**Verifierat lokalt:**62/62 kontrakts-/HTTP-/CI-/hookprov,18/18 K07-prov,27 äldre kapabilitetssvar bytejämförda,571 testkandidater/0orphan, `git diff --check`. Node24.21.0, högst fyra arbetare. PR #386 hade grön CI, dealer-regression och GitGuardian på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`, samt oberoende review utan blockerare. Renderkvittot finns ovan.
 
-**Nästa steg:** driftsätt och återläs v28 på befintlig Render `croupier-v3` före Admins nya readinesskrav. Lägg därefter till negativt gammal-runtime-prov för projekt, arkiverad policy och fryst paket före SQL samt skydd mot featurebyte inne i mutation. Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
+**Nästa steg:** leverera den granskade Admin-grinden ovan. Runtime v28 och de negativa proven är klara som delsteg. Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
 
 ## Studio-scener, materialval och responsiva kontroller — 25 oktober 2026
 
