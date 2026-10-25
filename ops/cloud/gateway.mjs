@@ -164,6 +164,9 @@ export function createCloudGateway(config, { sessionCheck = checkLabSession,
   });
   const roomTransports = new Set();
   let closing = false;
+  // Startup checks close the loopback listener before reopening this server
+  // publicly. Only a successful listen may reopen admission after that close.
+  server.on('listening', () => { closing = false; });
   const close = server.close;
   server.close = function (...args) {
     closing = true;

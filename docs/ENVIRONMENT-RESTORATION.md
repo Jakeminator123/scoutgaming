@@ -13,6 +13,25 @@ Lokal origin och push-/säkerhetspolicy använder den nya adressen.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
+## Kompletterande omstartsprov — 25 oktober sen kväll
+
+[PR #398](https://github.com/Jakeminator123/scoutgaming/pull/398), runtimekandidat `81bc2475b9f3da726a5d8e4cfe72e6850103c63a`. Vercels befintliga provapp ligger kvar på `28815e9c`; dess produktkod påverkas inte av gateway-/teständringen. Provets privata kvitton ligger i samma `arkiv/2026-10-25/migration-cloud-acceptance/` som tidigare.
+
+| Kontroll | Faktiskt utfall |
+| --- | --- |
+| Lokalt bygge och kontroller | Studio-produktionsbuild inklusive typer och 57 paketeringsspår godkänd; därefter ordinarie hook 98/98, inga skip. Separata gateway-/ingress-/shutdownprov 57 godkända, tre Linux-only skip på Windows. |
+| Render efter deploy | `dep-dbf72l5g1s2s73eng24g`: 8/8 health/version över 0/8/15/30 sekunders tomgång, alla versioner exakt `81bc2475b`. Kvitto `gateway-idle-after-deploy-1792963054428.json`. |
+| Konfigurationsfynd | Suspend/resume valde först den äldre servicebranchen. Versionsvakten stoppade provet och tjänsten. Enbart den egna stagingtjänstens branch ändrades till `codex/migration-native-material`; autodeploy är fortsatt av. Kvitto `staging-branch-pin.json`. |
+| Korrekt omstart | `dep-dbf746ss728c73ebkmfg` → `dep-dbf74k0ae00c73f11e3g`, verifierat stopp och samma `81bc2475b` före/efter. Kvitto `reviewed-gateway-restart-81bc2475b9f3da726a5d8e4cfe72e6850103c63a-1792963146508.json`. |
+| HTTP efter omstart | **Underkänt: 3/8 korrekta svar, 5 Render-HTML502.** Samma fel även med en ny HTTPS-anslutning och `Connection: close`. Header `x-render-routing=dynamic-paid-error`; korrekta versionssvar avser rätt SHA. Kvitto `gateway-idle-after-restart-1792963259009.json`. Timeoutändringen är alltså ingen verifierad lösning på 502. |
+| Sparad spelstatus | Återläsningen stannade vid första HTTP-kontrollen, före nya spelkommandon: `app-runtime/gameplay-proof.2026-10-25T21-20-02-019Z.f70a15a7.private.json`. Inget nytt saldo-/spelutfall har skapats av detta prov. J05 står öppet. |
+| Admins rumsutkast | **30/30** via vanlig Admin-inloggning: utkast, CAS, isolering och negativa writers. Ett eget syntetiskt utkast finns kvar; dess readiness anger ej redo för publicering med `studio_room_game_material_unavailable`. Andra rummet är oförändrat. Kvitto `app-runtime/room-config.c3faf732-2e4f-40c9-bc3b-9d14d0596fba.receipt.json`. Ingen publicering eller delat-bord-aktivering. |
+| Städning | Render verifierat suspenderad 21:21:28 UTC; Vercel verifierat pausad genom HTTP503/`DEPLOYMENT_PAUSED` 21:21:38. Egen lokala branch för mergad #397 borttagen efter kontroll av head/merge/ingen worktree. Privata backup-/återställningsunderlag och aktiva worktrees bevarade. |
+
+Läsande driftdiagnos fann låg CPU/RAM och inga registrerade serverfel i det avgränsade tidsfönstret. Metrics hade leveransfördröjning; detta bevisar inte en Render-rotorsak. Produktionsmotorn `croupier-v3` gav samtidigt health/version200 på `ebb6b91f` i två skrivfria kontrollanrop och ändrades inte.
+
+Ett separat kodfynd gäller gatewayens close→listen-livscykel: förkontrollen återöppnar samma server, men WS-grenen kan behålla stängningsflaggan. Det är rättat och separat kodprovat med verklig startkontroll, behörig echo, negativa authfall och shutdown; 54 godkända/tre Linux-only skip. Oberoende review utan blockerare. Detta senare delta är inte deployat i molnet och förklarar inte ovanstående health/version502.
+
 ## Molnsamprov 25 oktober kväll
 
 Detta är egna faktiska prov i den uttryckligen godkända isolerade miljön, inte produktionsacceptans. Kandidaten är `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` (mergad via #396; full CI `40225145966`). Produktionsmotorn `croupier-v3` återlästes separat som frisk på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`; den uppdaterades inte av provet.

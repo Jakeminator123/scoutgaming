@@ -170,11 +170,13 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 ## J06 — Rensa testlås och rikta CI
 
 **Etapp:** E2. **Beroenden:** J03, J04. J05:s levererade runtimekontrakt används av proven; dess återstående molnacceptans är inte ett beroende för CI-urvalets korrekthet.
+**VERIFIED på `81bc2475b9f3da726a5d8e4cfe72e6850103c63a` i PR #398:** Studio-build och 98/98 ordinarie hookprov utan skip; full CI `40234506315` med åtta grupper, SQL/omstart/HTTPS, readiness och slutgrind. Död profilflagga och Next-källsyntaxlås ersatta; root och acceptance_audit granskade ändringar/kriterier. J05:s molnfel och K04/K06:s mediegrindar ligger kvar.
+
 **Mål:** tester skyddar observerbara beteenden; CI kör rätt kontroller för ändringens risk och håller slutgrinden intakt.
 
-- [ ] Koppla varje berört test till ett aktivt beteende. Ersätt relevanta importer/CSS-/stränglås med interaktions- eller kontraktprov; radera tester för avvecklade funktioner.
+- [x] Koppla varje berört test till ett aktivt beteende. Ersätt relevanta importer/CSS-/stränglås med interaktions- eller kontraktprov; radera tester för avvecklade funktioner.
 - [x] Dokumentera den redan implementerade riskmatrisen nedan. Okända, blandade och server-/schemaändringar får inte klassas som enbart klient/prosa.
-- [ ] Bevara nödvändig full regression, typecheck, schema-readiness och säkerhetskontroll. Mät faktisk körningstid före/efter på jämförbar miljö om tidsbesparing rapporteras.
+- [x] Bevara nödvändig full regression, typecheck, schema-readiness och säkerhetskontroll. Mät faktisk körningstid före/efter på jämförbar miljö om tidsbesparing rapporteras.
 **Startfiler:** `apps/studio/client/admin/lib/workspace-tools.test.mjs`, `apps/studio/test/control-*.test.mjs`, `apps/web/test/`, `tools/ci-changes.mjs`, `precommit-checks.mjs`, `regression-group.mjs`, `.githooks/pre-commit-full`, `.github/workflows/croupier.yml`.
 **Radera:** överflödiga assertions, tester och byggjobb med dokumenterad ersättning eller bevisat pensionerat ansvar; inga auth-, ekonomi-, samtidighets- eller spelregressioner tas bort för att bli gröna.
 **Klart/verifiera:** testurvalsmatrisen täcker alla riskklasser; ett relevant fel når och fäller slutgrinden, och ett avvecklat UI krävs inte längre. Kör `test/ci-changes.mjs`, `test/precommit-checks.mjs`, `test/github-workflow.mjs` och berörda beteendetester.
