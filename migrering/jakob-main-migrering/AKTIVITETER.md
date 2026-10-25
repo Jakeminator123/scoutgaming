@@ -158,9 +158,9 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Etapp:** E2. **Beroenden:** J03, J04.
 **Mål:** en begriplig produktkedja utan överflödiga UI-processer, API-proxyer eller alternativa starter.
 
-- [ ] Rita aktuell requestkedja för varje kvarvarande API och mediaström: Vercel/Render → process → tjänst → lagring. Inventera externa och interna konsumenter före runtimebeslut.
-- [x] Aktuell Render-v3 använder `ops/cloud/Dockerfile.game`, utan Studio-/Next-bygge och med `CROUPIER_CLOUD_LAB_CHILD=0`. Tjänstinställningen och import-/filslutningen är verifierade. Återinför inte den äldre Studio-barnprocessen; Vercels Studio-tjänst behåller sina API-ansvar. Se [aktuell requestkedja](../MASTERPLAN.md#aktuell-requestkedja-och-runtimegräns).
-- [ ] Uppdatera build/start, allowlists, health/version, graceful shutdown och miljökontrakt tillsammans; behåll nödvändiga HTTP/WS- och mediafunktioner.
+- [x] Aktuell requestkedja och ansvar är dokumenterade i [masterplanen](../MASTERPLAN.md#aktuell-requestkedja-och-runtimegräns): Vercels webb/Studio och Renders enda spelprocess använder sina befintliga tjänster och Neon/Blob. Nya runtimeändringar kräver fortsatt konsumentspårning.
+- [x] Render-v3 använder `ops/cloud/Dockerfile.game` utan Studio-/Next-bygge. PR #394 avvecklade tvåprocesskedjan och kravet på `CROUPIER_CLOUD_LAB_CHILD=0`; flaggan ska inte återinföras som installationskrav. Vercels Studio-tjänst behåller sina API-ansvar.
+- [x] Samordnade kodändringar för build/start, allowlists, health/version, drain och miljökontrakt är levererade i #392/#394/#395/#396 med full CI och Docker-kvitton. Isolerad faktisk start, version, Admin-inloggning och omstart har därefter provats på `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3`; samtliga aktiva medie-/WS-flödens acceptans är fortfarande ett separat avslutskrav.
 **Startfiler:** `ops/cloud/Dockerfile.game`, `ops/cloud/start.mjs`, `config.mjs`, `gateway.mjs`, `process-group.mjs`, `vercel-ingress.mjs`, `packages/navigation/server/platform-routing.mjs`, `packages/server-transport/configuration.mjs`, `apps/web/middleware.ts`, `apps/studio/next.config.mjs`.
 **Radera:** bara verifierat ersatta processstarter, byggsteg, proxygrenar, flaggor och deras exklusiva tester/artefakter; förbrukade anslutna lokallägen ska inte återinföras.
 **Klart/verifiera:** ren container-/byggkontroll och isolerat start/stop-prov; samtliga inventerade aktiva API:er, WS, auth och media har godkänt utfall. Kör berörda `ops/cloud/test` och transporttester. Redovisa före/efter antal processer och byggvägar utan påhittad prestandavinst.
@@ -173,7 +173,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Mål:** tester skyddar observerbara beteenden; CI kör rätt kontroller för ändringens risk och håller slutgrinden intakt.
 
 - [ ] Koppla varje berört test till ett aktivt beteende. Ersätt relevanta importer/CSS-/stränglås med interaktions- eller kontraktprov; radera tester för avvecklade funktioner.
-- [ ] Föreslå smalare CI-spår med en ändringsmatris för docs, klient, tjänst, schema, delat kontrakt och okänd sökväg; okända/riskbärande ändringar får inte hamna i ett för smalt spår.
+- [x] Dokumentera den redan implementerade riskmatrisen nedan. Okända, blandade och server-/schemaändringar får inte klassas som enbart klient/prosa.
 - [ ] Bevara nödvändig full regression, typecheck, schema-readiness och säkerhetskontroll. Mät faktisk körningstid före/efter på jämförbar miljö om tidsbesparing rapporteras.
 **Startfiler:** `apps/studio/client/admin/lib/workspace-tools.test.mjs`, `apps/studio/test/control-*.test.mjs`, `apps/web/test/`, `tools/ci-changes.mjs`, `precommit-checks.mjs`, `regression-group.mjs`, `.githooks/pre-commit-full`, `.github/workflows/croupier.yml`.
 **Radera:** överflödiga assertions, tester och byggjobb med dokumenterad ersättning eller bevisat pensionerat ansvar; inga auth-, ekonomi-, samtidighets- eller spelregressioner tas bort för att bli gröna.
@@ -184,6 +184,25 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **J06-delsteg 25 oktober:** PR #386 registrerar de fyra befintliga K07-filerna i obligatoriska `gameplay/shared-blackjack` och tar bort deras orphan-undantag. 18/18 riktade prov, 0 orphan i 571 kandidater och grön CI på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`. Ingen ny testkopia eller sänkt regression; full J06/J05-acceptans kvarstår.
 
 **J06-slutgrind, 25 oktober:** en reproducerad fork-lucka rättas genom att CI kräver readinessstegets faktiska lyckade utfall när migration=true. Befintligt skydd mot produktionshemligheter till fork-kod behålls; klient-/test-/dokumentundantag består. Röd regression före rättning, därefter 40/40 CI-/workflow-/hookprov utan skip och oberoende review utan blockerare. Se [handoffens verifieringsgräns](../../docs/JOHN-HANDOFF.md#j06-slutgrinden-kräver-verklig-neon-readiness--25-oktober-2026). Detta är ett avgränsat J06-delsteg, inte full aktivitetsacceptans.
+
+### Verifierad CI-selektion och kvarvarande rensning, 25 oktober
+
+Källgranskning på `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3`: `tools/ci-changes.mjs`, `test/ci-changes.mjs` och `.github/workflows/croupier.yml`. Tabellen beskriver dagens kod, inte nya CI-spår eller en ny körning.
+
+| Ändring | Regression | Neon-readiness | Skydd |
+| --- | --- | --- | --- |
+| Enbart tillåten prosa | Dokumentationsspår | Nej | Runtime-Markdown räknas inte automatiskt som prosa |
+| Enbart namngiven klientkod/CSS/bild | Full | Nej | Hela diffen måste kvalificera; känsliga beroende-/schema-/konfigfiler undantas inte av klientplaceringen |
+| Enbart `test/` eller `apps/studio/test/` | Full | Nej | Separat undantag för testkatalogerna; andra kataloger omfattas inte automatiskt |
+| Server, API, schema, låsfil, delat kontrakt eller okänd sökväg | Full | Ja | Okänd/trasig bas eller diff faller tillbaka till strikt kontroll |
+| Blandad diff | Full om någon fil kräver det | Ja om någon fil kräver det | Bedömning av hela diffen |
+| Push till main | Full | Ja | Workergrind kan hoppas över endast med komplett verifierat pushintervall utan relevanta ändringar |
+| Manuell körning | Full | Ja | Workergrinden ingår |
+| Fork som kräver readiness | Full | Krävs för godkänd slutgrind | Inga produktionshemligheter lämnas ut; utebliven readiness får inte bli grönt |
+
+Åtta regressionsgrupper och de fyra K07-filerna är obligatoriska. Slutgrinden provar verkligt readiness-utfall; negativa prov exekverar grinden med fel, saknade resultat och otillåtna skip. #396:s fulla CI `40225145966` är grönt på samma kandidat. Detta ersätter inte liveacceptans.
+
+**Avgränsad legacyrensning i denna leverans:** `services/game/server.mjs` skapar inte längre ett lokalt Kevin-superadminkonto, höjer inte en befintlig Kevins roll och loggar inget startlösenord. Den aktiva jämförelsefixturen provisionerar redan sitt eget konto; molnbootstrap och uttrycklig gäståtkomst består. Ersättande prov verifierar tom lokal start, fungerande gästsession samt oförändrade roller/hash/salt över två starter. Bootstrap, local-comparison-fixture och game-entry-auth: 13/13, Node24.21.0, högst fyra arbetare; oberoende läsreview utan blockerare. Detta är kod-/fixturbevis, inte ett nytt Neonprov eller full J06-acceptans.
 
 ## J07 — Postgres-adapter för delat bord
 
@@ -243,6 +262,17 @@ De följande J08-delkvittona från 22 oktober är historiska. PR #334 är mergad
 - [ ] Inventera kandidater med samtliga läsare/skrivare, FK/index/views/triggers, bakgrundsjobb, backup/restore och publiceringshistorik. En tom tabell eller ett gammalt namn räcker inte.
 - [ ] Avveckla kopplingarna i kod; upprätta exakt migrationsfil och versions-/readinesskrav. Dela expansion, tolerant kod och kontraktion om tidigare release behöver fortsätta fungera.
 - [ ] Prova migration från stödd äldre version, avbrutet förlopp och återställning i isolerad Postgres. Jämför radantal/integritet och syntetiska konton, saldon, rättigheter och frysta paket före/efter.
+### Konsumentinventering på kandidaten, 25 oktober
+
+| Kontrakt | Faktiska konsumenter | Beslut |
+| --- | --- | --- |
+| `lab_sessions`, `bo_*`, `craig_*` | Native Admin/Partner-auth, överlämning till spel och återkallelse | Aktiva; behåll trots historiska namn |
+| `operator_qa_*`, `fullfile_*` | Operatörsrepetition, rättighets-/kostnadsgrindar och journal | Inte samma implementation som avvecklad P6; behåll aktiva kontrakt/historik |
+| `lissabon_profiles` | Ingen produktläsare/-skrivare funnen i services/packages/apps/ops/tools/test/workflows | Utredningskandidat, inte DROP-klar |
+| `lissabon_profile_sessions` | Kvarvarande DELETE vid lösenords-/statusbyte i `player-administration.mjs`; exklusiva testfixtures | Tolerant kodrensning behöver föregå eventuell schemakontraktion |
+
+Källsökningen verifierar inte externa jobb, driftdata eller deployade beroenden. Båda Lissabon-tabellerna ingår i checksummebunden `product-v1`, FK till spelare och backupmanifest. Ändra inte den historiska schemafilen. Nästa ordning: bekräfta stödda release-/rollbackversioner och faktiska beroenden → avveckla endast bevisat oanvända konsumenter med authprov → ny versionsbunden migration/readiness → isolerat avbrotts-/restoreprov. Ingen `CASCADE` eller produktions-DDL är beställd av inventeringen.
+
 **Startfiler:** `ops/neon-game/product-schema.sql`, `ops/neon-studio/migrations.mjs`, befintliga migrationsfiler, `packages/storage/server/postgres-store.mjs`, `tools/check-migration-readiness.mjs`, `tools/postgres-backup-restore.mjs`.
 **Radera:** bevisat förbrukade kodläsare/skrivare, överflödiga fixtures och aktuella kontraktsreferenser. Produktionsradering av tabeller verkställs först i O03 med separat mandat; redan tillämpad migrationshistorik skrivs inte om.
 **Klart/verifiera:** konsumentavveckling, migrationsfil, isolerad migration/restore och dokumenterad readiness/ordning är granskade. Kör relevanta migrations-, persistence- och restoretester. Kravet betyder inte att live-tabeller är borttagna eller att redan genomförd Neon/Blob-flytt återöppnas.

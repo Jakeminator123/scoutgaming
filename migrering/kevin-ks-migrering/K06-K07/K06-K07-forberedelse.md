@@ -1,4 +1,27 @@
-# K06/K07 – förberedelse (dokument, bara läsning) · root-worker 22 okt 2026
+# K06/K07 – aktuellt verifieringsunderlag
+
+## Gällande riktning och faktiska delbevis, 25 oktober 2026
+
+Mains `/admin` → Neon → fryst publicering → privat Blob → Render `croupier-v3` styr. Den historiska 22-oktobermatrisen längre ned är källunderlag, inte order att importera Kevin-filer, lokala SQL-register, gamla dealerbanker eller workerprotokoll. Aktuella bortval och produkttermer i [masterplanen](../../MASTERPLAN.md) har företräde. `migrering/status.json` är enda aktivitetsstatus.
+
+| Delbevis på kandidat `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` | Faktiskt utfall | Bevisgräns |
+| --- | --- | --- |
+| Ren molnbyggnad/start | Egen Vercel READY och Render live; HTTP-version återläst | Avser isolerad miljö, inte uppdaterad produktion |
+| Native Admin/Neon | 19/19 HTTP-steg: två login, tomma register, nekad obehörig/förfalskad session och fel Origin | Ingen visuell kontroll |
+| Ordinarie Admin-writer/CAS | 14/14 steg: ändrad händelseetikett, ny revision, gammal revision 409, ny inloggning, återställning genom samma writer | Inte spelkonfiguration eller publicering |
+| Faktisk Render-omstart | Verifierat suspend/resume till ny deployment; 4/4 HTTP-steg återläser exakt slutrevision/hash | Render startade utan bootstrapuppgifterna; inte full spelåteranslutning |
+| Publicering och privat Blob | 78/78: tre syntetiska media, två operatörer/rum, frysta paket, idempotens, HEAD/bytes/Range och nekad korsad rumsåtkomst | Vanlig scenpublicering; inte publicerad delad spelkonfiguration eller filmacceptans |
+| Serverägt blackjack | 71 HTTP-kontroller, fyra kommandon och en historikförd runda; återinloggning/replay/CAS | En syntetisk spelare, shared-flagga0; ingen visuell kontroll |
+| Senare omstart efter spel | Underkänd: Render live på ny deploy, men växlande korrekta svar/502 och misslyckad spelåterläsning | Ersätter inte det tidigare godkända projektåterläsningsprovet; stabil runtime/reconnect kvarstår |
+| Backup/SQL-restore | Genomförd en gång till separat Neon-databas; 75 tabeller, fyra sekvenser och 1 777 fullständiga objektnycklar matchar | Ursprunglig sorteringsmätning rättad genom skrivskyddad ommätning; ingen datarättning eller andra restore |
+| App-läsare efter restore | Identisk stabil data genom riktiga repositories/paketläsare och spelmotorns schemakontroll; TLS/skrivskydd verifierade | 1 dealerklipp, 2 lager, 2 bolag/paket/rum; 0 spelkonfigurationsutkast/config/head. Ingen full HTTP-spelreplay efter restore |
+| Resursstopp | Egen Render suspenderad, egen Vercel pausad före backup och lämnade så | Ingen produktion stoppad; separata kvarvarande kod- och manuella acceptanskrav |
+
+Privata kvitton och återställningsunderlag finns i uppgiftens ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`. Exakta resurser, kvitton och begränsningar finns i [återställningsguiden](../../../docs/ENVIRONMENT-RESTORATION.md#molnsamprov-25-oktober-kväll). Syntetiska media och mekaniska spelprov kan styrka transport, rättigheter och tillstånd; de får inte kvittera riktig dealers bild, kortkontakt eller läppsynk.
+
+**Håll återstående arbete isär:** automatiskt verifierbara lagrings-, publicerings-, spel-, omstarts- och restorekrav fortsätter oberoende av manuell kontroll. Manuellt kvarstår endast de relevanta bild-/ljud-/mobilflöden som ännu saknar godkänt kvitto. Inget krav blir VERIFIED bara för att kontrollen flyttas till ett senare tillfälle.
+
+## Historiskt underlag – 22 oktober 2026
 
 **Lästa källor (exakta SHA:er):**
 - Kevin (fryst): kevin-merge-admin `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` (läst i lokal worktree med samma träd; radnummer under `kevin/croupier-scoutgg/`).

@@ -13,6 +13,54 @@ Lokal origin och push-/säkerhetspolicy använder den nya adressen.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
+## Molnsamprov 25 oktober kväll
+
+Detta är egna faktiska prov i den uttryckligen godkända isolerade miljön, inte produktionsacceptans. Kandidaten är `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` (mergad via #396; full CI `40225145966`). Produktionsmotorn `croupier-v3` återlästes separat som frisk på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`; den uppdaterades inte av provet.
+
+| Resurs | Verifierad identitet |
+| --- | --- |
+| Vercel | `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, deployment `dpl_3xe6Zd3v3szh1tG3Z3zPRJ1Hogft`, normal domän `croupier-k06-k07-staging.vercel.app` |
+| Render | `srv-dbf61l0m7kps73ft7mk0`, `croupier-k06-k07-staging`, Frankfurt, 1 CPU/2 GB, en instans, ingen disk, manuell deploy |
+| Neon | `red-violet-36066351`, `br-plain-voice-b9yu49xi`, `ep-billowing-surf-b93x7p3c`; PG18.6, fast 0,25 CU, autosuspend300s |
+| Databaser och roll | `croupier_staging` samt separat `croupier_staging_restore`; app-roll `croupier_staging_app`, installationsroll `croupier_staging_migrator` |
+| Blob | Privat Frankfurt-store `store_7E06N1P4w9Mu1dZD`, bara eget syntetiskt material |
+
+| Prov | Faktiskt resultat | Bevisgräns |
+| --- | --- | --- |
+| Admin HTTP/auth | 19/19 | Vanlig login, serverläsning och negativa session/origin-fall |
+| Writer/CAS | 14/14, egen etikettändring återställd | Stale revision nekades, nytt login och exakt återläsning |
+| Riktig omstart | Render suspend/resume följt av 4/4 återläsningsprov | Ny deploy `dep-dbf64rgae00c73etofhg`; samma projekt efter processbyte |
+| Publicering/Blob | 78/78 | Tre syntetiska filer, två operatörer/rum, frysta paket, upload/commit-replay, bytes/hash/Range och korsad rumsåtkomst |
+| Blackjack | 71 HTTP-kontroller, fyra kommandon | Start → försäkring nej → stand → collect. 1 000 → 995 USD, noll återbetalning, en historikrad, idempotens och återinloggning. Syntetiska saldon, inga riktiga pengar |
+
+Privata kvitton finns i arbetskopians `arkiv/2026-10-25/migration-cloud-acceptance/`: `runtime-start-receipt.json`, `runtime-restart-receipt.json` och under `app-runtime/` `admin-http-proof.receipt-2026-10-25T20-09-41-539Z.json`, `admin-write-proof.2026-10-25T20-11-07-443Z.ee8c5f90.private.json`, `admin-write-restart.2026-10-25T20-12-19-785Z.03ba7721.private.json`, `cloud-publication.9dd2d3a4-da8c-4999-a677-a44a34a52a44.receipt.json`, `gameplay-proof.2026-10-25T20-19-15-604Z.2bac78e3.private.json`. De innehåller inte en publik verifieringsmiljö; hemligheter och fulla sessions-/speltillstånd stannar privata.
+
+Första dealerregistreringen fick503; oförändrat projekt kontrollerades före återförsök med samma identiteter och avsikt. Det senare kompletta provet passerade. Orsaken är inte fastställd och ska inte rapporteras som rättad. Två felaktiga antaganden i privata prov rättades till mains faktiska kontrakt (presentation `local` och Admin-timing `studio_api`), utan produktändring. Admins loginbegränsning gav därefter429; den försvagades inte.
+
+Bootstrap-lösenordet togs bort ur Render efter skapandet; omstart verifierades utan bootstrap. Deploymentskyddet i Vercel ändrades inte och ingen delnings-/bypasslänk skapades. `CROUPIER_SHARED_TABLE_ENABLED=0` och AI/taljobb är av. Syntetisk idle plus två bilder bevisar transport och bindning, aldrig läppsynk, kortkontakt eller filmkvalitet. Faktisk publicerad spelkonfiguration för delat bord saknar fortfarande native materialresolver; se masterplan/K05.
+
+### Omstart efter spel, backup och återställning
+
+Den andra processomstarten, efter den sparade blackjackrundan, blev **underkänd**. Render rapporterade ny deployment `dep-dbf68so473hc73c0f8m0` som live på samma kandidat, men HTTP växlade mellan korrekta health/version-svar och Renders HTML502. Spelåterläsningen avbröts efter en kontroll och noll kommandon. Oberoende kontroll såg samma växling med två HTTP-klienter; exakt orsak är inte fastställd. Detta bevisar varken förlorad speldata eller en stabil återanslutning. Första omstartens 4/4 projektåterläsningar och senare SQL-paritet gäller sina egna avgränsningar.
+
+Alla appskrivare stoppades före backup: Render återlästes `suspended` 20:24:32 UTC och Vercels normala domän svarade `503 / DEPLOYMENT_PAUSED` 20:26:36 UTC. Båda lämnades i detta tillstånd. Inga produktionsresurser stoppades. Kvitton: `gameplay-restart-control.json`, `post-workload-drain.json` och `app-runtime/gameplay-proof.2026-10-25T20-24-01-541Z.3ae6af1f.private.json`.
+
+| Återställningssteg | Faktiskt resultat | Avgränsning |
+| --- | --- | --- |
+| Backup efter arbetslast | PostgreSQL18.6 custom-dump, 205 884 byte; SHA256 `9f2db199f8b2bc8f5c059361e06ea97928895d6b06364162576290b1d3c639b1` | 75 tabeller, fyra sekvenser och tre godkända scheman; källa oförändrad under kontrollen |
+| Granskad restore | Genomförd en gång till `croupier_staging_restore`; inga restorefel | Målet är nu befolkat, inte en tom reserv. Kör inte om initiering/restore blint |
+| SQL-paritet | 1 777 unika fullständiga objektnycklar/poster matchar exakt; tabeller, sekvenser och källmetadata oförändrade | Identisk SHA256 `8b708fbe48636e60024d98332d09d0840fa23391f1a6e2ebba03be7fa08a4d5a` |
+| Riktiga applikationsläsare | Samma stabila avkodade data via Studio-repository, operatörs-/paketläsare samt spelmotorns schemakontroll | Ett dealerklipp, två lager, två bolag, två paket, två rum; inga spelkonfigurationsutkast, frysta konfigurationer eller huvuden |
+| Åtkomst under läsprovet | App-roll, skrivskyddade sessioner, verifierad TLS1.3/CA/serveridentitet; ledger-skrivning saknar behörighet | Ingen ny HTTP-applikation kopplades till restoredatabasen; full spelreplay efter restore är inte utförd |
+
+Originalets sista hashjämförelse underkändes på ett **mätfel**: SQL-UNION ärvde PostgreSQL-typen `name`, vilket trunkerade långa objektetiketter till 63 byte och gav instabil ordning. Originalfilerna hade samma radmultiset. En separat skrivskyddad ommätning med `text`, full C-sortering och verifierat unika nycklar passerade. OriginalSQL, misslyckat kvitto och dump bevarades; ingen andra restore eller datarättning utfördes.
+
+App-läsprovets TLS-grind rättades också: Neons backendfält `pg_stat_ssl` var false trots verifierad TLS till klienten. Grinden kontrollerar nu faktisk krypterad `TLSSocket`, CA-godkännande och serveridentitet; backendvärdet redovisas separat. Nio negativa/positiva offlineprov passerade. Ingen TLS-verifiering stängdes av.
+
+Privata slutkvitton: `post-workload-20261025-202619-52bbd0e4/backup-receipt.json`, samma katalogs `text-parity-correction/full-text-parity-receipt.json` och `app-runtime/restore-readers.77c9b7bf-00d0-4080-b010-cfbbd6791348.receipt.json`. App-läsarnas gemensamma datahash är `c8b5e3360b8a45a84fbb36a98e4848f19e55188ee3c8da2b606a1f443b60e619`.
+
+**Kvar:** stabil omstart/HTTP-återanslutning, native bindning av exakt material till delad spelkonfiguration, samtidighetsprov samt separat bild-/ljud-/mobilacceptans. SQL-restore och app-läsarna ska inte utföras på nytt utan ändrat underlag. Säkerhetsläsning på main `f098486f`: verifierad källbindning, komplett incidenttäckning för källan, 0 öppna/23 ignorerade och aktiv monitorering; historik `too_large`, platsmetadata partiell och aktuell checksuite ännu inte slutkvitterad. Det är inte fullständig historisk säkerhetsklarering.
+
 ## Återställ den samlade produkten
 
 Vercelproduktion är `scoutgaming`, projekt
@@ -122,7 +170,7 @@ Offlineinventeringen visar verkliga ägare och endast approllen som mottagare av
 objektgrants; inga security-definer-funktioner. Arkiv, SQL och kvitton är privata
 med ACL för aktuell användare/SYSTEM. Första kommandoförsöket stannade före
 anslutning på ett felaktigt PowerShell-filargument; korrekt argumentlista gav
-godkänd dump och inventering. Restoremålet är oförändrat tomt.
+godkänd dump och inventering. Restoremålet var fortfarande tomt vid detta basbackupsteg; kvällens senare restore ovan har befolkat det.
 
 Schemakontrollens bas var main `4abbf1985e183c145c5a7772fe02631c6ee9b274`; det privata installationsunderlaget frystes på `5310a5f`. Alla 23 granskade schemakällor matchade före faktisk apply. Stödet för tom katalog levererades genom #391 och de två konfigurationshindren genom #395. Tabellen nedan beskriver den granskade arbetsordningen; aktuellt utförande och det senare utökade mandatet finns i kvittot ovan. Tidigare stoppad QA återöppnas inte.
 
@@ -131,14 +179,14 @@ Schemakontrollens bas var main `4abbf1985e183c145c5a7772fe02631c6ee9b274`; det p
 | 1. Isolerat databasmål | Separat `croupier_staging` och dedikerad migrationsägare i projektet ovan; separat approll med nödvändiga DML-/sekvensrättigheter | Namn, roller och rättigheter beslutas före CREATE/GRANT. Verifiera exakt projekt, branch, endpoint, databas och ägare; kopiera inga produktionsroller |
 | 2. Spelschema | Aktuella `ops/neon-game/product-schema.sql` med verklig `product-v1`-checksumma i ledgern, sedan 006/007; befintliga `tools/prepare-shared-schema.mjs` för 008→009→010 | Frys SHA/hashes, granska genererad SQL och kör med rätt mål/ägare. Verktyget kontrollerar ägare, checksumma och tomma shared-objekt i transaktion. Inga blinda omförsök |
 | 3. Studioschema | `planStudioMigrations` → målgranskning → `applyStudioMigrations` i `ops/neon-studio/migrations.mjs`; CLI `tools/check-migration-readiness.mjs --apply` | Kräver godkänd schemaändring och `CROUPIER_MIGRATION_CONFIRM=apply-pending` endast i körningen. Återläs samtliga faktiska tillämpade/pending/optional-versioner; ingen förfalskad ledger |
-| 4. Tom policy och katalog | `createEmptyProject()` och befintlig repository-initialisering; tom administration. Scoped runtimekatalog krävs också före Admin-start | **Installerat och återläst enligt kvittot ovan:** `prepareEmptyRuntimeMediaImport({scope})` i `ops/neon-studio/runtime-media-import.mjs` ger ett exakt versionsbundet underlag till befintlig plan → mål-/hashgranskning → apply med lås, CAS och audit. Kör inte init igen mot fylld katalog. Den ännu ostartade appkedjan måste använda läsarkompatibel kod; äldre läsare avvisar formatet |
+| 4. Tom policy och katalog | `createEmptyProject()` och befintlig repository-initialisering; tom administration. Scoped runtimekatalog krävs också före Admin-start | **Installerat och återläst enligt kvittot ovan:** `prepareEmptyRuntimeMediaImport({scope})` i `ops/neon-studio/runtime-media-import.mjs` ger ett exakt versionsbundet underlag till befintlig plan → mål-/hashgranskning → apply med lås, CAS och audit. Kör inte init igen mot fylld katalog. Vid installationssteget behövde den ännu ostartade appkedjan läsarkompatibel kod; äldre läsare avvisar formatet |
 | 5. Aktuell appkedja | Samlad HTTPS-frontend/Admin från samma repo och spelmotor från `ops/cloud/Dockerfile.game`, gemensamt isolerat scope, nya ingress-/sessionnycklar och eget syntetiskt adminkonto via ordinarie bootstrap | Egna appar är uttryckligen godkända inom resursgränsen ovan. Återläs separat host, Neon och Blob före start. Starta Render före första Admin-anrop: ordinarie bootstrap skapar JWT-nyckel och admin med appens DML-rättigheter. Ingen produktionsnyckelkopiering eller gammal kombinerad Studio/Render-start |
 | 6. Syntetiskt testinnehåll | Efter appstart: befintliga Admin-writers för bolag/dealer/rum/media/publicering, separat privat Blob | Använd inte historiska `createSeedProject()`, produktionsutkast eller direkt SQL som publiceringsväg. Syntetiska klipp kan bevisa transport/identitet, inte PAOWs eller Dragans visuella acceptans |
 | 7. Faktisk acceptans | Admin → sparning/återläsning → publicering → fryst paket/config → två klienter/spel → processomstart → kompatibel återställning | Belägg rättigheter/CAS, exakt en ekonomisk effekt, rumsisolering och versionsbindning. Behåll loopback-harnessens skydd. `test/postgres-persistence.mjs` tillåter endast `croupier_game_qa`, inte det föreslagna målet; rikta inte om genom att försvaga vakten |
 
 Befintlig offlineförberedelse kördes med `prepare-shared-schema.mjs --database croupier_staging --role croupier_staging_migrator`. Alla fyra låsta källhashar matchade det granskade underlaget. Genererad SQL har SHA-256 `fdd27174ac3d9d1cb5316abbc54f6926e3fab48ef71c9e00c87402d50be0d8ed` och ligger privat som `shared-schema-review.sql/json`. Efter det utökade godkännandet installerades exakt detta 008→009→010-underlag med mål-/ägarvakter och återlästa objekt; ingen ny apply behövs.
 
-Inget nytt parallellt produktregister eller körsystem behövs. Den uttryckliga tomma katalogen och befintliga Admin-/publiceringskontrakt är kodprovade från `createEmptyProject()` med en ny syntetisk dealer, tom administration och syntetisk uppladdning. Den faktiska Neon-installationen och appbehörigheten är nu också verifierade. Appdrift, Admin→spel, Blob-transport och verklig restore återstår; provider-/transaktionsfixturer bevisar inte dessa eller visuell uppspelning. Officiell status är fortsatt 45 % (9/20); se [masterplanen](../migrering/MASTERPLAN.md#prioriterad-väg-till-910). Privata kvitton ligger i uppgiftens ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga anslutningshemligheter ingår.
+Inget nytt parallellt produktregister eller körsystem behövs. Den uttryckliga tomma katalogen och befintliga Admin-/publiceringskontrakt är kodprovade från `createEmptyProject()` med en ny syntetisk dealer, tom administration och syntetisk uppladdning. Den faktiska Neon-installationen och appbehörigheten är nu också verifierade. Vid detta installationskvitto återstod appdrift, Admin→spel, Blob-transport och verklig restore; kvällens utförda delprov redovisas ovan. provider-/transaktionsfixturer bevisar inte dessa eller visuell uppspelning. Officiell status är fortsatt 45 % (9/20); se [masterplanen](../migrering/MASTERPLAN.md#prioriterad-väg-till-910). Privata kvitton ligger i uppgiftens ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga anslutningshemligheter ingår.
 
 Historisk plan från 22 oktober: målidentitet, inställningar och tomma syntetiska data skulle verifieras före anslutning till separat `croupier_staging` med dedikerad migrationsägare. Tabellen nedan dokumenterar då planerade Gitblobbar; den är **inte en instruktion att applicera gamla schemafiler på dagens miljö**. Vid återupptaget arbete måste aktuellt schema, rätt ordning och redan tillämpade versioner jämföras med den frysta kandidaten. Ingen anslutningssträng skrivs i Git eller chatten.
 
