@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
-import { createServer, request as httpRequest } from 'node:http';
+import { Agent, createServer, request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -433,6 +433,54 @@ test('public gateway rejects misdirected requests before contacting a child', as
   } finally {
     await new Promise((resolve, reject) => gateway.close(error => error ? reject(error) : resolve()));
   }
+});
+
+test('gateway preserves an idle proxy connection beyond the Node default without widening ingress',
+  { timeout: 15000 }, async t => {
+  const origin = 'https://preview.example.test', transportOrigin = 'https://isolated.onrender.com';
+  const ingress = { publicOrigin:origin, transportOrigin, secret:'fixture-private-ingress-'.repeat(3) };
+  const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
+    labOrigin:origin, vercelIngress:ingress };
+  const gateway = createCloudGateway(config);
+  // Model a proxy whose own idle lifetime outlasts Node's former 5s + 1s buffer.
+  // Otherwise the client's Keep-Alive hint handling could hide a server close.
+  const agent = new class extends Agent {
+    keepSocketAlive(socket) {
+      const keep = super.keepSocketAlive(socket);
+      socket.setTimeout(0);
+      return keep;
+    }
+  }({ keepAlive:true, maxSockets:1 });
+  t.after(async () => {
+    agent.destroy(); gateway.closeAllConnections();
+    await new Promise((resolve, reject) => gateway.close(error => error ? reject(error) : resolve()));
+  });
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  const get = (path='/__cloud/health', host=new URL(transportOrigin).host) => new Promise((resolve, reject) => {
+    const request = httpRequest({ hostname:'127.0.0.1', port:gateway.address().port, path,
+      agent, headers:{ host } }, response => {
+      let body = '';
+      response.on('data', chunk => { body += chunk; });
+      response.on('error', reject);
+      response.on('end', () => resolve({ status:response.statusCode, body, socket:request.socket,
+        reused:request.reusedSocket, keepAlive:response.headers['keep-alive'] }));
+    });
+    request.on('error', reject);
+    request.setTimeout(2000, () => request.destroy(Error('gateway request timed out')));
+    request.end();
+  });
+  const first = await get();
+  assert.equal(first.status, 200); assert.equal(first.body, 'ok');
+  await new Promise(resolve => setTimeout(resolve, 6500));
+  assert.equal(first.socket.destroyed, false, 'gateway must retain the idle proxy connection');
+  const second = await get();
+  assert.equal(second.status, 200); assert.equal(second.body, 'ok');
+  assert.equal(second.reused, true); assert.equal(second.socket, first.socket);
+  assert.match(first.keepAlive, /(?:^|,\s*)timeout=120(?:,|$)/);
+  assert.equal((await get('/__cloud/health', 'evil.example.test')).status, 421);
+  assert.equal((await get('/api/table')).status, 421, 'persistent transport still requires signed ingress');
+  assert.equal(gateway.headersTimeout, 120000, 'header parsing retains a finite deadline');
+  assert.equal(gateway.requestTimeout, 0, 'existing streaming request policy is unchanged');
 });
 
 test('retired provider and playback routes cannot bypass authenticated Vercel ingress', async t => {

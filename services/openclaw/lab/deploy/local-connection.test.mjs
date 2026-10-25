@@ -214,7 +214,6 @@ test('Lissabon can share its saved project while keeping QA players and browser 
     assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, undefined);
     assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
     assert.equal(specs.lab.dataDir, studioDataDir);
-    assert.equal(specs.product.env.CROUPIER_LISSABON_PROFILES, '1');
     assert.equal(specs.product.env.HOST, '127.0.0.1');
     assert.equal(specs.lab.env.HOST, '127.0.0.1');
     assert.equal(specs.lab.args[specs.lab.args.indexOf('--hostname') + 1], '127.0.0.1');

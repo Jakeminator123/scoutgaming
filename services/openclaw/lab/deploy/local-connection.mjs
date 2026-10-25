@@ -406,7 +406,6 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_DATA_DIR: productData, DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
         CROUPIER_STREAM_LANE: streamLane,
-        CROUPIER_LISSABON_PROFILES: persistentProfiles ? '1' : '',
         CROUPIER_ASTRID_CAMERA: astridCamera ? '1' : '',
         CROUPIER_ASTRID_TRANSLATION_KEY: translationKey,
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,

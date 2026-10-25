@@ -358,10 +358,26 @@ test('native Studio routes use the Vercel data writer while game commands stay o
 });
 
 test('platform tracing keeps player documents without retired BO HTML', async () => {
-  const source = await readFile(new URL('../next.config.mjs', import.meta.url), 'utf8');
-  assert.match(source, /'\/game': \['\.\/runtime-ui\/game\.html'\]/);
-  assert.match(source, /'\/player-login': \['\.\/runtime-ui\/blackjack\.html'\]/);
-  assert.doesNotMatch(source, /runtime-ui\/bo|\/bo\/\[\[\.\.\.path\]\]|'\/v2'|'\/blackjack'|'\/play\/blackjack'|onrender\.com|scoutgaming\.tech|destination: '\/control/);
+  const {default:nextConfig} = await import('../next.config.mjs');
+  const tracing = nextConfig.outputFileTracingIncludes;
+  for (const [route, document] of [['/game','./runtime-ui/game.html'], ['/player-login','./runtime-ui/blackjack.html']]) {
+    assert.ok(tracing[route]?.includes(document), `${route} must package its player document`);
+  }
+  // Middleware owns canonical launch and retirement; Next must not resurrect
+  // a second document or redirect path for these entries.
+  const middlewareEntries = new Set(['/v2', '/blackjack', '/play/blackjack']);
+  for (const [route, files] of Object.entries(tracing)) {
+    assert.ok(!middlewareEntries.has(route), `${route} belongs to middleware`);
+    assert.doesNotMatch(route, /^\/bo(?:\/|$)/);
+    for (const file of files) assert.doesNotMatch(file, /(?:^|[/\\])runtime-ui[/\\]bo(?:[/\\.]|$)/);
+  }
+  for (const redirect of await nextConfig.redirects()) {
+    assert.ok(!middlewareEntries.has(redirect.source), `${redirect.source} belongs to middleware`);
+    assert.doesNotMatch(redirect.source, /^\/bo(?:\/|$)/);
+    const destination = new URL(redirect.destination, 'https://frontend.example.test');
+    assert.equal(destination.origin, 'https://frontend.example.test', 'bookmarks must stay on the current frontend');
+    assert.doesNotMatch(destination.pathname, /^\/control(?:\/|$)/);
+  }
 });
 
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {

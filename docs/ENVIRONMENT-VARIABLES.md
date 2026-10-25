@@ -394,7 +394,7 @@ bedömda separat från aktiva runtime-läsare.
 | `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och apps/studio/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
 | `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_VERCEL_UI`, `CROUPIER_VERCEL_UNIFIED_UI` | Next-konfiguration, middleware och serverrouting; base path/native-admin även bygge | Behåll; ändring kan kräva nytt bygge. |
 | `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
-| `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | services/game/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. `CROUPIER_LISSABON_PROFILES` läses inte längre av spelservern (22 oktober 2026); ops/cloud och local-connection städas av J05. |
+| `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | services/game/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. `CROUPIER_LISSABON_PROFILES` är pensionerad: varken spelservern eller den lokala fixturstarten använder den. Befintligt datakatalogval och `CROUPIER_STREAM_LANE` består; molnstartens negativa skydd och registrets blocked-post behålls. |
 | `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_DEALER_SPEECH_PROFILES`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_PREVIEW`, `CROUPIER_GENERATED_SPEECH_STREAMING` | ops/cloud/config.mjs och services/game/server.mjs | Behåll; förekomst är inte aktivering/acceptans av ny läppsynk. |
 | `CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY` | services/game/server.mjs, ops/cloud/config.mjs, local-connection.mjs | Behåll befintlig Astrid-väg. |
 | `CARTESIA_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY` | ops/cloud/config.mjs och explicit providerverktyg; Cartesia även Studio | Behåll kompletta Scoutgaming-par; återinför inte borttagna Vercel-kopior. |
@@ -773,8 +773,10 @@ Kvar med avsikt: tomma `CARTESIA_API_KEY` och `RUNPOD_API_KEY` (blockerade för
 `CROUPIER_MEDIA_STORE_ID` (managed, hör till Blob-kopplingen; läses inte av
 koden). Den då kvarvarande `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` togs bort
 13 oktober enligt nedan. Även `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`
-och `CROUPIER_LISSABON_PROFILES` = `0` i Production (läses av talvägen;
-Render-motorn vägrar starta om någon är `1`, `ops/cloud/config.mjs`). Inga
+och `CROUPIER_LISSABON_PROFILES` = `0` i Production. Det är daterade
+konfigurationsvärden; profilflaggan är numera pensionerad och läses inte av
+spelservern. Render-motorn vägrar fortfarande starta om någon av dessa flaggor
+är `1` (`ops/cloud/config.mjs`). Inga
 formatfel (radbrytningar, citattecken, blanksteg) hittades i läsbara variabler.
 Sensitive-värdens form går inte att läsa tillbaka och är okontrollerad.
 

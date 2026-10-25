@@ -153,23 +153,23 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 - [x] Sessions→rum/publicering-accessport i PR336/65118: verklig auth/scoped repository/Fetch/channel.prepare, exakt paket/config/materialkontroll och explicit partnerproveniens. SQL-minnesklient,11/11 access/40/40 samkörning/65/65 normalhook,0skip,oberoende review; ingen ny PG-/listener-/full Partneracceptans.
 - [x] Delsteg PR336/d008: montera access/K04-mottagare/scheduler i appkomposition med exklusiv dispatcher, skrivfri hälsa, schemaförestart och SQL/authdrain före poolclose. Flaggan är osatt;78/78 samkörning och84/84 normalhook överlappar. Ingen ny egen PG-/publik listeneracceptans.
 - [x] Koppla publik gateway/relay/Vercelrumsväg och rootklientens replay/presentation, isolerat verifierat i PR336/8504; detta är en delkontroll.
-- [ ] Verifiera samlad produktkedja med faktiska paket/media och K04acceptans före aktivering; produktionsschema och separat mandat kvarstår.
+- [ ] Verifiera den förenklade driftkedjan med isolerade paket/media, HTTP-omstart och sparad spelstatus. K04/K06:s godkända film-/talmaterial och produktionsmandat kvarstår som separata aktiveringsgrindar.
 
 **Etapp:** E2. **Beroenden:** J03, J04.
 **Mål:** en begriplig produktkedja utan överflödiga UI-processer, API-proxyer eller alternativa starter.
 
 - [x] Aktuell requestkedja och ansvar är dokumenterade i [masterplanen](../MASTERPLAN.md#aktuell-requestkedja-och-runtimegräns): Vercels webb/Studio och Renders enda spelprocess använder sina befintliga tjänster och Neon/Blob. Nya runtimeändringar kräver fortsatt konsumentspårning.
 - [x] Render-v3 använder `ops/cloud/Dockerfile.game` utan Studio-/Next-bygge. PR #394 avvecklade tvåprocesskedjan och kravet på `CROUPIER_CLOUD_LAB_CHILD=0`; flaggan ska inte återinföras som installationskrav. Vercels Studio-tjänst behåller sina API-ansvar.
-- [x] Samordnade kodändringar för build/start, allowlists, health/version, drain och miljökontrakt är levererade i #392/#394/#395/#396 med full CI och Docker-kvitton. Isolerad faktisk start, version, Admin-inloggning och omstart har därefter provats på `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3`; samtliga aktiva medie-/WS-flödens acceptans är fortfarande ett separat avslutskrav.
+- [x] Samordnade kodändringar för build/start, allowlists, health/version, drain och miljökontrakt är levererade i #392/#394/#395/#396 med full CI och Docker-kvitton. Isolerad faktisk start, version, Admin-inloggning och omstart har därefter provats på `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3`; berörda transporters negativa API-/WS-/auth-/mediekontrakt ska fortsatt passera. Full film-/tal- och delat-bord-acceptans följer K04/K06/K07.
 **Startfiler:** `ops/cloud/Dockerfile.game`, `ops/cloud/start.mjs`, `config.mjs`, `gateway.mjs`, `process-group.mjs`, `vercel-ingress.mjs`, `packages/navigation/server/platform-routing.mjs`, `packages/server-transport/configuration.mjs`, `apps/web/middleware.ts`, `apps/studio/next.config.mjs`.
 **Radera:** bara verifierat ersatta processstarter, byggsteg, proxygrenar, flaggor och deras exklusiva tester/artefakter; förbrukade anslutna lokallägen ska inte återinföras.
-**Klart/verifiera:** ren container-/byggkontroll och isolerat start/stop-prov; samtliga inventerade aktiva API:er, WS, auth och media har godkänt utfall. Kör berörda `ops/cloud/test` och transporttester. Redovisa före/efter antal processer och byggvägar utan påhittad prestandavinst.
+**Klart/verifiera:** ren container-/byggkontroll, isolerat start/stop/omstartsprov och återläst sparad spelstatus; inventerade berörda API-, WS-, auth- och medietransportkontrakt passerar sina positiva och negativa prov. Redovisa vilka som körts över verklig HTTPS respektive som kontraktprov. Full visuell/talmässig acceptans och delat bord tillhör K04/K06/K07 och öppnas inte av J05. Redovisa före/efter antal processer och byggvägar utan påhittad prestandavinst.
 **Risk:** Studio har serveransvar även när det äldre UI:t är borta; ett grönt frontendbygge bevisar inte att dessa konsumenter fungerar.
 **Bevis till status.json[J05]:** `head=<SHA>; API-karta=<referens>; build/start/stop=<miljö/resultat>; PR=<URL>; review=<granskare>`.
 
 ## J06 — Rensa testlås och rikta CI
 
-**Etapp:** E2. **Beroenden:** J03, J04, J05.
+**Etapp:** E2. **Beroenden:** J03, J04. J05:s levererade runtimekontrakt används av proven; dess återstående molnacceptans är inte ett beroende för CI-urvalets korrekthet.
 **Mål:** tester skyddar observerbara beteenden; CI kör rätt kontroller för ändringens risk och håller slutgrinden intakt.
 
 - [ ] Koppla varje berört test till ett aktivt beteende. Ersätt relevanta importer/CSS-/stränglås med interaktions- eller kontraktprov; radera tester för avvecklade funktioner.
@@ -180,6 +180,8 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Klart/verifiera:** testurvalsmatrisen täcker alla riskklasser; ett relevant fel når och fäller slutgrinden, och ett avvecklat UI krävs inte längre. Kör `test/ci-changes.mjs`, `test/precommit-checks.mjs`, `test/github-workflow.mjs` och berörda beteendetester.
 **Risk:** en ändringsklassificerare kan missa indirekta kontrakt- eller schemaändringar; testa även blandade diffar och saknad/okänd bas.
 **Bevis till status.json[J06]:** `head=<SHA>; urval=<matris>; test=<kommando/resultat>; mätning=<faktisk eller ej utförd>; PR=<URL>; review=<granskare>`.
+
+**Avgränsning 25 oktober sen kväll:** J05 bedömer förenklad drift och J06 de berörda testernas beteende samt CI-slutgrinden. Kravet på full film-/talacceptans duplicerade K04/K06; det har flyttats tillbaka till dessa aktiveringsgrindar. Detta tillåter inte shared-table-aktivering eller publicering av omätt material. J06 är inte en obegränsad beställning att skriva om hela repots tester. Kända syntaxlås i Next-tracing och död profilflagga rättas; granskade Control-tester för aktiva omdirigeringar och behörighet behålls. Ingen tidsprestandavinst påstås.
 
 **J06-delsteg 25 oktober:** PR #386 registrerar de fyra befintliga K07-filerna i obligatoriska `gameplay/shared-blackjack` och tar bort deras orphan-undantag. 18/18 riktade prov, 0 orphan i 571 kandidater och grön CI på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`. Ingen ny testkopia eller sänkt regression; full J06/J05-acceptans kvarstår.
 
