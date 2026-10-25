@@ -56,10 +56,8 @@ async function preflight(env) {
   return config;
 }
 
-// Ordinary production start forwards only the allowlisted finite game
-// diagnostics; the QA runner supplies its own transform and allowlist.
-export async function main(args = process.argv.slice(2), env = process.env,
-  { transformChildSpecifications = withChildDiagnostics } = {}) {
+// Production start forwards only the allowlisted finite game diagnostics.
+export async function main(args = process.argv.slice(2), env = process.env) {
   if (args.length !== 1 || !['--check', '--start'].includes(args[0])) {
     throw new Error('Usage: node ops/cloud/start.mjs --check|--start');
   }
@@ -84,7 +82,7 @@ export async function main(args = process.argv.slice(2), env = process.env,
       return 0;
     }
     for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
-    children = await startChildren(transformChildSpecifications(childSpecifications(config, env)), { signal: abort.signal });
+    children = await startChildren(withChildDiagnostics(childSpecifications(config, env)), { signal: abort.signal });
     gateway = createCloudGateway(config, { vercelIngress: config.vercelIngress, renderGitCommit: env.RENDER_GIT_COMMIT });
     await openCheckedGateway(gateway, config, { signal: abort.signal });
     console.log('Cloud pilot listening after local access checks; public deployment acceptance remains outstanding.');
