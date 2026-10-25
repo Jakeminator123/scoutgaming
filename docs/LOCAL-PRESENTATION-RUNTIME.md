@@ -1,5 +1,32 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## PAOWs 24 viloklipp
+
+`apps/studio/lib/paow-idle-source-f664c54d.json` fryser Kevins aktiva urval på
+`kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`: 13 tidigare original och 11 nya,
+alla 39 bilder vid 24 fps (1 625 ms). De tio bortvalda äldre tagningarna ingår inte.
+Admins inkoppling matchar exakt SHA-256, byteantal, PAOW-ägare och idleklassificering;
+saknade, avvisade, borttagna eller dubbla original stoppar inkopplingen. Befintliga
+UUID återanvänds. Ordinarie utkastssparning och publicering fryser policy och alla
+24 medieposter med befintliga revisionsvillkor; ingen DDL krävs.
+
+Valfri `rotation.clips` beskriver varje original med `from/to` (`rest/clasped`),
+fas (`any/bets/decide`), vikt och lugn/huvudrörelse. Klipp spelas hela till faktisk
+slutbild. Insatsfasen kan gå vila → knäppta händer → vila; beslutsfasen använder
+lugna viloklipp och platt-händer-klippen. Fasbyte eller färdigt tal tvingar utgång
+från knäppta händer och därefter standardklippet för talets bildbevis. Kevins
+fasvikter och fyra klipps avstånd mellan huvudrörelser används; huvudklippen kan
+förekomma mellan insatser, även utan tal. Oförändrad serverkedja använder sitt
+befintliga Kevin-urval; denna policy gäller den publicerade lokala filmspelaren.
+
+Avbrott för serverägda 2D-kort eller osynlig flik återupptar samma klipp och
+senast presenterade medietid. Försenade kvitton får inte flytta posen. En delvis
+visad misslyckad film hålls kvar; ingen osäker poseövergång gissas. En slutförd
+verifierad annan film kan återställa viloposen genom befintligt återgångskontrakt.
+Admins minutprov använder samma valfunktion. Övriga dealers fortsätter med sina
+befintliga idlepolicys. Återställning i Admin: **Återgå till enbart basklippet**,
+spara och publicera med ordinarie revisionskontroller; originalmedia behålls.
+
 ## Tal och villkorade Idle-beteenden
 
 Admin/intake exponerar inga `turn.player`-/`settle.*`-videofack. Dessa ID:n

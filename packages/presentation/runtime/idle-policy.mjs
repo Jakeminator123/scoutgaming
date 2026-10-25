@@ -1,9 +1,10 @@
 // Both canonical and /presentation-runtime/ browser URLs resolve these package paths.
 import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import { validateIdleRotation, chooseRotationClip } from './idle-rotation.mjs';
 import seedPolicy from '../../../packages/presentation/contracts/policies/idle-policy.seed.json' with { type: 'json' };
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
-const USES = new Set(['manual', 'automatic', 'rules', 'openclaw']);
+const USES = new Set(['manual', 'automatic', 'rules', 'openclaw', 'rotation']);
 const family = value => typeof value === 'string' && value.split('/').length === 3 && value.split('/')[1] === 'idle.ready' && value.split('/')[2] === 'ready' && isDealerId(value.split('/')[0]);
 export const MAX_IDLE_VARIANTS = 30;
 const clone = value => structuredClone(value);
@@ -22,7 +23,7 @@ function exact(value, fields, at, optional = []) {
 function integer(value, min, max, at) { if (!Number.isInteger(value) || value < min || value > max) fail(`${at} ska vara ett heltal ${min}–${max}`); }
 
 export function validateIdlePolicy(value) {
-  exact(value, ['schemaVersion', 'familyId', 'base', 'variants'], 'idlePolicy');
+  exact(value, ['schemaVersion', 'familyId', 'base', 'variants'], 'idlePolicy', ['rotation']);
   if (value.schemaVersion !== 1 || !family(value.familyId)) fail('version eller mediefamilj stöds inte');
   if (!Array.isArray(value.base) || value.base.length < 1 || value.base.length > 4) fail('base ska innehålla 1–4 grundloopar');
   if (!Array.isArray(value.variants) || value.variants.length > MAX_IDLE_VARIANTS) fail(`variants får innehålla högst ${MAX_IDLE_VARIANTS} engångsklipp`);
@@ -50,6 +51,8 @@ export function validateIdlePolicy(value) {
       if (item.automatic.jitterMs >= item.automatic.averageEveryMs) fail(`variants[${index}] jitter måste vara kortare än medelintervallet`);
     } else if (item.automatic !== null) fail(`variants[${index}].automatic ska vara null när användningen inte är automatisk`);
   }
+  if (value.rotation) { try { validateIdleRotation(value.rotation, value); } catch (error) { fail(error.message); } }
+  else if (Object.hasOwn(value, 'rotation') || value.variants.some(row => row.use === 'rotation')) fail('vilosekvens saknas');
   return value;
 }
 
@@ -87,10 +90,23 @@ function nextDue(item, from, random) {
   return from + item.automatic.averageEveryMs + Math.round((random() * 2 - 1) * jitter);
 }
 
-export function createIdlePreviewPlan(input, { seed = 1, durationMs = 60000 } = {}) {
+export function createIdlePreviewPlan(input, { seed = 1, durationMs = 60000, phase = 'bets' } = {}) {
   const policy = validateIdlePolicy(input);
   integer(seed, 0, 0xffffffff, 'preview.seed'); integer(durationMs, 1000, 600000, 'preview.durationMs');
   const random = mulberry32(seed);
+  if (policy.rotation) {
+    const durations = new Map([...policy.base, ...policy.variants].map(row => [row.videoId, row.durationMs]));
+    const plan = []; let at = 0, pose = 'rest', last = null, sinceHead = Infinity;
+    while (at < durationMs && plan.length < 1000) {
+      const row = chooseRotationClip(policy.rotation.clips, { pose, phase, last, sinceHead,
+        speechReady: durationMs - at < 4000, primaryId: policy.base[0].videoId, random });
+      if (!row) break;
+      const endMs = at + durations.get(row.videoId);
+      plan.push({ kind: row.videoId === policy.base[0].videoId ? 'base' : 'variant', videoId: row.videoId, startMs: at, endMs, reason: 'pose-rotation' });
+      at = endMs; pose = row.to; last = row.videoId; sinceHead = row.head ? 0 : sinceHead + 1;
+    }
+    return plan;
+  }
   const automatic = policy.variants.filter(item => item.use === 'automatic');
   const state = new Map(automatic.map(item => [item.videoId, { next: nextDue(item, 0, random), last: -Infinity, starts: [] }]));
   const plan = [];

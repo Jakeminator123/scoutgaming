@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clipLabel } from '../lib/clip-label.mjs';
 import {readIdleVideoDuration} from '../lib/idle-video-duration.mjs';
+import {preparePaowIdleRotation} from '../lib/paow-idle-rotation.mjs';
 import { createIdlePreviewPlan, idleShareEstimate, MAX_IDLE_VARIANTS, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../../../packages/presentation/runtime/idle-policy.mjs';
 import type { VideoEntry, VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
 import { PresentationFrame } from './presentation-frame';
@@ -14,6 +15,7 @@ const useLabels: Record<IdleVariantUse, string> = {
   automatic: 'Automatisk',
   rules: 'Regelstyrd',
   openclaw: 'OpenClaw',
+  rotation: 'Vilosekvens',
 };
 
 const seconds = (milliseconds: number) => Math.round(milliseconds / 1000);
@@ -74,6 +76,8 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   };
   const estimate = useMemo(() => idleShareEstimate(policy), [policy]);
   const [seed, setSeed] = useState(25);
+  const [previewPhase,setPreviewPhase] = useState<'bets'|'decide'>('bets');
+  const rotationCandidate = useMemo(() => preparePaowIdleRotation(policy,inventory), [policy,inventory]);
   const [showPlan, setShowPlan] = useState(false);
   const [previewId, setPreviewId] = useState(policy.base[0]?.videoId ?? '');
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -95,7 +99,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const segmentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preview = byId.get(previewId);
   const unconfigured = family?.variantIds.filter(id => !policy.variants.some(item => item.videoId === id)) ?? [];
-  const plan = useMemo(() => createIdlePreviewPlan(policy, { seed, durationMs: 60000 }), [policy, seed]);
+  const plan = useMemo(() => createIdlePreviewPlan(policy, { seed, durationMs: 60000, phase:previewPhase }), [policy, seed, previewPhase]);
   const primary = policy.base[0];
   const replacementChoices = editableBase ? inventory.videos.filter(video => replacementVideo(inventory,policy,video.id)) : [];
   const primaryActualShare = primary ? estimate.shares[primary.videoId] ?? 0 : 0;
@@ -216,6 +220,19 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   ] : []).slice(0, 16);
 
   return <fieldset className={styles.editor} disabled={blocked||importing} style={{border:0,padding:0,minWidth:0}} aria-busy={importing}>
+    {rotationCandidate ? <section className={styles.section} aria-label="PAOWs vilosekvenser">
+      <h3>Sammanhängande vilosekvenser</h3>
+      <p>{policy.rotation ? `${policy.rotation.clips.length} klipp är kopplade i utkastet. Händerna går tillbaka till vila mellan olika poser.` : 'Koppla Kevins 24 valda viloklipp. Befintliga original återanvänds; bortvalda tagningar lämnas utanför.'}</p>
+      {rotationCandidate.error ? <p role="alert">{rotationCandidate.error}</p> : null}
+      {!policy.rotation ? <button type="button" className="primary-button" disabled={!editableBase||!rotationCandidate.policy} onClick={() => {
+        if(!rotationCandidate.policy)return;stop('Vilosekvenser valda');onChange(rotationCandidate.policy);
+      }}>Koppla 24 viloklipp</button> : <>
+        <label>Förhandsvisa fas<select value={previewPhase} onChange={event=>{stop();setPreviewPhase(event.target.value as 'bets'|'decide');}}><option value="bets">Mellan rundor och insatser</option><option value="decide">Spelaren väljer</option></select></label>
+        <p>Knäppta händer följer insatsfasen. Händerna mot bordet följer spelarens beslut. Tal väntar på vanlig vilopose.</p>
+        <button type="button" className="text-button" disabled={!editableBase} onClick={()=>{stop();const {rotation,...rest}=policy;onChange({...rest,variants:[]});}}>Återgå till enbart basklippet</button>
+      </>}
+    </section> : null}
+    {!policy.rotation ? <>
     <section className={styles.section}>
       <h3>Basklipp</h3>
       {!family ? <p className={styles.warning}>Klippen för grundloopen kunde inte hittas.</p> : null}
@@ -265,15 +282,16 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
       <details className={styles.help}><summary>Om automatiken</summary><p>Automatisk följer ditt tidsintervall och dina gränser utan AI-anrop. Manuell betyder att klippet bara startas med Spela. OpenClaw väljer en färdig rörelse utifrån beskrivningen och nya observerade chattmeddelanden, högst en reaktion per minut. Det är skilt från AI-småprat som skapar ny text och nytt tal. Tal och spelhandlingar går före.</p><p>Mediekälla: <code>idle/variant/</code>.</p></details>
     </section>
 
+    </> : null}
     <section className={styles.player} aria-label="Spelare för grundloop">
       <div><strong title={shown(previewId).title}>{shown(previewId).text}</strong></div>
       <PresentationFrame label="Grundloop"><DealerVideoSurface framing={preview?.classification?.framing} compositing={preview?.classification?.compositing}>
-      {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
+      {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={!policy.rotation && Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
         if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
         onBusyChange(true);
         if (playback.current.started) return;
         playback.current.started = true; log(`started · ${fileLabel(preview, previewId)}`);
-        if (planIndex !== null && plan[planIndex].kind === 'base') segmentTimer.current = setTimeout(() => advance(playSerial), plan[planIndex].endMs - plan[planIndex].startMs);
+        if (!policy.rotation && planIndex !== null && plan[planIndex].kind === 'base') segmentTimer.current = setTimeout(() => advance(playSerial), plan[planIndex].endMs - plan[planIndex].startMs);
       }} onPause={event => { if (event.currentTarget === videoRef.current && !event.currentTarget.ended && playback.current?.serial === playSerial) stop('Pausat'); }} onEnded={() => advance(playSerial)} onError={event => { if (event.currentTarget === videoRef.current) stop('Videofel — provet avbröts'); }} /> : <p className={styles.warning}>Videon finns inte tillgänglig i klippbiblioteket.</p>}
       </DealerVideoSurface></PresentationFrame>
       <div className={styles.previewControls}><button type="button" className="primary-button" disabled={blocked} onClick={() => { stop(); setActualLog([]); startClip(plan[0].videoId, 0); }}>Spela en minut</button><button type="button" className="text-button" onClick={() => stop()}>Stoppa</button></div>
