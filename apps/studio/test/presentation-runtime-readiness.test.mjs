@@ -1019,3 +1019,75 @@ test('v27 blocks new UI and card spread on older engines for active, archived an
   assert.equal(f.writes.length,0);
  }
 });
+
+test('v28 rejects rotation in active and archived policies before SQL, including invalid new fields',async()=>{
+  const locations=[
+    policy=>({idlePolicy:policy}),
+    policy=>({dealerIdlePolicies:[{dealerId:'paow',policy}]}),
+    policy=>({dealerTrash:[{idlePolicy:policy}]}),
+    policy=>({dealerTrash:[{globalIdlePolicy:policy}]}),
+  ];
+  for(const policy of [{rotation:undefined},{rotation:null},{rotation:{}},{variants:[{use:'rotation'}]}])
+    for(const locate of locations)for(const kind of ['project','dealer-archive'])for(const version of [27,28]){
+      const value=locate(policy),descriptor={kind,value};
+      const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument(kind,{value}),{presentationMutation:descriptor});
+      if(version===27)await assert.rejects(work,blocked);else await work();
+      assert.equal(begun,version===28?1:0);assert.equal(f.writes.length,version===28?1:0);
+      assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'28');
+    }
+});
+
+test('v28 requires exact rotation support for a valid frozen policy and keeps its accepted bytes',async()=>{
+  const value=frozenPackage(pack=>{
+    const id=pack.registeredDealers[0].idle.id;
+    const extra=frozenMedia({eventId:'idle.ready',kind:'idle',situation:'',role:'alternative'},'video/mp4',29);
+    pack.playback.media.push(extra);
+    pack.playback.dealerIdlePolicies=[{dealerId:'astrid',policy:{
+      schemaVersion:1,familyId:'astrid/idle.ready/ready',base:[{videoId:id,weight:100,durationMs:1000}],
+      variants:[{videoId:extra.id,durationMs:1000,use:'rotation',automatic:null}],
+      rotation:{clips:[id,extra.id].map(videoId=>({videoId,phase:'any',from:'rest',to:'rest',weight:1,head:false,calm:true}))},
+    }}];
+  });
+  validatePresentationPackage(value);
+  const before=structuredClone(value);
+  for(const version of [27,28]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),
+      {presentationMutation:{kind:'presentation-package',value}});
+    if(version===27)await assert.rejects(work,blocked);else await work();
+    assert.equal(begun,version===28?1:0);assert.equal(f.writes.length,version===28?1:0);
+    assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'28');
+    if(version===28)assert.deepEqual(f.writes[0][2].value,before);
+  }
+  assert.deepEqual(value,before);
+});
+
+test('rotation cannot be added after preflight and plain idle does not acquire the new requirement',async()=>{
+  const plain={kind:'project',value:{dealers:[{id:'paow'}],dealerIdlePolicies:[{dealerId:'paow',policy:{variants:[{use:'manual'}]}}]}};
+  const changed=structuredClone(plain.value);changed.dealerIdlePolicies[0].policy.rotation={clips:[]};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:changed}),{fixture:true,presentationMutation:plain}),blocked);
+  assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'3');
+  await f.wrapped.saveDocument('project',{value:plain.value});
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'3');
+  const descriptor={kind:'project',value:changed};
+  await f.wrapped.transaction(async repo=>{
+    await repo.withMutationContext(inner=>inner.saveDocument('project',{value:changed}),descriptor);
+  },{fixture:true,presentationMutation:descriptor});
+  assert.equal(f.writes.length,2);assert.equal(f.fetches.length,3,'one HTTP preflight per outer mutation, none inside SQL');
+});
+
+test('dealer lifecycle writes preserve archived rotation and refuse a reader without v28',async()=>{
+  const value={dealerTrash:[{globalIdlePolicy:{rotation:{clips:[]}}}]},calls=[];
+  let version=27;
+  const repository={async saveDealerLifecycle(...args){calls.push(args);return 'saved';}};
+  const wrapped=wrapNativePresentationRepository(repository,{env,fetchImpl:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+  await assert.rejects(()=>wrapped.saveDealerLifecycle(value,{actor:'fixture'}),blocked);
+  assert.equal(calls.length,0);version=28;
+  assert.equal(await wrapped.saveDealerLifecycle(value,{actor:'fixture'}),'saved');
+  assert.deepEqual(calls,[[value,{actor:'fixture'}]]);
+});
