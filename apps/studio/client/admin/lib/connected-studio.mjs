@@ -9,12 +9,16 @@ import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRoul
 import {mediaClassification} from '../../../lib/dealer-media-library.mjs';
 import {layerAssetFitsGame} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlotSituation,speechSlotVideoFits} from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import {bindFilmedBank,filmedBankState,hasEmbeddedShoeTransitions} from '../../../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
 
 export function clipSlots(project, inventory, dealerId, game='blackjack') {
   if(game==='roulette')return rouletteClipSlots();
   if(game!=='blackjack')throw Error('Välj ett registrerat spel.');
   // Turn and settlement are conditions for idle behaviour, not media slots.
-  return project.events.filter(event => !['turn','settle'].includes(event.sourceType)).flatMap(event => {
+  const embedded=hasEmbeddedShoeTransitions(dealerId);
+  const hasSeparateShoe=project.lines.some(line=>line.dealerId===dealerId&&line.eventId==='transition.shoe'&&line.variants.some(row=>row.videoGenerationId));
+  return project.events.filter(event => !['turn','settle'].includes(event.sourceType)
+    && !(embedded&&!hasSeparateShoe&&event.id==='transition.shoe')).flatMap(event => {
     const families = (inventory.families ?? []).filter(row => row.dealerId === dealerId && row.eventId === event.id);
     const situations = families.length ? families.map(row => row.situation) : situationsForEvent(event);
     return (situations.length ? [...new Set(situations)] : ['']).map(situation => ({
@@ -135,6 +139,8 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
     || registeredSlot.sourceType!==slot.sourceType || registeredSlot.family?.id!==slot.family?.id) throw Error('Kortplatsen har ändrats. Välj den registrerade platsen igen.');
   const video = clipsForSlot(inventory, dealerId, slot).find(row => row.id === videoId);
   if (!video || !project.dealers.some(row => row.id === dealerId)) throw Error('Klippet passar inte denna dealer och kortplats.');
+  const bank=filmedBankState(inventory,dealerId);
+  if(!asAlternative&&bank?.entries.some(row=>row.take.sha256===video.sha256))return bindFilmedBank(project,inventory,dealerId);
   if (asAlternative) {
     if (slot.family || slot.eventId !== 'transition.shoe' || !currentClipId(project, dealerId, slot, undefined, inventory)) {
       throw Error('Koppla först ett standardklipp i detta skonfack.');
