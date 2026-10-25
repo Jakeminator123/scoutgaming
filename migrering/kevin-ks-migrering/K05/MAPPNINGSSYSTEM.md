@@ -7,7 +7,7 @@ Den tidigare importpausen från 22 oktober är historisk. Handoffens äldre kvit
 | Källa | Fryst version | Bevisgräns |
 | --- | --- | --- |
 | Kevin, begrepp och äldre K05-matris | `kevin-merge-admin@5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` | K01/O01:s accepterade referens under `kevin/croupier-scoutgg/` |
-| Main, aktuell kodgranskning | `2be88119d2f342b7a9cf6725dab1ab75d6a09d52` efter #378/#381/#382; ursprunglig genomgång på `34c6c22f` | Kontrakt/konsumenter i `packages/presentation/`, `apps/studio/`, `services/game/` samt senare versionsbundet PAOW-kvitto; utförandetabellen kompletterar den äldre begreppsmatrisen |
+| Main, aktuell kodgranskning | `aad0ba3a0c5230ebbca50dfff0649b4dafd45798` efter #378/#381/#382/#380; ursprunglig genomgång på `34c6c22f` | Kontrakt/konsumenter i `packages/presentation/`, `apps/studio/`, `services/game/` samt senare versionsbundet PAOW-kvitto; utförandetabellen kompletterar den äldre begreppsmatrisen |
 | PAOW-importens källmanifest | `kevin-staging@c713875923cd854b26f89c1db0d0f47064619c1d` | Separat importurval, inte automatiskt ny källa för hela K05 |
 | Historisk torrkörning i avsnitt 5 | 22 oktober, 159cc134 + fyra greetingrader | Mängderna beskriver dåvarande registerläge och får inte användas som dagens uppladdningslista |
 
@@ -24,7 +24,7 @@ Tabellerna behåller Kevins källbegrepp för spårbarhet. Main-motsvarigheter �
 | Giv/reveal/tal | Mains filmprofil, tidslinje, mediaattestering och committade spelhändelser; tre separata visuella lager | Exakta pose-/track-/kontaktvärden och två följande spel. Saknade bevis betyder fortsatt avstängt, inte tyst fallback eller lägre valideringskrav |
 | QA | [Masterplanens tre bevisnivåer](../../MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy) | Lokal mediemapp/minnesprov bevisar inte Neon/Blob-flödet. Ingen ny SQLitefixture eller connected-local-produkt beställs |
 
-#378:s separata källurval är `kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`; det flyttar inte K01/O01-baslinjen. [Masterplanens PR-tabell](../../MASTERPLAN.md#förnyad-admin--och-pr-granskning-25-oktober) anger granskade heads. Begreppsmatrisen nedan behåller sitt `34c6c22f`-underlag; den kompletteras av mergade #378/#381 och #382:s senare driftkvitto. #380 på `d51c7c13` är ännu öppen. Den reviderade planen levereras i befintlig PR #379 enligt Jakobs nya pushbegäran. [Motivering och slutkriterier](../../MASTERPLAN.md#motivering-och-när-migreringen-är-klar) förklarar varför dokumentleverans, delacceptans och färdig migration är olika saker.
+#378:s separata källurval är `kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`; det flyttar inte K01/O01-baslinjen. [Masterplanens PR-tabell](../../MASTERPLAN.md#förnyad-admin--och-pr-granskning-25-oktober) anger granskade heads. Begreppsmatrisen nedan behåller sitt `34c6c22f`-underlag; den kompletteras av mergade #378/#381 och #382:s senare driftkvitto. #380 på `d51c7c13` är nu mergad som `aad0ba3a`; dess senare drift-/layoutacceptans är separat. Den reviderade planen levereras i befintlig PR #379 enligt Jakobs nya pushbegäran. [Motivering och slutkriterier](../../MASTERPLAN.md#motivering-och-när-migreringen-är-klar) förklarar varför dokumentleverans, delacceptans och färdig migration är olika saker.
 
 ## 1. Kort: så fungerar Kevins system
 
