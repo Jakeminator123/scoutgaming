@@ -14,6 +14,8 @@
 
 **Publiceringsgräns:** [PR #384](https://github.com/Jakeminator123/scoutgaming/pull/384), merge `444caabb`, löste ett verkligt paket som var sju tecken för stort med en förlustfri Brotli-reservväg. Alla 38 media och två lager behölls. Full CI, 82 riktade prov, typkontroll och oberoende granskning passerade. Vercel `dpl_4omJApXcHTkTqwWh2DjsS6oEckBD` är READY på denna SHA; Render står på `1c842b5b`, vilket är rätt runtime för denna klient-/codecändring. Dragan publicerades därefter till version 14 med mobilens kortgrupp Y 32 %. Inget schema eller lagringsgräns ändrades.
 
+**Överlämning till annan dator:** utgå från `origin/main` i `Jakeminator123/scoutgaming`, inte en gammal lokal Croupier-kopia. Repoets Studio-paket använder Volta/Node `24.21.0`; installera respektive pakets låsta beroenden på den nya datorn. Registrerade projekt/media finns i Neon och Blob, inte i denna arbetskopias cache. Följ [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) för miljöåtkomst; kopiera inte personliga agentinställningar eller hemligheter mellan datorerna. Render-tjänsten är `croupier-v3`, Vercel-team/projekt `scoutgaming`. AGENT2:s PAOW-resultat följer nedan; dess lokala original-/bevismapp är återställningsunderlag, inte ett nytt produktregister.
+
 ## PAOW: 24 valda viloklipp — 25 oktober 2026
 
 Jakob beställde uppladdning av elva nya original till mains Blob, återanvändning

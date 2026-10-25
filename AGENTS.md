@@ -11,7 +11,7 @@ Jakobs aktuella beslut styr uppdraget. Historiska inventeringar, layouter och fi
 - Jakobs beställda Admin-/Kevin-arbete styrs av [masterplanen](migrering/MASTERPLAN.md); `migrering/status.json` är dess enda statuskälla. Det kompletterar molnöversikten och återöppnar inte genomförd Neon-/Blob-migrering utan ett konkret runtimefel. Skapa inte konkurrerande trackers.
 - Läs bara relevanta guider. OpenClaw-arbete börjar i [dess guide](docs/AI/openclaw/README.md). AI-arbetsflöden dokumenteras i [agentflödet](docs/AI/scoutgaming-agentflode.md). Uppdatera befintliga sakdokument; en uttryckligt beställd plan eller rapport är tillåten.
 
-Detta repo är arbetsprodukten. Neon är produktregistret och Blob lagrar mediebytes; skapa inte parallella lokala produktregister. Spelmotorn ligger i `services/game` och kör på Render `croupier-v2`; Vercel-team/projekt är `scoutgaming`. `apps/studio` är källkod och `/studio` teknisk basePath, inte ytterligare en produkt. Aktiva adaptrar i `apps/studio/lib` och delade tjänster i `packages/` är inte förbrukade på grund av sina namn.
+Detta repo är arbetsprodukten. Neon är produktregistret och Blob lagrar mediebytes; skapa inte parallella lokala produktregister. Spelmotorn ligger i `services/game` och kör på Render `croupier-v3`; Vercel-team/projekt är `scoutgaming`. `apps/studio` är källkod och `/studio` teknisk basePath, inte ytterligare en produkt. Aktiva adaptrar i `apps/studio/lib` och delade tjänster i `packages/` är inte förbrukade på grund av sina namn.
 
 ## Ägarskap och samarbete
 
