@@ -1,14 +1,20 @@
 # Aktuell handoff — Scoutgaming
 
+## J06: slutgrinden kräver verklig Neon-readiness — 25 oktober 2026
+
+En fork-PR med server-/schemaändring kunde tidigare få grön CI när säkerhetsvakten korrekt hoppade över produktionskontrollen. Slutgrinden krävde inget separat migrationskvitto. Den kräver nu ett rapporterat, lyckat utfall från det faktiska readinesssteget när ändringsklassificeringen anger migrationskrav. Saknat, felaktigt, avbrutet eller överhoppat kvitto stoppar leveransen. Produktionsåtkomstens befintliga fork-skydd är kvar; granskad kod behöver levereras genom en auktoriserad repobranch. Klient-/test-/dokumentundantag behåller sina tidigare gränser.
+
+**Verifiering:** regressionen mot workflowets verkliga slutskriptet var röd före rättningen (saknat kvitto gav exit 0). Efteråt passerar 40/40 CI-/workflow-/precommit-prov, 0 skip, Node 24.21.0. Proven täcker samma repo, fork, main-push, annan push, manuell körning, okänd händelse och saknade/felaktiga utfall. Oberoende kodreview och egen VM-reproduktion av grindskriptet fann inga blockerare. Full CI redovisas i leverans-PR:en. Ingen schema-, data- eller driftändring ingår; full J06 och migrationsstatus 45 % ändras inte.
+
 ## Rotationsgrind i Admin — 25 oktober 2026
 
-Nästa steg efter [PR #386](https://github.com/Jakeminator123/scoutgaming/pull/386): befintlig native readiness kräver v28 för rotationspolicy i aktivt projekt, dealerspecifik policy, arkiverad policy/globalpolicy och fryst paket. Även fältets närvaro eller `use: rotation` kräver stödet; en äldre läsare får inte accepteras genom generell dealer-/layout-capability.
+Levererat genom [PR #387](https://github.com/Jakeminator123/scoutgaming/pull/387), efter [PR #386](https://github.com/Jakeminator123/scoutgaming/pull/386): befintlig native readiness kräver v28 för rotationspolicy i aktivt projekt, dealerspecifik policy, arkiverad policy/globalpolicy och fryst paket. Även fältets närvaro eller `use: rotation` kräver stödet; en äldre läsare får inte accepteras genom generell dealer-/layout-capability.
 
 Negativ readiness stoppar före SQL. Ett verifierat mutationssammanhang kan inte i efterhand få rotationsbehörighet, och gör inget HTTP-anrop inne i transaktionen. Policy utan rotation behåller sitt tidigare krav. Ingen ny writer, lagring, schemaversion eller mediaimport.
 
-**Verifierat lokalt:**71/71 readinessprov,0skip, Node24.21.0. Prov täcker aktiv/arkiverad/fryst policy, verkligt validerbart fryst paket, bevarad data, versionsnedgradering och lifecycle-writer. Oberoende kodgranskning av `36979feee4232f6bc36e5f6aa1343203166dfffa` utan blockerande fynd. Slutlig CI och Admin-deploy redovisas i följd-PR:en.
+**Verifierat lokalt:**71/71 readinessprov,0skip, Node24.21.0. Prov täcker aktiv/arkiverad/fryst policy, verkligt validerbart fryst paket, bevarad data, versionsnedgradering och lifecycle-writer. Oberoende kodgranskning av `36979feee4232f6bc36e5f6aa1343203166dfffa` utan blockerande fynd. Slutlig [CI40206706124](https://github.com/Jakeminator123/scoutgaming/actions/runs/40206706124) är grön på exakt head `86f193137b94e700c53f2042486816bb8fb69423`, inklusive åtta regressionsgrupper och Linux SIGTERM natural/cancel/timeout utan skip. PR #387 är mergad som `095a10397acf7ec5fcde5e3207c52ca89938daf6`.
 
-**Runtimeförutsättning klar:** #386 är mergad som `23debde7155346e30ee5a3f3dfbe54cd09ea2789`. Render `dep-dbf1qie7bikc73bsg650` är live; faktisk HTTP-läsning visar samma SHA, health200, v27/200 och v28/200 med `idleRotation: pose-graph-v1`. Admin-grinden levereras därefter via PR och Vercel; ingen full Admin-deploy påstås före dess kvitto. Återställning får bara ske till en läsare som hanterar redan sparad rotation; ny skrivning kräver fortsatt v28. Detta är ett avgränsat kompatibilitetsbevis, inte full migrationsacceptans.
+**Runtimeförutsättning klar:** #386 är mergad som `23debde7155346e30ee5a3f3dfbe54cd09ea2789`. Render `dep-dbf1qie7bikc73bsg650` är live; faktisk HTTP-läsning visar samma SHA, health200, v27/200 och v28/200 med `idleRotation: pose-graph-v1`. Vercel `dpl_4MozvRpRga4F4CmFrxxuAebf3cW7` är READY på merge-SHA `095a10397acf7ec5fcde5e3207c52ca89938daf6`, med verifierat alias `www.scoutgaming.tech`. Inloggad Sceneditor laddades om från sparat läge och visade PAOW/West Bet samt sparat utkast; ingen produktskrivning eller publicering gjordes. Readiness-validatorn provades dessutom mot verkligt v28-svar med syntetisk featuredescriptor och tom repository: en GET, noll SQL-skrivningar. Återställning får bara ske till en läsare som hanterar redan sparad rotation; ny skrivning kräver fortsatt v28. Detta är ett avgränsat kompatibilitetsbevis, inte full migrationsacceptans.
 
 ## Migreringsgrind: runtimeannonsering och obligatoriska K07-prov — 25 oktober 2026
 
@@ -18,7 +24,7 @@ Fyra befintliga K07-sviter körs nu i obligatoriska `gameplay/shared-blackjack`:
 
 **Verifierat lokalt:**62/62 kontrakts-/HTTP-/CI-/hookprov,18/18 K07-prov,27 äldre kapabilitetssvar bytejämförda,571 testkandidater/0orphan, `git diff --check`. Node24.21.0, högst fyra arbetare. PR #386 hade grön CI, dealer-regression och GitGuardian på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`, samt oberoende review utan blockerare. Renderkvittot finns ovan.
 
-**Nästa steg:** leverera den granskade Admin-grinden ovan. Runtime v28 och de negativa proven är klara som delsteg. Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
+**Nästa steg:** den granskade Admin-grinden är levererad enligt kvittot ovan. Runtime v28 och de negativa proven är klara som delsteg. Samprovet behöver fortfarande den godkända isolerade Neon-testmiljön; se [aktuell åtkomst- och resurskontroll](ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging--historiskt-beslut-22-oktober). Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
 
 ## Studio-scener, materialval och responsiva kontroller — 25 oktober 2026
 

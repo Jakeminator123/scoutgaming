@@ -73,6 +73,8 @@ kontoeffekten är inte verifierad och gemensamma produktionsinställningar får 
 Använd inte produktionsgren, arkiverad dataklon eller okända standardvärden som
 ersättning. Befintlig Vercel-projektlänk ersätter inte dessa resursinställningar.
 
+**Aktuell kontroll 25 oktober:** Vercel-inloggningen fungerar. Neoninstallationen `icfg_6taAB1ZusMeDLwujDmRK07Yi` visar endast `croupier-production`; den arkiverade grenen `codex-zone-storage-qa` är en äldre dataklon och inget tomt testmål. Vercels produktmetadata och skapandeformulär visar region/auth/realtime men inga val för PG-version, fast CU eller autosuspend. Neon Console i den godkända organisationen visar ett projekt och inaktiverad New project. Ingen ny resurs, DDL, roll, flagga eller produktionskopiering har gjorts. Hindret är verifierbar provisionering inom det godkända resursbeslutet, inte en saknad webbinloggning. [Leveranskvittot](https://github.com/Jakeminator123/scoutgaming/pull/387#issuecomment-6399543347) skiljer den färdiga kompatibilitetsleveransen från återstående molnacceptans.
+
 Historisk plan från 22 oktober: målidentitet, inställningar och tomma syntetiska data skulle verifieras före anslutning till separat `croupier_staging` med dedikerad migrationsägare. Tabellen nedan dokumenterar då planerade Gitblobbar; den är **inte en instruktion att applicera gamla schemafiler på dagens miljö**. Vid återupptaget arbete måste aktuellt schema, rätt ordning och redan tillämpade versioner jämföras med den frysta kandidaten. Ingen anslutningssträng skrivs i Git eller chatten.
 
 | Fil | Fryst källa | SHA256 av exakta Gitbytes |
