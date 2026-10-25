@@ -1,6 +1,7 @@
 import { validateProject, allowedPathDescriptors, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { validateIdlePolicy } from '../../../../../packages/presentation/runtime/idle-policy.mjs';
-import { createRegisteredIdlePolicy } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
+import { createRegisteredIdlePolicy, registeredIdleInventory } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
+import { preparePaowIdleRotation } from '../../../lib/paow-idle-rotation.mjs';
 import { isAstridDealFamily, dealFrequencyPolicies, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../../packages/presentation/runtime/media-family-policy.mjs';
 import { selectionFor } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { clipSlots, clipsForSlot, configuredClipIds, currentClipId } from './connected-studio.mjs';
@@ -80,6 +81,12 @@ export function studioPolicyContext(project, inventory, dealerId, slot) {
   }
   if (family?.playbackType === 'idle-pool') fail('Grundloopspolicy kan bara redigeras i Grundloop.');
   return { kind:family ? 'family' : 'line',family,line,clips,policy:null,global:false,frequency:isAstridDealFamily(family) };
+}
+
+export function prepareStudioPaowIdleRotation(project,inventory,dealerId,slot) {
+  if(dealerId!=='paow'||slot.eventId!=='idle.ready')return null;
+  const scope=studioPolicyContext(project,inventory,dealerId,slot);
+  return scope.policy?preparePaowIdleRotation(scope.policy,registeredIdleInventory(inventory,{dealerId,policy:scope.policy})):null;
 }
 
 export function applyStudioIdlePolicy(project, inventory, dealerId, slot, nextPolicy) {

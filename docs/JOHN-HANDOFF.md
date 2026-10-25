@@ -34,10 +34,16 @@ exakta poseövergångar, avbrott, talprioritet och publiceringspaket/CAS. Befint
 idleprov 23/23, lokalspelarens 136/136 (inklusive nytt integrationsprov),
 relaterade publicerings-/registrerings-/Kevin-paritetsprov och Admins typkontroll
 passerar. Publiceringssviten passerar 36/36, inklusive avgränsning, N1,
-konkurrerande ändringar och rollback. PR #378:s första fulla regression är grön;
-den slutliga avgränsade publiceringen kontrolleras på uppdaterad head.
-**Kvar före runtimekvittens:** slutlig PR/CI, Vercel + Render-version, Admins
-sparade policy och ny publicering av PAOW-rummet samt faktisk videouppspelning.
+konkurrerande ändringar och rollback. PR #378 har grön full CI inklusive
+production-ledger readiness och är mergad som `51165e9a`.
+Vercel `dpl_2fD4TKdv4otgeFanr8m5BaVGaznW` är READY och Render
+`dep-dbev7au7bikc73bk852g` är live på samma SHA; versionendpoint och hälsa (200)
+är återlästa. Livekontrollen hittade att native Admin använder
+`studio-policy-panel.tsx`; en klientuppföljning ansluter samma originalmatchning
+dit. 22/22 panelprov inklusive verkligt knappanrop och typkontroll passerar.
+**Kvar före runtimekvittens:** klientuppföljningens CI/deploy, Admins sparade
+policy och avgränsad publicering samt faktisk videouppspelning. West Bet står
+ännu på paketversion 1 med endast `andas`; inga andra inställningar har skrivits.
 MAIN är informerad; dess layoutarbete ligger i annan arbetskopia.
 
 ## Mobilens beslutsknappar på korta skärmar — 25 oktober 2026
