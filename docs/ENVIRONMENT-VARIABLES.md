@@ -858,13 +858,16 @@ rena navigationskontrakt och samma transportkonfiguration. Modulflytten ändrar
 inga miljönycklar, origins, ingressvalidering eller behörigheter.
 `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
-publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
+publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då varken för routingen
+eller native-Admin. Native API, login och SSR accepterar endast public-origin
+i detta uttryckliga läge. Separat drift behåller de två exakta origins och
+sin befintliga rewrite-regel. Host, XFH, Origin, CSRF, session och scope valideras.
 Render-origin måste fortfarande vara separat och ingressnyckeln stannar på
 servern. Studio behåller `/studio` som basePath och sin befintliga Neon/Blob/mail-
 konfiguration. De två nya flaggorna är production-scopade i samma projekt,
 utan nyckelkopior. Git-autobyggen är återaktiverade; rootDirectory och
-ignored-build-kommandot är null, framework är services. Det äldre Studio-
-aliaset bevaras även i native-konfigurationens exakta tillåtna origins.
+ignored-build-kommandot är null, framework är services. Ett äldre sekundärt
+Studio-alias ger ingen extra native-behörighet i unified-läget.
 Det domänlösa reservprojektet scoutgaming-legacy-frontend har i stället
 ignored-build `exit 0` och automatisk domäntilldelning avstängd.
 
@@ -1008,7 +1011,7 @@ finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RE
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
-| Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
+| Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_STREAM_LANE=lissabon-stream-lane` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Postgres/Neon/Blob utan CROOT. `OPENCLAW_PRODUCT_SPEECH_URL` och `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs som par för aktivt genererat tal/kamera/moving. Båda får saknas när dessa är av; spelchatten är då okonfigurerad och avvisas utan påhittat svar. Inspelad spelmedia behöver inget AI-relä. | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
 | Vercel: spel/Studio-ingång (`apps/web`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | Gemensam serverägd Neon-/scope-/lagringspolicy; `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet | – |
 | Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar **Dealers & klipp → Skapa material** på `/admin/dealer-studio?view=generate` med vald dealer; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `apps/studio/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
 | Frontendens spelarbygge (`apps/web/tools/player-ui-build.mjs`, tjänst `vercel-entry`) | `CROUPIER_GAME_ORIGIN` = spelserverns exakta HTTPS-origin utan snedstreck på slutet | – | Krävs när bygget anropas utan explicit origin | – |

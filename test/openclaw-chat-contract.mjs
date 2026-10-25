@@ -32,6 +32,17 @@ const request = () => ({ requestId: 'chat-request-001', message: 'Hej Astrid', h
 const settings = Object.freeze({ baseUrl: 'https://gateway.example', gatewayKey: 'never-log-this',
   chatAgent: 'openclaw/croupier-chat', speechAgent: 'openclaw/croupier-speech', speechUrl: '', speechToken: '', adviceTimeoutMs: 2345 });
 
+test('unconfigured chat fails without a provider request or an invented reply', async () => {
+  let requests = 0;
+  const state = authoritative(), before = structuredClone(state);
+  await assert.rejects(openClawChat(request(), state, {
+    settingsProvider: () => ({ ...settings, baseUrl: '', gatewayKey: '' }),
+    fetchImpl: async () => { requests++; throw new Error('No provider must be contacted'); },
+  }), error => error.code === 'openclaw_not_configured' && error.statusCode === 503);
+  assert.equal(requests, 0);
+  assert.deepEqual(state, before);
+});
+
 test('saved memories reach Astrid as a separate evidence channel, not invented history or instructions', async () => {
   const state=authoritative();
   const asOf=Date.now();

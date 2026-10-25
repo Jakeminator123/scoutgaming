@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## Native-Admin följer unified-UI — 25 oktober 2026
+
+`CROUPIER_VERCEL_UNIFIED_UI=1` använder en public HTTPS-origin också i
+native-Admin. Det gamla tvåorigin-kravet gav annars 503/403 trots giltig
+gemensam routing. Separat drift behåller tvåorigin-kontraktet. Befintliga
+Host/XFH/Origin-, CSRF-, session-, roll- och scopekontroller består.
+Underagent: 163/163 riktade prov och 110/110 normalhook, fyra röda fall före
+rättningen. Root har läst produkt- och beteendediffarna utan blockerare.
+Syntetisk riktig login/session, publicering och återkallad auth-epoch ingår;
+detta är inte ett faktiskt Vercel-/Neon-installationskvitto.
+Root körde därefter samlad native-/publicerings-/AI-konfigurationsintegration:
+148/148, noll fel och noll skips. Full CI och faktisk Vercelacceptans återstår.
+
+## Inspelat spel utan obligatorisk AI-infrastruktur — 25 oktober 2026
+
+Cloud kan sakna både `OPENCLAW_PRODUCT_SPEECH_URL` och token när genererat tal,
+kamera och moving är av. Ett halvt par eller aktiv AI-media utan relä avvisas.
+Ingen produktionskonfiguration ändras. Inspelad media och serverns spelregler
+behöver därmed ingen extra AI-tjänst i en tom installation. Utan relä är chatten
+okonfigurerad: verklig beslutsväg ger 503 utan provideranrop eller påhittat svar.
+Riktade konfigurations-/chattprov: 38/38. Full CI och molnacceptans återstår;
+detta kvitterar varken chatt, tal eller K06/K07.
+
 ## Render-starten avvecklad till en spelprocess — 25 oktober 2026
 
 CI hittade också ett kvarvarande inventeringstest som krävde Studios
