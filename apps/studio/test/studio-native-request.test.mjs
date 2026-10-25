@@ -9,13 +9,63 @@ import { createDealerForgeApi } from '../lib/dealer-forge-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 
 const publicOrigin='https://public.example.invalid',labOrigin='https://studio.example.invalid';
-const config=nativeStudioAdminConfiguration({CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
+const environment={CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
   CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_LAB_UI_ORIGIN:labOrigin,CROUPIER_LAB_BASE_PATH:'/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-  CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture')});
+  CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture')};
+const config=nativeStudioAdminConfiguration(environment);
+const unifiedConfig=()=>nativeStudioAdminConfiguration({...environment,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_LAB_UI_ORIGIN:undefined});
 const scope={environment:'fixture',workspaceId:'croupier'};
 const forwarded={host:new URL(publicOrigin).host,'x-forwarded-host':new URL(publicOrigin).host,
   'x-forwarded-proto':'https',origin:publicOrigin,'sec-fetch-site':'same-origin',cookie:'bo_jwt=private-fixture-cookie'};
+
+test('unified Next requests preserve the one origin, basePath, credentials and mutation body',async()=>{
+  const unified=unifiedConfig();
+  const request=new NextRequest(publicOrigin+'/api/admin/tier',{method:'POST',headers:{...forwarded,'content-type':'application/json'},body:'{"tier":"fixture","expectedRevision":3}'});
+  const normalized=normalizeNativeStudioRequest(request,unified);
+  assert.equal(normalized.url,publicOrigin+'/studio/api/admin/tier');
+  for(const name of ['host','x-forwarded-host','origin','cookie','sec-fetch-site']) assert.equal(normalized.headers.get(name),request.headers.get(name));
+  assert.deepEqual(await normalized.json(),{tier:'fixture',expectedRevision:3});
+  assert.doesNotThrow(()=>assertNativeStudioRequest(normalized,unified));
+  const canonical=new NextRequest(publicOrigin+'/studio/api/auth/session',{nextConfig:{basePath:'/studio'},headers:forwarded});
+  assert.equal(normalizeNativeStudioRequest(canonical,unified),canonical);
+});
+
+test('unified requests reject secondary and foreign authority before native dispatch',()=>{
+  const unified=unifiedConfig();
+  for(const change of [{host:'studio.example.invalid'},{host:'evil.invalid'},
+    {'x-forwarded-host':'studio.example.invalid'},{'x-forwarded-host':'evil.invalid'},
+    {'x-forwarded-host':'public.example.invalid,evil.invalid'},{'x-forwarded-host':'public.example.invalid:443'},
+    {origin:labOrigin},{origin:'https://evil.invalid'},{'x-forwarded-proto':'http'},
+    {'sec-fetch-site':'cross-site'},{'next-action':'fixture'}]){
+    assert.throws(()=>normalizeNativeStudioRequest(new NextRequest(publicOrigin+'/api/admin/overview',{headers:{...forwarded,...change}}),unified),error=>error.statusCode===403);
+  }
+  for(const address of [labOrigin+'/api/admin/overview','https://evil.invalid/api/admin/overview',
+    'http://public.example.invalid/api/admin/overview',publicOrigin+'/api/admin/%6fverview',
+    publicOrigin+'/api/admin/overview?x=1',publicOrigin+'/api/admin/overview#x']){
+    assert.throws(()=>normalizeNativeStudioRequest(new NextRequest(address,{headers:forwarded}),unified),error=>error.statusCode===403);
+  }
+  // One entry is an explicit deployment mode, never inferred from a shortened list.
+  const singleWithoutMode={...unified};delete singleWithoutMode.unifiedUi;
+  assert.throws(()=>normalizeNativeStudioRequest(new Request(publicOrigin+'/studio/api/auth/session'),singleWithoutMode),error=>error.statusCode===403);
+  assert.throws(()=>normalizeNativeStudioRequest(new Request(publicOrigin+'/studio/api/auth/session'),{...config,unifiedUi:true}),error=>error.statusCode===403);
+});
+
+test('unified SSR navigation keeps its exact host and cookie without trusting a second alias',()=>{
+  const unified=unifiedConfig();
+  for(const path of ['/admin/login','/partner/login','/studio/administration']){
+    const request=normalizeNativeStudioPageRequest(new Request('http://public.example.invalid'+path,{headers:forwarded}),unified);
+    assert.equal(new URL(request.url).origin,publicOrigin);
+    assert.equal(new URL(request.url).pathname,path.startsWith('/studio/')?path:'/studio'+path);
+    assert.equal(request.headers.get('cookie'),forwarded.cookie);
+    assert.equal(request.headers.get('origin'),publicOrigin);
+  }
+  for(const [origin,headers] of [[labOrigin,forwarded],[publicOrigin,{...forwarded,origin:labOrigin}],
+    [publicOrigin,{...forwarded,host:'studio.example.invalid'}],[publicOrigin,{...forwarded,'x-forwarded-host':'studio.example.invalid'}],
+    [publicOrigin,{...forwarded,'next-action':'fixture'}]]){
+    assert.throws(()=>normalizeNativeStudioPageRequest(new Request(origin+'/admin/login',{headers}),unified),error=>error.statusCode===403);
+  }
+});
 
 test('real Next Request restores only the configured native basePath and retains credentials',async()=>{
   const next=new NextRequest(labOrigin+'/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:labOrigin,cookie:'bo_jwt=fixture'},body:'{"user":"fixture","pass":"fixture-password"}'});

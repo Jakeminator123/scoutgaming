@@ -87,6 +87,30 @@ test('native mode is explicit, scoped and never substitutes zone/general databas
     assert.throws(() => nativeStudioAdminConfiguration({ ...env, ...change }), error => error.statusCode === 503);
   }
 });
+test('explicit unified UI trusts only its public origin without a secondary alias', () => {
+  for (const secondary of [undefined, env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN, 'invalid-unused-alias']) {
+    const config = nativeStudioAdminConfiguration({ ...env, CROUPIER_VERCEL_UNIFIED_UI: '1', CROUPIER_LAB_UI_ORIGIN: secondary });
+    assert.equal(config.unifiedUi, true);
+    assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
+    assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
+    assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
+    assert.throws(() => assertNativeStudioRequest(new Request(env.CROUPIER_LAB_UI_ORIGIN + '/studio/api/auth/session'), config), error => error.statusCode === 403);
+  }
+  for (const value of [undefined, '0', 'true']) {
+    assert.throws(() => nativeStudioAdminConfiguration({ ...env, CROUPIER_VERCEL_UNIFIED_UI: value, CROUPIER_LAB_UI_ORIGIN: undefined }), error => error.statusCode === 503);
+  }
+});
+test('unified UI retains exact HTTPS, scope, Neon and policy requirements', () => {
+  for (const change of [
+    ...['http://public.example.invalid', 'https://localhost', 'https://127.0.0.1', 'https://[::1]',
+      'https://public.example.invalid/', 'https://user@public.example.invalid'].map(value => ({ CROUPIER_PUBLIC_ORIGIN: value })),
+    { CROUPIER_STUDIO_ENVIRONMENT_ID: undefined }, { CROUPIER_STUDIO_WORKSPACE_ID: undefined },
+    { CROUPIER_STUDIO_NEON_POLICY: undefined }, { CROUPIER_GAME_DATABASE_URL: undefined },
+    { CROUPIER_ZONES_DATABASE_URL: env.CROUPIER_GAME_DATABASE_URL }, { CROUPIER_LAB_BASE_PATH: '/unexpected' },
+  ]) {
+    assert.throws(() => nativeStudioAdminConfiguration({ ...env, CROUPIER_VERCEL_UNIFIED_UI: '1', CROUPIER_LAB_UI_ORIGIN: undefined, ...change }), error => error.statusCode === 503);
+  }
+});
 test('exact trusted request host/origin before DB initialization', () => {
   const config = nativeStudioAdminConfiguration(env);
   assert.doesNotThrow(() => assertNativeStudioRequest(new Request(`${env.CROUPIER_PUBLIC_ORIGIN}/studio/api/auth/session`), config));

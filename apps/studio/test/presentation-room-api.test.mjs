@@ -6,6 +6,8 @@ import { createSeedProject as createHistoricalProject, createEmptyProject, defau
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
+import { nativeStudioAdminConfiguration, createNativeStudioRequestHandlers } from '../lib/studio-native-runtime.mjs';
+import { fixtureDatabaseUrl } from '../../../test/fixtures/database-url.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
@@ -435,17 +437,30 @@ test('unavailable runtime refuses before writer locks; an unrelated layered cata
   assert.equal(current.gameLane, 'layer-preview'); assert.equal(current.gameLanes.find(row => row.id === created.room.gameLaneId).renderer, 'portrait-video');
 });
 
-test('room endpoint retains fresh session role, Origin and exact query/body/scope boundaries', async () => {
+test('unified room endpoint publishes while retaining fresh role, Origin and exact query/body/scope boundaries', async () => {
   const f = await fixture(); let role = 'admin';
-  const api = createStudioAdminApi({ authorize: async () => ({ ...session, role }), allowedOrigins: [origin], publicHosts: ['studio.example.invalid'], handlers: f.roomApi.handlers, mutationTransaction: work => work() });
-  const body = await f.payload(), post = (extra = {}, headers = {}) => new Request(`${origin}/studio/api/admin/presentation-room`, { method: 'POST', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', ...headers }, body: JSON.stringify({ ...body, ...extra }) });
-  role = 'player'; assert.equal((await api.handle(post())).status, 403); role = 'admin'; assert.equal((await api.handle(post({}, { origin: 'https://evil.invalid' }))).status, 403);
-  assert.equal((await api.handle(post({ gameLaneId: 'made-up' }))).status, 400);
+  const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
+    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_BASE_PATH:'/studio',
+    CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,
+    CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require','fixture') });
+  const api = createStudioAdminApi({ authorize: async () => ({ ...session, role }), allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts, handlers: f.roomApi.handlers, mutationTransaction: work => work() });
+  const native = createNativeStudioRequestHandlers({configuration:()=>config,runtime:async()=>({api})});
+  const body = await f.payload(), post = (extra = {}, headers = {}) => new Request(`${origin}/api/admin/presentation-room`, { method: 'POST', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', ...headers }, body: JSON.stringify({ ...body, ...extra }) });
+  const before = f.pool.snapshot();
+  for (const deniedRole of ['player', 'reader']) { role = deniedRole; assert.equal((await native.handleNativeAdmin(post())).status, 403); }
+  role = 'admin'; assert.equal((await native.handleNativeAdmin(post({}, { origin: 'https://evil.invalid' }))).status, 403);
+  assert.equal((await native.handleNativeAdmin(post({ scope: { ...scope, workspaceId: 'other' } }))).status, 400);
+  assert.equal((await native.handleNativeAdmin(post({ gameLaneId: 'made-up' }))).status, 400);
   for (const query of ['?operatorId=north&presentationLaneId=vip-presentation&x=1', '?operatorId=north&operatorId=other&presentationLaneId=vip-presentation', '?operatorId=north', '?operatorId=north&presentationLaneId=constructor']) {
     assert.equal((await api.handle(new Request(`${origin}/studio/api/admin/presentation-room${query}`))).status, 404);
   }
   await assert.rejects(f.roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ scope: { ...scope, workspaceId: 'other' }, request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=north&presentationLaneId=vip-presentation`) }), status(403));
-  assert.equal((await api.handle(post())).status, 200);
+  assert.deepEqual(f.pool.snapshot(), before);
+  const published = await native.handleNativeAdmin(post());
+  assert.equal(published.status, 200);
+  const result = await published.json();
+  assert.equal(result.room.operatorId, 'north');
+  assert.equal(f.pool.snapshot().packages.length, 1);
 });
 
 test('Nora uses an own frozen idle, accepts a different compatible lane ID and empty optional positions', async () => {

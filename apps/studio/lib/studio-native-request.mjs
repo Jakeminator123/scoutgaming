@@ -42,20 +42,21 @@ export function studioDocumentNavigationHeaders(request) {
 
 const reject = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 
-// Next's route Request may omit its configured basePath. The transport URL
-// also remains the Lab URL when the public frontend rewrites a same-origin
-// request. Only this server-configured public/Lab pair can be reconciled; no
-// arbitrary forwarded URL, Origin, credential or authorization is substituted.
+// Next's route Request may omit its configured basePath. Unified UI accepts
+// only its public origin. Separate deployments can retain the Lab transport
+// URL after a public frontend rewrite; only that configured pair is reconciled.
+// No arbitrary forwarded URL, Origin, credential or authorization is substituted.
 export function normalizeNativeStudioRequest(request, config) {
   if (!config) throw Object.assign(new Error('studio_native_unavailable'), { statusCode: 503 });
   const url = new URL(request.url), [publicOrigin, labOrigin] = config.allowedOrigins;
-  if (config.allowedOrigins.length !== 2 || !config.allowedOrigins.includes(url.origin)
+  const unifiedUi = config.unifiedUi === true;
+  if (config.allowedOrigins.length !== (unifiedUi ? 1 : 2) || !config.allowedOrigins.includes(url.origin)
     || !config.publicHosts.includes(url.host) || url.username || url.password
     || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) && !isStudioRepliesReadQuery(request.method, url) || url.hash) reject();
   const publicHost = new URL(publicOrigin).host;
   const forwarded = request.headers.get('x-forwarded-host');
   const host = request.headers.get('host');
-  const rewrite = url.origin === labOrigin && forwarded === publicHost;
+  const rewrite = !unifiedUi && url.origin === labOrigin && forwarded === publicHost;
   if (forwarded !== null && forwarded !== url.host && !rewrite) reject();
   if (host !== null && host !== url.host && !(rewrite && host === publicHost)) reject();
   const proto = request.headers.get('x-forwarded-proto');

@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { createHash, scryptSync } from 'node:crypto';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit, createStudioPasswordDelivery } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createStudioNativeAuth } from '../packages/studio-access/studio-native-auth.mjs';
+import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
+import { nativeStudioAdminConfiguration, createNativeStudioRequestHandlers } from '../apps/studio/lib/studio-native-runtime.mjs';
+import { normalizeNativeStudioRequest } from '../apps/studio/lib/studio-native-request.mjs';
+import { createStudioAdminApi } from '../apps/studio/lib/studio-admin-api.mjs';
+import { studioAdminEndpoint } from '../apps/studio/lib/studio-admin-contract.mjs';
 
 const scope = { environment:'fixture',workspaceId:'croupier' }, publicOrigin = 'https://studio.example.invalid';
 const password = 'existing-private-password', salt = 'fixture-salt';
@@ -76,6 +81,43 @@ function fixture(overrides = {}) {
   return { get state() { return state; },boDb,clock,mail,reads,counters,failure,authorize,actions,call,request,options };
 }
 const status = expected => error => error.statusCode === expected;
+
+test('unified login and session retain real credentials, scoped writes and immediate revocation', async () => {
+  const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
+    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_LAB_BASE_PATH:'/studio',
+    CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,
+    CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require','fixture') });
+  const f = fixture({allowedOrigins:config.allowedOrigins});
+  const login = await f.actions.handle(normalizeNativeStudioRequest(f.request('login',{user:'operator',pass:password}),config));
+  assert.equal(login.status,200);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const endpoint = studioAdminEndpoint('POST','/studio/api/admin/tier');
+  let writes = 0, checks = 0, revokeDuringLock = false;
+  const api = createStudioAdminApi({ authorize:async request=>{checks++;return f.authorize(request);},
+    allowedOrigins:config.allowedOrigins,publicHosts:config.publicHosts,
+    handlers:new Map([['POST /studio/api/admin/tier',async context=>{
+      assert.deepEqual(context.scope,scope);assert.equal(context.actor.accountId,'7');
+      assert.deepEqual(context.body,{tier:'fixture',expectedRevision:3});writes++;return {ok:true};
+    }]]),gates:new Map(endpoint.handlerRequirements.map(name=>[name,async()=>true])),
+    mutationTransaction:async work=>{if(revokeDuringLock)f.state.epochs['7']++;return work();} });
+  const native = createNativeStudioRequestHandlers({configuration:()=>config,runtime:async()=>({api,authorize:f.authorize})});
+  const headers={cookie,host:'studio.example.invalid','x-forwarded-host':'studio.example.invalid','x-forwarded-proto':'https'};
+  const sessionRequest=()=>new Request(publicOrigin+'/api/auth/session',{headers});
+  const session=await native.handleNativeSession(sessionRequest());
+  assert.equal(session.status,200);assert.deepEqual(await session.json(),{username:'Operator',role:'admin',availableActions:['POST tier'],gameOrigin:publicOrigin});
+  const post=(extra={})=>new Request(publicOrigin+'/api/admin/tier',{method:'POST',headers:{...headers,origin:publicOrigin,
+    'sec-fetch-site':'same-origin','content-type':'application/json',...extra},body:JSON.stringify({tier:'fixture',expectedRevision:3})});
+  assert.equal((await native.handleNativeAdmin(post())).status,200);assert.equal(writes,1);assert.equal(checks,3);
+  for(const change of [{origin:'https://foreign.invalid'},{'x-forwarded-host':'foreign.invalid'},{'sec-fetch-site':'cross-site'},{'next-action':'fixture'}]){
+    assert.equal((await native.handleNativeAdmin(post(change))).status,403);assert.equal(checks,3);
+  }
+  const missingOrigin=post();missingOrigin.headers.delete('origin');
+  assert.equal((await native.handleNativeAdmin(missingOrigin)).status,403);assert.equal(writes,1);
+  revokeDuringLock=true;
+  assert.equal((await native.handleNativeAdmin(post())).status,401);assert.equal(writes,1);
+  assert.equal((await native.handleNativeSession(sessionRequest())).status,401);
+  assert.equal((await native.handleNativeAdmin(post())).status,401);assert.equal(writes,1);
+});
 
 test('native login reuses existing identity and signer; resulting cookie validates all current claims', async () => {
   const f = fixture();

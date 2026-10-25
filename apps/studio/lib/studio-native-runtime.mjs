@@ -58,20 +58,21 @@ export const nativeStudioAdminEnabled = (env = process.env) => env.CROUPIER_STUD
 export function nativeStudioAdminConfiguration(env = process.env) {
   if (!nativeStudioAdminEnabled(env)) return null;
   if (!studioGamePolicyConfiguration(env)) unavailable();
-  const origins = [env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN];
+  const unifiedUi = env.CROUPIER_VERCEL_UNIFIED_UI === '1';
+  const origins = unifiedUi ? [env.CROUPIER_PUBLIC_ORIGIN] : [env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN];
   for (const value of origins) {
     let url; try { url = new URL(value); } catch { unavailable(); }
     if (url.origin !== value || url.protocol !== 'https:' || url.username || url.password
       || ['localhost','127.0.0.1','[::1]'].includes(url.hostname)) unavailable();
   }
-  if (new Set(origins).size !== 2 || !['', '/studio'].includes(env.CROUPIER_LAB_BASE_PATH || '')) unavailable();
+  if (new Set(origins).size !== (unifiedUi ? 1 : 2) || !['', '/studio'].includes(env.CROUPIER_LAB_BASE_PATH || '')) unavailable();
   let scope, connectionString;
   try {
     scope = validateStudioScope({ environment: env.CROUPIER_STUDIO_ENVIRONMENT_ID, workspaceId: env.CROUPIER_STUDIO_WORKSPACE_ID });
     connectionString = validateGameConnection(env.CROUPIER_GAME_DATABASE_URL, env.CROUPIER_ZONES_DATABASE_URL);
   } catch { unavailable(); }
   if (!new URL(connectionString).hostname.endsWith('.neon.tech')) unavailable();
-  return Object.freeze({ scope, connectionString, allowedOrigins: origins,
+  return Object.freeze({ scope, connectionString, allowedOrigins: origins, ...(unifiedUi ? { unifiedUi: true } : {}),
     publicHosts: origins.map(origin => new URL(origin).host),
     apiBase: env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio/api/admin' : '/api/admin',
     authBase: env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio/api/auth' : '/api/auth' });
