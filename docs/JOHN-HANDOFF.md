@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## Leveransavstämning efter PR 392/394/395 — 25 oktober 2026
+
+| Leverans | Main-merge | Verifierat på fryst PR-head |
+| --- | --- | --- |
+| #392: pensionerad P6-kedja bort | `7910d1b777d318a046db115e499a72c95bd1ce71` | Full CI `40213762922`, inklusive SQL/omstart/HTTPS och produktionsledger-readiness |
+| #394: en spelprocess, äldre QA-transport och felaktiga Studio-testlås bort | `9bfb680e3feb069356fec72406394bc3165c6e2e` | Full CI `40215199058` och faktisk Docker/cache/Linux-start `40215199267` |
+| #395: en native-Admin-origin och AI-relä valfritt när AI-media är av | `547c433b9fe229974cfc262fef2c01ba4e63424f` | Full CI `40215534400`, Docker `40215534405`, rootintegration 148/148 utan skip |
+
+Samtliga fulla CI-kvitton omfattar åtta regressionsgrupper och slutgrinden.
+Render-deploy samordnas med den separata PAOW-PR #393; ny runtimeversion är
+ännu inte kvitterad här. Vercels deploymentstatus och faktisk Adminkontroll
+redovisas separat. Inga tabeller, molnroller, produktionsdata eller dealers
+ändrades av dessa leveranser. Det separata Neon-projektets endpoint är återläst
+vilande, fast 0,25 CU/300 s. Schema/init, egna app-/Blob-resurser och restore
+inväntar svar på det konkreta resursförslaget. Officiell status: 45 % (9/20),
+alltså 55 % återstående aktiviteter, inte 55 % kod eller arbetstid.
+
 ## Native-Admin följer unified-UI — 25 oktober 2026
 
 `CROUPIER_VERCEL_UNIFIED_UI=1` använder en public HTTPS-origin också i
@@ -11,7 +28,8 @@ rättningen. Root har läst produkt- och beteendediffarna utan blockerare.
 Syntetisk riktig login/session, publicering och återkallad auth-epoch ingår;
 detta är inte ett faktiskt Vercel-/Neon-installationskvitto.
 Root körde därefter samlad native-/publicerings-/AI-konfigurationsintegration:
-148/148, noll fel och noll skips. Full CI och faktisk Vercelacceptans återstår.
+148/148, noll fel och noll skips. Full CI är kvitterad ovan; faktisk
+Vercelacceptans återstår.
 
 ## Inspelat spel utan obligatorisk AI-infrastruktur — 25 oktober 2026
 
@@ -20,7 +38,7 @@ kamera och moving är av. Ett halvt par eller aktiv AI-media utan relä avvisas.
 Ingen produktionskonfiguration ändras. Inspelad media och serverns spelregler
 behöver därmed ingen extra AI-tjänst i en tom installation. Utan relä är chatten
 okonfigurerad: verklig beslutsväg ger 503 utan provideranrop eller påhittat svar.
-Riktade konfigurations-/chattprov: 38/38. Full CI och molnacceptans återstår;
+Riktade konfigurations-/chattprov: 38/38. Full CI är kvitterad ovan; molnacceptans återstår;
 detta kvitterar varken chatt, tal eller K06/K07.
 
 ## Render-starten avvecklad till en spelprocess — 25 oktober 2026

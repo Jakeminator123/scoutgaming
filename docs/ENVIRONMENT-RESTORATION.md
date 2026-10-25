@@ -78,13 +78,14 @@ Det tidigare skapandehindret är löst. Efter att automatisk godkännandegranskn
 
 ### Konkret fortsättning, ännu inte utförd
 
-**Konfigurationsrättning under leverans:** explicit unified-UI använder endast
+**Konfigurationsrättning levererad i PR #395, main `547c433b`:** explicit unified-UI använder endast
 den egna publika HTTPS-adressen även för native-Admin, login och SSR; ett
 andra Studio-alias behövs inte. Med genererat tal, kamera och moving av får
 AI-reläparet saknas. Spelchatten avvisar då anrop som okonfigurerad utan
 provideranrop. Detta ersätter de två infrastrukturhindren i det privata
 installationsunderlaget fryst på `5310a5f`; det ersätter inte talacceptans.
-Avvakta rättningens CI och kompatibla artifacts före installation.
+Full CI `40215534400` och Docker `40215534405` är gröna. Avvakta kompatibla
+driftsatta artifacts och det separata resursbeslutet före installation.
 
 Schemakontrollens bas: main `4abbf1985e183c145c5a7772fe02631c6ee9b274`. Stödet för tom katalog i steg 4 är levererat genom PR #391, main `2faa327e69ae6bac2646009063f4b25c237898bf`, med full CI och faktisk Studio-ledger-readiness på head `9da680f7c91ce3f61e2f99495a3103ab3ab0e9ca`. Schemafilerna i det granskade underlaget är oförändrade. Kompatibel deploy och init återstår; äldre läsare saknar stödet. Databasskapandet är klart som eget delsteg. Den tidigare avgränsningen mot ny appdrift/Render och produktionsdata gäller fortfarande; den nya bekräftelsen gällde Create och direkt begränsning. Tabellen gör nästa installationsbeslut granskningsbart, men är inget tillstånd att återöppna tidigare stoppad QA.
 

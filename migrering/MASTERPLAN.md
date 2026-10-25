@@ -1,6 +1,6 @@
 # Masterplan: selektiv Kevin-portning till mains produkt
 
-Reviderad 25 oktober 2026 på Jakobs begäran, med läsande granskning av inloggad Admin, main och PR:ar. Ursprunglig genomgång: `34c6c22f60ac75f335f647c83af06e7d0514476b`; senaste kod-/leveransavstämning: main `2faa327e69ae6bac2646009063f4b25c237898bf` efter #379/#386–#391 och tidigare #378/#380–#385. Ursprunglig plan: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Den fördjupade dokumentrevisionen samlas, efter Jakobs uttryckliga begäran om push, i befintlig [PR #379](https://github.com/Jakeminator123/scoutgaming/pull/379). Utförandestatus ägs endast av [status.json](status.json), med genererad [läsvy](STATUS.md). Dokumentrevisionen #379 är mergad som `8093797cfb920f31de9e2d775d3bad50d1d7b69b`. Fortsättningen levererar en avgränsad kompatibilitetsgrind och obligatoriska befintliga tester. Full mediaacceptans och aktivitetsstatus ändras inte.
+Reviderad 25 oktober 2026 på Jakobs begäran, med läsande granskning av inloggad Admin, main och PR:ar. Ursprunglig genomgång: `34c6c22f60ac75f335f647c83af06e7d0514476b`; senaste kod-/leveransavstämning: main `547c433b9fe229974cfc262fef2c01ba4e63424f` efter #379/#386–#392/#394/#395 och tidigare #378/#380–#385. Ursprunglig plan: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Den fördjupade dokumentrevisionen samlas, efter Jakobs uttryckliga begäran om push, i befintlig [PR #379](https://github.com/Jakeminator123/scoutgaming/pull/379). Utförandestatus ägs endast av [status.json](status.json), med genererad [läsvy](STATUS.md). Dokumentrevisionen #379 är mergad som `8093797cfb920f31de9e2d775d3bad50d1d7b69b`. Fortsättningen levererar en avgränsad kompatibilitetsgrind och obligatoriska befintliga tester. Full mediaacceptans och aktivitetsstatus ändras inte.
 
 ## Slutsats och verifierat nuläge
 
@@ -23,7 +23,15 @@ PR #333:s sju avvikande filer har granskats som kod, inte bara räknats: replay 
 
 **Rensning utan återinförd legacy, 25 oktober:** v3-kontrollen i [PR #390](https://github.com/Jakeminator123/scoutgaming/pull/390) ersätter CI-bygget av den gamla kombinerade v2-/Studio-imagen och kravet på lokal bootstrapdata. PR390 är mergad som `d9ef40c8` efter full CI; Linux-bygge, cache och nätverksfritt konfigurationsprov har passerat. PR #391 är mergad som `2faa327e` efter full CI `40211795949` och faktisk Studio-ledger-readiness. Den explicita tomma runtimekatalogen gör dessutom en ny molninstallation oberoende av historiska Astrid-/Emil-register. Kodproven går från tom projektmodell till syntetisk dealer, ordinarie uppladdning, fryst publicering och spelentré. Läsarkompatibel deploy ska ske före init. Inget av detta är full Neon/Blob- eller spelacceptans; [installationsordningen](../docs/ENVIRONMENT-RESTORATION.md#konkret-fortsättning-ännu-inte-utförd) och 45 % gäller fortsatt.
 
-**P6-avveckling:** den suspenderade kampanjens särskilda SDK/router/klient och fullfilsundantag är borttagna i kod; 244 riktade prov och 273 commitkontroller passerade utan skip. Aktiva tal-, behörighets- och Neon-budgetkontrakt kvarstår. Nästa granskade kodsteg tar även bort kombinerad Dockerfile, Studio-process, Next-förkontroll och intern Lab-proxy. Cloud startar då alltid en spelprocess; Webs sessionskontroll och Vercels Studio består. Den äldre diskbundna QA-streamkedjan och dess exklusiva tolv prov är också avvecklade; aktiv transport/session/budget består. Samlad integration: 147 pass, noll fel, tre Linux-skips. Slutlig CI/deploy för dessa steg och faktisk molnacceptans återstår. Detta är ett J05/J06-delsteg, inte avslutad migration.
+**P6- och runtimeavveckling levererad:** #392 tar bort den pensionerade SDK/router/klientkedjan; #394 tar bort kombinerad Dockerfile, Studio-process, Next-förkontroll, intern Lab-proxy och äldre diskbunden QA-transport. Ett kvarvarande CI-krav på Studio-filer i Render rättades till Vercels verkliga tjänst. #395 rättar native-Admin till en origin i explicit unified-läge och tillåter spelstart utan AI-relä när AI-media är av. Auth, scope, Neon, privat Blob, aktiv talbudget och serverns ekonomi består.
+
+| Delsteg | Verifierad leverans | Kvar |
+| --- | --- | --- |
+| #392 P6 | Main `7910d1b`; full CI `40213762922` | Aktuellt Render-deploykvitto |
+| #394 runtime/QA/CI | Main `9bfb680e`; full CI `40215199058`, Docker/cache/Linux `40215199267` | Samlad start/drain/restore-acceptans |
+| #395 Admin och AI-krav | Main `547c433b`; full CI `40215534400`, Docker `40215534405`, rootintegration 148/148 | Faktisk Vercel-/Admin- och isolerad molnacceptans |
+
+Full CI omfattar alla åtta grupper, faktisk SQL/omstart/HTTPS och produktionsledger-readiness. Inga checks undantogs. Dessa är J05/J06/J08/K06-delbevis; 45 % ändras inte. Det separata resursförslaget för roller/schema, egna Vercel/Render/Blob-resurser och kompatibel restore inväntar mänskligt svar. Den gamla QA-tjänsten förblir stoppad.
 
 ## Prioriterad väg till 9/10
 

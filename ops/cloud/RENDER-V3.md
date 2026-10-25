@@ -6,6 +6,12 @@ Aktiv spelmotor är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i w
 
 ## Syfte
 
+Kodavvecklingen är levererad i #392/#394 och konfigurationsförenklingen i #395,
+main `547c433b9fe229974cfc262fef2c01ba4e63424f`, med full CI och faktiska
+Docker/cache/Linux-prov. Inga nya Render-variabler eller SQL-migreringar krävs
+av dessa PR:ar. Behåll nuvarande ingress, scope och aktiva talinställningar.
+Nytt deploy-/health-/capability-kvitto återstår enligt driftgränsen ovan.
+
 - Befintliga publika kontrakt för allt Vercel skickar till Render:
   ingresshemlighet, WebSocket-upgrade, moving-callback, `/__cloud/health`,
   `/__cloud/version`, delat-rum-socket.
