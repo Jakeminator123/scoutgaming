@@ -10,7 +10,7 @@ import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
-import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
+import {updatePublishedSceneLayout} from '../../../packages/presentation/contracts/published-scene-layout.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {
@@ -250,7 +250,10 @@ async function placementFixture(options){
   for(let revision=1;revision<9;revision++)await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:revision,lanes:[lane.id],games:['blackjack'],tables:[room.id],
     branding:withPackagePresentation({name:'North',roomOverrides:{[room.id]:{table:placementTable}},privateMetadata:{kept:true}},presentation)});
   f.pool.seedBrandingDraft({revision:3,basePackageRevision:9,branding:{roomOverrides:{[room.id]:{dealer:'linnea'}}}});
-  const body={action:'adjust-mobile-placement',operatorId:'north',roomId:room.id,tableId:placementTable,expectedPackageRevision:9,offsetY:-.07};
+  const body={action:'update-scene-layout',operatorId:'north',roomId:room.id,tableId:placementTable,expectedPackageRevision:9,composition:structuredClone(lane.composition)};
+  body.composition.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);
+  body.composition.desktop.table.width=.8;
+  body.composition.desktop.gameUi={actions:{x:.5,y:.8},chat:{x:1,y:0,width:.3,height:.4}};
   const context={...f.context,body};
   return {...f,presentation,room,body,context,prepare:()=>f.api.preparations.get('POST /studio/api/admin/operator-package')(context),
     publish:prepared=>f.api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})})};
@@ -309,11 +312,11 @@ test('scoped idle publication rechecks project, administration, media, package a
   }
 });
 
-test('published mobile placement uses frozen revision 9 and preserves project, branding draft, all media and package history',async()=>{
+test('published scene layout uses frozen revision 9 and preserves project, branding draft, all media and package history',async()=>{
   const f=await placementFixture(),before=f.pool.snapshot(),original=await f.direct.getCurrentPackage('north'),io=f.io(),offset=f.pool.calls.length;
   const prepared=await f.prepare(),result=await f.publish(prepared),after=f.pool.snapshot();
-  assert.equal(result.packageRevision,10);assert.deepEqual(result.adjusted,{roomId:f.room.id,tableId:placementTable,offsetY:-.07});
-  const expected=structuredClone(f.presentation);expected.lanes[0].composition.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);
+  assert.equal(result.packageRevision,10);assert.deepEqual(result.adjusted,{roomId:f.room.id,tableId:placementTable});
+  const expected=structuredClone(f.presentation);expected.lanes[0].composition=structuredClone(f.body.composition);
   assert.deepEqual(result.presentation,expected);
   assert.deepEqual(readPackagePresentation(await f.direct.getCurrentPackage('north')),expected);
   assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),publicPackageBranding(original.branding));
@@ -323,26 +326,31 @@ test('published mobile placement uses frozen revision 9 and preserves project, b
   assert.equal(f.pool.calls.slice(offset).some(row=>row.marker==='read-document'&&row.values[2]==='project'),false,'handler never reads the project draft');
 });
 
-test('mobile placement helper changes only three card heights, supports preview zero and rejects incompatible or out-of-range geometry',()=>{
-  const settings=defaultCompositionSettings(),board=defaultBlackjackTableGeometry(placementTable);board.mobile.betMode='under-cards';settings.blackjackTables=[board];
-  board.desktop.anchors={cards:{target:'table',rect:{x:0,y:.007349,width:1,height:1}}};
-  const before=structuredClone(settings),next=adjustPublishedMobilePlacement(settings,placementTable,-.07);
-  assert.deepEqual(settings,before);assert.deepEqual(adjustPublishedMobilePlacement(settings,placementTable,0),settings);
-  const expected=structuredClone(before);expected.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);assert.deepEqual(next,expected);
-  for(const offset of [NaN,Infinity,-Infinity,.20001,-.20001,'-.07',null])assert.throws(()=>adjustPublishedMobilePlacement(settings,placementTable,offset),e=>e.statusCode===422);
-  assert.throws(()=>adjustPublishedMobilePlacement(settings,mediaId,-.07),e=>e.statusCode===422);
-  for(const mutate of [b=>delete b.betMode,b=>b.autoScale={landing:true,cardSize:false,chips:false},
-    b=>b.anchors={bets:{target:'table',rect:{x:0,y:0,width:1,height:1}}},b=>b.seats[0].card.y=.01]){
-    const invalid=structuredClone(settings);mutate(invalid.blackjackTables[0].mobile);
-    assert.throws(()=>adjustPublishedMobilePlacement(invalid,placementTable,-.07),e=>e.statusCode===422);
+test('scene layout supports both formats, anchors and controls while preserving unrelated board geometry',()=>{
+  const settings=defaultCompositionSettings(),board=defaultBlackjackTableGeometry(placementTable),other=defaultBlackjackTableGeometry(mediaId);
+  settings.blackjackTables=[board,other];
+  const before=structuredClone(settings),edit=structuredClone(settings);
+  edit.mobile.dealer.scale=1.2;edit.desktop.background.x=.1;edit.desktop.table.width=.8;edit.tableFront=true;
+  edit.mobile.gameUi={actions:null,chat:{x:1,y:0,width:.9,height:.4}};
+  edit.blackjackTables[0].mobile.autoScale={landing:true,cardSize:false,chips:true};
+  edit.blackjackTables[0].desktop.anchors={cards:{target:'table',rect:{x:0,y:.1,width:1,height:1}}};
+  edit.blackjackTables[0].desktop.fanSpread=.75;
+  const next=updatePublishedSceneLayout(settings,placementTable,edit);
+  assert.deepEqual(next,edit);assert.deepEqual(settings,before);assert.notEqual(next,edit);
+  for(const mutation of [value=>value.blackjackTables[1].mobile.cardWidth=.1,value=>value.blackjackTables.pop(),
+    value=>value.blackjackTables[0].desktop.seats[0].card.y=1.01,value=>value.mobile.gameUi.chat.width=.01,
+    value=>value.mobile.dealer.scale=Infinity]){
+    const invalid=structuredClone(edit);mutation(invalid);assert.throws(()=>updatePublishedSceneLayout(settings,placementTable,invalid),e=>e.statusCode===422);
   }
-  const overflow=structuredClone(settings);overflow.blackjackTables[0].mobile.seats[2].card.y=.95;
-  assert.throws(()=>adjustPublishedMobilePlacement(overflow,placementTable,.07),e=>e.statusCode===422);
+  const blank=defaultCompositionSettings(),created={...blank,blackjackTables:[board]};
+  assert.deepEqual(updatePublishedSceneLayout(blank,placementTable,created),created,'first manual board profile can be created');
+  assert.deepEqual(updatePublishedSceneLayout(created,placementTable,blank),blank,'active board profile can be reset');
+  assert.throws(()=>updatePublishedSceneLayout(settings,'bad-id',edit),e=>e.statusCode===422);
 });
 
-test('mobile placement intent is exact, nonzero and scoped; malicious or stale inputs never publish',async()=>{
+test('scene layout intent is exact, nonzero and scoped; malicious or stale inputs never publish',async()=>{
   const f=await placementFixture(),before=f.pool.snapshot();
-  for(const patch of [{offsetY:0},{offsetY:.21},{offsetY:'-.07'},{offsetY:null},{expectedPackageRevision:null},{expectedPackageRevision:0},
+  for(const patch of [{composition:null},{composition:{}},{composition:f.presentation.lanes[0].composition},{offsetY:.07},{expectedPackageRevision:null},{expectedPackageRevision:0},
     {tableId:'../other'},{roomId:'../other'},{actor:'attacker'},{lanes:[f.lane.id]},{presentation:f.presentation},{expectedPackageRevision:8},
     {roomId:'room-missing'},{operatorId:'south'},{tableId:mediaId}]){
     await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:{...f.body,...patch}}),e=>[400,409,422].includes(e.statusCode));
@@ -353,7 +361,7 @@ test('mobile placement intent is exact, nonzero and scoped; malicious or stale i
   assert.deepEqual(f.pool.snapshot(),before);
 });
 
-test('mobile placement refuses foreign, inactive, roulette and shared-lane rooms',async()=>{
+test('scene layout refuses foreign, inactive, roulette and shared-lane rooms',async()=>{
   for(const mutation of [admin=>admin.rooms[0].operatorId='south',admin=>admin.rooms[0].state='preview',admin=>admin.rooms[0].game='roulette',
     admin=>admin.rooms.push({...admin.rooms[0],id:'room-other'})]){
     const f=await placementFixture(),admin=await f.repository.readDocument('administration');mutation(admin.value);
@@ -364,7 +372,7 @@ test('mobile placement refuses foreign, inactive, roulette and shared-lane rooms
   }
 });
 
-test('mobile placement requires effective frozen room branding and rejects a forged preparation',async()=>{
+test('scene layout requires effective frozen room branding and rejects a forged preparation',async()=>{
   const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.assets[0]);
   // The uploaded Oak is allowed but a different published room choice is authoritative.
   const oak=presentation.assets.find(row=>row.id===placementTable);Object.assign(other,oak,{id:mediaId,pathname:`croupier/media/tables/${mediaId}/${oak.sha256}.png`});
@@ -374,11 +382,11 @@ test('mobile placement requires effective frozen room branding and rejects a for
   f.body.expectedPackageRevision=10;await assert.rejects(f.prepare(),e=>e.statusCode===409);
   const clean=await placementFixture(),prepared=await clean.prepare(),before=clean.pool.snapshot();
   await assert.rejects(clean.publish({...prepared}),e=>e.statusCode===422);
-  await assert.rejects(clean.api.handlers.get('POST /studio/api/admin/operator-package')({...clean.context,body:{...clean.body,offsetY:-.08},prepared}),e=>e.statusCode===422);
+  await assert.rejects(clean.api.handlers.get('POST /studio/api/admin/operator-package')({...clean.context,body:{...clean.body,composition:{...clean.body.composition,tableFront:!clean.body.composition.tableFront}},prepared}),e=>e.statusCode===422);
   assert.deepEqual(clean.pool.snapshot(),before);
 });
 
-test('mobile placement retains another published lane and refuses unpublished rooms or suspended operators',async()=>{
+test('scene layout retains another published lane and refuses unpublished rooms or suspended operators',async()=>{
   const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.lanes[0]);
   other.id='other-published-lane';presentation.lanes.push(other);
   const admin=await f.repository.readDocument('administration');admin.value.rooms.push({...f.room,id:'room-other-lane',presentationLaneId:other.id});
@@ -394,7 +402,7 @@ test('mobile placement retains another published lane and refuses unpublished ro
   assert.deepEqual(suspended.pool.snapshot(),before);
 });
 
-test('mobile placement CAS rejects changed package or administration and rolls back SQL failure',async()=>{
+test('scene layout CAS rejects changed package or administration and rolls back SQL failure',async()=>{
   for(const change of ['package','administration','failure']){
     const f=await placementFixture(),prepared=await f.prepare();
     if(change==='package'){const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
@@ -430,7 +438,7 @@ test('N1 scoped idle publication requires admin authorization, current session a
   assert.equal(descriptor.presentationMutation.kind,'presentation-package');
   assert.deepEqual(descriptor.presentationMutation.value,(await response.json()).presentation);
 });
-test('N1 mobile placement negotiates the exact frozen candidate without project draft and rejects unavailable readiness',async()=>{
+test('N1 scene layout negotiates the exact frozen candidate without project draft and rejects unavailable readiness',async()=>{
   const f=await placementFixture();let descriptor;
   const api=placementAdmin(f,{mutationTransaction:async(work,options)=>{descriptor=options;return work();}});
   const response=await api.handle(request('operator-package',f.body));assert.equal(response.status,200);
@@ -447,7 +455,7 @@ test('N1 mobile placement negotiates the exact frozen candidate without project 
   assert.deepEqual(normalDescriptor.presentationDocuments,['project','administration']);
 });
 
-test('N1 mobile placement blocks anonymous, partner, cross-origin and revoked sessions without writes',async()=>{
+test('N1 scene layout blocks anonymous, partner, cross-origin and revoked sessions without writes',async()=>{
   const f=await placementFixture(),before=f.pool.snapshot();
   for(const actor of [null,{...session,scope:nativeScope,role:'partner'}]){
     const api=placementAdmin(f,{authorize:async()=>actor});assert.ok([401,403].includes((await api.handle(request('operator-package',f.body))).status));

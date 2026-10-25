@@ -565,7 +565,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     }};
   const login=await handlePartnerAuth(loginRequest('north-partner',secret),nativeConfig),cookie='partner_session='+tokenOf(login);
   const get=()=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{headers:{host:'public.example.invalid',cookie}}),nativeConfig);
-  const command=body=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{
+  const command=(body,operator='demo-north')=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator='+encodeURIComponent(operator),{
     method:'POST',headers:{host:'public.example.invalid',cookie,origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
     body:JSON.stringify(body)}),nativeConfig);
   const save=(dealer='linnea')=>command({action:'save-draft',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,branding:{lane:lane.id,dealer}});
@@ -579,12 +579,36 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     return publish((await reviewed.json()).reviewToken);
   };
   trace.length=0;
-  return {pool,repository,presentation,administration,get,post,save,saveRoomColor,review,publish,changeBeforeWrite:change=>{beforeWrite=change;},
+  return {pool,repository,presentation,administration,get,post,command,save,saveRoomColor,review,publish,changeBeforeWrite:change=>{beforeWrite=change;},
     addLockedAnchors:()=>{state.packages[0].branding=canonicalStudioJson(withPackagePresentation({name:'North'},anchoredPresentation()));},
     changePackageRevision:()=>{state.packages[0].package_revision=2;},
     revoke:()=>{state.memberships[0].status='suspended';},
     changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
 }
+
+test('native discard accepts only scoped revision intent and preserves the published package',async()=>{
+  const f=await nativeBrandingFixture();assert.equal((await f.save()).status,200);
+  const before=f.pool.snapshot(),current=await(await f.get()).json();
+  const intent={action:'discard-draft',expectedDraftRevision:1,expectedPackageRevision:1};
+  for(const extra of [{operatorId:'other'},{branding:{}},{sourcePackageRevision:1}])
+    assert.equal((await f.command({...intent,...extra})).status,400);
+  assert.equal((await f.command(intent,'other')).status,404);
+  assert.equal((await f.command({...intent,expectedDraftRevision:0})).status,409);
+  assert.deepEqual(f.pool.snapshot(),before);
+  const response=await f.command(intent);assert.equal(response.status,200);
+  const saved=await response.json();assert.equal(saved.operatorId,current.operatorId);assert.equal(saved.draft,null);assert.equal(saved.draftRevision,2);
+  assert.equal(saved.packageRevision,current.packageRevision);assert.deepEqual(saved.branding,current.branding);assert.deepEqual(saved.presentation,current.presentation);
+  assert.deepEqual(f.pool.snapshot().packages,before.packages);assert.equal((await(await f.get()).json()).draft,null);
+  assert.equal((await f.review()).status,409);
+});
+
+test('native discard rechecks access inside the transaction and keeps the draft when access changes',async()=>{
+  const f=await nativeBrandingFixture();assert.equal((await f.save()).status,200);
+  const before=f.pool.snapshot();f.changeBeforeWrite(f.revoke);
+  const response=await f.command({action:'discard-draft',expectedDraftRevision:1,expectedPackageRevision:1});
+  assert.equal(response.status,403);
+  const after=f.pool.snapshot();assert.deepEqual(after.drafts,before.drafts);assert.deepEqual(after.packages,before.packages);assert.deepEqual(after.operatorAudits,before.operatorAudits);
+});
 
 test('native N2 saves on one scoped client and frozen dealer choice reaches the actual room',async()=>{
   const f=await nativeBrandingFixture(),read=await f.get();assert.equal(read.status,200,JSON.stringify(f.pool.trace.map(row=>row.tag)));

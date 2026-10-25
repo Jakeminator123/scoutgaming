@@ -12,18 +12,29 @@ const require=createRequire(new URL('../client/package.json',import.meta.url)),R
 const nodes=(node,p)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(n=>nodes(n,p)):[...(p(node)?[node]:[]),...nodes(node.props?.children,p)];
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
 function fixture(){
-  const slots=[],module={exports:{}};let cursor=0;
-  const hooks={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=initial;return [slots[i],v=>slots[i]=typeof v==='function'?v(slots[i]):v];},useRef(v){return slots[cursor++]??={current:v};},useEffect(){}};
+  const slots=[],effects=[],module={exports:{}};let cursor=0;
+  const hooks={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=initial;return [slots[i],v=>slots[i]=typeof v==='function'?v(slots[i]):v];},useRef(v){return slots[cursor++]??={current:v};},useEffect(fn){effects.push(fn);}};
   const source=readFileSync(new URL('./blackjack-scene-placement-editor.tsx',import.meta.url),'utf8');
-  runInNewContext(transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,structuredClone,require:name=>{
+  runInNewContext(transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,structuredClone,ResizeObserver:class{observe(){}disconnect(){}},require:name=>{
     if(name==='react')return hooks;if(name.endsWith('.css'))return {};
     if(name.includes('composition-settings'))return contract;if(name.includes('composition-anchors'))return anchors;
     if(name.includes('game-overlay-layout'))return overlay;if(name.includes('filmed-profiles/registry'))return profiles;if(name.includes('card-view'))return cardView;return require(name);
   }});
   const value=contract.defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002'),settings=contract.defaultCompositionSettings();settings.blackjackTables=[value];
   const edits=[],props={tableId:value.tableId,value,savedValue:structuredClone(value),layout:'desktop',disabled:false,scene:{settings,width:1672,height:941},renderPreview:overlay=>React.createElement('div',{},overlay),onChange:next=>{next=structuredClone(next);const settings={...props.scene.settings,blackjackTables:next?[next]:[]};contract.validateCompositionSettings(settings);edits.push(next);props.value=next;props.scene.settings=settings;}};
-  return {props,edits,render:()=>{cursor=0;return module.exports.BlackjackScenePlacementEditor(props);},field:(tree,label)=>nodes(tree,n=>n.props?.['aria-label']===label)[0],button:(tree,label)=>nodes(tree,n=>n.type==='button'&&text(n)===label)[0]};
+  return {props,edits,render:()=>{cursor=0;return module.exports.BlackjackScenePlacementEditor(props);},field:(tree,label)=>nodes(tree,n=>n.props?.['aria-label']===label)[0],button:(tree,label)=>nodes(tree,n=>n.type==='button'&&text(n)===label)[0],
+    preview(width,height){const render=()=>{cursor=0;const tree=module.exports.BlackjackScenePlacementEditor(props),scene=nodes(tree,n=>typeof n.type==='function'&&n.type.name==='SceneOverlay')[0];return scene.type(scene.props);};
+      const tree=render(),svg=nodes(tree,n=>n.type==='svg')[0];svg.props.ref.current={getBoundingClientRect:()=>({width,height})};for(const effect of effects.splice(0))effect();return render();}};
 }
+
+test('a small mobile preview keeps device-sized touch geometry and never invents thumbnail overflow',()=>{
+  const h=fixture();h.props.layout='mobile';h.props.scene.settings.mobile.table={width:1.75,x:0,y:.35};
+  h.props.value.mobile={betMode:'under-cards',cardWidth:.038,dealer:{x:.5,y:.13},seats:[.324,.5,.676].map((x,i)=>({card:{x,y:i===1?.22:.19},bet:{x,y:.43}}))};
+  const small=h.preview(151,151*16/9),large=h.preview(390,390*16/9);
+  const marks=tree=>nodes(tree,n=>n.props?.['data-mark']).map(n=>n.props.transform);
+  assert.deepEqual(marks(small),marks(large),'CSS preview size does not move the physical card or chip targets');
+  assert.equal(nodes(small,n=>n.props?.role==='status').length,0,'valid device geometry must not report thumbnail-only overflow');
+});
 test('real editor rebinds without a jump, retains manual markers through follow-cards and resets only saved cards',()=>{
   const h=fixture(),before=structuredClone(h.props.value),frames=anchors.compositionAnchorFrames(h.props.scene.settings,'desktop',h.props.scene);let tree=h.render();
   h.field(tree,'Korten följer').props.onChange({target:{value:'dealer'}});tree=h.render();

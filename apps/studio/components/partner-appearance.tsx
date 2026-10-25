@@ -9,7 +9,7 @@ import {adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices}
 import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
 import {appearanceBranding, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, appearanceRoomStatus, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
-import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
+import {updatePublishedSceneLayout} from '../../../packages/presentation/contracts/published-scene-layout.mjs';
 import type {CompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 
@@ -18,7 +18,7 @@ export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 export type AppearanceRoomStatus = {roomId: string; packageRevision: number; draftRevision: number; draft: boolean; live: Record<'background'|'dealer'|'table', string|null>; labels: Record<'background'|'dealer'|'table', string>};
 
 const FIELDS = ['background', 'dealer', 'table', 'color'] as const;
-type Action = 'save-draft'|'review'|'publish'|'restore';
+type Action = 'save-draft'|'review'|'publish'|'restore'|'discard-draft';
 const ordered = (value:unknown):unknown => Array.isArray(value) ? value.map(ordered) : value&&typeof value==='object'
   ? Object.fromEntries(Object.entries(value).sort(([left],[right])=>left.localeCompare(right)).map(([key,item])=>[key,ordered(item)])) : value;
 const sameValue = (left:unknown,right:unknown) => JSON.stringify(ordered(left))===JSON.stringify(ordered(right));
@@ -46,7 +46,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewMedia,setPreviewMedia] = useState<PublicOperatorPreview|null>(null);
-  const [mobileAdjustment,setMobileAdjustment] = useState<{identity:string;percent:number}|null>(null);
+  const [sceneDraft,setSceneDraft] = useState<{identity:string;composition:CompositionSettings}|null>(null);
   const visual=roomLayout&&adminChoices;
   const busyRef = useRef(false);
   const active = useRef(true);
@@ -65,32 +65,35 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const selected = room ? branding.roomOverrides?.[room.id] ?? {} : branding;
   const inherited = room && laneId === (branding.lane ?? server.presentation?.lanes[0]?.id) ? branding : {};
   const liveRoom=room?appearanceRoomStatus(server,room.id):null;
-  const mobileIdentity=[initial.operatorId,operatorSlug,server.operatorId,room?.id,server.packageRevision,liveRoom?.live.table].join(':');
-  const publicationContext=useRef('');publicationContext.current=visible?mobileIdentity:'';
-  const mobileEditing=visual&&mobileAdjustment?.identity===mobileIdentity;
-  const mobilePercent=mobileEditing?mobileAdjustment!.percent:0;
+  const sceneIdentity=[initial.operatorId,operatorSlug,server.operatorId,room?.id,server.packageRevision,lane?.id,liveRoom?.live.table,liveRoom?.live.dealer].join(':');
+  const publicationContext=useRef('');publicationContext.current=visible?sceneIdentity:'';
+  const sceneEditing=visual&&sceneDraft?.identity===sceneIdentity;
   const frozenTable=server.presentation?.assets.find(row=>row.id===liveRoom?.live.table&&row.role==='table');
-  let mobileSupported=false, mobileSettings:CompositionSettings|null=null;
+  const sharedSceneRooms=server.rooms?.filter(row=>row.presentationLaneId===lane?.id)??[];
+  let sceneSupported=false, sceneSource:CompositionSettings|null=null, sceneSettings:CompositionSettings|null=null;
   if(visual&&room?.game==='blackjack'&&liveRoom?.live.table&&lane?.composition&&frozenTable&&frozenTable.width>0&&frozenTable.height>0){
-    try{adjustPublishedMobilePlacement(lane.composition,liveRoom.live.table,0);mobileSupported=true;}catch{/* Other geometries use the full composition editor. */}
+    try{updatePublishedSceneLayout(lane.composition,liveRoom.live.table,lane.composition);sceneSupported=true;}catch{/* Invalid frozen scenes cannot be edited. */}
     if(previewMedia?.operatorSlug===operatorSlug&&previewMedia.roomId===room.id&&previewMedia.packageRevision===server.packageRevision
       &&previewMedia.dealer.id===liveRoom.live.dealer&&previewMedia.independentLayers&&previewMedia.settings
       &&previewMedia.media.tables.some(row=>row.id===liveRoom.live.table)&&sameValue(previewMedia.settings,lane.composition)){
-      try{mobileSettings=adjustPublishedMobilePlacement(previewMedia.settings,liveRoom.live.table,mobilePercent/100);}catch{/* Invalid placement cannot publish. */}
+      sceneSource=previewMedia.settings;
+      if(sceneEditing)try{sceneSettings=updatePublishedSceneLayout(sceneSource,liveRoom.live.table,sceneDraft!.composition);}catch{/* Invalid layout cannot publish. */}
     }
   }
-  const canAdjustMobile=editable&&visible&&mobileSupported&&!dirty;
-  const canPublishMobile=canAdjustMobile&&mobileEditing&&mobilePercent!==0&&Boolean(mobileSettings);
-  const unsaved=dirty||mobileEditing&&mobilePercent!==0;
+  const canStartScene=editable&&visible&&sceneSupported&&sharedSceneRooms.length===1&&!dirty;
+  const canEditScene=canStartScene&&Boolean(sceneSource);
+  const sceneChanged=sceneEditing&&!sameValue(sceneDraft!.composition,lane?.composition);
+  const canPublishScene=canEditScene&&sceneChanged&&Boolean(sceneSettings);
+  const unsaved=dirty||sceneChanged;
   useEffect(() => { onDirtyChange?.(unsaved); return () => onDirtyChange?.(false); }, [unsaved, branding, onDirtyChange]);
   const fields = FIELDS.filter(key => section === 'all' || section === 'theme' || section === 'design' && ['table','color'].includes(key) || section === 'background' && key === 'background' || section === 'dealers' && key === 'dealer');
   // The room layout keeps the three layers together and demotes table colour under them.
   const layerFields = roomLayout ? fields.filter(key => key !== 'color') : fields;
   const labels: Record<string, string> = {lane:t('Sammansättning','Composition'),table:t('Bord','Table'),background:t('Bakgrund','Background'),dealer:'Dealer',color:t('Bordsfärg','Table colour')};
   const reviewValid = Boolean(review && server.draft && !dirty && !stale && review.draftRevision === draftRevision && review.packageRevision === server.packageRevision && sameAppearance(review.branding, branding));
-  const canSave = editable && !mobileEditing && (dirty || stale);
-  const canReview = editable && !mobileEditing && server.draft && !dirty && !stale;
-  const canPublish = editable && !mobileEditing && reviewValid && Boolean(review?.changes.length);
+  const canSave = editable && !sceneEditing && (dirty || stale);
+  const canReview = editable && !sceneEditing && server.draft && !dirty && !stale;
+  const canPublish = editable && !sceneEditing && reviewValid && Boolean(review?.changes.length);
   const endpoint = `${apiBase}/branding?operator=${encodeURIComponent(operatorSlug)}`;
   const labelOf = (value: string|null) => {
     if (value === null) return t('Standard','Default');
@@ -114,17 +117,18 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   }, [server, roomId]);
 
   function change(key: string, selection: string) {
-    if (!editable || busyRef.current || mobileEditing) return;
+    if (!editable || busyRef.current || sceneEditing) return;
     setBranding(current => changeAppearance(current, {roomId: room?.id ?? null, key, selection}));
     setReview(null); setNotice('');
   }
   function resetRoom() {
-    if (!editable || busyRef.current || mobileEditing || !room) return;
+    if (!editable || busyRef.current || sceneEditing || !room) return;
     setBranding(current => resetAppearanceRoom(current, room.id)); setReview(null); setNotice('');
   }
   async function command(action: Action, sourcePackageRevision?: number) {
-    if (!editable || busyRef.current || mobileEditing || action === 'save-draft' && !canSave || action === 'review' && !canReview
-      || action === 'publish' && !canPublish || action === 'restore' && dirty) return;
+    if (!editable || busyRef.current || sceneEditing || action === 'save-draft' && !canSave || action === 'review' && !canReview
+      || action === 'publish' && !canPublish || action === 'restore' && (dirty||sourcePackageRevision===server.packageRevision)) return;
+    if(action==='discard-draft'&&!server.draft){setBranding(appearanceBranding(server.branding));setReview(null);setProblem('');setLatest(null);setNotice(t('Ändringarna är kastade.','Changes discarded.'));return;}
     reportBusy(true); setProblem(''); setNotice(''); setLatest(null);
     const expectedDraftRevision = draftRevision, expectedPackageRevision = server.packageRevision;
     const body = {action, expectedDraftRevision, expectedPackageRevision,
@@ -154,25 +158,32 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
         setReview(payload); setNotice(t('Granskningen är klar. Kontrollera ändringar och berörda rum innan publicering.','Review ready. Check the changes and affected rooms before publishing.')); return;
       }
       if (!appearanceReceipt(payload, initial.operatorId) || !payload.presentation || appearanceDraftRevision(payload) <= expectedDraftRevision
-        || (action === 'publish' ? payload.packageRevision !== expectedPackageRevision + 1 || payload.draft !== null
+        || (action === 'discard-draft' ? appearanceDraftRevision(payload)!==expectedDraftRevision+1 || payload.packageRevision !== expectedPackageRevision || payload.draft !== null || !sameAppearance(payload.branding,server.branding) || !sameValue(payload.presentation,server.presentation)
+          : action === 'publish' ? payload.packageRevision !== expectedPackageRevision + 1 || payload.draft !== null
           : payload.packageRevision !== expectedPackageRevision || !payload.draft || payload.draft.basePackageRevision !== expectedPackageRevision)
         || action === 'save-draft' && !sameAppearance(payload.draft?.branding, branding)) throw new Error('invalid receipt');
       setServer(payload); setBranding(appearanceDraftBranding(payload));
-      setNotice(action === 'publish' ? t(`Publicerat som version ${payload.packageRevision}.`, `Published as version ${payload.packageRevision}.`)
+      setNotice(action === 'discard-draft' ? t('Bolagets materialutkast är kastat. Publicerade rum är oförändrade.','Company material draft discarded. Published rooms are unchanged.')
+        : action === 'publish' ? t(`Publicerat som version ${payload.packageRevision}.`, `Published as version ${payload.packageRevision}.`)
         : action === 'restore' ? t('Tidigare version har återställts till ett sparat utkast. Publicerad version är oförändrad.','Earlier version restored to a saved draft. The published version is unchanged.')
         : t('Utkastet är sparat. Publicerad version är oförändrad.','Draft saved. The published version is unchanged.'));
-      if (action === 'publish') onSaved?.(payload);
+      if (action === 'publish'||action==='discard-draft') onSaved?.(payload);
     } catch {
       if (active.current) { setBlocked(true); setProblem(t('Svaret kunde inte bekräftas. Redigeringen finns kvar. Hämta senaste version innan du fortsätter.','The response could not be confirmed. Your edits remain here. Fetch the latest version before continuing.')); }
     } finally {
       if (active.current) reportBusy(false); else busyRef.current = false;
     }
   }
-  async function publishMobilePlacement() {
-    if(!canPublishMobile||busyRef.current||!room||!lane||!liveRoom?.live.table||!mobileSettings||!server.presentation)return;
-    const identity=mobileIdentity,expectedPackageRevision=server.packageRevision,offsetY=mobilePercent/100;
-    const intent={action:'adjust-mobile-placement',operatorId:server.operatorId,roomId:room.id,tableId:liveRoom.live.table,expectedPackageRevision,offsetY};
-    const expectedPresentation={...server.presentation,lanes:server.presentation.lanes.map(row=>row.id===lane.id?{...row,composition:mobileSettings}:row)};
+  function changeScene(composition:CompositionSettings){
+    if(!canEditScene||busyRef.current||!sceneEditing||!sceneSource||!liveRoom?.live.table||publicationContext.current!==sceneIdentity)return;
+    try{setSceneDraft({identity:sceneIdentity,composition:updatePublishedSceneLayout(sceneSource,liveRoom.live.table,composition)});setProblem('');setNotice('');}
+    catch{setProblem(t('Placeringen är ogiltig eller ändrar ett annat bord.','The layout is invalid or changes another table.'));}
+  }
+  async function publishSceneLayout() {
+    if(!active.current||publicationContext.current!==sceneIdentity||!canPublishScene||busyRef.current||!room||!lane||!liveRoom?.live.table||!sceneSettings||!server.presentation)return;
+    const identity=sceneIdentity,expectedPackageRevision=server.packageRevision;
+    const intent={action:'update-scene-layout',operatorId:server.operatorId,roomId:room.id,tableId:liveRoom.live.table,expectedPackageRevision,composition:sceneSettings};
+    const expectedPresentation={...server.presentation,lanes:server.presentation.lanes.map(row=>row.id===lane.id?{...row,composition:sceneSettings}:row)};
     const current=()=>active.current&&publicationContext.current===identity;
     reportBusy(true);setProblem('');setNotice('');setReview(null);setLatest(null);
     try{
@@ -180,7 +191,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       const value:unknown=await response.json().catch(()=>null);if(!current())return;
       const receipt=value&&typeof value==='object'?value as Record<string,unknown>:null;
       if(!response.ok||receipt?.operatorId!==server.operatorId||receipt.packageRevision!==expectedPackageRevision+1
-        ||!sameValue(receipt.presentation,expectedPresentation)||!sameValue(receipt.adjusted,{roomId:room.id,tableId:liveRoom.live.table,offsetY}))throw new Error('unconfirmed publication');
+        ||!sameValue(receipt.presentation,expectedPresentation)||!sameValue(receipt.adjusted,{roomId:room.id,tableId:liveRoom.live.table}))throw new Error('unconfirmed publication');
       // A write receipt alone is insufficient: adopt only the separately read
       // published version, including the unchanged saved material draft.
       const refreshed=await fetch(endpoint,{credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}});
@@ -188,11 +199,11 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       if(!refreshed.ok||!appearanceReceipt(saved,initial.operatorId)||saved.packageRevision!==expectedPackageRevision+1
         ||!sameValue(saved.presentation,expectedPresentation)||!sameAppearance(saved.branding,server.branding)
         ||!sameValue(saved.draft,server.draft)||appearanceDraftRevision(saved)!==draftRevision)throw new Error('unconfirmed readback');
-      setServer(saved);setBranding(appearanceDraftBranding(saved));setMobileAdjustment(null);
-      setNotice(t(`Mobilplaceringen är publicerad som version ${saved.packageRevision}. Sparade materialval ligger kvar som utkast.`,`Mobile placement published as version ${saved.packageRevision}. Saved material choices remain a draft.`));
+      setServer(saved);setBranding(appearanceDraftBranding(saved));setSceneDraft(null);
+      setNotice(t(`Scenens placering är publicerad som version ${saved.packageRevision}.`,`Scene layout published as version ${saved.packageRevision}.`)+(saved.draft?' '+t('Sparade materialval ligger kvar som utkast.','Saved material choices remain a draft.'):''));
       onSaved?.(saved);
     }catch{
-      if(current()){setBlocked(true);setProblem(t('Mobilpubliceringen kunde inte bekräftas. Hämta senaste version innan du försöker igen.','Mobile publication could not be confirmed. Fetch the latest version before retrying.'));}
+      if(current()){setBlocked(true);setProblem(t('Scenpubliceringen kunde inte bekräftas. Hämta senaste version innan du försöker igen.','Scene publication could not be confirmed. Fetch the latest version before retrying.'));}
     }finally{if(active.current)reportBusy(false);else busyRef.current=false;}
   }
   async function refresh() {
@@ -209,25 +220,27 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     } finally { if (active.current) reportBusy(false); else busyRef.current = false; }
   }
   function adopt(keepLocal: boolean) {
-    if (!latest || busyRef.current) return;
+    if (!latest || busyRef.current || keepLocal && sceneChanged) return;
     setServer(latest); if (!keepLocal) setBranding(appearanceDraftBranding(latest));
-    setBlocked(false); setLatest(null); setReview(null); setProblem('');setMobileAdjustment(null);
+    setBlocked(false); setLatest(null); setReview(null); setProblem('');setSceneDraft(null);
     setNotice(keepLocal ? t('Din redigering behölls mot senaste version. Spara och granska igen före publicering.','Your edits were kept against the latest version. Save and review again before publishing.')
       : t('Senaste sparade version är inläst.','Latest saved version loaded.'));
   }
 
-  const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview onMedia={visual?setPreviewMedia:undefined} compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={mobileEditing?appearanceBranding(server.branding):branding} mobilePlacement={mobileEditing&&liveRoom?.live.table?{tableId:liveRoom.live.table,offsetY:mobilePercent/100}:undefined} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
-  const mobilePlacementControls=mobileSupported?<section className={styles.review} aria-label={t('Mobilplacering','Mobile placement')}>
-    <h4>{t('Mobilplacering','Mobile placement')}</h4>
-    <p>{t('Justeringen gäller publicerad version. Sparade materialval behålls som utkast.','The adjustment applies to the published version. Saved material choices remain a draft.')}</p>
-    {mobileEditing?<><label className={styles.row}>{t('Flytta kort och insatsplatser lodrätt (%)','Move cards and betting positions vertically (%)')}<input type="number" min={-20} max={20} step={1} aria-label={t('Mobilplacering lodrätt i procent','Vertical mobile placement percent')} value={mobilePercent} disabled={!canAdjustMobile||busy} onChange={event=>{const value=event.target.valueAsNumber;if(canAdjustMobile&&!busyRef.current&&Number.isFinite(value)&&Math.abs(value)<=20)setMobileAdjustment({identity:mobileIdentity,percent:value});}}/></label>
-      <p className={styles.hint}>{t('Negativt flyttar uppåt. De tre kort- och insatsplatserna visas i mobilbilden.','Negative values move up. The three card and betting positions are shown in the mobile preview.')}</p>
-      {!mobileSettings?<p role="status">{t('Hämta rätt förhandsvisning eller välj en placering inom bordet innan publicering.','Load the matching preview or choose a position within the table before publishing.')}</p>:null}
-      <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="publish-mobile-placement" disabled={!canPublishMobile||busy} onClick={publishMobilePlacement}>{t(`Publicera mobiljustering ${mobilePercent} %`,`Publish mobile adjustment ${mobilePercent}%`)}</button><button type="button" className="sg-btn" data-action="close-mobile-placement" disabled={busy} onClick={()=>{if(!busyRef.current)setMobileAdjustment(null);}}>{t('Avbryt justering','Cancel adjustment')}</button></div>
-    </>:<button type="button" className="sg-btn" data-action="open-mobile-placement" disabled={!canAdjustMobile||busy} onClick={()=>{if(canAdjustMobile&&!busyRef.current){setMobileAdjustment({identity:mobileIdentity,percent:0});setReview(null);}}}>{t('Justera mobilplacering','Adjust mobile placement')}</button>}
+  const preview = <div data-appearance-preview="frozen-composition" className={roomLayout ? styles.hero : undefined}><PartnerAppearancePreview onMedia={visual?setPreviewMedia:undefined} compact={roomLayout} initiallyEnabled={roomLayout} active={visible} server={server} branding={sceneEditing?appearanceBranding(server.branding):branding}
+    sceneLayout={sceneEditing&&liveRoom?.live.table?{tableId:liveRoom.live.table,composition:sceneDraft!.composition,disabled:!canEditScene||busy,onChange:changeScene}:undefined}
+    scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
+  const sceneLayoutControls=sceneSupported?<section className={styles.review} aria-label={t('Publicerad scen','Published scene')}>
+    <h4>{t('Publicerad scen','Published scene')}</h4>
+    <p>{t('Redigera kort, marker, lager och spelkontroller för mobil och desktop i förhandsvisningen. Sparade materialutkast behålls.','Edit cards, betting positions, layers and game controls for mobile and desktop in the preview. Saved material drafts are preserved.')}</p>
+    {sharedSceneRooms.length>1?<p>{t('Scenen delas av dessa rum: ','This scene is shared by these rooms: ')}{sharedSceneRooms.map(row=>row.label).join(', ')}. <a href={`/admin/clips?${new URLSearchParams({operator:operatorSlug,table:room!.id,composition:lane!.id,game:'blackjack',panel:'layers'})}`}>{t('Redigera den gemensamma mallen','Edit the shared template')}</a></p>:null}
+    {sceneEditing?<>
+      {!sceneSource?<p role="status">{t('Ladda den publicerade scenens förhandsvisning för att börja redigera.','Load the published scene preview to start editing.')}</p>:null}
+      <div className={styles.actions}>{sceneChanged&&<button type="button" className="sg-btn sg-btn-primary" data-action="publish-scene-layout" disabled={!canPublishScene||busy} onClick={publishSceneLayout}>{t('Publicera scenens placering','Publish scene layout')}</button>}<button type="button" className="sg-btn" data-action="close-scene-layout" disabled={busy} onClick={()=>{if(!busyRef.current)setSceneDraft(null);}}>{sceneChanged?t('Kasta layoutändringar','Discard layout changes'):t('Stäng layoutredigering','Close layout editor')}</button></div>
+    </>:<button type="button" className="sg-btn" data-action="open-scene-layout" disabled={!canStartScene||busy} onClick={()=>{if(canStartScene&&!busyRef.current&&lane?.composition){setSceneDraft({identity:sceneIdentity,composition:structuredClone(lane.composition)});setReview(null);}}}>{t('Redigera publicerad scen','Edit published scene')}</button>}
   </section>:null;
   const revisions = <div className={styles.revisions}><span>{t('Publicerad version','Published version')} <strong>{server.packageRevision}</strong></span><span>{server.draft ? t(`Sparat utkast ${draftRevision}`,`Saved draft ${draftRevision}`) : t('Inget sparat utkast','No saved draft')}</span></div>;
-  const publishActions = <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button><button type="button" className="sg-btn" data-action="review" disabled={!canReview || busy} onClick={() => command('review')}>{t('Granska publicering','Review publication')}</button></div>;
+  const publishActions = <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button><button type="button" className="sg-btn" data-action="review" disabled={!canReview || busy} onClick={() => command('review')}>{t('Granska publicering','Review publication')}</button>{(server.draft||dirty)&&<button type="button" className="sg-btn" data-action="discard-draft" disabled={!editable||busy||sceneEditing} onClick={()=>command('discard-draft')}>{server.draft?t('Kasta bolagets materialutkast','Discard company material draft'):t('Kasta ändringar','Discard changes')}</button>}</div>;
   const reviewPanel = <section className={styles.review} hidden={visual ? !review : roomLayout && !server.draft && !review} aria-label={t('Granskning före publicering','Review before publishing')}>
       <h4>{t('Granskning före publicering','Review before publishing')}</h4>
       {reviewValid && review ? <><p>{t(`Utkast ${review.draftRevision} ersätter publicerad version ${review.packageRevision}.`,`Draft ${review.draftRevision} replaces published version ${review.packageRevision}.`)}</p>
@@ -249,7 +262,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       })()}
       {room ? <button type="button" className="sg-btn" data-action="reset-room" disabled={!branding.roomOverrides?.[room.id]} onClick={resetRoom}>{t('Återställ rummet till standard','Reset room to defaults')}</button> : null}
   </>;
-  const statusBar = <div className={styles.statusBar+(visual?' '+styles.saveBar:'')}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (dirty ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && !visual && revisions}{visual && publishActions}{!visual && <button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button>}</div>;
+  const statusBar = <div className={styles.statusBar+(visual?' '+styles.saveBar:'')}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (unsaved ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && !visual && revisions}{visual && publishActions}{!visual && <button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button>}</div>;
   return <section className={roomLayout ? styles.panel + ' ' + styles.roomPanel + (visual?' '+styles.visualPanel:'') : styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
     {!visual && (roomLayout ? preview : <header className={styles.heading}><div><h3>{t('Sammansättning','Composition')}</h3><p className={styles.hint}>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
       {revisions}
@@ -260,14 +273,15 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     {server.canConfigure !== true ? <p>{t('Din roll kan läsa paketet. Ändring kräver rättigheten att konfigurera presentationer.','Your role can view the package. Editing requires permission to configure presentations.')}</p> : null}
     {stale ? <p className={styles.problem}>{t('Utkastet bygger på en äldre publicerad version. Spara det mot aktuell version och granska igen.','The draft is based on an older published version. Save it against the current version and review again.')}</p> : null}
     {latest ? <aside className={styles.review} aria-label={t('Senaste version','Latest version')}><p>{t(`Senast publicerad: ${latest.packageRevision}. Sparat utkast: ${latest.draft?.revision ?? '–'}. Din redigering är fortfarande kvar.`,`Latest published: ${latest.packageRevision}. Saved draft: ${latest.draft?.revision ?? '–'}. Your edits are still here.`)}</p>
+      {sceneChanged?<p>{t('Layoutändringarna är kvar i förhandsvisningen. De kan inte automatiskt flyttas till en annan version. ”Ersätt min redigering” kastar dem och läser in den senast publicerade scenen.','Your layout edits remain in the preview. They cannot be automatically moved to another version. “Replace my edits” discards them and loads the latest published scene.')}</p>:null}
       {latest.canConfigure !== true ? <p>{t('Du har inte längre rättighet att ändra paketet. Du kan fortfarande behålla din redigering här.','You no longer have permission to change this package. You can still keep your edits here.')}</p> : null}
-      <div className={styles.actions}><button type="button" className="sg-btn" data-action="keep-local" disabled={busy || latest.canConfigure !== true} onClick={() => adopt(true)}>{t('Behåll min redigering','Keep my edits')}</button><button type="button" className="sg-btn" data-action="load-latest" disabled={busy} onClick={() => adopt(false)}>{t('Ersätt min redigering med senaste sparade','Replace my edits with latest saved')}</button></div>
+      <div className={styles.actions}><button type="button" className="sg-btn" data-action="keep-local" disabled={busy || latest.canConfigure !== true || sceneChanged} onClick={() => adopt(true)}>{t('Behåll min redigering','Keep my edits')}</button><button type="button" className="sg-btn" data-action="load-latest" disabled={busy} onClick={() => adopt(false)}>{t('Ersätt min redigering med senaste sparade','Replace my edits with latest saved')}</button></div>
     </aside> : null}
       {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
     <div className={roomLayout ? styles.roomLayout : undefined} data-aside={roomLayout && !visual && Boolean(children) ? 'true' : undefined}>
       {visual && preview}
       <div className={roomLayout ? styles.choicesColumn : undefined}>
-    <fieldset className={styles.editor} disabled={!editable || busy || mobileEditing}>
+    <fieldset className={styles.editor} disabled={!editable || busy || sceneEditing}>
       <legend>{visual ? t('Välj material','Choose assets') : roomLayout ? t('Rummets val','Room choices') : t('Val i spelet','In-game choices')}</legend>
       {roomLayout && <p className={styles.hint}>{visual ? t('Välj dealer och bord till spelet. Bakgrunden byter du separat.','Choose a dealer and table for the game. Change the background separately.') : t('Bakgrund, dealer och bord bland det sammansättningen tillåter. Spara ett utkast, granska och publicera.','Background, dealer and table among what the composition allows. Save a draft, review and publish.')}</p>}
       {!roomLayout && <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{compositionLabel(item.label, language)}</option>)}</select></label>}
@@ -290,7 +304,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       })}</div>
       {visual ? <details className={styles.extraChoices}><summary>{t('Färg och standardval','Colour and defaults')}</summary>{secondaryControls}</details> : secondaryControls}
     </fieldset>
-    {mobilePlacementControls}
+    {sceneLayoutControls}
     {!roomLayout && <p className={styles.hint}>{t('Bordsfärgen påverkar spelets gränssnittsdetaljer, inte dealerfilmen. Logotyp, spelmarker och knappar saknar ännu koppling till spelet.','Table colour affects game interface details, not the dealer video. Logos, chips and buttons are not yet connected to the game.')}</p>}
     {!visual && publishActions}
     {!visual && reviewPanel}
@@ -301,7 +315,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     {visual && reviewPanel}
     {visual && children ? <details className={styles.gameSettings}><summary>Spelinställningar</summary>{children}</details> : null}
     <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary>{visual && <div className={styles.actions}>{revisions}<button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button></div>}<p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>
-      <ul>{server.history?.map(row => <li key={row.revision}><span><strong>{t('Version','Version')} {row.revision}</strong>{row.revision === server.packageRevision ? ` · ${t('publicerad nu','currently published')}` : ''}{row.publishedAt ? <small>{new Date(row.publishedAt).toLocaleString(en ? 'en-GB' : 'sv-SE')}</small> : null}</span><button type="button" className="sg-btn" data-action={`restore-${row.revision}`} disabled={!editable || busy || dirty} onClick={() => command('restore',row.revision)}>{t('Återställ till utkast','Restore to draft')}</button></li>)}</ul>
+      <ul>{server.history?.map(row => <li key={row.revision}><span><strong>{t('Version','Version')} {row.revision}</strong>{row.revision === server.packageRevision ? ` · ${t('publicerad nu','currently published')}` : ''}{row.publishedAt ? <small>{new Date(row.publishedAt).toLocaleString(en ? 'en-GB' : 'sv-SE')}</small> : null}</span>{row.revision!==server.packageRevision&&<button type="button" className="sg-btn" data-action={`restore-${row.revision}`} disabled={!editable || busy || dirty || sceneEditing} onClick={() => command('restore',row.revision)}>{t('Återställ till utkast','Restore to draft')}</button>}</li>)}</ul>
     </details>
   </section>;
 }

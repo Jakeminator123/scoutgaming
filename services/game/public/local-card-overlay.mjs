@@ -100,7 +100,7 @@ export function createLocalCardOverlay(host,{dealerLabel='Dealer',filmedProfile=
       projection=value;
       svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
       plane.setAttribute('transform',`translate(${value.x} ${value.y}) scale(${value.scale})`);
-      renderer.setSeatOffsets(value.offsets??{},value.positions,value.cardView,value.followCards);
+      renderer.setSeatOffsets(value.offsets??{},value.positions,value.cardView,value.followCards,value.fanSpread);
       visibility.textContent=Array.from({length:7},(_,i)=>i).filter(i=>value.boxes&&!value.boxes.includes(i))
         .map(i=>`#local-card-plane [data-seat="${i+1}"]{display:none}`).join('');
       cursor.reproject();

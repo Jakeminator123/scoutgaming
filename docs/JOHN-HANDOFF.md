@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Admins materialval och responsiva kontroller — 25 oktober 2026
+
+Scen & lager kan förhandsvisa varje tillåtet grundbord, bakgrund och dealer utan att ändra mallens standard eller rummets bindning. Kort/marker redigeras för valt bord och format. Kortspridning samt önskad placering av spelknappar och chatt är validerade inställningar; capability v27 krävs innan de sparas mot en äldre strikt runtime. Saldo och insatskontroller flödar inom skärmen. Oanvändbara High Roller/VIP-val och deras växlingslogik samt den permanent avstängda Autobet-knappen är borttagna. Classic-gränser och serverägda spelregler är bevarade.
+
+**Verifiering:** 280 riktade beteendeprov passerar efter uppdatering av testharnessens importer och fullständig materialfixtur; Admin-typkontroll och klientbygge passerar. Egen buggranskning omfattar materialval, delad mall/rum-isolering, format, gränser, runtime-readiness och placering. Isolerad Admin-fixtur sparade chattbredd 70 % och kortspridning 75 % med ny serverrevision. En komplett Dragan-demorunda med lokal frontendkod i en separat webviewflik: 5 insatt, 0 tillbaka, saldo 967 till 962. Beslut och öppen chatt granskades vid CSS 320×568, 390×600 och 1164×655. Detta är kod-/webviewprov, inte deploy eller fysisk Safari-acceptans.
+
+**Fortsättning i PR #380:** den begränsade mobil-offset-funktionen ersätts av `update-scene-layout` och samma kort-/markereditor för det aktuella publicerade bordet i båda format. Fryst paket, matchande preview, revisionskontroll och runtime-readiness används; projektutkast och materialutkast följer inte med. Delade publicerade scener hänvisar till den gemensamma mallen. Sparning i Klippkartan går direkt; osparade ändringar och bolagets sparade materialutkast kan kastas tydligt. Kassering kan inte återuppstå efter senare publicering. Renodlade meny-/pixeltestlås är ersatta med beteendeprov. Oberoende granskning hittade felaktig lokal dealerreferens och tappade klippprov efter materialbyte; båda är rättade, inklusive väntan på rätt medias laddning. 32 API-prov, 91 utkast-/session-/UI-prov och 8 previewprov passerar lokalt; full CI och livepublicering återstår.
+
+**Kvar före liveacceptans:** det publicerade Dragan-paketets manuella kortpunkter ligger högre än önskade bordsrutor. Projektutkastet har andra material än publicerat paket 10; använd den avgränsade layoutredigeringen efter deployment. Ingen produktionsdata eller publicerad kortgeometri ändrades av ovanstående prov.
+
 ## PAOW: 24 valda viloklipp — 25 oktober 2026
 
 Jakob beställde uppladdning av elva nya original till mains Blob, återanvändning

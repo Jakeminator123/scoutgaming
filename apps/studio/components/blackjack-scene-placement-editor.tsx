@@ -1,5 +1,5 @@
 'use client';
-import {useState,useRef,useEffect,type ReactNode,type PointerEvent} from 'react';
+import {useState,useRef,type ReactNode,type PointerEvent} from 'react';
 import {defaultBlackjackTableGeometry,defaultBlackjackAutoScale,type BlackjackTableGeometry,type BlackjackAutoScale,type TablePoint,type CompositionSettings,type AnchorTarget} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {compositionAnchorFrames,resolveAnchorRect,rebindAnchor,restoreGeometryGroup,projectAnchorRects,type AnchorFrames} from '../../../packages/presentation/runtime/composition-anchors.mjs';
 import {layoutGameOverlay} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
@@ -24,8 +24,9 @@ function withAutoScale(value:BlackjackTableGeometry,layout:Layout,choice?:Blackj
 
 function SceneOverlay({dealerId,framing,value,layout,frames,selected,disabled,onSelect,onPlace}:{dealerId?:string;framing?:Framing;value:BlackjackTableGeometry;layout:Layout;frames:AnchorFrames;selected:string;disabled:boolean;onSelect:(id:string)=>void;onPlace:(id:string,p:TablePoint)=>void}){
   const svg=useRef<SVGSVGElement>(null),drag=useRef<string|null>(null);
-  const [viewport,setViewport]=useState({width:layout==='mobile'?390:960,height:layout==='mobile'?693:540});
-  useEffect(()=>{const node=svg.current;if(!node)return;const read=()=>{const r=node.getBoundingClientRect();if(r.width&&r.height)setViewport({width:r.width,height:r.height});};read();const observer=new ResizeObserver(read);observer.observe(node);return()=>observer.disconnect();},[layout]);
+  // The canvas is a scaled device preview. Touch targets must be measured in
+  // that device's space, not against the tiny thumbnail width in the editor.
+  const viewport=layout==='mobile'?{width:390,height:390*16/9}:{width:960,height:540};
   const planes=projectAnchorRects(value[layout],frames,viewport,framing),boxes=layout==='mobile'?[2,3,4]:[0,1,2,3,4,5,6];
   const result=layoutGameOverlay({tableGeometry:value,tableLayout:layout,rect:planes.cardsRect,...planes},boxes,{left:0,right:viewport.width,top:0,bottom:viewport.height},{compact:layout==='mobile',filmedProfile:dealerId?registeredFilmedProfile(dealerId):null});
   // 63 = the calibration card width that the layout scale refers to.
@@ -81,6 +82,8 @@ export function BlackjackScenePlacementEditor({tableId,value,savedValue,layout,d
     }}>Placera på detta bord</button></>:geometry?<>
       <p>{layout==='mobile'?'Mobil · tre synliga platser, här visas 3–5':'Desktop · sju platser'}. Placeringen hör till denna borddesign och detta format.</p>
       <label>Kortvisning<select aria-label="Kortvisning" value={geometry.cardView??'table'} onChange={event=>{const next=structuredClone(value);next[layout].cardView=event.target.value as 'table'|'raised';update(next);}}><option value="table">På bordet</option><option value="raised">Upplyfta</option></select></label>
+      <label>Kortspridning · %<input aria-label="Kortspridning" type="number" min="25" max="150" step="5" value={Math.round((geometry.fanSpread??1)*100)} onChange={event=>{if(!Number.isFinite(event.target.valueAsNumber))return;const next=structuredClone(value);next[layout].fanSpread=event.target.valueAsNumber/100;update(next);}}/></label>
+      <small>Spridningen ändrar avståndet mellan korten i handen. Det nya kortets landningspunkt ligger kvar. Stäng av ”Korten landar där filmen visar” för att flytta kortpunkterna fritt.</small>
       <fieldset className={styles.group}><legend>Autoskala efter dealern</legend>
         <label className={styles.toggle}><input type="checkbox" aria-label="Autoskala efter dealern" checked={!!auto} onChange={event=>update(withAutoScale(value,layout,event.target.checked?defaultBlackjackAutoScale():undefined))}/> Autoskala efter dealern</label>
         {auto?<>

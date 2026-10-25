@@ -24,7 +24,7 @@ import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
 import { sideBetWin, roundWin } from './blackjack-feedback.mjs';
 import { totalLabel } from './card-presentation/renderer-support.js';
-import { placeActions, placeDealControl } from './action-placement.mjs';
+import { placeActions, placeDealControl, placeChat } from './action-placement.mjs';
 import { cardFaceArt } from './card-art.mjs';
 import { movingDealCard } from './moving-speech-sequence.mjs';
 
@@ -478,16 +478,9 @@ setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('en-
 
 // ---------- state ----------
 const SEATS = 7;
-// Only Classic is supported by the authoritative server and partner contract.
-// Keep the other presets unavailable until their limits are supported end to end.
-const TABLES = [
-  { id: 'classic', name: 'CLASSIC',     available: true,  min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000] },
-  { id: 'high',    name: 'HIGH ROLLER', available: false, min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000] },
-  { id: 'vip',     name: 'VIP SALON',   available: false, min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000] },
-];
-let table = TABLES.find(x => x.available);
-let CHIPS = table.chips;
-const LIMITS = { get min() { return table.min; }, get max() { return table.max; } };
+// The server and partner contract support these Classic limits.
+const CHIPS = [1, 5, 10, 25, 50, 100, 500, 1000];
+const LIMITS = { min: 5, max: 2000 };
 let balance = 1000;
 
 // ---------- player account: server-persisted demo money (SQLite) ----------
@@ -953,6 +946,7 @@ function renderBets() {
 
 // Fixed viewport percentages can cover the centre betting position.
 function layoutDealControl() {
+  layoutChat();
   const control=$('#deal-now'),scene=$('#scene');
   let notice=$('#deal-placement-warning');
   if(scene.dataset.betPlacement!=='under-cards'){
@@ -964,7 +958,7 @@ function layoutDealControl() {
   control.style.visibility='';
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
   const targets=seatEls.filter(el=>!el.classList.contains('seat-off')).flatMap(el=>[...el.querySelectorAll('.spot,.sidearcs,.bet-target,.clear-box,.stake')]).filter(visible).map(el=>el.getBoundingClientRect());
-  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
+  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#player-choices,#rehearsal,#game-title,#sound-btn,#chat,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
   const placement=placeDealControl({width:control.offsetWidth,height:control.offsetHeight,
     viewport:{width:innerWidth,top:0,bottom:$('#dealer-picker').getBoundingClientRect().top},targets,obstacles});
   if(placement)Object.assign(control.style,{position:'fixed',left:placement.x+'px',top:placement.y+'px',bottom:'auto',transform:'none'});
@@ -982,9 +976,9 @@ const setDeposit = amt => {
 $('#add-funds').onclick = async () => { if(studioPreview)return; try { if(!await ensureLogin('Sign in to add demo funds.'))return; refreshCashierAmounts(); $('#cashier').hidden = false; } catch(e){hint('SIGN IN',e.message);} };
 $('#cashier-close').onclick = () => { $('#cashier').hidden = true; };
 $('#cashier').onclick = e => { if (e.target.id === 'cashier') $('#cashier').hidden = true; };
-// deposit presets scale with the table: a VIP box cannot be funded $500 at a time
+// Demo deposit presets use the supported betting limit.
 function refreshCashierAmounts() {
-  const base = table.max;
+  const base = LIMITS.max;
   const presets = [base / 2, base * 2, base * 10, base * 50].map(v => Math.max(100, Math.round(v / 100) * 100));
   document.querySelectorAll('#cashier .amt').forEach((b, i) => {
     b.dataset.amt = presets[i];
@@ -1036,7 +1030,7 @@ $('#cashier-pay').onclick = async () => {
   if(studioPreview)return;
   try {if(!await ensureLogin('Sign in to add demo funds.'))return;}catch(e){hint('SIGN IN',e.message);return;}
   if ($('#cc-num').value.replace(/\D/g, '').length < 12) { $('#cc-num').classList.add('bad'); return; }
-  const depositCap = Math.max(100000, table.max * 100);   // must be able to fund the table you chose
+  const depositCap = Math.max(100000, LIMITS.max * 100);
   if (!(Number.isFinite(depositAmt) && depositAmt >= 1 && depositAmt <= depositCap)) {
     $('#cc-amount').classList.add('bad');
     hint('CASHIER', `deposits up to ${fmt(depositCap)}`);
@@ -1296,7 +1290,21 @@ function activeBoxHighlight() {
   }
   showActions(seat);
 }
+function layoutChat(){
+  const chat=$('#chat');if(!chat||studioPreview||!document.body.classList.contains('astrid-voice-ui'))return;
+  const open=$('#chat-log').classList.contains('open'),ui=layerComposition?.gameUi?.();
+  const config=ui?.chat??{x:1,y:0,width:innerWidth<=860?.95:.28,height:.45};
+  const obstacles=[...document.querySelectorAll('#game-title,#sound-btn,#hud-bottom,#dealer-picker,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat],.seat:not(.seat-off) .spot,.seat:not(.seat-off) .sidearcs')]
+    .filter(el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).opacity!=='0')
+    .map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+  const placement=placeChat({width:open?Math.max(240,innerWidth*config.width):190,height:open?Math.max(62,innerHeight*config.height):Math.max(62,chat.scrollHeight+2),
+    viewport:{width:innerWidth,top:0,bottom:innerHeight},position:config,obstacles});
+  if(placement){
+    Object.assign(chat.style,{position:'fixed',left:placement.x+'px',top:placement.y+'px',right:'auto',bottom:'auto',width:placement.width+'px',maxHeight:placement.height+'px'});
+  }
+}
 function showActions(seat) {
+  layoutChat();
   const legal = round?.legal() ?? [];
   const bar = $('#actions');
   bar.hidden = legal.length === 0;
@@ -1333,11 +1341,13 @@ function showActions(seat) {
   };
   // Local presentation hides legacy DOM cards/totals and paints the visible SVG.
   // Empty results and hidden duplicates must not consume the remaining space.
-  const obstacles=[...document.querySelectorAll('.card,.hand-total,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat][data-hand],.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,#chat,#chat-log,#chat-memory[open] > div')].map(visibleBounds).filter(Boolean);
+  const obstacles=[...document.querySelectorAll('.card,.hand-total,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat][data-hand],.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#player-choices,#rehearsal,#game-title,#sound-btn,#chat')].map(visibleBounds).filter(Boolean);
   const totals=[...activeSeat.querySelectorAll('.hand-total'),...document.querySelectorAll('#local-card-overlay .card-totals g[data-active="true"]')].map(visibleBounds).filter(Boolean);
   const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
   const viewport={width:innerWidth,top:Math.max(0,Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top)),bottom:Math.min(innerHeight,$('#dealer-picker').getBoundingClientRect().top)};
-  const locate=(margin,top=viewport.top)=>placeActions({width:controls.offsetWidth,height:controls.offsetHeight,viewport:{...viewport,top},anchor,obstacles,belowAnchor:true,margin});
+  const saved=layerComposition?.gameUi?.()?.actions;
+  const preferred=saved?{x:saved.x*Math.max(0,innerWidth-controls.offsetWidth),y:saved.y*Math.max(0,viewport.bottom-controls.offsetHeight)}:undefined;
+  const locate=(margin,top=viewport.top)=>placeActions({width:controls.offsetWidth,height:controls.offsetHeight,viewport:{...viewport,top},anchor,obstacles,belowAnchor:!saved,margin,preferred});
   let placement=locate(12);
   if(!placement){
     // Keep a complete 44px touch target while bringing each label inside it.
@@ -1664,7 +1674,16 @@ function setChatOpen(open) {
   $('#chat-log').classList.toggle('open', open);
   chatToggle?.setAttribute('aria-expanded', String(open));
   if (open && chatToggle) delete chatToggle.dataset.unread;
+  scheduleInterfaceLayout();
 }
+let interfaceFrame=0;
+function scheduleInterfaceLayout(){
+  if(interfaceFrame)return;
+  interfaceFrame=requestAnimationFrame(()=>{interfaceFrame=0;layoutSeats();layoutChat();if(round&&!busy)activeBoxHighlight();});
+}
+const interfaceObserver=new ResizeObserver(scheduleInterfaceLayout);
+for(const element of [$('#chat'),$('#hud-bottom'),$('#game-title')])if(element)interfaceObserver.observe(element);
+addEventListener('pagehide',()=>{interfaceObserver.disconnect();cancelAnimationFrame(interfaceFrame);},{once:true});
 function setChatStatus(text) {
   if (!chatStatus) return;
   chatElapsed.textContent = '';
@@ -1953,21 +1972,6 @@ $('#all-sides').onclick = () => {
   $('#all-sides').classList.toggle('on', allSides);
 };
 
-function setTable(id) {
-  const next = TABLES.find(x => x.id === id && x.available) ?? TABLES.find(x => x.available);
-  if (!next || next === table || round || busy) return;
-  table = next; CHIPS = table.chips;
-  bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));   // old stakes are off-limits here
-  undoStack = [];
-  buildChips();
-  document.querySelectorAll('#table-pick .tbl').forEach(b => b.classList.toggle('on', b.dataset.id === next.id));
-  $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
-  hint(table.name, balance < table.min
-    ? `min is ${fmt(table.min)} — add funds to play here`
-    : `${fmt(table.min)} to ${fmt(table.max)} a box`);
-  renderBets();
-}
-document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
 if (playerChoice && entrySelection.choices) {
   const remember = patch => writeChoices(choiceStorage, entrySelection.operator, { ...playerChoice.nextStored, ...patch }, previewSessionId);
   mountPlayerChoices(document, {
@@ -2031,7 +2035,7 @@ for (const dealer of Object.values(DEALERS)) {
 
 
 buildChips();
-$('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
+$('#limits').textContent = `${fmt(LIMITS.min)} \u2013 ${fmt(LIMITS.max)}`;
 
 $('#pitboss')?.remove();
 $('#supervisor')?.remove();

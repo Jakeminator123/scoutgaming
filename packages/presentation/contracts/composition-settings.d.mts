@@ -6,11 +6,12 @@ export type AnchorTarget='table'|'dealer'|'scene';
 export interface TableAnchor {target:AnchorTarget;rect:AnchorRect}
 /** Chip dx/dy are fractions of the composited 1080x1920 dealer plane; scales are 0.5-2. */
 export interface BlackjackAutoScale {landing:boolean;cardSize:boolean;chips:boolean;adjust?:{cards?:{scale:number};chips?:{dx:number;dy:number;scale:number}}}
-export interface BlackjackTableLayout {cardWidth:number; dealer:TablePoint; seats:Array<{card:TablePoint; bet:TablePoint}>; betMode?:'under-cards';anchors?:{cards?:TableAnchor;bets?:TableAnchor};autoScale?:BlackjackAutoScale;cardView?:'table'|'raised'}
+export interface BlackjackTableLayout {cardWidth:number; dealer:TablePoint; seats:Array<{card:TablePoint; bet:TablePoint}>; betMode?:'under-cards';anchors?:{cards?:TableAnchor;bets?:TableAnchor};autoScale?:BlackjackAutoScale;cardView?:'table'|'raised';fanSpread?:number}
+export interface GameUiLayout {actions:TablePoint|null;chat:TablePoint&{width:number;height:number}}
 export interface BlackjackTableGeometry {tableId:string; mobile:BlackjackTableLayout; desktop:BlackjackTableLayout}
 export interface CompositionSettings {
-  mobile:{dealer:CompositionPlane; background:CompositionPlane; table:CompositionTable};
-  desktop:{dealer:CompositionPlane; background:CompositionPlane; table:CompositionTable};
+  mobile:{dealer:CompositionPlane; background:CompositionPlane; table:CompositionTable;gameUi?:GameUiLayout};
+  desktop:{dealer:CompositionPlane; background:CompositionPlane; table:CompositionTable;gameUi?:GameUiLayout};
   tableFront:boolean;
   blackjackTables?:BlackjackTableGeometry[];
 }

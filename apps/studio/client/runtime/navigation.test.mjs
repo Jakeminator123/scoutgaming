@@ -231,7 +231,7 @@ async function mountClipMap(h,{scene=false}={}){
     rooms:['a','b'].map(id=>({id:'room-'+id,operatorId:id,name:id,game:id==='a'?'blackjack':'roulette',compositionId:'scene-'+id,state:'draft',published:false,dealerIds:['astrid','nora']})),
     dealers:[{id:'astrid'},{id:'nora'}],
   }}};
-  const slots=[],effects=[],cleanups=[];let cursor=0;
+  const slots=[],effects=[],cleanups=[],saveAttempts=[];let cursor=0;
   const depsChanged=(before,next)=>!before||next.some((dep,j)=>!Object.is(dep,before[j]));
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},
     useRef(initial){return slots[cursor++]??={current:initial};},
@@ -247,6 +247,7 @@ async function mountClipMap(h,{scene=false}={}){
     require:name=>name==='react'?react:name==='@xyflow/react'?flow:name.endsWith('.css')?{}
       :name==='../../../runtime/navigation'?h.api:name==='../../../runtime/admin-routing.mjs'?routing
       :name==='../../lib/connected-studio.mjs'?{...componentRequire(name),clipSlots:()=>[],createStudioClient:()=>({load:async()=>structuredClone(workspace),save:async next=>{
+        saveAttempts.push(structuredClone(next));
         if(next.revision!==workspace.project.revision)throw Object.assign(new Error('Revision conflict'),{statusCode:409});
         workspace.project=structuredClone({...next,revision:'fixture.scene.saved'});return structuredClone(workspace.project);}})}
       :name==='lucide-react'||name.startsWith('./')||name==='../../../../components/studio-navigation'||name==='../../../../components/probe-editor'?components:componentRequire(name)});
@@ -280,10 +281,9 @@ async function mountClipMap(h,{scene=false}={}){
       async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
       remote(project){workspace.project=structuredClone(project);},
       async compare(){button('Jämför senaste revision').props.onClick();await settle();},
-      async save(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Spara utkast')[0].props.onClick();await settle();
-        const review=one(nodes(node=>node.props?.role==='dialog'&&node.props?.['aria-labelledby']==='studio-save-review'),'save review');
-        const uses=all(review,node=>node.type==='li').map(textWithoutControls);
-        button('Bekräfta sparande').props.onClick();await settle();return uses;}},
+      async save(){const save=button('Spara utkast'),before=saveAttempts.length;assert.equal(Boolean(save.props.disabled),false,'draft save is enabled');
+        save.props.onClick();await settle();
+        assert.equal(saveAttempts.length,before+1,'one click sends the draft directly');return structuredClone(saveAttempts.at(-1));}},
     async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
     async editDraft(){
       button('Scen & lager').props.onClick();await settle();
@@ -326,7 +326,9 @@ for(const selected of ['a','b'])test(`the receiving scene editor keeps room A wh
     const after=scene.snapshot();
     assert.deepEqual(after.lanes.find(row=>row.id==='scene-'+selected).composition.blackjackTables[0],profile);
     assert.deepEqual(after.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
-    const reviewed=await scene.save();assert.deepEqual(reviewed,[selected==='a'?'a · a · blackjack':'b · b · roulette']);
+    const sent=await scene.save();assert.equal(sent.revision,before.revision);
+    assert.deepEqual(sent.lanes.find(row=>row.id===chosen.id).composition.blackjackTables[0],profile);
+    assert.deepEqual(sent.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
     assert.equal(scene.snapshot().revision,'fixture.scene.saved');
     assert.deepEqual(pane.registeredRooms(),rooms,'editing and saving a template must not reassign its context room');
     assert.equal(pane.registeredRooms().find(row=>row.id==='room-a').compositionId,'scene-a');
@@ -432,7 +434,9 @@ test('scene reset uses the compared server baseline while preserving the rebased
     await scene.open();const remote=scene.snapshot(),saved=sceneGeometry(remote);
     await scene.click('Redigera gemensam mall');const draft=movedGeometry(saved,.1);await scene.edit(draft);
     remote.revision='fixture.scene.remote';remote.lanes[0].composition.blackjackTables=[movedGeometry(saved,.2)];scene.remote(remote);
-    await scene.save();await scene.compare();
+    const sent=await scene.save();assert.notEqual(sent.revision,remote.revision);
+    assert.equal(scene.snapshot().revision,sent.revision,'a rejected save must not advance the draft revision');
+    assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'a rejected save retains the local geometry');await scene.compare();
     assert.equal(scene.snapshot().revision,remote.revision);assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'conflicting local points remain in the draft');
     await scene.leave();await scene.open();await scene.click('Redigera gemensam mall');await scene.click('Desktop');await scene.click('Återställ sparade kort');
     const actual=sceneGeometry(scene.snapshot());
