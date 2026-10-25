@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## Kevin → main: avstämd migrationsplan — 25 oktober 2026
+
+På Jakobs begäran har [masterplanen](../migrering/MASTERPLAN.md), aktivitetsinstruktionerna och K05-mappningen anpassats till main `34c6c22f60ac75f335f647c83af06e7d0514476b`. **45 % = 9 av 20 helt verifierade aktiviteter**; alla statusar, vikter och beroenden är oförändrade. Gamla “PR334/336 omergade” är rättade. #333 har 26/26 filer på main, 19 byte-identiska och sju läsgranskade vidareutvecklingar; extra fel-/replayprov kom via #348. #315/#323 ändrar äldre appens tester. Ingen av dessa PR:ar har mergats eller stängts i detta uppdrag.
+
+Prioritet: exakta godkända takes/kortkontakt i mains tre lager, befintlig Admin → publicering → spel-kedja, därefter begränsad idle-/talutveckling och samlad acceptans. Fyra redan portade K07-filer är ännu opt-in; CI-registrering är en separat liten kodleverans. PAOW:s senare importkvitto och aktiva `/game` beaktas; inga nya uppladdningar, borttagna legacyytor, SQLite-register eller tysta dealer-/språkfallbacks beställs.
+
+**Egen verifiering:** färsk GitHub-PR-/SHA-kontroll, PR333-blob-/sjudiffsjämförelse och riktad main-kodläsning. Node 24.21.0, `node --test --test-reporter=dot --test-concurrency=4 test/blackjack-core.mjs test/blackjack-table.mjs test/blackjack-presentation.mjs test/room-idle-kevin-parity.mjs test/table-behaviours-kevin.mjs test/table-limits-kevin.mjs test/table-restart-kevin.mjs` passerar (exit 0). Dessa prov är isolerade och visar inte full PG-/browser-/media-/produktionsacceptans. Statusgenerator, diffkontroll och elva nya relativa dokumentlänkar passerar. Baslinje, etapper, aktivitetsstatus, vikter och beroenden är identiska mot granskad main. Produktkod, drift, media och godkännanden är oförändrade; den befintliga arbetscheckoutens osparade filer bevaras.
+
 ## Mobilens beslutsknappar på korta skärmar — 25 oktober 2026
 
 Ett extra verkligt webviewprov av Dragan vid 320 × 568 visade att beslutsknapparna behöll gamla koordinater efter resize, eller föll tillbaka till en placering över saldot. Osynliga gamla DOM-kort och totaler samt tomma resultat räknades som hinder, medan synliga SVG-kort saknades i mätningen. Placeringen använder nu synliga kort/totaler och skyddar även HUD och chatt. Gamla koordinater rensas; fullstor knapprad används där den ryms, annars en kompakt 198 × 50 px rad med 44 × 44 px tryckytor. Verklig platsbrist ger en tydlig status i stället för dolda kontroller utanför skärmen; normal layout återställs när utrymmet kommer tillbaka.

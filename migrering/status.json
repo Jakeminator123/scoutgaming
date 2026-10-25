@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-22",
+  "updatedAt": "2026-10-25",
   "scope": "Admin-förenkling, Jakobs klippkarta och selektiv Kevin-anpassning till mains tre lager",
   "baseline": {
     "main": "15988f32fd572c453d2189502acbe324c4566815",
@@ -249,9 +249,10 @@
         "Aktuell transportleverans PR336/codex/shared-room-transport/head83f5810d33c483868ac0ce2bab728efb813d51b4. Root rapporterar exakt-head CI39753242313 completed/success. Main47756bdf1df372c7aa5047dc165a2d721614c4a2 är integrerad i featurebranchen; PR334/336 är inte produktmergade. Tidigare8504 är ersatt som aktuell J05-head.",
         "Levererat inom PR336: skyddad POST-command, readonly rumskanal, servervald rum/paket/config-bindning, same-PG G → S → R/P/A och låst session/proveniens före receipt/replay. WS återställer snapshot före presentation; osäker retry behåller commandId/bytes. Tvåfasigt mediaval omkontrollerar auth/config/material kring olåst arbete. Inga nativejournalwrites eller klientägda wallet-/spelregler.",
         "Senaste avgränsade rootkvitto: normalhook106/106 och presentation35/35, tsc samt573kandidater/0orphan. Manifestbunden lokal QA-fixture återanvänder SQLregistry och neutrala mediafabriker; constructorportar bevarar produktionsdefault, exakt origin/hash och publiceringskontroller. Tidigare isolerade PG-/schema-/restore- och presentationsbevis bevaras i befintlig handoff/evidens; de är inte full K04-media-, spelar- eller produktionsacceptans.",
-        "Direkt Jakobprioritet22oktober: main och Jakobs klippkarta/redigering är grund, med tre separata valbara lager bakgrund/dealer/bord. AdminBlackjack och operatörflöde till spel prioriteras; Kevins videor/övergångar anpassas till main och tvålagersmodellen är utesluten. Flerspelarutökning, nya QA-seeds och spelarprov är pausade som aktiv prioritet. SeedCLI hann inte skapas; separat seedutkast är partial/unreviewed, inte levererat. Läppsynk tas sist manuellt efter separat beslut."
+        "Direkt Jakobprioritet22oktober: main och Jakobs klippkarta/redigering är grund, med tre separata valbara lager bakgrund/dealer/bord. AdminBlackjack och operatörflöde till spel prioriteras; Kevins videor/övergångar anpassas till main och tvålagersmodellen är utesluten. Flerspelarutökning, nya QA-seeds och spelarprov är pausade som aktiv prioritet. SeedCLI hann inte skapas; separat seedutkast är partial/unreviewed, inte levererat. Läppsynk tas sist manuellt efter separat beslut.",
+        "Revision 2026-10-25 på main 34c6c22f60ac75f335f647c83af06e7d0514476b: GitHub bekräftar PR336 mergad som 34060c4d0e3fd33c1e4040479646d7150b6d1294. services/game/server.mjs monterar skyddad shared HTTP/WS, auth och start/readiness/drain. Senare #355/#356/#354 finns på main; kodnärvaro är inte samlad runtimeacceptans."
       ],
-      "blocker": "J05 är inte färdig: runtime-/byggförenkling, verifierad gameboot/readiness och drain/poollivstid återstår som samlad produktleverans. Pausade spelar-/seed-/flerspelarspår är inte nästa aktiva steg. Produktionsflaggan är AV; game008/009/010-productionblock består. Inga produktions-DDL/deploy/env-aktiveringar är godkända. GitGuardian incident-/historiktäckning är ofullständig."
+      "blocker": "Samlad start/readiness/drain/restore-acceptans återstår. #336:s transport/klient finns på main; senare server-v3 och avvecklad äldre klient/lokal produktstate återanvänds. Produktionsschema/flagga har inte återlästs i denna dokumentrevision; äldre AV-notering är historik. Ingen driftåtgärd beställs."
     },
     {
       "id": "J06",
@@ -270,9 +271,10 @@
       "pr": null,
       "reviewer": null,
       "evidence": [
-        "STÄD arbetar avgränsat med paket A:s sju filer: apps/web/lib/player-operator.mjs, player-catalog.mjs, player-catalog.d.mts, player-choices.mjs samt apps/web/test/player-profile.mjs, player-lobby.mjs och platform-ui.mjs. Syftet är att avveckla testbundna webblobbywrappers och bevara aktivt gemensamt katalog-/launchkontrakt. Pågående arbete utan fryst sluthead, full J06-acceptans eller nya migrationspoäng."
+        "STÄD arbetar avgränsat med paket A:s sju filer: apps/web/lib/player-operator.mjs, player-catalog.mjs, player-catalog.d.mts, player-choices.mjs samt apps/web/test/player-profile.mjs, player-lobby.mjs och platform-ui.mjs. Syftet är att avveckla testbundna webblobbywrappers och bevara aktivt gemensamt katalog-/launchkontrakt. Pågående arbete utan fryst sluthead, full J06-acceptans eller nya migrationspoäng.",
+        "Revision 2026-10-25: #345 är mergad som a2d461a1e8c28e195b4e197dff18f0b7955e3185. room-idle-kevin-parity, table-behaviours-kevin, table-limits-kevin och table-restart-kevin finns under test/, men tools/orphan-tests-exceptions.json markerar opt-in och fullhook/workflow saknar registrering. Ingen CI-kod ändrad här."
       ],
-      "blocker": "J06-förenkling återstår. Paket A är ett begränsat pågående delarbete, inte hela test-/CI-rensningen; J05-beroendet och aktiva säkerhets-, auth-, transaktions- och spelprov består."
+      "blocker": "Fyra portade K07-testfiler ligger ännu opt-in och saknas i obligatorisk fullregression. Registrering och borttagning av undantag är ett konkret nästa steg; övrig test-/CI-förenkling och J05-beroendet kvarstår."
     },
     {
       "id": "K02",
@@ -379,9 +381,10 @@
         "Urvalsfrågan i6330232589 är stängd på PR333/codex/kevin-k04-presentation/head23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540: bindLine använder nu samma uppskjuten-predikat som activationSet/planningRevision. Katalograder/historik, grundslot och Astridclassic bevaras; ingen aktiv visuell produktbugg påstås. kevin_plan läste hela fyrfilsdeltat, verifierade9 Gitblobbar och körde egna4/4 rena Node24.21-prov. Root läste underlag/logg. Nya8 PG-servermodulgrupper och totalt34/34 samt hooks på23d4 är Kevinrapporterade, inte egen PG-, klient- eller visuell acceptans. Privat bevis i planarkiv/2026-10-22/k04-23d4-review. Root har därefter importerat24 filer i PR336/d0086f5fc2391ea68f92b558ad846f7b285ea66d:22 källblobbar exakt verifierade avj04_resume, enda2skillnader är reproducerad CRLF-parserfix+regression. kevin_plan kontrollerade1293 identiska LF/CRLF-rader och fem aktiveringsmängder; samkörning78/78 och normalhook84/84 överlappar. Ingen full K04-acceptans: Kevin äger monterat klientflöde, felvägar och mobil/dator/visuell verifiering; root publik autentiserad transport. Full K05/produktion/GPU är inga nya förhandsgrindar.",
         "Kevin6332075298/PR333/codex/kevin-k04-presentation/head6a124410a39e168b078921f6d70507cb0ba42c14: authorinvoicesolv/sourceJakeminator123/scoutgaming verifierade och hela tvåfilsdeltat från23d4cd0bcb8c57e7d57a79e59dd5aff3d592a540 läst av root och oberoende kevin_plan utan blockerande fynd. Parsern har den smala CRLF-rättningen. Testet jämför verkliga spelsteg, saldo/ledger/audit/reservationer/rum/resultat mellan lyckad och felande presentationsleverans samt sen replay; alla fem injicerade feltyper nås genom sekventiella versioner1–6 och fortsatt outboxloop efter fel. Verkligt munlager med injicerat decoderfel lämnar kroppsbilden oförändrad och nekar sen patch. Detta är läsgranskade isolerade assertions, inte egen omkörning eller faktisk browser-/decoder-/PG-/visuell acceptans. Kevins24/24 presentation,140 regression/0fel/1valfritt codecskip,34/34 PG och hooks är rapporterade bevis. K04 förblir IN_PROGRESS; monterat klientflöde och mobil/dator kvar. Root äger publik autentiserad transport; inga nya K05/GPU/produktionsförhandsgrindar.",
         "Kevin6332927259 levererade beställd smal refillfix i PR333/codex/kevin-k04-presentation/head eb6ab45509fad539463bbcb6930cc46d2d0844c2,parent6a124410a39e168b078921f6d70507cb0ba42c14. Färsk GitHubcommit/tvåfilsdelta och source verifierat; PRauthorinvoicesolv/commitauthorSolvifyAB. Endast WalletDenied blir TableErrorREFILL_REFUSED; riktiga infrastrukturfel kastas vidare. Oberoende runtime_audit läste fryst kod/test mot parent utan blockerare: nekad refill/replay lämnar saldo/ledger/reservationer/kvitton/audit/snapshot oförändrade; senare friskt försök med sammaID krediterar en gång. Kevins31/31table och24/24presentation påLinux/macOS är rapporterade prov; ingen nyPG. Endast dessa granskade hunks återanvändes i rootc5d470b98e017ace54bdbc20ccf798d3ce0ecb09 efter koordinatoröverlapp samordnats, ny samlad oberoende review och rootnormalhook85/85,0skip. Detta är inget godkännande att merga KevinsPR333. Rootbackend 2f479f52a90586965210aae8fbebaa5160274a9f är nu pushverifierad i PR336 och överlämnad i6333354400: skyddad POST-command, låst same-PG auth före receipt/replay och skrivfri bootstrap för första join/återanslutning finns; settings valideras och rum/presentationsversion matchas. Rootnormalhook152/152,0skip inklusive verklig isolerad lobbybrowser; PG42/42,0fel,clusterStopped:true; oberoende review och orphan563/0. Rootposterna6333117918/6333203039 beställer den nya klienten hos Kevin, men ingen ny klienthead är levererad eller granskad här. Entryhelper förberedd, servercutover AV. K04:s monterade mobil/dator/felvägar och full klientacceptans kvarstår; ingen merge av Kevins PR eller media-/driftacceptans följer av backendbeviset. Ny CI39727259718 pågår på2f; tidigare c5-CI39724650872 är grön på föregående head.",
-        "Aktuellt integrationsunderlag är rootklienten i PR336/83f5810d33c483868ac0ce2bab728efb813d51b4 med grön CI39753242313 enligt root. Root äger klientmontering/rumsväg; Kevin har ingen obeställd klientleveransskuld. Tidigare isolerade presentation-/browser-/PG-bevis bevaras men är inte full verklig K04-mediaacceptans. Direkt Jakobprioritet22oktober: videor/övergångar anpassas till mains klippkarta och tre separata lager; tvålagersmodellen är utesluten. Spelarprov/ny QA-seed/flerspelarutökning är pausade som aktiv prioritet; läppsynk sist manuellt."
+        "Aktuellt integrationsunderlag är rootklienten i PR336/83f5810d33c483868ac0ce2bab728efb813d51b4 med grön CI39753242313 enligt root. Root äger klientmontering/rumsväg; Kevin har ingen obeställd klientleveransskuld. Tidigare isolerade presentation-/browser-/PG-bevis bevaras men är inte full verklig K04-mediaacceptans. Direkt Jakobprioritet22oktober: videor/övergångar anpassas till mains klippkarta och tre separata lager; tvålagersmodellen är utesluten. Spelarprov/ny QA-seed/flerspelarutökning är pausade som aktiv prioritet; läppsynk sist manuellt.",
+        "Revision 2026-10-25: PR333 eb6ab45509fad539463bbcb6930cc46d2d0844c2 jämförd mot main 34c6c22f60ac75f335f647c83af06e7d0514476b. Alla 26 filer finns, 19 blob-identiska; sju diffar läsgranskade (replayextraktion, same-PG-mottagare, auth/config-koordinator, kompletterade tester/QA). Inget unikt produktgap identifierat. #348 är mergad som 4336c2cfca2fd9e7a09cc1b4116845d677c52f52. Node24.21:s riktade presentation/core/table och fyra K07-filer passerar; inga nya visuella acceptansbevis."
       ],
-      "blocker": "K04 är inte fullt accepterad. Tidigare tre monterade prov (tal/kortövergång, touch/layout, fullflöde/skärmbilder) kvarstår som obekräftad acceptans, men körs inte som aktiv prioritet nu. Nästa videokoppling följer mains klippkarta/tre lager och AdminBlackjack/operatörflöde. Ingen ny QA-seed/spelarprov/GPU/mediaimport/PR333merge godkänd."
+      "blocker": "Portad presentation och PR333-innehåll finns redan på main. Full faktisk acceptans av godkända takes, tal/kortövergång, mobil/touch och helflöde återstår. Följ mains tre lager, exakta bindning och serverhändelser; ingen helmerge av #333, GPU eller driftaktivering beställs."
     },
     {
       "id": "J08",
@@ -402,9 +405,10 @@
         "Aktuell PR334/codex/admin-room-config-j08/head24e9f0264bc244e2ddabdac0cc12b1537ab164bd har grön exakt-head CI39757805089 enligt mergeagenten. Tidigare d7d139/9b43 är historiska delunderlag, inte aktuell PR-head. PR334 är inte produktmergad och main47756bdf1df372c7aa5047dc165a2d721614c4a2 är oförändrad.",
         "Delimplementationen återanvänder befintlig Admin och samma scoped Studio/Postgres-transaktion för rumsutkast, paket-CAS, immutable spelconfig, versionspekare och audit. Språk en/sv och limitPreset casual/prive/high;20s/15s är skrivskyddade. Exakt PNG-/video-/dealeridentitet, katalogrevision och paketpresentation valideras; lagring av ett rumsutkast är inte godkänd publicering.",
         "Befintliga oberoende API-/adapter-/PG-bevis och negativa materialprov bevaras. Aktuellt backendberoende är PR336/83f5810d33c483868ac0ce2bab728efb813d51b4 med grön CI39753242313 enligt root; se J05:s fixture- och produktionsgränser. En grön CI-runda ersätter inte full Admin→operatör→spel eller verklig material-/talbindning.",
-        "Direkt Jakobprioritet är AdminBlackjack och operatörflödet på main, Jakobs klippkarta och tre separata bakgrund/dealer/bord. Kevins videor/övergångar anpassas till detta; tvålagersmodellen införs inte. Nya QA-seeds/spelarprov och flerspelarutökning är pausade som aktiv prioritet; tidigare bevis sparas."
+        "Direkt Jakobprioritet är AdminBlackjack och operatörflödet på main, Jakobs klippkarta och tre separata bakgrund/dealer/bord. Kevins videor/övergångar anpassas till detta; tvålagersmodellen införs inte. Nya QA-seeds/spelarprov och flerspelarutökning är pausade som aktiv prioritet; tidigare bevis sparas.",
+        "Revision 2026-10-25: GitHub bekräftar #334 mergad som 73f6c8f5b9035fc70c6c68594131d96aa92d9fcf och #336 som 34060c4d0e3fd33c1e4040479646d7150b6d1294. Handoffens senare #364/#366 redovisar levererad operatörsyta med separata lager. Isolerade delprov och UI-fixtures bevaras; inget nytt komplett K06-/materialkvitto skapas här."
       ],
-      "blocker": "Full J08 och verklig material-/paketbindning återstår. Prioritera AdminBlackjack/operatörflödet; ingen ny seed-/spelar-QA är beställd nu. Verkliga register-/Blobidentiteter och godkänt inspelat tal får inte fabriceras. Molnimport, produktions-DDL och flaggaktivering kräver separat mål/mandat; game008/009/010-productionblock och befintliga merge-/ägarskapsgrindar består."
+      "blocker": "Full acceptans av befintlig Admin-writer genom verkligt godkänt paket/media till rätt spelversion återstår. Återanvänd mergade #334/#336/#364/#366, scoped roomOverrides, revisionskontroll och tre lager. Inga nya seeds/importer/driftskrivningar följer av dokumentrevisionen."
     },
     {
       "id": "K05",
@@ -427,9 +431,10 @@
         "Importplanreview fann faktiska gränser: runtime-catalog nekar review/uploads-objekt; verifierad runtimekopia eller framtida uttryckligt auktoriserad promotion behövs. legacy.entries är JSON-only och kan inte ta sex JS-källfiler. PNG kräver separat katalogbaserad stillbildskoppling.154extra G13-repliker är fortfarande obligatoriska i aktiveringsset/validator trots beslut att vänta; urval/matris/validator ska rättas samordnat. Utan G13:519nya medier/504SHA/472098193unika bytes, en planeringssumma. Eget kevin_plan-repro visar att okänd sourceDealer med tre shared-dokument felaktigt godtas som komplett plan; Kevin äger rättning.",
         "Rootbeslut inom befintligt scope: planera dragge→dragan först,med explicit rum/paketbindning och nytt granskat utkast; ingen automatisk Paow-återställning,nya dealers/rum eller ändring i levande paket. Identiska bytes får återanvända exakt samma media-ID men source.variant och separata källvägar består; olika u/v-bytes får aldrig aliasas. Astrid classic förblir separat märkt legacyreferens; Mårten fortsatt PUBLIC_HIDDEN. Extra G13/TableStudio-hälsning väntar och måste tas ur det obligatoriska urvalet samordnat. JSONtiming binds via befintligt validerat katalogformat; JS/PNG-frågor kräver rättad specifikation, ingen schemautökning eller prodimport beställd. Grundloopbyte endast i senare granskad publicering. K05ärIN_PROGRESS och ingen ny aktivitet ärVERIFIED.",
         "KorrigeratPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 är head/source/authorverifierat. kevin_plan verifierade7textblobbar motGitHub,matrisblob13aa21e0f9f827a659e3b69305fc04881b52cb90/sha256c024d9bc3664dbda7965c29afca6124c700a671b5065b03ad91366ddb1e06227 ochvalidatorblob820884f9a0facb59fee9d8006dee1d3da0bbd758. EgenNode24.21självtest36/36 och tidigareunknownsource-repro gammalok:true→nyunknown_source_dealer.1321rader=582valda+155uppskjutna+6JS-källbevis+550ejvalda+28V1. SHA/bytes/gitblob oförändrade; inga rader raderade. Review/uploads kräverauktoriserad promotion/återhashning,JSärversionskälla,PNGkatalog-onlyutanvideoID. Root läste helaK05mappning ochcentrala validatorändringar/loggar. Tvåsmåtextfel klassificeradeicke-blockerande:rad18missar4PNG-IDkolumnändringar,rad136Astrid27nyaska26. Inga kvarvarande konkreta gamla metadatafynd; helK05fortsattIN_PROGRESS. Bevisplanarkiv/2026-10-22/k05-159cc-review/{source-hashes.json,metadata-and-repro.log}. Ingen egen Neon/Blob/binärupprepning.",
-        "Kevinrapporterat, inte roots egen binärverifiering: kommentar6330456172 uppger separat byggserveragent/egen klon och omhashning av 1293/1293 matrisrader mot fryst5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc samt 28/28 V1 mot238d6dd6; 0 avvikelser i Gitblob/bytes/sha256. Matris sha256c024d9bc3664dbda7965c29afca6124c700a671b5065b03ad91366ddb1e06227. Detta gäller källidentitet, inte Neon/Blob, talgodkännande eller aktivering."
+        "Kevinrapporterat, inte roots egen binärverifiering: kommentar6330456172 uppger separat byggserveragent/egen klon och omhashning av 1293/1293 matrisrader mot fryst5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc samt 28/28 V1 mot238d6dd6; 0 avvikelser i Gitblob/bytes/sha256. Matris sha256c024d9bc3664dbda7965c29afca6124c700a671b5065b03ad91366ddb1e06227. Detta gäller källidentitet, inte Neon/Blob, talgodkännande eller aktivering.",
+        "Revision 2026-10-25: tidigare 159cc-/5aa-matris är historisk, inte aktuell uppladdningslista. Handoff på main34c6 redovisar PAOW-import från separat c713875923cd854b26f89c1db0d0f47064619c1d: 153 UUID/hashverifierade original, 152130447bytes, senare 153/153 notiser återställda via #370. Dealerpaow är skild från paow-kevin i trash. Givfilmer/repliker ej aktiverade/godkända; 17/18 landningsvärden skiljer sig och handfrigörande saknar separat bevis. Revisionen är kod-/dokumentgranskning, inte ny liveinventering."
       ],
-      "blocker": "Verklig register-/Blobbindning och full K05 återstår; metadatareview gäller det frysta159cc-underlaget och är inte tal-/produktionsacceptans. Kevins videor/övergångar ska anpassas till mains tre lager och Jakobs klippkarta; tvålagersmodellen är utesluten. Ingen promotion/import/grundloopändring eller prodskrivning aktiveras av tidigare importplan. Kräver separat exakt mål, identitets-/hash-/godkännandebevis, rum/paket-CAS och uppladdningsmandat. Läppsynk är sist och manuell; nya QA-seeds/spelarprov är pausade."
+      "blocker": "Exakt aktiverbar filmprofil/kortkontakt och godkänt inspelat tal återstår. PAOW:s 153 original är redan importerade enligt senare handoff, endast andas bunden grundloop. Avvikande landmarks och saknade talattesteringar måste utredas; ingen återimport, dealeråterställning, tvålagersmodell eller sänkning av main-kontrakt."
     },
     {
       "id": "J09",
@@ -448,8 +453,10 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": "J09-förenkling och avvecklingsförslag återstår efter befintliga beroenden. Ta bara bort belagt oanvända läsare/skrivare; ingen tabell-/data-/mediaradering eller produktions-DDL ingår i omprioriteringen."
+      "evidence": [
+        "Revision 2026-10-25: äldre planens generella /game-avveckling rättad mot senare #358/#360. Mains aktiva interna launchkontrakt och historiska data/media bevaras. Avvecklingsmigrering och faktisk restore kräver fortfarande egna bevis."
+      ],
+      "blocker": "Avveckla endast belagt oanvända konsumenter enligt befintliga beroenden. /game är nu aktiv ingång och gamla namn är inte raderingsbevis. Ingen tabell-, data- eller mediaradering beställs."
     },
     {
       "id": "K06",
@@ -468,9 +475,10 @@
       "reviewer": null,
       "evidence": [
         "Kevinrapporterar förberedelsedokument iPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 (K06-K07/K06-K07-forberedelse.md). Mottaget dokumentunderlag, inte egen full läsgranskning eller verifierat flöde; aktivitetsstatus ändras inte av dokumentet.",
-        "Tidigare K06-förberedelse är dokumentunderlag, inte verifierat Admin→spel efter omstart. Rumsbranding/roomOverrides, paketrevision och fryst spelconfig måste följas separat. Rootklienten är nu monterad i PR336/83f5810, men featureflaggan är AV i drift. Nya spelarprov/QA-seed är pausade enligt direkt Jakobstyrning; återstående acceptans kan inte ersättas med befintliga fixturekvitton."
+        "Tidigare K06-förberedelse är dokumentunderlag, inte verifierat Admin→spel efter omstart. Rumsbranding/roomOverrides, paketrevision och fryst spelconfig måste följas separat. Rootklienten är nu monterad i PR336/83f5810, men featureflaggan är AV i drift. Nya spelarprov/QA-seed är pausade enligt direkt Jakobstyrning; återstående acceptans kan inte ersättas med befintliga fixturekvitton.",
+        "Revision 2026-10-25: prioriterad acceptans av befintliga mergade writers och trelagerkedjan. Äldre paus-/resursdialoger är historiska; genomförande behöver valt godkänt isolerat mål. Ingen K06-körning gjord i dokumentrevisionen."
       ],
-      "blocker": "Pausad som aktiv spelar-/QA-prioritet. K06 och befintliga beroenden J08/K05 kvarstår; återupptagning kräver ny samordnad beställning efter AdminBlackjack/operatörflödet, utan nya automatiska miljö- eller mediaskrivningar."
+      "blocker": "Hela Admin → fryst paket/config → auktoriserat spel → reload/omstart behöver samlat kvitto efter J08/K05. Föreslagen hög prioritet, inte beställning av nya molnresurser, seeds eller produktionsspel."
     },
     {
       "id": "K07",
@@ -488,9 +496,10 @@
       "pr": null,
       "reviewer": null,
       "evidence": [
-        "Kevinrapporterar förberedelsedokument iPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 (K06-K07/K06-K07-forberedelse.md). Mottaget dokumentunderlag, inte egen full läsgranskning eller verifierat flöde; aktivitetsstatus ändras inte av dokumentet."
+        "Kevinrapporterar förberedelsedokument iPR314/159cc134d3a57db4ccbe3a871a3a5eb16fec3656 (K06-K07/K06-K07-forberedelse.md). Mottaget dokumentunderlag, inte egen full läsgranskning eller verifierat flöde; aktivitetsstatus ändras inte av dokumentet.",
+        "Revision 2026-10-25 på main34c6: Node24.21.0 --test --test-reporter=dot --test-concurrency=4, blackjack-core, blackjack-table, blackjack-presentation samt fyra K07-filer passerade med exit0. Restartfilen använder samma minnesstore med ny koordinator, inte ny process/Postgres. #323:s paus/försäkring är uttryckligen portat i blackjack-table. Detta är lokala isolerade prov; status TODO och beroenden oförändrade."
       ],
-      "blocker": "Pausad som aktiv spelar-/flerspelar-/QA-prioritet. K07 och beroenden K04/K06 kvarstår; tidigare isolerade regel-/PG-prov bevaras men betyder inte full spel-, samtidighets- eller medieacceptans."
+      "blocker": "Portade K07-tester finns men opt-in-CI-gapet kvarstår. Full samtidighets-, process-/Postgres-, media- och jämförelseacceptans på integrerad kandidat återstår efter K04/K06."
     },
     {
       "id": "J10",
@@ -508,8 +517,10 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": "J10 återstår: ren klon, start, readiness/drain och återställningskedja är inte samlat produktaccepterade. Tidigare isolerade schema-/restorebevis behålls; nya QA-seeds/spelarprov är pausade och utgör inte nästa aktiva leverans."
+      "evidence": [
+        "Revision 2026-10-25: nytt J10-prov är inte utfört; ny tids-/miljöplan ska utgå från aktuell main och bevarade daterade schema-/restorebevis, inte det äldre paket-A- eller server-v2-läget."
+      ],
+      "blocker": "Samlad ren klon, start/readiness/drain och kompatibel restore på samma kandidat återstår. Senare server-v3 och rensad lokal produktstate återanvänds. Tidigare isolerade bevis är inte full produktacceptans."
     },
     {
       "id": "O02",
@@ -526,8 +537,10 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "evidence": [
+        "Revision 2026-10-25: masterplanens 9/10-mål kräver fungerande godkänd media, versionerad Admin-kedja, negativa behörighetsfall, ekonomi/replay, obligatorisk CI och särskild mobil/runtimeacceptans. Inga nya VERIFIED-markeringar."
+      ],
+      "blocker": "Oberoende samprov på samma frysta kandidat återstår efter K07/J10; nuvarande dokumentrevision ersätter ingen aktivitet."
     },
     {
       "id": "O03",
@@ -543,8 +556,10 @@
       "head": null,
       "pr": null,
       "reviewer": null,
-      "evidence": [],
-      "blocker": null
+      "evidence": [
+        "Revision 2026-10-25: #315/#323/#333 är fortsatt öppna Kevin-utkast; jämförelsen ger inte merge-/stängningsmandat. Färsk säkerhetsläsning på main34c6: källbindning verifierad, 0öppna/23ignorerade, monitorering aktiv; historik too_large och platsmetadata partiell. Ingen fullständig säkerhetsklarering."
+      ],
+      "blocker": "Separat godkänd integration/drift med aktuell ägare/head, schema/readiness, säkerhets- och runtimekvitto återstår efter O02. Ingen merge eller driftåtgärd godkänns av denna plan."
     }
   ]
 }

@@ -1,61 +1,85 @@
-# Masterplan: ett Admin, en lobby och en gemensam spelmodul
+# Masterplan: selektiv Kevin-portning till mains produkt
 
-Beslut och planunderlag: 21 oktober 2026. Planleverans: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Utförandestatus finns bara i [status.json](status.json), med läsvy i [STATUS.md](STATUS.md). Denna plan beställdes uttryckligen av Jakob och kompletterar [produktens befintliga migrationsöversikt](../docs/CLOUD-MIGRATION.md); den återöppnar inte den redan genomförda Neon-/Blob-flytten.
+Reviderad 25 oktober 2026 på Jakobs begäran. Granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`. Ursprunglig plan: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Utförandestatus ägs endast av [status.json](status.json), med genererad [läsvy](STATUS.md). Detta är en dokumentrevision och prioritering; ingen produktkod, driftflagga, mediaacceptans eller migration ändras.
 
-## Rekommendation och mål
+## Slutsats och verifierat nuläge
 
-**Behåll main som bas. Förnya Admin och lyft ut valda spelbeteenden från Kevins rensade branch som en avgränsad modul. Radera det som ersätts i samma leverans.** Planens lämplighet: **9/10, bedömning**. Att först storstäda hela repot och databasen utan en körbar ersättningskedja är **4/10, bedömning**: det skjuter upp användarvärdet och gör beroendefel svåra att lokalisera.
+**Behåll main och färdigställ de accepterade beteendena genom dess befintliga kontrakt.** Det största återstående värdet är exakt mediebindning och verifierad användning genom Admin → publicering → spel. En generell merge av Kevin är inte en leveransmetod.
 
-Det behövs ingen tom main, inget nytt produktrepo och ingen generell merge av Kevin över main. En granskbar featurebranch skapas från aktuell main per aktivitet. En tillfällig integrationsbranch kan användas för samprov; den är ingen ny permanent produktlinje. Jakobs säkerhetsgren lämnas kvar. Begrepp och produktansvar ägs fortsatt av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
+**45 % betyder 9 av 20 helt verifierade aktiviteter.** Varje aktivitet väger fem procentenheter oavsett arbetsmängd. Det betyder varken att bara 45 % av koden finns på main eller att 55 % ska importeras. J01/J02/J03/J04/K01/O01/K02/K03/J07 är VERIFIED; status och vikter ändras inte av denna granskning. Flera återstående aktiviteter har redan stora mergade delsteg.
 
-När hela planen är verifierad ska användaren kunna:
+| Underlag, kontrollerat 25 oktober | Vad som faktiskt finns på main | Återstående beslut/acceptans |
+| --- | --- | --- |
+| PR #334, mergad som `73f6c8f5b9035fc70c6c68594131d96aa92d9fcf` | J08:s versionerade rums-/spelkonfiguration, behörighet, scope, revisionskontroll och materialkontroll | Samlad acceptans med riktiga godkända paket/media; inte ett nytt Admin eller en ny writer |
+| PR #336, mergad som `34060c4d0e3fd33c1e4040479646d7150b6d1294` | Delat bord, server-/klienttransport, återanslutning, same-PG auth och presentationsmottagare | Runtimekedja, miljö/readiness och media måste verifieras på samma kandidat |
+| Kevin PR #333, utkast vid `eb6ab45509fad539463bbcb6930cc46d2d0844c2`, bas `codex/postgres-shared-table-j07` | Alla 26 ändrade sökvägar finns: 19 byte-identiska; sju vidareutvecklade på main. Refill, mottagare, idle, katalog och replay finns. De två extra fel-/replayproven kom via PR #348 (`4336c2cfca2fd9e7a09cc1b4116845d677c52f52`) | Ingen kvarvarande unik produktfunktion identifierad i filjämförelsen. Granska som ersatt PR med ägaren; merge eller stängning utförs inte av denna plan |
+| Kevin PR #315 / #323, öppna utkast mot `kevin-merge-admin` | Teständringar i Kevins gamla app, inte saknad produktimplementation. Main har deterministiska fixtures samt explicit PR #323-prov för paus/försäkring och stabil kommandoåterspelning | Återanvänd endast en bevisad saknad testavsikt i mains testkontrakt; importera inte SQLite-fixtur eller legacyapp |
+| PR #345, mergad som `a2d461a1e8c28e195b4e197dff18f0b7955e3185` | Fyra K07-testfiler för idle, bordsbeteenden, limits och restart | Filerna är fortfarande `opt-in` i orphan-undantagen och saknas i obligatorisk fullregression. Restartprovet återanvänder minnesstore; det är inte process-/Postgresbevis |
+| K04, PAOW och operatörsytan | Trelagers-matte, filmad tidslinje, serverkedjad idle och kort-/chipsskalning finns. Operatörsytan är levererad via #364/#366. Handoffens PAOW-kvitto redovisar 153 importerade original och återställda källnotiser via #370 | PAOW:s givfilmer och repliker är inte aktiverade/godkända; endast andas är grundloop. Ingen verifierad PAOW-filmprofil; 17/18 landningsvärden skiljer sig i källunderlagen |
 
-- Arbeta i ett sammanhängande /admin, inklusive den zoombara klippkartan, utan en parallell /control-yta.
-- Välja rum i /lobby och starta spelet genom ett enda autentiserat launchkontrakt.
-- Spara och publicera de överenskomna spel-, dealer-, tal-, idle- och presentationsvalen i Admin och se rätt version i spelet efter omstart.
-- Använda de utvalda Kevin-beteendena med mains behörighet, rumskoppling, Neon och Blob.
-- Förstå en funktion genom UI → tjänst/kontrakt → lagring eller presentation, med färre alternativa körvägar.
+PR #333:s sju avvikande filer har granskats som kod, inte bara räknats: replay har flyttats till delat kontrakt, mottagaren läser under samma transaktion, koordinatorn har starkare auth-/configgräns, tester har kompletterats och SQL-provköraren bevarar tidigare kontroller. Det finns därför inget belägg för att en helmerge ger ytterligare användarvärde.
 
-J01, J02, J03, J04, K01, O01, K02, K03 och J07 är VERIFIED: **45% (9/20), 55% återstår**. J05, J06, J08, K04 och K05 är IN_PROGRESS. Omprioritering och dokumentarbete ger inga nya aktivitetsbockar eller migrationspoäng. Aktuell main är47756bdf1df372c7aa5047dc165a2d721614c4a2; PR334 och PR336 är inte produktmergade.
+## Prioriterad väg till 9/10
 
-**Aktuell leverans22oktober:** PR336/codex/shared-room-transport/head83f5810d33c483868ac0ce2bab728efb813d51b4 har grön CI39753242313 enligt root. PR334/codex/admin-room-config-j08/head24e9f0264bc244e2ddabdac0cc12b1537ab164bd har grön CI39757805089 enligt mergeagenten. Dessa ersätter8504 respektive d7d139/9b43 som aktuella headnoteringar. PR336 innehåller rootklient/rumsväg, skyddad POST, readonly WS med snapshot före presentation och retry med samma ID/bytes, same-PG auth före receipt/replay samt tvåfasigt fryst mediaval. Senaste rootkvitto106/106normalhook,35/35presentation,tsc och573kandidater/0orphan. Tidigare isolerade PG-/schema-/restore- och presentationsbevis bevaras; de är inte full K04-media-, spelar- eller produktionsacceptans.
+Poängen nedan är en bedömning av **nyttan för main**, inte ekonomisk avkastning eller migrationsprocent. Risk är relativ implementationsrisk före anpassning. Ordningen prioriterar fungerande befintlig produkt framför fler begrepp och klipp.
 
-## Nästa samlade leverans
+| Prio | Leverans och aktivitet | Nytta | Risk | Minsta godkända resultat |
+| --- | --- | ---: | --- | --- |
+| 1 | Exakt medie-/posebindning i befintlig klippkarta, K05 + K04 | 10/10 | Medel–hög | Välj en redan registrerad dealer och ett befintligt rum. Bind endast accepterade takes med exakt UUID/hash, posevariant, track och kontakt-/handfrigöranderuta. Kontrollera två följande uppspelningar genom tre separata lager; osäkra takes förblir avstängda |
+| 2 | Slut den befintliga Admin → paket → spel-kedjan, J08 + K06 | 10/10 | Medel | Alla redan accepterade fält sparas och återläses; rätt rum/paket/configversion används efter reload och omstart. Publicering under hand gäller vid beslutad versionsgräns. Fel bolag, roll, rum, revision och media nekas |
+| 3 | Gör befintliga Kevin-regressioner obligatoriska, J06 + K07 | 9/10 | Låg | Registrera de fyra redan portade filerna i relevant fullregression och ta bort deras opt-in-undantag i samma ändring. Behåll faktisk PG-/processåterställning som separat kontroll; återskapa inte redan portade tester |
+| 4 | Begränsat Adminval för lugn/varierad idle, K04 + J08 | 8/10 | Medel | Återanvänd `room-idle`/`server-chain`, viktning och skydd mot direkt upprepning. Visa ett belagt gap i aktuell Admin-writer innan något kontrakt utökas; välj en liten godkänd pool. Varken ny scheduler eller generell höjning till 24 basklipp behövs som första steg |
+| 5 | Exakt inspelat tal och händelsetiming, K05 + K04 | 8/10 | Hög | Bygg saknat attesteringsunderlag från exakta bytes, behåll mains krav på ljud-/indexhash, poser och kalibrering. Bind ett redan accepterat talfack till rätt committad händelse och tidslinje. Synk godkänns visuellt; saknad/sen media påverkar aldrig saldo eller utfall |
+| 6 | Samlad mobil-, reconnect- och driftacceptans, J05/J10/K07/O02 | 9/10 | Medel | Samma frysta kandidat provas med långsam laddning, avbrott, återanslutning och kompatibel restore. Befintliga mobilrättningar återanvänds; fysisk iPhone/Safari återstår enligt handoff. Redovisa runtimebevis separat från mock-/minnesprov |
+| 7 | Senare Kevin-fixar, först efter påvisat gap | 5/10 tills belagt | Medel–hög | Läs avgränsat delta från accepterad käll-SHA. Exempelvis sena talanrop, inaktiva platser eller idleövergång får en reproducerbar main-regression före portning; branchens nyhet är inte ett nyttokriterium |
 
-**Jakobs direkta prioritering22oktober:** main och Jakobs befintliga klippkarta/redigering är grunden. Prioritera AdminBlackjack och operatörflödet fram till spel med **tre separata valbara lager: bakgrund, dealer och bord**. Kevins videor, övergångar och lämpliga namn anpassas till main; **tvålagersmodellen är utesluten**. Produktbegrepp och utformning ägs fortsatt av TERMINOLOGI; detta ändrar arbetsprioritet, inte serverns spelhandling.
+Prio 3 kan genomföras fristående före den mer tidskrävande medieacceptansen. Prio 4–5 begränsas till accepterade funktioner och utgör inte villkor för att importera alla Kevins varianter. Generativ moving-lipsync/GPU tas sist efter separat beslut om exakt workerprotokoll, dealer-/frameidentitet, budget och visuell acceptans.
 
-Flerspelarutökning, nya QA-seeds och spelarprov är **pausade som aktiv prioritet**. Tidigare färdig evidens ligger kvar. Ett separat seedutkast är partial/unreviewed, inte levererat; prepareCLI hann inte skapas. Ingen ny PG-/spelar-/media-/providerkörning följer av den gamla nästa-steg-texten. Läppsynk tas sist manuellt efter separat beslut. Root äger klientmontering och rumsväg; Kevin har ingen obeställd klientleveransskuld. K04:s tidigare tre monterade acceptansprov återstår, men är inte nästa aktiva uppdrag.
+**9/10 ges först när följande kan beläggas på samma kandidat:**
 
-**Förenklingen i J05/J06/J09/J10 återstår.** STÄD arbetar med paket A:s sju utpekade webblobbywrapper-/testfiler; det är ett pågående delarbete, inte hel J06-acceptans eller skäl att radera aktiva gemensamma adaptrar. AdminBlackjack, Jakobs klippkarta och operatörflödet styr nästa avgränsade leverans. J08:s fulla material-/paketbindning och K05:s verkliga register-/Blobidentiteter/talgodkännande är fortfarande öppna. Fryst metadataunderlag159cc och senare läppsynkunderlag bevaras utan nya godkännanden. Ingen automatisk dealeråterställning, nytt rum, grundloopbyte, molnimport eller schemautökning beställs här.
+- En överenskommen dealer/rumskombination fungerar från Admin till två följande spel med separata bakgrunds-, dealer- och bordslager, korrekt kortkontakt och godkänt valt tal.
+- Sparning, publicering, samtidighet, retry, omstart och restore bevarar rätt identiteter, configversion, sko och exakt en ekonomisk effekt; negativa behörighetsfall passerar.
+- Relevant regression körs obligatoriskt. Mobil/Safari och verklig media redovisas med egna acceptanskvitton; en grön CI ersätter dem inte.
+- Aktiva runtimevägar och rollback är begripliga, utan återinförd legacy eller blockerande fynd. Detta är ett kvalitetsmål för demon, inte ett real-money-godkännande eller ett löfte om 100 % funktionsparitet med Kevin.
 
-**J08, visuell operatörsyta beställd 23 oktober:** avgränsad fortsättning på
-`codex/visuell-operator` efter navigationsarbetet i PR #359. Bolagsval och
-spelkort samlar skapa/ta bort, paus/öppning och separata val av bakgrund, dealer
-och bord. Befintliga publicerade materiallistor, rumsspecifika overrides,
-behörigheter och revisionskontroller gäller. Verifiera sparning/återöppning,
-bolagsisolering, osparade val och korrekt val av nyskapat/kvarvarande spel.
-Ingen ny datamodell, molnimport eller produktionsskrivning ingår. Denna del ändrar
-inte aktiviteternas verifieringsstatus; J08:s återstående runtimeacceptans kvarstår.
+## Anpassningsgräns: main bestämmer formen
 
-**Merge och produktionsgrindar:** befintligt villkorat mandat för verifierat Jakobägda PR:ar ändrar inte dagens prioritering och ger ingen automatisk merge. Färsk PRauthor/source/branch/fullhead, trusted-mainägarkarta, oberoende granskning, exakt-head grön obligatorisk CI samt integrations-/schema-/säkerhetsgrindar krävs; vanlig merge binds till granskad head och följs av verifierad main/CI. Kevin/John/Emil/okänd eller konfliktägare kräver separat uttryckligt mänskligt godkännande för exakt PR/ägare/oförändrad head. Ingen bypass/force/automerge/queue/grendeletion eller parallellmerge. **Game008/009/010-productionblock består** tills separat auktoriserad migration och readiness är verifierade; Studio-readiness ersätter inte detta. Produktionsflaggan är AV och produktions-DDL/deploy/env-aktivering är inte godkända. GitGuardian incident-/historiktäckning är ofullständig. Primary, planarbetskopian och andra ägares arbete lämnas orörda; root äger Git och integration.
+```text
+Admin / scoped roomOverrides
+    → validerad, fryst rum-/paket-/configversion i Neon
+    → auktoriserad spelstart och serverägd spelmotor
+    → committad händelse/outbox
+    → exakt godkänd media i privat Blob
+    → bakgrund → dealer → bord → serverns kort och UI
+```
 
-## Frysta utgångspunkter
+- Mains server äger regler, sko, kort, wallet, idempotens och tidsövergångar. Presentationsfel får aldrig skicka om en ekonomisk handling.
+- Main äger N1/N2/spelarsessioner, Neon-transaktioner, scoped writers, UUID:n, Blob och frysta paket. Kevins SQLite, filregister, cookies, fallbackdealer och monolitiska server följer inte med.
+- `/admin` är arbetsytan, `/lobby` katalogen och `/game` den aktuella publika spelstarten. Bevara de interna autentiserade `/play/{game}`-kontrakt som fortfarande har konsumenter. Återinför inte Control, lokal kalibreringspanel eller borttagna produktstarter.
+- Samma funktion med annat namn räknas som befintlig. `pos1` → `box0`, `posdealer` → `dealer-up` och `hole/flip` → utdelning/visning av dealer-hole behöver ingen ny begreppsmodell. Design, uppladdad layer-UUID, dealer, operatörsägt rum och fryst paket hålls isär.
+- Ställ uppskjutna G13-repliker, extra språk/dealers, större variantpooler och Kevins kompletta backoffice/roulette åt sidan. Svagt belagt värde med hög risk för legacy eller begreppsförvirring innebär **avstå**.
+- Färska PR-/ägar-/SHA-kontroller gäller vid eventuell senare integration. Denna revision ger inget merge-, DDL-, import-, flagg-, deploy- eller GPU-mandat. Produktionsschema 008/009/010 och flaggvärden måste återläsas inför ett faktiskt driftsbeslut; 22 oktobers “AV” är historik, inte ny verifiering.
+
+## Frysta utgångspunkter och versionsgräns
 
 | Källa | Full SHA | Användning |
 | --- | --- | --- |
-| main | 15988f32fd572c453d2189502acbe324c4566815 | Plattform, Admin, publicering, auth, Neon/Blob; inkluderar PR310:s Talade repliker och Vila/Idle |
-| jakob-gren | 15988f32fd572c453d2189502acbe324c4566815 | Verifierad säkerhetsgren, inte arbetsmål |
-| kevin-merge-admin | 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc | Fryst källa efter läppsynksfix; deltat från c4818f5 är oberoende granskat; K01-inventeringen är verifierad |
-| kevin-staging | 238d6dd681745ca87a813b969443e7edee3f820b | Äldre analysunderlag; inte migrationskälla |
+| Granskad main 25 oktober | `34c6c22f60ac75f335f647c83af06e7d0514476b` | Nuläge och prioriteringar i denna revision |
+| Ursprunglig main / jakob-gren 21 oktober | `15988f32fd572c453d2189502acbe324c4566815` | Historiskt plan-/kontraktsunderlag; inte dagens main |
+| kevin-merge-admin | `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` | Accepterad fryst källa för K01/O01; flyttas inte automatiskt |
+| kevin-staging, äldre analys | `238d6dd681745ca87a813b969443e7edee3f820b` | Historiskt underlag |
+| PAOW-importens separata källfrysning | `c713875923cd854b26f89c1db0d0f47064619c1d` | Redan dokumenterad import; ersätter inte generell migrationskälla |
+| kevin-staging, läst 25 oktober | `3e76d79e264a8abd07bc7996bb3ec75cc925341e` | Jämförelseunderlag, inte automatiskt accepterat delta |
+| kevin, läst 25 oktober | `f664c54dfce870a4ea048ed93dfda181d0df9600` | 40 commits efter staging; varje nytt beteende granskas separat |
 
-Refarna kontrollerades på GitHub 21 oktober. En senare käll-SHA kräver granskning av deltat; en branchs namn räcker inte som versionsbevis. Medieborttagningen är ingen garanti för att alla SQL-/runtimekopplingar är borta. K01 har verifierat inventeringen av den frysta källan; portning kräver O01:s kontrakt.
+Historiska kontrakt, delkvitton och de 20 aktiviteternas beroenden nedan bevaras. “Befintlig”, filrader och “mål” inne i det daterade O01-underlaget avser dess angivna SHA; läs nulägestabellen ovan innan ett gammalt delsteg beställs på nytt. Senare datum ger inte i sig media- eller produktionsacceptans.
 
 ## Vad ”bäst av allt” betyder
 
 | Område | Bas/urval | Konkret avveckling |
 | --- | --- | --- |
 | Admin och publicering | Main; förbättra användarflödet, behåll aktiva tjänster | Ersatta Control-sidor, formulärkopior, gamla entrypoints och deras enda tester |
-| Spelkatalog och launch | /lobby + serverkontrollerat rum/paket | /game och äldre /play-katalog, gamla navlänkar och alternativa produktstarter |
+| Spelkatalog och launch | `/lobby` + `/game` + serverkontrollerat rum/paket | Dubbla kataloger och bevisat ersatta starter; bevara aktiva autentiserade launchkontrakt |
 | Regelkärna | Välj verifierade regler per funktion | SQL, HTTP, filer, UI, video och timers inne i själva regelkärnan |
 | Delat bord och spelklient | Kevins dokumenterade beteenden som klarar K01/O01 | Kopierat auth-/wallet-/lagringssystem, hårdkodade bord/video och lokala produktregister |
 | Data och identitet | Mains Neon, serverägd wallet, befintliga scoped writers | SQLite som produktfallback och bevisat oanvända tabeller efter konsumentavveckling |
@@ -63,11 +87,11 @@ Refarna kontrollerades på GitHub 21 oktober. En senare käll-SHA kräver gransk
 | Lokal utveckling | Explicit isolerad fixture där den behövs | Dolda fallbackvägar som råkar starta en annan produkt |
 | Test och CI | Regler, auth, isolering, samtidighet, sparning, publicering | CSS-/sträng-/antal-lås för pensionerad implementation och redundanta byggjobb |
 
-/play/{game} är i dag spelstart, medan /play även har varit en katalog. J04 tar bort dubbel katalog och fastställer en enda väg; en URL-radering får inte samtidigt radera serverns paket-, ägar- och autentiseringskontroller. Profil och historik får en uttrycklig destination innan gamla sidor tas bort. /studio är en teknisk basePath, inte ännu en produkt.
+Dagens publika ingångar och interna launchkontrakt framgår av anpassningsgränsen ovan. J04:s äldre routekvitto är versionsmärkt; senare PR #358/#360 gör `/game` till aktiv ingång. En URL-radering får inte radera serverns paket-, ägar- och autentiseringskontroller. `/studio` är en teknisk basePath, inte ännu en produkt.
 
-## Motorn ska renodlas före sammanfogning
+## Arkitekturkontrakt för den befintliga porten
 
-Det finns redan åtskillnad mellan delar av regler och lagring, men serverns startkod innehåller även auth, presentation, media, äldre läsare och runtimeval. Kevins delade bord behöver granskas som tjänst, inte antas vara en fristående deterministisk motor.
+K02/K03/J07 har redan portat regelkärna, bordstjänst och Postgres-adapter. Följande gränser styr kompletteringar; de beställer inte en andra omskrivning av samma motor. Kevins nyare deltan granskas som beteendereferenser mot dessa kontrakt.
 
 Målgränser:
 
@@ -363,10 +387,10 @@ Aktiva gemensamma tjänster flyttas eller får neutralt namn endast när det und
 
 ## Arbetsordning nu
 
-1. Läs [STATUS.md](STATUS.md), aktivitetsfilen, AGENTS och relevanta kanoniska dokument. Bekräfta rätt checkout, full bas-SHA och filägande.
-2. Prioritera AdminBlackjack och operatörflöde till spel på main, Jakobs klippkarta/redigering och tre separata lager. Anpassa Kevins videor/övergångar till detta; inför inte tvålagersmodellen.
-3. Fortsätt avgränsad förenkling i J05/J06/J09/J10 enligt beroendena. STÄD:s paket A med sju filer är ett delarbete, inte hel J06-acceptans. Root gör Git/integration; andra agenter äger sina utpekade filer.
-4. Flerspelarutökning, nya QA-seeds och spelarprov är pausade som aktiv prioritet; bevara färdig evidens. Läppsynk tas sist manuellt. Avrapportera blockerare/färdig leverans med aktivitet, SHA och bevis; uppdatera status.json och generera STATUS.md utan nya poäng för planarbete.
-5. Använd [samarbets- och åtkomstguiden](SAMARBETE-OCH-ATKOMST.md) för GitHub-samordning, Slack och behörigheter.
+1. Läs status, denna revisions nuläge och aktuell handoff. Frys faktisk main och käll-SHA; granska kvarvarande funktionsgap, inte antal omergade commits.
+2. Ta en avgränsad leverans ur prioriteringstabellen. Återanvänd main-kontrakt och ange observerbart godkänt resultat samt vad som faktiskt ersätts.
+3. Separera kodport, publicering/lagring, faktisk media, Postgres/processprov och driftbevis. Gör inga produktions- eller GPU-åtgärder med denna dokumentrevision som mandat.
+4. Uppdatera samma aktivitet i status.json efter granskad acceptans och generera STATUS.md. En mergad del-PR eller planfil ger inga automatiska poäng.
+5. Följ befintlig ägarregel vid PR-hantering. #315/#323/#333 lämnas till ägargranskning; de är inte en färdig mergekö.
 
-**Tidsbild, grov uppskattning:** första synliga J01-jämförelse inom 2–4 arbetstimmar efter implementationens start; det är en återkopplingspunkt, inte löfte om en färdig sida. E1 ungefär 1–2 arbetsdagar. Hela programmet ungefär 7–12 arbetsdagar med två tillgängliga implementerare och en orkestrator, om kontrakt och åtkomst kan fastställas tidigt. Skatta om efter K01/O01; schemaavvikelser, samtidighetsfel och mediakrav kan ändra utfallet. Separat beställd femminutersbevakning av GitHub-tråden är aktiv; den ger inget utökat ändringsmandat.
+Tidigare resursplan, pausbeslut och uppskattning på 7–12 arbetsdagar från 21–22 oktober är historiska. Ny tids-/kostnadsbedömning kräver valt mediaurval, aktuell testmiljö och uppmätt återstående arbete; ingen generell tidsvinst härleds ur 45 %-siffran.

@@ -1,19 +1,17 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
-Uppdaterad 21 oktober 2026. Detta är produktens övergripande migrationsöversikt.
+Kevin-planen avstämd 25 oktober 2026. Övriga delkvitton är daterade var för sig; detta är produktens övergripande migrationsöversikt.
 Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
 
-## Beställd Admin- och Kevin-integration — 21 oktober 2026
+## Selektiv Kevin-integration — avstämd 25 oktober 2026
 
-Jakob har beställt en [Masterplan](../migrering/MASTERPLAN.md) med separata
-aktiviteter för Jakob och Kevin. Main är bas, `kevin-merge-admin` är källa
-för selektiv portning; `jakob-gren` bevarar utgångsläget. Planen kombinerar
-synlig Admin-förbättring med avveckling av ersatt kod och därefter spelmodulen.
-[Utförandestatus](../migrering/STATUS.md) genereras från en enda status.json;
-planfiler räknas inte som genomförd produktmigrering. Den avslutade tekniska
-Neon-/Blob-flytten nedan ändras inte av detta nya produktarbete.
+[Masterplanen](../migrering/MASTERPLAN.md) och befintliga aktivitetsfiler är reviderade mot main `34c6c22f60ac75f335f647c83af06e7d0514476b`. **45 % är 9/20 helt verifierade aktiviteter, inte andelen importerad kod.** PR #334/#336/#345/#348 är mergade. #333:s produktinnehåll är redan representerat på main; #315/#323 är legacytest-PR:ar och utgör ingen produktmergekö.
+
+Nästa värde ligger i exakt medie-/posebindning, hela Admin → publicering → spel-kedjan och att koppla befintliga K07-tester till obligatorisk regression. PAOW:s 153 original är redan importerade enligt handoff; full filmprofil-/talacceptans återstår. Mains tre lager, Neon, privat Blob, identiteter, auth, scoped writers och serverägda spelregler är målkontrakt. Extra språk/repliker, tvålagersscener, SQLite, lokala produktregister och borttagna ytor återinförs inte för att matcha Kevin.
+
+[Utförandestatus](../migrering/STATUS.md) genereras fortsatt från en enda status.json. Status/beroenden/vikter är oförändrade; detta dokumentarbete ger inga poäng. Det historiska `kevin-merge-admin@5aa7ed10...` förblir accepterad generell referens; senare källor kräver avgränsad deltareview. Den avslutade Neon-/Blob-flytten återöppnas inte.
 
 ## Aktuellt flöde på main — 19 oktober 2026
 
