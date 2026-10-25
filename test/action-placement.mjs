@@ -81,7 +81,7 @@ function actionControlsFixture(){
   nodes['#scene']={append:element=>{nodes['#'+element.id]=element;}};
   const context=vm.createContext({layoutChat(){},layerComposition:null,innerWidth:320,innerHeight:568,$:selector=>nodes[selector],balance:5,
     round:{active:0,legal:()=>['hit','stand','double'],live:()=>[{stake:10,box:3}]},seatOfLive:()=>activeSeat,placeActions,
-    getComputedStyle:element=>({display:element===bar?'none':'block',visibility:'visible',opacity:element.opacity??'1'}),
+    getComputedStyle:element=>({display:element.display??(element===bar?'none':'block'),visibility:'visible',opacity:element.opacity??'1'}),
     document:{documentElement:{dataset:{gameDealer:'dragan'}},querySelector:selector=>nodes[selector],querySelectorAll:query=>obstacles.filter(element=>query.split(',').some(selector=>element.selectors.includes(selector.trim()))),createElement:()=>({setAttribute(){},style:{}})}});
   vm.runInContext(fragment,context);
   const bounds=()=>box(parseFloat(top.style.left),parseFloat(top.style.top),top.offsetWidth,top.offsetHeight);
@@ -122,6 +122,33 @@ test('actual action controls recover from a stale phone position using visible c
   vm.runInContext('showActions()',context);
   assert.equal(top.classList.contains('action-compact'),true);assert.notEqual(top.style.visibility,'hidden');
   assert.ok(bounds().bottom<193.18&&obstacles.every(element=>!overlaps(bounds(),element.rect)));
+});
+
+test('actual actions fit the measured 320px open-chat gap without covering sign-out and recover when inactive choices disappear',()=>{
+  const {context,top,node,nodes,obstacles,visibleCards,activeTotal,bounds,setPickerTop}=actionControlsFixture();
+  setPickerTop(521);
+  const choices=node(['#player-choices'],box(157,435,68,15),'.3');
+  const signOut=node(['#sign-out'],box(250,390,50,30));
+  const protectedNodes=[...visibleCards,activeTotal,
+    node(['#chat'],box(8,51,304,188)),node(['#game-title'],box(11,9,298,34)),
+    ...[[14,297],[112,306],[211,297]].map(([x,y])=>node(['.seat .sidearcs'],box(x,y,95,75))),
+    node(['#wallet'],box(11,459,289,46)),signOut];
+  obstacles.splice(0,obstacles.length,...protectedNodes,choices);
+  vm.runInContext('showActions()',context);
+  assert.equal(top.style.visibility,'hidden','the still visible choices strip really leaves no complete touch row');
+  assert.equal(nodes['#action-placement-warning'].hidden,false);
+
+  choices.display='none';vm.runInContext('showActions()',context);
+  assert.equal(top.classList.contains('action-compact'),true);assert.equal(top.offsetWidth,198);assert.equal(top.offsetHeight,50);
+  assert.notEqual(top.style.visibility,'hidden','hiding the inactive choices frees a playable action row');
+  assert.equal(nodes['#action-placement-warning'].hidden,true);
+  assert.ok(bounds().left>=0&&bounds().right<=320&&bounds().top>=381&&bounds().bottom<=459);
+  for(const element of protectedNodes)assert.ok(!overlaps(bounds(),element.rect),'actions must clear '+element.selectors[0]);
+  assert.deepEqual(top.buttons.map(button=>button.disabled),[true,false,false,true],'fitting controls cannot change legal or affordable moves');
+
+  choices.display='block';vm.runInContext('showActions()',context);
+  assert.equal(top.style.visibility,'hidden');assert.equal(top.style.left,'');assert.equal(top.style.top,'');
+  assert.equal(nodes['#action-placement-warning'].hidden,false,'a later genuine no-fit must not retain the previous position');
 });
 
 test('fresh phone entry places restored actions after both the selected first frame and layout initialization',async()=>{
