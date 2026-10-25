@@ -132,6 +132,14 @@ export function clipLabel(clip, overrides) {
   const id = clip && typeof clip.id === 'string' ? clip.id : '';
   const override = overrides && id && typeof overrides[id] === 'string' ? overrides[id] : '';
   if (override.trim() && override.length <= CLIP_LABEL_MAX && !CONTROL_CHARS.test(override)) return override;
+  // Preserve filmed take identities: u is an appended return, v is a different
+  // rest take with its own card track. A family name cannot distinguish them.
+  const take = [clip?.label, clip?.relativePath?.replace(/\\/g, '/').split('/').at(-1)]
+    .find(value => typeof value === 'string' && /^(?:pos(?:[1-7]|dealer)|hole|flip)(?:-(?:i|u|iu|v|iv))?(?:\.mp4)?$/.test(value));
+  if (take && /\/(?:deal\.|reveal\.)/.test(clip?.familyId ?? '')) {
+    const name = take.replace(/\.mp4$/, '');
+    return `${labelFromFamily(clip.familyId)} · ${name}`;
+  }
   if (clip?.familyId?.includes('/idle.ready/')) {
     const path = clip?.relativePath ?? '';
     if (/idle_breath/.test(path)) return 'Andas lugnt';

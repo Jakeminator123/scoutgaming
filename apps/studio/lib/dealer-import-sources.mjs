@@ -5,6 +5,7 @@
 import dragge from './dealer-import-kevin-source.json' with { type: 'json' };
 import paow from './dealer-import-kevin-source-paow.json' with { type: 'json' };
 import { DRAGAN_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import { PAOW_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
 
 const SOURCES = Object.freeze({ [dragge.sourceDealerId]: dragge, [paow.sourceDealerId]: paow });
 export const FROZEN_IMPORT_SOURCE_ALIASES = Object.freeze(Object.keys(SOURCES));
@@ -47,7 +48,7 @@ const RUNTIME = Object.freeze({
     idle: relative => /^idle-v2\/(breath|glance|smile)\.mp4$/.test(relative) ? { version: 'idle-v2', calm: null, weight: null } : null,
     speech: ({ takeId }) => DRAGAN_PLAYED_LINES.has(takeId) ? { runtimeUses: ['playback', ...(DRAGAN_MANIFEST_LINES.includes(takeId) ? ['manifest', 'preload'] : [])] }
       : DRAGAN_WARMED_LINES.has(takeId) ? { runtimeUses: ['worker-preload'] } : { runtimeUses: [], exclusion: 'not-referenced-by-frozen-runtime' } }),
-  [paow.id]: Object.freeze({ profile: null, lipsyncAvatar: paow.runtime.lipsyncAvatar,
+  [paow.id]: Object.freeze({ profile: PAOW_KEVIN_PROFILE, lipsyncAvatar: paow.runtime.lipsyncAvatar,
     idle: relative => { const take = paow.runtime.idles.find(row => row.path === paow.sourceRoot + relative); return take ? { version: 'h3-v2', calm: take.calm, weight: take.weight } : null; },
     speech: ({ entry, language }) => k05SpeechSelection(paow, entry, language) }),
 });

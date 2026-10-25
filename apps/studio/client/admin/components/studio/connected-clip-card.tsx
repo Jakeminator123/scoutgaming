@@ -8,6 +8,7 @@ import type { ClipSlot, VideoEntry } from '../../lib/connected-studio.mjs';
 import type { StudioClipUsage } from '../../lib/studio-policy.mjs';
 import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup, type ClipLibraryGroup } from '../../lib/studio-layout.mjs';
 import { INTAKE_DRAG_TYPE } from '../../lib/clip-intake.mjs';
+import {registeredFilmedProfile} from '../../../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
   localPreviewUrl?:string; usage?:StudioClipUsage; usageChanged?:boolean; active?:boolean; onOpen?:()=>void;
   library?:ClipLibraryGroup[]; variants:{id:string;label:string;baseline?:boolean}[]; variantId:string; selectedId:string; onSelect:(id:string)=>void; onSlot:(id:string)=>void;
@@ -17,11 +18,19 @@ export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlo
   // Mount point for actions owned elsewhere, such as a deletion button.
   actions?:ReactNode; };
 const isIntakeDrag=(event:DragEvent)=>Array.from(event.dataTransfer.types).includes(INTAKE_DRAG_TYPE);
+function filmedProfileFor(video?:VideoEntry){
+  const profile=registeredFilmedProfile(video?.classification?.dealerId??'');
+  return profile?.takes.some((take:{sha256:string})=>take.sha256===video?.sha256)?profile:null;
+}
+function filmedVideoBound(data:CardData,video:VideoEntry){
+  return data.clips.some(row=>row.sha256===video.sha256&&data.boundIds.includes(row.id));
+}
 function droppedFiles(data:CardData,files:FileList){const list=Array.from(files);if(!list.length)return;if(data.onFiles)data.onFiles(list);else data.onFile(list[0]);}
 export type CardNode = Node<CardData, 'registeredClip'>;
 export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{data:CardData;settingsOpen?:boolean;active?:boolean}) {
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
+  const filmedProfile=filmedProfileFor(selected),filmed=Boolean(filmedProfile);
   const recording=selected?.classification?.recordedSpeech;
   const chain=data.slot.game==='roulette'?null:clipPoseChain(selected?.classification);
   const preview=useRef<HTMLVideoElement|null>(null);
@@ -44,7 +53,7 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
     </div><footer><span>Serverstyrt utfall</span><span>0–36</span></footer>
   </article>;
   const exactBinding=!data.slot.family&&data.slot.eventId!=='idle.ready'&&data.slot.game!=='roulette';
-  const ready=Boolean(selected&&(exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
+  const ready=Boolean(selected&&(filmed?filmedVideoBound(data,selected):exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
   const ruleEditor=!intake&&data.slot.game!=='roulette'&&data.slot.sourceType!=='speak';
   return <article className={`studio-clip-detail ${drag?'is-dragging':''}`} style={{'--clip-color':data.group.color} as CSSProperties}
     aria-label={`${data.group.title} ${data.group.subtitle}`} data-slot={data.slot.id} data-card={data.group.id}
@@ -54,7 +63,7 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
     <div className="studio-card-body nodrag nowheel">
       <section className="studio-card-situation"><span className="studio-card-eyebrow">Situation</span><h2>{slotCaption(data.slot)}</h2><p>{slotExplanation(data.slot)}</p></section>
       {data.group.slots.length>1&&<label className="studio-card-select">Situation<select aria-label={`Situation i ${data.group.title}`} value={data.slot.id} disabled={data.busy} onChange={event=>data.onSlot(event.target.value)}>{data.group.slots.map(slot=><option key={slot.id} value={slot.id}>{slotCaption(slot)}</option>)}</select></label>}
-      <ClipGuide slot={data.slot}/><p className="studio-preview-caption">Klippförhandsvisning · visar den valda filen, inte ett prov i spelmotorn.</p>
+      {!filmed&&<ClipGuide slot={data.slot}/>}<p className="studio-preview-caption">Klippförhandsvisning · visar den valda filen, inte ett prov i spelmotorn.</p>
       <div className="studio-card-media-row"><div className="studio-card-video">{data.localPreviewUrl?<img src={data.localPreviewUrl} alt="Tillfällig lokal VILA-bild"/>:selected&&image?<img src={selected.previewUrl} alt={selected.label}/>:selected?<video ref={preview} key={selected.id} src={selected.previewUrl} controls muted playsInline preload="metadata" aria-label={`Förhandsvisa ${selected.label}`} onPlay={event=>{if(!active||document.hidden)event.currentTarget.pause();}}/>
         :<div className="studio-preview-empty"><Film size={28}/><span>Välj ett klipp för att förhandsvisa</span></div>}</div>
         <div className="studio-card-summary"><span className="studio-card-eyebrow">{image?'Bild':'Valt klipp'}</span>
@@ -69,13 +78,14 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
         {data.actions}</div>}
       {wheelStart&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Kalibrera startfilm</button>}
       {selected&&!settingsOpen&&data.slot.game==='roulette'&&data.slot.eventId==='roulette.idle'&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Granska poser och inramning</button>}
-      {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind()}>Koppla till utkast</button>}
+      {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind()}>{filmedProfile?`Koppla hela givbanken · ${filmedProfile.takes.length} klipp`:'Koppla till utkast'}</button>}
       {selected&&data.slot.eventId==='transition.shoe'&&!data.slot.family&&data.boundId&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind(true)}>Lägg till som variant</button>}
+      {filmedProfile&&<p>Givbanken använder {filmedProfile.takes.length} exakta filmvarianter. Första klippet börjar i vila, följande fortsätter vid skon och sista återgår till vila. Separata skofilmer behövs inte.</p>}
       {selected&&!wheelStart&&data.slot.game==='roulette'&&!intake&&data.boundIds.includes(selected.id)&&data.onUnbind&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onUnbind}>Ta bort koppling</button>}
       <section className="studio-card-rule" aria-label={`Körregel ${data.slot.id}`}><h3>Körregel · projektutkast</h3>
-        {(data.usage?.rules??['Välj ett klipp för att se dess körregel.']).map(rule=><p key={rule}>{rule}</p>)}
+        {(filmed?['Spelserverns givsekvens väljer rätt plats och posevariant. Klippen väljs inte slumpmässigt.']:data.usage?.rules??['Välj ett klipp för att se dess körregel.']).map(rule=><p key={rule}>{rule}</p>)}
         {data.usageChanged&&<p className="studio-card-rule-dirty">Regeln eller kopplingen har ändrats lokalt.</p>}
-        {ruleEditor&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Redigera körregel</button>}
+        {!filmed&&ruleEditor&&!settingsOpen&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Redigera körregel</button>}
       </section>
       <details className="studio-card-identity"><summary>Tekniska detaljer</summary><p>{data.usage?.when||data.slot.description}</p>{selected&&<dl><dt>ID</dt><dd>{selected.id}</dd><dt>Format</dt><dd>{selected.contentType||'Ej angivet'}</dd><dt>SHA-256</dt><dd>{selected.sha256||'Inte tillgänglig i registret'}</dd></dl>}</details>
     </div><footer><span>{planned?'Spelkoppling återstår':image?'PNG · VILA':data.slot.sourceType==='speak'?'Exakt ljud + talvideo':drag?'Släpp videon här':'Släpp video på kortet'}</span><span>{data.clips.length} filer</span></footer>
@@ -91,7 +101,7 @@ export function ConnectedClipCard({data}:NodeProps<CardNode>) {
   const [drag,setDrag]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
   const exactBinding=!data.slot.family&&data.slot.eventId!=='idle.ready'&&data.slot.game!=='roulette';
-  const ready=Boolean(selected&&(exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
+  const ready=Boolean(selected&&(filmedProfileFor(selected)?filmedVideoBound(data,selected):exactBinding?selected.id===data.boundId:(data.usage?.configured??data.boundIds.includes(selected.id))));
   const rendered=isRenderedOutcome(data.slot);
   const intake=data.intakeDrag&&!rendered?data.intakeDrag.check(data.slot.id):null;
   const intakeAccepts=(slotId:string)=>Boolean(data.intakeDrag&&!rendered&&data.intakeDrag.check(slotId).accepted);

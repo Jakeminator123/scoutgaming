@@ -26,6 +26,7 @@ export const presentationPublicModules = Object.freeze([
   {source: 'packages/presentation/runtime/generated-speech-player.mjs', paths: ['/generated-speech-player.mjs', '/packages/presentation/runtime/generated-speech-player.mjs']},
   {source: 'packages/presentation/contracts/filmed-profiles/registry.mjs', paths: ['/packages/presentation/contracts/filmed-profiles/registry.mjs']},
   {source: 'packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs', paths: ['/card-presentation/profiles/kevin-dragan-f15b2af1.mjs', '/packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs']},
+  {source: 'packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs', paths: ['/packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs']},
   {source: 'packages/presentation/contracts/performance-contact.mjs', paths: ['/performance-contact.mjs', '/packages/presentation/contracts/performance-contact.mjs']},
   {source: 'packages/presentation/runtime/lab-speech-bridge.mjs', paths: ['/lab-speech-bridge.mjs', '/packages/presentation/runtime/lab-speech-bridge.mjs']},
   {source: 'packages/presentation/runtime/speech-pose-gate.mjs', paths: ['/speech-pose-gate.mjs', '/packages/presentation/runtime/speech-pose-gate.mjs']},
