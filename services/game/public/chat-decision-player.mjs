@@ -58,7 +58,6 @@ export async function playChatDecision(runtime, decision, signal, jobId) {
               onSequenceFrame: (sequence, k) => runtime.movingDealFrame(dealSpeech, sequence, k),
               onSequenceEnd: () => runtime.movingDealEnd(dealSpeech),
             } : {}),
-            streamObserver: runtime.pendingChatReplies.get(jobId)?.nativeP6Observer,
             onStart: text => {
               const pending = runtime.pendingChatReplies.get(jobId);
               if (runtime.chatStatus && pending) runtime.chatStatus.dataset.playbackMs = String(Math.round(runtime.now() - pending.requestedAt));
@@ -70,7 +69,6 @@ export async function playChatDecision(runtime, decision, signal, jobId) {
             },
             onReceipt: receipt => {
               const pending = runtime.pendingChatReplies.get(jobId); if (pending) pending.playbackReceipt = receipt;
-              pending?.nativeP6Receipt?.(receipt);
               runtime.chatPlaybackDiagnostic.stream(jobId, receipt);
               runtime.nativeObservation.emit('playback', { event: 'speech', source: 'generated-lipsync-stream',
                 synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });

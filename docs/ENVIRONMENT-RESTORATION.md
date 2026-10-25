@@ -78,7 +78,7 @@ Det tidigare skapandehindret är löst. Efter att automatisk godkännandegranskn
 
 ### Konkret fortsättning, ännu inte utförd
 
-Schemakontrollens bas: main `4abbf1985e183c145c5a7772fe02631c6ee9b274`. Stödet för tom katalog i steg 4 tillkommer genom kandidatcommits `06b8ee15` och `70d43a27` (integrerade från `958d5520` och `2f647a17`); äldre main saknar detta stöd. Databasskapandet är klart som eget delsteg. Den tidigare avgränsningen mot ny appdrift/Render och produktionsdata gäller fortfarande; den nya bekräftelsen gällde Create och direkt begränsning. Tabellen gör nästa installationsbeslut granskningsbart, men är inget tillstånd att återöppna tidigare stoppad QA.
+Schemakontrollens bas: main `4abbf1985e183c145c5a7772fe02631c6ee9b274`. Stödet för tom katalog i steg 4 är levererat genom PR #391, main `2faa327e69ae6bac2646009063f4b25c237898bf`, med full CI och faktisk Studio-ledger-readiness på head `9da680f7c91ce3f61e2f99495a3103ab3ab0e9ca`. Schemafilerna i det granskade underlaget är oförändrade. Kompatibel deploy och init återstår; äldre läsare saknar stödet. Databasskapandet är klart som eget delsteg. Den tidigare avgränsningen mot ny appdrift/Render och produktionsdata gäller fortfarande; den nya bekräftelsen gällde Create och direkt begränsning. Tabellen gör nästa installationsbeslut granskningsbart, men är inget tillstånd att återöppna tidigare stoppad QA.
 
 | Ordning | Mains befintliga väg | Kontroll före/efter och kvarstående beslut |
 | --- | --- | --- |
@@ -407,7 +407,7 @@ att branchen redan finns på GitHub; ingen force-push behövs.
 | Director-konfiguration/historik | Appadaptrarna bevarar relativ `open-claw/lab` för privata inställningar och data. Isolerade prov väljer egen datarot och `envFiles: []`; verklig historik bevaras separat. Director-paketets startprov behöver inte äldre filer. |
 | PostgreSQL-prov | `node tools/studio-isolated-qa.mjs --download-postgres` kräver icke-root Linux/WSL, APT/dpkg och OpenSSL; alternativt `--postgres-bin /absolut/bin`. Verktyget skapar och tar bort sitt eget kluster. Vid HTTP-spegelns checksummefel: använd betrodd HTTPS-källa via separat `APT_CONFIG`, behåll signatur-/hashkontrollerna. |
 | Valfria browserprov | Installera Playwright/Chrome separat och ange den dokumenterade fixturemodulen ovan. Dessa behövs inte för ordinarie bygge eller HTTP-fixtur. |
-| Privat native-AI-QA | `tools/activate-native-ai-qa.mjs` kräver `native-cloud-browser-qa.mjs`, `native-p6-sdk-worker.mjs`, `native-p6-sdk-admission.mjs` och `native-p6-upstream-bounds-final.json` i `lab/data/platform-private`, plus sitt hashbundna OpenAI-SDK 7.12.1-träd. Bevara/verifiera dessa för just den uttryckliga QA-kampanjen; de är inga normala bygg-/startberoenden. |
+| Pensionerad native-P6-kampanj | Aktiveringsverktyg, privat SDK-bootstrap, router och klientkoppling är avvecklade. Återställ inte dessa för produktstart eller ny molnacceptans. Eventuella äldre privata manifest, journaler och kostnadskvitton är historiskt återställningsunderlag, inte aktiva appberoenden; denna kodleverans raderar inga sådana data. |
 | Publicerad produkt och tal/mediaarbete | Neon, Blob, auth/provider-inställningar samt relevanta råmedia/banker behövs för sina respektive funktioner enligt miljö-/runtimeguiderna. Offline-fixturen ersätter dem med syntetisk konfiguration och verifierar inte skarp tjänst eller medieacceptans. |
 
 ## Lokal miljö

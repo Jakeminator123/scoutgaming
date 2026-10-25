@@ -1,8 +1,7 @@
 import { createServer, request as httpRequest } from 'node:http';
 import {sharedRoomSocketPath} from '../../packages/server-transport/paths.mjs';
 import { posix } from 'node:path';
-import { createHash, timingSafeEqual } from 'node:crypto';
-import { LAB_PORT, WEB_PORT, NATIVE_P6_QA } from './config.mjs';
+import { LAB_PORT, WEB_PORT } from './config.mjs';
 import { checkLabSession } from './lab-session-check.mjs';
 import { vercelIngressRequest, movingCallbackPath } from './vercel-ingress.mjs';
 import {MOVING_BANK_DIAGNOSTIC_HEADER,readMovingBankDiagnostic} from '../../packages/presentation/contracts/moving-bank-diagnostics.mjs';
@@ -100,28 +99,6 @@ export function proxyHeaders(headers, host) {
   return { ...kept, host, 'x-forwarded-host': host, 'x-forwarded-port': '443', 'x-forwarded-proto': 'https' };
 }
 
-const nativeP6Routes=new Map([['/api/product/speech',{method:'POST',token:'speech'}],
-  ['/api/studio/advice',{method:'POST',token:'director'}],['/internal/p6/qa-routing',{method:'GET',token:'readback'}]]);
-export function nativeP6QaRouterRequest(incoming, qa) {
-  if (!qa) return null;
-  const target=typeof incoming.url==='string'?incoming.url.split(/[?#]/,1)[0]:'';
-  if (!nativeP6Routes.has(target)) return null;
-  const deny=status=>({accepted:false,status});
-  if (qa.serviceId!==NATIVE_P6_QA.serviceId || qa.origin!==NATIVE_P6_QA.origin || qa.dataRoot!==NATIVE_P6_QA.dataRoot
-    || qa.environmentId!==NATIVE_P6_QA.environmentId || qa.workspaceId!==NATIVE_P6_QA.workspaceId || qa.database!==NATIVE_P6_QA.database
-    || incoming.headers?.host!==new URL(NATIVE_P6_QA.origin).host) return deny(421);
-  if (incoming.url!==target) return deny(404);
-  const route=nativeP6Routes.get(target);
-  if (incoming.method!==route.method) return deny(405);
-  if (['origin','cookie','sec-fetch-site','x-croupier-vercel-secret','x-croupier-p6-stage-ticket','x-croupier-p6-stage']
-    .some(k=>Object.hasOwn(incoming.headers,k))) return deny(403);
-  const supplied=incoming.headers.authorization,expected=qa.tokens?.[route.token];
-  if (typeof supplied!=='string'||!/^Bearer [^\s]+$/.test(supplied)||supplied.length>4096||typeof expected!=='string') return deny(401);
-  const sha=value=>createHash('sha256').update(value).digest();
-  if (!timingSafeEqual(sha(supplied.slice(7)),sha(expected))) return deny(401);
-  return {accepted:true,port:WEB_PORT};
-}
-
 // One platform port, three exact public hostnames. The original Host and Origin
 // reach the child; rewriting them to loopback would defeat application checks.
 export function createCloudGateway(config, { labInternalSecret, sessionCheck = checkLabSession,
@@ -141,19 +118,6 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     throw new Error('Vercel ingress requires the canonical single-origin layout.');
   }
   const server = createServer(async (incoming, outgoing) => {
-    // Own-QA service credentials are a separate boundary from the public
-    // Vercel transport. Only these exact three paths can bypass that ingress.
-    const nativeP6=nativeP6QaRouterRequest(incoming,config.nativeP6QaRouter);
-    if (nativeP6) {
-      if (!nativeP6.accepted) { outgoing.writeHead(nativeP6.status,{'Cache-Control':'no-store'});outgoing.end();return; }
-      const upstream=httpRequest({hostname:'127.0.0.1',port:webPort,method:incoming.method,path:incoming.url,
-        headers:proxyHeaders(incoming.headers,incoming.headers.host),timeout:35000},reply=>{
-        outgoing.writeHead(reply.statusCode??502,headersWithoutHops(reply.headers));reply.pipe(outgoing);
-      });
-      upstream.on('timeout',()=>upstream.destroy());
-      upstream.on('error',()=>{if(!outgoing.headersSent)outgoing.writeHead(502,{'Cache-Control':'no-store'});outgoing.end();});
-      incoming.on('aborted',()=>upstream.destroy());outgoing.on('close',()=>upstream.destroy());incoming.pipe(upstream);return;
-    }
     const ingress = vercelIngressRequest(incoming, vercelIngress);
     if (!ingress.accepted) { outgoing.writeHead(421, { 'Cache-Control': 'no-store' }); outgoing.end(); return; }
     if (ingress.health) { outgoing.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); outgoing.end('ok'); return; }

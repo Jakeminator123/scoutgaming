@@ -59,9 +59,6 @@ export async function prepareContainerUser(env = process.env, { fs = { chown, ch
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   prepareContainerUser().then(async () => {
-    // Restore only the manifest-pinned private SDK closure before flag-on children.
-    const { initializeAiQaPrivateBootstrap } = await import('../../services/game/native-ai-qa-private.mjs');
-    await initializeAiQaPrivateBootstrap();
     const { main } = await import('./start.mjs');
     process.exitCode = await main(['--start']);
   }).catch(() => {

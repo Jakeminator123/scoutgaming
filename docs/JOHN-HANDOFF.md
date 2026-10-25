@@ -1,11 +1,24 @@
 # Aktuell handoff — Scoutgaming
 
+## Pensionerad P6-kedja avvecklad i kod — 25 oktober 2026
+
+Den frusna P6-kampanjens privata SDK-bootstrap, QA-router, aktiveringsverktyg, spelklientkoppling och särskilda fullfilsundantag är borttagna: 27 filer, 129 tillagda och 2 470 borttagna rader i kodleveransen `6cb4ba29` (integrerad som `0358a192`). Tre P6-sviter och två P6-playback-fall är avvecklade med funktionen. Det aktiva miljöregistret beskriver bara kvarvarande kontrakt. Återställningsguidens gamla krav på privat P6-material är borttaget.
+
+**Verifiering:** underagenten körde 244/244 riktade prov och ordinarie hook 273/273 utan skip, inklusive typkontroll, miljöinventering och testregistrering. Root har granskat produkt-, klient-, route-, test- och miljödeltat samt den gamla kedjans exakta service-/scopebindning utan blockerare. Eget integrationsprov av tom katalog, publicering, ingress och talbudget gav 125/125 pass utan skip. Negativa prov visar att gamla endpoints nekas även genom autentiserad Vercel-ingress, att aktiverade P6-flaggor avvisas och att providerinjektion med giltig Neon-journal inte öppnar fullfilsgenerering under streaming. Slutlig CI och deploy redovisas i leverans-PR:en; detta är ännu inte liveacceptans.
+
+**Full-CI-fynd rättat före merge:** PR392:s första fulla körning fann en kvarlämnad `nativePlaybackContext`-referens i gästkontrollen efter att P6-definitionen tagits bort. Verkliga HTTP-anrop gav därför 503. Referensen är borttagen utan ändrade testkrav; tre lokala HTTP-fall reproducerade felet före rättningen. Berörda media-/offline-/strömprov passerade efteråt; två lokala starttimeouts kontrollerades om sekventiellt och gav 44/44 pass i auth-/chattproven. Ny full CI på rättad head krävs fortfarande.
+
+Talreläet behövs fortfarande för genererad text, operatörsrepetition och andra aktiva konsumenter även när genererad röst är av. Ordinarie auth, budget, Neon/Blob och registrerade medier består. Den äldre kombinerade tvåprocess-starten är nästa separata avvecklingssteg; den är ännu kvar i denna leverans. Inga gamla QA-resurser öppnas och inga molninställningar, privata journaler, dealers eller bolag ändras. VID arbetar separat med PAOWs filmprofil/varianter och bolagsdemo; P6-/katalogarbetet ändrar inte dessa bindningar. Full migrationsstatus står kvar på 45 %.
+
+
 
 ## Tom molnkatalog utan historiska dealerkrav — 25 oktober 2026
 
 Nya scopes kan starta med en explicit, exakt tom runtimekatalog. Den kräver inga gamla Astrid-/Emil-filer eller lokala produktregister. Saknad, blandad eller felaktig katalog avvisas fortfarande; alla fyllda kataloger behåller befintlig validering. Förberedelsefunktionen använder samma målgranskning, schema-/revisionskontroll, transaktionslås och audit som ordinarie import. Tom init kan aldrig ersätta en fylld bank.
 
 **Verifiering:** underagentens katalog-/importprov 23/23, konsumentprov 11/11, publiceringssvit 52/52 och oförändrade legacy-/uppladdningsprov 27/27 passerar. Första commit-hooken gav 230 pass, fyra uttryckliga browser-/PG-skips; den skärpta publiceringssviten gav 52/52 utan skip. Root har granskat produktdiffen och verifierat oförändrad befintlig katalog/revision, JSONB-nyckelordning och att äldre läsare avvisar den nya tomma formen. Det nya publiceringsfallet börjar med tom projektmodell, tom administration och noll media; en ny syntetisk dealer når fryst paket och rätt spelentré, medan annan operatör nekas. Root körde därefter de fyra integrerade katalog-/import-/register-/publiceringssviterna: 86/86 pass. Detta är domän-/providerfixturer, inte verklig moln- eller mediaacceptans.
+
+**Levererat:** [PR #391](https://github.com/Jakeminator123/scoutgaming/pull/391) är mergad som `2faa327e69ae6bac2646009063f4b25c237898bf`. Full CI `40211795949` passerade på exakt head `9da680f7c91ce3f61e2f99495a3103ab3ab0e9ca`: alla åtta regressionsgrupper, isolerade SQL-/omstarts-/HTTPS-prov och faktisk Studio-ledger-readiness. Detta verifierar kodleveransen; kompatibel runtime-deploy och tom init återstår.
 
 **Inför installation:** deploya kompatibla läsare i Vercel och Render före tom init. Rollback måste också förstå sparat tomt format; återställ inte historiska kataloger för att få gammal kod att starta. [Installationsordning och resurskvitto](ENVIRONMENT-RESTORATION.md#konkret-fortsättning-ännu-inte-utförd) gäller fortsatt. Neon-endpointets autosuspend är nu separat observerad som idle; ingen app, roll, schema eller seed har installerats. Migrationsstatus är fortsatt 45 % (9/20).
 

@@ -28,38 +28,6 @@ const samePath = (left, right) => {
 };
 const fail = name => { throw new Error(`Invalid or missing ${name}.`); };
 
-// This temporary paid-verification route belongs exclusively to the named QA
-// service. A normal deployment neither imports private adapters nor passes
-// their credentials to a child. No general cloud/provider bypass is exposed.
-export const NATIVE_P6_QA = Object.freeze({ serviceId:'srv-datj7l893c1s73ar3u50',
-  origin:'https://croupier-vercel-preview-qa.onrender.com', dataRoot:'/var/data/native-studio-qa/abc92154cb15',
-  environmentId:'qa_native_abc92154cb15', workspaceId:'croupier', database:'croupier_studio_qa_abc92154cb15' });
-export function nativeP6QaRouterConfig(env = process.env) {
-  const flag=env.CROUPIER_P6_QA_ROUTER;
-  if (flag === undefined || flag === '' || flag === '0') return null;
-  let database;try { database=new URL(env.CROUPIER_GAME_DATABASE_URL); } catch {}
-  if (flag !== '1' || env.NODE_ENV !== 'production' || env.RENDER_SERVICE_ID !== NATIVE_P6_QA.serviceId
-    || env.RENDER_EXTERNAL_URL !== NATIVE_P6_QA.origin || env.CROUPIER_CLOUD_DATA_ROOT !== NATIVE_P6_QA.dataRoot
-    || env.CROUPIER_STUDIO_ENVIRONMENT_ID !== NATIVE_P6_QA.environmentId || env.CROUPIER_STUDIO_WORKSPACE_ID !== NATIVE_P6_QA.workspaceId
-    || env.CROUPIER_CLOUD_LAYOUT !== 'single-origin' || env.CROUPIER_STUDIO_NEON_POLICY !== '1' || env.CROUPIER_DATABASE !== 'postgres'
-    || !database || !['postgres:','postgresql:'].includes(database.protocol) || !database.hostname.endsWith('.neon.tech')
-    || database.username !== NATIVE_P6_QA.database || database.pathname !== '/'+NATIVE_P6_QA.database || database.searchParams.get('sslmode') !== 'require'
-    || !/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT??'')
-    || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(env.CROUPIER_P6_SDK_RUN_ID??'')
-    || !/^dep-[a-z0-9]+$/.test(env.CROUPIER_P6_SDK_DEPLOYMENT_ID??'')
-    || !/^[a-f0-9]{64}$/.test(env.CROUPIER_P6_QA_ROUTER_SOURCE_SHA256??'')
-    || env.OPENCLAW_PRODUCT_SPEECH_URL !== NATIVE_P6_QA.origin || env.CROUPIER_PRESENTATION_DIRECTOR_URL !== NATIVE_P6_QA.origin
-    || env.NODE_OPTIONS || env.NODE_PATH || env.LD_PRELOAD || env.NODE_EXTRA_CA_CERTS || env.NODE_TLS_REJECT_UNAUTHORIZED)
-    fail('CROUPIER_P6_QA_ROUTER');
-  const tokens=[env.OPENCLAW_PRODUCT_SPEECH_TOKEN,env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN,
-    env.CROUPIER_P6_SDK_WORKER_TOKEN,env.CROUPIER_P6_SDK_READBACK_TOKEN,env.CROUPIER_P6_SDK_TICKET_SECRET];
-  if (!tokens.every(v=>typeof v==='string'&&v.length>=32&&v.length<=2048&&!/[\s\x00-\x1f\x7f]/.test(v))
-    || new Set(tokens).size!==tokens.length) fail('CROUPIER_P6_QA_ROUTER credentials');
-  return Object.freeze({ ...NATIVE_P6_QA, runId:env.CROUPIER_P6_SDK_RUN_ID, deploymentId:env.CROUPIER_P6_SDK_DEPLOYMENT_ID,
-    sourceSha256:env.CROUPIER_P6_QA_ROUTER_SOURCE_SHA256, stateRoot:NATIVE_P6_QA.dataRoot+'/p6-sdk/'+env.CROUPIER_P6_SDK_RUN_ID,
-    tokens:Object.freeze({speech:tokens[0],director:tokens[1],readback:tokens[3]}) });
-}
-
 function httpsOrigin(value, name) {
   let url;
   try { url = new URL(value); } catch { fail(name); }
@@ -100,7 +68,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   // keeps the existing two-child runtime unchanged.
   if (env.CROUPIER_CLOUD_LAB_CHILD !== undefined && !['', '0', '1'].includes(env.CROUPIER_CLOUD_LAB_CHILD)) fail('CROUPIER_CLOUD_LAB_CHILD');
   const labChild = env.CROUPIER_CLOUD_LAB_CHILD !== '0';
-  const nativeP6QaRouter=nativeP6QaRouterConfig(env);
+  for (const name of ['CROUPIER_P6_QA_ROUTER', 'CROUPIER_P6_BOUNDED_TEST']) {
+    if (env[name] !== undefined && !['', '0'].includes(env[name])) fail(name + ' (retired)');
+  }
   if (env.CROUPIER_PLAYER_ACCOUNTS && !['0', '1'].includes(env.CROUPIER_PLAYER_ACCOUNTS)) fail('CROUPIER_PLAYER_ACCOUNTS');
   for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
     'CROUPIER_LISSABON_PROFILES']) {
@@ -141,8 +111,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(sessionReserveUsd)
     || Number(sessionReserveUsd) <= 0 || Number(sessionReserveUsd) > 10)) fail('CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD');
   const dailyBudgetUsd = env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD || '';
-  const boundedQaFullfile = Boolean(nativeP6QaRouter && env.CROUPIER_P6_BOUNDED_TEST === '1');
-  const fullfileBudgetRequired = generatedSpeech && (!streaming || boundedQaFullfile) && env.CROUPIER_STUDIO_NEON_POLICY === '1';
+  const fullfileBudgetRequired = generatedSpeech && !streaming && env.CROUPIER_STUDIO_NEON_POLICY === '1';
   const fullfileReserveUsd = env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD || '';
   if (fullfileBudgetRequired && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(fullfileReserveUsd)
     || Number(fullfileReserveUsd) <= 0 || Number(fullfileReserveUsd) > 10)) fail('CROUPIER_SPEECH_FULLFILE_RESERVE_USD');
@@ -246,7 +215,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.CROUPIER_STREAM_LANE !== 'lissabon-stream-lane') fail('CROUPIER_STREAM_LANE');
   const publicPort = port(env.PORT);
   const disk = env.CROUPIER_CLOUD_DATA_ROOT;
-  const diskRequired = database === 'sqlite' || Boolean(storageExport) || Boolean(nativeP6QaRouter);
+  const diskRequired = database === 'sqlite' || Boolean(storageExport);
   if (disk === undefined && diskRequired) fail('CROUPIER_CLOUD_DATA_ROOT');
   if (disk !== undefined && (typeof disk !== 'string' || !isAbsolute(disk))) fail('CROUPIER_CLOUD_DATA_ROOT');
   const dataRoot = disk === undefined ? null : resolve(disk);
@@ -278,7 +247,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labChild, labBasePath, publicPort, dataRoot, paths, videoArchive,
-    database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport, nativeP6QaRouter,
+    database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport,
     director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
     mediaStorage, studioPolicy, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
@@ -354,21 +323,9 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
     CROUPIER_MEDIA_STORAGE: config.mediaStorage,
     ...(config.blobToken ? { BLOB_READ_WRITE_TOKEN: config.blobToken } : {}),
     ...(config.videoArchive ? { LAB_VIDEO_ARCHIVE: config.videoArchive } : {}) };
-  const nativeP6=nativeP6QaRouterConfig(env);
-  const nativeP6Web=nativeP6 ? {
-    RENDER_SERVICE_ID:env.RENDER_SERVICE_ID, RENDER_GIT_COMMIT:env.RENDER_GIT_COMMIT, RENDER_EXTERNAL_URL:env.RENDER_EXTERNAL_URL,
-    CROUPIER_CLOUD_DATA_ROOT:env.CROUPIER_CLOUD_DATA_ROOT, CROUPIER_P6_QA_ROUTER:'1',
-    CROUPIER_P6_QA_ROUTER_SOURCE_SHA256:env.CROUPIER_P6_QA_ROUTER_SOURCE_SHA256,
-    CROUPIER_P6_SDK_RUN_ID:env.CROUPIER_P6_SDK_RUN_ID, CROUPIER_P6_SDK_DEPLOYMENT_ID:env.CROUPIER_P6_SDK_DEPLOYMENT_ID,
-    CROUPIER_P6_SDK_WORKER_TOKEN:env.CROUPIER_P6_SDK_WORKER_TOKEN, CROUPIER_P6_SDK_READBACK_TOKEN:env.CROUPIER_P6_SDK_READBACK_TOKEN,
-    CROUPIER_P6_SDK_TICKET_SECRET:env.CROUPIER_P6_SDK_TICKET_SECRET,
-    ...(env.CROUPIER_P6_BOUNDED_TEST === '1' ? { CROUPIER_P6_BOUNDED_TEST:'1',
-      CROUPIER_P6_BOUNDED_MANIFEST_SHA256:env.CROUPIER_P6_BOUNDED_MANIFEST_SHA256,
-      CROUPIER_P6_SDK_OPENAI_API_KEY:env.CROUPIER_P6_SDK_OPENAI_API_KEY } : {}),
-  } : {};
   return {
     web: { command: process.execPath, args: [join(REPOSITORY, 'services/game/server.mjs')], cwd: REPOSITORY,
-      env: { ...shared, ...nativeP6Web, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
+      env: { ...shared, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
         CROUPIER_DATABASE: config.database,
         ...(config.gameDatabaseUrl ? { CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),
         CROUPIER_PUBLIC_GAME_PATH: config.publicGamePath,

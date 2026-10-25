@@ -42,8 +42,7 @@ const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile'
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
 const ROULETTE_ROOM = new Set(['/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
-const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
-  '/api/presentation/native-p6-playback-context']);
+const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
 const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei)|game|site)\/runtime)(?:\/|$)/;
 
