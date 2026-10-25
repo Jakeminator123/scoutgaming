@@ -109,7 +109,7 @@ test('one exact Vercel frontend origin is opt-in and reaches only Web', () => {
   }
 });
 
-test('three exact public origins share one port and two loopback children', () => {
+test('exact public origins share one gateway and one game process', () => {
   const env = fixture();
   const config = validateCloudConfig(env);
   const specs = childSpecifications(config, { PATH: '/usr/bin', UNRELATED_SECRET: 'never-forward' });
