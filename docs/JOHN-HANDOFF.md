@@ -12,6 +12,11 @@ detta kvitterar varken chatt, tal eller K06/K07.
 
 ## Render-starten avvecklad till en spelprocess — 25 oktober 2026
 
+CI hittade också ett kvarvarande inventeringstest som krävde Studios
+`cloud-media-store` och `video-registry` i Render. Kravet är rättat till deras
+verkliga Verceltjänst; spelets aktiva media-/miljökontroller består. Docker-
+provet på första PR-head var grönt, men full CI måste återköras efter rättningen.
+
 Den kombinerade Dockerfilen, Studio-processen, Next-förkontrollen, interna Lab-proxyn och dess hemlighet är borttagna i kod (`b7ff284d` + `bb6140df`, integrerade som `acdbd18e7` + `111b322d6`). CI/Docker kräver inte längre `CROUPIER_CLOUD_LAB_CHILD=0`; osatt värde ger samma enprocess-start och pensionerad aktivering nekas. Gamla tvåprocessprov är avvecklade. Signerad ingress, Webs verkliga sessionskontroll, dokumentredirects, medieintervall, strömmar, rumssockets och ordnad avstängning bevaras.
 
 **Verifiering:** oberoende produkt-/testgranskning utan blockerare. Agentens normala hook gav 115 pass och tre uttryckliga Linux-skips; testnamnsrättningen 24/24. Roots integration med aktuell v3-CI och katalogkod gav 126 pass, noll fel och tre Linux-skips. Linux-signalprov och faktiskt Dockerbygge återstår i leveransens CI. Miljöguiden rättar också ett felaktigt påstående: valfria zones-URL används fortfarande för att neka sammanblandning med game/auth, inte för att köra pensionerade zonroutes.
