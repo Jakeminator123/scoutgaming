@@ -489,6 +489,18 @@ test('scene publication uses only frozen live choices, preserves the material dr
   assert.deepEqual(initial,original);
 });
 
+test('oversized scene publication keeps editable geometry and reports the storage limit without a false success',async()=>{
+  const initial=sceneState(),calls=[],published=[];
+  const h=stateful(initial,async(url,request)=>{calls.push({url,request});return response({error:'Request too large'},413);},
+    {...sceneOptions,onSaved:value=>published.push(value)});
+  chooseScene(h,initial);await byAction(h.render(),'publish-scene-layout').props.onClick();
+  assert.equal(calls.length,1);assert.equal(published.length,0);
+  assert.deepEqual(JSON.parse(JSON.stringify(scenePreview(h.render()).props.sceneLayout.composition)),editedScene(initial));
+  assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,false);
+  assert.match(renderToStaticMarkup(h.render()),/överskrider lagringsgränsen/);
+  assert.doesNotMatch(renderToStaticMarkup(h.render()),/Hämta senaste version innan/);
+});
+
 test('scene editing waits for exact preview identity, rejects unrelated geometry and shows publication only for changes',async()=>{
   const initial=sceneState(),h=stateful(initial,()=>assert.fail('no write'),sceneOptions);
   byAction(h.render(),'open-scene-layout').props.onClick();
