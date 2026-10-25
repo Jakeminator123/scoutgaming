@@ -388,7 +388,7 @@ bedömda separat från aktiva runtime-läsare.
 | --- | --- | --- |
 | `BETTALOTTO_API`, `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET` | partner-reference.mjs, partner-observer.mjs | Behåll kanoniska namn. |
 | `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE` | cloud-media-store.mjs | Driftens Blob-inställningar; vanliga lokala starter kopplar inte in tjänsten. |
-| `CROUPIER_ZONES_DATABASE_URL` | Pensionerade zonroutes | Kodkonsumenten är borttagen. Extern databas och miljövariabler har inte raderats; hanteras separat i O03. |
+| `CROUPIER_ZONES_DATABASE_URL` | Valfri databasavgränsning i config/postgres-store och saved-game-policy | Zonrutterna är pensionerade. Om värdet finns nekas sammanblandning med game/auth-databasen, även via pooler-alias. Inget krav för Render-start och ingen vidarebefordran till spelprocessen. Extern databas/historik hanteras separat i O03. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
 | `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och apps/studio/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
@@ -407,7 +407,7 @@ bedömda separat från aktiva runtime-läsare.
 | `CROUPIER_STUDIO_MAIL_FROM`, `RESEND_API_KEY` | studio-native-mail.mjs | Behåll; isolerad start stänger av skarpa utskick. |
 | `CROUPIER_CLOUD_LAUNCH`, `CROUPIER_CLOUD_LAYOUT`, `HOST`, `NODE_ENV`, `PORT` | ops/cloud/config.mjs, Director/plattform; NODE_ENV även bygge | Behåll. PORT är värdhanterad där plattformen sätter den. |
 | `CROUPIER_CLOUD_DATA_ROOT` | Färskt verifierad endast på äldre QA med 1 GiB-disk; ops/cloud/config.mjs | Behåll QA:s återställningsunderlag. Återinför inte i produktion och radera inte den äldre disken. |
-| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; inbakad som `0` i `ops/cloud/Dockerfile.game` (Render `croupier-v3`, se [RENDER-V3](../ops/cloud/RENDER-V3.md)) | Pensionerad aktivering: osatt, tomt eller `0` ger alltid en spelprocess; `1` och andra värden nekas. Ingen lokal Studio-process eller Next-byggkontroll finns kvar. Signerade Studio-API-anrop till Render svarar 421; dokumentbokmärken omdirigeras fortsatt till Vercel. Inga molninställningar ändras av kodavvecklingen. |
+| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; krävs inte längre i Dockerfile eller CI (Render `croupier-v3`, se [RENDER-V3](../ops/cloud/RENDER-V3.md)) | Pensionerad aktivering: osatt, tomt eller `0` ger alltid en spelprocess; `1` och andra värden nekas. Ingen lokal Studio-process eller Next-byggkontroll finns kvar. Signerade Studio-API-anrop till Render svarar 421; dokumentbokmärken omdirigeras fortsatt till Vercel. Inga molninställningar ändras av kodavvecklingen. |
 | `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_URL` | ops/cloud/config.mjs | Behåll separat presentationsanslutning. |
 | `CROUPIER_QA_LOGIN_PASSWORD`, `CROUPIER_QA_LOGIN_USERNAME` | Privata autentiserade verifieringsverktyg; ingen aktiv produktläsare hittad | Behåll verifieringsunderlag. |
 | `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY`, `GITGUARDIAN_API_TOKEN` | Ingen aktiv produktläsare verifierad. DID-träffen är kommentar; ElevenLabs-video har ett negativt vidarebefordringstest. Extern användning oklar | Behåll tills exakt verktygsägare/konsument är klarlagd. |
@@ -1175,7 +1175,9 @@ Render-spelets villkorliga grupper:
   disk och lokala filprofiler har egna livscykler.
 - Bakgrundszoner: de oanropade `/api/zones*`-rutterna och deras privata
   databasadapter är pensionerade i PR1 för Admin-navigationen.
-  `CROUPIER_ZONES_DATABASE_URL` har ingen kvarvarande produktkonsument.
+  `CROUPIER_ZONES_DATABASE_URL` är fortfarande ett valfritt isoleringsskydd:
+  config/postgres-store och saved-game-policy nekar samma databas som game/auth.
+  Värdet öppnar inga zonroutes eller Studio-processer.
   Den externa zoninstansen och dess historik är inte raderade eller verifierade
   av denna kodändring; eventuell rensning kräver separat O03-mandat.
   Spelkonton och saldon använder fortsatt en separat game/auth-Neon-databas.

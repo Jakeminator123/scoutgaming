@@ -64,7 +64,6 @@ test('bare package imports resolve from the two locked installations that Docker
 });
 
 test('Dockerfile.game includes the game launcher and excludes Studio dependencies and builds', () => {
-  assert.match(dockerfile, /^ENV CROUPIER_CLOUD_LAB_CHILD=0$/m);
   const instructions = dockerfile.split('\n').filter(line => line && !line.startsWith('#')).join('\n');
   assert.doesNotMatch(instructions, /apps\/|next build|npm --prefix apps/);
   assert.ok(copied.includes('ops/cloud') && copied.includes('services/game') && copied.includes('services/astrid-gpu-worker/gateway'));

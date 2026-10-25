@@ -20,7 +20,7 @@ Varken `apps/`, `media/` eller lokal Studio-bootstrapdata ingår. Spelserverns s
 
 CI `Render v3 container check` bygger den aktiva imagen två gånger, med en tillfällig källändring i runnerns checkout. Den kräver cacheträff för låst installation och kör därefter nätverkslösa kontroller av beroenden, frånvaro av Studio/lokala medieregister samt v3-startkonfiguration. Fixturvärdena i denna nätverkslösa kontroll ansluter inte till Neon, Blob eller någon app. Inga imager publiceras eller driftsätts av kontrollen.
 
-Det ersatta CI-jobbet byggde `ops/cloud/Dockerfile`, kompilerade Studio och krävde den historiska privata bootstrapmappen. Dessa är inte längre leveranskrav för Render. Den äldre Dockerfilen och kombinerade startens kvarvarande QA-/kodkonsumenter är en separat avvecklingsyta; det gamla receptet är ingen produktionsåterställning.
+Den äldre `ops/cloud/Dockerfile` och den kombinerade Studio-/spelstarten är borttagna. Render startar alltid en spelprocess; ingen Next-byggkontroll, Studio-port eller intern Studio-hemlighet finns i denna start. Den gamla privata bootstrapmappen och P6-kampanjens SDK/router är inte leveranskrav. Studio-sessionen kontrolleras fortfarande av spelserverns befintliga identitetstjänst genom signerad Vercel-ingress.
 
 Neon är registerkälla: scoped `runtime_media_catalogs` innehåller layout, Blob-index och presentationsmetadata; `speech_reply_records` innehåller svarsbibliotekets metadata. Exakta mediebytes hämtas från privat Blob. Saknad/felaktig katalog får inte ersättas av filer ur imagen. Historiska authoringfiler eller dealeridentiteter blir inte krav på nya installationer bara för att gamla tester använder dem.
 

@@ -21,6 +21,5 @@ COPY ops/cloud/ ops/cloud/
 COPY services/astrid-gpu-worker/gateway/ services/astrid-gpu-worker/gateway/
 COPY services/game/ services/game/
 ENV NODE_ENV=production
-ENV CROUPIER_CLOUD_LAB_CHILD=0
 # The entrypoint drops to node (1000:1000) before any listener or database client.
 CMD ["node", "ops/cloud/container-entry.mjs"]
