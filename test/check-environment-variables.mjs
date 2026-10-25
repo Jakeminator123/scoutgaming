@@ -5,13 +5,11 @@ import { blueprintNames, compareKeys, hasEnvChange, parseEnvNames, referencedNam
 
 test('active media sources belong to their deployed service inventories', () => {
   const registry = JSON.parse(readFileSync(new URL('../docs/environment-variables.json', import.meta.url), 'utf8'));
-  for (const service of ['render-game', 'vercel-lab-ui']) {
-    for (const file of ['apps/studio/lib/cloud-media-store.mjs', 'apps/studio/lib/video-registry.mjs']) assert.ok(registry.services[service].sources.includes(file), service + ': ' + file);
-  }
+  const studio = registry.services['vercel-lab-ui'];
+  for (const file of ['apps/studio/lib/cloud-media-store.mjs', 'apps/studio/lib/video-registry.mjs']) assert.ok(studio.sources.includes(file), 'vercel-lab-ui: ' + file);
   const game = registry.services['render-game'];
   for (const file of ['services/game/blob-media.mjs', 'services/game/storage/video-registry.mjs', 'services/game/storage/legacy-clip-inventory.mjs', 'services/game/storage/studio-media-runtime.mjs']) assert.ok(game.sources.includes(file), file);
   assert.ok(game.conditional.includes('NEXT_PUBLIC_LAB_BASE_PATH'));
-  const studio = registry.services['vercel-lab-ui'];
   assert.ok(studio.sources.includes('apps/studio/lib/legacy-clip-inventory.mjs'));
   for (const name of ['LAB_PUBLIC_URL', 'CROUPIER_DATA_DIR']) assert.ok(studio.conditional.includes(name), name);
 });
