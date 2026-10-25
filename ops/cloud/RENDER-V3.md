@@ -53,7 +53,12 @@ Krävs för start (`config.mjs`):
 - `CROUPIER_STUDIO_NEON_POLICY=1`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`
 - `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN`
 - `CROUPIER_STREAM_LANE=lissabon-stream-lane`
-- `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN`
+
+`OPENCLAW_PRODUCT_SPEECH_URL` och `OPENCLAW_PRODUCT_SPEECH_TOKEN` är ett
+valfritt par när genererat tal, kamera och moving är av. Aktiv AI-media kräver
+fortfarande ett verkligt relä. Utan relä är spelchatten okonfigurerad och
+avvisar anrop; detta är inte verifierad chatt eller talacceptans. Ett halvt
+par avvisas alltid. Inspelad spelmedia kräver ingen separat AI-tjänst.
 
 Vercel-ingress (krävs för att Vercel ska nå v3):
 

@@ -223,7 +223,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   }
   const director = optionalPair(env, 'CROUPIER_PRESENTATION_DIRECTOR_URL', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN');
   const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN');
-  if (!productSpeech.url) fail('OPENCLAW_PRODUCT_SPEECH_URL/TOKEN');
+  // Recorded-media games can run without AI. Enabled AI media still needs its
+  // real relay; an absent pair must never be replaced by fixture credentials.
+  if ((generatedSpeech || camera || movingSpeech) && !productSpeech.url) fail('OPENCLAW_PRODUCT_SPEECH_URL/TOKEN');
   const timeoutMs = Number(env.OPENCLAW_TIMEOUT_MS ?? 8000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 30000) fail('OPENCLAW_TIMEOUT_MS');
   const speechTimeoutMs = Number(env.OPENCLAW_SPEECH_TIMEOUT_MS ?? timeoutMs);

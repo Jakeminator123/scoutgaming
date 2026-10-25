@@ -272,6 +272,8 @@ test('Neon fullfile budget must be explicit and reaches only the Web fullfile ch
     CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.50',CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1'};
   const config=validateCloudConfig(env),specs=childSpecifications(config,env);
   assert.deepEqual(config.fullfileBudget,{reserveUsd:'0.50',dailyBudgetUsd:'1'});
+  assert.throws(() => validateCloudConfig({ ...env, OPENCLAW_PRODUCT_SPEECH_URL: '', OPENCLAW_PRODUCT_SPEECH_TOKEN: '' }),
+    /OPENCLAW_PRODUCT_SPEECH_URL/);
   assert.equal(specs.web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,'0.50');
   assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,'1');
   for(const value of [undefined,'','0','-1','10.01','1e-2','0.0000001',' 0.5'])
@@ -454,6 +456,25 @@ test('retired Studio credentials stay outside the game and active relay credenti
     error => !error.message.includes('private-speech-token'));
   assert.throws(() => validateCloudConfig({ ...env, OPENCLAW_PRODUCT_SPEECH_TOKEN: '' }),
     error => !error.message.includes('private-speech-token'));
+});
+
+test('cloud game without AI does not require a relay, but partial or active AI configuration fails closed', () => {
+  const env = fixture();
+  delete env.OPENCLAW_PRODUCT_SPEECH_URL;
+  delete env.OPENCLAW_PRODUCT_SPEECH_TOKEN;
+  const config = validateCloudConfig(env);
+  assert.deepEqual(config.productSpeech, { url: '', token: '' });
+  const specs = childSpecifications(config, env);
+  assert.deepEqual(Object.keys(specs), ['web']);
+  assert.equal(specs.web.env.OPENCLAW_PRODUCT_SPEECH_URL, '');
+  assert.equal(specs.web.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, '');
+  assert.equal(specs.web.env.OPENCLAW_BASE_URL, undefined);
+  assert.equal(specs.web.env.OPENCLAW_API_KEY, undefined);
+  for (const change of [
+    { OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test' },
+    { OPENCLAW_PRODUCT_SPEECH_TOKEN: 'unused-fixture-token' },
+    { CROUPIER_ASTRID_CAMERA: '1', CROUPIER_ASTRID_TRANSLATION_KEY: 'unused-camera-key' },
+  ]) assert.throws(() => validateCloudConfig({ ...env, ...change }), /OPENCLAW_PRODUCT_SPEECH_URL/);
 });
 
 test('cloud launch requires an explicit pilot selection, not an auth-ready assertion', () => {

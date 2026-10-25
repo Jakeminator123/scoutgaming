@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Inspelat spel utan obligatorisk AI-infrastruktur — 25 oktober 2026
+
+Cloud kan sakna både `OPENCLAW_PRODUCT_SPEECH_URL` och token när genererat tal,
+kamera och moving är av. Ett halvt par eller aktiv AI-media utan relä avvisas.
+Ingen produktionskonfiguration ändras. Inspelad media och serverns spelregler
+behöver därmed ingen extra AI-tjänst i en tom installation. Utan relä är chatten
+okonfigurerad: verklig beslutsväg ger 503 utan provideranrop eller påhittat svar.
+Riktade konfigurations-/chattprov: 38/38. Full CI och molnacceptans återstår;
+detta kvitterar varken chatt, tal eller K06/K07.
+
 ## Render-starten avvecklad till en spelprocess — 25 oktober 2026
 
 Den kombinerade Dockerfilen, Studio-processen, Next-förkontrollen, interna Lab-proxyn och dess hemlighet är borttagna i kod (`b7ff284d` + `bb6140df`, integrerade som `acdbd18e7` + `111b322d6`). CI/Docker kräver inte längre `CROUPIER_CLOUD_LAB_CHILD=0`; osatt värde ger samma enprocess-start och pensionerad aktivering nekas. Gamla tvåprocessprov är avvecklade. Signerad ingress, Webs verkliga sessionskontroll, dokumentredirects, medieintervall, strömmar, rumssockets och ordnad avstängning bevaras.
