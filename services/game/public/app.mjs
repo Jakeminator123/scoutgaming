@@ -958,7 +958,7 @@ function layoutDealControl() {
   control.style.visibility='';
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
   const targets=seatEls.filter(el=>!el.classList.contains('seat-off')).flatMap(el=>[...el.querySelectorAll('.spot,.sidearcs,.bet-target,.clear-box,.stake')]).filter(visible).map(el=>el.getBoundingClientRect());
-  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#player-choices,#rehearsal,#game-title,#sound-btn,#chat,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
+  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#player-choices,#rehearsal,#game-title,#sound-btn,#sign-out,#chat,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
   const placement=placeDealControl({width:control.offsetWidth,height:control.offsetHeight,
     viewport:{width:innerWidth,top:0,bottom:$('#dealer-picker').getBoundingClientRect().top},targets,obstacles});
   if(placement)Object.assign(control.style,{position:'fixed',left:placement.x+'px',top:placement.y+'px',bottom:'auto',transform:'none'});
@@ -1294,7 +1294,7 @@ function layoutChat(){
   const chat=$('#chat');if(!chat||studioPreview||!document.body.classList.contains('astrid-voice-ui'))return;
   const open=$('#chat-log').classList.contains('open'),ui=layerComposition?.gameUi?.();
   const config=ui?.chat??{x:1,y:0,width:innerWidth<=860?.95:.28,height:.45};
-  const obstacles=[...document.querySelectorAll('#game-title,#sound-btn,#hud-bottom,#dealer-picker,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat],.seat:not(.seat-off) .spot,.seat:not(.seat-off) .sidearcs')]
+  const obstacles=[...document.querySelectorAll('#game-title,#sound-btn,#sign-out,#hud-bottom,#dealer-picker,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat],.seat:not(.seat-off) .spot,.seat:not(.seat-off) .sidearcs')]
     .filter(el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).opacity!=='0')
     .map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
   const placement=placeChat({width:open?Math.max(240,innerWidth*config.width):190,height:open?Math.max(62,innerHeight*config.height):Math.max(62,chat.scrollHeight+2),
@@ -1341,7 +1341,7 @@ function showActions(seat) {
   };
   // Local presentation hides legacy DOM cards/totals and paints the visible SVG.
   // Empty results and hidden duplicates must not consume the remaining space.
-  const obstacles=[...document.querySelectorAll('.card,.hand-total,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat][data-hand],.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#player-choices,#rehearsal,#game-title,#sound-btn,#chat')].map(visibleBounds).filter(Boolean);
+  const obstacles=[...document.querySelectorAll('.card,.hand-total,#local-card-overlay .playing-card,#local-card-overlay .card-totals g[data-seat][data-hand],.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#player-choices,#rehearsal,#game-title,#sound-btn,#sign-out,#chat')].map(visibleBounds).filter(Boolean);
   const totals=[...activeSeat.querySelectorAll('.hand-total'),...document.querySelectorAll('#local-card-overlay .card-totals g[data-active="true"]')].map(visibleBounds).filter(Boolean);
   const anchor={x:r.x,bottom:Math.max(r.y,...totals.map(b=>b.bottom))};
   const viewport={width:innerWidth,top:Math.max(0,Math.min(innerHeight*.35,$('#table2d').getBoundingClientRect().top)),bottom:Math.min(innerHeight,$('#dealer-picker').getBoundingClientRect().top)};
