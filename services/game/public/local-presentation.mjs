@@ -2,7 +2,7 @@ import { isActiveDealerId } from '../../../packages/presentation/contracts/deale
 import { recordedSpeechForVideo } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import { createLiveIdleController } from '../../../packages/presentation/runtime/live-idle.mjs';
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null }) {
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets' }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
   const preview=Boolean(transport?.context);
   const request=transport?.request??((...args)=>globalThis.fetch(...args));
@@ -50,6 +50,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   control.value = mode;
   control.className = 'local-presentation-mode'; if (!roomModes) host.append(control);
   const hasOwnIdlePolicy = config.idlePolicy?.familyId === `${dealerId}/idle.ready/ready`;
+  const readIdlePhase = () => { try { return idlePhase() === 'decide' ? 'decide' : 'bets'; } catch { return 'bets'; } };
   const idle = !hasOwnIdlePolicy ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.idleInventory ?? config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
@@ -224,12 +225,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const video = config.inventory.videos.find(item => item.id === clip.videoId && item.dealer === dealerId);
     if (!video) { status.textContent = 'Ingen lokal idlefilm · 2D-reserv'; return; }
     void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason, projectRevision: config.projectRevision || config.revision, configurationSource },
+      timing: idle.mode === 'rotation' ? { startOffset: clip.startOffset } : {},
+      onMediaFrame: idle.mode === 'rotation' ? seconds => { if (epoch === serial && !closed) idle.progress(clip.playId, seconds); } : undefined,
       onFrame: () => { if (epoch !== serial || closed) return;
         idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
         idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
-    }).then(() => { if (epoch !== serial) return; idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
+    }).then(() => { if (epoch !== serial) return; if (idle.mode === 'rotation') idle.updateScene({phase:readIdlePhase()}); idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
       .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
         if (transientPlayback(error) && idleTransientRetries++ < 20) { retryIdleSoon(); return; }
         idle.failed(clip.playId); resumeIdle(); });
@@ -249,9 +252,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // may revoke the current card's owner. Apply those flags on action release.
     if (action && ['deal', 'reveal'].includes(presentationKind) && !Object.hasOwn(patch, 'action') && !document.hidden) return;
     if (action || speech || document.hidden) adviceController?.abort();
+    if (idle?.mode === 'rotation' && Object.hasOwn(patch, 'ready') && !Object.hasOwn(patch, 'action')
+      && !Object.hasOwn(patch, 'speech') && !document.hidden) {
+      idle.updateScene({speechReady:ready,phase:readIdlePhase(),revision:`${version()}:${mode}`});
+      return; // Finish the current pose and its exit before presenting the speech-ready base.
+    }
     if (document.hidden) { pendingRule = null; ++behaviourRequest; upcoming = []; player.cancelLocalPreparation?.(); }
     ++serial; stop(); idleRun = 0;
-    idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}` });
+    idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}`, phase:readIdlePhase() });
     offerPendingRule();
     if (action || speech) onBusy(); else resumeIdle();
   }
@@ -321,7 +329,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         const current = ++attempt;
         try {
           await film(video, { kind, signal, onProgress:progress(), timing, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
-            onFrame: () => { if (owns(current)) onPresented?.(); },
+            onFrame: () => { if (owns(current)) { idle?.interruptPose?.(); onPresented?.(); } },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
         } finally { if (current === attempt) ++attempt; }
@@ -329,7 +337,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const transition = async (video, direction) => {
         if (!video) return;
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
-        await film(video, { kind: 'transition', signal, onProgress:progress(), details: { direction, shoeDraw: event.shoeDraw,
+        await film(video, { kind: 'transition', signal, onProgress:progress(), onFrame:()=>idle?.interruptPose?.(), details: { direction, shoeDraw: event.shoeDraw,
           requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource } });
         if (token !== serial || requestVersion !== version() || signal?.aborted) throw new DOMException('Presentation cancelled', 'AbortError');
       };
@@ -344,7 +352,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         await play(result.standard); }
       await transition(result.transitions?.after, 'from-shoe');
       const current = token === serial && requestVersion === version() && !signal?.aborted;
-      if (current) retainRule(result, requestVersion);
+      if (current) { idle?.resetPose?.(); retainRule(result, requestVersion); }
       return current;
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;

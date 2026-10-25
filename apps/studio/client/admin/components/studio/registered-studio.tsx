@@ -10,7 +10,7 @@ import type {AppearanceRoomStatus} from '../../../../components/partner-appearan
 import {ControlResourceLifecycle, type LifecycleSnapshot, type RoomLifecycleRequest} from '../../../../components/control-resource-lifecycle';
 import {RoomGameConfig} from '../../../../components/room-game-config';
 import {PresentationRoomCreate} from '../../../../components/presentation-room-create';
-import {markPackagesStale, packageEditor, packageSelectionDirty, publishOperatorPackage, publishedPackageMessage, rebasePackageEditors, togglePackageLane} from '../../../../lib/operator-package-client.mjs';
+import {markPackagesStale, packageEditor, packageSelectionDirty, publishOperatorPackage, publishedPackageMessage, rebasePackageEditors, togglePackageLane, verifiedPackageRevision, packagePublishError} from '../../../../lib/operator-package-client.mjs';
 import type {PackageEditor} from '../../../../lib/operator-package-client.mjs';
 import {labBasePath} from '../../../../lib/lab-url.mjs';
 import {compositionLabel} from '../../../../../../packages/navigation/control-flow.mjs';
@@ -190,6 +190,23 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
       onChanged?.();
     } finally { publishLock.current = false; setPublishBusy(false); }
   }
+  async function publishPaowIdle() {
+    if(!operator||!selectedRoom||publishBlocked||selectionDirty||publishLock.current)return;
+    const id=operator.id,room=selectedRoom.id,revision=operatorPackage.revision,lanes=[...operatorPackage.baseline];
+    publishLock.current=true;setPublishBusy(true);updatePackage(id,current=>({...current,message:'',error:''}));
+    try {
+      const response=await fetch(labBasePath()+'/api/admin/operator-package',{method:'POST',credentials:'same-origin',
+        headers:{'content-type':'application/json',accept:'application/json'},
+        body:JSON.stringify({action:'refresh-dealer-idle',operatorId:id,roomId:room,dealerId:'paow',expectedPackageRevision:revision})});
+      const payload=await response.json().catch(()=>null);
+      if(!response.ok)throw Error(packagePublishError(response.status,payload));
+      const next=verifiedPackageRevision(payload,{operatorId:id,lanes,revision});
+      if(next===null||payload?.idleRefreshed?.dealerId!=='paow'||payload.idleRefreshed.roomId!==room)throw Error('Publiceringskvittot kunde inte bekräftas. Läs in aktuella uppgifter.');
+      updatePackage(id,current=>({...current,revision:next,needsRefresh:false,error:'',message:`PAOWs sparade viloklipp är publicerade. Version ${next}.`}));
+      setLifecycleRefresh(value=>value+1);onChanged?.();
+    } catch(error) {updatePackage(id,current=>({...current,needsRefresh:true,error:error instanceof Error?error.message:'Publiceringen kunde inte bekräftas. Läs in aktuella uppgifter.'}));}
+    finally {publishLock.current=false;setPublishBusy(false);}
+  }
   const lifecycleNavigation = {
     compositionHref: (owner: {id:string}, room: {id:string;presentationLaneId:string}) => {
       const params = new URLSearchParams({ operator: owner.id, table: room.id, composition: room.presentationLaneId });
@@ -267,6 +284,12 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
               {roomId&&!selectedRoom&&<p role="alert" className={styles.message}>Det valda rummet finns inte hos detta aktiva spelbolag. Välj rum uttryckligen för att fortsätta.</p>}
               {selectedRoom&&operator&&<>
                 {disabled&&<p role="status" className={styles.message}>Spara det pågående Studio-arbetet innan du ändrar rummets val.</p>}
+                {gameSettingsRoom(selectedRoom)&&selectedRoom.dealerIds.includes('paow')&&<section className={styles.message} aria-label="Publicera PAOWs viloklipp">
+                  <p>Uppdatera PAOWs sparade vilosekvens i bolagets publicerade rum. Övriga publicerade val och placeringar behålls.</p>
+                  <button type="button" className="studio-button" disabled={publishBlocked||selectionDirty} onClick={()=>void publishPaowIdle()}>{publishBusy?'Publicerar…':'Publicera PAOWs viloklipp'}</button>
+                  {operatorPackage.message&&<p role="status">{operatorPackage.message}</p>}
+                  {operatorPackage.error&&<p role="alert">{operatorPackage.error}</p>}
+                </section>}
                 {selectedRoom.published ? <PartnerAppearanceLoader key={'layers:'+editorKey} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout adminChoices disabled={disabled||lifecycleBusy||gameBusy||gameDirty||createBusy||publishBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onStatus={setRoomStatus} onSaved={(saved:{operatorId:string;packageRevision:number})=>{packageAdvanced(saved.operatorId,saved.packageRevision);onChanged?.();}}>
                     {gameSettingsRoom(selectedRoom)&&<RoomGameConfig key={'game:'+editorKey} operatorId={operator.id} roomId={selectedRoom.id} roomName={selectedRoom.name}
                       disabled={disabled||lifecycleBusy||roomBusy||roomDirty||createBusy||publishBusy}
