@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## Borttagen implicit lokal administratör — 25 oktober kväll
+
+`services/game/server.mjs` skapar inte längre lokal Kevin-superadmin, höjer inte befintlig Kevin-användares roll och skriver inte startlösenord i loggen. Explicit molnbootstrap, aktiv jämförelsefixturs eget konto och tillåten gäståtkomst behålls. Ingen befintlig användare eller databas ändras av rensningen.
+
+Verifiering: 13/13 i `test/cloud-admin-bootstrap.mjs`, `test/local-comparison-fixture.mjs` och `test/game-entry-auth.mjs`, Node24.21.0/maxfyra arbetare. Nytt prov skyddar roller, salt och hash över två starter; oberoende review fann inga blockerare. Dessa processprov använder befintliga tillfälliga testfixturer. De inför ingen lokal produktlagring och ska inte räknas som molnacceptans. Kodändringen är senare än nedanstående frysta molnkandidat; den är inte verifierad i produktion.
+
+## Isolerat molnsamprov och kvarvarande kodgap — 25 oktober kväll
+
+[#396](https://github.com/Jakeminator123/scoutgaming/pull/396) är mergad som `f098486f1017b468e3c83547d4babc04a2e1f23a`; full CI `40225145966` passerade. Kandidat `28815e9c` kördes i egna Vercel/Render-appar mot isolerad Neon/privat Blob: Admin19/19, writer/CAS14/14, riktig omstart+återläsning4/4, publicering/media78/78 samt blackjack71HTTP/fyra kommandon. [Exakta resurser, kvitton och begränsningar](ENVIRONMENT-RESTORATION.md#molnsamprov-25-oktober-kväll).
+
+**45 % = nio helt verifierade aktiviteter; 55 % återstår enligt samma mått.** Delresultaten är nu synliga i masterplanens matris. Manuell film/touchkontroll kan tas separat, men ersätter inte återstående kod: native room-game-config saknar en exakt materialresolver till dagens K04/K05-urval/timing. Delade bord förblir av. Ingen historisk dealerbank, lokal databas eller TSV-runtime återinförs. Produktionsmotorn återlästes frisk på `ebb6b91f`, inte uppdaterad till provkandidaten.
+
+SQL-backup och restore till separat databas är genomförda. 75 tabeller/fyra sekvenser och 1 777 fullständiga objektnycklar matchar; riktiga app-läsare ger samma data i båda databaserna. Två privata mätfel (trunkerad SQL-objektetikett respektive fel TLS-kontrollpunkt) rättades med bevarade originalkvitton, utan datarättning eller försvagad TLS. Ingen full HTTP-spelreplay mot restoredatabasen är utförd.
+
+Den andra omstarten efter spel gav växlande korrekta svar och Render-HTML502; spelåterläsningen underkändes och orsaken är öppen. Render lämnades verifierat suspenderad och Vercel verifierat pausad före backup. Första dealerregistreringen503 är också en kvarstående driftobservation trots senare lyckat prov. Inloggningsbegränsningen429 bevaras. Ursprunglig checkout/annan IDE är orörd. Fortsätt från befintliga privata kvitton och egna resurs-ID:n; starta inte en parallell provmiljö.
+
 ## Delade bord: explicit flagga till Render-processen — 25 oktober 2026
 
 K07-förberedelsen hittade att `CROUPIER_SHARED_TABLE_ENABLED=1` inte nådde
@@ -7,8 +23,7 @@ spelprocessen från molnstarten. [PR #396](https://github.com/Jakeminator123/sco
 vidarebefordrar nu den validerade flaggan; standard av och explicit `0` består.
 Ogiltiga värden nekas före start. Underagentens riktade prov kör verkliga
 subprocessmiljöer och verifierar att rå miljö inte kan överstyra validerat beslut:
-26/26 passerade på Node24.21.0, inga skip. Kvar: PR:ens CI/merge, deployment och
-faktiskt K07-samprov. Ingen molnflagga aktiverades och inget schema ändrades.
+26/26 passerade på Node24.21.0, inga skip. CI och merge är verifierade ovan; provkandidaten kördes med flaggan av. Faktiskt K07-samprov med delat bord kvarstår. Ingen molnflagga aktiverades och inget schema ändrades.
 
 ## Leveransavstämning efter PR 392/394/395 — 25 oktober 2026
 

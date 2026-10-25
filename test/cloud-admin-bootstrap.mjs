@@ -95,11 +95,11 @@ async function start(f, overrides = {}) {
   return { child, output: () => stdout + stderr };
 }
 
-async function request(f, origin, path, body, cookie = '') {
+async function request(f, origin, path, body, cookie = '', method = 'POST') {
   const target = new URL(origin);
   return new Promise((resolveRequest, rejectRequest) => {
     const req = httpRequest(`http://127.0.0.1:${f.port}${path}`, {
-      method: 'POST', headers: { Host: target.host, Origin: target.origin, Cookie: cookie,
+      method, headers: { Host: target.host, Origin: target.origin, Cookie: cookie,
         'Content-Type': 'application/json' },
     }, res => {
       const chunks = [];
@@ -171,12 +171,47 @@ test('cloud creates one operator without logging the secret and preserves CRAIG 
   } finally { reloaded.close(); }
 });
 
-test('local empty CRAIG keeps its existing Kevin bootstrap', async t => {
+test('local empty CRAIG creates no administrator or password log and preserves guest access', async t => {
   const f = await fixture(t);
-  const local = await start(f, { CROUPIER_CLOUD_RUNTIME: '' });
-  assert.match(local.output(), /backoffice login created - user: kevin  password: /);
+  const local = await start(f, { CROUPIER_CLOUD_RUNTIME: '', DEMO_GUEST_ACCESS: '1' });
+  const session = await request(f, game, '/api/auth/session', undefined, '', 'GET');
+  assert.equal(session.status, 200);
+  const status = JSON.parse(session.body);
+  assert.equal(status.guest, true);
+  assert.equal(status.authenticated, false);
+  assert.match(session.headers['set-cookie']?.[0] ?? '', /^preview_session=/);
   await stop(local.child);
+  assert.doesNotMatch(local.output(), /backoffice login created|password:/i);
   const db = new DatabaseSync(join(f.dataDir, 'craig.db'));
-  try { assert.deepEqual(db.prepare('SELECT username,role FROM users').all().map(row => ({ ...row })), [{ username: 'kevin', role: 'superadmin' }]); }
+  try { assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 0); }
   finally { db.close(); }
+});
+
+test('local restarts preserve existing Kevin and other account roles and credentials', async t => {
+  const f = await fixture(t), existingPassword = randomBytes(24).toString('base64url');
+  const db = new DatabaseSync(join(f.dataDir, 'craig.db'));
+  let previous;
+  try {
+    db.exec('CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT UNIQUE NOT NULL,email TEXT,salt TEXT,hash TEXT,role TEXT NOT NULL,created_at TEXT NOT NULL)');
+    for (const [id, name, role] of [[41, 'kevin', 'reader'], [42, 'existing-operator', 'admin']]) {
+      const salt = randomBytes(16).toString('hex');
+      db.prepare('INSERT INTO users VALUES (?,?,?,?,?,?,?)').run(id, name, null, salt,
+        scryptSync(existingPassword, salt, 64).toString('hex'), role, new Date().toISOString());
+    }
+    previous = db.prepare('SELECT * FROM users ORDER BY id').all();
+  } finally { db.close(); }
+  for (let restart = 0; restart < 2; restart++) {
+    const local = await start(f, { CROUPIER_CLOUD_RUNTIME: '' });
+    await stop(local.child);
+    assert.doesNotMatch(local.output(), /backoffice login created|password:/i);
+    assert.ok(!local.output().includes(existingPassword), 'existing password reached child output');
+    const reloaded = new DatabaseSync(join(f.dataDir, 'craig.db'));
+    try {
+      const accounts = reloaded.prepare('SELECT * FROM users ORDER BY id').all();
+      assert.deepEqual(accounts.map(({id, username, role}) => ({id, username, role})),
+        previous.map(({id, username, role}) => ({id, username, role})));
+      assert.ok(accounts.every((row, i) => row.salt === previous[i].salt && row.hash === previous[i].hash
+        && row.email === previous[i].email && row.created_at === previous[i].created_at), 'existing account data changed');
+    } finally { reloaded.close(); }
+  }
 });

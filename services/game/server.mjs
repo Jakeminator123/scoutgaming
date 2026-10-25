@@ -418,25 +418,16 @@ async function boCreateUser(username, pw, role = 'admin') {
   (await boDb.prepare('INSERT INTO users (username, salt, hash, role, created_at) VALUES (?,?,?,?,?)')
     .run(username, salt, hash, role, new Date().toISOString()));
 }
-// Preserve the legacy local account behavior without changing roles in a cloud DB.
-if (!cloudRuntime && !postgres) {
-  try { boDb.exec("UPDATE users SET role='superadmin' WHERE username='kevin'"); } catch {}
-}
-if (!(await boDb.prepare('SELECT COUNT(*) n FROM users').get()).n) {
-  if (cloudRuntime) {
-    const username = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER;
-    const password = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
-    if (typeof username !== 'string' || !/^[a-z][a-z0-9._-]{2,63}$/.test(username)
-      || username === 'kevin' || typeof password !== 'string'
-      || password.length < 16 || password.length > 256 || /[\u0000-\u001f\u007f-\u009f]/u.test(password)) {
-      throw new Error('Cloud operator bootstrap credentials are required for an empty CRAIG database.');
-    }
-    (await boCreateUser(username, password, 'superadmin'));
-  } else {
-    const pw = randomBytes(9).toString('base64url');
-    (await boCreateUser('kevin', pw, 'superadmin'));
-    console.log(`[bo] backoffice login created - user: kevin  password: ${pw}`);
+// Local fixtures provision their own identities; startup never creates or promotes them.
+if (cloudRuntime && !(await boDb.prepare('SELECT COUNT(*) n FROM users').get()).n) {
+  const username = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER;
+  const password = process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
+  if (typeof username !== 'string' || !/^[a-z][a-z0-9._-]{2,63}$/.test(username)
+    || username === 'kevin' || typeof password !== 'string'
+    || password.length < 16 || password.length > 256 || /[\u0000-\u001f\u007f-\u009f]/u.test(password)) {
+    throw new Error('Cloud operator bootstrap credentials are required for an empty CRAIG database.');
   }
+  (await boCreateUser(username, password, 'superadmin'));
 }
 if (cloudRuntime) delete process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
 async function administratorGameSession(req,account) {
