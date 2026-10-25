@@ -1,14 +1,30 @@
-# K05: Kevins mappningssystem → mains klippkarta (2026-10-22)
+# K05: Kevins mappningssystem → mains klippkarta
 
-Jakobs beslut 22 oktober (#312, 6348346212 p4 och koordinatorns omprioritering): **inga av Kevins mediabytes importeras nu.** Det som ska över är Kevins *system* för att binda klipp till klippkort, fack och varianter, uttryckt i mains befintliga kategorisystem (TERMINOLOGI: kategori → situation → standardklipp + varianter). Detta dokument jämför de två systemen begrepp för begrepp och listar exakt vad mains klippkarta saknar. Inget här skriver till Neon eller Blob; ingen status ändras.
+Reviderad 25 oktober 2026. **Mains tre separata lager, identiteter och publiceringskontrakt är målmodellen.** Ett saknat Kevin-namn är inte automatiskt en saknad funktion. Aktuell prioritet och urval finns i [masterplanen](../../MASTERPLAN.md#prioriterad-väg-till-910); detta dokument förklarar mappningen, inte en andra migrationsstatus.
 
-Källor, lästa read-only:
+Den tidigare importpausen från 22 oktober är historisk. Handoffens äldre kvitto redovisar 153 importerade original (56 pose, 23 idle, 37 sv, 37 en) under dealer-ID `paow`, egna UUID/hash i privat Blob; `paow-kevin` ligger kvar i papperskorgen. Den tidigare Admin-läsningen den 25 oktober visade 34 idlefiler och obundna giv-/visnings-/talfack. **Det senare kvittot i [PR #382](https://github.com/Jakeminator123/scoutgaming/pull/382) anger att 24 valda idleoriginal redan är publicerade i West Bet revision 2.** 24/24 exakta media är återlästa; åtta klipp har bild-/uppspelningskvitto under 45 sekunder, nio identiteter observerades. Ingen insats eller full spelrunda utfördes. Detta är utförandeagentens dokumenterade delkvitto, inte omkört här. Återanvänd intag, policy och paket; historiska mängder är ingen ny uppladdningslista. Giv-/talacceptans och full spelacceptans återstår.
 
-| Sida | Fryst källa | Filer |
+| Källa | Fryst version | Bevisgräns |
 | --- | --- | --- |
-| K (Kevin) | `kevin-merge-admin` @ `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc`, under `kevin/croupier-scoutgg/` | `public/dealers.js`, `public/runtime-event-links.js`, `public/game-events.js`, `public/idle-chain.js`, `server/media-registry.mjs`, `server/shared-table.mjs:56-135`, `server/server.mjs:82-105`, `public/media/dealers/{dragge,paow,astrid2,marten}/v2/meta.json`, `public/media/manifest.json`, `public/media/dealers/dragge/repliker/sv/texter.json` |
-| M (main) | `main` @ `7afae426` (bas för `codex/k05-importplan`) | `packages/presentation/contracts/{clip-naming,video-intake,dealer-clip-guide,speech-lines,speech-slot-bindings,filmed-profile,recorded-speech,material-catalog}.mjs`, `contracts/policies/{studio-contract,project.seed}.json`, `contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs`, `packages/presentation/runtime/{media-families,idle-policy,registered-idle-policy,media-family-policy,filmed-deal-sequence,filmed-deal-timeline}.mjs`, `apps/studio/client/admin/lib/connected-studio.mjs`, `services/game/games/blackjack/presentation/{media-catalogue,room-idle}.mjs` (K04 på main), `docs/games/blackjack/DEALERBANK.md`, `docs/games/KLIPP-OCH-FORMAT.md`, `apps/studio/docs/TERMINOLOGI.md` |
-| K05-matris | main `migrering/kevin-ks-migrering/K05/K05-matris.tsv` (1 325 rader; 159cc134 + fyra greetingrader enligt 6339673965) | inventeringen i avsnitt 5 |
+| Kevin, begrepp och äldre K05-matris | `kevin-merge-admin@5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` | K01/O01:s accepterade referens under `kevin/croupier-scoutgg/` |
+| Main, aktuell kodgranskning | `0e457589e84dcef3147ee54f01883ce5e459e356` efter #378/#380–#385; ursprunglig genomgång på `34c6c22f` | Kontrakt/konsumenter i `packages/presentation/`, `apps/studio/`, `services/game/` samt versionsbundna PAOW-/scenkvitton; utförandetabellen kompletterar den äldre begreppsmatrisen |
+| PAOW-importens källmanifest | `kevin-staging@c713875923cd854b26f89c1db0d0f47064619c1d` | Separat importurval, inte automatiskt ny källa för hela K05 |
+| Historisk torrkörning i avsnitt 5 | 22 oktober, 159cc134 + fyra greetingrader | Mängderna beskriver dåvarande registerläge och får inte användas som dagens uppladdningslista |
+
+Tabellerna behåller Kevins källbegrepp för spårbarhet. Main-motsvarigheter är kontrollerade i den frysta main ovan; “finns” avser kod/kontrakt, inte automatiskt godkänt media eller aktiverad runtime.
+
+## Aktuellt utförande genom Admin, Neon och Blob
+
+| Del | Återanvänd och konvertera till | Återstående kontroll och gräns |
+| --- | --- | --- |
+| Klipp och klassning | **Admin → Klippkarta**, befintligt video-intag och Neon-register; privat Blob lagrar originalbytes | Återläs UUID, hash, storlek, dealer och klassning; gamla filnamn/antal får inte initiera omimport eller en lokal filkatalog |
+| Idle | Befintlig **Körregel → Basloop / Beteendeklipp**. #378/#381 och #382:s sparade/publicerade 24-originalpolicy återanvänds | Aktuella versioner fungerar enligt driftkvittot. Runtimegrinden saknar specifikt `rotation`-stöd; gammal main-läsare på `34c6c22f` avvisar fältet. Kräv förhandlat stöd, negativa versionsprov och kompatibel rollback. Komplettera full spelacceptans; ingen omimport eller ompublicering följer av planen |
+| Rumsval och mall | **Admin → Spelbolag & rum** binder rum och väljer material; **Studio → Sceneditor** (`/admin/scenes`) redigerar gemensam mall för mobil/desktop | #385 är målvägen. Preview ändrar inte standard; visa berörda rum. Återskapa inte separat placeringseditor eller den borttagna `update-scene-layout`-writern |
+| Fryst publicering | Befintligt operator-package-API och `publish-scene-layout`, Neon-transaktion, actor/scope samt projekt-/paket-/registerrevisioner | Geometri läses från sparad kanonisk mall; patchen bevarar frysta material/media, andra dealers, branding och historik. Materialutbud publiceras separat. Redundant kastat Dragan-utkast återställs inte |
+| Giv/reveal/tal | Mains filmprofil, tidslinje, mediaattestering och committade spelhändelser; tre separata visuella lager | Exakta pose-/track-/kontaktvärden och två följande spel. Saknade bevis betyder fortsatt avstängt, inte tyst fallback eller lägre valideringskrav |
+| QA | [Masterplanens tre bevisnivåer](../../MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy) | Lokal mediemapp/minnesprov bevisar inte Neon/Blob-flödet. Ingen ny SQLitefixture eller connected-local-produkt beställs |
+
+#378:s separata källurval är `kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`; det flyttar inte K01/O01-baslinjen. [Masterplanens PR-tabell](../../MASTERPLAN.md#förnyad-admin--och-pr-granskning-25-oktober) anger granskade heads. Begreppsmatrisen nedan behåller sitt `34c6c22f`-underlag; utförandet ovan gäller aktuell main. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Planrevisionen i PR #379 förbereder Jakobs beställda fortsatta implementation. [Motivering och slutkriterier](../../MASTERPLAN.md#motivering-och-när-migreringen-är-klar) skiljer dokumentleverans och delacceptans från färdig migration.
 
 ## 1. Kort: så fungerar Kevins system
 
@@ -25,9 +41,7 @@ Källor, lästa read-only:
 - **Händelser** (`policies/studio-contract.json`, 17 st): `speak.goodluck|insurance|double` (egna), `speak.other` med situationerna `placebets, dealerblackjack, blackjack, dealerbust, win, push, lose, greeting, peek, bust, sidebet, chatter1, chatter2, farewell`; `deal.player.left/box0,box1`, `deal.player.centre/box2-4`, `deal.player.right/box5,box6`, `deal.dealer/dealer-up,dealer-hole`, `reveal.dealer/dealer-hole`, `idle.ready`, `transition.shoe/to-shoe,from-shoe`; `turn.*`/`settle.*` är körvillkor, inte fack (`video-intake.mjs:31`).
 - **Fack** = `event/situation` (`connected-studio.mjs:13-26` `clipSlots`), `kind` = idle | action | speech | reaction, `role` = standard | alternativ (`limits.alternatives: 4`), `playback` = bara `once`; loop ligger i idlepolicyn. **Familjer** (`media-families.mjs`, Astrid): `standardIds`/`variantIds`, `playbackType once | idle-pool`. **Variantpolicy** (`media-family-policy.mjs`): högst 4 varianter per familj med `selection {rules, model, random}`, `priority`, `triggerIds`, `frequencyPercent`; standard för nya alternativ är `random:false`.
 - **Poseversioner** (`clip-naming.mjs`): `base` REDO→REDO, `i` VILA→REDO, `v` REDO→VILA, `iv` VILA→VILA; `u`→`v` och `iu`→`iv` är *alias* vid namntolkning. Klassificeringen lagrar `startPose`/`endPose` (`video.schema.json`, `validateClipPoses`). **Filmad profil** (`filmed-profile.mjs`) tar däremot varianterna `'', i, u, iu, v, iv` med eget `track` (`<take>v`), `frames`, `contactFrame`, `landFrame`, `clearFrame`, `startPose`, `endPose`; `planFilmedDealSequence` räknar `i`/`u` per steg och uppgraderar `u`→`v` när en rest take finns (`filmed-deal-sequence.mjs:54-58`). `filmed-deal-timeline.mjs` är Kevins `readyTimeline` (80 ms, 700/1500 ms, handover 1,5 rutor). Dragan har profil `kevin-dragan-f15b2af1` med 35 takes (alla `base/i/v/iv` för 1–7 och dealer, `hole:base/i`, `flip:base`); **inga `u`/`iu`-takes** och inga profiler för paow, astrid2, marten.
-- **Idle** (`idle-policy.mjs`): `base` 1–4 grundloopar med `weight` (summa 100) och `durationMs`; `variants` ≤ 30 engångsklipp med `use manual | automatic | rules | openclaw`, `automatic {averageEveryMs, jitterMs, cooldownMs, maxPerMinute}`, `description` ≤ 80 tecken. K04 på main (`room-idle.mjs`, `media-catalogue.mjs:107-112`) bär Kevins `vikt` och `calm` (anmärkning `lugn`) för rumskedjan, men utanför Admin-klippkartan.
-- **Tal**: `SPEECH_LINES` (17 line-ID:n, `speech-lines.mjs`), standard per fack + alternativ (`speech-slot-bindings.mjs`), `recordedSpeech` per take med `lineId, takeId, language, exactText, videoSha256, audioSha256, indexSha256, fps, frameCount, audioDelayMs, entryPose, exitPose, calibrationRevision` plus `recording verified-recording` och `review approved` (`recorded-speech.mjs:5-6,57-58`). `CLIP_LANGUAGES` = sv, en, es, no, da, fi, de, fr (namnråd); bordsspråk en/sv (beslut).
-- **Klippguiden** (`dealer-clip-guide.mjs:84-100`) förklarar redan Kevins namn (`pos<n>[-i|-v|-iv]`, `hole/hole-i`, `flip`, VILA/REDO-skillnader mot Forge) utan att göra dem till identitet.
+- **Idle** (`idle-policy.mjs`): `base` 1–4 grundloopar med `weight` (summa 100) och `durationMs`; `variants` ≤ 30 engångsklipp. Ursprungliga användningar är `manual | automatic | rules | openclaw`. Efter #378 tillkommer valfri `rotation` och `use: rotation` med explicita faser/poser; detta gör inte 24 klipp till 24 basloopar. Äldre strikta läsare kräver särskild kompatibilitetsgrind. `automatic {averageEveryMs, jitterMs, cooldownMs, maxPerMinute}` och beskrivning ≤ 80 tecken behålls. K04:s `room-idle`/server-chain är en separat befintlig konsument, inte bevis för att hela nya Adminflödet fungerar.
 
 ## 3. Jämförelsetabell: Kevin-begrepp → main-begrepp → status
 
@@ -37,17 +51,17 @@ Status: **finns** = samma begrepp; **annat namn** = finns med annan benämning/p
 
 | Kevin-begrepp | Main-begrepp | Status | Anmärkning |
 | --- | --- | --- | --- |
-| `DEALERS[id]` dealer-ID `dragge`, `paow`, `astrid2`, `marten`, `astrid` | `project.dealers[{id,label}]`, `isDealerId` (`dealer-identity.mjs`) | annat namn | `dragge`→`dragan` (belagt av 43 exakta hashar), `paow`→`paow-kevin` (i `dealerTrash`), `astrid2` och `marten` oregistrerade, Kevins Astrid classic ≠ mains `astrid` (andra bytes). Kopplingen bärs av hash, aldrig namn. |
+| `DEALERS[id]` dealer-ID `dragge`, `paow`, `astrid2`, `marten`, `astrid` | `project.dealers[{id,label}]`, `isDealerId` | annat namn | `dragge`→`dragan` är belagt för exakt mappade bytes. PAOW har senare importerats som `paow`; gammal `paow-kevin` ligger kvar i trash. Inga globala namnalias, automatiska återställningar eller antagna Astrid-identiteter. |
 | `name`/`label` (Dragan visas, id dragge) | `dealers[].label` | finns | |
 | `still` = rumsbild med inbakat bord (`rooms-v2/*.png`) | Bakgrundslager + bordslager (`material-catalog.mjs`, `layer-asset-contract.mjs`), TERMINOLOGI tre lager | annat namn / avsiktligt ej | Inbakat bord kan inte bytas separat; tvålagersmodellen är utesluten (MASTERPLAN). K05: `ej-vald:delad-ui/rum`. |
 | `ROOMS` (darkhall, mahogany, golden, azure; `still`, `thumb`, `wide`) | `BACKGROUND_MATERIALS` design-ID:n med sha256/size/width/height | annat namn | Mains ID är design, inte rum. Kevins PNG har ingen sha-träff i katalogen. |
 | `keyed.still` (`v2/vila.png`, frilagd VILA) | `pose/vila` referensbild (`clip-naming.mjs:126`, `dealer-clip-guide.mjs:44-52`); K05: katalogpost `still/keyed-still` med `mediaId:null` | finns (referens) | Lagras inte i klippbanken; via katalog + J08-adapterns stillbildsväg (PR334). |
 | `redo.png` | `pose/redo` | finns | |
-| `face` (ansiktsbild i väljaren) | – | saknas (ej behov) | K05: `ej-vald:ansiktsbild`. Admin visar dealers via `label`. |
+| `face` (ansiktsbild i väljaren) | Mains dealerporträtt i lobbyn | finns under annat kontrakt | Behåll publicerings-/dealeridentiteten; den äldre K05-radens `ej-vald:ansiktsbild` är ett urvalsbeslut, inte skäl att bygga en parallell väljare. |
 | `layerScale`, `handMatte` | `composition-settings.mjs`, `dealer-compositing.mjs`, K04-matte på main | annat namn | |
 | `PUBLIC_HIDDEN` (dölj Mårten publikt) | Operatörens tillåtna dealers / `dealerSets` / rumspublicering | annat namn | Ingen dealerflagga; synlighet styrs per operatör och rum, vilket täcker behovet. |
 | `pick()` → tyst fallback till Astrid | Ingen tyst fallback; saknat stöd nekas vid publicering | avsiktligt saknas | K05-regel. |
-| `card: [78,106]`, `props` per plats | `profile.card {width,height}` | delvis | Main har en kortstorlek per profil, inte per plats. |
+| `card: [78,106]`, `props` per plats | `profile.card {width,height}` och mains dealerbaserade kort-/chipsskalning | delvis / valt annat | Befintlig skalning återanvänds. Per-plats-utökning kräver visad kalibreringsbrist; importera inte Kevins pixelgeometri som standard. |
 
 ### 3b. Korthandlingar (deal/reveal) och varianter
 
@@ -61,7 +75,7 @@ Status: **finns** = samma begrepp; **annat namn** = finns med annan benämning/p
 | Variant `-i` VILA→REDO | `i` | finns | |
 | Variant `-iv` VILA→VILA (rest take) | `iv` | finns | |
 | Variant `-v` REDO→VILA (Emils rest take, eget spår `<take>v`) | `v` | finns i profil, **delvis** i klippkartan | Profilen skiljer `v` från `u`; klassificeringen har bara `startPose/endPose` och ser båda som REDO→VILA. |
-| Variant `-u` (tagning + gång tillbaka till VILA), `-iu` | `u`, `iu` i `filmed-profile.mjs:51`; alias `u→v`, `iu→iv` i `clip-naming.mjs:24` | **saknas i klippkartan** | Olika bytes, olika landningsrutor (K05-mappning §3). Dragans profil har inga `u/iu`-takes; namntolkningen slår ihop dem med `v/iv`. |
+| Variant `-u` (tagning + gång tillbaka till VILA), `-iu` | Alla sex varianter stöds i `filmed-profile.mjs`; namnrådet har alias `u→v`, `iu→iv` | delvis i intag/klippkarta | Tekniska takes kan ha olika bytes och landningsrutor trots samma start-/slutpose. Bevara exakt källvariant + track + hash vid bindning; generisk namnnormalisering får inte ersätta identitet. Ändra inte historiska ID:n eller alla alias utan konsumentprov. |
 | `readyVariant`/`readyTimeline` (i öppnar, u stänger, fog REDO→REDO, 80 ms, 700/1500 ms) | `planFilmedDealSequence` + `filmed-deal-timeline.mjs` | finns | K04 på main. |
 | `restStart`/`restEnd` per take | `startPose`/`endPose` per take i profilen | finns | |
 | `meta.frames[track][variant]` | `take.frames` | finns | |
@@ -69,7 +83,7 @@ Status: **finns** = samma begrepp; **annat namn** = finns med annan benämning/p
 | `in` (rutor som `-i` lägger före tagningen) | `contactFrame` = land + in (`media-catalogue.mjs:80-86`), `variantOffset` | finns | |
 | `ut` | – | saknas (används ej) | Kevins runtime använder inte `ut`. |
 | `centre[track]` inkl. `hole`, `flip` | `profile.positions 1-7, dealer {cx,cy}` | delvis | Hole/flip har ingen egen position; dealerpositionen används. |
-| `faceTracks` (kortets planara spår per tagning) | `profile.tracks[name].frames[{q,p,body,paper}]` | finns för Dragan | Saknas för paow, astrid2, marten (inga profiler). K05: JS-filerna är källbevis, inte runtimeidentitet. |
+| `faceTracks` (kortets planara spår per tagning) | `profile.tracks[name].frames[{q,p,body,paper}]` | finns för Dragan | PAOW har importerade videor men ingen verifierad filmprofil; 17/18 käll-landmarks skiljer sig och handfrigöranderuta saknar separat bevis. Astrid2/Mårten är inget automatiskt utökningsmål. |
 | `game-events.planDraws` (`clipId deal_pos<seat>/deal_hole`, `track`) | `filmedDealTarget(event)` ur serverns `to/box/faceDown` | finns | Main härleder ur spelhändelsen, inte ur klient-ID. |
 | Astrids `/media/deal/<id>.mp4` → dealerns take (`dealerClipUrl`) | Astrid-familjer `astrid/deal.*/box*` med `standardPaths` | finns | |
 
@@ -108,11 +122,11 @@ Status: **finns** = samma begrepp; **annat namn** = finns med annan benämning/p
 | `outcomeSpeech` (dealerblackjack > blackjack > dealerbust om ingen tjock > win > push > lose) | `settle.*` körvillkor + talfack; regeln bor i K03/K04-servern | annat ställe | Inte ett klippkartsbegrepp. |
 | `dealerLineUrl` fallback till engelska | nekas: "ingen tyst språkfallback" (masterplan N1) | avsiktligt saknas | |
 | `lines: null` (Mårten: bara text) | `speech.defaultSource: openclaw-text` | annat namn | |
-| Språk `sv, en, pt, ko` (dragge/paow), `en, pt, ko` (astrid2), rot `es, fr, zh` | `CLIP_LANGUAGES` sv, en, es, no, da, fi, de, fr; bordsspråk en/sv | **delvis** | `pt`, `ko`, `zh` saknas i namnrådet; `recordedSpeech.language` tar vilken ISO-kod som helst. K05: `ej-vald:sprak-utanfor-en/sv` (500 rader). |
+| Språk `sv, en, pt, ko` och rot `es, fr, zh` | `CLIP_LANGUAGES` sv, en, es, no, da, fi, de, fr, ko, pt; bordsspråk en/sv | delvis / valt urval | `pt` och `ko` finns redan i namnrådet; `zh` saknas. Namntolkning är inte språkacceptans. Utöka inte publicerade språk utan exakt godkänt tal och produktbehov. |
 | `rost` (Cartesia/ElevenLabs-röst per dealer) | `dealer-voice-catalog`, `dealer-speech-profile` | annat namn | |
 | `category gameplay / legacy_training`, `binding` | `role standard/alternative`, `archived`, oregistrerat = ej i banken | annat namn | "training only" ≈ ej registrerad/arkiverad. |
 | `sidebet_2` som aktiv variant | standardtagning per fack (`speechSlotStandard`) | finns | |
-| Attestering (`audioSha256`, `indexSha256`, `audioDelayMs`, `entryPose/exitPose`, `calibrationRevision`, `verified-recording`, `approved`) | krävs av `recorded-speech.mjs` | **saknas hos Kevin**, finns i main | Ljudet är inbäddat i mp4; ingen producent i main (`dealer-import-plan.mjs:173`). Blockerar talgrinden (6336757098). |
+| Attestering (`audioSha256`, `indexSha256`, `audioDelayMs`, `entryPose/exitPose`, `calibrationRevision`, `verified-recording`, `approved`) | krävs av `recorded-speech.mjs` | underlag saknas hos Kevin, kontrakt finns i main | `dealer-import-plan.mjs` kan validera exakta källalias/UUID/hash och återanvända redan godkänt tal; den producerar inte saknade attesteringar eller visuell acceptans. Framtagning och granskning av saknat underlag återstår. |
 
 ### 3e. Händelsekoppling och klassning
 
@@ -125,21 +139,17 @@ Status: **finns** = samma begrepp; **annat namn** = finns med annan benämning/p
 | `media-registry.mediaInventory` (okända filer = training only) | ingen filskanning; bara registrerade poster | annat namn | |
 | `CATALOGUE_SOURCE` (K04-raden binder Kevin-commit + sha) | finns i `media-catalogue.mjs:12-14` | finns | |
 
-## 4. Vad mains klippkarta behöver för att uttrycka Kevins mappning
+## 4. Prioriterat urval på mains villkor
 
-Konkret, i prioritetsordning. Inget av detta är beställt här; listan är beslutsunderlag för Jakob. Bakgrund, dealer och bord förblir tre separata lager.
+1. **Exakta takes och kontakt före fler klipp.** Återanvänd profilens sex posevarianter och K04:s exakta bindning. Bevara källvariant/track/hash vid Admin-intag; avvisa tvetydighet. Välj minsta fungerande godkända set och verifiera kontakt, handfrigörande, fog och två följande uppspelningar i mains tre lager. PAOW:s 17/18 motstridiga landmarks är ett granskningsbehov, inte tillstånd att kopiera Dragans profil.
+2. **Fullfölj befintlig publicering.** Återläs aktuell inventering och rums-/paketversion. Använd befintlig importplanering, klassificering, scoped writer och fryst materialrevision. Ett lyckat uppladdningskvitto eller en återställd notis är inte en godkänd spelbindning.
+3. **Lugn idle genom befintlig kedja.** `room-idle` och `server-chain` har redan determinism, viktning och skydd mot upprepning. Den möjliga luckan är ett begränsat Adminval för vänteläge kontra mellanrunda. Belägg aktuell writer/konsument först. Varken fler än fyra basklipp, ny pooltyp eller ny scheduler är förvalt krav.
+4. **Inspelat tal med mains attestering och timing.** Producera saknat ljud-/index-/kalibreringsunderlag från exakta källbytes och gör faktisk synkgranskning. Återanvänd befintliga talfack. Schemaläggning, taltidsfönster och eventuell fördröjning är presentationskontrakt; lyft inte in Kevins absoluta tider utan prov mot mains tidslinje.
+5. **Avstå från lågprioriterad breddning.** G13-fack (`twentyone`, remarks, banter, table_cash/table_trust och personhälsningar), fler språk, fler dealers, höjda alternativgränser samt per-platsgeometri ligger senare tills ett konkret main-behov är visat. Behåll nuvarande gränser och välj godkända takes. Namnrådet har redan pt/ko.
 
-1. **Poseversion som exakt fält, inte alias.** Lägg `poseVariant: 'base'|'i'|'u'|'iu'|'v'|'iv'` (K04:s `DEAL_VARIANTS`) i videoklassificeringen för deal-/revealklipp vid sidan av `startPose/endPose`, och sluta normalisera `u→v`/`iu→iv` i `clip-naming.mjs:24` för registrerade poseversioner. Profilen (`filmed-profile.mjs`) kan redan bära alla sex; luckan är Admin-klippkartan och namntolkningen. Per plats blir det då upp till sex tagningar med egna kortspår (`<take>` och `<take>v`), som TERMINOLOGI kallar "tekniska poseversioner, inte beteendevarianter".
-2. **Idlepool med fler än fyra viktade takes och en lugn-/livlig-klass.** Dagens `idlePolicy.base` (1–4, vikt summa 100) + `variants` (intervallstyrda engångsklipp) rymmer inte Kevins 9–23 viktade takes. Minsta tillägg: antingen höj `base` till ≥ 24 med relativa vikter, eller ge `variants[]` ett `use: 'pool'` med `weight`. Lägg dessutom `calm: boolean` (eller `idleUse: 'wait'|'between-rounds'|'speech'`) på idleklippet så att "väntan på spelare = bara lugna takes" kan sättas i Admin i stället för i K04:s katalogfil (`media-catalogue.mjs:111`, anmärkning `lugn`). Regeln "aldrig samma två gånger i rad" finns i `room-idle.mjs` och behöver bara dokumenteras som policy.
-3. **Fem talfack som saknas** (`SPEECH_LINES`/`speak.other`-situationer): `twentyone`, `remark` (hit17/hit20/stand11 som situation + spelarbeslut som villkor), `banter`, `table_cash`, `table_trust`. Jakob har valt att vänta med dem (G13, 155 rader uppskjutna). Om de tas in: lägg dem som `speak.other/<line>` med exakt text; `greet_<namn>` ska inte bli fack utan hanteras av OpenClaw-persona/greeting-standard.
-4. **Fler än fyra alternativ per talfack och slumpval utan upprepning.** Kevins bust/blackjack/twentyone har 7 takes. Antingen höj `limits.alternatives` för `speak.*` eller låt flera takes dela standardplats med `selection.random:true` + "inte samma som senast"-minne i serverns talval. I dag väljs alternativ med regler/modell, standard `random:false`.
-5. **Språk i namnrådet.** Lägg `pt`, `ko`, `zh` i `CLIP_LANGUAGES` om Kevins filnamn ska tolkas; bordsspråk förblir en/sv enligt beslut.
-6. **Per-plats kortstorlek och hole/flip-position** (`props`, `centre.hole/flip`) i profilen: liten lucka, bara om kalibrering per plats visar sig behövas.
-7. **Inte en klippkartsfråga men blockerar användning:** attesteringen i `recordedSpeech` (ljud-/indexhash, poser, kalibrering) saknas i Kevins källa och main har ingen producent (`dealer-import-plan.mjs:173`); filmade profiler saknas för paow, astrid2 och marten; `u`/`iu`-takes saknas i Dragans profil.
+**Redan täckt eller avsiktligt annorlunda:** `pos<n>`→`box<n-1>`, `posdealer`→`dealer-up`, `hole/flip`→`dealer-hole`, poser/frames/kontakt i filmprofilen, tidslinje/förladdning, Dragan-spår, serverkedjad idle, basrepliker, dealerporträtt och separata materiallager. Kevins `ROOMS` är källmaterial, inte automatiskt mains operatörsägda rum. `PUBLIC_HIDDEN` ger ingen ny dealerflagga; faktisk publicering och tillåtna val styr synlighet. Tvålagersscener, tyst dealer-/språkfallback och egna lokala register är uteslutna.
 
-Det som **redan finns under annat namn** och inte behöver något nytt: `pos<n>`→`box<n-1>`, `posdealer`→`dealer-up`, `hole`/`flip`→`dealer-hole` (deal/reveal), `i/v/iv`→`startPose/endPose`, `land/in`→`contactFrame/landFrame`, `frames`→`take.frames`, `restStart/restEnd`→poser per take, `faceTracks`→`profile.tracks`, `ROOMS`→bakgrundsmaterial, `keyed.still`→`pose/vila`, `PUBLIC_HIDDEN`→operatörens tillåtna dealers, `lines:null`→OpenClaw-text, `category gameplay/legacy_training`→registrerad/arkiverad, 14 av Kevins 15 replikhändelser → samma namn i `speak.*`.
-
-## 5. Inventering (torrkörning, ingen import)
+## 5. Historisk inventering — torrkörning 22 oktober
 
 `node tools/k05-import-plan.mjs --git-repo <read-only klon> --verify vald` läser matrisen, slår upp varje rads Git-blob på den frysta headen (`5aa7ed10`; V1-rader på `238d6dd6`), kontrollerar gitblob-OID och storlek för alla rader och strömmar sha256 för de valda, och klassar mot mains identitetsregler (exakt hash + bytes; aldrig namn eller längd). Inga mediabytes skrivs till disk. Resultatet per rad är ett körresultat och ligger inte i repot: standardutdata är den Git-ignorerade `arkiv/<datum>/migrering/kevin-ks-migrering/K05/importplan.json` (`--out` för annan plats). Tabellen nedan är sammanräkningen från körningen 22 oktober. Test: `node --test test/k05-import-plan.mjs`.
 
@@ -154,13 +164,15 @@ Det som **redan finns under annat namn** och inte behöver något nytt: `pos<n>`
 
 Valda totalt 586 rader (dragge 43 befintliga + 116 nya, paow 8 + 149, astrid2 0 + 105, marten 0 + 137, Astrid classic 1 + 26, delad 1), 566 unika sha256, 538 237 239 bytes; 51 kräver promotion; 15 sha256 delas av 38 rader (bytedubbletter får dela media-ID, varianten bevaras i identitetskartan). Källverifiering 22 oktober mot klonen: alla 586 valda `ok/ok/ok` (gitblob, bytes, sha256), övriga 739 `ok/ok/ej-kontrollerad` (gitblob och storlek); 0 rader med `sha256_avviker`, `bytes_avviker`, `gitblob_avviker` eller `kallblob_saknas`. Enda avvisningsorsak är `v1_bortvald` (28). Det bekräftar källidentiteten, inte Neon-/Blob-läget eller talgodkännande.
 
-## 6. Om Jakob senare vill ha bytes
+## 6. Befintligt intag och återstående bindning
 
-Kort, utan kommandon: mains väg är (a) `media_records` via Studios ordinarie uppladdning (`studio-upload-service.mjs`, hamnar i `review/uploads`), (b) katalograd via de spårade källfilerna `media/layout.json` + `media/blob-index.json` (+ `legacy.json` för JSON) och `ops/neon-studio/runtime-media-import.mjs` (prepare → plan → apply med planHash), (c) paketutkast som fryser media-ID:n (J08), (d) talattestering i Admin. Det saknas ett promotionssteg `review/uploads` → `runtime/` (katalogen nekar `review/uploads`, `runtime-catalog.mjs:29`), paketets brandingkolumn rymmer 42–55 medier (6338943386) mot 118–155 valda Dragan-rader, och `media_records` tar bara mp4/webm (`001-studio-metadata.sql`), så PNG/JSON går bara via katalogen. Ordningen i K05-mappning §7 gäller fortsatt som underlag; inget av det är beställt, och V1, omkodade kopior, ej valda språk, uppskjutna rader och källbevis importeras aldrig.
+Använd mains aktuella Admin-intag, `dealer-import-plan.mjs` och ordinarie register-/Blob-/klassificeringskontrakt. PAOW:s 153 original ska återfinnas genom sina exakta identiteter; kör inte om 22 oktobers äldre uppladdningslista. Återläs inventeringen och kontrollera dubbletter, tillgänglighet, ägarskap och revision före en föreslagen skrivning.
 
-## 7. Öppna frågor till Jakob
+`review/uploads`, runtimekatalog och fryst paket är skilda kontrakt. Om den valda konsumenten kräver runtimepromotion ska just den vägen beläggas och granskas; gamla storleksbegränsningar eller filnamn motiverar inte ett parallellt register. Bevara privata Blob-objekt, källhistorik och befintliga godkännanden. Nytt material eller ändrade bytes behöver eget mål/mandat och ny relevant acceptans.
 
-1. Ska `u`/`iu` registreras som egna poseversioner (punkt 4.1), eller räcker `v`/`iv` (Dragans profil har bara dem)?
-2. Idle: höjd `base`-gräns med relativa vikter, eller en ny `pool`-typ med `calm`-flagga (punkt 4.2)?
-3. Vilka av de fem G13-facken (punkt 4.3) ska in i `SPEECH_LINES`, och ska `greet_<namn>` ersättas av OpenClaw-hälsning?
-4. Takes per talfack: höja gränsen 4 eller behålla och välja fyra av Kevins sju?
+## 7. Beslutsregel vid osäkerhet
+
+- Bevara exakt teknisk take-identitet; skapa inget publikt begrepp bara för att namntolkningen skiljer sig.
+- Välj en liten redan godkänd pool och befintliga repliker innan gränser eller kataloger utökas.
+- Om klippet eller den nya funktionen har svagt belagt implementationsvärde och hög risk för legacy/begreppsförvirring: avstå och ange vilket observerbart behov som skulle motivera en senare omprövning.
+- Genomför ingen import, återställning av dealer, publicering eller GPU-körning med detta dokument som ensamt mandat. Utförandestatus och acceptans kvarstår i `status.json`.

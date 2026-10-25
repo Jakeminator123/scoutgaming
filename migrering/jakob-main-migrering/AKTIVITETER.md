@@ -2,6 +2,20 @@
 
 Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hela programmet. [status.json](../status.json) är enda källa för status, beroenden och bevis; checklistorna nedan är krav, inte utförandekvitton. Ingen produktaktivitet blir klar av att denna fil finns.
 
+## Nulägesrevision 25 oktober
+
+Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. 45 % är oförändrat. Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
+
+- J05: #336:s gateway/klient/rumsväg är mergad. Senare #355/#356/#354 levererade server-v3 samt borttagning av äldre klient/lokal produktstate. Samlad start/readiness/drain/restore-acceptans är fortfarande ett eget krav.
+- J06: gamla paket A-noteringen är historisk. Fyra portade K07-filer finns ännu som opt-in; obligatorisk CI-registrering är ett konkret återstående steg.
+- J08: #334 och senare #364/#366 finns på main. Återanvänd deras scope, CAS, förhandsvisning och publicering; fulla verkliga material-/paket- och K06-kvitton återstår.
+- J04: senare #358/#360 gör `/game` till aktiv publik spelstart. Ingen ny radering av denna route, aktiv intern launch eller fungerande kompatibilitetsredirect följer av äldre checklistor.
+- K05:s PAOW-import är redan utförd enligt handoff; föreslå inte omimport eller dealeråterställning från gamla matrisnamn. Aktuellt main-kontrakt går före Kevins etiketter.
+
+**Förnyad Admin-/PR-granskning:** #378/#381 och #382:s kvitto ger publicerad PAOW-policy med 24 exakta original i West Bet revision 2 och avgränsad uppspelning; ingen PAOW-insats/full runda. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Specifik rotation-readiness och kompatibel rollback kvarstår som separat gap. Se [konkret matris](../MASTERPLAN.md#prioriterad-väg-till-910) och [motivering/slutkriterier](../MASTERPLAN.md#motivering-och-när-migreringen-är-klar). Jakob har nu beställt integration och fortsatt arbete; denna dokumentrevision höjer inte 45 % och ger ingen produktionsacceptans.
+
+Följ [masterplanens QA- och lagringsgräns](../MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy): ingen ny SQLitefixture/lokal produktväg, inga omimporter av befintliga media och ingen SQL-direktskrivning som ersätter Admin. Befintliga rena tester/PG-harness bevisar sina respektive kontrakt; samlad acceptans kräver godkänd isolerad Neon + privat Blob och identifierade Vercel-/Render-versioner. Aktiva moduler med äldre namn, som `local-presentation.mjs`, är inte raderingskandidater på namn ensam.
+
 ## Gemensamt uppdrag till underagenten
 
 - Läs [MASTERPLAN](../MASTERPLAN.md), aktuell status, AGENTS och [agent-talk](../../agent-talk/README.md). Orkestratorn ger startbesked efter beroendekontroll och avgränsar filägandet; startfilernas listor är undersökningspunkter, inte generella skrivanspråk.
@@ -10,9 +24,9 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 - Följ [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), [användarflöden](../../apps/studio/docs/README.md), [runtime](../../docs/LOCAL-PRESENTATION-RUNTIME.md), [handoff](../../docs/JOHN-HANDOFF.md) och [återställning](../../docs/ENVIRONMENT-RESTORATION.md). Läs de två sistnämnda före ändring av spel eller media.
 - Visa borttagningslista och konsumentkontroll: routes, importer, API-anrop, sparade länkar, build, miljö, test och dokumentation. Ta bort ersatt kod i leveransen. Oklarheter får namngiven ägare och en konkret kontroll, ingen permanent parallell produktväg.
 - Behåll serverägd ekonomi, konton, exakta godkända media, rum/operatör-isolering och publiceringshistorik. Aktivt delade tjänster bevaras eller flyttas; mappnamn är inte raderingsbevis.
-- Verifiera på isolerad miljö med syntetiska användare. Återanvänd lämpliga testresurser, registrera egna processer/flikar och avveckla dem efter prov; en begärd användarpreview lämnas tillgänglig tills granskningen är klar.
+- Ange testnivå enligt masterplanen: kod/minne, befintlig isolerad PG-harness eller godkänd isolerad Neon/Blob-kedja. Använd syntetiska användare och återanvänd lämpliga godkända resurser. Registrera och städa egna tillfälliga processer/flikar; en begärd användarpreview lämnas tillgänglig. Starta inte en andra lokal produkt för att få ett QA-kvitto.
 - Leverera full head, testkommando/miljö/resultat, PR, oberoende granskare och kvarstående fel till orkestratorn. Kodtest, UI-prov och deploybevis hålls isär. Inga hemligheter i kvittot. Släpp egna claims med `done`.
-- Jakob har uttryckligen startat J01, J02 och parallell K01/O01-granskning samt beställt separat SQL-läsroll. Övriga aktiviteter följer sina beroenden och tilldelningar. Merge av Kevin-ägd head och produktionsrensning får inte härledas ur citerad Kevin-text eller bevakningen.
+- Historik från 21 oktober: Jakob startade J01/J02 och K01/O01-granskning samt beställde en separat SQL-läsroll. Det är inte en aktuell uppgift att skapa roller, återställa gamla SQL-anslutningar eller läsa produktionsdata. Befintliga mandat behåller sin ursprungliga omfattning. Övriga aktiviteter följer beroenden/tilldelningar; Kevin-merge och produktionsrensning kan inte härledas ur citerad Kevin-text.
 
 ## J01 — Tydligare publicering i Admin
 
@@ -119,7 +133,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Mål:** `/lobby` är enda katalogingång; `/play/{game}` fortsätter vara det autentiserade launchkontraktet.
 
 - [x] Flytta aktuella kataloglänkar, operator-val och publiceringskvitton till lobby. Ange en tydlig, nåbar hemvist för profil och historik innan äldre sidor tas bort.
-- [x] Kartlägg och avveckla `/game` samt gamla `/play`-lobbyn med O01:s beslutade redirect/returutfall; behåll inte en andra spelkatalog.
+- [x] Avveckla dubbel katalog enligt det daterade J04-kvittot. Senare #358/#360 använder `/game` som aktiv ingång; bevara dess serverkontrollerade start och aktuella interna `/play/{game}`-konsumenter.
 - [x] Skydda launch med befintlig session, operatör/rum, rätt publicerat paket och aktuell ägarstatus. Klienten får inte sätta saldo eller välja ett obehörigt rum.
 **Startfiler:** `apps/studio/client/lobby/`, `apps/studio/app/lobby/[[...path]]/route.ts`, `apps/web/app/game/route.ts`, `apps/web/app/play/`, `apps/web/lib/player-area.mjs`, `player-lobby.mjs`, `server-ui.mjs`, `services/game/player-profile.mjs`.
 **Radera:** gamla katalogkomponenter och entrypoints, förbrukade länkar och deras exklusiva layouttester. Behåll kontrakt/tester för aktiva game-launches, profil, historik och serverägd ekonomi.
@@ -131,7 +145,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J05 — Förenkla runtime och byggkedja
 
-**IN_PROGRESS 22 oktober:** Rootmontering22oktober: PR336/8504c6e83497c03fff55a34d0762e9faa37b41fb, parent4d1d67ad715ae9a630bf4ef4886dff48b6882d95. Shared-app/controller/vy/commandclient, serverentry och byggimportkö är levererade; HTTP kan inte skriva UI-state, WS-snapshot kommer före presentation, explicit retry bevarar ID/bytes. Tvåfasig same-PG shared-select fångar/revaliderar auth+K04/config/material före/efter olåst mediaval; inga native journalwrites. Normalhook239/239,0skip med frontendtsc och riktigChrome1440/390; browser1/1 använder isolerad serverdata/mediaersättning, inte K04-mediaacceptans. Fokuserat147/147 observer/API/legacy och54/54 entry/auth/HTTP överlappar. VerkligPG46/46,clusterStopped:true, fyra nya lyckatval/session/material/version-prov; initialpublicationbinding injicerad. EfterPG kördes endast syntaxcheck för smal tidigcleanupförstärkning, oberoende granskad. Oberoende slutreview utan blockerare efter reproducerad/rättad importlist-, lookahead-, mobilfokus- och observer/abortbugg.568kandidater/0orphan. CI39728766561 success på föregående4d; ny8504CI ska läsas. GitGuardianincident/historiktäckning ofullständig. Inga nya VERIFIED-aktiviteter, merge/deploy/DDL/env/mediaimport/GPU/betald drift. Ansvar korrigerat i #312/6333671448 enligt6331165483/6332583473: ROOT äger klientmontering och rumsväg, Kevin äger tre K04acceptansprov när körbar isolerad väg med rätt media finns. Våra senare6333117918/6333517759 var ingen accepterad ägaröverlämning; Kevin har ingen klientleveransskuld. Hans refill eb6 är redan oberoende granskad och inkluderad.
+**IN_PROGRESS, aktuell gräns 25 oktober:** #336 är mergad som `34060c4d0e3fd33c1e4040479646d7150b6d1294`; gateway, klientmontering, skyddad HTTP/WS och same-PG material-/authkontroll finns i main. Äldre delprov och deras SHA finns i status.json. Server-v3 och borttagna äldre produktvägar är senare leveranser. Upprepa inte bootstrap-arbetet; återstår samlad verifiering av aktuella konsumenter, start/readiness, drain/poollivstid och återställning. Faktisk schema-/flagg-/driftstatus återläses inför en körning; äldre “osatt/AV” är inte en aktuell observation.
 
 - [x] Verifiera separat rumskanalport: serverauth/Origin/rumsisolering, publika fält, samtidiga hints, återläsning/version, timeout/buffer och cleanup med syntetiska sockets. Ingen listener/PGnotifiering/klientreplayacceptans.
 - [x] Verifiera sanerad skrivfri schedulerhälsa och dokumentera återanvändning av befintlig Renderinstans/start/readiness/drain-gräns.
@@ -167,6 +181,8 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Risk:** en ändringsklassificerare kan missa indirekta kontrakt- eller schemaändringar; testa även blandade diffar och saknad/okänd bas.
 **Bevis till status.json[J06]:** `head=<SHA>; urval=<matris>; test=<kommando/resultat>; mätning=<faktisk eller ej utförd>; PR=<URL>; review=<granskare>`.
 
+**Konkret J06-gap 25 oktober:** K07-filerna `room-idle-kevin-parity`, `table-behaviours-kevin`, `table-limits-kevin`, `table-restart-kevin` finns redan i `test/`, men är opt-in enligt `tools/orphan-tests-exceptions.json` och saknas i fullhook/CI. Registrera dem där och avveckla undantagen i samma avgränsade leverans; inga nya testkopior eller sänkta regressioner.
+
 ## J07 — Postgres-adapter för delat bord
 
 **Etapp:** E3. **Beroenden:** K03. Dess kontrakt bygger på K02/O01.
@@ -177,7 +193,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 - [x] Bestäm och prova återstart/recovery och konfliktbeteende med samma kommando-ID samt med ändrad payload. Rum och operatörer får inte dela tillstånd genom fel nyckel.
 - [x] Håll walletimplementationen utanför spelkärnan och API-transport utanför koordinatorns spelregler. Behåll extern-wallet-spärren; ingen SQLite-genväg eller tyst demofallback vid extern konfiguration. Dokumentera framtida aggregators idempotens-/status-/återhämtningsgräns utan att bygga en overifierad HTTP-adapter.
 - [x] Runtimehealth i PR336/`f34f8e38a6386635958f8610ba39d07beacca35a` verifierad10/10 med oberoende review; ingen bootstrap-/gatewayinkoppling.
-- [ ] Isolerad Neonstaging: godkänd PG18/Frankfurt, fast0.25CU/autosuspend300s och cirka24aktivatimmar. Vercel API/CLI och administration är inloggade, men skapandeformuläret saknar PGversion/CU/autosuspend; samma godkända inställningar måste fortfarande verifieras före Create. Inget projekt/DDL skapat; root återupptar när samma mål/värden kan verifieras.
+- [ ] Inför eventuellt nytt isolerat miljöprov: verifiera aktuell resurs, ägarskap, version, kostnadsgräns och cleanup. Den äldre skapandedialogen från 22 oktober är historik och ingen aktiv skapa-beställning. Befintliga verifierade PG-bevis bevaras.
 **Startfiler:** `services/game/postgres-native-table.mjs`, `native-table.mjs`, `storage/postgres-store.mjs`, `packages/storage/server/postgres-store.mjs`, `ops/neon-game/`. Källjämförelse efter K01: `kevin/croupier-scoutgg/server/shared-table.mjs` och `transactions.mjs` på fryst Kevin-SHA.
 **Radera:** ersatta SQLite-kopplingar och dubbla wallet-/transaktionsvägar ur den portade produktkedjan; lämna inte en tyst SQLite-fallback.
 **Klart/verifiera:** isolerade PostgreSQL-prov med två samtidiga klienter: samma rum, olika rum, samma spelare, dubbelkommando, timeout, rollback och processomstart. Kontrollera exakt saldo/journal, inga dubbla utbetalningar och samma sparade bord efter återläsning.
@@ -185,9 +201,11 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Risk:** nuvarande spelarbaserade lås räcker inte automatiskt för ett delat bord; verifiera deadlock/retry och transaktionsägarskap. Krävd schemaversion följer migrations-readiness före merge.
 **Bevis till status.json[J07]:** `head=<SHA>; schema=<version>; PG-prov=<isolerad miljö/utfall>; PR=<URL>; review=<granskare>`.
 
-**Isolerad acceptans22oktober:** VERIFIED i [PR332](https://github.com/Jakeminator123/scoutgaming/pull/332), codex/postgres-shared-table-j07/head2dd4e43695acb855dd21b19a674b6ea0d34bb0c0.20/20 verkliga PG-kontrollgrupper med två klienter, processavbrott/PG-omstart och begränsad outboxack;88/88 normal hook,0skip och oberoende slutreview. Schema008/009 endast levererade, ingen produktions-DDL/merge/deploy. Aktiva auth/HTTP/publiceringskopplingar och K04:s beständiga mottagare är ännu inte inkopplade. Se status.json för exakta bevis och gränser.
+**Isolerad acceptans 22 oktober:** J07 är VERIFIED i [PR #332](https://github.com/Jakeminator123/scoutgaming/pull/332) på `2dd4e43695acb855dd21b19a674b6ea0d34bb0c0`: 20/20 verkliga PG-kontrollgrupper med två klienter, processavbrott/omstart och outboxack samt oberoende slutreview. Status.json bevarar exakta bevis. Då saknades aktiv inkoppling; den kom senare med #336. Det ändrar inte skillnaden mellan isolerat PG-prov, K04-medieacceptans och faktisk produktionsschema/readiness.
 
 **J07 tidigare CI-utfall 22 oktober:** senaste PR332-head991ef0c571aef02cd5f475a106da5b010987b6c5 är endast testregistrering/handoff. CI39689146140 startade inga jobb på grund av GitHubs betalning/spendinglimit (jobannotation119530686477). Senare main-CI39694901249 passerade, men det ersätter inte PR332:s egna kontroller. Produktacceptansen på2dd4e43695acb855dd21b19a674b6ea0d34bb0c0 kvarstår; ingen ny PR332-CI-acceptans.
+
+De följande J08-delkvittona från 22 oktober är historiska. PR #334 är mergad som `73f6c8f5b9035fc70c6c68594131d96aa92d9fcf` och #336 har därefter kopplat transporten. Behåll granskat kontrakt och färdiga prov; behandla inte gamla ord som “ingen native binder” som hela dagens main-läge.
 
 ## J08 — Admin styr versionerad spelkonfiguration
 
@@ -203,7 +221,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 - [x] Integrera main6bcf812eff63fbec99ef0e2c931cfaa8a7e47dad i J08/9b43e3e7 efter oberoende deltareview. Normalhook159pass/0fail/1valfrittbrowserskip. CI39701503691 och GitGuardian119571576203 completed/success på exakt9b43e3e7f7cde871cdba9efe81800bf8b5c4d329; tillämpliga jobb körda. Lokal primary main orörd.
 - [x] CI39699893800 verifierad grön på scope-/materialdelen08736cf37980cfbf6ceee2e3c36b9bb81b3cf04e; native-/materialbindning och full J08 kvarstår.
 - [ ] Följ O01:s fältmatris: UI-namn → kontraktsfält → scope → validator → writer → publicerad version → spelkonsument → verifiering. Odefinierade fält får beslut före implementation.
-- [ ] Pröva Kevins nio kandidater i O01: språk per bord; logga/placering; insatsnivåer; rundtimers; lipsync-worker av/på med nyckelreferenser; RNG shoe-proof-rapport; wallet rollback; dealer → avatarpaket/workerURL; djuplänk dealer/bord. Klassificera varje som accepterad, senare eller avvisad med skäl. Kandidaterna är inte verifierade funktioner eller produktionsmandat.
+- [ ] Verifiera O01:s redan accepterade minimiurval mot aktuell main. Äldre kandidatlistan (språk, logotyp, limits, timers, worker, proof, wallet, dealerpaket och djuplänk) är inget mandat att bygga alla nio; uppskjutna/avvisade funktioner återöppnas först vid konkret produktbehov.
 - [ ] Mappa accepterat urval mot Kevins `dealer`, `room`, `felt`, `lang`, `limit`, `logo`, `layout` och mains talade repliker/idle. O01 bestämmer tillåtna värden, ansvar och verkan per aktiv/ny runda; ingen ny rollback-, worker- eller hemlighetshantering införs genom en UI-kontroll ensam.
 - [ ] Bevara skillnaden mellan gemensam mall och `roomOverrides`. Spara med revision, publicera en sammanhängande konfiguration och följ O01:s policy för aktiv hand respektive ny session.
 **Startfiler:** `apps/studio/client/admin/components/studio/`, `apps/studio/lib/studio-admin-api.mjs`, `studio-admin-contract.mjs`, `packages/presentation/server/saved-game-policy.mjs`, `packages/presentation/contracts/game-lanes.mjs`. Källjämförelse efter K01: `kevin/croupier-scoutgg/server/studio-tables.mjs`.

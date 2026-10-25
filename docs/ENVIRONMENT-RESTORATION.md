@@ -45,7 +45,9 @@ Två äldre native-QA-projekt i `jakeminator123s-projects` saknar produktionsdom
 och behåller sin datagräns enligt [miljöregistret](ENVIRONMENT-VARIABLES.md).
 En gammal READY-deployment är inget färskt funktions- eller isoleringsprov.
 
-## Isolerad K06/K07-staging
+## Isolerad K06/K07-staging — historiskt beslut 22 oktober
+
+**Läsgräns, förtydligad 25 oktober:** detta avsnitt bevarar ett daterat resursbeslut och dåvarande försök, inte en färsk resursinventering eller körorder. Kontrollera aktuellt projekt/branch/endpoint, mandatets exakta omfattning och kandidatens schema/readiness innan arbetet återupptas. Tidigare godkännanden gäller fortfarande samma mål/åtgärd; de utökas inte till andra resurser, produktionsdata eller roller. [Masterplanens QA-gräns](../migrering/MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy) styr fortsatt Kevin-acceptans.
 
 Jakobs uttryckliga godkännande 22 oktober gäller endast det tomma projektet
 `croupier-k06-k07-staging` i Scoutgamings Vercel-hanterade Neonorganisation
@@ -71,11 +73,7 @@ kontoeffekten är inte verifierad och gemensamma produktionsinställningar får 
 Använd inte produktionsgren, arkiverad dataklon eller okända standardvärden som
 ersättning. Befintlig Vercel-projektlänk ersätter inte dessa resursinställningar.
 
-När målet finns: verifiera sanitiserad projekt-/branch-/endpoint-/DB-identitet,
-inställningar och tomma syntetiska data innan anslutning. Använd separat
-`croupier_staging` med dedikerad migrationsägare; skriv aldrig en anslutningssträng
-i Git eller tråden. Granska och applicera följande Gitblobbar i ordning efter
-bekräftad tom målidentitet; tillämpning har ännu inte skett:
+Historisk plan från 22 oktober: målidentitet, inställningar och tomma syntetiska data skulle verifieras före anslutning till separat `croupier_staging` med dedikerad migrationsägare. Tabellen nedan dokumenterar då planerade Gitblobbar; den är **inte en instruktion att applicera gamla schemafiler på dagens miljö**. Vid återupptaget arbete måste aktuellt schema, rätt ordning och redan tillämpade versioner jämföras med den frysta kandidaten. Ingen anslutningssträng skrivs i Git eller chatten.
 
 | Fil | Fryst källa | SHA256 av exakta Gitbytes |
 | --- | --- | --- |
@@ -93,6 +91,8 @@ loopbackkluster och fysisk omstart; rikta den inte direkt mot Neon. Verifiera
 separat PG18/målanslutning innan K06/K07-integrationsacceptans.
 
 ## Isolerad K04-start med verklig server
+
+**Avgränsat befintligt testverktyg, inte standardstart för migrationen.** Använd endast när ett identifierat PG-/processfel behöver detta isolerade prov. En lokal mediemapp, serverstart eller syntetisk fixture ger inte K06:s Admin → Neon → privat Blob-acceptans. Skapa inga nya SQLitefixtures eller lokala produktregister och använd inga verkliga användarkonton. Molnacceptans följer samma QA-gräns som ovan.
 
 Den explicita `tools/run-shared-room-k04-qa.mjs` startar ordinarie spelserver med
 en verifierad lokal testanslutning. Normal serverstart behåller TLS-/Neon-grindarna.

@@ -7,13 +7,27 @@
 - Gemensamma kontrakt och integration ägs av O01–O03 i [masterplanen](../MASTERPLAN.md). J07 äger Postgres-adapter, transaktioner och lås; J08 äger Admin-konfigurationen.
 - Planfilen ger inte tillstånd till produktionsmigrering, molnändring eller merge. Kevins långlivade branch behåller sitt ägarskap; GitHub-identitet ska verifieras, inte antas från namn eller `github: null` i personregistret.
 
+## Nulägesrevision 25 oktober
+
+Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanens nuläge och prioriteringar](../MASTERPLAN.md#slutsats-och-verifierat-nuläge) går före äldre nästa-steg-noteringar. 45 % är oförändrad acceptansstatus; en mergad del-PR ger inte automatiskt VERIFIED.
+
+- K02/K03/J07 är redan verifierade och portade. Main har starkare serverägd replay, auth och transaktionsgräns än Kevins gamla app.
+- PR #333:s 26 filer finns på main (19 identiska, sju granskade vidareutvecklingar). #348 tog in de två kompletterande fel-/replayproven. Ingen unik produktlucka identifierad i denna PR; ingen helmerge beställs.
+- #334/#336 är mergade. Klient-/rumsvägen är inte en kvarvarande Kevin-leveransskuld. K04:s riktiga medie-/spelacceptans är fortfarande öppen.
+- #345 portade fyra K07-testfiler. De är ännu opt-in och ska kopplas till obligatorisk regression innan detta räknas som fortlöpande CI-skydd.
+- #315/#323 ändrar bara tester i den äldre appen. Main har redan ett explicit PR #323-prov för paus/försäkring och stabila kommandoresultat; porta endast ytterligare bevisat saknade testfall genom mains fixtures.
+
+**Förnyad Admin-/PR-granskning:** #378/#381 och #382:s kvitto ger publicerad PAOW-policy med 24 exakta original i West Bet revision 2 och avgränsad uppspelning; ingen PAOW-insats/full runda. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Specifik rotation-readiness och kompatibel rollback kvarstår som separat gap. Se [konkret matris](../MASTERPLAN.md#prioriterad-väg-till-910) och [motivering/slutkriterier](../MASTERPLAN.md#motivering-och-när-migreringen-är-klar). Jakob har nu beställt integration och fortsatt arbete; denna dokumentrevision höjer inte 45 % och ger ingen produktionsacceptans.
+
+Följ [masterplanens QA- och lagringsgräns](../MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy): ingen ny SQLitefixture/lokal produktväg, inga omimporter av befintliga media och ingen SQL-direktskrivning som ersätter Admin. Befintliga rena tester/PG-harness bevisar sina respektive kontrakt; samlad acceptans kräver godkänd isolerad Neon + privat Blob och identifierade Vercel-/Render-versioner. Aktiva moduler med äldre namn, som `local-presentation.mjs`, är inte raderingskandidater på namn ensam.
+
 ## Fryst källunderlag och läsgräns
 
 | Beteckning | Källa och omfattning |
 | --- | --- |
 | K | [kevin-merge-admin vid 5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc](https://github.com/Jakeminator123/scoutgaming/tree/5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc/kevin/croupier-scoutgg); alla K-sökvägar nedan är relativa till `kevin/croupier-scoutgg/` |
-| M | Main vid `15988f32fd572c453d2189502acbe324c4566815`; M-sökvägar är relativa till reporoten |
-| Historik | `kevin-staging` är äldre analysunderlag, inte portningskälla. Mappnamnet `kevin-ks-migrering` ändrar inte detta. |
+| M | Historiska K01/O01-referenser: main `15988f32fd572c453d2189502acbe324c4566815`. Aktuell revisionsbas: `34c6c22f60ac75f335f647c83af06e7d0514476b`. Sökvägar är relativa till reporoten. |
+| Historik | Senare `kevin-staging`/`kevin` är jämförelseunderlag tills deltat godkänts. PAOW-importens `c7138759...` är ett separat dokumenterat urval; den ändrar inte K01:s frysta källa. |
 
 Verifierat genom avgränsad kodläsning 21 oktober 2026:
 
@@ -99,7 +113,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K04 — Spelklient och presentation från händelser
 
-**IN_PROGRESS 22 oktober:** PR333/head eb6ab45509fad539463bbcb6930cc46d2d0844c2, refill oberoende granskad och inkluderad i rootc5/2f/8504. Ansvar korrigerat i #312/6333671448 enligt6331165483/6332583473: ROOT äger klientmontering och rumsväg, Kevin äger tre K04acceptansprov när körbar isolerad väg med rätt media finns. Våra senare6333117918/6333517759 var ingen accepterad ägaröverlämning; Kevin har ingen klientleveransskuld. Hans refill eb6 är redan oberoende granskad och inkluderad. Rootmontering på PR336/8504c6e83497c03fff55a34d0762e9faa37b41fb har normalhook239/239, isolerad Chrome1440/390 och PG46/46. Browsermedia är ersatt; de tre verkliga K04proven nedan återstår. Full K04 är inte accepterad, PR333merge är inte godkänd.
+**IN_PROGRESS, reviderat 25 oktober:** K04:s portade kod finns på main via bland annat #336/#348. Root äger plattformens klientmontering och rumsväg; äldre mottagningsdiskussioner ger inte Kevin en ny klientleveransskuld. Trelagers-matte, per-take-timing, filmad tidslinje och serverkedjad idle finns redan. Kvar: exakta godkända takes och kontakt/handfrigörande, valt tal i rätt tidsfönster, faktisk touch/layout samt hela flödet med riktiga media. Tidigare browserprov med ersättningsmedia och dagens rena Node-prov är inte visuell acceptans. Ingen #333-merge eller GPU-/produktionsaktivering beställs.
 
 **Etapp/beroenden:** E3; K03 och J07.
 **Mål:** utvalda förbättringar av idle, tal, kort och layout återger committade spelhändelser utan att styra spelutfallet.
@@ -107,7 +121,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 - [x] Delsteg23d4: samma uppskjuten-predikat i bindLine/activationSet/planningRevision; kataloghistoria, grundslot och Astridclassic bevarade. Egen4/4 och9 Gitblobbar; inte full klient-/PG-/visuell acceptans.
 - [ ] Mappa O01:s offentliga händelser till befintliga presentationskontrakt och publicerat paket. Kort avslöjas först av committad serverhändelse; klienten gissar inte nästa kort eller handlingsrätt.
-- [ ] Porta accepterad lugn idle, moving lipsync, övergångar, tal och kortplacering. Prova tal under idle, vänteläge och kortövergång samt när lipsyncworker saknas eller svarar sent. Bevara exakt dealer-/källframe-/audio-/bankkoppling; ingen fristående munanimation eller återdebitering vid återställning.
+- [ ] Komplettera endast belagda gap i redan portad idle, övergångar och kortplacering. Prova valt godkänt tal under idle/väntan/kortövergång; generativ moving-lipsync kräver separat worker-/identitets-/kostnadsbeslut och kommer sist. Sen/saknad media får inte skapa ny spelhandling eller debitering.
 - [ ] Återanvänd verifierad buffring och förladdning. Lägg till kod endast för ett dokumenterat gap; skilj spelhändelse, presentationstid och klientens laddningsfel.
 - [ ] Kontrollera pekare/touch, tangentbord, läsbara fel och relevant mobil-/datorlayout. Definiera beteendet vid saknat media, avbrutet tal, långsam laddning och återanslutning.
 
@@ -117,7 +131,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K05 — Exakt mediakoppling till Neon och Blob
 
-**IN_PROGRESS 22 oktober, rättad dokumentleverans:** PR314/head159cc134d3a57db4ccbe3a871a3a5eb16fec3656 är läsgranskat,matris/validatorblobhashat och egetNode24.21-prov36/36. Gamla unknownsource-repro nekar nu;582valda/155uppskjutna/6JS-källbevis/550ejvalda/28V1. K04afba är synkat10/10. Dokument-/validatorrättningen är klar,fullK05kvar. J08:s PNG-/Draganpathrättning finns iPR334/d7d139b9. Root förbereder konkret promotion/importplan med återlästa mål och separat mandat; inga nya Cloudwrites/binärbevis. Tidigare riktade live-SELECT av tre Dragan-repliker är versionsmärkt bevis, inte full egen inventering.
+**IN_PROGRESS, reviderat 25 oktober:** 159cc-underlagets metadata-/validatorbevis bevaras i status.json. Handoffens äldre 153-originalimport och #370:s återställda källnotiser kompletteras nu av #382:s 24 exakta, redan publicerade idleoriginal. Gamla `paow-kevin` ligger kvar i trash. Filmprofil, givkontakt och inspelat tal är ännu inte accepterade; det avgränsade idlekvittot omfattar ingen full spelrunda. Återanvänd aktuella identiteter och [reviderad mappning](K05/MAPPNINGSSYSTEM.md). Ingen automatisk återimport eller sänkning av recordedSpeech-kraven.
 
 **Etapp/beroenden:** E4; K01 och K04.
 **Mål:** varje accepterat mediaobjekt har exakt identitet och koppling till befintligt register, Blob-objekt och publicerat paket.
@@ -133,7 +147,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 **Klart när:** samtliga valda runtimeposter löses till exakt accepterat material; avvisade/okända poster kan inte väljas. Visuell acceptans gäller endast oförändrade godkända bytes och sammanhang.
 **Verifiering/bevis:** manifestmatris `käll-SHA/sökväg → hash → Neon-ID → Blob-identitet → paket/händelse → acceptans`; valideringsresultat och negativa fall. Registreringsbevis, mediehämtning och visuell granskning hålls åtskilda.
 
-K05-källhashning i kommentar6330456172 är Kevinrapporterad: separat byggserveragent uppger1293/1293 mot fryst5aa och28/28V1 mot238d6dd6,0avvikelser. Detta är inte roots egna binär-/Neon-/Blobprov. K04:s nya bindLine-fråga hanteras som avgränsad urvalsrättning: samma uppskjuten-predikat som activationSet/planningRevision, med kataloghistorik och grundrepliker bevarade; Kevin lämnar fryst rättningshead.
+**Historiskt källbevis:** kommentar 6330456172 redovisar Kevinrapporterad hashkontroll av 1293/1293 rader mot fryst 5aa och 28/28 V1 mot 238d6dd6. Det är inte denna revisions nya binär-/Neon-/Blobprov. Senare importkvitton hålls separata från full K05- och medieacceptans; kataloghistorik och godkända grundrepliker bevaras.
 
 ## K06 — Verifiera Admin till spel efter omstart
 
@@ -150,13 +164,15 @@ K05-källhashning i kommentar6330456172 är Kevinrapporterad: separat byggserver
 **Klart när:** varje godkänt fält har ett positivt flödesbevis och relevant negativt test; omstart behåller rätt tillstånd/version utan lokal produktfallback.
 **Verifiering/bevis:** tabell `Admin-fält → writer → lagrad revision → publicerat paket → runtimevärde → effekt efter omstart`; skärmbilder för flödets kontrollerade steg, API-resultat och serverbevis utan hemligheter. Brister lämnas som blockerare till J08 eller berörd K-aktivitet.
 
+K06 är föreslagen acceptansprioritet i den nya planen, inte en beställning på nya molnresurser, seeds eller produktionsspel. Välj godkänd isolerad miljö och befintligt mål innan en faktisk körning.
+
 ## K07 — Verifiera spelbeteenden och samtidighet
 
 **Etapp/beroenden:** E5; K04 och K06. Levererar till O02; den ersätter inte O02:s oberoende samprov.
 **Mål:** den integrerade porten har verifierad regel-/saldo-/rumsintegritet och motiverade förbättringar jämfört med main.
 **Startfiler:** K `test/shared-table.test.mjs`, `test/game-integration.test.mjs`, `test/table-limits.test.mjs`, `test/idle-chain.test.mjs`, `test/game-cards-fixed.test.mjs`; M `test/shoe-game.mjs`, berörda beteendetester samt J07/J08:s nya integrationstester.
 
-- [ ] Porta relevanta beteendetester och kör dem på den integrerade kandidaten med högst fyra arbetare där verktyget stöder det. Bevara CI:s obligatoriska fullregression; upprepa inte tunga gröna körningar utan ändrad grund.
+- [ ] Koppla de fyra redan portade filerna `test/room-idle-kevin-parity.mjs`, `test/table-behaviours-kevin.mjs`, `test/table-limits-kevin.mjs` och `test/table-restart-kevin.mjs` till relevant obligatorisk fullregression; ta samtidigt bort deras opt-in-undantag i `tools/orphan-tests-exceptions.json`. Kör på fryst kandidat med högst fyra arbetare. Ingen ny port av samma tester behövs.
 - [ ] Verifiera samtidiga spelare/rum, parallella kommandon mot samma saldo, upprepade request-ID, konflikt, krasch/omstart och återanslutning. Förväntningen är exakt en giltig debitering/avräkning och inga rumsläckor.
 - [ ] Jämför main och kandidat i samma isolerade miljö med samma testindata och scenarier. För varje vald förbättring redovisas observerat före/efter, exempelvis idleövergång, kortpresentation, återanslutning eller responsivitet.
 - [ ] Om prestanda åberopas: ange enhet, nätverk, antal mätningar och mätvärden; redovisa osäkerhet. Befintliga portade preloads räknas som återanvändning, inte en ny förbättring.
@@ -164,6 +180,8 @@ K05-källhashning i kommentar6330456172 är Kevinrapporterad: separat byggserver
 **Raderas/importeras inte:** obsolete källsträng-/CSS-/layoutlås, dubbla tester utan egen beteenderisk och tillfälliga alternativa produktvägar som portningen ersatt. Bevara auth, spelregler, idempotens, persistens och rumsisolering.
 **Klart när:** kandidatens relevanta tester passerar, jämförelsen belägger O01:s accepterade förbättringar och alla kvarvarande brister är uttryckligt klassificerade. Ingen uppmätt förbättring påstås utifrån enbart kodläsning.
 **Verifiering/bevis:** full kandidat-SHA, jämförelse-SHA, miljö/schema, kontrakt/configversion, kommandon/exitkoder, relevanta loggar och visuella observationer. Leverera en kompakt kvittens till O02; orkestratorn uppdaterar status.json och avgör godkänd aktivitet.
+
+**Bevis 25 oktober:** de fyra K07-filerna och `test/blackjack-core.mjs`, `test/blackjack-table.mjs`, `test/blackjack-presentation.mjs` passerade tillsammans med Node 24.21.0 och `--test-concurrency=4` på granskad main. K07:s restartfil återskapar en koordinator över samma minnesstore; verklig PG-/process-/browseracceptans måste läsas eller utföras separat. Inga aktivitetsstatusar höjs av denna körning.
 
 ## Gemensam arbets- och leveransordning
 
