@@ -26,7 +26,6 @@ const fixture = () => ({
   OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
   OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-product-speech-token',
 });
-const LAB_SECRET = '0123456789abcdef'.repeat(4);
 
 test('retired QA switches cannot activate cloud routes or forward private SDK credentials', () => {
   for (const key of ['CROUPIER_P6_QA_ROUTER', 'CROUPIER_P6_BOUNDED_TEST']) {
@@ -36,11 +35,11 @@ test('retired QA switches cannot activate cloud routes or forward private SDK cr
     for (const value of [undefined, '', '0']) {
       const env = { ...fixture(), [key]: value, CROUPIER_P6_SDK_WORKER_TOKEN: 'unused-fixture-private-token',
         CROUPIER_P6_SDK_OPENAI_API_KEY: 'unused-fixture-provider-token' };
-      const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+      const specs = childSpecifications(validateCloudConfig(env), env);
       for (const child of Object.values(specs)) {
         assert.equal(Object.keys(child.env).some(name => name.startsWith('CROUPIER_P6_')), false);
       }
-      assert.ok(specs.lab, 'retiring QA keeps the existing two-child composition');
+      assert.deepEqual(Object.keys(specs), ['web']);
     }
   }
 });
@@ -48,13 +47,11 @@ test('retired QA switches cannot activate cloud routes or forward private SDK cr
 test('chat deadline reaches only the product relay and does not extend Director advice', () => {
   const env = { ...fixture(), OPENCLAW_TIMEOUT_MS: '8000', OPENCLAW_SPEECH_TIMEOUT_MS: '20000',
     OPENCLAW_SPEECH_ROUTING: 'adaptive', OPENCLAW_SPEECH_DEEP_MODEL: 'gpt-6-sol' };
-  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+  const specs = childSpecifications(validateCloudConfig(env), env);
   assert.equal(specs.web.env.OPENCLAW_SPEECH_TIMEOUT_MS, '20000');
   assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '8000');
-  assert.equal(specs.lab.env.OPENCLAW_SPEECH_TIMEOUT_MS, undefined);
   for (const name of ['OPENCLAW_SPEECH_ROUTING', 'OPENCLAW_SPEECH_DEEP_MODEL']) {
     assert.equal(specs.web.env[name], undefined, 'routing policy belongs to the Director');
-    assert.equal(specs.lab.env[name], undefined);
   }
   assert.equal(validateCloudConfig(fixture()).speechTimeoutMs, 8000);
   for (const value of ['', '0', '999', '30001', 'NaN', '20000.5']) {
@@ -62,19 +59,18 @@ test('chat deadline reaches only the product relay and does not extend Director 
   }
 });
 
-test('private media credentials reach both servers; scoped zones database reaches only Lab', () => {
+test('private media credentials reach only the game and zones credentials stay outside it', () => {
   const env = { ...fixture(), CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
     CROUPIER_ZONES_DATABASE_URL: 'postgresql://zones:fixture-password@zones.neon.tech/neondb?sslmode=require',
     DATABASE_URL: 'postgresql://game:never-forward@game.example/game', NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN: 'never-forward' };
-  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
-  for (const server of [specs.web, specs.lab]) {
+  const specs = childSpecifications(validateCloudConfig(env), env);
+  for (const server of Object.values(specs)) {
     assert.equal(server.env.CROUPIER_MEDIA_STORAGE, 'blob');
     assert.equal(server.env.BLOB_READ_WRITE_TOKEN, env.BLOB_READ_WRITE_TOKEN);
     assert.equal(server.env.DATABASE_URL, undefined);
     assert.equal(server.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN, undefined);
   }
   assert.equal(specs.web.env.CROUPIER_ZONES_DATABASE_URL, undefined);
-  assert.equal(specs.lab.env.CROUPIER_ZONES_DATABASE_URL, env.CROUPIER_ZONES_DATABASE_URL);
   assert.throws(()=>validateCloudConfig({...fixture(),CROUPIER_MEDIA_STORAGE:'disk',BLOB_READ_WRITE_TOKEN:'staged-not-active'}));
   for (const change of [
     { BLOB_READ_WRITE_TOKEN: '' }, { CROUPIER_MEDIA_STORAGE: 'public' },
@@ -89,24 +85,22 @@ test('private media credentials reach both servers; scoped zones database reache
 test('player registration is opt-in and reaches only the Web child', () => {
   for (const value of ['', '0', '1']) {
     const env = { ...fixture(), CROUPIER_PLAYER_ACCOUNTS: value };
-    const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+    const specs = childSpecifications(validateCloudConfig(env), env);
     assert.equal(specs.web.env.CROUPIER_PLAYER_ACCOUNTS, value === '1' ? '1' : '');
-    assert.equal(specs.lab.env.CROUPIER_PLAYER_ACCOUNTS, undefined);
   }
   assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_PLAYER_ACCOUNTS: 'yes' }));
 });
 
 test('one exact Vercel frontend origin is opt-in and reaches only Web', () => {
   const name = 'CROUPIER_VERCEL_FRONTEND_ORIGIN';
-  const disabled = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
+  const disabled = childSpecifications(validateCloudConfig(fixture()), fixture());
   assert.equal(disabled.web.env[name], '');
   const origin = 'https://preview.example.vercel.app';
   const env = { ...fixture(), [name]: origin };
   const config = validateCloudConfig(env);
-  const specs = childSpecifications(config, env, { labInternalSecret: LAB_SECRET });
+  const specs = childSpecifications(config, env);
   assert.equal(config.frontendOrigin, origin);
   assert.equal(specs.web.env[name], origin);
-  assert.equal(specs.lab.env[name], undefined);
   for (const bad of ['https://*.vercel.app', 'http://preview.example.vercel.app',
     'https://preview.example.vercel.app/', 'https://preview.example.vercel.app/path',
     'https://preview.example.vercel.app:443', 'https://user@preview.example.vercel.app',
@@ -118,10 +112,10 @@ test('one exact Vercel frontend origin is opt-in and reaches only Web', () => {
 test('three exact public origins share one port and two loopback children', () => {
   const env = fixture();
   const config = validateCloudConfig(env);
-  const specs = childSpecifications(config, { PATH: '/usr/bin', UNRELATED_SECRET: 'never-forward' }, { labInternalSecret: LAB_SECRET });
+  const specs = childSpecifications(config, { PATH: '/usr/bin', UNRELATED_SECRET: 'never-forward' });
   assert.equal(upstreamForHost('game.example.test', config), 4173);
   assert.equal(upstreamForHost('bo.example.test', config), 4173);
-  assert.equal(upstreamForHost('lab.example.test', config), 4188);
+  assert.equal(upstreamForHost('lab.example.test', config), null);
   assert.equal(upstreamForHost('evil.example.test', config), null);
   assert.equal(upstreamForHost('game.example.test:443', config), null);
   assert.equal(upstreamForHost('bo.example.test:443', config), null);
@@ -132,18 +126,12 @@ test('three exact public origins share one port and two loopback children', () =
   assert.equal(specs.web.env.LAB_PUBLIC_URL, config.labOrigin);
   for (const name of ['LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
     assert.equal(specs.web.env[name], undefined);
-    assert.equal(specs.lab.env[name], undefined);
   }
   assert.equal(specs.web.env.CROUPIER_DATA_DIR, undefined);
-  assert.equal(specs.lab.env.CROUPIER_DATA_DIR, specs.web.env.CROUPIER_DATA_DIR);
-  assert.equal(specs.lab.env.BO_URL, config.boOrigin);
   assert.equal(specs.web.env.CROUPIER_CLOUD_RUNTIME, '1');
   assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '8000');
   assert.equal(specs.web.env.UNRELATED_SECRET, undefined);
-  assert.equal(specs.lab.env.UNRELATED_SECRET, undefined);
   assert.equal(specs.web.env.DEMO_GUEST_ACCESS, '');
-  assert.equal(specs.lab.env.LAB_PUBLIC_URL, config.labOrigin);
-  assert.equal(specs.lab.env.CROUPIER_LAB_INTERNAL_SECRET, LAB_SECRET);
   assert.equal(specs.web.env.CROUPIER_LAB_INTERNAL_SECRET, undefined);
 });
 
@@ -184,15 +172,14 @@ test('Postgres, Neon and private Blob can start without a persistent product mou
   const config = validateCloudConfig(env);
   assert.equal(config.dataRoot, null); assert.deepEqual(config.paths, {});
   await assert.doesNotReject(inspectCloudDisk(config));
-  const specs = childSpecifications(config, env, { labInternalSecret:LAB_SECRET });
+  const specs = childSpecifications(config, env);
   for (const name of ['CROUPIER_DATA_DIR','LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
-    assert.equal(specs.web.env[name], undefined); assert.equal(specs.lab.env[name], undefined);
+    assert.equal(specs.web.env[name], undefined);
   }
   assert.equal(specs.web.env.BO_URL, config.boOrigin);
-  assert.equal(specs.lab.env.CROUPIER_GAME_ORIGIN, config.gameOrigin);
-  for(const server of [specs.web,specs.lab])assert.equal(server.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
+  for(const server of Object.values(specs))assert.equal(server.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
   const obsolete={...env,CROUPIER_MEDIA_BLOB_INDEX:join(tmpdir(),'ignored-retired-index.json')};
-  assert.equal(childSpecifications(validateCloudConfig(obsolete),obsolete,{labInternalSecret:LAB_SECRET}).web.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
+  assert.equal(childSpecifications(validateCloudConfig(obsolete),obsolete).web.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
   for (const patch of [{CROUPIER_MEDIA_STORAGE:'disk'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
     {CROUPIER_STUDIO_ENVIRONMENT_ID:''},{CROUPIER_STUDIO_WORKSPACE_ID:''},{CROUPIER_DATABASE:'sqlite'},
     {BLOB_READ_WRITE_TOKEN:''},{CROUPIER_CLOUD_DATA_ROOT:''}]) {
@@ -213,7 +200,7 @@ test('cloud bootstrap, camera, and paid speech credentials are opt-in and Web-on
     CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.5', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1',
     AMBIENT_SECRET: 'do-not-forward',
   };
-  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
+  const specs = childSpecifications(validateCloudConfig(env), env);
   assert.equal(specs.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER, env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER);
   assert.equal(specs.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD, env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD);
   assert.equal(specs.web.env.CROUPIER_ASTRID_CAMERA, '1');
@@ -224,8 +211,6 @@ test('cloud bootstrap, camera, and paid speech credentials are opt-in and Web-on
   assert.equal(specs.web.env.RUNPOD_API_KEY, env.RUNPOD_API_KEY);
   assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID, env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID);
   assert.equal(specs.web.env.OPENCLAW_TIMEOUT_MS, '12000');
-  for (const name of ['CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD', 'CROUPIER_ASTRID_TRANSLATION_KEY',
-    'CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'AMBIENT_SECRET']) assert.equal(specs.lab.env[name], undefined, name);
   assert.equal(specs.web.env.AMBIENT_SECRET, undefined);
   assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '');
   for (const change of [
@@ -238,7 +223,7 @@ test('cloud bootstrap, camera, and paid speech credentials are opt-in and Web-on
     { CARTESIA_API_KEY: '' },
     { CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: '' },
   ]) assert.throws(() => validateCloudConfig({ ...env, ...change }));
-  const inactive = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
+  const inactive = childSpecifications(validateCloudConfig(fixture()), fixture());
   assert.equal(inactive.web.env.CROUPIER_ASTRID_CAMERA, '');
   assert.equal(inactive.web.env.CROUPIER_GENERATED_SPEECH, '');
   assert.equal(inactive.web.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD, undefined);
@@ -252,16 +237,14 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
     CROUPIER_SPEECH_STREAM_TICKET_SECRET: 'fixture-ticket-secret-longer-than-32-characters',
     CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '0.25', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '9.94' };
   const config = validateCloudConfig(env);
-  const specs = childSpecifications(config, env, { labInternalSecret: LAB_SECRET });
+  const specs = childSpecifications(config, env);
   assert.equal(config.streaming, true);
   const ownProfiles={...env,CROUPIER_DEALER_SPEECH_PROFILES:'1',CROUPIER_STUDIO_NEON_POLICY:'1',ELEVENLABS_API_KEY:'fixture-own-voice-key'};
-  const ownSpecs=childSpecifications(validateCloudConfig(ownProfiles),ownProfiles,{labInternalSecret:LAB_SECRET});
+  const ownSpecs=childSpecifications(validateCloudConfig(ownProfiles),ownProfiles);
   assert.equal(ownSpecs.web.env.CROUPIER_DEALER_SPEECH_PROFILES,'1');
   assert.equal(ownSpecs.web.env.ELEVENLABS_API_KEY,ownProfiles.ELEVENLABS_API_KEY);
-  assert.equal(ownSpecs.lab.env.ELEVENLABS_API_KEY,undefined);
-  assert.equal(ownSpecs.lab.env.CROUPIER_DEALER_SPEECH_PROFILES,undefined);
   const off={...env,ELEVENLABS_API_KEY:'must-not-leak',ELEVENLABS_VIDEO_KEY:'different-account',ELEVENLABS_OC_API:'different-purpose'};
-  const offSpecs=childSpecifications(validateCloudConfig(off),off,{labInternalSecret:LAB_SECRET});
+  const offSpecs=childSpecifications(validateCloudConfig(off),off);
   for(const key of ['ELEVENLABS_API_KEY','ELEVENLABS_VIDEO_KEY','ELEVENLABS_OC_API'])assert.equal(offSpecs.web.env[key],undefined);
   for(const patch of [{CROUPIER_DEALER_SPEECH_PROFILES:'yes'},{CROUPIER_STUDIO_NEON_POLICY:'0'},{CROUPIER_GENERATED_SPEECH_STREAMING:'0'},{ELEVENLABS_API_KEY:'key\r\ninjection'}])assert.throws(()=>validateCloudConfig({...ownProfiles,...patch}));
   assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '1');
@@ -269,8 +252,6 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_TICKET_SECRET, env.CROUPIER_SPEECH_STREAM_TICKET_SECRET);
   assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD, '0.25');
   assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD, '9.94');
-  for (const name of ['CROUPIER_GENERATED_SPEECH_STREAMING', 'CROUPIER_SPEECH_STREAM_WORKER_SECRET',
-    'CROUPIER_SPEECH_STREAM_TICKET_SECRET', 'CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD', 'CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD']) assert.equal(specs.lab.env[name], undefined);
   for (const change of [
     { CROUPIER_GENERATED_SPEECH: '0' }, { CROUPIER_SPEECH_STREAM_WORKER_SECRET: '' },
     { CROUPIER_SPEECH_STREAM_TICKET_SECRET: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET },
@@ -289,11 +270,10 @@ test('Neon fullfile budget must be explicit and reaches only the Web fullfile ch
   const env={...fixture(),CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',
     CARTESIA_API_KEY:'fixture-cartesia',RUNPOD_API_KEY:'fixture-runpod',CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture-endpoint',
     CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.50',CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1'};
-  const config=validateCloudConfig(env),specs=childSpecifications(config,env,{labInternalSecret:LAB_SECRET});
+  const config=validateCloudConfig(env),specs=childSpecifications(config,env);
   assert.deepEqual(config.fullfileBudget,{reserveUsd:'0.50',dailyBudgetUsd:'1'});
   assert.equal(specs.web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,'0.50');
   assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,'1');
-  for(const name of ['CROUPIER_SPEECH_FULLFILE_RESERVE_USD','CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD'])assert.equal(specs.lab.env[name],undefined);
   for(const value of [undefined,'','0','-1','10.01','1e-2','0.0000001',' 0.5'])
     assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_FULLFILE_RESERVE_USD:value}),/CROUPIER_SPEECH_FULLFILE_RESERVE_USD/);
   assert.equal(validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'20'}).fullfileBudget.dailyBudgetUsd,'20');
@@ -301,7 +281,7 @@ test('Neon fullfile budget must be explicit and reaches only the Web fullfile ch
     assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:value}),/CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
   assert.throws(()=>validateCloudConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}),/CROUPIER_STUDIO_NEON_POLICY/);
   const off={...env,CROUPIER_GENERATED_SPEECH:'0',CROUPIER_CLOUD_GENERATED_SPEECH:'0'};
-  assert.equal(childSpecifications(validateCloudConfig(off),off,{labInternalSecret:LAB_SECRET}).web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,undefined);
+  assert.equal(childSpecifications(validateCloudConfig(off),off).web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,undefined);
 });
 
 test('disk preflight accepts its actual directory despite Windows path casing', async () => {
@@ -370,9 +350,9 @@ test('BO Host serves BO routes only; Lab handoff routes reach Web but public che
   for (const url of ['/', '/v2/', '/api/table', '/api/auth/lab/start', '/api/auth/lab/check']) {
     assert.equal(route('bo.example.test', 'GET', url), null, url);
   }
-  assert.equal(route('lab.example.test', 'GET', '/'), 4188);
-  assert.equal(route('lab.example.test', 'GET', '/_next/static/chunk.js'), 4188);
-  assert.equal(route('lab.example.test', 'POST', '/api/project'), 4188);
+  assert.equal(route('lab.example.test', 'GET', '/'), null);
+  assert.equal(route('lab.example.test', 'GET', '/_next/static/chunk.js'), null);
+  assert.equal(route('lab.example.test', 'POST', '/api/project'), null);
   assert.equal(route('lab.example.test', 'GET', '/api/auth/lab/start'), 4173);
   assert.equal(route('lab.example.test', 'GET', '/api/auth/lab/callback?state=abc&code=def'), 4173);
   for (const url of ['/api/auth/lab/check', '/%61pi/auth/lab/check', '/%61pi/auth/lab/start']) {
@@ -405,7 +385,7 @@ test('proxy keeps the exact public Host and Origin but drops spoofed forwarding 
 });
 
 test('public gateway rejects misdirected requests before contacting a child', async () => {
-  const gateway = createCloudGateway(validateCloudConfig(fixture()), { labInternalSecret: LAB_SECRET });
+  const gateway = createCloudGateway(validateCloudConfig(fixture()));
   await new Promise((resolve, reject) => {
     gateway.once('error', reject);
     gateway.listen(0, '127.0.0.1', resolve);
@@ -440,8 +420,8 @@ test('retired provider and playback routes cannot bypass authenticated Vercel in
   const ingress = { publicOrigin:origin, transportOrigin, secret:'fixture-private-ingress-'.repeat(3) };
   const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
     labOrigin:origin, vercelIngress:ingress };
-  const gateway = createCloudGateway(config, { labInternalSecret:LAB_SECRET, webPort:child.address().port,
-    labPort:child.address().port, sessionCheck:() => assert.fail('retired route cannot acquire Lab access') });
+  const gateway = createCloudGateway(config, { webPort:child.address().port,
+    sessionCheck:() => assert.fail('retired route cannot acquire Lab access') });
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   t.after(() => { gateway.closeAllConnections(); gateway.close(); });
   const status = (path, headers, method) => new Promise((resolve, reject) => {
@@ -462,88 +442,18 @@ test('retired provider and playback routes cannot bypass authenticated Vercel in
   assert.equal(forwarded, 0);
 });
 
-test('gateway checks every Lab request with Web before adding its private Lab header', async () => {
-  const checks = [], labRequests = [], handoffs = [];
-  const web = createServer((request, response) => {
-    if (request.url === '/api/auth/lab/check') {
-      checks.push({ host: request.headers.host, cookie: request.headers.cookie });
-      response.writeHead(request.headers.cookie === 'lab_session=valid' ? 200
-        : request.headers.cookie === 'lab_session=outage' ? 503 : 401);
-    } else {
-      handoffs.push({ host: request.headers.host, path: request.url,
-        authorized: request.headers['x-croupier-lab-authorized'] });
-      response.writeHead(200);
-    }
-    response.end();
-  });
-  const lab = createServer((request, response) => {
-    labRequests.push({ host: request.headers.host,
-      authorized: request.headers['x-croupier-lab-authorized'],
-      forwardedHost: request.headers['x-forwarded-host'],
-      forwardedProto: request.headers['x-forwarded-proto'] });
-    response.writeHead(200);
-    response.end();
-  });
-  web.listen(0, '127.0.0.1'); lab.listen(0, '127.0.0.1');
-  await Promise.all([once(web, 'listening'), once(lab, 'listening')]);
-  const gateway = createCloudGateway(validateCloudConfig(fixture()), {
-    labInternalSecret: LAB_SECRET, webPort: web.address().port, labPort: lab.address().port,
-  });
-  gateway.listen(0, '127.0.0.1');
-  await once(gateway, 'listening');
-  const hit = (path, headers = {}) => new Promise((resolve, reject) => {
-    const request = httpRequest({ hostname: '127.0.0.1', port: gateway.address().port,
-      method: 'GET', path, headers: { Host: 'lab.example.test', ...headers } }, response => {
-      response.resume();
-      response.on('end', () => resolve({ status: response.statusCode,
-        location: response.headers.location }));
-    });
-    request.on('error', reject);
-    request.end();
-  });
-  try {
-    assert.equal((await hit('/api/project')).status, 401);
-    assert.equal((await hit('/api/project', {
-      'X-Croupier-Lab-Authorized': LAB_SECRET, Cookie: 'lab_session=old',
-    })).status, 401, 'browser-supplied internal header never authorizes Lab');
-    const document = await hit('/lissabon', {
-      'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document',
-    });
-    assert.equal(document.status, 303);
-    assert.equal(document.location, '/api/auth/lab/start?next=%2Flissabon');
-    assert.equal((await hit('/api/project', { Cookie: 'lab_session=outage' })).status, 503);
-    assert.equal((await hit('/api/auth/lab/start')).status, 200);
-    assert.equal((await hit('/api/project', { Cookie: 'lab_session=valid',
-      'X-Croupier-Lab-Authorized': 'fake' })).status, 200);
-    assert.equal(labRequests.length, 1);
-    assert.deepEqual(labRequests[0], { host: 'lab.example.test', authorized: LAB_SECRET,
-      forwardedHost: 'lab.example.test', forwardedProto: 'https' });
-    assert.deepEqual(handoffs, [{ host: 'lab.example.test', path: '/api/auth/lab/start',
-      authorized: undefined }]);
-    assert.deepEqual(checks, [
-      { host: 'lab.example.test', cookie: 'lab_session=old' },
-      { host: 'lab.example.test', cookie: 'lab_session=outage' },
-      { host: 'lab.example.test', cookie: 'lab_session=valid' },
-    ]);
-  } finally {
-    await Promise.all([gateway, web, lab].map(server => new Promise(resolve => server.close(resolve))));
-  }
-});
-
-test('only paired credentials reach the intended child and errors do not echo secret values', () => {
+test('retired Studio credentials stay outside the game and active relay credentials remain validated', () => {
   const env = { ...fixture(), LAB_REMOTE_URL: 'https://director.example.test',
     LAB_REMOTE_TOKEN: 'private-director-token',
     OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
     OPENCLAW_PRODUCT_SPEECH_TOKEN: 'private-speech-token' };
-  const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
-  assert.equal(specs.lab.env.LAB_REMOTE_TOKEN, 'private-director-token');
+  const specs = childSpecifications(validateCloudConfig(env), env);
   assert.equal(specs.web.env.LAB_REMOTE_TOKEN, undefined);
   assert.equal(specs.web.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, 'private-speech-token');
-  assert.equal(specs.lab.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, undefined);
-  assert.throws(() => validateCloudConfig({ ...env, LAB_REMOTE_URL: 'https://private-director-token@director.example.test' }),
-    error => !error.message.includes('private-director-token'));
-  assert.throws(() => validateCloudConfig({ ...env, LAB_REMOTE_TOKEN: '' }),
-    error => !error.message.includes('private-director-token'));
+  assert.throws(() => validateCloudConfig({ ...env, OPENCLAW_PRODUCT_SPEECH_URL: 'https://private-speech-token@speech.example.test' }),
+    error => !error.message.includes('private-speech-token'));
+  assert.throws(() => validateCloudConfig({ ...env, OPENCLAW_PRODUCT_SPEECH_TOKEN: '' }),
+    error => !error.message.includes('private-speech-token'));
 });
 
 test('cloud launch requires an explicit pilot selection, not an auth-ready assertion', () => {
@@ -585,58 +495,22 @@ test('explicit child stdout observer handles chunks and drops oversized incomple
   stream.end(); throwing.end();
 });
 
-test('process group starts Web then Lab and signals both before waiting, once even on repeated shutdown', async () => {
-  const activity = [];
-  class FakeChild extends EventEmitter {
-    pid = 123;
-    exitCode = null;
-    signalCode = null;
-    constructor(name) { super(); this.name = name; }
-    kill(signal) {
-      activity.push(`stop:${this.name}:${signal}`);
-      if (this.name === 'web') queueMicrotask(() => {
-        this.signalCode = signal; this.emit('close', 0, signal);
-        lab.signalCode = signal; lab.emit('close', 0, signal);
-      });
-      return true;
-    }
-  }
-  let lab;
-  const specs = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
-  const group = await startChildren(specs, {
-    spawnProcess: (_command, _args, options) => {
-      assert.equal(options.stdio, 'ignore');
-      const name = options.cwd.endsWith('studio') ? 'lab' : 'web';
-      activity.push(`start:${name}`);
-      const child = new FakeChild(name);
-      if (name === 'lab') lab = child;
-      return child;
-    },
-    wait: async () => {},
-    portCheck: async () => {},
-  });
-  await Promise.all([group.stop(), group.stop()]);
-  assert.deepEqual(activity, ['start:web', 'start:lab', 'stop:lab:SIGTERM', 'stop:web:SIGTERM']);
-});
-
-test('CROUPIER_CLOUD_LAB_CHILD=0 runs one Web child without a Lab secret or Next build; unset and 1 keep both children', async () => {
+test('Cloud always starts one game child; retired activation is rejected and no Next build is needed', async () => {
   const gameOnly = { ...fixture(), CROUPIER_CLOUD_LAB_CHILD: '0',
     CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'fixture-admin', CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'fixture-bootstrap-password' };
   delete gameOnly.CROUPIER_CLOUD_DATA_ROOT; // Mountless Neon/Blob like production.
   const config = validateCloudConfig(gameOnly);
-  assert.equal(config.labChild, false);
-  assert.equal(validateCloudConfig(fixture()).labChild, true);
-  for (const value of ['', '1']) assert.equal(validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_LAB_CHILD: value }).labChild, true);
-  for (const value of ['0 ', 'off', 'false', 'no']) assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_LAB_CHILD: value }), /CROUPIER_CLOUD_LAB_CHILD/);
+  for (const value of [undefined, '', '0']) {
+    const allowed = { ...fixture(), CROUPIER_CLOUD_LAB_CHILD:value };
+    assert.deepEqual(Object.keys(childSpecifications(validateCloudConfig(allowed), allowed)), ['web']);
+  }
+  for (const value of ['1', '0 ', 'off', 'false', 'no']) assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_CLOUD_LAB_CHILD: value }), /CROUPIER_CLOUD_LAB_CHILD/);
   const specs = childSpecifications(config, gameOnly);
   assert.deepEqual(Object.keys(specs), ['web']);
   assert.equal(specs.web.env.CROUPIER_CLOUD_RUNTIME, '1');
   assert.equal(specs.web.env.CROUPIER_CLOUD_LAYOUT, 'separate-hosts');
   assert.equal(specs.web.env.CROUPIER_LAB_INTERNAL_SECRET, undefined);
   assert.equal(specs.web.env.CROUPIER_CLOUD_LAB_CHILD, undefined, 'the switch is a launcher setting, not a game setting');
-  assert.deepEqual(specs.web.env, childSpecifications(config, gameOnly, { labInternalSecret: LAB_SECRET }).web.env);
-  assert.throws(() => childSpecifications(validateCloudConfig(fixture()), fixture()), /internal secret/);
-  assert.ok(childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET }).lab);
   const activity = [];
   const group = await startChildren(specs, {
     spawnProcess: (_command, _args, options) => {
@@ -648,10 +522,35 @@ test('CROUPIER_CLOUD_LAB_CHILD=0 runs one Web child without a Lab secret or Next
     wait: async (_child, url) => { activity.push(`wait:${new URL(url).port}`); },
     portCheck: async ports => { activity.push(`ports:${ports.join(',')}`); },
   });
-  assert.equal(group.lab, null);
+  assert.equal(Object.hasOwn(group, 'lab'), false);
   await Promise.all([group.stop(), group.stop()]);
   assert.deepEqual(activity, ['ports:4173', 'start:web', 'wait:4173', 'stop:SIGTERM']);
   assert.equal(await group.ended, 'web-exit');
   // Read-only --check succeeds without apps/studio/.next: no disk, database or Lab build is read.
   assert.equal(await main(['--check'], gameOnly), 0);
+});
+
+test('single-child startup rejects extra processes and cleans up failed readiness or cancellation', async () => {
+  for (const failure of ['extra-child', 'already-aborted', 'aborted-during-port', 'readiness', 'aborted-after-wait', 'exited']) {
+    const activity = [], controller = new AbortController();
+    const specs = childSpecifications(validateCloudConfig(fixture()), fixture());
+    if (failure === 'extra-child') specs.lab = { command:'must-not-start' };
+    if (failure === 'already-aborted') controller.abort();
+    let child;
+    await assert.rejects(startChildren(specs, { signal:controller.signal,
+      portCheck:async () => { activity.push('port'); if (failure === 'aborted-during-port') controller.abort(); },
+      spawnProcess:() => {
+        activity.push('spawn'); child = Object.assign(new EventEmitter(), { pid:321, exitCode:null, signalCode:null,
+          kill(signal) { activity.push(signal); queueMicrotask(() => { child.signalCode=signal; child.emit('close', null, signal); }); return true; } });
+        return child;
+      },
+      wait:async () => {
+        if (failure === 'readiness') throw new Error('readiness rejected');
+        if (failure === 'aborted-after-wait') controller.abort();
+        if (failure === 'exited') { child.exitCode=1; child.emit('exit', 1); child.emit('close', 1); }
+      },
+    }), /only the game child|interrupted|readiness/);
+    assert.deepEqual(activity, ['extra-child','already-aborted'].includes(failure) ? []
+      : failure === 'aborted-during-port' ? ['port'] : failure === 'exited' ? ['port','spawn'] : ['port','spawn','SIGTERM'], failure);
+  }
 });

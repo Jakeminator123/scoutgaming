@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-import { randomBytes } from 'node:crypto';
-import { mkdir, stat, readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { REPOSITORY, childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from './config.mjs';
+import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from './config.mjs';
 import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 import { verifyCloudAccess } from './access-check.mjs';
@@ -45,7 +44,7 @@ export async function openCheckedGateway(gateway, config, { checkAccess = verify
 
 export async function stopCloudRuntime(gateway, children) {
   // Worker upgrades can be needed by the child's provider retirement. Signal
-  // both children before any gateway wait, then drain these paths in parallel.
+  // the game child before any gateway wait, then drain these paths in parallel.
   const childStop = children?.stop();
   await Promise.all([childStop, closeGateway(gateway, SHUTDOWN_BUDGET.childMs)]);
 }
@@ -54,11 +53,6 @@ async function preflight(env) {
   const config = validateCloudConfig(env);
   await inspectCloudDisk(config);
   await inspectCloudBootstrap(config);
-  if (!config.labChild) return config; // Game-only image: no Next build exists or is needed.
-  const build = await stat(join(REPOSITORY, 'apps/studio/.next/BUILD_ID')).catch(() => null);
-  if (!build?.isFile()) throw new Error('A production Lab build is required.');
-  const built = JSON.parse(await readFile(join(REPOSITORY, 'apps/studio/.next/required-server-files.json'), 'utf8'));
-  if ((built.config?.basePath || '') !== config.labBasePath) throw new Error('Lab build basePath does not match CROUPIER_CLOUD_LAYOUT. Rebuild the image.');
   return config;
 }
 
@@ -75,7 +69,6 @@ export async function main(args = process.argv.slice(2), env = process.env,
     return 0;
   }
   assertCloudAccessReady(env);
-  const labInternalSecret = randomBytes(32).toString('hex');
   const abort = new AbortController();
   const stop = () => abort.abort();
   process.on('SIGINT', stop);
@@ -86,13 +79,13 @@ export async function main(args = process.argv.slice(2), env = process.env,
       gateway = createStorageExportServer(config, config.storageExport, { childlessStartup: true });
       trackServerConnections(gateway);
       await listen(gateway, config.publicPort, '0.0.0.0');
-      console.log('Storage maintenance active; no product or Lab writers started.');
+      console.log('Storage maintenance active; no game writers started.');
       await new Promise(done => { abort.signal.addEventListener('abort', done, { once: true }); if (abort.signal.aborted) done(); });
       return 0;
     }
     for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
-    children = await startChildren(transformChildSpecifications(childSpecifications(config, env, { labInternalSecret })), { signal: abort.signal });
-    gateway = createCloudGateway(config, { labInternalSecret, vercelIngress: config.vercelIngress, renderGitCommit: env.RENDER_GIT_COMMIT });
+    children = await startChildren(transformChildSpecifications(childSpecifications(config, env)), { signal: abort.signal });
+    gateway = createCloudGateway(config, { vercelIngress: config.vercelIngress, renderGitCommit: env.RENDER_GIT_COMMIT });
     await openCheckedGateway(gateway, config, { signal: abort.signal });
     console.log('Cloud pilot listening after local access checks; public deployment acceptance remains outstanding.');
     const interrupted = new Promise(resolveDone => {

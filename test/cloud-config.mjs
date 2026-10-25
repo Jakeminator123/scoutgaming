@@ -33,14 +33,14 @@ const moving = () => ({CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH
   CROUPIER_MOVING_SPEECH_IMAGE:`ghcr.io/jakeminator123/moving-gpu-worker@sha256:${hash('owned fixture image')}`,
   CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('owned fixture source'),CROUPIER_MOVING_SPEECH_TICKET_SECRET:'fixture-moving-ticket-'.repeat(4),
   CROUPIER_STUDIO_MOVING_DRIFT_API:'1',CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:JSON.stringify([driftProfile])});
-const children = env => childSpecifications(validateCloudConfig(env),env,{labInternalSecret:'fixture-lab-only-'.repeat(4)});
+const children = env => childSpecifications(validateCloudConfig(env),env);
 
 test('moving configuration is explicit and passes its private values to Web only; Astrid stays unchanged',()=>{
   const legacy=children(base()),env={...base(),...moving()},configured=children(env);
   for(const [key,value] of Object.entries(moving())){
-    assert.equal(configured.web.env[key],value);assert.equal(configured.lab.env[key],undefined);
+    assert.equal(configured.web.env[key],value);
   }
-  assert.deepEqual(configured.lab,legacy.lab);
+  assert.deepEqual(Object.keys(configured), ['web']);
   const withoutMoving=Object.fromEntries(Object.entries(configured.web.env).filter(([key])=>!key.startsWith('CROUPIER_MOVING_')&&!['CROUPIER_STUDIO_MOVING_DRIFT_API','CROUPIER_STUDIO_MOVING_DRIFT_PROFILES'].includes(key)));
   assert.deepEqual(withoutMoving,legacy.web.env);
 });
@@ -50,12 +50,11 @@ test('moving drift forwards the validated baseline to the game child without unr
   const config=validateCloudConfig(env);
   // Forward the validated snapshot even if the caller subsequently edits its input.
   env.CROUPIER_STUDIO_MOVING_DRIFT_PROFILES='[]';
-  const specs=childSpecifications(config,env,{labInternalSecret:'fixture-lab-only-'.repeat(4)});
+  const specs=childSpecifications(config,env);
   assert.deepEqual(movingDriftConfiguration(specs.web.env),{profiles:[driftProfile]});
   assert.equal(specs.web.env.CROUPIER_MOVING_SPEECH_ENABLED,'1');
-  for(const name of ['CROUPIER_STUDIO_MOVING_DRIFT_API','CROUPIER_STUDIO_MOVING_DRIFT_PROFILES'])assert.equal(specs.lab.env[name],undefined);
   for(const name of ['UNRELATED_PROVIDER_SECRET','CROUPIER_STUDIO_MOVING_DRIFT_OTHER']){
-    assert.equal(specs.web.env[name],undefined);assert.equal(specs.lab.env[name],undefined);
+    assert.equal(specs.web.env[name],undefined);
   }
 });
 
@@ -97,7 +96,7 @@ test('worker origin is explicit, exact HTTPS and belongs to this Render deployme
     assert.throws(()=>validateCloudConfig({...env,RENDER_EXTERNAL_URL:bad}));
   const specs=children(env);
   assert.equal(specs.web.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,env.RENDER_EXTERNAL_URL);
-  assert.equal(specs.web.env.PUBLIC_URL,env.PUBLIC_URL);assert.equal(specs.lab.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,undefined);
+  assert.equal(specs.web.env.PUBLIC_URL,env.PUBLIC_URL);
 });
 
 test('bank configuration accepts only hash-bound private JSON manifests up to128KiB',()=>{

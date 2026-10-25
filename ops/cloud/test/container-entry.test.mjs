@@ -45,7 +45,7 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
   assert.deepEqual(calls,[['groups',[]],['gid',1000],['uid',1000]]);
   calls.length=0;await prepareContainerUser(env,{fs,proc});assert.deepEqual(calls,[]);
   // The game-only image sets the launcher switch; the entry's storage/user rules do not change.
-  await prepareContainerUser({...env,CROUPIER_CLOUD_LAB_CHILD:'0'},{fs,proc});assert.deepEqual(calls,[]);
+  await prepareContainerUser(env,{fs,proc});assert.deepEqual(calls,[]);
   for(const mode of ['require','verify-ca']) {
     await prepareContainerUser({...env,CROUPIER_GAME_DATABASE_URL:env.CROUPIER_GAME_DATABASE_URL.replace('verify-full',mode)},{fs,proc});
     assert.deepEqual(calls,[]);

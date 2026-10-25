@@ -13,8 +13,8 @@ const ingress = readVercelIngressConfig({CROUPIER_VERCEL_TRANSPORT_ORIGIN:transp
   CROUPIER_PUBLIC_ORIGIN:publicOrigin, CROUPIER_VERCEL_INGRESS_SECRET:'version-fixture-secret-'.repeat(3)});
 
 async function fixture(t, renderGitCommit, transport) {
-  const options = {labInternalSecret:'version-lab-fixture-secret-'.repeat(3), renderGitCommit,
-    vercelIngress:transport ? ingress : null, webPort:9, labPort:9};
+  const options = {renderGitCommit,
+    vercelIngress:transport ? ingress : null, webPort:9};
   const server = createCloudGateway(config, options);
   server.listen(0,'127.0.0.1'); await once(server,'listening');
   t.after(async()=>{server.closeAllConnections();await new Promise(done=>server.close(done));});
@@ -61,21 +61,3 @@ for (const transport of [false,true]) {
     });
   }
 }
-
-test('health and version receipts are unchanged without a Lab child', async t => {
-  const server = createCloudGateway({ ...config, labChild: false }, { labInternalSecret: 'version-lab-fixture-secret-'.repeat(3),
-    renderGitCommit: sha, vercelIngress: ingress, webPort: 9, labPort: 9 });
-  server.listen(0, '127.0.0.1'); await once(server, 'listening');
-  t.after(async () => { server.closeAllConnections(); await new Promise(done => server.close(done)); });
-  const get = (path, method = 'GET', headers = {}) => new Promise((resolve, reject) => {
-    const req = request({ host: '127.0.0.1', port: server.address().port, path, method, headers: { host: new URL(transportOrigin).host, ...headers } }, res => {
-      let body = ''; res.on('data', chunk => body += chunk); res.on('end', () => resolve({ status: res.statusCode, body }));
-    });
-    req.on('error', reject); req.setTimeout(2000, () => req.destroy(Error('fixture timeout'))); req.end();
-  });
-  const version = await get('/__cloud/version');
-  assert.equal(version.status, 200); assert.deepEqual(JSON.parse(version.body), { schemaVersion: 1, provider: 'render', commitSha: sha.toLowerCase() });
-  const health = await get('/__cloud/health'); assert.equal(health.status, 200); assert.equal(health.body, 'ok');
-  assert.equal((await get('/studio/api/project', 'GET', { 'x-croupier-vercel-secret': ingress.secret, 'x-croupier-public-origin': publicOrigin,
-    'x-forwarded-host': new URL(publicOrigin).host, 'x-forwarded-proto': 'https' })).status, 421, 'signed Lab API has no upstream');
-});

@@ -13,27 +13,26 @@ const env = {RENDER_SERVICE_ID: QA_SERVICE_ID, PUBLIC_URL: QA_PUBLIC_ORIGIN, CRO
 test('unpaid QA refuses other services, origins, real provider credentials and preload inheritance', () => {
   assertUnpaidQaEnvironment(env);
   for (const patch of [{RENDER_SERVICE_ID: 'production'}, {PUBLIC_URL: 'https://scoutgaming.tech'}, {RUNPOD_API_KEY: 'actual-provider-key'}, {CARTESIA_API_KEY: 'actual-provider-key'}, {CROUPIER_MEDIA_STORAGE: 'blob'}]) assert.throws(() => assertUnpaidQaEnvironment({...env, ...patch}));
-  const specifications = {web: {args: ['services/game/server.mjs'], env: {...env}}, lab: {env: {unchanged: true}}};
+  const specifications = {web: {args: ['services/game/server.mjs'], env: {...env}}};
   const transformed = unpaidQaSpecifications(specifications, env);
   assert.match(transformed.web.env.NODE_OPTIONS, /^--import=.*qa-stream-transport-preload\.mjs$/);
-  assert.equal(transformed.lab, specifications.lab); assert.equal(specifications.web.env.NODE_OPTIONS, undefined);
+  assert.deepEqual(Object.keys(transformed), ['web']); assert.equal(specifications.web.env.NODE_OPTIONS, undefined);
   assert.throws(() => unpaidQaSpecifications(specifications, {...env, NODE_OPTIONS: '--require=foreign'}));
 });
 
-test('each unpaid run isolates speech journals without changing Lab or the original child specification', () => {
+test('each unpaid run isolates speech journals without changing the original game specification', () => {
   const originalDirectory='/var/data/speech';
-  const specifications={web:{env:{...env,CROUPIER_GENERATED_SPEECH_DIR:originalDirectory}},lab:{env:{unchanged:true}}};
+  const specifications={web:{env:{...env,CROUPIER_GENERATED_SPEECH_DIR:originalDirectory}}};
   const first='/var/data/speech/transport-qa-00000000-0000-0000-0000-000000000001';
   const second='/var/data/speech/transport-qa-00000000-0000-0000-0000-000000000002';
   assert.equal(unpaidQaSpecifications(specifications,env,{speechDirectory:first}).web.env.CROUPIER_GENERATED_SPEECH_DIR,first);
   assert.equal(unpaidQaSpecifications(specifications,env,{speechDirectory:second}).web.env.CROUPIER_GENERATED_SPEECH_DIR,second);
   assert.equal(specifications.web.env.CROUPIER_GENERATED_SPEECH_DIR,originalDirectory);
-  assert.equal(unpaidQaSpecifications(specifications,env,{speechDirectory:first}).lab,specifications.lab);
   for(const speechDirectory of ['/var/data/speech','/var/data/players','/var/data/speech/../players','/tmp/transport-qa-00000000-0000-0000-0000-000000000001'])assert.throws(()=>unpaidQaSpecifications(specifications,env,{speechDirectory}),/Invalid isolated/);
 });
 
 test('only bounded allowlisted child phases reach QA parent logs, with private stdout discarded', () => {
-  const rows = [], specifications = {web: {env: {...env}}, lab: {env: {unchanged: true}}};
+  const rows = [], specifications = {web: {env: {...env}}};
   const qa = unpaidQaSpecifications(specifications, env, {emit: row => rows.push(row)});
   qa.web.onStdoutLine('user=private-user password=private-password');
   qa.web.onStdoutLine('CROUPIER_UNPAID_STREAM ' + JSON.stringify({phase: 'fresh_before', count: 1, cookie: 'private-cookie', text: 'private-text'}));
@@ -44,7 +43,6 @@ test('only bounded allowlisted child phases reach QA parent logs, with private s
   assert.deepEqual(JSON.parse(rows[0].slice('CROUPIER_UNPAID_STREAM '.length)), {phase: 'fresh_before', count: 1});
   assert.doesNotMatch(rows.join(''), /private-/);
   assert.equal(specifications.web.onStdoutLine, undefined);
-  assert.equal(qa.lab, specifications.lab);
   assert.throws(() => unpaidQaSpecifications(specifications, {...env, RENDER_SERVICE_ID: 'production'}));
 });
 

@@ -57,7 +57,7 @@ async function fixture(t,{admission}={}) {
   const game=createServer((_request,response)=>{response.writeHead(404);response.end();});
   game.on('upgrade',(request,socket,head)=>{observed.requests.push(request);void Promise.resolve(adapter.handleUpgrade(request,socket,head)).then(handled=>{if(!handled)socket.destroy();});});
   const gateway=createCloudGateway({gameOrigin:origin,boOrigin:origin,labOrigin:origin,singleOrigin:true,streaming:false,vercelIngress:ingress},
-    {labInternalSecret:'isolated-room-gateway-'.repeat(3),webPort:await listen(game)});
+    {webPort:await listen(game)});
   const gatewayPort=await listen(gateway);
   class LocalBackend extends WebSocket {constructor(url,protocols,options){super(url.replace('wss://engine.example.test','ws://127.0.0.1:'+gatewayPort),protocols,
     {...options,headers:{...options.headers,host:'engine.example.test'}});}}
