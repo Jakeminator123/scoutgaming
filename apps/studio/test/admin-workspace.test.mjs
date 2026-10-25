@@ -19,7 +19,7 @@ test('every existing Control tool and registered N1 view has a served Admin dest
   }
   for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS))assert.equal(adminToolName('/admin/'+key),key);
   assert.equal(adminToolName('/partner/companies'),null);
-  assert.equal(adminDocumentHref('/control/zones'),'/admin/clips?panel=layers');
+  assert.equal(adminDocumentHref('/control/zones'),'/admin/scenes');
   // Each retired OpenClaw entry returns to its owning resource.
   assert.equal(adminDocumentHref('/control/openclaw?tab=chat&dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
   assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
@@ -135,7 +135,7 @@ test('retired publication bookmark mapping preserves fragments and rejects docum
 });
 
 test('retired tool bookmarks retain exact context and never redirect mutations',()=>{
-  for(const [section,target] of [['guide','guide'],['videos','clips'],['probe','clips?panel=room'],['replies','replies'],['events','events'],['tree','events'],['compositions','clips?panel=layers'],['rehearsal','rooms'],['preview','clips?panel=layers'],['zones','clips?panel=layers']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
+  for(const [section,target] of [['guide','guide'],['videos','clips'],['probe','clips?panel=room'],['replies','replies'],['events','events'],['tree','events'],['compositions','scenes'],['rehearsal','rooms'],['preview','scenes'],['zones','scenes']])for(const nativeStudio of [false,true])for(const prefix of ['/control','/studio/control']){
     const config={nativeStudio,publicOrigin:'https://site.invalid',labUiOrigin:'https://lab.invalid',backendOrigin:'https://engine.invalid'};
     const url=new URL('https://site.invalid'+prefix+'/'+section+'?operator=north&table=room-1&lane=portrait&dealer=saga&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting#selected');
     for(const method of ['GET','HEAD'])assert.equal(platformRoute(url,config,new Request(url,{method})).destination,
@@ -161,7 +161,7 @@ test('merged dependency bookmarks redirect to Kopplingar & användning with thei
 });
 
 test('retired Admin editors redirect once to the owned panel with complete context',()=>{
-  for(const [source,target] of [['/admin/dealer-studio?view=speech','/admin/clips?panel=room'],['/admin/dealer-studio?view=settings','/admin/clips?panel=dealer'],['/admin/videos?view=clips','/admin/clips'],['/admin/compositions?view=preview','/admin/clips?panel=layers'],['/admin/probe?view=probe','/admin/clips?panel=room'],['/admin/rehearsal?view=log','/admin/rooms']]){
+  for(const [source,target] of [['/admin/dealer-studio?view=speech','/admin/clips?panel=room'],['/admin/dealer-studio?view=settings','/admin/clips?panel=dealer'],['/admin/videos?view=clips','/admin/clips'],['/admin/compositions?view=preview','/admin/scenes'],['/admin/probe?view=probe','/admin/clips?panel=room'],['/admin/rehearsal?view=log','/admin/rooms']]){
     for(const prefix of ['', '/studio']){
       const href=adminDocumentHref(prefix+source+'&dealer=saga&operator=north&room=one&room=two&lane=portrait#selection');
       const url=new URL(href,'https://site.invalid'),expected=new URL(target,'https://site.invalid');

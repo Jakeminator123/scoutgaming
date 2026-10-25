@@ -2,7 +2,6 @@
 
 import { useRef, useState, type FormEvent } from 'react';
 import {
-  OPERATOR_ADJUSTABLE,
   defaultPresentationLane,
   validateProject,
   type StudioLane,
@@ -13,7 +12,6 @@ import { compositionLabel } from '../../../packages/navigation/control-flow.mjs'
 import { activeStudioDealers } from './studio-types';
 
 export const LANE_ID_HELP = 'Unikt id: små bokstäver, siffror och bindestreck.';
-const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
 
 type Edit = (edit: (current: StudioProject) => StudioProject) => void;
 
@@ -133,63 +131,5 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
         <button type="submit" className="sg-btn sg-btn-secondary" disabled={!draftLabel.trim() || !draftDealer}>Skapa sammansättning</button>
       </div><p className={styles.help}>Ett tekniskt ID skapas automatiskt och behålls när namnet ändras.</p>
     </form></details>
-  </fieldset>;
-}
-
-export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabled = false }: {
-  project: StudioProject; lane: StudioLane; onEdit: Edit; disabled?: boolean;
-}) {
-  const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
-  const [draftColor, setDraftColor] = useState('#1b4332');
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const tableColors = lane.layers.table.colors ?? [];
-  function editLane(change: (draft: StudioLane) => void) {
-    if (disabled) return;
-    const next = structuredClone(lane); change(next);
-    try { replaceLane(project, lane.id, next); }
-    catch (cause) { onEdit(() => { throw cause; }); return; }
-    onEdit(current => replaceLane(current, lane.id, next));
-  }
-  return <fieldset className={styles.editor} disabled={disabled} aria-label="Avancerade sammansättningsinställningar">
-      <details className={styles.advanced}><summary>Bordsfärger för bolaget</summary><div className={styles.addColor}>
-        <label className={styles.field}>Bordsfärger
-          <input type="color" value={draftColor} aria-label="Ny bordsfärg" onChange={event => setDraftColor(event.target.value)} />
-        </label>
-        <button type="button" className="sg-btn sg-btn-secondary" onClick={() => editLane(draft => {
-          draft.layers.table.colors = [...(draft.layers.table.colors ?? []), draftColor];
-        })}>Lägg till färg</button>
-      </div>
-      {tableColors.length > 0 ? <ul className={styles.swatches}>
-        {tableColors.map(color => <li className={styles.swatch} key={color}>
-          <span className={styles.chip} style={{ background: color }} />
-          <span>{color}</span>
-          <button type="button" className="sg-btn sg-btn-ghost" onClick={() => editLane(draft => {
-            const colors = (draft.layers.table.colors ?? []).filter(item => item !== color);
-            if (colors.length === 0) delete draft.layers.table.colors;
-            else draft.layers.table.colors = colors;
-          })}>Ta bort</button>
-        </li>)}
-      </ul> : null}</details>
-    <details className={styles.advanced}><summary>Bolagets val och tekniska inställningar</summary><fieldset className={styles.group}>
-      <legend>Bolaget får ändra</legend>
-      <div className={styles.checks}>
-        {OPERATOR_ADJUSTABLE.map(item => <label className={styles.check} key={item}>
-          <input type="checkbox" checked={lane.operatorAdjustable.includes(item)} onChange={event => editLane(draft => {
-            const selected = new Set(draft.operatorAdjustable);
-            if (event.target.checked) selected.add(item);
-            else selected.delete(item);
-            draft.operatorAdjustable = OPERATOR_ADJUSTABLE.filter(entry => selected.has(entry));
-          })} />
-          {adjustmentLabels[item]??item}
-        </label>)}
-      </div>
-    </fieldset>
-    <p className={styles.idLine}>Sammansättningens tekniska ID <strong>{lane.id}</strong></p></details>
-    <section className={styles.card} aria-label="Hantera sammansättning"><h3>Hantera sammansättning</h3><p>Ta bort {compositionLabel(lane.label)} ur projektet. Dealerklipp, bord och bakgrunder behålls. Publicerade spelrum behåller sin publicerade version. Hantera dem under Spelrum & publicering.</p>
-    {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
-      <p>Ta bort sammansättningen {compositionLabel(lane.label)}?</p>
-      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort sammansättning</button>
-      <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(false)}>Avbryt</button>
-    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort sammansättning</button>}</section>
   </fieldset>;
 }

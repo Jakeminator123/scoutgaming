@@ -10,7 +10,6 @@ import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
-import {updatePublishedSceneLayout} from '../../../packages/presentation/contracts/published-scene-layout.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {
@@ -250,12 +249,21 @@ async function placementFixture(options){
   for(let revision=1;revision<9;revision++)await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:revision,lanes:[lane.id],games:['blackjack'],tables:[room.id],
     branding:withPackagePresentation({name:'North',roomOverrides:{[room.id]:{table:placementTable}},privateMetadata:{kept:true}},presentation)});
   f.pool.seedBrandingDraft({revision:3,basePackageRevision:9,branding:{roomOverrides:{[room.id]:{dealer:'linnea'}}}});
-  const body={action:'update-scene-layout',operatorId:'north',roomId:room.id,tableId:placementTable,expectedPackageRevision:9,composition:structuredClone(lane.composition)};
-  body.composition.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);
-  body.composition.desktop.table.width=.8;
-  body.composition.desktop.gameUi={actions:{x:.5,y:.8},chat:{x:1,y:0,width:.3,height:.4}};
+  const composition=structuredClone(lane.composition);
+  composition.blackjackTables[0].mobile.seats.forEach(seat=>seat.card.y-=.07);
+  composition.blackjackTables[0].mobile.autoScale={landing:true,cardSize:false,chips:true};
+  composition.blackjackTables[0].desktop.anchors={cards:{target:'table',rect:{x:0,y:.1,width:1,height:1}}};
+  composition.blackjackTables[0].desktop.fanSpread=.75;
+  composition.desktop.table.width=.8;composition.tableFront=true;
+  composition.desktop.gameUi={actions:{x:.5,y:.8},chat:{x:1,y:0,width:.3,height:.4}};
+  const doc=await f.repository.readDocument('project');
+  doc.value.layerAssets??=[];doc.value.layerAssets.push(asset);
+  const savedLane=doc.value.lanes.find(row=>row.id===lane.id);savedLane.layers.table=structuredClone(lane.layers.table);savedLane.composition=composition;
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  const saved=await f.repository.readDocument('project');
+  const body={action:'publish-scene-layout',operatorId:'north',compositionId:lane.id,expectedPackageRevision:9,expectedProjectRevision:saved.revision};
   const context={...f.context,body};
-  return {...f,presentation,room,body,context,prepare:()=>f.api.preparations.get('POST /studio/api/admin/operator-package')(context),
+  return {...f,presentation,room,body,composition,context,prepare:()=>f.api.preparations.get('POST /studio/api/admin/operator-package')(context),
     publish:prepared=>f.api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})})};
 }
 
@@ -312,81 +320,98 @@ test('scoped idle publication rechecks project, administration, media, package a
   }
 });
 
-test('published scene layout uses frozen revision 9 and preserves project, branding draft, all media and package history',async()=>{
-  const f=await placementFixture(),before=f.pool.snapshot(),original=await f.direct.getCurrentPackage('north'),io=f.io(),offset=f.pool.calls.length;
+test('saved scene publication preserves PAOW frozen media, choices, branding draft, project and package history',async()=>{
+  const f=await placementFixture({dealer:'paow'}),before=f.pool.snapshot(),original=await f.direct.getCurrentPackage('north'),io=f.io(),offset=f.pool.calls.length;
   const prepared=await f.prepare(),result=await f.publish(prepared),after=f.pool.snapshot();
-  assert.equal(result.packageRevision,10);assert.deepEqual(result.adjusted,{roomId:f.room.id,tableId:placementTable});
-  const expected=structuredClone(f.presentation);expected.lanes[0].composition=structuredClone(f.body.composition);
+  assert.equal(result.packageRevision,10);assert.equal(result.compositionId,f.body.compositionId);assert.equal(result.projectRevision,f.body.expectedProjectRevision);
+  assert.deepEqual(result.affectedRooms,[{id:f.room.id,name:f.room.name,state:f.room.state}]);
+  const expected=structuredClone(f.presentation);expected.lanes[0].composition=structuredClone(f.composition);
   assert.deepEqual(result.presentation,expected);
   assert.deepEqual(readPackagePresentation(await f.direct.getCurrentPackage('north')),expected);
   assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),publicPackageBranding(original.branding));
   for(const key of ['documents','media','catalogs','audits','history','brandingDraft'])assert.deepEqual(after[key],before[key],key+' remains untouched');
   assert.deepEqual(after.packages.slice(0,-1),before.packages);assert.equal(after.operatorAudits.length,before.operatorAudits.length+1);
   assert.equal(f.io(),io,'no provider or mutable media recapture');
-  assert.equal(f.pool.calls.slice(offset).some(row=>row.marker==='read-document'&&row.values[2]==='project'),false,'handler never reads the project draft');
+  assert.ok(f.pool.calls.slice(offset).filter(row=>row.marker==='read-document'&&row.values[2]==='project').length>=2,'saved project is checked during preparation and the transaction');
 });
 
-test('scene layout supports both formats, anchors and controls while preserving unrelated board geometry',()=>{
-  const settings=defaultCompositionSettings(),board=defaultBlackjackTableGeometry(placementTable),other=defaultBlackjackTableGeometry(mediaId);
-  settings.blackjackTables=[board,other];
-  const before=structuredClone(settings),edit=structuredClone(settings);
-  edit.mobile.dealer.scale=1.2;edit.desktop.background.x=.1;edit.desktop.table.width=.8;edit.tableFront=true;
-  edit.mobile.gameUi={actions:null,chat:{x:1,y:0,width:.9,height:.4}};
-  edit.blackjackTables[0].mobile.autoScale={landing:true,cardSize:false,chips:true};
-  edit.blackjackTables[0].desktop.anchors={cards:{target:'table',rect:{x:0,y:.1,width:1,height:1}}};
-  edit.blackjackTables[0].desktop.fanSpread=.75;
-  const next=updatePublishedSceneLayout(settings,placementTable,edit);
-  assert.deepEqual(next,edit);assert.deepEqual(settings,before);assert.notEqual(next,edit);
-  for(const mutation of [value=>value.blackjackTables[1].mobile.cardWidth=.1,value=>value.blackjackTables.pop(),
-    value=>value.blackjackTables[0].desktop.seats[0].card.y=1.01,value=>value.mobile.gameUi.chat.width=.01,
-    value=>value.mobile.dealer.scale=Infinity]){
-    const invalid=structuredClone(edit);mutation(invalid);assert.throws(()=>updatePublishedSceneLayout(settings,placementTable,invalid),e=>e.statusCode===422);
+test('saved scene publication filters unpublished table profiles without publishing draft materials or policies',async()=>{
+  const f=await placementFixture(),doc=await f.repository.readDocument('project'),lane=doc.value.lanes[0],asset=structuredClone(doc.value.layerAssets.find(row=>row.id===placementTable));
+  Object.assign(asset,{id:mediaId,label:'Unpublished table',pathname:`croupier/media/tables/${mediaId}/${asset.sha256}.png`});
+  doc.value.layerAssets.push(asset);lane.layers.table.allowed.push(asset.id);lane.layers.table.default=asset.id;
+  lane.composition.blackjackTables.push(defaultBlackjackTableGeometry(asset.id));lane.label='Unpublished label';lane.operatorAdjustable=[];
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  f.body.expectedProjectRevision=(await f.repository.readDocument('project')).revision;
+  const before=f.pool.snapshot(),result=await f.publish(),expected=structuredClone(f.presentation);
+  expected.lanes[0].composition=f.composition;assert.deepEqual(result.presentation,expected);
+  assert.deepEqual(f.pool.snapshot().documents,before.documents,'filtering must not change the saved template');
+  const changed=await f.repository.readDocument('project'),savedLane=changed.value.lanes[0];
+  savedLane.layers.table.allowed=[asset.id];savedLane.composition.blackjackTables=savedLane.composition.blackjackTables.filter(row=>row.tableId===asset.id);
+  savedLane.composition.desktop.background.x=.2;
+  await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
+  f.body.expectedProjectRevision=(await f.repository.readDocument('project')).revision;f.body.expectedPackageRevision=result.packageRevision;
+  const retained=await f.publish();expected.lanes[0].composition.desktop.background.x=.2;
+  assert.deepEqual(retained.presentation,expected,'a removed template material keeps its frozen manual profile and choice');
+  f.body.expectedPackageRevision=retained.packageRevision;const unchanged=f.pool.snapshot();
+  await assert.rejects(f.publish(),error=>error.statusCode===422);assert.deepEqual(f.pool.snapshot(),unchanged,'filtered-only changes cannot create another version');
+});
+
+test('saved scene publication refuses missing layouts and no-op without a new package, but permits profile reset',async()=>{
+  for(const kind of ['same','absent','missing-lane','reset']){
+    const f=await placementFixture(),doc=await f.repository.readDocument('project');
+    if(kind==='same')doc.value.lanes[0].composition=structuredClone(f.presentation.lanes[0].composition);
+    if(kind==='absent')delete doc.value.lanes[0].composition;
+    if(kind==='missing-lane')doc.value.lanes=[];
+    if(kind==='reset')delete doc.value.lanes[0].composition.blackjackTables;
+    await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+    f.body.expectedProjectRevision=(await f.repository.readDocument('project')).revision;
+    const before=f.pool.snapshot();
+    if(kind==='reset'){const result=await f.publish();assert.equal(result.presentation.lanes[0].composition.blackjackTables,undefined);}
+    else{await assert.rejects(f.prepare(),e=>e.statusCode===422);assert.deepEqual(f.pool.snapshot(),before,kind);}
   }
-  const blank=defaultCompositionSettings(),created={...blank,blackjackTables:[board]};
-  assert.deepEqual(updatePublishedSceneLayout(blank,placementTable,created),created,'first manual board profile can be created');
-  assert.deepEqual(updatePublishedSceneLayout(created,placementTable,blank),blank,'active board profile can be reset');
-  assert.throws(()=>updatePublishedSceneLayout(settings,'bad-id',edit),e=>e.statusCode===422);
 });
 
 test('scene layout intent is exact, nonzero and scoped; malicious or stale inputs never publish',async()=>{
   const f=await placementFixture(),before=f.pool.snapshot();
-  for(const patch of [{composition:null},{composition:{}},{composition:f.presentation.lanes[0].composition},{offsetY:.07},{expectedPackageRevision:null},{expectedPackageRevision:0},
-    {tableId:'../other'},{roomId:'../other'},{actor:'attacker'},{lanes:[f.lane.id]},{presentation:f.presentation},{expectedPackageRevision:8},
-    {roomId:'room-missing'},{operatorId:'south'},{tableId:mediaId}]){
+  for(const patch of [{composition:f.composition},{offsetY:.07},{expectedPackageRevision:null},{expectedPackageRevision:0},
+    {tableId:placementTable},{roomId:f.room.id},{actor:'attacker'},{lanes:[f.lane.id]},{presentation:f.presentation},{expectedPackageRevision:8},
+    {compositionId:'../other'},{compositionId:'original'},{compositionId:'missing'},{operatorId:'south'},
+    {expectedProjectRevision:null},{expectedProjectRevision:''},{expectedProjectRevision:'stale-project'},{action:'update-scene-layout'}]){
     await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:{...f.body,...patch}}),e=>[400,409,422].includes(e.statusCode));
   }
-  const missing={...f.body};delete missing.expectedPackageRevision;
-  await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:missing}),e=>e.statusCode===400);
+  for(const field of Object.keys(f.body)){const missing={...f.body};delete missing[field];
+    await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:missing}),e=>e.statusCode===400);}
   await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,scope:{...nativeScope,workspaceId:'other'}}),e=>e.statusCode===403);
   assert.deepEqual(f.pool.snapshot(),before);
 });
 
-test('scene layout refuses foreign, inactive, roulette and shared-lane rooms',async()=>{
-  for(const mutation of [admin=>admin.rooms[0].operatorId='south',admin=>admin.rooms[0].state='preview',admin=>admin.rooms[0].game='roulette',
-    admin=>admin.rooms.push({...admin.rooms[0],id:'room-other'})]){
-    const f=await placementFixture(),admin=await f.repository.readDocument('administration');mutation(admin.value);
-    await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
-    if(admin.value.rooms.length===2){const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
-      lanes:current.lanes,games:current.games,tables:[...current.tables,'room-other'],branding:current.branding});f.body.expectedPackageRevision=10;}
-    const before=f.pool.snapshot();await assert.rejects(f.prepare(),e=>e.statusCode===409);assert.deepEqual(f.pool.snapshot(),before);
-  }
+test('saved scene publication reports all shared-lane package rooms without touching foreign or unpublished rooms',async()=>{
+  const f=await placementFixture(),admin=await f.repository.readDocument('administration');
+  admin.value.rooms.push({...f.room,id:'room-shared',name:'Shared',state:'preview'},
+    {...f.room,id:'room-not-published',name:'Not published'},{...f.room,id:'room-foreign',operatorId:'south'});
+  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
+    lanes:current.lanes,games:current.games,tables:[...current.tables,'room-shared'],branding:current.branding});f.body.expectedPackageRevision=10;
+  const before=f.pool.snapshot(),result=await f.publish();
+  assert.deepEqual(result.affectedRooms,[{id:f.room.id,name:f.room.name,state:f.room.state},{id:'room-shared',name:'Shared',state:'preview'}]);
+  assert.deepEqual(f.pool.snapshot().documents,before.documents);
 });
 
-test('scene layout requires effective frozen room branding and rejects a forged preparation',async()=>{
+test('saved scene publication keeps room material choices and rejects forged or changed preparations',async()=>{
   const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.assets[0]);
   // The uploaded Oak is allowed but a different published room choice is authoritative.
   const oak=presentation.assets.find(row=>row.id===placementTable);Object.assign(other,oak,{id:mediaId,pathname:`croupier/media/tables/${mediaId}/${oak.sha256}.png`});
   presentation.assets.push(other);presentation.lanes[0].layers.table.allowed.push(other.id);
   const branding=withPackagePresentation({...publicPackageBranding(current.branding),roomOverrides:{[f.room.id]:{table:other.id}}},presentation);
   await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:current.lanes,games:current.games,tables:current.tables,branding});
-  f.body.expectedPackageRevision=10;await assert.rejects(f.prepare(),e=>e.statusCode===409);
+  f.body.expectedPackageRevision=10;await f.publish();assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),publicPackageBranding(branding));
   const clean=await placementFixture(),prepared=await clean.prepare(),before=clean.pool.snapshot();
   await assert.rejects(clean.publish({...prepared}),e=>e.statusCode===422);
-  await assert.rejects(clean.api.handlers.get('POST /studio/api/admin/operator-package')({...clean.context,body:{...clean.body,composition:{...clean.body.composition,tableFront:!clean.body.composition.tableFront}},prepared}),e=>e.statusCode===422);
+  await assert.rejects(clean.api.handlers.get('POST /studio/api/admin/operator-package')({...clean.context,body:{...clean.body,compositionId:'another-scene'},prepared}),e=>e.statusCode===422);
   assert.deepEqual(clean.pool.snapshot(),before);
 });
 
-test('scene layout retains another published lane and refuses unpublished rooms or suspended operators',async()=>{
+test('saved scene publication retains another lane, supports a scene without rooms and refuses suspended operators',async()=>{
   const f=await placementFixture(),current=await f.direct.getCurrentPackage('north'),presentation=readPackagePresentation(current),other=structuredClone(presentation.lanes[0]);
   other.id='other-published-lane';presentation.lanes.push(other);
   const admin=await f.repository.readDocument('administration');admin.value.rooms.push({...f.room,id:'room-other-lane',presentationLaneId:other.id});
@@ -396,19 +421,21 @@ test('scene layout retains another published lane and refuses unpublished rooms 
   f.body.expectedPackageRevision=10;const result=await f.publish();assert.deepEqual(result.presentation.lanes[1],other);assert.deepEqual(result.tables,[f.room.id,'room-other-lane']);
   const unpublished=await placementFixture(),pack=await unpublished.direct.getCurrentPackage('north');
   await unpublished.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,lanes:pack.lanes,games:pack.games,tables:[],branding:pack.branding});
-  unpublished.body.expectedPackageRevision=10;await assert.rejects(unpublished.prepare(),e=>e.statusCode===409);
+   unpublished.body.expectedPackageRevision=10;assert.deepEqual((await unpublished.publish()).affectedRooms,[]);
   const suspended=await placementFixture(),prepared=await suspended.prepare();suspended.pool.setOperatorStatus('suspended');
   const before=suspended.pool.snapshot();await assert.rejects(suspended.prepare(),e=>e.statusCode===409);await assert.rejects(suspended.publish(prepared),e=>e.statusCode===409);
   assert.deepEqual(suspended.pool.snapshot(),before);
 });
 
-test('scene layout CAS rejects changed package or administration and rolls back SQL failure',async()=>{
-  for(const change of ['package','administration','failure']){
+test('saved scene CAS rejects changed package, project or administration and rolls back SQL failure',async()=>{
+  for(const change of ['package','project','administration','failure']){
     const f=await placementFixture(),prepared=await f.prepare();
     if(change==='package'){const current=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:9,
       lanes:current.lanes,games:current.games,tables:current.tables,branding:{...current.branding,name:'Concurrent branding'}});}
     if(change==='administration'){const admin=await f.repository.readDocument('administration');admin.value.rooms[0].name='Concurrent room edit';
       await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});}
+    if(change==='project'){const doc=await f.repository.readDocument('project');doc.value.lanes[0].composition.mobile.dealer.x=.2;
+      await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});}
     if(change==='failure')f.pool.failNext('publish-package');
     const before=f.pool.snapshot();await assert.rejects(f.publish(prepared),e=>change==='failure'||e.statusCode===409);assert.deepEqual(f.pool.snapshot(),before);
   }
@@ -438,11 +465,11 @@ test('N1 scoped idle publication requires admin authorization, current session a
   assert.equal(descriptor.presentationMutation.kind,'presentation-package');
   assert.deepEqual(descriptor.presentationMutation.value,(await response.json()).presentation);
 });
-test('N1 scene layout negotiates the exact frozen candidate without project draft and rejects unavailable readiness',async()=>{
+test('N1 saved scene publication negotiates the exact candidate and both document revisions before writing',async()=>{
   const f=await placementFixture();let descriptor;
   const api=placementAdmin(f,{mutationTransaction:async(work,options)=>{descriptor=options;return work();}});
   const response=await api.handle(request('operator-package',f.body));assert.equal(response.status,200);
-  assert.deepEqual(descriptor.presentationDocuments,['administration']);assert.equal(descriptor.presentationMutation.kind,'presentation-package');
+  assert.deepEqual(descriptor.presentationDocuments,['project','administration']);assert.equal(descriptor.presentationMutation.kind,'presentation-package');
   assert.deepEqual(descriptor.presentationMutation.value,(await response.json()).presentation);
   const blocked=await placementFixture(),before=blocked.pool.snapshot();
   const reject=placementAdmin(blocked,{mutationTransaction:async()=>{throw Object.assign(Error('runtime_required'),{statusCode:503});}});

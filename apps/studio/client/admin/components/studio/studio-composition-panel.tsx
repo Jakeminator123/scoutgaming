@@ -3,6 +3,7 @@ import { useState, useRef, type ReactNode } from 'react';
 import type { StudioProject, StudioLane } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import { validateProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings, validateCompositionSettings } from '../../../../../../packages/presentation/contracts/composition-settings.mjs';
+import { ScenePublication } from './scene-publication';
 import { CompositionMetadata } from '../../../../components/lane-editor';
 import { LayerLibrary } from '../../../../components/layer-library';
 import { LayerAssetSelect } from '../../../../components/layer-selectors';
@@ -19,10 +20,11 @@ import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
 
-export function StudioCompositionPanel({localReferenceUrl,project,savedProject,inventory,room,compositionId,onSelect,game:requestedGame,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;room?:Room;compositionId?:string;onSelect?:(id:string)=>void;game?:'blackjack'|'roulette';dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
+export function StudioCompositionPanel({operatorId,operatorSlug,operatorName,localReferenceUrl,project,savedProject,inventory,room,compositionId,onSelect,game:requestedGame,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{operatorId?:string;operatorSlug?:string;operatorName?:string;localReferenceUrl?:string;project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;room?:Room;compositionId?:string;onSelect?:(id:string)=>void;game?:'blackjack'|'roulette';dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
   const [selectedLayout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[error,setError]=useState('');
   const [uploadBusy,setUploadBusy]=useState(false);
   const [moveTogether,setMoveTogether]=useState(false);
+  const [copyTable,setCopyTable]=useState('');
   const [editingCompositionId,setEditingCompositionId]=useState('');
   const [backgroundPreview,setBackgroundPreview]=useState<{id:string;request:number}>({id:'',request:0});
   const [tablePreview,setTablePreview]=useState<{id:string;request:number}>({id:'',request:0});
@@ -51,6 +53,8 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
   const tableBases=selectableLayerBases(lane?.layers.table.allowed,lane?.tablePlayback,lane?.layers.table.default??null);
   const editableTables=assets.filter(row=>row.role==='table'&&layerAssetFitsGame(row,game)&&tableBases.includes(row.id));
   const tableAsset=editableTables.find(row=>row.id===choices.table)??editableTables.find(row=>row.id===lane?.layers.table.default);
+  const copyChoices=editableTables.filter(row=>row.id!==tableAsset?.id&&settings.blackjackTables?.some(profile=>profile.tableId===row.id));
+  const copySource=copyChoices.some(row=>row.id===copyTable)?copyTable:copyChoices[0]?.id??'';
   const ui=settings[layout].gameUi??{actions:null,chat:{x:1,y:0,width:layout==='mobile'?.95:.28,height:.45}};
   function changeUi(value:typeof ui){if(!lane)return;const next=structuredClone(settings);next[layout].gameUi=structuredClone(value);change({...lane,composition:next,renderer:'layered'});}
   const clipAssets=(role:'background'|'table')=>lane?assets.filter(row=>row.role===role&&lane.layers[role].allowed.includes(row.id)).map(row=>({id:row.id,url:'/studio/api/layer-assets/'+row.id,label:row.label,contentType:row.contentType})):[];
@@ -61,6 +65,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
   const preview=(overlay?:ReactNode)=><CompositionPreview dealer={localDealerReference?{url:localDealerReference,label:'Lokal VILA · inte sparad',contentType:'image/png'}:video?{url:video.previewUrl,label:video.label,contentType:video.contentType!}:null} background={media(previewBackground)} table={media(tableAsset?.id)} overlay={overlay} framing={framing} settings={settings} layout={layout} show={{dealer:true,background:true,table:true}} compositing={localDealerReference?{mode:'alpha'}:video?effectiveDealerCompositing(video.classification?.compositing):undefined} backgroundPlayback={previewBackground!==lane.layers.background.default?undefined:lane.backgroundPlayback} backgroundAssets={clipAssets('background')} previewBackgroundRuleId={backgroundPreview.id} previewBackgroundRequest={backgroundPreview.request} tablePlayback={game==='blackjack'&&tableAsset?.id!==lane.layers.table.default?undefined:lane.tablePlayback} tableAssets={clipAssets('table')} previewTableRuleId={tablePreview.id} previewTableRequest={tablePreview.request}/>;
   return <section className="studio-detail-panel" aria-label="Gemensam sammansättningsmall">{metadata}<h2>{lane.label}</h2>
     {room&&room.compositionId!==lane.id&&<p role="status">Du visar mallen {lane.label}. Rummet {room.name} använder en annan mall. {onSelect&&<button type="button" className="studio-button" onClick={()=>onSelect(room.compositionId)}>Visa rummets mall</button>}</p>}
+    <ScenePublication project={project} savedProject={savedProject} compositionId={lane.id} operatorId={operatorId} operatorSlug={operatorSlug} operatorName={operatorName} blocked={blocked||uploadBusy} dirty={projectDirty} onEdit={onEdit} onBusyChange={value=>uploading('publication',value)}/>
     <p>Standardlager, placering, tillåtna alternativ och automatik delas av alla rum som använder denna mall. Ändringarna sparas i det gemensamma projektutkastet; publicerade versioner behålls.</p>
     <div className="studio-layer-summary" role="list" aria-label="Scenens tre lager">{([
       {id:'background',title:'Bakgrund',name:media(lane.layers.background.default)?.label??'Ingen separat bakgrund',count:lane.layers.background.allowed.length,media:media(lane.layers.background.default)},
@@ -72,7 +77,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
     </div>)}</div>
     <p><strong>Rum som använder mallen:</strong></p>
     <ul>{uses.length?uses.map(use=><li key={use.roomId}>{use.operatorName} · {use.roomName}</li>):<li>Inga registrerade rum.</li>}</ul>
-    {roomChoicesPath?<a className="studio-button" href={roomChoicesPath}>Ändra bara {room?.name}</a>:<p>Välj ett aktivt rum för att öppna dess egna val.</p>}
+    {roomChoicesPath?<a className="studio-button" href={roomChoicesPath}>Välj material för {room?.name}</a>:<p>Välj ett aktivt rum för att öppna dess egna val.</p>}
     <button className="studio-button" disabled={blocked||uploadBusy} aria-pressed={editing} onClick={()=>setEditingCompositionId(editing?'':lane.id)}>{editing?'Avsluta mallredigering':'Redigera gemensam mall'}</button>
     <fieldset disabled={locked} className="space-y-2"><legend>Dealers i den gemensamma mallen</legend>
       {project.dealers.map(dealer=><label key={dealer.id} className="flex items-center gap-2"><input type="checkbox" checked={lane.layers.dealer.allowed.includes(dealer.id)} onChange={event=>{
@@ -90,6 +95,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
       <label className="studio-field">Dealer<select aria-label="Dealer att förhandsvisa" value={previewDealer} onChange={event=>selectPreview('dealer',event.target.value)}>{project.dealers.filter(dealer=>lane.layers.dealer.allowed.includes(dealer.id)).map(dealer=><option key={dealer.id} value={dealer.id}>{dealer.label}{dealer.id===lane.layers.dealer.default?' · standard':''}</option>)}</select></label>
       <label className="studio-field">Bord<select aria-label="Bord att placera kort på" value={tableAsset?.id??''} onChange={event=>selectPreview('table',event.target.value)}>{!tableAsset&&<option value="">Inget bord</option>}{editableTables.map(asset=><option key={asset.id} value={asset.id}>{asset.label}{asset.id===lane.layers.table.default?' · standard':''}</option>)}</select></label></div>
       <small>Kort och marker sparas per bord och format. Dealer, bakgrund och bordsstorlek delas av mallens material inom samma format.</small>
+      {game==='blackjack'&&tableAsset&&copyChoices.length>0&&<div className="flex flex-wrap items-end gap-2"><label className="studio-field">Återanvänd kort och marker<select aria-label="Kopiera kortplacering från" disabled={locked} value={copySource} onChange={event=>setCopyTable(event.target.value)}>{copyChoices.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><button className="studio-button" disabled={locked||!copySource} onClick={()=>{if(locked||!lane)return;const source=settings.blackjackTables?.find(row=>row.tableId===copySource);if(!source)return;change({...lane,composition:{...structuredClone(settings),blackjackTables:[...(settings.blackjackTables??[]).filter(row=>row.tableId!==tableAsset.id),{...structuredClone(source),tableId:tableAsset.id}]}});}}>Kopiera båda formaten till valt bord</button></div>}
     </div>
     {game==='blackjack'&&<details><summary>Spelknappar och chatt · {layout==='mobile'?'mobil':'desktop'}</summary><fieldset disabled={locked} className="studio-detail-panel"><legend>Placering i spelytan</legend>
       <p>Önskad placering i spelytan. Spelet håller kontrollerna innanför skärmen och flyttar dem när kort eller menyer behöver plats. Saldo och menyer ryms automatiskt i nederkanten.</p>
@@ -106,7 +112,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
         if(value)rows.push(value);if(rows.length)next.blackjackTables=rows;else delete next.blackjackTables;
         try{change({...lane,composition:validateCompositionSettings(next),renderer:'layered'});}catch(cause){setError((cause as Error).message);}
       }}>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={moveTogether} disabled={locked} onChange={event=>setMoveTogether(event.target.checked)}/> Flytta scenen tillsammans · dealer och bord</label>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={moveTogether} disabled={locked} onChange={event=>setMoveTogether(event.target.checked)}/> Flytta scenen tillsammans · bakgrund, dealer och bord</label>
         <fieldset disabled={locked}><legend>Dealer</legend><div className="grid grid-cols-3 gap-2">{(['scale','x','y'] as const).map(field=><label key={field}>Dealer · {field==='scale'?'Skala':field.toUpperCase()}<input type="number" step={.01} min={field==='scale'?.1:-2} max={field==='scale'?4:2} value={settings[layout].dealer[field]} onChange={event=>{if(Number.isFinite(event.target.valueAsNumber))placement('dealer',field,event.target.valueAsNumber);}}/></label>)}</div></fieldset>
     {game==='blackjack'&&tableAsset&&<section className="studio-detail-panel" aria-label="Bordsprofil">
       <h3>Bordsprofil · {layout==='mobile'?'mobil':'desktop'}</h3>
@@ -119,7 +125,7 @@ export function StudioCompositionPanel({localReferenceUrl,project,savedProject,i
 
     </section>}
       </BlackjackScenePlacementEditor>:preview()}
-    {!(game==='blackjack'&&tableAsset)&&<label className="flex items-center gap-2"><input type="checkbox" checked={moveTogether} disabled={locked} onChange={event=>setMoveTogether(event.target.checked)}/> Flytta scenen tillsammans · dealer och bord</label>}
+    {!(game==='blackjack'&&tableAsset)&&<label className="flex items-center gap-2"><input type="checkbox" checked={moveTogether} disabled={locked} onChange={event=>setMoveTogether(event.target.checked)}/> Flytta scenen tillsammans · bakgrund, dealer och bord</label>}
     <details open={game==='roulette'||undefined}><summary>Storlek och placering · {layout==='mobile'?'mobil':'desktop'}</summary><fieldset disabled={locked}>{(game==='blackjack'&&tableAsset?(['background'] as const):(['dealer','background','table'] as const)).map(role=><div key={role} className="grid grid-cols-3 gap-2 py-2">{([role==='table'?'width':'scale','x','y'] as const).map(field=><label key={field} className="studio-field">{role==='dealer'?'Dealer':role==='background'?'Bakgrund':'Bord'} · {field==='width'?'Bredd':field==='scale'?'Skala':field.toUpperCase()}<input type="number" step={.01} min={field==='x'||field==='y'?-2:.1} max={field==='x'||field==='y'?2:4} value={(settings[layout][role] as unknown as Record<string,number>)[field]} onChange={event=>{try{placement(role,field,Number(event.target.value));}catch(cause){setError((cause as Error).message);}}}/></label>)}</div>)}<label><input type="checkbox" checked={settings.tableFront} onChange={event=>change({...lane,composition:{...settings,tableFront:event.target.checked}})}/> Bord framför dealer</label></fieldset></details>
     <fieldset disabled={locked} className="space-y-4">{(['background','table'] as const).map(role=><div key={role} className="space-y-3">
       <LayerAssetSelect role={role} lane={lane} assets={assets} game={game} permissions onChange={change}/>

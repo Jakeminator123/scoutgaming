@@ -150,10 +150,10 @@ test('merged page opens the tab and item of the navigation context and keeps roo
   const view=h.render(),all=nodes(view,()=>true),links=all.filter(row=>row.type==='a').map(row=>row.props.href);
   assert.deepEqual(h.scrolled,[resourceAnchor('room','room-a')]);
   assert.equal(all.find(row=>row.props?.id==='structure-panel-operators').props.hidden,false);
-  assert.ok(links.includes('/admin/clips?operator=company-a&table=room-a&composition=shared&game=blackjack&panel=layers'),'template edits open the clip map Scen & lager panel');
+  assert.ok(links.includes('/admin/scenes?operator=company-a&table=room-a&composition=shared&game=blackjack'),'template edits open the canonical Studio scene with the same room context');
   assert.ok(links.includes('/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack'),'room choices use the room editor');
   assert.equal(all.find(row=>row.type==='a'&&text(row)==='Öppna bolagets rum')?.props.href,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack','the company rooms open in Spelbolag & rum with the same context');
-  assert.ok(links.includes('/admin/clips?composition=shared&panel=layers'),'compositions open in the clip map, not a second editor');
+  assert.ok(links.includes('/admin/scenes?composition=shared'),'compositions open in the canonical Studio scene editor');
   assert.ok(links.includes('/admin/assets?tab=backgrounds'));assert.ok(links.includes('/admin/assets?tab=tables&game=blackjack'));
   const dealers=harness(fixture(),'?dealer=dragan');await dealers.settle();
   assert.equal(nodes(dealers.render(),row=>row.props?.id==='structure-panel-dealers')[0].props.hidden,false);

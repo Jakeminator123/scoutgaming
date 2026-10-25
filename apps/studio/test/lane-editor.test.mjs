@@ -40,7 +40,7 @@ function loadTs(fileUrl, overrides = {}) {
 
 const editor = loadTs(new URL('../components/lane-editor.tsx', import.meta.url));
 const page = loadTs(new URL('../components/admin-publication-page.tsx', import.meta.url));
-const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, CompositionSettings, LANE_ID_HELP } = editor;
+const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, LANE_ID_HELP } = editor;
 const { publishLaneRows } = page;
 
 function modelEdit(project, edit) {
@@ -176,14 +176,8 @@ test('new compositions ask for a name and dealer while technical IDs remain auto
   assert.match(html, /Välj bolag/);
 });
 
-test('the editor omits inactive phase controls and retains presentation settings', () => {
+test('publication omits inactive phase controls and requires an operator', () => {
   const project = createSeedProject();
-  const editorHtml = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {} }));
-  assert.doesNotMatch(editorHtml, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
-  assert.doesNotMatch(editorHtml, /sparat styrunderlag|Förberedda klippval|Följer OpenClaw|Variationsfrekvens|Variations-id|AI-småprat/);
-  assert.match(editorHtml, /type="color"/);
-  assert.match(editorHtml, /Bolaget får ändra/);
-  assert.doesNotMatch(editorHtml, /sg-btn-primary/);
   const html = renderToStaticMarkup(React.createElement(page.AdminPublicationPage, {
     initialProject: project,
     initialVideos: { videos: [] },
@@ -219,13 +213,10 @@ test('replaceLane stores the new fields and rejects an invalid table color', () 
   assert.deepEqual(project.lanes, before);
 });
 
-test('composition metadata and policies are disabled during writes without exposing a second layer editor', () => {
+test('composition metadata is disabled during writes', () => {
   const project = createSeedProject();
   const metadata = renderToStaticMarkup(React.createElement(CompositionMetadata, { project, selectedId: project.lanes[0].id, onSelect() {}, onEdit() {}, disabled: true }));
   assert.match(metadata, /<fieldset[^>]*disabled=""[^>]*aria-label="Välj och namnge sammansättning"/);
-  const locked = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {}, disabled: true }));
-  assert.match(locked, /<fieldset[^>]*disabled=""[^>]*aria-label="Avancerade sammansättningsinställningar"/);
-  assert.doesNotMatch(locked, /Dealer vid start|Tillåtna dealerbyten|Ändra sammansättning|<legend>Bakgrund<|<legend>Bord</);
 });
 
 function compositionControls(initialProject = createSeedProject(), disabled = false) {
@@ -244,7 +235,6 @@ function compositionControls(initialProject = createSeedProject(), disabled = fa
   };
   return { get project() { return project; }, get selectedId() { return selectedId; }, get error() { return error; }, find,
     metadata() { cursor = 0; return controls.CompositionMetadata({ project, onEdit, selectedId, onSelect, disabled }); },
-    settings() { cursor = 0; return controls.CompositionSettings({ project, lane: project.lanes.find(row => row.id === selectedId), onEdit, disabled }); },
   };
 }
 
@@ -300,27 +290,11 @@ test('generated composition IDs normalize names, obey the model limit and retry 
   assert.throws(() => newCompositionId(project, 'Ny scen', () => '../unsafe'), /unikt ID/);
 });
 
-test('visible colour controls preserve hidden policies and dealer assignments', () => {
-  const h = compositionControls(), original = structuredClone(h.project), lane = original.lanes[0];
-  let tree = h.settings();
-  assert.equal(h.find(tree, node => node.type === 'select'), null);
-  tree = h.settings(); h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
-  assert.equal(h.error, '');
-  assert.deepEqual(h.project.lanes[0].openclaw, lane.openclaw);
-  assert.deepEqual(h.project.lanes[0].layers.table.colors, [...(lane.layers.table.colors ?? []), '#1b4332']);
-  assert.deepEqual(h.project.lanes[0].dealers, lane.dealers);
-  assert.deepEqual(h.project.lanes[0].layers.dealer, lane.layers.dealer);
-  assert.deepEqual(h.project.lanes[0].operatorAdjustable, lane.operatorAdjustable);
-  assert.deepEqual(h.project.lanes[0].composition, lane.composition);
-});
-
-test('disabled composition controls reject direct callbacks as well as disabling native inputs', () => {
+test('disabled composition metadata rejects direct callbacks as well as disabling native inputs', () => {
   const h = compositionControls(createSeedProject(), true), before = structuredClone(h.project);
-  let tree = h.metadata();
+  const tree = h.metadata();
   h.find(tree, node => node.type === 'input' && node.props.value === 'Standardsammansättning').props.onChange({ target: { value: 'Blocked' } });
   h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
-  tree = h.settings(); h.find(tree, node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({target:{checked:false}});
-  h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
   assert.deepEqual(h.project, before);
 });
 

@@ -1,6 +1,7 @@
 // Shared menu labels for the Admin shell and Studio help.
 export const adminNavigationGroups = [
   {id:'creation',label:'Studio',description:'Dealers, klipp och scenens utseende.',links:[
+    {label:'Sceneditor',href:'/admin/scenes',description:'Placera dealer, bakgrund, bord, kort och spelkontroller i den gemensamma mallen.'},
     {label:'Klippkarta',href:'/admin/clips',description:'Ordna standardklipp och varianter för varje spelsituation.'},
     {label:'Dealers',href:'/admin/dealers',description:'Lägg till dealers och hantera deras bibliotek.'},
     {label:'Bord & bakgrunder',href:'/admin/assets',description:'Hantera material till scenens lager.'},

@@ -68,7 +68,7 @@ test('shared preview data authorization rejects unauthenticated and partner acce
     if(typeof error.redirect!=='string')return false;
     const target=new URL(error.redirect);
     return target.origin===config.allowedOrigins[0]&&target.pathname==='/admin/login'
-      &&target.searchParams.get('returnTo')==='/admin/clips?panel=layers';
+      &&target.searchParams.get('returnTo')==='/admin/scenes';
   });
   assert.equal(reads,0);
   role='admin';unauthenticated=false;

@@ -6,7 +6,7 @@ import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/s
 test('older workspace links keep company and room context', () => {
   assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/admin/companies?operator=op-one#team');
   assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), "/admin/rooms?dealer=paow&operator=north&table=room-one");
-  assert.equal(canonicalControlHref('/control/preview?composition=current'), "/admin/clips?panel=layers&composition=current");
+  assert.equal(canonicalControlHref('/control/preview?composition=current'), "/admin/scenes?composition=current");
 });
 
 test('ambiguous or external document paths never become a navigation destination', () => {

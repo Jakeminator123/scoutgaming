@@ -182,3 +182,12 @@ test('restoring cards restores saved display depth but restoring chips leaves it
  assert.equal(restoreGeometryGroup(current,saved,'mobile','cards').mobile.cardView,undefined);
  saved.mobile.cardView='table';assert.equal(restoreGeometryGroup(current,saved,'mobile','cards').mobile.cardView,'table');
 });
+
+for(const layout of ['mobile','desktop'])for(const role of ['dealer','background','table'])test(layout+': moving '+role+' together preserves all three layer offsets',()=>{
+ const {settings}=fixture(layout),before=structuredClone(settings),value=settings[layout][role].x+.1;
+ const next=moveCompositionLayer(settings,layout,role,'x',value,true);
+ for(const layer of ['dealer','background','table'])close(next[layout][layer].x-settings[layout][layer].x,.1);
+ assert.deepEqual(settings,before);
+ const field=role==='table'?'width':'scale',scaled=moveCompositionLayer(settings,layout,role,field,settings[layout][role][field]*1.1,true);
+ for(const layer of ['dealer','background','table']){const size=layer==='table'?'width':'scale';close(scaled[layout][layer][size]/settings[layout][layer][size],1.1);}
+});

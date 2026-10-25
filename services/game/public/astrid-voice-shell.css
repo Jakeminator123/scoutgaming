@@ -108,7 +108,9 @@
     max-height: 45dvh;
   }
   .astrid-voice-ui #chat #chat-log { max-height: min(280px, 35dvh); }
-  .astrid-voice-ui #chat-input { font-size: 16px; }
+  .astrid-voice-ui #chat-log-toggle { order: -2; }
+  .astrid-voice-ui #chat-input, .astrid-voice-ui #chat-send { order: -1; }
+  .astrid-voice-ui #chat-input { flex: 1 0 calc(100% - 52px); font-size: 16px; }
 }
 
 /* The open dock must sit above the independently positioned table controls. */

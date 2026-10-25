@@ -359,12 +359,20 @@ test('actual browser expired Admin login restores the real room view through his
       assert.equal(await select.isEnabled(),true);
     }
     assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
-    await studio.getByRole('button',{name:'Scen & lager',exact:true}).click();
+    const publicationRead = page.waitForResponse(response => new URL(response.url()).pathname === '/studio/api/partner/branding');
+    await studio.getByRole('button',{name:'Öppna sceneditor',exact:true}).click();
+    await page.waitForURL(url=>url.pathname==='/admin/scenes');
+    assert.equal(new URL(page.url()).pathname,'/admin/scenes');
+    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
+    const scene = page.getByRole('region',{name:'Sceneditor',exact:true});
     const composition = page.getByRole('region',{name:'Gemensam sammansättningsmall',exact:true});
     await composition.getByRole('heading',{name:expectedLabels.composition,exact:true}).waitFor();
-    assert.equal(await composition.getByRole('listitem').textContent(),expectedLabels.operator + ' · ' + expectedLabels.room);
+    assert.equal(await composition.getByRole('listitem').filter({hasText:expectedLabels.operator + ' · ' + expectedLabels.room}).textContent(),expectedLabels.operator + ' · ' + expectedLabels.room);
     assert.equal(await composition.getByRole('combobox',{name:'Förvald dealer',exact:true}).inputValue(),expectedContext.dealer);
-    await page.getByRole('complementary',{name:'Klipp och inställningar'}).getByRole('button',{name:'Stäng',exact:true}).click();
+    assert.equal((await publicationRead).status(),404,'the fixture operator has no published package');
+    assert.equal(await scene.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'opening the scene must not create a draft');
+    await scene.getByRole('button',{name:'Till klippkartan',exact:true}).click();
+    await page.waitForURL(publicOrigin + target);
     assert.equal(await studio.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'reading the room must not create a draft');
   }
   const unexpected = () => assert.fail('fixture must not access another runtime or data source');
@@ -461,6 +469,13 @@ test('actual browser expired Admin login restores the real room view through his
               assert.equal(url.search,'');dataReads.push(url.pathname);
               return route.fulfill({contentType:'application/json',body:JSON.stringify(url.pathname.endsWith('/project')?{project:readDocument('project')}:readDocument('inventory'))});
             }
+            if (url.pathname === '/studio/api/partner/branding') {
+              assert.equal((await authorize(new Request(url,{headers}))).role,'admin');
+              assert.deepEqual(Object.fromEntries(url.searchParams),{operator:expectedContext.operator});
+              assert.equal(await store.getCurrentPackage(expectedContext.operator),null);
+              dataReads.push(url.pathname);
+              return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'Not found'})});
+            }
             const document = ['/admin/clips','/studio/admin/clips'].includes(url.pathname);
             assert.ok(document || ['/admin/_data/catalog','/admin/_assets/admin/app.js','/admin/_assets/admin/app.css'].includes(url.pathname),'only real Admin fixture routes and assets are served: ' + url.pathname);
             assert.equal(url.search,document ? new URL(target,publicOrigin).search : '');
@@ -495,7 +510,7 @@ test('actual browser expired Admin login restores the real room view through his
           await page.goForward();await page.waitForURL(publicOrigin + target);await assertRoomView(page);
           const readsBeforeReload = dataReads.length;
           await page.reload();await assertRoomView(page);
-          assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/project','/studio/api/videos']);
+          assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/partner/branding','/studio/api/project','/studio/api/videos']);
           assert.deepEqual(posts,['/studio/api/auth/login']);assert.ok(documentStatuses.slice(1).every(status=>status===200));
           assert.deepEqual(bo.prepare('SELECT * FROM fixture_studio ORDER BY kind').all(),storedBefore,'room inspection does not mutate saved data');
           const cookies = await context.cookies(), cookie = cookies.find(item=>item.name==='bo_jwt');

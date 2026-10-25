@@ -3,12 +3,11 @@
 ## Rum, material och placering
 
 - **Spelbolag & rum**: välj bolag och rum. Här binds rummet till en sammansättning och du väljer rummets publicerade bakgrund, dealer och bord bland tillåtna alternativ.
-- **Spelbolag & rum → Redigera publicerad scen**: redigera det aktuella publicerade bordets kort och marker samt dealer, bakgrund, bordsstorlek och kontroller i mobil/desktop. Publiceringen ändrar endast den frysta layouten och lämnar materialutkast kvar. När flera publicerade rum delar samma scen används den gemensamma mallen i stället. Kort och marker syns i editorn; slutlig chatt- och knappplacering granskas i spelet.
-- **Klippkarta → Scen & lager**: den gemensamma sammansättningsmallen. **Förhandsvisa och placera** växlar mellan tillåtna bakgrunder, dealers och bord utan att ändra standardvalet eller rummets bindning. Händelseklipp hanteras under Bakgrundsklipp/Bordsklipp, inte som valbara grundmaterial.
+- **Studio → Sceneditor** (`/admin/scenes`): en gemensam editor för dealer, bakgrund, bord, kort, marker och spelkontroller. **Förhandsvisa och placera** växlar mellan tillåtna grundmaterial utan att ändra standardval eller rumsbindning. Klippkartans tidigare lagerflik och gamla scenbokmärken leder hit. Händelseklipp hanteras under Bakgrundsklipp/Bordsklipp.
 - Välj **Mobil** eller **Desktop**. Kortpunkter, marker, kortstorlek, kortvisning och kortspridning sparas per bord och format. Dealer, bakgrund och bordsstorlek delas av mallens material inom formatet. **Spelknappar och chatt** anger önskad placering; spelet flyttar kontroller som annars skulle täcka kort eller menyer. Saldo och insatsmeny ryms automatiskt i nederkanten.
 - **Autoskala efter dealern** väljer uttryckligen om kortens landning, storlek och marker följer filmen. När automatisk landning är av används de sparade kortpunkterna. **Korten följer** och **Markerna följer** väljer bord, dealer eller fast scenram; det är samma koordinatberäkning i editor och spel.
 
-**Redigera gemensam mall** låser upp ändringar för alla rum som använder mallen. Sparning skapar ett projektutkast; den ändrar inte ett publicerat paket. Ett rum kan därför visa en annan publicerad version än Klippkartan. Granska rummets publicering innan ett äldre utkast används.
+**Redigera gemensam mall** låser upp mallen. **Flytta scenen tillsammans** flyttar dealer, bakgrund och bord med bibehållet avstånd. **Återanvänd kort och marker** kopierar båda formatens placering från ett annat tillåtet bord till det valda bordet. Spara projektet och använd sedan **Publicera sparad placering** för valt bolag. Publiceringen läser den sparade mallen och visar vilka rum som berörs; material, klipp och bolagets materialutkast behålls. **Läs in placering i mallen** hämtar den publicerade geometrin när en äldre mall behöver uppdateras. Bolagsvyn har ingen egen placeringseditor.
 
 **Spara utkast** sparar direkt. **Kasta ändringar** hämtar tillbaka det senast sparade projektutkastet. Under rummets materialval tar **Kasta bolagets materialutkast** bort det aktiva materialutkastet för hela bolaget; publicerade rum ändras inte. Historiska publiceringar kan fortfarande återställas som nya utkast.
 
@@ -29,7 +28,7 @@ Filnamnsförslag är bara förslag: kontrollera att ett beteendeklipp är tyst o
 återgår till vila. Klipp med en inspelad mening behåller sitt exakta talfack.
 
 Produktmodell, ord och ny UX-inriktning har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
-Den här guiden beskriver befintliga arbetssteg. **Klippkarta → Scen & lager**
+Den här guiden beskriver befintliga arbetssteg. **Studio → Sceneditor**
 redigerar vald gemensam mall. Enhetliga låsningar per lager i alla tre nivåer
 är fortsatt målbild.
 
@@ -94,7 +93,7 @@ från fri chatt; ett filnamn eller röstval godkänner inte deras synk.
 **Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
 **Redigera gemensam mall**. **Zooma in scenen** och
 **Zooma ut scenen** skalar bakgrund, dealer och bord tillsammans runt bildens
-mitt. Finjustera ett lager under **Storlek och placering**. Scenzoom och skapande av sammansättningar finns i **Scen & lager** i samma arbetsyta.
+mitt. Finjustera ett lager under **Storlek och placering**. Scenzoom och skapande av sammansättningar finns i **Sceneditor** i samma arbetsyta.
 Roulette använder Desktop 16:9 även på mobil; dessa editorer visar därför det
 format som roulette använder. Detta ändrar sparad geometri i den gemensamma
 mallens utkast, inte tillfällig visningszoom eller rummets `roomOverrides`.
@@ -128,7 +127,7 @@ inte en fullständig ekonomisk periodrapport.
 **OpenClaw** (`/admin/openclaw`) samlar allt som rör automatiken på en sida med
 flikarna Driftläge (taldrift Av/Sparläge/Varm), Agentmodeller, Dealerns agent,
 Tal vid inaktivitet och Adminroboten. Valen per klipp och per fas ligger kvar
-hos innehållet i klippkartans Körregel och i Scen & lager.
+hos innehållet i klippkartans Körregel och i Sceneditor.
 **Agentmodeller** sparar ett modellval på respektive agents rad. **Ångra alla**
 återställer osparade val. Byte från konton, integrationer eller modellval går
 via sidnavigering, så befintliga varningar för osparade formulär används.
@@ -176,7 +175,7 @@ mallredigeraren visar vilka
 andra rum som kan påverkas. Gamla länkar med `view=registered` fungerar men
 behövs inte längre.
 
-Huvudmenyn har **Studio** och **Administration**. **Dealers** äger registret och skapar nya dealers; **Klippkarta** är arbetsytan för vald dealer och spel. Där finns flikarna **Klippkarta**, **Röst & tal**, **Svarsbibliotek**, **Skapa material** och **Inställningar**. **Scen & lager** öppnar den gemensamma sceneditorn. **Bord & bakgrunder** är materialbiblioteket. Betalningar finns under **Ekonomi**, journalen på valt bolag. Samma menynamn används i hjälp och mobilens sidväljare. Portalraden leder till Admin, Spelbolag och Spelarlobby; `/play/{game}` behåller sitt launchkontrakt.
+Huvudmenyn har **Studio** och **Administration**. **Dealers** äger registret och skapar nya dealers; **Klippkarta** är arbetsytan för vald dealer och spel. Där finns flikarna **Klippkarta**, **Röst & tal**, **Svarsbibliotek**, **Skapa material** och **Inställningar**. **Sceneditor** öppnar den gemensamma sceneditorn. **Bord & bakgrunder** är materialbiblioteket. Betalningar finns under **Ekonomi**, journalen på valt bolag. Samma menynamn används i hjälp och mobilens sidväljare. Portalraden leder till Admin, Spelbolag och Spelarlobby; `/play/{game}` behåller sitt launchkontrakt.
 
 Välj dealer och spel i klippkartan. Klippbanken fungerar även utan spelbolag
 eller rum. Öppna **Rum och publicering** när du vill välja dessa uttryckligen. Ett
@@ -366,7 +365,7 @@ ersätter inte spelmotorn eller dessa startkontrakt.
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
 ```text
-Studio: välj dealer → Klippkarta / Röst & tal / Svarsbibliotek / Skapa material / Inställningar; Scen & lager öppnas i samma arbetsyta
+Studio: välj dealer → Klippkarta / Röst & tal / Svarsbibliotek / Skapa material / Inställningar; Sceneditor öppnas i samma arbetsyta
 Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
@@ -392,11 +391,11 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 **Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Röst & tal** och är fortfarande begränsat till Astrid.
 
-**Scenens storlek:** öppna **Klippkarta → Scen & lager → Redigera gemensam mall**. Där delar alla klipp samma sparade skalning och placering för dealer, bord och bakgrund inom vald sammansättning. Mobil och desktop har egna formatinställningar. Detta är ännu inte en ärvd dealerstandard för alla sammansättningar, och mobil/desktop får inte automatiskt gemensam beskärning. I verktyget **Sammansättningar** finns **Hantera sammansättning → Ta bort sammansättning**; det tar bort utkastets profil. Media och redan publicerade paket behålls.
+**Scenens storlek:** öppna **Studio → Sceneditor → Redigera gemensam mall**. Där delar alla klipp samma sparade skalning och placering för dealer, bord och bakgrund inom vald sammansättning. Mobil och desktop har egna formatinställningar. Detta är ännu inte en ärvd dealerstandard för alla sammansättningar, och mobil/desktop får inte automatiskt gemensam beskärning. I verktyget **Sammansättningar** finns **Hantera sammansättning → Ta bort sammansättning**; det tar bort utkastets profil. Media och redan publicerade paket behålls.
 
-**Kort och marker:** öppna **Klippkarta → Rum och publicering**, välj rum och öppna **Scen & lager → Redigera gemensam mall**. Välj mobil eller desktop. Dealer och bord flyttas separat; **Flytta scenen tillsammans** kopplar ihop deras reglage. Välj för kort respektive marker: **Bordet**, **Dealern** eller **Ligg still i scenen**. Bytet bevarar placeringen. **Markerna följer korten** behåller tidigare manuella markerval för återgång. Dra en punkt i scenen eller välj **Flytta punkt** och procentfälten; gruppens läge kan också flyttas. **Återställ sparade kort/marker** återställer bara vald grupp i detta format. Desktop har sju spelarplatser och en dealerplats; mobil visar tre spelarplatser åt gången. **Spara utkast** visar berörda rum; publicering görs separat. Den filmade handrörelsen ändras inte.
+**Kort och marker:** öppna **Klippkarta → Rum och publicering**, välj rum och öppna **Sceneditor → Redigera gemensam mall**. Välj mobil eller desktop. Dealer och bord flyttas separat; **Flytta scenen tillsammans** kopplar ihop deras reglage. Välj för kort respektive marker: **Bordet**, **Dealern** eller **Ligg still i scenen**. Bytet bevarar placeringen. **Markerna följer korten** behåller tidigare manuella markerval för återgång. Dra en punkt i scenen eller välj **Flytta punkt** och procentfälten; gruppens läge kan också flyttas. **Återställ sparade kort/marker** återställer bara vald grupp i detta format. Desktop har sju spelarplatser och en dealerplats; mobil visar tre spelarplatser åt gången. **Spara utkast** visar berörda rum; publicering görs separat. Den filmade handrörelsen ändras inte.
 
-**Kortvisning** under **Studio → Scen & lager → Kort och marker** väljer **På bordet** eller **Upplyfta** för valt bord och format. Valet sparas med layouten och publiceras med spelet; spelaren har ingen separat kortvisningsbubbla. Utan eget val visas korten på bordet. Admins förhandsvisning använder samma kortstorlek och filmkalibrering som spelet. Kräver spelserverns kapabilitet 26. Den gamla spelkalibreringen (C eller `?cal=1`) är avvecklad; lokala kalibreringsvärden laddas inte längre. Äldre `/calibration`-skrivningar nekas utan att ändra filer.
+**Kortvisning** under **Studio → Sceneditor → Kort och marker** väljer **På bordet** eller **Upplyfta** för valt bord och format. Valet sparas med layouten och publiceras med spelet; spelaren har ingen separat kortvisningsbubbla. Utan eget val visas korten på bordet. Admins förhandsvisning använder samma kortstorlek och filmkalibrering som spelet. Kräver spelserverns kapabilitet 26. Den gamla spelkalibreringen (C eller `?cal=1`) är avvecklad; lokala kalibreringsvärden laddas inte längre. Äldre `/calibration`-skrivningar nekas utan att ändra filer.
 
 **Autoskala efter dealern** (förkryssad för ny bordsplacering, av för befintliga tills du kryssar i och sparar): korten landar där filmen visar i rekvisitakortets storlek och markerna ligger under korten, skalade med dealern; flyttar eller förstorar du dealern följer de med. Kortstorlek, markerläge och markerstorlek kan justeras ovanpå; bord, dealer och bakgrund justeras var för sig. På mobil får automatiska markerplatser egna tryckytor utan att kortens filmade landning flyttas. Sparade manuella förskjutningar gäller fortfarande. Förhandsvisningen visar en varning om kort eller marker inte ryms och använder samma grundklippsinramning som spelet. Kräver uppdaterad spelserver.
 
