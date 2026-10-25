@@ -107,7 +107,7 @@ Ingen produktion, historisk dealerbank eller AI/GPU-körning ingår.
 | Appbehörighet | 75 tabeller med avgränsad DML/sekvensåtkomst; ledger endast läsbar. Verklig appanslutning nekas ledger-UPDATE och Studio-DDL. PUBLIC-grants återtagna; inga extra default-ACL eller appmedlemskap | Detta är operativ DML-profil, inte påstående om kolumnminimal ACL eller databas-RLS |
 | Tom init | Ordinarie repository och katalogens plan/hash/lås/CAS/audit: projekt `staging-project-init-v1`, administration `staging-administration-init-v1`, katalog `88a927ac32181db129d321f216d700b2dc6ded96cf2b3617aaeb056f94200422` | 0 media och 0 spelare; inga historiska seeds. Syntetiskt innehåll ska skapas via Admin |
 | Vercel/Blob | Eget projekt `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`; eget privat Frankfurt-lager `store_7E06N1P4w9Mu1dZD`, 0 objekt. Lagringens token är kopplad till endast detta projekt | Deployment, separat Render-app och faktiskt samprov återstår |
-| Återställning | Separat tom databas, samma migrationsägare, explicit app-CONNECT och ingen PUBLIC-åtkomst. Officiella portabla PG18.6-klienter har läst båda målen med `verify-full` och faktisk TLS 1.3; 23/23 schemahashar, 75 tabeller och 4 sekvenser verifierade | Ingen faktisk dump/restore, omstart eller replay kvitterad ännu |
+| Återställning | Separat tom databas, samma migrationsägare, explicit app-CONNECT och ingen PUBLIC-åtkomst. Officiella portabla PG18.6-klienter har läst båda målen med `verify-full` och faktisk TLS 1.3; 23/23 schemahashar, 75 tabeller och 4 sekvenser verifierade. Verklig privat basbackup före appstart innehåller alla 75 tabeller, 4 sekvenser och 3 scheman; källfingeravtryck oförändrat före/efter | Detta är en basbackup, ingen faktisk restore, omstart eller replay efter spelaktivitet |
 
 Privata mål-/schema-/ACL-/initkvitton och credentialfiler ligger i uppgiftens
 ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga credentials i Git.
@@ -116,6 +116,13 @@ projektets granskade revisionsfält. Fältet rättades före någon init; urspru
 hash matchade därefter. Schemakällor och valideringskrav ändrades inte.
 Godkänd installation är inte godkänd slutacceptans: migrationsstatus är fortsatt
 45 % (9/20 aktiviteter).
+
+Basbackupens SHA256 är `697101923dcb72b10305fe51df4fb9dfe70649488bd28a05e69d15a92ef5bb39`.
+Offlineinventeringen visar verkliga ägare och endast approllen som mottagare av
+objektgrants; inga security-definer-funktioner. Arkiv, SQL och kvitton är privata
+med ACL för aktuell användare/SYSTEM. Första kommandoförsöket stannade före
+anslutning på ett felaktigt PowerShell-filargument; korrekt argumentlista gav
+godkänd dump och inventering. Restoremålet är oförändrat tomt.
 
 Schemakontrollens bas var main `4abbf1985e183c145c5a7772fe02631c6ee9b274`; det privata installationsunderlaget frystes på `5310a5f`. Alla 23 granskade schemakällor matchade före faktisk apply. Stödet för tom katalog levererades genom #391 och de två konfigurationshindren genom #395. Tabellen nedan beskriver den granskade arbetsordningen; aktuellt utförande och det senare utökade mandatet finns i kvittot ovan. Tidigare stoppad QA återöppnas inte.
 

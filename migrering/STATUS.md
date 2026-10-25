@@ -37,7 +37,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J08 | Admin styr versionerad spelkonfiguration | jakob | IN_PROGRESS |
 | K05 | Exakt mediakoppling till Neon och Blob | kevin | IN_PROGRESS |
 | J09 | Förbered avveckling av oanvända databaskontrakt | jakob | TODO |
-| K06 | Verifiera Admin till spel efter omstart | kevin | TODO |
+| K06 | Verifiera Admin till spel efter omstart | kevin | IN_PROGRESS |
 | K07 | Verifiera spelbeteenden och samtidighet | kevin | TODO |
 | J10 | Ren klon, start och återställning | jakob | TODO |
 | O02 | Oberoende integrerad granskning | orkestrator | TODO |
