@@ -1,70 +1,29 @@
-# Produktcontainerns byggkontext
+# Render v3: byggkontext och verifiering
 
-`ops/cloud/Dockerfile` använder reporoten som byggkontext:
+Den aktiva spelmotorn `croupier-v3` byggs från reporoten med `ops/cloud/Dockerfile.game`:
 
 ```sh
-docker build -f ops/cloud/Dockerfile .
+docker build -f ops/cloud/Dockerfile.game .
 ```
 
-Dockerfilen kopierar först manifest och låsfiler för spelmotorn, Studio och
-talreläet och installerar deras låsta beroenden. Först därefter kopieras resten
-av kontexten efter `.dockerignore` och Studio byggs med `/studio` som `basePath`
-som standard. En vanlig källändring kan därför återanvända beroendelagret;
-ändrade manifest eller låsfiler installerar fortfarande om beroendena.
-`container-entry.mjs` startar sedan runtime i `start.mjs` efter
-lagringskontroller och byte till användaren `node`. `apps/studio/` är Studios
-källmapp; Lissabon är ingen separat produkt eller image.
+Imagen kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`. Studio/Admin och spelarens webbgränssnitt byggs på Vercel. Se [Render-guiden](RENDER-V3.md) för startkontrakt och [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten) för kompatibel kodåtergång.
 
-`ops/cloud/Dockerfile.game` (Render `croupier-v3`, se [RENDER-V3.md](RENDER-V3.md))
-använder samma byggkontext men kopierar bara en uttrycklig lista: `packages/`,
-tre `tools/`-moduler, `ops/cloud`, `ops/neon-game`, `ops/neon-studio`,
-`services/astrid-gpu-worker/gateway` och `services/game`. Inget `apps/`
-följer med och ingen Studio byggs; `ops/cloud/test/game-image.test.mjs`
-kontrollerar att spelserverns statiska importstängning ryms i listan.
-
-CI-kontrollen `Product container cache check` körs för ändringar i Dockerfil,
-byggkontextfilter och de berörda manifesten/låsfilerna, samt manuellt. Den
-bygger imagen två gånger med en isolerad källändring mellan byggena och
-kräver cacheträff för den låsta installationen. En nätverkslös container
-kontrollerar därefter paketupplösning, Studio-bygge och UID/rättigheter för
-den privata bootstrap-mappen. Inga imager publiceras eller driftsätts.
-
-| Innehåll som kontexten behåller | Nuvarande roll |
+| Kopieras till v3-imagen | Roll |
 | --- | --- |
-| `web/`, `apps/studio/`, `apps/web/` | Spelserver, Studio och spelargränssnittets källkod. `web/public/` behåller publik kod och resurser; produktens medieauktoritet är scoped Neon och privat Blob. |
-| `packages/`, `tools/`, `ops/` | Gemensamma paket, byggverktyg och produktstart. Guide- och policydata under `apps/studio/docs/` och `apps/studio/policies/` följer också med. |
-| `services/astrid-gpu-worker/gateway/` | Talreläet vars beroenden denna Dockerfil installerar. GPU-imagen har en egen Dockerfil och byggs inte av kommandot ovan. |
-| `media/**/runtime` | Filträdet utesluts inte generellt. Eventuella medföljande filer blir inte metadata- eller bytesreserv: produktens runtime använder Neon och Blob. |
-| `tools/media/` | Bevarade verktyg och byggrecept, beskrivna i [mappguiden](../../tools/media/README.md). Mappen följer med men är ingen tjänst som containern startar. |
+| `services/game/` | Spelserver, konton, auktoritativ ekonomi och spelregler |
+| `packages/` | Delade kontrakt, register, media- och publiceringstjänster |
+| `services/astrid-gpu-worker/gateway/` | Befintligt talrelä; detta startar eller bygger ingen GPU-worker |
+| `ops/cloud/`, `ops/neon-game/`, `ops/neon-studio/` | Start/gateway och befintliga schemakontrakt; inga migreringar appliceras av Dockerbygget |
+| Tre uttryckliga `tools/`-moduler | Layout-, runtimekatalog- och Blob-indexadaptrar enligt Dockerfilen |
 
-`media/layout.json`, `media/blob-index.json` och hela `media/catalog/` är
-uttryckligen uteslutna ur denna byggkontext. De är lokala authoring-/importkällor,
-inte deployade runtime-register. Native Studio och spelservern hämtar layout,
-Blob-index och presentations-/JSON-metadata ur scoped `runtime_media_catalogs`;
-svarsbibliotekets metadata ligger i `speech_reply_records`. Mediebytes hämtas
-från privat Blob med oförändrade identitets- och hashkontroller. Saknad eller
-felaktig katalog får inte ersättas med filinläsning från imagen.
+Varken `apps/`, `media/` eller lokal Studio-bootstrapdata ingår. Spelserverns statiska importstängning kontrolleras av `ops/cloud/test/game-image.test.mjs`; Node-moduler och Linuxpaket installeras i imagen. Manifest och låsfiler kopieras före produktkoden, så en ren källändring kan återanvända beroendelagret.
 
-`web/storage/video-registry.mjs` komponerar den gemensamma registerkärnan som
-validerar det levererade mediemanifestet och referenserna; den
-importerar inte längre `tools/media/build-lab-video-manifest.mjs`. Den gamla
-lokala omskanningen svarar 410. De tidigare rötterna `emil/dealklipp-v1/`
-och `content/dealers/` är inte bankens kanoniska lagringsplatser.
+CI `Render v3 container check` bygger den aktiva imagen två gånger, med en tillfällig källändring i runnerns checkout. Den kräver cacheträff för låst installation och kör därefter nätverkslösa kontroller av beroenden, frånvaro av Studio/lokala medieregister samt v3-startkonfiguration. Fixturvärdena i denna nätverkslösa kontroll ansluter inte till Neon, Blob eller någon app. Inga imager publiceras eller driftsätts av kontrollen.
 
-`.dockerignore` utesluter bland annat Git, lokala cache-/beroendemappar,
-hela privata `arkiv/`, hemligheter, muterbara Web-/Lab-/OpenClaw-data, `docs/`, `test/`, `apps/studio/test/`
-och mediernas `source`, `staging`, `review`. Vissa redan borttagna mappnamn
-står kvar bland undantagen för att filtrera en återställd äldre kopia.
-Reglerna filtrerar byggkontexten och raderar inga lokala filer.
+Det ersatta CI-jobbet byggde `ops/cloud/Dockerfile`, kompilerade Studio och krävde den historiska privata bootstrapmappen. Dessa är inte längre leveranskrav för Render. Den äldre Dockerfilen och kombinerade startens kvarvarande QA-/kodkonsumenter är en separat avvecklingsyta; det gamla receptet är ingen produktionsåterställning.
 
-OpenClaw-imagerna använder egna Dockerfiler och ignore-filer
-(`services/openclaw/lab/.dockerignore` eller `Dockerfile.dockerignore` beroende på
-byggkontext). Kommandot ovan publicerar inte dessa imager.
+Neon är registerkälla: scoped `runtime_media_catalogs` innehåller layout, Blob-index och presentationsmetadata; `speech_reply_records` innehåller svarsbibliotekets metadata. Exakta mediebytes hämtas från privat Blob. Saknad/felaktig katalog får inte ersättas av filer ur imagen. Historiska authoringfiler eller dealeridentiteter blir inte krav på nya installationer bara för att gamla tester använder dem.
 
-Konfiguration och beständiga data kommer från driftsmiljön, inte från en
-kopierad `.env` eller lokal databas. Uppstarten accepterar de lagringslägen
-som `container-entry.mjs` och `config.mjs` uttryckligen validerar. Efter en
-kontextändring ska den byggda imagen, uppstart, inloggning och åtkomst till
-de medier produkten använder verifieras. Denna guide beskriver kod och
-kopieringsregler; driftsacceptans följs i den befintliga
-[molnplanen](../../docs/CLOUD-MIGRATION.md).
+`.dockerignore` filtrerar bland annat Git, privata `arkiv/`, hemligheter, muterbara appdata och mediers source/staging/review ur byggkontexten. V3 använder dessutom en uttrycklig COPY-lista. Filtreringen raderar inga lokala filer och är inte ett skäl att behålla en ersatt runtimeväg. OpenClaw och GPU-workern har egna Dockerfiler/byggkontexter.
+
+Verifiera faktiskt driftsatt SHA, health, kontraktsversion och det ändrade beteendet vid leverans. Ett lyckat containerbygge bevisar bara bygg-/startkontraktet; moln-, media- och återställningsacceptans redovisas separat i [molnplanen](../../docs/CLOUD-MIGRATION.md).
