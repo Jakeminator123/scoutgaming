@@ -7,8 +7,11 @@
 alla 39 bilder vid 24 fps (1 625 ms). De tio bortvalda äldre tagningarna ingår inte.
 Admins inkoppling matchar exakt SHA-256, byteantal, PAOW-ägare och idleklassificering;
 saknade, avvisade, borttagna eller dubbla original stoppar inkopplingen. Befintliga
-UUID återanvänds. Ordinarie utkastssparning och publicering fryser policy och alla
-24 medieposter med befintliga revisionsvillkor; ingen DDL krävs.
+UUID återanvänds. Ordinarie utkastssparning följs av rummets **Publicera PAOWs
+viloklipp** (`refresh-dealer-idle`). Den fryser policy och alla 24 medieposter
+med befintliga revisionsvillkor och runtime-readiness, men bevarar det aktuella
+paketets övriga innehåll. En full projektpublicering behövs inte och skulle
+kunna ersätta nyare publicerade placeringar med gamla utkast. Ingen DDL krävs.
 
 Valfri `rotation.clips` beskriver varje original med `from/to` (`rest/clasped`),
 fas (`any/bets/decide`), vikt och lugn/huvudrörelse. Klipp spelas hela till faktisk

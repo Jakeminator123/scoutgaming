@@ -13,11 +13,20 @@ gemensamma filmspelaren. Insats-/beslutsfas, knäpp-in/knäpp-ut, huvudrörelser
 talets standardpose och avbrott omfattas. Saknade/dubbla/avvisade original
 stoppar inkopplingen. Inga kortfilmer eller repliker aktiveras.
 
+Rummets **Publicera PAOWs viloklipp** uppdaterar bara den sparade idlepolicyn
+och dess exakta media i det befintliga publiceringspaketet. Publicerade
+placeringar, andra dealers, repliker, lager, branding, utkast och historik
+behålls. Detta behövs eftersom sparat projekt och publicerad layout skiljer
+sig åt. Behörighet, runtime-readiness och revisioner kontrolleras före skrivning.
+
 **Verifierat lokalt:** 7 nya tester, inklusive 4 000 klippval med full 24/24-täckning,
 exakta poseövergångar, avbrott, talprioritet och publiceringspaket/CAS. Befintliga
 idleprov 23/23, lokalspelarens 136/136 (inklusive nytt integrationsprov),
 relaterade publicerings-/registrerings-/Kevin-paritetsprov och Admins typkontroll
-passerar. **Kvar före runtimekvittens:** PR/CI, Vercel + Render-version, Admins
+passerar. Publiceringssviten passerar 36/36, inklusive avgränsning, N1,
+konkurrerande ändringar och rollback. PR #378:s första fulla regression är grön;
+den slutliga avgränsade publiceringen kontrolleras på uppdaterad head.
+**Kvar före runtimekvittens:** slutlig PR/CI, Vercel + Render-version, Admins
 sparade policy och ny publicering av PAOW-rummet samt faktisk videouppspelning.
 MAIN är informerad; dess layoutarbete ligger i annan arbetskopia.
 

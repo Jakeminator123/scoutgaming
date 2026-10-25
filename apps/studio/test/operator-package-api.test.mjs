@@ -235,8 +235,8 @@ async function nativeFixture({dealer='linnea'}={}){
 }
 
 const placementTable='f00be01d-fe7c-4a43-85b9-952e378f7331';
-async function placementFixture(){
-  const f=await nativeFixture(),first=await f.publish(),presentation=structuredClone(first.presentation),lane=presentation.lanes[0];
+async function placementFixture(options){
+  const f=await nativeFixture(options),first=await f.publish(),presentation=structuredClone(first.presentation),lane=presentation.lanes[0];
   const asset={schemaVersion:1,id:placementTable,role:'table',label:'Oak',sha256:'b'.repeat(64),size:4096,contentType:'image/png',width:1672,height:941,
     pathname:`croupier/media/tables/${placementTable}/${'b'.repeat(64)}.png`};
   presentation.assets.push(asset);lane.layers.table={enabled:true,default:placementTable,allowed:[placementTable]};
@@ -255,6 +255,59 @@ async function placementFixture(){
   return {...f,presentation,room,body,context,prepare:()=>f.api.preparations.get('POST /studio/api/admin/operator-package')(context),
     publish:prepared=>f.api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})})};
 }
+
+async function idleRefreshFixture(){
+  const f=await placementFixture({dealer:'paow'}),alternate=structuredClone(f.record);
+  alternate.id='10000000-0000-4000-8000-000000000099';alternate.sha256='d'.repeat(64);alternate.classification.label='Extra idle';
+  alternate.pathname=`croupier/media/dealers/paow/review/uploads/${alternate.id}/${alternate.sha256}.mp4`;
+  await f.repository.registerMedia(alternate,{actor:'tester'});
+  const doc=await f.repository.readDocument('project'),policy={schemaVersion:1,familyId:'paow/idle.ready/ready',
+    base:[{videoId:mediaId,weight:100,durationMs:1625}],variants:[{videoId:alternate.id,use:'rotation',automatic:null,durationMs:1625}],
+    rotation:{clips:[mediaId,alternate.id].map(videoId=>({videoId,phase:'any',from:'rest',to:'rest',weight:20,head:false,calm:true}))}};
+  doc.value.dealerIdlePolicies=[{dealerId:'paow',policy}];
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  // Restored notes after the original publication must not rewrite frozen
+  // baseline metadata, or reject identical original bytes.
+  const base=await f.repository.getMedia(mediaId);
+  await f.repository.classifyMedia(mediaId,{sha256:mediaHash,expectedRevision:base.revision,metadata:{...f.record.classification,notes:'Restored source note'},actor:'tester'});
+  const body={action:'refresh-dealer-idle',operatorId:'north',roomId:f.room.id,dealerId:'paow',expectedPackageRevision:9},context={...f.context,body};
+  return {...f,alternate,policy,body,context,prepare:()=>f.api.preparations.get('POST /studio/api/admin/operator-package')(context),
+    publish:prepared=>f.api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})})};
+}
+
+test('scoped idle publication preserves published geometry, branding, all non-idle data, drafts and history',async()=>{
+  const f=await idleRefreshFixture(),before=f.pool.snapshot(),old=await f.direct.getCurrentPackage('north');
+  const prepared=await f.prepare(),receipt=await f.publish(prepared),after=f.pool.snapshot();
+  assert.equal(receipt.packageRevision,10);assert.deepEqual(receipt.idleRefreshed,{dealerId:'paow',roomId:f.room.id});
+  const expected=structuredClone(f.presentation);expected.playback.dealerIdlePolicies=[{dealerId:'paow',policy:f.policy}];expected.playback.media.push(f.alternate);
+  assert.deepEqual(receipt.presentation,expected);
+  assert.deepEqual(readPackagePresentation(await f.direct.getCurrentPackage('north')),expected);
+  assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),publicPackageBranding(old.branding));
+  for(const key of ['documents','media','catalogs','audits','history','brandingDraft'])assert.deepEqual(after[key],before[key],key);
+  assert.deepEqual(after.packages.slice(0,-1),before.packages);assert.equal(after.operatorAudits.length,before.operatorAudits.length+1);
+});
+
+test('scoped idle publication rejects foreign rooms, dealers, payloads, preparations and stale revisions',async()=>{
+  const f=await idleRefreshFixture(),before=f.pool.snapshot();
+  for(const patch of [{operatorId:'south'},{roomId:'missing'},{dealerId:'linnea'},{expectedPackageRevision:8},{expectedPackageRevision:null},
+    {presentation:f.presentation},{lanes:[f.lane.id]},{dealerId:'../paow'}]) {
+    await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,body:{...f.body,...patch}}),e=>[400,409,422].includes(e.statusCode));
+  }
+  const prepared=await f.prepare();await assert.rejects(f.publish({...prepared}),e=>e.statusCode===422);
+  await assert.rejects(f.api.preparations.get('POST /studio/api/admin/operator-package')({...f.context,scope:{...nativeScope,workspaceId:'other'}}),e=>e.statusCode===403);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('scoped idle publication rechecks project, administration, media, package and SQL rollback',async()=>{
+  for(const kind of ['project','administration','media','package','sql']){
+    const f=await idleRefreshFixture(),prepared=await f.prepare();
+    if(kind==='project'||kind==='administration'){const doc=await f.repository.readDocument(kind);await f.repository.saveDocument(kind,{value:doc.value,expectedRevision:doc.revision,actor:'concurrent'});}
+    if(kind==='media'){const row=await f.repository.getMedia(f.alternate.id);await f.repository.classifyMedia(row.id,{sha256:f.alternate.sha256,expectedRevision:row.revision,metadata:{...f.alternate.classification,label:'Changed'},actor:'concurrent'});}
+    if(kind==='package'){const old=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'concurrent',operatorId:'north',expectedRevision:9,lanes:old.lanes,games:old.games,tables:old.tables,branding:old.branding});}
+    if(kind==='sql')f.pool.failNext('publish-package');
+    const before=f.pool.snapshot();await assert.rejects(f.publish(prepared));assert.deepEqual(f.pool.snapshot(),before,kind);
+  }
+});
 
 test('published mobile placement uses frozen revision 9 and preserves project, branding draft, all media and package history',async()=>{
   const f=await placementFixture(),before=f.pool.snapshot(),original=await f.direct.getCurrentPackage('north'),io=f.io(),offset=f.pool.calls.length;
@@ -359,6 +412,24 @@ test('mobile placement CAS rejects changed package or administration and rolls b
 function placementAdmin(f,{authorize=async()=>({...session,scope:nativeScope}),preparations=f.api.preparations,mutationTransaction=work=>work()}={}){
   return createStudioAdminApi({authorize,mutationTransaction,allowedOrigins:[origin],publicHosts:['studio.example'],handlers:f.api.handlers,preparations});
 }
+
+test('N1 scoped idle publication requires admin authorization, current session and runtime readiness for its exact candidate',async()=>{
+  const f=await idleRefreshFixture(),before=f.pool.snapshot();
+  for(const actor of [null,{...session,scope:nativeScope,role:'partner'}]){
+    const api=placementAdmin(f,{authorize:async()=>actor});assert.ok([401,403].includes((await api.handle(request('operator-package',f.body))).status));
+  }
+  assert.equal((await placementAdmin(f).handle(request('operator-package',f.body,{origin:'https://foreign.example'}))).status,403);
+  let reads=0;const revoked=placementAdmin(f,{authorize:async()=>++reads<3?{...session,scope:nativeScope}:null});
+  assert.ok([401,403].includes((await revoked.handle(request('operator-package',f.body))).status));
+  const blocked=placementAdmin(f,{mutationTransaction:async()=>{throw Object.assign(Error('runtime_required'),{statusCode:503});}});
+  assert.equal((await blocked.handle(request('operator-package',f.body))).status,503);
+  assert.deepEqual(f.pool.snapshot(),before);
+  let descriptor;const ready=placementAdmin(f,{mutationTransaction:async(work,options)=>{descriptor=options;return work();}});
+  const response=await ready.handle(request('operator-package',f.body));assert.equal(response.status,200);
+  assert.deepEqual(descriptor.presentationDocuments,['project','administration']);
+  assert.equal(descriptor.presentationMutation.kind,'presentation-package');
+  assert.deepEqual(descriptor.presentationMutation.value,(await response.json()).presentation);
+});
 test('N1 mobile placement negotiates the exact frozen candidate without project draft and rejects unavailable readiness',async()=>{
   const f=await placementFixture();let descriptor;
   const api=placementAdmin(f,{mutationTransaction:async(work,options)=>{descriptor=options;return work();}});
