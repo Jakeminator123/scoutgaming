@@ -7,7 +7,7 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. 45 % är oförändrat. Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
 
 - J05: #336:s gateway/klient/rumsväg är mergad. Senare #355/#356/#354 levererade server-v3 samt borttagning av äldre klient/lokal produktstate. Samlad start/readiness/drain/restore-acceptans är fortfarande ett eget krav.
-- J06: gamla paket A-noteringen är historisk. Fyra portade K07-filer finns ännu som opt-in; obligatorisk CI-registrering är ett konkret återstående steg.
+- J06: gamla paket A-noteringen är historisk. De fyra portade K07-filerna ingår i obligatorisk regression genom #386. Fortsatt testurval och full J06/J05-acceptans bedöms separat.
 - J08: #334 och senare #364/#366 finns på main. Återanvänd deras scope, CAS, förhandsvisning och publicering; fulla verkliga material-/paket- och K06-kvitton återstår.
 - J04: senare #358/#360 gör `/game` till aktiv publik spelstart. Ingen ny radering av denna route, aktiv intern launch eller fungerande kompatibilitetsredirect följer av äldre checklistor.
 - K05:s PAOW-import är redan utförd enligt handoff; föreslå inte omimport eller dealeråterställning från gamla matrisnamn. Aktuellt main-kontrakt går före Kevins etiketter.
@@ -182,6 +182,8 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 **Bevis till status.json[J06]:** `head=<SHA>; urval=<matris>; test=<kommando/resultat>; mätning=<faktisk eller ej utförd>; PR=<URL>; review=<granskare>`.
 
 **J06-delsteg 25 oktober:** PR #386 registrerar de fyra befintliga K07-filerna i obligatoriska `gameplay/shared-blackjack` och tar bort deras orphan-undantag. 18/18 riktade prov, 0 orphan i 571 kandidater och grön CI på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`. Ingen ny testkopia eller sänkt regression; full J06/J05-acceptans kvarstår.
+
+**J06-slutgrind, 25 oktober:** en reproducerad fork-lucka rättas genom att CI kräver readinessstegets faktiska lyckade utfall när migration=true. Befintligt skydd mot produktionshemligheter till fork-kod behålls; klient-/test-/dokumentundantag består. Röd regression före rättning, därefter 40/40 CI-/workflow-/hookprov utan skip och oberoende review utan blockerare. Se [handoffens verifieringsgräns](../../docs/JOHN-HANDOFF.md#j06-slutgrinden-kräver-verklig-neon-readiness--25-oktober-2026). Detta är ett avgränsat J06-delsteg, inte full aktivitetsacceptans.
 
 ## J07 — Postgres-adapter för delat bord
 

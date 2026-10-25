@@ -220,12 +220,47 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   const run = needs => spawnSync(process.execPath,['--input-type=module','-e',script],{
     encoding:'utf8',env:{...process.env,CI_NEEDS:JSON.stringify(needs)},
   }).status;
-  const full = { changes:{result:'success',outputs:{scope:'full',moving:'false'}}, documentation:{result:'skipped'},
-    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'moving-worker':{result:'skipped'} };
+  const full = { changes:{result:'success',outputs:{scope:'full',migration:'true',moving:'false'}}, documentation:{result:'skipped'},
+    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true',migration_readiness:'success'}}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
-  const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.documentation.result='success';
+  const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.changes.outputs.migration='false'; docs.documentation.result='success';
   docs['dealer-regression'].result='skipped'; delete docs['dealer-regression'].outputs;
   assert.equal(run(docs),0);
+  const client = structuredClone(full); client.changes.outputs.migration='false';
+  client['dealer-regression'].outputs.migration_readiness='skipped';
+  assert.equal(run(client),0,'client-only changes need no production access');
+  for (const receipt of [undefined,'','skipped','failure','cancelled','true',true]) {
+    const broken=structuredClone(full); broken['dealer-regression'].outputs.migration_readiness=receipt;
+    assert.notEqual(run(broken),0,'required readiness must have a successful step outcome: '+receipt);
+  }
+  for (const value of [undefined,'','unknown',true,false]) {
+    const broken=structuredClone(full); broken.changes.outputs.migration=value;
+    assert.notEqual(run(broken),0,'unreported or malformed migration selection is rejected');
+  }
+  const inconsistentDocs=structuredClone(docs); inconsistentDocs.changes.outputs.migration='true';
+  assert.notEqual(run(inconsistentDocs),0,'documentation cannot claim to have run required readiness');
+  const readiness = yaml.split('      - name: Studio migration readiness (production ledger)\n')[1]?.split('\n  moving-worker:')[0];
+  assert.ok(readiness?.includes('id: migration_readiness'));
+  assert.ok(yaml.includes('migration_readiness: $'+'{{ steps.migration_readiness.outcome }}'),'job exposes the real step outcome');
+  assert.doesNotMatch(readiness,/continue-on-error:/);
+  const condition=readiness.match(/if: \$\{\{ (.+) \}\}/)?.[1];
+  assert.ok(condition,'readiness retains an explicit production-access guard');
+  const repository='Jakeminator123/scoutgaming';
+  const contexts=[
+    {event_name:'pull_request',repository,event:{pull_request:{head:{repo:{full_name:repository}}}},allowed:true},
+    {event_name:'pull_request',repository,event:{pull_request:{head:{repo:{full_name:'contributor/scoutgaming'}}}},allowed:false},
+    {event_name:'push',ref:'refs/heads/main',repository,allowed:true},
+    {event_name:'push',ref:'refs/heads/feature',repository,allowed:false},
+    {event_name:'workflow_dispatch',repository,allowed:true},
+    {event_name:'unknown',repository,allowed:false},
+  ];
+  for (const context of contexts) for (const migration of ['true','false']) {
+    const allowed=runInNewContext(condition,{needs:{changes:{outputs:{migration}}},github:context});
+    assert.equal(allowed,migration==='true' && context.allowed,'production access: '+JSON.stringify({event:context.event_name,migration,allowed:context.allowed}));
+    const result=structuredClone(full); result.changes.outputs.migration=migration;
+    result['dealer-regression'].outputs.migration_readiness=allowed?'success':'skipped';
+    assert.equal(run(result)===0,migration==='false' || context.allowed,'fork readiness must block without exposing production access');
+  }
   for (const receipt of [undefined,'','false',false]) {
     const broken=structuredClone(full); broken['dealer-regression'].outputs.lipsync_verified=receipt; assert.notEqual(run(broken),0);
   }

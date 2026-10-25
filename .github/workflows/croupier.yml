@@ -69,6 +69,7 @@ jobs:
     timeout-minutes: 45
     outputs:
       lipsync_verified: ${{ steps.lipsync_contracts.outputs.verified }}
+      migration_readiness: ${{ steps.migration_readiness.outcome }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -196,8 +197,11 @@ jobs:
       - run: node test/split-rules.mjs
       - run: node --test --test-concurrency=4 test/croupier-chef.mjs test/github-workflow.mjs test/inbox.mjs
       - name: Studio migration readiness (production ledger)
+        id: migration_readiness
         # Main/manual runs always check the ledger. Client/test-only PR edits
         # need no production access; server/schema/dependency changes still do.
+        # Forks receive no production credentials; the final gate rejects
+        # skipped readiness whenever the classified change requires it.
         if: ${{ needs.changes.outputs.migration == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
         run: node tools/check-migration-readiness.mjs
         env:
@@ -226,6 +230,13 @@ jobs:
           const required = scope === 'documentation' ? ['documentation']
             : scope === 'full' ? ['dealer-regression'] : [];
           const moving = jobs.changes?.outputs?.moving;
+          const migration = jobs.changes?.outputs?.migration;
+          if (!['true', 'false'].includes(migration)
+            || (migration === 'true' && (scope !== 'full'
+              || jobs['dealer-regression']?.outputs?.migration_readiness !== 'success'))) {
+            console.error('CI failed: required production migration readiness is missing or unsuccessful. Fork code must not receive production credentials; review and rerun from an authorized repository branch.');
+            process.exit(1);
+          }
           if (!['true', 'false'].includes(moving)
             || jobs['moving-worker']?.result !== (moving === 'true' ? 'success' : 'skipped')
             || jobs.changes?.result !== 'success' || required.length === 0
