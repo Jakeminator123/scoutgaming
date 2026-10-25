@@ -2,7 +2,7 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject as createHistoricalProject, defaultPresentationLane, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
+import { createSeedProject as createHistoricalProject, createEmptyProject, defaultPresentationLane, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
@@ -13,7 +13,7 @@ import { buildPresentationPackage, layerAssetPath } from '../../../packages/pres
 import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
-import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
+import {runtimeCatalogRevision,createEmptyRuntimeMediaCatalog} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 
 import { createGameEntrySelector } from '../../../packages/presentation/server/game-entry-selector.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';
@@ -94,25 +94,28 @@ function combinedPool() {
   } };
   return pool;
 }
-async function fixture(options = {}) {
+async function fixture({catalog=readRuntimeCatalogFixture(),empty=false,...options} = {}) {
   const pool = combinedPool(), repository = createStudioRepository({ pool, scope });
-  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
-  let project = createSeedProject();
-  const vip = defaultPresentationLane('astrid'); vip.id = 'vip-presentation'; vip.label = 'VIP';
-  project.lanes.push(vip);
-  const lanes = project.lanes, cloud = cloudPresentationFixture({project,lanes:[...lanes,...['elin','saga'].map(dealer => ({...defaultPresentationLane(dealer),id:'fixture-'+dealer}))]});
-  project = cloud.project; project.lanes = lanes;
-  for (const {revision,...record} of cloud.mediaRows) pool.setMedia(record,revision);
-  const administration = { gameLane:'mobile-phone', gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}], rooms: [{ id: 'legacy', name: 'Legacy', scene: 'classic', felt: 'green', dealer: 'astrid', state: 'live' }],
+  pool.seedRuntimeCatalog(scope,catalog);
+  let project = empty ? createEmptyProject() : createSeedProject(), defaultPresentationLaneId;
+  if (!empty) {
+    const vip = defaultPresentationLane('astrid'); vip.id = 'vip-presentation'; vip.label = 'VIP';
+    project.lanes.push(vip);
+    const lanes = project.lanes, cloud = cloudPresentationFixture({project,lanes:[...lanes,...['elin','saga'].map(dealer => ({...defaultPresentationLane(dealer),id:'fixture-'+dealer}))]});
+    project = cloud.project; project.lanes = lanes;
+    for (const {revision,...record} of cloud.mediaRows) pool.setMedia(record,revision);
+    defaultPresentationLaneId = vip.id;
+  }
+  const administration = empty ? {rooms:[],gameLanes:[],gameLane:null} : { gameLane:'mobile-phone', gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}], rooms: [{ id: 'legacy', name: 'Legacy', scene: 'classic', felt: 'green', dealer: 'astrid', state: 'live' }],
     tiers: { classic: 'vera', high: 'astrid', vip: 'amira' }, tournaments: [], pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 } };
   await repository.initializeDocument('project', { value: project, revision: project.revision, actor: session.user });
   await repository.initializeDocument('administration', { value: administration, revision: 'admin-initial', actor: session.user });
   const videoRegistry = { async loadCaptured(snapshot) { assert.equal(pool.currentActive(), 0, 'inventory loading outside this request SQL'); return { videos: snapshot.mediaRows.map(record => ({ id: record.id, dealer: record.classification.dealerId, sha256: record.sha256, bytes: record.size, classification: clone(record.classification), available: true, integrity: 'verified' })) }; }, async verifyCapturedMedia() { assert.equal(pool.currentActive(), 0, 'provider HEAD outside this request SQL'); } };
   const roomApi = createPresentationRoomApi({ repository, scope, videoRegistry, runtimeCapabilities: async presentation => presentation?.schemaVersion === 3 ? capability4 : presentation?.schemaVersion === 2 ? { ...capability, schemaVersion: 3, registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' } : capability, now: () => 1700000000000, ...options });
   const context = body => ({ body, actor: session, scope });
-  const prepare = (operatorId = 'north', presentationLaneId = vip.id, game) => roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ ...context(null), request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=${presentationLaneId}${game?'&game='+game:''}`) });
+  const prepare = (operatorId = 'north', presentationLaneId = defaultPresentationLaneId, game) => roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ ...context(null), request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=${presentationLaneId}${game?'&game='+game:''}`) });
   const create = body => pool.request(()=>roomApi.handlers.get('POST /studio/api/admin/presentation-room')(context(body)));
-  const payload = async (overrides = {}) => { const ready = await prepare(); return { operatorId: 'north', presentationLaneId: vip.id, name: 'VIP room', idempotencyKey: key,
+  const payload = async (overrides = {}) => { const ready = await prepare(); return { operatorId: 'north', presentationLaneId: defaultPresentationLaneId, name: 'VIP room', idempotencyKey: key,
     expectedProjectRevision: ready.projectRevision, expectedAdministrationRevision: ready.administrationRevision, expectedPackageRevision: ready.packageRevision, ...overrides }; };
   const publish = async input => repository.transaction(() => repository.withTransactionClient(async client => {
     const store = await createOperatorStore({ sql: client, scope, transaction: work => repository.withTransactionClient(work), now: () => 1700000000000 }); return store.publishPackage(input);
@@ -948,4 +951,35 @@ test('missing or empty saved compositions cannot create a default room or public
     await assert.rejects(f.create(body),error=>error.code==='studio_presentation_required'&&error.statusCode===404);
     assert.deepEqual(f.pool.snapshot(),before);
   }
+});
+
+
+test('an empty project and immutable bank publish only a newly registered synthetic dealer through the normal game entry',async()=>{
+ const catalog=createEmptyRuntimeMediaCatalog(),f=await fixture({catalog,empty:true}),initial=await f.repository.readDocument('project');
+ assert.deepEqual(initial.value.dealers,[]);assert.deepEqual(initial.value.lines,[]);assert.deepEqual(initial.value.lanes,[]);
+ assert.deepEqual(await f.repository.listMedia({limit:5000}),[]);assert.deepEqual(f.administration,{rooms:[],gameLanes:[],gameLane:null});
+ const dealerId='synthetic',project=addDealer(initial.value,dealerId,'Synthetic dealer'),lane=defaultPresentationLane(dealerId);
+ lane.id='synthetic-composition';lane.label='Synthetic composition';lane.renderer='portrait-video';lane.composition=defaultCompositionSettings();
+ const background=fixedBackground(project,lane);project.lanes=[lane];
+ const cloud=cloudPresentationFixture({project,lanes:project.lanes});
+ for(const {revision,...record} of cloud.mediaRows)f.pool.setMedia(record,revision);
+ await f.repository.saveDocument('project',{actor:session.user,expectedRevision:initial.revision,value:cloud.project});
+ const ready=await f.prepare('north',lane.id);assert.equal(ready.ready,true);
+ const body={operatorId:'north',presentationLaneId:lane.id,name:'Synthetic room',idempotencyKey:key,
+  expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision};
+ const created=await f.create(body);assert.equal(created.duplicate,false);assert.equal(created.packageRevision,1);
+ const raw=f.pool.snapshot().packages[0],pack={operatorId:'north',revision:1,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+ const presentation=readPackagePresentation(pack);assert.ok(presentation.playback.media.length>0);
+ assert.deepEqual(presentation.registeredDealers.map(row=>row.id),[dealerId]);
+ assert.deepEqual(presentation.assets,[background]);assert.deepEqual(presentation.lanes[0].composition,lane.composition);
+ const records=await f.repository.listMedia({limit:5000});assert.equal(records.length,1);
+ for(const media of presentation.playback.media){assert.equal(media.classification.dealerId,dealerId);assert.ok(records.some(row=>row.id===media.id&&row.sha256===media.sha256));}
+ const saved={project:(await f.repository.readDocument('project')).value,administration:(await f.repository.readDocument('administration')).value};
+ assert.deepEqual(saved.project.dealers.map(row=>row.id),[dealerId]);assert.ok(saved.project.lines.every(row=>row.dealerId===dealerId));
+ assert.equal(saved.administration.gameLanes.length,1);assert.equal(saved.administration.gameLanes[0].dealer,dealerId);
+ const selector=createGameEntrySelector({policy:{readSaved:async()=>saved,readGameConfiguration:async()=>saved.administration},packages:{resolve:async slug=>({operator:{id:slug,status:'active'},package:pack})}});
+ const entry=await selector(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,dealerId);assert.equal(entry.selection.roomId,created.room.id);
+ assert.equal((await selector('?operator=other&table='+created.room.id)).status,404);
+ assert.deepEqual((await f.repository.readRuntimeCatalog()).value,catalog);
+ const before=f.pool.snapshot();assert.equal((await f.create(body)).duplicate,true);assert.deepEqual(f.pool.snapshot(),before);
 });

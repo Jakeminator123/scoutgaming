@@ -1,22 +1,32 @@
 # Aktuell handoff — Scoutgaming
 
+
+## Tom molnkatalog utan historiska dealerkrav — 25 oktober 2026
+
+Nya scopes kan starta med en explicit, exakt tom runtimekatalog. Den kräver inga gamla Astrid-/Emil-filer eller lokala produktregister. Saknad, blandad eller felaktig katalog avvisas fortfarande; alla fyllda kataloger behåller befintlig validering. Förberedelsefunktionen använder samma målgranskning, schema-/revisionskontroll, transaktionslås och audit som ordinarie import. Tom init kan aldrig ersätta en fylld bank.
+
+**Verifiering:** underagentens katalog-/importprov 23/23, konsumentprov 11/11, publiceringssvit 52/52 och oförändrade legacy-/uppladdningsprov 27/27 passerar. Första commit-hooken gav 230 pass, fyra uttryckliga browser-/PG-skips; den skärpta publiceringssviten gav 52/52 utan skip. Root har granskat produktdiffen och verifierat oförändrad befintlig katalog/revision, JSONB-nyckelordning och att äldre läsare avvisar den nya tomma formen. Det nya publiceringsfallet börjar med tom projektmodell, tom administration och noll media; en ny syntetisk dealer når fryst paket och rätt spelentré, medan annan operatör nekas. Root körde därefter de fyra integrerade katalog-/import-/register-/publiceringssviterna: 86/86 pass. Detta är domän-/providerfixturer, inte verklig moln- eller mediaacceptans.
+
+**Inför installation:** deploya kompatibla läsare i Vercel och Render före tom init. Rollback måste också förstå sparat tomt format; återställ inte historiska kataloger för att få gammal kod att starta. [Installationsordning och resurskvitto](ENVIRONMENT-RESTORATION.md#konkret-fortsättning-ännu-inte-utförd) gäller fortsatt. Neon-endpointets autosuspend är nu separat observerad som idle; ingen app, roll, schema eller seed har installerats. Migrationsstatus är fortsatt 45 % (9/20).
+
+
 ## Render v3 och borttagna v2-lås — 25 oktober 2026
 
 Jakob gav förtydligat mandat att rensa ersatt kod och regressioner som låser historiska beteenden. Container-CI riktas därför till den faktiska `Dockerfile.game`: det gamla kombinerade Studio/v2-jobbet och dess krav på privat bootstrapmapp är borttagna, medan beroende-/cachekontrollen flyttas till v3. Nätverkslösa bild-/startkontroller kräver att Studio, lokala medieregister och äldre bootstrapdata saknas i spelimagen. Detta skapar ingen lokal produkt eller molnresurs.
 
 Render-guiden och byggkontexten beskriver nu v3 som aktiv drift; det gamla receptet att återgå till suspenderad v2 är borttaget. Färsk tjänst- och HTTP-kontroll visar `23debde7155346e30ee5a3f3dfbe54cd09ea2789`, health200 och v28/rotation. V2 är suspenderad. Main `4abbf1985e183c145c5a7772fe02631c6ee9b274` saknar senare ändringar i motsvarande runtimefiler. Ingen produktion ändras av denna CI-/dokumentleverans.
 
-Den äldre kombinerade Dockerfilens och QA-hookarnas återstående kodkonsumenter är separat avvecklingsarbete. Historiska Astrid-/Emil-krav ska inte användas för att fylla en ny Neon-installation; exakt tom katalog och ordinarie uppladdningar granskas i separat avgränsad kodleverans. Testskydd för saldo, auth, scope, revisioner och bytesidentitet behålls. Migrationsstatus står kvar på 45 %.
+Den äldre kombinerade Dockerfilens och QA-hookarnas återstående kodkonsumenter är separat avvecklingsarbete. Historiska Astrid-/Emil-krav ska inte användas för att fylla en ny Neon-installation; exakt tom katalog och ordinarie uppladdningar är kodprovade enligt avsnittet ovan; faktisk molninstallation återstår. Testskydd för saldo, auth, scope, revisioner och bytesidentitet behålls. Migrationsstatus står kvar på 45 %.
 
-**Verifiering:** lokalt saknas Docker; faktisk Linux-image, cache och nätverkslös start verifieras i leverans-PR:ens containerjobb före merge. Ingen container- eller molnacceptans påstås enbart från YAML-läsning.
+**Levererat:** [PR #390](https://github.com/Jakeminator123/scoutgaming/pull/390) är mergad som `d9ef40c886d294a7d24e8cbada95d7aa177cfd05`. Full regression `40210908372` och verklig Linux-image/cache/nätverksfri startkontroll `40210908364` passerade på exakt `43a3efa18d3f65557bbec6ed169c754a09afce46`. Oberoende review utan blockerare; ingen runtime-/produktionsändring. Containerprovet är inte full molnacceptans.
 
 ## Tom Neon-staging skapad och begränsad — 25 oktober 2026
 
 Jakob godkände uttryckligen Create med Vercels startvärden och omedelbar begränsning. `croupier-k06-k07-staging` är skapad i rätt organisation: projekt `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, endpoint `ep-billowing-surf-b93x7p3c`. Separat GET verifierar PG18, Frankfurt, fast 0,25 CU och autosuspend 300 s. Endast `neondb` finns och inspektionen visar noll användartabeller. Ingen app är ansluten; inga roller/schema/seeds eller produktionsdata har ändrats.
 
-Projektets standardcompute och användningskvot kunde inte ändras i den Vercel-hanterade organisationen; endpointbegränsningen lyckades. Skapa inga ytterligare computes från de gamla standardvärdena. Autosuspend är inställd, men faktisk suspension är ännu inte observerad. Äldre Render-QA är verifierat suspenderad/maintenance och har inte återöppnats.
+Projektets standardcompute och användningskvot kunde inte ändras i den Vercel-hanterade organisationen; endpointbegränsningen lyckades. Skapa inga ytterligare computes från de gamla standardvärdena. Autosuspend är återläst och faktiskt observerad som idle 16:06:19 UTC; provideruppdatering 15:58:31 UTC. Äldre Render-QA är verifierat suspenderad/maintenance och har inte återöppnats.
 
-[Resurskvitto och konkret installationsordning](ENVIRONMENT-RESTORATION.md#verifierad-provisionering-25-oktober) beskriver separat databas/roller, mains schemaström, tom projektmodell, syntetiskt Admin-underlag, privat Blob, aktuell appdrift och återstående samprov. Databasskapandet är färdigt. Granskningen fann dessutom att en tom runtimekatalog nekas eftersom underliggande manifest fortfarande kräver historiska Emil-familjer; denna initlucka måste lösas utan legacyimport. Installations-/driftbeslut och full K06/K07-acceptans återstår. Detta ändrar inte migrationsstatus **45 % (9/20)**.
+[Resurskvitto och konkret installationsordning](ENVIRONMENT-RESTORATION.md#verifierad-provisionering-25-oktober) beskriver separat databas/roller, mains schemaström, tom projektmodell, syntetiskt Admin-underlag, privat Blob, aktuell appdrift och återstående samprov. Databasskapandet är färdigt. Granskningen fann att äldre kod nekade tom runtimekatalog genom krav på historiska Emil-familjer; denna initlucka är nu rättad i kod enligt avsnittet ovan, utan legacyimport; kompatibel deploy och faktisk init återstår. Installations-/driftbeslut och full K06/K07-acceptans återstår. Detta ändrar inte migrationsstatus **45 % (9/20)**.
 
 Föregående leverans [PR #388](https://github.com/Jakeminator123/scoutgaming/pull/388) är mergad som `4abbf1985e183c145c5a7772fe02631c6ee9b274`: CI40208080904 grön på head `03b507a04af6d0644ec9f081e7ff51e56d3f6010`, verkligt migrationsreadinesssteg lyckat och Vercel `dpl_Ci4syM9c556TNiM593c8a9uWoYEq` READY på merge-SHA. Äldre kommentarer om att Neon ännu saknas beskriver läget före detta nya resurskvitto.
 
