@@ -188,7 +188,7 @@ test('scene controls change only the chosen format and expose layers, table orde
  field('automatic-actions').props.onChange({target:{checked:true}});assert.equal(settings.mobile.gameUi.actions,null);
  const mobile=structuredClone(settings.mobile);field('dealer x',render('desktop')).props.onChange({target:{valueAsNumber:.19}});assert.equal(settings.desktop.dealer.x,.19);assert.deepEqual(settings.mobile,mobile);
  walk(render(),node=>node.type==='button')[0].props.onClick();assert.equal(settings.mobile.gameUi,undefined);assert.equal(settings.mobile.table.y,.7);
- const count=changes.length,disabled=render('desktop',true);assert.equal(disabled.props.disabled,true);
+ const count=changes.length,disabled=render('desktop',true);assert.ok(walk(disabled,node=>node.type==='fieldset'&&node.props.disabled).length);
  field('dealer x',disabled).props.onChange({target:{valueAsNumber:.25}});field('tableFront',disabled).props.onChange({target:{checked:true}});field('automatic-actions',disabled).props.onChange({target:{checked:false}});field('chat x',disabled).props.onChange({target:{valueAsNumber:25}});walk(disabled,node=>node.type==='button')[0].props.onClick();
  for(const value of [NaN,3,-3])field('dealer x').props.onChange({target:{valueAsNumber:value}});assert.equal(changes.length,count);
 });

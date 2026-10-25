@@ -16,7 +16,7 @@ export function PublishedSceneControls({settings,layout,disabled,onChange,langua
   const t=(sv:string,en:string)=>language==='en'?en:sv;
   const ui=settings[layout].gameUi??{actions:null,chat:{x:1,y:0,width:layout==='mobile'?.95:.28,height:.45}};
   const changeUi=(next:typeof ui)=>{const value=structuredClone(settings);value[layout].gameUi=structuredClone(next);onChange(value);};
-  return <fieldset disabled={disabled}><legend>{t('Scen och gränssnitt','Scene and interface')} · {layout==='mobile'?t('Mobil','Mobile'):'Desktop'}</legend>
+  return <details className={styles.previewHelp}><summary>{t('Storlek, lager och spelgränssnitt','Size, layers and game controls')} · {layout==='mobile'?t('Mobil','Mobile'):'Desktop'}</summary><fieldset disabled={disabled}>
     {(['dealer','background','table'] as const).map(role=><fieldset key={role}><legend>{{dealer:'Dealer',background:t('Bakgrund','Background'),table:t('Bord','Table')}[role]}</legend>
       {([role==='table'?'width':'scale','x','y'] as const).map(field=><label className={styles.row} key={field}>{field==='x'?t('Vågrätt','Horizontal'):field==='y'?t('Lodrätt','Vertical'):t('Storlek','Size')}
         <input type="number" aria-label={`${role} ${field}`} min={field==='x'||field==='y'?-2:.1} max={field==='x'||field==='y'?2:4} step={.01}
@@ -30,7 +30,7 @@ export function PublishedSceneControls({settings,layout,disabled,onChange,langua
       {(['x','y','width','height'] as const).map(field=><label className={styles.row} key={field}>{t('Chatt','Chat')} · {({x:t('vågrätt','horizontal'),y:t('lodrätt','vertical'),width:t('bredd','width'),height:t('maxhöjd','maximum height')})[field]} %<input type="number" aria-label={`chat ${field}`} min={field==='width'||field==='height'?15:0} max={100} step={1} value={Math.round(ui.chat[field]*100)} onChange={event=>{if(!disabled&&Number.isFinite(event.target.valueAsNumber))changeUi({...ui,chat:{...ui.chat,[field]:event.target.valueAsNumber/100}});}}/></label>)}
       <button type="button" className="sg-btn" onClick={()=>{if(disabled)return;const next=structuredClone(settings);delete next[layout].gameUi;onChange(next);}}>{t('Återställ automatisk placering','Reset automatic placement')}</button>
     </fieldset>
-  </fieldset>;
+  </fieldset></details>;
 }
 
 export function PartnerAppearancePreview({server,branding,scope,operatorSlug,language='sv',onStale,active=true,initiallyEnabled=false,compact=false,onMedia,sceneLayout}: {
