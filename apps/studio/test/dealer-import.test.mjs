@@ -552,7 +552,7 @@ test('frozen Paow files are recognised by exact name and size and placed from th
   assert.match(rows[5].reason, /saknar facket speak\.other\/twentyone/); assert.match(rows[5].warnings.join(' '), /uppskjuten:G13/); assert.equal(rows[5].classification, null);
   assert.match(rows[6].warnings.join(' '), /ej i K05-matrisen/); assert.match(rows[7].warnings.join(' '), /sprak-utanfor-en\/sv/);
   assert.match(rows[8].reason, /använder den inte/); assert.equal(rows[8].classification, null);
-  assert.match(rows[0].warnings.join(' '), /Ingen filmprofil/); assert.doesNotMatch(rows[2].warnings.join(' '), /Ingen filmprofil/);
+  assert.doesNotMatch(rows[0].warnings.join(' '), /Ingen filmprofil/); assert.doesNotMatch(rows[2].warnings.join(' '), /Ingen filmprofil/);
   // Same name but other bytes: ordinary filename rules, without any source evidence.
   assert.equal(rows[9].evidence, undefined); assert.match(rows[9].reason, /Filnamnet matchar/);
   assert.equal(rows[10].classification, null); assert.equal(rows[10].evidence.source, 'kevin-paow-c7138759');

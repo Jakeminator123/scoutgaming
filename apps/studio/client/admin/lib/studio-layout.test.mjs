@@ -184,6 +184,7 @@ test('editing a shared trigger reports each dealer bank and room using it',()=>{
 test('clip cards distinguish situation, selected unbound take, saved rule and local edits',async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+  const componentRequire=createRequire(new URL('../components/studio/connected-clip-card.tsx',import.meta.url));
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
     {module,exports:module.exports,require:name=>{
@@ -193,7 +194,7 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
       if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');
-      return require(name);
+      return componentRequire(name);
     }});
   const slot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.eventId==='idle.ready');
   const clips=[{id:'bound',label:'Sparad film'},{id:'selected',label:'En annan exakt tagning',contentType:'video/mp4',sha256:'a'.repeat(64)}];
