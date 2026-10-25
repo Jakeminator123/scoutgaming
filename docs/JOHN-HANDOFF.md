@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+**Aktuell status: 50 % verifierat, 50 % kvar (10/20 aktiviteter).** J06 är kvitterad genom kodrensning, beteendeprov och full CI40234506315 på81bc2475b. J05 är fortsatt öppen efter faktiskt Render502. Äldre procentuppgifter nedan är daterade delkvitton; status.json är enda statuskälla.
+
+## WebSocket efter startkontroll — 25 oktober sen kväll
+
+Startkontrollen stänger först loopbackservern och öppnar sedan samma gateway publikt. Dess `closing`-flagga återställs nu vid faktisk `listening`; tidigare gav behörig WebSocket HTTP503 efter förkontrollen. Ett riktigt `openCheckedGateway`-prov reproducerar felet före rättning och verifierar echo, fel Origin/hemlighet/session samt socketstängning vid shutdown efteråt. Riktad samkörning: 54 godkända, tre Linux-only skip på Windows, Node24.21.0/maxfyra; oberoende review utan blockerare. Detta är ett separat verifierat kodfel, ingen förklaring till Render-HTML502. Ändringen är ännu inte provkörd i molnet.
+
+CI `40234506315` är grön på föregående `81bc2475b`, inklusive alla åtta grupper, SQL/omstart/HTTPS, produktionsledger-readiness och slutgrind. Den senare WebSocket-rättningen måste få eget exakt-head CI-kvitto före slutleverans.
+
+## Gateway och kvarvarande materialkontrakt — 25 oktober sen kväll
+
+Nästa avgränsade leverans sätter gatewayens keep-alive och headertimeout till 120 sekunder enligt Render. En riktig HTTP-anslutning återanvänds efter 6,5 sekunders tomgång; samma prov underkänns med tidigare Node-standard. Riktat runtime-/ingress-/version-/shutdownprov: 57 godkända, tre Linux-only överhoppade på Windows. Detta rättar en belagd proxykonfigurationsrisk, men det nya molnprovet visar att Render502 kvarstår: efter korrekt omstart 3/8 lyckade svar och 5/8 Render502. Spelåterläsning stannade före kommandon; J05 är fortsatt öppet. [Fullständigt kvitto och städning](ENVIRONMENT-RESTORATION.md#kompletterande-omstartsprov--25-oktober-sen-kväll).
+
+Den döda emissionen av `CROUPIER_LISSABON_PROFILES` och dess källsträngslås tas bort. Next-tracingprovet läser nu utvärderad konfiguration och omdirigeringar i stället för att kräva en viss citat-/arraynotation. Befintliga datakatalogval, aktiva auth-/isoleringsprov och molnets nekande av den pensionerade flaggan består. `ops/cloud/README.md` beskriver nu en spelprocess i Render v3 samt Vercel/Neon/privat Blob. Historisk exportkod är separat konsumentgranskad före eventuell avveckling; inga gamla data eller säkerhetskopior raderas.
+
+[K05:s implementationsmatris](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-native-materialbindning-för-delad-spelkonfiguration) är reviderad efter förnyad granskning: fryst inspelat tal saknar verifierat ljudslut. Ny serverägd mätning av oförändrade Blob-bytes och ett bevisat sekvensbudgetkontrakt måste föregå native-materialproducenten. Inga nya medieregister, återkonstruerade godkännanden eller påhittade tider införs. Detta är kvarvarande implementation, inte en begäran om enbart manuell visuell sign-off.
+
+
 ## Borttagen implicit lokal administratör — 25 oktober kväll
 
 `services/game/server.mjs` skapar inte längre lokal Kevin-superadmin, höjer inte befintlig Kevin-användares roll och skriver inte startlösenord i loggen. Explicit molnbootstrap, aktiv jämförelsefixturs eget konto och tillåten gäståtkomst behålls. Ingen befintlig användare eller databas ändras av rensningen.
@@ -10,7 +27,7 @@ Verifiering: 13/13 i `test/cloud-admin-bootstrap.mjs`, `test/local-comparison-fi
 
 [#396](https://github.com/Jakeminator123/scoutgaming/pull/396) är mergad som `f098486f1017b468e3c83547d4babc04a2e1f23a`; full CI `40225145966` passerade. Kandidat `28815e9c` kördes i egna Vercel/Render-appar mot isolerad Neon/privat Blob: Admin19/19, writer/CAS14/14, riktig omstart+återläsning4/4, publicering/media78/78 samt blackjack71HTTP/fyra kommandon. [Exakta resurser, kvitton och begränsningar](ENVIRONMENT-RESTORATION.md#molnsamprov-25-oktober-kväll).
 
-**45 % = nio helt verifierade aktiviteter; 55 % återstår enligt samma mått.** Delresultaten är nu synliga i masterplanens matris. Manuell film/touchkontroll kan tas separat, men ersätter inte återstående kod: native room-game-config saknar en exakt materialresolver till dagens K04/K05-urval/timing. Delade bord förblir av. Ingen historisk dealerbank, lokal databas eller TSV-runtime återinförs. Produktionsmotorn återlästes frisk på `ebb6b91f`, inte uppdaterad till provkandidaten.
+**Vid denna tidigare kvällsavstämning: 45 % = nio aktiviteter; senare J06-kvitto höjer aktuell status till 50 %.** Delresultaten är nu synliga i masterplanens matris. Manuell film/touchkontroll kan tas separat, men ersätter inte återstående kod: native room-game-config saknar en exakt materialresolver till dagens K04/K05-urval/timing. Delade bord förblir av. Ingen historisk dealerbank, lokal databas eller TSV-runtime återinförs. Produktionsmotorn återlästes frisk på `ebb6b91f`, inte uppdaterad till provkandidaten.
 
 SQL-backup och restore till separat databas är genomförda. 75 tabeller/fyra sekvenser och 1 777 fullständiga objektnycklar matchar; riktiga app-läsare ger samma data i båda databaserna. Två privata mätfel (trunkerad SQL-objektetikett respektive fel TLS-kontrollpunkt) rättades med bevarade originalkvitton, utan datarättning eller försvagad TLS. Ingen full HTTP-spelreplay mot restoredatabasen är utförd.
 
@@ -48,7 +65,7 @@ befintliga writers i `croupier_staging`, på PG18.6/0,25 CU/300 s. Appens egen
 anslutning nekas ledger-skrivning och DDL. Separat tom restoredatabas samt eget
 Vercel-projekt/privat Blob finns. Inga produktionsdata eller dealerbanker kopierades.
 [Exakta resurser, mandat, verifiering och kvarvarande app-/restoreprov](ENVIRONMENT-RESTORATION.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober).
-Officiell status: 45 % (9/20), alltså 55 % återstående aktiviteter, inte kod/arbetstid.
+Vid detta tidigare delsteg: 45 % (9/20); aktuell status högst upp är 50 % (10/20), inte kod/arbetstid.
 
 ## Native-Admin följer unified-UI — 25 oktober 2026
 

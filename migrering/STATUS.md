@@ -2,21 +2,21 @@
 
 Genererad från [status.json](status.json). Uppdaterad 2026-10-25.
 
-**Verifierad migrering: 45% (9/20 aktiviteter).**
+**Verifierad migrering: 50% (10/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
 | Etapp | Verifierat inom etappen | Kumulativt etappmål | Grind |
 | --- | ---: | ---: | --- |
 | E1 Kontrakt och första Adminleverans | 100% | 20% | Godkänd |
-| E2 En produktväg | 50% | 40% | Ej godkänd |
+| E2 En produktväg | 75% | 40% | Ej godkänd |
 | E3 Kevinmodul med mains lagring | 75% | 60% | Ej godkänd |
 | E4 Adminstyrning och datamigrering | 0% | 80% | Ej godkänd |
 | E5 Verifierad leverans | 0% | 100% | Ej godkänd |
 
 | Ansvar | Verifierat inom ansvaret |
 | --- | ---: |
-| jakob | 50% |
+| jakob | 60% |
 | kevin | 43% |
 | orkestrator | 33% |
 
@@ -29,7 +29,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J03 | Avveckla resterande Control-ytor | jakob | VERIFIED |
 | J04 | En spelkatalog via lobby | jakob | VERIFIED |
 | J05 | Förenkla runtime och byggkedja | jakob | IN_PROGRESS |
-| J06 | Rensa testlås och rikta CI | jakob | IN_PROGRESS |
+| J06 | Rensa testlås och rikta CI | jakob | VERIFIED |
 | K02 | Ren regelkärna med explicit slump | kevin | VERIFIED |
 | K03 | Delat bord utan SQL- och videokoppling | kevin | VERIFIED |
 | J07 | Postgres-adapter för delat bord | jakob | VERIFIED |

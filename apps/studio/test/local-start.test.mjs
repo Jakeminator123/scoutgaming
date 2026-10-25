@@ -69,10 +69,8 @@ test('explicit fixture project preserves saved edits and refuses a corrupt proje
   assert.equal(specs.lab.env.CROUPIER_GAME_ORIGIN, 'http://127.0.0.1:4200');
   assert.notEqual(specs.product.dataDir, data);
   assert.equal(specs.product.dataDir, join(data, 'players'));
-  assert.equal(specs.product.env.CROUPIER_LISSABON_PROFILES, '1');
   const ordinary = childSpecifications(configuration, join(dir, 'ordinary'));
   assert.equal(ordinary.product.dataDir, join(dir, 'ordinary', 'product'));
-  assert.equal(ordinary.product.env.CROUPIER_LISSABON_PROFILES, '');
   assert.equal(specs.product.env.CROUPIER_STREAM_LANE, 'lissabon-stream-lane');
   assert.equal(specs.lab.env.CROUPIER_STREAM_LANE, 'lissabon-stream-lane');
 

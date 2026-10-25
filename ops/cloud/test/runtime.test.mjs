@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
-import { createServer, request as httpRequest } from 'node:http';
+import { Agent, createServer, request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from '../config.mjs';
 import { createCloudGateway, proxyHeaders, upstreamForHost, upstreamForRequest } from '../gateway.mjs';
-import { startChildren, terminateChild, observeChildStdout } from '../process-group.mjs';
+import { startChildren, terminateChild, observeChildStdout, closeGateway } from '../process-group.mjs';
 import { PassThrough } from 'node:stream';
-import { assertCloudAccessReady, main } from '../start.mjs';
+import { assertCloudAccessReady, main, openCheckedGateway } from '../start.mjs';
 
 const fixture = () => ({
   NODE_ENV: 'production', PORT: '10000',
@@ -433,6 +434,112 @@ test('public gateway rejects misdirected requests before contacting a child', as
   } finally {
     await new Promise((resolve, reject) => gateway.close(error => error ? reject(error) : resolve()));
   }
+});
+
+test('checked gateway reopens authorized room sockets and still drains them on shutdown',
+  { timeout: 5000 }, async t => {
+  const {WebSocket, WebSocketServer} = createRequire(new URL('../../../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
+  const origin = 'https://preview.example.test', transportOrigin = 'https://isolated.onrender.com';
+  const ingress = { publicOrigin:origin, transportOrigin, secret:'fixture-private-ingress-'.repeat(3) };
+  const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
+    labOrigin:origin, publicPort:0, vercelIngress:ingress };
+  const web = createServer((request, response) => {
+    response.writeHead(request.url === '/api/bo/speech-qa' ? 403 : 401); response.end();
+  });
+  const room = new WebSocketServer({ noServer:true }), clients = [];
+  let gateway, admitted = 0;
+  web.on('upgrade', (request, socket, head) => {
+    if (request.url !== '/shared-room/fixture-room' || request.headers.cookie !== 'player=owner') {
+      socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\nContent-Length: 0\r\n\r\n'); return;
+    }
+    assert.equal(request.headers.host, new URL(origin).host);
+    assert.equal(request.headers.origin, origin);
+    assert.equal(request.headers['x-croupier-vercel-secret'], undefined);
+    room.handleUpgrade(request, socket, head, ws => {
+      admitted++; ws.on('message', data => ws.send(data));
+    });
+  });
+  t.after(async () => {
+    clients.forEach(ws => ws.terminate()); room.clients.forEach(ws => ws.terminate()); room.close();
+    await closeGateway(gateway, 100);
+    web.closeAllConnections(); await new Promise(resolve => web.close(resolve));
+  });
+  web.listen(0, '127.0.0.1'); await once(web, 'listening');
+  gateway = createCloudGateway(config, { webPort:web.address().port,
+    sessionCheck:async () => ({ authorized:false, available:true }) });
+  const addresses = [];
+  gateway.on('listening', () => addresses.push(gateway.address().address));
+  // Exercise the real startup sequence, including all actual access probes,
+  // the loopback close, and reopening the same server on the public listener.
+  await openCheckedGateway(gateway, config);
+  assert.deepEqual(addresses, ['127.0.0.1', '0.0.0.0']);
+  const connect = (changes={}) => {
+    const ws = new WebSocket(`ws://127.0.0.1:${gateway.address().port}/shared-room/fixture-room`, {
+      headers:{ host:new URL(transportOrigin).host, origin, cookie:'player=owner',
+        'x-croupier-vercel-secret':ingress.secret, 'x-croupier-public-origin':origin,
+        'x-forwarded-host':new URL(origin).host, 'x-forwarded-proto':'https', ...changes } });
+    clients.push(ws); ws.on('error', () => {}); return ws;
+  };
+  const client = connect(); await once(client, 'open');
+  const echoed = once(client, 'message'); client.send('authorized-after-preflight');
+  assert.equal((await echoed)[0].toString(), 'authorized-after-preflight');
+  const rejected = ws => new Promise(resolve => ws.once('error', error => resolve(error.message)));
+  assert.match(await rejected(connect({'x-croupier-vercel-secret':'incorrect'})), /421/);
+  assert.match(await rejected(connect({origin:'https://evil.example.test'})), /421/);
+  assert.match(await rejected(connect({cookie:'player=other'})), /401/);
+  assert.equal(admitted, 1, 'reopening must not bypass transport or child session checks');
+  const clientClosed = once(client, 'close');
+  await closeGateway(gateway, 200); await clientClosed;
+  assert.equal(gateway.listening, false);
+  assert.equal(client.readyState, WebSocket.CLOSED);
+});
+
+test('gateway preserves an idle proxy connection beyond the Node default without widening ingress',
+  { timeout: 15000 }, async t => {
+  const origin = 'https://preview.example.test', transportOrigin = 'https://isolated.onrender.com';
+  const ingress = { publicOrigin:origin, transportOrigin, secret:'fixture-private-ingress-'.repeat(3) };
+  const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
+    labOrigin:origin, vercelIngress:ingress };
+  const gateway = createCloudGateway(config);
+  // Model a proxy whose own idle lifetime outlasts Node's former 5s + 1s buffer.
+  // Otherwise the client's Keep-Alive hint handling could hide a server close.
+  const agent = new class extends Agent {
+    keepSocketAlive(socket) {
+      const keep = super.keepSocketAlive(socket);
+      socket.setTimeout(0);
+      return keep;
+    }
+  }({ keepAlive:true, maxSockets:1 });
+  t.after(async () => {
+    agent.destroy(); gateway.closeAllConnections();
+    await new Promise((resolve, reject) => gateway.close(error => error ? reject(error) : resolve()));
+  });
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  const get = (path='/__cloud/health', host=new URL(transportOrigin).host) => new Promise((resolve, reject) => {
+    const request = httpRequest({ hostname:'127.0.0.1', port:gateway.address().port, path,
+      agent, headers:{ host } }, response => {
+      let body = '';
+      response.on('data', chunk => { body += chunk; });
+      response.on('error', reject);
+      response.on('end', () => resolve({ status:response.statusCode, body, socket:request.socket,
+        reused:request.reusedSocket, keepAlive:response.headers['keep-alive'] }));
+    });
+    request.on('error', reject);
+    request.setTimeout(2000, () => request.destroy(Error('gateway request timed out')));
+    request.end();
+  });
+  const first = await get();
+  assert.equal(first.status, 200); assert.equal(first.body, 'ok');
+  await new Promise(resolve => setTimeout(resolve, 6500));
+  assert.equal(first.socket.destroyed, false, 'gateway must retain the idle proxy connection');
+  const second = await get();
+  assert.equal(second.status, 200); assert.equal(second.body, 'ok');
+  assert.equal(second.reused, true); assert.equal(second.socket, first.socket);
+  assert.match(first.keepAlive, /(?:^|,\s*)timeout=120(?:,|$)/);
+  assert.equal((await get('/__cloud/health', 'evil.example.test')).status, 421);
+  assert.equal((await get('/api/table')).status, 421, 'persistent transport still requires signed ingress');
+  assert.equal(gateway.headersTimeout, 120000, 'header parsing retains a finite deadline');
+  assert.equal(gateway.requestTimeout, 0, 'existing streaming request policy is unchanged');
 });
 
 test('retired provider and playback routes cannot bypass authenticated Vercel ingress', async t => {

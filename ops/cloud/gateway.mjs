@@ -164,6 +164,9 @@ export function createCloudGateway(config, { sessionCheck = checkLabSession,
   });
   const roomTransports = new Set();
   let closing = false;
+  // Startup checks close the loopback listener before reopening this server
+  // publicly. Only a successful listen may reopen admission after that close.
+  server.on('listening', () => { closing = false; });
   const close = server.close;
   server.close = function (...args) {
     closing = true;
@@ -240,5 +243,10 @@ export function createCloudGateway(config, { sessionCheck = checkLabSession,
     socket.end('HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\n\r\n');
   });
   server.requestTimeout = 0; // SSE is a long-lived response.
+  // Render's edge reuses idle connections for up to 75s; Node's 5s default
+  // can close one before reuse. Keep header parsing bounded at the same 120s.
+  // https://render.com/tutorials/when-deploys-go-wrong/runtime-errors
+  server.keepAliveTimeout = 120000;
+  server.headersTimeout = 120000;
   return server;
 }
