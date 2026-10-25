@@ -18,7 +18,7 @@ Render-guiden och byggkontexten beskriver nu v3 som aktiv drift; det gamla recep
 
 Den äldre kombinerade Dockerfilens och QA-hookarnas återstående kodkonsumenter är separat avvecklingsarbete. Historiska Astrid-/Emil-krav ska inte användas för att fylla en ny Neon-installation; exakt tom katalog och ordinarie uppladdningar är kodprovade enligt avsnittet ovan; faktisk molninstallation återstår. Testskydd för saldo, auth, scope, revisioner och bytesidentitet behålls. Migrationsstatus står kvar på 45 %.
 
-**Verifiering:** lokalt saknas Docker; faktisk Linux-image, cache och nätverkslös start verifieras i leverans-PR:ens containerjobb före merge. Ingen container- eller molnacceptans påstås enbart från YAML-läsning.
+**Levererat:** [PR #390](https://github.com/Jakeminator123/scoutgaming/pull/390) är mergad som `d9ef40c886d294a7d24e8cbada95d7aa177cfd05`. Full regression `40210908372` och verklig Linux-image/cache/nätverksfri startkontroll `40210908364` passerade på exakt `43a3efa18d3f65557bbec6ed169c754a09afce46`. Oberoende review utan blockerare; ingen runtime-/produktionsändring. Containerprovet är inte full molnacceptans.
 
 ## Tom Neon-staging skapad och begränsad — 25 oktober 2026
 
