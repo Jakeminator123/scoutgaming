@@ -26,15 +26,26 @@ relaterade publicerings-/registrerings-/Kevin-paritetsprov och Admins typkontrol
 passerar. Publiceringssviten passerar 36/36, inklusive avgränsning, N1,
 konkurrerande ändringar och rollback. PR #378 har grön full CI inklusive
 production-ledger readiness och är mergad som `51165e9a`.
-Vercel `dpl_2fD4TKdv4otgeFanr8m5BaVGaznW` är READY och Render
-`dep-dbev7au7bikc73bk852g` är live på samma SHA; versionendpoint och hälsa (200)
-är återlästa. Livekontrollen hittade att native Admin använder
-`studio-policy-panel.tsx`; en klientuppföljning ansluter samma originalmatchning
-dit. 22/22 panelprov inklusive verkligt knappanrop och typkontroll passerar.
-**Kvar före runtimekvittens:** klientuppföljningens CI/deploy, Admins sparade
-policy och avgränsad publicering samt faktisk videouppspelning. West Bet står
-ännu på paketversion 1 med endast `andas`; inga andra inställningar har skrivits.
-MAIN är informerad; dess layoutarbete ligger i annan arbetskopia.
+PR #381 kopplar samma originalmatchning till native Admins riktiga regelflik;
+22/22 panelprov inklusive knappanrop, typkontroll och full CI passerar.
+Vercel `dpl_AVUrroma9Nz4Jcf2jsGx5dz8QSA8` är READY på `e57ed4d7`; Render
+`dep-dbev7au7bikc73bk852g` är live på backendversion `51165e9a`. Versionendpoint
+och hälsa (200) är återlästa. Klientuppföljningen kräver ingen ny backenddeploy.
+
+**Publicerat och återläst:** West Bet paketversion **2**, rummet
+`room-a8ffcb55-46c5-9424-9c1c-39d614383bf3`, har 24/24 källmatchade media
+(19 548 980 bytes) och exakt posepolicy. Projektets sparningskvittens är
+`studio-51fef509-d399-4471-8864-70656f15d1aa`. Branding, baseline-record och allt
+övrigt presentationsinnehåll är JSON-identiskt före/efter. Brandingutkast är
+fortsatt null. Sparad PAOW-policy är aktivt underlag och ska inte städas bort.
+
+Livekontroll i den publicerade spelarvyn visar riktiga videobilder, 8 olika klipp
+med uppspelnings-/bildkvittens och 9 observerade klippidentiteter på 45 sekunder.
+Observerade övergångar följer grafen, inklusive vila → knäppta händer → vila;
+inga status- eller konsolfel. Ingen insats eller spelrunda genomfördes.
+Alla 24 val och beslutsfasens regler är verifierade offline; samtliga 24 har
+inte spelats igenom manuellt i produktion. MAIN har fått slutkvittensen och
+kan fortsätta sin separata layoutdriftsättning.
 
 ## Mobilens beslutsknappar på korta skärmar — 25 oktober 2026
 
