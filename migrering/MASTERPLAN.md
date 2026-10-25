@@ -126,6 +126,13 @@ Kodkarta kontrollerad på main `23debde7155346e30ee5a3f3dfbe54cd09ea2789`. Rende
 
 ## Anpassningsgräns: main bestämmer formen
 
+Konfigurationen förenklas också enligt samma princip: explicit unified-UI ska
+använda en public HTTPS-origin även i native-Admin. Inspelat spel med AI-media
+av ska inte kräva en separat AI-tjänst; okonfigurerad chatt avvisas öppet.
+Kodrättningarna behåller behörighet, scope och aktiva AI-krav. De måste nå
+grön CI och kompatibel drift innan K06 kan använda dem; inga aktivitetsprocent
+eller media-/talattesteringar följer automatiskt av ändringarna.
+
 ```text
 Admin / scoped roomOverrides
     → validerad, fryst rum-/paket-/configversion i Neon

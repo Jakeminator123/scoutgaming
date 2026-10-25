@@ -858,13 +858,16 @@ rena navigationskontrakt och samma transportkonfiguration. Modulflytten ändrar
 inga miljönycklar, origins, ingressvalidering eller behörigheter.
 `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
-publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
+publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då varken för routingen
+eller native-Admin. Native API, login och SSR accepterar endast public-origin
+i detta uttryckliga läge. Separat drift behåller de två exakta origins och
+sin befintliga rewrite-regel. Host, XFH, Origin, CSRF, session och scope valideras.
 Render-origin måste fortfarande vara separat och ingressnyckeln stannar på
 servern. Studio behåller `/studio` som basePath och sin befintliga Neon/Blob/mail-
 konfiguration. De två nya flaggorna är production-scopade i samma projekt,
 utan nyckelkopior. Git-autobyggen är återaktiverade; rootDirectory och
-ignored-build-kommandot är null, framework är services. Det äldre Studio-
-aliaset bevaras även i native-konfigurationens exakta tillåtna origins.
+ignored-build-kommandot är null, framework är services. Ett äldre sekundärt
+Studio-alias ger ingen extra native-behörighet i unified-läget.
 Det domänlösa reservprojektet scoutgaming-legacy-frontend har i stället
 ignored-build `exit 0` och automatisk domäntilldelning avstängd.
 
