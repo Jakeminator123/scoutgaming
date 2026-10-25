@@ -84,27 +84,27 @@ test('WebSocket and SSE pass through the same authenticated ingress without repl
   assert.equal(vercelIngressRequest({url: '/__cloud/health', method: 'GET', headers: {host: 'isolated.onrender.com'}}, ingress).health, true);
 });
 
-test('real HTTP gateway preserves media ranges and streams SSE, checking Lab access on every reconnect', async () => {
-  let authorized = true, checks = 0, labRequests = 0;
+test('real HTTP gateway preserves game media ranges and SSE while checking Vercel sessions', async () => {
+  let authorized = true, checks = 0, eventRequests = 0;
   const web = createServer((req, res) => {
+    if (req.url === '/api/v1/events') {
+      eventRequests++; assert.equal(req.headers['x-croupier-lab-authorized'], undefined);
+      assert.equal(req.headers['last-event-id'], 'version-17');
+      res.writeHead(200, { 'Content-Type':'text/event-stream', 'Cache-Control':'no-store' });
+      res.write('id: version-18\ndata: {"version":18}\n\n');
+      return; // Leave the stream open until the client cancels.
+    }
     assert.equal(req.headers.host, 'preview.example.test');
     assert.equal(req.headers['x-croupier-vercel-secret'], undefined);
     assert.equal(req.headers.range, 'bytes=2-4');
     res.writeHead(206, {'Content-Type': 'video/mp4', 'Content-Range': 'bytes 2-4/8', 'Accept-Ranges': 'bytes', ETag: '"unchanged-hash"', 'Cross-Origin-Resource-Policy': 'same-origin'});
     res.end('234');
   });
-  const lab = createServer((req, res) => {
-    labRequests++; assert.equal(req.headers['x-croupier-lab-authorized'], 'lab-fixture-internal-secret-'.repeat(3));
-    assert.equal(req.headers['last-event-id'], 'version-17');
-    res.writeHead(200, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store'});
-    res.write('id: version-18\ndata: {"version":18}\n\n');
-    // Keep the connection open; the first event must reach the client now.
-  });
-  const servers = [web, lab];
+  const servers = [web];
   try {
     for (const server of servers) {server.listen(0, '127.0.0.1'); await once(server, 'listening');}
     const gateway = createCloudGateway({singleOrigin: true, gameOrigin: ingress.publicOrigin, boOrigin: ingress.publicOrigin, labOrigin: ingress.publicOrigin, streaming: true}, {
-      webPort: web.address().port, labPort: lab.address().port, vercelIngress: ingress, labInternalSecret: 'lab-fixture-internal-secret-'.repeat(3),
+      webPort: web.address().port, vercelIngress: ingress,
       sessionCheck: async (cookie, host) => {checks++; assert.equal(cookie, 'player_session=isolated'); assert.equal(host, 'preview.example.test'); return {available: true, authorized};},
     });
     servers.push(gateway); gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
@@ -120,12 +120,12 @@ test('real HTTP gateway preserves media ranges and streams SSE, checking Lab acc
     assert.equal(media.status, 206); assert.equal(media.body, '234'); assert.equal(media.headers['content-range'], 'bytes 2-4/8');
     assert.equal(media.headers.etag, '"unchanged-hash"'); assert.equal(media.headers['cross-origin-resource-policy'], 'same-origin');
     const session = await get('/__vercel/lab/session'); assert.equal(session.status, 200);
-    const sse = await get('/studio/api/inputs/events', {'last-event-id': 'version-17'}, true);
-    assert.equal(sse.status, 200); assert.match(sse.body, /id: version-18/); assert.equal(labRequests, 1);
+    const sse = await get('/api/v1/events', {'last-event-id': 'version-17'}, true);
+    assert.equal(sse.status, 200); assert.match(sse.body, /id: version-18/); assert.equal(eventRequests, 1);
     authorized = false;
     assert.equal((await get('/__vercel/lab/session')).status, 401);
-    assert.equal((await get('/studio/api/inputs/events', {'last-event-id': 'version-18'})).status, 401);
-    assert.equal(labRequests, 1); assert.equal(checks, 4);
+    assert.equal((await get('/studio/api/inputs/events', {'last-event-id': 'version-18'})).status, 421);
+    assert.equal(eventRequests, 1); assert.equal(checks, 2);
     assert.equal((await get('/api/table', {'x-croupier-vercel-secret': 'spoof'})).status, 421);
   } finally {
     for (const server of servers.reverse()) {server.closeAllConnections(); await new Promise(resolve => server.close(resolve));}
@@ -153,7 +153,7 @@ test('actual isolated Render gateway forwards public feature metadata only to th
   });
   web.listen(0,'127.0.0.1');await once(web,'listening');
   const gateway=createCloudGateway({singleOrigin:true,gameOrigin:ingress.publicOrigin,boOrigin:ingress.publicOrigin,labOrigin:ingress.publicOrigin,streaming:true},
-    {webPort:web.address().port,vercelIngress:ingress,labInternalSecret:'isolated-lab-secret-'.repeat(3)});
+    {webPort:web.address().port,vercelIngress:ingress});
   gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
   t.after(()=>{gateway.closeAllConnections();gateway.close();web.closeAllConnections();web.close();});
   const get=(path,method='GET',headers={})=>new Promise((resolve,reject)=>{
@@ -213,15 +213,21 @@ test('published company directory uses the exact existing signed public transpor
 });
 
 test('game-only gateway keeps the Web-backed Vercel session check and misdirects the signed Lab API without contacting any Lab port', async () => {
-  let checks = 0, labRequests = 0, webRequests = 0;
-  const web = createServer((req, res) => { webRequests++; assert.equal(req.headers.host, 'preview.example.test'); res.writeHead(401); res.end(); });
-  const lab = createServer((_req, res) => { labRequests++; res.writeHead(200); res.end(); });
-  const servers = [web, lab];
+  let checks = 0, authorityStatus = 200, webRequests = 0;
+  const web = createServer((req, res) => {
+    assert.equal(req.headers.host, 'preview.example.test');
+    if (req.url === '/api/auth/lab/check') {
+      checks++; assert.equal(req.headers.cookie, 'player_session=isolated');
+      assert.equal(req.headers['x-croupier-lab-authorized'], undefined);
+      res.writeHead(authorityStatus); res.end(); return;
+    }
+    webRequests++; res.writeHead(401); res.end();
+  });
+  const servers = [web];
   try {
     for (const server of servers) { server.listen(0, '127.0.0.1'); await once(server, 'listening'); }
-    const gateway = createCloudGateway({ singleOrigin: true, gameOrigin: ingress.publicOrigin, boOrigin: ingress.publicOrigin, labOrigin: ingress.publicOrigin, labChild: false, streaming: false }, {
-      webPort: web.address().port, labPort: lab.address().port, vercelIngress: ingress, labInternalSecret: 'lab-fixture-internal-secret-'.repeat(3),
-      sessionCheck: async () => { checks++; return { available: true, authorized: true }; },
+    const gateway = createCloudGateway({ singleOrigin: true, gameOrigin: ingress.publicOrigin, boOrigin: ingress.publicOrigin, labOrigin: ingress.publicOrigin, streaming: false }, {
+      webPort: web.address().port, vercelIngress: ingress,
     });
     servers.push(gateway); gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
     const get = (path, headers = {}) => new Promise((resolve, reject) => {
@@ -234,7 +240,10 @@ test('game-only gateway keeps the Web-backed Vercel session check and misdirects
     for (const path of ['/studio/api/inputs/events', '/studio/api/project', '/studio/api/videos']) assert.equal(await get(path), 421, path);
     assert.equal(await get('/api/table'), 401);
     assert.equal(await get('/api/auth/lab/start?next=%2Fstudio'), 401);
-    assert.equal(labRequests, 0); assert.equal(checks, 1); assert.equal(webRequests, 2);
+    assert.equal(checks, 1); assert.equal(webRequests, 2);
+    authorityStatus = 401; assert.equal(await get('/__vercel/lab/session'), 401);
+    authorityStatus = 503; assert.equal(await get('/__vercel/lab/session'), 503);
+    assert.equal(checks, 3);
     const direct = await new Promise((resolve, reject) => {
       const req = httpRequest({ host: '127.0.0.1', port: gateway.address().port, method: 'GET', path: '/studio', headers: { host: 'isolated.onrender.com' } }, res => { res.resume(); res.on('end', () => resolve(res)); });
       req.on('error', reject); req.end();

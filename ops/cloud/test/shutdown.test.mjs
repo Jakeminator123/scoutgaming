@@ -36,18 +36,17 @@ test('the child/host deadline leaves margin after runtime, HTTP and storage', ()
 
 for (const mode of ['natural', 'cancel', 'timeout']) test(`Linux SIGTERM chain with worker/client WebSockets and ${mode} provider shutdown`,
   { skip: process.platform !== 'linux', timeout: 6500 }, async t => {
-    const web = child('web', mode), lab = child('lab', mode);
+    const web = child('web', mode);
     let gateway, client;
     t.after(async () => {
       client?.terminate();
-      await Promise.all([terminateChild(web.child, 100), terminateChild(lab.child, 100)]);
+      await terminateChild(web.child, 100);
       await closeGateway(gateway, 100);
     });
-    const [webReady, labReady] = await Promise.all([web.until('web:listening'), lab.until('lab:listening')]);
+    const webReady = await web.until('web:listening');
     const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
       labOrigin: 'https://lab.example.test', streaming: true };
-    gateway = createCloudGateway(config, { labInternalSecret: 'fixture-gateway-secret-at-least-32-characters',
-      webPort: webReady.port, labPort: labReady.port });
+    gateway = createCloudGateway(config, { webPort: webReady.port });
     trackServerConnections(gateway);
     gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
     web.child.send({ command: 'start', gatewayPort: gateway.address().port });
@@ -61,12 +60,11 @@ for (const mode of ['natural', 'cancel', 'timeout']) test(`Linux SIGTERM chain w
     const before = performance.now();
     let groupStop;
     // Scaled fixture runtime1500 + HTTP40 + storage200 stays below force2000.
-    const group = { stop: () => groupStop ??= Promise.all([terminateChild(lab.child, 2000), terminateChild(web.child, 2000)]) };
+    const group = { stop: () => groupStop ??= terminateChild(web.child, 2000) };
     const stopping = stopCloudRuntime(gateway, group);
     // A second parent shutdown cannot duplicate child/provider cancellation.
     void group.stop();
     const runtime = await web.until('runtime:start'); assert.ok(runtime);
-    await lab.until('lab:signal');
     const stopped = await web.until('web:stopped');
     const snapshot = await web.until('runtime:snapshot');
     await stopping; await clientClosed;
@@ -91,12 +89,11 @@ for (const mode of ['natural', 'cancel', 'timeout']) test(`Linux SIGTERM chain w
 
 test('a game-only runtime stops its single child and the gateway together', async () => {
   const gateway = createCloudGateway({ gameOrigin: 'https://game.example.test', boOrigin: 'https://game.example.test',
-    labOrigin: 'https://game.example.test', singleOrigin: true, labChild: false, streaming: false },
-  { labInternalSecret: 'fixture-gateway-secret-at-least-32-characters' });
+    labOrigin: 'https://game.example.test', singleOrigin: true, streaming: false });
   trackServerConnections(gateway);
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   let stops = 0;
-  const group = { stop: () => { stops++; return Promise.resolve(); }, lab: null };
+  const group = { stop: () => { stops++; return Promise.resolve(); } };
   await stopCloudRuntime(gateway, group);
   assert.equal(stops, 1); assert.equal(gateway.listening, false);
   await stopCloudRuntime(gateway, undefined); // Idempotent after the children are gone.

@@ -63,7 +63,7 @@ test('gateway streams exact bank bytes only after application capability authori
     res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Length':bytes.length,'Cache-Control':'private, no-store'});res.end(bytes);
   });let gateway;
   try{
-    const webPort=await listen(web);gateway=createCloudGateway(config,{labInternalSecret:secret,webPort});const port=await listen(gateway);
+    const webPort=await listen(web);gateway=createCloudGateway(config,{webPort});const port=await listen(gateway);
     const received=await query(port,bank,{headers:{'x-croupier-lab-authorized':'spoof'}});
     assert.equal(received.status,200);assert.equal(received.headers['content-length'],String(bytes.length));
     assert.equal(createHash('sha256').update(received.body).digest('hex'),createHash('sha256').update(bytes).digest('hex'));
@@ -88,7 +88,7 @@ test('gateway carries owned direct callback and signed moving client independent
     peer.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
   });
   try{
-    gateway=createCloudGateway(config,{labInternalSecret:secret,webPort:await listen(web)});const port=await listen(gateway),url=new URL(channel.callbackUrl),path=url.pathname+url.search;
+    gateway=createCloudGateway(config,{webPort:await listen(web)});const port=await listen(gateway),url=new URL(channel.callbackUrl),path=url.pathname+url.search;
     const wrong=new URL(channel.callbackUrl);wrong.searchParams.set('token','0'.repeat(64));assert.equal(await rejected(socket(port,wrong.pathname+wrong.search)),403);
     worker=socket(port,path);await once(worker,'open');worker.send('private-pong');assert.equal((await channel.next()).data.toString(),'private-pong');
     const reply=once(worker,'message');await channel.send(Buffer.from('pcm'));assert.deepEqual((await reply)[0],Buffer.from('pcm'));
@@ -111,7 +111,7 @@ test('gateway logs finite bank rejection metadata and strips it from every respo
  const header='x-croupier-moving-bank-diagnostic',seen=[];let diagnostic='authorization:drift_not_admitting';
  const web=createServer((_req,res)=>{res.writeHead(403,{[header]:diagnostic});res.end();});let gateway;
  try{
-  const webPort=await listen(web);gateway=createCloudGateway(config,{labInternalSecret:secret,webPort,onMovingBankRejection:value=>seen.push(value)});
+  const webPort=await listen(web);gateway=createCloudGateway(config,{webPort,onMovingBankRejection:value=>seen.push(value)});
   const port=await listen(gateway),denied=await query(port,bank,{headers:{[header]:'read:rejected'}});
   assert.equal(denied.status,403);assert.equal(denied.headers[header],undefined);
   assert.deepEqual(seen,[{stage:'authorization',code:'drift_not_admitting',httpStatus:403}]);

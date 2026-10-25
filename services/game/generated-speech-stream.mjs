@@ -13,12 +13,6 @@ const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const digest = value => createHash('sha256').update(value).digest('hex');
 const equalPath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
 const identifier = v => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v);
-// The isolated unpaid preload installs this optional, allowlisted callback.
-// Production has no callback; no identity, text or payload is passed to it.
-function unpaidTrace(phase) {
-  const trace = globalThis[Symbol.for('croupier.unpaid-stream-diagnostics')];
-  if (typeof trace === 'function') { try { trace(phase, {}); } catch {} }
-}
 const PCM_LIMIT = 24000 * 2 * 25;
 function startAudioPrefetch(open, signal) {
   const chunks = [], waiters = [];
@@ -270,12 +264,9 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       identity.signal.addEventListener('abort', record.wireAbort, { once: true });
       if (identity.signal.aborted) { record.wireAbort(); return; }
       try {
-        unpaidTrace('fresh_before');
         await fresh(record);
-        unpaidTrace('fresh_after');
         if (identity.signal.aborted) return;
         record.handle = relay.openSource({ ...identity, rate: 24000 });
-        unpaidTrace('source_opened');
         record.monitor = setInterval(() => {
           if (record.checking) return;
           record.checking = true;
@@ -284,7 +275,6 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         const signal = AbortSignal.any([identity.signal, record.controller.signal]);
         const ttsStartedAt = performance.now();
         let firstAudio = true;
-        unpaidTrace('tts_source_before');
         if (journal && !record.submissionMarked) {
           await track((async () => journal.markRequestSubmissionStarted({ key:record.journalClaim.key, lease:await ownership.get() }))());
           record.submissionMarked = true;
@@ -301,7 +291,6 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
           }
           collect(record,'audio',pcm);
           await record.handle.writePCM(pcm);
-          unpaidTrace('pcm_written');
         }
         mark(record, 'tts_complete_ms', Math.round(performance.now() - ttsStartedAt));
         await fresh(record); record.ttsComplete = true; record.handle.end();
@@ -311,7 +300,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         }
         // Keep freshness monitoring through the final encoded fragment, even
         // after the HTTP TTS response has ended. Wire terminal ack owns cleanup.
-      } catch { unpaidTrace('source_error'); cancel(record); throw Error('Speech source unavailable'); }
+      } catch { cancel(record); throw Error('Speech source unavailable'); }
     },
   });
   sessionManager = suppliedSessionManager ?? (configuration.session ? createSpeechSessionManager({

@@ -16,7 +16,6 @@ import { movingDriftConfiguration } from '../../packages/presentation/contracts/
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
-export const LAB_PORT = 4188;
 
 const outside = (base, path) => {
   const rel = relative(base, path);
@@ -41,7 +40,7 @@ function httpsOrigin(value, name) {
 function port(value) {
   const number = Number(value);
   if (!/^[0-9]+$/.test(String(value ?? '')) || !Number.isInteger(number)
-    || number < 1024 || number > 65535 || [WEB_PORT, LAB_PORT].includes(number)) fail('PORT');
+    || number < 1024 || number > 65535 || number === WEB_PORT) fail('PORT');
   return number;
 }
 
@@ -63,12 +62,7 @@ function optionalPair(env, urlName, tokenName) {
 
 export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.NODE_ENV !== 'production') fail('NODE_ENV');
-  // The game-only image (Dockerfile.game) sets CROUPIER_CLOUD_LAB_CHILD=0: no
-  // Next Lab child, no Lab build preflight and no /studio upstream. Unset or 1
-  // keeps the existing two-child runtime unchanged.
-  if (env.CROUPIER_CLOUD_LAB_CHILD !== undefined && !['', '0', '1'].includes(env.CROUPIER_CLOUD_LAB_CHILD)) fail('CROUPIER_CLOUD_LAB_CHILD');
-  const labChild = env.CROUPIER_CLOUD_LAB_CHILD !== '0';
-  for (const name of ['CROUPIER_P6_QA_ROUTER', 'CROUPIER_P6_BOUNDED_TEST']) {
+  for (const name of ['CROUPIER_CLOUD_LAB_CHILD', 'CROUPIER_P6_QA_ROUTER', 'CROUPIER_P6_BOUNDED_TEST']) {
     if (env[name] !== undefined && !['', '0'].includes(env[name])) fail(name + ' (retired)');
   }
   if (env.CROUPIER_PLAYER_ACCOUNTS && !['0', '1'].includes(env.CROUPIER_PLAYER_ACCOUNTS)) fail('CROUPIER_PLAYER_ACCOUNTS');
@@ -206,12 +200,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
   if (frontendOrigin && [gameOrigin, boOrigin, labOrigin].includes(frontendOrigin)) fail('CROUPIER_VERCEL_FRONTEND_ORIGIN');
-  const labBasePath = singleOrigin ? '/studio' : '';
-  if (env.CROUPIER_LAB_BASE_PATH !== undefined && env.CROUPIER_LAB_BASE_PATH !== labBasePath) fail('CROUPIER_LAB_BASE_PATH');
-  if (httpsOrigin(env.CROUPIER_GAME_ORIGIN || (singleOrigin ? gameOrigin : ''), 'CROUPIER_GAME_ORIGIN') !== gameOrigin
-    || httpsOrigin(env.BETTALOTTO_PARTNER_BASE_URL || (singleOrigin ? gameOrigin : ''), 'BETTALOTTO_PARTNER_BASE_URL') !== gameOrigin) {
-    fail('CROUPIER_GAME_ORIGIN/BETTALOTTO_PARTNER_BASE_URL');
-  }
+  if (httpsOrigin(env.CROUPIER_GAME_ORIGIN || (singleOrigin ? gameOrigin : ''), 'CROUPIER_GAME_ORIGIN') !== gameOrigin) fail('CROUPIER_GAME_ORIGIN');
   if (env.CROUPIER_STREAM_LANE !== 'lissabon-stream-lane') fail('CROUPIER_STREAM_LANE');
   const publicPort = port(env.PORT);
   const disk = env.CROUPIER_CLOUD_DATA_ROOT;
@@ -235,28 +224,20 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   const director = optionalPair(env, 'CROUPIER_PRESENTATION_DIRECTOR_URL', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN');
   const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN');
   if (!productSpeech.url) fail('OPENCLAW_PRODUCT_SPEECH_URL/TOKEN');
-  const labRemote = optionalPair(env, 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN');
   const timeoutMs = Number(env.OPENCLAW_TIMEOUT_MS ?? 8000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 30000) fail('OPENCLAW_TIMEOUT_MS');
   const speechTimeoutMs = Number(env.OPENCLAW_SPEECH_TIMEOUT_MS ?? timeoutMs);
   if (!Number.isInteger(speechTimeoutMs) || speechTimeoutMs < 1000 || speechTimeoutMs > 30000) fail('OPENCLAW_SPEECH_TIMEOUT_MS');
-  const partnerKeys = ['BETTALOTTO_PARTNER_KEY_ID', 'BETTALOTTO_PARTNER_SECRET', 'BETTALOTTO_PARTNER_PLAYER_ID'];
-  const partnerPresent = partnerKeys.map(name => Boolean(env[name]));
-  if (partnerPresent.some(Boolean) && !partnerPresent.every(Boolean)) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
-  if (partnerPresent.every(Boolean) && (!/^ck_live_[A-Za-z0-9_-]{24}$/.test(env.BETTALOTTO_PARTNER_KEY_ID)
-    || !/^cs_[A-Za-z0-9_-]{43}$/.test(env.BETTALOTTO_PARTNER_SECRET)
-    || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
-  return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labChild, labBasePath, publicPort, dataRoot, paths, videoArchive,
+  return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, publicPort, dataRoot, paths, videoArchive,
     database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport,
-    director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
+    director, productSpeech, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
     mediaStorage, studioPolicy, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
     fullfileBudget: fullfileBudgetRequired ? { reserveUsd:fullfileReserveUsd, dailyBudgetUsd } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
-    speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null,
-    partner: partnerPresent.every(Boolean) ? Object.fromEntries(partnerKeys.map(name => [name, env[name]])) : null });
+    speechProvider: generatedSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null });
 }
 
 // Read-only check. Filesystem existence cannot prove that a mount is durable.
@@ -276,7 +257,7 @@ export async function inspectCloudDisk(config) {
 // A read-only preflight prevents --check from approving a blank CRAIG volume
 // that the Web child would reject on startup. It never creates a database.
 export async function inspectCloudBootstrap(config) {
-  // This maintenance process starts no product/Lab child and cannot bootstrap
+  // This maintenance process starts no game child and cannot bootstrap
   // or query PostgreSQL. Disk/build preflight remains in start.mjs.
   if (config.storageExport?.mode === 'studio-export') return;
   if (config.bootstrapAdmin) return;
@@ -302,16 +283,12 @@ export async function inspectCloudBootstrap(config) {
   finally { db?.close(); }
 }
 
-export function childSpecifications(config, env = process.env, { labInternalSecret } = {}) {
-  const labChild = config.labChild !== false;
-  if (labChild && (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32)) {
-    throw new Error('The cloud Lab child requires an internal secret.');
-  }
-  // Never pass the deployment environment wholesale to either child.
+export function childSpecifications(config, env = process.env) {
+  // Never pass the deployment environment wholesale to the game child.
   const base = Object.fromEntries(['PATH', 'Path', 'TMPDIR', 'TEMP', 'TMP', 'TZ',
     'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR'].filter(name => env[name] !== undefined)
     .map(name => [name, env[name]]));
-  const shared = { ...base, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1',
+  const shared = { ...base, NODE_ENV: 'production',
     ...(config.studioPolicy ? {
       CROUPIER_STUDIO_NEON_POLICY: '1',
       CROUPIER_STUDIO_ENVIRONMENT_ID: config.studioPolicy.scope.environment,
@@ -380,18 +357,5 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         OPENCLAW_PRODUCT_SPEECH_TOKEN: config.productSpeech.token,
         OPENCLAW_SPEECH_TIMEOUT_MS: String(config.speechTimeoutMs),
         OPENCLAW_TIMEOUT_MS: String(config.timeoutMs) } },
-    ...(labChild ? { lab: { command: process.execPath,
-      args: [join(REPOSITORY, 'apps/studio/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
-      cwd: join(REPOSITORY, 'apps', 'studio'),
-      env: { ...shared, HOST: '127.0.0.1', PORT: String(LAB_PORT), CROUPIER_LAB_DIST_DIR: '.next',
-        ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? { CROUPIER_DATABASE: config.database,
-          CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),
-        LAB_PUBLIC_URL: config.labOrigin, CROUPIER_LAB_INTERNAL_SECRET: labInternalSecret,
-        CROUPIER_LAB_BASE_PATH: config.labBasePath,
-        ...(config.database === 'sqlite' ? { CROUPIER_DATA_DIR: config.paths.players } : {}),
-        BO_URL: config.boOrigin, CROUPIER_GAME_ORIGIN: config.gameOrigin,
-        ...(config.zonesDatabaseUrl ? { CROUPIER_ZONES_DATABASE_URL: config.zonesDatabaseUrl } : {}),
-        BETTALOTTO_PARTNER_BASE_URL: config.gameOrigin,
-        ...(config.partner ?? {}), LAB_REMOTE_URL: config.labRemote.url, LAB_REMOTE_TOKEN: config.labRemote.token } } } : {}),
   };
 }
