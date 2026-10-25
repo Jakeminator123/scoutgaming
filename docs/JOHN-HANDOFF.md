@@ -9,13 +9,21 @@
 | #395: en native-Admin-origin och AI-relä valfritt när AI-media är av | `547c433b9fe229974cfc262fef2c01ba4e63424f` | Full CI `40215534400`, Docker `40215534405`, rootintegration 148/148 utan skip |
 
 Samtliga fulla CI-kvitton omfattar åtta regressionsgrupper och slutgrinden.
-Render-deploy samordnas med den separata PAOW-PR #393; ny runtimeversion är
-ännu inte kvitterad här. Vercels deploymentstatus och faktisk Adminkontroll
-redovisas separat. Inga tabeller, molnroller, produktionsdata eller dealers
-ändrades av dessa leveranser. Det separata Neon-projektets endpoint är återläst
-vilande, fast 0,25 CU/300 s. Schema/init, egna app-/Blob-resurser och restore
-inväntar svar på det konkreta resursförslaget. Officiell status: 45 % (9/20),
-alltså 55 % återstående aktiviteter, inte 55 % kod eller arbetstid.
+Vercel #395 `dpl_7DZsxTfYE1ZxeYg8cnaosH5EDVnr` återlästes READY på `547c433b`.
+Root laddade om inloggad `/admin/rooms`: bolag, publicerat rum, paket och
+livscykel lästes; spara/publicera var avstängt utan osparat utkast. Ingen skrivning
+eller insats gjordes. PAOW-chatten rapporterar senare samordnad produktion på
+#393:s `ebb6b91fec6423434be3cd6f3200bc779614b0c9`: Render
+`dep-dbf3og7avr4c73cn9bf0`, Vercel `dpl_m5gQzLP1ujnMvjAjY3tZvDBka27W`,
+health/version/v28/pose-graph verifierade där. Detta är den andra chattens kvitto.
+
+Jakob har uttryckligen godkänt nästa isolerade molnsteg. Root har därefter
+installerat granskade schemafiler, minimala egna roller och tomma register via
+befintliga writers i `croupier_staging`, på PG18.6/0,25 CU/300 s. Appens egen
+anslutning nekas ledger-skrivning och DDL. Separat tom restoredatabas samt eget
+Vercel-projekt/privat Blob finns. Inga produktionsdata eller dealerbanker kopierades.
+[Exakta resurser, mandat, verifiering och kvarvarande app-/restoreprov](ENVIRONMENT-RESTORATION.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober).
+Officiell status: 45 % (9/20), alltså 55 % återstående aktiviteter, inte kod/arbetstid.
 
 ## Native-Admin följer unified-UI — 25 oktober 2026
 

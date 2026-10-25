@@ -2,7 +2,7 @@
 
 Aktiv spelmotor är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`; Admin/Studio ligger på Vercel. Ingen Next-/Studio-process eller produktdisk ingår i v3.
 
-**Färsk kontroll 25 oktober 2026:** rätt repo/main, `ops/cloud/Dockerfile.game`, Frankfurt, 1c-2g och Auto-deploy av. Deployment `dep-dbf1qie7bikc73bsg650` är live på `23debde7155346e30ee5a3f3dfbe54cd09ea2789`; faktisk HTTP ger samma SHA, health 200/ok, capability v27/200 och v28/200 med `idleRotation: pose-graph-v1`. Detta driftkvitto föregår tom-katalogstödet i PR #391 samt P6-/tvåprocessavvecklingen. Dessa senare kodleveranser behöver ett nytt versionsbundet deploykvitto innan de kan kallas driftsatta. Äldre `croupier-v2` är suspenderad och används inte som återgång.
+**Färsk kontroll 25 oktober 2026:** rätt repo/main, `ops/cloud/Dockerfile.game`, Frankfurt, 1c-2g, en instans och Auto-deploy av. PAOW-chatten har samordnat deployment `dep-dbf3og7avr4c73cn9bf0` på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`, inklusive #391–#395, och rapporterat faktisk version, health 200/ok samt capability v28/200 med `idleRotation: pose-graph-v1`. Root har separat återläst tjänstekonfigurationen, faktisk health 200/ok och version 200 med samma fulla SHA. Äldre `croupier-v2` är suspenderad och används inte som återgång. Detta driftkvitto bevisar inte slutlig media-/restoreacceptans.
 
 ## Syfte
 
@@ -10,7 +10,8 @@ Kodavvecklingen är levererad i #392/#394 och konfigurationsförenklingen i #395
 main `547c433b9fe229974cfc262fef2c01ba4e63424f`, med full CI och faktiska
 Docker/cache/Linux-prov. Inga nya Render-variabler eller SQL-migreringar krävs
 av dessa PR:ar. Behåll nuvarande ingress, scope och aktiva talinställningar.
-Nytt deploy-/health-/capability-kvitto återstår enligt driftgränsen ovan.
+Nytt samordnat deploykvitto finns ovan. Vid rollback efter publicerad PAOW-profil
+måste även återgångskoden förstå #393:s profil, utöver tom katalog och v28.
 
 - Befintliga publika kontrakt för allt Vercel skickar till Render:
   ingresshemlighet, WebSocket-upgrade, moving-callback, `/__cloud/health`,

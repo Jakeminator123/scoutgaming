@@ -84,10 +84,40 @@ andra Studio-alias behövs inte. Med genererat tal, kamera och moving av får
 AI-reläparet saknas. Spelchatten avvisar då anrop som okonfigurerad utan
 provideranrop. Detta ersätter de två infrastrukturhindren i det privata
 installationsunderlaget fryst på `5310a5f`; det ersätter inte talacceptans.
-Full CI `40215534400` och Docker `40215534405` är gröna. Avvakta kompatibla
-driftsatta artifacts och det separata resursbeslutet före installation.
+Full CI `40215534400` och Docker `40215534405` är gröna. Det utökade
+resursbeslutet är nu uttryckligen godkänt; se aktuellt installationskvitto nedan.
 
-Schemakontrollens bas: main `4abbf1985e183c145c5a7772fe02631c6ee9b274`. Stödet för tom katalog i steg 4 är levererat genom PR #391, main `2faa327e69ae6bac2646009063f4b25c237898bf`, med full CI och faktisk Studio-ledger-readiness på head `9da680f7c91ce3f61e2f99495a3103ab3ab0e9ca`. Schemafilerna i det granskade underlaget är oförändrade. Kompatibel deploy och init återstår; äldre läsare saknar stödet. Databasskapandet är klart som eget delsteg. Den tidigare avgränsningen mot ny appdrift/Render och produktionsdata gäller fortfarande; den nya bekräftelsen gällde Create och direkt begränsning. Tabellen gör nästa installationsbeslut granskningsbart, men är inget tillstånd att återöppna tidigare stoppad QA.
+### Godkänt molnsteg och faktiskt installationskvitto 25 oktober
+
+Jakob svarade **”Ja, genomför det isolerade molnsteget”** på det konkreta
+underlaget `installation-review-5310a5f.md`. Det utökar det tidigare mandatet
+till egna roller, granskade scheman och tomma register i befintligt projekt,
+separat återställningsdatabas på samma compute samt egen privat Blob och egna
+Vercel-/Render-appar. Render: 1 CPU/2 GB, en instans, ingen disk, manuell deploy,
+stopp efter provet och högst 24 timmar. Uppskattat Render+Neon-compute cirka
+1,45 USD/dygn plus Vercel/lagring/trafik; ingen automatisk hård dollarspärr.
+Ingen produktion, historisk dealerbank eller AI/GPU-körning ingår.
+
+| Åtgärd | Faktiskt verifierat | Kvarstående gräns |
+| --- | --- | --- |
+| Neonmål | Samma projekt/branch/endpoint, PG18.6, 0,25 CU/300 s. `croupier_staging` och tomma `croupier_staging_restore` har egen migrationsägare | Inga nya computes eller produktionskopior |
+| Roller | Migrator och app är egna direktinloggningar utan superuser/CREATEDB/CREATEROLE/INHERIT/REPLICATION/BYPASSRLS. Appen saknar rollmedlemskap och ägarskap | Provisioner deployas aldrig; inga framtida blanket-grants |
+| Spelschema | Exakta granskade produkt-/006-/007-/008–010-källor installerade. Verklig `product-v1`-ledger, profilconstraints och rumsavgränsad roulette-PK återlästa | Ingen påhittad 006–010-ledger |
+| Studioschema | Befintlig plan/apply/replan installerade 001–008, 011–015 och 017. Appens egen readiness passerar; pending=[] | Valfria 016/018/019 avsiktligt ej installerade |
+| Appbehörighet | 75 tabeller med avgränsad DML/sekvensåtkomst; ledger endast läsbar. Verklig appanslutning nekas ledger-UPDATE och Studio-DDL. PUBLIC-grants återtagna; inga extra default-ACL eller appmedlemskap | Detta är operativ DML-profil, inte påstående om kolumnminimal ACL eller databas-RLS |
+| Tom init | Ordinarie repository och katalogens plan/hash/lås/CAS/audit: projekt `staging-project-init-v1`, administration `staging-administration-init-v1`, katalog `88a927ac32181db129d321f216d700b2dc6ded96cf2b3617aaeb056f94200422` | 0 media och 0 spelare; inga historiska seeds. Syntetiskt innehåll ska skapas via Admin |
+| Vercel/Blob | Eget projekt `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`; eget privat Frankfurt-lager `store_7E06N1P4w9Mu1dZD`, 0 objekt | Appkoppling, deployment, separat Render-app och faktiskt samprov återstår |
+| Återställning | Separat tom databas, samma migrationsägare, explicit app-CONNECT och ingen PUBLIC-åtkomst. Officiella portabla PG18.6-klienter förberedda | Ingen faktisk dump/restore, omstart eller replay kvitterad ännu |
+
+Privata mål-/schema-/ACL-/initkvitton och credentialfiler ligger i uppgiftens
+ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga credentials i Git.
+Ett första offline-inithashprov nekade korrekt eftersom jämförelsen saknade
+projektets granskade revisionsfält. Fältet rättades före någon init; ursprunglig
+hash matchade därefter. Schemakällor och valideringskrav ändrades inte.
+Godkänd installation är inte godkänd slutacceptans: migrationsstatus är fortsatt
+45 % (9/20 aktiviteter).
+
+Schemakontrollens bas var main `4abbf1985e183c145c5a7772fe02631c6ee9b274`; det privata installationsunderlaget frystes på `5310a5f`. Alla 23 granskade schemakällor matchade före faktisk apply. Stödet för tom katalog levererades genom #391 och de två konfigurationshindren genom #395. Tabellen nedan beskriver den granskade arbetsordningen; aktuellt utförande och det senare utökade mandatet finns i kvittot ovan. Tidigare stoppad QA återöppnas inte.
 
 | Ordning | Mains befintliga väg | Kontroll före/efter och kvarstående beslut |
 | --- | --- | --- |
