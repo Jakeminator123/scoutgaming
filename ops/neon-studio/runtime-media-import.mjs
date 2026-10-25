@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {isAbsolute,join} from 'node:path';
 import {StudioStorageError,canonicalStudioJson,studioStorageFailure,validateActor,validateStudioScope} from '../../packages/studio-registry/server/document-contract.mjs';
-import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogJson,runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
+import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogJson,runtimeCatalogRevision,createEmptyRuntimeMediaCatalog,isEmptyRuntimeMediaCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import {planStudioMigrations,isStudioMigrationPlanReady} from './migrations.mjs';
 import {validateMediaLayout} from '../../tools/media-layout.mjs';
 import {validatePrivateMedia} from '../../apps/studio/lib/cloud-media-store.mjs';
@@ -18,6 +18,17 @@ const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 const jsonMetadata=row=>['public','private'].includes(row.access)&&(row.storage?.contentType==='application/json'||row.logicalPath?.endsWith('.json'));
 const safePath=value=>typeof value==='string'&&!/[\\\0:]/.test(value)&&!value.startsWith('/')&&value.split('/').every(part=>part&&part!=='.'&&part!=='..');
+
+/** Pure explicit initialization input. Hash the four generated documents, not
+ * historical files; the ordinary plan/apply path still verifies target and ledger. */
+export function prepareEmptyRuntimeMediaImport({scope}={}) {
+  const value=createEmptyRuntimeMediaCatalog(),sourceHashes={};
+  for(const [kind,path] of Object.entries(sources)) {
+    const bytes=canonicalStudioJson(value[kind]);
+    sourceHashes[path]={sha256:hash(bytes),size:Buffer.byteLength(bytes)};
+  }
+  return checkedPrepared({schemaVersion:1,scope,value,revision:runtimeCatalogRevision(value),sourceHashes,sourceIndexCount:0});
+}
 
 /** Read exactly four operator-selected source files, preserving all string values. */
 export async function prepareRuntimeMediaImport({scope,sourceRoot,readMetadataBytes}={}) {
@@ -118,6 +129,9 @@ async function currentPlan(client,prepared,schema,{lock=false}={}) {
     WHERE environment_id=$1 AND workspace_id=$2${lock?' FOR UPDATE':''}`,[prepared.scope.environment,prepared.scope.workspaceId])).rows;
   if(rows.length>1)fail('target_invalid');
   const current=rows.length?validateRuntimeCatalogRecord(rows[0]):null;
+  // Checked during planning AND again under both apply locks. Initialization
+  // cannot erase an existing bank, including one imported after plan review.
+  if(isEmptyRuntimeMediaCatalog(prepared.value)&&current&&!isEmptyRuntimeMediaCatalog(current.value))fail('empty_target_required');
   const value={schemaVersion:1,scope:prepared.scope,target,expectedRevision:current?.revision??null,...summary(prepared),
     operation:current?.revision===prepared.revision?'unchanged':current?'replace':'insert'};
   return freeze({...value,planHash:hash(canonicalStudioJson(value))});

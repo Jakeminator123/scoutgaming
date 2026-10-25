@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogRevision} from '../packages/studio-registry/server/runtime-catalog.mjs';
+import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogRevision,createEmptyRuntimeMediaCatalog,isEmptyRuntimeMediaCatalog} from '../packages/studio-registry/server/runtime-catalog.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
@@ -29,4 +29,37 @@ test('catalogue is scoped Neon state; missing database or scope never becomes a 
  await assert.rejects(other.readRuntimeCatalog(),e=>e.code==='studio_runtime_catalog_missing');
  pool.failNext('read-runtime-catalog');await assert.rejects(repository.readRuntimeCatalog(),e=>e.code==='studio_storage_unavailable');
  assert.ok(pool.calls.filter(r=>r.marker==='read-runtime-catalog').every(r=>r.values.length===2));
+});
+
+
+test('explicit empty catalogue is detached, exact and contains no historical bank identity',()=>{
+ const source=createEmptyRuntimeMediaCatalog(),value=validateRuntimeMediaCatalog(source);
+ assert.equal(isEmptyRuntimeMediaCatalog(value),true);assert.deepEqual(value,source);assert.notEqual(value,source);
+ assert.equal(value.presentation.source,'scoutgaming-empty');assert.deepEqual(value.presentation.items,[]);
+ assert.equal(validateRuntimeCatalogRecord({revision:runtimeCatalogRevision(value),value}).revision,runtimeCatalogRevision(value));
+ source.layout.files.push({});assert.deepEqual(createEmptyRuntimeMediaCatalog().layout.files,[]);
+ for(const change of [
+  v=>v.layout.files.push({}),v=>v.layout.roots.old='media/old',v=>v.blobIndex.files.push({}),
+  v=>v.presentation.items.push({}),v=>v.presentation.families.push({}),v=>v.legacy.entries['media/old']='{}',
+  v=>v.extra=true,v=>v.layout.extra=true,v=>v.blobIndex.extra=true,v=>v.presentation.extra=true,v=>v.legacy.extra=true,
+  v=>v.blobIndex.verification='unchecked',v=>v.presentation.schemaVersion=2,
+  v=>v.presentation.source='emil/dealklipp-v1',v=>delete v.presentation,v=>v.legacy=null,
+ ]) {
+  const broken=createEmptyRuntimeMediaCatalog();change(broken);
+  assert.equal(isEmptyRuntimeMediaCatalog(broken),false);
+  assert.throws(()=>validateRuntimeMediaCatalog(broken),{code:'studio_runtime_catalog_invalid'});
+ }
+ const mixed=readRuntimeCatalogFixture();mixed.presentation=value.presentation;
+ assert.throws(()=>validateRuntimeMediaCatalog(mixed),{code:'studio_runtime_catalog_invalid'});
+ for(const absent of [undefined,null,{}])assert.throws(()=>validateRuntimeMediaCatalog(absent),{code:'studio_runtime_catalog_invalid'});
+});
+
+test('an empty catalogue still requires its exact scoped persisted row and revision',async()=>{
+ const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+ pool.seedRuntimeCatalog(scope,createEmptyRuntimeMediaCatalog());
+ assert.equal(isEmptyRuntimeMediaCatalog((await repository.readRuntimeCatalog()).value),true);
+ const other=createStudioRepository({pool,scope:{...scope,workspaceId:'empty-other'}});
+ await assert.rejects(other.readRuntimeCatalog(),{code:'studio_runtime_catalog_missing'});
+ pool.failNext('read-runtime-catalog');await assert.rejects(repository.readRuntimeCatalog(),{code:'studio_storage_unavailable'});
+ assert.throws(()=>validateRuntimeCatalogRecord({revision:'a'.repeat(64),value:createEmptyRuntimeMediaCatalog()}),{code:'studio_runtime_catalog_invalid'});
 });

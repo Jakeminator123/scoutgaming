@@ -11,10 +11,24 @@ const safe=path=>typeof path==='string'&&path.length>0&&!/[\\\u0000:]/.test(path
 export const runtimeCatalogJson=value=>JSON.stringify(cloneStudioJson(value,limits));
 export const runtimeCatalogRevision=value=>hash(runtimeCatalogJson(value));
 
+// Explicit absence of an immutable bank, never a fallback for missing/corrupt SQL.
+// Uploaded clips and layers remain separate scoped media/project records.
+const emptyCatalog={schemaVersion:1,layout:{schemaVersion:1,roots:{},files:[]},
+  blobIndex:{schemaVersion:1,namespace:'croupier/media',verification:'readback-sha256',files:[]},
+  presentation:{schemaVersion:1,source:'scoutgaming-empty',families:[],items:[]},
+  legacy:{schemaVersion:2,entries:{}}};
+const emptyCatalogJson=runtimeCatalogJson(emptyCatalog);
+export function createEmptyRuntimeMediaCatalog(){return cloneStudioJson(emptyCatalog,limits);}
+export function isEmptyRuntimeMediaCatalog(value){
+  if(value?.presentation?.source!=='scoutgaming-empty')return false;
+  try{return runtimeCatalogJson(value)===emptyCatalogJson;}catch{return false;}
+}
+
 /** Server-owned catalogue only. No disk reads, registration or provider requests. */
 export function validateRuntimeMediaCatalog(source) {
   try {
     const value=cloneStudioJson(source,limits);
+    if(isEmptyRuntimeMediaCatalog(value))return value;
     if(value.schemaVersion!==1||Object.keys(value).sort().join(',')!=='blobIndex,layout,legacy,presentation,schemaVersion')fail();
     validateMediaLayout(value.layout);
     validateLabVideoManifest(value.presentation);

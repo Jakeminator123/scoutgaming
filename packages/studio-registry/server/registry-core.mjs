@@ -5,6 +5,7 @@ import {basename,isAbsolute,join,relative,resolve} from 'node:path';
 import {Readable} from 'node:stream';
 import {MEDIA_FILE_TYPES} from '../../shared/media-file-types.mjs';
 import {mediaDefinitionForPath,readLabVideoManifest,validateLabVideoManifest} from './video-manifest.mjs';
+import {isEmptyRuntimeMediaCatalog,createEmptyRuntimeMediaCatalog} from './runtime-catalog.mjs';
 import {isCloudMediaConfigured,mediaBlobPath} from './private-media-contract.mjs';
 import {validateStudioMedia} from './storage-contract.mjs';
 import {createMediaLayout} from './media-layout.mjs';
@@ -50,7 +51,10 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
 
   async function readEntries(options) {
     try {
-      const snapshot = Object.hasOwn(options,'runtimeCatalog') ? validateLabVideoManifest(options.runtimeCatalog?.presentation) : await readLabVideoManifest(snapshotPath(options));
+      const snapshot = Object.hasOwn(options,'runtimeCatalog')
+        ? isEmptyRuntimeMediaCatalog(options.runtimeCatalog) ? createEmptyRuntimeMediaCatalog().presentation
+          : validateLabVideoManifest(options.runtimeCatalog?.presentation)
+        : await readLabVideoManifest(snapshotPath(options));
       return { entries: new Map(snapshot.items.map(item => [item.id, item])), families: snapshot.families };
     } catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
   }
@@ -193,7 +197,10 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
       total: 0, available: 0, missing: 0, unavailable: 0,
       configured: Boolean(selection.path), readable: false, snapshotReadable: false,
       archiveSource: selection.source, intakeCounts: { want: 0, no: 0, unrated: 0 },
-      notes: [
+      notes: isEmptyRuntimeMediaCatalog(options.runtimeCatalog) ? [
+        'Tom basbank. Uppladdade klipp läses från det sparade registret och privat Blob.',
+        'Registrering är inte visuell acceptans; exakta bytes verifieras före uppspelning.',
+      ] : [
         'Want är ett intake-omdöme, inte ett godkännande. Emils exakta familjer delas med Webs lokala presentationsläge.',
         'Manifestets familj väljer exakt destination eller replik. Kopplingen är inte visuell acceptans.',
         'Tillgänglig betyder läsbar fil med rätt storlek. SHA-256 kontrolleras före uppspelning.',

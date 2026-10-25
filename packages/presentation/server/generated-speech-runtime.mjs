@@ -17,19 +17,6 @@ export function acquireGeneratedSpeechRuntime({ repositoryRoot: root } = {}) {
   return runtimeFacade;
 }
 
-// Trusted server runtime registers its already validated provider function.
-// Keep the SDK runtime out of this module's shared Lab build dependency graph.
-const boundedFullfileAuthorities=new WeakMap();
-function registerBoundedAiQaFullfileAuthority(providerFetch,validate){
-  if(typeof providerFetch!=='function'||typeof validate!=='function'||boundedFullfileAuthorities.has(providerFetch))
-    throw new Error('generated_speech_bounded_authority_invalid');
-  boundedFullfileAuthorities.set(providerFetch,validate);
-}
-function boundedAiQaAllowsFullfile(providerFetch,env=process.env){
-  const validate=boundedFullfileAuthorities.get(providerFetch);if(!validate)return false;
-  try{return validate(env)===true;}catch{return false;}
-}
-
 const digest = value => createHash('sha256').update(value).digest('hex');
 const budgetAmount = (value, maximum = 10000000) => {
   if (typeof value !== 'string' || !/^(?:0|[1-9]\d?)(?:\.\d{1,6})?$/.test(value)) return undefined;
@@ -55,7 +42,7 @@ function configuration(env) {
   // client or Probe may not bypass it by asking for an unbudgeted file job.
   const managedStreaming = cloudPreview && env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
   const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview)
-    && (!managedStreaming || (boundedAiQaAllowsFullfile(speechProviderFetch,env)&&speechJournal));
+    && !managedStreaming;
   const journaled = env.CROUPIER_STUDIO_NEON_POLICY === '1';
   const value = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR,
     cartesiaApiKey: env.CARTESIA_API_KEY,
@@ -96,4 +83,4 @@ function getGeneratedSpeechService() {
 }
 
 const runtimeFacade = Object.freeze({ getGeneratedSpeechService, generatedSpeechStatus,
-  configureGeneratedSpeechJournal, registerBoundedAiQaFullfileAuthority, boundedAiQaAllowsFullfile });
+  configureGeneratedSpeechJournal });

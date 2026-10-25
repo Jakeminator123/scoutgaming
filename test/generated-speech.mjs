@@ -236,7 +236,33 @@ test('shared cancelled/lost acknowledgements keep the monetary tombstone and do 
   assert.equal(lost.counts().calls,0);assert.equal(lost.pool.state.requests.size,0);assert.equal(lost.pool.state.fileReservations.size,0);
 });
 
-test('app consumers share the configured speech service and exact provider authority within one module graph', async t => {
+test('managed cloud streaming never opens fullfile with an injected provider and valid Neon journal', async t => {
+  const f = await sharedFixture(t), runtime = acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot });
+  const env = { NODE_ENV:'production', HOST:'127.0.0.1', PUBLIC_URL:'https://game.example.test', DEMO_GUEST_ACCESS:'0',
+    CROUPIER_CLOUD_RUNTIME:'1', CROUPIER_GENERATED_SPEECH:'1', CROUPIER_CLOUD_GENERATED_SPEECH:'1',
+    CROUPIER_GENERATED_SPEECH_PREVIEW:'1', CROUPIER_GENERATED_SPEECH_STREAMING:'1', CROUPIER_STUDIO_NEON_POLICY:'1',
+    CROUPIER_P6_QA_ROUTER:'1', CROUPIER_P6_BOUNDED_TEST:'1', CARTESIA_API_KEY:'isolated-fixture',
+    RUNPOD_API_KEY:'isolated-fixture', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture',
+    CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.25', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1' };
+  const saved = new Map(Object.keys(env).map(key => [key, process.env[key]]));
+  let calls = 0;
+  try {
+    Object.assign(process.env, env);
+    runtime.configureGeneratedSpeechJournal(f.journal, { artifacts:f.artifacts, providerFetch:() => { calls++; assert.fail('no fullfile provider'); } });
+    for (const consumer of [runtime, gameSpeech, studioSpeech]) {
+      assert.equal(consumer.generatedSpeechStatus().enabled, false);
+      assert.equal(consumer.generatedSpeechStatus().configured, false);
+      assert.equal(consumer.getGeneratedSpeechService(), null);
+    }
+    assert.equal(calls, 0);
+    assert.deepEqual(f.counts(), { calls:0, tts:0, gpu:0, saves:0 });
+  } finally {
+    runtime.configureGeneratedSpeechJournal(null);
+    for (const [key, value] of saved) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
+
+test('app consumers share the configured speech service and provider configuration within one module graph', async t => {
   const f = await fixture(t);
   const runtime = acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot });
   assert.equal(studioSpeech.getGeneratedSpeechService, gameSpeech.getGeneratedSpeechService);
@@ -258,10 +284,6 @@ test('app consumers share the configured speech service and exact provider autho
     assert.equal(studioSpeech.getGeneratedSpeechService(), first);
     runtime.configureGeneratedSpeechJournal(null);
     assert.equal(runtime.getGeneratedSpeechService(), first);
-    runtime.registerBoundedAiQaFullfileAuthority(providerFetch, value => value === env);
-    assert.equal(runtime.boundedAiQaAllowsFullfile(providerFetch, env), true);
-    assert.equal(runtime.boundedAiQaAllowsFullfile(() => providerFetch(), env), false);
-    assert.throws(() => runtime.registerBoundedAiQaFullfileAuthority(providerFetch, () => true), /authority_invalid/);
     runtime.configureGeneratedSpeechJournal(null, { providerFetch });
     const second = studioSpeech.getGeneratedSpeechService();
     assert.notEqual(second, first);
