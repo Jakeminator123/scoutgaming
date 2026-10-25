@@ -10,17 +10,17 @@ const destinations = Object.freeze({
   '': '/admin', overview: '/admin', studio: '/admin/clips', lab: '/admin/clips',
   clips: '/admin/clips', 'dealer-forge': '/admin/dealer-studio?view=generate',
   companies: '/admin/companies', rooms: '/admin/rooms', lanes: '/admin/rooms',
-  compositions: '/admin/clips?panel=layers', preview: '/admin/clips?panel=layers', backgrounds: '/admin/clips?panel=layers',
+  compositions: '/admin/scenes', preview: '/admin/scenes', backgrounds: '/admin/scenes',
   rehearsal: '/admin/rooms', activity: '/admin/rooms',
   library: '/admin/assets', videos: '/admin/clips', media: '/admin/clips', archive: '/admin/clips',
   replies: '/admin/replies', events: '/admin/events', tree: '/admin/events', 'presentation-events': '/admin/events',
-  zones: '/admin/clips?panel=layers', probe: '/admin/clips?panel=room', guide: '/admin/guide',
+  zones: '/admin/scenes', probe: '/admin/clips?panel=room', guide: '/admin/guide',
   openclaw: '/admin/ai/models', ops: '/admin/drift?tab=speech', 'operator-chat': '/admin/dealer-agent',
   players: '/admin/players', team: '/admin/admin/accounts', transactions: '/admin/ekonomi',
   integration: '/admin/admin/api', shoes: '/admin/drift', 'legacy-rooms': '/admin/rooms',
   'game-tables': '/admin/rooms', speech: '/admin/clips?panel=room',
   tx:'/admin/ekonomi',api:'/admin/admin/api',bj:'/admin/rooms',dealers:'/admin/rooms',tables:'/admin/rooms',
-  background:'/admin/clips?panel=layers',voice:'/admin/clips?panel=room',
+  background:'/admin/scenes',voice:'/admin/clips?panel=room',
   deletion:'/admin/structure', // Merged into Kopplingar & användning.
   publication:'/admin/rooms', // Merged into Spelbolag & rum.
 });
@@ -38,7 +38,7 @@ export const ADMIN_RETIRED_DOCUMENTS = Object.freeze({
   '/admin/admin/payments':'/admin/ekonomi?tab=payments', '/admin/admin/log':'/admin/companies',
   '/admin/ai/chat':'/admin', '/admin/admin/players':'/admin/players',
   '/admin/videos':'/admin/clips', '/admin/rehearsal':'/admin/rooms',
-  '/admin/compositions':'/admin/clips?panel=layers', '/admin/probe':'/admin/clips?panel=room',
+  '/admin/compositions':'/admin/scenes', '/admin/probe':'/admin/clips?panel=room',
 });
 const openClawHomes=Object.freeze({drift:'/admin/drift?tab=speech',models:'/admin/ai/models',
   agent:'/admin/dealer-agent',probe:'/admin/clips?panel=room',assistant:'/admin'});
@@ -50,7 +50,9 @@ export function adminDocumentHref(value) {
   const section=control?path.replace(/^\/control\/?/,'').replace(/\/$/,''):null;
   let consumeTab=false;
   let target;
-  if(path==='/admin/openclaw'){
+  if(path==='/admin/clips'&&url.searchParams.get('panel')==='layers'){
+    target='/admin/scenes';
+  }else if(path==='/admin/openclaw'){
     const tab=url.searchParams.get('tab');
     target=Object.hasOwn(openClawHomes,tab)?openClawHomes[tab]:openClawHomes.drift;consumeTab=true;
   }else if(path==='/admin/dealer-studio'&&url.searchParams.get('view')!=='generate'){
@@ -82,6 +84,7 @@ export function adminDocumentHref(value) {
     result.searchParams.delete('dealerId');
   }
   if((path==='/admin/dealer-studio'||section==='clips')&&result.pathname==='/admin/clips')result.searchParams.delete('view');
+  if(result.pathname==='/admin/scenes')result.searchParams.delete('panel');
   result.hash=url.hash;
   return result.pathname+result.search+result.hash;
 }

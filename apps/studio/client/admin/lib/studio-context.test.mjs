@@ -115,9 +115,9 @@ test('registered room view embeds the exact scoped Admin editor with publication
   const html=renderToStaticMarkupOf(h);
   const links=hrefs(html);
   assert.equal(links.some(href=>href.startsWith('/admin/publication')),false,'no function lives only on the older publication page');
-  const template=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.searchParams.get('panel')==='layers');
-  assert.ok(template);assert.equal(template.pathname,'/admin/clips');
-  assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',panel:'layers'});
+  const template=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.pathname==='/admin/scenes');
+  assert.ok(template);
+  assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette'});
   assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);assert.match(html,/data-admin-choices="true"/);
   assert.doesNotMatch(html,/data-game-config=/,'roulette rooms have no blackjack game settings');
   const publication=walk(h.render(),node=>node.type==='section'&&node.props?.['aria-label']==='Publicering')[0];
@@ -147,7 +147,9 @@ test('unpublished rooms lead to the existing template and publication without a 
   const room={...catalog.administration.rooms[0],name:'Utkast',state:'preview',published:false,playable:false,dealerIds:[],dealers:[]};
   const html=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{rooms:[room]});
   assert.doesNotMatch(html,/data-room-editor=/);assert.match(html,/saknar ett publicerat paket/);
-  assert.ok(hrefs(html).some(href=>href.includes('panel=layers')));
+  const template=hrefs(html).map(href=>new URL(href,'https://scout.invalid')).find(url=>url.pathname==='/admin/scenes');
+  assert.ok(template);
+  assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'bj',composition:'one',game:'blackjack'});
 });
 
 test('an active company without registered rooms can still create its first room in Admin',async()=>{

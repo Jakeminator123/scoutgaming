@@ -143,7 +143,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const gameRooms=roomView ? operatorRooms : operatorRooms.filter(row=>row.game===selectedGame);
   const selectedRoom = roomId ? gameRooms.find(row => row.id === roomId) : gameRooms[0];
   const dealerName = (id: string) => data?.dealers.find(row => row.id === id)?.name ?? id;
-  const editHref = workspaceLink('/admin/clips', operator, selectedRoom) + '&panel=layers';
+  const editHref = workspaceLink('/admin/scenes', operator, selectedRoom);
   const compositions = complete?.compositions ?? [];
   const createComposition = compositions.find(row => row.id === newRoomComposition) ?? compositions.find(row => row.id === selectedRoom?.compositionId) ?? compositions[0];
   // Both room editors reload together on a register re-read; sibling keys stay distinct.

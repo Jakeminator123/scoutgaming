@@ -411,7 +411,7 @@ test('actual Admin middleware preserves document access with Node transport befo
 });
 
 test('retired Control URLs use the central Admin destination with room and material context intact',()=>{
-  for(const [section,destination] of [['library','assets'],['lanes','companies'],['preview','clips'],['zones','clips']]){
+  for(const [section,destination] of [['library','assets'],['lanes','companies'],['preview','scenes'],['zones','scenes']]){
     const query='dealer=dragan&operator=north&room=one&room=two&game=roulette&lane=portrait&role=background&token=private&tab='+(section==='lanes'?'companies':'backgrounds');
     for(const basePath of ['','/studio']) {
       const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+'/control/'+section+'?'+query),{basePath});
@@ -445,7 +445,7 @@ test('actual middleware centralizes exact legacy documents without changing nati
     ]) for(const method of ['GET','HEAD']) {
       const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
       assert.equal(response.status,307,path);
-      const admin=({tree:'events',activity:'rooms',zones:'clips?panel=layers',administration:'drift',openclaw:'ai/models','operator-chat':'dealer-agent',probe:'clips?panel=room',videos:'clips'}[path]??path);
+      const admin=({tree:'events',activity:'rooms',zones:'scenes',administration:'drift',openclaw:'ai/models','operator-chat':'dealer-agent',probe:'clips?panel=room',videos:'clips'}[path]??path);
       assert.equal(response.headers.get('location'),['guide','videos','probe','events','tree','activity','zones','openclaw','operator-chat','administration'].includes(path)?'https://game.fixture.invalid/admin/'+admin+(admin.includes('?')?'&':'?')+'dealer=dragan':'https://game.fixture.invalid/control'+(target?'/'+target:''));
     }
     const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
@@ -473,7 +473,7 @@ test('retired publication and tool documents redirect with context in every nati
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target]of [['rooms','rooms'],['companies','companies'],['lanes','rooms'],['guide','guide'],['videos','clips'],['probe','clips?panel=room'],['replies','replies'],['events','events'],['tree','events'],['compositions','clips?panel=layers'],['rehearsal','rooms'],['preview','clips?panel=layers'],['zones','clips?panel=layers'],['clips','clips']]){
+    for(const [section,target]of [['rooms','rooms'],['companies','companies'],['lanes','rooms'],['guide','guide'],['videos','clips'],['probe','clips?panel=room'],['replies','replies'],['events','events'],['tree','events'],['compositions','scenes'],['rehearsal','rooms'],['preview','scenes'],['zones','scenes'],['clips','clips']]){
       const url='https://game.fixture.invalid'+basePath+'/control/'+section+'?operator=north&room=room-1&table=room-1&dealer=dragan&game=roulette&lane=portrait&event=idle.ready&variant=take-2&situation=dealer-hole&category=greeting';
       for(const method of ['GET','HEAD']){
         const response=middleware(new Request(url,{headers,method}));
@@ -498,7 +498,7 @@ test('historical tool documents reach Admin with context before unified frontend
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio};
     const {middleware}=load('../middleware.ts',{'../../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config}},
       {CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
-    for(const [section,target] of [['events','events'],['tree','events'],['compositions','clips?panel=layers'],['rehearsal','rooms'],['preview','clips?panel=layers'],['zones','clips?panel=layers'],['clips','clips']])for(const selected of [false,true]){
+    for(const [section,target] of [['events','events'],['tree','events'],['compositions','scenes'],['rehearsal','rooms'],['preview','scenes'],['zones','scenes'],['clips','clips']])for(const selected of [false,true]){
       const context={dealer:'saga',operator:'north',table:'room-1',game:'roulette',lane:'portrait',...(selected?{event:'idle.ready',variant:'take-2',situation:'box1',tab:'variants'}:{})};
       const query=new URLSearchParams({...context,token:'private',unknown:'omit'});query.append('room','one');query.append('room','two');
       const url='https://game.fixture.invalid'+basePath+'/'+section+'?'+query;

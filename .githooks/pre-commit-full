@@ -64,7 +64,7 @@ run_node_tests presentation moving-speech-plan test/moving-speech-plan.mjs test/
 run_node_tests presentation moving-speech-bank test/moving-speech-bank.mjs test/moving-speech-sources.mjs test/build-moving-speech-bank.mjs
 run_node_tests presentation moving-speech-deal test/moving-speech-deal-plan.mjs test/moving-speech-source-frames.mjs test/moving-speech-deal-integration.mjs
 run_node_tests presentation presentation-layers test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/layer-media-inspection.mjs test/composition-runtime.mjs test/registered-idle.mjs
-run_node_tests presentation card-view test/card-view.mjs test/background-playback-policy.mjs test/background-playback.mjs test/game-overlay-layout.mjs test/composition-anchors.mjs
+run_node_tests presentation card-view test/card-view.mjs test/background-playback-policy.mjs test/background-playback.mjs test/game-overlay-layout.mjs test/composition-anchors.mjs test/scene-layout-publication.mjs
 run_node_tests presentation studio-preview test/studio-preview.mjs test/studio-preview-client.mjs
 run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-offline.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
 run_node_tests access moving-speech-cloud-config test/cloud-config.mjs

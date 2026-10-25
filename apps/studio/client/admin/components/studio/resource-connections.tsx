@@ -71,7 +71,7 @@ function RoomBranch({room,tree}:{room:DeletionRoom;tree:ResourceDeletionTree}){
   const composition=tree.compositions.find(row=>row.id===room.compositionId);
   const query=new URLSearchParams({operator:room.operatorId,table:room.id,...room.compositionId?{composition:room.compositionId}:{},...room.game?{game:room.game}:{}});
   // The shared template is edited in the clip map's Scen & lager panel; room choices use the room editor.
-  const templateHref=!room.archived&&composition&&!composition.missing&&room.game?'/admin/clips?'+new URLSearchParams({operator:room.operatorId,table:room.id,composition:composition.id,game:room.game,panel:'layers'}):null;
+  const templateHref=!room.archived&&composition&&!composition.missing&&room.game?'/admin/scenes?'+new URLSearchParams({operator:room.operatorId,table:room.id,composition:composition.id,game:room.game}):null;
   return <li className="admin-system-card scroll-mt-6" id={resourceAnchor('room',room.id)}>
     <h4 className="font-semibold">{room.label}</h4><p className="text-sm"><State row={room}/>{!room.archived&&(room.published?'Publicerat rum':'Rum utan aktuell publicering')}{!room.archived&&room.published&&(room.playable?' · spelbart':' · inte spelbart')}</p>
     <ResourceIdentity id={room.id}/>
@@ -168,7 +168,7 @@ export function ResourceConnections(){
           </div>
           {row.layers&&<dl className="space-y-2 text-sm">{(['background','dealer','table'] as const).map(role=><div key={role}><dt className="font-medium">{role==='background'?'Bakgrund':role==='dealer'?'Dealer':'Bord'}{row.layers![role].enabled?'':' · avstängt'}</dt>
             <dd>{row.layers![role].ids.length?row.layers![role].ids.map((id,index)=><span key={id}>{index>0?', ':''}<a className="underline" href={resourceHref(role==='dealer'?'dealer':'material',id)}>{(role==='dealer'?tree.dealers:tree.materials).find(item=>item.id===id)?.label??id}</a>{row.layers![role].defaultId===id?' (förval)':''}</span>):'Inga sparade val'}</dd></div>)}</dl>}
-          {!row.missing&&!row.archived&&<a className="studio-button mt-3" href={'/admin/clips?'+new URLSearchParams({composition:row.id,panel:'layers'})}>Ändra mallens kopplingar</a>}
+          {!row.missing&&!row.archived&&<a className="studio-button mt-3" href={'/admin/scenes?'+new URLSearchParams({composition:row.id})}>Ändra mallens kopplingar</a>}
         </li>}/>{!tree.compositions.length&&<p>Inga sammansättningar i det lästa registret.</p>}
       </section>
       <details className="admin-system-card text-sm text-sg-muted"><summary>Vad läsningen omfattar</summary><p className="mt-2">Historikräkning: {tree.historyCoverage==='complete'?'komplett registerläsning':tree.historyCoverage==='incomplete'?'ofullständig':'inte tillgänglig'}.</p><ul className="mt-2 list-disc space-y-2 pl-5">{tree.coverage.map(item=><li key={item}>{item}</li>)}</ul>

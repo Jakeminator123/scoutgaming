@@ -181,7 +181,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   function pause(){playAttempt.current++;playbackActive.current=false;backgroundPlayer.current?.pause();tablePlayer.current?.pause();Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus(t('Pausad.','Paused.'));}
   return <div style={{containerType:'inline-size'}}>
     <div style={{background:'#111827',display:'flex',justifyContent:'center',overflow:'hidden',borderRadius:12}}>
-      <div style={{position:'relative',height:'min(540px, 60vh, 56.25cqw)',width:layout==='mobile'?'calc(min(540px, 60vh, 56.25cqw) * 9 / 16)':'calc(min(540px, 60vh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}>
+      <div style={{position:'relative',height:layout==='mobile'?'min(640px, 72dvh, 177.777cqw)':'min(540px, 60dvh, 56.25cqw)',width:layout==='mobile'?'calc(min(640px, 72dvh, 177.777cqw) * 9 / 16)':'calc(min(540px, 60dvh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}>
         <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',height:'100%',width:'100%'}}/>
         {overlay}
       </div>

@@ -7,8 +7,7 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
-import {updatePublishedSceneLayout} from '../../../packages/presentation/contracts/published-scene-layout.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 const require = createRequire(import.meta.url);
 const {transformSync} = require('next/dist/build/swc');
 const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url);
@@ -410,152 +409,10 @@ test('changing a visual background preserves the chosen dealer, table, other roo
   assert.equal(initial.branding.roomOverrides['north-main'].background,undefined,'the read snapshot is not mutated');
 });
 
-const sceneTable='00000000-0000-4000-8000-000000000041';
-function sceneState(extra={}) {
-  const initial=initialState(extra),lane=initial.presentation.lanes[0];
-  initial.rooms=[{...initial.rooms[0],game:'blackjack'}];
-  lane.layers.table={enabled:true,default:sceneTable,allowed:[sceneTable]};
-  lane.composition.blackjackTables=[defaultBlackjackTableGeometry(sceneTable)];
-  initial.presentation.assets=[{id:sceneTable,role:'table',label:'Oak',width:1672,height:941}];
-  return initial;
-}
-const sceneOptions={roomId:'north-main',roomLayout:true,adminChoices:true};
-const scenePreview=tree=>walk(tree,node=>Boolean(node.props?.onMedia&&node.props?.server))[0];
-function supplyScenePreview(h,initial,extra={}) {
-  scenePreview(h.render()).props.onMedia({operatorSlug:'north',roomId:'north-main',packageRevision:initial.packageRevision,dealer:{id:'astrid'},independentLayers:true,
-    settings:structuredClone(initial.presentation.lanes[0].composition),media:{tables:[{id:sceneTable}]},...extra});
-}
-function editedScene(initial) {
-  const composition=structuredClone(initial.presentation.lanes[0].composition);
-  composition.mobile.table.y-=.07;composition.desktop.dealer.scale=1.2;
-  composition.mobile.gameUi={actions:{x:.3,y:.7},chat:{x:1,y:0,width:.75,height:.4}};
-  composition.blackjackTables[0].mobile.fanSpread=.6;
-  return composition;
-}
-function sceneReceipt(initial,composition=editedScene(initial)) {
-  const presentation=structuredClone(initial.presentation);
-  presentation.lanes[0].composition=updatePublishedSceneLayout(presentation.lanes[0].composition,sceneTable,composition);
-  return {ok:true,operatorId:initial.operatorId,packageRevision:initial.packageRevision+1,presentation,adjusted:{roomId:'north-main',tableId:sceneTable}};
-}
-function chooseScene(h,initial) {
-  byAction(h.render(),'open-scene-layout').props.onClick();
-  supplyScenePreview(h,initial);scenePreview(h.render()).props.sceneLayout.onChange(editedScene(initial));
-}
-
-test('published scene editing supports every valid blackjack geometry and excludes unauthorized or shared rooms',()=>{
-  for(const options of [{...sceneOptions,adminChoices:false},{...sceneOptions,roomLayout:false}]){
-    const h=stateful(sceneState(),()=>assert.fail('no write'),options);assert.equal(byAction(h.render(),'open-scene-layout'),undefined);
-  }
-  const roulette=sceneState();roulette.rooms[0].game='roulette';
-  assert.equal(byAction(stateful(roulette,()=>assert.fail('no write'),sceneOptions).render(),'open-scene-layout'),undefined);
-  for(const mutate of [state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.autoScale={landing:true,cardSize:true,chips:true},state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.anchors={cards:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}},state=>delete state.presentation.lanes[0].composition.blackjackTables]){
-    const initial=sceneState();mutate(initial);const h=stateful(initial,()=>assert.fail('no write'),sceneOptions);
-    assert.equal(byAction(h.render(),'open-scene-layout').props.disabled,false);
-  }
-  for(const extra of [{canConfigure:false},{}]){
-    const h=stateful(sceneState(extra),()=>assert.fail('no write'),sceneOptions);
-    if(extra.canConfigure!==false)picker(h.render(),'background').props.onChange('bg-two');
-    assert.equal(byAction(h.render(),'open-scene-layout').props.disabled,true);
-    byAction(h.render(),'open-scene-layout').props.onClick();assert.equal(scenePreview(h.render()).props.sceneLayout,undefined);
-  }
-  const shared=sceneState();shared.rooms.push({...shared.rooms[0],id:'north-vip',label:'VIP'});
-  const h=stateful(shared,()=>assert.fail('no write'),sceneOptions),tree=h.render();
-  assert.equal(byAction(tree,'open-scene-layout').props.disabled,true);
-  const link=walk(tree,node=>node.type==='a'&&node.props.href.startsWith('/admin/clips?'))[0];
-  assert.equal(new URL(link.props.href,'https://test.invalid').searchParams.get('composition'),'mobile-phone');
-  assert.match(renderToStaticMarkup(tree),/VIP/);
-});
-
-test('scene publication uses only frozen live choices, preserves the material draft and confirms with a separate GET',async()=>{
-  const draft={revision:3,basePackageRevision:7,branding:{dealer:'vera',table:sceneTable},updatedAt:1000};
-  const initial=sceneState({draft,draftRevision:3}),original=structuredClone(initial),receipt=sceneReceipt(initial),calls=[],published=[],busy=[];
-  let finishRead;
-  const h=stateful(initial,async(url,request)=>{
-    calls.push({url,request});if(request.method==='POST')return response(receipt);
-    return new Promise(resolve=>{finishRead=resolve;});
-  },{...sceneOptions,onSaved:value=>published.push(value),onBusyChange:value=>busy.push(value)});
-  chooseScene(h,initial);
-  assert.deepEqual(JSON.parse(JSON.stringify(scenePreview(h.render()).props.branding)),initial.branding);
-  assert.equal(byAction(h.render(),'save-draft').props.disabled,true);
-  const saving=byAction(h.render(),'publish-scene-layout').props.onClick();
-  await byAction(h.render(),'publish-scene-layout').props.onClick();
-  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,2);assert.equal(published.length,0);assert.equal(busy.at(-1),true);
-  assert.equal(calls[0].url,'/studio/api/admin/operator-package');assert.equal(calls[0].request.credentials,'same-origin');
-  assert.deepEqual(JSON.parse(calls[0].request.body),{action:'update-scene-layout',operatorId:'op-1',roomId:'north-main',tableId:sceneTable,expectedPackageRevision:7,composition:editedScene(initial)});
-  assert.equal(calls[1].url,'/studio/api/partner/branding?operator=north');assert.equal(calls[1].request.cache,'no-store');
-  finishRead(response({...initial,packageRevision:8,presentation:receipt.presentation}));await saving;
-  assert.equal(published.length,1);assert.deepEqual(published[0].draft,draft);assert.equal(published[0].packageRevision,8);assert.equal(busy.at(-1),false);
-  assert.equal(scenePreview(h.render()).props.sceneLayout,undefined);assert.equal(picker(h.render(),'dealer').props.effective,'vera');
-  assert.deepEqual(initial,original);
-});
-
-test('oversized scene publication keeps editable geometry and reports the storage limit without a false success',async()=>{
-  const initial=sceneState(),calls=[],published=[];
-  const h=stateful(initial,async(url,request)=>{calls.push({url,request});return response({error:'Request too large'},413);},
-    {...sceneOptions,onSaved:value=>published.push(value)});
-  chooseScene(h,initial);await byAction(h.render(),'publish-scene-layout').props.onClick();
-  assert.equal(calls.length,1);assert.equal(published.length,0);
-  assert.deepEqual(JSON.parse(JSON.stringify(scenePreview(h.render()).props.sceneLayout.composition)),editedScene(initial));
-  assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,false);
-  assert.match(renderToStaticMarkup(h.render()),/överskrider lagringsgränsen/);
-  assert.doesNotMatch(renderToStaticMarkup(h.render()),/Hämta senaste version innan/);
-});
-
-test('scene editing waits for exact preview identity, rejects unrelated geometry and shows publication only for changes',async()=>{
-  const initial=sceneState(),h=stateful(initial,()=>assert.fail('no write'),sceneOptions);
-  byAction(h.render(),'open-scene-layout').props.onClick();
-  assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,true);assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
-  for(const extra of [{operatorSlug:'other'},{roomId:'north-vip'},{packageRevision:8},{dealer:{id:'vera'}},{settings:defaultCompositionSettings()}]){
-    supplyScenePreview(h,initial,extra);scenePreview(h.render()).props.sceneLayout.onChange(editedScene(initial));
-    assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,true);assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
-  }
-  supplyScenePreview(h,initial);assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,false);
-  const invalid=editedScene(initial);invalid.blackjackTables.push(defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000099'));
-  scenePreview(h.render()).props.sceneLayout.onChange(invalid);assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
-  scenePreview(h.render()).props.sceneLayout.onChange(editedScene(initial));assert.equal(byAction(h.render(),'publish-scene-layout').props.disabled,false);
-  assert.match(renderToStaticMarkup(h.render()),/Du har osparade ändringar/);
-  scenePreview(h.render()).props.sceneLayout.onChange(structuredClone(initial.presentation.lanes[0].composition));assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
-});
-
-test('refresh retains local layout until an explicit discard instead of promising to keep and silently losing it',async()=>{
-  const initial=sceneState(),latest=sceneState({packageRevision:8});
-  const h=stateful(initial,async()=>response(latest),sceneOptions);chooseScene(h,initial);
-  await byAction(h.render(),'refresh').props.onClick();
-  assert.equal(byAction(h.render(),'keep-local').props.disabled,true);
-  byAction(h.render(),'keep-local').props.onClick();
-  assert.equal(scenePreview(h.render()).props.sceneLayout.composition.mobile.table.y,editedScene(initial).mobile.table.y);
-  assert.match(renderToStaticMarkup(h.render()),/Layoutändringarna är kvar i förhandsvisningen/);
-  byAction(h.render(),'load-latest').props.onClick();
-  assert.equal(scenePreview(h.render()).props.sceneLayout,undefined);assert.equal(scenePreview(h.render()).props.server.packageRevision,8);
-});
-
-test('scene publication conflicts and unconfirmed readbacks lock retries until explicit refresh',async()=>{
-  for(const failure of ['conflict','foreign-write','foreign-read','old-read','different-geometry','changed-draft','network-read']){
-    const initial=sceneState(),receipt=sceneReceipt(initial),calls=[],published=[];
-    const h=stateful(initial,async(url,request)=>{
-      calls.push({url,request});
-      if(request.method==='POST')return response(failure==='foreign-write'?{...receipt,operatorId:'foreign'}:receipt,failure==='conflict'?409:200);
-      if(failure==='network-read')throw new Error('offline');
-      return response({...initial,packageRevision:failure==='old-read'?7:8,presentation:failure==='different-geometry'?initial.presentation:receipt.presentation,
-        ...(failure==='foreign-read'?{operatorId:'foreign'}:{}),...(failure==='changed-draft'?{draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:{}}}:{})});
-    },{...sceneOptions,onSaved:value=>published.push(value)});
-    chooseScene(h,initial);await byAction(h.render(),'publish-scene-layout').props.onClick();
-    assert.equal(published.length,0,failure);assert.equal(byAction(h.render(),'publish-scene-layout').props.disabled,true,failure);
-    const count=calls.length;await byAction(h.render(),'publish-scene-layout').props.onClick();assert.equal(calls.length,count,failure);
-    assert.match(renderToStaticMarkup(h.render()),/Scenpubliceringen kunde inte bekräftas/);
-  }
-});
-
-test('scene publication ignores late responses after room, operator or activity changes and unmount',async()=>{
-  for(const leave of ['room','operator','inactive','unmount']){
-    const initial=sceneState(),options={...sceneOptions},calls=[],published=[];let finish;
-    options.onSaved=value=>published.push(value);
-    const h=stateful(initial,(url,request)=>{calls.push({url,request});return new Promise(resolve=>{finish=resolve;});},options);
-    chooseScene(h,initial);const saving=byAction(h.render(),'publish-scene-layout').props.onClick();
-    if(leave==='room'){options.roomId='north-vip';h.render();}
-    else if(leave==='operator'){options.initial={...initial,operatorId:'different'};options.operatorSlug='other';h.render();}
-    else if(leave==='inactive'){options.active=false;h.render();}else h.unmount();
-    finish(response(sceneReceipt(initial)));await saving;
-    assert.equal(calls.length,1);assert.equal(published.length,0);
-  }
+test('Admin room appearance links to Studio without a separate geometry writer',()=>{
+ const h=stateful(initialState(),()=>assert.fail('no write'),{roomId:'north-main',roomLayout:true,adminChoices:true});
+ const links=walk(h.render(),node=>node.type==='a'&&node.props.href?.startsWith('/admin/scenes?'));
+ assert.equal(links.length,1);const query=new URL(links[0].props.href,'https://test.invalid').searchParams;
+ assert.equal(query.get('operator'),'op-1');assert.equal(query.get('table'),'north-main');
+ assert.equal(byAction(h.render(),'open-scene-layout'),undefined);
 });

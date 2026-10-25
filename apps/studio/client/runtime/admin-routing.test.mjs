@@ -10,6 +10,7 @@ test('admin overview stays home even when old bookmarks contain a dealer or room
     assert.equal(isStudioAdminRoute('/admin',search),false);
   }
   assert.equal(isStudioAdminRoute('/admin/clips',''),true);
+  assert.equal(isStudioAdminRoute('/admin/scenes',''),true);
 });
 
 test('rooms always opens room choices; old queries cannot turn it into a shared editor',()=>{

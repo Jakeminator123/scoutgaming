@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {previewMediaPath} from '../../../packages/presentation/contracts/operator-preview-contract.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
@@ -131,64 +131,4 @@ test('Admin preview loads the exact frozen descriptor initially, while inactive 
   assert.equal(calls.length,active?1:0);assert.equal(h.compositions(tree).length,active?1:0);
   if(active){assert.equal(calls[0].url,'/api/operators/north/rooms/north-main/preview?dealer=linnea&revision=7');assert.equal(calls[0].request.method??'GET','GET');assert.equal(calls[0].request.body,undefined);}
  }
-});
-
-function sceneInput(){
- const p=props(),data=descriptor();p.branding={table:table1};p.server.presentation.assets=[{id:table1,role:'table',width:1672,height:941}];
- data.settings.blackjackTables=[defaultBlackjackTableGeometry(table1),defaultBlackjackTableGeometry(table2)];
- data.media.dealer.framing={scale:1.2,x:.03,y:-.04};p.server.presentation.lanes[0].composition=structuredClone(data.settings);
- return {p,data};
-}
-
-test('published scene reuses the placement editor in both formats and preserves frozen media and other table profiles',async()=>{
- const {p,data}=sceneInput(),original=structuredClone(data),changes=[];
- const h=harness(async()=>response(data)),input={...p,initiallyEnabled:true,sceneLayout:{tableId:table1,composition:structuredClone(data.settings),disabled:false,onChange:value=>changes.push(value)}};
- h.render(input);await h.flush();let tree=h.render(input),editor=h.editors(tree)[0];
- assert.equal(editor.props.tableId,table1);assert.equal(editor.props.layout,'desktop');assert.equal(editor.props.scene.width,1672);assert.equal(editor.props.scene.height,941);
- assert.deepEqual(editor.props.scene.framing,data.media.dealer.framing);assert.deepEqual(editor.props.savedValue,data.settings.blackjackTables[0]);
- const overlay=React.createElement('svg',{'data-proof':'overlay'}),composition=editor.props.renderPreview(overlay);
- assert.equal(composition.props.dealer.url,data.media.dealer.src);assert.equal(composition.props.table.url,data.media.tables[0].src);assert.equal(composition.props.overlay,overlay);
- walk(tree,node=>node.type==='button'&&node.props.children==='Mobil')[0].props.onClick();tree=h.render(input);editor=h.editors(tree)[0];assert.equal(editor.props.layout,'mobile');
- const geometry=structuredClone(editor.props.value);geometry.mobile.fanSpread=.6;geometry.mobile.seats[0].card.x=.24;editor.props.onChange(geometry);
- assert.equal(changes[0].blackjackTables.find(row=>row.tableId===table1).mobile.fanSpread,.6);assert.deepEqual(changes[0].blackjackTables.find(row=>row.tableId===table2),data.settings.blackjackTables[1]);
- input.sceneLayout.composition=changes[0];editor=h.editors(h.render(input))[0];assert.equal(editor.props.renderPreview().props.settings.blackjackTables.find(row=>row.tableId===table1).mobile.seats[0].card.x,.24);
- editor.props.onChange(undefined);assert.deepEqual(changes[1].blackjackTables,[data.settings.blackjackTables[1]],'removing the active profile leaves other profiles intact');
- input.sceneLayout.disabled=true;editor=h.editors(h.render(input))[0];assert.equal(editor.props.disabled,true);editor.props.onChange(geometry);assert.equal(changes.length,2);
- assert.deepEqual(data,original,'preview and editor never mutate the frozen descriptor');
-});
-
-test('published scene can create a missing profile without copying project draft geometry',async()=>{
- const {p,data}=sceneInput();delete data.settings.blackjackTables;
- // The server lane is not a media or geometry fallback inside the preview.
- p.server.presentation.lanes[0].composition.mobile.table.y=.91;
- const changes=[],h=harness(async()=>response(data)),input={...p,initiallyEnabled:true,sceneLayout:{tableId:table1,composition:structuredClone(data.settings),disabled:false,onChange:value=>changes.push(value)}};
- h.render(input);await h.flush();const editor=h.editors(h.render(input))[0];assert.equal(editor.props.value,undefined);
- assert.equal(editor.props.renderPreview().props.settings.mobile.table.y,data.settings.mobile.table.y);
- editor.props.onChange(defaultBlackjackTableGeometry(table1));assert.equal(changes[0].blackjackTables[0].tableId,table1);
-});
-
-test('a wrong table or a change to another table cannot display guessed scene geometry',async()=>{
- for(const mutate of [input=>{input.sceneLayout.tableId=table2;},input=>{input.sceneLayout.composition.blackjackTables[1].mobile.seats[0].card.x=.1;}]){
-  const {p,data}=sceneInput(),h=harness(async()=>response(data)),input={...p,initiallyEnabled:true,sceneLayout:{tableId:table1,composition:structuredClone(data.settings),disabled:false,onChange:()=>{}}};mutate(input);
-  h.render(input);await h.flush();const tree=h.render(input);assert.equal(h.editors(tree).length,0);assert.equal(h.compositions(tree).length,0);assert.match(renderToStaticMarkup(tree),/Scenen kan inte redigeras/);
- }
-});
-
-test('scene controls change only the chosen format and expose layers, table ordering, actions and chat',()=>{
- const h=harness(),changes=[];let settings=defaultCompositionSettings();const original=structuredClone(settings);
- const render=(layout='mobile',disabled=false)=>h.controls({settings,layout,disabled,onChange:next=>{settings=next;changes.push(next);}});
- const field=(name,tree=render())=>walk(tree,node=>node.type==='input'&&node.props['aria-label']===name)[0];
- for(const [name,value]of [['dealer scale',1.2],['dealer x',.15],['dealer y',-.1],['background scale',1.3],['background x',.12],['background y',-.14],['table width',1.6],['table x',.02],['table y',.7]]){
-  field(name).props.onChange({target:{valueAsNumber:value}});const [role,key]=name.split(' ');assert.equal(settings.mobile[role][key],value);assert.deepEqual(settings.desktop,original.desktop);
- }
- field('tableFront').props.onChange({target:{checked:!original.tableFront}});assert.equal(settings.tableFront,!original.tableFront);
- field('automatic-actions').props.onChange({target:{checked:false}});field('actions x').props.onChange({target:{valueAsNumber:25}});field('actions y').props.onChange({target:{valueAsNumber:72}});
- for(const [name,value]of [['chat x',80],['chat y',20],['chat width',60],['chat height',40]])field(name).props.onChange({target:{valueAsNumber:value}});
- assert.deepEqual(settings.mobile.gameUi,{actions:{x:.25,y:.72},chat:{x:.8,y:.2,width:.6,height:.4}});assert.deepEqual(settings.desktop,original.desktop);
- field('automatic-actions').props.onChange({target:{checked:true}});assert.equal(settings.mobile.gameUi.actions,null);
- const mobile=structuredClone(settings.mobile);field('dealer x',render('desktop')).props.onChange({target:{valueAsNumber:.19}});assert.equal(settings.desktop.dealer.x,.19);assert.deepEqual(settings.mobile,mobile);
- walk(render(),node=>node.type==='button')[0].props.onClick();assert.equal(settings.mobile.gameUi,undefined);assert.equal(settings.mobile.table.y,.7);
- const count=changes.length,disabled=render('desktop',true);assert.ok(walk(disabled,node=>node.type==='fieldset'&&node.props.disabled).length);
- field('dealer x',disabled).props.onChange({target:{valueAsNumber:.25}});field('tableFront',disabled).props.onChange({target:{checked:true}});field('automatic-actions',disabled).props.onChange({target:{checked:false}});field('chat x',disabled).props.onChange({target:{valueAsNumber:25}});walk(disabled,node=>node.type==='button')[0].props.onClick();
- for(const value of [NaN,3,-3])field('dealer x').props.onChange({target:{valueAsNumber:value}});assert.equal(changes.length,count);
 });

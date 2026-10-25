@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {runInNewContext} from 'node:vm';
+import {runInNewContext,runInThisContext} from 'node:vm';
 import {createSeedProject,defaultPresentationLane,validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import * as anchors from '../../../../../packages/presentation/runtime/composition-anchors.mjs';
 import * as settings from '../../../../../packages/presentation/contracts/composition-settings.mjs';
@@ -19,8 +19,9 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
-  runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>{
+  const components=Object.fromEntries(['ScenePublication','LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','LayerPlaybackEditor','BlackjackScenePlacementEditor'].map(key=>[key,()=>null]));
+  const componentRequire=name=>{
+    if(name==='./scene-publication')return {ScenePublication:components.ScenePublication};
     if(name==='react')return hooks;
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('composition-settings.mjs'))return settings;
@@ -33,7 +34,10 @@ function panelHarness(){
     if(name.endsWith('/layer-selectors'))return {LayerAssetSelect};
     if(name.includes('/components/'))return components;
     return require(name);
-  }});
+  };
+  // Browser components and validators share one realm. A separate VM realm
+  // makes valid object literals fail the contract's plain-object check.
+  runInThisContext(`(function(module,exports,require,structuredClone){${output.code}\n})`)(module,module.exports,componentRequire,structuredClone);
   const project=createSeedProject(),lane=defaultPresentationLane('astrid');project.lanes=[lane];
   const edits=[],props={project,savedProject:structuredClone(project),inventory:{videos:[]},room:{id:'room-a',name:'Main',compositionId:lane.id,game:'blackjack'},dealerId:'astrid',
     uses:[{roomId:'room-a',roomName:'Main',operatorName:'North'},{roomId:'room-b',roomName:'VIP',operatorName:'South'}],roomChoicesPath:'/admin/rooms?view=registered&operator=north&table=room-a',
@@ -287,4 +291,33 @@ test('manual background and table clip previews restore their own base and polic
     assert.equal(shown.previewBackgroundRequest,request);assert.deepEqual(shown.backgroundPlayback,lane.backgroundPlayback);
   }
   assert.deepEqual(h.props.project,before);assert.deepEqual(h.props.room,room);assert.equal(h.edits.length,0);
+});
+
+test('scene publication and uploads share one operation lock until every operation finishes',()=>{
+ const h=panelHarness(),states=[];h.props.onBusyChange=value=>states.push(value);
+ nodes(h.render(),n=>n.type==='button'&&text(n)==='Redigera gemensam mall')[0].props.onClick();
+ let tree=h.render(),publication=nodes(tree,n=>n.type===h.ScenePublication)[0],upload=nodes(tree,n=>n.type===h.LayerLibrary)[0];
+ publication.props.onBusyChange(true);tree=h.render();
+ assert.ok(nodes(tree,n=>n.type===h.LayerLibrary).every(n=>n.props.disabled));
+ assert.ok(nodes(tree,n=>n.type===h.LayerAssetManager).every(n=>n.props.disabled));
+ upload.props.onBusyChange(true);publication.props.onBusyChange(false);tree=h.render();
+ assert.equal(states.at(-1),true);assert.ok(nodes(tree,n=>n.type===h.LayerLibrary).every(n=>n.props.disabled));
+ upload.props.onBusyChange(false);tree=h.render();
+ assert.equal(states.at(-1),false);assert.ok(nodes(tree,n=>n.type===h.LayerLibrary).every(n=>!n.props.disabled));
+});
+
+test('copying placement updates only the selected allowed board in both formats',()=>{
+ const h=panelHarness(),base={schemaVersion:1,role:'table',game:'blackjack',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
+ const assets=[1,2].map(n=>{const row={...base,id:'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),label:'Board '+n};return {...row,pathname:layerAssetPath(row)};});
+ h.props.project.layerAssets=assets;const lane=h.props.project.lanes[0];lane.layers.table={enabled:true,default:assets[0].id,allowed:assets.map(row=>row.id)};
+ lane.composition=settings.defaultCompositionSettings();lane.composition.blackjackTables=assets.map(row=>settings.defaultBlackjackTableGeometry(row.id));
+ lane.composition.blackjackTables[0].mobile.fanSpread=.65;lane.composition.blackjackTables[0].desktop.fanSpread=.7;
+ assert.doesNotThrow(()=>validateProject(h.props.project),'fixture is a valid saved project');
+ const source=structuredClone(lane.composition.blackjackTables[0]),layers=structuredClone(lane.layers);
+ nodes(h.render(),n=>n.props?.['aria-label']==='Bord att placera kort på')[0].props.onChange({target:{value:assets[1].id}});
+ let tree=h.render();const copy=()=>nodes(h.render(),n=>n.type==='button'&&text(n)==='Kopiera båda formaten till valt bord')[0];assert.equal(copy().props.disabled,true);
+ nodes(tree,n=>n.type==='button'&&text(n)==='Redigera gemensam mall')[0].props.onClick();copy().props.onClick();
+ assert.deepEqual(nodes(h.render(),n=>n.props?.role==='alert').map(text),[]);assert.equal(h.edits.length,1,'copy commits one valid project edit');
+ const next=h.props.project.lanes[0];assert.deepEqual(next.composition.blackjackTables.find(row=>row.tableId===assets[1].id),{...source,tableId:assets[1].id});
+ assert.deepEqual(next.composition.blackjackTables.find(row=>row.tableId===assets[0].id),source);assert.deepEqual(next.layers,layers);
 });

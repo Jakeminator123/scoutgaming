@@ -42,6 +42,7 @@ export function markPackagesStale(current) {
 
 export function packagePublishError(status, payload) {
   if (payload?.code === 'studio_presentation_runtime_update_required') return 'Spelmotorn behöver uppdateras innan ändringen kan publiceras. Dina val finns kvar.';
+  if (status === 413) return 'Publiceringspaketet är för stort. Inget publicerades; dina sparade val finns kvar.';
   if (status === 422) return 'Kontrollera lagerfiler, vald grundloop och tillåtna val. Spara sammansättningen och försök igen.';
   if (status === 409) return 'Paketet kunde inte uppdateras. Uppgifterna kan ha ändrats, eller så påverkar urvalet ett befintligt spelrum. Läs in bolagets publicerade paket och behåll sammansättningar som används av spelrum.';
   return 'Publiceringen gick inte igenom.';

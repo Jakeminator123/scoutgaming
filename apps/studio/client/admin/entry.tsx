@@ -45,8 +45,8 @@ function App() {
   const [dealersVisited,setDealersVisited]=useState(path==='/admin/dealers');
   useEffect(()=>{if(path==='/admin/dealers')setDealersVisited(true);},[path]);
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
-  const [studioVisited,setStudioVisited]=useState(studio);
-  useEffect(()=>{if(studio)setStudioVisited(true);},[studio]);
+  const [studioVisited,setStudioVisited]=useState(studio&&!redirected);
+  useEffect(()=>{if(studio&&!redirected)setStudioVisited(true);},[studio,redirected]);
   const [libraryVisited,setLibraryVisited]=useState(path==='/admin/assets');
   useEffect(()=>{if(path==='/admin/assets')setLibraryVisited(true);},[path]);
   const [visited,setVisited]=useState<string[]>(()=>servicePaths.has(path)?[path]:[]);
@@ -61,9 +61,9 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Klippkarta':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?(path==='/admin/scenes'?'Sceneditor':'Klippkarta'):pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
-      <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : retired ? retired.split('?')[0] : path} onChange={event => navigate(previewHref(event.target.value))}>
+      <label className="preview-mobile-nav">Sida <select value={studio ? path : retired ? retired.split('?')[0] : path} onChange={event => navigate(previewHref(event.target.value))}>
         <option value="/admin">Översikt</option>
         {adminNavigationGroups.map(group=><optgroup key={group.id} label={group.label}>{group.links.map(link=><option key={link.href} value={link.href}>{link.label}</option>)}</optgroup>)}
         <optgroup label="System">{adminSystemGroups.flatMap(group=>group.links).map(link=><option key={link.href} value={link.href}>{link.label}</option>)}</optgroup>
