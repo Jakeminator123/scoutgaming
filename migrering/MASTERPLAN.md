@@ -1,6 +1,6 @@
 # Masterplan: selektiv Kevin-portning till mains produkt
 
-Reviderad 25 oktober 2026 på Jakobs begäran. Granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`. Ursprunglig plan: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Utförandestatus ägs endast av [status.json](status.json), med genererad [läsvy](STATUS.md). Detta är en dokumentrevision och prioritering; ingen produktkod, driftflagga, mediaacceptans eller migration ändras.
+Reviderad 25 oktober 2026 på Jakobs begäran, med läsande granskning av inloggad Admin, main och PR:ar. Ursprunglig genomgång: `34c6c22f60ac75f335f647c83af06e7d0514476b`; senaste avstämning: main `2be88119d2f342b7a9cf6725dab1ab75d6a09d52` efter #378/#381/#382. Ursprunglig plan: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Den fördjupade dokumentrevisionen samlas, efter Jakobs uttryckliga begäran om push, i befintlig [PR #379](https://github.com/Jakeminator123/scoutgaming/pull/379). Utförandestatus ägs endast av [status.json](status.json), med genererad [läsvy](STATUS.md). Leveransen ändrar dokumentation och evidens, inte produktkod, drift, mediaacceptans eller aktivitetsstatus.
 
 ## Slutsats och verifierat nuläge
 
@@ -15,32 +15,90 @@ Reviderad 25 oktober 2026 på Jakobs begäran. Granskad main: `34c6c22f60ac75f33
 | Kevin PR #333, utkast vid `eb6ab45509fad539463bbcb6930cc46d2d0844c2`, bas `codex/postgres-shared-table-j07` | Alla 26 ändrade sökvägar finns: 19 byte-identiska; sju vidareutvecklade på main. Refill, mottagare, idle, katalog och replay finns. De två extra fel-/replayproven kom via PR #348 (`4336c2cfca2fd9e7a09cc1b4116845d677c52f52`) | Ingen kvarvarande unik produktfunktion identifierad i filjämförelsen. Granska som ersatt PR med ägaren; merge eller stängning utförs inte av denna plan |
 | Kevin PR #315 / #323, öppna utkast mot `kevin-merge-admin` | Teständringar i Kevins gamla app, inte saknad produktimplementation. Main har deterministiska fixtures samt explicit PR #323-prov för paus/försäkring och stabil kommandoåterspelning | Återanvänd endast en bevisad saknad testavsikt i mains testkontrakt; importera inte SQLite-fixtur eller legacyapp |
 | PR #345, mergad som `a2d461a1e8c28e195b4e197dff18f0b7955e3185` | Fyra K07-testfiler för idle, bordsbeteenden, limits och restart | Filerna är fortfarande `opt-in` i orphan-undantagen och saknas i obligatorisk fullregression. Restartprovet återanvänder minnesstore; det är inte process-/Postgresbevis |
-| K04, PAOW och operatörsytan | Trelagers-matte, filmad tidslinje, serverkedjad idle och kort-/chipsskalning finns. Operatörsytan är levererad via #364/#366. Handoffens PAOW-kvitto redovisar 153 importerade original och återställda källnotiser via #370 | PAOW:s givfilmer och repliker är inte aktiverade/godkända; endast andas är grundloop. Ingen verifierad PAOW-filmprofil; 17/18 landningsvärden skiljer sig i källunderlagen |
+| K04, PAOW och operatörsytan | Trelagers-matte, filmad tidslinje, serverkedjad idle och kort-/chipsskalning finns; operatörsytan levererad via #364/#366. #382 dokumenterar PAOWs 24 exakta idleoriginal i publicerat West Bet-paket revision 2 och avgränsad faktisk videouppspelning | Återanvänd import/publicering. Kvittot omfattar ingen insats eller full spelrunda, inte heller alla 24 klipp manuellt. Givfilmer/repliker och PAOW-filmprofil med avvikande landmarks behöver fortsatt acceptans |
 
 PR #333:s sju avvikande filer har granskats som kod, inte bara räknats: replay har flyttats till delat kontrakt, mottagaren läser under samma transaktion, koordinatorn har starkare auth-/configgräns, tester har kompletterats och SQL-provköraren bevarar tidigare kontroller. Det finns därför inget belägg för att en helmerge ger ytterligare användarvärde.
 
 ## Prioriterad väg till 9/10
 
-Poängen nedan är en bedömning av **nyttan för main**, inte ekonomisk avkastning eller migrationsprocent. Risk är relativ implementationsrisk före anpassning. Ordningen prioriterar fungerande befintlig produkt framför fler begrepp och klipp.
+Poängen gäller **nytta för main**, inte ekonomisk avkastning eller migrationsprocent. Tabellen beställer bara verifierade luckor. Ingen helmerge av Kevin eller återuppbyggnad av redan fungerande Admin ingår.
 
-| Prio | Leverans och aktivitet | Nytta | Risk | Minsta godkända resultat |
-| --- | --- | ---: | --- | --- |
-| 1 | Exakt medie-/posebindning i befintlig klippkarta, K05 + K04 | 10/10 | Medel–hög | Välj en redan registrerad dealer och ett befintligt rum. Bind endast accepterade takes med exakt UUID/hash, posevariant, track och kontakt-/handfrigöranderuta. Kontrollera två följande uppspelningar genom tre separata lager; osäkra takes förblir avstängda |
-| 2 | Slut den befintliga Admin → paket → spel-kedjan, J08 + K06 | 10/10 | Medel | Alla redan accepterade fält sparas och återläses; rätt rum/paket/configversion används efter reload och omstart. Publicering under hand gäller vid beslutad versionsgräns. Fel bolag, roll, rum, revision och media nekas |
-| 3 | Gör befintliga Kevin-regressioner obligatoriska, J06 + K07 | 9/10 | Låg | Registrera de fyra redan portade filerna i relevant fullregression och ta bort deras opt-in-undantag i samma ändring. Behåll faktisk PG-/processåterställning som separat kontroll; återskapa inte redan portade tester |
-| 4 | Begränsat Adminval för lugn/varierad idle, K04 + J08 | 8/10 | Medel | Återanvänd `room-idle`/`server-chain`, viktning och skydd mot direkt upprepning. Visa ett belagt gap i aktuell Admin-writer innan något kontrakt utökas; välj en liten godkänd pool. Varken ny scheduler eller generell höjning till 24 basklipp behövs som första steg |
-| 5 | Exakt inspelat tal och händelsetiming, K05 + K04 | 8/10 | Hög | Bygg saknat attesteringsunderlag från exakta bytes, behåll mains krav på ljud-/indexhash, poser och kalibrering. Bind ett redan accepterat talfack till rätt committad händelse och tidslinje. Synk godkänns visuellt; saknad/sen media påverkar aldrig saldo eller utfall |
-| 6 | Samlad mobil-, reconnect- och driftacceptans, J05/J10/K07/O02 | 9/10 | Medel | Samma frysta kandidat provas med långsam laddning, avbrott, återanslutning och kompatibel restore. Befintliga mobilrättningar återanvänds; fysisk iPhone/Safari återstår enligt handoff. Redovisa runtimebevis separat från mock-/minnesprov |
-| 7 | Senare Kevin-fixar, först efter påvisat gap | 5/10 tills belagt | Medel–hög | Läs avgränsat delta från accepterad käll-SHA. Exempelvis sena talanrop, inaktiva platser eller idleövergång får en reproducerbar main-regression före portning; branchens nyhet är inte ett nyttokriterium |
+| Prio / nytta | Befintligt eller pågående | Konkret återstående arbete i mains modell | Godkänt resultat och gräns |
+| --- | --- | --- | --- |
+| 0 · 10/10 | Publiceringsrevisioner finns; #378:s nya idleformat är redan i drift, #380 inför layout-capability v27 | Komplettera befintligt capability-/readinesskontrakt för `rotation` så en äldre Render-läsare stoppar nya sparningar/publiceringar. Utgå från aktuellt fryst paket; säkra även versionsblandning och rollback | Negativt prov: ny Admin + gammal runtime skriver inget. Återställningsversionen kan läsa redan sparat format. #382 visar fungerande aktuella versioner; fyndet är ett kompatibilitetsgap, inte en observerad produktionsstörning |
+| 1 · 10/10 | Klippkarta, poseklassning och trelagersspelare finns | **Admin → Klippkarta**: bind accepterade UUID/hash, posevariant, track, kontakt- och handfrigöranderuta genom befintlig register-/publiceringsväg. Utred PAOW:s motstridiga landmarks före aktivering | Två följande uppspelningar i faktiskt spel med separat bakgrund, dealer och bord. Osäkra givfilmer/repliker förblir avstängda; inget nytt lokalt medieregister |
+| 2 · 10/10 | #334/#336/#364/#366 finns på main; Admin visar redan rum, utkast, material och spelinställningar | **Admin → Spelbolag & rum**: färdigställ K06/J08-kvittot för sparning → återläsning → granskning → publicerat paket/config → rätt spelversion. Använd scoped roomOverrides och befintliga writers | Fel bolag, roll, rum, revision och media nekas. Pågående hand behåller avtalad version. Gemensam mall, rumsval och paketets dealerpolicy får inte förväxlas |
+| 3 · 9/10 | Fyra K07-filer portades i #345 men är opt-in | J06/K07: registrera befintliga idle-, beteende-, limits- och restartprov i relevant obligatorisk regression; ta bort motsvarande opt-in-undantag i samma ändring | CI visar att filerna körs. Minnesrestart räknas endast som regel-/koordinatorprov; verklig PG-/processbeständighet har separat kvitto |
+| 4 · 8/10 | #378/#381 levererar rotation i verkliga Körregel-panelen; #382 kvitterar 24/24 exakta media, sparad policy och publicerat West Bet-paket revision 2 | Återanvänd leveransen och dess kvitto. Komplettera endast återstående acceptans: två följande spel, avbrott/återgång till talpose samt berörda rum. Ingen ny editor, omimport eller ompublicering beställs av planen | 45 sekunders dokumenterad liveuppspelning visar åtta klipp med bildkvitton och nio observerade identiteter; ingen insats/full runda. 24/24 urval är offlinebevis. Förhandlat runtimestöd och full spel-/mediaacceptans är fortfarande separata krav |
+| 5 · 9/10 | #380, öppen PR på uppdaterad head, har preview/formatlayout samt avgränsad ändring av fryst scen och kassering av gamla materialutkast | Granska befintligt `update-scene-layout` mot aktuellt paket och v27-grinden. Scen & lager gäller gemensam mall; Spelbolag & rum gäller val och avgränsad publicerad scen. Preview får inte ändra sparad standard | Övriga bord, media, lager och utkast bevaras; delad scen får inte felmärkas rumsspecifik. Kassering får inte återuppstå efter senare publicering. Mobil/webview och fysisk iPhone/Safari får eget kvitto |
+| 6 · 8/10 | Talplatser, inspelat tal och committade spelhändelser finns | K05/K04: attestera ett accepterat talfack med exakt text, ljud, video, indexhash, poser och kalibrering genom mains befintliga tjänster | Visuellt godkänd synk och rätt händelsetiming. Saknad/sen media påverkar aldrig saldo/utfall. Inga tysta språk-/dealerfallbacks eller generativ worker utan separat beslut |
+| 7 · 9/10 | Server-v3, Neon och privat Blob är befintlig produktväg | J05/J10/K07/O02: samla samma kandidats start/readiness, samtidighet, reconnect, avbruten laddning, retry och kompatibel restore i den godkända isolerade molnmiljön | Kvitto anger Vercel-/Render-version, Neon-scope, Blob-namnrymd och paket/configrevision. Kodtest, lokal PG och mediaacceptans hålls åtskilda enligt tabellen nedan |
 
-Prio 3 kan genomföras fristående före den mer tidskrävande medieacceptansen. Prio 4–5 begränsas till accepterade funktioner och utgör inte villkor för att importera alla Kevins varianter. Generativ moving-lipsync/GPU tas sist efter separat beslut om exakt workerprotokoll, dealer-/frameidentitet, budget och visuell acceptans.
+Prio 3 kan utföras före den långsammare medieacceptansen. #378/#381:s merger ersätter inte kompatibilitets- eller liveacceptans; öppna #380 granskas som pågående leverans. Sena Kevin-fixar kräver först ett reproducerbart gap i main; en nyare branch räcker inte. Extra dealers, språk, repliker, hela backoffice/roulette och generativ moving-lipsync/GPU skjuts upp när nyttan är svagt belagd.
 
-**9/10 ges först när följande kan beläggas på samma kandidat:**
+**9/10 ges först när samma kandidat uppfyller alla relevanta krav ovan:** en överenskommen dealer/rumskombination genom Admin till två följande spel; korrekt kortkontakt och valt godkänt tal; negativa behörighetsfall; exakt en ekonomisk effekt; obligatorisk regression; särskild mobil-/mediaacceptans och fungerande kompatibel restore. Det är ett kvalitetsmål för demon, inte ett real-money-godkännande eller ett krav på full Kevin-paritet.
 
-- En överenskommen dealer/rumskombination fungerar från Admin till två följande spel med separata bakgrunds-, dealer- och bordslager, korrekt kortkontakt och godkänt valt tal.
-- Sparning, publicering, samtidighet, retry, omstart och restore bevarar rätt identiteter, configversion, sko och exakt en ekonomisk effekt; negativa behörighetsfall passerar.
-- Relevant regression körs obligatoriskt. Mobil/Safari och verklig media redovisas med egna acceptanskvitton; en grön CI ersätter dem inte.
-- Aktiva runtimevägar och rollback är begripliga, utan återinförd legacy eller blockerande fynd. Detta är ett kvalitetsmål för demon, inte ett real-money-godkännande eller ett löfte om 100 % funktionsparitet med Kevin.
+## Motivering och när migreringen är klar
+
+Urvalet prioriterar verifierat användarvärde och liten anpassningsrisk. Befintlig kod och nya driftkvitton ska minska kvarvarande arbete; äldre delsteg får inte beställas på nytt.
+
+| Beslut | Motivering |
+| --- | --- |
+| Porta beteenden genom mains befintliga tjänster | Main äger autentisering, ekonomiska effekter, Neon, Blob och trelagersspelaren. Att kopiera Kevins app eller lagring skulle skapa konkurrerande sanningar |
+| Komplettera Admin och dess scoped writers | Samma behörighet, rum-/bolagsgräns, revision och frysta paket gäller från redigering till spel. Ett valt rum begränsar inte automatiskt en gemensam mall eller paketets dealerpolicy |
+| Återanvänd #333:s redan representerade innehåll och #378/#381/#382 | En ny merge, import eller editor ger inget extra värde när funktionen redan finns. Återstående skillnader måste kunna visas i main |
+| Behåll PostgreSQL/SQL och avgränsade befintliga tester | Neon använder SQL. Förbjuden återgång är ett nytt lokalt produktregister eller en alternativ publiceringsväg; rena kodprov och befintliga isolerade PG-prov är användbara delbevis |
+| Kräv explicit kompatibilitet och exakt mediaacceptans | Grön CI eller hash bevisar inte äldre läsares stöd, kortkontakt, läppsynk eller två följande spel. Osäkra giv-/talfilmer förblir avstängda |
+
+| Vad får kallas klart? | Krav och avgränsning |
+| --- | --- |
+| Plan-/dokumentrevisionen | Reviderad masterplan och K05, motiv, aktuella kvitton och kontroller levererade i PR #379. Push avslutar dokumentleveransen; integration i main är ett separat steg |
+| Ett avgränsat funktionsdelsteg | Dess accepterade beteende är implementerat i mains modell och har versionsbundet kvitto för hela just det delsteget. #382 är ett sådant avgränsat PAOW-kvitto, inte färdig K04/K05/K06 |
+| Kevin-migreringen enligt beslutad omfattning | Samtliga 20 aktiviteters gällande acceptanskriterier är verifierade och registrerade i status.json, inklusive O02:s oberoende samprov och O03:s leverans-/drift-/restorekvitto. Ett bortvalt krav kräver uttryckligt scopebeslut och dokumenterad motivering; det får inte tyst strykas eller räknas som VERIFIED |
+| Teknisk Neon-/Blob-flytt | Har separat avslut i [molnöversikten](../docs/CLOUD-MIGRATION.md#teknisk-register-runtimeflytt-avslutad-i-produktion). Det avslutet får inte blandas ihop med Kevins återstående funktions- och medieacceptans |
+| Main på 9/10 | Bedömning mot kvalitetskraven ovan. Inte samma mått som 45 % aktivitetsstatus, automatiskt 100 % migration eller ett godkännande för riktiga pengar |
+
+**Ja, migreringen kan kallas klar när den avgränsade planen faktiskt är genomförd och verifierad.** Full kopiering av Kevin, extra dealers/språk eller en generativ worker krävs inte. Dokumentpushen ensam räcker inte: 45 % (9/20) står kvar.
+
+O02/O03:s slutkvitto ska identifiera en gemensamt granskad release med kompatibla Vercel-/Render-versioner, schema, paket/config och exakta media, samt faktisk Admin → publicering → spel, negativa behörighets-/revisionsfall, två följande spel och kompatibel återställning. Frontend och backend behöver inte ha identisk commit om endast klientkod ändrats; deras kompatibilitet och faktiska driftsversioner måste vara belagda. Denna plan ger inget nytt mandat att testa på riktiga användardata eller ändra produktion.
+
+## Förnyad Admin- och PR-granskning 25 oktober
+
+Inloggad, läsande granskning av `www.scoutgaming.tech/admin` genomfördes tidigare den 25 oktober, före #382:s publiceringskvitto: Klippkarta, PAOW:s idlefack/Körregel och Spelbolag & rum för Dragan test respektive West Bet. Inga data sparades och inga spel startades av denna granskning. Följande UI-observationer beskriver den tidpunkten; #382 kompletterar dem med ett senare rapporterat driftkvitto.
+
+- PAOW:s idlefack visar **34 filer**, standard **andas**, och befintlig editor för basloop/beteendeklipp. Giv-/visnings-/talfack visar obundet material trots att filer finns. Antalet filer bevisar varken rätt urval eller acceptans.
+- Rumsytan visar separat **Bakgrund / Dealer / Bord**, publicerat läge, utkast, granska publicering och spelinställningar. West Bet visar publicerad version. Dragan test visar varning att utkastet bygger på en äldre publicerad version; granskning är spärrad. Det motiverar en avgränsad ändring av aktuellt paket, inte blind fullpublicering.
+- Main-koden bekräftar Neon-registret (`neon-video-registry.mjs`), privat Blob (`cloud-media-store.mjs`) och befintliga Admin-tjänster (`studio-native-runtime.mjs`). Molnstartens gränser i `ops/cloud/config.mjs` kräver Postgres, Neon-policy och Blob. Kvarvarande offline-/SQLitekod är inte förebild för portningen.
+
+| PR och fryst head vid granskning | Bedömning och återstående gräns |
+| --- | --- |
+| [#378](https://github.com/Jakeminator123/scoutgaming/pull/378) · `84b9c2fc60888f07286e46280afb1e2ca53de335` · mergad som `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` | Återanvänder Admin, exakt hashurval, Neon-transaktion/CAS och fryst paket. **Kvarstående kompatibilitetsfynd:** `rotation`/`use: rotation` läggs till i strikt idleformat utan ändring av capability-/readinessfiler. Föregående main-läsare på `34c6c22f` avvisar fältet; generic readiness bevisar inte detta stöd. Kräv explicit runtimegrind och negativt prov med gammal läsare före framtida sparning/publicering eller rollback. Kontrollera paketets dealerpolicy och alla påverkade rum |
+| [#380](https://github.com/Jakeminator123/scoutgaming/pull/380) · `d51c7c135f6ed8aadeeddb6e9bbf4a3198682b91` · Jakob, öppen | Har `update-scene-layout` mot aktuellt fryst paket, `discard-draft`, enhetsriktig preview och hopfällbara kontroller. v27 skyddar nya layoutfält. Senaste delta integrerar #381/#382 och uppdaterar navigationstestet för direkt sparning/CAS; återanvänd arbetet. Granska bevarade material/andra bord, delad scen och samverkan med rotation; UI-prov är inte full Neon/Blob-acceptans |
+| [#381](https://github.com/Jakeminator123/scoutgaming/pull/381) · `1cd40af4461654449259e6f07fe5137f7ef0e500` · mergad som `e57ed4d702378f20d5d29e398b0aec812a315f86` | Kopplar #378:s exakta 24-klippsurval till verkliga `StudioPolicyPanel`, skyddar aktiva sekvenser och ger återgång till basloop. Klient-/teständring; löser inte saknad runtimegrind. Behandla funktionen som levererad kod med separat återstående helflödes-/mediaacceptans |
+| [#382](https://github.com/Jakeminator123/scoutgaming/pull/382) · `84859b7cac9ac31d3b680afaf20f53526b0a99fa` · mergad som `2be88119d2f342b7a9cf6725dab1ab75d6a09d52` | Handoffkvitto från utförandeagenten: Vercel READY på `e57ed4d7`, Render live på `51165e9a`, West Bet revision 2 och 24/24 exakta media. 45 sekunders faktisk uppspelning, ingen insats/full runda; inte egen omkörd acceptans. Sparad PAOW-policy ska bevaras. Klientändringen #381 kräver inte identisk backend-SHA |
+| [#379](https://github.com/Jakeminator123/scoutgaming/pull/379) · denna dokumentleverans | Samlar masterplan, K05, aktivitetsnoteringar, motiv och slutkriterier efter Jakobs begäran om push. Ingen produkt-PR eller aktivitet markeras färdig av dokumentleveransen |
+| [#352](https://github.com/Jakeminator123/scoutgaming/pull/352) · `93edf200ea7d546362050840fcfc369fe664b41d` · Jakob, utkast | Review-workflow och handoff; ingen saknad Kevin-produktfunktion |
+| #333 / #315 / #323 · Kevin, utkast | Oförändrade produkt-/testslutsatser i nulägestabellen. #333 har annan integrationsbas; #315/#323 baseras på `kevin-merge-admin`. Ingen av dem är en automatisk mergekö till main |
+
+#378:s urval är separat fryst på `kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`. Det godkänner inte automatiskt alla senare Kevin-commits eller flyttar K01/O01:s baslinje. Kontrollera PR-head, ägare, CI och kvarstående fynd på nytt inför faktisk integration.
+
+## QA, SQL och lagring utan återinförd legacy
+
+**Neon är PostgreSQL och använder SQL.** Förbudet gäller att återinföra SQLite, filbaserad produktstate eller direktdatabasvägar som ersätter Admins auth, scope, revisioner och publicering. Parameteriserad SQL i mains Postgres-adapter är avsedd; regelkärnan ska fortfarande vara fri från databasåtkomst. En gammal beställning av en SQL-läsroll är ingen ny installations- eller behörighetsinstruktion.
+
+| Nivå | Tillåtet, befintligt verktyg | Vad provet kan bevisa | Vad det inte får bli |
+| --- | --- | --- | --- |
+| Kod/kontrakt | Mains rena tester och minnesfixtures, syntetisk slump/tid, statisk läsning av kod/SQL-migrationer | Regler, validering, UI-tillstånd, fel-/replayfall | Nya SQLitefixtures, Kevins lokala app, bevis på Neon-beständighet eller godkänd video |
+| Avgränsat Postgres-prov | Befintlig ägd, tillfällig PG-harness i test/CI när lås/rollback/processfel behöver isoleras | Transaktions- och processbeteende för den angivna testmiljön | Ny lokal produktmiljö, kopierad produktionsdata, nya produktionsroller eller att loopback-harnessen riktas mot Neon |
+| Molnintegration/acceptans | Befintlig godkänd isolerad Neon-resurs/scope och privat Blob-namnrymd, mains Admin/API och verkliga spelare med syntetiska användare | Admin → Neon → fryst paket → auktoriserad medieleverans från privat Blob → spel, med identifierade versioner | Produktionstest med riktiga konton, lokal mapp som ersätter Blob, eller obeställd resurs-/DDL-/behörighetsändring |
+
+- Normal `apps/studio/start.mjs` öppnar den publika produkten; `--offline` är endast en explicit jämförelsefixture. Återinför inte gamla connected-local-flaggor, lokal QA-kalibreringspanel eller alternativ produktstart för migrationens skull.
+- En befintlig `--media-root`-fixture, renklonstart eller lokal frontendöverskrivning kan vara ett avgränsat kod/UI-prov. Den bevisar inte Neon-isolering, Blob-auth/range/hash eller rätt driftsatt Vercel-/Render-version.
+- Metadata, ägarskap, godkännanden, UUID/hash och publicerade referenser hör hemma i Neon; originalklipp i privat Vercel Blob. `cloud-media-store.mjs`:s verifierade temporära cache är härledd data, inte ett nytt register. `services/game/public/local-presentation.mjs` är en aktiv del av molnspelaren trots namnet; behåll dess gemensamma kontrakt.
+- För varje skrivning: identifiera befintlig tjänst, actor/roll, operatör/rum, scope, förväntad revision och exakt media. Läsning av källkod eller migrations-SQL är inte databasåtkomst. Operativ SQL-läsning använder endast befintlig avsedd anslutning/scope; en direkt SQL-uppdatering får inte ersätta Admin-publicering.
+- Befintliga godkännanden gäller sitt exakta mål och sin omfattning. Daterade resursförsök, schemamanifest och “AV”-noteringar i [återställningsdokumentet](../docs/ENVIRONMENT-RESTORATION.md) återläses mot dagens mål; de är inte aktuella körinstruktioner. Skapa inget nytt testlandskap bara för att plantexten nämner QA.
+
+**Verifieringsgräns för dokumentleveransen:** annat test-/Adminarbete pågår i en annan IDE och bevaras. Tidigare lokala fixture-/beroendefel är inte fastställda produktfel och påverkar inte poängen. Denna leverans kontrollerar dokumentdiff, länkar, statusgenerator och oförändrade statusfält samt ordinarie commit-/pushkontroller. Ingen installation, produktändring eller ytterligare lokal QA-miljö beställs.
 
 ## Anpassningsgräns: main bestämmer formen
 
@@ -64,7 +122,9 @@ Admin / scoped roomOverrides
 
 | Källa | Full SHA | Användning |
 | --- | --- | --- |
-| Granskad main 25 oktober | `34c6c22f60ac75f335f647c83af06e7d0514476b` | Nuläge och prioriteringar i denna revision |
+| Main, första granskningen 25 oktober | `34c6c22f60ac75f335f647c83af06e7d0514476b` | Ursprunglig PR-/filjämförelse och prov av gammal idle-läsare |
+| Main efter #378 | `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` | Mergad med samma granskade head; källunderlag, inte en ny produktändring från denna dokumentrevision |
+| Main vid sista statusavstämningen | `2be88119d2f342b7a9cf6725dab1ab75d6a09d52` | #381:s native Admin-koppling och #382:s senare PAOW-driftkvitto läsgranskade; versionsbundet delbevis, inte slutacceptans |
 | Ursprunglig main / jakob-gren 21 oktober | `15988f32fd572c453d2189502acbe324c4566815` | Historiskt plan-/kontraktsunderlag; inte dagens main |
 | kevin-merge-admin | `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` | Accepterad fryst källa för K01/O01; flyttas inte automatiskt |
 | kevin-staging, äldre analys | `238d6dd681745ca87a813b969443e7edee3f820b` | Historiskt underlag |
@@ -84,7 +144,7 @@ Historiska kontrakt, delkvitton och de 20 aktiviteternas beroenden nedan bevaras
 | Delat bord och spelklient | Kevins dokumenterade beteenden som klarar K01/O01 | Kopierat auth-/wallet-/lagringssystem, hårdkodade bord/video och lokala produktregister |
 | Data och identitet | Mains Neon, serverägd wallet, befintliga scoped writers | SQLite som produktfallback och bevisat oanvända tabeller efter konsumentavveckling |
 | Media, tal och idle | Befintliga exakta identiteter och frysta paket i Neon/Blob | Oanvända V1-klipp från Kevin återimporteras inte; inga parallella fillager |
-| Lokal utveckling | Explicit isolerad fixture där den behövs | Dolda fallbackvägar som råkar starta en annan produkt |
+| Lokal utveckling | Befintliga avgränsade tester enligt QA-tabellen ovan; normal produktväg är molnet | Nya lokala produktregister, SQLitefixtures och dolda produktstarter; behåll aktiva gemensamma spelarmoduler oavsett filnamn |
 | Test och CI | Regler, auth, isolering, samtidighet, sparning, publicering | CSS-/sträng-/antal-lås för pensionerad implementation och redundanta byggjobb |
 
 Dagens publika ingångar och interna launchkontrakt framgår av anpassningsgränsen ovan. J04:s äldre routekvitto är versionsmärkt; senare PR #358/#360 gör `/game` till aktiv ingång. En URL-radering får inte radera serverns paket-, ägar- och autentiseringskontroller. `/studio` är en teknisk basePath, inte ännu en produkt.
@@ -101,7 +161,7 @@ Målgränser:
 4. **Presentation:** översätter committade spelhändelser till publicerade media-/talkontrakt. Misslyckad video eller tal får inte ändra utfallet eller debitera igen.
 5. **Admin:** producerar validerad, versionerad konfiguration. Aktiva sessioners versionspolicy bestäms i O01; inga halvpublicerade ändringar mitt i en hand.
 
-**Ta bort SQL ur regelkärnan, inte Postgres ur produkten.** SQLite för en namngiven, isolerad testfixture kan vara rimligt om den tillför värde; den ska inte bli en andra driftväg. Portningen ska inte börja med generell omskrivning av all SQL.
+**Regelkärnan hålls fri från SQL; lagringsadaptern använder mains Postgres/Neon.** Ingen ny SQLitefixture eller alternativ lagringsväg beställs. Befintliga isolerade PG-prov får användas för avgränsade transaktions-/processbevis enligt QA-tabellen; de ersätter inte acceptans av den aktuella molnkedjan.
 
 ## Etapper, ansvar och procent
 

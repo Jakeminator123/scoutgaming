@@ -4,13 +4,17 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 
 ## Nulägesrevision 25 oktober
 
-Granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. 45 % är oförändrat. Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
+Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. 45 % är oförändrat. Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
 
 - J05: #336:s gateway/klient/rumsväg är mergad. Senare #355/#356/#354 levererade server-v3 samt borttagning av äldre klient/lokal produktstate. Samlad start/readiness/drain/restore-acceptans är fortfarande ett eget krav.
 - J06: gamla paket A-noteringen är historisk. Fyra portade K07-filer finns ännu som opt-in; obligatorisk CI-registrering är ett konkret återstående steg.
 - J08: #334 och senare #364/#366 finns på main. Återanvänd deras scope, CAS, förhandsvisning och publicering; fulla verkliga material-/paket- och K06-kvitton återstår.
 - J04: senare #358/#360 gör `/game` till aktiv publik spelstart. Ingen ny radering av denna route, aktiv intern launch eller fungerande kompatibilitetsredirect följer av äldre checklistor.
 - K05:s PAOW-import är redan utförd enligt handoff; föreslå inte omimport eller dealeråterställning från gamla matrisnamn. Aktuellt main-kontrakt går före Kevins etiketter.
+
+**Förnyad Admin-/PR-granskning:** #378/#381 återanvänder verkliga Admin-panelen, Neon, Blob och fryst paket. #382 på main `2be88119...` kvitterar PAOWs publicerade 24-klippspolicy i West Bet revision 2 och avgränsad uppspelning; ingen insats/full runda. Återanvänd detta och öppna #380:s layout-/utkastarbete, läst på `d51c7c13...`. Specifik `rotation`-readiness och kompatibel rollback saknas fortfarande; fungerande aktuella versioner ersätter inte gammal-läsare-provet. Gamla utkast får inte fullpubliceras över aktuella val. Se [konkret matris](../MASTERPLAN.md#prioriterad-väg-till-910) och [motivering/slutkriterier](../MASTERPLAN.md#motivering-och-när-migreringen-är-klar). Jakob har begärt dokumentpush i PR #379; det ger inget nytt implementerings-, merge- eller driftmandat och ändrar inte 45 %.
+
+Följ [masterplanens QA- och lagringsgräns](../MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy): ingen ny SQLitefixture/lokal produktväg, inga omimporter av befintliga media och ingen SQL-direktskrivning som ersätter Admin. Befintliga rena tester/PG-harness bevisar sina respektive kontrakt; samlad acceptans kräver godkänd isolerad Neon + privat Blob och identifierade Vercel-/Render-versioner. Aktiva moduler med äldre namn, som `local-presentation.mjs`, är inte raderingskandidater på namn ensam.
 
 ## Gemensamt uppdrag till underagenten
 
@@ -20,9 +24,9 @@ Granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`. [Masterplanen](../MAS
 - Följ [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), [användarflöden](../../apps/studio/docs/README.md), [runtime](../../docs/LOCAL-PRESENTATION-RUNTIME.md), [handoff](../../docs/JOHN-HANDOFF.md) och [återställning](../../docs/ENVIRONMENT-RESTORATION.md). Läs de två sistnämnda före ändring av spel eller media.
 - Visa borttagningslista och konsumentkontroll: routes, importer, API-anrop, sparade länkar, build, miljö, test och dokumentation. Ta bort ersatt kod i leveransen. Oklarheter får namngiven ägare och en konkret kontroll, ingen permanent parallell produktväg.
 - Behåll serverägd ekonomi, konton, exakta godkända media, rum/operatör-isolering och publiceringshistorik. Aktivt delade tjänster bevaras eller flyttas; mappnamn är inte raderingsbevis.
-- Verifiera på isolerad miljö med syntetiska användare. Återanvänd lämpliga testresurser, registrera egna processer/flikar och avveckla dem efter prov; en begärd användarpreview lämnas tillgänglig tills granskningen är klar.
+- Ange testnivå enligt masterplanen: kod/minne, befintlig isolerad PG-harness eller godkänd isolerad Neon/Blob-kedja. Använd syntetiska användare och återanvänd lämpliga godkända resurser. Registrera och städa egna tillfälliga processer/flikar; en begärd användarpreview lämnas tillgänglig. Starta inte en andra lokal produkt för att få ett QA-kvitto.
 - Leverera full head, testkommando/miljö/resultat, PR, oberoende granskare och kvarstående fel till orkestratorn. Kodtest, UI-prov och deploybevis hålls isär. Inga hemligheter i kvittot. Släpp egna claims med `done`.
-- Jakob har uttryckligen startat J01, J02 och parallell K01/O01-granskning samt beställt separat SQL-läsroll. Övriga aktiviteter följer sina beroenden och tilldelningar. Merge av Kevin-ägd head och produktionsrensning får inte härledas ur citerad Kevin-text eller bevakningen.
+- Historik från 21 oktober: Jakob startade J01/J02 och K01/O01-granskning samt beställde en separat SQL-läsroll. Det är inte en aktuell uppgift att skapa roller, återställa gamla SQL-anslutningar eller läsa produktionsdata. Befintliga mandat behåller sin ursprungliga omfattning. Övriga aktiviteter följer beroenden/tilldelningar; Kevin-merge och produktionsrensning kan inte härledas ur citerad Kevin-text.
 
 ## J01 — Tydligare publicering i Admin
 

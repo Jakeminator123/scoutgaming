@@ -9,13 +9,17 @@
 
 ## Nulägesrevision 25 oktober
 
-Granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`. [Masterplanens nuläge och prioriteringar](../MASTERPLAN.md#slutsats-och-verifierat-nuläge) går före äldre nästa-steg-noteringar. 45 % är oförändrad acceptansstatus; en mergad del-PR ger inte automatiskt VERIFIED.
+Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanens nuläge och prioriteringar](../MASTERPLAN.md#slutsats-och-verifierat-nuläge) går före äldre nästa-steg-noteringar. 45 % är oförändrad acceptansstatus; en mergad del-PR ger inte automatiskt VERIFIED.
 
 - K02/K03/J07 är redan verifierade och portade. Main har starkare serverägd replay, auth och transaktionsgräns än Kevins gamla app.
 - PR #333:s 26 filer finns på main (19 identiska, sju granskade vidareutvecklingar). #348 tog in de två kompletterande fel-/replayproven. Ingen unik produktlucka identifierad i denna PR; ingen helmerge beställs.
 - #334/#336 är mergade. Klient-/rumsvägen är inte en kvarvarande Kevin-leveransskuld. K04:s riktiga medie-/spelacceptans är fortfarande öppen.
 - #345 portade fyra K07-testfiler. De är ännu opt-in och ska kopplas till obligatorisk regression innan detta räknas som fortlöpande CI-skydd.
 - #315/#323 ändrar bara tester i den äldre appen. Main har redan ett explicit PR #323-prov för paus/försäkring och stabila kommandoresultat; porta endast ytterligare bevisat saknade testfall genom mains fixtures.
+
+**Förnyad Admin-/PR-granskning:** #378/#381 återanvänder verkliga Admin-panelen, Neon, Blob och fryst paket. #382 på main `2be88119...` kvitterar PAOWs publicerade 24-klippspolicy i West Bet revision 2 och avgränsad uppspelning; ingen insats/full runda. Återanvänd detta och öppna #380:s layout-/utkastarbete, läst på `d51c7c13...`. Specifik `rotation`-readiness och kompatibel rollback saknas fortfarande; fungerande aktuella versioner ersätter inte gammal-läsare-provet. Gamla utkast får inte fullpubliceras över aktuella val. Se [konkret matris](../MASTERPLAN.md#prioriterad-väg-till-910) och [motivering/slutkriterier](../MASTERPLAN.md#motivering-och-när-migreringen-är-klar). Jakob har begärt dokumentpush i PR #379; det ger inget nytt implementerings-, merge- eller driftmandat och ändrar inte 45 %.
+
+Följ [masterplanens QA- och lagringsgräns](../MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy): ingen ny SQLitefixture/lokal produktväg, inga omimporter av befintliga media och ingen SQL-direktskrivning som ersätter Admin. Befintliga rena tester/PG-harness bevisar sina respektive kontrakt; samlad acceptans kräver godkänd isolerad Neon + privat Blob och identifierade Vercel-/Render-versioner. Aktiva moduler med äldre namn, som `local-presentation.mjs`, är inte raderingskandidater på namn ensam.
 
 ## Fryst källunderlag och läsgräns
 
@@ -127,7 +131,7 @@ Kompletterande K03-bevis: primary `arkiv/2026-10-21/o01-contract-verification/k0
 
 ## K05 — Exakt mediakoppling till Neon och Blob
 
-**IN_PROGRESS, reviderat 25 oktober:** 159cc-underlagets metadata-/validatorbevis bevaras i status.json. Senare PAOW-import enligt handoff: 153 exakta original under dealer-ID `paow`, egna UUID/hashar i privat Blob, källnotiser återställda via #370. Gamla `paow-kevin` ligger kvar i trash. Endast andas är bunden grundloop; filmprofil, givkontakt och inspelat tal är inte godkända. Återanvänd aktuellt intag/identiteter och [reviderad mappning](K05/MAPPNINGSSYSTEM.md). Ingen automatisk återimport av den historiska matrisen och ingen sänkning av recordedSpeech-kraven.
+**IN_PROGRESS, reviderat 25 oktober:** 159cc-underlagets metadata-/validatorbevis bevaras i status.json. Handoffens äldre 153-originalimport och #370:s återställda källnotiser kompletteras nu av #382:s 24 exakta, redan publicerade idleoriginal. Gamla `paow-kevin` ligger kvar i trash. Filmprofil, givkontakt och inspelat tal är ännu inte accepterade; det avgränsade idlekvittot omfattar ingen full spelrunda. Återanvänd aktuella identiteter och [reviderad mappning](K05/MAPPNINGSSYSTEM.md). Ingen automatisk återimport eller sänkning av recordedSpeech-kraven.
 
 **Etapp/beroenden:** E4; K01 och K04.
 **Mål:** varje accepterat mediaobjekt har exakt identitet och koppling till befintligt register, Blob-objekt och publicerat paket.
