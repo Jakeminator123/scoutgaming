@@ -6,6 +6,8 @@ Den kombinerade Dockerfilen, Studio-processen, Next-förkontrollen, interna Lab-
 
 **Verifiering:** oberoende produkt-/testgranskning utan blockerare. Agentens normala hook gav 115 pass och tre uttryckliga Linux-skips; testnamnsrättningen 24/24. Roots integration med aktuell v3-CI och katalogkod gav 126 pass, noll fel och tre Linux-skips. Linux-signalprov och faktiskt Dockerbygge återstår i leveransens CI. Miljöguiden rättar också ett felaktigt påstående: valfria zones-URL används fortfarande för att neka sammanblandning med game/auth, inte för att köra pensionerade zonroutes.
 
+**Ytterligare avveckling i samma leverans:** den gamla QA-tjänstens diskbundna stream-start, syntetiska provider-preload, klient och tolv exklusiva prov är borttagna (`f375aeb1`, integrerad som `395b6f145`): sju filer, 630 borttagna rader. Bara kedjans två produktkrokar tas bort: alternativ child-transform och global unpaid-diagnostik. Ordinarie diagnostik, talbudget/session/Neon-journal, WebSocket och containerbehörigheter består. Root har spårat konsumenterna och granskat deltat. Slutlig integration med P6-rättningen gav 147 pass, noll fel och tre Linux-skips, inklusive verklig tal-HTTP. Inga gamla QA-resurser eller data raderas av kodavvecklingen.
+
 Vercel `dpl_4ybApMopithSip7N1THUMrnjpBLE` är återläst READY på PR391:s main `2faa327e`. Render är fortfarande på det tidigare verifierade `23debde7`; tom-katalog-, P6- och startändringarna är ännu inte runtimeverifierade där. Ingen isolerad app, schema, roll, seed eller Blob-bank har skapats. Full migrationsstatus är fortsatt 45 %.
 
 ## Pensionerad P6-kedja avvecklad i kod — 25 oktober 2026
