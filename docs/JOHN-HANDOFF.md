@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Rotationsgrind i Admin — 25 oktober 2026
+
+Nästa steg efter [PR #386](https://github.com/Jakeminator123/scoutgaming/pull/386): befintlig native readiness kräver v28 för rotationspolicy i aktivt projekt, dealerspecifik policy, arkiverad policy/globalpolicy och fryst paket. Även fältets närvaro eller `use: rotation` kräver stödet; en äldre läsare får inte accepteras genom generell dealer-/layout-capability.
+
+Negativ readiness stoppar före SQL. Ett verifierat mutationssammanhang kan inte i efterhand få rotationsbehörighet, och gör inget HTTP-anrop inne i transaktionen. Policy utan rotation behåller sitt tidigare krav. Ingen ny writer, lagring, schemaversion eller mediaimport.
+
+**Verifierat lokalt:**71/71 readinessprov,0skip, Node24.21.0. Prov täcker aktiv/arkiverad/fryst policy, verkligt validerbart fryst paket, bevarad data, versionsnedgradering och lifecycle-writer. Oberoende granskning och slutlig CI redovisas i följd-PR:en.
+
+**Driftsordning:** merge/driftsätt #386 och återläs v28 på befintlig Render `croupier-v3` före denna Admin-grind. Grinden är förberedd lokalt, inte påstått driftsatt. Återställning får bara ske till en läsare som hanterar redan sparad rotation; ny skrivning kräver fortsatt v28. Detta är ett avgränsat kompatibilitetsbevis, inte full migrationsacceptans.
+
 ## Migreringsgrind: runtimeannonsering och obligatoriska K07-prov — 25 oktober 2026
 
 Första kompatibilitetssteget från main `8093797cfb920f31de9e2d775d3bad50d1d7b69b`: spelmotorns befintliga posebaserade idle-rotation annonseras uttryckligen genom förhandlad capability v28, `idleRotation: pose-graph-v1`. Standardv2 och version1–27 är byte-identiska med baslinjen. Svaret är1281bytes och ryms inom befintlig2048bytes-gräns. Ingen ändring av sparad policy, klipp, register, paket eller databas ingår.
