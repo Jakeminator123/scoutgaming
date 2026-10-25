@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Tom Neon-staging skapad och begränsad — 25 oktober 2026
+
+Jakob godkände uttryckligen Create med Vercels startvärden och omedelbar begränsning. `croupier-k06-k07-staging` är skapad i rätt organisation: projekt `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, endpoint `ep-billowing-surf-b93x7p3c`. Separat GET verifierar PG18, Frankfurt, fast 0,25 CU och autosuspend 300 s. Endast `neondb` finns och inspektionen visar noll användartabeller. Ingen app är ansluten; inga roller/schema/seeds eller produktionsdata har ändrats.
+
+Projektets standardcompute och användningskvot kunde inte ändras i den Vercel-hanterade organisationen; endpointbegränsningen lyckades. Skapa inga ytterligare computes från de gamla standardvärdena. Autosuspend är inställd, men faktisk suspension är ännu inte observerad. Äldre Render-QA är verifierat suspenderad/maintenance och har inte återöppnats.
+
+[Resurskvitto och konkret installationsordning](ENVIRONMENT-RESTORATION.md#verifierad-provisionering-25-oktober) beskriver separat databas/roller, mains schemaström, tom projektmodell, syntetiskt Admin-underlag, privat Blob, aktuell appdrift och återstående samprov. Databasskapandet är färdigt. Granskningen fann dessutom att en tom runtimekatalog nekas eftersom underliggande manifest fortfarande kräver historiska Emil-familjer; denna initlucka måste lösas utan legacyimport. Installations-/driftbeslut och full K06/K07-acceptans återstår. Detta ändrar inte migrationsstatus **45 % (9/20)**.
+
+Föregående leverans [PR #388](https://github.com/Jakeminator123/scoutgaming/pull/388) är mergad som `4abbf1985e183c145c5a7772fe02631c6ee9b274`: CI40208080904 grön på head `03b507a04af6d0644ec9f081e7ff51e56d3f6010`, verkligt migrationsreadinesssteg lyckat och Vercel `dpl_Ci4syM9c556TNiM593c8a9uWoYEq` READY på merge-SHA. Äldre kommentarer om att Neon ännu saknas beskriver läget före detta nya resurskvitto.
+
 ## J06: slutgrinden kräver verklig Neon-readiness — 25 oktober 2026
 
 En fork-PR med server-/schemaändring kunde tidigare få grön CI när säkerhetsvakten korrekt hoppade över produktionskontrollen. Slutgrinden krävde inget separat migrationskvitto. Den kräver nu ett rapporterat, lyckat utfall från det faktiska readinesssteget när ändringsklassificeringen anger migrationskrav. Saknat, felaktigt, avbrutet eller överhoppat kvitto stoppar leveransen. Produktionsåtkomstens befintliga fork-skydd är kvar; granskad kod behöver levereras genom en auktoriserad repobranch. Klient-/test-/dokumentundantag behåller sina tidigare gränser.
@@ -24,7 +34,7 @@ Fyra befintliga K07-sviter körs nu i obligatoriska `gameplay/shared-blackjack`:
 
 **Verifierat lokalt:**62/62 kontrakts-/HTTP-/CI-/hookprov,18/18 K07-prov,27 äldre kapabilitetssvar bytejämförda,571 testkandidater/0orphan, `git diff --check`. Node24.21.0, högst fyra arbetare. PR #386 hade grön CI, dealer-regression och GitGuardian på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`, samt oberoende review utan blockerare. Renderkvittot finns ovan.
 
-**Nästa steg:** den granskade Admin-grinden är levererad enligt kvittot ovan. Runtime v28 och de negativa proven är klara som delsteg. Samprovet behöver fortfarande den godkända isolerade Neon-testmiljön; se [aktuell åtkomst- och resurskontroll](ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging--historiskt-beslut-22-oktober). Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
+**Nästa steg:** den granskade Admin-grinden är levererad enligt kvittot ovan. Runtime v28 och de negativa proven är klara som delsteg. Den tomma Neon-testmiljön är nu skapad; schema, isolerad appkedja och samprov återstår enligt [aktuell åtkomst- och resurskontroll](ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging--historiskt-beslut-22-oktober). Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
 
 ## Studio-scener, materialval och responsiva kontroller — 25 oktober 2026
 

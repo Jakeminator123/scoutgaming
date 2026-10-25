@@ -58,22 +58,41 @@ lagring kan fortsätta kosta efter compute-stopp. Kopiera inga produktionsdata,
 lösenord eller roller. Ingen produktions-DDL, deploy, skalning eller ny Render-
 tjänst ingår. Detta är en verifieringsmiljö, inte en produktionsåterställning.
 
-Neon-API:s första skapandeförsök avvisades eftersom organisationen hanteras av
-Vercel. Efterföljande exakt namnsökning gav inget projekt. Vercel API, CLI och
-Scoutgamings administrationsvy är nu verifierat inloggade. Skapandeformuläret
-visar Frankfurt, Auth false och Realtime false, men saknar PostgreSQLversion,
-fast CU och autosuspend. Dessa värden måste verifieras före Create; skapa inte
-det slumpade formulärnamnet som ersättning för det godkända projektet.
-Marketplace-CLI:t exponerar inte heller dessa inställningar. Ingen resurs eller
-DDL har skapats. [Neons guide](https://neon.com/docs/guides/vercel-managed-integration)
-anger att Change Configuration kan beröra alla databaser i installationen;
-kontoeffekten är inte verifierad och gemensamma produktionsinställningar får inte
-ändras för staging. Endpoint-specifik Neon-PATCH finns dokumenterad, men dess
-åtkomst i denna organisation och PG18-provisionering är fortfarande overifierade.
-Använd inte produktionsgren, arkiverad dataklon eller okända standardvärden som
-ersättning. Befintlig Vercel-projektlänk ersätter inte dessa resursinställningar.
+### Verifierad provisionering 25 oktober
 
-**Aktuell kontroll 25 oktober:** Vercel-inloggningen fungerar. Neoninstallationen `icfg_6taAB1ZusMeDLwujDmRK07Yi` visar endast `croupier-production`; den arkiverade grenen `codex-zone-storage-qa` är en äldre dataklon och inget tomt testmål. Vercels produktmetadata och skapandeformulär visar region/auth/realtime men inga val för PG-version, fast CU eller autosuspend. Neon Console i den godkända organisationen visar ett projekt och inaktiverad New project. Ingen ny resurs, DDL, roll, flagga eller produktionskopiering har gjorts. Hindret är verifierbar provisionering inom det godkända resursbeslutet, inte en saknad webbinloggning. [Leveranskvittot](https://github.com/Jakeminator123/scoutgaming/pull/387#issuecomment-6399543347) skiljer den färdiga kompatibilitetsleveransen från återstående molnacceptans.
+Det tidigare skapandehindret är löst. Efter att automatisk godkännandegranskning stoppat Create gav Jakob ett nytt uttryckligt godkännande: skapa det tomma namngivna projektet med Vercels startvärden och begränsa det direkt före appanslutning. Projektet skapades 15:51:36 UTC; endpoint-PATCH och separat GET verifierade följande:
+
+| Resurs / kontroll | Verifierat värde |
+| --- | --- |
+| Neonorganisation / projekt | `org-green-butterfly-00780270` / `red-violet-36066351`, namn `croupier-k06-k07-staging` |
+| Branch / endpoint | `br-plain-voice-b9yu49xi` / `ep-billowing-surf-b93x7p3c` |
+| Databasversion / region | PostgreSQL 18 / AWS Frankfurt, `aws-eu-central-1` |
+| Compute | min = max = 0,25 CU; autosuspend 300 sekunder |
+| Tomhet | Endast `neondb`; inspektionen returnerade noll användartabeller. Nytt projekt, ingen produktionsklon |
+| Vercelresurs | `store_YHjcgrD2QEbsGopo` i befintlig installation `icfg_6taAB1ZusMeDLwujDmRK07Yi`; Auth och Realtime av |
+| Appkoppling / produktdata | Connect Project hoppades över. Ingen schemaapply, roll, seed, export av anslutningsuppgifter eller produktionsskrivning |
+
+**Kostnadsgränsens faktiska omfattning:** Vercel skapade initialt 1 CU med autosuspend 0. Det enskilda endpointets värden är nu begränsade och återlästa även 15:57 UTC. Projektets standardvärden och användningskvot kunde däremot inte ändras: Neon svarade att organisationen hanteras av Vercel. Skapa därför inga extra computes/branches från dess oförändrade standardvärden. 24 aktiva timmar är provets arbetsgräns, inte en tekniskt verkställd dollargräns. Det visade Launch-priset var 0,106 USD/CU-timme: 24 timmar vid 0,25 CU motsvarar cirka 0,636 USD compute, plus lagring, eventuell skatt och den korta inledande perioden. Autosuspend är konfigurerad; en faktisk övergång till suspended är ännu inte observerad.
+
+**Färsk gränskontroll:** äldre Render `croupier-vercel-preview-qa` (`srv-datj7l893c1s73ar3u50`) är suspenderad, med maintenance på, automatisk deploy av och äldre `ops/cloud/Dockerfile`/container-entry. Dess 1 GiB-disk `dsk-datj7lg93c1s73ar3us0` är bevarad. De två gamla native-QA-fronterna finns i `jakeminator123s-projects`; deras existens bevisar inte aktuell isolering. Inga äldre QA-resurser har öppnats eller konfigurerats om.
+
+### Konkret fortsättning, ännu inte utförd
+
+Granskad kodbas: main `4abbf1985e183c145c5a7772fe02631c6ee9b274`. Databasskapandet är klart som eget delsteg. Den tidigare avgränsningen mot ny appdrift/Render och produktionsdata gäller fortfarande; den nya bekräftelsen gällde Create och direkt begränsning. Tabellen gör nästa installationsbeslut granskningsbart, men är inget tillstånd att återöppna tidigare stoppad QA.
+
+| Ordning | Mains befintliga väg | Kontroll före/efter och kvarstående beslut |
+| --- | --- | --- |
+| 1. Isolerat databasmål | Separat `croupier_staging` och dedikerad migrationsägare i projektet ovan; separat approll med nödvändiga DML-/sekvensrättigheter | Namn, roller och rättigheter beslutas före CREATE/GRANT. Verifiera exakt projekt, branch, endpoint, databas och ägare; kopiera inga produktionsroller |
+| 2. Spelschema | Aktuella `ops/neon-game/product-schema.sql` med verklig `product-v1`-checksumma i ledgern, sedan 006/007; befintliga `tools/prepare-shared-schema.mjs` för 008→009→010 | Frys SHA/hashes, granska genererad SQL och kör med rätt mål/ägare. Verktyget kontrollerar ägare, checksumma och tomma shared-objekt i transaktion. Inga blinda omförsök |
+| 3. Studioschema | `planStudioMigrations` → målgranskning → `applyStudioMigrations` i `ops/neon-studio/migrations.mjs`; CLI `tools/check-migration-readiness.mjs --apply` | Kräver godkänd schemaändring och `CROUPIER_MIGRATION_CONFIRM=apply-pending` endast i körningen. Återläs samtliga faktiska tillämpade/pending/optional-versioner; ingen förfalskad ledger |
+| 4. Tom policy och katalog | `createEmptyProject()` och befintlig repository-initialisering; tom administration. Scoped runtimekatalog krävs också före Admin-start | **Öppen kontraktslucka:** tom katalog nekas av `validateRuntimeMediaCatalog`; underliggande `validateLabVideoManifest` kräver historisk Emil-källa, 28 familjer och 29 standardvägar. Detta är verifierat med ren negativ validering, inte en körbar tom import. Utred minsta uttryckliga tomma startläge utan lättnader för verkliga klipp; kopiera inte legacydata för att passera |
+| 5. Aktuell appkedja | Efter löst kataloggräns: samlad HTTPS-frontend/Admin från samma repo och spelmotor från `ops/cloud/Dockerfile.game`, gemensamt isolerat scope, nya ingress-/sessionnycklar och eget syntetiskt adminkonto via ordinarie bootstrap | Separat host, Neon och Blob måste återläsas före start. Ingen produktionsnyckelkopiering. Beslut om ny eller uttryckligt återöppnad QA-app saknas; gammal kombinerad Studio/Render-start får inte återinföras |
+| 6. Syntetiskt testinnehåll | Efter appstart: befintliga Admin-writers för bolag/dealer/rum/media/publicering, separat privat Blob | Använd inte historiska `createSeedProject()`, produktionsutkast eller direkt SQL som publiceringsväg. Syntetiska klipp kan bevisa transport/identitet, inte PAOWs eller Dragans visuella acceptans |
+| 7. Faktisk acceptans | Admin → sparning/återläsning → publicering → fryst paket/config → två klienter/spel → processomstart → kompatibel återställning | Belägg rättigheter/CAS, exakt en ekonomisk effekt, rumsisolering och versionsbindning. Behåll loopback-harnessens skydd. `test/postgres-persistence.mjs` tillåter endast `croupier_game_qa`, inte det föreslagna målet; rikta inte om genom att försvaga vakten |
+
+Befintlig offlineförberedelse har körts med `prepare-shared-schema.mjs --database croupier_staging --role croupier_staging_migrator`. Alla fyra låsta källhashar matchar main ovan. Det genererade 008→009→010-underlaget har SHA-256 `fdd27174ac3d9d1cb5316abbc54f6926e3fab48ef71c9e00c87402d50be0d8ed`, innehåller mål-/ägarvakter och ligger privat som `shared-schema-review.sql/json` bredvid resurskvittot. Det är granskningsunderlag, inte installerat schema eller en godkänd rollskapning.
+
+Inget nytt parallellt testregister eller körsystem behövs som utgångspunkt. Den oberoende kodgranskningen fann katalogluckan ovan och ingen komplett befintlig molnseed som redan bevisar denna kedja. Installation, appdrift och faktiskt samprov är därför återstående arbete, inte godkända testresultat. Officiell status är fortsatt 45 % (9/20); se [masterplanen](../migrering/MASTERPLAN.md#prioriterad-väg-till-910). Det privata resurskvittot finns i den här uppgiftens ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/neon-provisioning-receipt.json`; inga anslutningshemligheter ingår.
 
 Historisk plan från 22 oktober: målidentitet, inställningar och tomma syntetiska data skulle verifieras före anslutning till separat `croupier_staging` med dedikerad migrationsägare. Tabellen nedan dokumenterar då planerade Gitblobbar; den är **inte en instruktion att applicera gamla schemafiler på dagens miljö**. Vid återupptaget arbete måste aktuellt schema, rätt ordning och redan tillämpade versioner jämföras med den frysta kandidaten. Ingen anslutningssträng skrivs i Git eller chatten.
 
