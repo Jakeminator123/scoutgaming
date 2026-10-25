@@ -1,15 +1,15 @@
 "use client"
 import Link from 'next/link';
-import {usePathname,useSearchParams} from 'next/navigation';
+import {usePathname} from 'next/navigation';
 import {Network,LayoutDashboard,Activity,CircleDollarSign,Settings,Cpu,House,Clapperboard,Users,Play,Building2,Wallet,type LucideIcon} from 'lucide-react';
-import {adminToolName,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
+import {adminToolName} from '../../../runtime/admin-routing.mjs';
 import {adminNavigationGroups,adminSystemGroups,adminToolHome} from '../../lib/admin-navigation';
 
-const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Clapperboard,'/admin/dealers':Users,'/admin/assets':LayoutDashboard,'/admin/rehearsal':Play,'/admin/companies':Building2,'/admin/players':Wallet,'/admin/drift':Activity,'/admin/ekonomi':CircleDollarSign};
+const icons:Record<string,LucideIcon>={'/admin/rooms':Network,'/admin/clips':Clapperboard,'/admin/scenes':LayoutDashboard,'/admin/dealers':Users,'/admin/assets':LayoutDashboard,'/admin/rehearsal':Play,'/admin/companies':Building2,'/admin/players':Wallet,'/admin/drift':Activity,'/admin/ekonomi':CircleDollarSign};
 export function StudioSidebar() {
-  const pathname=usePathname(),search=useSearchParams().toString();
+  const pathname=usePathname();
   // A deep tool marks the menu page it belongs to, so exactly one entry is current.
-  const path=isStudioAdminRoute(pathname,search)?'/admin/clips':pathname==='/admin/admin/players'?'/admin/players':adminToolHome(adminToolName(pathname))??pathname;
+  const path=pathname==='/admin/admin/players'?'/admin/players':adminToolHome(adminToolName(pathname))??pathname;
   const systemActive=adminSystemGroups.some(group=>group.links.some(link=>link.href===path));
   return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>ADMIN</small></Link>
     <nav aria-label="Huvudmeny">

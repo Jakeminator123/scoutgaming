@@ -34,17 +34,17 @@ export function projectAnchorRects(geometry,frames,viewport,framing){
 export function moveCompositionLayer(settings,layout,role,field,value,together=false){
   const next=structuredClone(settings),before=settings[layout],after=next[layout];
   after[role][field]=value;
-  if(together&&['dealer','table'].includes(role)){
-    const other=role==='dealer'?'table':'dealer';
-    if(field==='x'||field==='y')after[other][field]+=value-before[role][field];
-    else{
-      const ratio=value/before[role][field];
-      after[other][other==='dealer'?'scale':'width']*=ratio;
-      // Both layer scales pivot horizontally at the scene centre. Table y is
-      // its top edge, while dealer y offsets the centred reference plane.
-      after[other].x=after[role].x+(before[other].x-before[role].x)*ratio;
-      const pivot=role==='dealer'?.5+before.dealer.y:before.table.y;
-      after[other].y=pivot+((other==='dealer'?.5:0)+before[other].y-pivot)*ratio-(other==='dealer'?.5:0);
+  if(together){
+    for(const other of ['dealer','background','table'].filter(item=>item!==role)){
+      if(field==='x'||field==='y')after[other][field]+=value-before[role][field];
+      else{
+        const ratio=value/before[role][field];
+        after[other][other==='table'?'width':'scale']*=ratio;
+        after[other].x=after[role].x+(before[other].x-before[role].x)*ratio;
+        const origin=role==='table'?0:.5,otherOrigin=other==='table'?0:.5;
+        const pivot=origin+before[role].y;
+        after[other].y=pivot+(otherOrigin+before[other].y-pivot)*ratio-otherOrigin;
+      }
     }
   }
   return validateCompositionSettings(next);

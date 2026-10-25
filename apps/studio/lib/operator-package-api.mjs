@@ -1,18 +1,17 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
-import { normalizeProject } from '../../../packages/presentation/contracts/studio-model.mjs';
+import { normalizeProject, LANE_ID, RESERVED_LANE_IDS } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { buildPresentationPackage, validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import { BASE_DEALER_IDS } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
-import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { canonicalStudioJson, validateStudioScope, validateRevision, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import { withPackagePresentation, readPackagePresentation, publicPackageBranding, encodePresentationPackage, PRESENTATION_PACKAGE_KEY } from '../../../packages/presentation/server/presentation-package.mjs';
-import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
+import {resolvePackageRoom,listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import {roomGame,isRoomOperatorId} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
 import {resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
-import {selectableLayerBases} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
-import {updatePublishedSceneLayout} from '../../../packages/presentation/contracts/published-scene-layout.mjs';
+import {sceneLayoutPublication} from '../../../packages/presentation/contracts/scene-layout-publication.mjs';
 import {refreshFrozenDealerIdle} from '../../../packages/presentation/server/refresh-frozen-dealer-idle.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
 
@@ -75,11 +74,11 @@ function publicOperator(operator) {
 }
 
 function sceneLayoutIntent(body){
-  exactKeys(body,['action','operatorId','roomId','tableId','expectedPackageRevision','composition']);
-  if(body.action!=='update-scene-layout'||!isRoomOperatorId(body.operatorId)||!isGameLaneId(body.roomId)
-    ||typeof body.tableId!=='string'||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(body.tableId)
-    ||!Number.isSafeInteger(body.expectedPackageRevision)||body.expectedPackageRevision<1
-    ||!body.composition)fail(422);
+  exactKeys(body,['action','operatorId','compositionId','expectedPackageRevision','expectedProjectRevision']);
+  if(body.action!=='publish-scene-layout'||!isRoomOperatorId(body.operatorId)
+    ||typeof body.compositionId!=='string'||!LANE_ID.test(body.compositionId)||RESERVED_LANE_IDS.has(body.compositionId)
+    ||!Number.isSafeInteger(body.expectedPackageRevision)||body.expectedPackageRevision<1)fail(422);
+  validateRevision(body.expectedProjectRevision);
   return structuredClone(body);
 }
 const sceneConflict=()=>{throw new StudioStorageError('studio_conflict',409);};
@@ -98,25 +97,22 @@ function idleRefreshPresentation(current,administration,body){
   if((branding.dealer??lane.layers.dealer.default)!==body.dealerId)sceneConflict();
   return presentation;
 }
-function updatedScenePresentation(current,administration,body){
+function publishedScenePresentation(current,administration,projectDocument,body){
   if(!current||current.operatorId!==body.operatorId||current.revision!==body.expectedPackageRevision)sceneConflict();
+  if(projectDocument?.revision!==body.expectedProjectRevision||projectDocument.value?.revision!==body.expectedProjectRevision)sceneConflict();
   const presentation=readPackagePresentation(current);
-  if(!presentation)sceneConflict();
-  const room=resolvePackageRoom({administration,package:current,operatorId:body.operatorId,roomId:body.roomId});
-  if(!room||room.state!=='live'||roomGame(room)!=='blackjack')sceneConflict();
-  // Geometry is lane-owned. Never relabel a shared lane change as room-local.
-  if(administration.rooms.some(other=>other.id!==room.id&&other.operatorId===body.operatorId
-    &&current.tables.includes(other.id)&&other.presentationLaneId===room.presentationLaneId))sceneConflict();
-  const lane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
-  const branding=resolveRoomBranding({lane:presentation.lanes[0].id,...publicPackageBranding(current.branding)},room.id,lane.id);
-  const table=lane.layers.table,selected=branding.table??table.default;
-  if(!table.enabled||selected!==body.tableId||!selectableLayerBases(table.allowed,lane.tablePlayback,table.default).includes(selected))sceneConflict();
-  const updated=updatePublishedSceneLayout(lane.composition,body.tableId,body.composition);
-  if(canonicalStudioJson(updated)===canonicalStudioJson(lane.composition))fail(422);
-  lane.composition=updated;
+  const lane=presentation?.lanes.find(row=>row.id===body.compositionId);
+  if(!lane||!current.lanes.includes(body.compositionId))sceneConflict();
+  const saved=normalizeProject(projectDocument.value).lanes?.find(row=>row.id===body.compositionId);
+  if(!saved?.composition)fail(422);
+  const candidate=sceneLayoutPublication(lane,saved);
+  if(!candidate.changed)fail(422);
+  lane.composition=candidate.composition;
   const checked=validatePresentationPackage(presentation);
   assertPublishedRoomBindings({administration,operatorId:body.operatorId,currentPackage:current,presentation:checked});
-  return checked;
+  const affectedRooms=listPackageRooms({administration,package:current,operatorId:body.operatorId})
+    .filter(room=>room.presentationLaneId===body.compositionId).map(({id,name,state})=>({id,name,state}));
+  return {presentation:checked,affectedRooms};
 }
 function freeze(value){
   if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}
@@ -153,16 +149,17 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
     const operators=await store(),operator=await operators.getOperatorById(body.operatorId);
     if(!operator||operator.status!=='active')sceneConflict();
-    const current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration');
+    const current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
     if(!administration)sceneConflict();
-    const presentation=updatedScenePresentation(current,administration.value,body);
+    const candidate=publishedScenePresentation(current,administration.value,projectDocument,body);
     const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,
-      expectedPackageRevision:body.expectedPackageRevision,administrationRevision:administration.revision,presentation});
+      expectedPackageRevision:body.expectedPackageRevision,projectRevision:body.expectedProjectRevision,
+      administrationRevision:administration.revision,...candidate});
     preparedValues.add(value);return value;
   }
   async function prepare(context) {
     if(context.body?.action==='refresh-dealer-idle')return prepareIdleRefresh(context);
-    if(context.body?.action==='update-scene-layout')return prepareSceneLayout(context);
+    if(context.body?.action==='publish-scene-layout')return prepareSceneLayout(context);
     const expectedPackageRevision = requestedPackageRevision(context.body);
     const operatorId = context.body.operatorId;
     if (typeof operatorId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(operatorId)) fail(422);
@@ -221,22 +218,22 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         return {...result(published,prepared.presentation),idleRefreshed:{dealerId:body.dealerId,roomId:body.roomId}};
       }));
     }
-    if(context.body?.action==='update-scene-layout'){
+    if(context.body?.action==='publish-scene-layout'){
       const body=sceneLayoutIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
       if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
       if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
       return repository.transaction(()=>repository.withTransactionClient(async client=>{
         const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
-        const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration');
-        if(!operator||operator.status!=='active'||administration?.revision!==prepared.administrationRevision)sceneConflict();
-        const presentation=updatedScenePresentation(current,administration.value,body);
+        const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
+        if(!operator||operator.status!=='active'||administration?.revision!==prepared.administrationRevision||projectDocument?.revision!==prepared.projectRevision)sceneConflict();
+        const {presentation,affectedRooms}=publishedScenePresentation(current,administration.value,projectDocument,body);
         if(canonicalStudioJson(presentation)!==canonicalStudioJson(prepared.presentation))sceneConflict();
         // Preserve every other branding field, including unrelated published room choices.
-        // Neither the project draft nor a saved branding draft is read or published.
+        // A saved branding draft is neither read nor published.
         const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(presentation)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
-        return {...result(published,presentation),adjusted:{roomId:body.roomId,tableId:body.tableId}};
+        return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms};
       }));
     }
     const expectedPackageRevision = requestedPackageRevision(context.body);

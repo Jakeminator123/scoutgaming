@@ -24,7 +24,7 @@ export function hasAdminContext(search){
 }
 
 export function isStudioAdminRoute(path,search){
-  return path==='/admin/clips';
+  return path==='/admin/clips'||path==='/admin/scenes';
 }
 
 // Room appearance comes from the selected room, never from a dealer-library query.

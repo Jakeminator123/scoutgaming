@@ -195,7 +195,7 @@ function mountScenePlacement(){
     const hooks={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},useRef(initial){return slots[cursor++]??={current:initial};}};
     const module={exports:{}},code=transformSync(readFileSync(url,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
     runInNewContext(code,{module,exports:module.exports,structuredClone,require:specifier=>specifier==='react'?hooks:specifier.endsWith('.css')?{}
-      :specifier.includes('/components/')&&!specifier.endsWith('.mjs')?components:localRequire(specifier)});
+      :specifier==='./scene-publication'?{ScenePublication:()=>null}:specifier.includes('/components/')&&!specifier.endsWith('.mjs')?components:localRequire(specifier)});
     return props=>{cursor=0;return module.exports[name](props);};
   }
   const panel=mount('../admin/components/studio/studio-composition-panel.tsx','StudioCompositionPanel');
@@ -275,7 +275,7 @@ async function mountClipMap(h,{scene=false}={}){
     composition:()=>nodes(node=>node.type==='StudioCompositionPanel')[0]?.props.compositionId,
     scene:{mounts:()=>sceneMounts,isMounted:()=>Boolean(scenePanel),snapshot:()=>scenePanel.project(),
       hasPlacement:()=>scenePanel?.hasPlacement()??false,
-      async open(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scen & lager')[0].props.onClick();await settle();},
+      async open(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Öppna sceneditor')[0].props.onClick();await settle();},
       async leave(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scenförhandsvisning')[0].props.onClick();await settle();},
       async click(label){scenePanel.click(label);await settle();},
       async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
@@ -286,7 +286,7 @@ async function mountClipMap(h,{scene=false}={}){
         assert.equal(saveAttempts.length,before+1,'one click sends the draft directly');return structuredClone(saveAttempts.at(-1));}},
     async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
     async editDraft(){
-      button('Scen & lager').props.onClick();await settle();
+      button('Öppna sceneditor').props.onClick();await settle();
       const inspector=one(nodes(node=>node.type==='aside'&&node.props['aria-label']==='Klipp och inställningar'),'clip inspector');
       assert.equal(inspector.props.hidden,false,'composition editor must open in the detail panel');
       const panel=one(all(inspector,node=>node.type==='StudioCompositionPanel'),'composition editor'),draft=structuredClone(panel.props.project);
@@ -313,7 +313,7 @@ function geometryGroup(value,group){
 }
 
 for(const selected of ['a','b'])test(`the receiving scene editor keeps room A while editing explicit template ${selected.toUpperCase()}`,async()=>{
-  const h=harness(`/admin/clips?operator=a&table=room-a&composition=scene-${selected}&dealer=astrid&game=blackjack&panel=layers`);
+  const h=harness(`/admin/scenes?operator=a&table=room-a&composition=scene-${selected}&dealer=astrid&game=blackjack`);
   const pane=await mountClipMap(h,{scene:true}),scene=pane.scene;
   try{
     const rooms=pane.registeredRooms(),before=scene.snapshot();
@@ -337,11 +337,11 @@ for(const selected of ['a','b'])test(`the receiving scene editor keeps room A wh
 });
 
 test('an already mounted receiver accepts a composition-only link and history without replacing room ownership',async()=>{
-  const h=harness('/admin/clips?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack&panel=layers');
+  const h=harness('/admin/scenes?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack');
   const pane=await mountClipMap(h,{scene:true});
   try{
     const rooms=pane.registeredRooms();
-    assert.equal(h.api.navigate('/admin/clips?composition=scene-b&panel=layers'),true);await pane.settle();
+    assert.equal(h.api.navigate('/admin/scenes?composition=scene-b'),true);await pane.settle();
     assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),true);
     assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
     h.go(-1);await pane.settle();assert.equal(pane.composition(),'scene-a');
@@ -351,7 +351,7 @@ test('an already mounted receiver accepts a composition-only link and history wi
 });
 
 test('an unknown explicit receiver composition stays invalid instead of editing the context room template',async()=>{
-  const h=harness('/admin/clips?operator=a&table=room-a&composition=missing&dealer=astrid&game=blackjack&panel=layers');
+  const h=harness('/admin/scenes?operator=a&table=room-a&composition=missing&dealer=astrid&game=blackjack');
   const pane=await mountClipMap(h,{scene:true});
   try{
     assert.equal(pane.composition(),'missing');assert.equal(pane.scene.hasPlacement(),false);
@@ -361,7 +361,7 @@ test('an unknown explicit receiver composition stays invalid instead of editing 
 });
 
 for(const existing of [false,true])test(`explicit scene game survives a different registered room game${existing?' in a mounted pane':''}`,async()=>{
-  const target='/admin/clips?operator=b&table=room-b&composition=scene-a&dealer=astrid&game=blackjack&panel=layers';
+  const target='/admin/scenes?operator=b&table=room-b&composition=scene-a&dealer=astrid&game=blackjack';
   const h=harness(existing?'/admin/clips?operator=b&table=room-b&game=roulette':target),pane=await mountClipMap(h,{scene:true});
   try{
     const rooms=pane.registeredRooms();
@@ -377,7 +377,7 @@ for(const existing of [false,true])test(`explicit scene game survives a differen
 });
 
 test('a receiver can edit an explicit library scene without assigning a company or room',async()=>{
-  const h=harness('/admin/clips?composition=scene-b&dealer=astrid&game=blackjack&panel=layers');
+  const h=harness('/admin/scenes?composition=scene-b&dealer=astrid&game=blackjack');
   const pane=await mountClipMap(h,{scene:true});
   try{
     const rooms=pane.registeredRooms(),original=pane.scene.snapshot();
@@ -390,11 +390,11 @@ test('a receiver can edit an explicit library scene without assigning a company 
 });
 
 test('a mounted receiver takes the new room game and template when the target omits both',async()=>{
-  const h=harness('/admin/clips?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack&panel=layers');
+  const h=harness('/admin/scenes?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack');
   const pane=await mountClipMap(h,{scene:true});
   try{
     const rooms=pane.registeredRooms();
-    assert.equal(h.api.navigate('/admin/clips?operator=b&table=room-b&panel=layers'),true);await pane.settle();
+    assert.equal(h.api.navigate('/admin/scenes?operator=b&table=room-b'),true);await pane.settle();
     assert.deepEqual(pane.selection(),{operator:'b',room:'room-b',dealer:'astrid',game:'roulette'});
     assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),false,'roulette must not show the blackjack placement editor');
     const target=h.location.search,query=new URLSearchParams(target);

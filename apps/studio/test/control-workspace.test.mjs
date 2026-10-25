@@ -8,7 +8,7 @@ import { legacyControlBookmarkHref } from '../lib/control-workspace.mjs';
 test('redirected Control fragments open the corresponding Admin tool once', () => {
   for (const [fragment, target] of [
     ['clips', '/admin/clips#deal'], ['voice', '/admin/clips?panel=room#clips'],
-    ['speech', '/admin/clips?panel=room#clips'], ['backgrounds', '/admin/clips?panel=layers'],
+    ['speech', '/admin/clips?panel=room#clips'], ['backgrounds', '/admin/scenes'],
     ['transactions', '/admin/ekonomi'], ['integration', '/admin/admin/api'],
     ['game-tables', '/admin/rooms'], ['overview', '/admin'],
   ]) {
