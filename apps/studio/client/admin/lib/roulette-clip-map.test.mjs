@@ -127,6 +127,7 @@ test('native upload rereads exact roulette metadata and rejects changed dealer/g
 });
 test('roulette cards allow explicit idle binding while reference and planned cards remain honest',()=>{
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+  const componentRequire=createRequire(new URL('../components/studio/connected-clip-card.tsx',import.meta.url));
   const source=readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8');
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
@@ -137,7 +138,7 @@ test('roulette cards allow explicit idle binding while reference and planned car
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
       if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');
-      return require(name);
+      return componentRequire(name);
     }});
   const render=(slot,component=module.exports.ConnectedClipDetails)=>{const clips=slot.planned?[]:[video(slot,'a')];return renderToStaticMarkup(React.createElement(component,{data:{
     group:groupSlots([slot])[0],slot,clips,selectedId:'a',boundId:'',boundIds:[],variants:[],variantId:'',busy:false,

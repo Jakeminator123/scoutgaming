@@ -271,12 +271,12 @@ test('Paow source freezes kevin-staging c7138759 with declared SHA-256, K05 sele
 
 test('Paow plan places poses, H3 idles and K05-selected speech; deferred, unselected and pt/ko rows are excluded with their reasons', () => {
   const result = paowPlan();
-  assert.equal(result.rows.length, 414); assert.equal(result.source.filmedProfile, null); assert.equal(result.source.k05.review, '6329902583');
+  assert.equal(result.rows.length, 414); assert.equal(result.source.filmedProfile, 'kevin-paow-c7138759'); assert.equal(result.source.k05.review, '6329902583');
   assert.equal(result.dynamicSpeech.sourceAvatar, 'paow_vila2x');
   assert.deepEqual(result.counts, { catalogSpeechPerLanguage: 81, manifestSpeechIds: 0, playbackOrFallbackSpeechIds: 37, additionalWorkerPreloadSpeechIds: 0, posePaths: 56 });
   const poses = result.rows.filter(row => row.placement.category === 'pose-version');
   assert.equal(poses.length, 56);
-  assert.ok(poses.every(row => row.decision === 'review' && row.reasons.includes('pose-calibration-not-bound-to-verified-bytes') && row.placement.calibration.runtimeProfile === null));
+  assert.ok(poses.every(row => row.decision === 'review' && row.reasons.includes('source-sha256-not-verified') && row.placement.calibration.runtimeProfile === 'kevin-paow-c7138759'));
   assert.equal(rowAt(result, 'v2/pos4-iv.mp4').placement.slotId, 'deal.player.centre/box3');
   assert.equal(rowAt(result, 'v2/pos4-iv.mp4').placement.calibration.frameCount, 60);
   assert.deepEqual(rowAt(result, 'v2/hole.mp4').placement.pose, { entry: 'REDO', exit: 'VILA', version: 'base' });
@@ -323,7 +323,9 @@ test('Paow declared SHA-256 must agree with verified bytes; verified idle takes 
   const archivedOwner = { id: 'paow-kevin-media', sha256: entry.sha256, available: true, classification: { ...row.classification, dealerId: 'paow-kevin' } };
   assert.equal(rowAt(paowPlan({ verifiedFiles, inventory: { videos: [archivedOwner] } }), tail).decision, 'keep-protected');
   const pose = rowAt(paowPlan({ verifiedFiles: paowProof('v2/pos4.mp4'), inventory: { videos: [] } }), 'v2/pos4.mp4');
-  assert.equal(pose.decision, 'review'); assert.ok(pose.reasons.includes('pose-calibration-not-bound-to-verified-bytes'));
+  assert.equal(pose.decision, 'import'); assert.ok(!pose.reasons.includes('pose-calibration-not-bound-to-verified-bytes'));
+  const appended = rowAt(paowPlan({ verifiedFiles: paowProof('v2/pos4-u.mp4'), inventory: { videos: [] } }), 'v2/pos4-u.mp4');
+  assert.equal(appended.decision, 'review'); assert.ok(appended.reasons.includes('pose-calibration-not-bound-to-verified-bytes'));
   const speech = rowAt(paowPlan({ verifiedFiles: paowProof('repliker/sv/goodluck_1.mp4'), inventory: { videos: [] } }), 'repliker/sv/goodluck_1.mp4');
   assert.equal(speech.decision, 'review'); assert.ok(speech.reasons.includes('recorded-audio-index-calibration-required'));
   assert.equal(speech.placement.speech.videoSha256, speech.sha256);

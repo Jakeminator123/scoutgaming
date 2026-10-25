@@ -6,6 +6,14 @@ import { createSeedProject, validateProject } from '../../../packages/presentati
 
 const manifest = JSON.parse(readFileSync(new URL('../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
 
+test('filmed variants keep their distinct original identities under the same situation',()=>{
+  const names=['pos1','pos1-i','pos1-u','pos1-iu','pos1-v','pos1-iv'];
+  const labels=names.map(label=>clipLabel({id:label,label,familyId:'paow/deal.player.left/box0',role:'alternative'}));
+  assert.equal(new Set(labels).size,6);
+  assert.ok(labels.every((label,i)=>label.endsWith(names[i])));
+  assert.equal(clipLabel({id:'take',label:'pos1-iv',familyId:'paow/deal.player.left/box0'},{take:'Eget namn'}),'Eget namn');
+});
+
 function manifestClip(familyId, role) {
   const item = manifest.items.find(row => row.familyId === familyId && row.role === role);
   assert.ok(item, `${familyId} ${role}`);

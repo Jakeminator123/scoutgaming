@@ -1,1 +1,7 @@
-export function registeredFilmedProfile(dealerId:string): {positions:Record<string,{cx:number;cy:number}>;card:{width:number;height:number};[key:string]:unknown}|null;
+export function registeredFilmedProfile(dealerId:string): {
+  id:string;
+  positions:Record<string,{cx:number;cy:number}>;
+  card:{width:number;height:number};
+  takes:{key:string;sha256:string;target:string;variant:string;startPose:'VILA'|'REDO';endPose:'VILA'|'REDO'}[];
+  [key:string]:unknown;
+}|null;

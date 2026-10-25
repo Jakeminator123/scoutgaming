@@ -40,7 +40,7 @@ export function MediaFamilyEditor({ inventory, family, project, variants, select
     if (!id) return fallback;
     const video = inventory.videos.find(item => item.id === id);
     const role = video?.role ?? (family?.standardIds.includes(id) ? 'standard' : family?.variantIds.includes(id) ? 'variant' : undefined);
-    const name = clipLabel({ id, familyId: video?.familyId ?? family?.id, role, relativePath: video?.relativePath }, project.clipLabels);
+    const name = clipLabel({ id, label: video?.label, familyId: video?.familyId ?? family?.id, role, relativePath: video?.relativePath }, project.clipLabels);
     return name;
   };
   const policyRows = project.mediaPolicy?.find(row => row.familyId === family?.id)?.variants ?? [];
