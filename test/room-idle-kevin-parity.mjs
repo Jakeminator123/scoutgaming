@@ -6,7 +6,7 @@ import * as kevinIdle from './fixtures/kevin-5aa7ed1/public/idle-chain.js';
 // K07 port of Kevin's agent's test/room-idle-kevin-parity.mjs from origin/codex/kevin-k07-tester @ c17cdba2 (stacked on his
 // K04 branch). Runs unchanged against main: main's services/game/games/blackjack/presentation/room-idle.mjs is byte-identical to
 // that branch's and the frozen fixture test/fixtures/kevin-5aa7ed1/public/idle-chain.js is on main, so nothing was dropped.
-// Registered opt-in in tools/orphan-tests-exceptions.json like the source branch. Kevin's original notes follow.
+// Required by .githooks/pre-commit-full in gameplay/shared-blackjack. Kevin's original notes follow.
 
 // K07 gap (K06-K07-forberedelse §2.2): Kevin's idle-chain unit tests @ 5aa7ed10 (test/idle-chain.test.mjs, the five that
 // concern functions room-idle.mjs ports) run against K04's port, plus a function-for-function parity check against the
