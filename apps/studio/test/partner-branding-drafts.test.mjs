@@ -86,6 +86,53 @@ test('concurrent draft CAS, revoked grants and foreign or unimplemented fields p
  f.revoke();await assert.rejects(f.command({action:'restore',sourcePackageRevision:1,expectedDraftRevision:1}),e=>e.statusCode===403);
  assert.equal((await f.store.getBrandingDraft(operatorId)).revision,1);assert.equal((await f.store.getCurrentPackage(operatorId)).revision,1);
 });
+
+test('discard clears only the selected operators draft, preserves its published package and advances draft CAS',async()=>{
+ const f=await fixture(),before=await f.api.readState({operatorId}),pack=await f.store.getCurrentPackage(operatorId);
+ const otherId='other-draft';
+ await f.store.createOperator({operatorId:otherId,actor:f.actor,slug:otherId,name:'Other'});
+ await f.store.publishPackage({operatorId:otherId,actor:f.actor,lanes:pack.lanes,games:pack.games,tables:[],branding:f.initial});
+ await f.store.saveBrandingDraft({operatorId:otherId,actor:f.actor,audit:f.audit,expectedDraftRevision:0,expectedPackageRevision:1,branding:{lane:f.lane.id,color:'#556677'}});
+ const other=await f.store.getBrandingDraft(otherId);
+ await f.command({action:'save-draft',branding:{lane:f.lane.id,color:'#334455'}});
+ const discarded=await f.command({action:'discard-draft',expectedDraftRevision:1});
+ assert.equal(discarded.draft,null);assert.equal(discarded.draftRevision,2);
+ assert.equal(discarded.packageRevision,1);assert.deepEqual(discarded.branding,before.branding);assert.deepEqual(discarded.presentation,before.presentation);
+ assert.deepEqual(await f.store.getCurrentPackage(operatorId),pack);
+ assert.deepEqual(await f.store.getBrandingDraft(otherId),other);
+ assert.equal((await f.api.readState({operatorId})).draft,null);
+ const marker=await f.store.getBrandingDraft(operatorId);assert.equal(marker.action,'draft.restore');assert.equal(marker.sourcePackageRevision,1);
+ for(const action of ['review','publish','discard-draft'])await assert.rejects(f.command({action,expectedDraftRevision:2,reviewToken:'obsolete'}),error=>error.statusCode===409);
+ await assert.rejects(f.command({action:'save-draft',expectedDraftRevision:1,branding:{lane:f.lane.id,color:'#556677'}}),error=>error.statusCode===409);
+ const next=await f.command({action:'save-draft',expectedDraftRevision:2,branding:{lane:f.lane.id,color:'#556677'}});
+ assert.equal(next.draft.revision,3);assert.equal(next.draft.branding.color,'#556677');
+});
+
+test('discard remains cleared after a later publication while restoring an older identical version creates a real draft',async()=>{
+ const f=await fixture();
+ await f.command({action:'save-draft',branding:{lane:f.lane.id,color:'#334455'}});
+ await f.command({action:'discard-draft',expectedDraftRevision:1});
+ const pack=await f.store.getCurrentPackage(operatorId);
+ await f.store.publishPackage({operatorId,actor:f.actor,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding:pack.branding});
+ const current=await f.api.readState({operatorId});assert.equal(current.packageRevision,2);assert.equal(current.draft,null);assert.equal(current.draftRevision,2);
+ await assert.rejects(f.command({action:'restore',sourcePackageRevision:2,expectedPackageRevision:2,expectedDraftRevision:2}),error=>error.statusCode===409);
+ assert.equal((await f.store.getBrandingDraft(operatorId)).revision,2);
+ const restored=await f.command({action:'restore',sourcePackageRevision:1,expectedPackageRevision:2,expectedDraftRevision:2});
+ assert.equal(restored.draft.revision,3);assert.equal(restored.draft.sourcePackageRevision,1);assert.deepEqual(restored.draft.branding,current.branding);
+ assert.equal((await f.api.readState({operatorId})).draft.revision,3);assert.equal((await f.store.getCurrentPackage(operatorId)).revision,2);
+});
+
+test('discard rejects stale revisions and revoked permission, and concurrent confirmations commit once',async()=>{
+ const f=await fixture();await f.command({action:'save-draft',branding:{lane:f.lane.id,color:'#334455'}});
+ for(const patch of [{expectedDraftRevision:0},{expectedDraftRevision:1,expectedPackageRevision:2}])
+  await assert.rejects(f.command({action:'discard-draft',...patch}),error=>error.statusCode===409);
+ assert.equal((await f.store.getBrandingDraft(operatorId)).revision,1);
+ const result=await Promise.allSettled([1,2].map(()=>f.command({action:'discard-draft',expectedDraftRevision:1})));
+ assert.equal(result.filter(row=>row.status==='fulfilled').length,1);assert.equal(result.find(row=>row.status==='rejected').reason.statusCode,409);
+ await f.command({action:'save-draft',expectedDraftRevision:2,branding:{lane:f.lane.id,color:'#334455'}});
+ f.revoke();await assert.rejects(f.command({action:'discard-draft',expectedDraftRevision:3}),error=>error.statusCode===403);
+ assert.equal((await f.store.getBrandingDraft(operatorId)).revision,3);assert.equal((await f.store.getCurrentPackage(operatorId)).revision,1);
+});
 test('draft marker failure rolls back package and publication audit while retaining the original draft',async()=>{
  const f=await fixture();await f.command({action:'save-draft',branding:{lane:f.lane.id,color:'#334455'}});
  const review=await f.command({action:'review',expectedDraftRevision:1}),before=structuredClone(f.pool.tables);

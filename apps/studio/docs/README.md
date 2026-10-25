@@ -3,11 +3,14 @@
 ## Rum, material och placering
 
 - **Spelbolag & rum**: välj bolag och rum. Här binds rummet till en sammansättning och du väljer rummets publicerade bakgrund, dealer och bord bland tillåtna alternativ.
+- **Spelbolag & rum → Redigera publicerad scen**: redigera det aktuella publicerade bordets kort och marker samt dealer, bakgrund, bordsstorlek och kontroller i mobil/desktop. Publiceringen ändrar endast den frysta layouten och lämnar materialutkast kvar. När flera publicerade rum delar samma scen används den gemensamma mallen i stället. Kort och marker syns i editorn; slutlig chatt- och knappplacering granskas i spelet.
 - **Klippkarta → Scen & lager**: den gemensamma sammansättningsmallen. **Förhandsvisa och placera** växlar mellan tillåtna bakgrunder, dealers och bord utan att ändra standardvalet eller rummets bindning. Händelseklipp hanteras under Bakgrundsklipp/Bordsklipp, inte som valbara grundmaterial.
 - Välj **Mobil** eller **Desktop**. Kortpunkter, marker, kortstorlek, kortvisning och kortspridning sparas per bord och format. Dealer, bakgrund och bordsstorlek delas av mallens material inom formatet. **Spelknappar och chatt** anger önskad placering; spelet flyttar kontroller som annars skulle täcka kort eller menyer. Saldo och insatsmeny ryms automatiskt i nederkanten.
 - **Autoskala efter dealern** väljer uttryckligen om kortens landning, storlek och marker följer filmen. När automatisk landning är av används de sparade kortpunkterna. **Korten följer** och **Markerna följer** väljer bord, dealer eller fast scenram; det är samma koordinatberäkning i editor och spel.
 
 **Redigera gemensam mall** låser upp ändringar för alla rum som använder mallen. Sparning skapar ett projektutkast; den ändrar inte ett publicerat paket. Ett rum kan därför visa en annan publicerad version än Klippkartan. Granska rummets publicering innan ett äldre utkast används.
+
+**Spara utkast** sparar direkt. **Kasta ändringar** hämtar tillbaka det senast sparade projektutkastet. Under rummets materialval tar **Kasta bolagets materialutkast** bort det aktiva materialutkastet för hela bolaget; publicerade rum ändras inte. Historiska publiceringar kan fortfarande återställas som nya utkast.
 
 ## Klipp: tal och beteenden
 

@@ -166,6 +166,21 @@ test('two manual background plays restore a still base and release each event wi
   assert.equal(h.players.length,1);assert.equal(h.pendingTimers,0);
 });
 
+for(const role of ['background','table'])test(`manual ${role} preview waits for a simultaneous material reload and runs once`,async t=>{
+  const h=fixture(t,{table:true});await h.ready();
+  const table=role==='table',rule=table?'flower':'celebrate',clip=table?'/flower.mp4':'/event.mp4';
+  const request=table?{previewTableRuleId:rule,previewTableRequest:1}:{previewBackgroundRuleId:rule,previewBackgroundRequest:1};
+  await h.update({[role]:{url:'/alternative.png',label:'Alternative',contentType:'image/png'}});
+  await h.update({[role]:{url:table?'/table.png':'/base.png',label:'Base',contentType:'image/png'},...request});h.frame();
+  assert.equal(h[role].src,clip,'first click plays after the selected base is ready');
+  const video=h[role];video.dispatchEvent(new Event('ended'));await h.flush();h.frame();
+  assert.equal(h[role].src,table?'/table.png':'/base.png');
+  const plays=h.videos.reduce((count,video)=>count+video.playCalls,0);
+  await h.update({settings:{...defaultCompositionSettings(),tableFront:true}});
+  await h.update({dealer:{url:'/another-dealer.mp4',label:'Another dealer',contentType:'video/mp4'}});h.frame();
+  assert.equal(h.videos.reduce((count,video)=>count+video.playCalls,0),plays,'old request is not replayed after another source reload');
+});
+
 test('a table clip swaps only the table layer and returns to the base table while the background channel keeps its own budget',async t=>{
   const h=fixture(t,{table:true});await h.ready();h.frame();
   const baseTable=h.table,baseBackground=h.background,dealer=h.dealer;assert.equal(baseTable.src,'/table.png');assert.equal(baseBackground.src,'/base.png');

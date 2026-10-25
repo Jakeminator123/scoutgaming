@@ -7,14 +7,14 @@ const app = readFileSync(new URL('../services/game/public/app.mjs', import.meta.
 const visibility = app.slice(app.indexOf('function setChatOpen(open)'), app.indexOf('\n}', app.indexOf('function setChatOpen(open)')) + 2);
 
 function harness(studioPreview = null) {
-  let open = false;
+  let open = false, layouts = 0;
   const chatToggle = { dataset: { unread: '1' }, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; } };
-  const context = vm.createContext({ studioPreview, chatToggle,
+  const context = vm.createContext({ studioPreview, chatToggle, scheduleInterfaceLayout:()=>{layouts++;},
     $: () => ({ classList: { contains:()=>open, toggle: (_name, value) => { open = value; } } }) });
   vm.runInContext(visibility, context);
   const start=app.indexOf('function noteChatMessage(role)');
   vm.runInContext(app.slice(start,app.indexOf('\n}',start)+2),context);
-  return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, message:role=>vm.runInContext(`noteChatMessage(${JSON.stringify(role)})`,context), chatToggle };
+  return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, message:role=>vm.runInContext(`noteChatMessage(${JSON.stringify(role)})`,context), chatToggle, get layouts(){return layouts;} };
 }
 
 test('conversation opens and closes on request with accessible state and cleared unread status', () => {
@@ -25,6 +25,7 @@ test('conversation opens and closes on request with accessible state and cleared
     assert.equal(h.chatToggle.attributes['aria-expanded'], String(requested));
     assert.equal(h.chatToggle.dataset.unread, undefined);
   }
+  assert.equal(h.layouts,5,'opening and closing the chat requests fresh control placement');
 });
 
 test('Studio preview cannot expose chat through ordinary open or close controls', () => {
@@ -35,6 +36,7 @@ test('Studio preview cannot expose chat through ordinary open or close controls'
     assert.deepEqual(h.chatToggle.attributes, {});
     assert.equal(h.chatToggle.dataset.unread, '1');
   }
+  assert.equal(h.layouts,0);
 });
 
 test('every public dealer presentation mounts its own voice control; Studio stays isolated',()=>{

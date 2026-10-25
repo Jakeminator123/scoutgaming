@@ -34,6 +34,7 @@ const clipTexts={
 function useLayerClips(role:LayerPlaybackRole,{policy,assets,enabled,sourceKey,loaded,language,previewRuleId,previewRequest,refs}:{policy?:BackgroundPlaybackPolicy;assets:ClipMedia[];enabled:boolean;sourceKey:string;loaded:boolean;language:string;previewRuleId?:string;previewRequest:number;refs:ClipRefs}){
   const t=(pair:readonly [string,string])=>language==='en'?pair[1]:pair[0],texts=clipTexts[role];
   const [status,setStatus]=useState('');
+  const consumedPreview=useRef('');
   const key=JSON.stringify({policy,assets,enabled});
   useEffect(()=>{
     if(!loaded||!enabled||!policy?.rules.length)return;
@@ -72,11 +73,16 @@ function useLayerClips(role:LayerPlaybackRole,{policy,assets,enabled,sourceKey,l
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[key,sourceKey,loaded,language]);
   useEffect(()=>{
-    if(!previewRequest||!previewRuleId)return;
-    const started=refs.player.current?.preview(previewRuleId);
+    const request=JSON.stringify([previewRequest,previewRuleId]);
+    if(!previewRequest||!previewRuleId||consumedPreview.current===request)return;
+    // A material switch and preview request can arrive in the same render.
+    // Wait for that material's player, then consume the request exactly once.
+    if(!loaded||!refs.player.current)return;
+    consumedPreview.current=request;
+    const started=refs.player.current.preview(previewRuleId);
     if(!started)setStatus(t(['Provet väntar: kontrollera laddning, paus och minutgränser.','Preview waiting: check loading, cooldown and minute limits.']));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[previewRequest,previewRuleId]);
+  },[previewRequest,previewRuleId,loaded,key,sourceKey,language]);
   return status;
 }
 
@@ -87,11 +93,12 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0),playAttempt=useRef(0);
   const backgroundPlayer=useRef<LayerPlayer|null>(null),tablePlayer=useRef<LayerPlayer|null>(null),sceneAssets=useRef(new Map<string,Asset>()),baseAssets=useRef<Record<LayerPlaybackRole,Asset|null>>({background:null,table:null}),playbackActive=useRef(false);
-  const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState(t('Välj ett klipp eller ett lager.','Choose a clip or layer.')),[error,setError]=useState(''),[loaded,setLoaded]=useState(false),[playing,setPlaying]=useState(false);
+  const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState(t('Välj ett klipp eller ett lager.','Choose a clip or layer.')),[error,setError]=useState(''),[loadedKey,setLoadedKey]=useState(''),[playing,setPlaying]=useState(false);
   const keyed=useMemo(()=>effectiveDealerCompositing(compositing),[compositing]);
   const visible=compositionPreviewLayers(show,keyed,Boolean(dealer));
   const sources={dealer:visible.dealer?dealer:null,background:visible.background?background:null,table:visible.table?table:null};
   const sourceKey=JSON.stringify(sources);
+  const loadKey=JSON.stringify([sourceKey,language]),loaded=loadedKey===loadKey;
   const frameSettings=useRef(framing);frameSettings.current=framing;
   useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,{...keyed,mode:'composite',enabled:keyed.mode!=='alpha'}),dealerAspect:16/9};},[settings,layout,show,keyed,framing]);
 
@@ -102,7 +109,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     sceneAssets.current=assets;baseAssets.current={background:null,table:null};playbackActive.current=false;
     const actor=document.createElement('canvas') as CanvasActor;actor.width=1080;actor.height=1920;
     const context=actor.getContext('2d');
-    ready.current=false;setMediaInfo('');setLoaded(false);setPlaying(false);setError('');setStatus(Object.values(sources).some(Boolean)?t('Laddar…','Loading…'):t('Välj ett klipp eller ett lager.','Choose a clip or layer.'));remaining.current=0;
+    ready.current=false;setMediaInfo('');setLoadedKey('');setPlaying(false);setError('');setStatus(Object.values(sources).some(Boolean)?t('Laddar…','Loading…'):t('Välj ett klipp eller ett lager.','Choose a clip or layer.'));remaining.current=0;
     const pause=()=>{playAttempt.current++;playbackActive.current=false;backgroundPlayer.current?.pause();tablePlayer.current?.pause();Object.values(videos.current).forEach(video=>video.pause());if(active)setPlaying(false);};
     function decode(element:MediaElement,event:string) {
       return new Promise<void>((resolve,reject)=>{
@@ -135,7 +142,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
       const [{Compositor}]=await Promise.all([import(/* webpackIgnore: true */ moduleUrl),load('dealer',sources.dealer),load('background',sources.background),load('table',sources.table)]);
       if(!active)return;
       renderer.current=new Compositor(stage,(message:string)=>{if(active)setError(message);}) as Renderer;
-      ready.current=true;setLoaded(true);setStatus(t('Redo.','Ready.'));
+      ready.current=true;setLoadedKey(loadKey);setStatus(t('Redo.','Ready.'));
       function render(time:number){
         if(!active)return;
         try{

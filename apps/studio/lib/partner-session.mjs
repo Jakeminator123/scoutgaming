@@ -468,6 +468,7 @@ async function brandingResponse(prepared, config) {
   const body = await bodyOf(prepared.request);
   const actionFields={
     'save-draft':['action','expectedDraftRevision','expectedPackageRevision','branding'],
+    'discard-draft':['action','expectedDraftRevision','expectedPackageRevision'],
     review:['action','expectedDraftRevision','expectedPackageRevision'],
     publish:['action','expectedDraftRevision','expectedPackageRevision','reviewToken'],
     restore:['action','expectedDraftRevision','expectedPackageRevision','sourcePackageRevision'],

@@ -10,6 +10,7 @@ import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/present
 import {defaultLayerRule,selectableLayerBases} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {rouletteReferencePreview} from './roulette-clip-map.mjs';
 import {setTemplateDealers} from './dealer-directory.mjs';
+import {effectiveDealerCompositing} from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
@@ -24,7 +25,7 @@ function panelHarness(){
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('composition-settings.mjs'))return settings;
     if(name.includes('composition-anchors.mjs'))return anchors;
-    if(name.includes('dealer-compositing.mjs'))return {effectiveDealerCompositing:()=>({})};
+    if(name.includes('dealer-compositing.mjs'))return {effectiveDealerCompositing};
     if(name.includes('layer-asset-contract.mjs'))return {layerAssetFitsGame};
     if(name.includes('background-playback-policy.mjs'))return {selectableLayerBases};
     if(name.includes('roulette-clip-map.mjs'))return {rouletteReferencePreview};
@@ -47,6 +48,26 @@ test('local roulette VILA replaces the editor idle without leaking into blackjac
   assert.equal(preview.props.compositing.mode,'alpha');assert.deepEqual(h.props.project,before);assert.equal(h.edits.length,0);
   h.props.room.game='blackjack';preview=nodes(h.render(),node=>node.type===h.CompositionPreview)[0];
   assert.equal(preview.props.dealer,null);
+});
+
+test('changing the preview dealer uses that dealers roulette media and framing instead of another dealers local VILA',()=>{
+  const h=panelHarness(),lane=h.props.project.lanes[0];
+  h.props.room.game='roulette';h.props.localReferenceUrl='blob:astrid-local-vila';
+  h.props.project.dealers.push({...h.props.project.dealers[0],id:'dragan',label:'Dragan'});
+  lane.layers.dealer.allowed.push('dragan');
+  const framing={scale:1.35,x:.12,y:-.08},compositing={mode:'green-screen',threshold:.3,softness:.1,despill:.2};
+  h.props.inventory.videos=[{id:'dragan-roulette-idle',label:'Dragan idle',available:true,integrity:'verified',contentType:'video/webm',previewUrl:'/dragan-roulette-idle.webm',
+    classification:{dealerId:'dragan',eventId:'roulette.idle',situation:'breathing',game:'roulette',action:'breathing',startPose:'VILA',endPose:'VILA',kind:'idle',role:'standard',playback:'once',label:'Andning',notes:'',framing,compositing}}];
+  const before=structuredClone(h.props.project),room=structuredClone(h.props.room);
+  const preview=()=>nodes(h.render(),node=>node.type===h.CompositionPreview)[0].props;
+  const choose=dealer=>nodes(h.render(),node=>node.props?.['aria-label']==='Dealer att förhandsvisa')[0].props.onChange({target:{value:dealer}});
+  assert.equal(preview().dealer.url,'blob:astrid-local-vila');assert.equal(preview().framing,undefined);
+  choose('dragan');
+  assert.equal(preview().dealer.url,'/dragan-roulette-idle.webm');
+  assert.deepEqual(preview().framing,framing);assert.deepEqual(preview().compositing,compositing);
+  choose('astrid');
+  assert.equal(preview().dealer.url,'blob:astrid-local-vila');assert.equal(preview().framing,undefined);assert.equal(preview().compositing.mode,'alpha');
+  assert.deepEqual(h.props.project,before);assert.deepEqual(h.props.room,room);assert.equal(h.edits.length,0);
 });
 
 test('shared template preview lists uses and requires its explicit edit action before changing any field',()=>{
@@ -233,4 +254,37 @@ test('background and dealer preview choices do not edit the shared template or r
  tree=h.render();nodes(tree,n=>n.props?.['aria-label']==='Dealer att förhandsvisa')[0].props.onChange({target:{value:other.id}});
  const preview=nodes(h.render(),n=>n.type===h.CompositionPreview)[0];assert.equal(preview.props.background.url,'/studio/api/layer-assets/'+assets[1].id);assert.equal(preview.props.dealer.url,'/other-idle');
  assert.deepEqual(h.props.project,before);assert.deepEqual(h.props.room,room);assert.equal(h.edits.length,0);
+});
+
+test('manual background and table clip previews restore their own base and policy after alternative material selection',()=>{
+  const h=panelHarness(),lane=h.props.project.lanes[0],materials={};
+  h.props.project.layerAssets=[];
+  for(const [roleIndex,role] of ['background','table'].entries()){
+    const assets=['base','alternative','clip'].map((label,index)=>({id:`00000000-0000-4000-8000-${String(roleIndex*3+index+1).padStart(12,'0')}`,role,...(role==='table'?{game:'blackjack'}:{}),label:`${role} ${label}`,contentType:index===2?'video/mp4':'image/png',width:1672,height:941}));
+    materials[role]=assets;
+    h.props.project.layerAssets.push(...assets);
+    lane.layers[role]={enabled:true,default:assets[0].id,allowed:assets.map(asset=>asset.id)};
+    lane[role+'Playback']={schemaVersion:1,rules:[defaultLayerRule(assets[2].id,role+'-motion',{role})]};
+  }
+  const before=structuredClone(h.props.project),room=structuredClone(h.props.room);
+  const choose=(role,id)=>nodes(h.render(),node=>node.props?.['aria-label']===(role==='background'?'Bakgrund att förhandsvisa':'Bord att placera kort på'))[0].props.onChange({target:{value:id}});
+  const preview=()=>nodes(h.render(),node=>node.type===h.BlackjackScenePlacementEditor)[0].props.renderPreview().props;
+  const start=role=>nodes(h.render(),node=>node.type===(role==='background'?h.BackgroundPlaybackEditor:h.LayerPlaybackEditor))[0].props.onPreview(role+'-motion');
+  for(const request of [1,2]){
+    for(const role of ['background','table'])choose(role,materials[role][1].id);
+    assert.equal(preview().backgroundPlayback,undefined);assert.equal(preview().tablePlayback,undefined);
+    start('background');
+    let shown=preview();
+    assert.equal(shown.background.url,'/studio/api/layer-assets/'+materials.background[0].id);
+    assert.deepEqual(shown.backgroundPlayback,lane.backgroundPlayback);
+    assert.equal(shown.previewBackgroundRuleId,'background-motion');assert.equal(shown.previewBackgroundRequest,request);
+    assert.equal(shown.table.url,'/studio/api/layer-assets/'+materials.table[1].id);
+    assert.equal(shown.tablePlayback,undefined);assert.equal(shown.previewTableRequest,request-1);
+    start('table');shown=preview();
+    assert.equal(shown.table.url,'/studio/api/layer-assets/'+materials.table[0].id);
+    assert.deepEqual(shown.tablePlayback,lane.tablePlayback);
+    assert.equal(shown.previewTableRuleId,'table-motion');assert.equal(shown.previewTableRequest,request);
+    assert.equal(shown.previewBackgroundRequest,request);assert.deepEqual(shown.backgroundPlayback,lane.backgroundPlayback);
+  }
+  assert.deepEqual(h.props.project,before);assert.deepEqual(h.props.room,room);assert.equal(h.edits.length,0);
 });
