@@ -7,9 +7,9 @@ Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska form
 
 ## Selektiv Kevin-integration — avstämd 25 oktober 2026
 
-[Masterplanen](../migrering/MASTERPLAN.md) och befintliga aktivitetsfiler är reviderade mot main `aad0ba3a0c5230ebbca50dfff0649b4dafd45798` efter #378/#381/#382/#380. **45 % är 9/20 helt verifierade aktiviteter, inte andelen importerad kod.** PR #334/#336/#345/#348 är mergade. #333:s produktinnehåll är redan representerat på main; #315/#323 är äldre test-PR:ar och utgör ingen produktmergekö.
+[Masterplanen](../migrering/MASTERPLAN.md) och befintliga aktivitetsfiler är reviderade mot main `0e457589e84dcef3147ee54f01883ce5e459e356` efter #378/#380–#385. **45 % är 9/20 helt verifierade aktiviteter, inte andelen importerad kod.** PR #334/#336/#345/#348 är mergade. #333:s produktinnehåll är redan representerat på main; #315/#323 är äldre test-PR:ar och utgör ingen produktmergekö.
 
-Nästa värde ligger i exakt medie-/posebindning, full Admin → publicering → spel-acceptans och obligatorisk körning av befintliga K07-tester. #378/#381:s 24-klippspolicy är redan publicerad enligt #382: West Bet revision 2, 24/24 exakta media och avgränsad faktisk videouppspelning; ingen insats/full spelrunda. Återanvänd detta kvitto och #380:s layout-/utkastarbete, nu mergat med granskad head `d51c7c135f6ed8aadeeddb6e9bbf4a3198682b91`. Separat drift-/layoutacceptans återstår. Specifik runtimegrind för `rotation`, kompatibel rollback, filmprofil/tal och full spelacceptans kvarstår. Dokumentrevisionen levereras i PR #379 enligt Jakobs begäran. [Motivering och slutkriterier](../migrering/MASTERPLAN.md#motivering-och-när-migreringen-är-klar) skiljer färdig dokumentation från färdig migration; den tekniska Neon-/Blob-flyttens avslut nedan gäller fortfarande.
+Nästa värde ligger i exakt medie-/posebindning, full Admin → publicering → spel-acceptans och obligatorisk körning av befintliga K07-tester. #378/#381:s 24-klippspolicy är publicerad enligt #382: West Bet revision 2, 24/24 exakta media och avgränsad faktisk uppspelning; ingen PAOW-insats/full runda. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Specifik rotation-readiness, kompatibel rollback och återstående film-/talacceptans kvarstår. [Motivering och slutkriterier](../migrering/MASTERPLAN.md#motivering-och-när-migreringen-är-klar) skiljer färdig dokumentation från färdig migration; den tekniska Neon-/Blob-flyttens avslut nedan gäller fortfarande.
 
 **Ingen återinförd lokal produktväg:** Neon använder PostgreSQL/SQL; återanvänd parameteriserade adapterfrågor och Admins behörighets-/revisionsstyrda writers. Originalklipp ligger i privat Vercel Blob, metadata i Neon. Inga nya SQLitefixtures, lokala filregister eller connected-local-starter ingår. Befintliga isolerade kod-/PG-prov är delbevis; molnacceptans kräver godkänd isolerad Neon/Blob-miljö och identifierade driftsversioner. Aktiva moduler med äldre namn och verifierad tillfällig Blob-cache får inte förväxlas med lokala produktregister. Se [utökad prioriteringsmatris](../migrering/MASTERPLAN.md#prioriterad-väg-till-910) och [QA-gränser](../migrering/MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy).
 
@@ -95,15 +95,13 @@ Neon-/Blob-migreringen.
 | --- | --- |
 | Intern personal, bolag, spelare | `/admin`, `/partner`, `/lobby` på www.scoutgaming.tech. Ett Vercel-projekt/team: `scoutgaming`. |
 | Webb och Studio | `apps/web/` och `apps/studio/`; Vercels webb-/Studio-tjänster. `/studio` är teknisk basePath. |
-| Spelmotor och live-transport | Render `croupier-v2`, källkod i `services/game/`; kort, shoe, saldo och avräkning är serverägda. |
+| Spelmotor och live-transport | Render `croupier-v3`, källkod i `services/game/`; kort, shoe, saldo och avräkning är serverägda. |
 | Produktregister | Neon: konton/spel, Studio-projekt, administration, scoped rum/publicering, mediekatalog och svarsbibliotekets metadata. |
 | Mediebyte | Privat Blob; exakta identiteter, hashbindningar och behörigheter följer registret. |
 | Director/Gateway | Aktiva OpenClaw-tjänster med egen konfiguration/sessioner på `/data/catalog` respektive `/data/openclaw`; inga alternativa produktregister. |
 | Isolerade tester | Egna tillfälliga data/scope. QA/Preview-utbyggnad är pausad; ingen automatisk återstart eller produktionsfallback. |
 
-Ett recept för en ny Render-tjänst `croupier-v3` som bara kör spelmotorn (ingen
-Studio-process, inget `/studio`) finns i [ops/cloud/RENDER-V3.md](../ops/cloud/RENDER-V3.md)
-med `ops/cloud/Dockerfile.game` och `CROUPIER_CLOUD_LAB_CHILD=0`; ingen tjänst är skapad av receptet.
+Aktuell motor är `croupier-v3`, enligt gällande AGENTS och handoffens versionsbundna driftkvitton. [Driftreceptet](../ops/cloud/RENDER-V3.md) beskriver spelmotorn utan Studio-process (`ops/cloud/Dockerfile.game`, `CROUPIER_CLOUD_LAB_CHILD=0`); läs aktuella tjänst-ID:n i återställningsguiden inför driftåtgärd. Den tidigare uppgiften att v3 endast var ett planerat recept är förbrukad.
 
 Normal start `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns
 adress. Endast explicit `--offline` skapar en isolerad, tillfällig fixture.
