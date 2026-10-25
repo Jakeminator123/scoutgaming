@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Render v3 och borttagna v2-lås — 25 oktober 2026
+
+Jakob gav förtydligat mandat att rensa ersatt kod och regressioner som låser historiska beteenden. Container-CI riktas därför till den faktiska `Dockerfile.game`: det gamla kombinerade Studio/v2-jobbet och dess krav på privat bootstrapmapp är borttagna, medan beroende-/cachekontrollen flyttas till v3. Nätverkslösa bild-/startkontroller kräver att Studio, lokala medieregister och äldre bootstrapdata saknas i spelimagen. Detta skapar ingen lokal produkt eller molnresurs.
+
+Render-guiden och byggkontexten beskriver nu v3 som aktiv drift; det gamla receptet att återgå till suspenderad v2 är borttaget. Färsk tjänst- och HTTP-kontroll visar `23debde7155346e30ee5a3f3dfbe54cd09ea2789`, health200 och v28/rotation. V2 är suspenderad. Main `4abbf1985e183c145c5a7772fe02631c6ee9b274` saknar senare ändringar i motsvarande runtimefiler. Ingen produktion ändras av denna CI-/dokumentleverans.
+
+Den äldre kombinerade Dockerfilens och QA-hookarnas återstående kodkonsumenter är separat avvecklingsarbete. Historiska Astrid-/Emil-krav ska inte användas för att fylla en ny Neon-installation; exakt tom katalog och ordinarie uppladdningar granskas i separat avgränsad kodleverans. Testskydd för saldo, auth, scope, revisioner och bytesidentitet behålls. Migrationsstatus står kvar på 45 %.
+
+**Verifiering:** lokalt saknas Docker; faktisk Linux-image, cache och nätverkslös start verifieras i leverans-PR:ens containerjobb före merge. Ingen container- eller molnacceptans påstås enbart från YAML-läsning.
+
 ## Tom Neon-staging skapad och begränsad — 25 oktober 2026
 
 Jakob godkände uttryckligen Create med Vercels startvärden och omedelbar begränsning. `croupier-k06-k07-staging` är skapad i rätt organisation: projekt `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, endpoint `ep-billowing-surf-b93x7p3c`. Separat GET verifierar PG18, Frankfurt, fast 0,25 CU och autosuspend 300 s. Endast `neondb` finns och inspektionen visar noll användartabeller. Ingen app är ansluten; inga roller/schema/seeds eller produktionsdata har ändrats.
