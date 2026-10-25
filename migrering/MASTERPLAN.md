@@ -142,7 +142,7 @@ Admin / scoped roomOverrides
 | --- | --- | --- |
 | Main, första granskningen 25 oktober | `34c6c22f60ac75f335f647c83af06e7d0514476b` | Ursprunglig PR-/filjämförelse och prov av gammal idle-läsare |
 | Main efter #378 | `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` | Mergad med samma granskade head; källunderlag, inte en ny produktändring från denna dokumentrevision |
-| Main vid sista statusavstämningen | `0e457589e84dcef3147ee54f01883ce5e459e356` | #380/#383–#385 kompletterar #378/#381/#382. Gemensam Sceneditor och faktisk geometri-publicering finns. v27 gäller layout; specifik rotation-grind saknas fortfarande. Rapporternas separata media-/driftgränser behålls |
+| Main vid sista statusavstämningen | `23debde7155346e30ee5a3f3dfbe54cd09ea2789` | #379:s plan och #386:s v28/testregistrering är mergade. Render v28 återläst; Admingrinden levereras i #387. Tidigare scen-/PAOW-leveranser bevaras; full restore och media-/samacceptans kvarstår |
 | Ursprunglig main / jakob-gren 21 oktober | `15988f32fd572c453d2189502acbe324c4566815` | Historiskt plan-/kontraktsunderlag; inte dagens main |
 | kevin-merge-admin | `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc` | Accepterad fryst källa för K01/O01; flyttas inte automatiskt |
 | kevin-staging, äldre analys | `238d6dd681745ca87a813b969443e7edee3f820b` | Historiskt underlag |
