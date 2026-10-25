@@ -43,11 +43,11 @@ function element() {
 }
 
 function dom() {
-  const anchor = { before(node) { anchor.panel = node; } };
+  const anchor = { append(node) { anchor.panel = node; } };
   return {
     anchor,
     documentElement: element(),
-    querySelector(selector) { return selector === '#table-pick' ? anchor : null; },
+    querySelector(selector) { return selector === '#hud-bottom' ? anchor : null; },
     createElement(tag) { const node = element(); node.tag = tag; return node; },
   };
 }
@@ -134,7 +134,7 @@ test('baked background is disabled and an empty colour list hides the swatches',
 test('table colour paints the felt mark, wallet and chip row and leaves the film alone', () => {
   const nodes = {};
   const make = () => ({ style: { props: {}, setProperty(name, value) { this.props[name] = value; } }, dataset: {} });
-  for (const selector of ['#felt-brand', '#wallet', '#chip-row', '#table-pick', 'video.local-presentation-film']) nodes[selector] = make();
+  for (const selector of ['#felt-brand', '#wallet', '#chip-row', 'video.local-presentation-film']) nodes[selector] = make();
   const document = {
     documentElement: make(),
     querySelector(selector) { return nodes[selector] ?? null; },

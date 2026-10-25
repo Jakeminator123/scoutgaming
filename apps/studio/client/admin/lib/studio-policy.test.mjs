@@ -1,12 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject,addVariant,validateProject,allowedPathDescriptors } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { createSeedProject,addDealer,addVariant,validateProject,allowedPathDescriptors } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import paowSource from '../../../lib/paow-idle-source-f664c54d.json' with {type:'json'};
 import { kindForEvent } from '../../../../../packages/presentation/contracts/video-intake.mjs';
 import { clipSlots } from './connected-studio.mjs';
 import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage,applyStudioIdleVariantPolicy,applyStudioIdleEventRule,studioIdleEventRule,IDLE_EVENT_RULES } from './studio-policy.mjs';
 import {selectRegisteredIdleRule} from '../../../../../services/game/presentation-selection.mjs';
 
 const ids=[1,2,3,4,5,6].map(number=>`${String(number).repeat(8)}-${String(number).repeat(4)}-4${String(number).repeat(3)}-8${String(number).repeat(3)}-${String(number).repeat(12)}`);
+
+test('native PAOW rule panel binds all original registrations through its button and protects unavailable or blocked edits',async()=>{
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const require=createRequire(import.meta.url),React=require('react'),policy=await import('./studio-policy.mjs');
+  const module={exports:{}},hooks={...React,useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect(){}};
+  runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+    {module,exports:module.exports,require:name=>name==='react'?hooks:name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){assert.fail('Original duration is verified without a new media request');}}:name.includes('video-intake')?require('../../../../../packages/presentation/contracts/video-intake.mjs'):require(name)});
+  const project=addDealer(createSeedProject(),'paow','PAOW'),dealerId='paow';
+  // Native /videos has registered clips without a derived idle family.
+  const inventory={families:[],videos:paowSource.clips.map((take,index)=>({id:`00000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,
+    dealer:dealerId,label:take.id,fileName:take.id+'.mp4',available:true,integrity:'verified',previewUrl:'/studio/api/videos/'+take.id,
+    sha256:take.sha256,bytes:take.bytes,classification:{dealerId,eventId:'idle.ready',kind:'idle',role:index?'alternative':'standard',playback:'once',situation:'',label:take.id,notes:'',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}}))};
+  const slot=clipSlots(project,inventory,dealerId).find(row=>row.eventId==='idle.ready');
+  const saved=addStudioIdleClip(project,inventory,dealerId,slot,inventory.videos[0].id,1625,true),changes=[];
+  const props={project:saved,inventory,dealerId,slot,blocked:false,onEdit:next=>changes.push(next)};
+  const nodes=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(nodes):[node,...nodes(node.props?.children)];
+  const text=node=>node==null?'':Array.isArray(node)?node.map(text).join(''):typeof node==='object'?text(node.props?.children):String(node);
+  const render=patch=>module.exports.StudioPolicyPanel({...props,...patch});
+  const button=(tree,label)=>nodes(tree).find(row=>row.type==='button'&&text(row)===label);
+  const bind=button(render({}),'Koppla 24 viloklipp');assert.ok(bind);assert.equal(bind.props.disabled,false);assert.equal(changes.length,0);
+  bind.props.onClick();assert.equal(changes.length,1);
+  const next=validateProject(JSON.parse(JSON.stringify(changes[0]))),rotation=next.dealerIdlePolicies.find(row=>row.dealerId===dealerId).policy;
+  assert.equal(rotation.rotation.clips.length,24);assert.equal(rotation.variants.length,23);assert.deepEqual(next.lines,saved.lines);
+  assert.deepEqual(next.idlePolicy,saved.idlePolicy);assert.equal(saved.dealerIdlePolicies[0].policy.variants.length,0);
+  const active=render({project:next});assert.match(text(active),/24 klipp är kopplade/);assert.equal(nodes(active).some(row=>row.type==='select'),false);
+  button(active,'Återgå till enbart basklippet').props.onClick();assert.equal(changes[1].dealerIdlePolicies[0].policy.rotation,undefined);
+  assert.equal(changes[1].dealerIdlePolicies[0].policy.variants.length,0);
+  for(const patch of [{blocked:true},{inventory:{...inventory,videos:inventory.videos.slice(1)}}]){
+    const before=changes.length,blocked=button(render(patch),'Koppla 24 viloklipp');assert.equal(blocked.props.disabled,true);blocked.props.onClick();assert.equal(changes.length,before);
+  }
+});
 
 test('idle presets save ordinary event predicates, survive readback and select only matching own behaviour',()=>{
   for(const rule of IDLE_EVENT_RULES){

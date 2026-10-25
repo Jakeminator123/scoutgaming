@@ -772,7 +772,7 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, prepared = null, onGestureWait = () => {}} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets'} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -789,10 +789,33 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, muted: () => false });
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
+
+test('pose rotation keeps a clasped clip through speech readiness and 2D actions, then exits before the standard pose', async t => {
+  const ids=[1,2,3].map(n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`),familyId='paow/idle.ready/ready';
+  const policy={schemaVersion:1,familyId,base:[{videoId:ids[0],durationMs:1625,weight:100}],
+    variants:ids.slice(1).map(videoId=>({videoId,durationMs:1625,use:'rotation',automatic:null})),
+    rotation:{clips:ids.map((videoId,i)=>({videoId,phase:i?'bets':'any',from:i===2?'clasped':'rest',to:i===1?'clasped':'rest',weight:20,head:false,calm:true}))}};
+  const videos=ids.map((id,i)=>({id,dealer:'paow',familyId,available:true,role:i?'variant':'standard',fileName:id+'.mp4',sha256:String(i).repeat(64)}));
+  const inventory={videos,families:[{id:familyId,dealerId:'paow',playbackType:'idle-pool',standardIds:[ids[0]],variantIds:ids.slice(1)}]};
+  let phase='bets';const f=await controllerFixture(t,{dealerId:'paow',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true,idlePhase:()=>phase});
+  const tick=()=>new Promise(resolve=>setImmediate(resolve));
+  f.controller.start();await tick();const base=f.jobs.at(-1);base.options.onReceipt({state:'presented'});base.resolve();await tick();
+  const entry=f.jobs.at(-1);assert.equal(entry.take.media.sha256,videos[1].sha256);
+  entry.options.onReceipt({state:'presented'});entry.options.onFrame(.5);
+  f.controller.state({ready:true});assert.equal(entry.options.signal.aborted,false);
+  f.controller.state({action:true});assert.equal(entry.options.signal.aborted,true);
+  await f.controller.present(source);await tick();const resumed=f.jobs.at(-1);
+  assert.equal(resumed.take.media.sha256,entry.take.media.sha256);assert.equal(resumed.options.startOffset,.5);
+  f.controller.state({action:false});await tick();const resumedAgain=f.jobs.at(-1);assert.equal(resumedAgain.options.startOffset,.5);
+  resumedAgain.options.onReceipt({state:'presented'});phase='decide';resumedAgain.resolve();await tick();
+  const exit=f.jobs.at(-1);assert.equal(exit.take.media.sha256,videos[2].sha256);const proofs=f.proofs;
+  exit.options.onReceipt({state:'presented'});assert.equal(f.proofs,proofs);exit.resolve();await tick();
+  const standard=f.jobs.at(-1);assert.equal(standard.take.media.sha256,videos[0].sha256);standard.options.onReceipt({state:'presented'});assert.equal(f.proofs,proofs+1);
+});
 
 test('only the current presentation owner can notify a gesture wait and stopping releases it', async t => {
   const waiting=[];

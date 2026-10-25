@@ -8,7 +8,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
-import {adjustPublishedMobilePlacement} from '../../../packages/presentation/contracts/published-mobile-placement.mjs';
+import {updatePublishedSceneLayout} from '../../../packages/presentation/contracts/published-scene-layout.mjs';
 const require = createRequire(import.meta.url);
 const {transformSync} = require('next/dist/build/swc');
 const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url);
@@ -22,7 +22,7 @@ vm.runInNewContext(pickerCompiled.code,{module:pickerModule,exports:pickerModule
 const {AppearanceLayerPicker}=pickerModule.exports;
 function load(hooks=React, fetcher) {
   const output={exports:{}};
-  vm.runInNewContext(compiled.code,{module:output,exports:output.exports,fetch:fetcher,require:name=>name==='react'?hooks:name==='./appearance-layer-picker'?{AppearanceLayerPicker}:name==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:name.endsWith('.css')?css:localRequire(name)},{filename:fileURLToPath(fileUrl)});
+  vm.runInNewContext(compiled.code,{module:output,exports:output.exports,fetch:fetcher,structuredClone,URLSearchParams,require:name=>name==='react'?hooks:name==='./appearance-layer-picker'?{AppearanceLayerPicker}:name==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:name.endsWith('.css')?css:localRequire(name)},{filename:fileURLToPath(fileUrl)});
   return output.exports.PartnerAppearance;
 }
 const Panel=load();
@@ -127,6 +127,74 @@ test('restore creates a draft only, protects unsaved input and requires a new re
   select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});await byAction(render(),'restore-5').props.onClick();
   assert.deepEqual(calls[0],{action:'restore',sourcePackageRevision:5,expectedDraftRevision:0,expectedPackageRevision:7});assert.equal(published.length,0);
   assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+});
+
+test('currently published history has no restore action while older revisions remain restorable',()=>{
+  for(const initial of [initialState(),withDraft()]){
+    const {render}=stateful(initial,()=>assert.fail('history inspection does not write'));
+    assert.equal(byAction(render(),'restore-7'),undefined);
+    assert.equal(byAction(render(),'restore-5').props.disabled,false);
+  }
+});
+
+test('discarding unsaved local choices resets them without a request or publication callback',async()=>{
+  const initial=initialState(),saved=[],dirty=[];
+  const {render}=stateful(initial,()=>assert.fail('local discard must not send a request'),{onSaved:value=>saved.push(value),onDirtyChange:value=>dirty.push(value)});
+  assert.equal(byAction(render(),'discard-draft'),undefined);
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});render();assert.equal(dirty.at(-1),true);
+  await byAction(render(),'discard-draft').props.onClick();
+  assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.equal(byAction(render(),'discard-draft'),undefined);
+  assert.equal(dirty.at(-1),false);assert.equal(saved.length,0);assert.equal(byAction(render(),'save-draft').props.disabled,true);
+});
+
+test('local discard clears an obsolete failed-save message without retrying the request',async()=>{
+  let calls=0;
+  const {render}=stateful(initialState(),async()=>{calls++;return response({},413);});
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();
+  assert.match(renderToStaticMarkup(render()),/Paketet är för stort/);
+  await byAction(render(),'discard-draft').props.onClick();
+  assert.equal(calls,1);assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.doesNotMatch(renderToStaticMarkup(render()),/Paketet är för stort/);
+});
+
+test('discarding a saved or stale company draft keeps live branding and uses the new draft revision for the next save',async()=>{
+  for(const initial of [withDraft(),withDraft({packageRevision:9})]){
+    const calls=[],saved=[];
+    const cleared={...initial,draft:null,draftRevision:3};
+    const {render}=stateful(initial,async(url,request)=>{const body=JSON.parse(request.body);calls.push({url,body});return response(body.action==='discard-draft'?cleared:{...cleared,draftRevision:4,draft:{revision:4,basePackageRevision:initial.packageRevision,branding:body.branding}});},{onSaved:value=>saved.push(value)});
+    await byAction(render(),'discard-draft').props.onClick();
+    assert.deepEqual(calls[0],{url:'/studio/api/partner/branding?operator=north',body:{action:'discard-draft',expectedDraftRevision:2,expectedPackageRevision:initial.packageRevision}});
+    assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.equal(saved.length,1);assert.equal(saved[0].packageRevision,initial.packageRevision);
+    assert.equal(byAction(render(),'discard-draft'),undefined);assert.equal(byAction(render(),'review').props.disabled,true);
+    select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();
+    assert.equal(calls[1].body.expectedDraftRevision,3);assert.equal(calls[1].body.expectedPackageRevision,initial.packageRevision);
+  }
+});
+
+test('discard refuses foreign or changed live receipts and conflicts without losing editable values',async()=>{
+  const initial=withDraft(),cleared={...initial,draft:null,draftRevision:3};
+  for(const [payload,status] of [
+    [{...cleared,operatorId:'foreign'},200],
+    [{...cleared,packageRevision:8},200],
+    [{...cleared,draftRevision:4},200],
+    [{...cleared,draft:initial.draft},200],
+    [{...cleared,branding:{color:'#445566'}},200],
+    [{...cleared,presentation:{...initial.presentation,projectRevision:'changed'}},200],
+    [{},409],[{},403],
+  ]){
+    const saved=[];
+    const {render}=stateful(initial,async()=>response(payload,status),{onSaved:value=>saved.push(value)});
+    await byAction(render(),'discard-draft').props.onClick();
+    assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(saved.length,0);
+    assert.equal(byAction(render(),'discard-draft').props.disabled,true);assert.equal(byAction(render(),'review').props.disabled,true);
+  }
+});
+
+test('discard sends one mutation while pending and ignores a completion after unmount',async()=>{
+  const initial=withDraft(),saved=[];let finish,calls=0;
+  const {render,unmount}=stateful(initial,()=>{calls++;return new Promise(resolve=>{finish=resolve;});},{onSaved:value=>saved.push(value)});
+  const action=byAction(render(),'discard-draft').props.onClick;
+  const pending=action();await action();assert.equal(calls,1);
+  unmount();finish(response({...initial,draft:null,draftRevision:3}));await pending;assert.equal(saved.length,0);
 });
 test('room reset removes only that override and room presentation remains server-owned',async()=>{
   const initial=initialState({branding:{color:'#112233',roomOverrides:{'north-main':{color:'#445566'},'north-vip':{table:'table-two'}}}}),calls=[];
@@ -342,112 +410,140 @@ test('changing a visual background preserves the chosen dealer, table, other roo
   assert.equal(initial.branding.roomOverrides['north-main'].background,undefined,'the read snapshot is not mutated');
 });
 
-const mobileTable='00000000-0000-4000-8000-000000000041';
-function mobileState(extra={}) {
+const sceneTable='00000000-0000-4000-8000-000000000041';
+function sceneState(extra={}) {
   const initial=initialState(extra),lane=initial.presentation.lanes[0];
-  initial.rooms.forEach(row=>{row.game='blackjack';});
-  lane.layers.table={enabled:true,default:mobileTable,allowed:[mobileTable]};
-  lane.composition.blackjackTables=[defaultBlackjackTableGeometry(mobileTable)];
-  lane.composition.blackjackTables[0].mobile.betMode='under-cards';
-  initial.presentation.assets=[{id:mobileTable,role:'table',label:'Oak',width:1672,height:941}];
+  initial.rooms=[{...initial.rooms[0],game:'blackjack'}];
+  lane.layers.table={enabled:true,default:sceneTable,allowed:[sceneTable]};
+  lane.composition.blackjackTables=[defaultBlackjackTableGeometry(sceneTable)];
+  initial.presentation.assets=[{id:sceneTable,role:'table',label:'Oak',width:1672,height:941}];
   return initial;
 }
-const mobileOptions={roomId:'north-main',roomLayout:true,adminChoices:true};
-const mobilePreview=tree=>walk(tree,node=>Boolean(node.props?.onMedia&&node.props?.server))[0];
-const mobileInput=tree=>walk(tree,node=>node.type==='input'&&node.props['aria-label']==='Mobilplacering lodrätt i procent')[0];
-function supplyMobilePreview(h,initial,extra={}) {
-  mobilePreview(h.render()).props.onMedia({operatorSlug:'north',roomId:'north-main',packageRevision:initial.packageRevision,dealer:{id:'astrid'},independentLayers:true,
-    settings:structuredClone(initial.presentation.lanes[0].composition),media:{tables:[{id:mobileTable}]},...extra});
+const sceneOptions={roomId:'north-main',roomLayout:true,adminChoices:true};
+const scenePreview=tree=>walk(tree,node=>Boolean(node.props?.onMedia&&node.props?.server))[0];
+function supplyScenePreview(h,initial,extra={}) {
+  scenePreview(h.render()).props.onMedia({operatorSlug:'north',roomId:'north-main',packageRevision:initial.packageRevision,dealer:{id:'astrid'},independentLayers:true,
+    settings:structuredClone(initial.presentation.lanes[0].composition),media:{tables:[{id:sceneTable}]},...extra});
 }
-function mobileReceipt(initial,offsetY=-.07) {
+function editedScene(initial) {
+  const composition=structuredClone(initial.presentation.lanes[0].composition);
+  composition.mobile.table.y-=.07;composition.desktop.dealer.scale=1.2;
+  composition.mobile.gameUi={actions:{x:.3,y:.7},chat:{x:1,y:0,width:.75,height:.4}};
+  composition.blackjackTables[0].mobile.fanSpread=.6;
+  return composition;
+}
+function sceneReceipt(initial,composition=editedScene(initial)) {
   const presentation=structuredClone(initial.presentation);
-  presentation.lanes[0].composition=adjustPublishedMobilePlacement(presentation.lanes[0].composition,mobileTable,offsetY);
-  return {ok:true,operatorId:initial.operatorId,packageRevision:initial.packageRevision+1,presentation,adjusted:{roomId:'north-main',tableId:mobileTable,offsetY}};
+  presentation.lanes[0].composition=updatePublishedSceneLayout(presentation.lanes[0].composition,sceneTable,composition);
+  return {ok:true,operatorId:initial.operatorId,packageRevision:initial.packageRevision+1,presentation,adjusted:{roomId:'north-main',tableId:sceneTable}};
 }
-function chooseMobile(h,initial) {
-  byAction(h.render(),'open-mobile-placement').props.onClick();
-  supplyMobilePreview(h,initial);mobileInput(h.render()).props.onChange({target:{valueAsNumber:-7}});
+function chooseScene(h,initial) {
+  byAction(h.render(),'open-scene-layout').props.onClick();
+  supplyScenePreview(h,initial);scenePreview(h.render()).props.sceneLayout.onChange(editedScene(initial));
 }
 
-test('published mobile placement is confined to eligible Admin blackjack rooms and respects local dirty state',()=>{
-  for(const options of [{...mobileOptions,adminChoices:false},{...mobileOptions,roomLayout:false}]){
-    const h=stateful(mobileState(),()=>assert.fail('no write'),options);assert.equal(byAction(h.render(),'open-mobile-placement'),undefined);
+test('published scene editing supports every valid blackjack geometry and excludes unauthorized or shared rooms',()=>{
+  for(const options of [{...sceneOptions,adminChoices:false},{...sceneOptions,roomLayout:false}]){
+    const h=stateful(sceneState(),()=>assert.fail('no write'),options);assert.equal(byAction(h.render(),'open-scene-layout'),undefined);
   }
-  for(const mutate of [state=>state.rooms[0].game='roulette',state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.autoScale={landing:false,cardSize:false,chips:false},state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.anchors={},state=>delete state.presentation.lanes[0].composition.blackjackTables[0].mobile.betMode]){
-    const initial=mobileState();mutate(initial);const h=stateful(initial,()=>assert.fail('no write'),mobileOptions);
-    assert.equal(byAction(h.render(),'open-mobile-placement'),undefined);
+  const roulette=sceneState();roulette.rooms[0].game='roulette';
+  assert.equal(byAction(stateful(roulette,()=>assert.fail('no write'),sceneOptions).render(),'open-scene-layout'),undefined);
+  for(const mutate of [state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.autoScale={landing:true,cardSize:true,chips:true},state=>state.presentation.lanes[0].composition.blackjackTables[0].mobile.anchors={cards:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}},state=>delete state.presentation.lanes[0].composition.blackjackTables]){
+    const initial=sceneState();mutate(initial);const h=stateful(initial,()=>assert.fail('no write'),sceneOptions);
+    assert.equal(byAction(h.render(),'open-scene-layout').props.disabled,false);
   }
   for(const extra of [{canConfigure:false},{}]){
-    const h=stateful(mobileState(extra),()=>assert.fail('no write'),mobileOptions);
+    const h=stateful(sceneState(extra),()=>assert.fail('no write'),sceneOptions);
     if(extra.canConfigure!==false)picker(h.render(),'background').props.onChange('bg-two');
-    assert.equal(byAction(h.render(),'open-mobile-placement').props.disabled,true);
-    byAction(h.render(),'open-mobile-placement').props.onClick();assert.equal(mobileInput(h.render()),undefined);
+    assert.equal(byAction(h.render(),'open-scene-layout').props.disabled,true);
+    byAction(h.render(),'open-scene-layout').props.onClick();assert.equal(scenePreview(h.render()).props.sceneLayout,undefined);
   }
+  const shared=sceneState();shared.rooms.push({...shared.rooms[0],id:'north-vip',label:'VIP'});
+  const h=stateful(shared,()=>assert.fail('no write'),sceneOptions),tree=h.render();
+  assert.equal(byAction(tree,'open-scene-layout').props.disabled,true);
+  const link=walk(tree,node=>node.type==='a'&&node.props.href.startsWith('/admin/clips?'))[0];
+  assert.equal(new URL(link.props.href,'https://test.invalid').searchParams.get('composition'),'mobile-phone');
+  assert.match(renderToStaticMarkup(tree),/VIP/);
 });
 
-test('mobile publication uses published choices, preserves saved material draft and confirms with a separate GET',async()=>{
-  const draft={revision:3,basePackageRevision:7,branding:{dealer:'vera',table:mobileTable},updatedAt:1000};
-  const initial=mobileState({draft,draftRevision:3}),original=structuredClone(initial),receipt=mobileReceipt(initial),calls=[],published=[],busy=[];
+test('scene publication uses only frozen live choices, preserves the material draft and confirms with a separate GET',async()=>{
+  const draft={revision:3,basePackageRevision:7,branding:{dealer:'vera',table:sceneTable},updatedAt:1000};
+  const initial=sceneState({draft,draftRevision:3}),original=structuredClone(initial),receipt=sceneReceipt(initial),calls=[],published=[],busy=[];
   let finishRead;
   const h=stateful(initial,async(url,request)=>{
     calls.push({url,request});if(request.method==='POST')return response(receipt);
     return new Promise(resolve=>{finishRead=resolve;});
-  },{...mobileOptions,onSaved:value=>published.push(value),onBusyChange:value=>busy.push(value)});
-  chooseMobile(h,initial);
-  assert.deepEqual(JSON.parse(JSON.stringify(mobilePreview(h.render()).props.branding)),initial.branding);
-  assert.equal(byAction(h.render(),'save-draft').props.disabled,true,'the calibration never submits material choices');
-  const saving=byAction(h.render(),'publish-mobile-placement').props.onClick();
-  await byAction(h.render(),'publish-mobile-placement').props.onClick();
+  },{...sceneOptions,onSaved:value=>published.push(value),onBusyChange:value=>busy.push(value)});
+  chooseScene(h,initial);
+  assert.deepEqual(JSON.parse(JSON.stringify(scenePreview(h.render()).props.branding)),initial.branding);
+  assert.equal(byAction(h.render(),'save-draft').props.disabled,true);
+  const saving=byAction(h.render(),'publish-scene-layout').props.onClick();
+  await byAction(h.render(),'publish-scene-layout').props.onClick();
   await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,2);assert.equal(published.length,0);assert.equal(busy.at(-1),true);
   assert.equal(calls[0].url,'/studio/api/admin/operator-package');assert.equal(calls[0].request.credentials,'same-origin');
-  assert.deepEqual(JSON.parse(calls[0].request.body),{action:'adjust-mobile-placement',operatorId:'op-1',roomId:'north-main',tableId:mobileTable,expectedPackageRevision:7,offsetY:-.07});
+  assert.deepEqual(JSON.parse(calls[0].request.body),{action:'update-scene-layout',operatorId:'op-1',roomId:'north-main',tableId:sceneTable,expectedPackageRevision:7,composition:editedScene(initial)});
   assert.equal(calls[1].url,'/studio/api/partner/branding?operator=north');assert.equal(calls[1].request.cache,'no-store');
   finishRead(response({...initial,packageRevision:8,presentation:receipt.presentation}));await saving;
   assert.equal(published.length,1);assert.deepEqual(published[0].draft,draft);assert.equal(published[0].packageRevision,8);assert.equal(busy.at(-1),false);
-  assert.equal(mobileInput(h.render()),undefined);assert.equal(picker(h.render(),'dealer').props.effective,'vera','saved draft remains editable and is not published');
-  assert.deepEqual(initial,original,'all original frozen data stays immutable');
+  assert.equal(scenePreview(h.render()).props.sceneLayout,undefined);assert.equal(picker(h.render(),'dealer').props.effective,'vera');
+  assert.deepEqual(initial,original);
 });
 
-test('mobile publication blocks on mismatched, missing or out-of-range preview without sending a request',async()=>{
-  const initial=mobileState(),h=stateful(initial,()=>assert.fail('no write'),mobileOptions);
-  byAction(h.render(),'open-mobile-placement').props.onClick();
-  for(const value of [-21,21,NaN])mobileInput(h.render()).props.onChange({target:{valueAsNumber:value}});
-  assert.equal(mobileInput(h.render()).props.value,0);
-  mobileInput(h.render()).props.onChange({target:{valueAsNumber:-7}});
+test('scene editing waits for exact preview identity, rejects unrelated geometry and shows publication only for changes',async()=>{
+  const initial=sceneState(),h=stateful(initial,()=>assert.fail('no write'),sceneOptions);
+  byAction(h.render(),'open-scene-layout').props.onClick();
+  assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,true);assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
   for(const extra of [{operatorSlug:'other'},{roomId:'north-vip'},{packageRevision:8},{dealer:{id:'vera'}},{settings:defaultCompositionSettings()}]){
-    supplyMobilePreview(h,initial,extra);assert.equal(byAction(h.render(),'publish-mobile-placement').props.disabled,true);
-    await byAction(h.render(),'publish-mobile-placement').props.onClick();
+    supplyScenePreview(h,initial,extra);scenePreview(h.render()).props.sceneLayout.onChange(editedScene(initial));
+    assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,true);assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
   }
-  supplyMobilePreview(h,initial);assert.equal(byAction(h.render(),'publish-mobile-placement').props.disabled,false);
+  supplyScenePreview(h,initial);assert.equal(scenePreview(h.render()).props.sceneLayout.disabled,false);
+  const invalid=editedScene(initial);invalid.blackjackTables.push(defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000099'));
+  scenePreview(h.render()).props.sceneLayout.onChange(invalid);assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
+  scenePreview(h.render()).props.sceneLayout.onChange(editedScene(initial));assert.equal(byAction(h.render(),'publish-scene-layout').props.disabled,false);
+  assert.match(renderToStaticMarkup(h.render()),/Du har osparade ändringar/);
+  scenePreview(h.render()).props.sceneLayout.onChange(structuredClone(initial.presentation.lanes[0].composition));assert.equal(byAction(h.render(),'publish-scene-layout'),undefined);
 });
 
-test('mobile publication conflicts and unconfirmed readbacks lock retries until explicit refresh',async()=>{
+test('refresh retains local layout until an explicit discard instead of promising to keep and silently losing it',async()=>{
+  const initial=sceneState(),latest=sceneState({packageRevision:8});
+  const h=stateful(initial,async()=>response(latest),sceneOptions);chooseScene(h,initial);
+  await byAction(h.render(),'refresh').props.onClick();
+  assert.equal(byAction(h.render(),'keep-local').props.disabled,true);
+  byAction(h.render(),'keep-local').props.onClick();
+  assert.equal(scenePreview(h.render()).props.sceneLayout.composition.mobile.table.y,editedScene(initial).mobile.table.y);
+  assert.match(renderToStaticMarkup(h.render()),/Layoutändringarna är kvar i förhandsvisningen/);
+  byAction(h.render(),'load-latest').props.onClick();
+  assert.equal(scenePreview(h.render()).props.sceneLayout,undefined);assert.equal(scenePreview(h.render()).props.server.packageRevision,8);
+});
+
+test('scene publication conflicts and unconfirmed readbacks lock retries until explicit refresh',async()=>{
   for(const failure of ['conflict','foreign-write','foreign-read','old-read','different-geometry','changed-draft','network-read']){
-    const initial=mobileState(),receipt=mobileReceipt(initial),calls=[],published=[];
+    const initial=sceneState(),receipt=sceneReceipt(initial),calls=[],published=[];
     const h=stateful(initial,async(url,request)=>{
       calls.push({url,request});
       if(request.method==='POST')return response(failure==='foreign-write'?{...receipt,operatorId:'foreign'}:receipt,failure==='conflict'?409:200);
       if(failure==='network-read')throw new Error('offline');
       return response({...initial,packageRevision:failure==='old-read'?7:8,presentation:failure==='different-geometry'?initial.presentation:receipt.presentation,
         ...(failure==='foreign-read'?{operatorId:'foreign'}:{}),...(failure==='changed-draft'?{draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:{}}}:{})});
-    },{...mobileOptions,onSaved:value=>published.push(value)});
-    chooseMobile(h,initial);await byAction(h.render(),'publish-mobile-placement').props.onClick();
-    assert.equal(published.length,0,failure);assert.equal(byAction(h.render(),'publish-mobile-placement').props.disabled,true,failure);
-    const count=calls.length;await byAction(h.render(),'publish-mobile-placement').props.onClick();assert.equal(calls.length,count,failure);
-    assert.match(renderToStaticMarkup(h.render()),/Mobilpubliceringen kunde inte bekräftas/);
+    },{...sceneOptions,onSaved:value=>published.push(value)});
+    chooseScene(h,initial);await byAction(h.render(),'publish-scene-layout').props.onClick();
+    assert.equal(published.length,0,failure);assert.equal(byAction(h.render(),'publish-scene-layout').props.disabled,true,failure);
+    const count=calls.length;await byAction(h.render(),'publish-scene-layout').props.onClick();assert.equal(calls.length,count,failure);
+    assert.match(renderToStaticMarkup(h.render()),/Scenpubliceringen kunde inte bekräftas/);
   }
 });
 
-test('mobile publication ignores late responses after a room, operator or activity change and unmount',async()=>{
+test('scene publication ignores late responses after room, operator or activity changes and unmount',async()=>{
   for(const leave of ['room','operator','inactive','unmount']){
-    const initial=mobileState(),options={...mobileOptions},calls=[],published=[];let finish;
+    const initial=sceneState(),options={...sceneOptions},calls=[],published=[];let finish;
     options.onSaved=value=>published.push(value);
     const h=stateful(initial,(url,request)=>{calls.push({url,request});return new Promise(resolve=>{finish=resolve;});},options);
-    chooseMobile(h,initial);const saving=byAction(h.render(),'publish-mobile-placement').props.onClick();
+    chooseScene(h,initial);const saving=byAction(h.render(),'publish-scene-layout').props.onClick();
     if(leave==='room'){options.roomId='north-vip';h.render();}
     else if(leave==='operator'){options.initial={...initial,operatorId:'different'};options.operatorSlug='other';h.render();}
     else if(leave==='inactive'){options.active=false;h.render();}else h.unmount();
-    finish(response(mobileReceipt(initial)));await saving;
+    finish(response(sceneReceipt(initial)));await saving;
     assert.equal(calls.length,1);assert.equal(published.length,0);
   }
 });

@@ -1003,3 +1003,19 @@ test('v26 checks a valid frozen card layout and cannot be acquired inside an old
  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:changed}),{fixture:true,presentationMutation:plain}),blocked);assert.equal(f.writes.length,0);
 });
+
+test('v27 blocks new UI and card spread on older engines for active, archived and nested writes',async()=>{
+ for(const field of ['ui','spread'])for(const layout of ['mobile','desktop']){
+  const composition=field==='ui'?{[layout]:{gameUi:{}}}:{blackjackTables:[{[layout]:{fanSpread:.5}}]};
+  for(const value of [{lanes:[{composition}]},{dealerTrash:[{compositions:[{composition}]}]}])for(const version of [26,27]){
+   const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+   const work=()=>f.wrapped.saveDocument('project',{value});
+   if(version===26)await assert.rejects(work,blocked);else await work();
+   assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'27');assert.equal(f.writes.length,version===27?1:0);
+  }
+  const plain={kind:'project',value:{lanes:[{composition:{blackjackTables:[{mobile:{cardView:'table'}}]}}]}};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:{lanes:[{composition}]}}),{fixture:true,presentationMutation:plain}),blocked);
+  assert.equal(f.writes.length,0);
+ }
+});

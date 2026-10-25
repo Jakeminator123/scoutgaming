@@ -1,5 +1,62 @@
 # Aktuell handoff — Scoutgaming
 
+## Admins materialval och responsiva kontroller — 25 oktober 2026
+
+Scen & lager kan förhandsvisa varje tillåtet grundbord, bakgrund och dealer utan att ändra mallens standard eller rummets bindning. Kort/marker redigeras för valt bord och format. Kortspridning samt önskad placering av spelknappar och chatt är validerade inställningar; capability v27 krävs innan de sparas mot en äldre strikt runtime. Saldo och insatskontroller flödar inom skärmen. Oanvändbara High Roller/VIP-val och deras växlingslogik samt den permanent avstängda Autobet-knappen är borttagna. Classic-gränser och serverägda spelregler är bevarade.
+
+**Verifiering:** 280 riktade beteendeprov passerar efter uppdatering av testharnessens importer och fullständig materialfixtur; Admin-typkontroll och klientbygge passerar. Egen buggranskning omfattar materialval, delad mall/rum-isolering, format, gränser, runtime-readiness och placering. Isolerad Admin-fixtur sparade chattbredd 70 % och kortspridning 75 % med ny serverrevision. En komplett Dragan-demorunda med lokal frontendkod i en separat webviewflik: 5 insatt, 0 tillbaka, saldo 967 till 962. Beslut och öppen chatt granskades vid CSS 320×568, 390×600 och 1164×655. Detta är kod-/webviewprov, inte deploy eller fysisk Safari-acceptans.
+
+**Fortsättning i PR #380:** den begränsade mobil-offset-funktionen ersätts av `update-scene-layout` och samma kort-/markereditor för det aktuella publicerade bordet i båda format. Fryst paket, matchande preview, revisionskontroll och runtime-readiness används; projektutkast och materialutkast följer inte med. Delade publicerade scener hänvisar till den gemensamma mallen. Sparning i Klippkartan går direkt; osparade ändringar och bolagets sparade materialutkast kan kastas tydligt. Kassering kan inte återuppstå efter senare publicering. Renodlade meny-/pixeltestlås är ersatta med beteendeprov. Oberoende granskning hittade felaktig lokal dealerreferens och tappade klippprov efter materialbyte; båda är rättade, inklusive väntan på rätt medias laddning. 32 API-prov, 91 utkast-/session-/UI-prov och 8 previewprov passerar lokalt; full CI och livepublicering återstår.
+
+**Kvar före liveacceptans:** det publicerade Dragan-paketets manuella kortpunkter ligger högre än önskade bordsrutor. Projektutkastet har andra material än publicerat paket 10; använd den avgränsade layoutredigeringen efter deployment. Ingen produktionsdata eller publicerad kortgeometri ändrades av ovanstående prov.
+
+## PAOW: 24 valda viloklipp — 25 oktober 2026
+
+Jakob beställde uppladdning av elva nya original till mains Blob, återanvändning
+av de tretton befintliga och inkoppling av alla 24 med rätt ordning/övergångar.
+Ordinarie Admin-intag kvitterade **11/11 sparade hos PAOW**. Källurvalet är fryst
+på `kevin@f664c54dfce870a4ea048ed93dfda181d0df9600`, med SHA-256, Git-blob,
+byteantal och 39 bilder/24 fps per klipp. Äldre importerade media behålls.
+
+Admin får en exakt hashmatchad inkoppling till den valfria posepolicyn i den
+gemensamma filmspelaren. Insats-/beslutsfas, knäpp-in/knäpp-ut, huvudrörelser,
+talets standardpose och avbrott omfattas. Saknade/dubbla/avvisade original
+stoppar inkopplingen. Inga kortfilmer eller repliker aktiveras.
+
+Rummets **Publicera PAOWs viloklipp** uppdaterar bara den sparade idlepolicyn
+och dess exakta media i det befintliga publiceringspaketet. Publicerade
+placeringar, andra dealers, repliker, lager, branding, utkast och historik
+behålls. Detta behövs eftersom sparat projekt och publicerad layout skiljer
+sig åt. Behörighet, runtime-readiness och revisioner kontrolleras före skrivning.
+
+**Verifierat lokalt:** 7 nya tester, inklusive 4 000 klippval med full 24/24-täckning,
+exakta poseövergångar, avbrott, talprioritet och publiceringspaket/CAS. Befintliga
+idleprov 23/23, lokalspelarens 136/136 (inklusive nytt integrationsprov),
+relaterade publicerings-/registrerings-/Kevin-paritetsprov och Admins typkontroll
+passerar. Publiceringssviten passerar 36/36, inklusive avgränsning, N1,
+konkurrerande ändringar och rollback. PR #378 har grön full CI inklusive
+production-ledger readiness och är mergad som `51165e9a`.
+PR #381 kopplar samma originalmatchning till native Admins riktiga regelflik;
+22/22 panelprov inklusive knappanrop, typkontroll och full CI passerar.
+Vercel `dpl_AVUrroma9Nz4Jcf2jsGx5dz8QSA8` är READY på `e57ed4d7`; Render
+`dep-dbev7au7bikc73bk852g` är live på backendversion `51165e9a`. Versionendpoint
+och hälsa (200) är återlästa. Klientuppföljningen kräver ingen ny backenddeploy.
+
+**Publicerat och återläst:** West Bet paketversion **2**, rummet
+`room-a8ffcb55-46c5-9424-9c1c-39d614383bf3`, har 24/24 källmatchade media
+(19 548 980 bytes) och exakt posepolicy. Projektets sparningskvittens är
+`studio-51fef509-d399-4471-8864-70656f15d1aa`. Branding, baseline-record och allt
+övrigt presentationsinnehåll är JSON-identiskt före/efter. Brandingutkast är
+fortsatt null. Sparad PAOW-policy är aktivt underlag och ska inte städas bort.
+
+Livekontroll i den publicerade spelarvyn visar riktiga videobilder, 8 olika klipp
+med uppspelnings-/bildkvittens och 9 observerade klippidentiteter på 45 sekunder.
+Observerade övergångar följer grafen, inklusive vila → knäppta händer → vila;
+inga status- eller konsolfel. Ingen insats eller spelrunda genomfördes.
+Alla 24 val och beslutsfasens regler är verifierade offline; samtliga 24 har
+inte spelats igenom manuellt i produktion. MAIN har fått slutkvittensen och
+kan fortsätta sin separata layoutdriftsättning.
+
 ## Mobilens beslutsknappar på korta skärmar — 25 oktober 2026
 
 Ett extra verkligt webviewprov av Dragan vid 320 × 568 visade att beslutsknapparna behöll gamla koordinater efter resize, eller föll tillbaka till en placering över saldot. Osynliga gamla DOM-kort och totaler samt tomma resultat räknades som hinder, medan synliga SVG-kort saknades i mätningen. Placeringen använder nu synliga kort/totaler och skyddar även HUD och chatt. Gamla koordinater rensas; fullstor knapprad används där den ryms, annars en kompakt 198 × 50 px rad med 44 × 44 px tryckytor. Verklig platsbrist ger en tydlig status i stället för dolda kontroller utanför skärmen; normal layout återställs när utrymmet kommer tillbaka.

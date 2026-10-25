@@ -147,8 +147,15 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
       && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation,room.game??'blackjack'));
   }
-  function cleanDraft(draft) {
-    return !draft||draft.action==='draft.publish'?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
+  async function cleanDraft(draft,pack,source=store) {
+    // Discard restores the current published choices in the existing immutable
+    // draft journal. Compare against that original package so a later publication
+    // cannot resurrect the discarded draft. Keep its revision for the next CAS.
+    const restoredCurrent=draft?.action==='draft.restore'&&draft.sourcePackageRevision===draft.basePackageRevision;
+    const restored=restoredCurrent?(draft.sourcePackageRevision===pack.revision?pack:await source.getPackage(pack.operatorId,draft.sourcePackageRevision)):null;
+    const discarded=restored?.operatorId===pack.operatorId&&restored.revision===draft.sourcePackageRevision
+      &&canonicalStudioJson(publicEditableBranding(draft.branding))===canonicalStudioJson(publicEditableBranding(restored.branding));
+    return !draft||draft.action==='draft.publish'||discarded?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
       branding:publicEditableBranding(draft.branding),sourcePackageRevision:draft.sourcePackageRevision,updatedAt:draft.updatedAt};
   }
   async function state(operatorId,source=store,document=null) {
@@ -156,7 +163,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const pack=await load(operatorId,source),draft=await source.getBrandingDraft(operatorId);
     document??=await administrationSnapshot();
     const history=await source.listPackages(operatorId,{limit:20});
-    return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:cleanDraft(draft),
+    return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:await cleanDraft(draft,pack,source),
       draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
       roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices({...pack,tables:[room.id]},readPackagePresentation(pack),document)[room.presentationLaneId]])),
       rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room)}))};
@@ -264,7 +271,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   async function command(input) {
     requireDraftStore(store);
-    if(!['save-draft','review','publish','restore'].includes(input.action)
+    if(!['save-draft','review','publish','restore','discard-draft'].includes(input.action)
       ||!Number.isSafeInteger(input.expectedDraftRevision)||input.expectedDraftRevision<0
       ||!Number.isSafeInteger(input.expectedPackageRevision)||input.expectedPackageRevision<1)fail(400);
     input=structuredClone(input);
@@ -279,10 +286,14 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       if(!Array.isArray(pack.lanes)||!pack.lanes.length||pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
       const document=await administrationSnapshot(context.readAdministration);
       const adminChoices=input.audit?.accessClass==='internal-admin';
-      if(input.action==='save-draft'||input.action==='restore'){
+      if(input.action==='discard-draft'){
+        if(!await cleanDraft(draft,pack,context.store))fail(409);
+        await context.store.saveBrandingDraft({...input,branding:publicEditableBranding(pack.branding),sourcePackageRevision:pack.revision});
+      }else if(input.action==='save-draft'||input.action==='restore'){
         let branding=input.branding;
         if(input.action==='restore'){
           if(!Number.isSafeInteger(input.sourcePackageRevision)||input.sourcePackageRevision<1)fail(400);
+          if(input.sourcePackageRevision===pack.revision)fail(409);
           const previous=await context.store.getPackage(input.operatorId,input.sourcePackageRevision);
           if(!previous||previous.operatorId!==input.operatorId)fail(404);
           branding=publicEditableBranding(previous.branding);
@@ -290,7 +301,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         await validateDraft(pack,branding,document,adminChoices);
         await context.store.saveBrandingDraft({...input,branding});
       }else{
-        if(!draft||draft.action==='draft.publish'||draft.basePackageRevision!==pack.revision)fail(409);
+        if(!await cleanDraft(draft,pack,context.store)||draft.basePackageRevision!==pack.revision)fail(409);
         const branding=await validateDraft(pack,draft.branding,document,adminChoices),review=reviewOf(pack,draft,document);
         if(input.action==='review')return review;
         if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);

@@ -66,8 +66,9 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
   const inside=(x,y,left,right,top,bottom)=>x-left>=bounds.left-1e-6&&x+right<=bounds.right+1e-6&&y-top>=bounds.top-1e-6&&y+bottom<=bounds.bottom+1e-6;
   // A filmed landing keeps the film's box spacing, which never leaves room for
   // a worst-case fan on a phone. Check the landed card and the touch row then.
+  const fanSpread=geometry.fanSpread??1;
   const [hand,dealerHand]=auto?.landing?Array(2).fill([calibration.width/2,calibration.width/2,calibration.height/2,calibration.height/2])
-    :[[144,90,230,55],[310,45,130,55]];
+    :[[84+60*fanSpread,90,120+110*fanSpread,55],[130+180*fanSpread,45,130,55]];
   const fits=seats.every((seat,index)=>{
     const card=positions[String(seat.box+1)],x=origin.x+card.cx*scale,y=origin.y+card.cy*scale;
     return inside(seat.x,seat.y,49*touchScale,49*touchScale,45*controlScale,45*controlScale)
@@ -75,7 +76,7 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
       &&(!index||seat.x-seats[index-1].x>=98*touchScale-1e-6);
   });
   const dealer=cardAt('dealer',geometry.dealer);
-  return {x:origin.x,y:origin.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,cardView,followCards,
+  return {x:origin.x,y:origin.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,cardView,followCards,fanSpread,
     ...(sourcePlane&&tableId?{sourcePlane,tableId,tableLayout:layout}:{}),
     geometryWarning:fits&&inside(dealer.x,dealer.y,...dealerHand.map(value=>value*scale))?''
       :`Kort eller insatsplatser ryms inte. Justera ${auto?.landing?'dealerns':'bordets'} placering i Sammansättning.`};

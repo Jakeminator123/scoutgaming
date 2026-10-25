@@ -18,8 +18,14 @@ export function validateCompositionSettings(value,{tableIds,assets}={}) {
   exact(value, ['mobile', 'desktop', 'tableFront', ...(Object.hasOwn(value??{}, 'blackjackTables')?['blackjackTables']:[])]);
   if (typeof value.tableFront !== 'boolean') fail();
   for (const layout of ['mobile', 'desktop']) {
-    exact(value[layout], ['dealer', 'background', 'table']);
+    exact(value[layout], ['dealer', 'background', 'table', ...(Object.hasOwn(value[layout]??{},'gameUi')?['gameUi']:[])]);
     placement(value[layout].dealer, 'scale'); placement(value[layout].background, 'scale'); placement(value[layout].table, 'width');
+    if(Object.hasOwn(value[layout],'gameUi')){
+      const ui=value[layout].gameUi;exact(ui,['actions','chat']);
+      if(ui.actions!==null)point(ui.actions);
+      exact(ui.chat,['x','y','width','height']);point({x:ui.chat.x,y:ui.chat.y});
+      if(['width','height'].some(key=>!Number.isFinite(ui.chat[key])||ui.chat[key]<.15||ui.chat[key]>1))fail();
+    }
   }
   if(value.blackjackTables!==undefined){
     if(!Array.isArray(value.blackjackTables)||value.blackjackTables.length>32)fail();
@@ -31,7 +37,8 @@ export function validateCompositionSettings(value,{tableIds,assets}={}) {
       if(tableIds!==undefined&&!tableIds.includes(table.tableId))fail();
       if(assets!==undefined&&!assets.some(asset=>asset.id===table.tableId&&asset.role==='table'&&asset.game!=='roulette'))fail();
       for(const layout of ['mobile','desktop']){
-        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...['betMode','anchors','autoScale','cardView'].filter(key=>Object.hasOwn(geometry??{},key))]);
+        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...['betMode','anchors','autoScale','cardView','fanSpread'].filter(key=>Object.hasOwn(geometry??{},key))]);
+        if(Object.hasOwn(geometry,'fanSpread')&&(!Number.isFinite(geometry.fanSpread)||geometry.fanSpread<.25||geometry.fanSpread>1.5))fail();
         if(Object.hasOwn(geometry,'autoScale'))autoScale(geometry.autoScale);
         if(Object.hasOwn(geometry,'cardView')&&!['table','raised'].includes(geometry.cardView))fail();
         if(Object.hasOwn(geometry,'anchors')){

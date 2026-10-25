@@ -33,31 +33,49 @@ test('measured reflow preserves dragged coordinates until layout reset',()=>{
   assert.deepEqual(layoutClipCards(cards,390,positions),before);
   assert.deepEqual(layoutClipCards(cards,1200,positions),before);
   assert.deepEqual(positions,before);
-  assert.deepEqual(layoutClipCards(cards,390,{ready:positions.ready}),{ready:positions.ready,reveal:{x:0,y:526}});
-  assert.deepEqual(layoutClipCards(cards,390,{}),{ready:{x:0,y:0},reveal:{x:0,y:526}});
+  const automatic=layoutClipCards(cards,390,{});
+  const partial=layoutClipCards(cards,390,{ready:positions.ready});
+  assert.deepEqual(partial.ready,positions.ready);
+  assert.deepEqual(partial.reveal,automatic.reveal,'unmoved cards still follow the measured layout');
+  assert.ok(automatic.reveal.y>automatic.ready.y+cards[0].height);
+  assert.notDeepEqual(automatic.ready,positions.ready,'reset releases a saved manual position');
 });
 
-test('unmeasured cards retain game spacing and invalid measurements cannot corrupt positions',()=>{
+test('invalid measurements use the unmeasured layout and explicit row spacing is honored',()=>{
   const cards=[{id:'a'},{id:'b',height:0},{id:'c',height:NaN},{id:'d',height:-10},{id:'e',height:Infinity},{id:'f',height:500}];
-  assert.equal(layoutClipCards(cards,1200).e.y,355);
-  assert.equal(layoutClipCards(cards,1200,{},440).e.y,440);
+  const unmeasured=cards.map(({id})=>({id}));
+  assert.deepEqual(layoutClipCards(cards,1200),layoutClipCards(unmeasured,1200));
+  const spaced=layoutClipCards(unmeasured,390,{},440);
+  const rows=[...new Set(Object.values(spaced).map(point=>point.y))].sort((a,b)=>a-b);
+  assert.ok(rows.length>1);
+  for(let index=1;index<rows.length;index++)assert.ok(rows[index]-rows[index-1]>=440);
+  assert.ok(Object.values(spaced).every(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)));
   assert.deepEqual(layoutClipCards([],390),{});
 });
 
-test('visual cards preserve every exact server slot and discover all 17 speech variants',()=>{
+test('visual groups preserve the exact available server slots without requiring fixed group sizes',()=>{
   const slots=clipSlots(createSeedProject(),{videos:[]},'astrid'),groups=groupSlots(slots);
   assert.ok(slots.every(row=>!['turn','settle'].includes(row.sourceType)));
-  assert.equal(groups.some(row=>row.id==='game'),false);
-  assert.equal(slots.filter(row=>row.sourceType==='speak').length,17);
   assert.deepEqual(groups.find(row=>row.id==='speech').slots.map(row=>row.id).sort(),slots.filter(row=>row.sourceType==='speak').map(row=>row.id).sort());
-  assert.equal(groups.find(row=>row.id==='players').slots.length,7);
+  assert.deepEqual(groups.find(row=>row.id==='players').slots.map(row=>row.id).sort(),slots.filter(row=>row.eventId.startsWith('deal.player.')).map(row=>row.id).sort());
   assert.deepEqual(groups.flatMap(row=>row.slots).map(row=>row.id).sort(),slots.map(row=>row.id).sort());
-  assert.equal(slotCaption(groups.find(row=>row.id==='players').slots[6]),'Plats 7');
+  for(const slot of groups.find(row=>row.id==='players').slots)assert.equal(slotCaption(slot),`Plats ${Number(slot.situation.slice(3))+1}`);
   const dealer=groups.find(row=>row.id==='dealer');
   assert.ok(dealer.slots.some(row=>row.eventId==='reveal.dealer'));
   assert.ok(dealer.slots.every(row=>!/^box/.test(row.situation)));
   assert.equal(slotCaption(dealer.slots.find(row=>row.eventId==='reveal.dealer')),'Vänd dolt kort');
   assert.match(slotExplanation(dealer.slots.find(row=>row.situation==='dealer-up')),/tredje och senare/);
+});
+
+test('visual groups accept a partial clip bank and new speech slots without padding or dropping them',()=>{
+  const slots=clipSlots(createSeedProject(),{videos:[]},'astrid');
+  const speech=slots.find(row=>row.sourceType==='speak');
+  const available=[slots.find(row=>row.eventId.startsWith('deal.player.')),speech,{...speech,id:'speech.custom',situation:'custom',title:'Egen replik'}];
+  const before=structuredClone(available),groups=groupSlots(available);
+  assert.deepEqual(groups.flatMap(row=>row.slots).map(row=>row.id).sort(),available.map(row=>row.id).sort());
+  assert.ok(groups.every(row=>row.slots.length>0),'unavailable groups must not become empty editor panels');
+  assert.deepEqual(groupSlots([]),[]);
+  assert.deepEqual(available,before);
 });
 
 test('library roles come from exact IDs, preserving unassigned clips and separating idle behaviors',()=>{

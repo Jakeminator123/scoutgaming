@@ -113,7 +113,7 @@ test('own dealer starts its exact preview idle and cannot select paid OpenClaw m
  presentation.close();
 });
 
-async function tierFixture(studioPreview=null) {
+async function controlsFixture(studioPreview=null) {
  const {readFile}=await import('node:fs/promises'),vm=await import('node:vm');
  const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const nodes=new Map(),hints=[],link={search:''};
@@ -126,9 +126,8 @@ async function tierFixture(studioPreview=null) {
   dealSequence:()=>assert.fail('invalid restored bets must not reach the server')});
  const run=code=>vm.runInContext(code,sandbox);
  const slice=(start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a);assert.ok(a>=0&&b>a);return source.slice(a,b);};
- run(slice('const TABLES = [','// ---------- player account:'));
+ run(slice('const CHIPS = [','// ---------- player account:'));
  run(slice('const betTotal =','const mains ='));
- run(slice('function setTable(id) {',"document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick"));
  run(slice('let allSides = false;','seatEls.forEach((seat, i) => {'));
  run(slice("$('#double-btn').onclick =","// MAX:"));
  run(source.split('\n').find(line=>line.startsWith("$('#deal-now').onclick =")));
@@ -137,24 +136,8 @@ async function tierFixture(studioPreview=null) {
   render:()=>run('{'+slice('  const staked = bets.filter','  layoutDealControl();')+'}')};
 }
 
-test('only Classic can be selected in ordinary play and preview; stale unsupported presets fall back without navigation',async()=>{
- for(const preview of [null,context]){
-  const f=await tierFixture(preview);
-  assert.deepEqual(f.read('[table.id,LIMITS.min,LIMITS.max]'),['classic',5,2000]);
-  f.run('bets[0].main=25;undoStack.push({box:0,field:"main",value:25});');
-  for(const id of ['high','vip','unknown']){
-   f.run('setTable('+JSON.stringify(id)+');');
-   assert.deepEqual(f.read('[table.id,bets[0].main,undoStack.length]'),['classic',25,1]);
-  }
-  // A stale caller cannot restore unsupported limits or their large chip ladder.
-  f.run('table=TABLES.find(x=>x.id==="vip");CHIPS=table.chips;setTable("vip");');
-  assert.deepEqual(f.read('[table.id,Math.max(...CHIPS),bets[0].main]'),['classic',1000,0]);
-  assert.equal(f.link.search,'');
- }
-});
-
 test('actual Classic controls retain main and side caps and reject oversized restored drafts without sending them',async()=>{
- const f=await tierFixture();
+ const f=await controlsFixture();
  f.run('selected=1000;placeBet(0,"main",{});placeBet(0,"main",{});placeBet(0,"pp",{});placeBet(0,"tp",{});selected=5;placeBet(0,"main",{});placeBet(0,"pp",{});placeBet(0,"tp",{});');
  assert.deepEqual(f.read('bets[0]'),{main:2000,pp:1000,tp:1000});
  f.render();assert.equal(f.node('#deal-now').disabled,false);
@@ -170,7 +153,7 @@ test('actual Classic controls retain main and side caps and reject oversized res
 });
 
 test('doubling respects existing Classic side caps as well as main cap and balance',async()=>{
- const f=await tierFixture();
+ const f=await controlsFixture();
  for(const key of ['pp','tp']){
   f.run('bets[0]={main:100,pp:0,tp:0};bets[0]['+JSON.stringify(key)+']=500;');f.render();
   assert.equal(f.node('#double-btn').disabled,false);f.node('#double-btn').onclick();f.render();

@@ -107,5 +107,5 @@ run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs
 run_node_tests gameplay local-comparison-fixture test/local-comparison-fixture.mjs test/generation-media.mjs
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
 run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
-run_node_tests gameplay local-presentation test/local-presentation.mjs test/layered-presentation.mjs test/layer-packs-route.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/abort-signals.mjs test/presentation-select-dealers.mjs test/presentation-select-astrid-baseline.mjs
+run_node_tests gameplay local-presentation test/local-presentation.mjs test/idle-rotation.mjs test/layered-presentation.mjs test/layer-packs-route.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/abort-signals.mjs test/presentation-select-dealers.mjs test/presentation-select-astrid-baseline.mjs
 run_node_tests gameplay player-results test/player-results.mjs

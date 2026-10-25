@@ -57,7 +57,7 @@ export const presentationPublicModules = Object.freeze([
     paths: ['/packages/presentation/contracts/game-lane-id.mjs']},
   {source: 'packages/presentation/contracts/layer-asset-contract.mjs',
     paths: ['/packages/presentation/contracts/layer-asset-contract.mjs']},
-  ...['live-idle', 'idle-policy'].map(name => ({source: 'packages/presentation/runtime/' + name + '.mjs',
+  ...['live-idle', 'idle-policy', 'idle-rotation'].map(name => ({source: 'packages/presentation/runtime/' + name + '.mjs',
     paths: ['/presentation-runtime/' + name + '.mjs', '/packages/presentation/runtime/' + name + '.mjs']})),
   {source: 'packages/presentation/contracts/policies/idle-policy.seed.json',
     paths: ['/lab/policies/idle-policy.seed.json', '/packages/presentation/contracts/policies/idle-policy.seed.json']},

@@ -18,6 +18,8 @@
   background: #101618f2;
   box-shadow: 0 8px 24px #0004;
   pointer-events: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .astrid-voice-ui #chat-log-toggle {
   order: 0;
@@ -30,6 +32,8 @@
 }
 .astrid-voice-ui #chat-log-toggle[aria-expanded="true"] { background: #d6ff3a18; border-color: #d6ff3a80; }
 .astrid-voice-ui #chat-log-toggle[data-unread="true"] { box-shadow: inset 0 -3px #d6ff3a; }
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-log-toggle {flex:1 1 60px;}
+.astrid-voice-ui #chat:not(:has(#chat-log.open)) #astrid-camera > .astrid-voice-button {flex:0 1 80px;}
 /* Keep each voice control and its live status in the same wrapping dock. */
 .astrid-voice-ui #chat #astrid-camera.astrid-voice-controls { display: contents; }
 .astrid-voice-ui #chat #astrid-camera > .astrid-voice-button { order: 1; flex: 0 0 44px; }
@@ -100,11 +104,8 @@
     z-index: 60;
   }
   .astrid-voice-ui #chat:has(#chat-log.open) {
-    top: auto;
-    bottom: max(12px, env(safe-area-inset-bottom, 0px));
-    left: max(10px, env(safe-area-inset-left, 0px));
-    width: auto;
-    max-height: calc(100dvh - 88px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    width: min(360px, calc(100vw - 20px));
+    max-height: 45dvh;
   }
   .astrid-voice-ui #chat #chat-log { max-height: min(280px, 35dvh); }
   .astrid-voice-ui #chat-input { font-size: 16px; }

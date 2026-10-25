@@ -59,15 +59,15 @@ function splitFanOffset(index, count, splitCount) {
 
 // Reserve the landing position as the new card makes contact. The old nodes
 // move once; revealing the new card does not restart or double their movement.
-export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat, depth=1 }) {
+export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat, depth=1, fanSpread=1 }) {
   const offset = (i,n) => seat === 'dealer' ? dealerFanOffset(i,n)
     : splitCount > 1 ? splitFanOffset(i,n,splitCount) : fanOffset(i,n,width);
   const to = offset(index, count);
   const oldCount = incomingIndex < 0 ? count : count - 1;
   const from = incomingIndex < 0 || index === incomingIndex ? to : offset(index, oldCount);
   const p = incomingIndex < 0 ? 1 : slideEase((time - contact) / SLIDE_SECONDS);
-  return { x: anchor.cx + from.x + (to.x - from.x) * p,
-    y: anchor.cy + (from.y + (to.y - from.y) * p) * depth };
+  return { x: anchor.cx + (from.x + (to.x - from.x) * p) * fanSpread,
+    y: anchor.cy + (from.y + (to.y - from.y) * p) * depth * fanSpread };
 }
 
 export function feltMatrix(depth=FELT_DEPTH) {
