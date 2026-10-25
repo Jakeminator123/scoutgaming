@@ -6,7 +6,7 @@ import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse, IdleAutomaticPolicy
 import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import { selectionFor } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
 import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
-import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
+import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, studioClipUsage, applyStudioIdleEventRule, applyStudioIdleVariantPolicy, studioIdleEventRule, prepareStudioPaowIdleRotation, IDLE_EVENT_RULES, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
 
 export type StudioPolicyPanelProps = {
   project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; selectedVideoId?:string; selectedVariantId?:string; blocked:boolean;
@@ -61,6 +61,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
     finally{if(operation.current===controller){operation.current=null;setBusy(false);busyCallback.current?.(false);}}
   }
   const policy=scope?.policy;
+  const rotationCandidate=scope?prepareStudioPaowIdleRotation(project,inventory,dealerId,slot):null;
   const choices=scope?.family?scope.clips.filter(video=>scope!.family!.variantIds.includes(video.id)).map(video=>({id:video.id,label:label(video.id)}))
     :scope?.line.variants.filter(row=>row.id!==scope!.line.baselineVariantId&&scope!.clips.some(video=>video.id===row.videoGenerationId)).map(row=>({id:row.id,label:row.label}))??[];
   const preferredId=scope?.family?selectedVideoId:scope?.line.variants.find(row=>row.id===selectedVariantId&&row.videoGenerationId===selectedVideoId)?.id
@@ -89,6 +90,16 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
     <header><h2>Körregler · {caption}</h2><p>Ändrar denna situation i projektutkastet. Rummet får ändringen först när utkastet sparas och rummet publiceras. OpenClaw-val visar tillåtet urval, inte en verifierad triggeranslutning.</p></header>
     {scopeError?<p role="alert" className="studio-policy-error">{scopeError}</p>:scope&&<fieldset disabled={locked} className="studio-policy-body" aria-busy={busy}>
       {scope.kind==='idle'?<>
+        {rotationCandidate&&<section className="studio-policy-section" aria-label="PAOWs vilosekvenser">
+          <h3>Sammanhängande vilosekvenser</h3>
+          <p>{policy?.rotation?`${policy.rotation.clips.length} klipp är kopplade i utkastet.`:'Koppla Kevins 24 valda viloklipp. Befintliga original återanvänds.'}</p>
+          <p>Knäppta händer följer insatsfasen. Händerna mot bordet följer spelarens beslut. Övergångsklipp spelas färdigt före nästa pose.</p>
+          {rotationCandidate.error&&<p role="alert">{rotationCandidate.error}</p>}
+          {!policy?.rotation?<button type="button" className="studio-button" disabled={locked||!rotationCandidate.policy} onClick={()=>{if(rotationCandidate.policy)idle(rotationCandidate.policy);}}>Koppla 24 viloklipp</button>
+            :<><p>Ändringen når spelet efter Spara utkast och Publicera PAOWs viloklipp i rummet.</p>
+              <button type="button" className="studio-button" disabled={locked} onClick={()=>{const {rotation,...rest}=policy;idle({...rest,variants:[]});}}>Återgå till enbart basklippet</button></>}
+        </section>}
+        {!policy?.rotation&&<>
         <section className="studio-policy-section" aria-label="Basloop"><h3>Basloop</h3>
           <p>Loopar hela tiden när inget annat spelas. Flera basklipp turas om enligt sina andelar.</p>
           {policy?policy.base.map((item,index)=><div key={item.videoId} className="studio-policy-clip">
@@ -120,6 +131,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
             {policy&&<button type="button" className="studio-button" disabled={!addId||!variationAllowed(addId)} onClick={()=>void add(false)}>Lägg till som beteendeklipp</button>}
           </div><p className="studio-policy-hint">Klippets längd läses från videons metadata. Högst fyra basklipp.</p>
         </section>
+        </>}
       </>:<>
         {choices.length?<>
           <label className="studio-field"><span>Variant</span><select value={selectedId} onChange={event=>setSelected(event.target.value)}>{!selectedId&&<option value="">Välj en alternativ tagning…</option>}{choices.map(choice=><option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label>
