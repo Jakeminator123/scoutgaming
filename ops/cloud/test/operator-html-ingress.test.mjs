@@ -38,7 +38,7 @@ async function fixture(t, canonical = true) {
   const ingress = readVercelIngressConfig({...env,CROUPIER_STUDIO_NEON_POLICY:canonical?'1':'0'});
   const gateway = createCloudGateway({singleOrigin:true,gameOrigin:env.CROUPIER_PUBLIC_ORIGIN,
     boOrigin:env.CROUPIER_PUBLIC_ORIGIN,labOrigin:env.CROUPIER_PUBLIC_ORIGIN},{
-    vercelIngress:ingress,webPort:web.address().port,labPort:9,labInternalSecret:'operator-lab-fixture-secret-'.repeat(3)});
+    vercelIngress:ingress,webPort:web.address().port,labPort:9});
   gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
   t.after(async()=>{for(const server of [gateway,web]){server.closeAllConnections();await new Promise(done=>server.close(done));}});
   const send=(path=entryPath,method='GET',overrides={})=>new Promise((resolve,reject)=>{

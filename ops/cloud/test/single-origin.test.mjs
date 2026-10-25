@@ -23,13 +23,12 @@ test('explicit one-origin mode derives exact platform origin and preserves secre
   assert.equal(config.gameOrigin, origin);
   assert.equal(config.boOrigin, origin);
   assert.equal(config.labOrigin, origin);
-  assert.equal(config.labBasePath, '/studio');
-  const specs = childSpecifications(config, env, { labInternalSecret: 'a'.repeat(64) });
+  const specs = childSpecifications(config, env);
   assert.equal(specs.web.env.CROUPIER_CLOUD_LAYOUT, 'single-origin');
-  assert.equal(specs.lab.env.CROUPIER_LAB_BASE_PATH, '/studio');
+  assert.deepEqual(Object.keys(specs), ['web']);
   assert.equal(specs.web.env.CROUPIER_LAB_INTERNAL_SECRET, undefined);
   for (const override of [{ CROUPIER_CLOUD_LAYOUT: '' }, { BO_URL: 'https://other.example.test' },
-    { RENDER_EXTERNAL_URL: 'http://localhost' }, { CROUPIER_LAB_BASE_PATH: '' }]) {
+    { RENDER_EXTERNAL_URL: 'http://localhost' }]) {
     assert.throws(() => validateCloudConfig({ ...env, ...override }));
   }
 });
@@ -38,7 +37,7 @@ test('one-origin router isolates the mounted Lab and rejects spoofing or interna
   const config = validateCloudConfig(env);
   const route = (url, host = new URL(origin).host) => upstreamForRequest({ headers: { host }, method: 'GET', url }, config);
   for (const path of ['/', '/blackjack', '/api/table', '/bo/login.html', '/api/bo/users', '/api/auth/lab/start']) assert.equal(route(path), 4173, path);
-  for (const path of ['/studio', '/studio/openclaw', '/studio/api/project', '/studio/_next/static/example.js']) assert.equal(route(path), 4188, path);
+  for (const path of ['/studio', '/studio/openclaw', '/studio/api/project', '/studio/_next/static/example.js']) assert.equal(route(path), null, path);
   for (const path of ['/api/auth/lab/check', '/api/auth/lab/%63heck', '/%73tudio/api/project', '/STUDIO/api/project', '/studio%2fapi/project', '//external.test/studio']) assert.equal(route(path), null, path);
   assert.equal(route('/studio', 'other.onrender.com'), null);
 });
@@ -91,7 +90,7 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
 test('one-origin game-only mode keeps the Web routes and closes the mounted Lab entirely', () => {
   const gameOnly = { ...env, CROUPIER_CLOUD_LAB_CHILD: '0' };
   const config = validateCloudConfig(gameOnly);
-  assert.equal(config.labChild, false); assert.equal(config.singleOrigin, true); assert.equal(config.labBasePath, '/studio');
+  assert.equal(config.singleOrigin, true);
   const route = (url, host = new URL(origin).host) => upstreamForRequest({ headers: { host }, method: 'GET', url }, config);
   for (const path of ['/', '/blackjack', '/api/table', '/bo/login.html', '/api/bo/users', '/api/auth/lab/start', '/api/bo/lab-login?state=x']) assert.equal(route(path), 4173, path);
   for (const path of ['/studio', '/studio/openclaw', '/studio/api/project', '/studio/_next/static/example.js', '/api/auth/lab/check']) assert.equal(route(path), null, path);
@@ -99,6 +98,7 @@ test('one-origin game-only mode keeps the Web routes and closes the mounted Lab 
   assert.deepEqual(Object.keys(specs), ['web']);
   assert.equal(specs.web.env.CROUPIER_CLOUD_LAYOUT, 'single-origin');
   assert.equal(specs.web.env.LAB_PUBLIC_URL, origin);
-  // A stray CROUPIER_LAB_BASE_PATH still has to agree with the layout even when no Lab is started.
-  assert.throws(() => validateCloudConfig({ ...gameOnly, CROUPIER_LAB_BASE_PATH: '' }));
+  // Retired base-path configuration cannot create a second process.
+  const obsolete = { ...gameOnly, CROUPIER_LAB_BASE_PATH:'/other-studio' };
+  assert.deepEqual(Object.keys(childSpecifications(validateCloudConfig(obsolete), obsolete)), ['web']);
 });

@@ -1,7 +1,7 @@
 import { createServer, request as httpRequest } from 'node:http';
 import {sharedRoomSocketPath} from '../../packages/server-transport/paths.mjs';
 import { posix } from 'node:path';
-import { LAB_PORT, WEB_PORT } from './config.mjs';
+import { WEB_PORT } from './config.mjs';
 import { checkLabSession } from './lab-session-check.mjs';
 import { vercelIngressRequest, movingCallbackPath } from './vercel-ingress.mjs';
 import {MOVING_BANK_DIAGNOSTIC_HEADER,readMovingBankDiagnostic} from '../../packages/presentation/contracts/moving-bank-diagnostics.mjs';
@@ -12,7 +12,6 @@ const HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate',
 export function upstreamForHost(host, config) {
   if (host === new URL(config.gameOrigin).host) return WEB_PORT;
   if (host === new URL(config.boOrigin).host) return WEB_PORT;
-  if (host === new URL(config.labOrigin).host) return LAB_PORT;
   return null;
 }
 
@@ -46,29 +45,13 @@ export function studioAliasRedirect({ headers, method, url }, config) {
   return STUDIO_ALIASES.has(path) ? `/control${queryAt < 0 ? '' : url.slice(queryAt)}` : null;
 }
 
-export function upstreamForRequest(request, config) {
-  const port = upstreamForChild(request, config);
-  // Without a Lab child (CROUPIER_CLOUD_LAB_CHILD=0) every /studio or Lab-host
-  // document/API is misdirected; Web-owned Lab auth paths are unaffected.
-  return port === LAB_PORT && config.labChild === false ? null : port;
-}
-
-function upstreamForChild({ headers, method, url }, config) {
+export function upstreamForRequest({ headers, method, url }, config) {
   const host = headers?.host;
   const path = routePath(url, config);
-  if (!path) return null;
+  if (!path || path === '/studio' || path.startsWith('/studio/')) return null;
   if (host === new URL(config.gameOrigin).host) {
     if (path === LAB_CHECK) return null; // The identity check is gateway-internal only.
-    if (config.singleOrigin) {
-      // Reject noncanonical aliases at the mount boundary rather than allowing
-      // Web and Next to interpret encoded/dot/case variants differently.
-      if (path === '/studio' || path.startsWith('/studio/')) {
-        const raw = new URL(url, config.gameOrigin).pathname;
-        if (!(raw === '/studio' || raw.startsWith('/studio/')) || /%|\\|\/\//.test(raw)) return null;
-        return LAB_PORT;
-      }
-      return WEB_PORT;
-    }
+    if (config.singleOrigin) return WEB_PORT;
     if (boPath(path) && !(method === 'GET' && url === '/api/bo/config')) return null;
     return WEB_PORT;
   }
@@ -79,7 +62,7 @@ function upstreamForChild({ headers, method, url }, config) {
       // Only the canonical public paths are routed to Web for the handoff.
       return new URL(url, config.labOrigin).pathname === path ? WEB_PORT : null;
     }
-    return LAB_PORT;
+    return null;
   }
   return null;
 }
@@ -94,19 +77,16 @@ export function proxyHeaders(headers, host) {
     return !HOP_HEADERS.has(name) && name !== 'forwarded' && !name.startsWith('x-forwarded-')
       && name !== 'x-croupier-lab-authorized';
   }).map(([key, value]) => [key.toLowerCase(), value]));
-  // The Lab authorization header remains absent until a gateway-side identity
-  // check authorizes the request. It must never be supplied by the browser.
+  // Studio runs on Vercel; neither browser input nor this gateway can supply
+  // a legacy local-Studio authorization header.
   return { ...kept, host, 'x-forwarded-host': host, 'x-forwarded-port': '443', 'x-forwarded-proto': 'https' };
 }
 
 // One platform port, three exact public hostnames. The original Host and Origin
 // reach the child; rewriting them to loopback would defeat application checks.
-export function createCloudGateway(config, { labInternalSecret, sessionCheck = checkLabSession,
-  webPort = WEB_PORT, labPort = LAB_PORT, vercelIngress = config.vercelIngress, renderGitCommit,
+export function createCloudGateway(config, { sessionCheck = checkLabSession,
+  webPort = WEB_PORT, vercelIngress = config.vercelIngress, renderGitCommit,
   onMovingBankRejection = value => console.warn(JSON.stringify({event:'moving_bank_rejected',...value})) } = {}) {
-  if (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32) {
-    throw new Error('The cloud Lab gateway requires an internal secret.');
-  }
   const labHost = new URL(config.labOrigin).host;
   // Snapshot only Render's parent-process deployment metadata, never request data.
   const commitSha = typeof renderGitCommit === 'string' && renderGitCommit.length === 40 && /^[a-fA-F0-9]{40}$/.test(renderGitCommit)
@@ -161,33 +141,8 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
       outgoing.end();
       return;
     }
-    if (incoming.headers.host === labHost && routePort === LAB_PORT) {
-      let session;
-      try { session = await sessionCheck(incoming.headers.cookie, labHost, { port: webPort }); }
-      catch { session = { authorized: false, available: false }; }
-      if (outgoing.destroyed) return;
-      if (!session.available) {
-        outgoing.writeHead(503, { 'Cache-Control': 'no-store' });
-        outgoing.end();
-        return;
-      }
-      if (!session.authorized) {
-        const document = incoming.method === 'GET'
-          && incoming.headers['sec-fetch-mode'] === 'navigate'
-          && incoming.headers['sec-fetch-dest'] === 'document';
-        if (document) outgoing.writeHead(303, { Location: `/api/auth/lab/start?next=${encodeURIComponent(incoming.url)}`,
-          'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-        else outgoing.writeHead(401, { 'Cache-Control': 'no-store' });
-        outgoing.end();
-        return;
-      }
-    }
     const headers = proxyHeaders(incoming.headers, incoming.headers.host);
-    if (incoming.headers.host === labHost && routePort === LAB_PORT) {
-      headers['x-croupier-lab-authorized'] = labInternalSecret;
-    }
-    const targetPort = routePort === WEB_PORT ? webPort : labPort;
-    const upstream = httpRequest({ hostname: '127.0.0.1', port: targetPort,
+    const upstream = httpRequest({ hostname: '127.0.0.1', port: webPort,
       method: incoming.method, path: incoming.url, headers }, response => {
       // Only trusted application metadata on a direct bank capability request
       // reaches the parent log. Strip the internal header on every response.

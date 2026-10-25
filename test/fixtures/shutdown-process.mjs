@@ -19,15 +19,8 @@ const close = async server => {
   server.closeAllConnections(); await closed;
 };
 
-if (role === 'lab') {
-  const server = createServer((_req, res) => res.end('fixture'));
-  let stopping;
-  process.on('SIGTERM', () => stopping ??= (async () => {
-    emit('lab:signal'); await pause(30); await close(server);
-    emit('lab:closed'); process.disconnect();
-  })());
-  emit('lab:listening', { port: await listen(server) });
-} else {
+if (role !== 'web') throw new Error('Unknown shutdown fixture role');
+{
   const server = createServer((_req, res) => res.end('fixture'));
   const pool = speechMemoryPool(Date.now);
   const journal = await createSpeechJournal({ pool, environmentId: 'isolated-shutdown', now: Date.now });

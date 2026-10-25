@@ -6,6 +6,17 @@ PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
+## Cloud kör endast spelmotorn
+
+`ops/cloud/Dockerfile` och den kombinerade Cloud/Studio-starten är pensionerade.
+`Dockerfile.game` startar spelmotorn bakom samma signerade ingress. Admin och
+Studio körs på Vercel. `LAB_PUBLIC_URL` består för Web-ägd sessionskontroll och
+autentiseringsöverlämning; den är ingen adress till en lokal Studio-process.
+Varken `CROUPIER_LAB_BASE_PATH`, interna Lab-nycklar eller privata Studio-nycklar
+bygger/startar en andra process. Privata data, molnkonfiguration och budgetar
+ändras inte av denna kodleverans. Återgång kräver en kompatibel version av den
+aktuella spel-imagen; den borttagna kombinerade imagen är ingen stödd reservväg.
+
 ## Delade Blackjackrum — avgränsad inkoppling
 
 Transportbranchen stödjer explicit `CROUPIER_SHARED_TABLE_ENABLED=1`. Flaggan
@@ -346,8 +357,9 @@ senaste produktions-SHA finns i leveransens PR-kvitto.
 
 Alla fyra är Docker-tjänster. Render erbjuder miljövariabler som byggargument
 och runtime-miljö; ett byggargument måste användas uttryckligen i Dockerfile.
-Produktens aktuella Dockerfile deklarerar `CROUPIER_LAB_BASE_PATH` som ARG/ENV
-före Next-bygget. Providerhemligheterna deklareras inte som ARG där.
+Det äldre kombinerade bygget deklarerade `CROUPIER_LAB_BASE_PATH` före Next-bygget.
+Det bygget är pensionerat; aktuell `ops/cloud/Dockerfile.game` bygger bara spelmotorn.
+Studios Next-bygge hör till Vercel. Providerhemligheter deklareras inte som ARG.
 Director/Gateway har separata runtime-konfigurationer och fasta Docker-defaults.
 Ingen miljögrupp kan överlagra tjänstvärden i det nu lästa workspacet.
 API-konfigurationen bevisar inte vilka senare sparade värden som finns i en
@@ -374,9 +386,9 @@ bedömda separat från aktiva runtime-läsare.
 
 | Namn | Konsument och fas | Beslut |
 | --- | --- | --- |
-| `BETTALOTTO_API`, `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET` | partner-reference.mjs, partner-observer.mjs, ops/cloud/config.mjs | Behåll kanoniska namn. |
+| `BETTALOTTO_API`, `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET` | partner-reference.mjs, partner-observer.mjs | Behåll kanoniska namn. |
 | `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE` | cloud-media-store.mjs | Driftens Blob-inställningar; vanliga lokala starter kopplar inte in tjänsten. |
-| `CROUPIER_ZONES_DATABASE_URL` | Pensionerade zonroutes | Kodkonsumenten är borttagen. Extern databas och miljövariabler har inte raderats; hanteras separat i O03. |
+| `CROUPIER_ZONES_DATABASE_URL` | Valfri databasavgränsning i config/postgres-store och saved-game-policy | Zonrutterna är pensionerade. Om värdet finns nekas sammanblandning med game/auth-databasen, även via pooler-alias. Inget krav för Render-start och ingen vidarebefordran till spelprocessen. Extern databas/historik hanteras separat i O03. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
 | `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och apps/studio/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
@@ -388,14 +400,14 @@ bedömda separat från aktiva runtime-läsare.
 | `CARTESIA_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY` | ops/cloud/config.mjs och explicit providerverktyg; Cartesia även Studio | Behåll kompletta Scoutgaming-par; återinför inte borttagna Vercel-kopior. |
 | `EMIL_CARTESIA_API_KEY`, `EMIL_ELEVENLABS_API_KEY`, `EMIL_GEMINI_API_KEY`, `EMIL_RUNPOD_API_KEY`, `EMIL_RUNPOD_ENDPOINT_ID` | Dynamiskt EMIL_-prefix i check-provider-profile.mjs; endast explicit fil/profil | Behåll separat, oförändrat; ingen normal runtimekoppling. |
 | `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`, `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD`, `CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD`, `CROUPIER_SPEECH_STREAM_TICKET_SECRET`, `CROUPIER_SPEECH_STREAM_WORKER_SECRET` | ops/cloud/config.mjs och speech-konfiguration | Behåll tak och separata hemligheter; inga jobb för inventeringen. |
-| `LAB_API_TOKEN`, `LAB_REMOTE_TOKEN`, `LAB_REMOTE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN`, `OPENCLAW_PRODUCT_SPEECH_URL` | settings.mjs, local-connection.mjs, ops/cloud/config.mjs | Behåll separata adresser/tokenroller. |
+| `LAB_API_TOKEN`, `LAB_REMOTE_TOKEN`, `LAB_REMOTE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN`, `OPENCLAW_PRODUCT_SPEECH_URL` | settings.mjs och local-connection.mjs; ops/cloud/config.mjs läser endast produktens talpar | Behåll separata adresser/tokenroller; LAB_REMOTE-paret hör inte till Render-spelets start. |
 | `LAB_DATA_DIR`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_DASHBOARD_ENABLED`, `OPENCLAW_HOSTPORT`, `OPENCLAW_SPEECH_AGENT`, `OPENCLAW_SPEECH_DEEP_MODEL`, `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_TIMEOUT_MS`, `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`, `OPENCLAW_TIMEOUT_MS` | Director settings/Blueprint och miljöregistrets tjänstekontrakt | Behåll tjänstprofilen; ingen ny agentaktivering. |
 | `CROUPIER_SPEECH_VISION`, `OPENCLAW_API_KEY`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_MODEL_API`, `OPENCLAW_MODEL_API_KEY`, `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_STATE_DIR` | Gateway/settings; modellnyckel/base URL även dealer-import-model.mjs | Behåll skilda Gateway-/modell-/produktroller. |
 | `CROUPIER_DEALER_IMPORT_AI`, `OPENAI_API_KEY`, `RUNWAY_API_KEY` | dealer-import-model.mjs och runway-client.mjs; OpenAI även villkorad kamerareserv | Behåll. Ingen generering genom inventeringen. |
 | `CROUPIER_STUDIO_MAIL_FROM`, `RESEND_API_KEY` | studio-native-mail.mjs | Behåll; isolerad start stänger av skarpa utskick. |
 | `CROUPIER_CLOUD_LAUNCH`, `CROUPIER_CLOUD_LAYOUT`, `HOST`, `NODE_ENV`, `PORT` | ops/cloud/config.mjs, Director/plattform; NODE_ENV även bygge | Behåll. PORT är värdhanterad där plattformen sätter den. |
 | `CROUPIER_CLOUD_DATA_ROOT` | Färskt verifierad endast på äldre QA med 1 GiB-disk; ops/cloud/config.mjs | Behåll QA:s återställningsunderlag. Återinför inte i produktion och radera inte den äldre disken. |
-| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; inbakad som `0` i `ops/cloud/Dockerfile.game` (Render `croupier-v3`, se [RENDER-V3](../ops/cloud/RENDER-V3.md)) | Ny 22 oktober 2026. `0` = bara Web-barnet, ingen Lab-byggkontroll, `/studio` svarar 421. Osatt eller `1` = oförändrat tvåbarnsläge på `croupier-v2`. Inget molnvärde är satt. |
+| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; krävs inte längre i Dockerfile eller CI (Render `croupier-v3`, se [RENDER-V3](../ops/cloud/RENDER-V3.md)) | Pensionerad aktivering: osatt, tomt eller `0` ger alltid en spelprocess; `1` och andra värden nekas. Ingen lokal Studio-process eller Next-byggkontroll finns kvar. Signerade Studio-API-anrop till Render svarar 421; dokumentbokmärken omdirigeras fortsatt till Vercel. Inga molninställningar ändras av kodavvecklingen. |
 | `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_URL` | ops/cloud/config.mjs | Behåll separat presentationsanslutning. |
 | `CROUPIER_QA_LOGIN_PASSWORD`, `CROUPIER_QA_LOGIN_USERNAME` | Privata autentiserade verifieringsverktyg; ingen aktiv produktläsare hittad | Behåll verifieringsunderlag. |
 | `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY`, `GITGUARDIAN_API_TOKEN` | Ingen aktiv produktläsare verifierad. DID-träffen är kommentar; ElevenLabs-video har ett negativt vidarebefordringstest. Extern användning oklar | Behåll tills exakt verktygsägare/konsument är klarlagd. |
@@ -927,7 +939,7 @@ Den frusna P6-kedjans router, privata SDK-bootstrap, aktiveringsverktyg,
 spelklientkoppling och särskilda fullfilsundantag är borttagna. Dess källor och
 nycklar ingår inte längre i det aktiva namnregistret. Cloud-start nekar aktiverade
 `CROUPIER_P6_QA_ROUTER` och `CROUPIER_P6_BOUNDED_TEST`; gamla SDK-nycklar förs
-inte vidare till barnprocesserna. Vanlig managed streaming kan inte öppna
+inte vidare till spelprocessen. Vanlig managed streaming kan inte öppna
 fullfilsgenerering. Ordinarie talrelä, scope, autentisering och beständiga
 Neon-budgetgränser för tal består.
 
@@ -940,10 +952,11 @@ finns i [Git före städningen](https://github.com/Jakeminator123/github-work/bl
 
 ### Origins och privata medier
 
-Källinventeringen omfattar de aktiva `apps/studio/lib/cloud-media-store.mjs` och
-`apps/studio/lib/video-registry.mjs` för både Render och Studio samt Studios
-`apps/studio/lib/legacy-clip-inventory.mjs`. De har inte flyttats eller tagits bort.
-Studio läser även `LAB_PUBLIC_URL` som betrodd proxy-origin.
+Render-spelets källinventering följer `services/game/storage/` och de delade
+registrerings-/mediemodulerna under `packages/`. Studio på Vercel använder sina
+`apps/studio/lib/`-adaptrar, däribland cloud-media-store, video-registry och
+legacy-clip-inventory. Dessa moduler ingår inte i Render-spelets image.
+Studio läser fortfarande `LAB_PUBLIC_URL` som betrodd proxy-origin.
 `CROUPIER_DATA_DIR` förekommer i äldre lokala verktyg men är ingen
 inventeringsreserv i gemensam Neon-drift. Detta kräver ingen
 ny tjänsteinställning eller ändring av hemliga värden.
@@ -995,7 +1008,7 @@ finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RE
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
-| Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
+| Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
 | Vercel: spel/Studio-ingång (`apps/web`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | Gemensam serverägd Neon-/scope-/lagringspolicy; `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet | – |
 | Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar **Dealers & klipp → Skapa material** på `/admin/dealer-studio?view=generate` med vald dealer; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `apps/studio/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
 | Frontendens spelarbygge (`apps/web/tools/player-ui-build.mjs`, tjänst `vercel-entry`) | `CROUPIER_GAME_ORIGIN` = spelserverns exakta HTTPS-origin utan snedstreck på slutet | – | Krävs när bygget anropas utan explicit origin | – |
@@ -1162,7 +1175,9 @@ Render-spelets villkorliga grupper:
   disk och lokala filprofiler har egna livscykler.
 - Bakgrundszoner: de oanropade `/api/zones*`-rutterna och deras privata
   databasadapter är pensionerade i PR1 för Admin-navigationen.
-  `CROUPIER_ZONES_DATABASE_URL` har ingen kvarvarande produktkonsument.
+  `CROUPIER_ZONES_DATABASE_URL` är fortfarande ett valfritt isoleringsskydd:
+  config/postgres-store och saved-game-policy nekar samma databas som game/auth.
+  Värdet öppnar inga zonroutes eller Studio-processer.
   Den externa zoninstansen och dess historik är inte raderade eller verifierade
   av denna kodändring; eventuell rensning kräver separat O03-mandat.
   Spelkonton och saldon använder fortsatt en separat game/auth-Neon-databas.
@@ -1183,12 +1198,12 @@ Render-spelets villkorliga grupper:
   Production-frontend. Kontrollera Host, cookies och omdirigeringar i Preview
   innan variabeln används i drift.
 - En origin: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
-  `CROUPIER_GAME_ORIGIN`, `BETTALOTTO_PARTNER_BASE_URL` kan utelämnas när
+  `CROUPIER_GAME_ORIGIN` kan utelämnas när
   Render levererar `RENDER_EXTERNAL_URL`. I separat-värdläge måste dessa
   origins konfigureras enligt `ops/cloud/config.mjs`.
 - Presentation/AI: `CROUPIER_PRESENTATION_DIRECTOR_URL` +
-  `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `LAB_REMOTE_URL` +
-  `LAB_REMOTE_TOKEN`. Varje par sätts tillsammans. `OPENCLAW_TIMEOUT_MS`
+  `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`. Paret sätts tillsammans.
+  `LAB_REMOTE_URL`/`LAB_REMOTE_TOKEN` används inte av Render-spelets start. `OPENCLAW_TIMEOUT_MS`
   är valfri tidsgräns.
 - Röst och kamera: `CROUPIER_ASTRID_CAMERA=1` kräver
   `CROUPIER_ASTRID_TRANSLATION_KEY` och `CROUPIER_STREAM_LANE=lissabon-stream-lane`.
@@ -1216,8 +1231,8 @@ Render-spelets villkorliga grupper:
   behåller reserver genom omstart. Se [aktuell handoff](JOHN-HANDOFF.md).
   Ingen av dessa funktioner är
   nödvändig för de registrerade förinspelade klippen.
-- Partner: `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_SECRET` och
-  `BETTALOTTO_PARTNER_PLAYER_ID` är en grupp om partnerkopplingen används.
+- Partnerns referensverktyg har egna `BETTALOTTO_PARTNER_*`-inställningar.
+  Render-spelets start läser eller vidarebefordrar dem inte.
 
 Sätt inte `DEMO_GUEST_ACCESS=1`, `CROUPIER_GENERATED_SPEECH_PREVIEW=1`
 eller `CROUPIER_LISSABON_PROFILES=1` i molndrift; startvalideringen avvisar

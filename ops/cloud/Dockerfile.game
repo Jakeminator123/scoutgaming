@@ -1,8 +1,7 @@
 # Game-only image for Render croupier-v3. Build from the repository root:
 #   docker build -f ops/cloud/Dockerfile.game .
-# No apps/studio dependencies and no Next build. CROUPIER_CLOUD_LAB_CHILD=0 keeps
-# ops/cloud/start.mjs to the Web child (services/game/server.mjs) behind the same
-# gateway, ingress validation, health and version routes as ops/cloud/Dockerfile.
+# Cloud starts only services/game/server.mjs; Admin and Studio run on Vercel.
+# Gateway, signed ingress, session checks, health and version stay on Render.
 FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
@@ -22,6 +21,5 @@ COPY ops/cloud/ ops/cloud/
 COPY services/astrid-gpu-worker/gateway/ services/astrid-gpu-worker/gateway/
 COPY services/game/ services/game/
 ENV NODE_ENV=production
-ENV CROUPIER_CLOUD_LAB_CHILD=0
 # The entrypoint drops to node (1000:1000) before any listener or database client.
 CMD ["node", "ops/cloud/container-entry.mjs"]

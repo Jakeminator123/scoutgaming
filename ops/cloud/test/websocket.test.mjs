@@ -43,7 +43,7 @@ function connect(url, path, { host = 'game.example.test', clientOrigin, authoriz
 
 const rejected = ws => new Promise(resolve => ws.once('error', error => resolve(error.message)));
 
-for (const labChild of [true, false]) test(`cloud gateway admits only owned game WebSockets and preserves relay cancellation; labChild=${labChild}`, { timeout: 10000 }, async t => {
+test('cloud gateway admits only owned game WebSockets and preserves relay cancellation', { timeout: 10000 }, async t => {
   const web = createServer();
   const authenticate = ticketAuthenticator(ticketSecret);
   const relay = attachSpeechRelay(web, { workerSecret, allowedOrigins: [origin],
@@ -56,8 +56,7 @@ for (const labChild of [true, false]) test(`cloud gateway admits only owned game
     await Promise.all([gateway, web].filter(Boolean).map(server => new Promise(resolve => server.close(resolve))));
   });
   web.listen(0, '127.0.0.1'); await once(web, 'listening');
-  gateway = createCloudGateway(configuration(), { labInternalSecret: ticketSecret,
-    webPort: web.address().port });
+  gateway = createCloudGateway(configuration(), { webPort: web.address().port });
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   const url = `ws://127.0.0.1:${gateway.address().port}`;
   const open = (path, options) => { const ws = connect(url, path, options); sockets.push(ws); return ws; };
@@ -82,7 +81,7 @@ for (const labChild of [true, false]) test(`cloud gateway admits only owned game
 
 test('cloud gateway rejects speech upgrades when streaming is disabled', { timeout: 5000 }, async () => {
   const config = { ...configuration(), streaming: false };
-  const gateway = createCloudGateway(config, { labInternalSecret: ticketSecret });
+  const gateway = createCloudGateway(config, {  });
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   try {
     const url = `ws://127.0.0.1:${gateway.address().port}`;

@@ -46,15 +46,19 @@ test('the forwarder is bounded, swallows emitter failures and is attached only b
   for (let i = 0; i < 6; i++) forward(JSON.stringify({ event: 'moving_drift_readback_failed', code: 'drift_observation_unverified' }));
   forward('plain text');
   assert.equal(emitted.length, 3);
-  const specs = withChildDiagnostics({ web: { command: 'node', env: {} }, lab: { command: 'node', env: {} } }, { emit: () => {} });
+  const specs = withChildDiagnostics({ web: { command: 'node', env: {} } }, { emit: () => {} });
   assert.equal(typeof specs.web.onStdoutLine, 'function'); assert.equal(specs.web.onStderrLine, specs.web.onStdoutLine);
-  assert.equal(specs.lab.onStdoutLine, undefined); assert.equal(specs.lab.onStderrLine, undefined);
+  assert.deepEqual(Object.keys(specs), ['web']);
   // Specifications stay stdio-free until start applies the transform; QA keeps its own transform.
-  const env = { CROUPIER_CLOUD_LAUNCH: 'pilot', CROUPIER_CLOUD_LAYOUT: 'unified', NODE_ENV: 'production' };
-  let plain;
-  try { plain = childSpecifications(validateCloudConfig({ ...env, CROUPIER_PUBLIC_ORIGIN: 'https://www.scoutgaming.tech', CROUPIER_BACKEND_ORIGIN: 'https://croupier-v2.onrender.com' }), env, { labInternalSecret: 'x'.repeat(64) }); }
-  catch { plain = null; }
-  if (plain) assert.equal(plain.web.onStdoutLine, undefined);
+  const env = { NODE_ENV:'production', CROUPIER_CLOUD_LAUNCH:'pilot', CROUPIER_CLOUD_LAYOUT:'single-origin',
+    RENDER_EXTERNAL_URL:'https://game.example.test', PORT:'10000', CROUPIER_STREAM_LANE:'lissabon-stream-lane',
+    CROUPIER_DATABASE:'postgres', CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=require',
+    CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+    CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-blob',
+    OPENCLAW_PRODUCT_SPEECH_URL:'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN:'fixture-speech' };
+  const plain = childSpecifications(validateCloudConfig(env), env);
+  assert.deepEqual(Object.keys(plain), ['web']);
+  assert.equal(plain.web.onStdoutLine, undefined);
   await assert.rejects(main(['--bogus'], env), /Usage/);
 });
 
@@ -68,8 +72,7 @@ test('a real child process: console.warn diagnostics on stderr reach the parent 
     "console.warn(JSON.stringify({event:'moving_speech_preparation_failed',code:'generated_speech_total_budget_exhausted',phase:'admission',streamId:null,requestId:'62fe0cc0-912f-4a4d-8a56-819794c8b2c1'}));",
     'setTimeout(()=>{},200);',
   ].join('\n');
-  const specs = withChildDiagnostics({ web: { command: process.execPath, args: ['-e', script], cwd: process.cwd(), env: { PATH: process.env.PATH } },
-    lab: { command: process.execPath, args: ['-e', 'setTimeout(()=>{},200)'], cwd: process.cwd(), env: { PATH: process.env.PATH, CROUPIER_LAB_BASE_PATH: '' } } }, { emit: value => emitted.push(JSON.parse(value)) });
+  const specs = withChildDiagnostics({ web: { command: process.execPath, args: ['-e', script], cwd: process.cwd(), env: { PATH: process.env.PATH } } }, { emit: value => emitted.push(JSON.parse(value)) });
   let seenStdio;
   const group = await startChildren(specs, { portCheck: async () => {}, wait: async () => {},
     spawnProcess: (command, args, options) => { seenStdio ??= options.stdio; return spawn(command, args, options); } });

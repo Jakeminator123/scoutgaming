@@ -1,5 +1,20 @@
 # Aktuell handoff — Scoutgaming
 
+## Render-starten avvecklad till en spelprocess — 25 oktober 2026
+
+CI hittade också ett kvarvarande inventeringstest som krävde Studios
+`cloud-media-store` och `video-registry` i Render. Kravet är rättat till deras
+verkliga Verceltjänst; spelets aktiva media-/miljökontroller består. Docker-
+provet på första PR-head var grönt, men full CI måste återköras efter rättningen.
+
+Den kombinerade Dockerfilen, Studio-processen, Next-förkontrollen, interna Lab-proxyn och dess hemlighet är borttagna i kod (`b7ff284d` + `bb6140df`, integrerade som `acdbd18e7` + `111b322d6`). CI/Docker kräver inte längre `CROUPIER_CLOUD_LAB_CHILD=0`; osatt värde ger samma enprocess-start och pensionerad aktivering nekas. Gamla tvåprocessprov är avvecklade. Signerad ingress, Webs verkliga sessionskontroll, dokumentredirects, medieintervall, strömmar, rumssockets och ordnad avstängning bevaras.
+
+**Verifiering:** oberoende produkt-/testgranskning utan blockerare. Agentens normala hook gav 115 pass och tre uttryckliga Linux-skips; testnamnsrättningen 24/24. Roots integration med aktuell v3-CI och katalogkod gav 126 pass, noll fel och tre Linux-skips. Linux-signalprov och faktiskt Dockerbygge återstår i leveransens CI. Miljöguiden rättar också ett felaktigt påstående: valfria zones-URL används fortfarande för att neka sammanblandning med game/auth, inte för att köra pensionerade zonroutes.
+
+**Ytterligare avveckling i samma leverans:** den gamla QA-tjänstens diskbundna stream-start, syntetiska provider-preload, klient och tolv exklusiva prov är borttagna (`f375aeb1`, integrerad som `395b6f145`): sju filer, 630 borttagna rader. Bara kedjans två produktkrokar tas bort: alternativ child-transform och global unpaid-diagnostik. Ordinarie diagnostik, talbudget/session/Neon-journal, WebSocket och containerbehörigheter består. Root har spårat konsumenterna och granskat deltat. Slutlig integration med P6-rättningen gav 147 pass, noll fel och tre Linux-skips, inklusive verklig tal-HTTP. Inga gamla QA-resurser eller data raderas av kodavvecklingen.
+
+Vercel `dpl_4ybApMopithSip7N1THUMrnjpBLE` är återläst READY på PR391:s main `2faa327e`. Render är fortfarande på det tidigare verifierade `23debde7`; tom-katalog-, P6- och startändringarna är ännu inte runtimeverifierade där. Ingen isolerad app, schema, roll, seed eller Blob-bank har skapats. Full migrationsstatus är fortsatt 45 %.
+
 ## Pensionerad P6-kedja avvecklad i kod — 25 oktober 2026
 
 Den frusna P6-kampanjens privata SDK-bootstrap, QA-router, aktiveringsverktyg, spelklientkoppling och särskilda fullfilsundantag är borttagna: 27 filer, 129 tillagda och 2 470 borttagna rader i kodleveransen `6cb4ba29` (integrerad som `0358a192`). Tre P6-sviter och två P6-playback-fall är avvecklade med funktionen. Det aktiva miljöregistret beskriver bara kvarvarande kontrakt. Återställningsguidens gamla krav på privat P6-material är borttaget.

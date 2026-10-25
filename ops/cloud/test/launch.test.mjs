@@ -11,7 +11,6 @@ import { createOperatorSpeechQa } from '../../../services/game/operator-speech-q
 
 const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
   labOrigin: 'https://lab.example.test', publicPort: 0, streaming: false };
-const secret = 'fixture-private-lab-secret-longer-than-32-characters';
 async function listening(server) {
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -25,7 +24,7 @@ async function close(server) {
 }
 
 async function fixture(change = {}, layout = config) {
-  // Fake child APIs only: no game/Lab product processes or real databases.
+  // Fake game API only: no product process or real database.
   const speechQa = createOperatorSpeechQa({ origin: layout.boOrigin, authenticate: async () => null,
     gateStore: { state() { throw new Error('Anonymous probe must not read the QA journal.'); } } });
   const web = createServer(async (request, response) => {
@@ -34,15 +33,11 @@ async function fixture(change = {}, layout = config) {
     response.writeHead(change[request.url] ?? 401);
     response.end();
   });
-  const lab = createServer((_request, response) => {
-    response.writeHead(change.labDirect ?? 403);
-    response.end();
-  });
-  const webPort = await listening(web), labPort = await listening(lab);
-  const gateway = createCloudGateway(layout, { labInternalSecret: secret, webPort, labPort });
+  const webPort = await listening(web);
+  const gateway = createCloudGateway(layout, { webPort });
   const gatewayPort = await listening(gateway);
-  return { labPort, gatewayPort, gateway,
-    close: () => Promise.all([gateway, web, lab].map(close)) };
+  return { gatewayPort, gateway,
+    close: () => Promise.all([gateway, web].map(close)) };
 }
 
 test('access probes pass with the real gateway and rejecting fixture children', async () => {
@@ -51,9 +46,9 @@ test('access probes pass with the real gateway and rejecting fixture children', 
   finally { await services.close(); }
 });
 
-test('access probes also enforce BO and mounted Lab authentication on one origin', async () => {
+test('access probes also enforce BO authentication and the closed Studio boundary on one origin', async () => {
   const layout = { ...config, singleOrigin: true, boOrigin: config.gameOrigin,
-    labOrigin: config.gameOrigin, labBasePath: '/studio' };
+    labOrigin: config.gameOrigin };
   const services = await fixture({}, layout);
   try { await verifyCloudAccess(layout, services); }
   finally { await services.close(); }
@@ -62,8 +57,6 @@ test('access probes also enforce BO and mounted Lab authentication on one origin
 for (const [name, change] of [
   ['player authentication', { '/api/table': 200 }],
   ['BO speech QA authentication', { '/api/bo/speech-qa': 200 }],
-  ['Lab forged session', { '/api/auth/lab/check': 200 }],
-  ['Lab direct access', { labDirect: 200 }],
 ]) test(`access probes fail closed if ${name} is broken`, async () => {
   const services = await fixture(change);
   try { await assert.rejects(verifyCloudAccess(config, services), new RegExp(name)); }
@@ -134,13 +127,14 @@ test('an upgraded gateway connection cannot hold shutdown beyond the socket dead
   assert.equal(upgraded.destroyed, true);
 });
 
-test('access probes pass without a Lab child: mounted Lab is misdirected and no Lab port is contacted', async () => {
-  const layout = { ...config, singleOrigin: true, boOrigin: config.gameOrigin,
-    labOrigin: config.gameOrigin, labBasePath: '/studio', labChild: false };
-  // An open fixture Lab port would fail the default probes; game-only start must not reach it.
-  const services = await fixture({ labDirect: 200 }, layout);
-  try {
-    await verifyCloudAccess(layout, services);
-    await assert.rejects(verifyCloudAccess({ ...layout, labChild: true }, services), /Lab anonymous access/);
-  } finally { await services.close(); }
+test('startup checks the Web-owned Studio session through signed Vercel ingress', async () => {
+  const layout = { ...config, singleOrigin:true, boOrigin:config.gameOrigin, labOrigin:config.gameOrigin,
+    vercelIngress:{ publicOrigin:config.gameOrigin, transportOrigin:'https://isolated.onrender.com', secret:'isolated-ingress-secret-'.repeat(3) } };
+  for (const status of [401, 200, 503]) {
+    const services = await fixture({ '/api/auth/lab/check':status }, layout);
+    try {
+      if (status === 401) await verifyCloudAccess(layout, services);
+      else await assert.rejects(verifyCloudAccess(layout, services), /Studio session authentication/);
+    } finally { await services.close(); }
+  }
 });
