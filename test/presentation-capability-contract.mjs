@@ -6,11 +6,11 @@ import {
 } from '../packages/presentation/capability-contract.mjs';
 
 const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version)));
-const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27];
+const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28];
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
 
-test('negotiation preserves default v2 and opts into v3-v27 only with one exact supported header', () => {
+test('negotiation preserves default v2 and opts into v3-v28 only with one exact supported header', () => {
   assert.equal(PRESENTATION_CAPABILITY_VERSION_HEADER, 'X-Presentation-Capability-Version');
   assert.equal(PRESENTATION_CAPABILITY_DEFAULT_VERSION, 2);
   for (const absent of [undefined, null]) assert.equal(negotiatePresentationCapabilityVersion(absent), 2);
@@ -40,7 +40,8 @@ test('negotiation preserves default v2 and opts into v3-v27 only with one exact 
   assert.equal(negotiatePresentationCapabilityVersion('25'), 25);
   assert.equal(negotiatePresentationCapabilityVersion('26'), 26);
   assert.equal(negotiatePresentationCapabilityVersion('27'), 27);
-  for (const malformed of ['', '1', '28', '27, 27', '027', '026', '26, 26', '025', '25, 25', '024', '24, 24', '023', '23, 23', '022', '22, 22', '021', '21, 21', '020', '20, 20', '019', '19, 19', '018', '18, 18', '017', '17, 17', '016', '16, 16', '015', '15, 15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
+  assert.equal(negotiatePresentationCapabilityVersion('28'), 28);
+  for (const malformed of ['', '1', '29', '28, 28', '028', '27, 27', '027', '026', '26, 26', '025', '25, 25', '024', '24, 24', '023', '23, 23', '022', '22, 22', '021', '21, 21', '020', '20, 20', '019', '19, 19', '018', '18, 18', '017', '17, 17', '016', '16, 16', '015', '15, 15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
     assert.throws(() => negotiatePresentationCapabilityVersion(malformed), unsupported);
   }
 });
@@ -73,6 +74,7 @@ test('v1-v11 exact representations advertise features while the legacy ID list n
   assert.deepEqual(presentationCapabilitiesForVersion(24), {...presentationCapabilitiesForVersion(23),schemaVersion:24,layerPlayback:'table-and-jitter-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(25), {...presentationCapabilitiesForVersion(24),schemaVersion:25,blackjackAutoScale:'dealer-source-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(8), {...presentationCapabilitiesForVersion(7),schemaVersion:8,backgroundPlayback:'rules-v1'});
+  assert.deepEqual(presentationCapabilitiesForVersion(28), {...presentationCapabilitiesForVersion(27),schemaVersion:28,idleRotation:'pose-graph-v1'});
   for (const version of versions) {
     const input = parsed(version), checked = validatePresentationCapabilities(input);
     assert.deepEqual(checked, input); assert.ok(Object.isFrozen(checked)); assert.ok(Object.isFrozen(checked.registeredDealerIds));
@@ -89,7 +91,7 @@ test('expected-version validation rejects downgrade even when the old response i
       assert.throws(() => validatePresentationCapabilities(parsed(version), { expectedVersion: expected }), invalid);
     }
   }
-  for (const version of [undefined, null, 0, 28, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
+  for (const version of [undefined, null, 0, 29, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
   assert.throws(() => validatePresentationCapabilities(parsed(3), { expectedVersion: '3' }), invalid);
 });
 
@@ -109,6 +111,7 @@ test('each schema rejects missing/extra properties and altered feature values', 
     if(version>=10)assert.throws(()=>validatePresentationCapabilities({...input,dealerSets:'frozen-package-versions'}),invalid);
     if(version>=11)assert.throws(()=>validatePresentationCapabilities({...input,materialTrash:'hidden-active-links'}),invalid);
     if(version>=12){assert.throws(()=>validatePresentationCapabilities({...input,mediaAlpha:'unverified'}),invalid);assert.throws(()=>validatePresentationCapabilities({...input,rouletteMedia:'blackjack-slots'}),invalid);}
+    if(version>=28)assert.throws(()=>validatePresentationCapabilities({...input,idleRotation:'unchecked'}),invalid);
     if(version>=17)assert.throws(()=>validatePresentationCapabilities({...input,recordedSpeech:'approximate-duration'}),invalid);
     if(version>=18)assert.throws(()=>validatePresentationCapabilities({...input,presentationCompression:'unbounded'}),invalid);
     if(version>=19)assert.throws(()=>validatePresentationCapabilities({...input,blackjackBetMode:'unbound'}),invalid);

@@ -25,7 +25,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '28', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '29', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
@@ -252,4 +252,25 @@ test('v26 advertises saved card display without changing v25',async()=>{
  const value=validatePresentationCapabilities(JSON.parse(text),{expectedVersion:26});
  assert.equal(value.blackjackCardView,'saved-layout-v1');assert.equal(value.blackjackAutoScale,'dealer-source-v1');
  assert.equal(Object.hasOwn(presentationCapabilitiesForVersion(25),'blackjackCardView'),false);
+});
+
+test('v28 advertises idle pose-graph rotation without changing earlier endpoint responses',async()=>{
+  const headers={'X-Presentation-Capability-Version':'28'};
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);
+  const body=await response.text();assert.ok(Buffer.byteLength(body)<=2048);
+  const value=validatePresentationCapabilities(JSON.parse(body),{expectedVersion:28});
+  assert.equal(value.idleRotation,'pose-graph-v1');
+  assert.equal(value.blackjackGameUi,'responsive-controls-v1');
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  assert.equal(response.headers.get('vary'),'X-Presentation-Capability-Version');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));
+  assert.equal(head.status,200);assert.equal(await head.text(),'');
+  for(const version of [undefined,...Array.from({length:26},(_,i)=>String(i+2))]){
+    const earlier=presentationCapabilitiesResponse(new Request(endpoint,{headers:version?{'X-Presentation-Capability-Version':version}:{}}));
+    assert.equal(earlier.status,200);
+    const prior=await earlier.json();
+    assert.equal(Object.hasOwn(prior,'idleRotation'),false);
+    assert.deepEqual(prior,JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version?Number(version):2))));
+  }
 });

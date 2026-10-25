@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Migreringsgrind: runtimeannonsering och obligatoriska K07-prov — 25 oktober 2026
+
+Första kompatibilitetssteget från main `8093797cfb920f31de9e2d775d3bad50d1d7b69b`: spelmotorns befintliga posebaserade idle-rotation annonseras uttryckligen genom förhandlad capability v28, `idleRotation: pose-graph-v1`. Standardv2 och version1–27 är byte-identiska med baslinjen. Svaret är1281bytes och ryms inom befintlig2048bytes-gräns. Ingen ändring av sparad policy, klipp, register, paket eller databas ingår.
+
+Fyra befintliga K07-sviter körs nu i obligatoriska `gameplay/shared-blackjack`: idleparitet, bordsbeteenden, insatsgränser och återstart. Deras opt-in-undantag är borttagna. Minnesstore-provet bevisar koordinatoråterhämtning, inte verklig process-/Neon-beständighet.
+
+**Verifierat lokalt:**62/62 kontrakts-/HTTP-/CI-/hookprov,18/18 K07-prov,27 äldre kapabilitetssvar bytejämförda,571 testkandidater/0orphan, `git diff --check`. Node24.21.0, högst fyra arbetare. CI, oberoende granskning och driftkvitto redovisas i leveransens PR.
+
+**Nästa steg:** driftsätt och återläs v28 på befintlig Render `croupier-v3` före Admins nya readinesskrav. Lägg därefter till negativt gammal-runtime-prov för projekt, arkiverad policy och fryst paket före SQL samt skydd mot featurebyte inne i mutation. Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
+
 ## Studio-scener, materialval och responsiva kontroller — 25 oktober 2026
 
 **Studio → Sceneditor**, `/admin/scenes`, är den enda placeringseditorn för kort, marker, kortspridning, dealer, bakgrund, bord och spelkontroller i mobil respektive desktop. Klippkartans gamla lagerflik och scenbokmärken leder dit, med samma projekt och sparning. `/admin/rooms` binder rum och väljer tillåtna material; den tidigare separata geometriändraren och dess API-kontrakt är borttagna. `/admin/assets` är materialregistret. Varje tillåtet grundbord, bakgrund och dealer kan förhandsvisas utan att standardvalet ändras. Placering för kort och marker kan kopieras mellan tillåtna bord i båda formaten. Gemensam förflyttning omfattar dealer, bakgrund och bord.
