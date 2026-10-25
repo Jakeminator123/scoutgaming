@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {prepareRuntimeMediaImport,planRuntimeMediaImport,applyRuntimeMediaImport} from '../ops/neon-studio/runtime-media-import.mjs';
+import {prepareRuntimeMediaImport,prepareEmptyRuntimeMediaImport,planRuntimeMediaImport,applyRuntimeMediaImport} from '../ops/neon-studio/runtime-media-import.mjs';
 import {runtimeCatalogJson,runtimeCatalogRevision} from '../packages/studio-registry/server/runtime-catalog.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {focusedTests,checkPlan} from '../tools/precommit-checks.mjs';
@@ -256,4 +256,52 @@ test('reviewed replacement uses CAS and failures/rollback COMMIT never leave par
 test('a corrupt stored revision/value is rejected rather than overwritten',async()=>{
   const pool=memoryPool();pool.seed(scope,{revision:'f'.repeat(64),value:prepared.value});const before=pool.snapshot();
   await assert.rejects(plan(pool),{code:'studio_runtime_catalog_invalid'});assert.deepEqual(pool.snapshot(),before);
+});
+
+
+test('empty preparation imports generated metadata explicitly, audits once and preserves other scopes',async()=>{
+ const source=prepareEmptyRuntimeMediaImport({scope}),pool=memoryPool();
+ assert.equal(source.sourceIndexCount,0);assert.equal(Object.isFrozen(source.value.presentation),true);
+ assert.deepEqual(source,prepareEmptyRuntimeMediaImport({scope}));
+ const other={...scope,workspaceId:'existing-bank'};pool.seed(other,{revision:prepared.revision,value:prepared.value});
+ const review=await plan(pool,source);assert.equal(review.operation,'insert');
+ assert.ok(Object.values(review.counts).every(value=>value===0));assert.equal(review.blobVerification,'metadata-only');
+ const before=pool.snapshot();
+ await assert.rejects(apply(pool,review,{prepared:source,confirm:false}),{code:'studio_runtime_import_confirmation_required'});
+ assert.deepEqual(pool.snapshot(),before);
+ assert.equal((await apply(pool,review,{prepared:source})).changed,true);
+ assert.deepEqual(pool.snapshot().catalogs.get(key(other)),before.catalogs.get(key(other)));
+ assert.equal(pool.snapshot().audits.length,1);
+ assert.equal((await apply(pool,await plan(pool,source),{prepared:source})).changed,false);
+ assert.equal(pool.snapshot().audits.length,1);
+ // Ordinary reviewed import may add a real bank later; empty init cannot undo it.
+ assert.equal((await apply(pool,await plan(pool))).changed,true);
+ const populated=pool.snapshot();
+ await assert.rejects(plan(pool,source),{code:'studio_runtime_import_empty_target_required'});
+ assert.deepEqual(pool.snapshot(),populated);
+});
+
+test('empty initialization cannot replace a bank installed after review or accept changed target/scope',async()=>{
+ const source=prepareEmptyRuntimeMediaImport({scope});
+ for(const mutation of ['bank','target','scope']){
+  const pool=memoryPool(),review=await plan(pool,source);let input=source;
+  if(mutation==='bank')pool.seed(scope,{revision:prepared.revision,value:prepared.value});
+  if(mutation==='target')pool.target={...target,database:'another_database'};
+  if(mutation==='scope')input=prepareEmptyRuntimeMediaImport({scope:{...scope,workspaceId:'another_scope'}});
+  const before=pool.snapshot();
+  await assert.rejects(apply(pool,review,{prepared:input}),error=>['studio_runtime_import_empty_target_required','studio_runtime_import_target_changed','studio_runtime_import_plan_changed'].includes(error.code));
+  assert.deepEqual(pool.snapshot(),before);assert.ok(!pool.calls.some(call=>['insert','update','audit'].includes(call.tag)));
+ }
+});
+
+test('concurrent empty initialization has one winner and rollback leaves no row or audit',async()=>{
+ const source=prepareEmptyRuntimeMediaImport({scope}),pool=memoryPool(),review=await plan(pool,source);
+ const results=await Promise.allSettled([apply(pool,review,{prepared:source}),apply(pool,review,{prepared:source})]);
+ assert.equal(results.filter(row=>row.status==='fulfilled').length,1);assert.equal(pool.snapshot().audits.length,1);
+ for(const failure of ['audit','rollback']){
+  const targetPool=memoryPool(),targetPlan=await plan(targetPool,source),before=targetPool.snapshot();
+  if(failure==='audit')targetPool.failNext('audit');else targetPool.commitRollback=true;
+  await assert.rejects(apply(targetPool,targetPlan,{prepared:source}),{code:failure==='audit'?'studio_storage_unavailable':'studio_runtime_import_rolled_back'});
+  assert.deepEqual(targetPool.snapshot(),before);
+ }
 });

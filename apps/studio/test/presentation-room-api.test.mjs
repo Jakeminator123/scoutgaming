@@ -13,7 +13,7 @@ import { buildPresentationPackage, layerAssetPath } from '../../../packages/pres
 import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
-import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
+import {runtimeCatalogRevision,createEmptyRuntimeMediaCatalog} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 
 import { createGameEntrySelector } from '../../../packages/presentation/server/game-entry-selector.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';
@@ -94,9 +94,9 @@ function combinedPool() {
   } };
   return pool;
 }
-async function fixture(options = {}) {
+async function fixture({catalog=readRuntimeCatalogFixture(),...options} = {}) {
   const pool = combinedPool(), repository = createStudioRepository({ pool, scope });
-  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
+  pool.seedRuntimeCatalog(scope,catalog);
   let project = createSeedProject();
   const vip = defaultPresentationLane('astrid'); vip.id = 'vip-presentation'; vip.label = 'VIP';
   project.lanes.push(vip);
@@ -948,4 +948,20 @@ test('missing or empty saved compositions cannot create a default room or public
     await assert.rejects(f.create(body),error=>error.code==='studio_presentation_required'&&error.statusCode===404);
     assert.deepEqual(f.pool.snapshot(),before);
   }
+});
+
+
+test('an explicit empty immutable bank permits frozen uploaded-room publication and the normal game entry',async()=>{
+ const catalog=createEmptyRuntimeMediaCatalog(),f=await fixture({catalog}),body=await f.payload();
+ const created=await f.create(body);assert.equal(created.duplicate,false);assert.equal(created.packageRevision,1);
+ const raw=f.pool.snapshot().packages[0],pack={operatorId:'north',revision:1,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+ const presentation=readPackagePresentation(pack);assert.ok(presentation.playback.media.length>0);
+ const records=await f.repository.listMedia({limit:5000});
+ for(const media of presentation.playback.media)assert.ok(records.some(row=>row.id===media.id&&row.sha256===media.sha256));
+ const saved={project:(await f.repository.readDocument('project')).value,administration:(await f.repository.readDocument('administration')).value};
+ const selector=createGameEntrySelector({policy:{readSaved:async()=>saved,readGameConfiguration:async()=>saved.administration},packages:{resolve:async slug=>({operator:{id:slug,status:'active'},package:pack})}});
+ assert.equal((await selector(new URL(created.playUrl,origin).search)).status,200);
+ assert.equal((await selector('?operator=other&table='+created.room.id)).status,404);
+ assert.deepEqual((await f.repository.readRuntimeCatalog()).value,catalog);
+ const before=f.pool.snapshot();assert.equal((await f.create(body)).duplicate,true);assert.deepEqual(f.pool.snapshot(),before);
 });
