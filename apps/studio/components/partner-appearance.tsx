@@ -189,6 +189,10 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     try{
       const response=await fetch('/studio/api/admin/operator-package',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(intent)});
       const value:unknown=await response.json().catch(()=>null);if(!current())return;
+      if(response.status===413){
+        setProblem(t('Scenens publiceringspaket överskrider lagringsgränsen. Inget publicerades och dina ändringar finns kvar.','The scene publication package exceeds the storage limit. Nothing was published and your edits are still here.'));
+        return;
+      }
       const receipt=value&&typeof value==='object'?value as Record<string,unknown>:null;
       if(!response.ok||receipt?.operatorId!==server.operatorId||receipt.packageRevision!==expectedPackageRevision+1
         ||!sameValue(receipt.presentation,expectedPresentation)||!sameValue(receipt.adjusted,{roomId:room.id,tableId:liveRoom.live.table}))throw new Error('unconfirmed publication');
@@ -262,7 +266,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       })()}
       {room ? <button type="button" className="sg-btn" data-action="reset-room" disabled={!branding.roomOverrides?.[room.id]} onClick={resetRoom}>{t('Återställ rummet till standard','Reset room to defaults')}</button> : null}
   </>;
-  const statusBar = <div className={styles.statusBar+(visual?' '+styles.saveBar:'')}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (unsaved ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && !visual && revisions}{visual && publishActions}{!visual && <button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button>}</div>;
+  const statusBar = <div className={styles.statusBar+(visual?' '+styles.saveBar:'')}><p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (unsaved ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>{roomLayout && !visual && revisions}{visual && publishActions}{(!visual||blocked) && <button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button>}</div>;
   return <section className={roomLayout ? styles.panel + ' ' + styles.roomPanel + (visual?' '+styles.visualPanel:'') : styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
     {!visual && (roomLayout ? preview : <header className={styles.heading}><div><h3>{t('Sammansättning','Composition')}</h3><p className={styles.hint}>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
       {revisions}
@@ -314,7 +318,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     {visual && statusBar}
     {visual && reviewPanel}
     {visual && children ? <details className={styles.gameSettings}><summary>Spelinställningar</summary>{children}</details> : null}
-    <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary>{visual && <div className={styles.actions}>{revisions}<button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button></div>}<p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>
+    <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary>{visual && <div className={styles.actions}>{revisions}{!blocked&&<button type="button" className="sg-btn" data-action="refresh" disabled={busy} onClick={refresh}>{t('Hämta senaste version','Fetch latest version')}</button>}</div>}<p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>
       <ul>{server.history?.map(row => <li key={row.revision}><span><strong>{t('Version','Version')} {row.revision}</strong>{row.revision === server.packageRevision ? ` · ${t('publicerad nu','currently published')}` : ''}{row.publishedAt ? <small>{new Date(row.publishedAt).toLocaleString(en ? 'en-GB' : 'sv-SE')}</small> : null}</span>{row.revision!==server.packageRevision&&<button type="button" className="sg-btn" data-action={`restore-${row.revision}`} disabled={!editable || busy || dirty || sceneEditing} onClick={() => command('restore',row.revision)}>{t('Återställ till utkast','Restore to draft')}</button>}</li>)}</ul>
     </details>
   </section>;

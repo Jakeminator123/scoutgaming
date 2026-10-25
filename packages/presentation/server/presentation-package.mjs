@@ -20,6 +20,10 @@ export function encodePresentationPackage(value) {
     data = brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 11,
       [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_TEXT } }).toString('base64url');
     encoding = 'br-base64url';
+    // Mode is an encoder hint, not a different format. Try it only after text
+    // overflow so all existing valid envelopes keep their original bytes.
+    if (data.length > BROTLI_LIMIT) data = brotliCompressSync(bytes, { params: {
+      [constants.BROTLI_PARAM_QUALITY]: 11, [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_FONT } }).toString('base64url');
     if (data.length > BROTLI_LIMIT) fail(413);
   }
   return Object.freeze({ format: 'croupier-lanes-v1', encoding, sha256: digest(bytes), data });
