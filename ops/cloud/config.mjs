@@ -66,6 +66,8 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (env[name] !== undefined && !['', '0'].includes(env[name])) fail(name + ' (retired)');
   }
   if (env.CROUPIER_PLAYER_ACCOUNTS && !['0', '1'].includes(env.CROUPIER_PLAYER_ACCOUNTS)) fail('CROUPIER_PLAYER_ACCOUNTS');
+  const sharedTableFlag = env.CROUPIER_SHARED_TABLE_ENABLED;
+  if (sharedTableFlag !== undefined && !['0', '1'].includes(sharedTableFlag)) fail('CROUPIER_SHARED_TABLE_ENABLED');
   for (const name of ['DEMO_GUEST_ACCESS', 'CROUPIER_GENERATED_SPEECH_PREVIEW',
     'CROUPIER_LISSABON_PROFILES']) {
     if (env[name] === '1') fail(name);
@@ -235,6 +237,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     director, productSpeech, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
     mediaStorage, studioPolicy, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
+    sharedTableEnabled: sharedTableFlag === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
     fullfileBudget: fullfileBudgetRequired ? { reserveUsd:fullfileReserveUsd, dailyBudgetUsd } : null,
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
@@ -313,6 +316,7 @@ export function childSpecifications(config, env = process.env) {
         CROUPIER_CLOUD_RUNTIME: '1',
         CROUPIER_CLOUD_LAYOUT: config.singleOrigin ? 'single-origin' : 'separate-hosts',
         CROUPIER_PLAYER_ACCOUNTS: config.playerAccounts ? '1' : '',
+        CROUPIER_SHARED_TABLE_ENABLED: config.sharedTableEnabled ? '1' : '0',
         ...(config.bootstrapAdmin ? {
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: config.bootstrapAdmin.user,
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: config.bootstrapAdmin.password,

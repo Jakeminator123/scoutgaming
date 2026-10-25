@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
+import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import { createServer, request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -89,6 +90,27 @@ test('player registration is opt-in and reaches only the Web child', () => {
     assert.equal(specs.web.env.CROUPIER_PLAYER_ACCOUNTS, value === '1' ? '1' : '');
   }
   assert.throws(() => validateCloudConfig({ ...fixture(), CROUPIER_PLAYER_ACCOUNTS: 'yes' }));
+});
+
+test('shared tables reach the game process only through the validated cloud flag', () => {
+  const name = 'CROUPIER_SHARED_TABLE_ENABLED';
+  for (const value of [undefined, '0', '1']) {
+    const env = { ...fixture(), ...(value === undefined ? {} : { [name]: value }) };
+    const config = validateCloudConfig(env);
+    // A later raw environment cannot turn on a feature validated as disabled.
+    const specs = childSpecifications(config, { ...env, [name]: value === '1' ? '0' : '1' });
+    const received = execFileSync(specs.web.command, ['-e',
+      `process.stdout.write(JSON.stringify(process.env.${name} ?? null))`],
+    { cwd: specs.web.cwd, env: specs.web.env, encoding: 'utf8', windowsHide: true, timeout: 10000 });
+    assert.equal(JSON.parse(received), value === '1' ? '1' : '0');
+  }
+  for (const value of ['', 'true', 'false', '01', '1 ', '2', true]) {
+    assert.throws(() => validateCloudConfig({ ...fixture(), [name]: value }), /CROUPIER_SHARED_TABLE_ENABLED/);
+  }
+  for (const change of [{ CROUPIER_DATABASE: 'sqlite', CROUPIER_GAME_DATABASE_URL: undefined },
+    { CROUPIER_STUDIO_NEON_POLICY: '0' }, { CROUPIER_STUDIO_ENVIRONMENT_ID: '' }]) {
+    assert.throws(() => validateCloudConfig({ ...fixture(), ...change, [name]: '1' }));
+  }
 });
 
 test('one exact Vercel frontend origin is opt-in and reaches only Web', () => {

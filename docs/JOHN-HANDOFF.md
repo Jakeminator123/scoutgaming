@@ -1,5 +1,40 @@
 # Aktuell handoff — Scoutgaming
 
+## Delade bord: explicit flagga till Render-processen — 25 oktober 2026
+
+K07-förberedelsen hittade att `CROUPIER_SHARED_TABLE_ENABLED=1` inte nådde
+spelprocessen från molnstarten. [PR #396](https://github.com/Jakeminator123/scoutgaming/pull/396)
+vidarebefordrar nu den validerade flaggan; standard av och explicit `0` består.
+Ogiltiga värden nekas före start. Underagentens riktade prov kör verkliga
+subprocessmiljöer och verifierar att rå miljö inte kan överstyra validerat beslut:
+26/26 passerade på Node24.21.0, inga skip. Kvar: PR:ens CI/merge, deployment och
+faktiskt K07-samprov. Ingen molnflagga aktiverades och inget schema ändrades.
+
+## Leveransavstämning efter PR 392/394/395 — 25 oktober 2026
+
+| Leverans | Main-merge | Verifierat på fryst PR-head |
+| --- | --- | --- |
+| #392: pensionerad P6-kedja bort | `7910d1b777d318a046db115e499a72c95bd1ce71` | Full CI `40213762922`, inklusive SQL/omstart/HTTPS och produktionsledger-readiness |
+| #394: en spelprocess, äldre QA-transport och felaktiga Studio-testlås bort | `9bfb680e3feb069356fec72406394bc3165c6e2e` | Full CI `40215199058` och faktisk Docker/cache/Linux-start `40215199267` |
+| #395: en native-Admin-origin och AI-relä valfritt när AI-media är av | `547c433b9fe229974cfc262fef2c01ba4e63424f` | Full CI `40215534400`, Docker `40215534405`, rootintegration 148/148 utan skip |
+
+Samtliga fulla CI-kvitton omfattar åtta regressionsgrupper och slutgrinden.
+Vercel #395 `dpl_7DZsxTfYE1ZxeYg8cnaosH5EDVnr` återlästes READY på `547c433b`.
+Root laddade om inloggad `/admin/rooms`: bolag, publicerat rum, paket och
+livscykel lästes; spara/publicera var avstängt utan osparat utkast. Ingen skrivning
+eller insats gjordes. PAOW-chatten rapporterar senare samordnad produktion på
+#393:s `ebb6b91fec6423434be3cd6f3200bc779614b0c9`: Render
+`dep-dbf3og7avr4c73cn9bf0`, Vercel `dpl_m5gQzLP1ujnMvjAjY3tZvDBka27W`,
+health/version/v28/pose-graph verifierade där. Detta är den andra chattens kvitto.
+
+Jakob har uttryckligen godkänt nästa isolerade molnsteg. Root har därefter
+installerat granskade schemafiler, minimala egna roller och tomma register via
+befintliga writers i `croupier_staging`, på PG18.6/0,25 CU/300 s. Appens egen
+anslutning nekas ledger-skrivning och DDL. Separat tom restoredatabas samt eget
+Vercel-projekt/privat Blob finns. Inga produktionsdata eller dealerbanker kopierades.
+[Exakta resurser, mandat, verifiering och kvarvarande app-/restoreprov](ENVIRONMENT-RESTORATION.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober).
+Officiell status: 45 % (9/20), alltså 55 % återstående aktiviteter, inte kod/arbetstid.
+
 ## Native-Admin följer unified-UI — 25 oktober 2026
 
 `CROUPIER_VERCEL_UNIFIED_UI=1` använder en public HTTPS-origin också i
@@ -11,7 +46,8 @@ rättningen. Root har läst produkt- och beteendediffarna utan blockerare.
 Syntetisk riktig login/session, publicering och återkallad auth-epoch ingår;
 detta är inte ett faktiskt Vercel-/Neon-installationskvitto.
 Root körde därefter samlad native-/publicerings-/AI-konfigurationsintegration:
-148/148, noll fel och noll skips. Full CI och faktisk Vercelacceptans återstår.
+148/148, noll fel och noll skips. Full CI är kvitterad ovan; faktisk
+Vercelacceptans återstår.
 
 ## Inspelat spel utan obligatorisk AI-infrastruktur — 25 oktober 2026
 
@@ -20,7 +56,7 @@ kamera och moving är av. Ett halvt par eller aktiv AI-media utan relä avvisas.
 Ingen produktionskonfiguration ändras. Inspelad media och serverns spelregler
 behöver därmed ingen extra AI-tjänst i en tom installation. Utan relä är chatten
 okonfigurerad: verklig beslutsväg ger 503 utan provideranrop eller påhittat svar.
-Riktade konfigurations-/chattprov: 38/38. Full CI och molnacceptans återstår;
+Riktade konfigurations-/chattprov: 38/38. Full CI är kvitterad ovan; molnacceptans återstår;
 detta kvitterar varken chatt, tal eller K06/K07.
 
 ## Render-starten avvecklad till en spelprocess — 25 oktober 2026
