@@ -7,6 +7,10 @@ import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from '..
 import {compositionAnchorFrames,projectAnchorRects} from './composition-anchors.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
+function roomLayerSource(src,id){
+  const match=new RegExp(`^/api/presentation/room-layers/[a-z][a-z0-9-]{0,62}/[a-z0-9_-]{1,128}/([1-9][0-9]{0,15})/${id}$`).exec(src);
+  return Boolean(match&&Number.isSafeInteger(Number(match[1])));
+}
 export function validateComposition(value) {
   if (!value || value.schemaVersion!==1 || Object.keys(value).filter(key=>!['settings','backgroundPlayback','tablePlayback'].includes(key)).sort().join(',')!=='assets,background,dealer,schemaVersion,table'
     || !Array.isArray(value.assets) || value.assets.length>64) fail();
@@ -18,6 +22,7 @@ export function validateComposition(value) {
       || !['background','table'].includes(asset.role)||typeof asset.label!=='string'||asset.label.length>80
       || !['image/png','image/jpeg','image/webp','video/mp4','video/webm'].includes(asset.contentType)
       || !(new RegExp(`^/api/presentation/layers/[a-z][a-z0-9-]{0,62}/${asset.id}$`).test(asset.src)
+        || roomLayerSource(asset.src,asset.id)
         || new RegExp(`^/api/studio-preview/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}/layers/${asset.id}$`).test(asset.src)))fail();
     ids.add(asset.id);
   }
@@ -54,7 +59,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   const host=document.querySelector('#scene');if(!host)return null;
   document.documentElement.dataset.presentationStandard='three-layer';
   let current=initial?validateComposition(initial):null,compositor=null,runtime=null,key=null,framing=null,frameNumber=0,preparation=0,raf=null,closed=false;
-  const mounts=new Map(),selected=new Map(),pending=new Map();
+  const mounts=new Map(),selected=new Map(),pending=new Map(),cancelLoads=new Map();
   // One silent scheduler and at most one running event clip per layer role.
   const PLAYBACK_ROLES=['background','table'],players=new Map(),events=new Map();let backgroundVisible=!document.hidden;
   const view=document.defaultView??globalThis;
@@ -158,8 +163,13 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     players.set(role,player);
     if(backgroundVisible&&playbackAllowed(role))player.start();
   }
+  function releaseLayer(role){
+    cancelLoads.get(role)?.();cancelLoads.delete(role);pending.delete(role);
+    const node=mounts.get(role);if(!node)return;
+    node.pause?.();compositor?.release?.(node);node.removeAttribute?.('src');if(node.tagName==='VIDEO')node.load?.();node.remove();mounts.delete(role);
+  }
   function render(role,id) {
-    const previous=mounts.get(role);previous?.pause?.();if(previous)compositor?.release?.(previous);previous?.remove();mounts.delete(role);pending.delete(role);
+    releaseLayer(role);
     selected.set(role,id);
     if(!current||!current[role].enabled)return;
     const asset=current.assets.find(row=>row.id===id&&row.role===role);if(!asset)return;
@@ -171,16 +181,20 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(node.style)node.style.visibility=current.dealer.enabled?'hidden':'';node.src=asset.src;host.append(node);mounts.set(role,node);
     if(node.addEventListener){const event=node.tagName==='VIDEO'?'loadeddata':'load';pending.set(role,new Promise((resolve,reject)=>{
       if(node.tagName==='VIDEO'?node.readyState>=2:node.complete&&node.naturalWidth){resolve();return;}
+      let settled=false;
       const timer=setTimeout(()=>finish(Error('Layer media unavailable')),12000);
-      function finish(error){clearTimeout(timer);node.removeEventListener(event,ready);node.removeEventListener('error',bad);error?reject(error):resolve();}
-      const ready=()=>finish(),bad=()=>finish(Error('Layer media unavailable'));node.addEventListener(event,ready,{once:true});node.addEventListener('error',bad,{once:true});
+      function finish(error){if(settled)return;settled=true;clearTimeout(timer);node.removeEventListener(event,ready);node.removeEventListener('error',bad);
+        if(cancelLoads.get(role)===cancel)cancelLoads.delete(role);error?reject(error):resolve();}
+      const ready=()=>finish(),bad=()=>finish(Error('Layer media unavailable')),cancel=()=>finish(Error('Layer media cancelled'));
+      cancelLoads.set(role,cancel);node.addEventListener(event,ready,{once:true});node.addEventListener('error',bad,{once:true});
     }));void pending.get(role).catch(()=>{});}
   }
-  function set(role,id) {if(current&&current[role].allowed.includes(id)){
+  function set(role,id) {if(!closed&&current&&current[role].allowed.includes(id)){
     players.get(role)?.pause();
     render(role,id);paintHeld();if(backgroundVisible&&playbackAllowed(role))players.get(role)?.start();
   }}
   function replace(value) {
+    if(closed)return;
     setMovingSpeechLayer(null);
     closePlayers();
     ++preparation;current=validateComposition(value);key=null;referenceFraming=null;lastGeometry='';stopAnimation();compositor?.canvas?.style.setProperty('visibility','hidden');
@@ -235,5 +249,6 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
       const base=mounts.get('background');if(base?.tagName==='VIDEO'){base.autoplay=backgroundVisible;
         if(backgroundVisible)Promise.resolve(base.play?.()).catch(()=>{});else base.pause?.();}},
     hold:()=>{if(key)paintHeld();},
-    close(){setMovingSpeechLayer(null);geometryListeners.clear();closePlayers();closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
+    close(){if(closed)return;closed=true;setMovingSpeechLayer(null);geometryListeners.clear();closePlayers();++preparation;stopAnimation();
+      for(const role of [...mounts.keys()])releaseLayer(role);compositor?.dispose();compositor?.canvas.remove();}};
 }

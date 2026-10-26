@@ -78,7 +78,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
   const output = await mkdtemp(join(tmpdir(), 'croupier-shared-browser-'));
   const outputRoot = resolve(output), outputUrl = pathToFileURL(output + sep);
   let browser, server, wss, origin, port, closed = false, snapshot, presentation, loseBet, effects, receipts;
-  const sockets = new Set(), rawSockets = new Set(), requests = [], httpBodies = [], unexpected = [], pageErrors = [], wsConnections = [];
+  const sockets = new Set(), rawSockets = new Set(), requests = [], httpBodies = [], bindingReads = [], unexpected = [], pageErrors = [], wsConnections = [];
   t.after(async () => {
     await browser?.close();
     for (const socket of sockets) socket.terminate();
@@ -116,6 +116,24 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     try {
       if (req.url === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html); return; }
       if (req.url === '/fixture.mjs') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(browserFixture); return; }
+      const url=new URL(req.url,origin);
+      if(url.pathname===`/api/presentation/shared-room/${roomId}/binding`){
+        // This fixture owns only its synthetic room/session. Product access and
+        // media authorization remain covered by the server integration suites.
+        const headers={'content-type':'application/json','cache-control':'private, no-store'};
+        if(req.method!=='GET'){res.writeHead(405,{...headers,Allow:'GET'});res.end();return;}
+        if(req.headers.cookie!==cookie||req.headers.authorization||req.headers.origin&&req.headers.origin!==origin){res.writeHead(403,headers);res.end();return;}
+        if(url.searchParams.size!==2||!['configVersion','windowId'].every(key=>url.searchParams.getAll(key).length===1)){
+          res.writeHead(400,headers);res.end();return;
+        }
+        if(!snapshot||url.searchParams.get('configVersion')!==snapshot.configVersion||url.searchParams.get('windowId')!==snapshot.windowId){
+          res.writeHead(409,headers);res.end();return;
+        }
+        const binding={owner:'web',roomId,configVersion:snapshot.configVersion,windowId:snapshot.windowId,
+          presentationContext:{operatorSlug:selection.operator,roomId,packageRevision:selection.packageRevision,dealerId:selection.dealer},selection};
+        bindingReads.push({configVersion:binding.configVersion,windowId:binding.windowId,cookie:req.headers.cookie});
+        res.writeHead(200,headers);res.end(JSON.stringify(binding));return;
+      }
       if (req.url.startsWith('/api/shared-room/')) {
         await handleSharedRoomHttp(req, res, { engineOrigin: origin, command: async request => {
           const bytes = await request.clone().text();
@@ -168,7 +186,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
   browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}),
     args: ['--disable-background-networking', '--disable-component-update', '--disable-domain-reliability'] });
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
-    snapshot = initial(); presentation = null; loseBet = true; effects = 0; receipts = new Map(); httpBodies.length = 0;
+    snapshot = initial(); presentation = null; loseBet = true; effects = 0; receipts = new Map(); httpBodies.length = 0; bindingReads.length = 0;
     const context = await browser.newContext({ viewport, isMobile: viewport.width < 860, serviceWorkers: 'block' });
     context.setDefaultTimeout(7000);
     await context.addCookies([{ name: 'fixture_session', value: 'isolated-browser', url: origin }]);
@@ -180,6 +198,8 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     page.on('pageerror', error => pageErrors.push(error.message));
     page.on('response', response => { if (response.url().endsWith('.mjs') && response.status() === 200) imported.add(new URL(response.url()).pathname); });
     await page.goto(origin); await page.waitForFunction(() => window.fixture?.ready && window.fixture.app.controller.state.snapshot?.version === 0);
+    assert.deepEqual(bindingReads,[1,2].map(()=>({configVersion:snapshot.configVersion,windowId:snapshot.windowId,cookie})),
+      'the actual browser verifies the same active binding before and after its media port loads');
     assert.equal(await page.locator('#balance').textContent(), '1 000 demo');
     assert.ok(imported.has('/packages/presentation/contracts/shared-room-replay.mjs'), 'actual built canonical replay import loaded');
     assert.equal(imported.has('/app.mjs'), false, 'legacy writer is never imported by shared mount');
@@ -240,7 +260,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     await page.locator('#add-funds').evaluate(node => node.click()); assert.equal(httpBodies.length, requestsBeforeClose);
     assert.equal(sockets.size, 0);
     console.info('Chrome viewport verified:', JSON.stringify({ ...viewport, commandRequests: httpBodies.length, effects,
-      modules: imported.size, replayContractImported: true, closeCleanup: true }));
+      bindingReads:bindingReads.length,postloadBindingChecked:true,modules: imported.size, replayContractImported: true, closeCleanup: true }));
     await context.close();
   }
   assert.deepEqual(unexpected, []); assert.deepEqual(pageErrors, []);

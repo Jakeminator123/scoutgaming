@@ -20,7 +20,7 @@ const timestamp = value => Number.isSafeInteger(value) && value >= 0 ? value : n
  * writer or material fallback lives here.
  */
 export function createSharedRoomService({
-  pool, walletMode, origin, engineOrigin, scope, auth, commandAuth, repository,
+  pool, walletMode, origin, engineOrigin, scope, auth, commandAuth, repository, privateMedia,
   clock = { now: Date.now }, random, intervalMs, onError,
   lockTimeoutMs, statementTimeoutMs, readTimeoutMs, WebSocketServer,
 } = {}, {
@@ -75,7 +75,10 @@ export function createSharedRoomService({
     // aborts admission immediately and drains these bounded SQL/auth operations.
     const operation = Promise.resolve().then(() => {
       requireReady(); combined.throwIfAborted(); return work(combined);
-    }).then(value => { combined.throwIfAborted(); requireReady(); return value; })
+    }).then(async value => {
+      try { combined.throwIfAborted(); requireReady(); return value; }
+      catch(error) { if(value instanceof Response)try{await value.body?.cancel();}catch{}throw error; }
+    })
       .finally(() => { reads.delete(operation); });
     reads.add(operation); return operation;
   }
@@ -125,14 +128,17 @@ export function createSharedRoomService({
     }, combined);
   }
   let presentationAccess;
-  function withSharedCommittedReceipt(args = {}, selectFrozen) {
+  function presentationRead(method,args,selectFrozen) {
     if (typeof runtime.withLockedRead !== 'function' || typeof receiver.currentLocked !== 'function') throw unavailable();
     presentationAccess ??= createPresentationAccess({ access, repository,
+      ...(privateMedia?{privateMedia}:{}),
       withLockedRead: (...values) => runtime.withLockedRead(...values),
       readPresentationLocked: (...values) => receiver.currentLocked(...values) });
     const signal = args.request?.signal && args.signal ? AbortSignal.any([args.request.signal,args.signal]) : args.request?.signal ?? args.signal;
-    return read(active => presentationAccess.withSharedCommittedReceipt({...args,signal:active},selectFrozen),signal);
+    return read(active => presentationAccess[method]({...args,signal:active},selectFrozen),signal);
   }
+  const withSharedCommittedReceipt=(args={},selectFrozen)=>presentationRead('withSharedCommittedReceipt',args,selectFrozen);
+  const withActiveRoomPresentation=(args={},selectFrozen)=>presentationRead('withActiveRoomPresentation',args,selectFrozen);
   channel = createChannel({ origin, now: () => clock.now(), readTimeoutMs,
     authorize: (request, { roomId, signal }) => read(active => access.authorize(request, { roomId, signal: active }), signal),
     revalidate: (binding, { signal }) => read(active => access.revalidate(binding, { signal: active }), signal),
@@ -197,6 +203,7 @@ export function createSharedRoomService({
     });
     return closing;
   }
-  return Object.freeze({ start, close, stop: close, health, command, withSharedCommittedReceipt,
+  return Object.freeze({ start, close, stop: close, health, command, withSharedCommittedReceipt, withActiveRoomPresentation,
     handleUpgrade: (request, socket, head) => upgrade.handleUpgrade(request, socket, head) });
 }
+

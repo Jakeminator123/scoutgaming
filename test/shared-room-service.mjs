@@ -10,7 +10,7 @@ function setup(t, hooks = {}) {
   const health = { running: false, failed: false, inFlight: false, lastSuccessAt: null, lastErrorAt: null };
   const binding = { actorId: 'actor-a', sessionId: 'digest-a', roomId: 'room-a', operatorId: 'operator-a', packageRevision: 3, expiresAt: Date.now() + 60000 };
   const options = { pool, walletMode: 'demo', origin: 'https://player.invalid', engineOrigin: 'https://engine.invalid',
-    scope: { environment: 'test', workspaceId: 'workspace-a' }, auth: {}, repository: {}, lockTimeoutMs: 200, statementTimeoutMs: 500 };
+    scope: { environment: 'test', workspaceId: 'workspace-a' }, auth: {}, repository: {}, privateMedia:hooks.privateMedia, lockTimeoutMs: 200, statementTimeoutMs: 500 };
   const dependencies = {
     createAccess(value) { config.access = value; return {
       async authorize(req, context) { calls.push(['authorize', req, context]); return hooks.authorize ? hooks.authorize(req, context) : binding; },
@@ -20,11 +20,13 @@ function setup(t, hooks = {}) {
       async assertInstalled() { calls.push(['receiver-installed']); await hooks.installed?.(); },
       async sink(row) { calls.push(['persist', row]); return hooks.sink ? hooks.sink(row) : 'applied'; },
       async current(room) { calls.push(['current', room]); return hooks.current ? hooks.current(room) : { roomId: room, ver: 7 }; },
+      async currentLocked(room) {return hooks.current?.(room);},
     }; },
     createRuntime(value) { config.runtime = value; return {
       async start() { calls.push(['runtime-start']); await hooks.start?.(); health.running = true; },
       async stop() { calls.push(['runtime-stop']); await hooks.stop?.(); health.running = false; },
       health: () => health,
+      withLockedRead: (...args)=>hooks.lockedRead?.(...args),
       coordinator: { async snapshot(room, actor) { calls.push(['snapshot', room, actor]); return hooks.snapshot ? hooks.snapshot(room, actor) : { roomId: room, presentationVer: 7, me: { id: actor } }; } },
     }; },
     createChannel(value) { ports.channel = value; return {
@@ -37,6 +39,10 @@ function setup(t, hooks = {}) {
       handleUpgrade(req, socket, head) { calls.push(['upgrade', req, socket, head]); return req.url === '/unowned' ? false : value.channel.prepare(req); },
       async close() { calls.push(['upgrade-close']); await hooks.upgradeClose?.(); },
     }; },
+    createPresentationAccess(value) {config.presentation=value;return {
+      withActiveRoomPresentation:(args,work)=>hooks.presentation?.('active',args,work),
+      withSharedCommittedReceipt:(args,work)=>hooks.presentation?.('receipt',args,work),
+    };},
   };
   const service = createSharedRoomService(options, dependencies);
   t.after(() => service.close().catch(() => {}));
@@ -159,3 +165,27 @@ test('cleanup failure still drains runtime, rejects shutdown and leaves admissio
   assert.equal(h.service.health().state, 'stopped'); assert.equal(h.service.health().failed, true);
   await assert.rejects(h.service.handleUpgrade(request()), { statusCode: 503 });
 });
+
+test('active presentation and committed receipts share the private media port and service lifetime',async t=>{
+  const privateMedia=()=>{},seen=[];
+  const h=setup(t,{privateMedia,presentation:async(method,args,work)=>{
+    seen.push({method,args});args.signal.throwIfAborted();return work({roomId:'room-a'},{signal:args.signal});
+  }});
+  await assert.rejects(h.service.withActiveRoomPresentation({request:request()},()=>({})),{statusCode:503});assert.equal(seen.length,0);
+  await h.service.start();
+  assert.deepEqual(await h.service.withActiveRoomPresentation({request:request(),roomId:'room-a'},value=>value),{roomId:'room-a'});
+  assert.deepEqual(await h.service.withSharedCommittedReceipt({request:request()},()=>({video:null})),{video:null});
+  assert.equal(h.config.presentation.privateMedia,privateMedia);assert.deepEqual(seen.map(row=>row.method),['active','receipt']);
+  assert.equal(seen[0].args.roomId,'room-a');assert.equal(h.service.health().inFlight,false);
+});
+
+test('service shutdown aborts active media and cancels a late response before releasing its read',async t=>{
+  const delayed=deferred();let signal,cancelled=0;
+  const h=setup(t,{presentation:async(_method,args)=>{signal=args.signal;await delayed.promise;return new Response(new ReadableStream({cancel(){cancelled++;}}));}});
+  await h.service.start();
+  const reading=h.service.withActiveRoomPresentation({request:request(),roomId:'room-a'},()=>{}),rejected=assert.rejects(reading,{name:'AbortError'});await turn();
+  let closed=false;const closing=h.service.close().then(()=>{closed=true;});await turn();
+  assert.equal(signal.aborted,true);assert.equal(closed,false);assert.equal(h.service.health().inFlight,true);
+  delayed.resolve();await rejected;await closing;assert.equal(cancelled,1);assert.equal(h.service.health().inFlight,false);
+});
+

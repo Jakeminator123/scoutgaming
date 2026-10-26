@@ -173,6 +173,58 @@ test('legacy full-frame flags cannot suppress independent background and table s
   assert.equal(mounted.size,2,'turning the dealer back on retains its authorized plane sources');
 });
 
+test('composition accepts exact room-scoped layer routes without widening the existing URL contracts',()=>{
+  const background=asset('background',1),table=asset('table',2);
+  const descriptor={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},
+    background:{enabled:true,mode:'image',default:background.id,allowed:[background.id]},table:{enabled:true,default:table.id,allowed:[table.id]},
+    assets:[background,table].map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/room-layers/north/room-a/12/${id}`}))};
+  assert.deepEqual(validateComposition(descriptor),descriptor);
+  const mutate=src=>({...descriptor,assets:[{...descriptor.assets[0],src},descriptor.assets[1]]});
+  for(const src of [
+    `/api/presentation/layers/north/${background.id}`,
+    `/api/studio-preview/00000000-0000-4000-8000-000000000009/layers/${background.id}`,
+  ])assert.doesNotThrow(()=>validateComposition(mutate(src)));
+  for(const src of [
+    `/api/presentation/room-layers/North/room-a/12/${background.id}`,
+    `/api/presentation/room-layers/north/room%2Fa/12/${background.id}`,
+    `/api/presentation/room-layers/north/room-a/0/${background.id}`,
+    `/api/presentation/room-layers/north/room-a/01/${background.id}`,
+    `/api/presentation/room-layers/north/room-a/9007199254740992/${background.id}`,
+    `/api/presentation/room-layers/north/room-a/12/${table.id}`,
+    `/api/presentation/room-layers/north/room-a/12/${background.id}?packageRevision=99`,
+    `/api/presentation/room-layers/north/room-a/12/${background.id}#old`,
+    `https://other.invalid/api/presentation/room-layers/north/room-a/12/${background.id}`,
+  ])assert.throws(()=>validateComposition(mutate(src)));
+});
+
+test('replaced and closed composition loads release their own listeners, timers and video sources',async t=>{
+  const timers=new Map();let timerId=0,compositors=0;
+  t.mock.method(globalThis,'setTimeout',(fn,ms)=>{const id=++timerId;timers.set(id,{fn,ms});return id;});
+  t.mock.method(globalThis,'clearTimeout',id=>timers.delete(id));
+  const mounted=new Set(),nodes=[];
+  class Node extends EventTarget{
+    constructor(tag){super();this.tagName=tag.toUpperCase();this.dataset={};this.style={};this.listeners=new Set();this.src='';this.loads=0;nodes.push(this);}
+    addEventListener(type,listener,options){this.listeners.add(listener);super.addEventListener(type,listener,options);}
+    removeEventListener(type,listener,options){this.listeners.delete(listener);super.removeEventListener(type,listener,options);}
+    setAttribute(){}removeAttribute(name){if(name==='src')this.src='';}pause(){}load(){this.loads++;}remove(){mounted.delete(this);}
+  }
+  const background=asset('background',1),table=asset('table',2);
+  const descriptor={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},
+    background:{enabled:true,mode:'video',default:background.id,allowed:[background.id]},table:{enabled:true,default:table.id,allowed:[table.id]},
+    assets:[background,table].map(({id,role,label})=>({id,role,label,contentType:'video/mp4',src:`/api/presentation/room-layers/north/room-a/1/${id}`}))};
+  const host={dataset:{},append:node=>mounted.add(node)},document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>new Node(tag)};
+  const composition=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:class{constructor(){compositors++;}}})});
+  assert.equal(timers.size,2);const old=[...mounted];
+  const preparing=composition.prepareClip({mode:'alpha'});await Promise.resolve();
+  const cancelled=assert.rejects(preparing,/Layer media cancelled/);composition.replace(descriptor);await cancelled;
+  assert.equal(timers.size,2,'only the replacement owns load deadlines');
+  for(const node of old){assert.equal(node.listeners.size,0);assert.equal(node.src,'');assert.equal(node.loads,1);node.dispatchEvent(new Event('loadeddata'));}
+  assert.equal(compositors,0);const current=[...mounted];composition.close();composition.close();
+  assert.equal(timers.size,0);assert.equal(mounted.size,0);
+  for(const node of current){assert.equal(node.listeners.size,0);assert.equal(node.src,'');assert.equal(node.loads,1);node.dispatchEvent(new Event('loadeddata'));}
+  composition.replace(descriptor);assert.equal(mounted.size,0);assert.equal(compositors,0);
+});
+
 function createPartnerBrandingApi(options) {
   const readAdministration=async()=>{
     const pack=await options.store.getCurrentPackage('north');

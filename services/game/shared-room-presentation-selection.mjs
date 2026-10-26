@@ -55,7 +55,7 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
     const record=allowed.get(id);if(!record)fail();
     const raw=frozenDealerContext.publicVideo(frozen,id);if(!raw)fail();
     const value=cloneStudioJson(raw,{maxBytes:32768});
-    const prefix='/api/presentation/registered-video/'+[body.presentationContext.operatorSlug,capture.roomId,capture.packageRevision,body.dealerId,id].join('/');
+    const prefix='/api/presentation/room-video/'+[body.presentationContext.operatorSlug,capture.roomId,capture.packageRevision,body.dealerId,id].join('/');
     if(value.id!==id||value.sha256!==record.sha256||value.src!==prefix)fail();
     const keys=['id','sha256','fileName','src','compositing','framing','recordedSpeech'];
     if(value.recordedSpeech?.schemaVersion===2)keys.push('contentType','bytes','mediaTiming');

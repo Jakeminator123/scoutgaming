@@ -19,6 +19,7 @@ import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} f
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 import {withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
+import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
 
 const scope={environment:'material-trash-test',workspaceId:'isolated'},origin='https://trash.example.invalid';
 const actor={user:'fixture-admin',role:'admin',scope},now=()=>1791753600000;
@@ -132,6 +133,38 @@ test('preview is read only; commit detaches media and archives only affected roo
  assert.equal((await f.post('material-trash',{...restoreBody,impactToken:restoreCheck.body.impact.token})).status,200);
  assert.deepEqual((await f.repository.readDocument('administration')).value.rooms,admin.rooms);
  assert.deepEqual(await f.stored(store=>store.getCurrentPackage('north')),pack);
+});
+
+test('material trash preserves an imported surviving room bank and cannot reactivate an archived room on restore',async()=>{
+ const f=await fixture({measuredBank:true});
+ const rooms=(await f.repository.readDocument('administration')).value.rooms;
+ for(const record of readPackagePresentation(await f.stored(store=>store.getCurrentPackage('north'))).playback.media)f.pool.setMedia(record);
+ for(const room of rooms)await f.stored(async store=>{
+  const pack=await store.getCurrentPackage('north'),material=resolveNativeRoomGameMaterial({package:pack,room,language:'sv'});
+  material.revision='imported-verified-lifecycle-fixture';
+  await store.publishRoomGameConfig({actor:'fixture',operatorId:'north',expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding:pack.branding},
+   {roomId:room.id,gameConfig:{language:'sv',limitPreset:'prive'},material});
+ });
+ const before=f.pool.snapshot(),original=await f.stored(store=>store.getCurrentPackage('north'));
+ const removedVersion=original.branding.roomGameConfigVersions['room-affected'],keptVersion=original.branding.roomGameConfigVersions['room-kept'];
+ const oldKept=before.roomConfigs.find(row=>row.version===keptVersion).body;
+ const body=await f.body(),preview=await f.post('material-trash-check',body);
+ assert.equal(preview.status,200);assert.deepEqual(f.pool.snapshot(),before);
+ assert.deepEqual(preview.body.impact.rooms.map(row=>row.id),['room-affected']);
+ const result=await f.post('material-trash',{...body,impactToken:preview.body.impact.token});assert.equal(result.status,200);
+ const after=f.pool.snapshot(),pack=await f.stored(store=>store.getCurrentPackage('north'));
+ assert.deepEqual(pack.tables,['room-kept']);assert.deepEqual(Object.keys(pack.branding.roomGameConfigVersions),['room-kept']);
+ assert.equal(after.roomConfigHeads.find(row=>row.room_id==='room-affected').version,removedVersion,'retired head is retained only as history');
+ assert.notEqual(pack.branding.roomGameConfigVersions['room-kept'],keptVersion);
+ const next=after.roomConfigs.find(row=>row.version===pack.branding.roomGameConfigVersions['room-kept']).body;
+ assert.equal(next.packageRevision,pack.revision);assert.deepEqual(next.material,oldKept.material);
+ assert.deepEqual(after.roomConfigs.slice(0,before.roomConfigs.length),before.roomConfigs,'old active and retired config bodies are immutable');
+ assert.equal(after.roomConfigs.length,before.roomConfigs.length+1,'only the surviving room gets a new config');
+ const restoreBody=await f.body(false),restorePreview=await f.post('material-trash-check',restoreBody);
+ assert.equal((await f.post('material-trash',{...restoreBody,impactToken:restorePreview.body.impact.token})).status,200);
+ const restored=f.pool.snapshot();assert.deepEqual(restored.roomConfigs,after.roomConfigs);assert.deepEqual(restored.roomConfigHeads,after.roomConfigHeads);
+ assert.deepEqual(await f.stored(store=>store.getCurrentPackage('north')),pack);
+ assert.deepEqual((await f.repository.readDocument('administration')).value.rooms.map(row=>row.id),['room-kept']);
 });
 
 test('material trash retains a large measured v2 bank only after native v29 and storage readiness',async()=>{

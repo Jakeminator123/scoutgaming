@@ -4,7 +4,8 @@ import {createOperatorStore} from '../../../packages/operators/server/operator-s
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
-import {validatePresentationPackage} from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {withoutPresentationLanes} from '../../../packages/presentation/contracts/retained-presentation.mjs';
+export {withoutPresentationLanes} from '../../../packages/presentation/contracts/retained-presentation.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
 import {isPresentationRoom} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
@@ -24,30 +25,6 @@ export function dealerArchiveCompositionIds(project,dealerId,records=[]){
   return (project.lanes??[]).filter(lane=>laneUsesDealer(lane,dealerId,mediaIds)).map(lane=>lane.id);
 }
 
-// Keep surviving publications byte-for-byte equivalent at the media/selection
-// level. In particular, never recapture mutable drafts or choose a replacement.
-export function withoutPresentationLanes(presentation,removedIds){
-  const next=structuredClone(presentation),removed=new Set(removedIds);
-  next.lanes=next.lanes.filter(lane=>!removed.has(lane.id));
-  if(!next.lanes.length)return null;
-  const dealers=new Set(next.lanes.flatMap(lane=>[...lane.dealers,...lane.layers.dealer.allowed]));
-  const layerAssets=new Set(next.lanes.flatMap(lane=>['background','table'].flatMap(role=>lane.layers[role].allowed)));
-  next.assets=next.assets.filter(asset=>layerAssets.has(asset.id));
-  if(next.registeredDealers)next.registeredDealers=next.registeredDealers.filter(dealer=>dealers.has(dealer.id));
-  if(next.playback){
-    const playback=next.playback;
-    playback.lines=playback.lines.filter(line=>dealers.has(line.dealerId));
-    if(playback.dealerIdlePolicies)playback.dealerIdlePolicies=playback.dealerIdlePolicies.filter(row=>dealers.has(row.dealerId));
-    const variants=playback.lines.flatMap(line=>line.variants);
-    const assets=new Set(variants.map(row=>row.assetId)),triggers=new Set(variants.flatMap(row=>row.triggerIds));
-    const media=new Set(variants.map(row=>row.videoGenerationId).filter(Boolean));
-    for(const row of playback.dealerIdlePolicies??[])for(const item of [...row.policy.base,...row.policy.variants])media.add(item.videoId);
-    playback.assets=playback.assets.filter(row=>assets.has(row.id));
-    playback.triggers=playback.triggers.filter(row=>triggers.has(row.id));
-    playback.media=playback.media.filter(row=>media.has(row.id));
-  }
-  return validatePresentationPackage(next);
-}
 
 async function readWithin(repository,{dealerId,expectedRevision,now=Date.now}){
   validateRevision(expectedRevision);

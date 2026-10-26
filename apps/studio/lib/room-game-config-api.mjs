@@ -1,4 +1,4 @@
-import {createHash,randomUUID} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {isAdministratorRole} from '../../../packages/studio-access/account-role.mjs';
 import {canonicalStudioJson,validateRevision,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -8,7 +8,7 @@ import {readPackagePresentation,resolvePackageRoomDealer} from '../../../package
 import {assertCapturedPresentationMedia} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import {recordedSpeechForVideo} from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
-import {validateRoomGameConfig,validateRoomGameDrafts,validateRoomGameMaterial,ROOM_GAME_TIMERS,ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
+import {validateRoomGameConfig,validateRoomGameDrafts,validateRoomGameMaterial,ROOM_GAME_TIMERS} from '../../../packages/presentation/contracts/room-game-config.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
 import {isRoomGameConfigReadQuery} from './studio-admin-contract.mjs';
 
@@ -16,7 +16,6 @@ const fail=(code='studio_room_game_config_rejected',status=422)=>{throw new Stud
 const object=value=>value&&typeof value==='object'&&!Array.isArray(value);
 const exact=(value,keys)=>object(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value)&&!['__proto__','constructor','prototype'].includes(value);
-const hash=value=>createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
 const bindingKey='roomGameConfigVersions';
 const materialReasons=new Set(['native_material_bank_incomplete','native_material_contract_unsupported','native_material_dealer_missing',
   'native_material_frozen_v3_required','native_material_idle_missing','native_material_invalid_publication','native_material_measurement_mismatch',
@@ -24,7 +23,6 @@ const materialReasons=new Set(['native_material_bank_incomplete','native_materia
   'native_material_size_mismatch','native_material_slot_unsupported','native_material_speech_pose_unsupported','native_material_speech_slot_missing',
   'native_material_speech_timing_mismatch','native_material_speech_unbound','native_material_take_audio_truncated','native_material_take_mismatch',
   'native_material_take_unrecognized','native_material_timing_limit','native_material_transition_pose_missing','native_material_video_unavailable']);
-const roomLock=roomId=>{const bytes=createHash('sha256').update(`croupier-shared-table\0room\0${roomId}`).digest();return[bytes.readInt32BE(0),bytes.readInt32BE(4)];};
 function intent(value) {
   const common=['action','operatorId','roomId','expectedAdministrationRevision','expectedPackageRevision'];
   if(!exact(value,[...common,...(value?.action==='save-draft'?['gameConfig']:['expectedDraftRevision'])])||!['save-draft','publish'].includes(value.action)
@@ -112,8 +110,8 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
   handlers.set('POST /studio/api/admin/room-game-config',async context=>{
     trusted(context);const body=intent(context.body);
     return repository.transaction(()=>repository.withTransactionClient(async client=>{
-      // The Studio scope lock is already held. The game's R lock serializes configuration publication with windows.
-      await client.query('/* room-game-config:room-lock */ SELECT pg_advisory_xact_lock($3::integer,$4::integer) WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL',[...params,...roomLock(body.roomId)]);
+      // The scope lock protects draft intent. The shared publication writer
+      // takes the operator lock then ordered room locks and rechecks all material.
       const saved=await snapshot(client,body.operatorId,body.roomId);
       if(saved.document.revision!==body.expectedAdministrationRevision||saved.pack.revision!==body.expectedPackageRevision)fail('studio_conflict',409);
       if(body.action==='save-draft') {
@@ -125,15 +123,9 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
       if(!saved.draft||saved.draft.revision!==body.expectedDraftRevision||saved.draft.basePackageRevision!==saved.pack.revision)fail('studio_conflict',409);
       const resolved=await material(saved,saved.draft.gameConfig);
       if(!resolved.ready)fail(resolved.reason,422);
-      const configVersion=`room-config-${randomUUID()}`,preset=ROOM_LIMIT_PRESETS[saved.draft.gameConfig.limitPreset];
-      const branding={...saved.pack.branding,[bindingKey]:{...(saved.pack.branding[bindingKey]??{}),[body.roomId]:configVersion}};
-      const pack=await saved.operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,expectedRevision:body.expectedPackageRevision,
-        lanes:saved.pack.lanes,games:saved.pack.games,tables:saved.pack.tables,branding});
-      const frozen={configVersion,roomId:body.roomId,operatorId:body.operatorId,packageRevision:pack.revision,presentationLaneId:saved.room.presentationLaneId,
-        presentationHash:hash(saved.presentation),...saved.draft.gameConfig,...ROOM_GAME_TIMERS,limits:{min:preset.min,max:preset.max,sideMax:preset.sideMax},chips:[...preset.chips],refill:preset.refill,
-        leadMs:resolved.material.leadMs,cardMs:resolved.material.cardMs,material:resolved.material};
-      await client.query('/* room-game-config:publish-config */ INSERT INTO croupier_game.shared_table_configs(room_id,version,body) SELECT $3,$4,$5 WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL',[...params,body.roomId,configVersion,JSON.stringify(frozen)]);
-      await client.query('/* room-game-config:publish-head */ INSERT INTO croupier_game.shared_table_config_heads(room_id,version) SELECT $3,$4 WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL ON CONFLICT(room_id) DO UPDATE SET version=EXCLUDED.version',[...params,body.roomId,configVersion]);
+      const {package:pack}=await saved.operators.publishRoomGameConfig({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,expectedRevision:body.expectedPackageRevision,
+        lanes:saved.pack.lanes,games:saved.pack.games,tables:saved.pack.tables,branding:saved.pack.branding},
+        {roomId:body.roomId,gameConfig:saved.draft.gameConfig,material:resolved.material});
       const drafts=saved.drafts.filter(row=>row.roomId!==body.roomId);
       const document=await repository.saveDocument('administration',{value:{...saved.administration,roomGameConfigs:drafts},expectedRevision:body.expectedAdministrationRevision,actor:context.actor.user});
       return receipt(client,{...saved,pack,document,drafts,draft:null});

@@ -1,5 +1,6 @@
 import { cloneStudioJson } from '../../packages/studio-registry/server/storage-contract.mjs';
 import { idleRuleFor, publishedSelectionMode, selectSharedRoomPresentation } from './shared-room-presentation-selection.mjs';
+import { sharedRoomPresentationRead } from './shared-room-presentation-http.mjs';
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
@@ -64,7 +65,7 @@ const unavailableStore = Object.freeze({ configurationSource: 'unavailable',
 export function createPresentationApi({ db, env = process.env, store = fixtureDataDir(env) ? createLocalProjectReader(join(fixtureDataDir(env), 'studio')) : unavailableStore,
   registryOptions = { env, repositoryRoot: root },
   select = selectPresentation, directorFetchFactory = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, qaPublicOrigin = null } = {}) {
+  recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, withActiveRoomPresentation = null, qaPublicOrigin = null } = {}) {
   // Only the verified server QA capability supplies this constructor port.
   if (qaPublicOrigin !== null && (typeof qaPublicOrigin !== 'string'
     || !/^http:\/\/127\.0\.0\.1:([1-9][0-9]{3,4})$/.test(qaPublicOrigin)
@@ -77,6 +78,30 @@ export function createPresentationApi({ db, env = process.env, store = fixtureDa
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
+  async function idleAdvice({req,playerId,body,signal,context=frozenDealerContext}) {
+    let frozen=null;
+    if(body.presentationContext!==undefined) {
+      if(!context||body.presentationContext.dealerId!==body.dealerId)fail('Invalid presentation context');
+      frozen=await context.resolve(body.presentationContext);
+      if(!frozen.project)return {videoId:null,provider:'idle_family_unavailable_baseline',projectRevision:frozen.projectRevision};
+    }
+    const project=frozen?.project??await store.load(),{presentationContext:_context,...adviceBody}=body;
+    if(frozen) {
+      const idleMode=publishedSelectionMode(frozen.lane,{type:'idle'},'off');
+      if(!['active','shadow'].includes(idleMode))return {videoId:null,provider:'idle_openclaw_off',projectRevision:frozen.projectRevision};
+      adviceBody.mode=idleMode;
+    }
+    const ownInventory=!frozen&&isDealerId(body.dealerId)?registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}):null;
+    adviceService??=createIdleAdviceServer({settings,registryLoader});
+    const advise=await adviceService;
+    const fetchImpl=directorFetchFactory?await directorFetchFactory({req,playerId,project,
+      readProject:async()=>frozen?(await context.resolve(frozen.context)).project:store.load(),signal}):null;
+    if(fetchImpl!==null&&typeof fetchImpl!=='function')fail('Director transport unavailable',503);
+    return {...await advise({...adviceBody,project},{signal,...(ownInventory?{videoRegistry:ownInventory}:{}),
+      ...(fetchImpl?{fetchImpl,...(fetchImpl.cacheScope===undefined?{}:{cacheScope:fetchImpl.cacheScope})}:{}),
+      ...(frozen?{videoRegistry:frozen.idleInventory,cacheScope:createHash('sha256').update(JSON.stringify([playerId,frozen.context,fetchImpl?.cacheScope??null])).digest('hex')}:{}),
+    }),projectRevision:project.revision,configurationSource:frozen?.configurationSource??configurationSource};
+  }
   return async function handle(req, res, pathname, playerId) {
     const capability=presentationCapabilitiesResponse(new Request('http://local'+(req.url||pathname),{method:req.method,headers:req.headers??{}}));
     if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return true;}
@@ -90,6 +115,26 @@ export function createPresentationApi({ db, env = process.env, store = fixtureDa
     let sharedRequest=false,sharedSignal;
     try {
       if (!playerId) fail('Sign in required', 401);
+      const sharedIdle=/^\/api\/presentation\/shared-room\/([a-z0-9_-]{1,128})\/idle-advice$/.exec(pathname);
+      if(!sharedIdle&&['/api/presentation/shared-room/','/api/presentation/room-idle/','/api/presentation/room-video/','/api/presentation/room-layers/'].some(prefix=>pathname.startsWith(prefix))) {
+        sharedRequest=true;
+        const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};
+        sharedSignal=controller.signal;res.once('close',disconnected);
+        if(req.aborted||res.destroyed)controller.abort();
+        let response,stream;
+        try {
+          controller.signal.throwIfAborted();
+          response=await sharedRoomPresentationRead({request:req,playerId,signal:controller.signal},withActiveRoomPresentation);
+          controller.signal.throwIfAborted();
+          res.writeHead(response.status,Object.fromEntries(response.headers));
+          controller.signal.throwIfAborted();
+          if(response.body){stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);}else res.end();
+          return true;
+        } catch(error) {
+          if(stream)stream.destroy();else if(response?.body)try{await response.body.cancel();}catch{}
+          throw error;
+        } finally {res.removeListener('close',disconnected);}
+      }
       if (qaPublicOrigin && ['/api/presentation/registered-idle/', '/api/presentation/registered-video/', '/api/presentation/videos/']
         .some(prefix => pathname.startsWith(prefix))
         && (req.headers.host !== qaHost || req.headers.origin && req.headers.origin !== qaPublicOrigin
@@ -138,7 +183,7 @@ export function createPresentationApi({ db, env = process.env, store = fixtureDa
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
         json(410, {error:'legacy_presentation_retired'}); return true;
       }
-      if (!['/api/presentation/select', '/api/presentation/idle-advice'].includes(pathname) || req.method !== 'POST') fail('Unknown presentation endpoint', 404);
+      if (!['/api/presentation/select', '/api/presentation/idle-advice'].includes(pathname) && !sharedIdle || req.method !== 'POST') fail('Unknown presentation endpoint', 404);
       let raw = '';
       for await (const chunk of req) { raw += chunk; if (raw.length > 16384) fail('Presentation request too large', 413); }
       const body = JSON.parse(raw);
@@ -150,49 +195,35 @@ export function createPresentationApi({ db, env = process.env, store = fixtureDa
           ||typeof marker.roomId!=='string'||!/^[a-z0-9_-]{1,128}$/.test(marker.roomId)||typeof marker.talkId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(marker.talkId)
           ||!Number.isSafeInteger(marker.ver)||marker.ver<1||body.version!==marker.ver||!modes.has(body.mode)||!isDealerId(body.dealerId)||!plain(body.presentationContext))
           throw Object.assign(new Error('shared_room_presentation_invalid'),{code:'shared_room_presentation_invalid',statusCode:400});
-        if(typeof withSharedCommittedReceipt!=='function'||typeof frozenDealerContext?.resolve!=='function'||typeof frozenDealerContext?.publicVideo!=='function')
+        if(typeof withSharedCommittedReceipt!=='function')
           throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
         const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};
         sharedSignal=controller.signal;res.once('close',disconnected);
+        if(req.aborted||res.destroyed)controller.abort();
         try{
-          const value=await withSharedCommittedReceipt({request:req,playerId,body,signal:controller.signal},(capture,{signal})=>
-            selectSharedRoomPresentation({capture,body,frozenDealerContext,select,settings,directorFetchFactory,request:req,playerId,signal}));
+          controller.signal.throwIfAborted();
+          const value=await withSharedCommittedReceipt({request:req,playerId,body,signal:controller.signal},(capture,{signal,frozenDealerContext:activeContext})=>
+            selectSharedRoomPresentation({capture,body,frozenDealerContext:activeContext,select,settings,directorFetchFactory,request:req,playerId,signal}));
           controller.signal.throwIfAborted();
           if(!value||Object.getPrototypeOf(value)!==Object.prototype)throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
           json(200,cloneStudioJson(value,{maxBytes:256*1024}));return true;
         }finally{res.removeListener('close',disconnected);}
       }
-      if (pathname === '/api/presentation/idle-advice') {
-        let frozen = null;
-        if (body.presentationContext !== undefined) {
-          if (!frozenDealerContext || body.presentationContext.dealerId !== body.dealerId) fail('Invalid presentation context');
-          frozen = await frozenDealerContext.resolve(body.presentationContext);
-          if (!frozen.project) { json(200,{videoId:null,provider:'idle_family_unavailable_baseline',projectRevision:frozen.projectRevision}); return true; }
-        }
-        const project = frozen?.project ?? await store.load();
-        const { presentationContext: _context, ...adviceBody } = body;
-        if (frozen) {
-          // Published rooms ask OpenClaw for idle variants only when the saved composition allows it.
-          const idleMode = publishedSelectionMode(frozen.lane, { type: 'idle' }, 'off');
-          if (!['active','shadow'].includes(idleMode)) { json(200,{videoId:null,provider:'idle_openclaw_off',projectRevision:frozen.projectRevision}); return true; }
-          adviceBody.mode = idleMode;
-        }
-        const ownInventory = !frozen && isDealerId(body.dealerId)
-          ? registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}) : null;
-        adviceService ??= createIdleAdviceServer({ settings, registryLoader });
-        const advise = await adviceService;
+      if (pathname === '/api/presentation/idle-advice' || sharedIdle) {
         const controller = new AbortController();
         const disconnected = () => { if (!res.writableEnded) controller.abort(); };
         res.once('close', disconnected);
         try {
-          const fetchImpl = directorFetchFactory ? await directorFetchFactory({ req, playerId, project,
-            readProject: async () => frozen ? (await frozenDealerContext.resolve(frozen.context)).project : store.load(), signal: controller.signal }) : null;
-          if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable', 503);
-          json(200, { ...await advise({ ...adviceBody, project }, { signal: controller.signal,
-            ...(ownInventory ? {videoRegistry:ownInventory} : {}),
-            ...(fetchImpl ? { fetchImpl, ...(fetchImpl.cacheScope === undefined ? {} : { cacheScope: fetchImpl.cacheScope }) } : {}),
-            ...(frozen ? {videoRegistry:frozen.idleInventory, cacheScope:createHash('sha256').update(JSON.stringify([playerId, frozen.context, fetchImpl?.cacheScope ?? null])).digest('hex')} : {}) }),
-            projectRevision: project.revision, configurationSource:frozen?.configurationSource ?? configurationSource });
+          if(sharedIdle) {
+            sharedRequest=true;sharedSignal=controller.signal;
+            if(req.aborted||res.destroyed)controller.abort();
+            controller.signal.throwIfAborted();
+            if(typeof withActiveRoomPresentation!=='function')throw Object.assign(Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
+            if(!body.presentationContext||body.presentationContext.dealerId!==body.dealerId||new URL(req.url,'http://local').search)throw Object.assign(Error('shared_room_presentation_invalid'),{code:'shared_room_presentation_invalid',statusCode:400});
+            const value=await withActiveRoomPresentation({request:req,playerId,roomId:sharedIdle[1],presentationContext:body.presentationContext,signal:controller.signal},
+              (_capture,{signal,frozenDealerContext:context})=>idleAdvice({req,playerId,body,signal,context}));
+            controller.signal.throwIfAborted();json(200,value);
+          } else json(200,await idleAdvice({req,playerId,body,signal:controller.signal}));
         }
         finally { res.removeListener('close', disconnected); }
         return true;
@@ -316,7 +347,7 @@ export function createPresentationApi({ db, env = process.env, store = fixtureDa
         json(200, projectOwned(await decisions.get(key)));
       } finally { res.removeListener('close', disconnected); }
     } catch (error) { if(sharedRequest){
-      const known={shared_room_presentation_invalid:400,shared_room_presentation_unavailable:503,shared_room_presentation_stale:409,shared_room_presentation_forbidden:403,shared_room_authentication_required:401};
+      const known={shared_room_presentation_invalid:400,shared_room_presentation_not_found:404,shared_room_presentation_unavailable:503,shared_room_presentation_stale:409,shared_room_presentation_forbidden:403,shared_room_authentication_required:401};
       const code=Object.hasOwn(known,error?.code)?error.code:error?.statusCode===401?'shared_room_authentication_required':error?.statusCode===403?'shared_room_presentation_forbidden':typeof error?.code==='string'&&error.code.startsWith('studio_presentation_idle_')&&error.statusCode===409?'shared_room_presentation_stale':'shared_room_presentation_unavailable';
       if(!res.destroyed&&!sharedSignal?.aborted)json(known[code],{error:code});return true;
     } json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }

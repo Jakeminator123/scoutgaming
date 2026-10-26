@@ -157,6 +157,24 @@ jobs:
         if: ${{ !cancelled() }}
         timeout-minutes: 8
         run: sh .githooks/pre-commit-full presentation
+      - name: Real shared-room browser wiring (Chrome)
+        if: ${{ !cancelled() }}
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x /opt/google/chrome/chrome
+          /opt/google/chrome/chrome --version
+
+          browser_tools="$RUNNER_TEMP/shared-room-browser"
+          mkdir -p "$browser_tools"
+          npm install --prefix "$browser_tools" \
+            --no-save --package-lock=false --ignore-scripts \
+            --no-audit --no-fund playwright-core@1.62.1
+
+          CROUPIER_BROWSER_FIXTURE_MODULE="$browser_tools/node_modules/playwright-core/index.mjs" \
+          CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome \
+            node --test --test-concurrency=1 --test-reporter=spec test/shared-room-browser.mjs
       - name: Regression - Access, wallet, registry and cloud
         if: ${{ !cancelled() }}
         timeout-minutes: 18
