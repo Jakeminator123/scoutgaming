@@ -2845,3 +2845,25 @@ besparing. Uppföljningen levereras i separat PR utan merge eller deploy;
 migreringsagenten är informerad och dess kodfiler/egen handoffsektion lämnas
 orörda. Bildkomprimering har lägre prioritet; byte av medieadresser och första
 hämtningar kan fortfarande vara betydande och ska bedömas från nya driftdata.
+
+## Admin: automatisk klientombyggnad — 26 oktober 2026
+
+Admins separata klientbygge kördes bara vid start, så klientändringar krävde
+manuella ombyggnader. `npm --prefix apps/studio run dev:client` bevakar nu
+avgränsade UI-/komponent-/kontraktskällor och återanvänder samma typkontroller
+och byggskript. Sparningar samlas, ett eget bygge körs åt gången och nästa
+ändring kan återhämta ett byggfel. Byggresultat, beroenden, cache, tester och
+privata filer utlöser inga ombyggnader. Stoppa bevakningen innan ett annat
+klientbygge startas; Ctrl+C inväntar ett pågående eget bygge utan bred processkill.
+
+Befintlig isolerad fixture/server används. Siduppdatering är manuell så att
+osparade utkast inte kastas automatiskt. Inga nya paket, produktstarter,
+API-/auth-/lagringskontrakt eller migrationsstatusar införs. Instruktioner
+finns i [klientguiden](../apps/studio/client/README.md#bygg-om-klienten-när-du-sparar).
+
+Verifierat i en avgränsad källkopia från main `94077613`: 7/7 riktade prov
+utan skip på Node 24.22.1/Linux, med verkliga filhändelser, byggprocesser och
+en compiler-barnprocess. Proven täcker JS/CSS/delade källor, atomisk sparning,
+nya mappar, uteblivna byggloopar, samtidiga sparningar, byggfel och ordnad
+stoppväg. Syntax- och diffkontroll passerar. Full produktregression och
+klientbygge redovisas av PR:ens CI; Windows-körning är inte utförd här.

@@ -37,6 +37,41 @@ UI-bygget, från reporoten med Node 24:
 node apps/studio/tools/prepare-design-preview.mjs
 ```
 
+### Bygg om klienten när du sparar
+
+Admin serverar det separata klientbygget från disk. Nexts vanliga omladdning
+bygger inte om de filerna. Starta den befintliga isolerade fixturen och vänta
+tills första bygget är klart:
+
+```powershell
+node apps/studio/start.mjs --offline --no-open
+```
+
+Kör sedan i en andra terminal från reporoten:
+
+```powershell
+npm --prefix apps/studio run dev:client
+```
+
+Kommandot bygger klienten igen när dess källfiler eller återanvända komponenter
+och kontrakt ändras. Det använder samma typkontroller och bygge som vanligt,
+samlar flera sparningar och kör högst ett eget bygge åt gången. Ett byggfel
+visas i terminalen; nästa ändring gör ett nytt försök. Klientens låsta
+beroenden ska redan vara installerade av första bygget.
+Ändras paketmanifest eller låsfil, stoppa bevakningen, kör det befintliga
+förberedelsekommandot ovan och starta bevakningen igen.
+
+När bygget lyckas, spara dina utkast och ladda om den befintliga Adminfliken.
+Detta är automatisk ombyggnad med manuell siduppdatering; pågående utkast
+laddas inte om automatiskt. Klientändringar kräver ingen Next-omstart.
+Serverändringar följer fortfarande serverns vanliga utvecklingsflöde.
+Scenförhandsvisningens separata `/preview/`-resurser från
+`packages/presentation/compositor` och `packages/presentation/preview`
+byggs fortfarande med `npm --prefix apps/studio run prepare:preview`.
+Avsluta bevakningen med Ctrl+C innan du startar ett annat klientbygge i
+samma arbetskopia; invänta att ett eventuellt pågående bygge avslutas.
+Kommandot startar ingen egen produktserver eller databas.
+
 Behåll `admin/`, `lobby/`, `runtime/`, `package.json`, `package-lock.json` och
 proveniensfilen. `node_modules/`, `.cache/` och `apps/studio/design-preview-build/` är
 återbyggbara lokala resultat och ska inte checkas in. Klientens installation
