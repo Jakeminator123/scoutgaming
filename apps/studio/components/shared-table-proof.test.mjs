@@ -60,3 +60,50 @@ test('invalid closure timestamps are rejected in both summary and selected shoe'
  await h.answer(1,data(true,{shoeId:'shoe-1',commitment:'commit',closedAt:'1792630800000',rawProof:'PRIVATE'}));
  assert.match(h.html(),/stämmer inte med det valda rummet/);assert.doesNotMatch(h.html(),/PRIVATE|data:application/);
 });
+
+const references=[{roomId:'room-1',shoeId:'shoe-1',roundId:'round-frozen',configVersion:'config-frozen'}];
+async function selectedProof(extra={},complete=true) {
+ const h=harness();h.change('room-1');h.submit();await h.answer(0,data(true));
+ h.nodes(n=>n.type==='button'&&String(n.props.children).startsWith('Visa'))[0].props.onClick();
+ await h.answer(1,data(true,{shoeId:'shoe-1',commitment:'commit',closedAt:1792630800000,rawProof:'{"second":2,"first":1}',
+   verification:{status:'verified'},traceability:{status:'verified',references},...extra},complete));
+ return h;
+}
+test('closed proof shows the exact verified room, shoe, round and frozen game version',async()=>{
+ const h=await selectedProof(),html=h.html();
+ assert.match(html,/Runda och spelversion är verifierade mot auditkedjan/);
+ for(const value of ['room-1','shoe-1','round-frozen','config-frozen'])assert.ok(html.includes(value),value);
+ assert.equal(decodeURIComponent(h.nodes(n=>n.type==='a')[0].props.href.split(',')[1]),'{"second":2,"first":1}');
+});
+test('older proof or unavailable and failed bindings remain explicit without fabricated references',async()=>{
+ for(const traceability of [undefined,{status:'unavailable',reason:'round_binding_missing'},{status:'unavailable',reason:'audit_incomplete'},
+   {status:'failed',reason:'round_binding_invalid'}]) {
+  const h=await selectedProof({traceability}),html=h.html();
+  assert.doesNotMatch(html,/round-frozen|config-frozen|Runda och spelversion är verifierade/);
+  assert.match(html,/Spårbarhet till runda och spelversion|Kopplingen till runda och spelversion/);
+  assert.equal(h.nodes(n=>n.type==='a').length,1,'integrity proof remains downloadable');
+ }
+});
+test('foreign, ambiguous and unverified reference receipts are rejected before display',async()=>{
+ for(const change of [
+  {traceability:{status:'verified',references:[{...references[0],roomId:'foreign-room'}]}},
+  {traceability:{status:'verified',references:[{...references[0],shoeId:'foreign-shoe'}]}},
+  {traceability:{status:'verified',references:[{...references[0],configVersion:'../foreign'}]}},
+  {traceability:{status:'verified',references:[]}},
+  {traceability:{status:'verified',references:[references[0],references[0]]}},
+  {traceability:{status:'unavailable',reason:'round_binding_missing',references}},
+  {verification:{status:'failed'}},
+ ]) {
+  const h=await selectedProof(change),html=h.html();
+  assert.match(html,/stämmer inte med det valda rummet/);assert.doesNotMatch(html,/round-frozen|config-frozen|data:application/);
+ }
+ const incomplete=await selectedProof({},false);
+ assert.match(incomplete.html(),/stämmer inte med det valda rummet/);assert.doesNotMatch(incomplete.html(),/round-frozen|config-frozen/);
+});
+test('open shoe never displays round or configuration references supplied by a malformed response',async()=>{
+ const h=harness();h.change('room-1');h.submit();await h.answer(0,data());
+ h.nodes(n=>n.type==='button'&&String(n.props.children).startsWith('Visa'))[0].props.onClick();
+ await h.answer(1,data(false,{shoeId:'shoe-1',commitment:'commit',traceability:{status:'verified',references}}));
+ assert.doesNotMatch(h.html(),/round-frozen|config-frozen|Runda och spelversion är verifierade/);
+ assert.match(h.html(),/lämnas inte ut medan skon är öppen/);
+});
