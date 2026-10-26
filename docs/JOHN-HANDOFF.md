@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Kevin-anpassning och isolerad PAOW-repetition — 26 oktober kväll
+
+Jakobs senaste styrning är selektiv konvertering av Kevin-funktioner till mains befintliga modell. Äldre tester, instruktioner och PAOW-sekvenser är inte automatiska bevarandekrav. Den frysta PAOW-banken nedan är ett jämförelseprov, inte ett beslut att framtida implementation måste använda alla 35 tagningar.
+
+Materialresolvern använder nu kanoniska `SPEECH_SLOT_IDS` direkt och slopar dubblerade literaljämförelser av 700/1500/80/1,5. Budget och ljudöverlämning beräknas fortsatt från samma aktiva timingvärden som spelaren. Verkliga medieidentiteter, godkännanden, servermått, tioreplikskontrakt, tidsgränser, sekvensvakt och rums-/versionsbindning består. Node24.21.0: 62/62 befintliga material-, tidslinje-, shared-runtime- och Admin-writerprov passerar, 0 skip; oberoende diffgranskning utan blockerare. Nästa möjliga förenkling är **nåbar varianttäckning** genom den verkliga sekvensplaneraren och valda skotransitioner, i stället för universellt krav på alla profilvarianter. Den förändringen är inte genomförd här.
+
+Befintlig staging återstartades och dess gamla branchkoppling rättades till `main`, autoDeploy fortsatt av. Render `dep-dbfrl8d9fdbs739tnp8g` är LIVE på fryst `f153d26d8d4546edd61dbd12fdf530dc31c0163b`; frontendens a22-version har identisk produktkod med denna f153-bas. Vanlig Admin-inloggning och projektläsning passerar. Därefter importerades 46 oförändrade PAOW-original genom native prepare/Blob/commit: 35 profilfilmer, JohnsBetv5:s idle och tio svenska taloriginal, totalt 58 265 985 byte. Samtliga 46 är servermätta; alla tio talval fungerar i den avsedda serverägda Studio-repetitionen med `review=pending`. Sparad projektrevision är `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Inga talgodkännanden eller bolags-/rumspubliceringar skrevs.
+
+Root öppnade repetitionen i browsern och såg PAOW samt märkningen separat testsaldo. Bakgrund/bord är stagingens syntetiska fixturlager; bilden är inte layoutacceptans för Johns Bet. Denna modell fick ingen ljudinmatning från verktyget, så talinnehåll och läppsynk är inte godkända. **60 % = 12/20 kvarstår.** Full J08/K04/K05/K06/K07-acceptans kräver återstående verkliga beteendekvitton.
+
+Privata manifest och original finns i originalcheckoutens `arkiv/2026-10-26/migration-continuation-paow/`. Aktuell chats privata bevis innehåller `staging-paow-preview-journal.private.json`, `staging-resume-f153-20261026.json`, `paow-isolated-preview.png` och nästa etapps `NEXT-STAGE.md`. Credentials/sessioner stannar utanför Git. Aktiv staging ska lämnas över till nästa ägare eller stoppas efter prov; gamla stoppkvitton nedan är historiska.
+
 ## Migrationsrapportens verifieringsväg — 26 oktober
 
 [PR417](https://github.com/Jakeminator123/scoutgaming/pull/417) är mergad som `b7bff26469670afd2090987e50256fedbf6edec6` efter full [CI40375434645](https://github.com/Jakeminator123/scoutgaming/actions/runs/40375434645). Status är 60 %; detaljerade runtime-, medie- och återställningsgränser följer nedan.
