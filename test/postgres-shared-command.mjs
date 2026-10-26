@@ -382,6 +382,19 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
             if (!fresh) return null;
             assert.deepEqual(fresh, { actorId: h.actorId, sessionId: h.sessionId, expiresAt: h.expires, partnerKeyId: null });
             return { actorId: fresh.actorId, sessionId: fresh.sessionId, expiresAt: fresh.expiresAt, ...h.publication };
+          }, async readPresentationContextLocked(value, { configVersion, signal }) {
+            signal.throwIfAborted(); assert.deepEqual(value, binding);
+            h.storage.db.assertSharedTransaction({ studioScope: h.scope, serialize: true });
+            assert.deepEqual(await h.storage.db.prepare('SELECT pg_backend_pid() AS pid,txid_current()::text AS txid').get(),
+              transactions.at(-1), 'the active context uses the same locked authority transaction');
+            const row = await h.storage.db.prepare('SELECT body FROM croupier_game.shared_table_configs WHERE room_id=? AND version=?')
+              .get(value.roomId, configVersion);
+            assert.ok(row); const config = JSON.parse(row.body);
+            assert.equal(config.configVersion, configVersion);
+            // Publication admission stays injected; material/config bytes come
+            // from the real immutable row on each of the two captures.
+            return { config, context: { ...context, packageRevision: config.packageRevision, dealerId: config.material.dealerId },
+              saved: {}, authority: {} };
           } },
           async readPresentationLocked(roomId) {
             const current = await receiver.currentLocked(roomId), transaction = transactions.at(-1);

@@ -25,7 +25,7 @@ test('shared rooms use the published card display and the same default in every 
   const presentation=await mountSharedRoomPresentation({
    document:{getElementById:id=>id==='scene'||id==='table2d'?host:null},
    window:{matchMedia:()=>({matches:compact}),addEventListener(){},removeEventListener(){},fetch(){assert.fail('layout must not request data');}},
-   selection:{presentation:'local',dealer:'test-dealer',localDealer:'test-dealer',registeredDealers:[{id:'test-dealer',label:'Test'}]},
+   selection:{roomId:'card-view-room',presentation:'local',dealer:'test-dealer',localDealer:'test-dealer',registeredDealers:[{id:'test-dealer',label:'Test'}]},
    onReady(){},onError(error){assert.fail(error);},
    createComposition:()=>plane?{referencePlane:()=>plane,onGeometryChange:()=>()=>{},close(){}}:null,
    loadAdapters:async()=>[
