@@ -12,12 +12,17 @@ import {isPresentationRoomReadQuery,studioAdminEndpoint} from '../lib/studio-adm
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {recordedSpeechIdentity} from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
+import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
 
 const scope={environment:'j08-test',workspaceId:'isolated'},actor={user:'j08-admin',role:'admin'};
 const clone=structuredClone;
 const catalogValue=readRuntimeCatalogFixture(),catalog={revision:runtimeCatalogRevision(catalogValue),value:catalogValue};
-function fixture({resolver=true,speech=false}={}) {
-  const cloud=cloudPresentationFixture({lanes:[defaultPresentationLane('linnea')]});
+function fixture({resolver=true,speech=false,native=false}={}) {
+  const source=native?nativeRoomMaterialFixture():null;
+  const cloud=source?{project:source.project,presentation:source.presentation,mediaRows:source.records.map(row=>({...clone(row),revision:'media-1'}))}:cloudPresentationFixture({lanes:[defaultPresentationLane('linnea')]});
+  const dealerId=cloud.presentation.lanes[0].layers.dealer.default;
   if(speech) {
     const record=clone(cloud.mediaRows[0]);record.id='80000000-0000-4000-8000-000000000001';
     record.pathname=`croupier/media/dealers/linnea/review/uploads/${record.id}/${record.sha256}.mp4`;
@@ -32,8 +37,8 @@ function fixture({resolver=true,speech=false}={}) {
   }
   const room={schemaVersion:2,id:'room-test',name:'Test room',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'room-lane',state:'live'};
   const operator={environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1};
-  let state={document:{revision:'admin-1',value:{rooms:[room],gameLane:'room-lane',gameLanes:[{schemaVersion:1,id:'room-lane',label:'Room',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}]}},
-    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation({},cloud.presentation)),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
+  let state={document:{revision:'admin-1',value:{rooms:[room],gameLane:'room-lane',gameLanes:[{schemaVersion:1,id:'room-lane',label:'Room',renderer:'portrait-video',dealer:dealerId,mediaCollection:dealerId+'-presentation'}]}},
+    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation({},cloud.presentation,{allowExtended:native})),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
   let work=null,serial=Promise.resolve(),failure=null,captureChange=null,mediaChange=null,resolverChange=null;const trace=[];
   const client={async query(sql,values) {
     assert.ok(work,'every SQL query uses one active repository transaction');assert.deepEqual(values.slice(0,2),[scope.environment,scope.workspaceId]);
@@ -41,6 +46,7 @@ function fixture({resolver=true,speech=false}={}) {
     if(failure===marker){failure=null;throw Error('injected SQL failure');}
     let rows=[];
     if(marker==='operator-store:operator-by-id'||marker==='operator-store:lock-operator')rows=values[2]===operator.operator_id?[operator]:[];
+    else if(marker==='operator-store:extended-presentation-ready')rows=[{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}];
     else if(marker==='operator-store:current-package')rows=work.packages.filter(row=>row.operator_id===values[2]).slice(-1);
     else if(marker==='operator-store:publish-package') {const row={...work.packages.at(-1),package_revision:work.packages.at(-1).package_revision+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]};work.packages.push(row);rows=[row];}
     else if(marker==='operator-store:audit-write'){work.audits.push(values);rows=[{event_id:values[3]}];}
@@ -65,7 +71,7 @@ function fixture({resolver=true,speech=false}={}) {
   }};
   let materialOverride=null;
   const material=({language})=>materialOverride??({revision:'media-revision-1',dealerId:'linnea',language,leadMs:1200,cardMs:880,media:cloud.mediaRows.map(({id,sha256})=>({id,sha256}))});
-  const api=createRoomGameConfigApi({repository,scope,...(resolver?{resolveMaterial:input=>{assert.ok(work);const value=material(input);resolverChange?.(input,value);return value;}}:{}),now:()=>100});
+  const api=createRoomGameConfigApi({repository,scope,...(resolver?{resolveMaterial:input=>{assert.ok(work);const value=typeof resolver==='function'?resolver(input):material(input);resolverChange?.(input,value);return value;}}:{}),now:()=>100});
   const invoke=(method,body,options={})=>api.handlers.get(method+' /studio/api/admin/room-game-config')({actor,scope,request:new Request('https://studio.invalid/studio/api/admin/room-game-config?operatorId=north&roomId=room-test',{method}),body,...options});
   const save=(gameConfig={language:'sv',limitPreset:'prive'},extra={})=>invoke('POST',{action:'save-draft',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:state.document.revision,expectedPackageRevision:state.packages.at(-1).package_revision,gameConfig,...extra});
   const publish=draft=>invoke('POST',{action:'publish',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:draft.administrationRevision,expectedPackageRevision:draft.packageRevision,expectedDraftRevision:draft.draft.revision});
@@ -83,6 +89,33 @@ test('J08 save/read/publish binds immutable full profile and package on the same
   assert.deepEqual(config.limits,{min:5,max:2000,sideMax:200});assert.deepEqual(config.chips,ROOM_LIMIT_PRESETS.prive.chips);assert.equal(config.refill,1000);
   assert.ok(f.trace.indexOf('room-game-config:room-lock')<f.trace.indexOf('operator-store:publish-package'));
   assert.deepEqual((await f.invoke('GET')).published,result.published);
+});
+test('native material publishes through the captured current-record and frozen-package checks without provider I/O',async t=>{
+  const provider=t.mock.method(globalThis,'fetch',()=>{throw Error('unexpected provider request');});
+  const f=fixture({native:true,resolver:resolveNativeRoomGameMaterial});
+  const draft=await f.save({language:'sv',limitPreset:'casual'});assert.deepEqual(draft.publication,{ready:true});
+  const published=await f.publish(draft),state=f.snapshot();
+  const frozen=JSON.parse(state.configs['room-test:'+published.published.configVersion]);
+  assert.match(frozen.material.revision,/^native-/);assert.equal(frozen.material.dealerId,'dragan');
+  assert.ok(f.trace.includes('material:snapshot'));assert.ok(f.trace.includes('material:recheck'));
+  assert.equal(provider.mock.callCount(),0);
+
+  const changed=fixture({native:true,resolver:resolveNativeRoomGameMaterial});
+  const prepared=await changed.save({language:'sv',limitPreset:'casual'});
+  changed.changeCapture(snapshot=>{snapshot.mediaRows[0].classification.notes='Changed after frozen publication';});
+  const before=changed.snapshot();await assert.rejects(changed.publish(prepared),{code:'studio_room_game_material_unavailable'});
+  assert.deepEqual(changed.snapshot(),before,'changed current material never publishes a config or new package');
+});
+test('material readiness exposes only fixed native reason codes and leaves publish errors generic',async()=>{
+  for(const reason of ['native_material_measurement_missing','private_database_password','native_material_measurement_missing\nsecret']){
+    const f=fixture({resolver:()=>{throw Object.assign(Error('private failure'),{statusCode:422,code:'studio_room_game_material_unavailable',reason});}});
+    const draft=await f.save();
+    const expected={ready:false,reason:'studio_room_game_material_unavailable',...(reason==='native_material_measurement_missing'?{materialReason:reason}:{})};
+    assert.deepEqual(draft.publication,expected);assert.deepEqual((await f.invoke('GET')).publication,expected);
+    await assert.rejects(f.publish(draft),error=>error.code==='studio_room_game_material_unavailable'&&error.reason===undefined);
+  }
+  const native=fixture({resolver:resolveNativeRoomGameMaterial}),draft=await native.save();
+  assert.deepEqual(draft.publication,{ready:false,reason:'studio_room_game_material_unavailable',materialReason:'native_material_profile_missing'});
 });
 test('J08 role and tenant failures happen before data reads; wrong room cannot publish',async()=>{
   const f=fixture();await assert.rejects(f.invoke('GET',undefined,{actor:{user:'partner',role:'partner'}}),{statusCode:403});

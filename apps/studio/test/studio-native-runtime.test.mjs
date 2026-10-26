@@ -8,6 +8,8 @@ import { readFileSync } from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession,nativeStudioErrorResponse,readAssistantDatabaseInventory } from '../lib/studio-native-runtime.mjs';
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
+import {layerBlobFixture,layerVideo} from '../../../test/fixtures/layer-media.mjs';
 
 test('repository and app cwd reach real traced build roots and installed product SQL', () => {
   const repo = fileURLToPath(new URL('../../../', import.meta.url));
@@ -51,6 +53,26 @@ const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https:
   CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid', CROUPIER_LAB_BASE_PATH: '/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
   CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') };
+
+test('native runtime binds byte inspection to its own environment and preserves caller cancellation',async t=>{
+  const blob=await layerBlobFixture(cleanup=>t.after(cleanup),layerVideo(),'video/mp4');
+  const nativeEnv={...env,...blob.options.env,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'fixture-ingress-'.repeat(4)};
+  const pool={...createStudioMemoryPool(),query:async()=>{throw Error('unexpected initialization query');},end:async()=>{}},empty=()=>({handlers:new Map(),gates:new Map()});
+  const boDb={prepare:()=>({get:async()=>({v:'ab'.repeat(32)})}),transaction:work=>work()};
+  const native=await createStudioNativeRuntime(nativeStudioAdminConfiguration(nativeEnv),{
+    env:nativeEnv,poolFactory:async()=>pool,storeFactory:()=>({db:{assertInstalled:async()=>{}},boDb}),schemaCheck:async()=>{},
+    authFactory:()=>async()=>({user:'fixture-admin',role:'admin',scope:{environment:'fixture',workspaceId:'croupier'}}),
+    dataFactory:empty,accountsFactory:empty,authActionsFactory:()=>({handle:async()=>new Response(null),availableActions:[]}),
+    policyFactory:()=>({readSaved:async()=>({project:{}}),canAssignDealer:async()=>true,readGameConfiguration:async()=>({gameLanes:[]})}),
+    fetchImpl:()=>{throw Error('unexpected runtime request');},
+  });
+  const id='10000000-0000-4000-8000-000000000001',record={id,provider:'vercel-blob',pathname:`croupier/videos/${id}/${blob.sha256}.mp4`,sha256:blob.sha256,size:blob.size,contentType:blob.contentType};
+  const measured=await native.inspectMediaTiming(record,{...blob.options,env:{}});
+  assert.equal(measured.mediaId,id);assert.equal(measured.sha256,blob.sha256);assert.equal(measured.endUs,1000000);
+  assert.equal(measured.recordedSpeechIdentitySha256,null);
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(native.inspectMediaTiming(record,{...blob.options,signal:controller.signal}),error=>error.statusCode===408);
+});
 
 test('assistant inventory reads only table names in the actual game, auth and Studio schemas', async () => {
   const schemas = ['../../../ops/neon-game/product-schema.sql','../../../ops/neon-studio/001-studio-metadata.sql']
@@ -145,7 +167,7 @@ test('bundled source paths load all reviewed migrations without asset URLs', asy
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
   assert.equal(actual.filter(row => !row.deploymentOptional).at(-1).file, '017-moving-budget-capacity.sql');
-  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['016', '018', '019']);
+  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['016', '018', '019', '020']);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });
 

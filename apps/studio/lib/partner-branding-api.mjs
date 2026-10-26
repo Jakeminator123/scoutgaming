@@ -1,5 +1,6 @@
+import {validatePresentationBranding} from '../../../packages/presentation/server/presentation-storage.mjs';
 import { createHash } from 'node:crypto';
-import { canonicalStudioJson, cloneStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import {roomGame} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
@@ -225,7 +226,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const next=structuredClone(pack.branding);
     for(const key of [...PARTNER_BRANDING_FIELDS,'roomOverrides'])delete next[key];
     // Save, review and publish must all fit the same final package, including N1-owned metadata.
-    try { return cloneStudioJson({...next,...structuredClone(branding)}, {maxBytes:8000,maxNodes:200,maxDepth:6}); }
+    try { return validatePresentationBranding({...next,...structuredClone(branding)}); }
     catch(error) { if(error instanceof StudioStorageError && error.statusCode===422)fail(413); throw error; }
   }
   function changesFor(pack,draft,document) {

@@ -18,6 +18,12 @@ const exact=(value,keys)=>object(value)&&Object.keys(value).length===keys.length
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value)&&!['__proto__','constructor','prototype'].includes(value);
 const hash=value=>createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
 const bindingKey='roomGameConfigVersions';
+const materialReasons=new Set(['native_material_bank_incomplete','native_material_contract_unsupported','native_material_dealer_missing',
+  'native_material_frozen_v3_required','native_material_idle_missing','native_material_invalid_publication','native_material_measurement_mismatch',
+  'native_material_measurement_missing','native_material_media_limit','native_material_profile_missing','native_material_room_mismatch',
+  'native_material_size_mismatch','native_material_slot_unsupported','native_material_speech_pose_unsupported','native_material_speech_slot_missing',
+  'native_material_speech_timing_mismatch','native_material_speech_unbound','native_material_take_audio_truncated','native_material_take_mismatch',
+  'native_material_take_unrecognized','native_material_timing_limit','native_material_transition_pose_missing','native_material_video_unavailable']);
 const roomLock=roomId=>{const bytes=createHash('sha256').update(`croupier-shared-table\0room\0${roomId}`).digest();return[bytes.readInt32BE(0),bytes.readInt32BE(4)];};
 function intent(value) {
   const common=['action','operatorId','roomId','expectedAdministrationRevision','expectedPackageRevision'];
@@ -77,7 +83,8 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
       await assertCapturedPresentationMedia(repository,preconditions);
       return {ready:true,material:value};
     } catch(error) {
-      if(error?.statusCode===422)return {ready:false,reason:'studio_room_game_material_unavailable'};
+      if(error?.statusCode===422)return {ready:false,reason:'studio_room_game_material_unavailable',
+        ...(error.code==='studio_room_game_material_unavailable'&&materialReasons.has(error.reason)?{materialReason:error.reason}:{})};
       throw error;
     }
   }
@@ -93,7 +100,7 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
     const available=saved.draft?await material(saved,saved.draft.gameConfig):{ready:false,reason:'studio_room_game_draft_required'};
     return {ok:true,roomId:saved.room.id,operatorId:saved.operator.id,administrationRevision:saved.document.revision,packageRevision:saved.pack.revision,
       draft:saved.draft?{revision:saved.draft.revision,gameConfig:saved.draft.gameConfig}:null,published,
-      publication:{ready:available.ready,...(available.reason?{reason:available.reason}:{})}};
+      publication:{ready:available.ready,...(available.reason?{reason:available.reason}:{}),...(available.materialReason?{materialReason:available.materialReason}:{})}};
   }
   handlers.set('GET /studio/api/admin/room-game-config',async context=>{
     trusted(context);const url=new URL(context.request.url);

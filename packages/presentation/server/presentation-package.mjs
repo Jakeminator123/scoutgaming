@@ -1,21 +1,23 @@
 import { createHash } from 'node:crypto';
+import { EXTENDED_PRESENTATION_FORMAT, EXTENDED_PRESENTATION_DATA_LIMIT, validatePresentationBranding } from './presentation-storage.mjs';
 import { OPERATOR_LIFECYCLE_KEY } from '../contracts/operator-lifecycle-key.mjs';
 import { gzipSync, gunzipSync, brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { validatePresentationPackage } from '../contracts/presentation-layers.mjs';
 import { canonicalStudioJson, StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
 
 // A reserved, server-authored part of the existing immutable operator package.
-// Compression keeps the existing 8 KiB branding column/schema unchanged.
+// Legacy encodings retain their exact bounds. The explicit extended envelope
+// requires optional storage version 020 and runtime capability 29 before writing.
 export const PRESENTATION_PACKAGE_KEY = '_scoutPresentation';
 const GZIP_LIMIT = 6500, BROTLI_LIMIT = 7400, OUTPUT_LIMIT = 256 * 1024;
 const fail = (status = 422) => { throw new StudioStorageError('studio_invalid_presentation', status); };
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
-export function encodePresentationPackage(value) {
+export function encodePresentationPackage(value, {allowExtended=false} = {}) {
   const checked = validatePresentationPackage(value);
   const bytes = Buffer.from(canonicalStudioJson(checked));
   if (bytes.length > OUTPUT_LIMIT) fail();
   // Preserve historical bytes for packages that already fit the gzip contract.
-  let data = gzipSync(bytes).toString('base64url'), encoding = 'gzip-base64url';
+  let data = gzipSync(bytes).toString('base64url'), encoding = 'gzip-base64url', format = 'croupier-lanes-v1';
   if (data.length > GZIP_LIMIT) {
     data = brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 11,
       [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_TEXT } }).toString('base64url');
@@ -24,15 +26,19 @@ export function encodePresentationPackage(value) {
     // overflow so all existing valid envelopes keep their original bytes.
     if (data.length > BROTLI_LIMIT) data = brotliCompressSync(bytes, { params: {
       [constants.BROTLI_PARAM_QUALITY]: 11, [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_FONT } }).toString('base64url');
-    if (data.length > BROTLI_LIMIT) fail(413);
+    if (data.length > BROTLI_LIMIT) {
+      if (allowExtended !== true || data.length > EXTENDED_PRESENTATION_DATA_LIMIT) fail(413);
+      format = EXTENDED_PRESENTATION_FORMAT;
+    }
   }
-  return Object.freeze({ format: 'croupier-lanes-v1', encoding, sha256: digest(bytes), data });
+  return Object.freeze({ format, encoding, sha256: digest(bytes), data });
 }
 export function decodePresentationPackage(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || Object.keys(value).sort().join(',') !== 'data,encoding,format,sha256'
-    || value.format !== 'croupier-lanes-v1' || !['gzip-base64url','br-base64url'].includes(value.encoding)
-    || typeof value.data !== 'string' || !value.data.length || value.data.length > (value.encoding === 'br-base64url' ? BROTLI_LIMIT : GZIP_LIMIT)
+    || !['croupier-lanes-v1',EXTENDED_PRESENTATION_FORMAT].includes(value.format) || !['gzip-base64url','br-base64url'].includes(value.encoding)
+    || value.format === EXTENDED_PRESENTATION_FORMAT && value.encoding !== 'br-base64url'
+    || typeof value.data !== 'string' || !value.data.length || value.data.length > (value.format === EXTENDED_PRESENTATION_FORMAT ? EXTENDED_PRESENTATION_DATA_LIMIT : value.encoding === 'br-base64url' ? BROTLI_LIMIT : GZIP_LIMIT)
     || !/^[A-Za-z0-9_-]+$/.test(value.data) || !/^[a-f0-9]{64}$/.test(value.sha256)) fail(503);
   try {
     const zipped = Buffer.from(value.data, 'base64url');
@@ -54,9 +60,9 @@ export function readPackagePresentation(pack) {
     || pack.lanes?.some(id => !presentation.lanes.some(lane => lane.id === id))) fail(503);
   return presentation;
 }
-export function withPackagePresentation(branding, presentation) {
-  const next = { ...normalizePresentationBranding(branding,presentation), ...(Object.hasOwn(branding ?? {}, OPERATOR_LIFECYCLE_KEY) ? { [OPERATOR_LIFECYCLE_KEY]: structuredClone(branding[OPERATOR_LIFECYCLE_KEY]) } : {}), [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation) };
-  if (Buffer.byteLength(canonicalStudioJson(next)) > 8000) fail(413);
+export function withPackagePresentation(branding, presentation, options) {
+  const next = { ...normalizePresentationBranding(branding,presentation), ...(Object.hasOwn(branding ?? {}, OPERATOR_LIFECYCLE_KEY) ? { [OPERATOR_LIFECYCLE_KEY]: structuredClone(branding[OPERATOR_LIFECYCLE_KEY]) } : {}), [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation,options) };
+  try { validatePresentationBranding(next); } catch { fail(413); }
   return next;
 }
 export function normalizePresentationBranding(branding,presentation) {

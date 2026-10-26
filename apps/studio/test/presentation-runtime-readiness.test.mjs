@@ -1,3 +1,6 @@
+import {createHash} from 'node:crypto';
+import {nativeRoomMaterialFixture,measuredFixtureRecord} from '../../../test/fixtures/native-room-game-material.mjs';
+import {filmedPresentationFixture} from '../../../test/fixtures/filmed-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
@@ -125,6 +128,7 @@ function fixture({ config = env, fetcher = async () => Response.json(capability)
     marker: 'original',
     async saveDocument(...args) { assert.equal(this, repository); writes.push(['saveDocument', ...args]); return 'document-result'; },
     async registerMedia(...args) { assert.equal(this, repository); writes.push(['registerMedia', ...args]); return 'register-result'; },
+    async saveMediaTiming(...args) { assert.equal(this, repository); writes.push(['saveMediaTiming',...args]); return 'timing-result'; },
     async classifyMedia(...args) { assert.equal(this, repository); writes.push(['classifyMedia', ...args]); return 'classify-result'; },
     transaction(work, options) { assert.equal(this, repository); assert.equal(options?.fixture, true); return work(repository); },
     readDocument: async () => 'read-result',
@@ -1090,4 +1094,107 @@ test('dealer lifecycle writes preserve archived rotation and refuse a reader wit
   assert.equal(calls.length,0);version=28;
   assert.equal(await wrapped.saveDealerLifecycle(value,{actor:'fixture'}),'saved');
   assert.deepEqual(calls,[[value,{actor:'fixture'}]]);
+});
+
+
+test('v29 gates measured registration and exact measurement descriptors before SQL',async()=>{
+  const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
+  for(const version of [28,29]){
+    let inSql=false,begun=0;
+    const f=fixture({fetcher:async()=>{assert.equal(inSql,false);return Response.json(presentationCapabilitiesForVersion(version));}});
+    f.repository.transaction=async work=>{begun++;inSql=true;try{return await work(f.repository);}finally{inSql=false;}};
+    const descriptor={metadata:record.classification,mediaTiming:record.mediaTiming};
+    const save=()=>f.wrapped.transaction(repo=>repo.saveMediaTiming(record.id,{sha256:record.sha256,mediaTiming:record.mediaTiming,expectedRevision:'media-1',actor:'tester'}),{presentationMutation:descriptor});
+    if(version===28)await assert.rejects(save,blocked);else assert.equal(await save(),'timing-result');
+    assert.equal(begun,version===29?1:0);assert.equal(f.writes.length,version===29?1:0);
+    assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'29');
+    const register=()=>f.wrapped.registerMedia(record);
+    if(version===28)await assert.rejects(register,blocked);else await register();
+    assert.equal(f.fetches.at(-1)[1].headers['X-Presentation-Capability-Version'],'29');
+  }
+});
+
+test('measurement writer cannot acquire permission outside or across a different active descriptor',async()=>{
+  const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
+  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+  const options={sha256:record.sha256,mediaTiming:record.mediaTiming,expectedRevision:'media-1',actor:'tester'};
+  await assert.rejects(f.wrapped.saveMediaTiming(record.id,options),blocked);assert.equal(f.fetches.length,0);
+  await f.wrapped.withMutationContext(()=>assert.rejects(f.wrapped.saveMediaTiming(record.id,options),blocked),{metadata:record.classification});
+  const descriptor={metadata:record.classification,mediaTiming:record.mediaTiming};
+  const other=measuredFixtureRecord({...record,id:'20000000-0000-4000-8000-000000000002'}).mediaTiming;
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveMediaTiming(other.mediaId,{...options,mediaTiming:other}),blocked);
+    await assert.rejects(f.wrapped.saveMediaTiming(record.id,{...options,sha256:'b'.repeat(64)}),blocked);
+    await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no different receipt inside context'),{...descriptor,mediaTiming:other}),blocked);
+    await f.wrapped.saveMediaTiming(record.id,options);
+  },descriptor);
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.length,1);
+  // Async-local permission cannot survive the operation that acquired it.
+  await assert.rejects(f.wrapped.saveMediaTiming(record.id,options),blocked);
+});
+
+test('frozen timing and an extended envelope independently require v29',async()=>{
+  const small=frozenPackage();small.playback.media.forEach(row=>measuredFixtureRecord(row));
+  small.registeredDealers[0].idle=structuredClone(small.playback.media[0]);
+  assert.equal(encodePresentationPackage(small,{allowExtended:true}).format,'croupier-lanes-v1');
+  const extended=filmedPresentationFixture();
+  extended.playback.media.filter(row=>row.classification.kind==='action').forEach((row,index)=>{
+    row.classification.notes+=' '+createHash('sha256').update('codec-boundary:5:'+index).digest('hex');
+  });
+  assert.equal(encodePresentationPackage(extended,{allowExtended:true}).format,'croupier-lanes-v2');
+  assert.equal(extended.playback.media.some(row=>Object.hasOwn(row,'mediaTiming')),false);
+  for(const value of [small,extended])for(const version of [28,29]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    const save=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),{presentationMutation:{kind:'presentation-package',value}});
+    if(version===28)await assert.rejects(save,blocked);else await save();
+    assert.equal(begun,version===29?1:0);assert.equal(f.fetches.length,1);
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'29');
+  }
+});
+
+test('a complete native filmed bank passes v29 but cannot grant a measurement-write permission',async()=>{
+  const {presentation,records}=nativeRoomMaterialFixture({allSpeechSlots:true,capture:false});
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+  const before=structuredClone(presentation),row=records[0];
+  await f.wrapped.withMutationContext(async()=>{
+    await f.wrapped.saveDocument('presentation-package',{value:presentation});
+    await assert.rejects(f.wrapped.saveMediaTiming(row.id,{sha256:row.sha256,mediaTiming:row.mediaTiming}),blocked);
+  },{kind:'presentation-package',value:presentation});
+  assert.deepEqual(presentation,before);assert.equal(f.writes.length,1);assert.equal(f.fetches.length,1);
+  assert.ok(Buffer.byteLength(JSON.stringify(presentationCapabilitiesForVersion(29)))<2048);
+});
+
+
+test('present but invalid measurement cannot downgrade readiness or authorize a writer',async()=>{
+  for(const mediaTiming of [undefined,null,{}]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(28))});
+    await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('not entered'),{metadata:{dealerId:'astrid'},mediaTiming}),blocked);
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'29');
+    assert.equal(f.writes.length,0);
+  }
+  const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
+  const descriptor={metadata:record.classification,mediaTiming:structuredClone(record.mediaTiming)};
+  const f=fixture({fetcher:async()=>{
+    descriptor.mediaTiming.size++;
+    return Response.json(presentationCapabilitiesForVersion(29));
+  }});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveMediaTiming(record.id,{sha256:record.sha256,mediaTiming:descriptor.mediaTiming}),blocked);
+    await f.wrapped.saveMediaTiming(record.id,{sha256:record.sha256,mediaTiming:record.mediaTiming});
+  },descriptor);
+  assert.equal(f.writes.length,1,'permission uses the original immutable measurement, not a later descriptor mutation');
+});
+
+
+test('a detached continuation cannot retain measurement permission after its operation closes',async()=>{
+  const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+  let release,child;
+  const later=new Promise(resolve=>{release=resolve;});
+  await f.wrapped.withMutationContext(async()=>{
+    child=later.then(()=>f.wrapped.saveMediaTiming(record.id,{sha256:record.sha256,mediaTiming:record.mediaTiming}));
+  },{metadata:record.classification,mediaTiming:record.mediaTiming});
+  release();await assert.rejects(child,blocked);
+  assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
 });

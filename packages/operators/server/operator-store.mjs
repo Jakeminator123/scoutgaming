@@ -8,12 +8,13 @@
 // A missing/unwritable journal rejects the mutation; server logging is not durability.
 // Branding is package data. It is not a permission boundary.
 import { createHash, randomUUID } from 'node:crypto';
+import { validatePresentationBranding, isExtendedPresentationEnvelope, PRESENTATION_STORAGE_KEY, assertExtendedPresentationStorage } from '../../presentation/server/presentation-storage.mjs';
 import { publicEditableBranding } from '../contracts/branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
 import { isAdministratorRole } from '../../studio-access/account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
 import {
-  StudioStorageError, canonicalStudioJson, cloneStudioJson, studioStorageFailure, validateActor, validateStudioScope,
+  StudioStorageError, canonicalStudioJson, studioStorageFailure, validateActor, validateStudioScope,
 } from '../../studio-registry/server/storage-contract.mjs';
 
 const idPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
@@ -105,11 +106,7 @@ function canonicalIdList(value) {
 }
 
 function canonicalBranding(value) {
-  const copy = cloneStudioJson(value, { maxBytes: 8000, maxNodes: 200, maxDepth: 6 });
-  if (!copy || typeof copy !== 'object' || Array.isArray(copy)) fail('studio_invalid_data', 422);
-  const text = canonicalStudioJson(copy);
-  if (text.length > 8000) fail('studio_invalid_data', 422);
-  return text;
+  return canonicalStudioJson(validatePresentationBranding(value));
 }
 
 function storedJson(text, canonicalize, code = 'studio_corrupt_operator') {
@@ -143,6 +140,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if (result && Array.isArray(result.rows)) return result.rows;
     fail('studio_storage_unavailable');
   }
+  async function assertExtendedPresentationReady() { return assertExtendedPresentationStorage(query); }
   function clock() {
     const at = now();
     if (!Number.isSafeInteger(at) || at < 0) fail('studio_invalid_data', 422);
@@ -576,6 +574,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         if (archived.rooms.some(entry => JSON.parse(tables).includes(entry.room.id) || entry.room.operatorId !== operatorId)) fail('studio_conflict',409);
         branding = canonicalBranding(nextBranding);
       }
+      if (isExtendedPresentationEnvelope(JSON.parse(branding)[PRESENTATION_STORAGE_KEY])) await assertExtendedPresentationStorage(txQuery);
       const row = (await txQuery(`/* operator-store:publish-package */
       INSERT INTO croupier_studio.operator_packages
         (environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms)
@@ -663,6 +662,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         after:{draftRevision:revision,basePackageRevision:base,sourcePackageRevision:source,publishedPackageRevision,brandingSha256:brandingSha256(branding)}});
     }
     if(changes.length>10000)fail('studio_invalid_data',422);
+    if (isExtendedPresentationEnvelope(branding[PRESENTATION_STORAGE_KEY])) await assertExtendedPresentationStorage(txQuery);
     const row=(await txQuery(`/* operator-store:write-branding-draft */ INSERT INTO croupier_studio.operator_branding_drafts
       (environment_id,workspace_id,operator_id,draft_revision,base_package_revision,branding,source_package_revision,published_package_revision,action,event_id,actor_id,access_class,occurred_at_ms,request_id,changes)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING ${draftColumns}`,
@@ -696,7 +696,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
   async function publishBrandingDraft(input={}) { return changeBrandingDraft(input,true); }
 
   return Object.freeze({
-    scope, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
+    scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
     getCurrentPackage, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage,
   });
 }

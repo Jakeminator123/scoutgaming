@@ -9,6 +9,19 @@ const pending = new Map();
 const verifiedFiles = new Map();
 const MAX_VERIFIED_FILES = 1024;
 const fail = (message, status = 503) => { throw new StudioError(message, status); };
+const readAborted = () => new StudioError('Den privata medialäsningen avbröts.',408);
+const checkReadSignal = signal => { if(signal?.aborted)throw readAborted(); };
+async function waitForDownload(promise,signal) {
+  checkReadSignal(signal);
+  if(!signal)return promise;
+  let abort;
+  try {
+    return await Promise.race([promise,new Promise((_,reject)=>{
+      abort=()=>reject(readAborted());signal.addEventListener('abort',abort,{once:true});
+      if(signal.aborted)abort();
+    })]);
+  } finally {signal.removeEventListener('abort',abort);}
+}
 export function createBlobMediaStore({clientFactory,defaultCacheDir}) {
   if(typeof clientFactory!=='function'||typeof defaultCacheDir!=='string'||!isAbsolute(defaultCacheDir)) throw new TypeError('Explicit Blob provider and cache root required.');
 
@@ -44,22 +57,27 @@ export function createBlobMediaStore({clientFactory,defaultCacheDir}) {
   }
 
   async function downloadVerified(record, options) {
+    checkReadSignal(options.signal);
     validatePrivateMedia(record);
     const token = tokenFor(options), target = cachePath(record, options);
     await safeDirectory(cacheDirectory(options));
     try {
       const info = await lstat(target);
       if (!info.isFile() || info.isSymbolicLink() || info.size !== record.size) fail('Den privata mediacachen är ogiltig.', 409);
+      checkReadSignal(options.signal);
       return target; // Every response still hashes the same descriptor it serves.
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
     const client = await clientFor(options);
+    const timeout=AbortSignal.timeout(60000),signal=options.signal?AbortSignal.any([options.signal,timeout]):timeout;
+    checkReadSignal(signal);
     let result;
-    try { result = await client.get(record.pathname, { access: 'private', token, useCache: false, abortSignal: AbortSignal.timeout(60000) }); }
-    catch { fail('Den privata mediafilen kunde inte hämtas.'); }
-    if (!result) fail('Den privata mediafilen saknas.', 404);
-    let file, reader;
+    try { result = await client.get(record.pathname, { access: 'private', token, useCache: false, abortSignal: signal }); }
+    catch { checkReadSignal(signal);fail('Den privata mediafilen kunde inte hämtas.'); }
+    if (!result) {checkReadSignal(signal);fail('Den privata mediafilen saknas.', 404);}
+    let file, reader,abortRead;
     const temporary = `${target}.${randomUUID()}.part`;
     try {
+      checkReadSignal(signal);
       if (result.statusCode !== 200 || !result.stream) fail('Den privata mediafilen kunde inte hämtas.');
       privateResult(result.blob, record);
       const encoding=result.headers?.get?.('content-encoding')?.trim().toLowerCase()??null;
@@ -72,20 +90,30 @@ export function createBlobMediaStore({clientFactory,defaultCacheDir}) {
       if ((!decodedBody&&result.blob.size!==record.size) || !privateContentTypeMatches(result.blob.contentType,record.contentType)) fail('Den privata mediafilens metadata har ändrats.', 409);
       file = await open(temporary, 'wx');
       reader = result.stream.getReader();
+      // Cancel the body as well as the provider request: a stream may already
+      // have arrived when the caller cancels, or be waiting for its next chunk.
+      abortRead=()=>{void reader.cancel().catch(()=>{});};
+      signal.addEventListener('abort',abortRead,{once:true});
+      checkReadSignal(signal);
       let size = 0; const hash = createHash('sha256');
       for (;;) {
-        const { done, value } = await reader.read(); if (done) break;
+        checkReadSignal(signal);
+        const { done, value } = await reader.read();checkReadSignal(signal); if (done) break;
         size += value.byteLength;
         if (size > record.size || size > MAX_BYTES) fail('Den privata mediafilens storlek har ändrats.', 409);
         hash.update(value);
         let offset = 0;
-        while (offset < value.byteLength) { const { bytesWritten } = await file.write(value, offset, value.byteLength - offset); offset += bytesWritten; }
+        while (offset < value.byteLength) { checkReadSignal(signal);const { bytesWritten } = await file.write(value, offset, value.byteLength - offset); offset += bytesWritten; }
       }
       if (size !== record.size || hash.digest('hex') !== record.sha256) fail('Den privata mediafilens hash stämmer inte.', 409);
       await file.sync(); await file.close(); file = null;
+      checkReadSignal(signal);
       await rename(temporary, target);
       return target;
+    } catch(error) {
+      checkReadSignal(signal);throw error;
     } finally {
+      if(abortRead)signal.removeEventListener('abort',abortRead);
       if (reader) { await reader.cancel().catch(() => {}); reader.releaseLock(); }
       else await result.stream?.cancel().catch(() => {});
       if (file) await file.close().catch(() => {});
@@ -93,9 +121,14 @@ export function createBlobMediaStore({clientFactory,defaultCacheDir}) {
     }
   }
   async function cachedFile(record, options) {
+    checkReadSignal(options.signal);
     const key = cachePath(record, options);
-    if (!pending.has(key)) pending.set(key, downloadVerified(record, options).finally(() => pending.delete(key)));
-    return pending.get(key);
+    if(pending.has(key))return waitForDownload(pending.get(key),options.signal);
+    const download=downloadVerified(record, options).finally(() => pending.delete(key));
+    pending.set(key,download);
+    // The owning caller awaits cleanup before retry; another caller may stop
+    // waiting without cancelling an in-flight download that it does not own.
+    return download;
   }
 
   function providerErrorCategory(error){
@@ -194,16 +227,20 @@ export function createBlobMediaStore({clientFactory,defaultCacheDir}) {
   async function withVerifiedPrivateMediaFile(record, inspect, options = {}) {
     let handle,path;
     try {
+      checkReadSignal(options.signal);
       validatePrivateMedia(record); tokenFor(options);
       path=await cachedFile(record,options);
+      checkReadSignal(options.signal);
       const info=await lstat(path,{bigint:true});
       if(!info.isFile() || info.isSymbolicLink() || info.size!==BigInt(record.size))fail('Den privata mediacachen är ogiltig.',409);
       handle=await open(path,constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
       const opened=await handle.stat({bigint:true});
       if(!opened.isFile() || fingerprint(opened)!==fingerprint(info))fail('Den privata mediafilen ändrades.',409);
       const stamp=await verifyCachedFile(handle,path,record,opened);
+      checkReadSignal(options.signal);
       const result=await inspect(handle);
       await assertCurrentFile(handle,path,stamp);
+      checkReadSignal(options.signal);
       return result;
     } catch(error) {
       if(path)verifiedFiles.delete(path);

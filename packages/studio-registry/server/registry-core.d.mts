@@ -12,6 +12,7 @@ export interface VideoRegistryOptions {
 export interface RegistryVideo {
   retainedBank?: true;
   classification?: VideoMetadata;
+  mediaTiming?:import('../../presentation/contracts/media-timing.mjs').MediaTiming;
   source?: 'emil' | 'archive' | 'upload';
   storage?: 'disk' | 'private-blob';
   familyId?: string;

@@ -4,6 +4,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject as createHistoricalProject, createEmptyProject, defaultPresentationLane, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { nativeStudioAdminConfiguration, createNativeStudioRequestHandlers } from '../lib/studio-native-runtime.mjs';
@@ -45,11 +47,12 @@ function combinedPool() {
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
   ] }, tail = Promise.resolve(), clientId = 0, tick = 0;
+  let extendedReady=false;
   const trace = [], faults = new Set(), requestTransactions = new AsyncLocalStorage();
   const sameScope = (row, values) => row.environment_id === values[0] && row.workspace_id === values[1];
   const documentKey = values => JSON.stringify(values.slice(0, 3));
   const result = (rows = [], command = 'SELECT') => ({ rows: clone(rows), command });
-  const pool = { trace, active: 0, currentActive:()=>requestTransactions.getStore()?.active ?? pool.active, request:work=>requestTransactions.run({active:0},work), setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); },
+  const pool = { allowExtendedStorage(){extendedReady=true;}, trace, active: 0, currentActive:()=>requestTransactions.getStore()?.active ?? pool.active, request:work=>requestTransactions.run({active:0},work), setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); },
     seedRuntimeCatalog(scope,value){state.catalogs.set(JSON.stringify([scope.environment,scope.workspaceId]),{revision:runtimeCatalogRevision(value),value:clone(value)});},
     snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
     const id = ++clientId, requestScope = requestTransactions.getStore(); let working, unlock, readOnly = false;
@@ -66,6 +69,7 @@ function combinedPool() {
         pool.active--; if(requestScope)requestScope.active--; if (sql === 'COMMIT' && !readOnly) state = working; working = undefined; unlock?.(); unlock = null; return result([], sql);
       }
       assert.ok(working, 'all domain queries use the repository transaction');
+      if(marker==='extended-presentation-ready')return result(extendedReady?[{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}]:[]);
       if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
       if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2]));
@@ -315,13 +319,13 @@ test('room GET retains its published room when candidate encoding exceeds the pu
   await assert.rejects(f.create({...original,idempotencyKey:'0bbb0000-1111-4222-8333-444444444444'}), status(409));
 
   const saved = await f.repository.readDocument('project');
-  for (const line of saved.value.lines.filter(row => row.dealerId === 'astrid' && ['deal.player.left','deal.player.centre'].includes(row.eventId))) {
+  for (const line of saved.value.lines.filter(row => row.dealerId === 'astrid' && ['deal.player.left','deal.player.centre','deal.player.right','deal.dealer'].includes(row.eventId))) {
     const baseline = line.variants.find(row => row.id === line.baselineVariantId);
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
       const hash = value => createHash('sha256').update(`${line.eventId}:${i}:${value}`).digest('hex');
       const identity = hash('id'), id = `${identity.slice(0,8)}-${identity.slice(8,12)}-4000-8000-${identity.slice(12,24)}`;
       const record = idleRecord('astrid', id);
-      record.classification = {...record.classification,eventId:line.eventId,kind:'action',role:'alternative',situation:line.eventId.endsWith('left')?'box0':'box2',
+      record.classification = {...record.classification,eventId:line.eventId,kind:'action',role:'alternative',situation:line.eventId.endsWith('left')?'box0':line.eventId.endsWith('centre')?'box2':line.eventId.endsWith('right')?'box5':'dealer-up',
         label:'Isolated large candidate',notes:Array.from({length:20},(_,part)=>hash(part)).join('')};
       f.pool.setMedia(record);
       line.variants.push({...clone(baseline),id:`astrid.${line.eventId}.large.${identity.slice(0,24)}`,videoGenerationId:id,
@@ -331,7 +335,7 @@ test('room GET retains its published room when candidate encoding exceeds the pu
   const changed = await f.repository.saveDocument('project', {value:saved.value,expectedRevision:saved.revision,actor:session.user});
   const before = f.pool.snapshot(), response = await read(), blocked = await response.json();
   assert.ok(Buffer.byteLength(JSON.stringify(candidate)) > 32 * 1024);
-  assert.throws(() => encodePresentationPackage(candidate), status(413));
+  assert.throws(() => encodePresentationPackage(candidate,{allowExtended:true}), status(413));
   assert.equal(response.status, 200); assert.equal(blocked.ready, false);
   assert.equal(blocked.reason, 'presentation_package_too_large'); assert.equal(blocked.capabilities, null);
   assert.deepEqual(blocked.rooms, valid.rooms); assert.equal(blocked.projectRevision, changed.revision);
@@ -997,4 +1001,32 @@ test('an empty project and immutable bank publish only a newly registered synthe
  assert.equal((await selector('?operator=other&table='+created.room.id)).status,404);
  assert.deepEqual((await f.repository.readRuntimeCatalog()).value,catalog);
  const before=f.pool.snapshot();assert.equal((await f.create(body)).duplicate,true);assert.deepEqual(f.pool.snapshot(),before);
+});
+
+
+test('new measured filmed room publishes only with v29 and optional020 while retaining every frozen record',async()=>{
+  for(const version of [4,29])for(const installed of [false,true]){
+    const f=await fixture({empty:true,runtimeCapabilities:async()=>presentationCapabilitiesForVersion(version)});
+    if(installed)f.pool.allowExtendedStorage();
+    const source=nativeRoomMaterialFixture({allSpeechSlots:true,capture:false});
+    const old=await f.repository.readDocument('project');
+    await f.repository.saveDocument('project',{value:source.project,expectedRevision:old.revision,actor:session.user});
+    source.records.forEach(row=>{const {revision,updatedAt,...record}=row;f.pool.setMedia(record);});
+    const lane=source.project.lanes[0].id,ready=await f.prepare('north',lane);
+    assert.equal(ready.ready,version===29);
+    if(version!==29)assert.equal(ready.reason,'studio_presentation_runtime_update_required');
+    const body={operatorId:'north',presentationLaneId:lane,name:'Measured fixture room',idempotencyKey:key,
+      expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision};
+    const before=f.pool.snapshot();
+    if(version!==29||!installed){
+      await assert.rejects(f.create(body),e=>e.code===(version!==29?'studio_presentation_runtime_update_required':'studio_extended_presentation_storage_unavailable'));
+      assert.deepEqual(f.pool.snapshot(),before,'no room/package/audit survives a denied publication');
+    }else{
+      const saved=await f.create(body),branding=JSON.parse(f.pool.snapshot().packages[0].branding),presentation=readPackagePresentation({branding,lanes:[lane]});
+      assert.equal(saved.packageRevision,1);assert.equal(branding._scoutPresentation.format,'croupier-lanes-v2');
+      assert.equal(presentation.playback.media.length,53);assert.equal(presentation.playback.media.every(row=>Boolean(row.mediaTiming)),true);
+      assert.equal((await f.create(body)).duplicate,true);
+      assert.equal(f.pool.snapshot().packages.length,1);
+    }
+  }
 });

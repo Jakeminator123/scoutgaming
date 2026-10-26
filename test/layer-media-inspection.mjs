@@ -92,3 +92,143 @@ test('inspection errors remain actionable without echoing parser or provider det
     assert.match(body.error,/fil/i);assert.doesNotMatch(JSON.stringify(body),/private\.invalid|secret|person-file/);
   }
 });
+
+import {createHash} from 'node:crypto';
+import {inspectMediaTiming} from '../apps/studio/lib/layer-media-inspection.mjs';
+import {normalizeMediaTiming,mediaTimingSpeechIdentity} from '../packages/presentation/contracts/media-timing.mjs';
+import {timingVideo} from './fixtures/layer-media.mjs';
+
+async function timedMedia(t,bytes=timingVideo()) {
+  const f=await media(t,bytes,'video/mp4');
+  return {...f,record:{...f.record,id:randomUUID()}};
+}
+function speech(sha256) {
+  return {schemaVersion:1,dealerId:'linnea',lineId:'greeting',takeId:'take-one',language:'sv',exactText:'Hej.',
+    videoSha256:sha256,audioSha256:'a'.repeat(64),indexSha256:'b'.repeat(64),fps:24,frameCount:6,audioDelayMs:0,
+    entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-1',recording:{status:'pending'},review:{status:'pending'}};
+}
+test('timing measures presentation order, CFR frames and every audio tail from verified bytes',async t=>{
+  const silent=await timedMedia(t,layerVideo()),a=await inspectMediaTiming(silent.record,silent.options);
+  assert.deepEqual(a.video,{trackId:1,frameCount:2,fps:2,firstPtsUs:0,lastPtsUs:500000,endUs:1000000});
+  assert.deepEqual(a.audio,[]);assert.equal(a.audioTailUs,0);
+  const f=await timedMedia(t),result=await inspectMediaTiming(f.record,f.options);
+  assert.equal(result.mediaId,f.record.id);assert.equal(result.sha256,f.sha256);assert.equal(result.size,f.size);
+  assert.deepEqual(result.video,{trackId:1,frameCount:6,fps:24,firstPtsUs:0,lastPtsUs:208333,endUs:250000});
+  assert.deepEqual(result.audio,[{trackId:2,firstPtsUs:0,endUs:500000},{trackId:3,firstPtsUs:0,endUs:750000}]);
+  assert.equal(result.endUs,750000);assert.equal(result.audioTailUs,500000);
+  assert.equal(result.recordedSpeechIdentitySha256,null);
+  assert.deepEqual(normalizeMediaTiming(result,{mediaId:f.record.id,sha256:f.sha256,size:f.size,recordedSpeechIdentitySha256:null}),result);
+});
+test('timing binds the unchanged speech tuple without creating or rewriting approvals',async t=>{
+  const f=await timedMedia(t),declared=speech(f.sha256),before=structuredClone(declared);
+  f.record.classification={recordedSpeech:declared};
+  const result=await inspectMediaTiming(f.record,f.options),digest=createHash('sha256').update(mediaTimingSpeechIdentity(declared)).digest('hex');
+  assert.equal(result.recordedSpeechIdentitySha256,digest);assert.deepEqual(declared,before);
+  assert.equal(Object.hasOwn(result,'review'),false);assert.equal(Object.hasOwn(result,'recording'),false);
+  assert.deepEqual(normalizeMediaTiming(result,{recordedSpeechIdentitySha256:digest}),result);
+  const changed={...declared,exactText:'Annat.'};
+  const changedDigest=createHash('sha256').update(mediaTimingSpeechIdentity(changed)).digest('hex');
+  assert.throws(()=>normalizeMediaTiming(result,{recordedSpeechIdentitySha256:changedDigest}),/invalid_media_timing/);
+  for(const field of [{frameCount:5},{fps:25},{videoSha256:'c'.repeat(64)}]){
+    await assert.rejects(inspectMediaTiming({...f.record,classification:{recordedSpeech:{...declared,...field}}},f.options),error=>error.code==='studio_media_timing_mismatch');
+  }
+});
+test('timing rejects wrong identities, forged ends and extra data, and returns detached values',async t=>{
+  const f=await timedMedia(t),result=await inspectMediaTiming(f.record,f.options);
+  for(const binding of [{mediaId:randomUUID()},{sha256:'f'.repeat(64)},{size:f.size+1},{recordedSpeechIdentitySha256:'e'.repeat(64)}])
+    assert.throws(()=>normalizeMediaTiming(result,binding),/invalid_media_timing/);
+  for(const mutated of [{...result,endUs:250000},{...result,audioTailUs:0},{...result,approval:'approved'},
+    {...result,video:{...result.video,frameCount:7}},{...result,audio:[...result.audio].reverse()}])
+    assert.throws(()=>normalizeMediaTiming(mutated),/invalid_media_timing/);
+  const copy=normalizeMediaTiming(result);copy.audio[0].endUs=3;copy.video.endUs=3;
+  assert.equal(result.audio[0].endUs,500000);assert.equal(result.video.endUs,250000);
+});
+test('timing rejects unsupported containers and edits without restricting existing dimension inspection',async t=>{
+  const webm=await media(t,layerVideo('webm'),'video/webm');
+  assert.deepEqual(await inspectLayerMedia(webm.record,webm.options),{width:32,height:24,contentType:'video/webm'});
+  await assert.rejects(inspectMediaTiming({...webm.record,id:randomUUID()},webm.options),error=>error.code==='studio_media_timing_unsupported');
+  const malformed=[];
+  const multi=timingVideo();multi.writeUInt32BE(2,multi.indexOf('elst')+8);malformed.push(multi);
+  const speed=timingVideo();speed.writeUInt32BE(0x20000,speed.indexOf('elst')+20);malformed.push(speed);
+  const partial=timingVideo();partial.writeUInt32BE(230,partial.indexOf('elst')+12);malformed.push(partial);
+  const pts=timingVideo();const ctts=pts.indexOf('ctts');assert.ok(ctts>0);pts.writeUInt32BE(pts.readUInt32BE(ctts+16)+1,ctts+16);malformed.push(pts);
+  for(const bytes of malformed){
+    const f=await timedMedia(t,bytes);
+    await assert.rejects(inspectMediaTiming(f.record,f.options),error=>error.code==='studio_media_timing_unsupported');
+  }
+});
+test('timing ignores catalogue durations and rejects incompatible container ends, sample bounds and hashes',async t=>{
+  const f=await timedMedia(t);f.record.duration=90000;
+  assert.equal((await inspectMediaTiming(f.record,f.options)).endUs,750000);
+  const bytes=timingVideo();bytes.writeUInt32BE(90000,bytes.indexOf('mvhd')+20);
+  const incompatible=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(incompatible.record,incompatible.options));
+  const corrupt=timingVideo();corrupt.writeUInt32BE(corrupt.length+100,corrupt.indexOf('stco')+12);
+  const bad=await timedMedia(t,corrupt);await assert.rejects(inspectMediaTiming(bad.record,bad.options));
+  const wrong=await timedMedia(t);wrong.record.sha256='0'.repeat(64);wrong.record.pathname=wrong.record.pathname.replace(wrong.sha256,wrong.record.sha256);
+  await assert.rejects(inspectMediaTiming(wrong.record,wrong.options));
+});
+test('timing rejects conflicting movie, track and edit ends even within one movie tick',async t=>{
+  const coarse=layerVideo();
+  coarse.writeUInt32BE(1,coarse.indexOf('mvhd')+16);
+  coarse.writeUInt32BE(2,coarse.indexOf('mvhd')+20);
+  coarse.writeUInt32BE(2,coarse.indexOf('tkhd')+24);
+  coarse.writeUInt32BE(1,coarse.indexOf('elst')+12);
+  const values=[coarse];
+  for(const delta of [-1,1])for(const types of [['mvhd'],['tkhd'],['mvhd','tkhd']]){
+    const bytes=layerVideo();
+    for(const type of types){const at=bytes.indexOf(type)+(type==='mvhd'?20:24);bytes.writeUInt32BE(bytes.readUInt32BE(at)+delta,at);}
+    values.push(bytes);
+  }
+  // No edit: two 3/4-second samples cannot be rounded to a 2-second header.
+  const fractional=layerVideo();fractional.write('free',fractional.indexOf('edts'),'ascii');
+  fractional.writeUInt32BE(1,fractional.indexOf('mvhd')+16);fractional.writeUInt32BE(2,fractional.indexOf('mvhd')+20);
+  fractional.writeUInt32BE(2,fractional.indexOf('tkhd')+24);
+  fractional.writeUInt32BE(32768,fractional.indexOf('mdhd')+16);fractional.writeUInt32BE(49152,fractional.indexOf('mdhd')+20);
+  fractional.writeUInt32BE(24576,fractional.indexOf('stts')+16);values.push(fractional);
+  for(const bytes of values){const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});}
+});
+
+test('timing compares every audio track end and the movie maximum without rounding tolerances',async t=>{
+  const source=timingVideo(),tracks=[];let at=-1;
+  while((at=source.indexOf('tkhd',at+1))!==-1)tracks.push(at);
+  assert.equal(tracks.length,3);
+  for(const index of [1,2])for(const delta of [-1,1]){
+    const bytes=Buffer.from(source),position=tracks[index]+24;bytes.writeUInt32BE(bytes.readUInt32BE(position)+delta,position);
+    const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});
+  }
+  const bytes=Buffer.from(source);bytes.writeUInt32BE(24000,bytes.indexOf('mvhd')+20);
+  const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});
+});
+
+test('timing rejects media-duration summaries that contradict the sample decode durations',async t=>{
+  const source=timingVideo(),tracks=[];let offset=-1;
+  while((offset=source.indexOf('mdhd',offset+1))!==-1)tracks.push(offset);
+  assert.equal(tracks.length,3);
+  for(const track of tracks)for(const delta of [-1,1]){
+    const bytes=Buffer.from(source),at=track+20;bytes.writeUInt32BE(bytes.readUInt32BE(at)+delta,at);
+    const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});
+  }
+});
+
+test('exact rational presentation ends are rounded upward only at the microsecond boundary',async t=>{
+  const bytes=layerVideo();bytes.write('free',bytes.indexOf('edts'),'ascii');
+  bytes.writeUInt32BE(3,bytes.indexOf('mvhd')+16);bytes.writeUInt32BE(4,bytes.indexOf('mvhd')+20);
+  bytes.writeUInt32BE(4,bytes.indexOf('tkhd')+24);
+  bytes.writeUInt32BE(3,bytes.indexOf('mdhd')+16);bytes.writeUInt32BE(4,bytes.indexOf('mdhd')+20);
+  bytes.writeUInt32BE(2,bytes.indexOf('stts')+16);
+  const f=await timedMedia(t,bytes),result=await inspectMediaTiming(f.record,f.options);
+  assert.equal(result.video.fps,1.5);assert.equal(result.video.lastPtsUs,666667);
+  assert.equal(result.video.endUs,1333334);assert.equal(result.endUs,1333334);
+});
+
+test('timing mode preserves worker deadline, cancellation and exclusive descriptor ownership',async t=>{
+  const folder=await mkdtemp(join(tmpdir(),'croupier-timing-fd-'));
+  t.after(async()=>{assert.equal(dirname(resolve(folder)),resolve(tmpdir()));assert.match(basename(folder),/^croupier-timing-fd-/);await rm(folder,{recursive:true,force:true});});
+  const bytes=timingVideo(),file=join(folder,'fixture.mp4');await writeFile(file,bytes);
+  const handle=await open(file,'r');t.after(()=>handle.close());const record={size:bytes.length,contentType:'video/mp4'};
+  await assert.rejects(inspectVerifiedLayerFile(handle,record,{timing:true,timeoutMs:1}),error=>error.code==='studio_media_inspection_timeout');
+  const controller=new AbortController(),first=inspectVerifiedLayerFile(handle,record,{timing:true,signal:controller.signal});
+  await assert.rejects(inspectVerifiedLayerFile(handle,record,{timing:true}),error=>error.code==='studio_media_inspection_busy');
+  controller.abort();await assert.rejects(first,error=>error.code==='studio_media_inspection_cancelled');
+  assert.equal((await handle.stat()).size,bytes.length);
+});

@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { runSharedPostgresTransaction, runPostgresTransactionOwner, assertSharedPostgresOwner } from '../../storage/server/postgres-transaction-context.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { StudioStorageError } from '../../studio-access/studio-scope.mjs';
+import { normalizeMediaTiming, mediaTimingSpeechIdentity } from '../../presentation/contracts/media-timing.mjs';
 
 function requiredAdapter(name, value, functions) {
   if (!value || functions.some(key => typeof value[key] !== 'function')) {
@@ -290,6 +291,9 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
     },
     registerMedia(record, { actor } = {}) {
       return operation(() => {
+        // Upload/forge registration cannot mint an inspection receipt. The
+        // server inspection writer binds it to an already registered revision.
+        if (record && Object.hasOwn(record, 'mediaTiming')) fail('studio_invalid_media', 422);
         const validated=validateStudioMedia(record);
         assertStudioMediaStorageType(validated.contentType);
         return {record:validated,actor:validateActor(actor)};
@@ -330,11 +334,53 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
         const retainedOwner = previous.classification.dealerId === metadata?.dealerId
           && project?.value.dealerTrash?.some(entry => entry.dealer.id === metadata?.dealerId);
         if (project && !retainedOwner && !project.value.dealers?.some(dealer => dealer.id === metadata?.dealerId)) fail('studio_dealer_inactive');
-        const next = validateStudioMedia({ ...record, classification: metadata }), revision = newRevision('media');
+        const { mediaTiming, ...withoutTiming } = record;
+        let next = validateStudioMedia({ ...withoutTiming, classification: metadata });
+        const beforeSpeech = record.classification.recordedSpeech;
+        const afterSpeech = next.classification.recordedSpeech;
+        if (mediaTiming && (beforeSpeech ? afterSpeech && mediaTimingSpeechIdentity(beforeSpeech) === mediaTimingSpeechIdentity(afterSpeech) : !afterSpeech)) {
+          next = validateStudioMedia({ ...next, mediaTiming });
+        }
+        const revision = newRevision('media');
         const row = (await query(`/* studio:classify-media */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
           WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,
         [prepared.id, revision, canonicalStudioJson(next), oldRevision])).rows[0];
         if (!row) fail('studio_conflict');
+        await audit('classify_media', prepared.id, revision, prepared.actor);
+        return media(row);
+      });
+    },
+    // Only the trusted server inspector supplies mediaTiming. No Blob/provider
+    // I/O belongs here: the current row and dealer are rechecked under the same
+    // scope lock used by classification and lifecycle writes.
+    saveMediaTiming(id, { sha256, expectedRevision, mediaTiming, actor } = {}) {
+      return operation(() => {
+        const checked = { id: validateMediaId(id), expectedRevision: validateRevision(expectedRevision), actor: validateActor(actor) };
+        if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256)) fail('studio_invalid_media', 422);
+        try { return { ...checked, sha256, mediaTiming: normalizeMediaTiming(mediaTiming, { mediaId: checked.id, sha256 }) }; }
+        catch { fail('studio_invalid_media', 422); }
+      }, async prepared => {
+        const previous = await loadMedia(prepared.id);
+        if (!previous) fail('studio_media_missing', 404);
+        if (previous.retainedBank) fail('studio_retained_media_immutable', 410);
+        if (previous.deletion) fail('studio_media_deletion_pending');
+        if (previous.classification.archived) fail('studio_media_archived');
+        if (previous.revision !== prepared.expectedRevision || previous.sha256 !== prepared.sha256) fail('studio_conflict');
+        const project = await loadDocument('project');
+        const dealerId = previous.classification.dealerId;
+        if (project?.value.dealerTrash?.some(entry => entry.dealer.id === dealerId)) fail('studio_dealer_archived');
+        if (!isActiveDealerId(dealerId) || !project?.value.dealers?.some(dealer => dealer.id === dealerId)) fail('studio_dealer_inactive');
+        const { revision: oldRevision, updatedAt, ...record } = previous;
+        // Server contract checks exact size/hash and recomputes the speech
+        // identity digest; recording/review and all other fields are retained.
+        const next = validateStudioMedia({ ...record, mediaTiming: prepared.mediaTiming });
+        const revision = newRevision('media');
+        const row = (await query(`/* studio:save-media-timing */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
+          WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,
+        [prepared.id, revision, canonicalStudioJson(next), oldRevision])).rows[0];
+        if (!row) fail('studio_conflict');
+        // Existing immutable audit vocabulary; the revision identifies the
+        // measured metadata row without requiring a schema migration.
         await audit('classify_media', prepared.id, revision, prepared.actor);
         return media(row);
       });

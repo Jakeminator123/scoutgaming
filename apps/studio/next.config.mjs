@@ -23,7 +23,7 @@ export default {
       .map(route => [route, ['../../ops/neon-game/product-schema.sql', '../../ops/neon-studio/*.sql',
         // This worker runs as an unbundled Node module. Trace its runtime imports
         // explicitly, including Sharp's native binaries and transitive helpers.
-        ...(route==='/api/layer-assets/**'?['./lib/layer-media-inspection-worker.mjs',
+        ...(['/api/layer-assets/**','/api/videos/**'].includes(route)?['./lib/layer-media-inspection-worker.mjs','./lib/mp4-media-timing.mjs',
           './node_modules/mediabunny/package.json','./node_modules/mediabunny/dist/modules/**/*.js',
           './node_modules/sharp/package.json','./node_modules/sharp/dist/**/*',
           './node_modules/@img/**/*','./node_modules/detect-libc/**/*','./node_modules/semver/**/*']:[])]])),

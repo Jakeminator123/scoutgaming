@@ -1,5 +1,17 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Native material och uppmätt tidsbudget — 26 oktober 2026
+
+Admin använder den befintliga Neon-posten och privata Blob-filen. POST /api/videos/measure-timing tar endast id, SHA-256 och expectedRevision. Servern läser oförändrade bytes utanför SQL-låset och sparar ett bytebundet mediaTiming-kvitto med behörighet, scope, revision och audit. Ändrad inspelad talidentitet ogiltigförklarar kvittot. Retained-bank-original är fortsatt skrivskyddade.
+
+Progressiv MP4 med entydig tidslinje stöds för ny mätning. Bildrutor, fps, sample/edit-slut och samtliga ljudspårs slut måste stämma exakt; motsägande eller tvetydiga tider nekas. Avbrott avslutar hämtning och städar delvis hämtade filer. Kvittot bevisar containertider och bindning till videobytes, inte avkodning, separat ljud-/indexfil eller läppsynk. Befintliga talgodkännanden krävs fortfarande.
+
+Den rena native-producenten utgår från fryst publicerad presentation, vald dealer, registrerad filmprofil, exakta UUID/hash/storlekar, talidentiteter och mätkvitton. Den läser inget gammalt dealerregister. Alla 35 profiltagningar, runtime-repliker och valda övergångar måste finnas i rätt kontrakt. Blandade språkbanker och ofullständigt material nekas. Utdata binder revision, språk, media och konservativ leadMs/cardMs; koordinatorn granskar de verkliga presentationshändelserna före atomisk commit. Kort, sko och saldo förblir serverägda.
+
+Nya mätkvitton och utökat presentationskuvert kräver runtimekontrakt v29. Gamla paket behåller tidigare representation och läsning. Det uttryckligen valda croupier-lanes-v2-kuvertet tillåter högst 30 KiB komprimerad data och 32 KiB branding, med högst 256 KiB uppackat innehåll. Vanlig branding är fortsatt högst 8000 byte. Writer kräver optional020:s exakta ledgerchecksumma och båda validerade CHECKs på samma transaktionsanslutning. Readiness flyttar inte provideranrop in under SQL-lås och höjer inte generella startkrav.
+
+Ordning: kompatibla läsare och v29 → separat godkänd optional020 i avsedd databas → Admin-mätning → ny paketpublicering → spelkonfigurationspublicering. Optional020 har provats endast i isolerade croupier_staging; produktion är inte migrerad av denna leverans. Se [prov och begränsningar](ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober).
+
 ## PAOWs 24 viloklipp
 
 `apps/studio/lib/paow-idle-source-f664c54d.json` fryser Kevins aktiva urval på

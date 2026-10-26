@@ -1,6 +1,6 @@
 export type RoomGameConfig={language:'en'|'sv';limitPreset:'casual'|'prive'|'high'};
 export type RoomGameContext={operatorId:string;roomId:string};
-export type RoomGameReceipt={ok:true;operatorId:string;roomId:string;administrationRevision:string;packageRevision:number;draft:null|{revision:string;gameConfig:RoomGameConfig};published:null|{configVersion:string;packageRevision:number;gameConfig:RoomGameConfig;betMs:20000;actionMs:15000};publication:{ready:boolean;reason?:string}};
+export type RoomGameReceipt={ok:true;operatorId:string;roomId:string;administrationRevision:string;packageRevision:number;draft:null|{revision:string;gameConfig:RoomGameConfig};published:null|{configVersion:string;packageRevision:number;gameConfig:RoomGameConfig;betMs:20000;actionMs:15000};publication:{ready:boolean;reason?:string;materialReason?:string}};
 export const ROOM_GAME_DEFAULTS:Readonly<RoomGameConfig>;
 export function validRoomGameConfig(value:unknown):value is RoomGameConfig;
 export class RoomGameConfigError extends Error{status:number;constructor(message:string,status?:number);}

@@ -10,6 +10,8 @@ import {withPackagePresentation} from '../packages/presentation/server/presentat
 import {canonicalStudioJson,validateDocumentValue} from '../packages/studio-registry/server/document-contract.mjs';
 import {ROOM_LIMIT_PRESETS,ROOM_GAME_TIMERS} from '../packages/presentation/contracts/room-game-config.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
+import {nativeRoomMaterialFixture,measuredFixtureRecord} from './fixtures/native-room-game-material.mjs';
+import {resolveNativeRoomGameMaterial} from '../packages/presentation/server/native-room-game-material.mjs';
 
 const scope={environment:'room-access-test',workspaceId:'isolated'},clone=structuredClone;
 const token='a'.repeat(64),sessionId='player-'+createHash('sha256').update(token).digest('hex');
@@ -63,6 +65,48 @@ function fixture({realAuth=false}={}) {
     fail:marker=>{failAt=marker;},after:fn=>{afterQuery=fn;},authFail:error=>{authFailure=error;},authAfter:fn=>{authAfter=fn;},
     assertReleased(){assert.equal(active,false);assert.equal(clientCount,releases);}};
 }
+
+function nativeFixture() {
+  const h=fixture(),native=nativeRoomMaterialFixture();
+  h.state.administration.gameLanes[0].dealer='dragan';
+  h.state.administration.gameLanes[0].mediaCollection='dragan-presentation';
+  const recapture=()=>{
+    h.state.pack.branding=withPackagePresentation({roomGameConfigVersions:h.state.pack.branding.roomGameConfigVersions},native.presentation,{allowExtended:true});
+    for(const config of Object.values(h.state.configs))config.presentationHash=createHash('sha256').update(canonicalStudioJson(native.presentation)).digest('hex');
+  };
+  recapture();
+  for(const room of h.state.administration.rooms){
+    const material=resolveNativeRoomGameMaterial({room,language:'sv',package:{operatorId:'north',revision:1,
+      tables:['room-a','room-b'],games:['blackjack'],lanes:['mobile-phone'],branding:h.state.pack.branding}});
+    Object.assign(h.state.configs[room.id],{material,leadMs:material.leadMs,cardMs:material.cardMs});
+  }
+  return {...h,native,recapture};
+}
+
+test('native access recomputes the complete frozen material and preserves branding-only publication',async()=>{
+  const h=nativeFixture(),before=clone(h.state),binding=await h.read();
+  assert.deepEqual(await h.access.revalidate(binding),binding);assert.deepEqual(h.state,before);
+  h.state.pack.package_revision=2;h.state.pack.branding.title='Another title';
+  assert.equal((await h.read()).packageRevision,2);
+  await assert.rejects(h.access.revalidate(binding),denied);h.assertReleased();
+});
+
+test('native access rejects a forged budget, revision or incomplete frozen media list',async()=>{
+  for(const change of [config=>{config.material.leadMs--;config.leadMs--;},
+    config=>{config.material.cardMs--;config.cardMs--;},config=>{config.material.revision='native-film-v1-'+'f'.repeat(64);},
+    config=>{config.material.media.pop();}]){
+    const h=nativeFixture();change(h.state.configs['room-a']);
+    await assert.rejects(h.read(),denied);h.assertReleased();
+  }
+});
+
+test('native access rejects changed measurements or approvals even with a refreshed outer presentation hash',async()=>{
+  for(const change of [row=>measuredFixtureRecord(row,{audioEndUs:3000000}),row=>{row.classification.recordedSpeech.review={status:'pending'};}]){
+    const h=nativeFixture(),binding=await h.read();
+    change(h.native.records.find(row=>row.classification.situation==='placebets'));h.recapture();
+    await assert.rejects(h.access.revalidate(binding),denied);h.assertReleased();
+  }
+});
 
 test('explicit ports/scope and non-partner live session required before all registry reads',async()=>{
   const h=fixture();assert.throws(()=>createSharedRoomAccess({scope}),TypeError);

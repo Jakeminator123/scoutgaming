@@ -1,7 +1,7 @@
 import {assertMediaAlpha} from './media-alpha.mjs';
 import {assertNativeMediaReadiness} from './native-media-readiness.mjs';
 import {DEFAULT_DEALER_COMPOSITING} from '../../../packages/presentation/contracts/dealer-compositing.mjs';
-import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId, validateRevision, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
@@ -15,7 +15,7 @@ function writeMetadata(value) {
   try { return validateVideoMetadata(value,{forWrite:true}); }
   catch (error) { fail(error.code==='dealer_background_required'?'studio_dealer_background_required':'studio_invalid_media',422); }
 }
-export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mediaDeletion, mutationTransaction, baseOverride} = {}) {
+export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mediaDeletion, inspectMediaTiming, mutationTransaction, baseOverride} = {}) {
   if (typeof authorize !== 'function' || !config || !['/api/admin','/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration');
   const scope = validateStudioScope(config.scope), prefix = config.apiBase === '/api/admin' ? '/api' : '/studio/api';
   if (baseOverride !== undefined && baseOverride !== `${prefix}/layer-assets`) fail('studio_invalid_configuration');
@@ -59,6 +59,48 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
           return json(await uploads.commit(body,{actor,request,stillAuthorized:refresh,mutationTransaction}));
         }
         fail('studio_invalid_request',400);
+      }
+      if (baseOverride === undefined && path === `${base}/measure-timing` && request.method === 'POST') {
+        if (request.headers.get('origin') !== new URL(request.url).origin
+          || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
+        const body = await readStudioDocumentJson(request);
+        if (Object.keys(body).sort().join(',') !== 'expectedRevision,id,sha256'
+          || typeof body.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(body.sha256)) fail('studio_invalid_request',400);
+        validateMediaId(body.id); validateRevision(body.expectedRevision);
+        if (typeof inspectMediaTiming !== 'function' || typeof repository?.getMedia !== 'function'
+          || typeof repository?.saveMediaTiming !== 'function' || typeof repository?.transaction !== 'function') fail('studio_media_registry_unavailable');
+        if (typeof mutationTransaction !== 'function') fail('studio_mutation_transaction_required');
+        if (canonicalStudioJson(validateStudioScope(repository.scope)) !== canonicalStudioJson(scope)) fail('studio_request_rejected',403);
+        const checkedSource = async () => {
+          const record = await repository.getMedia(body.id);
+          if (!record) fail('studio_media_missing',404);
+          if (record.retainedBank || record.classification.familyId) fail('studio_retained_media_immutable',409);
+          if (record.deletion) fail('studio_media_deletion_pending',409);
+          if (record.classification.archived) fail('studio_media_archived',409);
+          if (record.revision !== body.expectedRevision || record.sha256 !== body.sha256) fail('studio_conflict',409);
+          if (record.contentType !== 'video/mp4') fail('studio_media_timing_unsupported',422);
+          await requireSavedVideoDealer(repository,record.classification.dealerId);
+          return record;
+        };
+        const source = await checkedSource(), sourceIdentity = canonicalStudioJson(source);
+        if (request.signal.aborted) fail('studio_media_inspection_cancelled',408);
+        // Verified Blob reads and decoding must finish before either SQL lock.
+        // The caller supplies only identity/CAS; the server owns this receipt.
+        const mediaTiming = await inspectMediaTiming(structuredClone(source),{signal:request.signal});
+        if (request.signal.aborted) fail('studio_media_inspection_cancelled',408);
+        await refresh();
+        const presentationMutation = {metadata:source.classification,mediaTiming};
+        const saved = await mutationTransaction(async () => {
+          await refresh();
+          return repository.transaction(async () => {
+            if (request.signal.aborted) fail('studio_media_inspection_cancelled',408);
+            const current = await checkedSource();
+            if (canonicalStudioJson(current) !== sourceIdentity) fail('studio_conflict',409);
+            if (request.signal.aborted) fail('studio_media_inspection_cancelled',408);
+            return repository.saveMediaTiming(body.id,{sha256:body.sha256,expectedRevision:body.expectedRevision,mediaTiming,actor});
+          },{presentationMutation});
+        },{presentationMutation});
+        return json({media:saved});
       }
       if (baseOverride === undefined && [`${base}/delete-check`,`${base}/delete`].includes(path) && request.method === 'POST') {
         if (request.headers.get('origin') !== new URL(request.url).origin || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);

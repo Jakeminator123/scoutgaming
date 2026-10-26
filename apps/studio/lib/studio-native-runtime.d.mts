@@ -1,4 +1,5 @@
 import type { NativeStudioSession } from '../../../packages/studio-access/studio-native-auth.mjs';
+import type { MediaTiming } from '../../../packages/presentation/contracts/media-timing.mjs';
 export interface NativeStudioConfiguration {
   scope: Readonly<{environment: string; workspaceId: string}>;
   connectionString: string; allowedOrigins: string[]; publicHosts: string[];
@@ -26,6 +27,7 @@ export interface NativeStudioRuntime {
   legacyControls?: (project: any) => Promise<any>;
   uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
   layerUploads?: NativeStudioRuntime['uploads'];
+  inspectMediaTiming(record: any, options?: {signal?: AbortSignal}): Promise<MediaTiming>;
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
   listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string; publishedPackage?: { revision: number; lanes: string[] } | null }>>;
   listOperatorDirectory?: () => Promise<OperatorDirectoryEntry[]>;
