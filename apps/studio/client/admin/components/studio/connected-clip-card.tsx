@@ -12,7 +12,7 @@ import {registeredFilmedProfile} from '../../../../../../packages/presentation/c
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
   localPreviewUrl?:string; usage?:StudioClipUsage; usageChanged?:boolean; active?:boolean; onOpen?:()=>void;
   library?:ClipLibraryGroup[]; variants:{id:string;label:string;baseline?:boolean}[]; variantId:string; selectedId:string; onSelect:(id:string)=>void; onSlot:(id:string)=>void;
-  onVariant:(id:string)=>void; onBind:(asAlternative?:boolean)=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onFiles?:(files:File[])=>void; onSettings:()=>void;
+  onVariant:(id:string)=>void; onBind:(asAlternative?:boolean)=>void; onBindNative?:()=>void; onUnbind?:()=>void; onFile:(file:File)=>void; onFiles?:(files:File[])=>void; onSettings:()=>void;
   // Intake rows dragged from the panel: the parent says which slots accept the dragged row.
   intakeDrag?:{rowId:string;check:(slotId:string)=>{accepted:boolean;reason:string}}|null; onIntakeDrop?:(rowId:string,slotId:string)=>void;
   // Mount point for actions owned elsewhere, such as a deletion button.
@@ -80,7 +80,8 @@ export function ConnectedClipDetails({ data, settingsOpen=false, active=true }:{
       {selected&&!settingsOpen&&data.slot.game==='roulette'&&data.slot.eventId==='roulette.idle'&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Granska poser och inramning</button>}
       {selected&&!wheelStart&&!intake&&!ready&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind()}>{filmedProfile?`Koppla hela givbanken · ${filmedProfile.takes.length} klipp`:'Koppla till utkast'}</button>}
       {selected&&data.slot.eventId==='transition.shoe'&&!data.slot.family&&data.boundId&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" onClick={()=>data.onBind(true)}>Lägg till som variant</button>}
-      {filmedProfile&&<p>Givbanken använder {filmedProfile.takes.length} exakta filmvarianter. Första klippet börjar i vila, följande fortsätter vid skon och sista återgår till vila. Separata skofilmer behövs inte.</p>}
+      {filmedProfile&&data.onBindNative&&<><button type="button" disabled={data.busy} className="studio-card-bind" onClick={()=>{if(!data.busy)data.onBindNative?.();}}>Koppla för delat bord</button><p>Endast filmer som kan behövas med dina valda skoklipp kopplas till utkastet. Befintliga kopplingar behålls. Spara och publicera separat.</p></>}
+      {filmedProfile&&<p>Hela givbanken innehåller {filmedProfile.takes.length} exakta filmvarianter, inklusive övergångar till och från vila.</p>}
       {selected&&!wheelStart&&data.slot.game==='roulette'&&!intake&&data.boundIds.includes(selected.id)&&data.onUnbind&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onUnbind}>Ta bort koppling</button>}
       <section className="studio-card-rule" aria-label={`Körregel ${data.slot.id}`}><h3>Körregel · projektutkast</h3>
         {(filmed?['Spelserverns givsekvens väljer rätt plats och posevariant. Klippen väljs inte slumpmässigt.']:data.usage?.rules??['Välj ett klipp för att se dess körregel.']).map(rule=><p key={rule}>{rule}</p>)}

@@ -27,12 +27,28 @@ export function validateRoomGameDrafts(value, rooms) {
 // This is supplied by the verified frozen-media adapter, never by an Admin request.
 // Absence is a publication blocker, not permission to use fixture timing or another language.
 export function validateRoomGameMaterial(value, {language,dealerId}={}) {
-  if(!exact(value,['revision','dealerId','language','leadMs','cardMs','media'])||!id(value.revision)||value.dealerId!==dealerId||value.language!==language
+  const filmed = typeof value?.revision === 'string' && value.revision.startsWith('native-film-v2-');
+  if(!exact(value,['revision','dealerId','language','leadMs','cardMs','media',...(filmed?['film']:[])])||!id(value.revision)||value.dealerId!==dealerId||value.language!==language
     ||!Number.isSafeInteger(value.leadMs)||value.leadMs<0||value.leadMs>60000||!Number.isSafeInteger(value.cardMs)||value.cardMs<1||value.cardMs>60000
     ||!Array.isArray(value.media)||!value.media.length||value.media.length>256)fail();
   const seen=new Set();
   for(const row of value.media) {
     if(!exact(row,['id','sha256'])||!id(row.id)||!/^[a-f0-9]{64}$/.test(row.sha256)||seen.has(row.id))fail();seen.add(row.id);
+  }
+  if (typeof value.revision === 'string' && value.revision.startsWith('native-film-')
+    && !/^native-film-v[12]-[a-f0-9]{64}$/.test(value.revision)) fail();
+  if (filmed) {
+    const film=value.film;
+    if(!exact(film,['schemaVersion','profileId','transitions'])||film.schemaVersion!==1||!id(film.profileId)
+      ||!exact(film.transitions,['toShoe','fromShoe']))fail();
+    const transitionIds=new Set();
+    for(const clip of Object.values(film.transitions)) {
+      if(clip===null)continue;
+      if(!exact(clip,['id','sha256','durationMs'])||!id(clip.id)||!/^[a-f0-9]{64}$/.test(clip.sha256)
+        ||!Number.isSafeInteger(clip.durationMs)||clip.durationMs<1||clip.durationMs>60000
+        ||!value.media.some(row=>row.id===clip.id&&row.sha256===clip.sha256)||transitionIds.has(clip.id))fail();
+      transitionIds.add(clip.id);
+    }
   }
   return structuredClone(value);
 }

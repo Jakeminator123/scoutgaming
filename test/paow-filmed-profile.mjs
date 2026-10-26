@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {PAOW_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
 import {registeredFilmedProfile} from '../packages/presentation/contracts/filmed-profiles/registry.mjs';
 import {validateFilmedDealProfile,filmedFaceAtTime} from '../packages/presentation/contracts/filmed-profile.mjs';
-import {bindFilmedBank,filmedBankState,hasEmbeddedShoeTransitions} from '../packages/presentation/contracts/filmed-bank-bindings.mjs';
+import {bindFilmedBank,bindNativeFilmedBank,nativeFilmedBankState,filmedBankState,hasEmbeddedShoeTransitions} from '../packages/presentation/contracts/filmed-bank-bindings.mjs';
 import {createEmptyProject,addDealer,validateProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {createStudioProjectBindings} from '../packages/presentation/server/studio-project-bindings.mjs';
@@ -126,4 +126,96 @@ test('server validation and frozen publication retain all 35 films even with ord
   inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:['paow']});
  assert.equal(presentation.playback.media.length,36);
  assert.ok(profile.takes.every(take=>presentation.playback.media.some(video=>video.sha256===take.sha256)));
+});
+
+
+function shoeFixture(){
+ const f=fixture();
+ for(const [index,situation] of ['to-shoe','from-shoe'].entries()){
+  const video={id:`00000000-0000-4000-8000-${String(201+index).padStart(12,'0')}`,sha256:String(8+index).repeat(64),bytes:2048,
+   available:true,integrity:'verified',classification:{dealerId:'paow',kind:'action',eventId:'transition.shoe',situation,
+    startPose:index?'REDO':'VILA',endPose:index?'VILA':'REDO',role:'standard',label:situation,notes:''}};
+  f.inventory.videos.push(video);
+  const slot=clipSlots(f.project,f.inventory,'paow').find(row=>row.id===`transition.shoe/${situation}`);
+  assert.ok(slot,'compatible inventory makes the separate shoe slot selectable before any binding');
+  f.project=bindClip(f.project,f.inventory,'paow',slot,video.id);
+ }
+ return f;
+}
+
+test('explicit native bank binding accepts reachable originals and preserves unrelated drafts and legacy full-bank behavior',()=>{
+ const f=shoeFixture(),coverage=nativeFilmedBankState(f.project,f.inventory,'paow');
+ assert.equal(coverage.complete,true);assert.ok(coverage.entries.length<profile.takes.length);
+ const ids=new Set(coverage.entries.map(row=>row.video.id));
+ f.inventory.videos=f.inventory.videos.filter(row=>ids.has(row.id)||row.classification.eventId==='transition.shoe');
+ const before=structuredClone(f.project),inventoryBefore=structuredClone(f.inventory);
+ assert.equal(filmedBankState(f.inventory,'paow').complete,false);
+ assert.throws(()=>bindFilmedBank(f.project,f.inventory,'paow'),/saknar verifierade/);
+ const bound=bindNativeFilmedBank(f.project,f.inventory,'paow');
+ const refs=bound.lines.filter(row=>row.dealerId==='paow'&&row.eventId!=='transition.shoe').flatMap(row=>row.variants.map(variant=>variant.videoGenerationId).filter(Boolean));
+ assert.deepEqual(new Set(refs),ids);assert.equal(refs.length,ids.size);
+ assert.deepEqual(f.project,before);assert.deepEqual(f.inventory,inventoryBefore);
+ assert.deepEqual(bound.lines.filter(row=>row.dealerId!=='paow'||row.eventId==='transition.shoe'),before.lines.filter(row=>row.dealerId!=='paow'||row.eventId==='transition.shoe'));
+ assert.deepEqual(bindNativeFilmedBank(bound,f.inventory,'paow'),bound);
+ const existing=bound.lines.find(row=>row.eventId==='deal.player.left'&&row.dealerId==='paow').variants.find(row=>row.videoGenerationId);
+ existing.label='Mitt granskade utkast';existing.priority=2;
+ assert.deepEqual(bindNativeFilmedBank(bound,f.inventory,'paow'),bound,'existing bindings and their author settings remain unchanged');
+});
+
+test('native binding rejects wrong exact bytes, owner, unavailable media and broken selected shoe directions without editing',()=>{
+ for(const change of [row=>row.sha256='a'.repeat(64),row=>row.classification.dealerId='astrid',row=>row.available=false]){
+  const f=shoeFixture(),needed=nativeFilmedBankState(f.project,f.inventory,'paow').entries[0].video;
+  change(needed);const before=structuredClone(f.project);
+  assert.throws(()=>bindNativeFilmedBank(f.project,f.inventory,'paow'),/saknar verifierade/);
+  assert.deepEqual(f.project,before);
+ }
+ for(const change of [row=>row.available=false,row=>row.integrity='unavailable',row=>row.classification.dealerId='astrid',row=>row.classification.startPose='REDO']){
+  const f=shoeFixture(),shoe=f.inventory.videos.find(row=>row.classification.situation==='to-shoe');
+  change(shoe);const before=structuredClone(f.project);
+  assert.throws(()=>bindNativeFilmedBank(f.project,f.inventory,'paow'),/valt skoklipp/);
+  assert.deepEqual(f.project,before);
+ }
+ const f=shoeFixture(),line=f.project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='transition.shoe');
+ line.variants.find(row=>row.id.endsWith('.slot.to-shoe')).videoGenerationId='missing-selected';
+ assert.throws(()=>bindNativeFilmedBank(f.project,f.inventory,'paow'),/valt skoklipp/);
+});
+
+test('removing a saved shoe direction restores the embedded take requirement without discarding previous bindings',()=>{
+ const f=shoeFixture(),full=structuredClone(f.inventory),needed=nativeFilmedBankState(f.project,f.inventory,'paow');
+ const ids=new Set(needed.entries.map(row=>row.video.id));
+ f.inventory.videos=f.inventory.videos.filter(row=>ids.has(row.id)||row.classification.eventId==='transition.shoe');
+ const bound=bindNativeFilmedBank(f.project,f.inventory,'paow');
+ bound.lines.find(row=>row.dealerId==='paow'&&row.eventId==='transition.shoe').variants.find(row=>row.id.endsWith('.slot.to-shoe')).videoGenerationId=null;
+ const before=structuredClone(bound);
+ assert.throws(()=>bindNativeFilmedBank(bound,f.inventory,'paow'),/saknar verifierade/);
+ const repaired=bindNativeFilmedBank(bound,full,'paow');
+ const actual=nativeFilmedBankState(repaired,full,'paow');assert.equal(actual.complete,true);
+ assert.ok(actual.entries.some(row=>!ids.has(row.video.id)),'embedded entry variants are now necessary');
+ for(const line of before.lines)for(const variant of line.variants){
+  assert.deepEqual(repaired.lines.find(row=>row.dealerId===line.dealerId&&row.eventId===line.eventId).variants.find(row=>row.id===variant.id),variant);
+ }
+});
+
+test('embedded profiles expose shoe slots only for compatible inventory or existing saved references',()=>{
+ for(const change of [row=>row.available=false,row=>row.classification.dealerId='astrid',row=>row.classification.startPose='REDO']){
+  const f=shoeFixture();f.project=fixture().project;
+  f.inventory.videos=f.inventory.videos.filter(row=>row.classification.situation!=='from-shoe');
+  change(f.inventory.videos.find(row=>row.classification.situation==='to-shoe'));
+  assert.equal(clipSlots(f.project,f.inventory,'paow').some(row=>row.eventId==='transition.shoe'),false);
+ }
+});
+
+test('native binding fills an empty canonical reference without replacing its author settings',()=>{
+ const f=shoeFixture(),bound=bindNativeFilmedBank(f.project,f.inventory,'paow');
+ const line=bound.lines.find(row=>row.dealerId==='paow'&&row.eventId==='deal.player.left');
+ const variant=line.variants.find(row=>row.id==='paow.deal.player.left.filmed.1.base'),videoId=variant.videoGenerationId;
+ variant.videoGenerationId=null;variant.label='Saved author label';variant.priority=2;
+ variant.selection={rules:true,random:false,model:false};
+ const before=structuredClone(bound),expected={...structuredClone(variant),videoGenerationId:videoId};
+ validateProject(bound);
+ const repaired=bindNativeFilmedBank(bound,f.inventory,'paow');
+ assert.deepEqual(repaired.lines.find(row=>row.dealerId==='paow'&&row.eventId===line.eventId).variants.find(row=>row.id===variant.id),expected);
+ assert.deepEqual(bound,before);
+ variant.videoGenerationId='another-existing-video';
+ assert.throws(()=>bindNativeFilmedBank(bound,f.inventory,'paow'),/sparad givkoppling/);
 });

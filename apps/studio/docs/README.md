@@ -194,6 +194,13 @@ klippet byts. Den ändrar inte projektet.
 skillnaden mellan nödvändiga poseversioner och frivilliga tagningar. Okända poser
 är uttryckligen okända. Guiden är stöd för arbetet, inte medieacceptans.
 
+**Koppla för delat bord** i givklippets detaljpanel kopplar de filmer som kan
+behövas med dealerns valda skoklipp. Välj först standardklipp i **Till skon** och
+**Från skon** om de ska användas. Dessa fack visas när kompatibla klipp finns i
+biblioteket. Befintliga kopplingar behålls; spara utkastet och publicera separat.
+**Koppla hela givbanken** behåller sitt tidigare urval. Ingen knapp godkänner
+film eller tal.
+
 **Provspelning** öppnar en panel på samma arbetsyta. Välj uttryckligen en sparad
 Blackjack-sammansättning och starta provet. Provet använder dess sparade förval,
 inte det markerade klippet, osparade ändringar eller rummets publicerade val.

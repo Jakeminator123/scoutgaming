@@ -9,6 +9,7 @@ import { StudioStorageError, canonicalStudioJson } from '../packages/studio-regi
 import { EXTENDED_PRESENTATION_STORAGE_CHECKSUM, validatePresentationBranding } from '../packages/presentation/server/presentation-storage.mjs';
 import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture } from './fixtures/native-room-game-material.mjs';
 import { readPackagePresentation, withPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
+import { withNativeFilmedPlanningReadiness } from '../packages/presentation/server/native-filmed-readiness-context.mjs';
 import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
 import { ROOM_GAME_TIMERS, ROOM_LIMIT_PRESETS } from '../packages/presentation/contracts/room-game-config.mjs';
 
@@ -897,4 +898,26 @@ test('a first J08 package binding cannot adopt an existing foreign or malformed 
     await assert.rejects(h.store.publishRoomGameConfig(h.request(),{roomId:h.room.id,gameConfig:{language:'sv',limitPreset:'prive'},material}),refusal('studio_conflict'));
     assert.deepEqual(h.sql.tables,before);
   }
+});
+
+test('v2 configuration publication requires live readiness and preserves v1 room history through republication',async()=>{
+  const h=await roomPublicationFixture({twoRooms:true}),original=structuredClone(h.config()),other=structuredClone(h.config('room-other'));
+  const material=resolveNativeRoomGameMaterial({package:h.pack,room:h.room,language:'sv'},{version:2});
+  const replacement={roomId:h.room.id,gameConfig:{language:'sv',limitPreset:'prive'},material};
+  const before=structuredClone(h.sql.tables);
+  await assert.rejects(h.store.publishRoomGameConfig(h.request(),replacement),refusal('studio_presentation_runtime_update_required'));
+  assert.deepEqual(h.sql.tables,before);
+  const result=await withNativeFilmedPlanningReadiness(true,()=>h.store.publishRoomGameConfig(h.request(),replacement));
+  const active=structuredClone(h.config()),pack=result.package;
+  assert.deepEqual(active.material,material);assert.match(active.material.revision,/^native-film-v2-/);
+  assert.deepEqual(h.config('room-other'),other);
+  assert.deepEqual(h.sql.tables.shared_table_configs.find(row=>row.version===original.configVersion).body,original);
+  const request=h.request({expectedRevision:pack.revision,branding:{...pack.branding,roomOverrides:{[h.room.id]:{color:'#778899'}}}});
+  const saved=structuredClone(h.sql.tables);
+  await assert.rejects(h.store.publishPackage(request),refusal('studio_presentation_runtime_update_required'));
+  assert.deepEqual(h.sql.tables,saved);
+  await withNativeFilmedPlanningReadiness(true,()=>h.store.publishPackage(request));
+  assert.deepEqual(h.config().material,material);assert.notEqual(h.config().configVersion,active.configVersion);
+  assert.deepEqual(h.config('room-other'),other);
+  assert.deepEqual(h.sql.tables.shared_table_configs.find(row=>row.version===active.configVersion).body,active);
 });

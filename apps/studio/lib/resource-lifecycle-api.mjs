@@ -1,3 +1,4 @@
+import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
 import * as savedGameDocumentContract from '../../../packages/studio-registry/server/document-contract.mjs';
 
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
@@ -56,7 +57,7 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   const pack=await operators.getCurrentPackage(operatorId),presentation=readPackagePresentation(pack);
   // Native preflight includes this frozen package, not only the mutable draft.
   // Inside the existing transaction this is a coverage check, never HTTP.
-  if(presentation&&repository.withMutationContext)await repository.withMutationContext(async()=>{}, {kind:'presentation-package',value:presentation});
+  if(presentation&&repository.withMutationContext)await repository.withMutationContext(async()=>{}, [{kind:'presentation-package',value:presentation},...nativeFilmedPlanningMutations(pack)]);
   return {operator,pack,lifecycle:lifecycleFor(pack,operatorId)};
  }
  const endpoint=(method,action,handler)=>handlers.set(`${method} /studio/api/admin/${action}`,async context=>{trusted(context);return repository.transaction(()=>repository.withTransactionClient(async client=>handler(context,await store(client))));});
@@ -128,7 +129,7 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   const plan=await materialTrashPlan({repository,operators,id:body.id,archived:body.archived,expectedRevision:body.expectedRevision,now});
   if(repository.withMutationContext){
    const retained=plan.changes.map(change=>readPackagePresentation(change)).filter(Boolean);
-   await repository.withMutationContext(async()=>{},retained.map(value=>({kind:'presentation-package',value})));
+   await repository.withMutationContext(async()=>{},[...retained.map(value=>({kind:'presentation-package',value})),...plan.changes.flatMap(nativeFilmedPlanningMutations)]);
   }
   if(action==='material-trash-check')return {impact:plan.impact};
   if(typeof body.impactToken!=='string'||body.impactToken!==plan.impact.token)fail('studio_conflict');

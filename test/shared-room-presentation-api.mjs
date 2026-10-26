@@ -43,6 +43,15 @@ function speech(status='approved',changes={}){
   const identity=recordedSpeechIdentity(row),proof={by:'synthetic-reviewer',at:'2026-10-22T00:00:00.000Z',identity};row.recording={status:'verified-recording',...proof};row.review=status==='pending'?{status}:{status,...proof};return row;
 }
 
+test('scoped config transports the active material separately from mutable selection options',async()=>{
+  const filmedMaterial={revision:'native-film-v2-'+'c'.repeat(64),film:{schemaVersion:1,profileId:profile.id,transitions:{toShoe:null,fromShoe:null}}};
+  const response=await sharedRoomPresentationRead({request:{url:'/api/presentation/shared-room/room-a/config?operatorSlug=north&roomId=room-a&packageRevision=7&dealerId=dragan',method:'GET'},playerId:'alice'},
+    async(_args,work)=>work({filmedMaterial,presentationContext:{operatorSlug:'north',roomId:'room-a',packageRevision:7,dealerId:'dragan'}},
+      {frozenDealerContext:{configuration:async()=>({owner:'web',filmedMaterial:{revision:'untrusted-configuration'}})}}));
+  assert.deepEqual((await response.json()).filmedMaterial,filmedMaterial);
+  assert.equal(response.headers.get('cache-control'),'private, no-store');
+});
+
 test('shared selector uses committed card and active-room URL without native reads or action writes',async()=>{
   const h=fixture(),reply=await h.request({event:{...event,card:{r:'K',s:'♦'},private:'untrusted'}});
   assert.equal(reply.status,200,JSON.stringify(reply.body)+' '+String(h.failure));assert.deepEqual(reply.body.decision.sourceEvent,event);
@@ -225,6 +234,30 @@ test('filmed selection uses the captured exact take and cannot borrow another pr
   const reply=await h.request();assert.equal(reply.status,200,JSON.stringify(reply.body));assert.equal(reply.body.video.id,first);
   assert.equal(reply.body.video.filmedTake.takeKey,'1:iv');
   h.capture.material.media[0].sha256='f'.repeat(64);const blocked=await h.request();assert.equal(blocked.status,200);assert.equal(blocked.body.video,null);
+});
+
+test('v2 selected shoe topology is server frozen even when the client disables transitions',async()=>{
+  const source={...event,box:0,clip:{action:'deal-left'}},h=fixture({dealerId:'dragan',sourceEvent:source});
+  const take=profile.takes.find(row=>row.key==='1:base');
+  h.video.sha256=take.sha256;Object.assign(h.video.classification,{eventId:'deal.player.left',situation:'box0'});
+  h.capture.material.media[0].sha256=take.sha256;
+  const line=h.project.lines.find(row=>row.dealerId==='dragan'&&row.eventId==='transition.shoe'),transitions={};
+  for(const [direction,situation,id,startPose,endPose] of [['toShoe','to-shoe',second,'VILA','REDO'],['fromShoe','from-shoe','10000000-0000-4000-8000-000000000003','REDO','VILA']]) {
+    const sha256=createHash('sha256').update(situation).digest('hex');
+    const video={...structuredClone(h.video),id,sha256,fileName:situation+'.mp4',classification:{...h.video.classification,eventId:'transition.shoe',situation,startPose,endPose}};
+    h.frozen.inventory.videos.push(video);h.capture.material.media.push({id,sha256});
+    line.variants.push({...structuredClone(line.variants[0]),id:'dragan.transition.shoe.slot.'+situation,videoGenerationId:id});
+    transitions[direction]={id,sha256,durationMs:1000};
+  }
+  Object.assign(h.capture.material,{revision:'native-film-v2-'+'c'.repeat(64),film:{schemaVersion:1,profileId:profile.id,transitions}});
+  for(const shoeTransitions of [undefined,false,true]) {
+    const reply=await h.request({shoeTransitions});assert.equal(reply.status,200,JSON.stringify(reply.body));
+    assert.equal(reply.body.video.filmedTake.takeKey,'1:base');
+    assert.equal(reply.body.transitions.before.id,transitions.toShoe.id);assert.equal(reply.body.transitions.after.id,transitions.fromShoe.id);
+  }
+  h.frozen.inventory.videos=h.frozen.inventory.videos.filter(row=>row.id!==transitions.toShoe.id);
+  const missing=await h.request({shoeTransitions:false});assert.equal(missing.status,503);
+  assert.deepEqual(missing.body,{error:'shared_room_presentation_unavailable'});
 });
 
 test('idle rule cannot expose a clip outside captured material',async()=>{

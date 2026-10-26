@@ -726,7 +726,7 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets'} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets'} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -735,7 +735,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
     removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0, tableVersion = 2;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
@@ -747,6 +747,18 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
 }
+
+test('the local presenter exposes a detached frozen planning material',async t=>{
+  const filmedMaterial={revision:'native-film-v2-'+'c'.repeat(64),film:{transitions:{toShoe:null,fromShoe:null}}};
+  const current=await controllerFixture(t,{filmedMaterial});
+  const exposed=current.controller.filmedMaterial;assert.deepEqual(exposed,filmedMaterial);
+  exposed.film.transitions.toShoe={id:'changed'};
+  assert.equal(current.controller.filmedMaterial.film.transitions.toShoe,null);
+});
+
+test('legacy local configuration has no frozen v2 planning material',async t=>{
+  const legacy=await controllerFixture(t);assert.equal(legacy.controller.filmedMaterial,null);
+});
 
 test('pose rotation keeps a clasped clip through speech readiness and 2D actions, then exits before the standard pose', async t => {
   const ids=[1,2,3].map(n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`),familyId='paow/idle.ready/ready';

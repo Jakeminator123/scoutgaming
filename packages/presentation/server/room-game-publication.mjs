@@ -6,7 +6,9 @@ import {validateRoomGameConfig,validateRoomGameMaterial,ROOM_GAME_TIMERS,ROOM_LI
 import {recordedSpeechForVideo} from '../contracts/recorded-speech.mjs';
 import {withoutPresentationLanes} from '../contracts/retained-presentation.mjs';
 import {readPackagePresentation,publicPackageBranding,resolvePackageRoomDealer} from './presentation-package.mjs';
-import {resolveNativeRoomGameMaterial,NATIVE_ROOM_MATERIAL_PREFIX} from './native-room-game-material.mjs';
+import {resolveNativeRoomGameMaterial} from './native-room-game-material.mjs';
+import {assertNativeFilmedPlanningReady} from './native-filmed-readiness-context.mjs';
+import {isNativeRoomMaterial,nativeRoomMaterialVersion} from '../contracts/native-room-filmed-planning.mjs';
 
 const bindingKey='roomGameConfigVersions';
 const configId=value=>typeof value==='string'&&/^room-config-[a-f0-9-]{36}$/.test(value);
@@ -34,8 +36,8 @@ export function assertPublishedRoomGameConfig(value,{version,pack,room,presentat
   const selected=validateRoomGameConfig({language:value.language,limitPreset:value.limitPreset});
   const preset=ROOM_LIMIT_PRESETS[selected.limitPreset];
   const material=validateRoomGameMaterial(value.material,{language:selected.language,dealerId});
-  if(material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX)
-    &&!same(material,resolveNativeRoomGameMaterial({package:pack,room,language:selected.language})))fail();
+  if(isNativeRoomMaterial(material)
+    &&!same(material,resolveNativeRoomGameMaterial({package:pack,room,language:selected.language},{version:nativeRoomMaterialVersion(material)})))fail();
   const captured=[...(presentation.playback?.media??[]),...(presentation.registeredDealers??[]).flatMap(row=>row.idle?[row.idle]:[])];
   for(const ref of material.media) {
     const record=captured.find(row=>row.id===ref.id&&row.sha256===ref.sha256&&row.classification?.dealerId===dealerId);
@@ -74,6 +76,7 @@ function configBody({room,pack,presentation,gameConfig,material}) {
   const selected=validateRoomGameConfig(gameConfig),preset=ROOM_LIMIT_PRESETS[selected.limitPreset];
   const dealerId=resolvePackageRoomDealer(pack,room,presentation);
   material=validateRoomGameMaterial(material,{dealerId,language:selected.language});
+  if(nativeRoomMaterialVersion(material)===2)assertNativeFilmedPlanningReady();
   const value={configVersion:`room-config-${randomUUID()}`,roomId:room.id,operatorId:room.operatorId,packageRevision:pack.revision,
     presentationLaneId:room.presentationLaneId,presentationHash:hash(presentation),...selected,...ROOM_GAME_TIMERS,
     limits:{min:preset.min,max:preset.max,sideMax:preset.sideMax},chips:[...preset.chips],refill:preset.refill,
@@ -139,7 +142,7 @@ export async function prepareRoomGamePublication({query,decodePackage,current,ne
       assertPublishedRoomGameConfig(existing,{version:expectedVersion,pack:source,room,presentation:oldPresentation,dealerId});
       if(same(effect(source,room,oldPresentation),effect(next,room,presentation))) {map[id]=expectedVersion;continue;}
       let material=existing.material;
-      if(material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX))material=resolveNativeRoomGameMaterial({package:next,room,language:existing.language});
+      if(isNativeRoomMaterial(material))material=resolveNativeRoomGameMaterial({package:next,room,language:existing.language},{version:nativeRoomMaterialVersion(material)});
       else if(dealerId!==resolvePackageRoomDealer(next,room,presentation)
         ||hash(oldPresentation)!==hash(presentation)&&!unchangedRetainedPresentation(oldPresentation,presentation,room))fail();
       body=configBody({room,pack:next,presentation,gameConfig:{language:existing.language,limitPreset:existing.limitPreset},material});

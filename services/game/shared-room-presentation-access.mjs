@@ -169,8 +169,14 @@ export function createSharedRoomPresentationAccess({ access, repository, withLoc
         ||room&&config.configVersion!==room.configVersion)stale();
       if(expected&&(expected.configVersion!==config.configVersion||expected.windowId!==windowId))stale();
       if(requested&&Object.keys(requested).some(key=>context.context[key]!==requested[key]))stale();
+      let filmedMaterial;
+      if(config.material?.revision?.startsWith('native-film-v2-')) {
+        try { filmedMaterial=validateRoomGameMaterial(config.material,{dealerId:context.context.dealerId,language:config.language}); } catch { stale(); }
+        if(config.leadMs!==filmedMaterial.leadMs||config.cardMs!==filmedMaterial.cardMs)stale();
+      }
       return {context,state:{windowId,context},value:{roomId:binding.roomId,configVersion:config.configVersion,windowId,
-        presentationContext:context.context,operatorId:binding.operatorId,packageRevision:config.packageRevision}};
+        presentationContext:context.context,operatorId:binding.operatorId,packageRevision:config.packageRevision,
+        ...(filmedMaterial?{filmedMaterial}:{})}};
     },selectFrozen,true);
   }
   return Object.freeze({ withSharedCommittedReceipt, withActiveRoomPresentation });

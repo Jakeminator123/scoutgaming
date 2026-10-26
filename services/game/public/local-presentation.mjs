@@ -365,6 +365,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   control.onchange = () => { pendingRule = null; ++behaviourRequest; settlementContinuation=null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, observeEvents, start: resumeIdle,
+    get filmedMaterial() { return config.filmedMaterial?structuredClone(config.filmedMaterial):null; },
     prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
     close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };

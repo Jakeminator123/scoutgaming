@@ -5,9 +5,9 @@ import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/n
 import { assertNativeRoomSequenceBudget, NATIVE_ROOM_PRESENTATION_CONTRACT } from '../packages/presentation/contracts/native-room-game-budget.mjs';
 import { recordedSpeechIdentity } from '../packages/presentation/contracts/recorded-speech.mjs';
 import { presentationEvents } from '../services/game/partner-presentation.mjs';
-import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord } from './fixtures/native-room-game-material.mjs';
+import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
 
-const resolve = f => resolveNativeRoomGameMaterial(f.input);
+const resolve = f => resolveNativeRoomGameMaterial(f.input,{version:2});
 const denied = reason => error => error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && (!reason || error.reason === reason);
 const rebindSpeech = row => {
   const speech = row.classification.recordedSpeech, identity = recordedSpeechIdentity(speech);
@@ -20,7 +20,7 @@ test('native producer uses complete measured frozen Dragan and PAOW banks withou
     const f = nativeRoomMaterialFixture({dealerId,language}), before = structuredClone(f.input), result = resolve(f);
     assert.deepEqual(f.input,before);
     assert.equal(result.dealerId,dealerId); assert.equal(result.language,language);
-    assert.match(result.revision,/^native-film-v1-[a-f0-9]{64}$/);
+    assert.match(result.revision,/^native-film-v2-[a-f0-9]{64}$/);
     assert.equal(result.media.length,46);
     assert.deepEqual(new Set(result.media.map(row => row.id)),new Set(f.records.map(row => row.id)));
     assert.equal(result.cardMs,dealerId === 'dragan' ? 2830 : 2580);
@@ -229,4 +229,52 @@ test('each serialized clip keeps its own whole-millisecond container allowance',
   // 50/24 seconds is represented by a 2084ms MP4 edit. There can be
   // a preceding placebets and two spoken lines, each with this allowance.
   assert.equal(result.leadMs,1500+Math.ceil(reveal.mediaTiming.endUs/1000)+80+3*2084);
+});
+
+test('reachable native banks work for all saved transition directions and fail on a reachable missing take',()=>{
+  for(const toShoe of [false,true])for(const fromShoe of [false,true]) {
+    const f=withNativeFilmTransitions(nativeRoomMaterialFixture({dealerId:'paow'}),{toShoe,fromShoe});
+    const material=resolve(f),full=resolve(nativeRoomMaterialFixture({dealerId:'paow'}));
+    assert.ok(f.records.filter(row=>row.classification.kind==='action'&&row.classification.eventId!=='transition.shoe').length<35);
+    assert.equal(Boolean(material.film.transitions.toShoe),toShoe);assert.equal(Boolean(material.film.transitions.fromShoe),fromShoe);
+    assert.notEqual(material.revision,full.revision);
+    for(let box=0;box<7;box++)assert.equal(guard(material,[{type:'deal',to:'box',box,shoeDraw:100,faceDown:false}],1),true);
+    assert.throws(()=>resolveNativeRoomGameMaterial(f.input,{version:1}),denied('native_material_bank_incomplete'));
+    const flip=f.records.find(row=>row.sha256===f.profile.takes.find(t=>t.target==='flip').sha256);
+    f.records.splice(f.records.indexOf(flip),1);
+    for(const line of f.presentation.playback.lines)for(const v of line.variants)if(v.videoGenerationId===flip.id)v.videoGenerationId=null;
+    f.recapture();assert.throws(()=>resolve(f),denied('native_material_bank_incomplete'));
+  }
+});
+
+test('historical v1 identity is reproducible and cannot acquire a v2 topology by changing prefix',()=>{
+  const f=nativeRoomMaterialFixture(),v1=resolveNativeRoomGameMaterial(f.input,{version:1});
+  assert.match(v1.revision,/^native-film-v1-[a-f0-9]{64}$/);assert.equal(Object.hasOwn(v1,'film'),false);
+  assert.deepEqual(resolveNativeRoomGameMaterial(f.input,{version:1}),v1);
+  const spoof={...v1,revision:v1.revision.replace('v1','v2')};
+  assert.throws(()=>guard(spoof,[],0),{code:'native_room_sequence_unsupported'});
+});
+
+test('precommit guard plans exact frozen takes, rejecting absent bytes and altered topology',()=>{
+  const f=withNativeFilmTransitions(nativeRoomMaterialFixture()),material=resolve(f);
+  const steps=[{type:'deal',to:'box',box:6,faceDown:false,shoeDraw:91}],take=f.profile.takes.find(row=>row.key==='7:base');
+  assert.equal(guard(material,steps,1),true);
+  const missing=structuredClone(material);missing.media=missing.media.filter(row=>row.sha256!==take.sha256);
+  assert.throws(()=>guard(missing,steps,1),{code:'native_room_sequence_unsupported'});
+  const changed=structuredClone(material);changed.film.transitions.toShoe=null;
+  assert.throws(()=>guard(changed,steps,1),{code:'native_room_sequence_unsupported'});
+  const unknown=structuredClone(material);unknown.film.profileId='unknown-profile';
+  assert.throws(()=>guard(unknown,steps,1),{code:'native_room_sequence_unsupported'});
+});
+
+test('v1 retains the historical embedded-entry fallback for a mismatched explicit shoe slot',()=>{
+  const f=withNativeFilmTransitions(nativeRoomMaterialFixture(),{toShoe:false,fromShoe:true,reduce:false});
+  const line=f.presentation.playback.lines.find(row=>row.eventId==='transition.shoe');
+  const from=line.variants.find(row=>row.id==='dragan.transition.shoe.slot.from-shoe');
+  line.variants.push({...structuredClone(from),id:'dragan.transition.shoe.slot.to-shoe'});
+  f.recapture();
+  const legacy=resolveNativeRoomGameMaterial(f.input,{version:1});
+  assert.match(legacy.revision,/^native-film-v1-/);assert.equal(legacy.media.length,f.records.length);
+  assert.equal(Object.hasOwn(legacy,'film'),false);
+  assert.throws(()=>resolve(f),denied('native_material_transition_pose_missing'));
 });

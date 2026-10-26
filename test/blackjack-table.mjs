@@ -9,7 +9,7 @@ import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-
 import { createPresentationGate, tickIdOf, WalletDenied, LockSetExceeded } from '../services/game/games/blackjack/table/ports.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
-import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
+import { nativeRoomMaterialFixture, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
 import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
 import { presentationForRow } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
 
@@ -821,4 +821,20 @@ test('a closed shoe is verified against its commitment and the global audit draw
   assert.equal(JSON.parse(closed.payload).verification.status, 'verified');
   assert.equal(t.auditTypes().filter(x => x === 'shoe.opened').length, 2);
   assert.equal((await t.store.audit.verifyChain()).ok, true);
+});
+
+test('missing reachable native film rolls back ready and tick before all durable effects',async()=>{
+  for(const trigger of ['ready','tick']) {
+    const t=setup(),f=withNativeFilmTransitions(nativeRoomMaterialFixture()),material=resolveNativeRoomGameMaterial(f.input,{version:2});
+    const cfg={material,language:material.language,leadMs:material.leadMs,cardMs:material.cardMs};
+    const broken=structuredClone(cfg),hash=f.profile.takes.find(take=>take.key==='1:base').sha256;
+    broken.material.media=broken.material.media.filter(row=>row.sha256!==hash);
+    t.store.test.publish('film-v2',broken);await t.join('kevin',[0]);await t.bet('kevin',0,25);
+    t.setShoe('party',['8','6','9','10','5']);if(trigger==='tick')t.time=(await t.snap()).deadline;
+    const before=await durableState(t),invoke=trigger==='ready'?()=>t.ready('kevin'):async()=>t.table.tick((await t.table.dueTicks()).find(row=>row.kind==='window.close'));
+    await rejects(invoke(),'native_room_sequence_unsupported');assert.deepEqual(await durableState(t),before);
+    t.store.test.publish('film-v2',cfg);await invoke();
+    assert.equal(t.store.test.ledger().filter(row=>row.kind==='consume:stake').length,1);
+    assert.equal((await t.store.audit.verifyChain()).ok,true);
+  }
 });

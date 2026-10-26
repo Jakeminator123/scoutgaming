@@ -335,6 +335,23 @@ test('bootstrap and shared selection treat client package/window/config values o
   await assert.rejects(h.helper.withSharedCommittedReceipt(input,()=>assert.fail('mixed active material and later branding selected')),isCode('shared_room_presentation_stale'));
 });
 
+test('active config exposes only its validated frozen v2 film material and rechecks it after unlocked work',async()=>{
+  const h=fixture(),input={request:args().request,playerId,roomId};
+  const legacy=await h.helper.withActiveRoomPresentation(input,capture=>capture);
+  assert.equal(Object.hasOwn(legacy,'filmedMaterial'),false);
+  h.stored.config.material.revision='native-film-v2-'+'c'.repeat(64);
+  h.stored.config.material.film={schemaVersion:1,profileId:'fixture-profile',transitions:{toShoe:null,fromShoe:null}};
+  const result=await h.helper.withActiveRoomPresentation(input,capture=>{
+    assert.equal(Object.isFrozen(capture.filmedMaterial.film.transitions),true);return capture;
+  });
+  assert.deepEqual(result.filmedMaterial,h.stored.config.material);
+  await assert.rejects(h.helper.withActiveRoomPresentation(input,capture=>{
+    h.stored.config.material.film.profileId='changed-profile';return capture;
+  }),isCode('shared_room_presentation_stale'));
+  h.stored.config.material.film.transitions.toShoe={id:'unbound',sha256:'d'.repeat(64),durationMs:1000};
+  await assert.rejects(h.helper.withActiveRoomPresentation(input,()=>assert.fail('invalid frozen film exposed')),isCode('shared_room_presentation_stale'));
+});
+
 test('private responses are cancelled after unlocked revocation or a window change before final capture',async()=>{
   for(const revoke of [true,false]) {
     let revoked=false,cancelled=0;

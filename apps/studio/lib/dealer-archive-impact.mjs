@@ -1,3 +1,4 @@
+import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
 import {createHash} from 'node:crypto';
 import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
@@ -129,7 +130,7 @@ export async function applyDealerArchiveImpact({repository,impactToken,actor,...
     // write; an active mutation context cannot acquire new features or fetch.
     if(repository.withMutationContext){
       const retained=plan.packageChanges.map(readPackagePresentation).filter(Boolean);
-      await repository.withMutationContext(async()=>{},retained.map(value=>({kind:'presentation-package',value})));
+      await repository.withMutationContext(async()=>{},[...retained.map(value=>({kind:'presentation-package',value})),...plan.packageChanges.flatMap(nativeFilmedPlanningMutations)]);
     }
     if(typeof impactToken!=='string'||impactToken!==plan.impact.token)fail('studio_conflict');
     if(!same(plan.administration,plan.administrationDocument.value))await repository.saveDocument('administration',{

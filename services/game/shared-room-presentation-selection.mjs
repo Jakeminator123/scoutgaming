@@ -4,6 +4,8 @@ import { validateRoomGameMaterial } from '../../packages/presentation/contracts/
 import { buildRuntimeCatalog } from '../../packages/presentation/contracts/studio-model.mjs';
 import { prepareDecision } from '../../packages/director/engine.mjs';
 import { gateRecordedSpeechSelection, recordedSpeechResult } from '../../packages/presentation/runtime/recorded-speech-selection.mjs';
+import { nativeRoomFilmedPlanning } from '../../packages/presentation/contracts/native-room-filmed-planning.mjs';
+import { transitionClipsForDealer } from '../../packages/presentation/runtime/shoe-transitions.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
 import { selectRegisteredIdleRule } from './presentation-selection.mjs';
 const fail=()=>{throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});};
@@ -72,7 +74,18 @@ export async function selectSharedRoomPresentation({capture,body,frozenDealerCon
   const mode=publishedSelectionMode(frozen.lane,sourceEvent,'off'),idleMode=publishedSelectionMode(frozen.lane,{type:'idle'},'off');
   const rule=()=>{const value=idleRuleFor(body,project,inventory,sourceEvent,requestId,idleMode);return value&&allowed.has(value.videoId)?value:null;};
   if(['turn','settle'].includes(sourceEvent.type))return finish({video:null,standard:null,idleRule:rule(),decision:{requestId,sourceEvent}});
-  const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,published,shoeTransitions:body.shoeTransitions===true});
+  let nativePlanning;
+  try { nativePlanning=nativeRoomFilmedPlanning(capture.material); } catch { fail(); }
+  if(nativePlanning) {
+    const selected=transitionClipsForDealer(project,inventory,body.dealerId);
+    for(const direction of ['toShoe','fromShoe']) {
+      const expected=nativePlanning.transitions[direction],actual=selected[direction];
+      if(Boolean(expected)!==Boolean(actual)||expected&&(expected.id!==actual.id||expected.sha256!==actual.sha256))fail();
+    }
+  }
+  const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,published,
+    shoeTransitions:nativePlanning?true:body.shoeTransitions===true});
+  if(nativePlanning&&['deal','reveal'].includes(sourceEvent.type)&&!filmed?.video)fail();
   if(filmed){
     const video=filmed.video?{...publicVideo(filmed.video.id),filmedTake:filmed.filmedTake}:null;
     const transitions=Object.fromEntries(Object.entries(filmed.transitions??{}).map(([key,clip])=>[key,clip?publicVideo(clip.id):null]));

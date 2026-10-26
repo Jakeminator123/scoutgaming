@@ -27,7 +27,8 @@ export async function sharedRoomPresentationRead({request,playerId,signal},withA
     if(!strictQuery(url,['operatorSlug','roomId','packageRevision','dealerId'])||url.searchParams.get('roomId')!==roomId||!revision(url.searchParams.get('packageRevision')))fail();
     const presentationContext={operatorSlug:url.searchParams.get('operatorSlug'),roomId,packageRevision:Number(url.searchParams.get('packageRevision')),dealerId:url.searchParams.get('dealerId')};
     const value=await withActiveRoomPresentation({request,playerId,roomId,presentationContext,signal},async(capture,{frozenDealerContext})=>({
-      inventory:{videos:[],families:[]},defaultMode:'off',...await frozenDealerContext.configuration(capture.presentationContext)}));
+      inventory:{videos:[],families:[]},defaultMode:'off',...await frozenDealerContext.configuration(capture.presentationContext),
+      ...(capture.filmedMaterial?{filmedMaterial:capture.filmedMaterial}:{})}));
     return Response.json(value,{headers:noStore});
   }
   if(url.search)fail();

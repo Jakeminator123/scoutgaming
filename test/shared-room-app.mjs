@@ -587,12 +587,12 @@ const dragonTake=key=>dragan.takes.find(take=>take.key===key);
 const frameMs=frames=>frames*1000/dragan.plane.fps;
 // The fake media never selects a video, so the ports' static fallback (cards.show) follows every played deal; `shown`
 // before any media.present call is therefore the expired-step path alone. The snapshot clock is the mocked Date.
-function timedPorts(t,{present,startAt,endAt,events,enableTimers=true}){
+function timedPorts(t,{present,startAt,endAt,events,enableTimers=true,filmedMaterial}){
   if(enableTimers)t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
   startAt??=Date.now();endAt??=startAt+30000;
   const seen=[],shown=[],prepared=[],revealed=[];
   const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal:()=>revealed.push(Date.now()),begin:(_video,source)=>source.shoeDraw,frame(){},finish(){}};
-  const media={state(){},prepareSequence(value){prepared.push(value);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
+  const media={filmedMaterial,state(){},prepareSequence(value){prepared.push(value);},async present(event,options){seen.push({event,options,at:Date.now()});return present?present(event,options):true;},close(){}};
   const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,filmedProfile:dragan,dealerId:'dragan'});t.after(()=>ports.close());
   const signal=new AbortController().signal;
   ports.restoreSnapshot(seated(1,{serverNow:Date.now()}),{signal});ports.restoreSnapshot(seated(2,{presentationVer:1,serverNow:Date.now()}),{signal});
@@ -665,5 +665,40 @@ test('without a profile, a start time or a matching filmed order the steps play 
   const untimed=timedPorts(t,{events:[filmedBox(0,9)],enableTimers:false});delete untimed.plan.startAt;
   const second=untimed.start();await flushRender();assert.equal(untimed.seen.length,1);assert.equal(untimed.seen[0].options.handoverAt,undefined);
   await second;
+});
+
+const reducedFilmedMaterial=()=>{
+  const transitions={toShoe:{id:'to-shoe',sha256:'a'.repeat(64),durationMs:2000},fromShoe:{id:'from-shoe',sha256:'b'.repeat(64),durationMs:1000}};
+  return {revision:'native-film-v2-'+'c'.repeat(64),dealerId:'dragan',language:'sv',leadMs:10000,cardMs:6000,
+    media:[...dragan.takes.filter(take=>take.variant==='').map(take=>({id:'take-'+take.target,sha256:take.sha256})),
+      ...Object.values(transitions).map(({id,sha256})=>({id,sha256}))],
+    film:{schemaVersion:1,profileId:dragan.id,transitions}};
+};
+
+test('a reduced frozen bank prefetches and hands over the exact take selected with shoe transitions',async t=>{
+  const take=dragonTake('1:base'),h=timedPorts(t,{events:[filmedBox(0,1)],filmedMaterial:reducedFilmedMaterial()});
+  const pending=h.start();await flushRender();
+  assert.deepEqual(h.prepared[0][0].filmedTake,{profileId:dragan.id,takeKey:take.key,sha256:take.sha256});
+  t.mock.timers.tick(699);await flushRender();assert.equal(h.seen.length,0);
+  t.mock.timers.tick(1);await flushRender();assert.equal(h.seen[0].at,1700,'begin the complete entry clip at the chain start');
+  assert.equal(h.seen[0].options.startOffset,0);
+  assert.equal(h.seen[0].options.handoverAt,frameMs(Math.min(take.frames,Math.max(take.frames-1.5,take.clearFrame+1)))/1000);
+  assert.equal(h.seen[0].options.clockTime(),0,'entry duration is not counted as take time');
+  await pending;
+});
+
+test('late live shoe entry reanchors the local chain while an expired complete chain only shows committed cards',async t=>{
+  const material=reducedFilmedMaterial(),events=[filmedBox(0,1),filmedBox(1,2)];
+  const firstDuration=frameMs(dragonTake('1:base').frames);
+  const h=timedPorts(t,{events,filmedMaterial:material});
+  t.mock.timers.tick(3200);const pending=h.start();await flushRender();
+  assert.equal(h.seen.length,1);assert.equal(h.seen[0].options.startOffset,0,'play the entire entry and its take from the start');
+  assert.equal(h.plan.endAt,31000,'the server deadline stays unchanged');
+  t.mock.timers.tick(2000+firstDuration-1);await flushRender();assert.equal(h.seen.length,1);
+  t.mock.timers.tick(1);await flushRender();assert.equal(h.seen.length,2,'next joined take waits for full entry and first take');
+  assert.equal(h.seen[1].options.startOffset,0);await pending;
+  const expired=timedPorts(t,{events:[filmedBox(0,3)],filmedMaterial:material,enableTimers:false});
+  t.mock.timers.tick(700+2000+firstDuration+1000);
+  await expired.start();assert.equal(expired.seen.length,0);assert.deepEqual(expired.shown,[3]);
 });
 

@@ -7,13 +7,14 @@ import {maxVariantsForEvent} from '../../../packages/presentation/contracts/stud
 import {encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
 import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 import {normalizeMediaTiming} from '../../../packages/presentation/contracts/media-timing.mjs';
+import {withNativeFilmedPlanningReadiness} from '../../../packages/presentation/server/native-filmed-readiness-context.mjs';
 import {playbackUsesJitter} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';
 export const PRESENTATION_RUNTIME_UPDATE_MESSAGE = 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.';
 const baseDealers = new Set(BASE_DEALER_IDS);
 const CAPABILITY_PATH = '/api/presentation/capabilities';
-// Bounds the capability read; the exact v30 representation is well below this limit.
+// Bounds the capability read; the exact v31 representation is well below this limit.
 const JSON_LIMIT = 2048;
 const fail = () => { throw new StudioStorageError(PRESENTATION_RUNTIME_UPDATE_REQUIRED, 503); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -37,6 +38,14 @@ export function presentationPackageRequiresV30(value) {
   // Version selection only; preflight validates the complete frozen candidate.
   return packageRecords(value).some(row=>extendedDealerMediaFeatures(row?.classification).recordedEmbeddedAv);
 }
+// Binding presence is conservative: republishing a v1 shared room also
+// negotiates v31, while packages without shared configurations remain legacy.
+export const NATIVE_FILMED_PLANNING_MUTATION = Object.freeze({kind:'native-film-planning',value:Object.freeze({})});
+export function nativeFilmedPlanningMutations(pack) {
+  const bindings=pack?.branding?.roomGameConfigVersions;
+  return bindings&&typeof bindings==='object'&&Object.keys(bindings).length
+    ? [NATIVE_FILMED_PLANNING_MUTATION] : [];
+}
 function timingIdentity(value) {
   try { return canonicalStudioJson(normalizeMediaTiming(value)); } catch { return null; }
 }
@@ -46,6 +55,7 @@ function documentFeatures(kind, value) {
   // Lifecycle can retain or re-encode any current frozen package. Its explicit
   // descriptor negotiates both codecs and the current table layout before SQL;
   // stored project trash fields alone do not imply that operation.
+  const nativeFilmedPlanning=kind==='native-film-planning';
   const lifecycleOperation = ['material-trash','resource-lifecycle','dealer-archive'].includes(kind);
   const packed=kind==='presentation-package'?packageFeatures(value):null;
   const presentationCompression=lifecycleOperation||packed?.envelope.encoding==='br-base64url';
@@ -126,8 +136,8 @@ function documentFeatures(kind, value) {
   // Unrelated lifecycle operations retain their existing capability requirement.
   const speechSlots=lines.some(line=>Array.isArray(line?.variants)
     &&(line.eventId==='speak.other'&&line.variants.length>5||line.variants.some(variant=>typeof variant?.id==='string'&&variant.id.includes('.slot-'))));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || recordedEmbeddedAv || filmedDealVariants || presentationCompression || speechSlots || blackjackAnchors || clipPoses || roomGameConfigs || layerPlayback || blackjackAutoScale || blackjackCardView || blackjackGameUi || idleRotation || mediaTiming || extendedPresentation,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,recordedEmbeddedAv,filmedDealVariants,presentationCompression,speechSlots,blackjackAnchors,clipPoses,roomGameConfigs,layerPlayback,blackjackAutoScale,blackjackCardView,blackjackGameUi,idleRotation,mediaTiming,extendedPresentation };
+  return { required: nativeFilmedPlanning || dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || recordedEmbeddedAv || filmedDealVariants || presentationCompression || speechSlots || blackjackAnchors || clipPoses || roomGameConfigs || layerPlayback || blackjackAutoScale || blackjackCardView || blackjackGameUi || idleRotation || mediaTiming || extendedPresentation,
+    nativeFilmedPlanning, dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,recordedEmbeddedAv,filmedDealVariants,presentationCompression,speechSlots,blackjackAnchors,clipPoses,roomGameConfigs,layerPlayback,blackjackAutoScale,blackjackCardView,blackjackGameUi,idleRotation,mediaTiming,extendedPresentation };
 }
 function mediaFeatures(metadata, hasTiming=false, timing) {
   const {mediaAlpha,rouletteMedia,recordedSpeech,recordedEmbeddedAv,clipPoses}=extendedDealerMediaFeatures(metadata);
@@ -141,6 +151,7 @@ function mutationFeatures(input) {
     ? mediaFeatures(value.metadata,Object.hasOwn(value,'mediaTiming'),value.mediaTiming) : documentFeatures(value.kind, value.value));
   return {
     required: features.some(value => value.required),
+    nativeFilmedPlanning: features.some(value => value.nativeFilmedPlanning),
     dealers: [...new Set(features.flatMap(value => value.dealers))],
     composition: features.some(value => value.composition),
     rooms: features.some(value => value.rooms),
@@ -211,6 +222,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
   const origin = trustedOrigin(env), mutationContext = new AsyncLocalStorage();
   function covered(features, active) {
     return !features.required || Boolean(active?.verified
+      && (!features.nativeFilmedPlanning || active.features.nativeFilmedPlanning)
       && (!features.composition || active.features.composition)
       && (!features.rooms || active.features.rooms)
       && (!features.generic || active.features.generic)
@@ -260,7 +272,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.recordedEmbeddedAv ? 30 : features.mediaTiming || features.extendedPresentation ? 29 : features.idleRotation ? 28 : features.blackjackGameUi ? 27 : features.blackjackCardView ? 26 : features.blackjackAutoScale ? 25 : features.layerPlayback ? 24 : features.roomGameConfigs ? 23 : features.clipPoses ? 22 : features.blackjackAnchors ? 21 : features.speechSlots ? 20 : features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.nativeFilmedPlanning ? 31 : features.recordedEmbeddedAv ? 30 : features.mediaTiming || features.extendedPresentation ? 29 : features.idleRotation ? 28 : features.blackjackGameUi ? 27 : features.blackjackCardView ? 26 : features.blackjackAutoScale ? 25 : features.layerPlayback ? 24 : features.roomGameConfigs ? 23 : features.clipPoses ? 22 : features.blackjackAnchors ? 21 : features.speechSlots ? 20 : features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),
@@ -284,10 +296,10 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     }
     await ready(features);
     const context={verified:features.required,features,measurementOpen:true};
-    return mutationContext.run(context,async()=>{
+    return withNativeFilmedPlanningReadiness(features.nativeFilmedPlanning,()=>mutationContext.run(context,async()=>{
       try { return await work(wrapped); }
       finally { context.measurementOpen=false; }
-    });
+    }));
   }
   wrapped = Object.freeze({
     ...repository,
