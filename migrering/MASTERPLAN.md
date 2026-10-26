@@ -1,13 +1,19 @@
 # Masterplan: selektiv Kevin-portning till mains produkt
 
+## Verifierad runtime — 26 oktober
+
+J05 är verifierad på integrerad main `902bae95ca47409390f0b77cf1c76bd8707245b9` från [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403). Befintlig isolerad Render fick verklig ny instans på samma version; kompletta offentliga HTTPS-serier före/efter och efter vila passerade64/64 med requestkorrelation. Produktens egna spel-, profil-/saldo- och historikläsare gav identiska data över omstarten. Ren Docker-/Studio-build och berörda positiva/negativa API/WS/auth/mediekontrakt har grön integrations- och main-CI. Oberoende slutgranskning passerar.
+
+[Exakta tider, källor, metod och bevarad kvittolucka](../docs/ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober) avgränsar detta från autentiserad offentlig spelåteranslutning, HTTP-restore och full K04/K06/K07-acceptans. Historiska502 är inte rotorsaksförklarade. Testtjänsten är stoppad efter prov. Kriterier, vikter och beroenden är oförändrade.
+
 ## Senaste material- och driftavstämning — 26 oktober
 
 | Prioritet | Genomfört i native-kandidaten | Kvar för acceptans |
 | --- | --- | --- |
 | 1 | Serverägd mätning i befintliga Admin, Neon-CAS och privata Blob; inga parallella register | Mät valt verkligt material och publicera ett nytt fryst paket |
 | 2 | Fryst native-materialresolver, exakta tal-/filmidentiteter och sekvensbudget i servermotorn | Samlat Admin → publicering → delat spel, aktiv hand och samtidighet på samma v29-kandidat |
-| 3 | Toleranta läsare, v29-grind och optional020 för full fryst bank; verklig isolerad Neon-verifiering passerar | Separat godkänd schemamigrering i avsedd driftsmiljö, efter kompatibla läsare |
-| 4 | Render-requestkorrelation; senare8/8health/version och ytterligare6/6DNS-/transportprov passerar | Fastställ/hantera övergångens502 och verifiera spelåteranslutning/HTTP-restore |
+| 3 | Toleranta läsare, v29-grind och optional020;020 är redan installerad i isolerade croupier_staging enligt molnkvittot | Annan driftsmiljö kräver separat godkänd schemamigrering efter kompatibla läsare; kör inte om staging-installationen |
+| 4 | J05 verifierad på902: faktisk ny Renderinstans,64/64 accepterade HTTPS-svar och identisk produktläsaråterläsning | Autentiserad offentlig spelåteranslutning/HTTP-restore och full samacceptans återstår; historiska502 är inte rotorsaksförklarade |
 
 [Reviderat implementationskontrakt](../docs/LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) preciserar nu hur K05:s material-/talbindning konverteras till main. [Faktiska prov, städning och begränsningar](../docs/ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober). Historiska formuleringar längre ned om att resolverimplementation saknas ersätts av denna avstämning; moln- och mediaacceptans är fortsatt öppen. Ingen aktivitet kvitteras enbart av kod eller antal testfall.
 
@@ -17,7 +23,7 @@ Reviderad 25 oktober 2026 på Jakobs begäran, med läsande granskning av inlogg
 
 **Behåll main och färdigställ de accepterade beteendena genom dess befintliga kontrakt.** Det största återstående värdet är exakt mediebindning och verifierad användning genom Admin → publicering → spel. En generell merge av Kevin är inte en leveransmetod.
 
-**50 % betyder 10 av 20 helt verifierade aktiviteter; 50 % återstår.** Varje aktivitet väger fem procentenheter oavsett arbetsmängd. J06 har nu konkreta kod-/test-/CI-kvitton utöver J01/J02/J03/J04/K01/O01/K02/K03/J07. Detta är inte andel kod som saknas eller ska importeras. J05 hålls öppet efter det underkända molnomstartsprovet; vikterna är oförändrade.
+**55 % betyder 11 av 20 helt verifierade aktiviteter; 45 % återstår.** Varje aktivitet väger fem procentenheter oavsett arbetsmängd. J05:s verifierade drift och sparade spelåterläsning tillkommer till J01/J02/J03/J04/J06/K01/O01/K02/K03/J07. Detta är inte andel kod som saknas eller ska importeras. Kriterier, beroenden och vikter är oförändrade.
 
 | Underlag, kontrollerat 25 oktober | Vad som faktiskt finns på main | Återstående beslut/acceptans |
 | --- | --- | --- |
@@ -48,7 +54,7 @@ Full CI omfattar alla åtta grupper, faktisk SQL/omstart/HTTPS och produktionsle
 
 [PR #398](https://github.com/Jakeminator123/scoutgaming/pull/398) tar bort döda profil-/Next-testlås och rättar gatewayens proxy-timeout. Nytt molnprov med Vercel `28815e9c` och Render `81bc2475b`: Admin-utkast/CAS **30/30**; HTTP efter deploy **8/8**, men efter korrekt omstart **3/8** och fem Render502. Timeoutfixen stänger därför inte J05. Spelåterläsning stannade före nya kommandon. Egna Render/Vercel är stoppade/pausade; [detaljer och oförändrad produktion](../docs/ENVIRONMENT-RESTORATION.md#kompletterande-omstartsprov--25-oktober-sen-kväll).
 
-K05:s [reviderade implementationsmatris](kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-native-materialbindning-för-delad-spelkonfiguration) beskriver verifierat ljudslut, exakt fryst material, sekvensbudget och kompatibel native-koppling. J05/J06:s tekniska slutkrav har skilts från K04/K06:s oförändrade material-/aktiveringsgrindar. J06 är verifierad på `81bc2475b` med full CI `40234506315`; status är nu 50 %. Ett separat WS-fel efter gatewayens förkontroll är rättat och kodprovat; slutversionens CI krävs före leverans. Äldre delkvitton nedan behålls som tidsbundna bevis.
+K05:s [reviderade implementationsmatris](kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-native-materialbindning-för-delad-spelkonfiguration) beskriver verifierat ljudslut, exakt fryst material, sekvensbudget och kompatibel native-koppling. J05/J06:s tekniska slutkrav har skilts från K04/K06:s oförändrade material-/aktiveringsgrindar. J06-kvittot på `81bc2475b` med full CI `40234506315` gav då50 procent; senare J05-kvitto höjer aktuell status till55 procent. Ett separat WS-fel efter gatewayens förkontroll är rättat och kodprovat; slutversionens CI krävs före leverans. Äldre delkvitton nedan behålls som tidsbundna bevis.
 
 ## Automatiskt verifierat och återstående arbete — 25 oktober kväll
 
@@ -63,7 +69,7 @@ Kandidat `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` är mergad via [#396](https:
 | Delat bords spelkonfiguration | Native resolver och tidsmätning implementerade i separat kandidat; faktisk Neon-CAS/paketverifiering passerar | Deploya och verifiera v29-kedjan med valt godkänt material. Se senaste avstämningen ovan; full spelacceptans återstår |
 | Avveckling och slutleverans | J05/J06/J09:s konsument-/CI-matris preciserad; implicit lokal Kevin-admin/rollhöjning/lösenordslogg borttagen, 13/13 processprov | Kodändringen är ännu inte deployad. Återstående samprov och separat godkänd produktionsdrift kvarstår; egna Render/Vercel lämnade stoppade/pausade |
 
-**Denna tidigare kvällsmatris avsåg 45 % (9/20); senaste status är 50 % (10/20) efter verifierad J06.** Det är inte en uppskattning av återstående kod eller tid. Ingen ny procentsats härleds ur antalet HTTP-prov. Manuella mediafrågor hålls skilda från kodgap, automatisk integration och drift, så att de kan granskas separat när Jakob är tillbaka. En manuell filmkontroll kan inte ensam stänga J08/K06/K07. Nästa tekniska steg är materialbindningen och stabil HTTP-omstart, därefter delat bord/samtidighet. Manuell kontroll gäller det valda materialets kortkontakt, tal-/läppsynk och relevant mobilvy; inga generella omprov av andra dealers beställs.
+**Denna tidigare kvällsmatris avsåg45 % (9/20); aktuell status är55 % (11/20) efter J06 och J05.** Det är inte en uppskattning av återstående kod eller tid. Ingen ny procentsats härleds ur antalet HTTP-prov. Manuella mediafrågor hålls skilda från kodgap, automatisk integration och drift, så att de kan granskas separat när Jakob är tillbaka. En manuell filmkontroll kan inte ensam stänga J08/K06/K07. Materialbindningen är integrerad och J05:s avgränsade processomstart verifierad. Nästa tekniska steg är full material-/fältacceptans och autentiserad återanslutning, därefter delat bord/samtidighet. Manuell kontroll gäller det valda materialets kortkontakt, tal-/läppsynk och relevant mobilvy; inga generella omprov av andra dealers beställs.
 
 Det tekniska provet skapar enbart nytt syntetiskt material genom vanliga Admin-writers. Det återinför varken SQLite, lokalt produktregister, historisk dealerbank eller SQL/TSV som alternativ runtimekälla. Privata provskript och autentiseringsunderlag publiceras inte.
 
@@ -106,7 +112,7 @@ Urvalet prioriterar verifierat användarvärde och liten anpassningsrisk. Befint
 | Teknisk Neon-/Blob-flytt | Har separat avslut i [molnöversikten](../docs/CLOUD-MIGRATION.md#teknisk-register-runtimeflytt-avslutad-i-produktion). Det avslutet får inte blandas ihop med Kevins återstående funktions- och medieacceptans |
 | Main på 9/10 | Bedömning mot kvalitetskraven ovan. Inte samma mått som aktivitetsstatus, automatiskt 100 % migration eller ett godkännande för riktiga pengar |
 
-**Ja, migreringen kan kallas klar när den avgränsade planen faktiskt är genomförd och verifierad.** Full kopiering av Kevin, extra dealers/språk eller en generativ worker krävs inte. Dokumentpushen ensam räcker inte: 50 % (10/20) är verifierat, medan återstående runtime-, material- och slutleveranskrav består.
+**Ja, migreringen kan kallas klar när den avgränsade planen faktiskt är genomförd och verifierad.** Full kopiering av Kevin, extra dealers/språk eller en generativ worker krävs inte. Dokumentpushen ensam räcker inte:55 % (11/20) är verifierat genom faktiska kriteriebevis; återstående material-, spel-/restore- och slutleveranskrav består.
 
 O02/O03:s slutkvitto ska identifiera en gemensamt granskad release med kompatibla Vercel-/Render-versioner, schema, paket/config och exakta media, samt faktisk Admin → publicering → spel, negativa behörighets-/revisionsfall, två följande spel och kompatibel återställning. Frontend och backend behöver inte ha identisk commit om endast klientkod ändrats; deras kompatibilitet och faktiska driftsversioner måste vara belagda. Denna plan ger inget nytt mandat att testa på riktiga användardata eller ändra produktion.
 
@@ -151,7 +157,7 @@ Inloggad, läsande granskning av `www.scoutgaming.tech/admin` genomfördes tidig
 
 ## Aktuell requestkedja och runtimegräns
 
-Kartan nedan är avstämd mot kandidat `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` efter #394–#396. Ursprungligt kontrakts-/driftkvitto nedan avser `23debde7155346e30ee5a3f3dfbe54cd09ea2789`. Render `croupier-v3` bygger `ops/cloud/Dockerfile.game`; ingen Studio-/Next-process startas där. Barnprocessen som äldre kod kallar `web` är `services/game/server.mjs`. Vercels webb- och Studio-tjänster behåller sina serveransvar. Karta och kontraktprov är delbevis, inte full J05/J10-acceptans.
+Kartan nedan är avstämd mot kandidat `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` efter #394–#396. Ursprungligt kontrakts-/driftkvitto nedan avser `23debde7155346e30ee5a3f3dfbe54cd09ea2789`. Render `croupier-v3` bygger `ops/cloud/Dockerfile.game`; ingen Studio-/Next-process startas där. Barnprocessen som äldre kod kallar `web` är `services/game/server.mjs`. Vercels webb- och Studio-tjänster behåller sina serveransvar. Kartan återanvänds på902 i J05:s samlade runtimekvitto ovan. J10:s fulla HTTP-restore och övrig spel-/mediaacceptans återstår.
 
 | Konsument | Aktiv väg och lagring | Bevarad gräns |
 | --- | --- | --- |

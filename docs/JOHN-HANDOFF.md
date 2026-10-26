@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## J05 verifierad: 55 procent — 26 oktober
+
+**55 % = 11 av 20 verifierade aktiviteter; 45 % återstår.** J05 är nu klar enligt sitt befintliga kriterium på integrerad main `902bae95ca47409390f0b77cf1c76bd8707245b9` från [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403). Vikter, beroenden och övriga aktivitetsstatus är oförändrade.
+
+Befintlig isolerad Render körde exakt902 och startades verkligen om till en ny instans/runtime. De kompletta offentliga HTTPS-serierna före/efter samt efter klientvila ger **64/64** korrekta, individuellt korrelerade svar. Produktens riktiga profil-/saldo-, historik- och spelläsare återgav identiska data före/efter omstarten. En första efterserie med en saknad kvittorad är bevarad och exkluderad; en separat komplett serie godkändes. Oberoende `migration_acceptance` har kontrollerat slutbevisen, och `runtime_harness` matchade sex läsarfiler mot exakt GitHub902.
+
+[Fullständigt runtimekvitto](ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober) skiljer offentlig health/version från läsprov och återanvända positiva/negativa API/WS/auth/mediekontrakt. [Integrations-CI40309660807](https://github.com/Jakeminator123/scoutgaming/actions/runs/40309660807) och [main-CI40311134134](https://github.com/Jakeminator123/scoutgaming/actions/runs/40311134134) är gröna, inklusive åtta grupper, Studio, verklig isolerad PG/omstart/HTTPS, readiness och Docker.
+
+**Kvar:** gemensam Vercel/Render-acceptans av Admin → publicering → godkänt material/spel, aktiv hand, delat bord/samtidighet, autentiserad offentlig återanslutning och HTTP-spelreplay efter restore. Historiska Render502 är inte rotorsaksförklarade. Inga nya media, produktions-DDL, konton eller speltransaktioner skapades. Egen staging är verifierat suspenderad 12:12:53 UTC efter prov enligt körplanen; nästa start måste välja aktuell granskad commit uttryckligen.
+
 ## Integrering av materialbindning, avveckling och Admin-bygge — 26 oktober
 
 Den gemensamma kandidaten bevarar PR400 på `b6eb90ca9ff331ad0aa311a4eb86fa805a0f1b07`, PR401 på `eabc5a86baa494d4bfd9afe6d659671686ad4de4` och PR402 på `d6f6fecc37726d39ef89afa4fff35f655bde6e79`. De tre gemensamma filerna har sammanfogats från samma main `940776136101fe18d30e4ee1091151335e558b83`; båda testregistreringarna och samtliga handoff-/återställningsavsnitt är kvar. Originalheadarnas CI är gröna: [material](https://github.com/Jakeminator123/scoutgaming/actions/runs/40296506738), [avveckling](https://github.com/Jakeminator123/scoutgaming/actions/runs/40294842713) och [Admin-bygge](https://github.com/Jakeminator123/scoutgaming/actions/runs/40302643112). Dessa kvitton ersätter äldre väntan på CI i avsnitten nedan.
@@ -8,7 +18,7 @@ Slutgranskningen hittade en livscykelregression: arkivering av material eller de
 
 Implementerarens faktiska Node24.21.0-körning: material-trash 15/15, dealer-archive-impact 12/12, presentation-runtime-readiness 77/77 och operator-store 13/13; totalt 117/117 utan skip. Native materialprov verifierar v28-nekande före mutationslåset, rollback vid saknad020/auditfel och bevarat kvarvarande material/historik. Dealerprovet använder rårepository; dess native anropskedja är källgranskad. SQL-readiness är syntetisk i dessa riktade prov. Root och oberoende granskare har läst femfilersrättningen; gemensam full CI redovisas i integrations-PR:en.
 
-Valfria020 och game011 startas inte av runtime. Ingen produktions-DDL eller ny mediaacceptans följer av denna integration. Verifierad migrationsstatus förblir 50 procent. Nästa driftkvitto behöver samma integrerade kandidat, stabil offentlig HTTP-serie bunden till ny gatewayinstans, därefter återläsning av sparad spelstatus. Befintlig restoredatabas återanvänds; full HTTP-replay mot restore, delat bord/samtidighet och PAOW:s återstående underlag är fortsatt öppna.
+Valfria020 och game011 startas inte av runtime. Ingen produktions-DDL eller ny mediaacceptans följer av denna integration. Vid integrationsleveransen var status50 procent. Samma integrerade kandidat har därefter klarat J05:s driftkvitto och produktläsaråterläsning enligt det nya avsnittet ovan. Befintlig restoredatabas återanvänds; full HTTP-replay mot restore, delat bord/samtidighet och PAOW:s återstående underlag är fortsatt öppna.
 
 ## Fortsättning, PAOW och verifierad återläsning — 26 oktober
 
@@ -30,9 +40,9 @@ Huvudcommit `a98a21e1` passerade ordinarie kontroll med 716 godkända prov, fyra
 
 CI-fixturernas manuella kopie-/källistor omfattar nu materialets beroenden och optional020. Samma efterföljande 18 integrationsfall gav fem starttimeouts lokalt med fyra arbetare, men 18/18 pass med två; inga gemensamma portar eller datalås hittades. Lokal focused-verifiering kan därför välja `CROUPIER_PRECOMMIT_TEST_WORKERS=1..4` (standard fyra). Alla kontroller och tidsgränser behålls; CI och full regression påverkas inte. Sjutton beteendeprov verifierar valet och avvisar ogiltiga värden. Detta är tillfälliga testfixturer, inte produktregister eller connected-local-drift.
 
-Render-502 är avgränsat till anrop utan gatewaymottagning; senare 8/8 health/version-anrop passerade. Rotorsak, stabil spelomstart, delat bord/samtidighet och vald medias faktiska acceptans återstår. Materialkoden är inte deploy-/produktionsaccepterad av dessa HTTP-prov. Status förblir 50 % verifierat enligt status.json.
+Tidigare Render502 inträffade utan observerad gatewaymottagning; dåvarande8/8-serie var ett delbevis. Den senare902-kandidaten uppfyller J05 enligt slutkvittot överst. Rotorsak till de äldre502, delat bord/samtidighet och vald medias fulla acceptans kvarstår; historiska HTTP-prov ger ingen produktionsacceptans.
 
-**Aktuell status: 50 % verifierat, 50 % kvar (10/20 aktiviteter).** J06 är kvitterad genom kodrensning, beteendeprov och full CI40234506315 på81bc2475b. J05 är fortsatt öppen efter faktiskt Render502. Äldre procentuppgifter nedan är daterade delkvitton; status.json är enda statuskälla.
+**Historisk avstämning före J05-kvittot: 50 % (10/20).** J06 var då kvitterad och J05 öppen efter Render502. Aktuell status är55 procent enligt avsnittet överst och status.json; äldre procentuppgifter nedan är daterade delkvitton.
 
 ## J09: valfri Lissabon-avveckling — 26 oktober
 
@@ -72,7 +82,7 @@ Verifiering: 13/13 i `test/cloud-admin-bootstrap.mjs`, `test/local-comparison-fi
 
 [#396](https://github.com/Jakeminator123/scoutgaming/pull/396) är mergad som `f098486f1017b468e3c83547d4babc04a2e1f23a`; full CI `40225145966` passerade. Kandidat `28815e9c` kördes i egna Vercel/Render-appar mot isolerad Neon/privat Blob: Admin19/19, writer/CAS14/14, riktig omstart+återläsning4/4, publicering/media78/78 samt blackjack71HTTP/fyra kommandon. [Exakta resurser, kvitton och begränsningar](ENVIRONMENT-RESTORATION.md#molnsamprov-25-oktober-kväll).
 
-**Vid denna tidigare kvällsavstämning: 45 % = nio aktiviteter; senare J06-kvitto höjer aktuell status till 50 %.** Delresultaten är nu synliga i masterplanens matris. Manuell film/touchkontroll kan tas separat, men ersätter inte återstående kod: native room-game-config saknar en exakt materialresolver till dagens K04/K05-urval/timing. Delade bord förblir av. Ingen historisk dealerbank, lokal databas eller TSV-runtime återinförs. Produktionsmotorn återlästes frisk på `ebb6b91f`, inte uppdaterad till provkandidaten.
+**Vid denna tidigare kvällsavstämning: 45 % = nio aktiviteter; J06-kvittot gav därefter 50 %. Aktuell status efter J05 är 55 % (11/20), enligt avsnittet överst.** Delresultaten från denna avstämning finns i masterplanens historiska matris. Vid tillfället saknade native room-game-config en exakt materialresolver till K04/K05-urval/timing; den är senare integrerad genom PR403, medan full materialacceptans kvarstår. Delade bord var av. Ingen historisk dealerbank, lokal databas eller TSV-runtime återinfördes. Produktionsmotorn återlästes frisk på `ebb6b91f`, inte uppdaterad till provkandidaten.
 
 SQL-backup och restore till separat databas är genomförda. 75 tabeller/fyra sekvenser och 1 777 fullständiga objektnycklar matchar; riktiga app-läsare ger samma data i båda databaserna. Två privata mätfel (trunkerad SQL-objektetikett respektive fel TLS-kontrollpunkt) rättades med bevarade originalkvitton, utan datarättning eller försvagad TLS. Ingen full HTTP-spelreplay mot restoredatabasen är utförd.
 
@@ -110,7 +120,7 @@ befintliga writers i `croupier_staging`, på PG18.6/0,25 CU/300 s. Appens egen
 anslutning nekas ledger-skrivning och DDL. Separat tom restoredatabas samt eget
 Vercel-projekt/privat Blob finns. Inga produktionsdata eller dealerbanker kopierades.
 [Exakta resurser, mandat, verifiering och kvarvarande app-/restoreprov](ENVIRONMENT-RESTORATION.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober).
-Vid detta tidigare delsteg: 45 % (9/20); aktuell status högst upp är 50 % (10/20), inte kod/arbetstid.
+Vid detta tidigare delsteg: 45 % (9/20); aktuell status högst upp är 55 % (11/20) efter J05, inte kod/arbetstid.
 
 ## Native-Admin följer unified-UI — 25 oktober 2026
 

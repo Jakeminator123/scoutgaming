@@ -1,5 +1,69 @@
 # Återställning och skydd av data
 
+## J05: verifierad runtime och sparat spel — 26 oktober
+
+**J05 är verifierad på `902bae95ca47409390f0b77cf1c76bd8707245b9` från [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403).** Det slutför det befintliga kravet på förenklad drift, verklig omstart och återläst sparat spel. Autentiserad offentlig spelåteranslutning, full HTTP-restore, godkänd film/tal och delat bord ligger kvar i K04/K06/K07/J10/O02. Historiska 502-observationer nedan bevaras; provet fastställer inte deras rotorsak.
+
+### Resurs, version och omstart
+
+Befintlig `croupier-k06-k07-staging`, Render `srv-dbf61l0m7kps73ft7mk0` i Jakobs bekräftade workspace `tea-d19jsa63jp1c73ch0sc0`, användes med oförändrad 1 CPU/2 GB/en instans/Frankfurt och automatisk deploy av. Exakt main-SHA valdes manuellt; inga miljövariabler, servicebrancher, scheman eller media ändrades.
+
+| Händelse | Faktiskt kvitto (UTC) |
+| --- | --- |
+| Deploy | `dep-dbfjqq5g1s2s7383f2m0`, live 11:47:34.695335 |
+| Före omstart | Instans `srv-dbf61l0m7kps73ft7mk0-7994b79d59-4r6h7`, runtime `4de9def7-20b2-4cab-aafc-3afc9a68cadb` |
+| Restart service | `evt-dbfk2hgae00c738crqcg`, 12:02:14.748776; samma SHA och deploy-ID |
+| Efter omstart | Instans `srv-dbf61l0m7kps73ft7mk0-5f565785b7-n4ct5`, runtime `b47e0c23-deeb-4c9e-923f-0caaa2debd11`; publik listener 2 på 0.0.0.0:10000 från 12:02:59.064 |
+| Offentlig överlämning | Health `17bc1e2e-b627-437b` och version `fd53b6cc-45eb-4729` når nya runtime 12:03:58.853 respektive 12:03:59.007 |
+| Stopp efter prov | Render verifierat `suspended` 12:12:53.924353, event `evt-dbfk7h8ae00c738dc5sg`; inga kvarvarande egna provprocesser |
+
+De första 16 klientanropen efter restart-begäran nådde fortfarande föregående instans under överlämningen. De räknas inte som bevis för nya processens acceptans. Restart skapade en ny instans under samma deployment; inget nytt deploy-ID har hittats på eller antagits.
+
+### Förutbestämd offentlig HTTPS-grind
+
+Efter minst 90 sekunders överlämningsmarginal: 60 sekunder med health/version-par var femte sekund, därefter minst 90 sekunder utan egna klientprober och tre nya par. Alla svar kräver HTTP200, förväntad MIME, health `ok` eller exakt SHA/provider. Varje accepterat `Rndr-Id` måste ha både `received` och `finished`/200 på rätt runtime/listener. Renders egna hälsokontroller fortsätter under klientvilan.
+
+| Accepterad serie | UTC | Utfall |
+| --- | --- | --- |
+| Efter deploy, 60 s | 11:50:56.300–11:51:56.448 | 26/26, runtime `4de9def7` |
+| Efter 109,347 s klientvila | 11:53:45.968–11:53:56.102 | 6/6, samma runtime |
+| Efter restart, komplett 60 s | 12:08:47.789–12:09:47.924 | 26/26, runtime `b47e0c23` |
+| Efter 105,069 s klientvila | 12:11:33.126–12:11:43.284 | 6/6, samma nya runtime |
+
+**64/64 accepterade svar**, samtliga bundna till rätt instans, commit och listener 2. Ingen 502 observerades i dessa fönster. Detta är en avgränsad driftverifiering, inte långvarig tillgänglighetsgaranti eller en förklaring till tidigare proxyfel.
+
+En kvittolucka är bevarad: den första efteromstartsserien 12:05:36–12:06:36 har 25 av 26 sparade rader; `index=1, endpoint=version` saknas. Alla 25 observerade svar är korrekta, men originalserien godtas inte som komplett bevis och ingår inte i 64/64. Den separata senare serien ovan har 26 kompletta klientrader i både stdout och fil samt 52 gatewayposter; idle-serien har sex klientrader och tolv gatewayposter. Inga felresultat har raderats eller räknats bort för ett grönt utfall.
+
+### Sparad spelstatus genom produktens egna läsare
+
+Exakt granskat engångsprov, SHA256 `1374f01056e80f26222bf424c551f41fa6abd91fa6b830ade7c7b17ccaac94f1`, kördes i den befintliga Render-containern före 12:01:03.010 och efter 12:04:57.932. Verifierad `croupier_staging`/`croupier_staging_app`, workspace `croupier`/environment `staging_k06_k07`, shared-table=0, faktiskt verifierad TLS och skrivskydd redan i anslutningen. Snapshoten kördes under `REPEATABLE READ, READ ONLY`; `assertInstalled` läste bara schema/checksummor.
+
+Provet körde `readPlayerProfile`/`publicPlayerProfile`, `createPlayerHistoryHandler`/`readPlayerResults` och `gameView` på faktiskt lagrat spel-JSON genom produktens PostgreSQL-fasad. **Samma aktiva syntetiska spelare** hade initialiserat spel, native-ledger och minst en färdig runda i den riktiga historikläsaren.
+
+| Återläst del | Antal före/efter | SHA256 före = efter |
+| --- | ---: | --- |
+| Spelare/profilunderlag | 1/1 | `cfd5fc2abb0ba1269fac727582237295b55f3a2b0a87b109da5fc48c3207f46e` |
+| Sparat spel | 1/1 | `9c31d6116d9887023592bbb1e289f50fff7bf0a8086394f710040010db9120b7` |
+| Ledger | 2/2 | `f113274fe90e212b099bc50913dd16f1a95a0187c74ef434a85afe306982a11a` |
+| Presentation | 1/1 | `f3d13d7aeb2d59524a0850508c49ba9e418e7a4e10369a306b657ea46fe8056a` |
+| Historikläsarens resultat | 1/1 | `bbd7963a55a7cfbc289db4ba0298fae2bb09405e75bd4e7e3cec1449c3d7f301` |
+| Publik spelprojektion | 1/1 | `48baa934bdb301f477d9bfc3be376d94febf15025b8a2fd5880c5b312596b8b9` |
+| Profil-/saldoläsarens resultat | 1/1 | `3bf402c2ff1741bb2d4b3bfc5f93fe96c8495ee878c703c5d700d32a4699834c` |
+
+Samlad affärsdata-SHA256 är `13f71ae3b4f91815ad24c479d1d17a68d4263095004e4ce9c7f92a35946b5833` i båda instanserna. Alla sex importerade läsarfiler matchar exakt GitHub902 både med SHA256 och Git-blobhash. Node var 24.22.1. Provet skapade inga sessioner, konton, insatser, spelkommandon eller DDL och skrev inte ut identiteter, saldo eller hemligheter.
+
+Bootstrap-/QA-inloggningsuppgifterna var borttagna. Metoden är därför uttryckligen **produktläsaråterläsning efter HTTP-verifierad processomstart**, inte autentiserad offentlig spelåteranslutning. Ingen ny Vercel-deployment eller HTTP-restore verifierades.
+
+### Byggkedja, kontrakt och oberoende granskning
+
+Före #394 startade den kombinerade Renderkedjan game och Studio. Nu används endast `ops/cloud/Dockerfile.game` och en game-server; Vercels befintliga webb-/Studio-ansvar behålls. Verklig processinventering före och efter omstart visar **två Node-OS-processer**: PID1 `container-entry` och PID19 `game-server`, inga Studio-/Next-processer. “En spelprocess” betyder inte en enda OS-process. Ingen uppmätt bygg- eller prestandavinst påstås.
+
+[Integrations-CI40309660807](https://github.com/Jakeminator123/scoutgaming/actions/runs/40309660807) och [main-CI40311134134](https://github.com/Jakeminator123/scoutgaming/actions/runs/40311134134) passerar. Root återanvänder och har läst de faktiska loggarna för åtta grupper, Studio-build, isolerad PG/omstart/HTTPS, readiness och Docker på den integrerade koden. [API-/ansvarskartan](../migrering/MASTERPLAN.md#aktuell-requestkedja-och-runtimegräns) gäller: signerad ingress, session/Origin/rum, WS/SSE/socket/drain och auth/range/media behåller positiva och negativa kontraktprov; de kördes inte om som autentiserade molnflöden här.
+
+`migration_acceptance` granskade kriterier, läsarskript, före-/efterdata och alla 64 klient-/gatewaykorrelationer: inga blockerare för J05. `runtime_harness` kontrollerade sex läsarkällor mot exakt902. Granskarna läste kvitton; roots körningar är de faktiska runtimeproven. J05:s kriterier, vikter och beroenden ändras inte. Main902 har grön CI; GitGuardian-suite är queued utan checkrun och incident-API-täckningen är ofullständig, vilket inte räknas som noll incidenter.
+
+Nästa återstart ska välja en granskad commit uttryckligen och kontrollera versionssvaret: tjänstens oförändrade länkade branch `codex/native-material-binding` pekar på en äldre commit än integrationscommit `902bae95`. Ingen återställningsdump, schemaåtgärd eller återskapad bootstrap behövs för att upprepa detta läsprov.
+
 ## Materialkontrakt och Renderkorrelation — 26 oktober
 
 Endast befintliga godkända croupier-k06-k07-staging-resurser användes. Render srv-dbf61l0m7kps73ft7mk0 kördes manuellt på 961c3556556b38a66903ccbb931698ba06393b83 och 694b9b176eae5ba91d17a718c052ac25620eee1a, samma 1 CPU/2 GB/en instans/Frankfurt. Inga produktionsresurser, medieoriginal eller GPU-inställningar ändrades.
