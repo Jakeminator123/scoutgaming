@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## Övertagande och releasegräns — 26 oktober
+
+Kevin-staging är källreferens på GitHub; Jakob vill fortsätta med tillgänglig kod och egna resurser utan beroende av Kevins GitLab eller körmiljö. Vår isolerade testmiljö nedan är en separat sak.
+
+Läsande avstämning på main `8fcb920a930d7459273be3a495f8474137203abd`. **55 % (11/20) består enligt `migrering/status.json`.** [PR407](https://github.com/Jakeminator123/scoutgaming/pull/407) mergades av den andra körningen 26 oktober 15:33:27 UTC. Dess head `857347de6bc802463aaed9e39a6e4a16ebd44ded` har grön [CI40347468353](https://github.com/Jakeminator123/scoutgaming/actions/runs/40347468353), inklusive obligatoriskt verkligt Chrome-prov, regression, bygge och GitGuardian. Releaseaktiviteten visar att tidigare arbete fortsatte under övertagandet; chattens interna körstatus är inte verifierad.
+
+| Yta | Nu verifierat | Betydelse för fortsättningen |
+| --- | --- | --- |
+| GitHub | Main och PR407:s merge är återlästa genom anslutning och CLI. | PR407:s kod är integrerad. Egen städning och uppdaterade instruktioner levereras tillsammans från denna main-bas. |
+| Vercel | Produktion `scoutgaming` är READY på `8fcb920a…`, deploy `dpl_CGtnKhZiC4q3FPToha7zWtJsUAFG`. Dokumenterad staging `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14` ger 404 i båda anslutna teamen. | Staging är inte åtkomlig; detta bevisar inte att den raderats. Identifiera/återställ rätt isolerade frontend. Äldre QA-projekt är inte automatiskt ersättare. |
+| Render | `croupier-v3`: `dep-dbfn2ju7bikc73e6af10` är LIVE på `857347de6…`; offentliga version och health är återlästa med exakt SHA respektive `ok`. `croupier-k06-k07-staging` är suspended. | Render kör PR-head och Vercel dess integrerade merge-version. Ingen deploy eller omstart utfördes av denna avstämning. |
+| Neon | `red-violet-36066351` / `br-plain-voice-b9yu49xi` / `croupier_staging` går att läsa. Scope `staging_k06_k07`/`croupier` har en mediepost och noll delade bordskonfigurationer; Studio-ledgern innehåller bland annat 020. | Återanvänd den isolerade miljön. Databasåtkomst/installerad migration bevisar inte att avsett PAOW-material finns där. |
+| Webview | Verktyget svarar `Local browser use is disabled in Work settings`. | Visuell Admin-/spelacceptans är inte genomförd i denna avstämning. Lokal webbläsaranvändning behöver aktiveras för det verktyget. |
+
+**Release och acceptans:**
+
+1. PR407:s releaseordning är utförd av den andra körningen: Render-läsare först, därefter main/Vercel. Dess releasekvitto anger delat spel fortsatt avstängt. Nya J08-publiceringar kräver fortfarande verifierad readiness, exakt material och isolerad acceptans; LIVE/READY ensamt öppnar inte den grinden. Återgång behåller kompatibel läsare och fryst historik.
+2. Bind PAOW:s redan accepterade tio taloriginal till exakta UUID/hash, språk och tagningar. Detaljlistan har inte återfunnits i denna avstämning. Mät via befintliga Admin-tjänster; bevara originalbytes och tidigare giltig AV-acceptans. V2:s MP4-ljud kräver inte fabricerade V1-index-/kalibreringsbevis. Se [K05](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) och [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
+3. Kör isolerat Admin → publicering → spel med rätt filmprofil, avsett idle/tal och separata bakgrunds-, dealer- och bordslager. Verifiera aktiv hand under ny publicering, nästa hand, multitable och återanslutning på samma kandidat. Flytta aktivitetsstatus först när dess befintliga kriterier är uppfyllda.
+
+K05-guidens gamla krav att implementera resolver/mätning och generellt producera ljud-/index-/kalibreringsunderlag är rättade. Inga produktionsdata, godkända original eller historik har raderats. Fortsatt avveckling ska följa faktiska konsumenter och behålla prov för behörighet, isolation, revisioner, samtidighet och spelregler.
+
+Läsande registerkontroll i produktionens Neon bekräftar 56 PAOW-actionklipp, 34 idleklipp och 74 talklipp. Ingen av dessa poster har `mediaTiming` eller `classification.recordedSpeech`; mängderna är befintlig inventering, inte en order om ny import eller ett bevis på spelbarhet. Välj och koppla avsedda original genom befintliga tjänster.
 ## Avvecklad oanvänd klippeditor — 26 oktober
 
 På main `8fcb920a930d7459273be3a495f8474137203abd` efter PR407 saknar `LegacyClipEditor` produktkonsumenter. Den tas bort tillsammans med sitt ensamma komponentprov och exklusiva klassningshjälpare/typer i `dealer-workspace`. Hjälparnas eget prov tas också bort. Detta följer masterplanens avveckling av ersatta Admin-ytor; det återinför ingen Kevin- eller lokal QA-yta.
