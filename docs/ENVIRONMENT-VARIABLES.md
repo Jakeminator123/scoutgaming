@@ -1,5 +1,7 @@
 # Miljövariabler per tjänst
 
+Render tillhandahåller valfri `RENDER_INSTANCE_ID` för avgränsad instanskorrelation i gatewayens health/version-diagnostik. Den är leverantörshanterad och ska inte sättas manuellt eller innehålla autentiseringsuppgifter.
+
 Senaste leveransstatus finns i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md),
 och kvarvarande arbete/ägare i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
 PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
