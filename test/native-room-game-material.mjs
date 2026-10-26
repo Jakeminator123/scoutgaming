@@ -182,3 +182,16 @@ test('additional approved Admin speech slots stay frozen and bounded alongside t
   greeting.classification.recordedSpeech.review={status:'pending'};full.recapture();
   assert.throws(()=>resolve(full),denied('native_material_speech_unbound'));
 });
+
+test('each serialized clip keeps its own whole-millisecond container allowance',()=>{
+  const f=nativeRoomMaterialFixture({dealerId:'paow'});
+  for(const row of f.records.filter(row=>row.classification.kind==='speech')){
+    row.classification.recordedSpeech.frameCount=50;rebindSpeech(row);
+    measuredFixtureRecord(row,{frames:50,audioEndUs:2000000});
+  }
+  f.recapture();const result=resolve(f);
+  const reveal=f.records.find(row=>row.classification.eventId==='reveal.dealer');
+  // 50/24 seconds is represented by a 2084ms MP4 edit. There can be
+  // a preceding placebets and two spoken lines, each with this allowance.
+  assert.equal(result.leadMs,1500+Math.ceil(reveal.mediaTiming.endUs/1000)+80+3*2084);
+});

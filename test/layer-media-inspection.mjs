@@ -232,3 +232,85 @@ test('timing mode preserves worker deadline, cancellation and exclusive descript
   controller.abort();await assert.rejects(first,error=>error.code==='studio_media_inspection_cancelled');
   assert.equal((await handle.stat()).size,bytes.length);
 });
+
+function timingTrackOffsets(bytes,type) {
+  const result=[];let at=-1;
+  while((at=bytes.indexOf(type,at+1))!==-1)result.push(at);
+  return result;
+}
+function primedTimingVideo() {
+  const bytes=timingVideo();
+  for(const at of timingTrackOffsets(bytes,'mdhd').slice(1))bytes.writeUInt32BE(bytes.readUInt32BE(at+20)-1024,at+20);
+  return bytes;
+}
+function roundedTimingVideo(movieScale=1000) {
+  const bytes=primedTimingVideo(),factor=movieScale/48000;
+  bytes.writeUInt32BE(movieScale,bytes.indexOf('mvhd')+16);
+  const durationAt=[bytes.indexOf('mvhd')+20,...timingTrackOffsets(bytes,'tkhd').map(at=>at+24),...timingTrackOffsets(bytes,'elst').map(at=>at+12)];
+  for(const at of durationAt)bytes.writeUInt32BE(Math.ceil(bytes.readUInt32BE(at)*factor),at);
+  // Preserve six CFR B-frames, changing 1000-tick samples to 1001 ticks.
+  bytes.writeUInt32BE(1001,bytes.indexOf('stts')+16);
+  bytes.writeUInt32BE(6006,bytes.indexOf('mdhd')+20);
+  const ctts=bytes.indexOf('ctts'),entries=bytes.readUInt32BE(ctts+8);
+  for(let i=0;i<entries;i++){const at=ctts+16+i*8;bytes.writeUInt32BE(bytes.readUInt32BE(at)/1000*1001,at);}
+  bytes.writeUInt32BE(2002,bytes.indexOf('elst')+16);
+  for(const at of [bytes.indexOf('elst')+12,bytes.indexOf('tkhd')+24])bytes.writeUInt32BE(Math.ceil(6006/24000*movieScale),at);
+  return bytes;
+}
+
+test('AAC edit and roll groups identify the exact priming excluded by the media header',async t=>{
+  const f=await timedMedia(t,primedTimingVideo()),result=await inspectMediaTiming(f.record,f.options);
+  assert.deepEqual(result.audio,[{trackId:2,firstPtsUs:0,endUs:500000},{trackId:3,firstPtsUs:0,endUs:750000}]);
+  assert.equal(result.endUs,750000);
+});
+
+test('priming requires the complete declared roll mapping and cannot hide changed durations',async t=>{
+  const malformed=[];
+  for(const type of ['sgpd','sbgp']){const bytes=primedTimingVideo();bytes.write('free',bytes.indexOf(type),'ascii');malformed.push(bytes);}
+  for(const [type,offset,value]of [['sgpd',20,0],['sbgp',16,1],['sbgp',20,2],['elst',16,1023]]){
+    const bytes=primedTimingVideo(),at=type==='elst'?timingTrackOffsets(bytes,type)[1]:bytes.indexOf(type);
+    if(type==='sgpd')bytes.writeInt16BE(value,at+offset);else bytes.writeUInt32BE(value,at+offset);malformed.push(bytes);
+  }
+  for(const delta of [-1,1]){const bytes=primedTimingVideo(),at=timingTrackOffsets(bytes,'mdhd')[1]+20;bytes.writeUInt32BE(bytes.readUInt32BE(at)+delta,at);malformed.push(bytes);}
+  for(const bytes of malformed){const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});}
+});
+
+test('exact ceiling to a millisecond-dividing movie clock preserves sample timing and budget',async t=>{
+  for(const scale of [1000,2000,48000]){
+    const f=await timedMedia(t,roundedTimingVideo(scale)),result=await inspectMediaTiming(f.record,f.options);
+    assert.equal(result.video.frameCount,6);assert.equal(result.video.fps,24000/1001);
+    assert.equal(result.video.endUs,250250);assert.equal(result.video.lastPtsUs,208542);
+    const declaredMs=Math.ceil(6006/24000*scale)*1000/scale;
+    assert.ok(Math.ceil(result.video.endUs/1000)>=declaredMs,'per-clip milliseconds cover the declared movie end');
+  }
+});
+
+test('rounded clock support rejects earlier ends, added ticks, coarse clocks and non-dividing clocks',async t=>{
+  const malformed=[roundedTimingVideo(100),roundedTimingVideo(1500)];
+  for(const delta of [-1,1])for(const types of [['elst'],['tkhd'],['elst','tkhd']]){
+    const bytes=roundedTimingVideo();for(const type of types){const at=bytes.indexOf(type)+(type==='elst'?12:24);bytes.writeUInt32BE(bytes.readUInt32BE(at)+delta,at);}malformed.push(bytes);
+  }
+  const extraMovie=roundedTimingVideo();extraMovie.writeUInt32BE(751,extraMovie.indexOf('mvhd')+20);malformed.push(extraMovie);
+  for(const bytes of malformed){const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});}
+});
+function splitRoundedAudioVideo() {
+  const bytes=roundedTimingVideo(),stts=timingTrackOffsets(bytes,'stts')[1];
+  const count=bytes.readUInt32BE(stts+8),last=stts+16+(count-1)*8;
+  bytes.writeUInt32BE(bytes.readUInt32BE(last)+16,last);
+  const mdhd=timingTrackOffsets(bytes,'mdhd')[1]+20;
+  bytes.writeUInt32BE(bytes.readUInt32BE(mdhd)+16,mdhd);
+  bytes.writeUInt32BE(501,timingTrackOffsets(bytes,'tkhd')[1]+24);
+  // ceil(25040/48) - ceil(1024/48) = 500, while ceil(24016/48) = 501.
+  bytes.writeUInt32BE(500,timingTrackOffsets(bytes,'elst')[1]+12);
+  return bytes;
+}
+
+test('separately rounded AAC priming retains the full conservative sample envelope',async t=>{
+  const f=await timedMedia(t,splitRoundedAudioVideo()),result=await inspectMediaTiming(f.record,f.options);
+  assert.equal(result.audio[0].endUs,500334);
+  assert.equal(Math.ceil(result.audio[0].endUs/1000),501,'budget covers the track header despite the separately rounded edit');
+  for(const [type,value]of [['elst',499],['tkhd',500],['tkhd',502]]){
+    const bytes=splitRoundedAudioVideo();bytes.writeUInt32BE(value,timingTrackOffsets(bytes,type)[1]+(type==='elst'?12:24));
+    const bad=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(bad.record,bad.options),{code:'studio_media_timing_unsupported'});
+  }
+});

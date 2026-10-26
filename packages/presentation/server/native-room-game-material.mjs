@@ -81,7 +81,10 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
       try { timing = normalizeMediaTiming(row.mediaTiming, {mediaId:row.id,sha256:row.sha256,size:row.size,
         recordedSpeechIdentitySha256:speech ? hash(mediaTimingSpeechIdentity(speech)) : null}); }
       catch { fail('native_material_measurement_mismatch'); }
-      durations.set(row.id,timing.endUs);
+      // Each MP4 may round its edit/track end to the next movie-clock tick.
+      // The inspector only admits rounded clocks that divide a millisecond.
+      // Round each serialized clip before summing, preserving every allowance.
+      durations.set(row.id,Math.ceil(timing.endUs/1000)*1000);
       if (speech) {
         if (timing.video.fps !== speech.fps || timing.video.frameCount !== speech.frameCount || !timing.audio.length) fail('native_material_speech_timing_mismatch');
         speeches.set(row.id,speech);

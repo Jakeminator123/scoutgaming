@@ -116,7 +116,21 @@ export function inspectMp4Timing(read,size) {
       dts+=duration;if(!Number.isSafeInteger(dts))invalid();
       return {start,end,duration};
     }).sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0);
-    if(dts!==media.duration)invalid();
+    let explicitPriming=false;
+    if(dts!==media.duration) {
+      // Some FFmpeg MP4s describe the post-priming AAC span in mdhd.
+      // Accept only the explicit one-packet AAC roll/edit representation;
+      // never infer encoder delay from a header difference alone.
+      // https://developer.apple.com/documentation/quicktime-file-format/using_track_structures_to_represent_encode_delay_explictly
+      if(handler!=='soun' || ctts || editDuration===null || mediaStart!==1024
+        || media.duration!==dts-mediaStart || durations.some((n,i)=>i===durations.length-1?n>1024:n!==1024))invalid();
+      const roll=body(one(stbl,'sgpd'),18),groups=full(one(stbl,'sbgp'),20);
+      if(roll.length!==18 || roll.readUInt32BE(0)!==0x01000000 || roll.toString('ascii',4,8)!=='roll'
+        || roll.readUInt32BE(8)!==2 || roll.readUInt32BE(12)!==1 || roll.readInt16BE(16)!==-1
+        || groups.length!==20 || groups.toString('ascii',4,8)!=='roll' || groups.readUInt32BE(8)!==1
+        || groups.readUInt32BE(12)!==count || groups.readUInt32BE(16)!==1)invalid();
+      explicitPriming=true;
+    }
     const visible=presentation.filter(p=>p.end>0n&&(upper===null||p.start<upper));
     if(!visible.length)invalid();
     let previousEnd=null;
@@ -126,21 +140,35 @@ export function inspectMp4Timing(read,size) {
       if(previousEnd!==null&&start!==previousEnd)invalid();previousEnd=end;
       return {...p,start,end};
     });
-    if(upper!==null && previousEnd!==upper)invalid();
-    const first=clipped[0],last=clipped.at(-1);
+    // FFmpeg rounds edit/track durations upward into the movie clock.
+    // Only an exact ceiling is allowed, and only when a whole-millisecond
+    // per-clip budget also covers that clock (its timescale is a multiple
+    // of 1000). Sample times remain exact; no whole-tick tolerance is used.
+    // https://ffmpeg.org/pipermail/ffmpeg-devel/2019-December/254407.html
+    const matchesEnd=(end,declared)=>end===BigInt(declared)*BigInt(media.scale)
+      || editDuration!==null && movie.scale%1000===0
+        && (end+BigInt(media.scale)-1n)/BigInt(media.scale)===BigInt(declared);
+    const first=clipped[0],last=clipped.at(-1),sampleEnd=presentation.at(-1).end;
     const declaredEnd=version?safe64(tk,28):tk.readUInt32BE(20);
-    // Require exact agreement before converting either clock to microseconds.
-    // A tick may be a whole second; accepting one as rounding slack can hide
-    // a longer declared presentation. Ambiguously rounded muxer headers are
-    // unsupported, including no-edit tracks whose end is not representable
-    // in the movie clock. This never substitutes a header for measured time.
-    if(last.end!==BigInt(declaredEnd)*BigInt(media.scale))invalid();
+    const ceilMovie=ticks=>(BigInt(ticks)*BigInt(movie.scale)+BigInt(media.scale)-1n)/BigInt(media.scale);
+    // FFmpeg 4.x rounds total AAC duration and negative priming separately:
+    // ceil(total) - ceil(priming) can be one tick below ceil(total-priming).
+    // Require that exact construction plus the explicit roll/edit evidence.
+    // Keep the full sample envelope, so neither audio nor its budget is cut.
+    // https://github.com/FFmpeg/FFmpeg/blob/n4.4.1/libavformat/movenc.c#L2981-L3058
+    const splitPriming=explicitPriming && movie.scale%1000===0
+      && BigInt(editDuration)===ceilMovie(dts)-ceilMovie(mediaStart)
+      && BigInt(declaredEnd)===ceilMovie(dts-mediaStart);
+    if(explicitPriming && (BigInt(declaredEnd)!==ceilMovie(dts-mediaStart)
+      || !splitPriming && !matchesEnd(sampleEnd,editDuration)))invalid();
+    if(upper!==null && !matchesEnd(previousEnd,editDuration) && !splitPriming)invalid();
+    if(!splitPriming && (!matchesEnd(last.end,declaredEnd) || editDuration!==null && declaredEnd!==editDuration))invalid();
     maxTrackDuration=Math.max(maxTrackDuration,declaredEnd);
     if(handler==='vide') {
       if(first.start!==0n || clipped.some(p=>p.duration!==first.duration))invalid();
       const fps=media.scale/first.duration;if(fps<=0||fps>240||clipped.length>28_800)invalid();
       measured.push({handler,trackId:id,frameCount:clipped.length,fps,firstPtsUs:0,lastPtsUs:toUs(last.start),endUs:toUs(last.end,true)});
-    } else measured.push({handler,trackId:id,firstPtsUs:toUs(first.start),endUs:toUs(last.end,true)});
+    } else measured.push({handler,trackId:id,firstPtsUs:toUs(first.start),endUs:toUs(splitPriming?sampleEnd:last.end,true)});
   }
   ranges.sort((a,b)=>a.start-b.start);
   if(ranges.some((r,i)=>i&&r.start<ranges[i-1].end))invalid();
