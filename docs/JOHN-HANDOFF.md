@@ -4,6 +4,8 @@
 
 ## Render: avgränsad requestkorrelation — 26 oktober
 
+PR399:s första CI40284099569 stoppade på miljöinventeringen: nya `RENDER_INSTANCE_ID` saknades under `render-game.managed`. Namnet och dess leverantörshanterade ansvar är nu dokumenterade; inga nya manuella miljövariabler eller runtimebeteenden införs av rättningen. Ny full CI krävs på rättad head.
+
 PR #398 är mergad som `56ca23130ab59b1bd5d157b095787d4fa0f386c7`; sluthead `46025e38b2e92f59256b2266fff7edc19f9ca078` har full grön CI [40235368991](https://github.com/Jakeminator123/scoutgaming/actions/runs/40235368991) och grön PR-GitGuardian. Det slutkvittot ersätter föregående avsnitts väntan på WS-deltats CI. Egna Render/Vercel lämnades stoppade och Neon återlästes idle 25 oktober 21:27 UTC. Ingen produktionsacceptans eller lösning på Render502 följer av CI.
 
 Nästa diagnostik loggar enbart exakta health/version-anrop: validerat `Rndr-Id`, instans, runtime, commit, lyssnargeneration samt mottagning/avslut. Querysträngar, cookies, övriga headers och body loggas inte. `finished` betyder överlämning till operativsystemet, inte bekräftad leverans. Bindning och nedstängning får motsvarande små livscykelposter. Bred kontroll av bindning, childport, signaler och socketdränering fann ingen ny verifierad rotorsak. Riktade tester: 60 godkända, tre Linux-specifika skip på Windows, Node24.21/maxfyra; oberoende läsreview utan blockerare. Nytt molnprov återstår.

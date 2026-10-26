@@ -105,7 +105,8 @@
         "PORT",
         "RENDER_EXTERNAL_URL",
         "RENDER_SERVICE_ID",
-        "RENDER_GIT_COMMIT"
+        "RENDER_GIT_COMMIT",
+        "RENDER_INSTANCE_ID"
       ],
       "blocked": [
         "DEMO_GUEST_ACCESS",
