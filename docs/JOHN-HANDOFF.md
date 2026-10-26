@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## Avvecklade frysta Astrid-svar — 26 oktober
+
+Jakob har förtydligat att gamla Astrid-/QA-förväntningar inte ska bevaras som hinder för målarkitekturen. Tar bort den separata golden-baslinjen: 161 JSON-filer i `test/fixtures/astrid-select-baseline`, `astrid-select-off.json`, det exklusiva baslinjetestet och verktyget som regenererade dessa svar. Detta är testdata och testverktyg, inte dealerfilmer, publicerade paket eller produktionshistorik.
+
+Det kvarvarande presentationsprovet jämför nu samma aktuella dealer med och utan en annan dealers gamla regler. Det låser inte den första dealerns svar till en historisk JSON-fil. Negativa prov för pensionerade/okända dealer-ID:n och separation av aktiva dealers/cache finns kvar. Den borttagna kontrollens enda registrering i fullkörningen tas också bort. Samkörning av dealerproven samt workflow-, CI- och precommitproven passerar 42/42 utan skip på Node24.21.0/fyra arbetare. Testinventeringen hittar 570 JS/TS-kandidater, noll föräldralösa tester och 11 explicita undantag; Python-körning ingår inte i det kvittot. Inga hänvisningar till den borttagna baslinjekedjan finns kvar i kod eller körkonfiguration. Aktivitetsprocenten ändras inte.
+
 ## Övertagande och releasegräns — 26 oktober
 
 Kevin-staging är källreferens på GitHub; Jakob vill fortsätta med tillgänglig kod och egna resurser utan beroende av Kevins GitLab eller körmiljö. Vår isolerade testmiljö nedan är en separat sak.
