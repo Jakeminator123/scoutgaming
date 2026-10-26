@@ -1,29 +1,29 @@
 # Masterplan: selektiv Kevin-portning till mains produkt
 
-## Fortsättning efter PR407 — 26 oktober
+## Fortsättning och rättad förkunskapskedja — 26 oktober
 
 Jakobs förtydligande: Kevin-staging används som granskbar källreferens på GitHub. Fortsättningen är inte beroende av att köra hans miljö eller få åtkomst till GitLab. Isolerade molnprov nedan gäller våra egna resurser för mains produkt.
 
-**55 % = 11/20 verifierade aktiviteter består.** Avstämningen gäller main `8fcb920a930d7459273be3a495f8474137203abd`. Native materialbindning, serverägd tidsmätning och MP4-tal med inbäddat ljud (`recordedSpeech` v2, runtime v30) är implementerade; bygg inte om dem utifrån äldre gapbeskrivningar nedan. [K05:s aktuella utförandeväg](kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-verifiera-den-implementerade-materialbindningen) ersätter de äldre implementationsförslagen.
+**60 % = 12/20 verifierade aktiviteter.** J09:s redan levererade förberedelse är nu slutgranskad; de historiska J08/K05-beroendena har ingen koppling till dess två Lissabon-tabeller och är borttagna. J05/J07 kvarstår som förkunskaper. Detta flyttar inte produktions-DDL eller spel-/mediaacceptans från O03/K06/J10. Isolerad runtime är verifierad på main `d89048625d127d159101707fe46547a6108987f6`. Native materialbindning, serverägd tidsmätning och MP4-tal med inbäddat ljud (`recordedSpeech` v2, runtime v30) är implementerade; bygg inte om dem utifrån äldre gapbeskrivningar nedan. [K05:s aktuella utförandeväg](kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-verifiera-den-implementerade-materialbindningen) ersätter de äldre implementationsförslagen.
 
-[PR407](https://github.com/Jakeminator123/scoutgaming/pull/407), head `857347de6bc802463aaed9e39a6e4a16ebd44ded`, är mergad som ovanstående main efter grön [CI40347468353](https://github.com/Jakeminator123/scoutgaming/actions/runs/40347468353), inklusive obligatorisk Chrome-körning. Render är LIVE på PR-head och Vercel READY på merge-versionen. Rättningen fryser aktivt fönsters material och städar avbrutna laddningar. Kod- och driftkvittona är inte verklig PAOW-acceptans.
+[PR407](https://github.com/Jakeminator123/scoutgaming/pull/407), head `857347de6bc802463aaed9e39a6e4a16ebd44ded`, är mergad som `8fcb920a930d7459273be3a495f8474137203abd` efter grön [CI40347468353](https://github.com/Jakeminator123/scoutgaming/actions/runs/40347468353), inklusive obligatorisk Chrome-körning. Releasekvittot verifierade då Render LIVE på PR-head och Vercel READY på merge-versionen. Rättningen fryser aktivt fönsters material och städar avbrutna laddningar. Kod- och driftkvittona är inte verklig PAOW-acceptans.
 
-Nästa steg är ett isolerat Admin → publicering → spel-prov med exakta PAOW-original och verifierad readiness. Den dokumenterade Vercel-stagingen är inte åtkomlig via de anslutna teamen; Render-staging är stoppad och Neon-staging finns kvar. Återställ en identifierad isolerad frontend innan samprovet. Kör inte spelprov mot produktionsdata. [Överlämningen](../docs/JOHN-HANDOFF.md#övertagande-och-releasegräns--26-oktober) anger källversioner, åtkomst och kvarstående bevis. Ingen extra statuslista införs.
+Nästa steg är ett isolerat Admin → publicering → spel-prov med exakta PAOW-original och verifierad readiness. Befintliga Vercel-/Neon-/Render-staging är återfunna; Vercels tidigare404 var anslutningsspecifik. Samma frysta d890486 verifierades på frontend/backend med vanlig Admin-inloggning och senare även säkerhetshead a22f7a97. Testtjänsten är åter suspenderad efter provet. Staging saknar däremot godkänd tal-/filmbank; det är den konkreta publiceringsblockeraren. Kör inte spelprov mot produktionsdata. [Överlämningen](../docs/JOHN-HANDOFF.md#fortsatt-verifiering-och-rättad-förkunskapskedja--26-oktober) anger källversioner, åtkomst och kvarstående bevis. Ingen extra statuslista införs.
 
-## Verifierad runtime — 26 oktober
+## Historiskt J05-kvitto: verifierad runtime — 26 oktober
 
 J05 är verifierad på integrerad main `902bae95ca47409390f0b77cf1c76bd8707245b9` från [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403). Befintlig isolerad Render fick verklig ny instans på samma version; kompletta offentliga HTTPS-serier före/efter och efter vila passerade64/64 med requestkorrelation. Produktens egna spel-, profil-/saldo- och historikläsare gav identiska data över omstarten. Ren Docker-/Studio-build och berörda positiva/negativa API/WS/auth/mediekontrakt har grön integrations- och main-CI. Oberoende slutgranskning passerar.
 
-[Exakta tider, källor, metod och bevarad kvittolucka](../docs/ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober) avgränsar detta från autentiserad offentlig spelåteranslutning, HTTP-restore och full K04/K06/K07-acceptans. Historiska502 är inte rotorsaksförklarade. Testtjänsten är stoppad efter prov. Kriterier, vikter och beroenden är oförändrade.
+[Exakta tider, källor, metod och bevarad kvittolucka](../docs/ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober) avgränsar detta från autentiserad offentlig spelåteranslutning, HTTP-restore och full K04/K06/K07-acceptans. Historiska502 är inte rotorsaksförklarade. Testtjänsten stoppades efter det provet. Vid J05-kvittot var kriterier, vikter och beroenden oförändrade; senare J09-beroenderevision och ny isolerad omstart redovisas överst.
 
 ## Senaste material- och driftavstämning — 26 oktober
 
 | Prioritet | Genomfört i native-kandidaten | Kvar för acceptans |
 | --- | --- | --- |
 | 1 | Serverägd mätning i befintliga Admin, Neon-CAS och privata Blob; inga parallella register | Mät valt verkligt material och publicera ett nytt fryst paket |
-| 2 | Fryst native-materialresolver, exakta tal-/filmidentiteter och sekvensbudget i servermotorn | Samlat Admin → publicering → delat spel, aktiv hand och samtidighet på samma v29-kandidat |
-| 3 | Toleranta läsare, v29-grind och optional020;020 är redan installerad i isolerade croupier_staging enligt molnkvittot | Annan driftsmiljö kräver separat godkänd schemamigrering efter kompatibla läsare; kör inte om staging-installationen |
-| 4 | J05 verifierad på902: faktisk ny Renderinstans,64/64 accepterade HTTPS-svar och identisk produktläsaråterläsning | Autentiserad offentlig spelåteranslutning/HTTP-restore och full samacceptans återstår; historiska502 är inte rotorsaksförklarade |
+| 2 | Fryst native-materialresolver, exakta tal-/filmidentiteter och sekvensbudget i servermotorn | Samlat Admin → publicering → delat spel, aktiv hand och samtidighet på samma v30-kandidat |
+| 3 | Toleranta läsare, v30-grind och optional020;020 är redan installerad i isolerade croupier_staging enligt molnkvittot | Annan driftsmiljö kräver separat godkänd schemamigrering efter kompatibla läsare; kör inte om staging-installationen |
+| 4 | J05 verifierad på902; senare d890 har även faktisk processomstart med26 korrelerade health/version och9 autentiserade återanslutnings-/replayprov med SQL-paritet | HTTP-spelreplay efter SQL-restore samt samacceptans med publicerat material/delat bord återstår; historiska502 är inte rotorsaksförklarade |
 
 [Reviderat implementationskontrakt](../docs/LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) preciserar nu hur K05:s material-/talbindning konverteras till main. [Faktiska prov, städning och begränsningar](../docs/ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober). Historiska formuleringar längre ned om att resolverimplementation saknas ersätts av denna avstämning; moln- och mediaacceptans är fortsatt öppen. Ingen aktivitet kvitteras enbart av kod eller antal testfall.
 
@@ -33,7 +33,7 @@ Reviderad 25 oktober 2026 på Jakobs begäran, med läsande granskning av inlogg
 
 **Behåll main och färdigställ de accepterade beteendena genom dess befintliga kontrakt.** Det största återstående värdet är exakt mediebindning och verifierad användning genom Admin → publicering → spel. En generell merge av Kevin är inte en leveransmetod.
 
-**55 % betyder 11 av 20 helt verifierade aktiviteter; 45 % återstår.** Varje aktivitet väger fem procentenheter oavsett arbetsmängd. J05:s verifierade drift och sparade spelåterläsning tillkommer till J01/J02/J03/J04/J06/K01/O01/K02/K03/J07. Detta är inte andel kod som saknas eller ska importeras. Kriterier, beroenden och vikter är oförändrade.
+**60 % betyder 12 av 20 helt verifierade aktiviteter; 40 % återstår.** Varje aktivitet väger fem procentenheter oavsett arbetsmängd. J09:s granskade avvecklingsförberedelse tillkommer till J01/J02/J03/J04/J05/J06/K01/O01/K02/K03/J07. Detta är inte andel kod som saknas eller ska importeras. Aktivitetsvikter och slutkrav är oförändrade; endast J09:s ovidkommande J08/K05-förkunskaper är borttagna.
 
 | Underlag, kontrollerat 25 oktober | Vad som faktiskt finns på main | Återstående beslut/acceptans |
 | --- | --- | --- |
@@ -79,7 +79,7 @@ Kandidat `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` är mergad via [#396](https:
 | Delat bords spelkonfiguration | Native resolver och tidsmätning implementerade i separat kandidat; faktisk Neon-CAS/paketverifiering passerar | Deploya och verifiera v29-kedjan med valt godkänt material. Se senaste avstämningen ovan; full spelacceptans återstår |
 | Avveckling och slutleverans | J05/J06/J09:s konsument-/CI-matris preciserad; implicit lokal Kevin-admin/rollhöjning/lösenordslogg borttagen, 13/13 processprov | Kodändringen är ännu inte deployad. Återstående samprov och separat godkänd produktionsdrift kvarstår; egna Render/Vercel lämnade stoppade/pausade |
 
-**Denna tidigare kvällsmatris avsåg45 % (9/20); aktuell status är55 % (11/20) efter J06 och J05.** Det är inte en uppskattning av återstående kod eller tid. Ingen ny procentsats härleds ur antalet HTTP-prov. Manuella mediafrågor hålls skilda från kodgap, automatisk integration och drift, så att de kan granskas separat när Jakob är tillbaka. En manuell filmkontroll kan inte ensam stänga J08/K06/K07. Materialbindningen är integrerad och J05:s avgränsade processomstart verifierad. Nästa tekniska steg är full material-/fältacceptans och autentiserad återanslutning, därefter delat bord/samtidighet. Manuell kontroll gäller det valda materialets kortkontakt, tal-/läppsynk och relevant mobilvy; inga generella omprov av andra dealers beställs.
+**Denna tidigare kvällsmatris avsåg45 % (9/20); aktuell status är60 % (12/20) efter J06, J05 och granskad J09-förberedelse.** Det är inte en uppskattning av återstående kod eller tid. Ingen ny procentsats härleds ur antalet HTTP-prov. Manuella mediafrågor hålls skilda från kodgap, automatisk integration och drift, så att de kan granskas separat när Jakob är tillbaka. En manuell filmkontroll kan inte ensam stänga J08/K06/K07. Materialbindningen är integrerad och J05:s avgränsade processomstart verifierad. Nästa tekniska steg är full material-/fältacceptans samt autentiserad återanslutning inom delat bord/samtidighet. Avgränsad offentlig återanslutning i native demospel är verifierad påd890. Manuell kontroll gäller det valda materialets kortkontakt, tal-/läppsynk och relevant mobilvy; inga generella omprov av andra dealers beställs.
 
 Det tekniska provet skapar enbart nytt syntetiskt material genom vanliga Admin-writers. Det återinför varken SQLite, lokalt produktregister, historisk dealerbank eller SQL/TSV som alternativ runtimekälla. Privata provskript och autentiseringsunderlag publiceras inte.
 
@@ -122,7 +122,7 @@ Urvalet prioriterar verifierat användarvärde och liten anpassningsrisk. Befint
 | Teknisk Neon-/Blob-flytt | Har separat avslut i [molnöversikten](../docs/CLOUD-MIGRATION.md#teknisk-register-runtimeflytt-avslutad-i-produktion). Det avslutet får inte blandas ihop med Kevins återstående funktions- och medieacceptans |
 | Main på 9/10 | Bedömning mot kvalitetskraven ovan. Inte samma mått som aktivitetsstatus, automatiskt 100 % migration eller ett godkännande för riktiga pengar |
 
-**Ja, migreringen kan kallas klar när den avgränsade planen faktiskt är genomförd och verifierad.** Full kopiering av Kevin, extra dealers/språk eller en generativ worker krävs inte. Dokumentpushen ensam räcker inte:55 % (11/20) är verifierat genom faktiska kriteriebevis; återstående material-, spel-/restore- och slutleveranskrav består.
+**Ja, migreringen kan kallas klar när den avgränsade planen faktiskt är genomförd och verifierad.** Full kopiering av Kevin, extra dealers/språk eller en generativ worker krävs inte. Dokumentpushen ensam räcker inte:60 % (12/20) är verifierat genom faktiska kriteriebevis; återstående material-, spel-/restore- och slutleveranskrav består.
 
 O02/O03:s slutkvitto ska identifiera en gemensamt granskad release med kompatibla Vercel-/Render-versioner, schema, paket/config och exakta media, samt faktisk Admin → publicering → spel, negativa behörighets-/revisionsfall, två följande spel och kompatibel återställning. Frontend och backend behöver inte ha identisk commit om endast klientkod ändrats; deras kompatibilitet och faktiska driftsversioner måste vara belagda. Denna plan ger inget nytt mandat att testa på riktiga användardata eller ändra produktion.
 
