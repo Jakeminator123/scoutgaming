@@ -1,5 +1,9 @@
 # Aktuell handoff — Scoutgaming
 
+## Start för nästa agent — 26 oktober
+
+Jakob har beställt en överlämning även för annat Codex-konto och bekräftat efter slutleveransen att PAOW hos Johns Bet såg bra ut. [Nästa agents startpunkt](NEXT-AGENT.md) samlar aktuell bas, åtkomstidentiteter, genomförd städning, bevarad demogeometri, privata bevis och de återstående migrationsstegen. Det är ingen konkurrerande statuskälla; `migrering/status.json` kvarstår på 55 %. Användarens bekräftelse gäller utseendet, inte full spel- eller talacceptans. Vid denna överlämning återlästes remote main `cc52ed54…`, Vercel READY på samma SHA, Render v3:s version/health och paketversion 5 för båda bolagen. PR410 är nu stängd utan merge och är inte en väntande release.
+
 ## Johns Bet och PAOW-skarven — 26 oktober
 
 På Jakobs beställning skapades bolaget `johns-bet` och det publicerade blackjackrummet `room-76640ca1-b619-7948-596e-3d102202b7d0` via ordinarie Admin. [Spelstart](https://www.scoutgaming.tech/play/blackjack?operator=johns-bet&table=room-76640ca1-b619-7948-596e-3d102202b7d0) behåller bolags- och rumsidentiteten genom den autentiserade inloggningen. Läsande Neon-kontroll bekräftar rumstillstånd `live` och publicerat paket. Befintlig PAOW-mall `paow-studio-blackjack-e9a6193d-6bf3-4774-b505-538d6507bf3d` återanvänds med separat dealer, Midnight-bakgrund och Oak-bord; inga mediebytes har kopierats eller godkänts på nytt.
