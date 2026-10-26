@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { labUrl } from '../../lib/lab-url.mjs';
 import { studioHistory } from '../../lib/studio-history.mjs';
 import { initialPartnerRoomSelection, partnerRoomRequest, partnerRoomQuery } from '../../lib/partner-room-selection.mjs';
 import { Mark } from './views/shared.jsx';
@@ -9,7 +8,7 @@ import { PartnerLiveOverview } from './views/overview.jsx';
 import { PartnerRoomWorkspace } from './views/rooms.jsx';
 import { PartnerDisconnected } from './views/integration.jsx';
 import { TeamView } from './views/team.jsx';
-import { createPreviewRuntime, operatorPackageRevision, validatePreviewSnapshot } from './preview-runtime.mjs';
+import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from './partner-workspace-context.mjs';
 import { normalizeView } from './navigation.mjs';
 import { resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
 import { partnerPackageProfiles } from '../../lib/partner-package-view.mjs';
@@ -38,20 +37,18 @@ export function PartnerOperatorWorkspace(props) {
 
 function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomScope,initialView='ops'}) {
   const preferences=usePartnerPreferences(),{copy,language,theme}=preferences;
-  const [snapshot,setSnapshot]=React.useState(()=>validatePreviewSnapshot(initialSnapshot));
+  const [snapshot,setSnapshot]=React.useState(()=>validatePartnerSnapshot(initialSnapshot));
   const [view,setView]=React.useState(()=>partnerWorkspaceView(normalizeView(initialView,'partner')||'ops'));
   const [message,setMessage]=React.useState('');
   const [roomRequest,setRoomRequest]=React.useState(()=>({roomId:initialRoomId,scope:initialRoomScope}));
   const roomSelection=initialPartnerRoomSelection(snapshot,roomRequest.roomId,roomRequest.scope);
-  const runtimeRef=React.useRef(null);
   const notify=React.useCallback(value=>setMessage(value),[]);
   const [appearanceDirty,setAppearanceDirty]=React.useState(false);
   const dirtyRef=React.useRef(false),copyRef=React.useRef(copy),leaveGuard=React.useRef(null);
   copyRef.current=copy;
-  if(!leaveGuard.current)leaveGuard.current=createPartnerLeaveGuard({isDirty:()=>dirtyRef.current||Boolean(runtimeRef.current?.dirty),confirmLeave:()=>window.confirm(copyRef.current.unsavedLeave)});
+  if(!leaveGuard.current)leaveGuard.current=createPartnerLeaveGuard({isDirty:()=>dirtyRef.current,confirmLeave:()=>window.confirm(copyRef.current.unsavedLeave)});
   const onAppearanceDirty=React.useCallback(dirty=>{dirtyRef.current=dirty;setAppearanceDirty(dirty);leaveGuard.current.reset();},[]);
-  const runtime=React.useMemo(()=>createPreviewRuntime(snapshot,{surface:'partner',user,notify,studioUrl:labUrl,refresh:()=>{},teamView:partnerTeamView(apiBase,TeamView)}),[snapshot,user,notify,apiBase]);
-  runtimeRef.current=runtime;
+  const runtime=React.useMemo(()=>createPartnerWorkspaceContext(snapshot,{surface:'partner',user,notify,teamView:partnerTeamView(apiBase,TeamView)}),[snapshot,user,notify,apiBase]);
   const admin=snapshot.accessClass==='internal-admin';
   const navigation=partnerNavigation(language,snapshot.permissions);
   const groups=[...new Set(navigation.map(item=>item.group))];

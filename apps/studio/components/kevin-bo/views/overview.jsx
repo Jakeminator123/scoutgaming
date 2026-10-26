@@ -2,7 +2,7 @@
 import React from 'react';
 import { compositionLabel } from '../../../../../packages/navigation/control-flow.mjs';
 import { workspaceSurfacePath } from '../../../../../packages/navigation/workspace-surfaces.mjs';
-import { operatorPackageRevision } from '../preview-runtime.mjs';
+import { operatorPackageRevision } from '../partner-workspace-context.mjs';
 
 const h = React.createElement;
 

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { createPreviewRuntime, operatorPackageRevision, sectionNotConnected, validatePreviewSnapshot } from './preview-runtime.mjs';
+import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from './partner-workspace-context.mjs';
 import { destinationsFor, normalizeView } from './navigation.mjs';
 import { readPartnerPreviewFixture } from '../../test/fixtures/partner-preview.mjs';
 import { createPartnerPreviewContext } from '../../lib/partner-preview-policy.mjs';
@@ -14,7 +14,7 @@ const babel=require('next/dist/compiled/babel/core');
 const source=await readFile(new URL('./partner-operator-workspace.jsx',import.meta.url),'utf8');
 const scope={environment:'fixture',workspaceId:'croupier'};
 const fixture=readPartnerPreviewFixture(createPartnerPreviewContext({session:{role:'admin',user:'test',scope},scope,operatorId:'operator-demo-north',previewEnabled:true}),{now:()=>Date.UTC(2026,9,6)});
-const makeRuntime=(surface,snapshot=fixture,options={})=>createPreviewRuntime(snapshot,{surface,user:'test',notify:()=>{},refresh:()=>{},studioUrl:path=>'/studio'+(path==='/'?'':path),...options});
+const makeRuntime=(surface,snapshot=realSnapshot(),options={})=>createPartnerWorkspaceContext(snapshot,{surface,user:'test',notify:()=>{},...options});
 
 test('legacy destination aliases retain their surface boundaries',()=>{
   for(const [alias,view] of Object.entries({overview:'ops',transactions:'tx',users:'team',apikeys:'api',rooms:'bj'}))assert.equal(normalizeView(alias,'partner'),view,alias);
@@ -24,19 +24,16 @@ test('legacy destination aliases retain their surface boundaries',()=>{
   assert.equal(normalizeView('tables','internal'),'tables');
 });
 
-test('fixture boundaries reject live snapshots and mixed operator resources',()=>{
-  assert.throws(()=>validatePreviewSnapshot({...fixture,mode:'live'}));
-  assert.throws(()=>makeRuntime('partner',{...fixture,viewer:{...fixture.viewer,user:'another-admin'}}));
-  for(const key of ['tables','team','presentations','players','transactions','reports'])assert.throws(()=>validatePreviewSnapshot({...fixture,[key]:[{id:'foreign',operatorId:'operator-demo-south'}]}),key);
-});
-
-test('local draft state and memory never cross runtimes and legacy mutations reject',async()=>{
-  const north=makeRuntime('partner'),south=makeRuntime('partner');
-  north.designStore.write('themes',{scout:{draft:{primary:'#FF0000'}}});
-  north.memory.setItem('layout','list');
-  assert.deepEqual(south.designStore.read('themes'),{});
-  assert.equal(south.memory.getItem('layout'),null);
-  await assert.rejects(north.api('/api/bo/apikeys/create',{name:'test'}),/ingen ansluten tjänst/);
+test('live workspace rejects fixtures, changed actors and mixed operator resources',()=>{
+  assert.throws(()=>validatePartnerSnapshot(fixture));
+  assert.throws(()=>validatePartnerSnapshot({...fixture,mode:'live'}));
+  assert.throws(()=>makeRuntime('internal'));
+  assert.throws(()=>makeRuntime('partner',{...realSnapshot(),viewer:{user:'another-admin'}}));
+  assert.throws(()=>validatePartnerSnapshot({...realSnapshot(),operators:[]}));
+  for(const key of ['tables','team','presentations','players','transactions','reports']){
+    assert.throws(()=>validatePartnerSnapshot({...realSnapshot(),[key]:[{id:'foreign',operatorId:'operator-other'}]}),key);
+    assert.throws(()=>validatePartnerSnapshot({...realSnapshot(),[key]:null}),key);
+  }
 });
 
 test('CSS is fenced inside the portal and source has no legacy loader or global BO state',async()=>{
@@ -46,19 +43,6 @@ test('CSS is fenced inside the portal and source has no legacy loader or global 
     css.walkRules(rule=>{if(rule.parent.type==='atrule'&&/keyframes$/.test(rule.parent.name))return;for(const selector of postcss.list.comma(rule.selector))assert.ok(selector.startsWith('.kevin-bo'),selector);});
   }
   assert.doesNotMatch(source,/window\.BO_|ReactDOM|createRoot\(|import\(|fetch\(|new WebSocket|new EventSource|localStorage/);
-});
-
-test('partner design choices remain usable locally and report their missing lane connection',()=>{
-  const notices=[],runtime=makeRuntime('partner',fixture,{notify:message=>notices.push(message)});
-  const themes={scout:{draft:{chipMode:'set',chipSet:'scout'}}};
-  runtime.designStore.write('themes',themes);
-  assert.deepEqual(runtime.designStore.read('themes'),themes);
-  assert.match(notices[0],/marker och kort.*saknar koppling till en publicerad presentationslane/);
-  assert.match(notices[0],/bara i den lokala förhandsvisningen/);
-  runtime.designStore.write('tables',{scout:{draft:{felt:'#000000'}}});
-  assert.match(notices[1],/Bordsdesign saknar koppling/);
-  assert.deepEqual(fixture.presentations[0].status,'demo');
-  assert.deepEqual(makeRuntime('partner').designStore.read('themes'),{});
 });
 
 const portalSource = source;
@@ -96,7 +80,7 @@ test('real partner menu uses Swedish terms and exposes team navigation only with
     assert.doesNotMatch(menu,/\/(?:archive|legacy-rooms|speech|clips|media|presentation-events|generations)"|Dealerarkiv|Röstklipp|Genereringar/);
     assert.doesNotMatch(html,/href="\/(?:admin|control|studio)(?:\/|")/);
   }
-  const owned = [portalSource, await readFile(new URL('./navigation.mjs', import.meta.url), 'utf8'), await readFile(new URL('./partner-copy.mjs', import.meta.url), 'utf8'), await readFile(new URL('./preview-runtime.mjs', import.meta.url), 'utf8')].join('\n').replaceAll('PartnerOperatorWorkspace', '');
+  const owned = [portalSource, await readFile(new URL('./navigation.mjs', import.meta.url), 'utf8'), await readFile(new URL('./partner-copy.mjs', import.meta.url), 'utf8'), await readFile(new URL('./partner-workspace-context.mjs', import.meta.url), 'utf8')].join('\n').replaceAll('PartnerOperatorWorkspace', '');
   assert.doesNotMatch(owned, /Backoffice|BO event|\bTrigger\b|\bPolicy\b|\bLinje\b/);
 });
 test('operator workspace rejects the retired fixture and keeps the real scoped shell', () => {
@@ -128,11 +112,9 @@ test('operator workspace rejects the retired fixture and keeps the real scoped s
   assert.match(reports, /Spelare, transaktioner och ekonomiska rapporter är ännu inte anslutna/);
   const unavailablePanel = reports.slice(reports.indexOf('<div class="page-b kevin-disconnected"'));
   assert.doesNotMatch(unavailablePanel, /href=|Öppna integrationer|Ingen serverdata har lästs/);
-  assert.equal(sectionNotConnected(fixture, 'players'), false);
-  assert.equal(sectionNotConnected(realSnapshot(), 'transactions'), true);
   assert.equal(operatorPackageRevision(realSnapshot()), 'rev-7');
   assert.equal(makeRuntime('partner', realSnapshot()).snapshot.preview, false);
-  assert.equal(validatePreviewSnapshot({ ...realSnapshot(), mode:'live', accessClass:'partner' }).accessClass, 'partner');
+  assert.equal(validatePartnerSnapshot({ ...realSnapshot(), mode:'live', accessClass:'partner' }).accessClass, 'partner');
   assert.throws(() => makeRuntime('partner', { ...realSnapshot(), viewer:{ user:'someone-else' } }));
 });
 
