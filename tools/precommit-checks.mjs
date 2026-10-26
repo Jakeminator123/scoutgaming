@@ -172,9 +172,10 @@ export function focusedTests(changes, root = repositoryRoot) {
   return [...selected].sort();
 }
 
-export function checkPlan(mode, { changes = [], root = repositoryRoot } = {}) {
+export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorkers = 4 } = {}) {
   if (mode === 'full') return [['sh', '.githooks/pre-commit-full']];
   if (!['documentation', 'focused'].includes(mode)) throw Error('Unknown verification mode');
+  if (!Number.isInteger(testWorkers) || testWorkers < 1 || testWorkers > 4) throw Error('Focused test workers must be an integer from 1 to 4');
   const tests = focusedTests(changes, root);
   const commands = [['git', 'diff', '--cached', '--check']];
   for (const { status, path } of changes) {
@@ -190,7 +191,7 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot } = {}) {
     commands.push([process.execPath, 'apps/web/node_modules/typescript/bin/tsc',
       '--project', 'apps/web/tsconfig.json', '--noEmit', '--incremental', 'false']);
   }
-  if (tests.length) commands.push([process.execPath, '--test', '--test-concurrency=4', ...tests]);
+  if (tests.length) commands.push([process.execPath, '--test', `--test-concurrency=${testWorkers}`, ...tests]);
   return commands;
 }
 
@@ -219,7 +220,11 @@ export function main(args = process.argv.slice(2)) {
   if (process.env.GIT_INDEX_FILE) indexEnv.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
   const changes = readStagedChanges(repositoryRoot, { env: indexEnv });
   const mode = verificationMode(changes, { forceFull });
-  const commands = checkPlan(mode, { changes });
+  // Limit simultaneous disposable servers on constrained local machines.
+  // This changes scheduling only: CI/full checks and every test stay intact.
+  const workerSetting = mode === 'focused' ? process.env.CROUPIER_PRECOMMIT_TEST_WORKERS : undefined;
+  if (workerSetting !== undefined && !['1','2','3','4'].includes(workerSetting)) throw Error('CROUPIER_PRECOMMIT_TEST_WORKERS must be 1, 2, 3 or 4');
+  const commands = checkPlan(mode, { changes, testWorkers: workerSetting === undefined ? 4 : Number(workerSetting) });
   if (planOnly) {
     console.log(JSON.stringify({ mode, commands }));
     return 0;

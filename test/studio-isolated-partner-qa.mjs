@@ -71,6 +71,9 @@ test('isolated SQL evidence binds the actual draft suite imports and immutable m
   const runtimeFixture = new URL('./fixtures/studio-runtime-sql-checks.mjs', import.meta.url);
   const runtimeImporter = new URL('../ops/neon-studio/runtime-media-import.mjs', import.meta.url);
   const required = ['ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs',
+    'ops/neon-studio/020-extended-presentation.sql', 'packages/presentation/server/presentation-storage.mjs',
+    'packages/presentation/contracts/media-timing.mjs',
+    'packages/presentation/contracts/room-game-config.mjs',
     'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs',
     'media/layout.json','media/blob-index.json','media/catalog/presentation.json','media/catalog/legacy.json',
     'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs',
@@ -86,4 +89,30 @@ test('isolated SQL evidence binds the actual draft suite imports and immutable m
   }
   assert.equal(new Set(STUDIO_ISOLATED_QA_SOURCES).size,STUDIO_ISOLATED_QA_SOURCES.length,'each source has one receipt hash');
   for (const path of required) assert.ok(STUDIO_ISOLATED_QA_SOURCES.includes(path),`SQL evidence must hash ${path}`);
+});
+
+test('disposable runtime copy can load the native frozen-material and storage dependency chain', async t => {
+  const { copyOpenClawRuntime } = await import('./fixtures/copy-openclaw-runtime.mjs');
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { basename, dirname, join, resolve } = await import('node:path');
+  const { pathToFileURL } = await import('node:url');
+  const root = await mkdtemp(join(tmpdir(),'croupier-runtime-import-'));
+  t.after(async () => {
+    assert.equal(dirname(resolve(root)),resolve(tmpdir()));
+    assert.ok(basename(root).startsWith('croupier-runtime-import-'));
+    await rm(root,{recursive:true,force:true});
+  });
+  await copyOpenClawRuntime(root);
+  const load = file => import(pathToFileURL(join(root,file)).href);
+  const publication = await load('packages/presentation/server/presentation-package.mjs');
+  const material = await load('packages/presentation/server/native-room-game-material.mjs');
+  const budget = await load('packages/presentation/contracts/native-room-game-budget.mjs');
+  const storage = await load('packages/studio-registry/server/storage-contract.mjs');
+  const operators = await load('packages/operators/server/operator-store.mjs');
+  assert.equal(publication.readPackagePresentation({branding:{}}),null);
+  assert.throws(()=>material.resolveNativeRoomGameMaterial({}),{code:'studio_room_game_material_unavailable'});
+  assert.equal(typeof budget.assertNativeRoomSequenceBudget,'function');
+  assert.equal(typeof storage.validateStudioMedia,'function');
+  assert.equal(typeof operators.createOperatorStore,'function');
 });
