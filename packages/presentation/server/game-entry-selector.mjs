@@ -93,13 +93,16 @@ export function createGameEntrySelector({ policy, packages = null, log = console
         ||!frozen.registeredDealers.find(item=>item.id===presentationLane.layers.dealer.default)?.rouletteIdle||row.rouletteIdle?.base).map(row => row.id).filter(isActiveDealerId) : [];
     if (presentationLane) {
       const dealerQuery = new URLSearchParams(params);
-      if (room && frozen) {
+      const configuredRoom = room && Object.hasOwn(current.branding?.roomGameConfigVersions ?? {}, room.id);
+      // V2 portrait rooms retain their single runtime dealer even when the
+      // older frozen layer default names another allowed identity. V3 and J08
+      // rooms can bind the effective room choice before client bootstrap.
+      if (room && frozen && (frozen.schemaVersion === 3 || configuredRoom)) {
         const roomDealer = resolvePackageRoomDealer(current, room, frozen);
         if (!roomDealer) throw Object.assign(Error('presentation_dealer_mismatch'), {statusCode:503});
         // A published shared-room config binds its material dealer. Older rooms
         // retain their explicit allowed query choices until they publish one.
-        if (Object.hasOwn(current.branding?.roomGameConfigVersions ?? {}, room.id)
-          && dealerQuery.has('dealer') && dealerQuery.get('dealer') !== roomDealer) return {status:404};
+        if (configuredRoom && dealerQuery.has('dealer') && dealerQuery.get('dealer') !== roomDealer) return {status:404};
         if (!dealerQuery.has('dealer')) dealerQuery.set('dealer', roomDealer);
       }
       const dealer = laneDealerSelection(dealerQuery, lane, presentationLane.layers?.dealer, { portraitDealerIds });

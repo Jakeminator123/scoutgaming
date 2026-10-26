@@ -57,7 +57,8 @@ test('N2 frozen allowed choices save once and reach actual HTML/client with N1 g
   let {selection}=await f.select('operator=north&table=room-first');selection=f.document(selection);
   const actual=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer,composition:selection.composition});
   assert.equal(selection.presentation,'local');assert.equal(selection.composition.dealer.compatibility,'per-clip');
-  assert.equal(actual.dealer,'nora');assert.equal(actual.navigateDealer,'nora');assert.equal(actual.tableValue,f.assets[1].id);
+  assert.equal(selection.dealer,'nora');assert.equal(actual.dealer,'nora');assert.equal(actual.navigateDealer,null);
+  assert.equal(actual.tableValue,f.assets[1].id);
   assert.equal(actual.backgroundValue,f.assets[3].id);assert.equal(actual.tableColor,'#445566');assert.equal(selection.roomId,'room-first');
   assert.deepEqual(selection.composition.settings,f.lanes[0].composition);
   const switched=f.document((await f.select('operator=north&table=room-first&dealer=nora')).selection);
