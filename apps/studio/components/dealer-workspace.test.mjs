@@ -65,7 +65,6 @@ function harness(file, initialStates = [], overrides = {}) {
     './registered-idle-editor': {RegisteredIdleEditor: marker('own-idle')},
     './idle-policy-editor': { IdlePolicyEditor: marker('idle') },
     './family-video-library': { FamilyVideoLibrary: marker('families') },
-    './legacy-clip-editor': { LegacyClipEditor: marker('legacy') },
     './family-video-upload': { FamilyVideoUpload: marker('upload') },
     './media-family-editor': { MediaFamilyEditor: empty },
     './probe-editor': { ProbeEditor: empty }, './project-conflict': { ProjectConflict: empty },
@@ -104,12 +103,6 @@ const props = () => ({ initialProject: createSeedProject(), initialVideos: { vid
 
 
 
-test('controlled legacy editor lists only selected dealer exact speech and no second dealer selector', () => {
-  const controls = { clips: ['astrid', 'elin'].map(dealerId => ({ id: `${dealerId}:line`, dealerId, kind: 'recorded-speech', exactParts: [], lineId: 'goodluck', text: `${dealerId} exact text`, available: true, source: 'speech-media.json', route: '/', reviewStatus: 'registered' })) };
-  const h = harness('./legacy-clip-editor.tsx', [controls, 'astrid', '']);
-  const html = renderToStaticMarkup(h.render({ project: createSeedProject(), dealerId: 'elin', section: 'clips', onChange() { throw new Error('Unexpected edit'); } }));
-  assert.match(html, /elin exact text/); assert.doesNotMatch(html, /astrid exact text|<select|Äldre BO-val|Importera exakt koppling|Avancerat · spelvägar och klippkontroll/);
-});
 
 
 

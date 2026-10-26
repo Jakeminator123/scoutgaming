@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## Avvecklad oanvänd klippeditor — 26 oktober
+
+På main `8fcb920a930d7459273be3a495f8474137203abd` efter PR407 saknar `LegacyClipEditor` produktkonsumenter. Den tas bort tillsammans med sitt ensamma komponentprov och exklusiva klassningshjälpare/typer i `dealer-workspace`. Hjälparnas eget prov tas också bort. Detta följer masterplanens avveckling av ersatta Admin-ytor; det återinför ingen Kevin- eller lokal QA-yta.
+
+Aktiv navigation via `StudioGuide` och `workspaceLocation` behålls med befintliga bokmärkesprov. `RegisteredIdleEditor` använder fortfarande `IdlePolicyEditor`, och `ActivityLog` läser fortfarande `/api/clip-controls`; de flödena, medietjänsterna, filmprofilerna och lagrad `legacyClipPolicy` bevaras. Ingen route, mediepost, originalfil eller historik raderas. Historiska Admin-kartor beskriver sina daterade versioner och är inte nya bevarandekrav.
+
+Verifiering: inga återstående kodreferenser till den borttagna editorn eller dess exklusiva exporter i apps/studio, packages/presentation, services/game, tools eller test. Befintliga prov för dealerarbetsytan, aktiv idle-redigering och navigation passerar 22/22 utan skip på Node24.21.0/fyra arbetare. Full frontendtypkontroll/bygge och regression lämnas till kandidatens CI. Ingen visuell eller ny moln-/mediaacceptans påstås, och migrationsprocenten ändras inte.
+
 ## J08: fryst aktiv hand och samordnad release — 26 oktober
 
 Nästa sammanhängande kandidat bygger på main `736776f2ad35c9b1416d8c82a566106172388fff`, vars [main-CI40338221402](https://github.com/Jakeminator123/scoutgaming/actions/runs/40338221402) nu är grön. Den frysta produkt-/testleveransen omfattar 35 filer; PR405:s dealerfix och PR406:s proofprojektion bevaras. **55 % består tills J08:s verkliga acceptans är komplett.**
