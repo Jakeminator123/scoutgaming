@@ -4,7 +4,7 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 
 ## Aktuell status 26 oktober
 
-J05 är verifierad på902 enligt det faktiska drift- och läsarkvittot nedan;55 % (11/20) är nu verifierat. Status.json är fortsatt enda statuskälla. Följande25-oktobersrevision är historik.
+J05 är verifierad på902 enligt det faktiska drift- och läsarkvittot nedan. J09:s levererade avvecklingsförberedelse är nu också slutgranskad;60 % (12/20) är verifierat. Status.json är fortsatt enda statuskälla. Följande25-oktobersrevision är historik.
 
 ## Nulägesrevision 25 oktober
 
@@ -266,22 +266,24 @@ De följande J08-delkvittona från 22 oktober är historiska. PR #334 är mergad
 
 ## J09 — Förbered avveckling av oanvända databaskontrakt
 
-**Etapp:** E4. **Beroenden:** J05, J07, J08, K05.
+**Etapp:** E4. **Beroenden:** J05, J07.
+**Verifierat 26 oktober:** PR401/eabc5a86 med grön CI40294842713 och isolerade PG16.15/18.6-prov, integrerat via PR403. Oberoende ny kod-/beroendegranskning bekräftar att J08/K05 inte är förkunskaper för denna förberedelse. Spel-/mediaacceptans och eventuell produktionsverkställighet behåller sina egna grindar i K06/J10/O02/O03.
+
 **Mål:** konkret oanvända tabeller/kontrakt har avvecklade konsumenter och en testad, granskbar migrerings- och återställningsordning.
 
-- [ ] Inventera kandidater med samtliga läsare/skrivare, FK/index/views/triggers, bakgrundsjobb, backup/restore och publiceringshistorik. En tom tabell eller ett gammalt namn räcker inte.
-- [ ] Avveckla kopplingarna i kod; upprätta exakt migrationsfil och versions-/readinesskrav. Dela expansion, tolerant kod och kontraktion om tidigare release behöver fortsätta fungera.
-- [ ] Prova migration från stödd äldre version, avbrutet förlopp och återställning i isolerad Postgres. Jämför radantal/integritet och syntetiska konton, saldon, rättigheter och frysta paket före/efter.
-### Konsumentinventering på kandidaten, 25 oktober
+- [x] Inventera kandidaternas repokonsumenter, FK/index/views/triggers, bakgrundsjobb, backup/restore och publiceringshistorik. Dokumentera att externa jobb och aktuell drift måste återkontrolleras före O03:s eventuella produktionsverkställighet; tomma tabeller eller gamla namn är inte raderingsmandat.
+- [x] Avveckla kopplingarna i kod; upprätta exakt migrationsfil och versions-/readinesskrav. Dela expansion, tolerant kod och kontraktion om tidigare release behöver fortsätta fungera.
+- [x] Prova migration från stödd äldre version, avbrutet förlopp och återställning i isolerad Postgres. Jämför radantal/integritet och syntetiska konton, saldon, rättigheter och frysta paket före/efter.
+### Konsumentinventering på kandidaten, uppdaterad 26 oktober
 
 | Kontrakt | Faktiska konsumenter | Beslut |
 | --- | --- | --- |
 | `lab_sessions`, `bo_*`, `craig_*` | Native Admin/Partner-auth, överlämning till spel och återkallelse | Aktiva; behåll trots historiska namn |
 | `operator_qa_*`, `fullfile_*` | Operatörsrepetition, rättighets-/kostnadsgrindar och journal | Inte samma implementation som avvecklad P6; behåll aktiva kontrakt/historik |
-| `lissabon_profiles` | Ingen produktläsare/-skrivare funnen i services/packages/apps/ops/tools/test/workflows | Utredningskandidat, inte DROP-klar |
-| `lissabon_profile_sessions` | Kvarvarande DELETE vid lösenords-/statusbyte i `player-administration.mjs`; exklusiva testfixtures | Tolerant kodrensning behöver föregå eventuell schemakontraktion |
+| `lissabon_profiles` | Ingen aktiv produktläsare/-skrivare; endast historiskt schema, adapter-allowlist och isolerade avvecklingsprov | Granskad opt-in-kandidat; ingen produktions-DDL utförd |
+| `lissabon_profile_sessions` | De tidigare DELETE-anropen vid lösenords-/statusbyte avvecklades i PR401; sessions-/audit-/walletskydd bevaras | Tolerant kod levererad, opt-in 011 isolerat provad |
 
-Källsökningen verifierar inte externa jobb, driftdata eller deployade beroenden. Båda Lissabon-tabellerna ingår i checksummebunden `product-v1`, FK till spelare och backupmanifest. Ändra inte den historiska schemafilen. Nästa ordning: bekräfta stödda release-/rollbackversioner och faktiska beroenden → avveckla endast bevisat oanvända konsumenter med authprov → ny versionsbunden migration/readiness → isolerat avbrotts-/restoreprov. Ingen `CASCADE` eller produktions-DDL är beställd av inventeringen.
+Källsökningen verifierar inte externa jobb, driftdata eller deployade beroenden. Båda Lissabon-tabellerna ingår i checksummebunden `product-v1`, FK till spelare och backupmanifest. Ändra inte den historiska schemafilen. PR401 levererar konsumentavveckling, opt-in 011 och isolerat avbrotts-/restoreprov; historisk product-v1 är oförändrad. Före O03:s eventuella verkställighet krävs färsk mål-/externjobbsinventering, kompatibla release-/rollbackversioner, dränering och aktuell provad backup. Ingen `CASCADE` eller produktions-DDL är beställd av inventeringen.
 
 **Startfiler:** `ops/neon-game/product-schema.sql`, `ops/neon-studio/migrations.mjs`, befintliga migrationsfiler, `packages/storage/server/postgres-store.mjs`, `tools/check-migration-readiness.mjs`, `tools/run-shared-table-qa.mjs` (isolerat fullbackup-/restoreprov med PostgreSQLs verktyg).
 **Radera:** bevisat förbrukade kodläsare/skrivare, överflödiga fixtures och aktuella kontraktsreferenser. Produktionsradering av tabeller verkställs först i O03 med separat mandat; redan tillämpad migrationshistorik skrivs inte om.

@@ -2,7 +2,7 @@
 
 Genererad från [status.json](status.json). Uppdaterad 2026-10-26.
 
-**Verifierad migrering: 55% (11/20 aktiviteter).**
+**Verifierad migrering: 60% (12/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
@@ -11,12 +11,12 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | E1 Kontrakt och första Adminleverans | 100% | 20% | Godkänd |
 | E2 En produktväg | 100% | 40% | Godkänd |
 | E3 Kevinmodul med mains lagring | 75% | 60% | Ej godkänd |
-| E4 Adminstyrning och datamigrering | 0% | 80% | Ej godkänd |
+| E4 Adminstyrning och datamigrering | 25% | 80% | Ej godkänd |
 | E5 Verifierad leverans | 0% | 100% | Ej godkänd |
 
 | Ansvar | Verifierat inom ansvaret |
 | --- | ---: |
-| jakob | 70% |
+| jakob | 80% |
 | kevin | 43% |
 | orkestrator | 33% |
 
@@ -36,7 +36,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | K04 | Spelklient och presentation från händelser | kevin | IN_PROGRESS |
 | J08 | Admin styr versionerad spelkonfiguration | jakob | IN_PROGRESS |
 | K05 | Exakt mediakoppling till Neon och Blob | kevin | IN_PROGRESS |
-| J09 | Förbered avveckling av oanvända databaskontrakt | jakob | IN_PROGRESS |
+| J09 | Förbered avveckling av oanvända databaskontrakt | jakob | VERIFIED |
 | K06 | Verifiera Admin till spel efter omstart | kevin | IN_PROGRESS |
 | K07 | Verifiera spelbeteenden och samtidighet | kevin | TODO |
 | J10 | Ren klon, start och återställning | jakob | TODO |
