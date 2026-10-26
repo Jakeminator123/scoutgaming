@@ -1,3 +1,6 @@
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {runInNewContext} from 'node:vm';
 import test from 'node:test';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import assert from 'node:assert/strict';
@@ -458,4 +461,49 @@ test('archive readiness preserves current authorization, metadata CAS and active
     assert.equal(response.status,guard==='authorization'?403:409);
     assert.deepEqual(pool.snapshot(),before);
   }
+});
+
+
+function nextTimingRoute(api, native = true) {
+  const file = new URL('../app/api/videos/measure-timing/route.ts', import.meta.url);
+  const require = createRequire(import.meta.url);
+  const {transformSync} = require('next/dist/build/swc');
+  const {autoImplementMethods} = require('next/dist/server/route-modules/app-route/helpers/auto-implement-methods.js');
+  const {code} = transformSync(readFileSync(file, 'utf8'), {
+    filename: file.pathname, jsc: {parser: {syntax: 'typescript'}}, module: {type: 'commonjs'},
+  });
+  const module = {exports: {}};
+  runInNewContext(code, {module, exports: module.exports, Response,
+    require: name => {
+      if (name === '@/lib/studio-native-runtime.mjs') return {nativeStudioAdminEnabled: () => native};
+      if (name === '@/lib/studio-media-api.mjs') return {handleNativeStudioMedia: request => api.handle(request)};
+      throw new Error('Unexpected route dependency: ' + name);
+    },
+  }, {filename: file.pathname});
+  return autoImplementMethods(module.exports);
+}
+
+test('Next timing route reaches native measurement, preserves guards and persists CAS once', async () => {
+  const f = await timingFixture(), route = nextTimingRoute(f.api);
+  for (const headers of [{origin: 'https://foreign.invalid'}, {'sec-fetch-site': 'cross-site'}]) {
+    assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', f.body, headers))).status, 403);
+  }
+  assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', {...f.body, sha256: '0'.repeat(64)}))).status, 409);
+  assert.equal(f.stats.inspections, 0);
+  const response = await route.POST(request('/studio/api/videos/measure-timing', 'POST', f.body));
+  assert.equal(response.status, 200);
+  const {media} = await response.json();
+  assert.deepEqual(media.mediaTiming, timingFor(f.source));
+  assert.equal((await f.repository.getMedia(media.id)).revision, media.revision);
+  assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', f.body))).status, 409);
+  assert.equal(f.stats.inspections, 1);
+  const denied = await timingFixture({authorize: async () => null});
+  assert.equal((await nextTimingRoute(denied.api).POST(request('/studio/api/videos/measure-timing', 'POST', denied.body))).status, 403);
+  assert.equal(denied.stats.inspections, 0);
+});
+
+test('Next timing route refuses a non-native runtime without a fallback writer', async () => {
+  const route = nextTimingRoute({handle: () => assert.fail('no fallback writer')}, false);
+  assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', {}))).status, 503);
+  assert.equal((await route.GET(request('/studio/api/videos/measure-timing'))).status, 405);
 });

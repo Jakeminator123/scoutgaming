@@ -1,11 +1,16 @@
 # Aktuell handoff — Scoutgaming
 
-## Fortsättning och CI-rättning — 26 oktober
+## Fortsättning, CI och driftsatt mät-route — 26 oktober
 
-PR400:s CI40288732203 underkändes i `presentation/managed-media-contract`: det äldre HTTP-provet räknade den nu stödda version29 som otillåten. Samma fel reproducerades lokalt (26/27). Testet använder nu version30 som nästa otillåtna version och provar även dubblerad29 och nollprefix029. Produktens versionsförhandling ändras inte. Hela berörda gruppen passerar 148/148 utan skip, Node24.21.0/två arbetare. Ny full CI på rättad head återstår.
+PR400:s rättade head1865babe3c0bfe858df58f9268f39bad197cd789 har full grön [CI40291579056](https://github.com/Jakeminator123/scoutgaming/actions/runs/40291579056), inklusive GitGuardian. Det tidigare versionsprovet för version29 är rättat; berörd kontraktsgrupp passerade148/148. Det kvittot gäller före routeändringen nedan.
 
-Färsk åtkomstkontroll bekräftar GitHub samt rätt isolerade Neon-, Blob-, Vercel- och Render-resurser. Vercel-kandidaten81c370 är fortfarande BLOCKED med tom bygglogg; orsaken är inte fastställd. Inga nya molnprov eller mediegodkännanden följer av CI-rättningen. MIGRERING har bekräftat avslutad etapp och släppta anspråk. Aktivitetsstatus kvarstår50procent.
+Åtkomst till GitHub, Neon, Blob, Vercel och Render är verifierad. Isolerade Vercel-deployen dpl_EhjJc9bR91sVxoNBFipSiUwywdSC blev READY på1865 och aliaset bands till den; den tidigare BLOCKED-deployens rotorsak är inte fastställd. Render-deploy dep-dbfh0te7bikc73dhbjl0 nådde stabilitetsfönstret efter fyra observerade HTTP-fel. Förkontrollen passerade9/9 med version29, autentisering, exakta privata Blob-bytes/range och negativ anonym åtkomst.
 
+Det efterföljande mätprovet hittade ett verkligt distributionsfel: POST /studio/api/videos/measure-timing gav405 eftersom Next-routen saknades, trots att tjänsten hade funktionen. Routen är nu kopplad till samma befintliga native-tjänst och avvisar annat runtime-läge. Två nya beteendeprov reproducerade den saknade routen före ändringen; route-, media- och behörighetsproven passerar49/49 efteråt, Node24.21.0/två arbetare. Ny exakt-head CI och driftsatt omprov krävs.
+
+Provet avbröts vid det första negativa hash-anropet, före giltig mätning. Direkt Neon-återläsning2026-10-26 visade oförändrad revision studio-abd15877-899f-460c-b0a6-48ed61f5b364, oförändrade bytes/hash och ingen mediaTiming. Egna Render/Vercel är verifierat stoppade/pausade. Privata kvitton finns under arkiv/2026-10-25/migration-cloud-acceptance i den aktiva arbetskopian.
+
+Jakob har valt PAOW för slutprovet. Tio befintliga taloriginal matchar källans och Neons exakta SHA256/storlek; teknisk kontroll visar24fps med ljud. Detta är ingen ny bedömning av läppsynk, innehåll eller poser. Aktivitetsstatus är fortsatt50procent; stabil spelomstart, sammanhängande spel/media och slutlig återställning kvarstår.
 
 ## Native materialbindning och tal — 26 oktober
 
