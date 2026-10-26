@@ -15,7 +15,6 @@ import { NATIVE_ROOM_MATERIAL_PREFIX, NATIVE_ROOM_PRESENTATION_CONTRACT, NATIVE_
 
 export { NATIVE_ROOM_MATERIAL_PREFIX } from '../contracts/native-room-game-budget.mjs';
 const requiredSpeechSlots = NATIVE_ROOM_SPEECH_SLOTS;
-const speechSlots = Object.freeze(['blackjack','bust','chatter1','chatter2','dealerblackjack','dealerbust','double','farewell','goodluck','greeting','insurance','lose','peek','placebets','push','sidebet','win']);
 const expectedTakes = [...['1','2','3','4','5','6','7','dealer'].flatMap(target => ['', 'i', 'v', 'iv'].map(variant => `${target}:${variant}`)), 'hole:', 'hole:i', 'flip:'].sort();
 const digest = value => createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -27,9 +26,6 @@ const max = values => Math.max(0, ...values);
 // fixture timings. A changed contract/topology must be reviewed before publishing.
 function compatible(profile) {
   if (NATIVE_ROOM_PRESENTATION_CONTRACT !== 'blackjack-presentation/1'
-    || !same([...SPEECH_SLOT_IDS].sort(), speechSlots)
-    || FILMED_OPEN_LEAD_MS.deal !== 700 || FILMED_OPEN_LEAD_MS.reveal !== 1500
-    || FILMED_TAKE_GAP_MS !== 80 || FILMED_HANDOVER_FRAMES !== 1.5
     || !same(profile.takes.map(t => `${t.target}:${t.variant}`).sort(), expectedTakes)) fail('native_material_contract_unsupported');
 }
 function placement(take) {
@@ -73,7 +69,7 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
       if (sizes.has(row.sha256) && sizes.get(row.sha256) !== row.size) fail('native_material_size_mismatch');
       sizes.set(row.sha256,row.size);
       const speech = metadata.kind === 'speech' ? recordedSpeechForVideo(row, {dealerId,language,lineId:metadata.situation,takeId:metadata.recordedSpeech?.takeId}) : null;
-      if (metadata.kind === 'speech' && (!speech || !speechSlots.includes(metadata.situation)
+      if (metadata.kind === 'speech' && (!speech || !SPEECH_SLOT_IDS.includes(metadata.situation)
         || metadata.eventId !== speechSlotEventId(metadata.situation))) fail('native_material_speech_unbound');
       if (speech && (speech.entryPose !== 'VILA' || speech.exitPose !== 'VILA')) fail('native_material_speech_pose_unsupported');
       if (!row.mediaTiming) fail('native_material_measurement_missing');

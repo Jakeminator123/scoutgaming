@@ -16,6 +16,12 @@ Jakob bekräftade efter leveransen: **”allt såg ganska bra ut gällande paow 
 4. Kontrollera nya relevanta meddelanden i [samordning #312](https://github.com/Jakeminator123/scoutgaming/issues/312), aktuella PR:er och faktisk drift. Återuppta inte redan mergat arbete.
 5. Använd Node **24.21.0** genom Volta, högst fyra testarbetare. Kör `node tools/agent-talk.mjs status <eget-id>` innan nya filanspråk och före commit/push. Claima egna filer och `.git`; läs chef-status före integration/push.
 
+## Senaste fortsättningen: Kevin-konvertering och nästa etapp
+
+Läs det översta kvällsavsnittet i [JOHN-HANDOFF](JOHN-HANDOFF.md). Jakob vill att nyare Kevin-underlag och verkligt produktbeteende väger tyngre än historiska lås. Två duplicerade material-/timinglås är borttagna och 62/62 relevanta beteendeprov passerar. Utred därefter nåbar varianttäckning via den befintliga sekvensplaneraren; cementera inte PAOW-bankens 35 tagningar som framtida standard.
+
+Isolerad staging innehåller nu 46 exakt bundna, servermätta PAOW-original och en separat sparad PAOW-scen. Tio talval passerar i riktig pending-repetition; inget nytt AV-godkännande eller publicerat rum finns. Projektrevision `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Staging använder fortfarande syntetiska bakgrunds-/bordslager. Full spel-, AV- och layoutacceptans återstår; aktuell status är fortfarande 60 %. Root har beställt sömlös fortsättning i en ny chatt med privat överlämning, inte en ny migrationsplan.
+
 ## Levererat och kvarvarande arbete
 
 Fortsatt isolerad runtime har verifierats på `d89048625d127d159101707fe46547a6108987f6` (PR414) och säkerhetshead `a22f7a97dc1f29d91400cb7becc33073bff3d11d` (PR416, mergad som `291dba91924bd432c88733aa28a3bf5db8fe9257`). Hämta aktuell main och läs senaste JOHN-HANDOFF vid övertagandet; en fryst testversion är inte automatiskt senaste produktionsdeploy.
@@ -62,8 +68,8 @@ Behörigheter, inloggade browserflikar och MCP-anslutningar följer inte en text
 | Vercel | Team `scoutgaming` / `team_Scxorb9qtZHjNae1YEQnFCaT`; projekt `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`. READY på `291dba91924bd432c88733aa28a3bf5db8fe9257`, deploy `dpl_Ck66fKCYFTJeUyfNJBiqZNbJoggG`, alias `www.scoutgaming.tech`. Publik lobby/inloggning och anonym behörighetsgräns kontrollerade. |
 | Render | Jakob godkände workspace `tea-d19jsa63jp1c73ch0sc0`. Produktion **croupier-v3**, service `srv-dbd6nfon74is73aiblf0`. LIVE på `a22f7a97dc1f29d91400cb7becc33073bff3d11d`, deployment `dep-dbfpasfb9u1s738nss10`. Tolv health-/versionsprov efter LIVE passerar och är bundna till ny process. |
 | Neon produktion | Projekt `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`, databas `croupier_game`; scope `production` / `croupier`. |
-| Neon isolerad staging | Projekt `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databas `croupier_staging`; scope `staging_k06_k07` / `croupier`. Tidigare läsning: en mediepost, noll delade bordskonfigurationer, ledger020 installerad. Inte en komplett PAOW-testmiljö. |
-| Render staging | `croupier-k06-k07-staging`, `srv-dbf61l0m7kps73ft7mk0`: verifierat suspenderad 18:01:57 UTC efter isolerad acceptans på d890486 och säkerhetshead a22f7a97; autoDeploy av. Vid senare återstart välj granskad commit uttryckligen. |
+| Neon isolerad staging | Projekt `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, DB `croupier_staging`; scope `staging_k06_k07` / `croupier`. En befintlig QA-mediepost och 46 nya exakt bundna PAOW-original; talreview pending. Ingen publicerad delad bordskonfiguration. |
+| Render staging | `croupier-k06-k07-staging`, `srv-dbf61l0m7kps73ft7mk0`: återupptagen för isolerad repetition, LIVE `dep-dbfrl8d9fdbs739tnp8g` på f153. Branch rättad till `main`, autoDeploy av. Kontrollera aktuell ägare före användning/stopp; stoppa efter prov. |
 | Vercel staging | Befintliga `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, `croupier-k06-k07-staging.vercel.app`, är åtkomligt genom anslutna `mcp__user_vercel`. Tidigare 404 var anslutningsspecifik. Senast READY dpl_6pAacVPeZBx1iUHYqbAtRKqNjehC på a22f7a97 efter vanlig Admin-/spelkontroll. Backend är nu avsiktligt stoppad. |
 
 `recordedSpeech` **v2** är MP4-talformat med inbäddat ljud, inte Render-motorn v2. Motorn är v3. Native materialresolver, serverägd mätning och MP4-formatet är redan implementerade. Delat spel var fortsatt avstängt enligt releasekvittot; aktivera inte produktionsflaggor som bieffekt av tester.
