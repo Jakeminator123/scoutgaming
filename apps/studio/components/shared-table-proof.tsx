@@ -2,8 +2,29 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import styles from './studio-administration.module.css';
 
-type ProofPayload={roomId:string;shoes:{shoeId:string;commitment:string;closedAt?:number|null}[];selected:null|{shoeId:string;commitment:string;closedAt?:number|null;rawProof?:string;verification?:{status:string;disclaimer?:string}};chain:{ok:boolean;complete:boolean;count:number;total:number;reason?:string}};
+type ProofReference={roomId:string;shoeId:string;roundId:string;configVersion:string};
+type ProofTraceability={status:'verified';references:ProofReference[]}|{status:'unavailable';reason:'round_binding_missing'|'audit_incomplete'}|{status:'failed';reason:'audit_invalid'|'proof_unverified'|'round_binding_invalid'};
+type ProofPayload={roomId:string;shoes:{shoeId:string;commitment:string;closedAt?:number|null}[];selected:null|{shoeId:string;commitment:string;closedAt?:number|null;rawProof?:string;verification?:{status:string;disclaimer?:string};traceability?:ProofTraceability};chain:{ok:boolean;complete:boolean;count:number;total:number;reason?:string}};
 const validClosedAt=(value:unknown)=>value==null||typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=8640000000000000;
+const referenceId=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
+function validTraceability(selected:NonNullable<ProofPayload['selected']>,roomId:string,chain:ProofPayload['chain']) {
+  const trace=selected.traceability;
+  // Older readers remain usable, but absent metadata is never a verified binding.
+  if(trace===undefined)return true;
+  if(!trace||typeof trace!=='object'||Array.isArray(trace)||Object.keys(trace).length!==2)return false;
+  if(trace.status==='verified'){
+    if(!chain.ok||!chain.complete||selected.verification?.status!=='verified'||!Array.isArray(trace.references)
+      ||trace.references.length<1||trace.references.length>416)return false;
+    const rounds=new Set<string>();
+    return trace.references.every(row=>{
+      if(!row||typeof row!=='object'||Array.isArray(row)||Object.keys(row).length!==4||row.roomId!==roomId||row.shoeId!==selected.shoeId
+        ||![row.roomId,row.shoeId,row.roundId,row.configVersion].every(referenceId)||rounds.has(row.roundId))return false;
+      rounds.add(row.roundId);return true;
+    });
+  }
+  return trace.status==='unavailable'&&['round_binding_missing','audit_incomplete'].includes(trace.reason)
+    ||trace.status==='failed'&&['audit_invalid','proof_unverified','round_binding_invalid'].includes(trace.reason);
+}
 type ReadProof=(query:Record<string,string>,signal:AbortSignal)=>Promise<unknown>;
 export function SharedTableProof({read,roomChoices=[]}:{read:ReadProof;roomChoices?:{id:string;name:string}[]}) {
   const [roomId,setRoomId]=useState(''),[payload,setPayload]=useState<ProofPayload|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -19,7 +40,8 @@ export function SharedTableProof({read,roomChoices=[]}:{read:ReadProof;roomChoic
       if(!value||value.roomId!==roomId||!Array.isArray(value.shoes)||!value.chain||typeof value.chain.ok!=='boolean'||typeof value.chain.complete!=='boolean'
         || !Number.isSafeInteger(value.chain.count)||!Number.isSafeInteger(value.chain.total)
         || value.shoes.some(row=>!row||typeof row.shoeId!=='string'||typeof row.commitment!=='string'||!validClosedAt(row.closedAt))
-        || value.selected && (value.selected.shoeId!==shoeId||typeof value.selected.commitment!=='string'||!validClosedAt(value.selected.closedAt)||!value.shoes.some(row=>row.shoeId===shoeId&&row.commitment===value.selected?.commitment&&row.closedAt===value.selected?.closedAt)))throw Error('Skobevisets svar stämmer inte med det valda rummet.');
+        || value.selected && (value.selected.shoeId!==shoeId||typeof value.selected.commitment!=='string'||!validClosedAt(value.selected.closedAt)||!value.shoes.some(row=>row.shoeId===shoeId&&row.commitment===value.selected?.commitment&&row.closedAt===value.selected?.closedAt)
+          ||value.selected.closedAt!=null&&!validTraceability(value.selected,roomId,value.chain)))throw Error('Skobevisets svar stämmer inte med det valda rummet.');
       setPayload(value);
     }catch(problem){if(alive.current&&seq===epoch.current)setError(problem instanceof Error?problem.message:'Skobeviset kunde inte hämtas.');}
     finally{if(alive.current&&seq===epoch.current)setBusy(false);}
@@ -42,6 +64,17 @@ export function SharedTableProof({read,roomChoices=[]}:{read:ReadProof;roomChoic
       {payload.selected?<details open><summary>{payload.selected.closedAt!=null?'Stängd sko':'Öppen sko'} · {payload.selected.shoeId}</summary>
         <p>Åtagande: <code>{payload.selected.commitment}</code></p>
         {payload.selected.closedAt!=null?<><p>Bevisstatus: {payload.selected.verification?.status??'Ej verifierat'}</p>
+          {payload.selected.traceability?.status==='verified'?<>
+            <p>Runda och spelversion är verifierade mot auditkedjan.</p>
+            <p>Rum: <code>{payload.roomId}</code> · Sko: <code>{payload.selected.shoeId}</code></p>
+            <details><summary>Visa rundor och spelversioner ({payload.selected.traceability.references.length})</summary>
+              <table><thead><tr><th scope="col">Runda</th><th scope="col">Spelversion</th></tr></thead>
+                <tbody>{payload.selected.traceability.references.map(row=><tr key={row.roundId}><td><code>{row.roundId}</code></td><td><code>{row.configVersion}</code></td></tr>)}</tbody>
+              </table>
+            </details>
+          </>:<p>{payload.selected.traceability?.status==='failed'?'Kopplingen till runda och spelversion kunde inte verifieras.'
+            :payload.selected.traceability?.reason==='audit_incomplete'?'Spårbarhet till runda och spelversion kan inte visas eftersom auditkedjan är ofullständig.'
+              :'Spårbarhet till runda och spelversion saknas i det sparade underlaget.'}</p>}
           {typeof payload.selected.rawProof==='string'?<a href={'data:application/json;charset=utf-8,'+encodeURIComponent(payload.selected.rawProof)} download="skobevis.json">Hämta exakt skobevis (JSON)</a>:<p>Fullständigt bevis kunde inte hämtas.</p>}</>:<p>Kortordning och skobevis lämnas inte ut medan skon är öppen.</p>}
       </details>:null}
       <p>Kontrollen är ett tekniskt integritetsbevis, inte en spelcertifiering.</p>

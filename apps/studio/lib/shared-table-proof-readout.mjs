@@ -11,6 +11,54 @@ const parse = value => { try { return JSON.parse(value); } catch { fail('studio_
 const summary = shoe => ({ shoeId: shoe.shoeId, commitment: shoe.commitment, openedAt: shoe.openedAt,
   ...(shoe.closedAt != null ? { closedAt: shoe.closedAt, verdict: shoe.verdict } : {}) });
 
+function traceRounds(audit, roomId, shoeId, { checked, complete, proofVerified }) {
+  const unavailable = reason => ({ status: 'unavailable', reason });
+  const invalid = reason => ({ status: 'failed', reason });
+  if (!checked.ok) return invalid('audit_invalid');
+  if (!complete) return unavailable('audit_incomplete');
+  if (!proofVerified) return invalid('proof_unverified');
+  const sequence = value => Number.isSafeInteger(value) && value > 0;
+  const payload = row => { try { const value = JSON.parse(row.payload); return value && typeof value === 'object' && !Array.isArray(value) ? value : null; } catch { return null; } };
+  const rows = new Map(audit.map(row => [row.seq, row]));
+  const own = audit.filter(row => row.room === roomId);
+  const engines = own.filter(row => row.type?.startsWith('engine.')).map(row => ({ row, value: payload(row) }));
+  const drawn = engines.filter(({ value }) => value?.shoeId === shoeId && Array.isArray(value.draws) && value.draws.length);
+  if (!drawn.length) return unavailable('round_binding_missing');
+  const starts = own.filter(row => row.type === 'round.started').map(row => ({ row, value: payload(row) }));
+  const references = new Map(), usedTriggers = new Set();
+  for (const { row, value } of drawn) {
+    if (row.round_id == null || row.parent == null) return unavailable('round_binding_missing');
+    if (!id(row.round_id) || !sequence(row.parent)) return invalid('round_binding_invalid');
+    const cause = rows.get(row.parent);
+    if (!cause || cause.room !== roomId || cause.seq >= row.seq
+      || row.type !== 'engine.start' && cause.round_id !== row.round_id
+      || value.cause?.eventId !== undefined && value.cause.eventId !== row.parent) return invalid('round_binding_invalid');
+    if (references.has(row.round_id)) continue;
+    const engineStarts = engines.filter(entry => entry.row.type === 'engine.start' && entry.row.round_id === row.round_id);
+    if (!engineStarts.length) return unavailable('round_binding_missing');
+    if (engineStarts.length !== 1) return invalid('round_binding_invalid');
+    const start = engineStarts[0];
+    if (start.row.parent == null) return unavailable('round_binding_missing');
+    if (!sequence(start.row.parent) || start.value?.shoeId !== shoeId || start.row.seq > row.seq) return invalid('round_binding_invalid');
+    const trigger = rows.get(start.row.parent), triggerPayload = trigger && payload(trigger);
+    if (!trigger || trigger.room !== roomId || trigger.seq >= start.row.seq
+      || !(trigger.type === 'player.ready' || trigger.type === 'table.tick' && triggerPayload?.kind === 'window.close')) return invalid('round_binding_invalid');
+    // The coordinator records round.started before it has a round ID. Its
+    // triggerEvent and engine.start.parent identify the same committed cause;
+    // nearest timestamps, ordering alone and the current config head do not.
+    const matching = starts.filter(entry => entry.value?.triggerEvent === trigger.seq);
+    if (!matching.length) return unavailable('round_binding_missing');
+    if (matching.length !== 1) return invalid('round_binding_invalid');
+    const started = matching[0];
+    if (started.value.configVersion == null) return unavailable('round_binding_missing');
+    if (!id(started.value.configVersion) || started.row.seq <= trigger.seq || started.row.seq >= start.row.seq
+      || started.row.round_id != null && started.row.round_id !== row.round_id || usedTriggers.has(trigger.seq)) return invalid('round_binding_invalid');
+    usedTriggers.add(trigger.seq);
+    references.set(row.round_id, { roomId, shoeId, roundId: row.round_id, configVersion: started.value.configVersion });
+  }
+  return { status: 'verified', references: [...references.values()] };
+}
+
 function request(query) {
   const entries = query instanceof URLSearchParams ? [...query] : Object.entries(query ?? {});
   if (entries.some(([key]) => !['roomId', 'shoeId'].includes(key)) || new Set(entries.map(([key]) => key)).size !== entries.length)
@@ -48,8 +96,9 @@ function project(row, roomId, shoeId) {
     // An intact chain prefix beyond the bounded window cannot verify the draws,
     // but it is not evidence of tampering either: report it as incomplete.
     const incomplete = checked.ok && !complete && own.every(c => c.pass);
-    view = { ...view, proof, rawProof: JSON.stringify(proof), verification: { ...verification, checks,
-      status: checks.every(c => c.pass) ? 'verified' : incomplete ? 'incomplete' : 'failed' } };
+    const status = checks.every(c => c.pass) ? 'verified' : incomplete ? 'incomplete' : 'failed';
+    view = { ...view, proof, rawProof: JSON.stringify(proof), verification: { ...verification, checks, status },
+      traceability: traceRounds(audit, roomId, selected.shoeId, { checked, complete, proofVerified: status === 'verified' }) };
   }
   return { roomId, shoes: shoes.map(summary), selected: view, chain };
 }
