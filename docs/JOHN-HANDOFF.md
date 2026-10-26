@@ -2,6 +2,11 @@
 
 **Aktuell status: 50 % verifierat, 50 % kvar (10/20 aktiviteter).** J06 är kvitterad genom kodrensning, beteendeprov och full CI40234506315 på81bc2475b. J05 är fortsatt öppen efter faktiskt Render502. Äldre procentuppgifter nedan är daterade delkvitton; status.json är enda statuskälla.
 
+## J09: valfri Lissabon-avveckling — 26 oktober
+
+De två kvarvarande sessionsraderingarna och deras exklusiva fixturer är borttagna. `game-011-retire-lissabon` och dess offlineförberedare är en uttryckligen valfri, separat leverans från main `940776136101fe18d30e4ee1091151335e558b83`. Historiskt produktschema är oförändrat. Tomma tabeller, oförändrat schema/ägarskap, kända beroenden, fryst kompatibel release/rollback samt backup-/restorebevis krävs; ingen startupregistrering, `CASCADE`, automatisk tillämpning eller produktions-DDL införs. [Ordning, grindar och återställning](ENVIRONMENT-RESTORATION.md#valfri-förberedelse-för-lissabon-kontraktion-j09).
+
+Porteringen passerar 37/37 riktade offline-, lösenords- och CI-policyprov på Node24.21.0 med högst två arbetare; testinventeringen har noll föräldralösa tester. Samma SQL, förberedare, PG-test och runner är byte-identiska med tidigare isolerade prov på PostgreSQL16.15 och18.6: 19/19 per version, inklusive avbruten transaktion och full `pg_dump`/`pg_restore`. Det privata originalkvittot ligger kvar i arbetskopian `migration-continuation`, `arkiv/2026-10-26/j09/verification.json`; egna kluster och portar är stoppade/stängda. Den tidigare provbasen innehöll även valfria Studio020, som inte ingår här. Exakt-head Linux/SQL-CI och full regression återstår för denna separata PR; äldre deployade binärer och faktisk produktionskontraktion är inte verifierade. Root har läsgranskat SQL, verktyg och portering utan blockerare. J09-status ändras först efter CI.
 ## Render: avgränsad requestkorrelation — 26 oktober
 
 PR399:s första CI40284099569 stoppade på miljöinventeringen: nya `RENDER_INSTANCE_ID` saknades under `render-game.managed`. Namnet och dess leverantörshanterade ansvar är nu dokumenterade; inga nya manuella miljövariabler eller runtimebeteenden införs av rättningen. Ny full CI krävs på rättad head.

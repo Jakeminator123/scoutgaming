@@ -293,6 +293,66 @@ eller rader. Kontextens18 enhetsprov,5 verkliga PG-identitetsprov och fixturens
 serverstart, verklig PG-/K04-mediaacceptans. Saknat underlag får inte ersättas
 med nya dealers eller påhittade godkännanden.
 
+## Valfri förberedelse för Lissabon-kontraktion (J09)
+
+`ops/neon-game/011-retire-lissabon.sql` förbereder endast avveckling av
+`lissabon_profiles` och `lissabon_profile_sessions`. Versionen är
+`game-011-retire-lissabon`; den ingår inte i Studios migrationsregister,
+ordinarie startup eller krav för deployment. Den checksummebundna
+`product-schema.sql` och dess `product-v1`-post är oförändrade.
+
+`node tools/prepare-lissabon-retirement.mjs --evidence <privat-json>` skapar
+ett manifest offline. Lägg till `--readiness-sql` för låsta förkontroller med
+avslutande ROLLBACK, eller `--sql` för den kompletta transaktionen. Verktyget
+har ingen databasanslutning eller apply-funktion. Mallfilens parametrar ska
+aldrig ersättas för hand. Frys SQL, manifest, verktygsrevision och evidens ihop.
+
+JSON-underlaget måste innehålla exakt `database`, `role`, `releaseSha`,
+`rollbackSha`, `consumerInventorySha256`, `backupSha256` och
+`restoreReceiptSha256`. SHA-referenserna är obligatoriska bindningar till
+granskat underlag, inte bevis på dess innehåll eller körningsgodkännande.
+Källinventeringen måste även omfatta externa jobb och dynamisk SQL;
+PostgreSQLs beroendekatalog bevisar inte att sådana konsumenter saknas.
+
+Före eventuell körning krävs separat målgranskning (projekt, gren, direkt
+endpoint, databas och roll), frysta kompatibla release-/rollbackversioner,
+dränerade writers och en full backup med provad återställning till ett annat
+tomt mål. Använd den dokumenterade `pg_dump --format=custom` och
+`pg_restore --single-transaction --exit-on-error`-vägen nedan; det äldre
+JSON-backupverktyget stöder inte den installerade utökade tabelluppsättningen.
+
+Förkontrollerna kräver PostgreSQL 16+, rätt ägare, oförändrad produktchecksumma,
+två tomma tabeller och känd struktur utan okända beroenden. RLS, externa vyer,
+FK, typberoenden, extra index/kolumner/triggers och aktiva eventtriggers nekas.
+Interna nycklar, radtyper och TOAST är uttryckliga undantag. Okända triggers,
+regler och CHECK-/FK-kontrakt på migrationsjournalen nekas också, så att dess
+INSERT inte kan utlösa okända sidoeffekter. Exklusiva lås hålls
+genom transaktionen med 2 s låstimeout; 30 s gäller per statement. Inget CASCADE
+används. Efterkontroll och ny migrationspost ingår i samma atomiska commit.
+
+Fel före commit återställer båda tabellerna och lämnar historiken orörd.
+Efter commit tillåts endast granskad kompatibel kod; ingen blind DOWN eller
+återapplicering finns. Återställ aldrig en äldre fullbackup över nya
+wallettransaktioner. Schemaåtergång och eventuell återöppning kräver ett eget
+beslut med avstämning mot den nya datan. J09:s offlineförberedelse är inte
+produktions-DDL eller bekräftelse på stödda gamla releaseversioner.
+
+Verifierat lokalt 26 oktober: 3/3 offlineprov samt samma levererade SQL med
+min16 på PostgreSQL 16.15 och 18.6, 19/19 prov per version. Katalogfält och DDL
+kräver inga PG18-specifika funktioner; PG18:s extra NOT NULL-katalograder
+hanteras utan att sänka någon testgrind. Proven jämför samtliga syntetiska
+tabellrader (inklusive konton, saldon och fryst paket), sekvenser, schema,
+ägare och effektiva ACL efter full backup/restore. Identiska rättigheter kan
+representeras som antingen implicit standard-ACL eller explicit ägar-ACL;
+jämförelsen normaliserar den representationen. Egna kluster stoppades och
+portarna verifierades stängda. Detta är inte ett prov av äldre deployade binärer.
+
+Ordinarie kontraktsregression kör offlineproven. CI anropar den befintliga
+isolerade Linux-runnern med `node tools/run-shared-table-qa.mjs
+--lissabon-retirement --postgres-bin /usr/lib/postgresql/16/bin` (befintlig
+`--download-postgres` fungerar också). Runnern äger både käll- och
+återställningsdatabasen, fullbackupen och städningen; inga molncredentials används.
+
 ## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
 
 Detta är ett granskningsunderlag för den befintliga speldatabasen. Det ger inget
