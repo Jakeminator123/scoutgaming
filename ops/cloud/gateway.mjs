@@ -1,4 +1,5 @@
 import { createServer, request as httpRequest } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import {sharedRoomSocketPath} from '../../packages/server-transport/paths.mjs';
 import { posix } from 'node:path';
 import { WEB_PORT } from './config.mjs';
@@ -86,6 +87,7 @@ export function proxyHeaders(headers, host) {
 // reach the child; rewriting them to loopback would defeat application checks.
 export function createCloudGateway(config, { sessionCheck = checkLabSession,
   webPort = WEB_PORT, vercelIngress = config.vercelIngress, renderGitCommit,
+  renderInstanceId, onGatewayDiagnostic,
   onMovingBankRejection = value => console.warn(JSON.stringify({event:'moving_bank_rejected',...value})) } = {}) {
   const labHost = new URL(config.labOrigin).host;
   // Snapshot only Render's parent-process deployment metadata, never request data.
@@ -94,10 +96,44 @@ export function createCloudGateway(config, { sessionCheck = checkLabSession,
   const versionBody = JSON.stringify(commitSha
     ? { schemaVersion: 1, provider: 'render', commitSha }
     : { error: 'render_version_unavailable' });
+  const instanceId = typeof renderInstanceId === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9-]{0,127}$/.test(renderInstanceId)
+    ? renderInstanceId : null;
+  const runtimeId = randomUUID();
+  let listenerId = 0, requestNumber = 0, binding = null;
+  const diagnostic = (event, details) => {
+    if (typeof onGatewayDiagnostic !== 'function') return;
+    try { onGatewayDiagnostic({ event, at:new Date().toISOString(), instanceId, runtimeId, commitSha, ...details }); }
+    catch { /* Observability must not affect admission, responses or shutdown. */ }
+  };
+  const observeProbe = (incoming, outgoing) => {
+    if (typeof onGatewayDiagnostic !== 'function' || !['GET', 'HEAD'].includes(incoming.method)
+      || !['/__cloud/health', '/__cloud/version'].includes(incoming.url) || incoming.headers.upgrade) return;
+    // Render copies this ID to its request log and response header. Accept only
+    // its observed hex ID / UUID shapes; never log other headers or query strings.
+    // https://render.com/docs/logging#tracing-with-requestid-and-rndr-id
+    const rawId = incoming.headers['rndr-id'];
+    const requestId = typeof rawId === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){2}(?:-[a-f0-9]{4}-[a-f0-9]{12})?$/i.test(rawId)
+      ? rawId : null;
+    const probe = { listenerId, requestNumber:++requestNumber, requestId, method:incoming.method, path:incoming.url };
+    const started = performance.now();
+    let completed = false;
+    diagnostic('cloud_gateway_request', { ...probe, phase:'received' });
+    const finish = phase => {
+      if (completed) return;
+      completed = true;
+      diagnostic('cloud_gateway_request', { ...probe, phase,
+        status:outgoing.headersSent ? outgoing.statusCode : null,
+        durationMs:Number((performance.now() - started).toFixed(3)) });
+    };
+    // Node's finish means handed to the OS, not confirmed delivery to Render.
+    outgoing.once('finish', () => finish('finished'));
+    outgoing.once('close', () => finish('closed'));
+  };
   if (vercelIngress && (!config.singleOrigin || vercelIngress.publicOrigin !== config.gameOrigin)) {
     throw new Error('Vercel ingress requires the canonical single-origin layout.');
   }
   const server = createServer(async (incoming, outgoing) => {
+    observeProbe(incoming, outgoing);
     const ingress = vercelIngressRequest(incoming, vercelIngress);
     if (!ingress.accepted) { outgoing.writeHead(421, { 'Cache-Control': 'no-store' }); outgoing.end(); return; }
     if (ingress.health) { outgoing.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); outgoing.end('ok'); return; }
@@ -166,10 +202,20 @@ export function createCloudGateway(config, { sessionCheck = checkLabSession,
   let closing = false;
   // Startup checks close the loopback listener before reopening this server
   // publicly. Only a successful listen may reopen admission after that close.
-  server.on('listening', () => { closing = false; });
+  server.on('listening', () => {
+    closing = false;
+    listenerId++;
+    const address = server.address();
+    binding = address && typeof address === 'object'
+      ? { address:['127.0.0.1', '0.0.0.0', '::1', '::'].includes(address.address) ? address.address : 'other', port:address.port }
+      : null;
+    diagnostic('cloud_gateway_lifecycle', { phase:'listening', listenerId, binding });
+  });
+  server.on('close', () => diagnostic('cloud_gateway_lifecycle', { phase:'closed', listenerId }));
   const close = server.close;
   server.close = function (...args) {
     closing = true;
+    if (server.listening) diagnostic('cloud_gateway_lifecycle', { phase:'draining', listenerId });
     // Drain before HTTP close waits for upgraded sockets; its close event is too late.
     for (const transport of roomTransports) transport.close();
     return close.apply(this, args);

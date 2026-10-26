@@ -436,6 +436,105 @@ test('public gateway rejects misdirected requests before contacting a child', as
   }
 });
 
+test('gateway correlates only exact health/version probes across its real listener lifecycle',
+  { timeout:5000 }, async t => {
+  const origin = 'https://preview.example.test', transportOrigin = 'https://isolated.onrender.com';
+  const ingress = { publicOrigin:origin, transportOrigin, secret:'fixture-private-ingress-'.repeat(3) };
+  const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
+    labOrigin:origin, publicPort:0, vercelIngress:ingress };
+  const events = [], instanceId = 'srv-fixture-instance', sha = 'a'.repeat(40);
+  let observerFails = false;
+  const options = { renderInstanceId:instanceId, renderGitCommit:sha,
+    onGatewayDiagnostic:event => {
+      events.push(structuredClone(event));
+      if (observerFails) throw Error('fixture-observer-failed');
+    } };
+  const gateway = createCloudGateway(config, options);
+  t.after(() => closeGateway(gateway, 100));
+  options.renderInstanceId = 'must-not-replace-snapshot';
+  options.renderGitCommit = 'b'.repeat(40);
+  const get = ({ path='/__cloud/health', method='GET', headers={} }={}) => new Promise((resolve, reject) => {
+    const request = httpRequest({ hostname:'127.0.0.1', port:gateway.address().port, path, method, agent:false,
+      headers:{ host:new URL(transportOrigin).host, ...headers } }, response => {
+      response.resume(); response.on('error', reject);
+      response.on('end', () => resolve({status:response.statusCode, headers:response.headers}));
+    });
+    request.on('error', reject); request.end();
+  });
+  const preflightId = '714d2a35-5552-45b1', publicId = '8a74dfd0-6154-4ab8-9c12-0123456789ab';
+  await openCheckedGateway(gateway, config, { checkAccess:async () => {
+    assert.equal((await get({headers:{'rndr-id':preflightId}})).status, 200);
+  } });
+  assert.deepEqual(events.filter(e => e.event === 'cloud_gateway_lifecycle').map(e => [e.phase, e.listenerId]),
+    [['listening',1], ['draining',1], ['closed',1], ['listening',2]]);
+  assert.deepEqual(events.filter(e => e.phase === 'listening').map(e => e.binding.address), ['127.0.0.1','0.0.0.0']);
+  assert.ok(events.filter(e => e.phase === 'listening').every(e => e.binding.port > 0));
+  const privateHeaders = { cookie:'fixture-private-cookie', authorization:'Bearer fixture-private-token',
+    'x-render-instance-id':'fixture-private-spoof', 'x-croupier-vercel-secret':'fixture-private-secret' };
+  const version = await get({path:'/__cloud/version', method:'HEAD', headers:{...privateHeaders, 'rndr-id':publicId}});
+  assert.equal(version.status, 200);
+  assert.equal(version.headers['cache-control'], 'no-store');
+  assert.equal(version.headers['rndr-id'], undefined, 'diagnostics do not reflect input into responses');
+  assert.equal((await get({headers:{host:'evil.example.test', 'rndr-id':'360af8ff-80b9-4df9'}})).status, 421);
+  for (const rawId of ['fixture-private-id', `${preflightId}, ${preflightId}`, 'f'.repeat(500)]) {
+    assert.equal((await get({headers:{...privateHeaders, 'rndr-id':rawId}})).status, 200);
+  }
+  const beforeExcluded = events.length;
+  assert.equal((await get({path:'/__cloud/health?token=fixture-private-query', headers:privateHeaders})).status, 421);
+  assert.equal((await get({path:'/api/table?token=fixture-private-query', headers:privateHeaders})).status, 421);
+  assert.equal(events.length, beforeExcluded, 'no arbitrary API, query or credential logging');
+  observerFails = true;
+  assert.equal((await get()).status, 200, 'a failed log sink cannot fail health');
+  observerFails = false;
+  // Fault-inject a peer closing before the response is handed to the OS.
+  const abortedId = '9f003b7e-de24-4e22';
+  gateway.prependOnceListener('request', (_incoming, outgoing) => outgoing.destroy());
+  await assert.rejects(get({headers:{'rndr-id':abortedId}}), {code:'ECONNRESET'});
+  await closeGateway(gateway, 100);
+  const requests = events.filter(e => e.event === 'cloud_gateway_request');
+  const received = requests.filter(e => e.phase === 'received');
+  assert.equal(received.length, 8);
+  for (const start of received) {
+    const terminal = requests.filter(e => e.requestNumber === start.requestNumber && e.phase !== 'received');
+    assert.equal(terminal.length, 1, 'finish followed by close must not duplicate completion');
+    assert.equal(terminal[0].requestId, start.requestId);
+    assert.equal(terminal[0].listenerId, start.listenerId);
+    assert.ok(Number.isFinite(terminal[0].durationMs) && terminal[0].durationMs >= 0);
+  }
+  assert.equal(requests.find(e => e.requestId === preflightId).listenerId, 1);
+  assert.equal(requests.find(e => e.requestId === publicId).listenerId, 2);
+  assert.equal(requests.find(e => e.requestId === abortedId && e.phase !== 'received').phase, 'closed');
+  assert.equal(requests.find(e => e.requestId === '360af8ff-80b9-4df9' && e.phase !== 'received').status, 421);
+  assert.equal(received.filter(e => e.requestId === null).length, 4, 'unknown or duplicate IDs are omitted');
+  assert.ok(events.every(e => e.instanceId === instanceId && e.commitSha === sha));
+  assert.equal(new Set(events.map(e => e.runtimeId)).size, 1);
+  assert.match(events[0].runtimeId, /^[a-f0-9-]{36}$/);
+  assert.ok(events.every(e => Number.isFinite(Date.parse(e.at))));
+  assert.equal(JSON.stringify(events).includes('fixture-private'), false);
+  assert.deepEqual(events.slice(-2).map(e => e.phase), ['draining','closed']);
+});
+
+test('gateway diagnostics omit malformed deployment metadata and record version unavailability', async t => {
+  const events = [];
+  const gateway = createCloudGateway(validateCloudConfig(fixture()), {
+    renderInstanceId:'private=invalid\ninstance', renderGitCommit:'private-invalid-sha',
+    onGatewayDiagnostic:event => events.push(event),
+  });
+  t.after(() => closeGateway(gateway, 100));
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  const status = await new Promise((resolve, reject) => {
+    const request = httpRequest({ hostname:'127.0.0.1', port:gateway.address().port,
+      path:'/__cloud/version', headers:{host:'game.example.test'}, agent:false }, response => {
+      response.resume(); response.on('end', () => resolve(response.statusCode));
+    });
+    request.on('error', reject); request.end();
+  });
+  assert.equal(status, 503);
+  assert.equal(events.find(e => e.phase === 'finished').status, 503);
+  assert.ok(events.every(e => e.instanceId === null && e.commitSha === null));
+  assert.equal(JSON.stringify(events).includes('private'), false);
+});
+
 test('checked gateway reopens authorized room sockets and still drains them on shutdown',
   { timeout: 5000 }, async t => {
   const {WebSocket, WebSocketServer} = createRequire(new URL('../../../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');

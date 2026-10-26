@@ -2,6 +2,12 @@
 
 **Aktuell status: 50 % verifierat, 50 % kvar (10/20 aktiviteter).** J06 är kvitterad genom kodrensning, beteendeprov och full CI40234506315 på81bc2475b. J05 är fortsatt öppen efter faktiskt Render502. Äldre procentuppgifter nedan är daterade delkvitton; status.json är enda statuskälla.
 
+## Render: avgränsad requestkorrelation — 26 oktober
+
+PR #398 är mergad som `56ca23130ab59b1bd5d157b095787d4fa0f386c7`; sluthead `46025e38b2e92f59256b2266fff7edc19f9ca078` har full grön CI [40235368991](https://github.com/Jakeminator123/scoutgaming/actions/runs/40235368991) och grön PR-GitGuardian. Det slutkvittot ersätter föregående avsnitts väntan på WS-deltats CI. Egna Render/Vercel lämnades stoppade och Neon återlästes idle 25 oktober 21:27 UTC. Ingen produktionsacceptans eller lösning på Render502 följer av CI.
+
+Nästa diagnostik loggar enbart exakta health/version-anrop: validerat `Rndr-Id`, instans, runtime, commit, lyssnargeneration samt mottagning/avslut. Querysträngar, cookies, övriga headers och body loggas inte. `finished` betyder överlämning till operativsystemet, inte bekräftad leverans. Bindning och nedstängning får motsvarande små livscykelposter. Bred kontroll av bindning, childport, signaler och socketdränering fann ingen ny verifierad rotorsak. Riktade tester: 60 godkända, tre Linux-specifika skip på Windows, Node24.21/maxfyra; oberoende läsreview utan blockerare. Nytt molnprov återstår.
+
 ## WebSocket efter startkontroll — 25 oktober sen kväll
 
 Startkontrollen stänger först loopbackservern och öppnar sedan samma gateway publikt. Dess `closing`-flagga återställs nu vid faktisk `listening`; tidigare gav behörig WebSocket HTTP503 efter förkontrollen. Ett riktigt `openCheckedGateway`-prov reproducerar felet före rättning och verifierar echo, fel Origin/hemlighet/session samt socketstängning vid shutdown efteråt. Riktad samkörning: 54 godkända, tre Linux-only skip på Windows, Node24.21.0/maxfyra; oberoende review utan blockerare. Detta är ett separat verifierat kodfel, ingen förklaring till Render-HTML502. Ändringen är ännu inte provkörd i molnet.
