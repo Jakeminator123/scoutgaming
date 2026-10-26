@@ -4,7 +4,7 @@ import {isAdministratorRole} from '../../../packages/studio-access/account-role.
 import {canonicalStudioJson,validateRevision,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {validateRuntimeCatalogRecord} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {isPresentationRoom,roomGame} from '../../../packages/presentation/contracts/presentation-room.mjs';
-import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {readPackagePresentation,resolvePackageRoomDealer} from '../../../packages/presentation/server/presentation-package.mjs';
 import {assertCapturedPresentationMedia} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import {recordedSpeechForVideo} from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import {resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
@@ -67,8 +67,10 @@ export function createRoomGameConfigApi({repository,scope,resolveMaterial=null,n
       if(canonicalStudioJson(validateStudioScope(snapshot.scope))!==canonicalStudioJson(scope))fail('studio_scope_mismatch',409);
       if(snapshot.administrationDocument?.revision!==saved.document.revision)fail('studio_conflict',409);
       const capturedCatalog=validateRuntimeCatalogRecord(snapshot.runtimeCatalog);
+      const dealerId=resolvePackageRoomDealer(saved.pack,saved.room,saved.presentation);
+      if(!dealerId)fail('studio_room_game_material_unavailable',422);
       const value=validateRoomGameMaterial(await resolveMaterial({room:structuredClone(saved.room),package:structuredClone(saved.pack),
-        language:gameConfig.language,capturedCatalog:structuredClone(capturedCatalog)}),{language:gameConfig.language,dealerId:saved.lane.layers.dealer.default});
+        language:gameConfig.language,capturedCatalog:structuredClone(capturedCatalog)}),{language:gameConfig.language,dealerId});
       const captured=[...(saved.presentation.playback?.media??[]),...(saved.presentation.registeredDealers??[]).flatMap(row=>row.idle?[row.idle]:[])];
       const preconditions=value.media.map(ref=>{
         const frozen=captured.find(row=>row.id===ref.id&&row.sha256===ref.sha256&&row.classification?.dealerId===value.dealerId);

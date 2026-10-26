@@ -4,7 +4,10 @@ const owns=(value,key)=>value!=null&&Object.hasOwn(value,key);
 export const hasRecordedSpeech=video=>owns(video,'recordedSpeech')||owns(video?.classification,'recordedSpeech');
 export function recordedSpeechProjection(video){
   if(!hasRecordedSpeech(video))return {};
-  return {recordedSpeech:structuredClone(video.recordedSpeech??video.classification?.recordedSpeech)};
+  const recordedSpeech=structuredClone(video.recordedSpeech??video.classification?.recordedSpeech);
+  return {recordedSpeech,...(recordedSpeech?.schemaVersion===2?{
+    contentType:video.contentType,bytes:video.bytes??video.size,mediaTiming:structuredClone(video.mediaTiming),
+  }:{})};
 }
 
 // The authored line's saved UUID selects the language and take. Do not search

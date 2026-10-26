@@ -14,7 +14,7 @@ import { gameLaneConfiguration } from '../contracts/game-lanes.mjs';
 import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from '../contracts/game-selection.mjs';
 import {laneDealerSelection} from '../contracts/game-lanes.mjs';
 import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
-import {readPackagePresentation, publicPackageBranding} from './presentation-package.mjs';
+import {readPackagePresentation, publicPackageBranding, resolvePackageRoomDealer} from './presentation-package.mjs';
 import {resolvePackageRoom} from './package-rooms.mjs';
 import {roomGame} from '../contracts/presentation-room.mjs';
 import {resolveRoomBranding} from '../../operators/contracts/branding.mjs';
@@ -92,7 +92,17 @@ export function createGameEntrySelector({ policy, packages = null, log = console
       ? frozen.registeredDealers.filter(row=>roomGame(room)!=='roulette'
         ||!frozen.registeredDealers.find(item=>item.id===presentationLane.layers.dealer.default)?.rouletteIdle||row.rouletteIdle?.base).map(row => row.id).filter(isActiveDealerId) : [];
     if (presentationLane) {
-      const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer, { portraitDealerIds });
+      const dealerQuery = new URLSearchParams(params);
+      if (room && frozen) {
+        const roomDealer = resolvePackageRoomDealer(current, room, frozen);
+        if (!roomDealer) throw Object.assign(Error('presentation_dealer_mismatch'), {statusCode:503});
+        // A published shared-room config binds its material dealer. Older rooms
+        // retain their explicit allowed query choices until they publish one.
+        if (Object.hasOwn(current.branding?.roomGameConfigVersions ?? {}, room.id)
+          && dealerQuery.has('dealer') && dealerQuery.get('dealer') !== roomDealer) return {status:404};
+        if (!dealerQuery.has('dealer')) dealerQuery.set('dealer', roomDealer);
+      }
+      const dealer = laneDealerSelection(dealerQuery, lane, presentationLane.layers?.dealer, { portraitDealerIds });
       if (dealer) selection = { ...selection, dealer };
       else if (params.has('dealer')) return {status:404};
       else throw Object.assign(Error('presentation_dealer_mismatch'), {statusCode:503});

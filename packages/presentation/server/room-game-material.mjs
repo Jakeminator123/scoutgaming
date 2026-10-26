@@ -4,7 +4,7 @@ import {validateRuntimeCatalogRecord} from '../../studio-registry/server/runtime
 import {isPresentationRoom,roomGame} from '../contracts/presentation-room.mjs';
 import {validateRoomGameMaterial} from '../contracts/room-game-config.mjs';
 import {recordedSpeechForVideo} from '../contracts/recorded-speech.mjs';
-import {readPackagePresentation} from './presentation-package.mjs';
+import {readPackagePresentation,resolvePackageRoomDealer} from './presentation-package.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const digest=value=>hash(canonicalStudioJson(value));
@@ -39,8 +39,8 @@ export function resolveRoomGameMaterial({package:pack,room,language,catalogue,ca
     ||!Array.isArray(catalogue)||!catalogue.length||catalogue.length>5000)fail();
   // Detach all caller-owned inputs before invoking the producer.
   const mapping=structuredClone(identityMap),sources=structuredClone(catalogue);
-  const presentation=readPackagePresentation(pack),lane=presentation?.lanes.find(row=>row.id===room.presentationLaneId);
-  if(!lane||lane.layers.dealer.default!==mapping.dealerId)fail();
+  const presentation=readPackagePresentation(pack),dealerId=resolvePackageRoomDealer(pack,room,presentation);
+  if(!dealerId||dealerId!==mapping.dealerId)fail();
   const {revision:catalogRevision,value:catalog}=validateRuntimeCatalogRecord(capturedCatalog);
   const rows=new Map(sources.map(row=>[row.path,row]));
   if(rows.size!==sources.length)fail();

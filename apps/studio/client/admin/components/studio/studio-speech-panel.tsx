@@ -110,9 +110,20 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
       {recordings.length?<><label className="studio-field">Inspelad fil<select value={recorded.id} onChange={event=>setRecordedId(event.target.value)}>{recordings.map(row=><option key={row.id} value={row.id}>{row.lineLabel} · {row.label}{row.language?' · '+row.language.toUpperCase():''}</option>)}</select></label>
         <article className="space-y-2 rounded-lg border border-border p-3"><strong className="text-sm">{recorded.label}</strong><p className="text-xs text-muted-foreground">{recorded.contentType||'Format saknas'}{recorded.language?' · '+recorded.language.toUpperCase():''}</p>
           <p className="text-sm">{recordedReview[recorded.review]}</p>
+          {recorded.speech?.schemaVersion===2&&<p className="text-xs text-muted-foreground">Bild och ljud finns i samma MP4. {recorded.speech.source.status==='verified-embedded-av'?'Filens bild- och ljudspår är kontrollerade.':'Filkontroll återstår.'}</p>}
           <p className="text-xs text-muted-foreground">Registrerad text</p><p className="text-sm">{recorded.exactText||'Ingen exakt text registrerad. Genereringsmallar ersätter inte filmens tal.'}</p>
           <RecordedSpeechPreview key={recorded.id+':'+recorded.sha256} row={recorded} active={active}/>
-          <details className="text-xs"><summary>Detaljer · fil och granskning</summary><dl className="mt-2 space-y-1 break-all"><dt>Fil-ID</dt><dd>{recorded.id}</dd><dt>Video-/filhash</dt><dd>{recorded.sha256||'Saknas'}</dd>{recorded.speech&&<><dt>Ljudhash i kvittot</dt><dd>{recorded.speech.audioSha256}</dd><dt>Tagning</dt><dd>{recorded.speech.takeId}</dd><dt>Kalibrering</dt><dd>{recorded.speech.calibrationRevision}</dd>{recorded.speech.review.status!=='pending'&&<><dt>Granskare och tid</dt><dd>{recorded.speech.review.by} · {recorded.speech.review.at}</dd></>}</>}</dl></details>
+          <details className="text-xs"><summary>Detaljer · fil och granskning</summary><dl className="mt-2 space-y-1 break-all">
+            <dt>Fil-ID</dt><dd>{recorded.id}</dd><dt>Video-/filhash</dt><dd>{recorded.sha256||'Saknas'}</dd>
+            {recorded.speech&&<>
+              <dt>Tagning</dt><dd>{recorded.speech.takeId}</dd>
+              {recorded.speech.schemaVersion===2?<>
+                <dt>Bildspår / ljudspår</dt><dd>{recorded.speech.videoTrackId} / {recorded.speech.audioTrackId}</dd>
+                {recorded.speech.source.status==='verified-embedded-av'&&<><dt>Filkontroll · ansvarig och tid</dt><dd>{recorded.speech.source.by} · {recorded.speech.source.at}</dd></>}
+              </>:<><dt>Ljudhash i kvittot</dt><dd>{recorded.speech.audioSha256}</dd><dt>Kalibrering</dt><dd>{recorded.speech.calibrationRevision}</dd></>}
+              {recorded.speech.review.status!=='pending'&&<><dt>Granskare och tid</dt><dd>{recorded.speech.review.by} · {recorded.speech.review.at}</dd></>}
+            </>}
+          </dl></details>
         </article><p className="text-xs text-muted-foreground">Filregistret visar inte rummets publicerade urval. Välj klipp i klippkartan och granska publiceringen separat.</p></>:<p className="text-sm text-muted-foreground">Inga inspelade talfiler är registrerade för denna dealer och detta spel. En röstprofil eller textmall är ingen färdig inspelning.</p>}
     </section>
     <details className="mt-5 border-t border-border pt-4"><summary>Ny generering · textmallar</summary><div className="mt-3"><h3 className="font-semibold">Ny generering · {allowedLineIds.length} textmallar</h3><p className="mt-1 text-xs text-muted-foreground">Detta är textmallar för nya filer, inte färdiga talvideor. Språkvalet ändrar inte texten eller godkännandet för inspelade filer.</p>{game==='roulette'&&<p className="mt-1 text-xs text-muted-foreground">Spelneutrala biblioteksrepliker. Koppling till roulettehändelser och automatisk uppspelning ingår inte.</p>}

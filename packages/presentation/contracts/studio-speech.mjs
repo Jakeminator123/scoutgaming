@@ -1,4 +1,4 @@
-import { normalizeRecordedSpeech, recordedSpeechForVideo } from '../../../packages/presentation/contracts/recorded-speech.mjs';
+import { normalizeRecordedSpeech, recordedSpeechForVideo, recordedSpeechSourceVerified } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import { SPEECH_LINES } from '../../../packages/presentation/contracts/speech-lines.mjs';
 import { ASTRID_VOICE_PROFILE } from '../../../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from '../../../packages/presentation/contracts/dealer-speech-profile.mjs';
@@ -76,7 +76,7 @@ export function studioRecordedSpeech(project,inventory,dealerId,game='blackjack'
     let speech=null,review='missing-proof';
     if(declared)try{
       speech=normalizeRecordedSpeech(declared,{dealerId,lineId:metadata.situation,videoSha256:video.sha256});
-      review=speech.review.status==='rejected'?'rejected':speech.recording.status==='verified-recording'&&speech.review.status==='approved'
+      review=speech.review.status==='rejected'?'rejected':recordedSpeechSourceVerified(speech)&&speech.review.status==='approved'
         ?recordedSpeechForVideo(video,{dealerId,lineId:speech.lineId,language:speech.language})?'approved':video.available===false?'unavailable':'invalid-proof':'pending';
     }catch{review='invalid-proof';}
     const url=studioSpeechMediaUrl(video.previewUrl),audio=metadata.mediaType==='audio'||video.contentType?.startsWith('audio/');
@@ -87,3 +87,4 @@ export function studioRecordedSpeech(project,inventory,dealerId,game='blackjack'
       contentType:video.contentType??'',sha256:video.sha256??'',speech,review};
   }).sort((a,b)=>a.lineLabel.localeCompare(b.lineLabel,'sv')||a.label.localeCompare(b.label,'sv')||a.id.localeCompare(b.id));
 }
+

@@ -9,7 +9,7 @@ import { layerImage,layerAnimation,layerVideo,layerBlobFixture } from './fixture
 import { createLayerUploadService } from '../apps/studio/lib/layer-upload-service.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
-import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
+import { createSeedProject,createEmptyProject,addDealer } from '../packages/presentation/contracts/studio-model.mjs';
 import { nativeStudioErrorResponse } from '../apps/studio/lib/studio-native-runtime.mjs';
 
 async function media(t,bytes,contentType='image/png') {
@@ -96,6 +96,8 @@ test('inspection errors remain actionable without echoing parser or provider det
 import {createHash} from 'node:crypto';
 import {inspectMediaTiming} from '../apps/studio/lib/layer-media-inspection.mjs';
 import {normalizeMediaTiming,mediaTimingSpeechIdentity} from '../packages/presentation/contracts/media-timing.mjs';
+import {recordedSpeechIdentity,recordedSpeechForVideo} from '../packages/presentation/contracts/recorded-speech.mjs';
+import {recordedSpeechProjection} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import {timingVideo} from './fixtures/layer-media.mjs';
 
 async function timedMedia(t,bytes=timingVideo()) {
@@ -107,6 +109,68 @@ function speech(sha256) {
     videoSha256:sha256,audioSha256:'a'.repeat(64),indexSha256:'b'.repeat(64),fps:24,frameCount:6,audioDelayMs:0,
     entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-1',recording:{status:'pending'},review:{status:'pending'}};
 }
+function embeddedSpeech(sha256) {
+  return {schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'linnea',lineId:'greeting',takeId:'take-one',language:'sv',exactText:'Hej.',
+    videoSha256:sha256,fps:24,frameCount:6,videoTrackId:1,audioTrackId:2,entryPose:'VILA',exitPose:'VILA',
+    source:{status:'pending'},review:{status:'pending'}};
+}
+function singleAudioTimingVideo() {
+  // Retain the existing synthetic samples and their byte offsets. Turn the
+  // second audio track's entire container into padding, then bind movie duration
+  // to the remaining half-second track (48000 movie ticks per second).
+  const bytes=timingVideo(),tracks=[];let at=-1;
+  while((at=bytes.indexOf('trak',at+1))!==-1)tracks.push(at);
+  assert.equal(tracks.length,3);
+  bytes.write('free',tracks[2]);bytes.writeUInt32BE(24000,bytes.indexOf('mvhd')+20);
+  return bytes;
+}
+test('embedded AV timing binds one actual audio track and preserves independent pending proofs',async t=>{
+  const f=await timedMedia(t,singleAudioTimingVideo()),declared=embeddedSpeech(f.sha256),before=structuredClone(declared);
+  f.record.classification={recordedSpeech:declared};
+  const result=await inspectMediaTiming(f.record,f.options);
+  assert.deepEqual(result.audio,[{trackId:2,firstPtsUs:0,endUs:500000}]);
+  assert.equal(result.video.trackId,1);assert.equal(result.video.frameCount,6);assert.equal(result.video.fps,24);
+  assert.equal(result.recordedSpeechIdentitySha256,createHash('sha256').update(mediaTimingSpeechIdentity(declared)).digest('hex'));
+  assert.deepEqual(declared,before);assert.equal(Object.hasOwn(result,'source'),false);assert.equal(Object.hasOwn(result,'review'),false);
+  assert.deepEqual(normalizeMediaTiming(result,{recordedSpeech:declared}),result);
+  for(const fields of [{videoTrackId:7},{audioTrackId:3},{fps:25},{frameCount:5},{videoSha256:'c'.repeat(64)}]){
+    const changed={...declared,...fields};
+    assert.throws(()=>normalizeMediaTiming(result,{recordedSpeech:changed}),/invalid_media_timing/);
+    await assert.rejects(inspectMediaTiming({...f.record,classification:{recordedSpeech:changed}},f.options),{code:'studio_media_timing_mismatch'});
+  }
+});
+test('embedded AV timing rejects silent or ambiguous MP4 sources even when declared video timing matches',async t=>{
+  for(const bytes of [layerVideo(),timingVideo()]){
+    const f=await timedMedia(t,bytes),measured=await inspectMediaTiming(f.record,f.options);
+    const declared={...embeddedSpeech(f.sha256),frameCount:measured.video.frameCount,fps:measured.video.fps};
+    f.record.classification={recordedSpeech:declared};
+    await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_mismatch'});
+  }
+});
+test('verified embedded MP4 bytes bind the persisted source and client selection without granting AV approval',async t=>{
+  const f=await timedMedia(t,singleAudioTimingVideo()),pool=createStudioMemoryPool();
+  const repository=createStudioRepository({pool,scope:{environment:'test',workspaceId:'embedded-av-bytes'}});
+  await repository.initializeDocument('project',{value:addDealer(createEmptyProject(),'nora','Nora'),actor:'Fixture uploader'});
+  const declared={...embeddedSpeech(f.sha256),dealerId:'nora',lineId:'goodluck',exactText:'Lycka till.'};
+  const input={id:f.record.id,sha256:f.sha256,size:f.size,contentType:'video/mp4',
+    pathname:`croupier/media/dealers/nora/review/uploads/${f.record.id}/${f.sha256}.mp4`,
+    classification:{dealerId:'nora',eventId:'speak.goodluck',kind:'speech',role:'alternative',situation:'goodluck',
+      label:'Synthetic embedded AV fixture',notes:'',playback:'once',recordedSpeech:declared}};
+  const registered=(await repository.registerMedia(input,{actor:'Fixture uploader'})).media;
+  const mediaTiming=await inspectMediaTiming(registered,f.options);
+  const measured=await repository.saveMediaTiming(registered.id,{sha256:f.sha256,expectedRevision:registered.revision,mediaTiming,actor:'Fixture inspector'});
+  const selection={dealerId:'nora',lineId:'goodluck',language:'sv'},speech=measured.classification.recordedSpeech;
+  assert.equal(speech.source.status,'verified-embedded-av');assert.equal(speech.source.by,'Fixture inspector');
+  assert.deepEqual(speech.source.identity,recordedSpeechIdentity(declared));assert.deepEqual(speech.review,{status:'pending'});
+  assert.equal(recordedSpeechForVideo(measured,selection),null);
+  const metadata=structuredClone(measured.classification);
+  metadata.recordedSpeech.review={status:'approved',by:'Synthetic fixture reviewer',at:'2026-10-26T00:00:00.000Z',identity:recordedSpeechIdentity(speech)};
+  const reviewed=await repository.classifyMedia(measured.id,{sha256:f.sha256,expectedRevision:measured.revision,metadata,actor:'Synthetic fixture reviewer'});
+  const read=await repository.getMedia(reviewed.id),publicVideo={id:read.id,sha256:read.sha256,...recordedSpeechProjection(read)};
+  assert.deepEqual(read.mediaTiming,mediaTiming);assert.deepEqual(read.classification.recordedSpeech.source,speech.source);
+  assert.deepEqual(recordedSpeechForVideo(publicVideo,selection),read.classification.recordedSpeech);
+  assert.equal(recordedSpeechForVideo({...publicVideo,mediaTiming:undefined},selection),null);
+});
 test('timing measures presentation order, CFR frames and every audio tail from verified bytes',async t=>{
   const silent=await timedMedia(t,layerVideo()),a=await inspectMediaTiming(silent.record,silent.options);
   assert.deepEqual(a.video,{trackId:1,frameCount:2,fps:2,firstPtsUs:0,lastPtsUs:500000,endUs:1000000});

@@ -14,7 +14,7 @@ function exact(value,keys) {
 export function mediaTimingSpeechIdentity(recordedSpeech) {
   return JSON.stringify(recordedSpeechIdentity(recordedSpeech));
 }
-export function normalizeMediaTiming(value,{mediaId,sha256,size,recordedSpeechIdentitySha256}={}) {
+export function normalizeMediaTiming(value,{mediaId,sha256,size,recordedSpeechIdentitySha256,recordedSpeech}={}) {
   exact(value,['schemaVersion','mediaId','sha256','size','recordedSpeechIdentitySha256','video','audio','endUs','audioTailUs']);
   if(value.schemaVersion!==1 || typeof value.mediaId!=='string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value.mediaId)
     || !hash(value.sha256) || !uint(value.size,128*1024*1024) || value.size<16
@@ -44,5 +44,12 @@ export function normalizeMediaTiming(value,{mediaId,sha256,size,recordedSpeechId
   const result={schemaVersion:1,mediaId:value.mediaId,sha256:value.sha256,size:value.size,
     recordedSpeechIdentitySha256:value.recordedSpeechIdentitySha256,video:{...v},audio,endUs,audioTailUs};
   if(recordedSpeechIdentitySha256!==undefined && result.recordedSpeechIdentitySha256!==recordedSpeechIdentitySha256) fail();
+  if(recordedSpeech!=null) {
+    let identity;
+    try {identity=recordedSpeechIdentity(recordedSpeech);} catch {fail();}
+    if(result.sha256!==identity.videoSha256 || v.frameCount!==identity.frameCount || Math.abs(v.fps-identity.fps)>1e-9) fail();
+    if(identity.sourceKind==='embedded-mp4-av' && (v.trackId!==identity.videoTrackId
+      || audio.length!==1 || audio[0].trackId!==identity.audioTrackId)) fail();
+  }
   return result;
 }

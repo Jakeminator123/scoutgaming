@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
-import {readPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
+import {readPackagePresentation,resolvePackageRoomDealer} from '../../packages/presentation/server/presentation-package.mjs';
 import {resolveNativeRoomGameMaterial,NATIVE_ROOM_MATERIAL_PREFIX} from '../../packages/presentation/server/native-room-game-material.mjs';
 import {isPresentationRoom,roomGame} from '../../packages/presentation/contracts/presentation-room.mjs';
 import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
@@ -83,6 +83,8 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
       if(entry.status!==200||entry.selection?.roomId!==roomId||entry.selection.packageRevision!==pack.revision)deny();
       const presentation=readPackagePresentation(pack);
       if(!presentation)deny();
+      const dealerId=resolvePackageRoomDealer(pack,room,presentation);
+      if(!dealerId||entry.selection.dealer!==dealerId)deny();
       const version=pack.branding?.roomGameConfigVersions?.[roomId];
       if(typeof version!=='string'||!/^room-config-[a-f0-9-]{36}$/.test(version))deny();
       // These are the existing ConfigPort tables. Read head + frozen body on
@@ -93,7 +95,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
         WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND h.room_id=$3`,[...parameters,roomId]);
       if(result.rows.length!==1||result.rows[0].version!==version)deny();
       let config;try{config=typeof result.rows[0].body==='string'?JSON.parse(result.rows[0].body):result.rows[0].body;}catch{unavailable();}
-      configMatches(config,{version,pack,room,presentation,dealerId:entry.selection.dealer});
+      configMatches(config,{version,pack,room,presentation,dealerId});
       aborted(signal);
       return {operatorId:operator.id,roomId,packageRevision:pack.revision};
     }));

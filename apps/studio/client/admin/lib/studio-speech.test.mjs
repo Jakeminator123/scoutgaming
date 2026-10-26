@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {recordedSpeechIdentity} from '../../../../../packages/presentation/contracts/recorded-speech.mjs';
 import {SPEECH_LINES} from '../../../../../packages/presentation/contracts/speech-lines.mjs';
 import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl,studioRecordedSpeech} from '../../../../../packages/presentation/contracts/studio-speech.mjs';
 import {initialDealerVoiceDraft,dealerVoiceDraft,dealerVoicePreset} from '../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs';
@@ -253,6 +255,34 @@ test('recorded approvals are invalidated by changed bytes or proof while pending
   const byId=Object.fromEntries(rows.map(row=>[row.id,row]));
   assert.equal(byId.changed.review,'invalid-proof');assert.equal(byId.broken.review,'invalid-proof');assert.equal(byId.legacy.review,'missing-proof');assert.equal(byId.legacy.exactText,'');assert.equal(byId.pending.review,'pending');assert.equal(byId.rejected.review,'rejected');assert.equal(byId.unavailable.available,false);assert.equal(byId.unavailable.review,'unavailable');assert.equal(byId.unsafe.available,false);assert.equal(byId.unsafe.url,null);
 });
+function embeddedRecordingFixture(id,status='approved'){
+    const row=recordingFixture(id),value={schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'dragan',lineId:'goodluck',takeId:'goodluck_1',language:'en',
+      exactText:'Original recorded words.',videoSha256:row.sha256,fps:25,frameCount:50,videoTrackId:1,audioTrackId:2,entryPose:'VILA',exitPose:'VILA',
+      source:{status:'pending'},review:{status:'pending'}};
+    const identity=recordedSpeechIdentity(value),proof=state=>({status:state,by:'Reviewer',at:'2026-10-26T00:00:00.000Z',identity:structuredClone(identity)});
+    value.source=proof('verified-embedded-av');if(status!=='pending')value.review=proof(status);
+    row.classification.recordedSpeech=value;row.bytes=4096;
+    row.mediaTiming={schemaVersion:1,mediaId:id,sha256:row.sha256,size:row.bytes,
+      recordedSpeechIdentitySha256:createHash('sha256').update(JSON.stringify(identity)).digest('hex'),
+      video:{trackId:1,frameCount:50,fps:25,firstPtsUs:0,lastPtsUs:1960000,endUs:2000000},
+      audio:[{trackId:2,firstPtsUs:0,endUs:2000000}],endUs:2000000,audioTailUs:0};
+    return row;
+}
+test('embedded original inventory uses measured source proof and keeps pending or rejected audiovisual review explicit',()=>{
+  const make=embeddedRecordingFixture;
+  const approved=make('approved'),pending=make('pending','pending'),rejected=make('rejected','rejected'),unavailable=make('unavailable');
+  unavailable.available=false;
+  const missing=make('missing');delete missing.mediaTiming;
+  const changed=make('changed');changed.mediaTiming.audio[0].trackId=3;
+  const unverified=make('unverified','pending');unverified.classification.recordedSpeech.source={status:'pending'};
+  const inventory={videos:[approved,pending,rejected,unavailable,missing,changed,unverified]},before=structuredClone(inventory);
+  const rows=Object.fromEntries(studioRecordedSpeech({},inventory,'dragan').map(row=>[row.id,row]));
+  assert.equal(rows.approved.review,'approved');assert.equal(rows.approved.speech.source.status,'verified-embedded-av');
+  assert.equal(Object.hasOwn(rows.approved.speech,'recording'),false);
+  assert.equal(rows.pending.review,'pending');assert.equal(rows.rejected.review,'rejected');assert.equal(rows.unverified.review,'pending');
+  assert.equal(rows.unavailable.review,'unavailable');assert.equal(rows.missing.review,'invalid-proof');assert.equal(rows.changed.review,'invalid-proof');
+  assert.deepEqual(inventory,before);
+});
 test('panel separates recorded original text from generation language and opens with no provider call or dirty form',async()=>{
   const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[recordingFixture()]};
   const original=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
@@ -264,7 +294,25 @@ test('panel separates recorded original text from generation language and opens 
   assert.equal(h.calls.length,0);assert.deepEqual(h.props.project,original);assert.equal(h.props.profileDirty,false);
 });
 
+test('embedded panel renders source evidence separately without changing approval or invoking a provider',async()=>{
+  for(const [verified,review] of [[true,'approved'],[true,'pending'],[false,'pending']]){
+    const row=embeddedRecordingFixture('embedded-take',review);
+    if(!verified){row.classification.recordedSpeech.source={status:'pending'};delete row.mediaTiming;}
+    const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='dragan';
+    h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[row]};
+    const inventoryBefore=structuredClone(h.props.inventory),projectBefore=structuredClone(h.props.project);
+    h.render();h.flush();const tree=h.render();h.flush();
+    assert.equal(h.field(tree,'Inspelad fil').props.value,'embedded-take');
+    assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
+    const evidence=JSON.stringify(h.nodes(tree,node=>node.type==='dd').map(node=>node.props.children));
+    assert.equal(evidence.includes('Reviewer'),verified,'pending source cannot display an invented attester');
+    assert.deepEqual(h.props.inventory,inventoryBefore);assert.deepEqual(h.props.project,projectBefore);
+    assert.equal(row.classification.recordedSpeech.review.status,review);assert.equal(h.props.profileDirty,false);assert.equal(h.calls.length,0);
+  }
+});
+
 test('audio-only and unavailable records remain files, never an inferred talvideo',()=>{
   const audio={id:'audio-only',label:'Audio only',dealer:'dragan',available:true,integrity:'verified',previewUrl:'/studio/api/videos/audio-only',contentType:'audio/mpeg',sha256:'f'.repeat(64),classification:{dealerId:'dragan',kind:'speech',eventId:'speak.goodluck',situation:'goodluck',mediaType:'audio'}};
   const row=studioRecordedSpeech({}, {videos:[audio]},'dragan')[0];assert.equal(row.audio,true);assert.equal(row.review,'missing-proof');assert.equal(row.exactText,'');assert.equal(row.available,true);
 });
+

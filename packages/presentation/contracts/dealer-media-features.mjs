@@ -6,6 +6,10 @@ export function extendedDealerMediaFeatures(metadata) {
   const poses=Boolean(object&&['startPose','endPose'].some(key=>Object.hasOwn(metadata,key)));
   return {
     recordedSpeech:Boolean(object&&Object.hasOwn(metadata,'recordedSpeech')),
+    // Presence selects compatibility before the strict media validator runs.
+    // A partial or invalid declaration cannot fall back to the v1 speech gate.
+    recordedEmbeddedAv:Boolean(object&&(metadata.recordedSpeech?.schemaVersion===2
+      ||metadata.recordedSpeech?.sourceKind==='embedded-mp4-av')),
     mediaAlpha:Boolean(object&&(metadata.mediaType==='image'||metadata.compositing?.mode==='alpha')),
     rouletteMedia:roulette,
     // A declared VILA/REDO hand chain on a blackjack clip (capability v22).

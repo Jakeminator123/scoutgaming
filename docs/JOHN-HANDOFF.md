@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## Fortsättning: rummets dealer och verifierbart MP4-tal — 26 oktober
+
+Kandidaten bygger på main `8f79395591339f626ace9bf7b2914b0ceed6ab51` efter PR404. Main-CI [40323465159](https://github.com/Jakeminator123/scoutgaming/actions/runs/40323465159) är grön. **55 % = 11/20 verifierade aktiviteter består.** Denna leverans stänger konkreta kodgap; den markerar inte hela J08 eller K05 som klart.
+
+- **Rätt dealer genom hela kedjan:** rummets `roomOverrides` används av native/importerad materialproducering, J08-publicering, launch och delad rumsåtkomst. En gammal dealerquery får inte starta en annan dealer i ett rum med publicerad J08-config. Fel eller saknad bank nekas, och befintligt rensat operatörsstandardval bevaras.
+- **Tal med bild och ljud i samma MP4:** strikt `recordedSpeech` v2 binder originalhash, exakt text/språk/tagning/poser och uppmätta video-/ljudspår. Den skyddade mätwritern ensam skapar källbeviset. AV-review är separat och ändras aldrig av mätning. Vanlig metadataredigering kan inte skapa eller återattribuera källbevis. V1 behåller sitt tidigare kontrakt.
+- **Publicering och spelarläsning:** v30 krävs redan för pending v2-metadata och för berörda frysta paket/livscykeländringar. DTO-kedjan bevarar mätning, filtyp och storlek fram till spelarens urval. Admin visar filkontroll och AV-granskning separat. Ingen ny produktdatabas, fallbackbank eller historisk dealerimport införs.
+
+Riktade beteendeprov omfattar felaktigt dealerurval före rättning, native spara/återläsa/publicera, gamla läsare, exakt källa/review, CAS/auditrollback, frysta/offentliga DTO:er och Admin-rendering. Ett nytt kedjeprov använder verkliga syntetiska MP4-bytes genom inspektor → atomisk registerskrivare → separat review → offentlig DTO → spelarurval. De fulla riktade testfilerna och den samlade CI:n redovisas i leveransens PR; kontraktsprov ska inte läsas som nya moln- eller medieacceptansbevis. Oberoende granskning hittade och ledde till rättning av query-bootstrap och v29-contextens mätwriter.
+
+**Nästa belagda J08-hinder:** ett aktivt fönsters äldre config kan kombineras med det nyare paketets branding eller nekas efter dealerbyte. Ett avgränsat minnesprov reproducerar detta med de verkliga accessfunktionerna; det är inte ett PG-/HTTP-prov. Den återstående rättningen måste binda konsumentens faktiska bord/bakgrund/färg/dealer till fönstrets frysta version och samtidigt behålla aktuell behörighet. Därefter behövs det samlade niofältskvittot på kandidaten. Full offentlig spelrunda, samtidighet och återanslutning hör fortsatt till K06/K07.
+
+PAOW:s tio redan godkända taloriginal behöver inget nytt generellt AV-godkännande för oförändrade bytes. De har inte omregistrerats, ommätts eller publicerats i molnet i denna kodleverans. Inget inspelningsursprung tillskrivs Jakob. Egna Render/Vercel-resurser är fortsatt stoppade; ingen DDL eller speltransaktion har utförts. [Kontrakt och versionsordning](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
+
 ## J05 verifierad: 55 procent — 26 oktober
 
 **55 % = 11 av 20 verifierade aktiviteter; 45 % återstår.** J05 är nu klar enligt sitt befintliga kriterium på integrerad main `902bae95ca47409390f0b77cf1c76bd8707245b9` från [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403). Vikter, beroenden och övriga aktivitetsstatus är oförändrade.

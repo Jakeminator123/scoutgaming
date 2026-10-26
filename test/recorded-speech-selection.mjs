@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
+import {createHash} from 'node:crypto';
 import {addDealer,createEmptyProject} from '../packages/presentation/contracts/studio-model.mjs';
-import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
+import {recordedSpeechIdentity,recordedSpeechForVideo} from '../packages/presentation/contracts/recorded-speech.mjs';
 import {gateRecordedSpeechSelection,recordedSpeechProjection} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import {createPresentationApi} from '../services/game/presentation-api.mjs';
 
@@ -23,6 +24,23 @@ function fixture(metadata=speech()){
   const video={id,sha256:'a'.repeat(64),available:true,contentType:'video/mp4',dealer:'nora',fileName:'speech.mp4',
     classification:{dealerId:'nora',eventId:'speak.goodluck',kind:'speech',role:'standard',situation:'goodluck',label:'Lycka till',notes:'',recordedSpeech:metadata}};
   return {video,project,line,context:{project,dealerId:'nora',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'}}};
+}
+function embeddedSpeech(status='approved',overrides={}){
+  const value={schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'nora',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
+    videoSha256:'a'.repeat(64),fps:24,frameCount:72,videoTrackId:1,audioTrackId:2,entryPose:'VILA',exitPose:'VILA',
+    source:{status:'pending'},review:{status:'pending'},...overrides};
+  const identity=recordedSpeechIdentity(value),by='fixture-reviewer',at='2026-10-26T00:00:00.000Z';
+  value.source={status:'verified-embedded-av',by,at,identity:structuredClone(identity)};
+  value.review=status==='pending'?{status}:{status,by,at,identity:structuredClone(identity)};
+  return value;
+}
+function embeddedFixture(metadata=embeddedSpeech()){
+  const f=fixture(metadata);f.video.bytes=4096;
+  f.video.mediaTiming={schemaVersion:1,mediaId:id,sha256:f.video.sha256,size:f.video.bytes,
+    recordedSpeechIdentitySha256:createHash('sha256').update(JSON.stringify(recordedSpeechIdentity(metadata))).digest('hex'),
+    video:{trackId:metadata.videoTrackId,frameCount:72,fps:24,firstPtsUs:0,lastPtsUs:2958333,endUs:3000000},
+    audio:[{trackId:metadata.audioTrackId,firstPtsUs:0,endUs:3000000}],endUs:3000000,audioTailUs:0};
+  return f;
 }
 function handlerFor(f,options={}){
   const inventory={videos:[f.video],families:[]};
@@ -121,3 +139,39 @@ test('request rehearsal and preview flags cannot authorize pending speech',async
   const serverOptionOnly=handlerFor(f,{recordedSpeechPreview:true});
   assert.equal((await serverOptionOnly.request()).video,null,'option without isolated preview source and identity is insufficient');
 });
+
+test('embedded MP4 selection projects its measured source through the public player gate without changing v1 DTOs',async()=>{
+  const f=embeddedFixture(),result=await handlerFor(f).request(),tuple=f.video.classification.recordedSpeech;
+  assert.deepEqual(result.video.recordedSpeech,tuple);assert.deepEqual(result.video.mediaTiming,f.video.mediaTiming);
+  assert.equal(result.video.contentType,'video/mp4');assert.equal(result.video.bytes,4096);
+  assert.deepEqual(recordedSpeechForVideo(result.video,{dealerId:'nora',lineId:'goodluck',language:'sv',takeId:'goodluck_sv_1'}),tuple);
+  const projected=recordedSpeechProjection(f.video);projected.mediaTiming.audio[0].trackId=99;
+  assert.equal(f.video.mediaTiming.audio[0].trackId,2,'projected measurements are detached');
+  assert.deepEqual(recordedSpeechProjection(fixture().video),{recordedSpeech:speech()},'historical projection is unchanged');
+});
+
+test('embedded source identity cannot borrow an older recording proof or another take as fallback',()=>{
+  const f=embeddedFixture();f.line.variants.push({...structuredClone(f.line.variants[0]),id:'nora.speak.goodluck.variant1',videoGenerationId:otherId});
+  for(const metadata of [speech(),embeddedSpeech('approved',{language:'en',exactText:'Good luck.'}),embeddedSpeech('approved',{takeId:'goodluck_sv_2'})]){
+    const standard=embeddedFixture(metadata).video;standard.id=otherId;standard.mediaTiming.mediaId=otherId;
+    const selected=gateRecordedSpeechSelection({video:f.video,standard},f.context);
+    assert.equal(selected.video,f.video);assert.equal(selected.standard,null);
+  }
+  const standard=structuredClone(f.video);standard.id=otherId;standard.mediaTiming.mediaId=otherId;
+  assert.equal(gateRecordedSpeechSelection({video:f.video,standard},f.context).standard,standard);
+});
+
+test('cached embedded selection rechecks missing or changed source measurements and never promotes pending AV review',async()=>{
+  const f=embeddedFixture(),{request}=handlerFor(f),revision=f.project.revision,original=structuredClone(f.video.mediaTiming);
+  assert.equal((await request()).video.id,id);
+  for(const mutation of [v=>delete v.mediaTiming,v=>v.mediaTiming.audio[0].trackId=3,v=>v.mediaTiming.mediaId=otherId,
+    v=>v.mediaTiming.audio.push({...v.mediaTiming.audio[0],trackId:3})]){
+    f.video.mediaTiming=structuredClone(original);mutation(f.video);
+    const denied=await request();assert.equal(denied.video,null);assert.equal(denied.standard,null);
+    assert.equal(denied.decision.media.reason,'recorded_speech_unavailable');
+  }
+  f.video.mediaTiming=original;f.video.classification.recordedSpeech=embeddedSpeech('pending');
+  assert.equal((await request({rehearsal:true,preview:true})).video,null);
+  assert.equal(f.project.revision,revision);
+});
+

@@ -23,10 +23,11 @@ export function measuredFixtureRecord(row,{frames=48,fps=24,audioEndUs=null} = {
 
 /** Synthetic declared unit-test records only: no files, databases or approvals
  * of real material. Profile hashes describe the checked-in source contract. */
-export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',capture=true,allSpeechSlots=false} = {}) {
+export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',capture=true,allSpeechSlots=false,idOffset=0,speechSchemaVersion=1} = {}) {
+  if (![1,2].includes(speechSchemaVersion)) throw new TypeError('Unsupported synthetic speech schema');
   const fixture = cloudPresentationFixture({lanes:[defaultPresentationLane(dealerId)]});
   const profile = registeredFilmedProfile(dealerId), presentation = fixture.presentation;
-  let project = fixture.project, n = 1;
+  let project = fixture.project, n = 1 + idOffset;
   const idle = presentation.playback.media[0]; measuredFixtureRecord(idle);
   presentation.registeredDealers[0].idle = structuredClone(idle);
   const rows = [idle];
@@ -44,11 +45,14 @@ export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',captu
   project = bindFilmedBank(project,inventory(),dealerId);
   for (const lineId of allSpeechSlots ? SPEECH_SLOT_IDS : NATIVE_ROOM_SPEECH_SLOTS) {
     const sha256 = hash(`synthetic:${dealerId}:${language}:${lineId}`), eventId = speechSlotEventId(lineId);
-    const speech = {schemaVersion:1,dealerId,lineId,takeId:lineId+'_1',language,exactText:'Synthetic unit test line.',
-      videoSha256:sha256,audioSha256:hash(`audio:${lineId}`),indexSha256:hash(`index:${lineId}`),fps:24,frameCount:48,audioDelayMs:0,
-      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'synthetic-fixture-1',recording:{status:'pending'},review:{status:'pending'}};
+    const speech = {schemaVersion:speechSchemaVersion,dealerId,lineId,takeId:lineId+'_1',language,exactText:'Synthetic unit test line.',
+      videoSha256:sha256,fps:24,frameCount:48,entryPose:'VILA',exitPose:'VILA',
+      ...(speechSchemaVersion===2?{sourceKind:'embedded-mp4-av',videoTrackId:1,audioTrackId:2,source:{status:'pending'}}
+        :{audioSha256:hash(`audio:${lineId}`),indexSha256:hash(`index:${lineId}`),audioDelayMs:0,calibrationRevision:'synthetic-fixture-1',recording:{status:'pending'}}),
+      review:{status:'pending'}};
     const proof = {by:'unit-test-fixture',at:'2026-10-26T00:00:00.000Z',identity:recordedSpeechIdentity(speech)};
-    speech.recording = {status:'verified-recording',...structuredClone(proof)};
+    if(speechSchemaVersion===2)speech.source = {status:'verified-embedded-av',...structuredClone(proof)};
+    else speech.recording = {status:'verified-recording',...structuredClone(proof)};
     speech.review = {status:'approved',...structuredClone(proof)};
     const row = measuredFixtureRecord(record({sha256,classification:{kind:'speech',eventId,situation:lineId,recordedSpeech:speech}}),{audioEndUs:2_000_000});
     rows.push(row);
@@ -61,4 +65,20 @@ export function nativeRoomMaterialFixture({dealerId='dragan',language='sv',captu
   const recapture = () => { pack.branding = withPackagePresentation({},presentation,{allowExtended:true}); };
   if (capture) recapture();
   return {input:{package:pack,room,language},presentation,project,records:rows,profile,recapture};
+}
+
+/** Two complete synthetic banks in one frozen lane, with distinct media IDs. */
+export function nativeRoomMaterialChoicesFixture({language='sv',speechSchemaVersion=1,allSpeechSlots=false}={}) {
+  const options={language,speechSchemaVersion,allSpeechSlots,capture:false};
+  const primary=nativeRoomMaterialFixture(options);
+  const alternate=nativeRoomMaterialFixture({...options,dealerId:'paow',idOffset:1000});
+  const lane=primary.presentation.lanes[0];
+  lane.dealers=['dragan','paow'];lane.layers.dealer.allowed=[...lane.dealers];
+  primary.presentation.registeredDealers.push(...alternate.presentation.registeredDealers);
+  primary.presentation.playback.lines.push(...alternate.presentation.playback.lines);
+  primary.records.push(...alternate.records);
+  primary.project.dealers.push(...alternate.project.dealers.filter(row=>!primary.project.dealers.some(item=>item.id===row.id)));
+  primary.project.lines.push(...alternate.project.lines);
+  primary.recapture();
+  return primary;
 }

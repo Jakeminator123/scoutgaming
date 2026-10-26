@@ -10,7 +10,7 @@ import {withPackagePresentation} from '../packages/presentation/server/presentat
 import {canonicalStudioJson,validateDocumentValue} from '../packages/studio-registry/server/document-contract.mjs';
 import {ROOM_LIMIT_PRESETS,ROOM_GAME_TIMERS} from '../packages/presentation/contracts/room-game-config.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
-import {nativeRoomMaterialFixture,measuredFixtureRecord} from './fixtures/native-room-game-material.mjs';
+import {nativeRoomMaterialFixture,nativeRoomMaterialChoicesFixture,measuredFixtureRecord} from './fixtures/native-room-game-material.mjs';
 import {resolveNativeRoomGameMaterial} from '../packages/presentation/server/native-room-game-material.mjs';
 
 const scope={environment:'room-access-test',workspaceId:'isolated'},clone=structuredClone;
@@ -66,12 +66,12 @@ function fixture({realAuth=false}={}) {
     assertReleased(){assert.equal(active,false);assert.equal(clientCount,releases);}};
 }
 
-function nativeFixture() {
-  const h=fixture(),native=nativeRoomMaterialFixture();
+function nativeFixture({choices=false,branding={}}={}) {
+  const h=fixture(),native=choices?nativeRoomMaterialChoicesFixture():nativeRoomMaterialFixture();
   h.state.administration.gameLanes[0].dealer='dragan';
   h.state.administration.gameLanes[0].mediaCollection='dragan-presentation';
   const recapture=()=>{
-    h.state.pack.branding=withPackagePresentation({roomGameConfigVersions:h.state.pack.branding.roomGameConfigVersions},native.presentation,{allowExtended:true});
+    h.state.pack.branding=withPackagePresentation({...h.state.pack.branding,...branding},native.presentation,{allowExtended:true});
     for(const config of Object.values(h.state.configs))config.presentationHash=createHash('sha256').update(canonicalStudioJson(native.presentation)).digest('hex');
   };
   recapture();
@@ -89,6 +89,19 @@ test('native access recomputes the complete frozen material and preserves brandi
   h.state.pack.package_revision=2;h.state.pack.branding.title='Another title';
   assert.equal((await h.read()).packageRevision,2);
   await assert.rejects(h.access.revalidate(binding),denied);h.assertReleased();
+});
+
+test('room override authorizes only its published dealer and leaves the sibling room on its own material',async()=>{
+  const h=nativeFixture({choices:true,branding:{roomOverrides:{'room-a':{dealer:'paow'}}}});
+  assert.equal(h.state.configs['room-a'].material.dealerId,'paow');
+  assert.equal(h.state.configs['room-b'].material.dealerId,'dragan');
+  const a=await h.read('room-a'),b=await h.read('room-b');
+  assert.equal(a.roomId,'room-a');assert.equal(b.roomId,'room-b');
+  await assert.rejects(h.access.revalidate({...a,operatorId:'other'}),denied);
+  h.state.pack.branding.roomOverrides['room-a'].dealer='dragan';
+  await assert.rejects(h.read('room-a'),denied);
+  assert.deepEqual(await h.read('room-b'),b,'an unrelated room keeps its published bank');
+  h.assertReleased();
 });
 
 test('native access rejects a forged budget, revision or incomplete frozen media list',async()=>{

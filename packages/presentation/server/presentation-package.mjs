@@ -4,6 +4,7 @@ import { OPERATOR_LIFECYCLE_KEY } from '../contracts/operator-lifecycle-key.mjs'
 import { gzipSync, gunzipSync, brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { validatePresentationPackage } from '../contracts/presentation-layers.mjs';
 import { canonicalStudioJson, StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
+import { resolveRoomBranding } from '../../operators/contracts/branding.mjs';
 
 // A reserved, server-authored part of the existing immutable operator package.
 // Legacy encodings retain their exact bounds. The explicit extended envelope
@@ -59,6 +60,19 @@ export function readPackagePresentation(pack) {
   if (presentation.lanes.some(lane => !pack.lanes?.includes(lane.id))
     || pack.lanes?.some(id => !presentation.lanes.some(lane => lane.id === id))) fail(503);
   return presentation;
+}
+// The frozen lane bounds the dealer; its room override wins over the matching
+// operator default. An explicit invalid choice must never fall back to a bank.
+export function resolvePackageRoomDealer(pack, room, presentation = readPackagePresentation(pack)) {
+  const lane = presentation?.lanes.find(row => row.id === room?.presentationLaneId);
+  if (!lane || !room?.operatorId || pack?.operatorId !== room.operatorId
+    || !pack.tables?.includes(room.id) || !pack.lanes?.includes(lane.id)) return null;
+  const branding = resolveRoomBranding({lane:presentation.lanes[0].id,...pack.branding}, room.id, lane.id);
+  const roomChoice = Object.hasOwn(pack.branding?.roomOverrides?.[room.id] ?? {}, 'dealer');
+  // The existing operator writer uses null to clear its default. Room choices
+  // are explicit strings; a malformed override remains an invalid selection.
+  const dealerId = roomChoice ? branding.dealer : branding.dealer ?? lane.layers.dealer.default;
+  return typeof dealerId === 'string' && lane.layers.dealer.allowed.includes(dealerId) ? dealerId : null;
 }
 export function withPackagePresentation(branding, presentation, options) {
   const next = { ...normalizePresentationBranding(branding,presentation), ...(Object.hasOwn(branding ?? {}, OPERATOR_LIFECYCLE_KEY) ? { [OPERATOR_LIFECYCLE_KEY]: structuredClone(branding[OPERATOR_LIFECYCLE_KEY]) } : {}), [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation,options) };

@@ -76,6 +76,8 @@ export async function inspectMediaTiming(record,options={}) {
   const stored=record.classification?.recordedSpeech??record.recordedSpeech??null;
   const speech=options.recordedSpeech??stored;
   const identityText=speech==null?null:mediaTimingSpeechIdentity(speech);
+  // Keep the declared scalar identity fixed across asynchronous file access.
+  const speechBinding=speech==null?null:{...speech};
   const identityHash=identityText===null?null:createHash('sha256').update(identityText).digest('hex');
   if(stored && mediaTimingSpeechIdentity(stored)!==identityText)fail('studio_media_timing_mismatch');
   const key=JSON.stringify(['timing',mediaId,source.pathname,source.sha256,source.size,source.contentType,identityHash]);
@@ -83,13 +85,9 @@ export async function inspectMediaTiming(record,options={}) {
   const promise=withVerifiedPrivateMediaFile(source,async handle=>{
     const measured=await inspectVerifiedLayerFile(handle,source,{signal:options.signal,timing:true});
     try {
-      if(identityText!==null) {
-        const identity=JSON.parse(identityText);
-        if(identity.videoSha256!==source.sha256 || identity.frameCount!==measured.video.frameCount || Math.abs(identity.fps-measured.video.fps)>1e-9)fail('studio_media_timing_mismatch');
-      }
       return normalizeMediaTiming({schemaVersion:1,mediaId,sha256:source.sha256,size:source.size,
         recordedSpeechIdentitySha256:identityHash,...measured},
-        {mediaId,sha256:source.sha256,size:source.size,recordedSpeechIdentitySha256:identityHash});
+        {mediaId,sha256:source.sha256,size:source.size,recordedSpeechIdentitySha256:identityHash,recordedSpeech:speechBinding});
     } catch {fail('studio_media_timing_mismatch');}
   },options);
   pending={key,promise};
