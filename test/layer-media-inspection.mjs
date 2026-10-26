@@ -314,3 +314,34 @@ test('separately rounded AAC priming retains the full conservative sample envelo
     const bad=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(bad.record,bad.options),{code:'studio_media_timing_unsupported'});
   }
 });
+
+function compositionHeaderTimingVideo() {
+  const bytes=timingVideo();
+  // Six reordered video samples: PTS span 2000..8000; the smallest CTS
+  // among the first three (DTS <= edit start 2000) is 1000. Older FFmpeg
+  // writes mdhd=8000-1000, while the edit still shows all six frames.
+  bytes.writeUInt32BE(7000,bytes.indexOf('mdhd')+20);
+  return bytes;
+}
+
+test('reordered video accepts the exact unedited FFmpeg composition header while preserving all media',async t=>{
+  const f=await timedMedia(t,compositionHeaderTimingVideo()),result=await inspectMediaTiming(f.record,f.options);
+  assert.deepEqual(result.video,{trackId:1,frameCount:6,fps:24,firstPtsUs:0,lastPtsUs:208333,endUs:250000});
+  assert.deepEqual(result.audio,[{trackId:2,firstPtsUs:0,endUs:500000},{trackId:3,firstPtsUs:0,endUs:750000}]);
+  assert.equal(result.endUs,750000);
+});
+
+test('composition-header support cannot conceal a changed header, missing evidence or discarded video frames',async t=>{
+  const malformed=[];
+  for(const duration of [6999,7001,8000]){
+    const bytes=compositionHeaderTimingVideo();bytes.writeUInt32BE(duration,bytes.indexOf('mdhd')+20);malformed.push(bytes);
+  }
+  for(const type of ['ctts','edts']){
+    const bytes=compositionHeaderTimingVideo();bytes.write('free',bytes.indexOf(type),'ascii');malformed.push(bytes);
+  }
+  const trimmed=compositionHeaderTimingVideo();
+  for(const [type,offset]of [['elst',12],['tkhd',24]])trimmed.writeUInt32BE(10000,trimmed.indexOf(type)+offset);
+  malformed.push(trimmed);
+  const changedComposition=compositionHeaderTimingVideo();changedComposition.writeUInt32BE(2001,changedComposition.indexOf('ctts')+16);malformed.push(changedComposition);
+  for(const bytes of malformed){const f=await timedMedia(t,bytes);await assert.rejects(inspectMediaTiming(f.record,f.options),{code:'studio_media_timing_unsupported'});}
+});

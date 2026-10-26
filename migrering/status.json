@@ -481,22 +481,23 @@
       "stage": "E4",
       "title": "Förbered avveckling av oanvända databaskontrakt",
       "weight": 5,
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "dependsOn": [
         "J05",
         "J07",
         "J08",
         "K05"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "branch": "codex/retire-lissabon-contracts",
+      "head": "eabc5a86baa494d4bfd9afe6d659671686ad4de4",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/401",
+      "reviewer": "Root granskar oberoende SQL, prepare och restore efter j09_migrations implementation; isolerade negativa prov och CI pa exakt head.",
       "evidence": [
         "Revision 2026-10-25: äldre planens generella /game-avveckling rättad mot senare #358/#360. Mains aktiva interna launchkontrakt och historiska data/media bevaras. Avvecklingsmigrering och faktisk restore kräver fortfarande egna bevis.",
-        "Konsumentmatris2026-10-25 skiljer aktiva lab_sessions/bo/craig och operatörs-QA från lissabon_profiles-kandidat och lissabon_profile_sessions indirekta DELETE-konsument. Ingen produktions-DDL eller avveckling utifrån enbart namn/tom tabell."
+        "Konsumentmatris2026-10-25 skiljer aktiva lab_sessions/bo/craig och operatörs-QA från lissabon_profiles-kandidat och lissabon_profile_sessions indirekta DELETE-konsument. Ingen produktions-DDL eller avveckling utifrån enbart namn/tom tabell.",
+        "2026-10-26: PR401/eabc5a86 avvecklar endast gamla Lissabon-DELETE-konsumenter och tillfor explicit opt-in 011 med oforandrad historisk product-v1. 19/19 negativa migration/rollback/restoreprov pa PostgreSQL16.15 och18.6,37/37 riktade prov,47/47 ordinarie hook. Full CI40294842713 inklusive Docker och GitGuardian passerar pa exakt head. Rootreview utan blockerare; produktions-DDL ej utford."
       ],
-      "blocker": "Avveckla endast belagt oanvända konsumenter enligt befintliga beroenden. /game är nu aktiv ingång och gamla namn är inte raderingsbevis. Ingen tabell-, data- eller mediaradering beställs."
+      "blocker": "Implementationen och isolerad migration/restore ar verifierade i PR401; forkunskaper J05/J08/K05 och senare godkand integration/drift kvarstar. Ingen live-tabell eller produktionsdata har raderats."
     },
     {
       "id": "K06",

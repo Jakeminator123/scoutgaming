@@ -110,14 +110,26 @@ export function inspectMp4Timing(read,size) {
     const unit=BigInt(media.scale)*BigInt(movie.scale),upper=editDuration===null?null:BigInt(editDuration)*BigInt(media.scale);
     const toUs=(n,ceil=false)=>{const scaled=n*1_000_000n,value=Number(ceil?(scaled+unit-1n)/unit:(scaled+unit/2n)/unit);
       if(!Number.isSafeInteger(value)||value<0||value>MAX_US)limited();return value;};
-    let dts=0;
+    let dts=0,leadingCompositionOffset=Infinity;
     const presentation=durations.map((duration,i)=>{
+      if(dts<=mediaStart)leadingCompositionOffset=Math.min(leadingCompositionOffset,offsets[i]||0);
       const start=BigInt(dts+(offsets[i]||0)-mediaStart)*BigInt(movie.scale),end=start+BigInt(duration)*BigInt(movie.scale);
       dts+=duration;if(!Number.isSafeInteger(dts))invalid();
       return {start,end,duration};
     }).sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0);
+    // Older FFmpeg writes mdhd from the maximum composition end minus the
+    // lowest CTS offset among packets with original DTS <= 0. That unedited
+    // span can exceed the decode duration for reordered video. Reproduce the
+    // exact construction only with an explicit edit starting at the first CTS;
+    // every sample must still survive the edit and pass the CFR/end checks.
+    // https://github.com/FFmpeg/FFmpeg/blob/n8.0/libavformat/movenc.c#L3488-L3516
+    // https://github.com/FFmpeg/FFmpeg/blob/n8.0/libavformat/movenc.c#L6564-L6572
+    const compositionHeader=handler==='vide' && ctts && editDuration!==null
+      && mediaStart>0 && offsets[0]===mediaStart && leadingCompositionOffset>=0 && leadingCompositionOffset<mediaStart
+      && presentation[0].start===0n && BigInt(media.duration)*BigInt(movie.scale)
+        ===presentation.at(-1).end+BigInt(mediaStart-leadingCompositionOffset)*BigInt(movie.scale);
     let explicitPriming=false;
-    if(dts!==media.duration) {
+    if(dts!==media.duration && !compositionHeader) {
       // Some FFmpeg MP4s describe the post-priming AAC span in mdhd.
       // Accept only the explicit one-packet AAC roll/edit representation;
       // never infer encoder delay from a header difference alone.
@@ -132,7 +144,7 @@ export function inspectMp4Timing(read,size) {
       explicitPriming=true;
     }
     const visible=presentation.filter(p=>p.end>0n&&(upper===null||p.start<upper));
-    if(!visible.length)invalid();
+    if(!visible.length || compositionHeader && visible.length!==presentation.length)invalid();
     let previousEnd=null;
     const clipped=visible.map(p=>{
       if(handler==='vide'&&(p.start<0n||upper!==null&&p.end>upper))invalid();
