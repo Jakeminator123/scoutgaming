@@ -29,7 +29,6 @@ function components({ language = 'sv', theme = 'light' } = {}) {
     require: name => {
       if (name.endsWith('.css')) return {};
       if (name === '../partner-session-actions') return actionsModule.exports;
-      if (name === './assets.mjs') return { assetUrl: path => path };
       if (name === './views/team.jsx') return { TeamView: () => null };
       if (name === './partner-copy.mjs') return { partnerNavigation, usePartnerPreferences: () => ({
         language, theme, copy: partnerCopy(language), setLanguage() {}, setTheme() {},

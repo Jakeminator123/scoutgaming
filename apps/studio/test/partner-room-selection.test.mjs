@@ -62,7 +62,7 @@ function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-cas
     dispatchEvent(event){for(const fn of listeners.get(event.type)??[])fn(event);return !event.defaultPrevented;}};
   const localRequire=createRequire(sourceUrl),module={exports:{}};
   require('node:vm').runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,structuredClone,window,
-    require:name=>name==='react'?hooks:name.endsWith('.css')?{}:name==='../partner-session-actions'?{PartnerSessionActions:()=>null}:name==='./assets.mjs'?{assetUrl:()=>undefined}:name==='./partner-copy.mjs'?{partnerNavigation,usePartnerPreferences:()=>({copy:partnerCopy('sv'),language:'sv',theme:'light'})}:localRequire(name)});
+    require:name=>name==='react'?hooks:name.endsWith('.css')?{}:name==='../partner-session-actions'?{PartnerSessionActions:()=>null}:name==='./partner-copy.mjs'?{partnerNavigation,usePartnerPreferences:()=>({copy:partnerCopy('sv'),language:'sv',theme:'light'})}:localRequire(name)});
   const initialSnapshot={...snapshot,tables:snapshot.tables.filter(room=>room.operatorId===operator.id),preview:false,accessClass,operators:[operator,{id:'south',slug:'south-casino',name:'South'}],team:[],presentations:[],players:[],transactions:[],reports:[]};
   const props={surface:'partner',initialSnapshot,initialRoomId,initialRoomScope,initialView:'bj',apiBase:'/studio/api/partner/snapshot',user:'test'};
   const Session=module.exports.PartnerOperatorWorkspace(props).type;
