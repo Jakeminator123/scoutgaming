@@ -1,5 +1,12 @@
 # Aktuell handoff — Scoutgaming
 
+## Fortsättning och CI-rättning — 26 oktober
+
+PR400:s CI40288732203 underkändes i `presentation/managed-media-contract`: det äldre HTTP-provet räknade den nu stödda version29 som otillåten. Samma fel reproducerades lokalt (26/27). Testet använder nu version30 som nästa otillåtna version och provar även dubblerad29 och nollprefix029. Produktens versionsförhandling ändras inte. Hela berörda gruppen passerar 148/148 utan skip, Node24.21.0/två arbetare. Ny full CI på rättad head återstår.
+
+Färsk åtkomstkontroll bekräftar GitHub samt rätt isolerade Neon-, Blob-, Vercel- och Render-resurser. Vercel-kandidaten81c370 är fortfarande BLOCKED med tom bygglogg; orsaken är inte fastställd. Inga nya molnprov eller mediegodkännanden följer av CI-rättningen. MIGRERING har bekräftat avslutad etapp och släppta anspråk. Aktivitetsstatus kvarstår50procent.
+
+
 ## Native materialbindning och tal — 26 oktober
 
 PR399 är mergad som `940776136101fe18d30e4ee1091151335e558b83`. Rättad head `694b9b176eae5ba91d17a718c052ac25620eee1a` har full grön [CI40285373321](https://github.com/Jakeminator123/scoutgaming/actions/runs/40285373321) och GitGuardian. Detta ersätter väntan på ny CI i det äldre avsnittet nedan.
