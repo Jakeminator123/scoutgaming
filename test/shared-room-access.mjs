@@ -12,6 +12,9 @@ import {ROOM_LIMIT_PRESETS,ROOM_GAME_TIMERS} from '../packages/presentation/cont
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import {nativeRoomMaterialFixture,nativeRoomMaterialChoicesFixture,measuredFixtureRecord} from './fixtures/native-room-game-material.mjs';
 import {resolveNativeRoomGameMaterial} from '../packages/presentation/server/native-room-game-material.mjs';
+import {createActiveRoomPresentationContext} from '../services/game/shared-room-presentation-context.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
+import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 
 const scope={environment:'room-access-test',workspaceId:'isolated'},clone=structuredClone;
 const token='a'.repeat(64),sessionId='player-'+createHash('sha256').update(token).digest('hex');
@@ -30,7 +33,7 @@ function fixture({realAuth=false}={}) {
     limits:{min:preset.min,max:preset.max,sideMax:preset.sideMax},chips:[...preset.chips],refill:preset.refill,leadMs:material.leadMs,cardMs:material.cardMs,material:clone(material)};
   const pack={environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-a","room-b"]',
     branding:withPackagePresentation({roomGameConfigVersions:Object.fromEntries(rooms.map(room=>[room.id,version(room.id)]))},cloud.presentation),published_at_ms:1};
-  const state={administration,pack,operator:{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1},configs,
+  const state={administration,pack,project:clone(cloud.project),media:cloud.mediaRows.map(({revision,...row})=>row),packageHistory:[],configHistory:[],operator:{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1},configs,
     heads:Object.fromEntries(rooms.map(room=>[room.id,version(room.id)])),session:{actorId:'player-a',sessionId,expiresAt:999999,partnerKeyId:null}};
   const pool={async connect(){assert.equal(active,false);clientCount++;trace.push('connect');return {async query(sql,values){
     const marker=/\/\* ([^ ]+) \*\//.exec(sql)?.[1];trace.push(marker??sql);
@@ -41,10 +44,13 @@ function fixture({realAuth=false}={}) {
     assert.deepEqual(values.slice(0,2),[scope.environment,scope.workspaceId]);
     if(failAt===marker)throw new Error('injected SQL infrastructure failure');
     let rows;
-    if(marker==='studio:read-document')rows=[{kind:'administration',revision:'admin-1',value:state.administration,updated_at:'2026-10-22T00:00:00.000Z'}];
+    if(marker==='studio:read-document')rows=[{kind:values[2],revision:values[2]==='project'?state.project.revision:'admin-1',value:values[2]==='project'?state.project:state.administration,updated_at:'2026-10-22T00:00:00.000Z'}];
     else if(marker==='operator-store:operator-by-id')rows=values[2]===state.operator.operator_id?[state.operator]:[];
     else if(marker==='operator-store:current-package')rows=state.pack?[{...state.pack,branding:canonicalStudioJson(state.pack.branding)}]:[];
+    else if(marker==='operator-store:package-by-revision')rows=[state.pack,...state.packageHistory].filter(row=>row?.operator_id===values[2]&&row.package_revision===values[3]).map(row=>({...row,branding:canonicalStudioJson(row.branding)}));
     else if(marker==='shared-room-access:config'){const id=values[2];rows=state.heads[id]?[{version:state.heads[id],body:clone(state.configs[id])}]:[];}
+    else if(marker==='shared-room-access:active-config')rows=[...Object.values(state.configs),...state.configHistory].filter(row=>row.roomId===values[2]&&row.configVersion===values[3]).map(body=>({body}));
+    else if(marker==='shared-room-access:active-media')rows=state.media.filter(row=>values[2].includes(row.id)).map(record=>({id:record.id,record}));
     else assert.fail('Unexpected read or write: '+sql);
     afterQuery?.(marker);return {rows:clone(rows)};
   },release(){assert.equal(active,false);releases++;trace.push('release');}};}};
@@ -60,14 +66,17 @@ function fixture({realAuth=false}={}) {
     Object.assign(auth,playerAuth(db,()=>assert.fail('read-only auth cannot create players')));
     state.session.expiresAt=Date.now()+60000;now=Date.now();
   }
-  const repository=createStudioRepository({pool,scope}),access=createSharedRoomAccess({auth,repository,scope,now:()=>now});
+  const repository=createStudioRepository({pool,scope}),commandAuth={async bindingById(id){assert.ok(active,'locked context stays on scoped SQL client');return auth.bindingById(id);}},
+    access=createSharedRoomAccess({auth,commandAuth,repository,scope,now:()=>now});
   return {access,auth,repository,state,trace,read:(roomId='room-a',req=request())=>access.authorize(req,{roomId}),setNow:value=>{now=value;},
     fail:marker=>{failAt=marker;},after:fn=>{afterQuery=fn;},authFail:error=>{authFailure=error;},authAfter:fn=>{authAfter=fn;},
+    readLocked:(binding,configVersion)=>repository.transaction(()=>access.readPresentationContextLocked(binding,{configVersion})),
     assertReleased(){assert.equal(active,false);assert.equal(clientCount,releases);}};
 }
 
 function nativeFixture({choices=false,branding={}}={}) {
   const h=fixture(),native=choices?nativeRoomMaterialChoicesFixture():nativeRoomMaterialFixture();
+  h.state.project=clone(native.project);h.state.media=clone(native.records);
   h.state.administration.gameLanes[0].dealer='dragan';
   h.state.administration.gameLanes[0].mediaCollection='dragan-presentation';
   const recapture=()=>{
@@ -82,6 +91,102 @@ function nativeFixture({choices=false,branding={}}={}) {
   }
   return {...h,native,recapture};
 }
+
+function activeHistoryFixture() {
+  const h=nativeFixture({choices:true,branding:{roomOverrides:{'room-a':{color:'#112233'}}}});
+  const assets=[1,2].map(n=>({schemaVersion:1,id:`f0000000-0000-4000-8000-00000000000${n}`,role:'background',label:'Fixture background '+n,
+    sha256:String(n).repeat(64),size:128,contentType:'image/png',width:1920,height:1080}));
+  for(const asset of assets)asset.pathname=layerAssetPath(asset);
+  const lane=h.native.presentation.lanes[0];
+  lane.layers.background={enabled:true,mode:'image',default:assets[0].id,allowed:assets.map(row=>row.id)};
+  lane.composition=defaultCompositionSettings();
+  h.native.presentation.assets=clone(assets);h.state.project.layerAssets=clone(assets);h.state.project.lanes=[clone(lane)];h.recapture();
+  const rebind=()=>{
+    for(const room of h.state.administration.rooms) {
+      const config=h.state.configs[room.id],material=resolveNativeRoomGameMaterial({room,language:config.language,
+        package:{operatorId:'north',revision:h.state.pack.package_revision,tables:['room-a','room-b'],games:['blackjack'],lanes:['mobile-phone'],branding:h.state.pack.branding}});
+      Object.assign(config,{material,leadMs:material.leadMs,cardMs:material.cardMs,
+        presentationHash:createHash('sha256').update(canonicalStudioJson(h.native.presentation)).digest('hex')});
+    }
+  };
+  rebind();
+  const original=clone(h.state.configs['room-a']),oldPresentation=clone(h.native.presentation);
+  h.state.packageHistory.push(clone(h.state.pack));h.state.configHistory.push(...clone(Object.values(h.state.configs)));
+  h.state.pack.package_revision=2;lane.composition.mobile.dealer.scale=1.2;lane.layers.background.default=assets[1].id;
+  for(const [index,room] of h.state.administration.rooms.entries()) {
+    const version=`room-config-00000000-0000-4000-8000-${index+3}00000000000`;
+    Object.assign(h.state.configs[room.id],{configVersion:version,packageRevision:2});
+    h.state.heads[room.id]=version;h.state.pack.branding.roomGameConfigVersions[room.id]=version;
+  }
+  h.state.pack.branding=withPackagePresentation({...h.state.pack.branding,roomOverrides:{'room-a':{dealer:'paow',color:'#445566',background:assets[1].id}}},h.native.presentation,{allowExtended:true});
+  rebind();
+  return {...h,original,oldPresentation,assets,rebind};
+}
+
+test('active room context reads its exact old package, dealer, branding and geometry while unopened/next reads current head',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read(),snapshot=clone(h.state);
+  const old=await h.readLocked(binding,h.original.configVersion);
+  assert.equal(old.context.packageRevision,1);assert.equal(old.context.dealerId,'dragan');assert.deepEqual(old.config,h.original);
+  const view=createActiveRoomPresentationContext({...old,privateMedia:()=>assert.fail('metadata must not fetch media')});
+  const selection=await view.selection(),configuration=await view.configuration(old.context);
+  assert.equal(selection.branding.color,'#112233');assert.equal(selection.dealer,'dragan');
+  assert.deepEqual(selection.composition.settings,h.oldPresentation.lanes[0].composition);
+  assert.equal(selection.composition.background.default,h.assets[0].id);
+  assert.ok(selection.composition.assets.every(row=>row.src.startsWith('/api/presentation/room-layers/north/room-a/1/')));
+  assert.equal(configuration.packageRevision,1);assert.equal(configuration.dealer.id,'dragan');
+  assert.ok(configuration.inventory.videos.every(row=>row.src.startsWith('/api/presentation/room-video/north/room-a/1/dragan/')));
+  const current=await h.readLocked(binding,null),next=await h.readLocked(binding,h.state.heads['room-a']);
+  assert.equal(current.context.packageRevision,2);assert.equal(current.context.dealerId,'paow');assert.deepEqual(next,current);
+  const newView=createActiveRoomPresentationContext({...current,privateMedia:()=>assert.fail('metadata must not fetch media')});
+  assert.equal((await newView.selection()).branding.color,'#445566');
+  assert.deepEqual(h.state,snapshot,'all active and historical reads are immutable');h.assertReleased();
+});
+
+test('active package lookup cannot resurrect revoked sessions, rooms, dealers, media or trashed layers',async()=>{
+  for(const change of [
+    h=>{h.state.session=null;},h=>{h.state.operator.status='archived';},h=>{h.state.administration.rooms[0].state='draft';},
+    h=>{h.state.pack.tables='["room-b"]';},
+    h=>{const lane=h.native.presentation.lanes[0];lane.layers.dealer.default='paow';lane.layers.dealer.allowed=['paow'];
+      h.state.administration.gameLanes[0].dealer='paow';h.state.administration.gameLanes[0].mediaCollection='paow-presentation';
+      h.state.pack.branding=withPackagePresentation(h.state.pack.branding,h.native.presentation,{allowExtended:true});h.rebind();},
+    h=>{h.state.media.find(row=>row.classification.dealerId==='dragan').classification.archived=true;},
+    h=>{h.state.media.find(row=>row.classification.dealerId==='dragan'&&row.classification.recordedSpeech).classification.recordedSpeech.review={status:'pending'};},
+    h=>{h.state.project.layerAssets=h.state.project.layerAssets.filter(row=>row.id!==h.assets[0].id);h.state.project.lanes=[];},
+  ]) {
+    const h=activeHistoryFixture(),binding=await h.read();change(h);
+    await assert.rejects(h.readLocked(binding,h.original.configVersion),error=>[403,503].includes(error.statusCode));h.assertReleased();
+  }
+  const h=activeHistoryFixture(),binding=await h.read();
+  await assert.rejects(h.readLocked(binding,h.state.configHistory.find(row=>row.roomId==='room-b').configVersion),denied);
+  h.state.configHistory[0].operatorId='foreign';await assert.rejects(h.readLocked(binding,h.original.configVersion),denied);h.assertReleased();
+});
+
+test('late video and layer providers receive the lease signal and lose their unread body after abort',async()=>{
+  for(const kind of ['video','layer']) {
+    const h=activeHistoryFixture(),binding=await h.read(),captured=await h.readLocked(binding,h.original.configVersion),controller=new AbortController();
+    let release,entered,providerSignal,cancelled=0;
+    const began=new Promise(resolve=>{entered=resolve;}),gate=new Promise(resolve=>{release=resolve;});
+    const video=captured.authority.media[0],asset=h.assets[0];
+    const path=kind==='video'?'/api/presentation/room-video/north/room-a/1/dragan/'+video.id:'/api/presentation/room-layers/north/room-a/1/'+asset.id;
+    const view=createActiveRoomPresentationContext({...captured,signal:controller.signal,request:new Request('https://engine.invalid'+path),
+      privateMedia:async(_record,request)=>{providerSignal=request.signal;entered();await gate;return new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{etag:'"sha256-'+(kind==='video'?video.sha256:asset.sha256)+'"'}});}});
+    const work=kind==='video'?view.response():view.layerResponse();
+    await began;controller.abort();assert.equal(providerSignal.aborted,true);release();
+    if(kind==='video')assert.equal((await work).status,503);else await assert.rejects(work,{name:'AbortError'});
+    assert.equal(cancelled,1,'provider ignoring abort must still lose the late private stream');h.assertReleased();
+  }
+});
+
+test('editorial media and layer labels cannot revoke or rewrite an active frozen presentation',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read(),before=await h.readLocked(binding,h.original.configVersion);
+  for(const row of h.state.media){row.classification.label='Updated label';row.classification.notes='Updated private editing note';}
+  for(const asset of h.state.project.layerAssets)asset.label='Updated material label';
+  const after=await h.readLocked(binding,h.original.configVersion);assert.deepEqual(after,before);
+  const view=createActiveRoomPresentationContext({...after,privateMedia:()=>assert.fail('labels do not request bytes')});
+  assert.ok((await view.selection()).composition.assets.every(row=>row.label!=='Updated material label'));
+  assert.ok((await view.configuration(after.context)).inventory.videos.every(row=>row.fileName!=='Updated label'));
+  h.assertReleased();
+});
 
 test('native access recomputes the complete frozen material and preserves branding-only publication',async()=>{
   const h=nativeFixture(),before=clone(h.state),binding=await h.read();

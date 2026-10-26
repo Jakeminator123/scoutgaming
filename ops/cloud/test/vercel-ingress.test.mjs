@@ -189,6 +189,67 @@ test('frozen event media retains signed transport and never becomes public featu
   assert.equal(vercelIngressRequest({...request(path+'/record'),method:'GET'},ingress).accepted,false);
 });
 
+test('active shared room endpoints retain complete signed ingress and exact media identities',()=>{
+  const id='00000000-0000-4000-8000-000000000083';
+  const paths=[['/api/presentation/shared-room/room_a-2/binding?configVersion=cfg-1&windowId=unopened','GET'],
+    ['/api/presentation/shared-room/room_a-2/config?operatorSlug=north&roomId=room_a-2&packageRevision=7&dealerId=astrid','GET'],
+    ['/api/presentation/shared-room/room_a-2/idle-advice','POST'],['/api/presentation/room-idle/north/room_a-2/7/astrid','GET'],
+    ['/api/presentation/room-video/north/room_a-2/7/astrid/'+id,'GET'],['/api/presentation/room-layers/north/room_a-2/7/'+id,'GET']];
+  for(const [path,method]of paths){
+    const input={...request(path,{range:'bytes=2-7','if-range':'"frozen"','if-none-match':'"frozen"'}),method};
+    const accepted=vercelIngressRequest(input,ingress);assert.equal(accepted.accepted,true,path);
+    assert.equal(accepted.headers.host,'preview.example.test');assert.equal(accepted.headers.cookie,'player_session=isolated');
+    assert.equal(accepted.headers.range,'bytes=2-7');assert.equal(accepted.headers['if-range'],'"frozen"');assert.equal(accepted.headers['if-none-match'],'"frozen"');
+    assert.equal(accepted.headers['x-croupier-vercel-secret'],undefined);assert.equal(accepted.headers['x-croupier-public-origin'],undefined);
+    if(path.includes('/room-'))assert.equal(vercelIngressRequest({...input,method:'HEAD'},ingress).accepted,true);
+    assert.equal(vercelIngressRequest({url:path,method,headers:{host:'isolated.onrender.com',cookie:'player_session=isolated'}},ingress).accepted,false);
+    for(const extra of [{'x-croupier-vercel-secret':'wrong'},{'x-croupier-public-origin':'https://foreign.invalid'},{'x-forwarded-host':'foreign.invalid'},{host:'preview.example.test'}])
+      assert.equal(vercelIngressRequest({...request(path,extra),method},ingress).accepted,false);
+  }
+  for(const path of ['/api/presentation/shared-room/room-a/unknown','/api/presentation/shared-room/room-a/binding/extra',
+    '/api/presentation/shared-room/room%2Da/config','/api/presentation/shared-room/room-a/../room-b/binding','/api/presentation/shared-room/Room-a/binding',
+    '/api/presentation/room-idle/north/room-a/0/astrid','/api/presentation/room-idle/north/room-a/9007199254740992/astrid',
+    '/api/presentation/room-video/north/room-a/7/astrid/not-a-uuid','/api/presentation/room-layers/north/room-a/7/'+id+'/extra','/api/presentation/unknown'])
+    assert.equal(vercelIngressRequest({...request(path),method:'GET'},ingress).accepted,false,path);
+});
+
+test('owned HTTP gateway carries shared binding queries and media GET HEAD Range through the same signed boundary',async t=>{
+  const id='00000000-0000-4000-8000-000000000083',seen=[];
+  const config='/api/presentation/shared-room/room-a/config?operatorSlug=north&roomId=room-a&packageRevision=7&dealerId=astrid';
+  const binding='/api/presentation/shared-room/room-a/binding?configVersion=cfg-1&windowId=window-1';
+  const advice='/api/presentation/shared-room/room-a/idle-advice';
+  const media=['/api/presentation/room-idle/north/room-a/7/astrid','/api/presentation/room-video/north/room-a/7/astrid/'+id,'/api/presentation/room-layers/north/room-a/7/'+id];
+  const web=createServer((req,res)=>{
+    seen.push({url:req.url,method:req.method});assert.equal(req.headers.host,'preview.example.test');assert.equal(req.headers.cookie,'player_session=isolated');
+    assert.equal(req.headers['x-croupier-vercel-secret'],undefined);assert.equal(req.headers['x-croupier-public-origin'],undefined);
+    if([binding,config,advice].includes(req.url)){
+      assert.equal(req.method,req.url===advice?'POST':'GET');res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"owner":"web"}');return;
+    }
+    assert.ok(media.includes(req.url));assert.equal(req.headers.range,'bytes=2-4');assert.equal(req.headers['if-range'],'"frozen"');
+    res.writeHead(req.method==='HEAD'?200:206,{'Content-Type':'video/mp4','Content-Length':req.method==='HEAD'?'8':'3',
+      ...(req.method==='HEAD'?{}:{'Content-Range':'bytes 2-4/8'}),'Accept-Ranges':'bytes',ETag:'"frozen"','Cache-Control':'private, no-cache, must-revalidate'});
+    res.end(req.method==='HEAD'?undefined:'234');
+  });
+  const servers=[web];t.after(async()=>{for(const server of servers.reverse()){server.closeAllConnections();if(server.listening)await new Promise(resolve=>server.close(resolve));}});
+  web.listen(0,'127.0.0.1');await once(web,'listening');
+  const gateway=createCloudGateway({singleOrigin:true,gameOrigin:ingress.publicOrigin,boOrigin:ingress.publicOrigin,labOrigin:ingress.publicOrigin,streaming:true},
+    {webPort:web.address().port,vercelIngress:ingress});servers.push(gateway);gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
+  const send=(path,method='GET',extra={})=>new Promise((resolve,reject)=>{
+    const input=request(path,extra),req=httpRequest({hostname:'127.0.0.1',port:gateway.address().port,path,method,headers:input.headers},res=>{
+      let body='';res.on('data',part=>body+=part);res.once('error',reject);res.once('end',()=>resolve({status:res.statusCode,headers:res.headers,body}));});
+    req.once('error',reject);req.setTimeout(2000,()=>req.destroy(Error('Owned ingress fixture timed out')));req.end();
+  });
+  for(const [path,method]of [[binding,'GET'],[config,'GET'],[advice,'POST']]){const response=await send(path,method);assert.equal(response.status,200);assert.equal(response.body,'{"owner":"web"}');}
+  for(const path of media){
+    const headers={range:'bytes=2-4','if-range':'"frozen"'},get=await send(path,'GET',headers),head=await send(path,'HEAD',headers);
+    assert.equal(get.status,206);assert.equal(get.body,'234');assert.equal(get.headers['content-range'],'bytes 2-4/8');assert.equal(get.headers.etag,'"frozen"');
+    assert.equal(head.status,200);assert.equal(head.body,'');assert.equal(head.headers['content-length'],'8');assert.equal(head.headers.etag,'"frozen"');
+  }
+  assert.equal(seen.length,9);
+  for(const path of [binding,media[0]])assert.equal((await send(path,'GET',{'x-croupier-vercel-secret':'wrong'})).status,421);
+  assert.equal((await send('/api/presentation/shared-room/room-a/unknown')).status,421);assert.equal(seen.length,9);
+});
+
 test('Studio preview HTML, commands and media require signed ingress and preserve only existing session cookies', () => {
   const id='10000000-0000-4000-8000-000000000001',base='/api/studio-preview/'+id;
   for(const [path,method] of [['/api/studio-preview','POST'],['/studio-preview/'+id+'?dealer=amira','GET'],

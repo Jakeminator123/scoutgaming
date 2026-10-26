@@ -14,6 +14,15 @@ import {createRequire} from 'node:module';
 const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_VERCEL_UNIFIED_UI:'0', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0', CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test',
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
+const roomMediaId='00000000-0000-4000-8000-000000000083';
+const roomPresentationRequests=[
+  ['/api/presentation/shared-room/room_a-2/binding?configVersion=cfg-1&windowId=unopened','GET'],
+  ['/api/presentation/shared-room/room_a-2/config?operatorSlug=north&roomId=room_a-2&packageRevision=7&dealerId=astrid','GET'],
+  ['/api/presentation/shared-room/room_a-2/idle-advice','POST'],
+  ['/api/presentation/room-idle/north/room_a-2/7/astrid','GET'],
+  [`/api/presentation/room-video/north/room_a-2/7/astrid/${roomMediaId}`,'GET'],
+  [`/api/presentation/room-layers/north/room_a-2/7/${roomMediaId}`,'GET'],
+];
 
 test('published roulette browser contracts use exact backend routes without exposing source aliases', () => {
   for (const path of ['/roulette-idle-contract.mjs', '/material-catalog.mjs', '/background-materials.mjs']) {
@@ -581,6 +590,15 @@ test('actual Next middleware disables rewrite caching for backend and authentica
         assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
       } else assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
     }
+    for(const [path,method]of roomPresentationRequests){
+      const response=module.exports.middleware(new NextRequest(config.publicOrigin+path,{method,headers:{cookie:'player_session=isolated',range:'bytes=2-7','if-none-match':'"frozen"','x-croupier-vercel-secret':'spoof'}}));
+      assert.equal(response.headers.get('x-middleware-rewrite'),config.backendOrigin+path);
+      assert.equal(response.headers.get('x-middleware-request-cookie'),'player_session=isolated');
+      assert.equal(response.headers.get('x-middleware-request-range'),'bytes=2-7');
+      assert.equal(response.headers.get('x-middleware-request-if-none-match'),'"frozen"');
+      assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'),config.secret);
+      assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'),'0');assert.equal(response.headers.get('cdn-cache-control'),'no-store');
+    }
     const contextPath = '/api/presentation/select';
     const context = module.exports.middleware(new NextRequest(config.publicOrigin + contextPath, {method:'GET', headers:{
       cookie:'player_session=isolated-unit-session', 'x-croupier-vercel-secret':'spoof', 'x-croupier-player-owner':'spoof',
@@ -647,6 +665,32 @@ test('frozen event media has one exact authenticated backend route',()=>{
   const headers=platformBackendHeaders(new Headers({cookie:'player_session=fixture',range:'bytes=0-15'}),config);
   assert.equal(headers.get('cookie'),'player_session=fixture');assert.equal(headers.get('range'),'bytes=0-15');
   for(const bad of [path+'/',path+'/record',path.replace('/7/','/0/'),path.replace('/johanna/','/%6aohanna/'),path.replace(/83$/,'xyz'),path.replace('/north/','/../')]) assert.equal(backendPlatformPath(bad),false,bad);
+});
+
+test('active shared presentation routes preserve exact queries, player cookies and media validators through signed transport',()=>{
+  for(const [path,method]of roomPresentationRequests){
+    assert.equal(backendPlatformPath(path),true,path);
+    const url=new URL(path,config.publicOrigin);
+    assert.deepEqual(platformRoute(url,config,new Request(url,{method})),{kind:'backend',destination:config.backendOrigin+path});
+    if(path.includes('/room-'))assert.deepEqual(platformRoute(url,config,new Request(url,{method:'HEAD'})),{kind:'backend',destination:config.backendOrigin+path});
+  }
+  const headers=platformBackendHeaders(new Headers({cookie:'player_session=isolated',range:'bytes=2-7','if-range':'"frozen"','if-none-match':'"frozen"','x-croupier-vercel-secret':'spoof'}),config);
+  for(const [name,value]of [['cookie','player_session=isolated'],['range','bytes=2-7'],['if-range','"frozen"'],['if-none-match','"frozen"']])assert.equal(headers.get(name),value);
+  assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
+});
+
+test('active room presentation routes reject adjacent namespaces, invalid identities and noncanonical paths',()=>{
+  const base='/api/presentation/shared-room/room-a',media='/api/presentation/room-video/north/room-a/7/astrid/'+roomMediaId;
+  const bad=[base,base+'/',base+'/select',base+'/bindings',base+'/binding/extra',base+'/config/extra',base+'/idle-advice/extra',
+    '/api/presentation/shared-room//binding','/api/presentation/shared-room/Room-a/binding',
+    '/api/presentation/shared-room/'+'a'.repeat(129)+'/binding',base.replace('room-a','room%2Da')+'/binding',base+'/../room-b/binding',
+    '/api/presentation/shared-room/room/a/binding','/api/presentation/unknown','/api/presentation/room-anything/north/room-a/7/astrid',
+    media+'/',media+'/extra',media.replace('/7/','/0/'),media.replace('/7/','/01/'),media.replace('/7/','/9007199254740992/'),
+    media.replace('/north/','/North/'),media.replace('/room-a/','/room%2Da/'),media.replace('/room-a/','/../'),
+    media.replace('/astrid/','/astrid_/'),media.replace(roomMediaId,roomMediaId.toUpperCase().replace('0000','ABCD')),media.replace(roomMediaId,'not-a-uuid'),
+    '/api/presentation/room-idle/north/room-a/7/astrid/'+roomMediaId,'/api/presentation/room-video/north/room-a/7/astrid',
+    '/api/presentation/room-layers/north/room-a/7/astrid/'+roomMediaId,'/api/presentation/room-layers/north/room-a/7/'+roomMediaId+'/extra'];
+  for(const path of bad)assert.equal(backendPlatformPath(path),false,path);
 });
 
 test('published room catalogue uses an exact operator route through existing backend transport',()=>{

@@ -33,7 +33,7 @@ function checked(raw, roomId) {
 export function createSharedRoomController({ roomId, commands, view, presentation, now = Date.now }) {
   if (!/^[a-z0-9_-]{1,128}$/.test(roomId) || !commands || !view || !presentation) fail();
   let snapshot = null, chip = null, focusSeat = null, activeSignal, disconnected, clockOffset = 0, clockTimer;
-  let closed = false, connected = false, presenting = false, sending = false, waiting = null, notice = 'Ansluter till bordet…';
+  let closed = false, connected = false, presenting = false, sending = false, restoring = false, restoreGeneration = 0, waiting = null, notice = 'Ansluter till bordet…';
   const serverTime = () => now() + clockOffset;
   function available() {
     const s = snapshot, result = { join:false, leave:false, bet:false, undo:false, clear:false, doubleBets:false, allSeats:false, repeat:false,
@@ -56,7 +56,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     return result;
   }
   function draw() { view.render({ snapshot, chip, focusSeat, can:available(), busy:sending || Boolean(waiting) || presenting,
-    retry:commands.state === 'uncertain' && !sending && !closed, notice, connected, stopped:closed, serverNow:serverTime() }); }
+    retry:commands.state === 'uncertain' && !sending && !closed && connected && !restoring && !activeSignal?.aborted, notice, connected, stopped:closed, serverNow:serverTime() }); }
   function schedule() {
     clearTimeout(clockTimer);
     if (!snapshot || closed || !connected) return;
@@ -91,7 +91,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     return {op};
   }
   async function execute(work) {
-    if (closed || sending) return;
+    if (closed || sending || restoring || !connected || activeSignal?.aborted) return;
     sending = true; notice = 'Skickar…'; draw();
     try {
       const reply = await work();
@@ -113,7 +113,14 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       signal?.throwIfAborted(); if (closed) return;
       const next = checked(raw,roomId);
       if (snapshot && (next.me.id !== snapshot.me.id || next.version < snapshot.version || next.presentationVer < snapshot.presentationVer)) fail();
-      await presentation.restoreSnapshot(next,{signal}); signal?.throwIfAborted(); if (closed) return;
+      const generation = ++restoreGeneration;
+      // An active socket is not authority to act while its new window's media
+      // binding is loading and being checked again by the server.
+      connected = false; restoring = true; clearTimeout(clockTimer); draw();
+      try { await presentation.restoreSnapshot(next,{signal}); signal?.throwIfAborted(); }
+      catch(error) { if (generation === restoreGeneration) { restoring = false; if (!closed) draw(); } throw error; }
+      if (closed || generation !== restoreGeneration) return;
+      restoring = false;
       activeSignal?.removeEventListener('abort',disconnected);
       snapshot = next; activeSignal = signal; connected = true; clockOffset = next.serverNow-now();
       disconnected = () => { connected = false; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
@@ -134,10 +141,11 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
     fail() { if (!closed) { api.stop(); notice = 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
     stop() {
-      if (closed) return; closed = true; connected = false; clearTimeout(clockTimer);
+      if (closed) return; closed = true; connected = false; restoring = false; ++restoreGeneration; clearTimeout(clockTimer);
       activeSignal?.removeEventListener('abort',disconnected); commands.stop(); presentation.close(); view.close();
     },
     get state() { return Object.freeze({snapshot,chip,waiting:waiting ? {...waiting} : null,closed,connected}); },
   };
   view.bind({dispatch:api.dispatch,selectChip:api.selectChip,focusSeat:api.focusSeat,retry:api.retry}); draw(); return Object.freeze(api);
 }
+

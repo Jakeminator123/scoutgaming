@@ -4,6 +4,22 @@ import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/pr
 import { calibration } from '../../../packages/presentation/contracts/calibration.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
+import { resolvePlayerSelection, applyTableColor } from '../../../packages/presentation/runtime/player-choices.mjs';
+
+const colorOwner=Symbol('shared-room-color');
+function roomColor(document,color){
+  if(!color)return()=>{};
+  const root=document.documentElement,owner={},previous=root.dataset.tableColor;
+  const styles=[[root,'--table-felt'],[document.querySelector('#felt-brand'),'color'],[document.querySelector('#wallet'),'border-left-color'],
+    [document.querySelector('#chip-row'),'box-shadow']].filter(([node])=>node).map(([node,property])=>({node,property,value:node.style.getPropertyValue?.(property)??'',priority:node.style.getPropertyPriority?.(property)??''}));
+  if(!applyTableColor(document,color))return()=>{};
+  root[colorOwner]=owner;
+  return()=>{
+    if(root[colorOwner]!==owner)return;delete root[colorOwner];
+    for(const {node,property,value,priority}of styles){if(value)node.style.setProperty(property,value,priority);else node.style.removeProperty?.(property);}
+    if(previous===undefined)delete root.dataset.tableColor;else root.dataset.tableColor=previous;
+  };
+}
 
 // K04's public instructions are rendered through the existing exact media/card ports.
 // A reconnect restores authoritative cards and consumes its historical presentation.
@@ -130,20 +146,23 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   if(selection.presentation!=='local')throw new Error('shared_room_presentation_adapter_unavailable');
   const host=document.getElementById('scene');
   const dealer=selection.registeredDealers?.find(row=>row.id===selection.dealer);
-  if(!host||!dealer||selection.localDealer!==dealer.id)throw new Error('shared_room_presentation_binding_missing');
+  if(!host||!dealer||selection.localDealer!==dealer.id||!/^[a-z0-9_-]{1,128}$/.test(selection.roomId??''))throw new Error('shared_room_presentation_binding_missing');
   const filmedProfile=registeredFilmedProfile(dealer.id);
   signal?.throwIfAborted();
   const [{PerformancePlayer},{createLocalPresentation},{createLocalCardOverlay}]=await loadAdapters();
   signal?.throwIfAborted();
   const composition=createComposition(document,selection.composition);
   let player;
-  let media,cards,version=0,muted=true,lastLayout,currentPresentation,currentConnection;
+  let media,cards,version=0,muted=true,lastLayout,currentPresentation,currentConnection,restoreColor=()=>{};
   const sound=document.getElementById('sound-btn');
   const onSound=()=>{muted=!muted;paintSound();media?.state({});};
   const paintSound=()=>{if(sound){sound.textContent=muted?'🔇':'🔊';sound.setAttribute('aria-label',muted?'Slå på dealerljud':'Stäng av dealerljud');sound.setAttribute('aria-pressed',String(!muted));}};
   try {
     player=new PerformancePlayer({host});
     const request=(url,options={})=>{
+      if(url==='/api/presentation/config'||url.startsWith('/api/presentation/config?'))
+        url=url.replace('/api/presentation/config',`/api/presentation/shared-room/${selection.roomId}/config`);
+      else if(url==='/api/presentation/idle-advice')url=`/api/presentation/shared-room/${selection.roomId}/idle-advice`;
       if(url==='/api/presentation/select'){
         if(!currentPresentation||currentPresentation.ver!==version)throw new Error('shared_room_media_authority_unavailable');
         const body=JSON.parse(options.body);
@@ -158,7 +177,13 @@ export async function mountSharedRoomPresentation({ document, window, selection,
       muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:()=>onReady(dealer.id),onBusy:()=>{},onError:()=>onError('shared_room_media_unavailable')});
     signal?.throwIfAborted();
     cards=createLocalCardOverlay(host,{dealerLabel:dealer.label,filmedProfile});
-  } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();throw error;}
+    // Apply only this server binding's N2 values. Shared tables never read a
+    // personal dealer/colour override or query-string choice here.
+    const chosen=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:dealer.id,composition:selection.composition});
+    if(chosen.applyBackground)composition?.setBackground(chosen.backgroundValue);
+    if(chosen.tableValue)composition?.setTable(chosen.tableValue);
+    restoreColor=roomColor(document,chosen.tableColor);
+  } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();restoreColor();throw error;}
   const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id});
   function layout(value=lastLayout){
     if(!value)return;lastLayout=value;
@@ -182,10 +207,13 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   }
   const unGeometry=composition?.onGeometryChange(layout);
   const resize=()=>layout();window.addEventListener('resize',resize);sound?.addEventListener('click',onSound);paintSound();
-  media.start();
+  let closed=false;
+  const close=()=>{if(closed)return;closed=true;window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();restoreColor();};
+  try{signal?.throwIfAborted();media.start();}catch(error){close();throw error;}
   return Object.freeze({
     restoreSnapshot(snapshot,options){currentConnection=options?.signal;version=snapshot.presentationVer;if(currentPresentation?.ver!==version)currentPresentation=null;return ports.restoreSnapshot(snapshot,options);},
     present:ports.present,layout,
-    close(){window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();},
+    close,
   });
 }
+

@@ -14,7 +14,7 @@ import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecy
 import { isAdministratorRole } from '../../studio-access/account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
 import {
-  StudioStorageError, canonicalStudioJson, studioStorageFailure, validateActor, validateStudioScope,
+  StudioStorageError, canonicalStudioJson, cloneStudioJson, studioStorageFailure, validateActor, validateStudioScope,
 } from '../../studio-registry/server/storage-contract.mjs';
 
 const idPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
@@ -539,7 +539,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       return saved;
     });
   }
-  async function publishWithin(txQuery,input) {
+  async function publishWithin(txQuery,input,replacement=null) {
       // Validation is part of the transaction callback, so a caught local error
       // poisons a shared repository mutation just like an SQL/CAS failure.
       actorOf(input);
@@ -551,13 +551,14 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       const expectedRevision = optionalOwn(input, 'expectedRevision');
       if (expectedRevision !== undefined && expectedRevision !== null) integer(expectedRevision, 1, 'studio_invalid_data', 422);
       if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      let current=null;
       {
         const rows = await txQuery(`/* operator-store:current-package */
           SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms
           FROM croupier_studio.operator_packages
           WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
           ORDER BY package_revision DESC LIMIT 1`, [operatorId]);
-        const current = rows[0] ? packageRow(rows[0]) : null;
+        current = rows[0] ? packageRow(rows[0]) : null;
         if (expectedRevision !== undefined && (current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
         const lifecycle = optionalOwn(input, 'lifecycle');
         if (lifecycle !== undefined && (!plain(lifecycle) || Object.keys(lifecycle).sort().join(',') !== 'archived,resourceId,resourceType'
@@ -574,6 +575,12 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         if (archived.rooms.some(entry => JSON.parse(tables).includes(entry.room.id) || entry.room.operatorId !== operatorId)) fail('studio_conflict',409);
         branding = canonicalBranding(nextBranding);
       }
+      const nextBranding=JSON.parse(branding);
+      const roomWriter=replacement||Object.hasOwn(current?.branding??{},'roomGameConfigVersions')||Object.hasOwn(nextBranding,'roomGameConfigVersions')
+        ?await import('../../presentation/server/room-game-publication.mjs'):null;
+      const roomPublication=roomWriter?await roomWriter.prepareRoomGamePublication({query:txQuery,decodePackage:packageRow,current,
+        next:{operatorId,revision:(current?.revision??0)+1,lanes:JSON.parse(lanes),games:JSON.parse(games),tables:JSON.parse(tables),branding:nextBranding},replacement}):null;
+      if(roomPublication)branding=canonicalBranding(roomPublication.branding);
       if (isExtendedPresentationEnvelope(JSON.parse(branding)[PRESENTATION_STORAGE_KEY])) await assertExtendedPresentationStorage(txQuery);
       const row = (await txQuery(`/* operator-store:publish-package */
       INSERT INTO croupier_studio.operator_packages
@@ -584,10 +591,18 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     [operatorId, lanes, games, tables, branding, clock()]))[0];
     if (!row) fail('studio_storage_unavailable');
       const saved=packageRow(row);
+      if(roomPublication)await roomWriter.writeRoomGamePublication(txQuery,roomPublication,saved.revision);
       await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {})}});
-      return saved;
+      return replacement?{package:saved,config:structuredClone(roomPublication.configs.find(row=>row.roomId===replacement.roomId).body)}:saved;
   }
   async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
+  // Only the trusted J08 writer supplies a complete validated replacement. A
+  // branding payload cannot turn itself into this method or choose its ID.
+  async function publishRoomGameConfig(input={},replacement) {
+    if(!replacement)fail('studio_invalid_data',422);
+    const captured=cloneStudioJson(replacement),capturedInput=cloneStudioJson(input);
+    return withOperatorLock(txQuery=>publishWithin(txQuery,capturedInput,captured));
+  }
   async function changeOperatorStatus(input={}) {
     actorOf(input);
     const operatorId=idText(ownValue(input,'operatorId'));
@@ -697,6 +712,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
 
   return Object.freeze({
     scope, assertExtendedPresentationReady, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
-    getCurrentPackage, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage,
+    getCurrentPackage, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage, publishRoomGameConfig,
   });
 }

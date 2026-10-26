@@ -52,9 +52,13 @@ function fixture({resolver=true,speech=false,native=false,branding={}}={}) {
     else if(marker==='operator-store:current-package')rows=work.packages.filter(row=>row.operator_id===values[2]).slice(-1);
     else if(marker==='operator-store:publish-package') {const row={...work.packages.at(-1),package_revision:work.packages.at(-1).package_revision+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]};work.packages.push(row);rows=[row];}
     else if(marker==='operator-store:audit-write'){work.audits.push(values);rows=[{event_id:values[3]}];}
-    else if(marker==='room-game-config:room-lock')assert.match(sql,/pg_advisory_xact_lock/);
-    else if(marker==='room-game-config:publish-config'){const key=values[2]+':'+values[3];assert.equal(work.configs[key],undefined);work.configs[key]=values[4];}
-    else if(marker==='room-game-config:publish-head')work.heads[values[2]]=values[3];
+    else if(marker==='operator-store:room-config-lock')assert.match(sql,/pg_advisory_xact_lock/);
+    else if(marker==='operator-store:room-config-administration')rows=[clone(work.document)];
+    else if(marker==='operator-store:package-by-revision')rows=work.packages.filter(row=>row.operator_id===values[2]&&row.package_revision===values[3]);
+    else if(marker==='operator-store:room-config-current'){const version=work.heads[values[2]];rows=version?[{version,body:work.configs[values[2]+':'+version]}]:[];}
+    else if(marker==='operator-store:room-config-media')rows=work.mediaRows.filter(row=>values[2].includes(row.id)).map(({revision,updatedAt,...record})=>({id:record.id,record}));
+    else if(marker==='operator-store:room-config-insert'){const key=values[2]+':'+values[3];assert.equal(work.configs[key],undefined);work.configs[key]=values[4];}
+    else if(marker==='operator-store:room-config-head'){if((work.heads[values[2]]??null)===values[4]){work.heads[values[2]]=values[3];rows=[{version:values[3]}];}}
     else if(marker==='room-game-config:read-published'){const body=work.configs[values[2]+':'+values[3]];rows=body?[{body}]:[];}
     else if(marker==='shared-room-access:config'){const version=work.heads[values[2]];rows=version?[{version,body:work.configs[values[2]+':'+version]}]:[];}
     else throw Error('Unhandled SQL '+marker);
@@ -90,7 +94,7 @@ test('J08 save/read/publish binds immutable full profile and package on the same
   assert.equal(stored.heads['room-test'],version);assert.equal(JSON.parse(stored.packages.at(-1).branding).roomGameConfigVersions['room-test'],version);
   assert.equal(config.betMs,20000);assert.equal(config.actionMs,15000);assert.equal(config.language,'sv');assert.equal(config.cardMs,880);
   assert.deepEqual(config.limits,{min:5,max:2000,sideMax:200});assert.deepEqual(config.chips,ROOM_LIMIT_PRESETS.prive.chips);assert.equal(config.refill,1000);
-  assert.ok(f.trace.indexOf('room-game-config:room-lock')<f.trace.indexOf('operator-store:publish-package'));
+  assert.ok(f.trace.indexOf('operator-store:room-config-lock')<f.trace.indexOf('operator-store:publish-package'));
   assert.deepEqual((await f.invoke('GET')).published,result.published);
 });
 test('native material publishes through the captured current-record and frozen-package checks without provider I/O',async t=>{
@@ -195,7 +199,7 @@ test('embedded AV room override survives J08 save/read/publish and native access
     assert.equal((await denied.invoke('GET')).publication.ready,false,name);
     await assert.rejects(denied.publish(pending),{code:'studio_room_game_material_unavailable',statusCode:422});
     assert.deepEqual(denied.snapshot(),before,name+' cannot change package, config, head, draft or audit');
-    assert.equal(denied.trace.some(marker=>['operator-store:publish-package','operator-store:audit-write','room-game-config:publish-config','room-game-config:publish-head'].includes(marker)),false);
+    assert.equal(denied.trace.some(marker=>['operator-store:publish-package','operator-store:audit-write','operator-store:room-config-insert','operator-store:room-config-head'].includes(marker)),false);
   }
   assert.equal(provider.mock.callCount(),0);
 });
@@ -222,7 +226,7 @@ test('J08 stale administration, package and draft revisions never partially publ
   await assert.rejects(f.publish(first),{statusCode:409});assert.deepEqual(f.snapshot().heads,{});
 });
 test('J08 publication fault rolls package, audit, config, head and draft back together',async()=>{
-  const f=fixture(),draft=await f.save(),before=f.snapshot();f.fail('room-game-config:publish-head');await assert.rejects(f.publish(draft),/injected/);assert.deepEqual(f.snapshot(),before);
+  const f=fixture(),draft=await f.save(),before=f.snapshot();f.fail('operator-store:room-config-head');await assert.rejects(f.publish(draft),{code:'studio_storage_unavailable',statusCode:503});assert.deepEqual(f.snapshot(),before);
   await f.publish(draft);assert.equal(f.snapshot().packages.length,2);
 });
 test('J08 concurrent duplicate publications have one winner',async()=>{
@@ -343,7 +347,7 @@ test('J08 native material dry-run refuses publication without a resolver and pre
     assert.deepEqual(await denied.json(),{error:'studio_room_game_material_unavailable',code:'studio_room_game_material_unavailable'});
     assert.equal(denied.headers.get('cache-control'),'private, no-store');
     assert.deepEqual(f.snapshot(),before,'package, config, head, audit and saved draft remain unchanged');
-    assert.equal(f.trace.some(marker=>marker?.startsWith('material:')||marker==='operator-store:publish-package'||marker==='room-game-config:publish-config'),false);
+    assert.equal(f.trace.some(marker=>marker?.startsWith('material:')||marker==='operator-store:publish-package'||marker==='operator-store:room-config-insert'),false);
   }
   assert.equal(provider.mock.callCount(),0);
 });

@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { createRoomGameConfigApi } from '../../apps/studio/lib/room-game-config-api.mjs';
 import { createSharedTableProofReadout } from '../../apps/studio/lib/shared-table-proof-readout.mjs';
 import { cloudPresentationFixture } from '../../apps/studio/test/fixtures/cloud-presentation.mjs';
@@ -51,6 +52,16 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
     audits: await rows('croupier_studio.audit_events', 'event_id'), packageAudit: await rows('croupier_studio.operator_audit_events', 'event_id'),
     packages: await rows('croupier_studio.operator_packages', 'package_revision'), configs: await rows('croupier_game.shared_table_configs', 'version'), heads: await rows('croupier_game.shared_table_config_heads', 'room_id') });
   const status = wanted => error => error?.statusCode === wanted;
+  const withPublication = (work, repo = repository) => repo.transaction(() => repo.withTransactionClient(async client => {
+    const operators = await createOperatorStore({ sql: client, scope, transaction: callback => repo.withTransactionClient(callback) });
+    const current = await operators.getCurrentPackage(operatorId);
+    assert.ok(current, 'fixture must already have a published package');
+    const input = { actor: actor.user, operatorId, expectedRevision: current.revision,
+      lanes: current.lanes, games: current.games, tables: current.tables, branding: structuredClone(current.branding) };
+    return work({ operators, input, current, client });
+  }));
+  const appearanceInput = (input, color) => ({ ...input, branding: { ...input.branding,
+    roomOverrides: { ...input.branding.roomOverrides, [roomId]: { ...input.branding.roomOverrides?.[roomId], color } } } });
   await repository.initializeDocument('administration', { value: administration, revision: 'j08-initial', actor: actor.user });
   await repository.initializeDocument('project', { value: cloud.project, revision: cloud.project.revision, actor: actor.user });
   for (const { revision: _revision, updatedAt: _updatedAt, ...record } of cloud.mediaRows)
@@ -65,6 +76,19 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
   await pool.query(`CREATE FUNCTION croupier_studio.j08_fixture_fail_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
     IF NEW.actor='j08-sql-fault' THEN RAISE EXCEPTION 'isolated J08 injected SQL audit failure'; END IF; RETURN NEW; END $$;
     CREATE TRIGGER j08_fixture_fail_audit AFTER INSERT ON croupier_studio.audit_events FOR EACH ROW EXECUTE FUNCTION croupier_studio.j08_fixture_fail_audit()`);
+  // Transaction-local fixture switches exercise the actual INSERT/UPDATE/CAS
+  // and final package audit in PostgreSQL. They never run outside this owned cluster.
+  await pool.query(`CREATE FUNCTION croupier_game.j08_fixture_conflict_config_head() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    IF current_setting('j08.force_head_conflict',true)='on' THEN
+      UPDATE croupier_game.shared_table_config_heads SET version=NEW.version WHERE room_id=NEW.room_id;
+    END IF; RETURN NEW; END $$;
+    CREATE TRIGGER j08_fixture_conflict_config_head AFTER INSERT ON croupier_game.shared_table_configs
+      FOR EACH ROW EXECUTE FUNCTION croupier_game.j08_fixture_conflict_config_head();
+    CREATE FUNCTION croupier_studio.j08_fixture_fail_package_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF current_setting('j08.fail_package_audit',true)='on' THEN RAISE EXCEPTION 'isolated J08 injected package audit failure'; END IF;
+      RETURN NEW; END $$;
+    CREATE TRIGGER j08_fixture_fail_package_audit AFTER INSERT ON croupier_studio.operator_audit_events
+      FOR EACH ROW EXECUTE FUNCTION croupier_studio.j08_fixture_fail_package_audit()`);
 
   await check('j08-two-physical-clients-save-read-and-stale-admin-package-draft-cas', async () => {
     const a = await pool.connect(), b = await secondPool.connect();
@@ -139,6 +163,76 @@ export async function runRoomGameConfigSqlChecks({ pool, createPool, restart }) 
     time = Math.max(time, settled.plan.endAt); await send('next', { roundId: settled.roundId });
     const next = await table.snapshot(roomId, playerId); assert.equal(next.phase, 'bets'); assert.notEqual(next.windowId, original.windowId);
     assert.equal(next.configVersion, secondPublication.published.configVersion);
+  });
+  await check('j08-sql-unchanged-publication-preserves-head-and-immutable-config-history', async () => {
+    const before = await persisted();
+    const result = await withPublication(({ operators, input }) => operators.publishPackage(input));
+    const after = await persisted();
+    assert.equal(result.revision, Number(before.packages.at(-1).package_revision) + 1);
+    assert.deepEqual(after.heads, before.heads); assert.deepEqual(after.configs, before.configs);
+    assert.equal(result.branding.roomGameConfigVersions[roomId], before.heads.find(row => row.room_id === roomId).version);
+    assert.equal(after.packages.length, before.packages.length + 1); assert.equal(after.packageAudit.length, before.packageAudit.length + 1);
+    assert.deepEqual(after.documents, before.documents); assert.deepEqual(after.audits, before.audits);
+  });
+  await check('j08-sql-n2-rotation-keeps-the-active-window-and-switches-only-the-next-window', async () => {
+    const playerId = 'j08-player', original = await table.snapshot(roomId, playerId, { client: true }), before = await persisted();
+    const originalRow = before.configs.find(row => row.room_id === roomId && row.version === original.configVersion);
+    const originalConfig = JSON.parse(originalRow.body);
+    const saved = await withPublication(({ operators, input }) => operators.publishPackage(appearanceInput(input, '#445566')), otherRepository);
+    const after = await persisted(), nextVersion = saved.branding.roomGameConfigVersions[roomId];
+    assert.notEqual(nextVersion, original.configVersion);
+    assert.equal(after.heads.find(row => row.room_id === roomId).version, nextVersion);
+    const nextConfig = JSON.parse(after.configs.find(row => row.room_id === roomId && row.version === nextVersion).body);
+    assert.equal(nextConfig.packageRevision, saved.revision);
+    assert.deepEqual({ ...nextConfig, configVersion: originalConfig.configVersion, packageRevision: originalConfig.packageRevision }, originalConfig);
+    assert.equal(after.configs.find(row => row.version === original.configVersion).body, originalRow.body);
+    assert.equal(after.configs.length, before.configs.length + 1);
+    assert.equal(after.packageAudit.length, before.packageAudit.length + 1);
+    assert.deepEqual(after.documents, before.documents); assert.deepEqual(after.history, before.history); assert.deepEqual(after.audits, before.audits);
+    // Reconstruct from another physical pool. Current package/head changed,
+    // but the already-open window must still read its old immutable config.
+    table = createTableCoordinator({ store: createPostgresTableStore({ pool: secondPool, walletMode: 'demo' }),
+      clock: { now: () => time }, random: deterministicRandom('j08-n2-reconstructed') });
+    assert.equal((await table.snapshot(roomId, playerId)).configVersion, original.configVersion);
+    const send = (op, body = {}) => table.command({ actorId: playerId }, { roomId, commandId: `j08-${++command}`, op, ...body });
+    await send('bet', { seat: 0, field: 'main', chip: original.settings.chips[0], windowId: original.windowId });
+    await send('ready', { windowId: original.windowId });
+    for (let step = 0; step < 12 && (await store.read.room(roomId)).phase !== 'settled'; step++) {
+      const current = await store.read.room(roomId); assert.equal(current.configVersion, original.configVersion);
+      time = Math.max(time + 1, current.actionDeadline ?? current.plan?.endAt ?? current.deadline ?? time + 20000);
+      await table.seen(roomId, playerId);
+      for (const tick of (await table.dueTicks()).filter(row => row.roomId === roomId && ['insurance.timeout', 'turn.autostand', 'window.close', 'round.settle'].includes(row.kind)))
+        await table.tick(tick);
+    }
+    const settled = await store.read.room(roomId); assert.equal(settled.phase, 'settled'); assert.equal(settled.configVersion, original.configVersion);
+    time = Math.max(time, settled.plan.endAt); await send('next', { roundId: settled.roundId });
+    const next = await table.snapshot(roomId, playerId);
+    assert.equal(next.phase, 'bets'); assert.notEqual(next.windowId, original.windowId); assert.equal(next.configVersion, nextVersion);
+    assert.equal((await read(otherApi)).published.configVersion, nextVersion);
+  });
+  await check('j08-sql-forged-bindings-foreign-operator-and-stale-package-cannot-write', async () => {
+    for (const change of ['replace-binding', 'remove-binding', 'foreign-binding', 'foreign-operator', 'stale-package']) {
+      const before = await persisted();
+      await assert.rejects(withPublication(({ operators, input }) => {
+        if (change === 'replace-binding') input.branding.roomGameConfigVersions[roomId] = 'room-config-30000000-0000-4000-8000-000000000001';
+        if (change === 'remove-binding') delete input.branding.roomGameConfigVersions[roomId];
+        if (change === 'foreign-binding') input.branding.roomGameConfigVersions['room-foreign'] = 'room-config-30000000-0000-4000-8000-000000000001';
+        if (change === 'foreign-operator') input.operatorId = 'j08-foreign-operator';
+        if (change === 'stale-package') input.expectedRevision -= 1;
+        return operators.publishPackage(input);
+      }), error => [403, 404, 409].includes(error?.statusCode), change);
+      assert.deepEqual(await persisted(), before, `${change} must leave package, config, head and audit unchanged`);
+    }
+  });
+  await check('j08-sql-head-cas-and-final-package-audit-failures-rollback-n2-rotation', async () => {
+    for (const fault of ['force_head_conflict', 'fail_package_audit']) {
+      const before = await persisted();
+      await assert.rejects(withPublication(async ({ operators, input, client }) => {
+        await client.query('SELECT set_config($3,$4,true) WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL', [...params, `j08.${fault}`, 'on']);
+        return operators.publishPackage(appearanceInput(input, '#778899'));
+      }), status(fault === 'force_head_conflict' ? 409 : 503));
+      assert.deepEqual(await persisted(), before, `${fault} must roll back even an already-inserted config and changed head`);
+    }
   });
   await check('j08-publication-takes-the-same-physical-room-lock-as-j07', async () => {
     const draft = await save(), before = await persisted(), holder = await secondPool.connect();

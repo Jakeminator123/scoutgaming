@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Readable } from 'node:stream';
+import { Readable, Writable } from 'node:stream';
 import { EventEmitter } from 'node:events';
 import {createHash} from 'node:crypto';
 import { createPresentationApi } from '../services/game/presentation-api.mjs';
+import {sharedRoomPresentationRead,createSharedRoomPresentationBridge} from '../services/game/shared-room-presentation-http.mjs';
 import { createEmptyProject, addDealer } from '../packages/presentation/contracts/studio-model.mjs';
 import { recordedSpeechIdentity, recordedSpeechForVideo } from '../packages/presentation/contracts/recorded-speech.mjs';
 import {recordedSpeechProjection} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
@@ -22,11 +23,11 @@ function fixture({dealerId='nora',sourceEvent=event,options={}}={}){
   let reads=0,native=0,before=0,selects=0,failure;
   const base={env:{},db:{prepare(){native++;throw Error('must not read native journal');}},beforeActionPresentation(){before++;throw Error('must not change native action');},
     store:{load:async()=>{throw Error('must not read live Studio');}},registryLoader:async()=>{throw Error('must not read live registry');},
-    frozenDealerContext:{resolve:async()=>{reads++;return frozen;},publicVideo:(_f,id)=>{const row=frozen.inventory.videos.find(v=>v.id===id);return row?{id,sha256:row.sha256,fileName:row.fileName,src:'/api/presentation/registered-video/'+['north','room-a',7,dealerId,id].join('/'),...recordedSpeechProjection(row)}:null;}},
+    frozenDealerContext:{resolve:async()=>{reads++;return frozen;},publicVideo:(_f,id)=>{const row=frozen.inventory.videos.find(v=>v.id===id);return row?{id,sha256:row.sha256,fileName:row.fileName,src:'/api/presentation/room-video/'+['north','room-a',7,dealerId,id].join('/'),...recordedSpeechProjection(row)}:null;}},
     withSharedCommittedReceipt:async({request,playerId,body,signal},selectFrozen)=>{
       assert.equal(request.method,'POST');assert.equal(playerId,'alice');signal.throwIfAborted();
       if(body.event.type!==capture.sourceEvent.type||body.event.type==='speak'&&body.event.line!==capture.sourceEvent.line)throw Object.assign(Error('stale'),{code:'shared_room_presentation_stale',statusCode:409});
-      selects++;try{return await selectFrozen(capture,{signal});}catch(error){failure=error;throw error;}
+      selects++;try{return await selectFrozen(capture,{signal,frozenDealerContext:base.frozenDealerContext});}catch(error){failure=error;throw error;}
     },...options};
   const api=createPresentationApi(base);
   const body={dealerId,mode:'off',version:3,event:sourceEvent,presentationContext:context,sharedRoom:{roomId:'room-a',ver:3,talkId:'talk-3'}};
@@ -42,11 +43,109 @@ function speech(status='approved',changes={}){
   const identity=recordedSpeechIdentity(row),proof={by:'synthetic-reviewer',at:'2026-10-22T00:00:00.000Z',identity};row.recording={status:'verified-recording',...proof};row.review=status==='pending'?{status}:{status,...proof};return row;
 }
 
-test('shared selector uses committed card and frozen registered URL without native reads or action writes',async()=>{
+test('shared selector uses committed card and active-room URL without native reads or action writes',async()=>{
   const h=fixture(),reply=await h.request({event:{...event,card:{r:'K',s:'♦'},private:'untrusted'}});
   assert.equal(reply.status,200,JSON.stringify(reply.body)+' '+String(h.failure));assert.deepEqual(reply.body.decision.sourceEvent,event);
-  assert.equal(reply.body.video.id,first);assert.match(reply.body.video.src,/registered-video\/north\/room-a\/7\/nora\//);
+  assert.equal(reply.body.video.id,first);assert.match(reply.body.video.src,/room-video\/north\/room-a\/7\/nora\//);
   assert.deepEqual(h.counts(),{reads:2,native:0,before:0,selects:1});assert.equal(reply.body.standard.id,first);
+});
+
+test('shared selection and shared idle advice use only the active request context, leaving generic history readers untouched',async()=>{
+  const h=fixture(),generic=h.base.frozenDealerContext;
+  h.base.frozenDealerContext={...generic};generic.resolve=()=>assert.fail('generic history reader must not handle the active room');
+  assert.equal((await h.request()).status,200);
+  let activeReads=0;
+  const idle=fixture({options:{frozenDealerContext:{resolve:()=>assert.fail('generic idle context used')},
+    withActiveRoomPresentation:async(args,work)=>{
+      activeReads++;assert.equal(args.roomId,'room-a');assert.equal(args.presentationContext.packageRevision,7);
+      return work({presentationContext:args.presentationContext},{signal:args.signal,frozenDealerContext:{resolve:async()=>idle.frozen}});
+    }}});
+  const result=await idle.request({sharedRoom:undefined},'/api/presentation/shared-room/room-a/idle-advice');
+  assert.equal(result.status,200);assert.equal(result.body.provider,'idle_openclaw_off');assert.equal(activeReads,1);
+});
+
+test('scoped HTTP binding/config/media carry exact preconditions and preserve private Range/HEAD/304 responses',async()=>{
+  const context={operatorSlug:'north',roomId:'room-a',packageRevision:7,dealerId:'nora'},calls=[];
+  const read=async(request,status=200)=>sharedRoomPresentationRead({request,playerId:'alice'},async(args,work)=>{
+    calls.push(args);assert.equal(args.roomId,'room-a');assert.equal(args.playerId,'alice');
+    const respond=()=>new Response(request.method==='HEAD'||status===304?null:'verified bytes',{status,headers:{etag:'"sha256-'+ 'a'.repeat(64)+'"',
+      'Cache-Control':'private, no-cache, must-revalidate',...(status===206?{'Content-Range':'bytes 0-13/4096'}:{})}});
+    return work({configVersion:'config-a',windowId:'window-a',presentationContext:context},{frozenDealerContext:{
+      selection:async()=>({dealer:'nora',roomId:'room-a',packageRevision:7}),configuration:async()=>({owner:'web',dealer:{id:'nora'}}),response:respond,layerResponse:respond}});
+  });
+  const binding=await read({url:'/api/presentation/shared-room/room-a/binding?configVersion=config-a&windowId=window-a',method:'GET'});
+  assert.deepEqual((await binding.json()).presentationContext,context);assert.deepEqual(calls.at(-1).expected,{configVersion:'config-a',windowId:'window-a'});
+  assert.equal(binding.headers.get('cache-control'),'private, no-store');
+  const config=await read({url:'/api/presentation/shared-room/room-a/config?operatorSlug=north&roomId=room-a&packageRevision=7&dealerId=nora',method:'GET'});
+  assert.equal((await config.json()).dealer.id,'nora');assert.deepEqual(calls.at(-1).presentationContext,context);
+  for(const path of ['/api/presentation/room-video/north/room-a/7/nora/'+first,'/api/presentation/room-idle/north/room-a/7/nora','/api/presentation/room-layers/north/room-a/7/'+first]) {
+    const range=await read({url:path,method:'GET',headers:{range:'bytes=0-13'}},206);
+    assert.equal(range.status,206);assert.equal(range.headers.get('content-range'),'bytes 0-13/4096');assert.equal(await range.text(),'verified bytes');
+    const head=await read({url:path,method:'HEAD'});assert.equal(head.body,null);assert.equal(head.headers.get('etag'),'"sha256-'+ 'a'.repeat(64)+'"');
+    const cached=await read({url:path,method:'GET',headers:{'if-none-match':'"sha256-'+ 'a'.repeat(64)+'"'}},304);assert.equal(cached.status,304);assert.equal(cached.body,null);
+  }
+  assert.equal(await read({url:'/api/presentation/registered-video/north/room-a/7/nora/'+first,method:'GET'}),null);
+  for(const url of [
+    '/api/presentation/shared-room/room-a/binding?configVersion=config-a&windowId=window-a&windowId=other',
+    '/api/presentation/shared-room/room-a/config?operatorSlug=north&roomId=other&packageRevision=7&dealerId=nora',
+    '/api/presentation/room-video/north/room-a/07/nora/'+first,
+    '/api/presentation/room-layers/north/room-a/7/not-a-uuid',
+    '/api/presentation/shared-room/room-b/../room-a/binding?configVersion=config-a&windowId=window-a',
+  ])await assert.rejects(sharedRoomPresentationRead({request:{url,method:'GET'},playerId:'alice'},()=>assert.fail('invalid request reached authority')));
+});
+
+test('active HTTP bridge authenticates canonical same-origin requests and rejects cross-room/header/path confusion before service work',async()=>{
+  let invoked=0;
+  const bridge=createSharedRoomPresentationBridge({origin:'https://ui.invalid',engineOrigin:'https://engine.invalid',service:()=>({
+    async withActiveRoomPresentation(args){invoked++;assert.ok(args.request instanceof Request);assert.equal(args.request.headers.get('cookie'),'player_session=fixture');return args;},
+    async withSharedCommittedReceipt(args){invoked++;return args;},
+  })});
+  const input=()=>({request:{method:'GET',url:'/api/presentation/room-video/north/room-a/7/nora/'+first,headers:{host:'engine.invalid',cookie:'player_session=fixture','sec-fetch-site':'same-origin'}},
+    roomId:'room-a',playerId:'alice',presentationContext:{operatorSlug:'north',roomId:'room-a',packageRevision:7,dealerId:'nora'}});
+  const original=input();assert.equal((await bridge.withActiveRoomPresentation(original,()=>{})).request.url,'https://engine.invalid'+original.request.url);
+  for(const change of [args=>{args.roomId='room-b';},args=>{args.request.headers.host='evil.invalid';},args=>{args.request.headers.origin='https://evil.invalid';},
+    args=>{args.request.headers.authorization='Bearer fixture';},args=>{args.request.headers['sec-fetch-site']='cross-site';},
+    args=>{args.request.url+='?x=1#fragment';},args=>{args.request.url='/api/presentation/shared-room/room-x/../room-a/config';},
+    args=>{args.request.method='POST';},args=>{args.request.url='https://evil.invalid'+args.request.url;}]) {
+    const bad=input(),before=invoked;change(bad);assert.throws(()=>bridge.withActiveRoomPresentation(bad,()=>{}));assert.equal(invoked,before);
+  }
+  const post=input();post.request={...post.request,method:'POST',url:'/api/presentation/shared-room/room-a/idle-advice'};
+  assert.throws(()=>bridge.withActiveRoomPresentation(post,()=>{}));post.request.headers.origin='https://ui.invalid';await bridge.withActiveRoomPresentation(post,()=>{});
+  post.request.url='/api/presentation/select';await bridge.withSharedCommittedReceipt(post,()=>{});
+  post.request.url='/api/other/../presentation/select';assert.throws(()=>bridge.withSharedCommittedReceipt(post,()=>{}));
+});
+
+test('HTTP disconnect cancels a private response returned after its active read instead of losing its body',async()=>{
+  let cancelled=0,written=0;
+  const req=Readable.from([]);req.method='GET';req.url='/api/presentation/room-video/north/room-a/7/nora/'+first;req.headers={host:'engine.invalid'};
+  const res=new EventEmitter();res.writableEnded=false;res.destroyed=false;res.writeHead=()=>{written++;};res.end=()=>{written++;};
+  const api=createPresentationApi({env:{},db:{},withActiveRoomPresentation:async()=>{
+    res.destroyed=true;res.emit('close');return new Response(new ReadableStream({cancel(){cancelled++;}}));
+  }});
+  assert.equal(await api(req,res,new URL(req.url,'https://engine.invalid').pathname,'alice'),true);
+  assert.equal(cancelled,1);assert.equal(written,0);assert.equal(res.listenerCount('close'),0);
+});
+
+test('already aborted requests and closed responses never begin shared presentation work',async()=>{
+  for(const closed of ['request','response','both'])for(const pathname of [
+    '/api/presentation/room-video/north/room-a/7/nora/'+first,
+    '/api/presentation/shared-room/room-a/idle-advice','/api/presentation/select',
+  ]) {
+    const h=fixture();let calls=0,written=0;
+    const method=pathname.includes('/room-video/')?'GET':'POST';
+    const body={...h.body,...(pathname.endsWith('/idle-advice')?{sharedRoom:undefined}:{})};
+    const req=Readable.from(method==='POST'?[JSON.stringify(body)]:[]);
+    req.method=method;req.url=pathname;req.headers={host:'engine.invalid'};req.aborted=closed!=='response';
+    const res=new Writable({write(_chunk,_encoding,callback){written++;callback();}});
+    res.writeHead=()=>{written++;};
+    if(closed!=='request')await new Promise(resolve=>{res.once('close',resolve);res.destroy();});
+    const unexpected=async()=>{calls++;throw Error('closed request must not start service or provider work');};
+    const api=createPresentationApi({...h.base,withActiveRoomPresentation:unexpected,withSharedCommittedReceipt:unexpected});
+    try {
+      assert.equal(await api(req,res,pathname,'alice'),true);
+      assert.equal(calls,0,closed+' '+pathname);assert.equal(written,0);assert.equal(res.listenerCount('close'),0);
+    } finally {if(!res.destroyed)await new Promise(resolve=>{res.once('close',resolve);res.destroy();});}
+  }
 });
 
 test('shared marker never falls through without its port or with malformed context',async()=>{

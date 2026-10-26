@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { allowsPartnerResource } from '../packages/studio-access/server/partner-access-policy.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
+import { withOperatorLifecycle } from '../packages/operators/server/operator-lifecycle.mjs';
 import { StudioStorageError, canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 
 import { EXTENDED_PRESENTATION_STORAGE_CHECKSUM, validatePresentationBranding } from '../packages/presentation/server/presentation-storage.mjs';
-import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
+import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture } from './fixtures/native-room-game-material.mjs';
+import { readPackagePresentation, withPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
+import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
+import { ROOM_GAME_TIMERS, ROOM_LIMIT_PRESETS } from '../packages/presentation/contracts/room-game-config.mjs';
 
 const north = { environment: 'qa', workspaceId: 'workspace-north' };
 const south = { environment: 'qa', workspaceId: 'workspace-south' };
@@ -15,7 +20,8 @@ const refusal = code => error => error instanceof StudioStorageError && error.co
 const clock = () => 1_700_000_000_000;
 
 function memorySql() {
-  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operator_audit_events: [] };
+  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operator_audit_events: [],
+    documents: [], media_records: [], shared_table_configs: [], shared_table_config_heads: [] };
   const calls = [];
   const clients = [];
   const trace = [];
@@ -66,10 +72,37 @@ function memorySql() {
     calls.push({ text, values: [...values] });
     const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
     if (!tag) throw new Error(`untagged query: ${text}`);
+    if (sql.failTag === tag) { sql.failTag = null; throw pgError('XX000'); }
     const [environment, workspace] = values;
     const scoped = name => tables[name].filter(row => row.environment_id === environment && row.workspace_id === workspace);
     const snapshot = () => { if (tx?.inTx && !tx.snapshot) tx.snapshot = structuredClone(tables); };
     if (tag === 'extended-presentation-ready') return copy(sql.extendedStorage ?? []);
+    if (tag === 'room-config-lock') { assert.equal(tx?.inTx, true); return []; }
+    if (tag === 'room-config-administration') return scoped('documents').filter(row => row.kind === 'administration').map(copy);
+    if (tag === 'room-config-media') {
+      assert.ok(Array.isArray(values[2]), 'rotation reads the needed media identities in one scoped batch');
+      return scoped('media_records').filter(row => values[2].includes(row.id)).map(copy);
+    }
+    if (tag === 'room-config-current') return tables.shared_table_config_heads.filter(row => row.room_id === values[2]).map(head => ({
+      version: head.version, body: copy(tables.shared_table_configs.find(row => row.room_id === head.room_id && row.version === head.version)?.body ?? null),
+    }));
+    if (tag === 'room-config-insert') {
+      assert.equal(tx?.inTx, true);
+      if (tables.shared_table_configs.some(row => row.room_id === values[2] && row.version === values[3])) throw pgError('23505');
+      snapshot();
+      const row = { room_id: values[2], version: values[3], body: JSON.parse(values[4]) };
+      tables.shared_table_configs.push(row); return [copy(row)];
+    }
+    if (tag === 'room-config-head') {
+      assert.equal(tx?.inTx, true);
+      if (sql.conflictHead) return [];
+      const row = tables.shared_table_config_heads.find(row => row.room_id === values[2]);
+      if ((row?.version ?? null) !== values[4]) return [];
+      snapshot();
+      if (row) row.version = values[3];
+      else tables.shared_table_config_heads.push({ room_id: values[2], version: values[3] });
+      return [{ version: values[3] }];
+    }
     if (tag === 'list-operators') return scoped('operators').sort((a, b) => a.slug.localeCompare(b.slug)).map(copy);
     if (tag === 'operator-by-slug') return scoped('operators').filter(row => row.slug === values[2]).map(copy);
     if (tag === 'operator-by-id') return scoped('operators').filter(row => row.operator_id === values[2]).map(copy);
@@ -78,6 +111,7 @@ function memorySql() {
     if (tag === 'get-membership') return scoped('operator_memberships').filter(row => row.operator_id === values[2] && row.user_id === values[3]).map(copy);
     if (tag === 'list-memberships' || tag === 'guard-memberships') return scoped('operator_memberships').filter(row => row.operator_id === values[2]).sort((a, b) => a.user_id.localeCompare(b.user_id)).map(copy);
     if (tag === 'current-package') return scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => b.package_revision - a.package_revision).slice(0, 1).map(copy);
+    if (tag === 'package-by-revision') return scoped('operator_packages').filter(row => row.operator_id === values[2] && row.package_revision === values[3]).map(copy);
     if (tag === 'lock-operator') return scoped('operators').filter(row => row.operator_id === values[2]).map(copy);
     if (tag === 'audit-write') {
       snapshot();
@@ -612,4 +646,255 @@ test('extended immutable packages read safely but publication requires exact opt
   assert.throws(()=>validatePresentationBranding({...branding,name:'x'.repeat(8000)}),refusal('studio_invalid_data'));
   await assert.rejects(store.publishPackage({...request,expectedRevision:1,branding:{name:'x'.repeat(8000)}}),refusal('studio_invalid_data'));
   assert.deepEqual(sql.tables,frozen);
+});
+
+let cachedRoomPublicationSource;
+async function roomPublicationFixture({ imported = false, twoRooms = false } = {}) {
+  if (!cachedRoomPublicationSource) {
+    const source = nativeRoomMaterialChoicesFixture({ allSpeechSlots: true });
+    cachedRoomPublicationSource = structuredClone({ input: source.input, records: source.records });
+  }
+  const source = structuredClone(cachedRoomPublicationSource), sql = memorySql(), store = await open(north, sql);
+  const room = source.input.room, operatorId = room.operatorId;
+  await seed(store, { operatorId, slug: 'fixture' });
+  sql.extendedStorage = [{ checksum: EXTENDED_PRESENTATION_STORAGE_CHECKSUM, structure_checksum: 'a'.repeat(64), matching_checks: 2 }];
+  const rooms = [room, ...(twoRooms ? [{ ...room, id: 'room-other', name: 'Other room' }] : [])];
+  const versions = Object.fromEntries(rooms.map((row, index) => [row.id, `room-config-20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`]));
+  const pack = { ...source.input.package, revision: 1, tables: rooms.map(row => row.id), branding: {
+    ...source.input.package.branding, roomOverrides: { [room.id]: { color: '#112233' } }, roomGameConfigVersions: versions,
+  } };
+  const presentation = readPackagePresentation(pack), preset = ROOM_LIMIT_PRESETS.prive;
+  const hash = value => createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
+  const scoped = { environment_id: north.environment, workspace_id: north.workspaceId };
+  sql.tables.documents.push({ ...scoped, kind: 'administration', revision: 'administration-1', value: {
+    rooms: structuredClone(rooms), gameLane: room.gameLaneId,
+    gameLanes: [{ schemaVersion: 1, id: room.gameLaneId, label: 'Fixture', renderer: 'portrait-video', dealer: 'dragan', mediaCollection: 'dragan-presentation' }],
+  } });
+  sql.tables.media_records.push(...source.records.map(record => ({ ...scoped, id: record.id, record: structuredClone(record) })));
+  sql.tables.operator_packages.push({ ...scoped, operator_id: operatorId, package_revision: 1,
+    lanes: canonicalStudioJson(pack.lanes), games: canonicalStudioJson(pack.games), tables: canonicalStudioJson(pack.tables),
+    branding: canonicalStudioJson(pack.branding), published_at_ms: clock() });
+  for (const currentRoom of rooms) {
+    const material = resolveNativeRoomGameMaterial({ package: pack, room: currentRoom, language: 'sv' });
+    if (imported) material.revision = 'imported-verified-fixture';
+    const body = { configVersion: versions[currentRoom.id], roomId: currentRoom.id, operatorId, packageRevision: 1,
+      presentationLaneId: currentRoom.presentationLaneId, presentationHash: hash(presentation), language: 'sv', limitPreset: 'prive',
+      ...ROOM_GAME_TIMERS, limits: { min: preset.min, max: preset.max, sideMax: preset.sideMax }, chips: [...preset.chips], refill: preset.refill,
+      leadMs: material.leadMs, cardMs: material.cardMs, material };
+    sql.tables.shared_table_configs.push({ room_id: currentRoom.id, version: body.configVersion, body });
+    sql.tables.shared_table_config_heads.push({ room_id: currentRoom.id, version: body.configVersion });
+  }
+  const request = extra => ({ actor, operatorId, expectedRevision: 1, lanes: pack.lanes, games: pack.games, tables: pack.tables,
+    branding: structuredClone(pack.branding), ...extra });
+  const changedRequest = () => request({ branding: { ...pack.branding, roomOverrides: { [room.id]: { color: '#445566' } } } });
+  const config = (roomId = room.id) => {
+    const version = sql.tables.shared_table_config_heads.find(row => row.room_id === roomId)?.version;
+    return sql.tables.shared_table_configs.find(row => row.room_id === roomId && row.version === version)?.body;
+  };
+  const reframe = mutate => {
+    const changed = structuredClone(presentation); mutate(changed);
+    return withPackagePresentation(pack.branding, changed, { allowExtended: true });
+  };
+  return { sql, store, room, rooms, pack, presentation, request, changedRequest, config, reframe, hash };
+}
+
+test('N2 room override rotates only that room while active history and the neighbouring room stay unchanged', async () => {
+  const h = await roomPublicationFixture({ twoRooms: true });
+  const historical = structuredClone(h.sql.tables.shared_table_configs), beforeAudit = h.sql.tables.operator_audit_events.length;
+  const branding = { ...h.pack.branding, roomOverrides: { [h.room.id]: { color: '#445566' } } };
+  const saved = await h.store.publishPackage(h.request({ branding }));
+  assert.equal(saved.revision, 2); assert.equal(saved.branding.roomOverrides[h.room.id].color, '#445566');
+  const original = historical[0].body, next = h.config();
+  assert.notEqual(next.configVersion, original.configVersion, 'next window receives a distinct frozen config');
+  assert.equal(next.configVersion, saved.branding.roomGameConfigVersions[h.room.id]);
+  assert.equal(next.packageRevision, saved.revision);
+  assert.deepEqual({ ...next, configVersion: original.configVersion, packageRevision: original.packageRevision }, original);
+  assert.deepEqual(h.config('room-other'), historical[1].body, 'room A appearance must not invalidate room B');
+  assert.equal(saved.branding.roomGameConfigVersions['room-other'], historical[1].version);
+  assert.deepEqual(h.sql.tables.shared_table_configs.slice(0, historical.length), historical, 'ongoing windows retain their original immutable bodies');
+  assert.equal(h.sql.tables.shared_table_configs.length, 3);
+  assert.equal(h.sql.tables.operator_audit_events.length, beforeAudit + 1);
+  assert.equal(h.sql.clients.at(-1).released, true);
+  const writer = h.sql.clients.at(-1);
+  assert.ok(writer.calls.some(row => row.text.includes('room-config-insert')));
+  assert.ok(writer.calls.some(row => row.text.includes('publish-package')));
+  assert.ok(writer.calls.some(row => row.text.includes('audit-write')));
+  assert.equal(writer.calls.at(-1).text, 'COMMIT');
+
+  const secondBranding = { ...saved.branding, roomOverrides: { ...saved.branding.roomOverrides, 'room-other': { color: '#778899' } } };
+  const second = await h.store.publishPackage(h.request({ expectedRevision: 2, branding: secondBranding }));
+  assert.equal(second.revision, 3); assert.deepEqual(h.config(), next, 'a later B-only edit preserves A');
+  assert.equal(h.config('room-other').packageRevision, 3);
+  assert.notEqual(h.config('room-other').configVersion, historical[1].version);
+  assert.equal(h.sql.tables.shared_table_configs.length, 4);
+  const noChange = structuredClone(h.sql.tables.shared_table_configs), heads = structuredClone(h.sql.tables.shared_table_config_heads);
+  await h.store.publishPackage(h.request({ expectedRevision: 3, branding: second.branding }));
+  assert.deepEqual(h.sql.tables.shared_table_configs, noChange, 'same effective room appearance and N1 need no new configs');
+  assert.deepEqual(h.sql.tables.shared_table_config_heads, heads);
+});
+
+test('N1 publication recomputes the selected native dealer bank and exact presentation identity for the next config', async t => {
+  const provider = t.mock.method(globalThis, 'fetch', () => assert.fail('publication must use scoped registry data, never provider I/O'));
+  const h = await roomPublicationFixture(), original = structuredClone(h.config());
+  const branding = h.reframe(presentation => { presentation.lanes[0].layers.dealer.default = 'paow'; });
+  const saved = await h.store.publishPackage(h.request({ branding })), next = h.config();
+  assert.equal(next.material.dealerId, 'paow'); assert.equal(original.material.dealerId, 'dragan');
+  assert.notEqual(next.material.revision, original.material.revision);
+  assert.deepEqual(next.material, resolveNativeRoomGameMaterial({ package: saved, room: h.room, language: original.language }));
+  assert.equal(next.presentationHash, h.hash(readPackagePresentation(saved)));
+  assert.notEqual(next.presentationHash, original.presentationHash);
+  for (const key of ['language', 'limitPreset', 'betMs', 'actionMs', 'limits', 'chips', 'refill']) assert.deepEqual(next[key], original[key]);
+  assert.equal(next.packageRevision, 2); assert.equal(saved.branding.roomGameConfigVersions[h.room.id], next.configVersion);
+  assert.deepEqual(h.sql.tables.shared_table_configs[0].body, original);
+  assert.equal(provider.mock.callCount(), 0);
+});
+
+test('ordinary publication cannot fabricate, replace or remove retained room config bindings', async () => {
+  for (const change of ['replace', 'remove', 'add', 'omit-map']) {
+    const h = await roomPublicationFixture(), branding = structuredClone(h.pack.branding);
+    if (change === 'replace') branding.roomGameConfigVersions[h.room.id] = 'room-config-30000000-0000-4000-8000-000000000001';
+    if (change === 'remove') delete branding.roomGameConfigVersions[h.room.id];
+    if (change === 'add') branding.roomGameConfigVersions['room-foreign'] = 'room-config-30000000-0000-4000-8000-000000000001';
+    if (change === 'omit-map') delete branding.roomGameConfigVersions;
+    const before = structuredClone(h.sql.tables);
+    await assert.rejects(h.store.publishPackage(h.request({ branding })), error => [403, 409, 422].includes(error.statusCode), change);
+    assert.deepEqual(h.sql.tables, before, `${change} cannot publish or mutate config history`);
+  }
+});
+
+test('removing a room clears only its current package binding and preserves immutable config history', async () => {
+  for (const keepInputBinding of [true, false]) {
+    const h = await roomPublicationFixture({ twoRooms: true }), original = structuredClone(h.config());
+    const administration = h.sql.tables.documents[0].value;
+    const branding = withOperatorLifecycle(h.pack.branding, { schemaVersion: 1, operator: null, rooms: [{
+      archivedAt: new Date(clock()).toISOString(), room: h.room, gameLane: administration.gameLanes[0], sourcePackageRevision: 1,
+    }] });
+    if (!keepInputBinding) delete branding.roomGameConfigVersions[h.room.id];
+    const saved = await h.store.publishPackage(h.request({ tables: ['room-other'], branding,
+      lifecycle: { resourceType: 'room', resourceId: h.room.id, archived: true } }));
+    assert.equal(Object.hasOwn(saved.branding.roomGameConfigVersions ?? {}, h.room.id), false);
+    assert.equal(saved.branding.roomGameConfigVersions['room-other'], h.config('room-other').configVersion);
+    assert.equal(h.config('room-other').packageRevision, 1);
+    assert.deepEqual(h.config(), original, 'removal cannot erase or rewrite the active/historical config body');
+    assert.equal(h.sql.tables.shared_table_configs.length, 2, 'an unrelated surviving room keeps its existing config');
+    assert.deepEqual(JSON.parse(h.sql.tables.operator_packages[0].branding).roomGameConfigVersions, h.pack.branding.roomGameConfigVersions);
+  }
+});
+
+test('unavailable or foreign room/config/head authority fails before any publication is committed', async () => {
+  const changes = [
+    h => { h.sql.tables.documents.length = 0; },
+    h => { h.sql.tables.documents[0].workspace_id = south.workspaceId; },
+    h => { h.sql.tables.documents[0].value.rooms[0].operatorId = 'operator-foreign'; },
+    h => { h.sql.tables.documents[0].value.rooms[0].state = 'draft'; },
+    h => { h.sql.tables.shared_table_config_heads[0].version = 'room-config-30000000-0000-4000-8000-000000000001'; },
+    h => { h.sql.tables.shared_table_configs[0].body.operatorId = 'operator-foreign'; },
+    h => { h.sql.tables.shared_table_configs[0].body.roomId = 'room-foreign'; },
+    h => { h.sql.tables.shared_table_configs[0].body.packageRevision = 2; },
+    h => { h.sql.tables.shared_table_configs[0].body.material.dealerId = 'paow'; },
+    h => { h.sql.tables.shared_table_configs[0].body.presentationHash = 'f'.repeat(64); },
+  ];
+  for (const change of changes) {
+    const h = await roomPublicationFixture(); change(h);
+    const before = structuredClone(h.sql.tables);
+    await assert.rejects(h.store.publishPackage(h.changedRequest()), error => [403, 409, 422, 503].includes(error.statusCode));
+    assert.deepEqual(h.sql.tables, before);
+    assert.equal(h.sql.clients.at(-1).released, true);
+  }
+});
+
+test('rotation rechecks current scoped media rather than resurrecting an archived, changed or unapproved frozen source', async () => {
+  const changes = [
+    h => { h.sql.tables.media_records[0].workspace_id = south.workspaceId; },
+    h => { h.sql.tables.media_records[0].record.classification.archived = true; },
+    h => { h.sql.tables.media_records[0].record.sha256 = 'f'.repeat(64); },
+    h => { h.sql.tables.media_records[0].record.classification.notes = 'Changed after capture'; },
+    h => { h.sql.tables.media_records.find(row => row.record.classification.kind === 'speech').record.classification.recordedSpeech.review = { status: 'pending' }; },
+  ];
+  for (const change of changes) {
+    const h = await roomPublicationFixture(); change(h);
+    const before = structuredClone(h.sql.tables);
+    await assert.rejects(h.store.publishPackage(h.changedRequest()), error => [409, 422, 503].includes(error.statusCode));
+    assert.deepEqual(h.sql.tables, before);
+  }
+});
+
+test('config insertion, head CAS, package and audit failures roll back every part of a room publication', async () => {
+  for (const failure of ['room-config-insert', 'room-config-head', 'publish-package', 'audit-write', 'head-conflict']) {
+    const h = await roomPublicationFixture(), before = structuredClone(h.sql.tables);
+    if (failure === 'head-conflict') h.sql.conflictHead = true;
+    else h.sql.failTag = failure;
+    await assert.rejects(h.store.publishPackage(h.changedRequest()), error => [409, 503].includes(error.statusCode), failure);
+    assert.deepEqual(h.sql.tables, before, `${failure} must keep package, config, head and audit atomic`);
+    const client = h.sql.clients.at(-1);
+    assert.equal(client.released, true); assert.equal(client.calls.at(-1).text, 'ROLLBACK');
+    assert.equal(client.calls.some(row => row.text === 'COMMIT'), false);
+  }
+});
+
+test('concurrent package CAS creates one new config version and cannot leave the head bound to the loser', async () => {
+  const h = await roomPublicationFixture(), original = structuredClone(h.config());
+  h.sql.holdUntilWaiters = 1;
+  const results = await Promise.allSettled(['#445566', '#778899'].map(color => h.store.publishPackage(h.request({
+    branding: { ...h.pack.branding, roomOverrides: { [h.room.id]: { color } } },
+  }))));
+  const accepted = results.filter(result => result.status === 'fulfilled'), denied = results.filter(result => result.status === 'rejected');
+  assert.equal(accepted.length, 1); assert.equal(denied.length, 1); assert.equal(denied[0].reason.code, 'studio_conflict');
+  assert.equal(h.sql.tables.operator_packages.length, 2); assert.equal(h.sql.tables.shared_table_configs.length, 2);
+  assert.equal(h.config().configVersion, accepted[0].value.branding.roomGameConfigVersions[h.room.id]);
+  assert.equal(h.config().packageRevision, accepted[0].value.revision);
+  assert.deepEqual(h.sql.tables.shared_table_configs[0].body, original);
+});
+
+test('an imported material receipt survives N2 rotation only while its exact presentation and dealer stay the same', async () => {
+  const h = await roomPublicationFixture({ imported: true }), original = structuredClone(h.config());
+  const saved = await h.store.publishPackage(h.request({ branding: {
+    ...h.pack.branding, roomOverrides: { [h.room.id]: { color: '#445566' } },
+  } }));
+  assert.equal(h.config().packageRevision, saved.revision); assert.notEqual(h.config().configVersion, original.configVersion);
+  assert.deepEqual(h.config().material, original.material);
+  for (const change of ['dealer', 'presentation']) {
+    const denied = await roomPublicationFixture({ imported: true });
+    const branding = change === 'dealer'
+      ? { ...denied.pack.branding, roomOverrides: { [denied.room.id]: { dealer: 'paow' } } }
+      : denied.reframe(presentation => { presentation.lanes[0].openclaw.speak = 'rules'; });
+    const before = structuredClone(denied.sql.tables);
+    await assert.rejects(denied.store.publishPackage(denied.request({ branding })), error => [409, 422].includes(error.statusCode));
+    assert.deepEqual(denied.sql.tables, before, 'generic publication must not invent a new imported-material proof');
+  }
+});
+
+test('the explicit J08 writer authors its own config version without changing an unrelated retained room', async () => {
+  const h = await roomPublicationFixture({ twoRooms: true }), old = structuredClone(h.sql.tables.shared_table_configs);
+  const gameConfig = { language: 'sv', limitPreset: 'casual' }, material = structuredClone(h.config().material);
+  const result = await h.store.publishRoomGameConfig(h.request(), { roomId: h.room.id, gameConfig, material });
+  assert.equal(result.package.revision, 2); assert.deepEqual(result.config, h.config());
+  assert.equal(result.config.configVersion, result.package.branding.roomGameConfigVersions[h.room.id]);
+  assert.notEqual(result.config.configVersion, old[0].version); assert.equal(result.config.packageRevision, 2);
+  assert.equal(result.config.limitPreset, 'casual'); assert.equal(result.config.language, 'sv');
+  assert.deepEqual(result.config.limits, { min: 1, max: 500, sideMax: 50 });
+  assert.deepEqual(result.config.chips, ROOM_LIMIT_PRESETS.casual.chips); assert.equal(result.config.refill, 500);
+  assert.deepEqual(result.config.material, material);
+  assert.deepEqual(h.config('room-other'), old[1].body);
+  assert.equal(result.package.branding.roomGameConfigVersions['room-other'], old[1].version);
+  assert.deepEqual(h.sql.tables.shared_table_configs.slice(0, 2), old);
+  const forged = structuredClone(material); forged.media[0].sha256 = 'f'.repeat(64);
+  for (const extra of [{ roomId: 'room-foreign' }, { material: forged }]) {
+    const denied = await roomPublicationFixture(), before = structuredClone(denied.sql.tables);
+    await assert.rejects(denied.store.publishRoomGameConfig(denied.request(), { roomId: denied.room.id, gameConfig, material, ...extra }),
+      error => [403, 409, 422].includes(error.statusCode));
+    assert.deepEqual(denied.sql.tables, before);
+  }
+});
+
+test('a first J08 package binding cannot adopt an existing foreign or malformed config head', async () => {
+  for(const change of [body=>{body.operatorId='operator-foreign';},body=>{body.roomId='room-foreign';},body=>{body.configVersion='room-config-ffffffff-ffff-4fff-8fff-ffffffffffff';}]) {
+    const h=await roomPublicationFixture(),material=structuredClone(h.config().material);
+    delete h.pack.branding.roomGameConfigVersions;
+    h.sql.tables.operator_packages[0].branding=canonicalStudioJson(h.pack.branding);
+    change(h.sql.tables.shared_table_configs[0].body);
+    const before=structuredClone(h.sql.tables);
+    await assert.rejects(h.store.publishRoomGameConfig(h.request(),{roomId:h.room.id,gameConfig:{language:'sv',limitPreset:'prive'},material}),refusal('studio_conflict'));
+    assert.deepEqual(h.sql.tables,before);
+  }
 });

@@ -11,12 +11,12 @@ import { createStudioRepository } from '../packages/studio-registry/server/docum
 
 const clone = value => structuredClone(value);
 const roomId = 'room-a', playerId = 'alice';
-const context = { operatorSlug: 'operator-a', roomId, packageRevision: 2, dealerId: 'astrid' };
+const context = { operatorSlug: 'operator-a', roomId, packageRevision: 1, dealerId: 'astrid' };
 const binding = { actorId: playerId, sessionId: 'player-' + 'a'.repeat(64), operatorId: 'operator-id', roomId, packageRevision: 2, expiresAt: 9999999999999 };
 const cardEvent = { type: 'deal', to: 'box', box: 0, handIndex: 0, shoeDraw: 1, card: { r: 'K', s: 'H' }, faceDown: false };
 const body = () => ({ dealerId: 'astrid', mode: 'off', version: 7, event: { ...cardEvent, card: { r: 'A', s: 'S' } },
   presentationContext: clone(context), sharedRoom: { roomId, ver: 7, talkId: 'talk-a' }, shoeTransitions: true });
-const state = () => ({ room: { roomId, presentationVer: 7, configVersion: 'config-a' },
+const state = () => ({ room: { roomId, presentationVer: 7, configVersion: 'config-a', windowId: 'window-a' },
   presentation: { roomId, ver: 7, talkId: 'talk-a', status: 'ready', kind: 'plan', configVersion: 'config-a', windowId: 'window-a',
     language: 'en', events: [clone(cardEvent), { type: 'speak', line: 'goodluck' }], lines: [{ index: 1, line: 'goodluck', lineId: 'b'.repeat(32) }] },
   config: { roomId, operatorId: binding.operatorId, packageRevision: 1, configVersion: 'config-a', language: 'en', leadMs: 700, cardMs: 500,
@@ -36,6 +36,11 @@ function fixture({ authorize, revalidate, onRead, commitFailure, timeoutMs, maxR
     async revalidateLocked(value, options) {
       trace.push('auth'); assert.equal(counters.active, true); assert.equal(counters.locked, true);
       assert.deepEqual(value, binding); return revalidate ? revalidate(value, options) : clone(value);
+    },
+    async readPresentationContextLocked(value,options) {
+      trace.push('context');assert.equal(counters.active,true);assert.equal(counters.locked,true);
+      assert.equal(options.configVersion,stored.room?.configVersion??null);await onRead?.('context',counters.transactions);
+      return {config:clone(stored.config),context:{...context,packageRevision:stored.config.packageRevision,dealerId:stored.config.material.dealerId},saved:{},authority:{}};
     },
   };
   const repository = { async sharedTransaction(work, options) {
@@ -58,7 +63,7 @@ function fixture({ authorize, revalidate, onRead, commitFailure, timeoutMs, maxR
     trace.push('presentation'); assert.equal(id, roomId); assert.equal(counters.locked, true);
     await onRead?.('presentation', counters.transactions); return clone(stored.presentation);
   };
-  const helper = createSharedRoomPresentationAccess({ access, repository, withLockedRead, readPresentationLocked,
+  const helper = createSharedRoomPresentationAccess({ access, repository, withLockedRead, readPresentationLocked,createContext:()=>Object.freeze({}),
     ...(timeoutMs ? { timeoutMs } : {}), ...(maxResultBytes ? { maxResultBytes } : {}) });
   return { helper, stored, trace, counters };
 }
@@ -70,14 +75,15 @@ test('two captures authorize before data and select outside G/S/R/P/A; callback 
     assert.deepEqual(Object.keys(capture).sort(), ['configVersion', 'language', 'material', 'operatorId', 'packageRevision', 'presentationContext',
       'published', 'roomId', 'sourceEvent', 'talkId', 'version'].sort());
     assert.equal(capture.sourceEvent.card.r, 'K', 'browser supplied A must not replace committed K');
+    assert.equal(capture.packageRevision,1,'the active config chooses its original package although authorization observes package 2');
     assert.equal(Object.isFrozen(capture.material.media[0]), true); assert.equal(Object.isFrozen(capture.published), true);
     assert.throws(() => { capture.material.media[0].sha256 = 'b'.repeat(64); }, TypeError);
     selected = { video: { id: capture.material.media[0].id }, sourceEvent: capture.sourceEvent };
     return selected;
   });
   assert.deepEqual(output, selected); assert.notEqual(output, selected); assert.notEqual(output.video, selected.video);
-  assert.deepEqual(h.trace, ['authorize', 'G', 'S', 'R', 'P', 'A', 'auth', 'room', 'presentation', 'config', 'COMMIT', 'select',
-    'G', 'S', 'R', 'P', 'A', 'auth', 'room', 'presentation', 'config', 'COMMIT']);
+  assert.deepEqual(h.trace, ['authorize', 'G', 'S', 'R', 'P', 'A', 'auth', 'room', 'presentation', 'config', 'context', 'COMMIT', 'select',
+    'G', 'S', 'R', 'P', 'A', 'auth', 'room', 'presentation', 'config', 'context', 'COMMIT']);
   assert.equal(h.counters.transactions, 2);
 });
 
@@ -97,8 +103,8 @@ test('shared selector identity requires exact room/version/talk/context and has 
   }
 });
 
-test('actor/package mismatch and locked revocation stop before any room, config or presentation read', async () => {
-  for (const alternate of [{ ...binding, actorId: 'mallory' }, { ...binding, packageRevision: 3 }]) {
+test('actor/invalid publication and locked revocation stop before any room, config or presentation read', async () => {
+  for (const alternate of [{ ...binding, actorId: 'mallory' }, { ...binding, packageRevision: 0 }]) {
     const h = fixture({ authorize: () => alternate });
     await assert.rejects(h.helper.withSharedCommittedReceipt(args(), () => {}), isCode('shared_room_presentation_forbidden'));
     assert.deepEqual(h.trace, ['authorize']);
@@ -192,7 +198,7 @@ test('abort is checked before admission and after every read; pending callback t
   const before = new AbortController(); before.abort(); const untouched = fixture();
   await assert.rejects(untouched.helper.withSharedCommittedReceipt(args({ signal: before.signal }), () => {}), { name: 'AbortError' });
   assert.deepEqual(untouched.trace, []); assert.equal(getEventListeners(before.signal, 'abort').length, 0);
-  for (const phase of ['room', 'presentation', 'config']) {
+  for (const phase of ['room', 'presentation', 'config', 'context']) {
     const controller = new AbortController(), h = fixture({ onRead: name => { if (name === phase) controller.abort(); } });
     await assert.rejects(h.helper.withSharedCommittedReceipt(args({ signal: controller.signal }), () => assert.fail('selector called')), { name: 'AbortError' });
     assert.equal(h.trace.at(-1), 'ROLLBACK'); assert.equal(getEventListeners(controller.signal, 'abort').length, 0);
@@ -276,9 +282,9 @@ test('locked receiver refuses absent/foreign/unserialized/undeclared shared cont
 test('real adapters compose both helper captures, while SQL failures preserve identity and prevent selector execution', async () => {
   const h = sqlFixture();
   const helper = createSharedRoomPresentationAccess({ repository: h.repository, withLockedRead: h.runtime.withLockedRead,
-    readPresentationLocked: h.receiver.currentLocked, access: { async authorize() { return clone(binding); }, async revalidateLocked(value) {
+    createContext:()=>Object.freeze({}),readPresentationLocked: h.receiver.currentLocked, access: { async authorize() { return clone(binding); }, async revalidateLocked(value) {
       h.storage.db.assertSharedTransaction({ studioScope: h.scope, serialize: true }); return clone(value);
-    } } });
+    },async readPresentationContextLocked(){h.storage.db.assertSharedTransaction({studioScope:h.scope,serialize:true});return{config:clone(h.stored.config),context:clone(context),saved:{},authority:{}};} } });
   assert.deepEqual(await helper.withSharedCommittedReceipt(args(), () => {
     assert.equal(h.clients[0].released, true); return { video: null };
   }), { video: null });
@@ -294,7 +300,7 @@ test('presentation access refuses an existing transaction owner so selection can
     const h = sqlFixture(); let authorized = false, selected = false;
     const helper = createSharedRoomPresentationAccess({ repository: h.repository, withLockedRead: h.runtime.withLockedRead,
       readPresentationLocked: h.receiver.currentLocked, access: { async authorize() { authorized = true; return clone(binding); },
-        async revalidateLocked(value) { return value; } } });
+        async revalidateLocked(value) { return value; },async readPresentationContextLocked(){assert.fail('outer owner must fail before a context read');} } });
     const work = () => helper.withSharedCommittedReceipt(args(), () => { selected = true; return {}; });
     await assert.rejects(ordinary ? h.repository.transaction(work) : h.repository.sharedTransaction(work, { serialize: true }),
       ordinary ? isCode('studio_storage_unavailable') : /outer unit/);
@@ -302,3 +308,61 @@ test('presentation access refuses an existing transaction owner so selection can
     assert.equal(h.calls.at(-1).sql, 'ROLLBACK');
   }
 });
+
+test('bootstrap uses the engine window and active package even after later publication; unopened uses only current head',async()=>{
+  const h=fixture(),input={request:args().request,playerId,roomId,expected:{configVersion:'config-a',windowId:'window-a'}};
+  const first=await h.helper.withActiveRoomPresentation(input,(capture)=>{
+    assert.equal(h.counters.active,false);assert.equal(capture.packageRevision,1);assert.deepEqual(capture.presentationContext,context);return capture;
+  });
+  assert.equal(first.configVersion,'config-a');assert.equal(first.windowId,'window-a');
+  h.stored.room=null;h.stored.config.configVersion='config-b';h.stored.config.packageRevision=2;
+  const unopened=await h.helper.withActiveRoomPresentation({...input,expected:{configVersion:'config-b',windowId:'unopened'}},capture=>capture);
+  assert.equal(unopened.windowId,'unopened');assert.equal(unopened.configVersion,'config-b');assert.equal(unopened.presentationContext.packageRevision,2);
+  h.stored.room={roomId,configVersion:'config-b',windowId:'window-b'};
+  const next=await h.helper.withActiveRoomPresentation({...input,expected:{configVersion:'config-b',windowId:'window-b'}},capture=>capture);
+  assert.equal(next.packageRevision,2);assert.equal(next.windowId,'window-b');
+});
+
+test('bootstrap and shared selection treat client package/window/config values only as stale preconditions',async()=>{
+  for(const expected of [{configVersion:'config-b',windowId:'window-a'},{configVersion:'config-a',windowId:'window-b'}]) {
+    const h=fixture();await assert.rejects(h.helper.withActiveRoomPresentation({request:args().request,playerId,roomId,expected},()=>assert.fail('stale bootstrap selected')),
+      isCode('shared_room_presentation_stale'));
+  }
+  const h=fixture(),requested={...context,packageRevision:2};
+  await assert.rejects(h.helper.withActiveRoomPresentation({request:args().request,playerId,roomId,presentationContext:requested},()=>assert.fail('later package selected')),
+    isCode('shared_room_presentation_stale'));
+  const input=args();input.body.presentationContext=requested;
+  await assert.rejects(h.helper.withSharedCommittedReceipt(input,()=>assert.fail('mixed active material and later branding selected')),isCode('shared_room_presentation_stale'));
+});
+
+test('private responses are cancelled after unlocked revocation or a window change before final capture',async()=>{
+  for(const revoke of [true,false]) {
+    let revoked=false,cancelled=0;
+    const h=fixture({revalidate:value=>{if(revoked)throw Object.assign(Error('revoked'),{code:'revoked'});return clone(value);}});
+    await assert.rejects(h.helper.withActiveRoomPresentation({request:args().request,playerId,roomId},()=>{
+      assert.equal(h.counters.active,false);
+      if(revoke)revoked=true;else h.stored.room.windowId='window-next';
+      return new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{etag:'"sha256-'+ 'a'.repeat(64)+'"'}});
+    }),isCode(revoke?'revoked':'shared_room_presentation_stale'));
+    assert.equal(cancelled,1);assert.equal(h.counters.active,false);
+  }
+});
+
+test('a late unlocked response is cancelled after timeout even when its provider ignores abort',async()=>{
+  const release=deferred(),entered=deferred(),h=fixture({timeoutMs:10});let cancelled=0;
+  const work=h.helper.withActiveRoomPresentation({request:args().request,playerId,roomId},async()=>{
+    entered.resolve();await release.promise;return new Response(new ReadableStream({cancel(){cancelled++;}}));
+  });
+  await entered.promise;await assert.rejects(work,{name:'AbortError'});release.resolve();await turn();
+  assert.equal(cancelled,1);assert.equal(h.counters.transactions,1);
+});
+
+test('a response remains owned when abort lands between the settled provider and lease continuation',async()=>{
+  const h=fixture(),controller=new AbortController();let cancelled=0;
+  await assert.rejects(h.helper.withActiveRoomPresentation({request:args().request,playerId,roomId,signal:controller.signal},()=>{
+    queueMicrotask(()=>queueMicrotask(()=>controller.abort()));
+    return new Response(new ReadableStream({cancel(){cancelled++;}}));
+  }),{name:'AbortError'});
+  await turn();assert.equal(cancelled,1);assert.equal(h.counters.active,false);
+});
+

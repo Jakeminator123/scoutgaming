@@ -891,17 +891,8 @@ const server = createServer(async (req, res) => {
   if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || presentationPublicSource(pathname)) {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext, qaPublicOrigin:sharedRoomQa?.publicOrigin,
-        withSharedCommittedReceipt: ({request,playerId,body,signal},selectFrozen) => {
-          if (!sharedRoomsEnabled || !sharedRoomService || request.method!=='POST' || request.url!=='/api/presentation/select')
-            throw Object.assign(Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
-          const engineOrigin=process.env.CROUPIER_PUBLIC_ORIGIN ?? gameOrigin;
-          const url=new URL(request.url,engineOrigin);
-          if(request.headers.origin!==frontendOrigin || request.headers.host!==url.host
-            || ['authorization','upgrade','sec-websocket-protocol','x-worker-id'].some(key=>request.headers[key]!==undefined))
-            throw Object.assign(Error('shared_room_presentation_forbidden'),{code:'shared_room_presentation_forbidden',statusCode:403});
-          const authenticatedRequest=new Request(url,{method:'POST',headers:request.headers,signal});
-          return sharedRoomService.withSharedCommittedReceipt({request:authenticatedRequest,playerId,body,signal},selectFrozen);
-        },
+        ...(sharedRoomsEnabled?(await import('./shared-room-presentation-http.mjs')).createSharedRoomPresentationBridge({
+          service:()=>sharedRoomService,origin:frontendOrigin,engineOrigin:sharedRoomQa?.publicOrigin??process.env.CROUPIER_PUBLIC_ORIGIN??gameOrigin}):{}),
         beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),
         ...(studioPolicyRuntime ? { store: studioPolicyRuntime.policy.projectStore(), registryLoader: studioMediaRuntime.videoRegistry,
           videoResponse: studioMediaRuntime.videoResponse } : {}) });
@@ -1297,6 +1288,9 @@ if (sharedRoomsEnabled) {
   sharedRoomService = createSharedRoomService({
     pool:storage.gamePool, walletMode:'demo', auth, commandAuth,
     repository:studioPolicyRuntime.repository, scope:studioPolicyRuntime.scope,
+    privateMedia:sharedRoomQa?.privateMedia??((record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,signal:request.signal,
+      trustedProxyOrigin:cloudRuntime&&frontendOrigin&&new URL(request.url).origin===gameOrigin
+        &&[new URL(gameOrigin).host,new URL(frontendOrigin).host].includes(request.headers.get('host'))?frontendOrigin:null}))),
     engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL,
     origin:frontendOrigin,
     onError:()=>console.warn(JSON.stringify({event:'shared_room_runtime_unavailable'})),
@@ -1409,3 +1403,4 @@ export const sharedRoomQaRuntime = sharedRoomQa ? Object.freeze({
   close: () => gameShutdown.stop(),
 }) : null;
 server.listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));
+

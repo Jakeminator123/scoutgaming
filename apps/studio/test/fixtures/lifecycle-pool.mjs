@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../../packages/presentation/server/presentation-storage.mjs';
 const clone=value=>structuredClone(value);
 export function combinedPool(scope,{extendedPresentationReady=false}={}) {
-  let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], operators: [
+  let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], roomConfigs: [], roomConfigHeads: [], operators: [
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
   ] }, tail = Promise.resolve(), clientId = 0, tick = 0;
@@ -19,6 +19,7 @@ export function combinedPool(scope,{extendedPresentationReady=false}={}) {
       if (sql.startsWith('BEGIN')) { pool.active++; readOnly = sql.includes('READ ONLY'); working = readOnly ? clone(state) : undefined; return result([], 'BEGIN'); }
       if (sql.startsWith('SET LOCAL')) return result([], 'SET');
       if (sql.includes('pg_advisory_xact_lock')) {
+        if (working) return result(); // The repository already owns this synthetic transaction lock.
         const previous = tail; tail = new Promise(resolve => { unlock = resolve; }); await previous; working = clone(state); return result();
       }
       if (sql === 'COMMIT' || sql === 'ROLLBACK') {
@@ -32,6 +33,23 @@ export function combinedPool(scope,{extendedPresentationReady=false}={}) {
       if (marker === 'lifecycle-packages') return result(working.packages.filter(row=>sameScope(row,values)));
       if (marker === 'operator-status') {const row=working.operators.find(row=>sameScope(row,values)&&row.operator_id===values[2]&&row.status===values[4]);if(!row)return result();row.status=values[3];return result([row]);}
       if (marker === 'current-package') return result(packages().sort((a, b) => b.package_revision - a.package_revision).slice(0, 1));
+      if (marker === 'package-by-revision') return result(packages().filter(row=>row.package_revision===values[3]));
+      if (marker === 'room-config-administration') return result(working.documents.has(documentKey(values)) ? [working.documents.get(documentKey(values))] : []);
+      if (marker === 'room-config-current') {
+        const head=working.roomConfigHeads.find(row=>row.room_id===values[2]);
+        return result(head?[{version:head.version,body:working.roomConfigs.find(row=>row.room_id===head.room_id&&row.version===head.version)?.body}]:[]);
+      }
+      if (marker === 'room-config-media') return result([...working.media.values()].filter(row=>sameScope(row,values)&&values[2].includes(row.id)));
+      if (marker === 'room-config-insert') {
+        assert.ok(!working.roomConfigs.some(row=>row.room_id===values[2]&&row.version===values[3]));
+        working.roomConfigs.push({room_id:values[2],version:values[3],body:JSON.parse(values[4])});return result();
+      }
+      if (marker === 'room-config-head') {
+        const head=working.roomConfigHeads.find(row=>row.room_id===values[2]);
+        if(head?head.version!==values[4]:values[4]!==null)return result();
+        if(head)head.version=values[3];else working.roomConfigHeads.push({room_id:values[2],version:values[3]});
+        return result([{version:values[3]}]);
+      }
       if (marker === 'used-key') return result(packages().filter(row => JSON.parse(row.tables).includes(values[3])).slice(0, 1));
       if (marker === 'publish-package') {
         const row = { environment_id: values[0], workspace_id: values[1], operator_id: values[2], package_revision: Math.max(0, ...packages().map(row => row.package_revision)) + 1,

@@ -1,19 +1,125 @@
 import { gameLaneFromDocument } from '../../../packages/presentation/contracts/game-selection.mjs';
 import { createPresentationStartup } from './presentation-startup.mjs';
+import { combineAbortSignals } from './abort-signals.mjs';
 import { createSharedRoomClient } from './shared-room-client.mjs';
 import { createSharedRoomCommandClient } from './shared-room-command-client.mjs';
 import { createSharedRoomController } from './shared-room-controller.mjs';
 import { createSharedRoomView } from './shared-room-view.mjs';
 import { mountSharedRoomPresentation } from './shared-room-presentation.mjs';
 
+const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const invalidBinding=()=>{throw new TypeError('shared_room_presentation_binding_invalid');};
+const abortError=()=>new DOMException('Shared room presentation replaced','AbortError');
+const selectionAttributes={lane:'gameLane',dealer:'gameDealer',presentation:'gamePresentation',localDealer:'gameLocalDealer',
+  registeredDealers:'gameRegisteredDealers',operator:'gameOperator',roomId:'gameRoomId',packageRevision:'gamePackageRevision',
+  branding:'gameBranding',composition:'gameComposition',choices:'gameChoices'};
+const jsonAttributes=new Set(['registeredDealers','branding','composition','choices']);
+function checkedBinding(value,snapshot,roomId){
+  if(!object(value)||Object.keys(value).sort().join(',')!=='configVersion,owner,presentationContext,roomId,selection,windowId'
+    ||value.owner!=='web'||value.roomId!==roomId||value.configVersion!==snapshot.configVersion||value.windowId!==snapshot.windowId)invalidBinding();
+  const context=value.presentationContext,raw=value.selection;
+  if(!object(context)||Object.keys(context).sort().join(',')!=='dealerId,operatorSlug,packageRevision,roomId'
+    ||!object(raw)||Object.keys(raw).some(key=>!Object.hasOwn(selectionAttributes,key))
+    ||!Number.isSafeInteger(raw.packageRevision)||raw.packageRevision<1)invalidBinding();
+  const dataset={};
+  for(const [key,item]of Object.entries(raw)){
+    if(!jsonAttributes.has(key)&&key!=='packageRevision'&&typeof item!=='string')invalidBinding();
+    dataset[selectionAttributes[key]]=jsonAttributes.has(key)?JSON.stringify(item):String(item);
+  }
+  // Reuse the document contract, without trusting the initial document's dealer
+  // or package. The active room can still belong to an older published package.
+  const selection=gameLaneFromDocument(dataset);
+  if(selection.presentation!=='local'||selection.roomId!==roomId||context.roomId!==roomId
+    ||context.operatorSlug!==selection.operator||context.packageRevision!==selection.packageRevision||context.dealerId!==selection.dealer)invalidBinding();
+  return {owner:'web',roomId,configVersion:value.configVersion,windowId:value.windowId,presentationContext:{...context},selection};
+}
+const canonical=value=>JSON.stringify(value,(_key,item)=>object(item)?Object.fromEntries(Object.keys(item).sort().map(key=>[key,item[key]])):item);
+function untilAborted(work,signal){
+  signal.throwIfAborted();let abort;
+  return Promise.race([work,new Promise((_,reject)=>{abort=()=>reject(signal.reason);signal.addEventListener('abort',abort,{once:true});})])
+    .finally(()=>signal.removeEventListener('abort',abort));
+}
+
+// A snapshot is the only input to this lazy owner. Media and controls become
+// usable together, after the server confirms the same binding after loading.
+function boundPresentation({document,window,roomId,signal,fetchImpl,createPresentation,transport,startupFor,onError}){
+  let current=null,job=null,generation=0,closed=false;
+  const pending=new Set();
+  function dispose(owned){
+    if(!owned||owned.closed)return;
+    owned.closed=true;owned.lifetime.abort();owned.port?.close();owned.startup.close();pending.delete(owned);
+  }
+  async function read(snapshot,requestSignal){
+    if(!id(snapshot.configVersion)||!id(snapshot.windowId))invalidBinding();
+    const request=new AbortController();
+    const combined=combineAbortSignals([signal,requestSignal,request.signal,AbortSignal.timeout(10000)]);
+    try{
+      combined.throwIfAborted();
+      const query=new URLSearchParams({configVersion:snapshot.configVersion,windowId:snapshot.windowId});
+      const response=await fetchImpl(`/api/presentation/shared-room/${roomId}/binding?${query}`,{
+        method:'GET',credentials:'same-origin',mode:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json'},signal:combined});
+      combined.throwIfAborted();
+      if(response.status!==200)throw new Error('shared_room_presentation_binding_unavailable');
+      const value=await response.json();combined.throwIfAborted();return checkedBinding(value,snapshot,roomId);
+    }finally{request.abort();}
+  }
+  return Object.freeze({
+    async restoreSnapshot(snapshot,{signal:connection}={}){
+      signal.throwIfAborted();connection?.throwIfAborted();if(closed)throw abortError();
+      const epoch=++generation;
+      job?.abort();const work=new AbortController();job=work;
+      const active=combineAbortSignals([signal,connection,work.signal]);
+      const check=()=>{active.throwIfAborted();if(closed||epoch!==generation)throw abortError();};
+      let candidate,abortMount;
+      try{
+        const binding=await read(snapshot,active);check();
+        const key=canonical({presentationContext:binding.presentationContext,selection:binding.selection});
+        if(current?.key===key){
+          await current.port.restoreSnapshot(snapshot,{signal:connection});check();return;
+        }
+        dispose(current);current=null;
+        let ready,failed;
+        const firstFrame=new Promise((resolve,reject)=>{ready=resolve;failed=reject;});
+        void firstFrame.catch(()=>{});
+        candidate={key,lifetime:new AbortController(),port:null,closed:false,authorized:false,startup:startupFor(binding.selection.dealer)};
+        pending.add(candidate);
+        const owned=candidate,mountSignal=combineAbortSignals([signal,owned.lifetime.signal]);
+        abortMount=()=>dispose(owned);active.addEventListener('abort',abortMount,{once:true});
+        const port=await createPresentation({document,window,selection:structuredClone(binding.selection),signal:mountSignal,transport,
+          onReady:dealer=>{if(owned.closed||mountSignal.aborted)return;if(dealer!==binding.selection.dealer)failed(new Error('shared_room_presentation_dealer_mismatch'));else ready();},
+          onError:()=>{if(owned.closed)return;if(!owned.authorized)failed(new Error('shared_room_media_unavailable'));onError();}});
+        if(owned.closed){port.close();check();throw abortError();}
+        owned.port=port;check();
+        await untilAborted(firstFrame,active);check();
+        await port.restoreSnapshot(snapshot,{signal:connection});check();
+        const confirmed=await read(snapshot,active);check();
+        if(canonical(confirmed)!==canonical(binding))throw new Error('shared_room_presentation_binding_changed');
+        current=owned;pending.delete(owned);owned.authorized=true;
+        active.removeEventListener('abort',abortMount);abortMount=null;
+        owned.startup.ready(binding.selection.dealer);
+      }catch(error){
+        if(candidate){if(!active.aborted)candidate.startup.fail();dispose(candidate);}
+        throw error;
+      }finally{
+        if(abortMount)active.removeEventListener('abort',abortMount);
+        work.abort();if(job===work)job=null;
+      }
+    },
+    present(value,options){if(closed||!current?.authorized)throw new Error('shared_room_media_authority_unavailable');return current.port.present(value,options);},
+    layout(value){current?.port.layout?.(value);},
+    close(){if(closed)return;closed=true;++generation;job?.abort();for(const owned of pending)dispose(owned);dispose(current);current=null;},
+  });
+}
+
 export async function mountSharedRoomApp({document=globalThis.document,window=globalThis.window,
   createSocket=createSharedRoomClient,createCommands=createSharedRoomCommandClient,
-  createView=createSharedRoomView,createPresentation=mountSharedRoomPresentation,presentationTransport=null}={}) {
-  const dataset=document?.documentElement?.dataset;
-  if(dataset?.sharedRoom!=='1')throw new Error('shared_room_entry_required');
-  const selection=gameLaneFromDocument(dataset),roomId=selection.roomId;
-  if(!roomId||!/^[a-z0-9_-]{1,128}$/.test(roomId))throw new Error('shared_room_entry_required');
-  const startup=createPresentationStartup({document,dealerId:selection.dealer});
+  createView=createSharedRoomView,createPresentation=mountSharedRoomPresentation,presentationTransport=null,
+  fetchImpl=(...args)=>window.fetch(...args)}={}) {
+  const dataset=document?.documentElement?.dataset,roomId=dataset?.gameRoomId;
+  if(dataset?.sharedRoom!=='1'||!roomId||!/^[a-z0-9_-]{1,128}$/.test(roomId))throw new Error('shared_room_entry_required');
+  const loading=document.getElementById('presentation-loading'),loadingText=loading?.textContent??'Visar spelbordet…';
+  let startup=createPresentationStartup({document,dealerId:null});
   const lifetime=new AbortController();
   let presentation,view,controller,socket,commands,closed=false;
   const fail=()=>{startup.fail();controller?.fail();};
@@ -22,10 +128,11 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   window.addEventListener('pagehide',close,{once:true});
   try {
     commands=createCommands({roomId});
-    presentation=await createPresentation({document,window,selection,signal:lifetime.signal,transport:presentationTransport,onReady:id=>startup.ready(id),onError:()=>{
-      const caption=document.getElementById('caption');if(caption)caption.textContent='Presentationen är inte tillgänglig. Bordets spelstatus är oförändrad.';
-    }});
-    if(closed){presentation.close();return Object.freeze({close});}
+    presentation=boundPresentation({document,window,roomId,signal:lifetime.signal,fetchImpl,createPresentation,transport:presentationTransport,
+      startupFor:dealerId=>{startup.close();if(loading){loading.hidden=false;loading.textContent=loadingText;}
+        startup=createPresentationStartup({document,dealerId});return startup;},onError:()=>{
+        const caption=document.getElementById('caption');if(caption)caption.textContent='Presentationen är inte tillgänglig. Bordets spelstatus är oförändrad.';
+      }});
     view=createView({document,onLayout:layout=>presentation.layout?.(layout)});
     controller=createSharedRoomController({roomId,commands,view,presentation});
     socket=createSocket({roomId,browserOrigin:window.location.origin,restoreSnapshot:controller.restoreSnapshot,

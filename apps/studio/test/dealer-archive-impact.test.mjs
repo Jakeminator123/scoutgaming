@@ -14,6 +14,8 @@ import {mergeFrozenDealerPlayback} from '../../../packages/presentation/contract
 import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {readOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import { createSavedGamePolicy } from '../../../packages/presentation/server/saved-game-policy.mjs';
+import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
+import {changeDealerLifecycle} from '../lib/dealer-lifecycle.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
@@ -71,6 +73,30 @@ test('archive detaches active rooms and only affected publication, without chang
   assert.equal(readOperatorLifecycle(pack.branding).rooms[0].room.id,'paow-table');
   assert.deepEqual((await f.pack('other')),other);
   assert.deepEqual(f.pool.snapshot().packages.slice(0,2),before.packages);
+});
+
+test('ordinary dealer archive and restore preserve another room imported bank without reopening retired rooms',async()=>{
+  const f=await fixture({measuredBank:true}),keptRoom=room('dragan');
+  await f.stored(async store=>{
+    const pack=await store.getCurrentPackage('north'),material=resolveNativeRoomGameMaterial({package:pack,room:keptRoom,language:'sv'});
+    material.revision='imported-verified-lifecycle-fixture';
+    await store.publishRoomGameConfig({actor:'fixture',operatorId:'north',expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding:pack.branding},
+      {roomId:keptRoom.id,gameConfig:{language:'sv',limitPreset:'prive'},material});
+  });
+  const before=f.pool.snapshot(),old=before.roomConfigs[0].body,plan=await f.read();
+  await changeDealerLifecycle({repository:f.repository,mutationTransaction:work=>work(),stillAuthorized:async()=>'Admin',
+    body:{dealerId:'paow',archived:true,expectedRevision:f.project.revision,impactToken:plan.impact.token}});
+  const after=f.pool.snapshot(),pack=await f.pack('north'),project=await f.repository.readDocument('project');
+  assert.deepEqual(pack.tables,['dragan-table']);assert.deepEqual(Object.keys(pack.branding.roomGameConfigVersions),['dragan-table']);
+  assert.deepEqual(after.roomConfigs[0].body,old);assert.equal(after.roomConfigs.length,2);
+  const next=after.roomConfigs.find(row=>row.version===pack.branding.roomGameConfigVersions['dragan-table']).body;
+  assert.notEqual(next.configVersion,old.configVersion);assert.equal(next.packageRevision,pack.revision);assert.deepEqual(next.material,old.material);
+  assert.ok(project.value.dealerTrash.some(entry=>entry.dealer.id==='paow'));
+  assert.ok([...after.media.values()].filter(row=>row.record.classification.dealerId==='paow').every(row=>row.record.classification.archived===true));
+  await changeDealerLifecycle({repository:f.repository,mutationTransaction:work=>work(),stillAuthorized:async()=>'Admin',
+    body:{dealerId:'paow',archived:false,expectedRevision:project.revision}});
+  const restored=f.pool.snapshot();assert.deepEqual(restored.roomConfigs,after.roomConfigs);assert.deepEqual(restored.roomConfigHeads,after.roomConfigHeads);
+  assert.deepEqual(await f.pack('north'),pack);assert.deepEqual((await f.repository.readDocument('administration')).value.rooms,[keptRoom]);
 });
 
 test('dealer archive preserves another dealer large measured v2 bank and rolls back without optional020',async()=>{

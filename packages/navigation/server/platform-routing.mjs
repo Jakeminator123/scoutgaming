@@ -38,6 +38,13 @@ const AUTH = new Set([
   '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
 const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
+const SHARED_ROOM_PRESENTATION = /^\/api\/presentation\/shared-room\/[a-z0-9_-]{1,128}\/(?:binding|config|idle-advice)$/;
+const ROOM_PRESENTATION_MEDIA = [
+  /^\/api\/presentation\/room-idle\/[a-z][a-z0-9-]{0,62}\/[a-z0-9_-]{1,128}\/([1-9][0-9]{0,15})\/[a-z][a-z0-9-]{0,39}$/,
+  /^\/api\/presentation\/room-video\/[a-z][a-z0-9-]{0,62}\/[a-z0-9_-]{1,128}\/([1-9][0-9]{0,15})\/[a-z][a-z0-9-]{0,39}\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/,
+  /^\/api\/presentation\/room-layers\/[a-z][a-z0-9-]{0,62}\/[a-z0-9_-]{1,128}\/([1-9][0-9]{0,15})\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/,
+];
+const roomPresentationMediaPath=path=>ROOM_PRESENTATION_MEDIA.some(pattern=>{const match=pattern.exec(path);return match&&Number.isSafeInteger(Number(match[1]));});
 const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
@@ -61,6 +68,7 @@ export function backendPlatformPath(value) {
     || path === '/api/operators'
     || path === '/api/studio-game/command'
     || (value === path && SHARED_ROOM_COMMAND.test(path))
+    || SHARED_ROOM_PRESENTATION.test(path) || roomPresentationMediaPath(path)
     || /^\/api\/moving-speech\/[a-f0-9]{32}\/rest$/.test(path)
     || /^\/api\/moving-speech\/bank\/[a-f0-9]{64}\/(?:archive|receipt)$/.test(path)
     || path === '/api/dealer/observation'

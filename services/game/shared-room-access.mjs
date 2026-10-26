@@ -1,19 +1,18 @@
-import {createHash} from 'node:crypto';
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
 import {readPackagePresentation,resolvePackageRoomDealer} from '../../packages/presentation/server/presentation-package.mjs';
-import {resolveNativeRoomGameMaterial,NATIVE_ROOM_MATERIAL_PREFIX} from '../../packages/presentation/server/native-room-game-material.mjs';
 import {isPresentationRoom,roomGame} from '../../packages/presentation/contracts/presentation-room.mjs';
 import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
-import {recordedSpeechForVideo} from '../../packages/presentation/contracts/recorded-speech.mjs';
-import {validateRoomGameConfig,validateRoomGameMaterial,ROOM_GAME_TIMERS,ROOM_LIMIT_PRESETS} from '../../packages/presentation/contracts/room-game-config.mjs';
-import {canonicalStudioJson,validateStudioScope,StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
+import {assertPublishedRoomGameConfig} from '../../packages/presentation/server/room-game-publication.mjs';
+import {canonicalStudioJson,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
 
 const deny=()=>{throw new StudioStorageError('studio_forbidden',403);};
 const unavailable=()=>{throw new StudioStorageError('studio_storage_unavailable',503);};
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const keys=['actorId','sessionId','operatorId','roomId','packageRevision','expiresAt'];
 const same=(a,b)=>canonicalStudioJson(a)===canonicalStudioJson(b);
+const mediaIdentity=value=>({...value,classification:Object.fromEntries(Object.entries(value.classification).filter(([key])=>!['label','notes'].includes(key)))});
+const layerIdentity=({label,...value})=>value;
 const aborted=signal=>{if(signal?.aborted)throw signal.reason??new DOMException('Aborted','AbortError');};
 function session(value,now) {
   // Legacy partner keys have no canonical operator/room grant. This new demo
@@ -23,30 +22,9 @@ function session(value,now) {
     ||!Number.isSafeInteger(value.expiresAt)||value.expiresAt<=now())deny();
   return {actorId:value.actorId,sessionId:value.sessionId,expiresAt:value.expiresAt};
 }
-function configMatches(value,{version,pack,room,presentation,dealerId}) {
-  if(!value||value.configVersion!==version||value.roomId!==room.id||value.operatorId!==room.operatorId
-    ||value.presentationLaneId!==room.presentationLaneId||!Number.isSafeInteger(value.packageRevision)
-    ||value.packageRevision<1||value.packageRevision>pack.revision
-    ||value.presentationHash!==createHash('sha256').update(canonicalStudioJson(presentation)).digest('hex'))deny();
-  // Branding-only publications retain the original config version/revision.
-  // Never equate a currently open round with a newly published config here.
-  try {
-    const selected=validateRoomGameConfig({language:value.language,limitPreset:value.limitPreset});
-    const preset=ROOM_LIMIT_PRESETS[selected.limitPreset];
-    const material=validateRoomGameMaterial(value.material,{language:selected.language,dealerId});
-    if(material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX)
-      && !same(material,resolveNativeRoomGameMaterial({package:pack,room,language:selected.language})))deny();
-    const captured=[...(presentation.playback?.media??[]),...(presentation.registeredDealers??[]).flatMap(row=>row.idle?[row.idle]:[])];
-    for(const ref of material.media) {
-      const record=captured.find(row=>row.id===ref.id&&row.sha256===ref.sha256&&row.classification?.dealerId===dealerId);
-      if(!record||record.classification.archived===true||record.deletion)deny();
-      if(record.classification.kind==='speech'&&!recordedSpeechForVideo(record,{dealerId,language:selected.language,
-        lineId:record.classification.situation,takeId:record.classification.recordedSpeech?.takeId}))deny();
-    }
-    if(value.betMs!==ROOM_GAME_TIMERS.betMs||value.actionMs!==ROOM_GAME_TIMERS.actionMs
-      ||!same(value.limits,{min:preset.min,max:preset.max,sideMax:preset.sideMax})||!same(value.chips,preset.chips)
-      ||value.refill!==preset.refill||value.leadMs!==material.leadMs||value.cardMs!==material.cardMs)deny();
-  } catch(error) {if(error?.statusCode===422)deny();throw error;}
+function configMatches(value,context) {
+  try { assertPublishedRoomGameConfig(value,context); }
+  catch(error) { if(error?.statusCode===422)deny(); throw error; }
 }
 
 /** Read-only authorization for createSharedRoomChannel, not an installed route.
@@ -60,7 +38,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
     ||!repository||!['transaction','withTransactionClient','readDocument'].every(key=>typeof repository[key]==='function')
     ||!same(scope,validateStudioScope(repository.scope)))throw new TypeError('Explicit scoped room access required');
   const parameters=[scope.environment,scope.workspaceId];
-  async function current(roomId,signal) {
+  async function current(roomId,signal,details=false) {
     aborted(signal);
     return repository.transaction(()=>repository.withTransactionClient(async client=>{
       aborted(signal);
@@ -97,7 +75,8 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
       let config;try{config=typeof result.rows[0].body==='string'?JSON.parse(result.rows[0].body):result.rows[0].body;}catch{unavailable();}
       configMatches(config,{version,pack,room,presentation,dealerId});
       aborted(signal);
-      return {operatorId:operator.id,roomId,packageRevision:pack.revision};
+      const publication={operatorId:operator.id,roomId,packageRevision:pack.revision};
+      return details?{publication,operator,pack,room,presentation,config,administration,administrationRevision:document.revision}:publication;
     }));
   }
   async function bind(value,roomId,signal) {
@@ -140,5 +119,57 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
     aborted(signal);
     return Object.freeze({...fresh,...publication});
   }
-  return Object.freeze({authorize,revalidate,revalidateLocked});
+  async function readPresentationContextLocked(binding,{configVersion=null,signal}={}) {
+    // The caller obtains configVersion from the locked engine room, never from
+    // a query/body. Null means no engine window: use the current published head.
+    // Revalidate on the same G/S/R/P/A owner, including the current session.
+    await revalidateLocked(binding,{signal});aborted(signal);
+    return repository.transaction(()=>repository.withTransactionClient(async client=>{
+      const saved=await current(binding.roomId,signal,true);aborted(signal);
+      const {operator,pack,room,presentation,administration}=saved;
+      let config=saved.config;
+      if(configVersion!==null) {
+        if(typeof configVersion!=='string'||!/^room-config-[a-f0-9-]{36}$/.test(configVersion))deny();
+        const result=await client.query(`/* shared-room-access:active-config */ SELECT body FROM croupier_game.shared_table_configs
+          WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND room_id=$3 AND version=$4`,[...parameters,room.id,configVersion]);
+        aborted(signal);if(result.rows.length!==1)deny();
+        try{config=typeof result.rows[0].body==='string'?JSON.parse(result.rows[0].body):result.rows[0].body;}catch{unavailable();}
+      }
+      const version=configVersion??config.configVersion;
+      if(!Number.isSafeInteger(config?.packageRevision)||config.packageRevision<1||config.packageRevision>pack.revision)deny();
+      const operators=await createOperatorStore({sql:client,scope,now});
+      const source=config.packageRevision===pack.revision?pack:await operators.getPackage(operator.id,config.packageRevision);aborted(signal);
+      if(!source||source.operatorId!==operator.id||source.branding?.roomGameConfigVersions?.[room.id]!==version
+        ||!source.games.includes('blackjack')||!source.tables.includes(room.id)||!source.lanes.includes(room.presentationLaneId))deny();
+      const frozen=readPackagePresentation(source),dealerId=resolvePackageRoomDealer(source,room,frozen);
+      configMatches(config,{version,pack:source,room,presentation:frozen,dealerId});
+      const liveLane=presentation.lanes.find(row=>row.id===room.presentationLaneId),lane=frozen.lanes.find(row=>row.id===room.presentationLaneId);
+      if(!liveLane?.dealers.includes(dealerId)||!liveLane.layers.dealer.allowed.includes(dealerId)
+        ||!presentation.registeredDealers.some(row=>row.id===dealerId))deny();
+      const project=await repository.readDocument('project');aborted(signal);
+      if(!project?.value?.dealers?.some(row=>row.id===dealerId))deny();
+      // A frozen asset may outlive a changed default, but never its ordinary
+      // trash/deletion or approval. Provider bytes are fetched after COMMIT.
+      const records=[...(frozen.playback?.media??[]),...(frozen.registeredDealers??[]).flatMap(row=>row.idle?[row.idle]:[])]
+        .filter(row=>row.classification?.dealerId===dealerId);
+      const expected=new Map(records.map(row=>[row.id,validateStudioMedia(row)]));
+      if(!expected.size)deny();
+      const rows=await client.query(`/* shared-room-access:active-media */ SELECT id,record FROM croupier_studio.media_records
+        WHERE environment_id=$1 AND workspace_id=$2 AND id=ANY($3::uuid[])`,[...parameters,[...expected.keys()]]);aborted(signal);
+      if(rows.rows.length!==expected.size||new Set(rows.rows.map(row=>row.id)).size!==rows.rows.length)deny();
+      for(const row of rows.rows) {
+        let value;try{value=validateStudioMedia(typeof row.record==='string'?JSON.parse(row.record):row.record);}catch{deny();}
+        if(value.id!==row.id||value.deletion||value.classification.archived===true||!expected.has(row.id)
+          ||!same(mediaIdentity(value),mediaIdentity(expected.get(row.id))))deny();
+      }
+      const assets=frozen.assets.filter(asset=>lane.layers[asset.role]?.allowed.includes(asset.id));
+      for(const asset of assets)if(!project.value.layerAssets?.some(row=>row.id===asset.id&&same(layerIdentity(row),layerIdentity(asset))))deny();
+      aborted(signal);
+      return {config,context:{operatorSlug:operator.slug,roomId:room.id,packageRevision:source.revision,dealerId},
+        saved:{operator,package:source,administration},
+        authority:{administrationRevision:saved.administrationRevision,projectRevision:project.revision,
+          media:[...expected.values()],assets}};
+    }));
+  }
+  return Object.freeze({authorize,revalidate,revalidateLocked,readPresentationContextLocked});
 }

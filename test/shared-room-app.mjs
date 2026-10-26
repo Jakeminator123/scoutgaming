@@ -22,6 +22,12 @@ function snapshot(version=0,extra={}){
     me:{id:actor,seats:[],memberGen:0,active:false,available:1000,pausedUntil:0,insuranceDue:false,lastSettlement:null},...extra};
 }
 function seated(version=1,extra={}){return snapshot(version,{owners:[actor,null,null,null,null,null,null],seatGen:[1,0,0,0,0,0,0],players:[{id:actor,seats:[0],ready:false,leaving:false}],me:{id:actor,seats:[0],memberGen:1,active:true,available:1000,pausedUntil:0,insuranceDue:false,lastSettlement:null},...extra});}
+function presentationBinding(s=snapshot(),{dealer='astrid',packageRevision=1,branding={}}={}){
+  return {owner:'web',roomId,configVersion:s.configVersion,windowId:s.windowId,
+    presentationContext:{operatorSlug:'north',roomId,packageRevision,dealerId:dealer},
+    selection:{lane:'saved',dealer,presentation:'local',localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}],operator:'north',roomId,packageRevision,branding}};
+}
+const bindingResponse=url=>{const query=new URL(url,'https://game.invalid').searchParams;return Response.json(presentationBinding({configVersion:query.get('configVersion'),windowId:query.get('windowId')}));};
 function harness(t,options={}){
   const calls=[],renders=[],events=[];let send=options.send??(async intent=>({status:'ok',result:{op:intent.op,version:10},commandId:'id-1',replay:false}));
   const commands=options.commands??{state:'idle',send(intent){calls.push(intent);return send(intent);},retry(){return send();},stop(){this.state='stopped';}};
@@ -95,6 +101,18 @@ test('late async restore after close cannot restore authority or restart control
   await h.controller.dispatch('refill');assert.equal(h.calls.length,0);
 });
 
+test('pending presentation binding disables connected controls and retries until the latest restore completes',async t=>{
+  const gate=deferred();let restores=0;
+  const h=harness(t,{presentation:{restoreSnapshot(){if(++restores===2)return gate.promise;},present(){},close(){}}});
+  await h.restore(seated(1));const pending=h.restore(seated(2));
+  assert.equal(h.controller.state.connected,false);assert.equal(h.renders.at(-1).can.bet,false);
+  await h.controller.dispatch('refill');assert.equal(h.calls.length,0);
+  h.commands.state='uncertain';let retries=0;h.commands.retry=()=>{retries++;};
+  await h.controller.retry();assert.equal(retries,0);assert.equal(h.renders.at(-1).retry,false);
+  h.commands.state='idle';await h.restore(seated(3));assert.equal(h.controller.state.connected,true);
+  gate.resolve();await pending;assert.equal(h.controller.state.snapshot.version,3,'a superseded async restore cannot replace the latest authority');
+});
+
 test('presentation restores reconnect cards without old replay; new events use exact frame callbacks after snapshot',async()=>{
   const trace=[];let selected;
   const cards=Object.fromEntries(['restore','sync','clear','show','reveal','close'].map(key=>[key,(...args)=>trace.push([key,...args])]));
@@ -112,17 +130,112 @@ test('presentation restores reconnect cards without old replay; new events use e
 });
 
 class Element extends EventTarget {
-  constructor(tag='div'){super();this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attributes={};this.style={setProperty(){}};this.hidden=false;this.disabled=false;this.className='';this._text='';this.classes=new Set();this.classList={toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
+  constructor(tag='div'){super();this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attributes={};const styles=new Map();this.style={setProperty:(key,value)=>styles.set(key,String(value)),getPropertyValue:key=>styles.get(key)??'',removeProperty:key=>styles.delete(key)};this.hidden=false;this.disabled=false;this.className='';this._text='';this.classes=new Set();this.classList={toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
   set textContent(value){this._text=String(value);this.children=[];}get textContent(){return this._text+this.children.map(child=>child.textContent).join('');}
   setAttribute(name,value){this.attributes[name]=String(value);}append(...children){this.children.push(...children);}prepend(...children){this.children.unshift(...children);}replaceChildren(...children){this._text='';this.children=children;}click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
 }
 function documentFixture(){
   const ids=['scene','seats','chips','balance','total-bet','last-win','banner','deal-now','insurance','ins-yes','ins-no','actions','actions-top','undo-btn','clear-btn','double-btn','max-btn','all-sides','add-funds','pitboss','presentation-loading','caption','limits','chat','table-pick'];
   const nodes=new Map(ids.map(id=>[id,new Element()])),acts=['hit','stand','double','split'].map(action=>{const node=new Element('button');node.dataset.act=action;return node;});
-  const document={documentElement:{dataset:{sharedRoom:'1',gameLane:'saved',gameDealer:'astrid',gameLocalDealer:'astrid',gamePresentation:'local',gameRegisteredDealers:JSON.stringify([{id:'astrid',label:'Astrid'}]),gameOperator:'north',gamePackageRevision:'1',gameBranding:'{}',gameRoomId:roomId}},
+  const document={documentElement:{style:new Element().style,dataset:{sharedRoom:'1',gameLane:'saved',gameDealer:'astrid',gameLocalDealer:'astrid',gamePresentation:'local',gameRegisteredDealers:JSON.stringify([{id:'astrid',label:'Astrid'}]),gameOperator:'north',gamePackageRevision:'1',gameBranding:'{}',gameRoomId:roomId}},
     getElementById:id=>nodes.get(id),createElement:tag=>new Element(tag),querySelector:selector=>nodes.get(selector.slice(1)),querySelectorAll:selector=>selector==='[data-act]'?acts:[]};
   return{document,nodes,acts};
 }
+async function bindingHarness(t,{fetchImpl=async url=>bindingResponse(url),createPresentation,document:givenDocument}={}){
+  const {document:defaultDocument,nodes}=documentFixture(),document=givenDocument??defaultDocument;
+  const window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const writes=[],mounts=[],renders=[];let socketOptions,stops=0;
+  const commands={state:'idle',send:async intent=>{writes.push(intent);return{status:'rejected',httpStatus:409,code:'STALE_COMMAND'};},stop(){this.state='stopped';}};
+  const app=await mountSharedRoomApp({document,window,fetchImpl,createCommands:()=>commands,
+    createView:()=>({bind(){},render:value=>renders.push(value),close(){}}),
+    createSocket:options=>{socketOptions=options;return{start(){},stop(){stops++;}};},
+    createPresentation:async options=>{mounts.push(options);return createPresentation?createPresentation(options):
+      (options.onReady(options.selection.dealer),{restoreSnapshot(){},present(){},close(){}});}});
+  t.after(app.close);
+  return{...app,document,window,nodes,writes,mounts,renders,commands,get stops(){return stops;},
+    restore:(value,signal=new AbortController().signal)=>socketOptions.restoreSnapshot(value,{signal})};
+}
+
+test('new shared client ignores a newer HTML dealer and opens controls only after the active binding is checked after the first frame',async t=>{
+  const {document}=documentFixture();Object.assign(document.documentElement.dataset,{gameDealer:'nora',gameLocalDealer:'nora',gamePackageRevision:'9'});
+  const firstFrame=deferred(),confirmed=deferred(),requests=[];let loaded;
+  const active=presentationBinding(seated(3),{dealer:'astrid',packageRevision:1,branding:{color:'#123456'}});
+  const h=await bindingHarness(t,{document,fetchImpl:async(url,init)=>{requests.push({url,init});return requests.length===1?Response.json(active):confirmed.promise;},
+    createPresentation:async options=>{loaded=options;void firstFrame.promise.then(()=>options.onReady('astrid'));return{restoreSnapshot(){},present(){},close(){}};}});
+  assert.equal(h.mounts.length,0,'media is not selected before the server snapshot');
+  const restoring=h.restore(seated(3));await turn();
+  assert.equal(loaded.selection.packageRevision,1);assert.equal(loaded.selection.dealer,'astrid');assert.equal(requests.length,1);
+  await h.controller.dispatch('refill');assert.equal(h.writes.length,0);assert.equal(h.controller.state.connected,false);
+  firstFrame.resolve();await turn();assert.equal(requests.length,2);assert.equal(h.controller.state.connected,false);
+  assert.equal(document.documentElement.dataset.presentationStartup,'pending');
+  for(const {url,init}of requests){
+    assert.equal(url,'/api/presentation/shared-room/room-a/binding?configVersion=cfg-1&windowId=window-1');
+    assert.equal(init.method,'GET');assert.equal(init.body,undefined);assert.equal(init.credentials,'same-origin');assert.equal(init.mode,'same-origin');
+    assert.equal(init.cache,'no-store');assert.equal(init.redirect,'error');assert.equal(new Headers(init.headers).has('authorization'),false);assert.ok(init.signal instanceof AbortSignal);
+  }
+  confirmed.resolve(Response.json(active));await restoring;
+  assert.equal(h.controller.state.connected,true);assert.equal(document.documentElement.dataset.presentationStartup,'ready');
+  await h.controller.dispatch('refill');assert.deepEqual(h.writes,[{op:'refill'}]);
+});
+
+test('an existing client retains the active N2 presentation and remounts once for the next window package',async t=>{
+  let current=presentationBinding(seated(3),{branding:{color:'#123456'}}),closes=0;
+  const h=await bindingHarness(t,{fetchImpl:async()=>Response.json(current),createPresentation:async options=>{
+    options.onReady(options.selection.dealer);return{restoreSnapshot(){},present(){},close(){closes++;}};}});
+  await h.restore(seated(3));assert.equal(h.mounts.length,1);
+  // The server still names the active config after another package is published.
+  await h.restore(seated(4));assert.equal(h.mounts.length,1);assert.equal(closes,0);
+  assert.equal(h.mounts[0].selection.branding.color,'#123456');
+  const next=seated(5,{windowId:'window-2',configVersion:'cfg-2',settings:{...snapshot().settings,configVersion:'cfg-2'}});
+  current=presentationBinding(next,{packageRevision:2,branding:{color:'#abcdef'}});
+  await h.restore(next);assert.equal(h.mounts.length,2);assert.equal(closes,1);
+  assert.equal(h.mounts[1].selection.packageRevision,2);assert.equal(h.mounts[1].selection.branding.color,'#abcdef');
+  await h.restore({...next,version:6});assert.equal(h.mounts.length,2);assert.equal(closes,1);
+  h.close();assert.equal(closes,2);
+});
+
+test('an unopened room binds its published head and reuses unchanged media when its first window opens',async t=>{
+  const urls=[];const h=await bindingHarness(t,{fetchImpl:async url=>{urls.push(url);return bindingResponse(url);}});
+  await h.restore(snapshot(0,{windowId:'unopened'}));
+  assert.equal(urls.length,2);assert.ok(urls.every(url=>url.endsWith('configVersion=cfg-1&windowId=unopened')));
+  await h.restore(seated(1));assert.equal(h.mounts.length,1);assert.equal(h.controller.state.snapshot.windowId,'window-1');
+});
+
+test('a stale or revoked binding after slow media loading closes that media and never enables commands',async t=>{
+  for(const status of [403,409,'changed'])await t.test(String(status),async t=>{
+    let reads=0,ready,closes=0;
+    const active=presentationBinding(seated(1));
+    const h=await bindingHarness(t,{fetchImpl:async()=>++reads===1?Response.json(active):status==='changed'
+      ?Response.json({...active,selection:{...active.selection,branding:{color:'#ffffff'}}}):new Response(null,{status}),
+      createPresentation:async options=>{ready=options.onReady;return{restoreSnapshot(){},present(){},close(){closes++;}};}});
+    const restoring=h.restore(seated(1));await turn();assert.equal(reads,1);assert.equal(h.controller.state.connected,false);
+    ready('astrid');await assert.rejects(restoring,/shared_room_presentation_binding_(unavailable|changed)/);
+    assert.equal(reads,2);assert.equal(closes,1);assert.equal(h.controller.state.connected,false);
+    await h.controller.dispatch('refill');assert.equal(h.writes.length,0);h.close();assert.equal(closes,1);
+  });
+});
+
+test('binding scope, owner, context and snapshot preconditions are checked before mounting media',async t=>{
+  const mutations=[b=>{b.owner='preview';},b=>{b.roomId='room-b';},b=>{b.configVersion='cfg-2';},b=>{b.windowId='window-2';},
+    b=>{b.presentationContext.roomId='room-b';},b=>{b.presentationContext.operatorSlug='south';},b=>{b.presentationContext.packageRevision=2;},
+    b=>{b.presentationContext.dealerId='nora';},b=>{b.selection.roomId='room-b';},b=>{b.selection.registeredDealers=[];},b=>{b.selection.token='not-a-capability';}];
+  for(const mutate of mutations){
+    const binding=presentationBinding();mutate(binding);
+    const h=await bindingHarness(t,{fetchImpl:async()=>Response.json(binding)});
+    await assert.rejects(h.restore(snapshot()));assert.equal(h.mounts.length,0);assert.equal(h.controller.state.connected,false);h.close();
+  }
+});
+
+test('an aborted binding fetch cannot mount late or replace a newer connection generation',async t=>{
+  const oldRead=deferred(),oldConnection=new AbortController();let reads=0,firstSignal;
+  const next=seated(3,{windowId:'window-3',configVersion:'cfg-3',settings:{...snapshot().settings,configVersion:'cfg-3'}});
+  const h=await bindingHarness(t,{fetchImpl:async(url,init)=>{
+    if(++reads===1){firstSignal=init.signal;return oldRead.promise;}return Response.json(presentationBinding(next,{packageRevision:3}));}});
+  const oldRestore=h.restore(seated(1),oldConnection.signal);await turn();oldConnection.abort();assert.equal(firstSignal.aborted,true);
+  await h.restore(next);assert.equal(h.controller.state.snapshot.version,3);assert.equal(h.mounts.length,1);
+  oldRead.resolve(Response.json(presentationBinding(seated(1))));await assert.rejects(oldRestore,{name:'AbortError'});
+  assert.equal(h.mounts.length,1);assert.equal(h.controller.state.connected,true);assert.equal(h.controller.state.snapshot.version,3);
+});
 
 test('existing DOM receives server balances, native seat/chip controls, Swedish error and explicit retry',()=>{
   const {document,nodes}=documentFixture(),calls=[];const view=createSharedRoomView({document});
@@ -151,6 +264,7 @@ test('mounted application wires real WS and HTTP clients; duplicate reconnect st
   const sockets=[],renders=[],events=[],requests=[];
   class Socket extends EventTarget {readyState=1;bufferedAmount=0;constructor(){super();sockets.push(this);}close(){this.readyState=3;}frame(s,p=null){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:s,presentation:p})}));}}
   const app=await mountSharedRoomApp({document,window,createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket,reconnectDelayMs:1}),
+    fetchImpl:async url=>bindingResponse(url),
     createCommands:options=>createSharedRoomCommandClient({...options,randomUUID:()=> 'join-id',fetchImpl:async(url,init)=>{requests.push({url,body:JSON.parse(init.body)});return Response.json({result:{op:'join',version:1,memberGen:1,seats:[0],seatGen:[1,0,0,0,0,0,0]},replay:false,snapshot:seated()});}}),
     createView:()=>({bind(){},render:state=>renders.push(state),close(){}}),
     createPresentation:async({onReady})=>{onReady('astrid');return{restoreSnapshot:s=>events.push('restore:'+s.version),present:p=>events.push('present:'+p.ver),close(){}};}});
@@ -168,13 +282,28 @@ test('mounted application wires real WS and HTTP clients; duplicate reconnect st
   window.dispatchEvent(new Event('pagehide'));await app.controller.dispatch('refill');assert.equal(requests.length,1);assert.equal(app.controller.state.closed,true);
 });
 
-test('pagehide during asynchronous media startup closes the returned port and never opens a socket',async()=>{
+test('a postload binding rejection through the real socket closes the controller, media and command port',async t=>{
   const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
-  const gate=deferred();let sockets=0,closes=0,stops=0;
-  const mounting=mountSharedRoomApp({document,window,createCommands:()=>({stop(){stops++;}}),
-    createPresentation:()=>gate.promise,createSocket:()=>{sockets++;},createView:()=>assert.fail('closed startup cannot mount a view')});
-  window.dispatchEvent(new Event('pagehide'));gate.resolve({close(){closes++;}});
-  await mounting;assert.equal(sockets,0);assert.equal(closes,1);assert.equal(stops,1);
+  let socket,reads=0,closes=0,stops=0;
+  class Socket extends EventTarget{readyState=1;constructor(){super();socket=this;}close(){this.readyState=3;}}
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async()=>++reads===1?Response.json(presentationBinding()):new Response(null,{status:403}),
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket}),createCommands:()=>({state:'idle',stop(){stops++;},send(){assert.fail('unverified media cannot authorize writes');}}),
+    createView:()=>({bind(){},render(){},close(){}}),createPresentation:async options=>{options.onReady('astrid');return{restoreSnapshot(){},present(){},close(){closes++;}};}});
+  t.after(app.close);socket.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:snapshot(),presentation:null})}));
+  await turn();await turn();assert.equal(reads,2);assert.equal(closes,1);assert.equal(stops,1);assert.equal(socket.readyState,3);
+  assert.equal(app.controller.state.closed,true);await app.controller.dispatch('refill');app.close();assert.equal(closes,1);assert.equal(stops,1);
+});
+
+test('pagehide during bound media startup closes a late returned port and stops the socket and commands',async()=>{
+  const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const gate=deferred();let closes=0,stops=0,socketStops=0,viewCloses=0,mediaSignal,restorer;
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),createCommands:()=>({state:'idle',stop(){stops++;}}),
+    createPresentation:options=>{mediaSignal=options.signal;return gate.promise;},createSocket:options=>{restorer=options.restoreSnapshot;return{start(){},stop(){socketStops++;}};},
+    createView:()=>({bind(){},render(){},close(){viewCloses++;}})});
+  const restoring=restorer(snapshot(),{signal:new AbortController().signal});await turn();
+  assert.ok(mediaSignal);window.dispatchEvent(new Event('pagehide'));assert.equal(mediaSignal.aborted,true);gate.resolve({close(){closes++;}});
+  await assert.rejects(restoring,{name:'AbortError'});app.close();
+  assert.equal(closes,1);assert.equal(stops,1);assert.equal(socketStops,1);assert.equal(viewCloses,1);
 });
 
 test('revoked command authority stops writes and preserves the last server snapshot',async t=>{
@@ -197,10 +326,13 @@ test('pause keeps stand and declining insurance usable while blocking bets and r
 
 test('pagehide aborts pending media initialization and blocks late startup work',async()=>{
   const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
-  const gate=deferred();let signal;
-  const mounting=mountSharedRoomApp({document,window,createCommands:()=>({stop(){}}),
-    createPresentation:async options=>{signal=options.signal;await gate.promise;signal.throwIfAborted();},createSocket:()=>assert.fail('closed')});
-  window.dispatchEvent(new Event('pagehide'));assert.equal(signal.aborted,true);gate.resolve();await assert.rejects(mounting,{name:'AbortError'});
+  let signal,ready,closes=0,restorer;
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),createCommands:()=>({state:'idle',stop(){}}),
+    createPresentation:async options=>{signal=options.signal;ready=options.onReady;return{restoreSnapshot(){},close(){closes++;}};},
+    createSocket:options=>{restorer=options.restoreSnapshot;return{start(){},stop(){}};},createView:()=>({bind(){},render(){},close(){}})});
+  const restoring=restorer(snapshot(),{signal:new AbortController().signal});await turn();
+  assert.equal(app.controller.state.connected,false);window.dispatchEvent(new Event('pagehide'));assert.equal(signal.aborted,true);
+  await assert.rejects(restoring,{name:'AbortError'});ready('astrid');assert.equal(closes,1);assert.notEqual(document.documentElement.dataset.presentationStartup,'ready');
 });
 
 test('all seven seats remain selectable through a native control when the visual table is compact',()=>{
@@ -235,6 +367,13 @@ test('registered local presentation reuses exact media and card ports without Ab
   await options.transport.request('/api/presentation/select',{method:'POST',body:JSON.stringify({version:7,event:{type:'speak',line:'goodluck'}})});
   assert.deepEqual(JSON.parse(requests[0].init.body),{version:7,event:{type:'speak',line:'goodluck'},sharedRoom:{roomId,ver:7,talkId:'verified-talk'}});
   await options.transport.request('/api/presentation/config',{method:'GET'});assert.equal(requests[1].init.body,undefined);
+  assert.equal(requests[1].url,'/api/presentation/shared-room/room-a/config');
+  const context={operatorSlug:'north',roomId,packageRevision:1,dealerId:'astrid'};
+  await options.transport.request('/api/presentation/config?'+new URLSearchParams(context),{method:'GET'});
+  assert.equal(requests[2].url,'/api/presentation/shared-room/room-a/config?'+new URLSearchParams(context));
+  const advice=JSON.stringify({presentationContext:context,event:{type:'idle'},version:7});
+  await options.transport.request('/api/presentation/idle-advice',{method:'POST',body:advice});
+  assert.equal(requests[3].url,'/api/presentation/shared-room/room-a/idle-advice');assert.equal(requests[3].init.body,advice);
   wsConnection.abort();assert.equal(requests[0].init.signal.aborted,true,'selection belongs to the WS generation at request start');
   assert.throws(()=>options.transport.request('/api/presentation/select',{body:'{}'}),/authority_unavailable/);
   port.layout({snapshot:seated(),seats:Array.from({length:7},()=>new Element())});
@@ -245,6 +384,28 @@ test('registered local presentation reuses exact media and card ports without Ab
   assert.ok(events.includes('cards-restore'));assert.ok(events.includes('cards-setProjection'));port.close();
   assert.deepEqual(events.slice(-3),['media-close','cards-close','player-close']);
   await assert.rejects(mountSharedRoomPresentation({document,window,selection:{...selection,registeredDealers:[]},onReady(){},onError(){}}),/binding_missing/);
+});
+
+test('bound shared presentation applies only its published room branding and restores its owned colour on close',async()=>{
+  const {document,nodes}=documentFixture(),window=new EventTarget(),selected=[];
+  window.location={search:'?dealer=nora&table=%23ffffff'};window.matchMedia=()=>({matches:false});window.fetch=async()=>Response.json({});
+  document.documentElement.style.setProperty('--table-felt','#010203');
+  for(const id of ['felt-brand','wallet','chip-row'])nodes.set(id,new Element());
+  const background='00000000-0000-4000-8000-000000000001',table='00000000-0000-4000-8000-000000000002';
+  const selection={...presentationBinding().selection,branding:{background,table,color:'#123456'},
+    choices:{dealers:['astrid'],dealerDefault:'astrid',tableColors:['#123456'],tableDefault:'#123456',background:{enabled:true,mode:'image',allowed:[background],default:background}},
+    composition:{background:{enabled:true,mode:'image',allowed:[background],default:background},table:{enabled:true,allowed:[table],default:table},
+      assets:[{id:background,role:'background',contentType:'image/png'},{id:table,role:'table',contentType:'image/png'}]}};
+  let mediaOptions,closes=0;
+  const port=await mountSharedRoomPresentation({document,window,selection,onReady(){},onError(){},
+    createComposition:()=>({setBackground:id=>selected.push(['background',id]),setTable:id=>selected.push(['table',id]),onGeometryChange:()=>()=>{},close(){closes++;}}),
+    loadAdapters:async()=>[{PerformancePlayer:class{dispose(){}}},{createLocalPresentation:async options=>{mediaOptions=options;return{state(){},start(){options.onIdle();},close(){}};}},
+      {createLocalCardOverlay:()=>({restore(){},sync(){},clear(){},close(){}})}]});
+  assert.equal(mediaOptions.dealerId,'astrid');assert.deepEqual(selected,[['background',background],['table',table]]);
+  assert.equal(document.documentElement.dataset.tableColor,'#123456');assert.equal(document.documentElement.style.getPropertyValue('--table-felt'),'#123456');
+  assert.equal(nodes.get('felt-brand').style.getPropertyValue('color'),'#123456');
+  port.close();port.close();assert.equal(closes,1);assert.equal(document.documentElement.style.getPropertyValue('--table-felt'),'#010203');
+  assert.equal(document.documentElement.dataset.tableColor,undefined);assert.equal(nodes.get('felt-brand').style.getPropertyValue('color'),'');
 });
 
 test('media lookahead may shift its private queue without skipping committed instructions',async()=>{
@@ -505,3 +666,4 @@ test('without a profile, a start time or a matching filmed order the steps play 
   const second=untimed.start();await flushRender();assert.equal(untimed.seen.length,1);assert.equal(untimed.seen[0].options.handoverAt,undefined);
   await second;
 });
+
