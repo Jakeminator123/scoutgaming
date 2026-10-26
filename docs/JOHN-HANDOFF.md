@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Fortsatt förenkling av test och återställning — 26 oktober
+
+Den tidigare valfria kant-/kortkontrollen följer nu den gemensamma regressionen. Kantparametrarnas beteendeprov ligger i `test/actor-edge-blend.mjs`; kortets landningsyta provas i befintliga `test/performance-player-source.mjs`. Det gamla shadersträngslåset förkastade den aktiva hårspecifika blandningen och tas bort, tillsammans med två separata teststarter och deras orphan-undantag. Inga renderingsparametrar eller produktbeteenden ändras.
+
+Den oanvända `tools/postgres-backup-restore.mjs` avvecklas. Dess JSON-format och fasta äldre tabellista täcker inte Studio, senare speltabeller eller databasobjekt. Aktuell återställning använder den befintliga fullständiga `pg_dump --format=custom` / `pg_restore --single-transaction --exit-on-error`-vägen med separat tomt mål och granskade roller/ägare/ACL. Repositorysökning hittade inga aktiva anrop, importer eller testkonsumenter av JSON-verktyget. Befintliga privata backuper och historiska läsare i Git bevaras. Isolerat fullbackup-/restoreprov ligger kvar i `tools/run-shared-table-qa.mjs --lissabon-retirement`; detta är ingen ny genomförd molnrestore.
+
+Verifiering på Node24.21.0 med högst fyra arbetare: implementerarens 65/65 riktade beteende-/registreringsprov och rootens 48/48 miljö-/CI-/hookprov passerar utan skip (överlapp mellan körningarna). Orphan-kontrollen hittar 569 kandidater, noll orphan och nio uttryckliga undantag. Oberoende läsgranskning av backupavvecklingen har inga blockerande fynd; root har granskat testdiffen. Full CI på PR-head återstår. Migrationsstatus ligger kvar på 55 %; städningen är inte ett nytt moln-, återställnings- eller PAOW-acceptanskvitto.
+
+Leveranshjälparen rättas också efter ett faktiskt fel i en checkout med begränsad fetch-konfiguration: push och remote-SHA-kontroll lyckades, men upstream kunde inte kopplas. Samma hjälpare hämtar nu endast den verifierade egna refen, kontrollerar dess SHA igen och lägger till en exakt fetch-mappning bara när den saknas. Verkligt isolerat Git-prov verifierar första push, omkörning utan dubbla mappningar och stopp vid ändrad remote-SHA. 33/33 relaterade workflow-/hook-/orphanprov passerar utan skip. Ingen force-push eller alternativ leveransväg införs.
+
 ## Start för nästa agent — 26 oktober
 
 Jakob har beställt en överlämning även för annat Codex-konto och bekräftat efter slutleveransen att PAOW hos Johns Bet såg bra ut. [Nästa agents startpunkt](NEXT-AGENT.md) samlar aktuell bas, åtkomstidentiteter, genomförd städning, bevarad demogeometri, privata bevis och de återstående migrationsstegen. Det är ingen konkurrerande statuskälla; `migrering/status.json` kvarstår på 55 %. Användarens bekräftelse gäller utseendet, inte full spel- eller talacceptans. Vid denna överlämning återlästes remote main `cc52ed54…`, Vercel READY på samma SHA, Render v3:s version/health och paketversion 5 för båda bolagen. PR410 är nu stängd utan merge och är inte en väntande release.

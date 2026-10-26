@@ -76,6 +76,24 @@ export function deliver({ args = [], policy, git, log = console.log }) {
     git('push', 'origin', `${local}:${plan.ref}`);
     const after = git('ls-remote', '--heads', urls[0], plan.ref).split(/\s+/)[0];
     if (after !== local) throw new Error('GitHub commit does not match the pushed commit.');
+    const tracking = `refs/remotes/origin/${plan.branch}`;
+    // Explicit source/destination works when origin fetches only main. Fetch
+    // the already-approved push URL, which may differ from origin's fetch URL.
+    git('fetch', '--no-tags', urls[0], `${plan.ref}:${tracking}`);
+    if (git('rev-parse', tracking) !== local) throw new Error('GitHub branch changed while fetching the pushed commit.');
+    let fetchSpecs = [];
+    try { fetchSpecs = git('config', '--get-all', 'remote.origin.fetch').split(/\r?\n/); } catch { /* No fetch mapping yet. */ }
+    const mapped = fetchSpecs.some(spec => {
+      const [from, to] = spec.replace(/^\+/, '').split(':');
+      if (!to) return false;
+      const wildcard = from.indexOf('*');
+      if (wildcard < 0) return from === plan.ref && to === tracking;
+      const prefix = from.slice(0, wildcard), suffix = from.slice(wildcard + 1);
+      if (!plan.ref.startsWith(prefix) || !plan.ref.endsWith(suffix)) return false;
+      const match = plan.ref.slice(prefix.length, suffix ? -suffix.length : undefined);
+      return to.replace('*', match) === tracking;
+    });
+    if (!mapped) git('remote', 'set-branches', '--add', 'origin', plan.branch);
     git('branch', `--set-upstream-to=origin/${plan.branch}`, plan.branch);
     log(`GitHub verified: ${after}`);
   }

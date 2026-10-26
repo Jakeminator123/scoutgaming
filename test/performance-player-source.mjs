@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 globalThis.window ??= { addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }), devicePixelRatio: 1 };
 globalThis.document ??= { hidden: false, addEventListener() {}, removeEventListener() {}, createElement: () => ({ style: {}, classList: { add() {}, remove() {} }, setAttribute() {}, appendChild() {}, remove() {} }) };
-const { PerformancePlayer } = await import('../services/game/public/performance-player.mjs');
+const { PerformancePlayer, cardLandingCorners } = await import('../services/game/public/performance-player.mjs');
 
 const bytes = new TextEncoder().encode('same-bytes-for-centre-and-dealer');
 const sha = createHash('sha256').update(bytes).digest('hex');
@@ -20,4 +20,9 @@ test('two concurrent loads of the same hash fetch once and share one blob url', 
   assert.equal(a, b); assert.equal(fetches, 1); assert.equal(urls, 1);
   assert.equal(await p.source(take('again')), a); assert.equal(fetches, 1);
   assert.equal(p.loading.size, 0);
+});
+
+test('a felt-corner dataset is the landing quad', () => {
+  const quad = [[0, 0], [100, 0], [100, 143.5], [0, 143.5]];
+  assert.deepEqual(cardLandingCorners({dataset: {feltCorners: JSON.stringify(quad)}}), quad);
 });

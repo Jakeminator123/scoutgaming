@@ -102,6 +102,9 @@ test('delivery helper pushes the feature branch and only prints the pull-request
     'rev-parse HEAD': local,
     'ls-remote --heads https://github.com/Jakeminator123/scoutgaming refs/heads/cursor/a03-example': '',
     [`push origin ${local}:refs/heads/cursor/a03-example`]: '',
+    'fetch --no-tags https://github.com/Jakeminator123/scoutgaming refs/heads/cursor/a03-example:refs/remotes/origin/cursor/a03-example': '',
+    'rev-parse refs/remotes/origin/cursor/a03-example': local,
+    'config --get-all remote.origin.fetch': '+refs/heads/*:refs/remotes/origin/*',
     [`branch --set-upstream-to=origin/cursor/a03-example cursor/a03-example`]: '',
   });
   let remoteReads = 0;
@@ -144,6 +147,9 @@ test('delivery check does not push, and main requires the admin flag', () => {
     'rev-parse HEAD': local,
     'ls-remote --heads https://github.com/Jakeminator123/scoutgaming.git refs/heads/main': '',
     [`push origin ${local}:refs/heads/main`]: '',
+    'fetch --no-tags https://github.com/Jakeminator123/scoutgaming.git refs/heads/main:refs/remotes/origin/main': '',
+    'rev-parse refs/remotes/origin/main': local,
+    'config --get-all remote.origin.fetch': '+refs/heads/*:refs/remotes/origin/*',
     'branch --set-upstream-to=origin/main main': '',
   });
   let reads = 0;
@@ -173,6 +179,68 @@ test('delivery check does not push, and main requires the admin flag', () => {
     'remote get-url --push --all origin': 'https://github.com/someone/else.git',
   });
   assert.throws(() => deliver({ args: ['--check'], policy, git: wrong.git, log() {} }), /approved GitHub/);
+});
+
+
+test('delivery with a narrow fetch mapping creates only its own tracking branch and is repeatable', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'croupier-delivery-'));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+  const repository = join(temp, 'work'), remote = join(temp, 'remote.git');
+  const approved = 'https://github.com/Jakeminator123/scoutgaming.git';
+  const env = { ...process.env };
+  for (const name of Object.keys(env)) if (name.startsWith('GIT_')) delete env[name];
+  const run = (cwd, args) => {
+    const result = spawnSync('git', args, { cwd, env, encoding: 'utf8', timeout: 10000, windowsHide: true });
+    assert.ifError(result.error);
+    if (result.status !== 0) throw new Error(result.stderr.trim());
+    return result.stdout.trim();
+  };
+  run(temp, ['init', '--bare', '--initial-branch=main', remote]);
+  run(temp, ['init', '--initial-branch=main', repository]);
+  const git = (...args) => run(repository, args);
+  git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','--allow-empty','-m','Initial fixture');
+  git('remote','add','origin',approved);
+  git('config','remote.origin.fetch','+refs/heads/main:refs/remotes/origin/main');
+  git('switch','-c','codex/narrow-fetch');
+  const local = git('rev-parse','HEAD'), logs = [], calls = [];
+  const deliveryGit = (...args) => {
+    calls.push(args);
+    // Keep the actual Git protocol, refs and config local to this test. Only
+    // network commands redirect the validated GitHub URL to the owned bare repo.
+    return ['push','fetch','ls-remote'].includes(args[0])
+      ? git('-c', `url.${remote.replaceAll('\\','/')}.insteadOf=${approved}`, ...args)
+      : git(...args);
+  };
+  for (let attempt=0; attempt<2; attempt++) deliver({ policy, git:deliveryGit, log:line=>logs.push(line) });
+  assert.equal(git('rev-parse','@{upstream}'),local);
+  assert.equal(run(remote,['rev-parse','refs/heads/codex/narrow-fetch']),local);
+  assert.equal(git('config','branch.codex/narrow-fetch.remote'),'origin');
+  assert.equal(git('config','branch.codex/narrow-fetch.merge'),'refs/heads/codex/narrow-fetch');
+  assert.deepEqual(git('config','--get-all','remote.origin.fetch').split(/\r?\n/),[
+    '+refs/heads/main:refs/remotes/origin/main',
+    '+refs/heads/codex/narrow-fetch:refs/remotes/origin/codex/narrow-fetch',
+  ]);
+  assert.equal(calls.filter(args=>args[0]==='remote'&&args[1]==='set-branches').length,1);
+  assert.equal(logs.filter(line=>line===`GitHub verified: ${local}`).length,2);
+  assert.equal(calls.some(args=>args.includes('--force')||args.includes('--force-with-lease')),false);
+});
+
+test('delivery never configures upstream or reports success when remote verification changes', () => {
+  for (const stage of ['after-push','after-fetch']) {
+    const calls=[], logs=[], local=sha('c'); let reads=0;
+    const git=(...args)=>{
+      calls.push(args);
+      if(args[0]==='branch'&&args[1]==='--show-current')return 'codex/verification';
+      if(args[0]==='remote'&&args[1]==='get-url')return 'https://github.com/Jakeminator123/scoutgaming.git';
+      if(args[0]==='rev-parse')return args[1]==='HEAD'?local:sha('d');
+      if(args[0]==='ls-remote')return ++reads===1?'':stage==='after-push'?sha('d'):local;
+      if(['push','fetch'].includes(args[0]))return '';
+      throw Error('Unexpected command');
+    };
+    assert.throws(()=>deliver({policy,git,log:line=>logs.push(line)}),stage==='after-push'?/does not match/:/changed while fetching/);
+    assert.equal(calls.some(args=>args[0]==='config'||args[1]==='set-branches'||args[1]?.startsWith('--set-upstream-to')),false);
+    assert.equal(logs.some(line=>line.startsWith('GitHub verified:')),false);
+  }
 });
 
 

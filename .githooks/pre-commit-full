@@ -94,7 +94,7 @@ run_node_tests speech astrid-camera test/astrid-camera.mjs test/astrid-camera-co
 run_node_tests speech generated-speech-providers test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
 run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 run_node_tests speech player-probe test/player-probe.mjs
-run_node_tests gameplay performance-contact test/performance-contact.mjs test/performance-player-source.mjs test/pack-contact-media.mjs test/table-audio.mjs
+run_node_tests gameplay performance-contact test/performance-contact.mjs test/performance-player-source.mjs test/actor-edge-blend.mjs test/pack-contact-media.mjs test/table-audio.mjs
 run_node_tests gameplay dealer-reach test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
 run_node_tests gameplay idle-video-loop test/idle-video-loop.mjs
 run_node_tests gameplay action-placement test/action-placement.mjs test/bugshot-report.mjs
