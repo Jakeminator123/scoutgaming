@@ -9,5 +9,10 @@
   "dependencies": {
     "@vercel/blob": "2.8.0",
     "pg": "8.16.3"
+  },
+  "overrides": {
+    "@vercel/cli-config": {
+      "zod": "4.6.6"
+    }
   }
 }
