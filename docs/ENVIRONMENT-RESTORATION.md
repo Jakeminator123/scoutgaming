@@ -533,9 +533,9 @@ Matrisen ersätter inte övriga serverfunktioners befintliga behörighetskrav.
    som del av detta förberedelsearbete.
 2. Frys målidentitet, kodrevision och en verifierad backup efter dränering.
    Välj i förväg ett separat tomt restoremål och explicit roll-/ägarmappning.
-   PostgreSQL pg_dump sparar inte globala roller. Befintliga
-   tools/postgres-backup-restore.mjs accepterar bara äldre tabelluppsättning och
-   sparar inte roller/ACL; det är inte en återställningsväg för 008–010.
+   PostgreSQL pg_dump sparar inte globala roller. Inventera därför roller och
+   granska ägar-/ACL-mappningen separat. Den avvecklade JSON-exportören för
+   äldre tabeller är inte en återställningsväg för aktuellt schema.
 3. Prova pg_dump --format=custom och pg_restore --single-transaction
    --exit-on-error mot det isolerade målet. Verifiera samtliga tabeller, ledger,
    balanser, reservationer, receipts, sekvenser, objektägare och ACL samt verkligt
@@ -823,8 +823,12 @@ source/staging-rensningen och dedupliceringen finns 2 514 logiska poster och
 Tidigare kopior återinförs inte från gamla manifest; använd aktuell layout och
 de bevarade privata kvittona i `lab/data/lane-media-audit/`.
 
-Neon-verktyg: `tools/postgres-backup-restore.mjs` verifierar full
-rad-/sekvensparitet och vägrar zon-databas och import med aktiv extern wallet.
+Aktuell Neon-backup använder PostgreSQLs fullständiga `pg_dump --format=custom`
+och `pg_restore --single-transaction --exit-on-error` till ett separat tomt mål,
+med explicit granskade roller, ägare och ACL enligt förfarandet ovan. Den äldre
+JSON-exportören är avvecklad: dess fasta tabellista saknade Studio, senare
+speltabeller och databasobjekt. Inga befintliga backuper raderas; historiska
+JSON-filer kräver sin versionsmatchade läsare från Git och ett isolerat mål.
 SQLite-importverktyget togs bort efter genomförd flytt.
 Bevara orörda SQLite-backuper utanför Git. Efter första nya Neon-skrivning
 kräver återgång senaste data/ledger; starta aldrig blindt en äldre SQLite-kopia.

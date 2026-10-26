@@ -30,16 +30,6 @@
     "reason": "Manually launched browser fixture server backed by the synthetic Python worker; not a node:test suite."
   },
   {
-    "path": "tools/media/test-actor-edge-blend.mjs",
-    "kind": "opt-in",
-    "reason": "Existing opt-in rendering check for edge parameters, shader and compositor source bindings; needs no media. This inventory does not add it to default regression."
-  },
-  {
-    "path": "tools/media/test-blender-card-layout.mjs",
-    "kind": "opt-in",
-    "reason": "Existing standalone felt-corner landing check imports the live performance-player module and needs no media. Retained as an opt-in check; its old filename does not establish CI coverage."
-  },
-  {
     "path": "test/postgres-presentation-receiver.mjs",
     "kind": "helper",
     "reason": "Exports PostgreSQL checks run by tools/run-shared-table-qa.mjs in croupier.yml's database/shared-blackjack step after schema010 in the runner-owned isolated cluster; not a direct node:test suite."
