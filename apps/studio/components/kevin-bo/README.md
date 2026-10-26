@@ -33,11 +33,13 @@ Team and room writes continue to recheck server permissions and revisions.
 Players, transactions and reports remain explicitly disconnected, with no
 fictional metrics or working-action promises.
 
-`preview-runtime.mjs` still supplies the live views' compatibility adapter and
-snapshot validation. The server-side partner-preview fixtures are separate:
-Control and operator-package diagnostics still use them. Their ownership,
-viewer checks and instance-local compatibility state remain tested. Legacy
-navigation IDs are retained for saved-link resolution.
+`partner-workspace-context.mjs` validates the live operator snapshot and actor
+and supplies the shared context to the views. It rejects client fixtures and
+does not create mock game results, media catalogs, local design stores or
+unconnected writers. Real appearance drafts retain their navigation guard.
+The server-side partner-preview fixtures remain separate diagnostic inputs;
+their policy is not changed here. Legacy navigation IDs are retained for
+saved-link resolution.
 
 ## Historical source receipt
 

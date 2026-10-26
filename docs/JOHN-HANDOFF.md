@@ -1,5 +1,11 @@
 # Aktuell handoff — Scoutgaming
 
+## Partnerportalen använder bara verklig arbetskontext — 26 oktober
+
+Den gamla klientadaptern `preview-runtime.mjs` skapade fortfarande låtsasresultat, kataloger, designlagring, minneslagring och oanslutna skrivfunktioner. Inga aktiva vyer konsumerar dessa delar. De tas bort tillsammans med två exklusiva tester för demonstrationslagringen och en oanvänd statusklassare. `partner-workspace-context.mjs` ersätter adaptern med den verkliga operatörens snapshot, konto, notiser och stabila teamvy. Kontexten avvisar demonstrationsdata och behåller kontrollerna av konto och resursägare.
+
+Skyddet för osparade ändringar använder fortsatt den riktiga rumseditorns dirty-signal; den borttagna demomodellens dirty-flagga hade ingen aktiv writer. Befintliga prov verifierar kvarhållna rumsutkast, avbruten navigering, bolags-/rumsval, teamrättigheter, återkallade grants, revisionskonflikter, SSR och sessionsåterhämtning: 58/58 passerar utan skip på Node24.21.0/fyra arbetare. Separata serverdiagnostik-fixturer och produktionsdata ändras inte. Full CI krävs fortfarande före merge; migrationsstatus förblir 55 %.
+
 ## Pensionerade demonstrationsbilder och ny PAOW-kontroll — 26 oktober
 
 Åtta statiska bilder i partnerportalens gamla `kevin-bo/assets` (2 255 392 byte), deras oanvända `assetUrl`-adapter och exklusiva testmockar tas bort. Konsumentgenomgången visar att ingen aktiv vy använder adaptern. Portalens data-, behörighets-, rums- och sessionsflöden behålls. Befintliga prov för dessa flöden passerar 50/50 utan skip på Node24.21.0/fyra arbetare. Den historiska källkvittensen bevaras; den är inte ett krav att återinföra demonstrationsbilderna.
