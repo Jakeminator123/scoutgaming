@@ -1,5 +1,27 @@
 # Aktuell handoff — Scoutgaming
 
+## Övertagande och releasegräns — 26 oktober
+
+Kevin-staging är källreferens på GitHub; Jakob vill fortsätta med tillgänglig kod och egna resurser utan beroende av Kevins GitLab eller körmiljö. Vår isolerade testmiljö nedan är en separat sak.
+
+Läsande avstämning på main `736776f2ad35c9b1416d8c82a566106172388fff`. **55 % (11/20) består enligt `migrering/status.json`.** [PR407](https://github.com/Jakeminator123/scoutgaming/pull/407) är öppen, inte mergad. Dess head `857347de6bc802463aaed9e39a6e4a16ebd44ded` har nu grön [CI40347468353](https://github.com/Jakeminator123/scoutgaming/actions/runs/40347468353), inklusive obligatoriskt verkligt Chrome-prov, regression, bygge och GitGuardian. Det ersätter tidigare uppgifter om pågående CI, men säger inte om den tidigare chatten fortfarande arbetar.
+
+| Yta | Nu verifierat | Betydelse för fortsättningen |
+| --- | --- | --- |
+| GitHub | Main och PR407 kan läsas genom anslutning och CLI. | Behåll PR407:s verifierade head som releasekandidat. Denna dokumenträttning ändrar inte kandidatens kod. |
+| Vercel | Produktion `scoutgaming` är READY på `736776f2…`. Dokumenterad staging `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14` ger 404 i båda anslutna teamen. | Staging är inte åtkomlig; detta bevisar inte att den raderats. Identifiera/återställ rätt isolerade frontend. Äldre QA-projekt är inte automatiskt ersättare. |
+| Render | `croupier-v3` är aktiv på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`; `croupier-k06-k07-staging` är suspended. | Frontend och spelmotor kör olika versioner. Inget har deployats eller startats om vid denna avstämning. |
+| Neon | `red-violet-36066351` / `br-plain-voice-b9yu49xi` / `croupier_staging` går att läsa. Scope `staging_k06_k07`/`croupier` har en mediepost och noll delade bordskonfigurationer; Studio-ledgern innehåller bland annat 020. | Återanvänd den isolerade miljön. Databasåtkomst/installerad migration bevisar inte att avsett PAOW-material finns där. |
+| Webview | Verktyget svarar `Local browser use is disabled in Work settings`. | Visuell Admin-/spelacceptans är inte genomförd i denna avstämning. Lokal webbläsaranvändning behöver aktiveras för det verktyget. |
+
+**Release och acceptans:**
+
+1. Följ PR407:s releasevillkor: kompatibel Render-läsare först med delat spel fortsatt avstängt, därefter main/Vercel och versions-/readinesskontroll. Äldre Vercel-ingress stöder inte den nya delade medievägen. Aktivera inte delat spel mellan dessa steg. Kontrollera aktuell flagga, exakt kandidat och återgångsväg vid faktisk driftsättning; snapshoten ovan är inget nytt produktionsgodkännande.
+2. Bind PAOW:s redan accepterade tio taloriginal till exakta UUID/hash, språk och tagningar. Detaljlistan har inte återfunnits i denna avstämning. Mät via befintliga Admin-tjänster; bevara originalbytes och tidigare giltig AV-acceptans. V2:s MP4-ljud kräver inte fabricerade V1-index-/kalibreringsbevis. Se [K05](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) och [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
+3. Kör isolerat Admin → publicering → spel med rätt filmprofil, avsett idle/tal och separata bakgrunds-, dealer- och bordslager. Verifiera aktiv hand under ny publicering, nästa hand, multitable och återanslutning på samma kandidat. Flytta aktivitetsstatus först när dess befintliga kriterier är uppfyllda.
+
+K05-guidens gamla krav att implementera resolver/mätning och generellt producera ljud-/index-/kalibreringsunderlag är rättade. Inga produktionsdata, godkända original eller historik har raderats. Fortsatt avveckling ska följa faktiska konsumenter och behålla prov för behörighet, isolation, revisioner, samtidighet och spelregler.
+
 ## Skobevis: runda och fryst spelversion — 26 oktober
 
 O01:s fält 9 får en läsprojektion från den befintliga verifierade auditkedjan: en vald stängd sko visar exakta referenser till rum, sko, runda och den configversion som användes. Bindningen följer koordinatorns verkliga `engine.start.parent` → startorsak → `round.started.triggerEvent`; den använder varken aktuell config-head eller närmaste tidsstämpel. Det historiska formatet med `round.started.round_id=null` bevaras. Ingen ny spelwriter, schemaversion eller dubbellagring införs.
