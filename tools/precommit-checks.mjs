@@ -184,6 +184,9 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
     if (/\.json$/.test(path)) commands.push([process.execPath, '-e',
       "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))", path]);
   }
+  if (changes.some(({path}) => ['migrering/status.json', 'migrering/status.mjs', 'migrering/STATUS.md'].includes(path))) {
+    commands.push([process.execPath, 'migrering/status.mjs', '--check']);
+  }
   if (changes.some(({path}) => /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path))) {
     commands.push([process.execPath, 'tools/check-environment-variables.mjs']);
   }

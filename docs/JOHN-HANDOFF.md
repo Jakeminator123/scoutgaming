@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## Migrationsrapportens verifieringsväg — 26 oktober
+
+[PR417](https://github.com/Jakeminator123/scoutgaming/pull/417) är mergad som `b7bff26469670afd2090987e50256fedbf6edec6` efter full [CI40375434645](https://github.com/Jakeminator123/scoutgaming/actions/runs/40375434645). Status är 60 %; detaljerade runtime-, medie- och återställningsgränser följer nedan.
+
+Sex uttryckligen granskade migrationsrapportfiler använder nu samma dokumentklassificering lokalt och i CI. Okända filer, annan JSON, generatorns kod, filtypsbyten och blandade kodändringar går fortsatt genom full CI. `node migrering/status.mjs --check` validerar rapporten i dokumentjobbet och en gång i fullregressionens ordinarie contracts-grupp. Lokal hook kör samma kontroll när statusdata, generatorn eller den genererade läsvyn ändras. Därmed kontrolleras både statuskontrakt och synkronisering; tidigare full frontendregression kontrollerade inte detta.
+
+Verifiering av denna ändring: 43/43 riktade urvals-, hook- och workflowprov passerar utan skip på Node 24.21.0, högst fyra arbetare. Verklig merge-/sparse-checkout och körning genom lokal-, dokumentations- och fullväg verifieras; ogiltig vikt och osynkad rapport stoppar samtliga vägar. Det tidigare exakta sparse-fillistelåset ersätts av faktisk körning. Orphan-kontrollen visar 0 av 569 kandidater, med nio befintliga undantag. Oberoende läsreview har inga blockerande fynd. Själva workflowändringen går fortsatt genom full CI.
+
 ## Fortsatt verifiering och rättad förkunskapskedja — 26 oktober
 
 **60 % = 12/20 verifierade aktiviteter.** J09:s avvecklingsförberedelse från [PR401](https://github.com/Jakeminator123/scoutgaming/pull/401), integrerad via PR403, är slutgranskad mot sitt befintliga krav: konsumentavveckling, opt-in-migration, isolerad avbrotts-/fullrestore och dokumenterad verkställighetsordning. Två oberoende granskningar och rootens kod-/provgranskning fann ingen teknisk koppling till J08/K05; dessa historiska förkunskaper är borttagna. J05/J07 består. Produktions-DDL, färsk mål-/externjobbsinventering, dränering och aktuellt återställningsunderlag ligger kvar inför O03. Inga live-tabeller har raderats.

@@ -36,6 +36,9 @@ jobs:
             tools/documentation-paths.mjs
             tools/precommit-checks.mjs
             tools/check-push-target.mjs
+            migrering/status.mjs
+            migrering/status.json
+            migrering/STATUS.md
       - name: Verify preinstalled Node 24
         run: node -e "if (process.versions.node.split('.')[0] !== '24') throw new Error('Preinstalled Node 24 is required')"
       - name: Verify CI selection and final gate
@@ -59,6 +62,7 @@ jobs:
       - name: Environment registry and documentation contracts
         run: |
           node tools/check-environment-variables.mjs
+          node migrering/status.mjs --check
           node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
 
