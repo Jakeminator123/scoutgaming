@@ -2861,9 +2861,12 @@ osparade utkast inte kastas automatiskt. Inga nya paket, produktstarter,
 API-/auth-/lagringskontrakt eller migrationsstatusar införs. Instruktioner
 finns i [klientguiden](../apps/studio/client/README.md#bygg-om-klienten-när-du-sparar).
 
-Verifierat i en avgränsad källkopia från main `94077613`: 7/7 riktade prov
-utan skip på Node 24.22.1/Linux, med verkliga filhändelser, byggprocesser och
-en compiler-barnprocess. Proven täcker JS/CSS/delade källor, atomisk sparning,
-nya mappar, uteblivna byggloopar, samtidiga sparningar, byggfel och ordnad
-stoppväg. Syntax- och diffkontroll passerar. Full produktregression och
-klientbygge redovisas av PR:ens CI; Windows-körning är inte utförd här.
+Verifierat i en avgränsad källkopia från main `94077613`: 8/8 riktade prov
+utan skip på Node 24.21.0/Linux, samma Node-version som CI, med verkliga
+filhändelser, byggprocesser och en compiler-barnprocess. CI hittade först
+missad upprepad atomisk sparning; felet återskapades på 24.21.0 och rättades
+med katalogbevakning. Samma assertion och timeout behålls. Proven täcker
+också ändringar i nya/återskapade mappar, ersatt källrot, tydligt stopp vid
+förlorad källrot, uteblivna byggloopar, samtidiga sparningar och byggfel.
+Syntax- och diffkontroll passerar. Full produktregression och klientbygge
+redovisas av PR:ens CI; Windows-körning är inte utförd här.

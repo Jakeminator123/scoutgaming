@@ -115,6 +115,36 @@ test('new source directories and repeated atomic editor saves remain observable'
     await f.built(index + 3);
     assert.equal((await f.output()).value, label);
   }
+  await f.put('apps/studio/client/admin/new-feature/label.mjs', "export default 'edited feature';\n");
+  await f.built(5);
+  assert.equal((await f.output()).feature, 'edited feature');
+  await rm(f.path('apps/studio/client/admin/new-feature'), { recursive: true });
+  await f.built(6);
+  assert.equal((await f.output()).feature, null);
+  await f.put('apps/studio/client/admin/new-feature/label.mjs', "export default 'recreated feature';\n");
+  await f.built(7);
+  assert.equal((await f.output()).feature, 'recreated feature');
+  await f.put('apps/studio/client/admin/new-feature/label.mjs', "export default 'edited recreation';\n");
+  await f.built(8);
+  assert.equal((await f.output()).feature, 'edited recreation');
+  await f.put('apps/studio/.replacement-components/example.mjs', "export default 'replaced directory';\n");
+  await rename(f.path('apps/studio/components'), f.path('apps/studio/.old-components'));
+  await rename(f.path('apps/studio/.replacement-components'), f.path('apps/studio/components'));
+  await f.built(9);
+  assert.equal((await f.output()).component, 'replaced directory');
+  await f.put('apps/studio/components/example.mjs', "export default 'edited replacement';\n");
+  await f.built(10);
+  assert.equal((await f.output()).component, 'edited replacement');
+});
+
+test('removing an explicit source root stops clearly instead of silently losing future edits', async t => {
+  const f = await fixture(t);
+  await f.watcher.ready;
+  await rm(f.path('apps/studio/components'), { recursive: true });
+  await until(() => f.events.some(event => event.type === 'watch-error'), 'missing source root is reported');
+  await f.watcher.closed;
+  assert.match(f.events.find(event => event.type === 'watch-error').error.message, /apps\/studio\/components/);
+  assert.equal(f.events.filter(event => event.type === 'build-start').length, 1);
 });
 
 test('build output, dependencies, caches, tests and private files do not cause rebuild loops', async t => {
