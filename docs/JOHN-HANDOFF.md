@@ -10,6 +10,10 @@ Befintlig staging återstartades och dess gamla branchkoppling rättades till `m
 
 Root öppnade repetitionen i browsern och såg PAOW samt märkningen separat testsaldo. Bakgrund/bord är stagingens syntetiska fixturlager; bilden är inte layoutacceptans för Johns Bet. Denna modell fick ingen ljudinmatning från verktyget, så talinnehåll och läppsynk är inte godkända. **60 % = 12/20 kvarstår.** Full J08/K04/K05/K06/K07-acceptans kräver återstående verkliga beteendekvitton.
 
+En separat minnesisolerad previewrunda passerade med tolv HTTP 200: insats 5 på box 0, stand och collect, version 0→3 och slutsaldo 10 000. Fyra committed utdelningar och en vändning gav exakt registrerat UUID/SHA via vanlig presentation/select. Detta är filmvalsbevis i preview, inte beständig spelacceptans eller AV-godkännande. Privat kvitto: `staging-preview-one-round-receipt.private.json`.
+
+Färsk GitHub-granskning visar oförändrade Kevin-refs sedan masterplanens 25 oktober-kontroll: `kevin-merge-admin@5aa7ed10`, `kevin-staging@3e76d79e`, `kevin@f664c54d`. PAOW-kortspår och v2-metadata har identiska Git-blobbar mellan första och sista refen. Senare idle/posegraf är redan portad via PR378. Platsfrigöring/kö och GPU-tal är separata konverteringskandidater, inga nya automatiska krav eller driftmandat; underlaget finns i privat `kevin-fresh-delta-20261026.json`.
+
 Privata manifest och original finns i originalcheckoutens `arkiv/2026-10-26/migration-continuation-paow/`. Aktuell chats privata bevis innehåller `staging-paow-preview-journal.private.json`, `staging-resume-f153-20261026.json`, `paow-isolated-preview.png` och nästa etapps `NEXT-STAGE.md`. Credentials/sessioner stannar utanför Git. Aktiv staging ska lämnas över till nästa ägare eller stoppas efter prov; gamla stoppkvitton nedan är historiska.
 
 ## Migrationsrapportens verifieringsväg — 26 oktober

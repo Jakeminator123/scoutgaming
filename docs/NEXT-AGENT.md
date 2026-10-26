@@ -20,7 +20,7 @@ Jakob bekräftade efter leveransen: **”allt såg ganska bra ut gällande paow 
 
 Läs det översta kvällsavsnittet i [JOHN-HANDOFF](JOHN-HANDOFF.md). Jakob vill att nyare Kevin-underlag och verkligt produktbeteende väger tyngre än historiska lås. Två duplicerade material-/timinglås är borttagna och 62/62 relevanta beteendeprov passerar. Utred därefter nåbar varianttäckning via den befintliga sekvensplaneraren; cementera inte PAOW-bankens 35 tagningar som framtida standard.
 
-Isolerad staging innehåller nu 46 exakt bundna, servermätta PAOW-original och en separat sparad PAOW-scen. Tio talval passerar i riktig pending-repetition; inget nytt AV-godkännande eller publicerat rum finns. Projektrevision `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Staging använder fortfarande syntetiska bakgrunds-/bordslager. Full spel-, AV- och layoutacceptans återstår; aktuell status är fortfarande60 %. Root har beställt sömlös fortsättning i en ny chatt med privat överlämning, inte en ny migrationsplan.
+Isolerad staging innehåller nu 46 exakt bundna, servermätta PAOW-original och en separat sparad PAOW-scen. Tio talval passerar i riktig pending-repetition; inget nytt AV-godkännande eller publicerat rum finns. Projektrevision `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Staging använder fortfarande syntetiska bakgrunds-/bordslager. Full spel-, AV- och layoutacceptans återstår; aktuell status är fortfarande 60 %. Root har beställt sömlös fortsättning i en ny chatt med privat överlämning, inte en ny migrationsplan.
 
 ## Levererat och kvarvarande arbete
 
