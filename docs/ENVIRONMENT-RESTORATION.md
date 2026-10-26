@@ -1,5 +1,21 @@
 # Återställning och skydd av data
 
+## Materialkontrakt och Renderkorrelation — 26 oktober
+
+Endast befintliga godkända croupier-k06-k07-staging-resurser användes. Render srv-dbf61l0m7kps73ft7mk0 kördes manuellt på 961c3556556b38a66903ccbb931698ba06393b83 och 694b9b176eae5ba91d17a718c052ac25620eee1a, samma 1 CPU/2 GB/en instans/Frankfurt. Inga produktionsresurser, medieoriginal eller GPU-inställningar ändrades.
+
+| Prov | Faktiskt utfall | Begränsning |
+| --- | --- | --- |
+| Gatewaykorrelation 961c3556, två starter | 9/16 HTTP200, 7/16 Render502. Alla nio lyckade request-ID matchar gateway200; de sju 502 saknar motsvarande gatewaymottagning. En lyckad begäran efter andra starten nådde föregående instans | Avgränsar felet före observerad handler, men bevisar inte Renders interna rotorsak |
+| Senare 694b9b17 efter 90 s väntan | Första serien 5/8; senare serie 8/8, båda health/version och exakt SHA | Deploystatus live och fast 90 s väntan räcker inte som acceptans. Separat curl/Node/DNS-prov 6/6 passerade. Långvarig drift och spelåteranslutning återstår |
+| Optional020 | Ordinarie migreringsverktyg: plan, DDL-repetition med exakt rollback, därefter endast020 installerad i croupier_staging | 016/018/019 uttryckligen fortsatt uppskjutna; inga produktions-DDL. Snapshot av CHECKs/ledger/paketstorlekar är inte full backup |
+| Faktisk Neon-approll | 53 syntetiska mätposter och paket/draft med branding 11 388 tecken återlästa; oförändrade godkännandefält; gammal revision/fel hash nekade | SQL-kontrakt, inte Blob-bytes, HTTP-flöde eller visuell acceptans |
+| Återställning av prov | Noll kvarvarande provrader i åtta tabeller efter samtliga tre scenarier, inklusive föregående felprov; befintlig databasbild oförändrad | Det första provskriptets sentinel saknade studio_-prefix. Separat hashbundet verify-v2 rättade provet; ingen produktbugg eller ytterligare DDL |
+
+Privata kvitton ligger i samma gitignorerade arkiv/2026-10-25/migration-cloud-acceptance: gateway-correlated-1792999027164.json, render-correlation-961.json, gateway-correlated-1792999416426.json, render-route-diagnosis-694b.json samt optional020.apply.878f09cc-9a7d-4f40-8b20-8718d9987460.json och optional020.verify-v2.575d0183-2259-48ae-9342-70239ee5af9b.json. Inga autentiseringsuppgifter ingår i Git-dokumenten.
+
+Render återlästes suspenderad efter varje avslutat prov. Vercel förblev pausad. Befintlig privat Blob och återställningsdatabas behålls som återställningsunderlag; temporära SQL-provrader återställdes. Native-materialkoden är ännu inte samma deployade kandidat som dessa HTTP-prov. Den fortsatta körningen behöver identifierad v29-kandidat, riktigt godkänt material och en lyckad offentlig readiness-serie innan Admin-/spelkommandon.
+
 Produktens leveranskälla är `Jakeminator123/scoutgaming` på `main`.
 Den lokala arbetskopian kan ligga på en arbetsbranch; kontrollera root,
 branch/HEAD och egna ändringar före synkning eller återställning.
@@ -292,6 +308,66 @@ eller rader. Kontextens18 enhetsprov,5 verkliga PG-identitetsprov och fixturens
 11 prov med syntetiska bytes/instrumenterad SQLpool är separata från full
 serverstart, verklig PG-/K04-mediaacceptans. Saknat underlag får inte ersättas
 med nya dealers eller påhittade godkännanden.
+
+## Valfri förberedelse för Lissabon-kontraktion (J09)
+
+`ops/neon-game/011-retire-lissabon.sql` förbereder endast avveckling av
+`lissabon_profiles` och `lissabon_profile_sessions`. Versionen är
+`game-011-retire-lissabon`; den ingår inte i Studios migrationsregister,
+ordinarie startup eller krav för deployment. Den checksummebundna
+`product-schema.sql` och dess `product-v1`-post är oförändrade.
+
+`node tools/prepare-lissabon-retirement.mjs --evidence <privat-json>` skapar
+ett manifest offline. Lägg till `--readiness-sql` för låsta förkontroller med
+avslutande ROLLBACK, eller `--sql` för den kompletta transaktionen. Verktyget
+har ingen databasanslutning eller apply-funktion. Mallfilens parametrar ska
+aldrig ersättas för hand. Frys SQL, manifest, verktygsrevision och evidens ihop.
+
+JSON-underlaget måste innehålla exakt `database`, `role`, `releaseSha`,
+`rollbackSha`, `consumerInventorySha256`, `backupSha256` och
+`restoreReceiptSha256`. SHA-referenserna är obligatoriska bindningar till
+granskat underlag, inte bevis på dess innehåll eller körningsgodkännande.
+Källinventeringen måste även omfatta externa jobb och dynamisk SQL;
+PostgreSQLs beroendekatalog bevisar inte att sådana konsumenter saknas.
+
+Före eventuell körning krävs separat målgranskning (projekt, gren, direkt
+endpoint, databas och roll), frysta kompatibla release-/rollbackversioner,
+dränerade writers och en full backup med provad återställning till ett annat
+tomt mål. Använd den dokumenterade `pg_dump --format=custom` och
+`pg_restore --single-transaction --exit-on-error`-vägen nedan; det äldre
+JSON-backupverktyget stöder inte den installerade utökade tabelluppsättningen.
+
+Förkontrollerna kräver PostgreSQL 16+, rätt ägare, oförändrad produktchecksumma,
+två tomma tabeller och känd struktur utan okända beroenden. RLS, externa vyer,
+FK, typberoenden, extra index/kolumner/triggers och aktiva eventtriggers nekas.
+Interna nycklar, radtyper och TOAST är uttryckliga undantag. Okända triggers,
+regler och CHECK-/FK-kontrakt på migrationsjournalen nekas också, så att dess
+INSERT inte kan utlösa okända sidoeffekter. Exklusiva lås hålls
+genom transaktionen med 2 s låstimeout; 30 s gäller per statement. Inget CASCADE
+används. Efterkontroll och ny migrationspost ingår i samma atomiska commit.
+
+Fel före commit återställer båda tabellerna och lämnar historiken orörd.
+Efter commit tillåts endast granskad kompatibel kod; ingen blind DOWN eller
+återapplicering finns. Återställ aldrig en äldre fullbackup över nya
+wallettransaktioner. Schemaåtergång och eventuell återöppning kräver ett eget
+beslut med avstämning mot den nya datan. J09:s offlineförberedelse är inte
+produktions-DDL eller bekräftelse på stödda gamla releaseversioner.
+
+Verifierat lokalt 26 oktober: 3/3 offlineprov samt samma levererade SQL med
+min16 på PostgreSQL 16.15 och 18.6, 19/19 prov per version. Katalogfält och DDL
+kräver inga PG18-specifika funktioner; PG18:s extra NOT NULL-katalograder
+hanteras utan att sänka någon testgrind. Proven jämför samtliga syntetiska
+tabellrader (inklusive konton, saldon och fryst paket), sekvenser, schema,
+ägare och effektiva ACL efter full backup/restore. Identiska rättigheter kan
+representeras som antingen implicit standard-ACL eller explicit ägar-ACL;
+jämförelsen normaliserar den representationen. Egna kluster stoppades och
+portarna verifierades stängda. Detta är inte ett prov av äldre deployade binärer.
+
+Ordinarie kontraktsregression kör offlineproven. CI anropar den befintliga
+isolerade Linux-runnern med `node tools/run-shared-table-qa.mjs
+--lissabon-retirement --postgres-bin /usr/lib/postgresql/16/bin` (befintlig
+`--download-postgres` fungerar också). Runnern äger både käll- och
+återställningsdatabasen, fullbackupen och städningen; inga molncredentials används.
 
 ## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
 

@@ -33,6 +33,7 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
         sha256:checked.sha256, size:checked.size, contentType:checked.contentType});
       return {id:checked.id, sha256:checked.sha256, size:checked.size, extension:MEDIA_FILE_TYPES[checked.contentType],
         classification:checked.classification, addedAt:updatedAt, storage, revision,
+        ...(checked.mediaTiming?{mediaTiming:checked.mediaTiming}:{}),
         ...(checked.deletion ? {deletion:checked.deletion} : {}),
         ...(checked.retainedBank ? {retainedBank:checked.retainedBank} : {})};
     });

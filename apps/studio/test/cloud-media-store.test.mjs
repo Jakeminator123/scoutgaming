@@ -67,6 +67,72 @@ test('private inspection uses the hashed descriptor and closes it after the call
   assert.deepEqual(inspected,{width:32});assert.throws(()=>readSync(fd,Buffer.alloc(1),0,1,0),{code:'EBADF'});
 });
 
+test('aborted private inspection does not read Blob or publish a callback result',async t=>{
+  const {options,objects,calls}=await fixture(t),record={provider:'vercel-blob',pathname:pathname(),sha256,size:bytes.length,contentType};
+  objects.set(record.pathname,bytes);const controller=new AbortController();controller.abort(new Error('private cancellation detail'));
+  let inspected=false;
+  await assert.rejects(withVerifiedPrivateMediaFile(record,()=>{inspected=true;return 'unexpected';},{...options,signal:controller.signal}),error=>error.statusCode===408&&!error.message.includes('private cancellation detail'));
+  assert.equal(inspected,false);assert.equal(calls.length,0);assert.deepEqual(await readdir(options.cacheDir),[]);
+  let fd;const during=new AbortController();
+  await assert.rejects(withVerifiedPrivateMediaFile(record,handle=>{fd=handle.fd;during.abort();return 'unexpected';},{...options,signal:during.signal}),error=>error.statusCode===408);
+  assert.throws(()=>readSync(fd,Buffer.alloc(1),0,1,0),{code:'EBADF'});
+});
+
+test('private download forwards caller cancellation and retains its provider deadline',async t=>{
+  let deadline;
+  t.mock.method(AbortSignal,'timeout',milliseconds=>{assert.equal(milliseconds,60000);return deadline.signal;});
+  for(const cause of ['caller','deadline']){
+    deadline=new AbortController();
+    const {options,objects}=await fixture(t),record={provider:'vercel-blob',pathname:pathname(),sha256,size:bytes.length,contentType};
+    objects.set(record.pathname,bytes);const get=options.blobClient.get,started=Promise.withResolvers(),controller=new AbortController();
+    let providerSignal,inspected=false;
+    options.blobClient.get=async(_path,{abortSignal})=>{
+      providerSignal=abortSignal;started.resolve();
+      return new Promise((_,reject)=>abortSignal.addEventListener('abort',()=>reject(new Error('private provider error')),{once:true}));
+    };
+    const result=withVerifiedPrivateMediaFile(record,()=>{inspected=true;},{...options,signal:controller.signal});
+    const rejected=assert.rejects(result,error=>error.statusCode===408&&!error.message.includes('private'));
+    await started.promise;assert.notEqual(providerSignal,controller.signal);
+    (cause==='caller'?controller:deadline).abort();await rejected;
+    assert.equal(providerSignal.aborted,true);assert.equal(inspected,false);assert.deepEqual(await readdir(options.cacheDir),[]);
+    options.blobClient.get=get;deadline=new AbortController();
+    assert.equal(await withVerifiedPrivateMediaFile(record,()=>true,options),true,'failed download leaves no pending entry');
+  }
+});
+
+test('aborting a stalled Blob body cancels its stream and removes partial files before retry',async t=>{
+  const {options,objects}=await fixture(t),record={provider:'vercel-blob',pathname:pathname(),sha256,size:bytes.length,contentType};
+  objects.set(record.pathname,bytes);const get=options.blobClient.get,stalled=Promise.withResolvers(),controller=new AbortController();
+  let cancelled=0,inspected=false;
+  options.blobClient.get=async(...args)=>{
+    const result=await get(...args);await result.stream.cancel();
+    result.stream=new ReadableStream({
+      start(stream){stream.enqueue(bytes.subarray(0,8));},
+      pull(){stalled.resolve();return new Promise(()=>{});},
+      cancel(){cancelled++;},
+    });return result;
+  };
+  const result=withVerifiedPrivateMediaFile(record,()=>{inspected=true;},{...options,signal:controller.signal});
+  const rejected=assert.rejects(result,error=>error.statusCode===408);
+  await stalled.promise;controller.abort();await rejected;
+  assert.equal(cancelled,1);assert.equal(inspected,false);assert.deepEqual(await readdir(options.cacheDir),[]);
+  options.blobClient.get=get;
+  assert.equal(await withVerifiedPrivateMediaFile(record,()=>true,options),true);
+});
+
+test('a cancelled download waiter does not cancel the caller that owns the shared download',async t=>{
+  const {options,objects}=await fixture(t),record={provider:'vercel-blob',pathname:pathname(),sha256,size:bytes.length,contentType};
+  objects.set(record.pathname,bytes);const get=options.blobClient.get,started=Promise.withResolvers(),release=Promise.withResolvers();
+  let reads=0,ownerSignal,waiterInspected=false;
+  options.blobClient.get=async(...args)=>{reads++;ownerSignal=args[1].abortSignal;started.resolve();await release.promise;return get(...args);};
+  const owner=withVerifiedPrivateMediaFile(record,()=>true,options);await started.promise;
+  const controller=new AbortController();
+  const waiter=withVerifiedPrivateMediaFile(record,()=>{waiterInspected=true;},{...options,signal:controller.signal});
+  const rejected=assert.rejects(waiter,error=>error.statusCode===408);controller.abort();await rejected;
+  assert.equal(waiterInspected,false);assert.equal(ownerSignal.aborted,false);
+  release.resolve();assert.equal(await owner,true);assert.equal(reads,1);
+});
+
 test('private inspection rejects a same-size edit or pathname swap during its callback',async t=>{
   for(const swap of [false,true]){
     const {options}=await fixture(t),record=await putPrivateMedia(pathname(),bytes,options);

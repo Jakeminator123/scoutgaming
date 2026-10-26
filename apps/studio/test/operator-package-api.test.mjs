@@ -1,3 +1,7 @@
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
+import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
+import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {publicPackageBranding,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import test from 'node:test';
@@ -154,9 +158,10 @@ const mediaId='10000000-0000-4000-8000-000000000001',mediaHash='a'.repeat(64);
 // and rollback paths. Real PostgreSQL isolation remains a separate integration.
 function nativePool(){
   let state={documents:new Map(),media:new Map(),catalogs:new Map(),packages:[],operatorAudits:[],audits:[],history:[]},tail=Promise.resolve(),sequence=0;
+  let extendedReady=false;
   const calls=[],faults=new Set(),clone=v=>structuredClone(v),key=values=>JSON.stringify(values.slice(0,3));
   const result=(rows=[],command='SELECT')=>({rows:clone(rows),command});
-  const pool={calls,snapshot:()=>clone(state),failNext:marker=>faults.add(marker),
+  const pool={allowExtendedStorage(){extendedReady=true;},calls,snapshot:()=>clone(state),failNext:marker=>faults.add(marker),
     seedBrandingDraft(value){state.brandingDraft=clone(value);},
     setOperatorStatus(value){state.operatorStatus=value;},
     seedRuntimeCatalog(scope,value){state.catalogs.set(JSON.stringify([scope.environment,scope.workspaceId]),{revision:runtimeCatalogRevision(value),value:clone(value)});},
@@ -171,6 +176,7 @@ function nativePool(){
         if(sql.includes('pg_advisory_xact_lock')){if(unlock)return result();const previous=tail;tail=new Promise(resolve=>unlock=resolve);await previous;working=clone(state);return result();}
         if(sql==='COMMIT'||sql==='ROLLBACK'){if(sql==='COMMIT'&&!readOnly)state=working;working=undefined;unlock?.();unlock=null;return result([],sql);}
         assert.ok(working,'domain reads/writes use a live scoped client');
+        if(marker==='extended-presentation-ready')return result(extendedReady?[{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}]:[]);
         if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
         const packages=()=>working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]&&row.operator_id===values[2]);
         if(marker==='lock-operator'||marker==='operator-by-id')return result(values[2]==='north'?[{environment_id:values[0],workspace_id:values[1],operator_id:'north',slug:'north',name:'North',status:working.operatorStatus??'active',created_at_ms:1}]:[]);
@@ -188,8 +194,8 @@ function nativePool(){
           const row={environment_id:values[0],workspace_id:values[1],kind:values[2],revision:values[3],value:JSON.parse(values[4]),updated_at:'2026-10-09T12:00:00Z'};
           working.documents.set(key(values),row);return result([row]);
         }
-        if(marker==='insert-media'||marker==='classify-media'){
-          if(marker==='classify-media'&&working.media.get(key(values))?.revision!==values[5])return result();
+        if(marker==='insert-media'||marker==='classify-media'||marker==='save-media-timing'){
+          if((marker==='classify-media'||marker==='save-media-timing')&&working.media.get(key(values))?.revision!==values[5])return result();
           const row={environment_id:values[0],workspace_id:values[1],id:values[2],revision:values[3],record:JSON.parse(values[4]),updated_at:'2026-10-09T12:00:00Z'};
           working.media.set(key(values),row);return result([row]);
         }
@@ -705,4 +711,44 @@ test('an explicitly saved Astrid uses the same native own-idle capture and canno
   const before=f.pool.snapshot();
   await assert.rejects(f.publish(),error=>error.code==='studio_dealer_idle_required');
   assert.deepEqual(f.pool.snapshot(),before);
+});
+
+
+test('native publication of all measured filmed takes requires v29 and installed optional020',async()=>{
+  for(const version of [28,29])for(const installed of [false,true]){
+    const source=nativeRoomMaterialFixture({allSpeechSlots:true,capture:false}),pool=nativePool();
+    if(installed)pool.allowExtendedStorage();
+    pool.seedRuntimeCatalog(nativeScope,readRuntimeCatalogFixture());
+    const repository=createStudioRepository({pool,scope:nativeScope});
+    await repository.initializeDocument('project',{value:source.project,revision:source.project.revision,actor:'tester'});
+    await repository.initializeDocument('administration',{value:{rooms:[],gameLanes:[],gameLane:null},revision:'admin-initial',actor:'tester'});
+    for(const {revision,updatedAt,mediaTiming,...record} of source.records){
+      const {media}=await repository.registerMedia(record,{actor:'tester'});
+      await repository.saveMediaTiming(record.id,{sha256:record.sha256,expectedRevision:media.revision,mediaTiming,actor:'tester'});
+    }
+    let fetches=0;
+    const guarded=wrapNativePresentationRepository(repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://runtime.example.invalid'},fetchImpl:async(_url,init)=>{
+      fetches++;assert.equal(init.headers['X-Presentation-Capability-Version'],'29');
+      assert.equal(pool.calls.filter(row=>['BEGIN','COMMIT','ROLLBACK'].includes(row.marker)).at(-1).marker,'COMMIT','capability before SQL');
+      return Response.json(presentationCapabilitiesForVersion(version));
+    }});
+    const videoRegistry={loadCaptured:async snapshot=>({videos:snapshot.mediaRows.map(row=>({...row,dealer:row.classification.dealerId,bytes:row.size,available:true,integrity:'verified'})),families:[]}),verifyCapturedMedia:async()=>{}};
+    const api=createOperatorPackageApi({pool,scope:nativeScope,repository:guarded,videoRegistry,now:clock});
+    const context={body:{operatorId:'north',lanes:[source.project.lanes[0].id]},actor:{user:'tester'},scope:nativeScope};
+    const prepared=await api.preparations.get('POST /studio/api/admin/operator-package')(context),before=pool.snapshot();
+    const publish=()=>api.handlers.get('POST /studio/api/admin/operator-package')({...context,prepared});
+    if(version===28||!installed){
+      await assert.rejects(publish,e=>e.code===(version===28?'studio_presentation_runtime_update_required':'studio_extended_presentation_storage_unavailable'));
+      assert.deepEqual(pool.snapshot(),before);
+    }else{
+      const saved=await publish(),stored=JSON.parse(pool.snapshot().packages[0].branding);
+      assert.equal(stored._scoutPresentation.format,'croupier-lanes-v2');
+      assert.equal(saved.presentation.playback.media.length,53);
+      assert.deepEqual(readPackagePresentation({branding:stored,lanes:saved.lanes}),saved.presentation);
+      assert.equal(saved.presentation.playback.media.every(row=>Boolean(row.mediaTiming)),true);
+    }
+    assert.equal(fetches,1);
+    const raw=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
+    await assert.rejects(raw.handlers.get('POST /studio/api/admin/operator-package')(context),e=>e.code==='studio_presentation_runtime_update_required');
+  }
 });

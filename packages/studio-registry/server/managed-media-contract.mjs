@@ -1,6 +1,7 @@
 import { MEDIA_FILE_TYPES } from '../../shared/media-file-types.mjs';
 import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../../presentation/contracts/video-intake.mjs';
 import { normalizeRecordedSpeech } from '../../presentation/contracts/recorded-speech.mjs';
+import { normalizeMediaTiming } from '../../presentation/contracts/media-timing.mjs';
 
 // The normal managed StudioMediaRecord contract is shared by browser package
 // decoding and server storage. Retained bank provenance stays server-only.
@@ -27,7 +28,7 @@ function data(value, depth = 0) {
 }
 export function validateManagedStudioMedia(record) {
   const copy = data(record);
-  if (!copy || Array.isArray(copy) || Object.keys(copy).sort().join(',') !== 'classification,contentType,id,pathname,sha256,size'
+  if (!copy || Array.isArray(copy) || Object.keys(copy).sort().join(',') !== (Object.hasOwn(copy,'mediaTiming')?'classification,contentType,id,mediaTiming,pathname,sha256,size':'classification,contentType,id,pathname,sha256,size')
     || typeof copy.id !== 'string' || !uuid.test(copy.id) || typeof copy.sha256 !== 'string' || !sha.test(copy.sha256)
     || !Number.isSafeInteger(copy.size) || copy.size < 16 || copy.size > MAX_VIDEO_BYTES
     || !Object.hasOwn(MEDIA_FILE_TYPES,copy.contentType)) fail();
@@ -35,6 +36,16 @@ export function validateManagedStudioMedia(record) {
   if (copy.classification.recordedSpeech !== undefined) {
     if (!['video/mp4','video/webm'].includes(copy.contentType)) fail();
     try { normalizeRecordedSpeech(copy.classification.recordedSpeech, {dealerId:copy.classification.dealerId,lineId:copy.classification.situation,videoSha256:copy.sha256}); } catch { fail(); }
+  }
+  if (Object.hasOwn(copy,'mediaTiming')) {
+    if(copy.contentType!=='video/mp4')fail();
+    const speech=copy.classification.recordedSpeech;
+    try {
+      copy.mediaTiming=normalizeMediaTiming(copy.mediaTiming,{mediaId:copy.id,sha256:copy.sha256,size:copy.size,
+        ...(!speech?{recordedSpeechIdentitySha256:null}:{})});
+      if(speech && (copy.mediaTiming.recordedSpeechIdentitySha256===null || copy.mediaTiming.video.frameCount!==speech.frameCount
+        || Math.abs(copy.mediaTiming.video.fps-speech.fps)>1e-9))fail();
+    } catch {fail();}
   }
   if (copy.contentType.startsWith('audio/') !== (copy.classification.mediaType === 'audio')) fail();
   if(copy.contentType.startsWith('image/') !== (copy.classification.mediaType==='image'))fail();

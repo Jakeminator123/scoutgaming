@@ -19,7 +19,7 @@ import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCaptur
   isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { validatePresentationCapabilities } from '../../../packages/presentation/capability-contract.mjs';
-import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
+import { presentationPackageRequiresV29, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
 import {assertPresentationRoomMaterials} from '../../../packages/presentation/contracts/presentation-material-game.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
@@ -165,9 +165,10 @@ function assertReplayBinding(saved, room) {
   return frozen;
 }
 function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
-  if (!capabilities || ![2, 3, 4, 9, 14, 15].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion < 9
+  if (!capabilities || ![2, 3, 4, 9, 14, 15, 29].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion < 9
     ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.rouletteIdle!=='explicit-game-idle-v1'
     ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1') return false;
+  if(presentation&&presentationPackageRequiresV29(presentation)&&capabilities.schemaVersion!==29)return false;
   return capabilities.schemaVersion >= (presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2);
 }
 export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {
@@ -232,9 +233,10 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       publicationPresentation = assertReplayBinding(saved, room);
     }
     assertPresentationRoomMaterials(publicationPresentation,{presentationLaneId:body.presentationLaneId,game:roomGame(body)});
-    if (!runtimeAccepts(await capabilities(publicationPresentation,roomGame(body)), publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+    const runtime=await capabilities(publicationPresentation,roomGame(body));
+    if (!runtimeAccepts(runtime, publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
-    const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation, ...captured });
+    const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation, allowExtended:runtime.schemaVersion===29, ...captured });
     preparedValues.add(value); return value;
   }
   preparations.set('POST /studio/api/admin/presentation-room', prepare);
@@ -317,7 +319,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       const changed = await repository.saveDocument('administration', { value: administration, expectedRevision: body.expectedAdministrationRevision, actor: context.actor.user });
       const pack = await saved.operators.publishPackage({ actor: context.actor.user, audit: operatorAuditContext(context.actor), operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
         lanes: presentation.lanes.map(lane => lane.id), games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])],
-        tables: [...(saved.pack?.tables ?? []), room.id], branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation) });
+        tables: [...(saved.pack?.tables ?? []), room.id], branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation,{allowExtended:prepared.allowExtended===true}) });
       return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
     }), { presentationMutation: [roomGame(body)==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(prepared.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : [])] });
   });

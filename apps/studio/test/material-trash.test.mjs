@@ -10,7 +10,9 @@ import {createResourceLifecycleApi} from '../lib/resource-lifecycle-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {withPackagePresentation,readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {withPackagePresentation,readPackagePresentation,encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
+import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
@@ -31,19 +33,25 @@ function withRetainedAnchors(input){
  for(const layout of ['mobile','desktop'])geometry[layout].anchors={cards:{target:'scene',rect:{x:.1,y:.2,width:.4,height:.5}},bets:{target:'dealer',rect:{x:0,y:0,width:1,height:1}}};
  lane.composition={...defaultCompositionSettings(),blackjackTables:[geometry]};return value;
 }
-async function fixture({nativeVersion,frozenAnchors=false}={}){
- const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),target=asset(1),kept=asset(2);
- const lane=defaultPresentationLane('astrid');lane.layers.background={enabled:true,mode:'image',default:target.id,allowed:[target.id]};
+async function fixture({nativeVersion,frozenAnchors=false,measuredBank=false}={}){
+ const pool=combinedPool(scope,{extendedPresentationReady:measuredBank}),repository=createStudioRepository({pool,scope}),target=asset(1),kept=asset(2);
+ const dealerId=measuredBank?'dragan':'astrid';
+ const lane=defaultPresentationLane(dealerId);lane.layers.background={enabled:true,mode:'image',default:target.id,allowed:[target.id]};
  const retained={...structuredClone(lane),id:'other-composition',label:'Behållen sammansättning'};
  retained.layers.background={enabled:true,mode:'image',default:kept.id,allowed:[kept.id]};
  const cloud=cloudPresentationFixture({lanes:[lane,retained],assets:[target,kept]});
- const gameLane={schemaVersion:1,id:'room-lane-trash',label:'Fixture',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'};
+ if(measuredBank){
+  const bank=nativeRoomMaterialFixture({capture:false,allSpeechSlots:true});
+  cloud.project={...bank.project,lanes:cloud.project.lanes,layerAssets:cloud.project.layerAssets};
+  cloud.presentation={...bank.presentation,lanes:cloud.presentation.lanes,assets:cloud.presentation.assets};
+ }
+ const gameLane={schemaVersion:1,id:'room-lane-trash',label:'Fixture',renderer:'portrait-video',dealer:dealerId,mediaCollection:dealerId+'-presentation'};
  const rooms=[{schemaVersion:2,id:'room-affected',name:'Berört rum',operatorId:'north',presentationLaneId:lane.id,gameLaneId:gameLane.id,state:'live'},
   {schemaVersion:2,id:'room-kept',name:'Behållet rum',operatorId:'north',presentationLaneId:retained.id,gameLaneId:gameLane.id,state:'live'}];
  await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
  await repository.initializeDocument('administration',{value:{tiers:{classic:'vera',high:'astrid',vip:'amira'},rooms,gameLanes:[gameLane],gameLane:gameLane.id,tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}},actor:'fixture'});
  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,now,transaction:fn=>repository.withTransactionClient(fn)}))));
- await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[lane.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},frozenAnchors?withRetainedAnchors(cloud.presentation):cloud.presentation)}));
+ await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:[lane.id,retained.id],games:['blackjack'],tables:rooms.map(row=>row.id),branding:withPackagePresentation({},frozenAnchors?withRetainedAnchors(cloud.presentation):cloud.presentation,{allowExtended:measuredBank})}));
  const gates={version:nativeVersion,fetches:[],transactions:0,beforeMutation:null},nativeRepository=nativeVersion===undefined?repository:wrapNativePresentationRepository(repository,{
   env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,{headers})=>{
    assert.equal(pool.active,0,'readiness HTTP precedes SQL');assert.ok(!gates.active,'no HTTP under product lock');
@@ -124,6 +132,37 @@ test('preview is read only; commit detaches media and archives only affected roo
  assert.equal((await f.post('material-trash',{...restoreBody,impactToken:restoreCheck.body.impact.token})).status,200);
  assert.deepEqual((await f.repository.readDocument('administration')).value.rooms,admin.rooms);
  assert.deepEqual(await f.stored(store=>store.getCurrentPackage('north')),pack);
+});
+
+test('material trash retains a large measured v2 bank only after native v29 and storage readiness',async()=>{
+ const f=await fixture({nativeVersion:29,measuredBank:true}),body=await f.body();
+ const original=await f.stored(store=>store.getCurrentPackage('north'));
+ const retained=withoutPresentationLanes(readPackagePresentation(original),[f.lane.id]);
+ assert.equal(original.branding._scoutPresentation.format,EXTENDED_PRESENTATION_FORMAT);
+ assert.throws(()=>encodePresentationPackage(retained),error=>error.statusCode===413,'the surviving bank must still require v2');
+ const before=f.pool.snapshot(),check=await f.post('material-trash-check',body);
+ assert.equal(check.status,200);assert.deepEqual(f.pool.snapshot(),before,'preview cannot change the publication');
+ const request={...body,impactToken:check.body.impact.token};
+ f.gates.version=28;
+ const transactions=f.gates.transactions,offset=f.pool.trace.length;
+ const denied=await f.post('material-trash',request);
+ assert.equal(denied.status,503);assert.equal(denied.body.code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+ assert.equal(f.gates.fetches.at(-1),29);assert.equal(f.gates.transactions,transactions);
+ assert.deepEqual(f.pool.snapshot(),before);
+ assert.ok(!f.pool.trace.slice(offset).some(row=>['save-document','publish-package','audit','audit-write'].includes(row.marker)));
+ f.gates.version=29;f.pool.setExtendedPresentationReady(false);
+ assert.equal((await f.post('material-trash',request)).status,503);
+ assert.deepEqual(f.pool.snapshot(),before,'missing optional020 rolls back every lifecycle write');
+ f.pool.setExtendedPresentationReady(true);f.pool.fail('audit-write');
+ assert.equal((await f.post('material-trash',request)).status,503);assert.deepEqual(f.pool.snapshot(),before);
+ assert.equal((await f.post('material-trash',request)).status,200);
+ const pack=await f.stored(store=>store.getCurrentPackage('north'));
+ assert.equal(pack.branding._scoutPresentation.format,EXTENDED_PRESENTATION_FORMAT);
+ assert.deepEqual(readPackagePresentation(pack),retained,'all surviving measurements, identities and selections remain frozen');
+ assert.deepEqual(pack.tables,['room-kept']);assert.deepEqual(pack.lanes,[f.retained.id]);
+ assert.deepEqual(f.pool.snapshot().packages[0],before.packages[0]);
+ assert.equal((await f.repository.readDocument('project')).value.layerAssetTrash[0].asset.id,f.target.id);
+ assert.deepEqual((await f.repository.readDocument('administration')).value.rooms.map(room=>room.id),['room-kept']);
 });
 
 test('material confirmation rejects stale project, administration and publication revisions',async()=>{

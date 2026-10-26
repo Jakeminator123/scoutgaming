@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
-import { createSeedProject, createEmptyProject } from '../packages/presentation/contracts/studio-model.mjs';
+import { createHash } from 'node:crypto';
+import { createSeedProject, createEmptyProject, addDealer } from '../packages/presentation/contracts/studio-model.mjs';
+import { mediaTimingSpeechIdentity } from '../packages/presentation/contracts/media-timing.mjs';
+import { recordedSpeechIdentity, recordedSpeechForVideo } from '../packages/presentation/contracts/recorded-speech.mjs';
+import { lifecycleProject } from '../apps/studio/lib/dealer-lifecycle.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
@@ -39,6 +43,148 @@ const scope = Object.freeze({ environment: 'test', workspaceId: 'workspace-1' })
 const repository = pool => createStudioRepository({ pool, scope });
 const rejection = (code, status) => error => error instanceof StudioStorageError && error.code === code && (status === undefined || error.statusCode === status);
 const initialize = repo => repo.initializeDocument('administration', { value: { rooms: [] }, actor: 'tester', revision: 'initial' });
+
+async function timingFixture({ speech = false, project = true, archived = false } = {}) {
+  const pool = createStudioMemoryPool(), repo = repository(pool);
+  if (project) await repo.initializeDocument('project', { value: addDealer(createEmptyProject(), 'nora', 'Nora'), actor: 'tester' });
+  const id = '40000000-0000-4000-8000-000000000001', sha256 = 'a'.repeat(64);
+  const record = { id, sha256, size: 4096, contentType: 'video/mp4',
+    pathname: `croupier/media/dealers/nora/review/uploads/${id}/${sha256}.mp4`,
+    classification: { dealerId: 'nora', eventId: speech ? 'speak.goodluck' : 'idle.ready', kind: speech ? 'speech' : 'idle',
+      role: 'alternative', situation: speech ? 'goodluck' : '', label: 'Synthetic timing fixture', notes: 'Retain me', playback: 'once', ...(archived ? { archived: true } : {}) } };
+  if (speech) record.classification.recordedSpeech = { schemaVersion: 1, dealerId: 'nora', lineId: 'goodluck', takeId: 'take_1', language: 'sv',
+    exactText: 'Lycka till.', videoSha256: sha256, audioSha256: 'b'.repeat(64), indexSha256: 'c'.repeat(64), fps: 24, frameCount: 72,
+    audioDelayMs: 0, entryPose: 'VILA', exitPose: 'VILA', calibrationRevision: 'fixture-1', recording: { status: 'pending' }, review: { status: 'pending' } };
+  const registered = (await repo.registerMedia(record, { actor: 'Uploader' })).media;
+  const mediaTiming = { schemaVersion: 1, mediaId: id, sha256, size: record.size,
+    recordedSpeechIdentitySha256: speech ? createHash('sha256').update(mediaTimingSpeechIdentity(record.classification.recordedSpeech)).digest('hex') : null,
+    video: { trackId: 1, frameCount: 72, fps: 24, firstPtsUs: 0, lastPtsUs: 2958333, endUs: 3000000 },
+    audio: [{ trackId: 2, firstPtsUs: 0, endUs: 3200000 }], endUs: 3200000, audioTailUs: 200000 };
+  const save = (changes = {}) => repo.saveMediaTiming(id, { sha256, expectedRevision: registered.revision, mediaTiming, actor: 'Inspector', ...changes });
+  return { pool, repo, record, registered, mediaTiming, save };
+}
+
+test('server timing writer preserves the exact record and audits one scoped CAS revision', async () => {
+  const f = await timingFixture({ speech: true }), offset = f.pool.calls.length;
+  const expected = structuredClone(f.mediaTiming), pending = f.save();
+  f.mediaTiming.audio[0].endUs = 9; // Async SQL must not observe later caller mutation.
+  const saved = await pending;
+  assert.notEqual(saved.revision, f.registered.revision);
+  assert.deepEqual(saved.mediaTiming, expected);
+  assert.deepEqual(saved.classification, f.registered.classification);
+  const { revision, updatedAt, mediaTiming, ...unchanged } = saved;
+  const { revision: oldRevision, updatedAt: oldAt, ...original } = f.registered;
+  assert.deepEqual(unchanged, original);
+  assert.deepEqual(await f.repo.getMedia(f.record.id), saved);
+  const calls = f.pool.calls.slice(offset, f.pool.calls.findIndex((call, index) => index >= offset && call.sql === 'COMMIT') + 1);
+  assert.equal(new Set(calls.map(call => call.client)).size, 1);
+  assert.ok(calls.findIndex(call => call.sql.includes('pg_advisory_xact_lock')) < calls.findIndex(call => call.marker === 'read-media'));
+  for (const call of calls.filter(call => ['read-media', 'read-document', 'save-media-timing', 'audit'].includes(call.marker))) {
+    assert.deepEqual(call.values.slice(0, 2), [scope.environment, scope.workspaceId]);
+  }
+  const audit = f.pool.snapshot().audits.at(-1);
+  assert.equal(audit.action, 'classify_media'); assert.equal(audit.subject, saved.id);
+  assert.equal(audit.revision, saved.revision); assert.equal(audit.actor, 'Inspector');
+  assert.equal(recordedSpeechForVideo(saved, { dealerId: 'nora', lineId: 'goodluck', language: 'sv' }), null);
+});
+
+test('timing rejects forged byte and speech bindings, bad input and registration bypass without writes', async () => {
+  const f = await timingFixture({ speech: true }), before = f.pool.snapshot();
+  for (const change of [
+    value => { value.mediaId = '50000000-0000-4000-8000-000000000001'; },
+    value => { value.sha256 = 'd'.repeat(64); }, value => { value.size++; },
+    value => { value.recordedSpeechIdentitySha256 = 'd'.repeat(64); }, value => { value.recordedSpeechIdentitySha256 = null; },
+    value => { value.video.fps = 25; }, value => { value.video.frameCount++; },
+    value => { value.approved = true; },
+  ]) {
+    const value = structuredClone(f.mediaTiming); change(value);
+    await assert.rejects(f.save({ mediaTiming: value }), rejection('studio_invalid_media', 422));
+    assert.deepEqual(f.pool.snapshot(), before);
+  }
+  for (const changes of [{ mediaTiming: null }, { sha256: 'not-a-hash' }, { actor: '' }, { expectedRevision: '' }]) {
+    await assert.rejects(f.save(changes)); assert.deepEqual(f.pool.snapshot(), before);
+  }
+  await assert.rejects(f.save({ sha256: 'd'.repeat(64), mediaTiming: { ...f.mediaTiming, sha256: 'd'.repeat(64) } }), rejection('studio_conflict'));
+  await assert.rejects(f.repo.saveMediaTiming('invalid', { sha256: f.record.sha256, expectedRevision: f.registered.revision, actor: 'Inspector', mediaTiming: f.mediaTiming }), rejection('studio_invalid_media'));
+  const connections = f.pool.connects;
+  await assert.rejects(f.repo.registerMedia({ ...f.record, mediaTiming: f.mediaTiming }, { actor: 'Uploader' }), rejection('studio_invalid_media'));
+  assert.equal(f.pool.connects, connections); assert.deepEqual(f.pool.snapshot(), before);
+});
+
+test('timing CAS has one concurrent winner and update/audit failure rolls back the complete write', async () => {
+  const f = await timingFixture(), before = f.pool.snapshot();
+  f.pool.failNext('audit');
+  await assert.rejects(f.save(), rejection('studio_storage_unavailable', 503));
+  assert.deepEqual(f.pool.snapshot(), before);
+  f.pool.failNext('save-media-timing');
+  await assert.rejects(f.save(), rejection('studio_storage_unavailable', 503));
+  assert.deepEqual(f.pool.snapshot(), before);
+  const outcomes = await Promise.allSettled([f.save(), f.save()]);
+  assert.equal(outcomes.filter(row => row.status === 'fulfilled').length, 1);
+  assert.equal(outcomes.filter(row => row.status === 'rejected' && rejection('studio_conflict')(row.reason)).length, 1);
+  assert.equal(f.pool.snapshot().audits.length, before.audits.length + 1);
+  assert.equal(f.pool.connects, f.pool.releases);
+});
+
+test('timing requires current active ownership and cannot cross scope, trash, retained or deletion fences', async () => {
+  const missingProject = await timingFixture({ project: false });
+  await assert.rejects(missingProject.save(), rejection('studio_dealer_inactive'));
+  const f = await timingFixture(), other = createStudioRepository({ pool: f.pool, scope: { ...scope, workspaceId: 'other' } });
+  await assert.rejects(other.saveMediaTiming(f.record.id, { sha256: f.record.sha256, expectedRevision: f.registered.revision, actor: 'Inspector', mediaTiming: f.mediaTiming }), rejection('studio_media_missing', 404));
+  const project = await f.repo.readDocument('project');
+  await f.repo.saveDealerLifecycle(createEmptyProject(), { expectedRevision: project.revision, actor: 'Admin' });
+  await assert.rejects(f.save(), rejection('studio_dealer_inactive'));
+  const trashed = await timingFixture(), beforeTrash = await trashed.repo.readDocument('project');
+  await trashed.repo.saveDealerLifecycle(lifecycleProject(beforeTrash.value, { dealerId: 'nora', archived: true, records: [trashed.registered] }),
+    { expectedRevision: beforeTrash.revision, actor: 'Admin' });
+  await assert.rejects(trashed.save(), rejection('studio_dealer_archived'));
+  const archived = await timingFixture({ archived: true });
+  await assert.rejects(archived.save(), rejection('studio_media_archived'));
+  const deleted = await archived.repo.setMediaDeletion(archived.record.id, { expectedRevision: archived.registered.revision, sha256: archived.record.sha256,
+    deletion: { state: 'pending', requestedAt: '2026-10-26T00:00:00.000Z' }, actor: 'Admin' });
+  await assert.rejects(archived.save({ expectedRevision: deleted.revision }), rejection('studio_media_deletion_pending'));
+  const retained = createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id), repo = repository(createStudioMemoryPool());
+  const saved = (await repo.registerMedia(retained, { actor: 'explicit-retention-import' })).media;
+  await assert.rejects(repo.saveMediaTiming(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, actor: 'Inspector',
+    mediaTiming: { ...f.mediaTiming, mediaId: saved.id, sha256: saved.sha256, size: saved.size } }), rejection('studio_retained_media_immutable', 410));
+});
+
+test('classification keeps timing for the same speech identity while review still controls runtime permission', async () => {
+  const f = await timingFixture({ speech: true }); let saved = await f.save();
+  const metadata = structuredClone(saved.classification), identity = recordedSpeechIdentity(metadata.recordedSpeech);
+  metadata.label = 'New visible label'; metadata.notes = 'Updated note';
+  metadata.recordedSpeech.recording = { status: 'verified-recording', by: 'Recorder', at: '2026-10-26T00:00:00.000Z', identity };
+  metadata.recordedSpeech.review = { status: 'approved', by: 'Reviewer', at: '2026-10-26T00:00:01.000Z', identity };
+  saved = await f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata, actor: 'Reviewer' });
+  assert.deepEqual(saved.mediaTiming, f.mediaTiming);
+  assert.ok(recordedSpeechForVideo(saved, { dealerId: 'nora', lineId: 'goodluck', language: 'sv' }));
+  for (const review of [{ status: 'pending' }, { status: 'rejected', by: 'Reviewer', at: '2026-10-26T00:00:02.000Z', identity }]) {
+    metadata.recordedSpeech.review = review;
+    saved = await f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata, actor: 'Reviewer' });
+    assert.deepEqual(saved.mediaTiming, f.mediaTiming);
+    assert.equal(recordedSpeechForVideo(saved, { dealerId: 'nora', lineId: 'goodluck', language: 'sv' }), null);
+  }
+});
+
+test('classification invalidates timing on changed, removed or newly added speech identity', async () => {
+  for (const [key, value] of Object.entries({ exactText: 'En annan replik.', takeId: 'take_2', language: 'en', audioSha256: 'd'.repeat(64),
+    indexSha256: 'e'.repeat(64), fps: 25, frameCount: 73, audioDelayMs: 1, entryPose: 'REDO', exitPose: 'REDO', calibrationRevision: 'fixture-2' })) {
+    const f = await timingFixture({ speech: true }), saved = await f.save(), metadata = structuredClone(saved.classification);
+    metadata.recordedSpeech[key] = value;
+    const changed = await f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata, actor: 'Editor' });
+    assert.equal(Object.hasOwn(changed, 'mediaTiming'), false, key);
+    assert.equal(changed.classification.recordedSpeech[key], value);
+    await assert.rejects(f.save({ expectedRevision: changed.revision }), rejection('studio_invalid_media'));
+  }
+  const speech = await timingFixture({ speech: true }), measured = await speech.save(), metadata = structuredClone(measured.classification);
+  delete metadata.recordedSpeech;
+  const removed = await speech.repo.classifyMedia(measured.id, { sha256: measured.sha256, expectedRevision: measured.revision, metadata, actor: 'Editor' });
+  assert.equal(Object.hasOwn(removed, 'mediaTiming'), false);
+  const plain = await timingFixture(), measuredPlain = await plain.save();
+  const added = await plain.repo.classifyMedia(measuredPlain.id, { sha256: measuredPlain.sha256, expectedRevision: measuredPlain.revision,
+    metadata: speech.record.classification, actor: 'Editor' });
+  assert.equal(Object.hasOwn(added, 'mediaTiming'), false);
+});
 
 test('Studio factory is inert; missing cloud rows stay missing and SQL scope is bound', async () => {
   const pool = createStudioMemoryPool(), mutable = { ...scope }, repo = createStudioRepository({ pool, scope: mutable });

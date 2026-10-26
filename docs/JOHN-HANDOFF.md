@@ -1,7 +1,44 @@
 # Aktuell handoff — Scoutgaming
 
+## Integrering av materialbindning, avveckling och Admin-bygge — 26 oktober
+
+Den gemensamma kandidaten bevarar PR400 på `b6eb90ca9ff331ad0aa311a4eb86fa805a0f1b07`, PR401 på `eabc5a86baa494d4bfd9afe6d659671686ad4de4` och PR402 på `d6f6fecc37726d39ef89afa4fff35f655bde6e79`. De tre gemensamma filerna har sammanfogats från samma main `940776136101fe18d30e4ee1091151335e558b83`; båda testregistreringarna och samtliga handoff-/återställningsavsnitt är kvar. Originalheadarnas CI är gröna: [material](https://github.com/Jakeminator123/scoutgaming/actions/runs/40296506738), [avveckling](https://github.com/Jakeminator123/scoutgaming/actions/runs/40294842713) och [Admin-bygge](https://github.com/Jakeminator123/scoutgaming/actions/runs/40302643112). Dessa kvitton ersätter äldre väntan på CI i avsnitten nedan.
+
+Slutgranskningen hittade en livscykelregression: arkivering av material eller dealer återkodade ett redan sparat stort v2-paket med den äldre 7400-gränsen och nekades med 413. Båda beteendeproven reproducerade felet före rättning, medan de 25 befintliga livscykelproven passerade. Planerna får nu behålla v2 endast från ett redan avkodat och validerat sparat v2-källpaket. Klientindata, kodarens standard, v29-preflight, låst omkontroll och optional020-grind är oförändrade.
+
+Implementerarens faktiska Node24.21.0-körning: material-trash 15/15, dealer-archive-impact 12/12, presentation-runtime-readiness 77/77 och operator-store 13/13; totalt 117/117 utan skip. Native materialprov verifierar v28-nekande före mutationslåset, rollback vid saknad020/auditfel och bevarat kvarvarande material/historik. Dealerprovet använder rårepository; dess native anropskedja är källgranskad. SQL-readiness är syntetisk i dessa riktade prov. Root och oberoende granskare har läst femfilersrättningen; gemensam full CI redovisas i integrations-PR:en.
+
+Valfria020 och game011 startas inte av runtime. Ingen produktions-DDL eller ny mediaacceptans följer av denna integration. Verifierad migrationsstatus förblir 50 procent. Nästa driftkvitto behöver samma integrerade kandidat, stabil offentlig HTTP-serie bunden till ny gatewayinstans, därefter återläsning av sparad spelstatus. Befintlig restoredatabas återanvänds; full HTTP-replay mot restore, delat bord/samtidighet och PAOW:s återstående underlag är fortsatt öppna.
+
+## Fortsättning, PAOW och verifierad återläsning — 26 oktober
+
+Åtkomst till GitHub, Neon, privat Blob, Vercel och Render är verifierad. PR400:s head3273b483d8d787271289e18e95fa121440c1b986 har grön [CI40293854913](https://github.com/Jakeminator123/scoutgaming/actions/runs/40293854913), inklusive GitGuardian. Den saknade POST-routen /studio/api/videos/measure-timing är kopplad till befintlig native-tjänst; route-, media- och behörighetsprov passerar49/49. Tidigare versionsfix1865 har även full grön CI40291579056.
+
+Faktiskt isolerat molnprov på3273: Vercel dpl_HcbNdFH8GYryNUs3bfYtCiaMb4Gj och Render dep-dbfh79u7bikc73di4090. Servermätningen sparades en gång med CAS; efterföljande återläsning och negativa revisions-/hashprov passerade23/23. Det ursprungliga provet felbedömde det förväntade updatedAt/addedAt-bytet som orelaterad ändring; originalkvittot är bevarat och återupptagningen gjorde ingen ny giltig mätning. Fem HTTP-kontroller bekräftar tidigare spelstatus, historik och saldo efter omstart utan nya spelkommandon. Render gav nio fel bland36 startobservationer före det godkända stabilitetsfönstret; rotorsaken är fortfarande öppen. Egna Render/Vercel är åter stoppade/pausade. Privata kvitton: arkiv/2026-10-25/migration-cloud-acceptance.
+
+PAOW:s tio befintliga taloriginal har oförändrade SHA256/bytes och är granskade och godkända av Jakob för rätt replik, hörbart tal, läppsynk och naturliga start/slutposer. Mätaren stöder nu deras explicita AAC-priming och exakta MP4-klockavrundning; budgeten avrundas konservativt per klipp. Riktade beteendeprov38/38. Alla48valda original (35givningar,3idle,10tal) passerar riktig worker. Sex givningar krävde exakt stöd för äldre FFmpegs CTTS-baserade mdhd; samtliga bildrutor och strikta sluttidskontroller bevaras. Root har granskat parserändringarna utan blockerare. Ny exakt-head CI/deploy krävs för parserändringen. Jakob vill ha faktiska tester och intygar inte inspelningsursprung. Hans AV-godkännande kvarstår; ingen inspelningsattest registreras i hans namn. Native-flödets v1-intygskoppling granskas för en explicit, testbar embedded-AV-väg utan fabricerad kalibreringshistorik. Privat underlag: arkiv/2026-10-26/paow-acceptance.
+
+J09:s avgränsade avvecklingsförberedelse ligger separat i [PR401](https://github.com/Jakeminator123/scoutgaming/pull/401), head eabc5a86baa494d4bfd9afe6d659671686ad4de4: explicit opt-in-migrering, kontroll av konsumenter och negativa rollback-prov på isolerad PostgreSQL16/18. Full grön CI40294842713 inklusive Docker och GitGuardian gäller exakt J09-head; ingen produktions-DDL är utförd. Aktivitetsstatus finns enbart i migrering/status.json; sammanhängande PAOW-spel, delat bord/samtidighet och full HTTP-acceptans efter restore kvarstår.
+
+## Native materialbindning och tal — 26 oktober
+
+PR399 är mergad som `940776136101fe18d30e4ee1091151335e558b83`. Rättad head `694b9b176eae5ba91d17a718c052ac25620eee1a` har full grön [CI40285373321](https://github.com/Jakeminator123/scoutgaming/actions/runs/40285373321) och GitGuardian. Detta ersätter väntan på ny CI i det äldre avsnittet nedan.
+
+Implementerad i `codex/native-material-binding` ovanpå `694b9b176`: Admin-mätning av privata Blob-bytes, Neon-CAS/audit, fryst native-materialresolver, v29-publiceringsgrind, optional020 och atomiska sekvens-/tidsbudgetkontroller i spelmotorn. Admin visar Mät speltid och konkreta råd om saknat material. Ingen lokal produktdatabas, historisk dealerimport eller nytt talgodkännande införs.
+
+Huvudcommit `a98a21e1` passerade ordinarie kontroll med 716 godkända prov, fyra skip och inga fel; frontendtypkontroll och oberoende kodreview passerar. Faktisk isolerad Neon-verifiering: 53 syntetiska mätposter, extended paket/draft, negativa CAS/hash och noll kvarvarande provrader. [Kontrakt](LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) och [molnkvitton](ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober) anger exakta gränser.
+
+CI-fixturernas manuella kopie-/källistor omfattar nu materialets beroenden och optional020. Samma efterföljande 18 integrationsfall gav fem starttimeouts lokalt med fyra arbetare, men 18/18 pass med två; inga gemensamma portar eller datalås hittades. Lokal focused-verifiering kan därför välja `CROUPIER_PRECOMMIT_TEST_WORKERS=1..4` (standard fyra). Alla kontroller och tidsgränser behålls; CI och full regression påverkas inte. Sjutton beteendeprov verifierar valet och avvisar ogiltiga värden. Detta är tillfälliga testfixturer, inte produktregister eller connected-local-drift.
+
+Render-502 är avgränsat till anrop utan gatewaymottagning; senare 8/8 health/version-anrop passerade. Rotorsak, stabil spelomstart, delat bord/samtidighet och vald medias faktiska acceptans återstår. Materialkoden är inte deploy-/produktionsaccepterad av dessa HTTP-prov. Status förblir 50 % verifierat enligt status.json.
+
 **Aktuell status: 50 % verifierat, 50 % kvar (10/20 aktiviteter).** J06 är kvitterad genom kodrensning, beteendeprov och full CI40234506315 på81bc2475b. J05 är fortsatt öppen efter faktiskt Render502. Äldre procentuppgifter nedan är daterade delkvitton; status.json är enda statuskälla.
 
+## J09: valfri Lissabon-avveckling — 26 oktober
+
+De två kvarvarande sessionsraderingarna och deras exklusiva fixturer är borttagna. `game-011-retire-lissabon` och dess offlineförberedare är en uttryckligen valfri, separat leverans från main `940776136101fe18d30e4ee1091151335e558b83`. Historiskt produktschema är oförändrat. Tomma tabeller, oförändrat schema/ägarskap, kända beroenden, fryst kompatibel release/rollback samt backup-/restorebevis krävs; ingen startupregistrering, `CASCADE`, automatisk tillämpning eller produktions-DDL införs. [Ordning, grindar och återställning](ENVIRONMENT-RESTORATION.md#valfri-förberedelse-för-lissabon-kontraktion-j09).
+
+Porteringen passerar 37/37 riktade offline-, lösenords- och CI-policyprov på Node24.21.0 med högst två arbetare; testinventeringen har noll föräldralösa tester. Samma SQL, förberedare, PG-test och runner är byte-identiska med tidigare isolerade prov på PostgreSQL16.15 och18.6: 19/19 per version, inklusive avbruten transaktion och full `pg_dump`/`pg_restore`. Det privata originalkvittot ligger kvar i arbetskopian `migration-continuation`, `arkiv/2026-10-26/j09/verification.json`; egna kluster och portar är stoppade/stängda. Den tidigare provbasen innehöll även valfria Studio020, som inte ingår här. Exakt-head Linux/SQL-CI och full regression återstår för denna separata PR; äldre deployade binärer och faktisk produktionskontraktion är inte verifierade. Root har läsgranskat SQL, verktyg och portering utan blockerare. J09-status ändras först efter CI.
 ## Render: avgränsad requestkorrelation — 26 oktober
 
 PR399:s första CI40284099569 stoppade på miljöinventeringen: nya `RENDER_INSTANCE_ID` saknades under `render-game.managed`. Namnet och dess leverantörshanterade ansvar är nu dokumenterade; inga nya manuella miljövariabler eller runtimebeteenden införs av rättningen. Ny full CI krävs på rättad head.
@@ -2845,3 +2882,28 @@ besparing. Uppföljningen levereras i separat PR utan merge eller deploy;
 migreringsagenten är informerad och dess kodfiler/egen handoffsektion lämnas
 orörda. Bildkomprimering har lägre prioritet; byte av medieadresser och första
 hämtningar kan fortfarande vara betydande och ska bedömas från nya driftdata.
+
+## Admin: automatisk klientombyggnad — 26 oktober 2026
+
+Admins separata klientbygge kördes bara vid start, så klientändringar krävde
+manuella ombyggnader. `npm --prefix apps/studio run dev:client` bevakar nu
+avgränsade UI-/komponent-/kontraktskällor och återanvänder samma typkontroller
+och byggskript. Sparningar samlas, ett eget bygge körs åt gången och nästa
+ändring kan återhämta ett byggfel. Byggresultat, beroenden, cache, tester och
+privata filer utlöser inga ombyggnader. Stoppa bevakningen innan ett annat
+klientbygge startas; Ctrl+C inväntar ett pågående eget bygge utan bred processkill.
+
+Befintlig isolerad fixture/server används. Siduppdatering är manuell så att
+osparade utkast inte kastas automatiskt. Inga nya paket, produktstarter,
+API-/auth-/lagringskontrakt eller migrationsstatusar införs. Instruktioner
+finns i [klientguiden](../apps/studio/client/README.md#bygg-om-klienten-när-du-sparar).
+
+Verifierat i en avgränsad källkopia från main `94077613`: 8/8 riktade prov
+utan skip på Node 24.21.0/Linux, samma Node-version som CI, med verkliga
+filhändelser, byggprocesser och en compiler-barnprocess. CI hittade först
+missad upprepad atomisk sparning; felet återskapades på 24.21.0 och rättades
+med katalogbevakning. Samma assertion och timeout behålls. Proven täcker
+också ändringar i nya/återskapade mappar, ersatt källrot, tydligt stopp vid
+förlorad källrot, uteblivna byggloopar, samtidiga sparningar och byggfel.
+Syntax- och diffkontroll passerar. Full produktregression och klientbygge
+redovisas av PR:ens CI; Windows-körning är inte utförd här.

@@ -3,6 +3,7 @@ export { StudioStorageError, validateStudioEnvironmentId, validateStudioScope } 
 import { createHash } from 'node:crypto';
 import { validateRoomGameDrafts } from '../../presentation/contracts/room-game-config.mjs';
 import { validateManagedStudioMedia } from './managed-media-contract.mjs';
+import { normalizeMediaTiming,mediaTimingSpeechIdentity } from '../../presentation/contracts/media-timing.mjs';
 
 export const STUDIO_DOCUMENT_KINDS = Object.freeze(['project', 'social-policy', 'administration']);
 export const STUDIO_SNAPSHOT_FORMAT = 'croupier-studio-documents-v1';
@@ -128,6 +129,11 @@ export function validateStudioMedia(record) {
       delete copy.deletion;
     }
     const checked = validateManagedStudioMedia(copy);
+    if(checked.mediaTiming) {
+      const speech=checked.classification.recordedSpeech;
+      const digest=speech?createHash('sha256').update(mediaTimingSpeechIdentity(speech)).digest('hex'):null;
+      checked.mediaTiming=normalizeMediaTiming(checked.mediaTiming,{mediaId:checked.id,sha256:checked.sha256,size:checked.size,recordedSpeechIdentitySha256:digest});
+    }
     return deletion === undefined ? checked : {...checked,deletion};
   }
   catch { throw new StudioStorageError('studio_invalid_media', 422); }

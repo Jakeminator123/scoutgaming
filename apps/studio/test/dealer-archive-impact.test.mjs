@@ -8,7 +8,10 @@ import {defaultPresentationLane} from '../../../packages/presentation/contracts/
 import {dealerArchiveCompositionIds,readDealerArchiveImpact,applyDealerArchiveImpact,withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {readPackagePresentation,withPackagePresentation,encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
+import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
+import {mergeFrozenDealerPlayback} from '../../../packages/presentation/contracts/frozen-dealer-playback.mjs';
+import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {readOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import { createSavedGamePolicy } from '../../../packages/presentation/server/saved-game-policy.mjs';
 
@@ -18,16 +21,25 @@ const scope={environment:'dealer-archive-impact',workspaceId:'isolated'};
 const lane=(dealerId)=>({...defaultPresentationLane(dealerId),id:dealerId+'-room',label:dealerId+' scene'});
 const adapter=dealer=>({schemaVersion:1,id:'room-lane-'+dealer,label:dealer,renderer:'portrait-video',dealer,mediaCollection:dealer+'-presentation'});
 const room=dealer=>({schemaVersion:2,id:dealer+'-table',name:dealer+' table',operatorId:'north',presentationLaneId:dealer+'-room',gameLaneId:'room-lane-'+dealer,state:'live'});
-async function fixture({labelCollision=false}={}){
-  const pool=combinedPool(scope),repository=createStudioRepository({pool,scope});
-  const cloud=cloudPresentationFixture({lanes:[lane('paow'),{...lane('linnea'),...(labelCollision?{label:'paow'}:{})}]});
+async function fixture({labelCollision=false,measuredBank=false}={}){
+  const pool=combinedPool(scope,{extendedPresentationReady:measuredBank}),repository=createStudioRepository({pool,scope});
+  const keptDealer=measuredBank?'dragan':'linnea';
+  const cloud=cloudPresentationFixture({lanes:[lane('paow'),{...lane(keptDealer),...(labelCollision?{label:'paow'}:{})}]});
+  if(measuredBank){
+    const bank=nativeRoomMaterialFixture({capture:false,allSpeechSlots:true});
+    cloud.project.lines=[...cloud.project.lines.filter(row=>row.dealerId!==keptDealer),...bank.project.lines];
+    const registeredDealers=cloud.presentation.registeredDealers.map(row=>row.id===keptDealer?bank.presentation.registeredDealers[0]:row);
+    const playback=mergeFrozenDealerPlayback(cloud.presentation,bank.presentation,{registeredDealers,preservedDealerIds:['paow']});
+    cloud.presentation={...cloud.presentation,registeredDealers,playback};
+    cloud.mediaRows=[...cloud.mediaRows.filter(row=>row.classification.dealerId!==keptDealer),...bank.records.map(row=>({...row,revision:'fixture-media-1'}))];
+  }
   const project=await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
-  await repository.initializeDocument('administration',{value:{rooms:[room('paow'),room('linnea')],gameLanes:[adapter('paow'),adapter('linnea')],gameLane:'room-lane-paow'},actor:'fixture'});
+  await repository.initializeDocument('administration',{value:{rooms:[room('paow'),room(keptDealer)],gameLanes:[adapter('paow'),adapter(keptDealer)],gameLane:'room-lane-paow'},actor:'fixture'});
   for(const {revision,...record} of cloud.mediaRows)pool.setMedia(record,revision);
   const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,transaction:fn=>repository.withTransactionClient(fn)}))));
-  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-room','linnea-room'],games:['blackjack'],tables:['paow-table','linnea-table'],branding:withPackagePresentation({dealer:'paow',roomOverrides:{'paow-table':{dealer:'paow'},'linnea-table':{dealer:'linnea'}}},cloud.presentation)}));
+  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-room',keptDealer+'-room'],games:['blackjack'],tables:['paow-table',keptDealer+'-table'],branding:withPackagePresentation({dealer:'paow',roomOverrides:{'paow-table':{dealer:'paow'},[keptDealer+'-table']:{dealer:keptDealer}}},cloud.presentation,{allowExtended:measuredBank})}));
   const unrelated=withoutPresentationLanes(cloud.presentation,['paow-room']);
-  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:['linnea-room'],games:['blackjack'],tables:[],branding:withPackagePresentation(labelCollision?{label:'paow'}:{},unrelated)}));
+  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'other',expectedRevision:null,lanes:[keptDealer+'-room'],games:['blackjack'],tables:[],branding:withPackagePresentation(labelCollision?{label:'paow'}:{},unrelated,{allowExtended:measuredBank})}));
   const input={repository,dealerId:'paow',expectedRevision:project.revision};
   return {pool,repository,cloud,project,stored,input,read:()=>readDealerArchiveImpact(input),pack:id=>stored(store=>store.getCurrentPackage(id))};
 }
@@ -59,6 +71,29 @@ test('archive detaches active rooms and only affected publication, without chang
   assert.equal(readOperatorLifecycle(pack.branding).rooms[0].room.id,'paow-table');
   assert.deepEqual((await f.pack('other')),other);
   assert.deepEqual(f.pool.snapshot().packages.slice(0,2),before.packages);
+});
+
+test('dealer archive preserves another dealer large measured v2 bank and rolls back without optional020',async()=>{
+  const f=await fixture({measuredBank:true}),original=await f.pack('north'),other=await f.pack('other');
+  const retained=withoutPresentationLanes(readPackagePresentation(original),['paow-room']);
+  assert.equal(original.branding._scoutPresentation.format,EXTENDED_PRESENTATION_FORMAT);
+  assert.throws(()=>encodePresentationPackage(retained),error=>error.statusCode===413,'the retained dealer still needs v2');
+  const before=f.pool.snapshot(),plan=await f.read();
+  assert.deepEqual(f.pool.snapshot(),before);assert.deepEqual(plan.packageChanges.map(row=>row.operatorId),['north']);
+  const input={...f.input,impactToken:plan.impact.token,actor:'Admin'};
+  f.pool.setExtendedPresentationReady(false);
+  await assert.rejects(applyDealerArchiveImpact(input),error=>error.statusCode===503);
+  assert.deepEqual(f.pool.snapshot(),before,'missing storage readiness cannot partially archive rooms or publish');
+  f.pool.setExtendedPresentationReady(true);f.pool.fail('audit-write');
+  await assert.rejects(applyDealerArchiveImpact(input));assert.deepEqual(f.pool.snapshot(),before);
+  await applyDealerArchiveImpact(input);
+  const pack=await f.pack('north');
+  assert.equal(pack.branding._scoutPresentation.format,EXTENDED_PRESENTATION_FORMAT);
+  assert.deepEqual(readPackagePresentation(pack),retained,'every retained measurement, approval and selection is unchanged');
+  assert.deepEqual(pack.lanes,['dragan-room']);assert.deepEqual(pack.tables,['dragan-table']);
+  assert.deepEqual((await f.repository.readDocument('administration')).value.rooms,[room('dragan')]);
+  assert.deepEqual(await f.pack('other'),other);assert.deepEqual(f.pool.snapshot().packages.slice(0,2),before.packages);
+  assert.equal(readOperatorLifecycle(pack.branding).rooms[0].room.id,'paow-table');
 });
 
 test('archive removes only wholly assigned legacy tiers from modern or empty room administration',async()=>{

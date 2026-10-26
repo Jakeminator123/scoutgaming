@@ -10,6 +10,7 @@ import { summarizeMovingWorkerHealth } from '../services/game/moving-speech-runp
 import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import {runRuntimeRegistrySqlChecks} from './fixtures/studio-runtime-sql-checks.mjs';
+import {addDealer,createEmptyProject} from '../packages/presentation/contracts/studio-model.mjs';
 
 const suffix = () => randomBytes(8).toString('hex');
 const hasCode = code => error => error?.code === code;
@@ -187,6 +188,32 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     }
     const counts=(await pool.query('SELECT (SELECT count(*)::int FROM croupier_studio.media_records WHERE environment_id=$1) AS records,(SELECT count(*)::int FROM croupier_studio.audit_events WHERE environment_id=$1) AS audits',[mimeScope.environment])).rows[0];
     assert.deepEqual(counts,{records:2,audits:2});
+  });
+
+  await check('timing writer uses current SQL constraints, scoped CAS and atomic audit rollback', async () => {
+    const scope = { environment: `qa_timing_${suffix()}`, workspaceId: 'integration' }, repo = createStudioRepository({ pool, scope });
+    await repo.initializeDocument('project', { value: addDealer(createEmptyProject(), 'nora', 'Nora'), actor: 'qa' });
+    const id = randomUUID(), sha256 = 'a'.repeat(64), record = { id, sha256, size: 4096, contentType: 'video/mp4',
+      pathname: `croupier/media/dealers/nora/review/uploads/${id}/${sha256}.mp4`,
+      classification: { dealerId: 'nora', eventId: 'idle.ready', kind: 'idle', role: 'alternative', situation: '', label: 'Synthetic SQL fixture', notes: '' } };
+    const original = (await repo.registerMedia(record, { actor: 'qa' })).media;
+    const mediaTiming = { schemaVersion: 1, mediaId: id, sha256, size: record.size, recordedSpeechIdentitySha256: null,
+      video: { trackId: 1, frameCount: 24, fps: 24, firstPtsUs: 0, lastPtsUs: 958333, endUs: 1000000 },
+      audio: [], endUs: 1000000, audioTailUs: 0 };
+    const save = expectedRevision => repo.saveMediaTiming(id, { sha256, expectedRevision, mediaTiming, actor: 'Inspector' });
+    const outcomes = await Promise.allSettled([save(original.revision), save(original.revision)]);
+    assert.equal(outcomes.filter(row => row.status === 'fulfilled').length, 1);
+    assert.equal(outcomes.filter(row => row.status === 'rejected' && hasCode('studio_conflict')(row.reason)).length, 1);
+    const saved = await repo.getMedia(id);
+    assert.deepEqual(saved.mediaTiming, mediaTiming); assert.deepEqual(saved.classification, record.classification);
+    const audits = async () => (await pool.query('SELECT action,subject,revision,actor FROM croupier_studio.audit_events WHERE environment_id=$1 AND workspace_id=$2 AND subject=$3 ORDER BY at,event_id', [scope.environment, scope.workspaceId, id])).rows;
+    const before = await audits();
+    assert.equal(before.length, 2);
+    assert.deepEqual(before.find(row => row.revision === saved.revision), { action: 'classify_media', subject: id, revision: saved.revision, actor: 'Inspector' });
+    await assert.rejects(repo.transaction(async () => { await save(saved.revision); throw Error('intentional fixture rollback'); }));
+    assert.deepEqual(await repo.getMedia(id), saved); assert.deepEqual(await audits(), before);
+    const other = createStudioRepository({ pool, scope: { ...scope, workspaceId: 'other' } });
+    await assert.rejects(other.saveMediaTiming(id, { sha256, expectedRevision: saved.revision, mediaTiming, actor: 'Inspector' }), hasCode('studio_media_missing'));
   });
 
   const scope = { environment: `qa_${suffix()}`, workspaceId: 'integration' };

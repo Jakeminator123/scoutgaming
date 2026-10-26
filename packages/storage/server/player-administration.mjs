@@ -31,7 +31,7 @@ export function createPlayerAdministration({ db, boDb, now = () => new Date().to
       }
       const at = now();
       await db.prepare('UPDATE players SET status=?,account_epoch=account_epoch+1,closed_at=? WHERE id=?').run(status, status === 'closed' ? at : null, playerId);
-      for (const table of ['player_sessions','preview_sessions','lissabon_profile_sessions']) await db.prepare(`DELETE FROM ${table} WHERE player_id=?`).run(playerId);
+      for (const table of ['player_sessions','preview_sessions']) await db.prepare(`DELETE FROM ${table} WHERE player_id=?`).run(playerId);
       await db.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id IN (SELECT craig_user_id FROM craig_player_links WHERE player_id=?)').run(playerId);
       await db.prepare('INSERT INTO player_admin_events (player_id,actor,action,reason,previous_status,status,at) VALUES (?,?,?,?,?,?,?)')
         .run(playerId, actor.trim(), status === 'active' ? 'reactivate' : status === 'blocked' ? 'block' : 'close', reason.trim(), player.status, status, at);
@@ -48,7 +48,7 @@ export function createPlayerAdministration({ db, boDb, now = () => new Date().to
       if (!player || !account) throw Object.assign(new Error('Player credentials unavailable'),{statusCode:404});
       if (player.status === 'closed') throw Object.assign(new Error('Closed player account'),{statusCode:409});
       await db.prepare('UPDATE player_accounts SET salt=?,hash=? WHERE player_id=?').run(salt,hash,playerId);
-      for(const table of ['player_sessions','preview_sessions','lissabon_profile_sessions']) await db.prepare(`DELETE FROM ${table} WHERE player_id=?`).run(playerId);
+      for(const table of ['player_sessions','preview_sessions']) await db.prepare(`DELETE FROM ${table} WHERE player_id=?`).run(playerId);
       await db.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id IN (SELECT craig_user_id FROM craig_player_links WHERE player_id=?)').run(playerId);
       await db.prepare('INSERT INTO player_admin_events (player_id,actor,action,reason,previous_status,status,at) VALUES (?,?,?,?,?,?,?)')
         .run(playerId,actor.trim(),'password',reason.trim(),player.status,player.status,now());

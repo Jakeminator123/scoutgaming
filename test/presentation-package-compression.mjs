@@ -7,6 +7,8 @@ import {buildPresentationPackage} from '../packages/presentation/contracts/prese
 import {canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import {encodePresentationPackage,decodePresentationPackage,withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {filmedPresentationFixture} from './fixtures/filmed-presentation.mjs';
+import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
+import { EXTENDED_PRESENTATION_FORMAT, EXTENDED_PRESENTATION_DATA_LIMIT, validatePresentationBranding } from '../packages/presentation/server/presentation-storage.mjs';
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const small=()=>{const project=createSeedProject();project.lanes=[defaultPresentationLane('astrid')];return buildPresentationPackage(project,[project.lanes[0].id],[]);};
 const invalid=error=>error.statusCode===503;
@@ -70,4 +72,24 @@ test('both codecs enforce bounded expansion, canonical JSON and full input consu
 });
 test('total branding guard stays at 8000 bytes for either encoding',()=>{
   for(const presentation of [small(),filmedPresentationFixture(),boundaryPresentation()])assert.throws(()=>withPackagePresentation({name:'x'.repeat(8000)},presentation),error=>error.statusCode===413);
+});
+
+test('extended v2 is explicit, lossless and bounded; legacy limits never grow',()=>{
+  const {presentation}=nativeRoomMaterialFixture({capture:false,allSpeechSlots:true});
+  assert.throws(()=>encodePresentationPackage(presentation),error=>error.statusCode===413);
+  assert.throws(()=>encodePresentationPackage(presentation,{allowExtended:'true'}),error=>error.statusCode===413);
+  const envelope=encodePresentationPackage(presentation,{allowExtended:true});
+  assert.equal(envelope.format,EXTENDED_PRESENTATION_FORMAT);assert.equal(envelope.encoding,'br-base64url');
+  assert.ok(envelope.data.length>7400&&envelope.data.length<=EXTENDED_PRESENTATION_DATA_LIMIT);
+  assert.deepEqual(decodePresentationPackage(envelope),presentation);
+  assert.deepEqual(encodePresentationPackage(small(),{allowExtended:true}),encodePresentationPackage(small()));
+  for(const patch of [{format:'croupier-lanes-v1'},{encoding:'gzip-base64url'},{sha256:'0'.repeat(64)},
+    {data:'A'.repeat(EXTENDED_PRESENTATION_DATA_LIMIT+1)},
+    {data:Buffer.concat([Buffer.from(envelope.data,'base64url'),Buffer.from('trailing')]).toString('base64url')}])
+    assert.throws(()=>decodePresentationPackage({...envelope,...patch}),invalid);
+  const branding=withPackagePresentation({name:'Synthetic'},presentation,{allowExtended:true});
+  assert.deepEqual(validatePresentationBranding(branding),branding);
+  assert.throws(()=>withPackagePresentation({name:'x'.repeat(8000)},presentation,{allowExtended:true}),error=>error.statusCode===413);
+  assert.throws(()=>validatePresentationBranding({...branding,_scoutPresentation:{...envelope,data:'A'.repeat(EXTENDED_PRESENTATION_DATA_LIMIT)},name:'x'.repeat(2500)}));
+  assert.throws(()=>validatePresentationBranding({name:'x'.repeat(8000)}));
 });

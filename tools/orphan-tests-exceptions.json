@@ -1,5 +1,10 @@
 [
   {
+    "path": "test/lissabon-retirement.mjs",
+    "kind": "helper",
+    "reason": "Exports real PostgreSQL contraction and full pg_dump/pg_restore checks invoked by tools/run-shared-table-qa.mjs --lissabon-retirement in croupier.yml's isolated SQL step; requires the runner-owned loopback cluster."
+  },
+  {
     "path": "test/shared-schema-upgrade.mjs",
     "kind": "helper",
     "reason": "Exports populated product-v1 upgrade checks invoked by tools/run-shared-table-qa.mjs --schema-upgrade in croupier.yml's isolated SQL step; requires the runner-owned loopback cluster."

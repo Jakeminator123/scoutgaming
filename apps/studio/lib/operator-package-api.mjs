@@ -6,6 +6,7 @@ import { BASE_DEALER_IDS } from '../../../packages/presentation/contracts/dealer
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { canonicalStudioJson, validateStudioScope, validateRevision, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
+import {presentationPackageRequiresV29,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from './presentation-runtime-readiness.mjs';
 import { withPackagePresentation, readPackagePresentation, publicPackageBranding, encodePresentationPackage, PRESENTATION_PACKAGE_KEY } from '../../../packages/presentation/server/presentation-package.mjs';
 import {resolvePackageRoom,listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import {roomGame,isRoomOperatorId} from '../../../packages/presentation/contracts/presentation-room.mjs';
@@ -199,11 +200,18 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     return {ok:true, operatorId:published.operatorId, packageRevision:published.revision, package_revision:published.revision,
       lanes:[...published.lanes], games:[...published.games], tables:[...published.tables], presentation};
   }
+  function encodingOptions(presentation) {
+    const allowExtended=typeof repository?.withMutationContext==='function';
+    if(!allowExtended&&presentationPackageRequiresV29(presentation))
+      throw new StudioStorageError(PRESENTATION_RUNTIME_UPDATE_REQUIRED,503);
+    return {allowExtended};
+  }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
     if(context.body?.action==='refresh-dealer-idle'){
       const body=idleRefreshIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
       if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
       if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
+      const encoding=encodingOptions(prepared.presentation);
       return repository.transaction(()=>repository.withTransactionClient(async client=>{
         const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
         const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId);
@@ -212,16 +220,17 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         idleRefreshPresentation(current,administration.value,body);
         await assertCapturedPresentationMedia(repository,prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation:prepared.presentation});
-        const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(prepared.presentation)};
+        const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(prepared.presentation,encoding)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
         return {...result(published,prepared.presentation),idleRefreshed:{dealerId:body.dealerId,roomId:body.roomId}};
-      }));
+      }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     if(context.body?.action==='publish-scene-layout'){
       const body=sceneLayoutIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
       if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
       if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
+      const encoding=encodingOptions(prepared.presentation);
       return repository.transaction(()=>repository.withTransactionClient(async client=>{
         const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
         const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
@@ -230,11 +239,11 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         if(canonicalStudioJson(presentation)!==canonicalStudioJson(prepared.presentation))sceneConflict();
         // Preserve every other branding field, including unrelated published room choices.
         // A saved branding draft is neither read nor published.
-        const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(presentation)};
+        const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(presentation,encoding)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
         return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms};
-      }));
+      }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     const expectedPackageRevision = requestedPackageRevision(context.body);
     if (repository) {
@@ -242,6 +251,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       if (!preparedValues.has(prepared) || prepared.operatorId !== context.body.operatorId
         || canonicalStudioJson(prepared.lanes) !== canonicalStudioJson(context.body.lanes)) fail(422);
       if (expectedPackageRevision !== undefined && prepared.expectedPackageRevision !== expectedPackageRevision) fail(409);
+      const encoding=encodingOptions(prepared.presentation);
       return repository.transaction(() => repository.withTransactionClient(async client => {
         const operators = await createOperatorStore({sql:client, scope, now, transaction:work => repository.withTransactionClient(work)});
         const projectDocument = await repository.readDocument('project'), administrationDocument = await repository.readDocument('administration');
@@ -254,9 +264,9 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const published = await operators.publishPackage({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId:prepared.operatorId,
           expectedRevision:prepared.expectedPackageRevision, lanes:[...prepared.lanes],
           games:current?.games?.length ? [...current.games] : ['blackjack'], tables:current ? [...current.tables] : [],
-          branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation)});
+          branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation,encoding)});
         return result(published, prepared.presentation);
-      }));
+      }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     // Local fixture/legacy adapters retain original-four behavior. A registered
     // extra dealer requires the native saved snapshot and immutable media path.

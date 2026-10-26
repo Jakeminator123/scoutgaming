@@ -1,5 +1,16 @@
 # Masterplan: selektiv Kevin-portning till mains produkt
 
+## Senaste material- och driftavstämning — 26 oktober
+
+| Prioritet | Genomfört i native-kandidaten | Kvar för acceptans |
+| --- | --- | --- |
+| 1 | Serverägd mätning i befintliga Admin, Neon-CAS och privata Blob; inga parallella register | Mät valt verkligt material och publicera ett nytt fryst paket |
+| 2 | Fryst native-materialresolver, exakta tal-/filmidentiteter och sekvensbudget i servermotorn | Samlat Admin → publicering → delat spel, aktiv hand och samtidighet på samma v29-kandidat |
+| 3 | Toleranta läsare, v29-grind och optional020 för full fryst bank; verklig isolerad Neon-verifiering passerar | Separat godkänd schemamigrering i avsedd driftsmiljö, efter kompatibla läsare |
+| 4 | Render-requestkorrelation; senare8/8health/version och ytterligare6/6DNS-/transportprov passerar | Fastställ/hantera övergångens502 och verifiera spelåteranslutning/HTTP-restore |
+
+[Reviderat implementationskontrakt](../docs/LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) preciserar nu hur K05:s material-/talbindning konverteras till main. [Faktiska prov, städning och begränsningar](../docs/ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober). Historiska formuleringar längre ned om att resolverimplementation saknas ersätts av denna avstämning; moln- och mediaacceptans är fortsatt öppen. Ingen aktivitet kvitteras enbart av kod eller antal testfall.
+
 Reviderad 25 oktober 2026 på Jakobs begäran, med läsande granskning av inloggad Admin, main och PR:ar. Ursprunglig genomgång: `34c6c22f60ac75f335f647c83af06e7d0514476b`; senaste kod-/leveransavstämning: main `f098486f1017b468e3c83547d4babc04a2e1f23a` efter #379/#386–#392/#394–#396 och tidigare #378/#380–#385. Ursprunglig plan: [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311). Den fördjupade dokumentrevisionen samlas, efter Jakobs uttryckliga begäran om push, i befintlig [PR #379](https://github.com/Jakeminator123/scoutgaming/pull/379). Utförandestatus ägs endast av [status.json](status.json), med genererad [läsvy](STATUS.md). Dokumentrevisionen #379 är mergad som `8093797cfb920f31de9e2d775d3bad50d1d7b69b`. Fortsättningen levererar en avgränsad kompatibilitetsgrind och obligatoriska befintliga tester. Full mediaacceptans och aktivitetsstatus ändras inte.
 
 ## Slutsats och verifierat nuläge
@@ -49,7 +60,7 @@ Kandidat `28815e9cb0de36c5d6fc3b4f4827430e6f568ce3` är mergad via [#396](https:
 | Publicering och media | 78 kontroller: ny syntetisk dealer, tre Blob-filer, två operatörer/rum, frysta paket, HEAD/bytes/Range, replay och korsad rumsåtkomst | Faktisk film-, kort-, tal- och mobilacceptans med avsett godkänt material |
 | Spel och ekonomi | 71 HTTP-kontroller och fyra kommandon i en serverägd blackjackrunda; saldo, historik, replay och återinloggning | Delat bord, samtidighet och versionbyte under pågående hand. Senare processomstart gav växlande Render502; HTTP-spelåterläsning underkänd |
 | Backup och restore | 75 tabeller/fyra sekvenser samt 1 777 fullständiga objektnycklar matchar i separat Neon-restore; riktiga app-läsare ger samma stabila data | Full HTTP-spelreplay efter restore är inte utförd; tom spelkonfiguration bevisar inte J08/K06 |
-| Delat bords spelkonfiguration | Befintlig native API/CAS finns; publiceringsspärren behålls | **Kodgap:** koppla en exakt materialresolver till dagens frysta urval/timing. Nuvarande K04-planrevision och filmprofiler är inte samma kontrakt; se [K05-mappningen](kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) |
+| Delat bords spelkonfiguration | Native resolver och tidsmätning implementerade i separat kandidat; faktisk Neon-CAS/paketverifiering passerar | Deploya och verifiera v29-kedjan med valt godkänt material. Se senaste avstämningen ovan; full spelacceptans återstår |
 | Avveckling och slutleverans | J05/J06/J09:s konsument-/CI-matris preciserad; implicit lokal Kevin-admin/rollhöjning/lösenordslogg borttagen, 13/13 processprov | Kodändringen är ännu inte deployad. Återstående samprov och separat godkänd produktionsdrift kvarstår; egna Render/Vercel lämnade stoppade/pausade |
 
 **Denna tidigare kvällsmatris avsåg 45 % (9/20); senaste status är 50 % (10/20) efter verifierad J06.** Det är inte en uppskattning av återstående kod eller tid. Ingen ny procentsats härleds ur antalet HTTP-prov. Manuella mediafrågor hålls skilda från kodgap, automatisk integration och drift, så att de kan granskas separat när Jakob är tillbaka. En manuell filmkontroll kan inte ensam stänga J08/K06/K07. Nästa tekniska steg är materialbindningen och stabil HTTP-omstart, därefter delat bord/samtidighet. Manuell kontroll gäller det valda materialets kortkontakt, tal-/läppsynk och relevant mobilvy; inga generella omprov av andra dealers beställs.

@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
 import {readPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
+import {resolveNativeRoomGameMaterial,NATIVE_ROOM_MATERIAL_PREFIX} from '../../packages/presentation/server/native-room-game-material.mjs';
 import {isPresentationRoom,roomGame} from '../../packages/presentation/contracts/presentation-room.mjs';
 import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import {recordedSpeechForVideo} from '../../packages/presentation/contracts/recorded-speech.mjs';
@@ -33,6 +34,8 @@ function configMatches(value,{version,pack,room,presentation,dealerId}) {
     const selected=validateRoomGameConfig({language:value.language,limitPreset:value.limitPreset});
     const preset=ROOM_LIMIT_PRESETS[selected.limitPreset];
     const material=validateRoomGameMaterial(value.material,{language:selected.language,dealerId});
+    if(material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX)
+      && !same(material,resolveNativeRoomGameMaterial({package:pack,room,language:selected.language})))deny();
     const captured=[...(presentation.playback?.media??[]),...(presentation.registeredDealers??[]).flatMap(row=>row.idle?[row.idle]:[])];
     for(const ref of material.media) {
       const record=captured.find(row=>row.id===ref.id&&row.sha256===ref.sha256&&row.classification?.dealerId===dealerId);

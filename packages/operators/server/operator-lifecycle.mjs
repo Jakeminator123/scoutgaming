@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {validatePresentationBranding} from '../../presentation/server/presentation-storage.mjs';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {canonicalStudioJson,StudioStorageError} from '../../studio-registry/server/storage-contract.mjs';
 import {isPresentationRoom} from '../../presentation/contracts/presentation-room.mjs';
@@ -41,5 +42,5 @@ export function withOperatorLifecycle(branding,lifecycle){
  const bytes=Buffer.from(canonicalStudioJson(value)),data=gzipSync(bytes).toString('base64url');
  if(bytes.length>512*1024||data.length>7000)fail(413);
  next[OPERATOR_LIFECYCLE_KEY]={format:'scout-lifecycle-v1',encoding:'gzip-base64url',sha256:hash(bytes),data};
- if(Buffer.byteLength(canonicalStudioJson(next))>8000)fail(413);return next;
+ try{validatePresentationBranding(next);}catch{fail(413);}return next;
 }

@@ -9,6 +9,9 @@ import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-
 import { createPresentationGate, tickIdOf, WalletDenied, LockSetExceeded } from '../services/game/games/blackjack/table/ports.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
+import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
+import { presentationForRow } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
 
 function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
   const store = createMemoryTableStore({ hooks });
@@ -58,6 +61,83 @@ function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
   return t;
 }
 const rejects = (promise, code) => assert.rejects(promise, e => e.code === code || assert.fail(`expected ${code}, got ${e.code}: ${e.message}`));
+
+function nativeConfig() {
+  const fixture = nativeRoomMaterialFixture(), material = resolveNativeRoomGameMaterial(fixture.input);
+  return { material, language: material.language, leadMs: material.leadMs, cardMs: material.cardMs };
+}
+async function durableState(t) {
+  return { room: await t.store.read.room('party'), members: await t.store.read.members('party'),
+    balance: t.store.test.balance('kevin'), ledger: t.store.test.ledger(), reservations: t.store.test.reservations(),
+    audit: t.store.test.audit(), outbox: t.store.test.outbox(), receipts: t.store.test.receipts(), ticks: t.store.test.ticks() };
+}
+
+test('native material drives real start, double, insurance and next-window presentation without changing wallet ownership', async () => {
+  for (const scenario of ['double', 'insurance']) {
+    const t = setup(), cfg = nativeConfig(); t.store.test.publish('native-v1', cfg);
+    await t.join('kevin', [0]); await t.bet('kevin', 0, 25);
+    t.setShoe('party', scenario === 'double' ? ['5','6','6','10','10','10'] : ['10','A','9','9','2']);
+    await t.ready('kevin');
+    const first = await t.snap();
+    assert.equal(first.plan.endAt - first.plan.startAt, cfg.leadMs + 4 * cfg.cardMs);
+    if (scenario === 'double') await t.act('kevin', 'double');
+    else { await t.insurance('kevin', false); await t.act('kevin', 'stand'); }
+    await t.finish();
+    const settled = await t.snap(); assert.equal(settled.phase, 'settled');
+    await t.send('kevin', 'next', { roundId: settled.roundId });
+    const rows = t.store.test.outbox(), plans = rows.filter(row => row.payload.presentation.kind === 'plan');
+    assert.ok(plans.length >= 2);
+    for (const row of plans) {
+      const events = presentationForRow(row).events, draws = events.filter(event => event.type === 'deal').length;
+      assert.equal(row.payload.endAt - row.payload.startAt, cfg.leadMs + draws * cfg.cardMs);
+    }
+    assert.deepEqual(presentationForRow(rows.at(-1)).events.map(({type,line}) => ({type,...(line ? {line} : {})})),
+      [{type:'speak',line:'placebets'},{type:'idle'}]);
+    assert.equal(t.store.test.balance('kevin'), 1000 + t.store.test.ledger().reduce((sum,row) => sum + row.amountCents / 100, 0));
+    assert.equal((await t.store.audit.verifyChain()).ok, true);
+  }
+});
+
+test('native budget failure rolls back ready and due-tick shoe, wallet, audit, receipt and outbox effects', async () => {
+  for (const trigger of ['ready', 'tick']) {
+    const t = setup(), cfg = nativeConfig(); t.store.test.publish('native-v1', {...cfg, cardMs: cfg.cardMs - 1});
+    await t.join('kevin', [0]); await t.bet('kevin', 0, 25);
+    t.setShoe('party', ['8','6','9','10','5']);
+    if (trigger === 'tick') t.time = (await t.snap()).deadline;
+    const before = await durableState(t);
+    const invoke = trigger === 'ready' ? () => t.ready('kevin') : async () => t.table.tick((await t.table.dueTicks()).find(row => row.kind === 'window.close'));
+    await rejects(invoke(), 'native_room_sequence_unsupported');
+    assert.deepEqual(await durableState(t), before);
+    t.store.test.publish('native-v1', cfg);
+    await invoke(); assert.equal(t.store.test.ledger().filter(row => row.kind === 'consume:stake').length, 1);
+  }
+});
+
+test('native sequence guard rejects a core draw/public-event disagreement atomically', async () => {
+  const t = setup(); t.store.test.publish('native-v1', nativeConfig());
+  await t.join('kevin', [0]); await t.bet('kevin', 0, 25);
+  t.setShoe('party', ['8','6','9','10','5']);
+  // Deliberately corrupt this test-only proof: the core audit now reports one
+  // additional draw that its authoritative public card view cannot present.
+  t.store.test.mutateRoom('party', room => room.game.shoe.proof.draws.push({ position: 100000, kind: 'deal', card: {r:'2',s:'h',serial:100000} }));
+  const before = await durableState(t);
+  await rejects(t.ready('kevin'), 'native_room_sequence_unsupported');
+  assert.deepEqual(await durableState(t), before);
+});
+
+test('native next-window guard rolls back a reset when the newly frozen budget is inconsistent', async () => {
+  const t = setup(), cfg = nativeConfig(); t.store.test.publish('native-v1', cfg);
+  await t.join('kevin', [0]); await t.bet('kevin', 0, 25);
+  t.setShoe('party', ['A','9','K','7']); await t.ready('kevin'); await t.finish();
+  const settled = await t.snap(); assert.equal(settled.phase, 'settled');
+  t.store.test.publish('native-v2', {...cfg, leadMs: cfg.leadMs - 1});
+  const before = await durableState(t);
+  await rejects(t.send('kevin', 'next', {roundId:settled.roundId}), 'native_room_sequence_unsupported');
+  assert.deepEqual(await durableState(t), before);
+  t.store.test.publish('native-v2', cfg);
+  await t.send('kevin', 'next', {roundId:settled.roundId});
+  assert.equal((await t.snap()).configVersion, 'native-v2');
+});
 
 test('tick actor metadata is captured once from the successful lock attempt, never rollback or replay',async()=>{
   const h=setup();await h.join('kevin',[0]);await h.bet('kevin',0,25);

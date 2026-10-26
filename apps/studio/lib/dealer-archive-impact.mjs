@@ -3,6 +3,7 @@ import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 import {validatePresentationPackage} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
 import {isPresentationRoom} from '../../../packages/presentation/contracts/presentation-room.mjs';
@@ -110,7 +111,8 @@ async function readWithin(repository,{dealerId,expectedRevision,now=Date.now}){
     }
     if(presentation&&removedIds.size){
       const retained=withoutPresentationLanes(presentation,[...removedIds]);
-      if(retained)branding=withPackagePresentation(branding,retained);
+      // Permit the saved v2 format; publication still checks runtime and SQL readiness.
+      if(retained)branding=withPackagePresentation(branding,retained,{allowExtended:pack.branding[PRESENTATION_PACKAGE_KEY]?.format===EXTENDED_PRESENTATION_FORMAT});
       else{delete branding[PRESENTATION_PACKAGE_KEY];delete branding.lane;delete branding.dealer;}
     }
     const lifecycle=readOperatorLifecycle(pack.branding);

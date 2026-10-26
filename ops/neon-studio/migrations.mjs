@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import { join, isAbsolute } from 'node:path';
 import { StudioStorageError, canonicalStudioJson, studioStorageFailure } from '../../packages/studio-registry/server/document-contract.mjs';
 
+import { EXTENDED_PRESENTATION_ALTERS, EXTENDED_PRESENTATION_CHECKS, EXTENDED_BRANDING_LIMIT, presentationBrandingCheck } from '../../packages/presentation/server/presentation-storage.mjs';
+
 const schema = 'croupier_studio';
 const hash = text => createHash('sha256').update(text).digest('hex');
 const refuse = (code, status = 409) => { throw new StudioStorageError(code, status); };
@@ -58,6 +60,9 @@ const sources = Object.freeze([
   // need their own funded amendment after this version is applied.
   { version:'019', file:'019-trial-budget-ceilings.sql', deploymentOptional:true, tables:[], indexes:[],
     fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments','gpu_budget_policies'] },
+  // Reader-first rollout: ordinary startup still accepts schemas through 019.
+  { version:'020', file:'020-extended-presentation.sql', deploymentOptional:true, tables:[], indexes:[],
+    fingerprintTables:['operator_packages','operator_branding_drafts'] },
 ]);
 /** Accept only a verified planner result with every required version installed.
  * Deployment-optional versions may be pending; installed versions retain their proofs. */
@@ -105,6 +110,11 @@ function statements(sql) {
 }
 
 function validateSql(source, sql) {
+  if (source.version === '020') {
+    const parts = statements(sql);
+    if (parts.length !== EXTENDED_PRESENTATION_ALTERS.length || parts.some((part,index) => part.replace(/\s+/g,' ') !== EXTENDED_PRESENTATION_ALTERS[index])) refuse('studio_migration_invalid_source',422);
+    return;
+  }
   if (source.version === '015' || source.version === '017' || source.version === '019') {
     const parts = statements(sql), expected = source.version === '019'
       ? [...movingCapacityAlters(150000000), budgetAlter(60000000)]
@@ -307,7 +317,19 @@ async function inspect(client, migrations, objects) {
     if (matches.length !== 1 || matches[0].definition !== movingBudgetDefinition(15000000)) refuse('studio_migration_structure_mismatch');
     movingHistorical = { ...movingPrevious, constraints:movingPrevious.constraints.map(row => row === matches[0] ? {...row,definition:movingBudgetDefinition(5000000)} : row) };
   }
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '017' ? movingCapacityCurrent : row.version === '018' ? dailyBeforeWidening : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  // Only a ledgered 020 may project the two exact extended CHECKs back to
+  // the original 005/007 definitions. Source/history records stay unchanged.
+  let brandingHistorical = objects;
+  if (installed.some(row => row.version === '020')) {
+    const replacements = new Map();
+    for (const {table,name} of EXTENDED_PRESENTATION_CHECKS) {
+      const matches = objects.constraints.filter(row => row.table_name === table && row.name === name);
+      if (matches.length !== 1 || matches[0].definition !== presentationBrandingCheck(EXTENDED_BRANDING_LIMIT)) refuse('studio_migration_structure_mismatch');
+      replacements.set(matches[0],{...matches[0],definition:presentationBrandingCheck(8000)});
+    }
+    brandingHistorical = {...objects,constraints:objects.constraints.map(row => replacements.get(row) ?? row)};
+  }
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(['005','007'].includes(row.version) ? brandingHistorical : row.version === '013' ? movingHistorical : row.version === '014' ? movingPrevious : row.version === '015' ? movingCapacityPrevious : row.version === '017' ? movingCapacityCurrent : row.version === '018' ? dailyBeforeWidening : row.version === '011' ? budgetPrevious : evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
   return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply };
 }
 

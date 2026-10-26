@@ -7,6 +7,8 @@
 import { BlackjackCoreError, newGame, publicView, step } from '../core.mjs';
 import { verifyShoe } from '../shoe-proof.mjs';
 import { LockSetExceeded, TableError, WalletDenied, fingerprint, ledgerKey, tickIdOf } from './ports.mjs';
+import { presentationEvents } from '../../../partner-presentation.mjs';
+import { assertNativeRoomSequenceBudget, NATIVE_ROOM_MATERIAL_PREFIX } from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
 
 export const TABLE_CONTRACT = 'blackjack-table/1';
 export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
@@ -108,10 +110,23 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     contract: PRESENTATION_CONTRACT, kind, op, action, windowId: r.windowId, configVersion: r.configVersion,
     before, after: kind === 'window' ? null : publicView(r.game) });
 
+  // Match the outbox reader's raw instruction generator before any durable
+  // state/outbox commit. A failure rolls back engine, wallet and audit too.
+  function assertNativePresentation(cfg, presentation, draws) {
+    if (typeof cfg.material?.revision !== 'string' || !cfg.material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX)) return;
+    if (cfg.leadMs !== cfg.material.leadMs || cfg.cardMs !== cfg.material.cardMs || cfg.language !== cfg.material.language)
+      throw Object.assign(new Error('native_room_sequence_unsupported'), { code: 'native_room_sequence_unsupported', statusCode: 422 });
+    const steps = presentation.kind === 'window' ? presentationEvents(null, null, 'collect')
+      : presentationEvents(presentation.before, presentation.after, presentation.op, { action: presentation.action });
+    assertNativeRoomSequenceBudget({ material: cfg.material, steps, draws, presentationContract: presentation.contract, kind: presentation.kind });
+  }
+
   // Presentation plan (:201-217) without media: a server rule from the frozen config gives the
   // timing, the plan is stored in room state and written to the outbox in this transaction with
   // a stored version. Delivery happens only after COMMIT (deliverOutbox).
   async function present(tx, r, cfg, { out, engineSeq, draws, before }, action = null) {
+    const presentation = publicPresentation('plan', r, { op: out.events.at(-1).type.slice('engine.'.length), action, before });
+    assertNativePresentation(cfg, presentation, draws);
     const startAt = now(), endAt = startAt + cfg.leadMs + draws * cfg.cardMs;
     const plan = { id: random.uuid(), startAt, endAt, turnAt: endAt };
     r.plan = plan;
@@ -121,16 +136,18 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       { planId: plan.id, language: cfg.language, startAt, endAt, status: 'scheduled; not a playback acknowledgement' }, engineSeq);
     await tx.outbox.put({ roomId: r.roomId, auditSeq: seq, talkId: plan.id, ver,
       payload: { roundId: r.roundId, planId: plan.id, language: cfg.language, startAt, endAt, events: out.publicEvents,
-        presentation: publicPresentation('plan', r, { op: out.events.at(-1).type.slice('engine.'.length), action, before }) } });
+        presentation } });
   }
 
   // K04: a committed step without a presentation plan (collect, a newly opened betting window). It
   // never touches r.plan or any deadline; talkId is derived from the stored round/window identity.
   async function presentState(tx, r, cfg, kind, auditSeq, extra = {}) {
+    const presentation = publicPresentation(kind, r, extra);
+    if (kind === 'window') assertNativePresentation(cfg, presentation, 0);
     const ver = ++r.presentationVer, at = now();
     await tx.outbox.put({ roomId: r.roomId, auditSeq, talkId: `${kind === 'window' ? r.windowId : r.roundId}:${kind}`, ver,
       payload: { roundId: kind === 'window' ? null : r.roundId, planId: null, language: cfg.language, startAt: at, endAt: at, events: [],
-        presentation: publicPresentation(kind, r, extra) } });
+        presentation } });
   }
 
   async function createRoom(tx, roomId) {

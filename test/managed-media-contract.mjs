@@ -67,3 +67,46 @@ test('the complete portable package validation import graph has no Node dependen
   await visit(new URL('../packages/presentation/contracts/presentation-layers.mjs',import.meta.url));
   assert.ok(visited.size>=4);
 });
+
+import {createHash} from 'node:crypto';
+import {mediaTimingSpeechIdentity} from '../packages/presentation/contracts/media-timing.mjs';
+function measuredRecord({withSpeech=false}={}) {
+  const row=record();
+  if(withSpeech)Object.assign(row.classification,{eventId:'speak.goodluck',kind:'speech',situation:'goodluck',playback:'once',
+    recordedSpeech:{schemaVersion:1,dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'Inspelad testreplik.',
+      videoSha256:row.sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}}});
+  row.mediaTiming={schemaVersion:1,mediaId:row.id,sha256:row.sha256,size:row.size,
+    recordedSpeechIdentitySha256:withSpeech?createHash('sha256').update(mediaTimingSpeechIdentity(row.classification.recordedSpeech)).digest('hex'):null,
+    video:{trackId:1,frameCount:72,fps:24,firstPtsUs:0,lastPtsUs:2958333,endUs:3000000},
+    audio:withSpeech?[{trackId:2,firstPtsUs:0,endUs:3200000}]:[],endUs:withSpeech?3200000:3000000,audioTailUs:withSpeech?200000:0};
+  return row;
+}
+test('optional timing survives portable and server reads without changing old media or speech approvals',()=>{
+  for(const withSpeech of [false,true]){
+    const input=measuredRecord({withSpeech}),before=structuredClone(input);
+    const portable=validateManagedStudioMedia(input),server=validateStudioMedia(input);
+    assert.deepEqual(portable,server);assert.deepEqual(server.mediaTiming,input.mediaTiming);
+    assert.deepEqual(input,before);
+    if(withSpeech)assert.deepEqual(server.classification.recordedSpeech.recording,{status:'pending'});
+  }
+  assert.equal(Object.hasOwn(validateStudioMedia(record()),'mediaTiming'),false);
+});
+test('timing byte binding fails in all readers and changed speech digests fail at the server boundary',()=>{
+  for(const mutate of [
+    r=>{r.sha256='d'.repeat(64);r.pathname=r.pathname.replace(sha256,r.sha256);},
+    r=>{r.id='30000000-0000-4000-8000-000000000001';r.pathname=r.pathname.replace(id,r.id);},
+    r=>r.size++,r=>r.mediaTiming.video.frameCount++,
+  ]){
+    const input=measuredRecord({withSpeech:true});mutate(input);
+    assert.throws(()=>validateManagedStudioMedia(input));assert.throws(()=>validateStudioMedia(input));
+  }
+  for(const field of ['exactText','audioSha256','indexSha256','calibrationRevision']){
+    const input=measuredRecord({withSpeech:true});
+    input.classification.recordedSpeech[field]=field.endsWith('Sha256')?'d'.repeat(64):'changed';
+    assert.doesNotThrow(()=>validateManagedStudioMedia(input),'portable reader only validates form and byte tuple');
+    assert.throws(()=>validateStudioMedia(input),e=>e.code==='studio_invalid_media');
+  }
+  const forged=measuredRecord({withSpeech:true});forged.mediaTiming.recordedSpeechIdentitySha256='d'.repeat(64);
+  assert.throws(()=>validateStudioMedia(forged));
+});

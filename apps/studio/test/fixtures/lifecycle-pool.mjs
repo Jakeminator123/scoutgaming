@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../../packages/presentation/server/presentation-storage.mjs';
 const clone=value=>structuredClone(value);
-export function combinedPool(scope) {
+export function combinedPool(scope,{extendedPresentationReady=false}={}) {
   let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], operators: [
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
@@ -9,7 +10,7 @@ export function combinedPool(scope) {
   const sameScope = (row, values) => row.environment_id === values[0] && row.workspace_id === values[1];
   const documentKey = values => JSON.stringify(values.slice(0, 3));
   const result = (rows = [], command = 'SELECT') => ({ rows: clone(rows), command });
-  const pool = { trace, active: 0, setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); }, snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
+  const pool = { trace, active: 0, setExtendedPresentationReady(value) { assert.equal(typeof value,'boolean'); extendedPresentationReady=value; }, setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); }, snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
     const id = ++clientId; let working, unlock, readOnly = false;
     return { async query(sql, values = []) {
       const marker = /\/\* (?:studio|operator-store|presentation-room):([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
@@ -24,6 +25,7 @@ export function combinedPool(scope) {
         pool.active--; if (sql === 'COMMIT' && !readOnly) state = working; working = undefined; unlock?.(); unlock = null; return result([], sql);
       }
       assert.ok(working, 'all domain queries use the repository transaction');
+      if (marker === 'extended-presentation-ready') return result(extendedPresentationReady ? [{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}] : []);
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
       if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2]));
       if (marker === 'list-operators') return result(working.operators.filter(row=>sameScope(row,values)));
