@@ -230,7 +230,7 @@ test('room game config writes negotiate the administration draft field before pr
     const response = await configured.handle(request('room-game-config', { body: JSON.stringify({ action, operatorId: 'north', roomId: 'room-1' }) }));
     assert.equal(response.status, 200);
     assert.deepEqual(seen.presentationDocuments, ['project', 'administration']);
-    assert.deepEqual(seen.presentationMutation, { kind: 'administration', value: { roomGameConfigs: [] } });
+    assert.deepEqual(seen.presentationMutation, [{ kind: 'administration', value: { roomGameConfigs: [] } }, ...(action==='publish'?[{kind:'native-film-planning',value:{}}]:[])]);
     assert.deepEqual(seen.presentationOperatorIds, action === 'publish' ? ['north'] : undefined);
   }
 });

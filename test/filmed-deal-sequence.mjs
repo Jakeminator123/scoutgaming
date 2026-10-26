@@ -202,8 +202,35 @@ test('the timeline is pure, refuses what it cannot time and plays untimed when t
   assert.equal(timeline([dealer(7),box(0,6)]).reason,'order_mismatch','the filmed order (player first) is not the published order');
   assert.equal(timeline([box(1,3),{type:'speak',line:'twentyone'},box(2,4)]).complete,true,'speech between takes: the server plans the same chain, the player anchors the second run');
   assert.equal(planFilmedTimeline({events:[box(0,1)]}).reason,'profile_missing');
-  // a separate shoe clip breaks the join on that side (transitions are not timed here)
+  // Separate shoe clips break the join and require their own measured times.
   const withShoe=planFilmedDealSequence({profile,events,inventory,dealerId:'dragan',transitions:{toShoe:{id:'to'},fromShoe:{id:'from'}}});
-  const timed=timeFilmedDealSequence(withShoe,profile);
+  assert.equal(timeFilmedDealSequence(withShoe,profile).reason,'transition_timing_missing');
+  const timed=timeFilmedDealSequence(withShoe,profile,{transitions:{toShoe:{id:'to',durationMs:2000},fromShoe:{id:'from',durationMs:1000}}});
   assert.deepEqual(timed.steps.map(s=>[s.takeKey,s.joinBefore,s.joinAfter,s.gapAfterMs]),[['7:base',false,true,0],['1:base',true,false,FILMED_TAKE_GAP_MS]]);
+});
+
+test('an explicit reduced bank times its selected shoe clips and exact take, without synthesizing missing variants',()=>{
+  const transitions={toShoe:{id:'to',durationMs:2000},fromShoe:{id:'from',durationMs:1000}};
+  const reduced={videos:inventory.videos.filter(video=>video.sha256===takeOf('1:base').sha256)};
+  const result=planFilmedTimeline({profile,events:[box(0,1)],dealerId:'dragan',inventory:reduced,transitions,startAt:1000,endAt:11000});
+  assert.equal(result.complete,true);assert.equal(result.steps[0].takeKey,'1:base');
+  const step=result.steps[0],duration=frameMs(takeOf('1:base').frames);
+  assert.equal(step.playbackStartMs,700);assert.equal(step.startMs,2700);
+  assert.equal(step.endMs,2700+duration);assert.equal(step.playbackEndMs,3700+duration);
+  assert.equal(result.realEndMs,step.playbackEndMs+FILMED_TAKE_GAP_MS);
+  assert.equal(filmedStepPhase(step,699).waitMs,1);
+  assert.equal(filmedStepPhase(step,step.endMs+500).expired,false,'the full exit clip remains within the step');
+  assert.equal(filmedStepPhase(step,step.playbackEndMs).expired,true);
+  assert.equal(planFilmedTimeline({profile,events:[box(0,1)],dealerId:'dragan',inventory:reduced}).complete,false,'no fabricated iv variant');
+  assert.equal(planFilmedTimeline({profile,events:[box(0,1)],dealerId:'dragan',inventory:{videos:[]},transitions}).complete,false);
+});
+
+test('a fitted chain reserves the complete measured transitions and only compresses the take',()=>{
+  const transitions={toShoe:{id:'to',durationMs:2000},fromShoe:{id:'from',durationMs:1000}};
+  const result=planFilmedTimeline({profile,events:[box(0,1)],dealerId:'dragan',inventory,transitions,startAt:0,endAt:4500});
+  const step=result.steps[0];assert.ok(result.fit.rate>1);
+  assert.equal(step.fit.startMs-step.fit.playbackStartMs,2000);
+  assert.equal(step.fit.playbackEndMs-step.fit.endMs,1000);
+  assert.equal(step.fit.durationMs,step.durationMs/result.fit.rate);
+  assert.equal(result.endAt,4500);
 });

@@ -8,7 +8,7 @@ import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
 import { layerMediaInspectionMessage } from '../../../packages/presentation/contracts/layer-upload-errors.mjs';
 import { inspectMediaTiming } from './layer-media-inspection.mjs';
-import { wrapNativePresentationRepository, presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
+import { wrapNativePresentationRepository, nativeFilmedPlanningMutations, presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
@@ -120,7 +120,8 @@ export function createNativePresentationMutationTransaction({repository,boDb,poo
       if (!Array.isArray(operatorIds) || operatorIds.length !== 1) unavailable();
       const operators=await createOperatorStore({sql:pool,scope});
       for (const operatorId of operatorIds) {
-        const presentation=readPackagePresentation(await operators.getCurrentPackage(operatorId));
+        const pack=await operators.getCurrentPackage(operatorId),presentation=readPackagePresentation(pack);
+        descriptors.push(...nativeFilmedPlanningMutations(pack));
         if (presentation) descriptors.push({kind:'presentation-package',value:presentation});
       }
     }
@@ -130,6 +131,7 @@ export function createNativePresentationMutationTransaction({repository,boDb,poo
       // Only retained presentations that this deletion republishes matter.
       // An unrelated operator's frozen anchors cannot widen this preflight.
       for(const change of plan.changes){
+        descriptors.push(...nativeFilmedPlanningMutations(change));
         const presentation=readPackagePresentation(change);
         if(presentation)descriptors.push({kind:'presentation-package',value:presentation});
       }
@@ -213,7 +215,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     }
     // Pure frozen-material resolution stays inside the captured SQL snapshot;
     // byte inspection is a separate capability and runs before mutation admission.
-    for (const service of [createRoomGameConfigApi({repository,scope:config.scope,resolveMaterial:resolveNativeRoomGameMaterial}),createSharedTableProofReadout({repository,scope:config.scope})]) {
+    for (const service of [createRoomGameConfigApi({repository,scope:config.scope,resolveMaterial:input=>resolveNativeRoomGameMaterial(input,{version:2})}),createSharedTableProofReadout({repository,scope:config.scope})]) {
       for (const [key,handler] of service.handlers) { if(handlers.has(key))unavailable();handlers.set(key,handler); }
     }
     for (const [key, handler] of rooms.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }

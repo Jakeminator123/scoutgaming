@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { requiredNativeFilmedTakes } from '../../packages/presentation/runtime/filmed-deal-coverage.mjs';
 import { cloudPresentationFixture } from '../../apps/studio/test/fixtures/cloud-presentation.mjs';
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { bindFilmedBank } from '../../packages/presentation/contracts/filmed-bank-bindings.mjs';
@@ -81,4 +82,34 @@ export function nativeRoomMaterialChoicesFixture({language='sv',speechSchemaVers
   primary.project.lines.push(...alternate.project.lines);
   primary.recapture();
   return primary;
+}
+
+/** Add explicitly selected, measured synthetic shoe clips; optionally retain
+ * only the native producer's reachable exact takes. Never a real-media proof. */
+export function withNativeFilmTransitions(f,{toShoe=true,fromShoe=true,reduce=true}={}) {
+  const dealerId=f.profile.dealerId??f.input.package?.dealerId??f.presentation.registeredDealers[0].id;
+  const line=f.presentation.playback.lines.find(row=>row.dealerId===dealerId&&row.eventId==='transition.shoe');
+  const transitions={toShoe:null,fromShoe:null};
+  for(const [direction,situation,frames,startPose,endPose,n] of [
+    ['toShoe','to-shoe',48,'VILA','REDO',1],['fromShoe','from-shoe',24,'REDO','VILA',2]]) {
+    if(!(direction==='toShoe'?toShoe:fromShoe))continue;
+    const row=structuredClone(f.records.find(item=>item.classification.kind==='action'));
+    row.id=`40000000-0000-4000-8000-00000000000${n}`;
+    row.sha256=hash('synthetic native transition '+dealerId+situation);
+    row.pathname=`croupier/media/dealers/${dealerId}/review/uploads/${row.id}/${row.sha256}.mp4`;
+    Object.assign(row.classification,{eventId:'transition.shoe',situation,startPose,endPose});
+    measuredFixtureRecord(row,{frames}); f.records.push(row);
+    line.variants.push({...structuredClone(line.variants[0]),id:`${dealerId}.transition.shoe.slot.${situation}`,videoGenerationId:row.id});
+    transitions[direction]=row;
+  }
+  if(reduce) {
+    const coverage=requiredNativeFilmedTakes({profile:f.profile,dealerId,transitions});
+    if(!coverage.complete)throw Error(coverage.reason);
+    const required=new Set(coverage.requiredTakeKeys),excluded=new Set(f.profile.takes.filter(t=>!required.has(t.key)).map(t=>t.sha256));
+    f.records.splice(0,f.records.length,...f.records.filter(row=>!excluded.has(row.sha256)));
+    const ids=new Set(f.records.map(row=>row.id));
+    for(const item of f.presentation.playback.lines)for(const variant of item.variants)
+      if(variant.videoGenerationId&&!ids.has(variant.videoGenerationId))variant.videoGenerationId=null;
+  }
+  f.recapture();return f;
 }

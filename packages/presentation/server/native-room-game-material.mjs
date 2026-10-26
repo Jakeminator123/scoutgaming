@@ -9,24 +9,23 @@ import { normalizeMediaTiming, mediaTimingSpeechIdentity } from '../contracts/me
 import { recordedSpeechForVideo } from '../contracts/recorded-speech.mjs';
 import { SPEECH_SLOT_IDS, speechSlotEventId, speechSlotStandard } from '../contracts/speech-slot-bindings.mjs';
 import { transitionClipsForDealer } from '../runtime/shoe-transitions.mjs';
+import { requiredNativeFilmedTakes } from '../runtime/filmed-deal-coverage.mjs';
+import { NATIVE_ROOM_MATERIAL_V2_PREFIX } from '../contracts/native-room-filmed-planning.mjs';
 import { FILMED_OPEN_LEAD_MS, FILMED_TAKE_GAP_MS, FILMED_HANDOVER_FRAMES } from '../runtime/filmed-deal-timeline.mjs';
 import { validateRoomGameMaterial } from '../contracts/room-game-config.mjs';
 import { NATIVE_ROOM_MATERIAL_PREFIX, NATIVE_ROOM_PRESENTATION_CONTRACT, NATIVE_ROOM_SPEECH_SLOTS } from '../contracts/native-room-game-budget.mjs';
 
 export { NATIVE_ROOM_MATERIAL_PREFIX } from '../contracts/native-room-game-budget.mjs';
 const requiredSpeechSlots = NATIVE_ROOM_SPEECH_SLOTS;
-const expectedTakes = [...['1','2','3','4','5','6','7','dealer'].flatMap(target => ['', 'i', 'v', 'iv'].map(variant => `${target}:${variant}`)), 'hole:', 'hole:i', 'flip:'].sort();
 const digest = value => createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fail = reason => { const error = new StudioStorageError('studio_room_game_material_unavailable', 422); error.reason = reason; throw error; };
-const same = (a,b) => canonicalStudioJson(a) === canonicalStudioJson(b);
 const max = values => Math.max(0, ...values);
 
 // Versioned assumptions for the existing shared-table producer, not arbitrary
 // fixture timings. A changed contract/topology must be reviewed before publishing.
-function compatible(profile) {
-  if (NATIVE_ROOM_PRESENTATION_CONTRACT !== 'blackjack-presentation/1'
-    || !same(profile.takes.map(t => `${t.target}:${t.variant}`).sort(), expectedTakes)) fail('native_material_contract_unsupported');
+function compatible() {
+  if (NATIVE_ROOM_PRESENTATION_CONTRACT !== 'blackjack-presentation/1') fail('native_material_contract_unsupported');
 }
 function placement(take) {
   const box = Number(take.target) - 1;
@@ -40,8 +39,9 @@ function placement(take) {
  * or outer package revision in the semantic material fingerprint.
  * The caller still owns current-record/CAS checks and runtime readiness.
  */
-export function resolveNativeRoomGameMaterial({package:pack, room, language} = {}) {
+export function resolveNativeRoomGameMaterial({package:pack, room, language} = {}, {version=1} = {}) {
   try {
+    if (![1,2].includes(version)) fail('native_material_contract_unsupported');
     if (!['en','sv'].includes(language) || !isPresentationRoom(room) || room.state !== 'live' || roomGame(room) !== 'blackjack'
       || pack?.operatorId !== room.operatorId || !Number.isSafeInteger(pack.revision) || pack.revision < 1
       || !pack.tables?.includes(room.id) || !pack.games?.includes('blackjack') || !pack.lanes?.includes(room.presentationLaneId)) fail('native_material_room_mismatch');
@@ -59,6 +59,14 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
     const byId = new Map(records.map(row => [row.id,row])), byTake = new Map(), durations = new Map(), speeches = new Map();
     const inventory = {videos:records.map(row => ({...row, dealer:dealerId, available:true, integrity:'verified', bytes:row.size}))};
     const transitions = transitionClipsForDealer(project, inventory, dealerId);
+    // A broken explicit standard must not silently choose embedded variants.
+    const transitionLine=project.lines.find(line=>line.dealerId===dealerId&&line.eventId==='transition.shoe');
+    for(const [direction,situation] of version===2?[['toShoe','to-shoe'],['fromShoe','from-shoe']]:[]) {
+      const selected=transitionLine?.variants.find(row=>row.id===`${dealerId}.transition.shoe.slot.${situation}`);
+      if(selected?.videoGenerationId&&!transitions[direction])fail('native_material_transition_pose_missing');
+    }
+    const coverage=version===2?requiredNativeFilmedTakes({profile,dealerId,transitions}):null;
+    if(coverage&&!coverage.complete)fail('native_material_contract_unsupported');
     const selectedTransitions = new Set(Object.values(transitions).filter(Boolean).map(row => row.id));
     const takeByHash = new Map(profile.takes.map(take => [take.sha256,take]));
     const sizes = new Map();
@@ -104,7 +112,8 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
         }
       } else if (metadata.kind !== 'idle' || metadata.eventId !== 'idle.ready') fail('native_material_slot_unsupported');
     }
-    if (byTake.size !== profile.takes.length) fail('native_material_bank_incomplete');
+    const requiredTakeKeys=coverage?.requiredTakeKeys??profile.takes.map(take=>take.key);
+    if (requiredTakeKeys.some(key=>!byTake.has(key))) fail('native_material_bank_incomplete');
     for (const lineId of requiredSpeechSlots) {
       const variant = speechSlotStandard(project,dealerId,speechSlotEventId(lineId),lineId);
       if (!variant || !speeches.has(variant.videoGenerationId) || speeches.get(variant.videoGenerationId).lineId !== lineId) fail('native_material_speech_slot_missing');
@@ -125,10 +134,12 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
     const cardMs = Math.ceil((dealUs + transitionUs + FILMED_TAKE_GAP_MS*1000)/1000);
     if (leadMs > 60000 || cardMs > 60000) fail('native_material_timing_limit');
     const media = records.map(({id,sha256}) => ({id,sha256})).sort((a,b) => a.id.localeCompare(b.id));
-    const revision = NATIVE_ROOM_MATERIAL_PREFIX + digest({contract:NATIVE_ROOM_PRESENTATION_CONTRACT,
+    const film=version===2?{schemaVersion:1,profileId:profile.id,transitions:Object.fromEntries(Object.entries(transitions)
+      .map(([direction,row])=>[direction,row?{id:row.id,sha256:row.sha256,durationMs:durations.get(row.id)/1000}:null]))}:null;
+    const revision = (version===2?NATIVE_ROOM_MATERIAL_V2_PREFIX:NATIVE_ROOM_MATERIAL_PREFIX) + digest({contract:NATIVE_ROOM_PRESENTATION_CONTRACT,
       room:{id:room.id,operatorId:room.operatorId,presentationLaneId:room.presentationLaneId,gameLaneId:room.gameLaneId},
-      presentationSha256:digest(presentation), profileSha256:digest(profile), language, leadMs,cardMs});
-    return validateRoomGameMaterial({revision,dealerId,language,leadMs,cardMs,media},{dealerId,language});
+      presentationSha256:digest(presentation), profileSha256:digest(profile), language, leadMs,cardMs,...(film?{film}:{})});
+    return validateRoomGameMaterial({revision,dealerId,language,leadMs,cardMs,media,...(film?{film}:{})},{dealerId,language});
   } catch (error) {
     if (error?.code === 'studio_room_game_material_unavailable') throw error;
     fail('native_material_invalid_publication');

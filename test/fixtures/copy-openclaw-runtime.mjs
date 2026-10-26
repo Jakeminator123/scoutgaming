@@ -87,6 +87,8 @@ export async function copyOpenClawRuntime(root) {
     'packages/presentation/server/presentation-package.mjs',
     'packages/presentation/server/presentation-storage.mjs',
     'packages/presentation/server/native-room-game-material.mjs',
+    'packages/presentation/server/native-filmed-readiness-context.mjs',
+    'packages/presentation/runtime/filmed-deal-coverage.mjs',
     'packages/presentation/server/room-game-publication.mjs',
     'packages/presentation/server/saved-game-policy.mjs',
     'packages/shared/media-file-types.mjs',

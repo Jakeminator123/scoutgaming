@@ -311,11 +311,11 @@ test('J08 HTTP boundary preserves private reads, origin protection and package r
   const draftResponse=await http.handle(request(body));assert.equal(draftResponse.status,200);const draft=await draftResponse.json();
   // Both writes declare the administration draft field so the v23 preflight runs before SQL.
   const drafts={kind:'administration',value:{roomGameConfigs:[]}};
-  assert.deepEqual(transactions[0],{presentationDocuments:['project','administration'],presentationMutation:drafts});
+  assert.deepEqual(transactions[0],{presentationDocuments:['project','administration'],presentationMutation:[drafts]});
   const publishBody={action:'publish',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:draft.administrationRevision,expectedPackageRevision:1,expectedDraftRevision:draft.draft.revision};
   const forged=request(publishBody);forged.headers.set('origin','https://other.invalid');assert.equal((await http.handle(forged)).status,403);assert.equal(f.snapshot().packages.length,1);
   const published=await http.handle(request(publishBody));assert.equal(published.status,200);assert.equal((await published.json()).published.packageRevision,2);
-  assert.deepEqual(transactions[1],{presentationDocuments:['project','administration'],presentationMutation:drafts,presentationOperatorIds:['north']});
+  assert.deepEqual(transactions[1],{presentationDocuments:['project','administration'],presentationMutation:[drafts,{kind:'native-film-planning',value:{}}],presentationOperatorIds:['north']});
 });
 
 test('J08 native material dry-run refuses publication without a resolver and preserves the saved draft',async t=>{

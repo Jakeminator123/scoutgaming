@@ -1,4 +1,7 @@
 import { validateRoomGameMaterial } from './room-game-config.mjs';
+import { nativeRoomFilmedPlanning, isNativeRoomMaterial } from './native-room-filmed-planning.mjs';
+import { planFilmedDealSequence, orderFilmedPresentationEvents } from '../runtime/filmed-deal-sequence.mjs';
+export { isNativeRoomMaterial } from './native-room-filmed-planning.mjs';
 
 export const NATIVE_ROOM_MATERIAL_PREFIX = 'native-film-v1-';
 export const NATIVE_ROOM_PRESENTATION_CONTRACT = 'blackjack-presentation/1';
@@ -10,9 +13,9 @@ const fail = () => { throw Object.assign(Error('native_room_sequence_unsupported
 // native plan. Existing non-native configurations retain their own contract.
 // This guard never chooses cards, changes deadlines or performs any I/O.
 export function assertNativeRoomSequenceBudget({material,steps,draws,presentationContract,kind='plan'} = {}) {
-  if (typeof material?.revision !== 'string' || !material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX)) return false;
+  if (!isNativeRoomMaterial(material)) return false;
   try { validateRoomGameMaterial(material,{dealerId:material.dealerId,language:material.language}); } catch { fail(); }
-  if (!/^native-film-v1-[a-f0-9]{64}$/.test(material.revision) || presentationContract !== NATIVE_ROOM_PRESENTATION_CONTRACT || !Array.isArray(steps) || steps.length > 128
+  if (!/^native-film-v[12]-[a-f0-9]{64}$/.test(material.revision) || presentationContract !== NATIVE_ROOM_PRESENTATION_CONTRACT || !Array.isArray(steps) || steps.length > 128
     || !Number.isSafeInteger(draws) || draws < 0) fail();
   if (kind === 'window') {
     if (draws !== 0 || steps.length !== 2 || steps.some(event => !event || typeof event !== 'object' || Array.isArray(event)) || steps[0]?.type !== 'speak'
@@ -41,5 +44,9 @@ export function assertNativeRoomSequenceBudget({material,steps,draws,presentatio
   if (counts.deal !== draws || counts.settle && counts.turn) fail();
   if (spoken.length === 2 && !(spoken[0] === 'goodluck' && (spoken[1] === 'insurance' || outcomes.has(spoken[1]))
     || spoken[0] === 'double' && outcomes.has(spoken[1]))) fail();
+  try {
+    const planning=nativeRoomFilmedPlanning(material);
+    if(planning&&!planFilmedDealSequence({...planning,events:orderFilmedPresentationEvents(steps)}).complete)fail();
+  } catch { fail(); }
   return true;
 }

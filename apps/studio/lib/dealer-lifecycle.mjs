@@ -1,3 +1,4 @@
+import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
 import {validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -105,7 +106,7 @@ export async function changeDealerLifecycle({repository,mutationTransaction,stil
     ...(plan?[{kind:'administration',value:plan.administration}]:[]),
     ...(plan?.packageChanges??[]).flatMap(change=>{
       const presentation=readPackagePresentation(change);
-      return presentation?[{kind:'presentation-package',value:presentation}]:[];
+      return [...nativeFilmedPlanningMutations(change),...(presentation?[{kind:'presentation-package',value:presentation}]:[])];
     }),
     ...records.filter(row=>row.classification.dealerId===body.dealerId&&!row.retainedBank).map(row=>({metadata:row.classification}))];
   return mutationTransaction(()=>repository.transaction(async()=>{

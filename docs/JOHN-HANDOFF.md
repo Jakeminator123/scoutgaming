@@ -1,5 +1,18 @@
 # Aktuell handoff — Scoutgaming
 
+## Nåbar klipptäckning med fryst filmplanering — 26 oktober, nästa etapp
+
+Nästa kodsteg ligger på `codex/reachable-filmed-coverage-20261026`. Nytt native-material använder samma planerare för nödvändiga tagningar, verklig precommit-kontroll och spelarens tidslinje. 180 kommandovittnen täcker producentens lokala grannar över alla sju platser, split, vändning och dealerns dragloop. PAOW/Dragan ger 34/18/18/10 tagningar utan/till/från/båda skotransitionerna; detta är profilbundna provresultat, inte framtida antalkrav. Batchplanering validerar profilen en gång utan cache eller extern valideringsgenväg.
+
+`native-film-v2` fryser profil, exakt media och skotransitionernas uppmätta tider i befintlig config. Klientens flagga kan inte byta topologi. Sekvensvakten planerar verkliga händelser före atomisk commit, och klienten tidsätter rätt tagning samt hela före-/efterklipp. Serverkort och deadlines består. Historiskt v1-material återberäknas fortsatt med sin ursprungliga modell. V31 `nativeFilmedPlanning: frozen-topology-v2` krävs före nya v2-writes och förkontrolleras även vid ompublicering med shared-bindningar; contextgrinden gör ingen I/O under SQL. Ingen DDL eller generellt nytt startkrav.
+
+Befintliga Admin-klippdetaljer har det uttryckliga valet **Koppla för delat bord**. Det kopplar nåbara original enligt valda skoklipp, bevarar andra kopplingar och författarinställningar och ändrar endast utkast. Fullbankens tidigare val finns kvar. Kompatibla uppladdade skoklipp visar skofacken före första koppling. Tomma canonical-referenser kan återbindas utan att skriva över andra inställningar.
+
+Lokal verifiering på Node24.21.0, högst fyra arbetare: integrerad producent/planerare/koordinator/publicering 94 godkända prov, ett separat obligatoriskt Chrome-prov lämnat till CI; klient/API/importgraf 242/242; kapabiliteter 29/29; readiness/API/livscykel 347 slutligt godkända genom riktad omkörning efter två rättningar; Admin/återbindning 29/29 samt övriga 33 oförändrat godkända Adminprov. Admin TypeScript passerar. Oberoende review hittade två rättade kompatibilitetsfel: v1:s historiska skofallback och återbindning av tom variant. Efterföljande readiness-/tidslinjegranskning har inga blockerare; numeriskt prov över 1 440 kombinationer höll den konservativa budgeten. Detta är kod- och syntetiska beteendeprov, inte AV-/molnacceptans.
+
+**60 % = 12/20 kvarstår.** J08 är närmaste självständiga aktivitetsacceptans men kräver fortfarande sammanhängande faktisk Admin-/publicerings-/versionsacceptans med godkänt material. Den tidigare PAOW-bankens pending review ändras inte. Johns Bet, produktionsmedia, produktionsflaggor och källfiler har inte ändrats i utvecklingsarbetet. CI/PR och eventuell isolerad v31-stagingkontroll ska redovisas separat i leveranskvittot; inga nya godkännanden följer av denna kod. Privata testloggar finns i chattens `visualizations/2026/10/26/01a17a07-9ae1-71f2-a1b8-d0bf37a9a416/`.
+
+
 ## Kevin-anpassning och isolerad PAOW-repetition — 26 oktober kväll
 
 Jakobs senaste styrning är selektiv konvertering av Kevin-funktioner till mains befintliga modell. Äldre tester, instruktioner och PAOW-sekvenser är inte automatiska bevarandekrav. Den frysta PAOW-banken nedan är ett jämförelseprov, inte ett beslut att framtida implementation måste använda alla 35 tagningar.

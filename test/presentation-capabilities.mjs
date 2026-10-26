@@ -4,6 +4,23 @@ import { presentationCapabilitiesResponse } from '../services/game/presentation-
 import { validatePresentationCapabilities, presentationCapabilitiesForVersion } from '../packages/presentation/capability-contract.mjs';
 const endpoint = 'https://engine.example.invalid/api/presentation/capabilities';
 
+test('v31 negotiates frozen native film planning while older readers keep their exact contracts',async()=>{
+  const headers={'X-Presentation-Capability-Version':'31'};
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);
+  const text=await response.text();assert.ok(Buffer.byteLength(text)<=2048);
+  const cap=validatePresentationCapabilities(JSON.parse(text),{expectedVersion:31});
+  assert.equal(cap.nativeFilmedPlanning,'frozen-topology-v2');
+  assert.equal(cap.recordedEmbeddedAv,'embedded-mp4-av-v2');
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));
+  assert.equal(head.status,200);assert.equal(await head.text(),'');
+  const previous=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'30'}})).json();
+  assert.equal(Object.hasOwn(previous,'nativeFilmedPlanning'),false);
+  assert.deepEqual(previous,JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(30))));
+  assert.throws(()=>validatePresentationCapabilities({...cap,nativeFilmedPlanning:'legacy'}, {expectedVersion:31}),{code:'presentation_capability_invalid'});
+});
+
 test('v30 serves exact embedded MP4 AV capability for GET and HEAD while v29 remains unchanged',async()=>{
   const headers={'X-Presentation-Capability-Version':'30'};
   const response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
@@ -43,7 +60,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '31', '030', '30, 30', '29, 29', '029', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '32', '031', '31, 31', '030', '30, 30', '29, 29', '029', '28, 28', '028', '27, 27', '027', '26, 26', '25, 25', '24, 24', '23, 23', '22, 22', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }

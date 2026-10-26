@@ -1,9 +1,10 @@
+import {assertNativeFilmedPlanningReady} from '../../../packages/presentation/server/native-filmed-readiness-context.mjs';
 import {createHash} from 'node:crypto';
 import {nativeRoomMaterialFixture,measuredFixtureRecord} from '../../../test/fixtures/native-room-game-material.mjs';
 import {filmedPresentationFixture} from '../../../test/fixtures/filmed-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { wrapNativePresentationRepository, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
+import { wrapNativePresentationRepository, NATIVE_FILMED_PLANNING_MUTATION, nativeFilmedPlanningMutations, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
 import { createNativePresentationMutationTransaction, nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
 import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
@@ -1381,4 +1382,70 @@ test('embedded AV preflight permissions are snapshotted and cannot be introduced
     await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no edited descriptor'),descriptor),blocked);
   },descriptor);
   assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+
+test('frozen native film publication requires exact v31 before either transaction lock',async()=>{
+  for(const version of [30,31]){
+    let productLocks=0,studioLocks=0,inProduct=false,inStudio=false,admitted=0;
+    const f=fixture({fetcher:async(_url,{headers})=>{
+      assert.equal(inProduct,false);assert.equal(inStudio,false);
+      assert.equal(headers['X-Presentation-Capability-Version'],'31');
+      return Response.json(presentationCapabilitiesForVersion(version));
+    }});
+    f.repository.transaction=async work=>{studioLocks++;inStudio=true;try{return await work(f.repository);}finally{inStudio=false;}};
+    const mutate=createNativePresentationMutationTransaction({repository:f.wrapped,
+      boDb:{async transaction(work){productLocks++;inProduct=true;try{
+        return await f.wrapped.transaction(work);
+      }finally{inProduct=false;}}}});
+    const write=()=>mutate(()=>{assertNativeFilmedPlanningReady();admitted++;},
+      {presentationMutation:NATIVE_FILMED_PLANNING_MUTATION});
+    if(version===30)await assert.rejects(write,blocked);else await write();
+    assert.equal(productLocks,version===31?1:0);assert.equal(studioLocks,version===31?1:0);
+    assert.equal(admitted,version===31?1:0);assert.equal(f.fetches.length,1);
+    assert.throws(assertNativeFilmedPlanningReady,blocked);
+  }
+});
+
+test('legacy preflight cannot add native filmed topology after SQL starts or retain expired admission',async()=>{
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  await f.wrapped.withMutationContext(async()=>{
+    assert.throws(assertNativeFilmedPlanningReady,blocked);
+    await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no nested v31 authority'),NATIVE_FILMED_PLANNING_MUTATION),blocked);
+  },{metadata:{dealerId:'astrid',recordedSpeech:{schemaVersion:2,sourceKind:'embedded-mp4-av'}}});
+  assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'30');
+  let release,continuation;
+  const wait=new Promise(resolve=>{release=resolve;});
+  await f.wrapped.withMutationContext(async()=>{
+    assertNativeFilmedPlanningReady();
+    continuation=wait.then(()=>assert.throws(assertNativeFilmedPlanningReady,blocked));
+  },NATIVE_FILMED_PLANNING_MUTATION);
+  release();await continuation;
+  assert.equal(f.fetches.length,2);
+});
+
+test('native package preflight discovers shared bindings before SQL while unbound packages keep legacy admission',async()=>{
+  const scope={environment:'test',workspaceId:'studio'};
+  for(const bound of [false,true])for(const version of [30,31]){
+    let locks=0,reads=0,admitted=0,inSql=false;
+    const f=fixture({fetcher:async(_url,{headers})=>{
+      assert.equal(inSql,false);assert.equal(headers['X-Presentation-Capability-Version'],'31');
+      return Response.json(presentationCapabilitiesForVersion(version));
+    }});
+    const branding=bound?{roomGameConfigVersions:{'room-1':'config-frozen'}}:{};
+    const pool={async query(sql,params){
+      assert.equal(inSql,false);assert.match(sql,/operator-store:current-package/);
+      assert.deepEqual(params,[scope.environment,scope.workspaceId,'north']);reads++;
+      return {rows:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,
+        lanes:JSON.stringify(['lane']),games:JSON.stringify(['blackjack']),tables:JSON.stringify(['room-1']),branding:JSON.stringify(branding),published_at_ms:1}]};
+    }};
+    const mutate=createNativePresentationMutationTransaction({repository:f.wrapped,pool,scope,
+      boDb:{async transaction(work){locks++;inSql=true;try{return await work();}finally{inSql=false;}}}});
+    const write=()=>mutate(()=>{if(bound)assertNativeFilmedPlanningReady();else assert.throws(assertNativeFilmedPlanningReady,blocked);admitted++;},
+      {presentationOperatorIds:['north']});
+    if(bound&&version===30)await assert.rejects(write,blocked);else await write();
+    assert.equal(locks,bound&&version===30?0:1);assert.equal(admitted,locks);assert.equal(reads,1);
+    assert.equal(f.fetches.length,bound?1:0);
+    assert.deepEqual(nativeFilmedPlanningMutations({branding}),bound?[NATIVE_FILMED_PLANNING_MUTATION]:[]);
+  }
 });

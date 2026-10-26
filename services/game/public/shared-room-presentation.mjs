@@ -4,6 +4,7 @@ import { layoutGameOverlay, BLACKJACK_COMPACT_QUERY } from '../../../packages/pr
 import { calibration } from '../../../packages/presentation/contracts/calibration.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { planFilmedTimeline, filmedStepPhase } from '../../../packages/presentation/runtime/filmed-deal-timeline.mjs';
+import { nativeRoomFilmedPlanning } from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
 import { resolvePlayerSelection, applyTableColor } from '../../../packages/presentation/runtime/player-choices.mjs';
 
 const colorOwner=Symbol('shared-room-color');
@@ -34,7 +35,12 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
   let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
   const timelineFor=presentation=>{
     if(!filmedProfile||presentation.kind!=='plan'||!Number.isFinite(presentation.startAt))return null;
-    const timeline=planFilmedTimeline({profile:filmedProfile,dealerId:dealerId??'filmed',events:presentation.events,startAt:presentation.startAt,endAt:presentation.endAt});
+    let planning={profile:filmedProfile,dealerId:dealerId??'filmed'};
+    if(media.filmedMaterial) {
+      try { planning=nativeRoomFilmedPlanning(media.filmedMaterial); }
+      catch { onError('shared_room_media_unavailable');return null; }
+    }
+    const timeline=planFilmedTimeline({...planning,events:presentation.events,startAt:presentation.startAt,endAt:presentation.endAt});
     return timeline.complete?timeline:null;
   };
   const pause=(ms,signal)=>new Promise((resolve,reject)=>{
@@ -78,7 +84,8 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
           const step=timeline?.eventIndex.get(index)??null;let timing={};
           if(step){
-            if(!inRun&&index>0)shiftMs=Math.max(shiftMs,elapsed()-(fitted?step.fit:step).startMs);
+            const placed=fitted?step.fit:step;
+            if(!inRun&&index>0)shiftMs=Math.max(shiftMs,elapsed()-(placed.playbackStartMs??placed.startMs));
             inRun=true;
             let phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});
             if(phase.waitMs>0){await pause(phase.waitMs,signal);signal?.throwIfAborted();if(closed)return;phase=filmedStepPhase(step,elapsed()-shiftMs,{fitted});}
@@ -87,8 +94,11 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
               if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);
               continue;
             }
+            // A separate entry clip must play whole. Anchor its exact take after
+            // that clip, preserving the local chain without moving the deadline.
+            if(step.beforeMs)shiftMs=Math.max(shiftMs,elapsed()-placed.playbackStartMs);
             const startMs=phase.startMs+shiftMs;
-            timing={startOffset:phase.seekS,handoverAt:step.handoverMs/1000,...(fitted?{playbackRate:phase.rate}:{}),clockTime:()=>Math.max(0,(elapsed()-startMs)*phase.rate/1000)};
+            timing={startOffset:step.beforeMs?0:phase.seekS,handoverAt:step.handoverMs/1000,...(fitted?{playbackRate:phase.rate}:{}),clockTime:()=>Math.max(0,(elapsed()-startMs)*phase.rate/1000)};
           } else inRun=false;
           for(const layerEvent of ['backgroundEvent','tableEvent'])composition?.[layerEvent]?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
           let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1;

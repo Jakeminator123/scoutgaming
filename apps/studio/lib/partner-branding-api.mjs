@@ -1,3 +1,4 @@
+import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
 import {validatePresentationBranding} from '../../../packages/presentation/server/presentation-storage.mjs';
 import { createHash } from 'node:crypto';
 import { canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -261,7 +262,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   function publicationMutation(pack) {
     const presentation=readPackagePresentation(pack);
-    return presentation?{kind:'presentation-package',value:presentation}:undefined;
+    return [...nativeFilmedPlanningMutations(pack),...(presentation?[{kind:'presentation-package',value:presentation}]:[])];
   }
   async function checkPublication(context,pack) {
     // Native callers already negotiated this exact operator before SQL. Check

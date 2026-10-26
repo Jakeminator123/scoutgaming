@@ -27,9 +27,33 @@ export function orderFilmedPresentationEvents(published) {
 // Call only with the complete, server-committed presentation instructions for
 // one command. This is presentation selection, never a source of cards/rules.
 export function planFilmedDealSequence({profile,events,inventory,dealerId,transitions={}}={}) {
+  const reason=invalidProfileReason(profile);
+  if (reason) return {profileId:profile?.id??null,complete:false,reason,steps:[]};
+  return planValidatedFilmedDealSequence({profile,events,inventory,dealerId,transitions});
+}
+
+function invalidProfileReason(profile) {
+  if (!profile) return 'profile_missing';
+  try { validateFilmedDealProfile(profile); } catch { return 'profile_invalid'; }
+  return null;
+}
+
+// Synchronous batch of complete commands with one profile validation. The same
+// private core handles single and batch planning; no caller can skip validation
+// or retain a validated closure/cache after profile or inventory changes.
+export function planFilmedDealSequences({profile,eventSequences,inventory,dealerId,transitions={}}={}) {
+  const unavailable=reason=>({profileId:profile?.id??null,complete:false,reason,plans:[]});
+  const reason=invalidProfileReason(profile);
+  if (reason) return unavailable(reason);
+  if (!Array.isArray(eventSequences)) return unavailable('instructions_invalid');
+  const input={profile,inventory,dealerId,transitions};
+  const plans=Array.from(eventSequences,events=>planValidatedFilmedDealSequence({...input,events}));
+  const failure=plans.find(plan=>!plan.complete)??(plans.length?null:planValidatedFilmedDealSequence({...input,events:[]}));
+  return {profileId:profile.id,complete:failure?.complete!==false,reason:failure?.reason??null,plans};
+}
+
+function planValidatedFilmedDealSequence({profile,events,inventory,dealerId,transitions}) {
   const unavailable=reason=>({profileId:profile?.id??null,complete:false,reason,steps:[]});
-  if (!profile) return unavailable('profile_missing');
-  try { validateFilmedDealProfile(profile); } catch { return unavailable('profile_invalid'); }
   if (!Array.isArray(events)||events.length>128||typeof dealerId!=='string'||!dealerId) return unavailable('instructions_invalid');
   const videos=Array.isArray(inventory)?inventory:inventory?.videos;
   if (!Array.isArray(videos)) return unavailable('inventory_missing');

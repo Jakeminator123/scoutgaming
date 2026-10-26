@@ -1,3 +1,4 @@
+import {NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -149,14 +150,14 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : endpoint.action === 'room-game-config'
         // Both actions write administration.roomGameConfigs; negotiate v23 before either SQL lock.
-        ? { presentationDocuments: ['project','administration'], presentationMutation: { kind: 'administration', value: { roomGameConfigs: [] } },
+        ? { presentationDocuments: ['project','administration'], presentationMutation: [{ kind: 'administration', value: { roomGameConfigs: [] } }, ...(body?.action==='publish'?[NATIVE_FILMED_PLANNING_MUTATION]:[])],
           ...(body?.action === 'publish' ? { presentationOperatorIds: [body.operatorId] } : {}) }
         : endpoint.action === 'presentation-room'
-        ? { presentationDocuments: ['project', 'administration'], presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
+        ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
-        : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
+        : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
       // Mail is an effect of committed identity state. Never send a token whose

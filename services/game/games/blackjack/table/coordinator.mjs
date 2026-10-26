@@ -8,7 +8,7 @@ import { BlackjackCoreError, newGame, publicView, step } from '../core.mjs';
 import { verifyShoe } from '../shoe-proof.mjs';
 import { LockSetExceeded, TableError, WalletDenied, fingerprint, ledgerKey, tickIdOf } from './ports.mjs';
 import { presentationEvents } from '../../../partner-presentation.mjs';
-import { assertNativeRoomSequenceBudget, NATIVE_ROOM_MATERIAL_PREFIX } from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
+import { assertNativeRoomSequenceBudget, isNativeRoomMaterial } from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
 
 export const TABLE_CONTRACT = 'blackjack-table/1';
 export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
@@ -113,7 +113,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // Match the outbox reader's raw instruction generator before any durable
   // state/outbox commit. A failure rolls back engine, wallet and audit too.
   function assertNativePresentation(cfg, presentation, draws) {
-    if (typeof cfg.material?.revision !== 'string' || !cfg.material.revision.startsWith(NATIVE_ROOM_MATERIAL_PREFIX)) return;
+    if (!isNativeRoomMaterial(cfg.material)) return;
     if (cfg.leadMs !== cfg.material.leadMs || cfg.cardMs !== cfg.material.cardMs || cfg.language !== cfg.material.language)
       throw Object.assign(new Error('native_room_sequence_unsupported'), { code: 'native_room_sequence_unsupported', statusCode: 422 });
     const steps = presentation.kind === 'window' ? presentationEvents(null, null, 'collect')
