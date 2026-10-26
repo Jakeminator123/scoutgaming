@@ -1,4 +1,13 @@
-// Prose-only paths shared by local checks and CI. Runtime Markdown is not prose.
+// Reviewed documentation paths shared by local checks and CI. Runtime Markdown is not documentation.
+// Migration report data is validated separately; other JSON and future guides stay strict.
+const migrationReports = new Set([
+  "migrering/MASTERPLAN.md",
+  "migrering/STATUS.md",
+  "migrering/status.json",
+  "migrering/jakob-main-migrering/AKTIVITETER.md",
+  "migrering/kevin-ks-migrering/AKTIVITETER.md",
+  "migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md",
+]);
 const guides = new Set([
   "AGENTS.md",
   "CLAUDE.md",
@@ -26,5 +35,5 @@ const guides = new Set([
 export function isDocumentationPath(path) {
   return typeof path === 'string' && !path.includes('\\')
     && !path.split('/').some(part => ['', '.', '..'].includes(part))
-    && (guides.has(path) || /^(?:docs|apps\/studio\/docs)\/.+\.md$/.test(path));
+    && (guides.has(path) || migrationReports.has(path) || /^(?:docs|apps\/studio\/docs)\/.+\.md$/.test(path));
 }

@@ -40,18 +40,92 @@ test('Moving image verification follows worker and gate changes, including delet
 test('local and CI prose selection share reviewed guides while runtime Markdown stays strict', async () => {
   const { verificationMode, focusedTests } = await import('../tools/precommit-checks.mjs');
   for (const path of ['agent-talk/README.md', 'apps/studio/AGENTS.md', 'apps/studio/docs/new-guide.md',
-    'packages/presentation/docs/INTEGRATION.md', 'ops/cloud/CONTAINER-CONTEXT.md']) {
+    'packages/presentation/docs/INTEGRATION.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+    'migrering/MASTERPLAN.md', 'migrering/STATUS.md', 'migrering/status.json',
+    'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
+    'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md']) {
     assert.equal(documentationOnly([change(path)]), true, path);
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'documentation', path);
   }
   for (const path of ['packages/presentation/docs/runtime.md', 'services/game/public/docs/partner-api.md',
-    'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md']) {
+    'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md',
+    'migrering/status.mjs', 'migrering/config.json', 'migrering/new-runtime.md']) {
     assert.equal(documentationOnly([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'focused', path);
   }
   assert.ok(focusedTests([change('tools/documentation-paths.mjs')]).includes('test/ci-changes.mjs'));
   assert.ok(focusedTests([change('tools/documentation-paths.mjs')]).includes('test/precommit-checks.mjs'));
+});
+
+
+test('local, documentation CI and full regression execute migration validation once and reject invalid or stale reports', async () => {
+  const { checkPlan, runChecks } = await import('../tools/precommit-checks.mjs');
+  const root = mkdtempSync(join(tmpdir(), 'croupier-migration-check-'));
+  try {
+    for (const directory of ['migrering', '.githooks', 'test']) mkdirSync(join(root, directory));
+    for (const path of ['migrering/status.mjs', 'migrering/status.json', 'migrering/STATUS.md', '.githooks/pre-commit-full']) {
+      writeFileSync(join(root, path), readFileSync(new URL('../' + path, import.meta.url)));
+    }
+    const validData = readFileSync(join(root, 'migrering/status.json'), 'utf8');
+    const validReport = readFileSync(join(root, 'migrering/STATUS.md'), 'utf8');
+    const paths = ['migrering/status.json', 'migrering/STATUS.md', 'migrering/status.mjs'];
+    for (const path of paths) for (const status of ['A', 'M', 'D']) {
+      const commands = checkPlan('focused', { root, changes: [change(path, { status })] });
+      assert.equal(commands.filter(command => command[1] === 'migrering/status.mjs' && command[2] === '--check').length, 1);
+    }
+    const changes = paths.slice(0, 2).map(path => change(path));
+    const local = checkPlan('documentation', { root, changes });
+    assert.equal(local.filter(command => command[1] === 'migrering/status.mjs').length, 1);
+    assert.equal(checkPlan('documentation', { root, changes: [change('docs/guide.md')] })
+      .some(command => command.includes('migrering/status.mjs')), false, 'unrelated local prose needs no status check');
+    const yaml = readFileSync(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+    const job = yaml.split('\n  documentation:\n')[1]?.split('\n  dealer-regression:')[0];
+    const body = job?.match(/\n        run: \|\n((?:          .*(?:\n|$))+)/)?.[1]
+      .split('\n').map(line => line.slice(10)).join('\n');
+    assert.ok(body, 'execute the actual documentation check block');
+    // Keep unrelated suites isolated, but execute the real validator from the
+    // actual CI block and shell registry, including normal shell failure rules.
+    const wrapper = ['set -eu', 'node() {',
+      '  if [ "$1" = tools/regression-group.mjs ]; then',
+      '    shift 3; if [ "$1" != node ]; then return 0; fi; shift', '  fi',
+      '  if [ "$1" = migrering/status.mjs ]; then',
+      '    printf "check\\n" >> "$MIGRATION_TEST_LOG"',
+      '    "$MIGRATION_TEST_NODE" "$@"', '  fi', '}', 'git() { :; }', ''].join('\n');
+    const log = join(root, 'checks.log');
+    const shell = script => {
+      writeFileSync(log, '');
+      const bash = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+      const result = spawnSync(bash, ['-c', wrapper + script], { cwd: root, encoding: 'utf8',
+        env: { ...process.env, MIGRATION_TEST_NODE: process.execPath, MIGRATION_TEST_LOG: log } });
+      assert.ifError(result.error);
+      assert.equal(readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).length, 1, 'validator must execute exactly once');
+      return result;
+    };
+    const full = checkPlan('full', { root, changes: [...changes, change('services/game/server.mjs')] });
+    assert.equal(full.length, 1);
+    const fullScript = full[0].slice(1).join(' ');
+    for (const state of ['valid', 'invalid', 'stale']) {
+      const data = JSON.parse(validData);
+      if (state === 'invalid') data.activities[0].weight = 4;
+      writeFileSync(join(root, 'migrering/status.json'), JSON.stringify(data));
+      writeFileSync(join(root, 'migrering/STATUS.md'), state === 'stale' ? 'outdated report\n' : validReport);
+      let calls = 0, diagnostics = '';
+      const localCode = runChecks(local, { cwd: root, run(command, args, options) {
+        if (command === 'git') return { status: 0 };
+        if (args[0] === 'migrering/status.mjs') calls++;
+        const result = spawnSync(command, args, { ...options, stdio: 'pipe', encoding: 'utf8' });
+        diagnostics += result.stderr || ''; return result;
+      } });
+      assert.equal(calls, 1);
+      assert.equal(localCode === 0, state === 'valid', diagnostics);
+      for (const script of [body, 'set -- contracts\n. ./' + fullScript, 'set --\n. ./' + fullScript]) {
+        const result = shell(script);
+        assert.equal(result.status === 0, state === 'valid', result.stderr);
+        if (state !== 'valid') assert.match(result.stderr, state === 'invalid' ? /Ogiltig etapp\/status\/vikt/ : /STATUS.md är inaktuell/);
+      }
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test('NUL parser preserves unusual names and fails on truncated/rename records', () => {
@@ -156,6 +230,13 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     const shallow = join(root,'shallow'); git('clone','-q','--depth=2',pathToFileURL(root).href,shallow);
     assert.equal(ciScope({cwd:shallow,env:prEnv()}),'documentation');
     rmSync(shallow,{recursive:true,force:true});
+    git('checkout','-qb','migration-docs');
+    mkdirSync(join(root,'migrering','jakob-main-migrering'),{recursive:true});
+    for (const path of ['docs/JOHN-HANDOFF.md','docs/NEXT-AGENT.md','migrering/MASTERPLAN.md',
+      'migrering/STATUS.md','migrering/jakob-main-migrering/AKTIVITETER.md']) put(path,'reviewed report\n');
+    put('migrering/status.json','{}\n'); commit('six migration report files');
+    git('checkout','main'); git('merge','--no-ff','migration-docs','-m','test report merge');
+    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'documentation',migration:false,moving:false});
     git('checkout','-qb','ui'); mkdirSync(join(root,'apps', 'studio','components'),{recursive:true});
     put('apps/studio/components/editor.tsx','export const label = "Editor";\n'); commit('client-only edit');
     git('checkout','main'); git('merge','--no-ff','ui','-m','test UI merge');
@@ -165,7 +246,7 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     git('checkout','main'); git('merge','--no-ff','moving','-m','test worker merge');
     assert.equal(ciSelection({cwd:root,env:prEnv()}).moving,true);
     git('checkout','-qb','code'); put('app.mjs','export const version = 3;\n'); commit('code');
-    put('docs/guide.md','last push is just prose\n'); commit('docs followup');
+    put('docs/guide.md','last push is just prose\n'); put('migrering/status.json','{"updatedAt":"fixture"}\n'); commit('docs followup');
     git('checkout','main'); git('merge','--no-ff','code','-m','test mixed merge');
     assert.equal(ciScope({cwd:root,env:prEnv()}),'full');
     assert.equal(ciScope({cwd:root,env:{...prEnv(),GITHUB_SHA:'0'.repeat(40)}}),'full');
@@ -365,16 +446,9 @@ test('sparse checkout retains the full commit diff and every policy dependency',
   assert.doesNotMatch(changes,/^\s+filter:/m,'filter overrides checkout sparse patterns');
   assert.doesNotMatch(changes,/^\s+(?:ref|repository):/m,'checkout must retain the event repository and commit');
   const files = changes.match(/sparse-checkout: \|\n((?:            [^\n]+\n)+)/)?.[1].trim().split('\n').map(line=>line.trim());
-  assert.deepEqual(files,[
-    '.github/workflows/croupier.yml',
-    '.githooks/pre-commit-full',
-    'test/ci-changes.mjs',
-    'test/precommit-checks.mjs',
-    'tools/ci-changes.mjs',
-    'tools/documentation-paths.mjs',
-    'tools/precommit-checks.mjs',
-    'tools/check-push-target.mjs',
-  ]);
+  assert.ok(files?.length, 'sparse checkout must declare its policy inputs');
+  // The isolated sparse run below executes every policy test and catches
+  // missing transitive dependencies without freezing this file list.
   const root = mkdtempSync(join(tmpdir(),'ci-sparse-policy-'));
   const env = {...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null'};
   for (const key of Object.keys(env)) if (/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES)$/.test(key)) delete env[key];

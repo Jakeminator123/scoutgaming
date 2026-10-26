@@ -23,6 +23,9 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
   const guides = [
     'apps/web/README.md', 'agent-talk/README.md', 'apps/studio/AGENTS.md',
     'apps/studio/docs/new-guide.md',
+    'migrering/MASTERPLAN.md', 'migrering/STATUS.md', 'migrering/status.json',
+    'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
+    'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md',
     'packages/presentation/README.md', 'apps/studio/client/README.md',
     'packages/presentation/docs/INTEGRATION.md',
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
@@ -35,6 +38,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
   }
   for (const path of [
     'tools/media/encode.sh', 'apps/studio/client/build.mjs',
+    'migrering/status.mjs', 'migrering/config.json', 'migrering/new-runtime.md',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
     'services/astrid-gpu-worker/gateway/auth.mjs', 'services/game/storage/package.json',
     'tools/media/runtime-bundle/README.md', 'services/game/public/lab/README.md',
