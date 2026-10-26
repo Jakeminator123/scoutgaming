@@ -9,6 +9,7 @@ import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../co
 import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../contracts/roulette-idle-contract.mjs';
 import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../contracts/roulette-start-contract.mjs';
 import {speechSlotSituation} from '../contracts/speech-slot-bindings.mjs';
+import {recordedSpeechSourceVerified} from '../contracts/recorded-speech.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,
   validateDocumentValue, validateRevision, validateStudioMedia,
@@ -169,10 +170,11 @@ export function captureFrozenDealerPlayback({ project, inventory, mediaRows, reg
       || canonicalStudioJson(captured.record.classification) !== canonicalStudioJson(video.classification))
       fail('studio_media_binding_invalid');
     preconditions.set(captured.record.id, { id: captured.record.id, revision: captured.revision, record: captured.record });
-    // Unverified recordings cannot play, even in deliberate rehearsal. Keep the
+    // Unverified speech sources cannot play, even in deliberate rehearsal. Keep the
     // exclusion bound to this exact media revision until publication commits.
-    // Verified recordings awaiting review remain available for rehearsal.
-    if (captured.record.classification.recordedSpeech?.recording.status === 'pending') return false;
+    // Verified sources awaiting review remain available for rehearsal.
+    const speech=captured.record.classification.recordedSpeech;
+    if (speech&&!recordedSpeechSourceVerified(speech)) return false;
     media.set(captured.record.id, captured.record);
     return true;
   }

@@ -5,7 +5,7 @@ import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/n
 import { assertNativeRoomSequenceBudget, NATIVE_ROOM_PRESENTATION_CONTRACT } from '../packages/presentation/contracts/native-room-game-budget.mjs';
 import { recordedSpeechIdentity } from '../packages/presentation/contracts/recorded-speech.mjs';
 import { presentationEvents } from '../services/game/partner-presentation.mjs';
-import { nativeRoomMaterialFixture, measuredFixtureRecord } from './fixtures/native-room-game-material.mjs';
+import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord } from './fixtures/native-room-game-material.mjs';
 
 const resolve = f => resolveNativeRoomGameMaterial(f.input);
 const denied = reason => error => error?.code === 'studio_room_game_material_unavailable' && error.statusCode === 422 && (!reason || error.reason === reason);
@@ -36,6 +36,41 @@ test('branding-only republication preserves material revision; another room does
   assert.deepEqual(resolve(f),original);
   f.input.room.id = 'room-other'; f.input.package.tables = ['room-other'];
   assert.notEqual(resolve(f).revision,original.revision);
+});
+
+test('room override selects its complete frozen bank and only its effective dealer changes the material revision', () => {
+  const f=nativeRoomMaterialChoicesFixture(),pack=f.input.package,roomId=f.input.room.id;
+  const original=resolve(f);assert.equal(original.dealerId,'dragan');
+  pack.branding.dealer=null;
+  assert.deepEqual(resolve(f),original,'the existing cleared operator default keeps the lane default');
+  delete pack.branding.dealer;
+  pack.branding.roomOverrides={'room-other':{dealer:'paow'}};
+  assert.deepEqual(resolve(f),original,'another room cannot change this material');
+  pack.branding.dealer='paow';
+  const operatorDefault=resolve(f);assert.equal(operatorDefault.dealerId,'paow');
+  pack.branding.roomOverrides[roomId]={dealer:'dragan'};
+  assert.deepEqual(resolve(f),original,'the room overrides its operator default');
+  pack.branding.roomOverrides[roomId]={dealer:'paow'};
+  const selected=resolve(f);assert.deepEqual(selected,operatorDefault);
+  assert.notEqual(selected.revision,original.revision);
+  assert.deepEqual(selected.media.map(row=>row.id),f.records.filter(row=>row.classification.dealerId==='paow').map(row=>row.id).sort());
+  pack.revision++;
+  assert.deepEqual(resolve(f),selected,'outer publication revision does not change identical material');
+});
+
+test('room override never substitutes the template dealer for missing or unauthorized material', () => {
+  for(const dealer of ['nora','',null]) {
+    const f=nativeRoomMaterialChoicesFixture();
+    f.input.package.branding.roomOverrides={[f.input.room.id]:{dealer}};
+    assert.throws(()=>resolve(f),denied('native_material_dealer_missing'));
+  }
+  const f=nativeRoomMaterialChoicesFixture(),take=f.records.find(row=>row.classification.dealerId==='paow'&&row.classification.kind==='action');
+  f.presentation.playback.media=f.records.filter(row=>row.id!==take.id);
+  for(const line of f.presentation.playback.lines)for(const variant of line.variants)if(variant.videoGenerationId===take.id)variant.videoGenerationId=null;
+  f.recapture();
+  assert.equal(resolve(f).dealerId,'dragan','the template bank remains complete');
+  f.input.package.branding.roomOverrides={[f.input.room.id]:{dealer:'paow'}};
+  assert.throws(()=>resolve(f),denied('native_material_bank_incomplete'));
 });
 
 test('missing measurement and a foreign language refuse native publication', () => {

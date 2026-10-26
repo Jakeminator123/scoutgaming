@@ -55,6 +55,10 @@ async function timingFixture({ speech = false, project = true, archived = false 
   if (speech) record.classification.recordedSpeech = { schemaVersion: 1, dealerId: 'nora', lineId: 'goodluck', takeId: 'take_1', language: 'sv',
     exactText: 'Lycka till.', videoSha256: sha256, audioSha256: 'b'.repeat(64), indexSha256: 'c'.repeat(64), fps: 24, frameCount: 72,
     audioDelayMs: 0, entryPose: 'VILA', exitPose: 'VILA', calibrationRevision: 'fixture-1', recording: { status: 'pending' }, review: { status: 'pending' } };
+  if (speech === 'embedded') record.classification.recordedSpeech = { schemaVersion: 2, sourceKind: 'embedded-mp4-av',
+    dealerId: 'nora', lineId: 'goodluck', takeId: 'take_1', language: 'sv', exactText: 'Lycka till.', videoSha256: sha256,
+    fps: 24, frameCount: 72, videoTrackId: 1, audioTrackId: 2, entryPose: 'VILA', exitPose: 'VILA',
+    source: { status: 'pending' }, review: { status: 'pending' } };
   const registered = (await repo.registerMedia(record, { actor: 'Uploader' })).media;
   const mediaTiming = { schemaVersion: 1, mediaId: id, sha256, size: record.size,
     recordedSpeechIdentitySha256: speech ? createHash('sha256').update(mediaTimingSpeechIdentity(record.classification.recordedSpeech)).digest('hex') : null,
@@ -63,6 +67,118 @@ async function timingFixture({ speech = false, project = true, archived = false 
   const save = (changes = {}) => repo.saveMediaTiming(id, { sha256, expectedRevision: registered.revision, mediaTiming, actor: 'Inspector', ...changes });
   return { pool, repo, record, registered, mediaTiming, save };
 }
+
+test('embedded AV measurement stamps only the server source and preserves pending review', async () => {
+  const f = await timingFixture({ speech: 'embedded' }), before = structuredClone(f.registered.classification);
+  const started = Date.now(), saved = await f.save(), speech = saved.classification.recordedSpeech;
+  assert.equal(speech.source.status, 'verified-embedded-av'); assert.equal(speech.source.by, 'Inspector');
+  assert.ok(Date.parse(speech.source.at) >= started && Date.parse(speech.source.at) <= Date.now());
+  assert.equal(new Date(speech.source.at).toISOString(), speech.source.at);
+  assert.deepEqual(speech.source.identity, recordedSpeechIdentity(speech));
+  assert.deepEqual(speech.review, before.recordedSpeech.review);
+  assert.deepEqual({ ...saved.classification, recordedSpeech: { ...speech, source: before.recordedSpeech.source } }, before);
+  assert.deepEqual(saved.mediaTiming, f.mediaTiming);
+  assert.equal(recordedSpeechForVideo(saved, { dealerId: 'nora', lineId: 'goodluck', language: 'sv' }), null);
+  assert.deepEqual(await f.repo.getMedia(saved.id), saved);
+  assert.equal(f.pool.snapshot().audits.at(-1).actor, 'Inspector');
+});
+
+test('embedded AV registration and classification cannot mint a verified source or change its attribution', async () => {
+  const f = await timingFixture({ speech: 'embedded' }), before = f.pool.snapshot();
+  const metadata = structuredClone(f.record.classification), speech = metadata.recordedSpeech;
+  speech.source = { status: 'verified-embedded-av', by: 'Untrusted', at: '2026-10-26T00:00:00.000Z', identity: recordedSpeechIdentity(speech) };
+  const classify = value => f.repo.classifyMedia(f.record.id, { sha256: f.record.sha256, expectedRevision: f.registered.revision, metadata: value, actor: 'Editor' });
+  await assert.rejects(classify(metadata), rejection('studio_invalid_media', 422));
+  assert.deepEqual(f.pool.snapshot(), before);
+  const forged = { ...f.record, id: '40000000-0000-4000-8000-000000000002', classification: metadata };
+  forged.pathname = forged.pathname.replace(f.record.id, forged.id);
+  const connections = f.pool.connects;
+  await assert.rejects(f.repo.registerMedia(forged, { actor: 'Uploader' }), rejection('studio_invalid_media', 422));
+  await assert.rejects(f.repo.registerMedia({ ...forged, mediaTiming: { ...f.mediaTiming, mediaId: forged.id } }, { actor: 'Uploader' }), rejection('studio_invalid_media', 422));
+  assert.equal(f.pool.connects, connections); assert.deepEqual(f.pool.snapshot(), before);
+  const saved = await f.save(), stable = f.pool.snapshot();
+  for (const change of [source => { source.by = 'Another inspector'; }, source => { source.at = '2026-10-25T00:00:00.000Z'; }]) {
+    const next = structuredClone(saved.classification); change(next.recordedSpeech.source);
+    await assert.rejects(f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata: next, actor: 'Editor' }), rejection('studio_invalid_media', 422));
+    assert.deepEqual(f.pool.snapshot(), stable);
+  }
+  const reset = structuredClone(saved.classification); reset.recordedSpeech.source = { status: 'pending' };
+  const pending = await f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata: reset, actor: 'Editor' });
+  const resetState = f.pool.snapshot();
+  assert.deepEqual(pending.mediaTiming, saved.mediaTiming);
+  await assert.rejects(f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: pending.revision,
+    metadata: saved.classification, actor: 'Editor' }), rejection('studio_invalid_media', 422));
+  assert.deepEqual(f.pool.snapshot(), resetState, 'a prior source stamp cannot be replayed after it was cleared');
+});
+
+test('embedded AV review can approve measured bytes while preserving the exact source and timing', async () => {
+  const f = await timingFixture({ speech: 'embedded' }); let saved = await f.save();
+  let source = structuredClone(saved.classification.recordedSpeech.source);
+  const metadata = structuredClone(saved.classification);
+  const identity = recordedSpeechIdentity(metadata.recordedSpeech);
+  metadata.label = 'Reviewed label';
+  metadata.recordedSpeech.review = { status: 'approved', by: 'Reviewer', at: '2026-10-26T00:00:01.000Z', identity };
+  const pending = f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata, actor: 'Reviewer' });
+  metadata.recordedSpeech.source.by = 'Caller changed during SQL';
+  saved = await pending;
+  assert.deepEqual(saved.classification.recordedSpeech.source, source);
+  assert.deepEqual(saved.mediaTiming, f.mediaTiming);
+  assert.ok(recordedSpeechForVideo(saved, { dealerId: 'nora', lineId: 'goodluck', language: 'sv' }));
+  const review = structuredClone(saved.classification.recordedSpeech.review);
+  saved = await f.save({ expectedRevision: saved.revision, actor: 'Second inspector' });
+  assert.deepEqual(saved.classification.recordedSpeech.review, review, 'remeasurement preserves an existing exact review');
+  assert.equal(saved.classification.recordedSpeech.source.by, 'Second inspector');
+  source = structuredClone(saved.classification.recordedSpeech.source);
+  for (const review of [{ status: 'pending' }, { status: 'rejected', by: 'Reviewer', at: '2026-10-26T00:00:02.000Z', identity }]) {
+    const next = structuredClone(saved.classification); next.recordedSpeech.review = review;
+    saved = await f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata: next, actor: 'Reviewer' });
+    assert.deepEqual(saved.mediaTiming, f.mediaTiming); assert.deepEqual(saved.classification.recordedSpeech.source, source);
+    assert.equal(recordedSpeechForVideo(saved, { dealerId: 'nora', lineId: 'goodluck', language: 'sv' }), null);
+  }
+});
+
+test('embedded AV identity changes require pending source and discard the previous measurement', async () => {
+  for (const [key, value] of Object.entries({ exactText: 'En annan replik.', takeId: 'take_2', language: 'en',
+    fps: 25, frameCount: 73, videoTrackId: 3, audioTrackId: 3, entryPose: 'REDO', exitPose: 'REDO' })) {
+    const f = await timingFixture({ speech: 'embedded' }), saved = await f.save(), before = f.pool.snapshot();
+    const metadata = structuredClone(saved.classification), speech = metadata.recordedSpeech;
+    speech[key] = value;
+    speech.source = { ...speech.source, identity: recordedSpeechIdentity(speech) };
+    await assert.rejects(f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata, actor: 'Editor' }), rejection('studio_invalid_media', 422));
+    assert.deepEqual(f.pool.snapshot(), before);
+    speech.source = { status: 'pending' }; speech.review = { status: 'pending' };
+    const changed = await f.repo.classifyMedia(saved.id, { sha256: saved.sha256, expectedRevision: saved.revision, metadata, actor: 'Editor' });
+    assert.equal(Object.hasOwn(changed, 'mediaTiming'), false, key);
+    assert.deepEqual(changed.classification.recordedSpeech.source, { status: 'pending' });
+    await assert.rejects(f.save({ expectedRevision: changed.revision }), rejection('studio_invalid_media', 422));
+  }
+});
+
+test('embedded AV timing must identify exactly the declared video and single audio track', async () => {
+  const f = await timingFixture({ speech: 'embedded' }), before = f.pool.snapshot();
+  for (const change of [timing => { timing.video.trackId = 3; }, timing => { timing.audio[0].trackId = 3; },
+    timing => { timing.audio = []; timing.endUs = timing.video.endUs; timing.audioTailUs = 0; },
+    timing => { timing.audio.push({ ...timing.audio[0], trackId: 3 }); }]) {
+    const mediaTiming = structuredClone(f.mediaTiming); change(mediaTiming);
+    await assert.rejects(f.save({ mediaTiming }), rejection('studio_invalid_media', 422));
+    assert.deepEqual(f.pool.snapshot(), before);
+  }
+});
+
+test('embedded AV source, timing and audit share one CAS outcome and rollback', async () => {
+  const f = await timingFixture({ speech: 'embedded' }), before = f.pool.snapshot();
+  f.pool.failNext('audit');
+  await assert.rejects(f.save(), rejection('studio_storage_unavailable', 503));
+  assert.deepEqual(f.pool.snapshot(), before);
+  assert.deepEqual((await f.repo.getMedia(f.record.id)).classification.recordedSpeech.source, { status: 'pending' });
+  const outcomes = await Promise.allSettled([f.save(), f.save()]);
+  const saved = outcomes.find(row => row.status === 'fulfilled').value;
+  assert.equal(saved.classification.recordedSpeech.source.status, 'verified-embedded-av');
+  assert.equal(outcomes.filter(row => row.status === 'fulfilled').length, 1);
+  assert.equal(outcomes.filter(row => row.status === 'rejected' && rejection('studio_conflict')(row.reason)).length, 1);
+  assert.equal(f.pool.snapshot().audits.length, before.audits.length + 1);
+  assert.equal(f.pool.connects, f.pool.releases);
+});
 
 test('server timing writer preserves the exact record and audits one scoped CAS revision', async () => {
   const f = await timingFixture({ speech: true }), offset = f.pool.calls.length;

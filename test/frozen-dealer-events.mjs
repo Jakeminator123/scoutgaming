@@ -10,7 +10,7 @@ import { encodePresentationPackage, decodePresentationPackage } from '../package
 import { validatePresentationPackage } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { frozenPlaybackProject, mergeFrozenDealerPlayback } from '../packages/presentation/contracts/frozen-dealer-playback.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
-import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
+import {recordedSpeechIdentity,recordedSpeechForVideo} from '../packages/presentation/contracts/recorded-speech.mjs';
 import {bindSpeechSlotStandard, OTHER_SPEECH_SLOT_IDS} from '../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {createHash} from 'node:crypto';
 import {createPresentationApi} from '../services/game/presentation-api.mjs';
@@ -52,6 +52,32 @@ function serviceFor(presentation) {
     privateMedia:async (row,request) => {served.push(row);return new Response(request.method==='HEAD'?null:'bytes',{status:request.headers.has('range')?206:200,headers:{ETag:`"sha256-${row.sha256}"`}});}})};
 }
 const context = {operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
+
+test('frozen embedded source measurement survives inventory, published selection and the player approval gate',async()=>{
+  const input=fixture(),row=input.snapshot.mediaRows[1],metadata={schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'linnea',lineId:'goodluck',
+    takeId:'goodluck_1',language:'sv',exactText:'Lycka till.',videoSha256:row.sha256,fps:24,frameCount:72,videoTrackId:1,audioTrackId:2,
+    entryPose:'VILA',exitPose:'VILA',source:{status:'pending'},review:{status:'pending'}};
+  const identity=recordedSpeechIdentity(metadata),proof=status=>({status,by:'fixture-reviewer',at:'2026-10-26T00:00:00.000Z',identity:structuredClone(identity)});
+  metadata.source=proof('verified-embedded-av');metadata.review=proof('approved');row.classification.recordedSpeech=metadata;
+  row.mediaTiming={schemaVersion:1,mediaId:row.id,sha256:row.sha256,size:row.size,
+    recordedSpeechIdentitySha256:createHash('sha256').update(JSON.stringify(identity)).digest('hex'),
+    video:{trackId:1,frameCount:72,fps:24,firstPtsUs:0,lastPtsUs:2958333,endUs:3000000},
+    audio:[{trackId:2,firstPtsUs:0,endUs:3000000}],endUs:3000000,audioTailUs:0};
+  input.inventory.videos[1].classification=structuredClone(row.classification);
+  const {service}=serviceFor(captureFrozenPresentation(input).presentation),resolved=await service.resolve(context);
+  const owned=resolved.inventory.videos.find(video=>video.id===row.id),selection={dealerId:'linnea',lineId:'goodluck',language:'sv',takeId:'goodluck_1'};
+  assert.equal(owned.contentType,'video/mp4');assert.deepEqual(owned.mediaTiming,row.mediaTiming);
+  assert.deepEqual(recordedSpeechForVideo(owned,selection),metadata);
+  const api=createPresentationApi({db:{prepare:()=>({get:()=>undefined})},env:{},frozenDealerContext:service});
+  const req=Readable.from([JSON.stringify({dealerId:'linnea',mode:'off',version:1,event:{type:'speak',line:'goodluck'},presentationContext:context})]);
+  Object.assign(req,{method:'POST',headers:{},url:'/api/presentation/select'});
+  const res=new EventEmitter();res.writableEnded=false;res.writeHead=code=>res.status=code;res.end=raw=>{res.body=JSON.parse(raw);res.writableEnded=true;};
+  await api(req,res,'/api/presentation/select','fixture-player');assert.equal(res.status,200,JSON.stringify(res.body));
+  assert.deepEqual(recordedSpeechForVideo(res.body.video,selection),metadata);assert.deepEqual(res.body.video.mediaTiming,row.mediaTiming);
+  const config=await service.configuration(context);assert.deepEqual(recordedSpeechForVideo(config.inventory.videos.find(video=>video.id===row.id),selection),metadata);
+  const original=await serviceFor(captureFrozenPresentation(fixture()).presentation).service.resolve(context);
+  for(const video of original.inventory.videos)for(const key of ['contentType','mediaTiming'])assert.equal(Object.hasOwn(video,key),false,'historical inventory is unchanged');
+});
 
 test('schema3 idle and exact event URLs revalidate original bytes without altering frozen speech metadata',async()=>{
   const presentation=captureFrozenPresentation(fixture()).presentation, before=structuredClone(presentation);

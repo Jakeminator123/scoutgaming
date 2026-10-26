@@ -10,8 +10,11 @@ import {dealerVersionPath} from '../services/game/public/dealer-version-switcher
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {createPartnerBrandingApi} from '../apps/studio/lib/partner-branding-api.mjs';
+import {nativeRoomMaterialChoicesFixture} from './fixtures/native-room-game-material.mjs';
+import {resolveNativeRoomGameMaterial} from '../packages/presentation/server/native-room-game-material.mjs';
+import {validateRoomGameMaterial} from '../packages/presentation/contracts/room-game-config.mjs';
 
-function fixture({schemaVersion=3,includeBaselineDealer=false}={}) {
+function fixture({schemaVersion=3,includeBaselineDealer=false,branding={}}={}) {
   let project=addDealer(addDealer(addDealer(createEmptyProject(),'linnea','Linnea'),'nora','Nora'),'foreign','Foreign draft');
   if(includeBaselineDealer)for(const id of ['astrid'])project=addDealer(project,id,id);
   const lane=defaultPresentationLane('linnea');project.lanes=[lane];lane.id='johns-presentation';lane.dealers=['linnea','nora',...(includeBaselineDealer?['astrid']:[])];
@@ -35,7 +38,7 @@ function fixture({schemaVersion=3,includeBaselineDealer=false}={}) {
   const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Linnea room',
     renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]};
   let pack={operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[room.id],
-    branding:withPackagePresentation({name:'Johns'},presentation)};
+    branding:withPackagePresentation({name:'Johns',...branding},presentation)};
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project,administration})},
     packages:{resolve:async slug=>slug==='north'?{operator:{id:'north',status:'active'},package:structuredClone(pack)}:{operator:null}},
     log:()=>{}});
@@ -72,6 +75,60 @@ test('v3 room switches between its two frozen own dealers and excludes a dealer 
   assert.equal((await f.select('operator=north&table=foreign-room&dealer=nora')).status,404);
   assert.equal((await f.select('operator=foreign&table=room-johns&dealer=nora')).status,404);
 });
+test('room override reaches server and client bootstrap while explicit allowed choices retain their contract',async()=>{
+  const f=fixture({branding:{roomOverrides:{'room-johns':{dealer:'nora'},'other-room':{dealer:'linnea'}}}});
+  const before=f.pack(),entry=await f.select('operator=north&table=room-johns');
+  assert.equal(entry.selection.dealer,'nora');
+  const {selection}=clientDocument(entry.selection);
+  assert.equal(selection.dealer,'nora');assert.equal(selection.localDealer,'nora');assert.equal(selection.branding.dealer,'nora');
+  assert.equal(resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer}).navigateDealer,null);
+  assert.equal((await f.select('operator=north&table=room-johns&dealer=linnea')).selection.dealer,'linnea');
+  assert.equal((await f.select('operator=north&table=room-johns&dealer=foreign')).status,404);
+  assert.equal((await f.select('operator=north&table=other-room')).status,404);
+  assert.equal((await f.select('operator=foreign&table=room-johns')).status,404);
+  assert.deepEqual(f.pack(),before,'query choices cannot publish or replace a room config');
+  const invalid=fixture({branding:{roomOverrides:{'room-johns':{dealer:'foreign'}}}});
+  await assert.rejects(invalid.select('operator=north&table=room-johns'),error=>error.statusCode===503);
+});
+
+test('published J08 room binds server and client bootstrap to its frozen material dealer before any query override',async()=>{
+  const source=nativeRoomMaterialChoicesFixture(),room=source.input.room,pack=source.input.package;
+  pack.branding.roomOverrides={[room.id]:{dealer:'paow'}};
+  pack.branding.roomGameConfigVersions={[room.id]:'room-config-00000000-0000-4000-8000-000000000001'};
+  const lane={schemaVersion:1,id:room.gameLaneId,label:'Fixture lane',renderer:'portrait-video',
+    dealer:'dragan',mediaCollection:'dragan-presentation'};
+  const administration={gameLane:lane.id,gameLanes:[lane],rooms:[room]};
+  const select=createGameEntrySelector({log:()=>{},policy:{readGameConfiguration(){},
+    readSaved:async()=>({project:source.project,administration})},
+    packages:{resolve:async slug=>slug==='fixture'?{operator:{id:room.operatorId,status:'active'},package:structuredClone(pack)}:{operator:null}}});
+  const material=resolveNativeRoomGameMaterial(source.input),before=structuredClone(pack);
+  assert.equal(material.dealerId,'paow');
+  for(const dealer of [undefined,'paow']){
+    const query=new URLSearchParams({operator:'fixture',table:room.id});if(dealer)query.set('dealer',dealer);
+    const entry=await select(query);assert.equal(entry.status,200);
+    const {selection}=clientDocument(entry.selection);
+    assert.equal(entry.selection.dealer,material.dealerId);
+    assert.equal(selection.dealer,material.dealerId);assert.equal(selection.localDealer,material.dealerId);
+    assert.equal(selection.branding.dealer,material.dealerId);
+    assert.deepEqual(validateRoomGameMaterial(material,{dealerId:selection.dealer,language:'sv'}),material);
+  }
+  const mismatch=await select(new URLSearchParams({operator:'fixture',table:room.id,dealer:'dragan'}));
+  assert.deepEqual(mismatch,{status:404},'a different allowed dealer cannot reach the shared room client');
+  assert.equal((await select(new URLSearchParams({operator:'foreign',table:room.id,dealer:'paow'}))).status,404);
+  assert.equal((await select(new URLSearchParams({operator:'fixture',table:'another-room',dealer:'paow'}))).status,404);
+  assert.deepEqual(pack,before,'entry cannot rewrite the published config or room choices');
+});
+
+test('another room config never removes the existing query choice from an unconfigured v3 room',async()=>{
+  for(const roomGameConfigVersions of [undefined,{}, {'other-room':'room-config-00000000-0000-4000-8000-000000000001'}]){
+    const branding={roomOverrides:{'room-johns':{dealer:'nora'}},...(roomGameConfigVersions===undefined?{}:{roomGameConfigVersions})};
+    const f=fixture({branding}),before=f.pack();
+    const result=await f.select('operator=north&table=room-johns&dealer=linnea');
+    assert.equal(result.status,200);assert.equal(clientDocument(result.selection).selection.dealer,'linnea');
+    assert.deepEqual(f.pack(),before);
+  }
+});
+
 test('dealer navigation round trip retains the v3 room and exact requested identity',async t=>{
   const f=fixture(),first=clientDocument((await f.select('operator=north&table=room-johns')).selection);
   const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
@@ -103,8 +160,8 @@ test('partner can save either frozen v3 dealer and the chosen identity reaches t
   assert.deepEqual(readPackagePresentation(f.pack()),original);assert.deepEqual(f.pack().tables,['room-johns']);
   const {selection}=clientDocument((await f.select('operator=north&table=room-johns')).selection);
   const choice=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer,composition:selection.composition});
-  assert.equal(choice.dealer,'nora');assert.equal(choice.navigateDealer,'nora');
-  assert.equal((await f.select('operator=north&table=room-johns&dealer='+choice.navigateDealer)).selection.dealer,'nora');
+  assert.equal(choice.dealer,'nora');assert.equal(choice.navigateDealer,null);
+  assert.equal(selection.dealer,'nora');assert.equal(selection.localDealer,'nora');
   await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'linnea'}}),error=>error.statusCode===409);
   const reverted=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:2,branding:{dealer:'linnea'}});
   assert.equal(reverted.branding.dealer,'linnea');assert.equal(reverted.packageRevision,3);

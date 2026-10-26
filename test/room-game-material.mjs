@@ -70,6 +70,23 @@ test('explicit frozen binding translates registered identities and exact timing 
     assert.throws(()=>resolveRoomGameMaterial(f.input),unavailable);
   }
 });
+test('room override binds the explicit imported bank instead of the different template dealer',()=>{
+  const f=fixture(),alternate=cloudPresentationFixture({lanes:[defaultPresentationLane('nora')]}).presentation;
+  const lane=f.presentation.lanes[0];lane.dealers=['linnea','nora'];
+  lane.layers.dealer.allowed=[...lane.dealers];lane.layers.dealer.default='nora';
+  f.presentation.registeredDealers.push(...alternate.registeredDealers);
+  f.presentation.playback.lines.push(...alternate.playback.lines);
+  f.presentation.playback.media.push(...alternate.playback.media);
+  f.republish();
+  assert.throws(()=>resolveRoomGameMaterial(f.input),unavailable);
+  f.input.package.branding.roomOverrides={[f.input.room.id]:{dealer:'linnea'}};
+  const selected=resolveRoomGameMaterial(f.input);assert.equal(selected.dealerId,'linnea');
+  f.input.package.branding.roomOverrides['another-room']={dealer:'nora'};
+  assert.deepEqual(resolveRoomGameMaterial(f.input),selected);
+  f.input.package.branding.roomOverrides[f.input.room.id].dealer='foreign';
+  assert.throws(()=>resolveRoomGameMaterial(f.input),unavailable);
+});
+
 test('missing producer, mapping or exact operator/package/room/dealer context refuses before planning',()=>{
   for(const change of [f=>delete f.input.planningRevision,f=>delete f.input.identityMap,f=>f.input.identityMap.packageRevision++,
     f=>f.input.identityMap.roomId='other',f=>f.input.identityMap.presentationLaneId='other',f=>f.input.identityMap.operatorId='other',

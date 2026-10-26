@@ -132,7 +132,8 @@ export function validateStudioMedia(record) {
     if(checked.mediaTiming) {
       const speech=checked.classification.recordedSpeech;
       const digest=speech?createHash('sha256').update(mediaTimingSpeechIdentity(speech)).digest('hex'):null;
-      checked.mediaTiming=normalizeMediaTiming(checked.mediaTiming,{mediaId:checked.id,sha256:checked.sha256,size:checked.size,recordedSpeechIdentitySha256:digest});
+      checked.mediaTiming=normalizeMediaTiming(checked.mediaTiming,{mediaId:checked.id,sha256:checked.sha256,size:checked.size,
+        recordedSpeech:speech,recordedSpeechIdentitySha256:digest});
     }
     return deletion === undefined ? checked : {...checked,deletion};
   }

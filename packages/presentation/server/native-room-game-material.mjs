@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { canonicalStudioJson, StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
-import { readPackagePresentation } from './presentation-package.mjs';
+import { readPackagePresentation, resolvePackageRoomDealer } from './presentation-package.mjs';
 import { isPresentationRoom, roomGame } from '../contracts/presentation-room.mjs';
 import { frozenPlaybackProject } from '../contracts/frozen-dealer-playback.mjs';
 import { registeredFilmedProfile } from '../contracts/filmed-profiles/registry.mjs';
@@ -51,8 +51,8 @@ export function resolveNativeRoomGameMaterial({package:pack, room, language} = {
       || !pack.tables?.includes(room.id) || !pack.games?.includes('blackjack') || !pack.lanes?.includes(room.presentationLaneId)) fail('native_material_room_mismatch');
     const presentation = readPackagePresentation(pack);
     if (presentation?.schemaVersion !== 3 || !presentation.playback) fail('native_material_frozen_v3_required');
-    const lane = presentation.lanes.find(value => value.id === room.presentationLaneId), dealerId = lane?.layers?.dealer?.default;
-    if (!dealerId || !lane.layers.dealer.allowed.includes(dealerId)
+    const dealerId = resolvePackageRoomDealer(pack, room, presentation);
+    if (!dealerId
       || !presentation.registeredDealers.some(row => row.id === dealerId && row.idle)) fail('native_material_dealer_missing');
     const profile = registeredFilmedProfile(dealerId);
     if (!profile) fail('native_material_profile_missing');

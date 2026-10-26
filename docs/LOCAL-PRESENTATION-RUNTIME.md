@@ -12,6 +12,22 @@ Nya mätkvitton och utökat presentationskuvert kräver runtimekontrakt v29. Gam
 
 Ordning: kompatibla läsare och v29 → separat godkänd optional020 i avsedd databas → Admin-mätning → ny paketpublicering → spelkonfigurationspublicering. Optional020 har provats endast i isolerade croupier_staging; produktion är inte migrerad av denna leverans. Se [prov och begränsningar](ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober).
 
+### Inspelat tal med bild och ljud i samma MP4
+
+`recordedSpeech.schemaVersion: 2` och `sourceKind: 'embedded-mp4-av'` beskriver en registrerad originalfil med ett videospår och exakt ett ljudspår. Identiteten binder dealer, replik, tagning, språk, exakt text, videohash, fps, bildantal, spår-ID:n och start-/slutpose. Den kräver ingen separat ljudfil, indexhash, kalibreringshistorik eller attest om inspelningsursprung. Det tidigare v1-kontraktet och dess uppgifter behåller sin betydelse.
+
+Registrering börjar med `source.status: 'pending'`. Den befintliga servermätaren verifierar privata Blob-bytes, videospåret och det enda ljudspåret. `saveMediaTiming` stämplar därefter `verified-embedded-av` med autentiserad actor, serverns UTC-tid och exakt identitet i samma CAS-/audittransaktion som mätningen. Klassificering kan bevara detta exakta källbevis, men kan inte skapa, återattribuera eller återspela ett rensat bevis. Ändrad identitet kräver pending och ny mätning. Serverläsaren återberäknar mätningens identitetsdigest.
+
+`review` är en separat AV-granskning. Mätning ändrar aldrig dess status eller attribution. Ordinarie uppspelning kräver godkänd review; den befintliga uttryckliga repetitionsvägen kan använda verifierad källa med pending review. Rejected eller omätt källa blockeras. Frysta paket och offentliga v2-svar bevarar filtyp, storlek, mätning och talidentitet genom spelarens urvalsgrind. Admin visar filkontroll och AV-granskning separat.
+
+Ny v2-metadata, även pending, kräver förhandlat runtimekontrakt **v30**, `recordedEmbeddedAv: 'embedded-mp4-av-v2'`. Samma krav gäller paket, publicering och livscykeländringar som bevarar materialet. En v29-mutationscontext får inte breddas till v2 eller användas för att stämpla en lagrad v2-post. Kontroll under SQL-lås använder den redan verifierade contexten och den lagrade posten; inget nytt runtime-/provideranrop görs där. Generella startkrav höjs inte. Deploya kompatibla läsare före nya v2-skrivningar; en äldre release som inte läser v2 är ingen giltig rollback när sådana poster eller paket finns. Inget nytt schema eller någon DDL införs här.
+
+### Rummets effektiva dealer
+
+Materialproducent, publiceringsvalidator, launch och delad rumsåtkomst använder samma paketbundna val: rätt rums `roomOverrides` före tillämplig operatörsstandard och därefter mallens standard, alltid inom publicerad allowlist och operatörens rum. Saknat eller otillåtet material stoppar urvalet. Operatörens befintliga `dealer: null` rensar dess standard; ett ogiltigt uttryckligt rumsval ger ingen fallback. I ett rum med publicerad J08-konfiguration nekas avvikande `?dealer=` före klientstart. Rum utan publicerad spelkonfiguration behåller sitt tidigare tillåtna queryurval.
+
+Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell handoff](JOHN-HANDOFF.md).
+
 ## PAOWs 24 viloklipp
 
 `apps/studio/lib/paow-idle-source-f664c54d.json` fryser Kevins aktiva urval på
@@ -2775,3 +2791,4 @@ Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
 `media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `packages/presentation/runtime/`.
 Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
 Transportanslutning är inte speldata, valt klipp är inte spelat klipp.
+

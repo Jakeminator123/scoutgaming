@@ -8,4 +8,4 @@ export interface MediaTiming {
   endUs:number; audioTailUs:number;
 }
 export function mediaTimingSpeechIdentity(value:RecordedSpeech):string;
-export function normalizeMediaTiming(value:unknown,context?:{mediaId?:string;sha256?:string;size?:number;recordedSpeechIdentitySha256?:string|null}):MediaTiming;
+export function normalizeMediaTiming(value:unknown,context?:{mediaId?:string;sha256?:string;size?:number;recordedSpeechIdentitySha256?:string|null;recordedSpeech?:RecordedSpeech|null}):MediaTiming;

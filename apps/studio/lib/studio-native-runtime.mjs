@@ -8,7 +8,7 @@ import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
 import { layerMediaInspectionMessage } from '../../../packages/presentation/contracts/layer-upload-errors.mjs';
 import { inspectMediaTiming } from './layer-media-inspection.mjs';
-import { wrapNativePresentationRepository, presentationPackageRequiresV29, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
+import { wrapNativePresentationRepository, presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
@@ -205,7 +205,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope,
       // Verify the negotiated format before reporting readiness. This metadata
       // never substitutes for the saved dealer registry or frozen media record.
-      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
+      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
         [game==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
     });
     for (const service of [lanePackages, rooms]) {

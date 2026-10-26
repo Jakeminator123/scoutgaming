@@ -5,22 +5,24 @@ import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
 import {createNativeStudioRequestHandlers} from '../lib/studio-native-runtime.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {canonicalStudioJson,validateDocumentValue} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {ROOM_LIMIT_PRESETS,validateRoomGameConfig} from '../../../packages/presentation/contracts/room-game-config.mjs';
 import {isPresentationRoomReadQuery,studioAdminEndpoint} from '../lib/studio-admin-contract.mjs';
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
-import {recordedSpeechIdentity} from '../../../packages/presentation/contracts/recorded-speech.mjs';
+import {recordedSpeechForVideo,recordedSpeechIdentity} from '../../../packages/presentation/contracts/recorded-speech.mjs';
+import {SPEECH_SLOT_IDS} from '../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
-import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {nativeRoomMaterialFixture,nativeRoomMaterialChoicesFixture} from '../../../test/fixtures/native-room-game-material.mjs';
 import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
+import {createSharedRoomAccess} from '../../../services/game/shared-room-access.mjs';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
 
 const scope={environment:'j08-test',workspaceId:'isolated'},actor={user:'j08-admin',role:'admin'};
 const clone=structuredClone;
 const catalogValue=readRuntimeCatalogFixture(),catalog={revision:runtimeCatalogRevision(catalogValue),value:catalogValue};
-function fixture({resolver=true,speech=false,native=false}={}) {
-  const source=native?nativeRoomMaterialFixture():null;
+function fixture({resolver=true,speech=false,native=false,branding={}}={}) {
+  const source=native?(native===true?nativeRoomMaterialFixture():native):null;
   const cloud=source?{project:source.project,presentation:source.presentation,mediaRows:source.records.map(row=>({...clone(row),revision:'media-1'}))}:cloudPresentationFixture({lanes:[defaultPresentationLane('linnea')]});
   const dealerId=cloud.presentation.lanes[0].layers.dealer.default;
   if(speech) {
@@ -38,7 +40,7 @@ function fixture({resolver=true,speech=false,native=false}={}) {
   const room={schemaVersion:2,id:'room-test',name:'Test room',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'room-lane',state:'live'};
   const operator={environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1};
   let state={document:{revision:'admin-1',value:{rooms:[room],gameLane:'room-lane',gameLanes:[{schemaVersion:1,id:'room-lane',label:'Room',renderer:'portrait-video',dealer:dealerId,mediaCollection:dealerId+'-presentation'}]}},
-    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation({},cloud.presentation,{allowExtended:native})),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
+    packages:[{environment_id:scope.environment,workspace_id:scope.workspaceId,operator_id:'north',package_revision:1,lanes:'["mobile-phone"]',games:'["blackjack"]',tables:'["room-test"]',branding:canonicalStudioJson(withPackagePresentation(branding,cloud.presentation,{allowExtended:Boolean(native)})),published_at_ms:1}],configs:{},heads:{},audits:[],mediaRows:clone(cloud.mediaRows),catalog:clone(catalog)};
   let work=null,serial=Promise.resolve(),failure=null,captureChange=null,mediaChange=null,resolverChange=null;const trace=[];
   const client={async query(sql,values) {
     assert.ok(work,'every SQL query uses one active repository transaction');assert.deepEqual(values.slice(0,2),[scope.environment,scope.workspaceId]);
@@ -54,6 +56,7 @@ function fixture({resolver=true,speech=false,native=false}={}) {
     else if(marker==='room-game-config:publish-config'){const key=values[2]+':'+values[3];assert.equal(work.configs[key],undefined);work.configs[key]=values[4];}
     else if(marker==='room-game-config:publish-head')work.heads[values[2]]=values[3];
     else if(marker==='room-game-config:read-published'){const body=work.configs[values[2]+':'+values[3]];rows=body?[{body}]:[];}
+    else if(marker==='shared-room-access:config'){const version=work.heads[values[2]];rows=version?[{version,body:work.configs[values[2]+':'+version]}]:[];}
     else throw Error('Unhandled SQL '+marker);
     return {rows:clone(rows)};
   }};
@@ -75,7 +78,7 @@ function fixture({resolver=true,speech=false,native=false}={}) {
   const invoke=(method,body,options={})=>api.handlers.get(method+' /studio/api/admin/room-game-config')({actor,scope,request:new Request('https://studio.invalid/studio/api/admin/room-game-config?operatorId=north&roomId=room-test',{method}),body,...options});
   const save=(gameConfig={language:'sv',limitPreset:'prive'},extra={})=>invoke('POST',{action:'save-draft',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:state.document.revision,expectedPackageRevision:state.packages.at(-1).package_revision,gameConfig,...extra});
   const publish=draft=>invoke('POST',{action:'publish',operatorId:'north',roomId:'room-test',expectedAdministrationRevision:draft.administrationRevision,expectedPackageRevision:draft.packageRevision,expectedDraftRevision:draft.draft.revision});
-  return {api,invoke,save,publish,trace,snapshot:()=>clone(state),fail:marker=>{failure=marker;},setMaterial:value=>{materialOverride=value;},material:()=>material({language:'sv'}),
+  return {api,repository,invoke,save,publish,trace,snapshot:()=>clone(state),fail:marker=>{failure=marker;},setMaterial:value=>{materialOverride=value;},material:()=>material({language:'sv'}),
     changeState:change=>change(state),changeCapture:change=>{captureChange=change;},changeMediaRead:change=>{mediaChange=change;},changeResolver:change=>{resolverChange=change;}};
 }
 
@@ -106,6 +109,97 @@ test('native material publishes through the captured current-record and frozen-p
   const before=changed.snapshot();await assert.rejects(changed.publish(prepared),{code:'studio_room_game_material_unavailable'});
   assert.deepEqual(changed.snapshot(),before,'changed current material never publishes a config or new package');
 });
+test('room override save/read/publish binds the selected full bank and rejects missing or unauthorized choices',async()=>{
+  const source=nativeRoomMaterialChoicesFixture();
+  const branding={roomOverrides:{'room-test':{dealer:'paow'},'another-room':{dealer:'dragan'}}};
+  const f=fixture({native:source,branding,resolver:resolveNativeRoomGameMaterial});
+  const draft=await f.save({language:'sv',limitPreset:'casual'});
+  assert.deepEqual(draft.publication,{ready:true});
+  assert.deepEqual((await f.invoke('GET')).draft,draft.draft);
+  const result=await f.publish(draft),state=f.snapshot();
+  const frozen=JSON.parse(state.configs['room-test:'+result.published.configVersion]);
+  assert.equal(frozen.material.dealerId,'paow');
+  assert.deepEqual((await f.invoke('GET')).published,result.published);
+  assert.deepEqual(frozen.material.media.map(row=>row.id),source.records.filter(row=>row.classification.dealerId==='paow').map(row=>row.id).sort());
+  assert.deepEqual(JSON.parse(state.packages.at(-1).branding).roomOverrides,branding.roomOverrides);
+  for(const dealer of ['nora','paow']) {
+    const native=dealer==='paow'?nativeRoomMaterialFixture():nativeRoomMaterialChoicesFixture();
+    const rejected=fixture({native,branding:{roomOverrides:{'room-test':{dealer}}},resolver:resolveNativeRoomGameMaterial});
+    const pending=await rejected.save({language:'sv',limitPreset:'casual'});
+    assert.equal(pending.publication.ready,false);
+    const before=rejected.snapshot();
+    await assert.rejects(rejected.publish(pending),{code:'studio_room_game_material_unavailable'});
+    assert.deepEqual(rejected.snapshot(),before);
+  }
+});
+
+test('embedded AV room override survives J08 save/read/publish and native access with exact source, tracks and revisions',async t=>{
+  const provider=t.mock.method(globalThis,'fetch',()=>{throw Error('unexpected provider request');});
+  const options={speechSchemaVersion:2,language:'en',allSpeechSlots:true};
+  const source=nativeRoomMaterialChoicesFixture(options);
+  const branding={roomOverrides:{'room-test':{dealer:'paow'},'another-room':{dealer:'dragan'}}};
+  const f=fixture({native:source,branding,resolver:resolveNativeRoomGameMaterial});
+  const draft=await f.save({language:'en',limitPreset:'casual'}),readDraft=await f.invoke('GET');
+  assert.deepEqual(readDraft.draft,draft.draft);assert.deepEqual(readDraft.publication,{ready:true});
+  const published=await f.publish(readDraft),read=await f.invoke('GET'),state=f.snapshot();
+  assert.deepEqual(read.published,published.published);assert.equal(read.draft,null);
+  const version=read.published.configVersion,key='room-test:'+version,frozen=JSON.parse(state.configs[key]);
+  const row=state.packages.at(-1),pack={operatorId:row.operator_id,revision:row.package_revision,
+    lanes:JSON.parse(row.lanes),games:JSON.parse(row.games),tables:JSON.parse(row.tables),branding:JSON.parse(row.branding)};
+  assert.equal(state.heads['room-test'],version);assert.equal(pack.branding.roomGameConfigVersions['room-test'],version);
+  assert.equal(frozen.configVersion,version);assert.equal(frozen.packageRevision,read.published.packageRevision);
+  assert.equal(pack.revision,2);assert.equal(read.packageRevision,pack.revision);assert.equal(frozen.packageRevision,pack.revision);
+  assert.deepEqual(pack.branding.roomOverrides,branding.roomOverrides);
+  const material=resolveNativeRoomGameMaterial({package:pack,room:state.document.value.rooms[0],language:read.published.gameConfig.language});
+  assert.deepEqual(frozen.material,material);assert.match(material.revision,/^native-film-v1-[a-f0-9]{64}$/);
+  assert.equal(material.dealerId,'paow');assert.equal(material.language,'en');
+  assert.deepEqual(material.media.map(item=>item.id),source.records.filter(item=>item.classification.dealerId==='paow').map(item=>item.id).sort());
+  const speeches=readPackagePresentation(pack).playback.media.filter(item=>item.classification.dealerId==='paow'&&item.classification.kind==='speech');
+  assert.deepEqual(new Set(speeches.map(item=>item.classification.situation)),new Set(SPEECH_SLOT_IDS));
+  for(const video of speeches){
+    const speech=video.classification.recordedSpeech;
+    assert.equal(speech.schemaVersion,2);assert.equal(speech.sourceKind,'embedded-mp4-av');
+    assert.equal(speech.source.status,'verified-embedded-av');assert.equal(speech.review.status,'approved');
+    assert.deepEqual(speech.source.identity,recordedSpeechIdentity(speech));
+    assert.equal(video.mediaTiming.video.trackId,speech.videoTrackId);
+    assert.deepEqual(video.mediaTiming.audio.map(track=>track.trackId),[speech.audioTrackId]);
+    assert.deepEqual(recordedSpeechForVideo(video,{dealerId:'paow',language:'en',lineId:speech.lineId,takeId:speech.takeId}),speech);
+    assert.equal(recordedSpeechForVideo(video,{dealerId:'paow',language:'sv',lineId:speech.lineId}),null);
+  }
+  const session={actorId:'synthetic-player',sessionId:'player-'+'a'.repeat(64),expiresAt:1000,partnerKeyId:null};
+  const access=createSharedRoomAccess({repository:f.repository,scope,now:()=>100,
+    auth:{binding:async()=>clone(session),bindingById:async id=>id===session.sessionId?clone(session):null}});
+  const authorize=()=>access.authorize(new Request('https://engine.invalid/shared-room/room-test'),{roomId:'room-test'});
+  const binding=await authorize();assert.equal(binding.packageRevision,read.packageRevision);
+  assert.equal(binding.roomId,'room-test');assert.equal(binding.operatorId,'north');
+  assert.deepEqual(await access.revalidate(binding),binding);assert.deepEqual(f.snapshot(),state);
+  assert.ok(f.trace.includes('shared-room-access:config'));
+  for(const change of [value=>{value.configVersion='room-config-00000000-0000-4000-8000-000000000000';},
+    value=>{value.packageRevision++;},value=>{value.material.revision='native-film-v1-'+'f'.repeat(64);}]){
+    f.changeState(saved=>{const value=clone(frozen);change(value);saved.configs[key]=JSON.stringify(value);});
+    const before=f.snapshot();await assert.rejects(authorize(),{code:'studio_forbidden',statusCode:403});assert.deepEqual(f.snapshot(),before);
+    f.changeState(saved=>{saved.configs[key]=JSON.stringify(frozen);});
+  }
+  const selectedSpeech=rows=>rows.find(item=>item.classification.dealerId==='paow'&&item.classification.kind==='speech');
+  const negatives=[
+    {name:'pending source',captured:true,change:video=>{video.classification.recordedSpeech.source={status:'pending'};video.classification.recordedSpeech.review={status:'pending'};}},
+    {name:'pending review',captured:true,change:video=>{video.classification.recordedSpeech.review={status:'pending'};}},
+    {name:'changed video track',change:video=>{video.mediaTiming.video.trackId=3;}},
+    {name:'changed audio track',change:video=>{video.mediaTiming.audio[0].trackId=3;}}
+  ];
+  for(const {name,captured,change} of negatives){
+    const native=nativeRoomMaterialChoicesFixture(options);if(captured)change(selectedSpeech(native.records));
+    const denied=fixture({native,branding,resolver:resolveNativeRoomGameMaterial}),pending=await denied.save({language:'en',limitPreset:'casual'});
+    if(!captured){assert.equal(pending.publication.ready,true);denied.changeState(saved=>change(selectedSpeech(saved.mediaRows)));}
+    const before=denied.snapshot();denied.trace.length=0;
+    assert.equal((await denied.invoke('GET')).publication.ready,false,name);
+    await assert.rejects(denied.publish(pending),{code:'studio_room_game_material_unavailable',statusCode:422});
+    assert.deepEqual(denied.snapshot(),before,name+' cannot change package, config, head, draft or audit');
+    assert.equal(denied.trace.some(marker=>['operator-store:publish-package','operator-store:audit-write','room-game-config:publish-config','room-game-config:publish-head'].includes(marker)),false);
+  }
+  assert.equal(provider.mock.callCount(),0);
+});
+
 test('material readiness exposes only fixed native reason codes and leaves publish errors generic',async()=>{
   for(const reason of ['native_material_measurement_missing','private_database_password','native_material_measurement_missing\nsecret']){
     const f=fixture({resolver:()=>{throw Object.assign(Error('private failure'),{statusCode:422,code:'studio_room_game_material_unavailable',reason});}});

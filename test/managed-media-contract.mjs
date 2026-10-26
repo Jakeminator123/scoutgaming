@@ -70,6 +70,7 @@ test('the complete portable package validation import graph has no Node dependen
 
 import {createHash} from 'node:crypto';
 import {mediaTimingSpeechIdentity} from '../packages/presentation/contracts/media-timing.mjs';
+import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 function measuredRecord({withSpeech=false}={}) {
   const row=record();
   if(withSpeech)Object.assign(row.classification,{eventId:'speak.goodluck',kind:'speech',situation:'goodluck',playback:'once',
@@ -82,6 +83,38 @@ function measuredRecord({withSpeech=false}={}) {
     audio:withSpeech?[{trackId:2,firstPtsUs:0,endUs:3200000}]:[],endUs:withSpeech?3200000:3000000,audioTailUs:withSpeech?200000:0};
   return row;
 }
+function embeddedRecord({verified=false,measured=true}={}) {
+  const row=measuredRecord({withSpeech:true});
+  const speech={schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_1',language:'sv',
+    exactText:'Inspelad testreplik.',videoSha256:row.sha256,fps:24,frameCount:72,videoTrackId:1,audioTrackId:2,
+    entryPose:'VILA',exitPose:'VILA',source:{status:'pending'},review:{status:'pending'}};
+  if(verified)speech.source={status:'verified-embedded-av',by:'Inspector',at:'2026-10-26T00:00:00.000Z',identity:recordedSpeechIdentity(speech)};
+  row.classification.recordedSpeech=speech;
+  row.mediaTiming.recordedSpeechIdentitySha256=createHash('sha256').update(mediaTimingSpeechIdentity(speech)).digest('hex');
+  if(!measured)delete row.mediaTiming;
+  return row;
+}
+test('embedded AV is MP4-only and verified source requires its measured binding in every reader',()=>{
+  for(const verified of [false,true]){
+    const input=embeddedRecord({verified}),before=structuredClone(input);
+    assert.deepEqual(validateManagedStudioMedia(input),validateStudioMedia(input));assert.deepEqual(input,before);
+    const missing=embeddedRecord({verified,measured:false});
+    if(verified){assert.throws(()=>validateManagedStudioMedia(missing));assert.throws(()=>validateStudioMedia(missing));}
+    else assert.deepEqual(validateManagedStudioMedia(missing),validateStudioMedia(missing));
+    const webm=embeddedRecord({verified,measured:false});webm.contentType='video/webm';webm.pathname=webm.pathname.replace('.mp4','.webm');
+    assert.throws(()=>validateManagedStudioMedia(webm));assert.throws(()=>validateStudioMedia(webm));
+  }
+});
+test('embedded AV readers bind track IDs and frame identity while server also recomputes the digest',()=>{
+  for(const change of [row=>{row.mediaTiming.video.trackId=3;},row=>{row.mediaTiming.audio[0].trackId=3;},
+    row=>{row.mediaTiming.audio=[];row.mediaTiming.endUs=row.mediaTiming.video.endUs;row.mediaTiming.audioTailUs=0;},
+    row=>{row.mediaTiming.audio.push({...row.mediaTiming.audio[0],trackId:3});}]){
+    const input=embeddedRecord({verified:true});change(input);
+    assert.throws(()=>validateManagedStudioMedia(input));assert.throws(()=>validateStudioMedia(input));
+  }
+  const forged=embeddedRecord({verified:true});forged.mediaTiming.recordedSpeechIdentitySha256='d'.repeat(64);
+  assert.throws(()=>validateStudioMedia(forged));
+});
 test('optional timing survives portable and server reads without changing old media or speech approvals',()=>{
   for(const withSpeech of [false,true]){
     const input=measuredRecord({withSpeech}),before=structuredClone(input);

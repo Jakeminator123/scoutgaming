@@ -36,15 +36,17 @@ export function validateManagedStudioMedia(record) {
   if (copy.classification.recordedSpeech !== undefined) {
     if (!['video/mp4','video/webm'].includes(copy.contentType)) fail();
     try { normalizeRecordedSpeech(copy.classification.recordedSpeech, {dealerId:copy.classification.dealerId,lineId:copy.classification.situation,videoSha256:copy.sha256}); } catch { fail(); }
+    const speech=copy.classification.recordedSpeech;
+    if(speech.schemaVersion===2 && (copy.contentType!=='video/mp4'
+      || speech.source.status==='verified-embedded-av' && !Object.hasOwn(copy,'mediaTiming')))fail();
   }
   if (Object.hasOwn(copy,'mediaTiming')) {
     if(copy.contentType!=='video/mp4')fail();
     const speech=copy.classification.recordedSpeech;
     try {
-      copy.mediaTiming=normalizeMediaTiming(copy.mediaTiming,{mediaId:copy.id,sha256:copy.sha256,size:copy.size,
+      copy.mediaTiming=normalizeMediaTiming(copy.mediaTiming,{mediaId:copy.id,sha256:copy.sha256,size:copy.size,recordedSpeech:speech,
         ...(!speech?{recordedSpeechIdentitySha256:null}:{})});
-      if(speech && (copy.mediaTiming.recordedSpeechIdentitySha256===null || copy.mediaTiming.video.frameCount!==speech.frameCount
-        || Math.abs(copy.mediaTiming.video.fps-speech.fps)>1e-9))fail();
+      if(speech && copy.mediaTiming.recordedSpeechIdentitySha256===null)fail();
     } catch {fail();}
   }
   if (copy.contentType.startsWith('audio/') !== (copy.classification.mediaType === 'audio')) fail();

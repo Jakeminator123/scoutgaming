@@ -147,10 +147,8 @@
           "unevaluatedProperties": false
         }
       }
-    }
-  },
-  "properties": {
-    "recordedSpeech": {
+    },
+    "recordedSpeechV1": {
       "type": "object",
       "description": "Optional exact recording tuple. Runtime validation also binds both proofs to this identity, the dealer, line and media bytes; verification never implies audiovisual approval.",
       "allOf": [
@@ -216,6 +214,201 @@
           ]
         }
       }
+    },
+    "embeddedAvSpeechIdentity": {
+      "type": "object",
+      "required": [
+        "sourceKind",
+        "dealerId",
+        "lineId",
+        "takeId",
+        "language",
+        "exactText",
+        "videoSha256",
+        "fps",
+        "frameCount",
+        "videoTrackId",
+        "audioTrackId",
+        "entryPose",
+        "exitPose"
+      ],
+      "properties": {
+        "sourceKind": {
+          "const": "embedded-mp4-av"
+        },
+        "dealerId": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "lineId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,99}$"
+        },
+        "takeId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,99}$"
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$"
+        },
+        "exactText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "videoSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "fps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 240
+        },
+        "frameCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 28800
+        },
+        "videoTrackId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "audioTrackId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "entryPose": {
+          "enum": [
+            "VILA",
+            "REDO"
+          ]
+        },
+        "exitPose": {
+          "enum": [
+            "VILA",
+            "REDO"
+          ]
+        }
+      }
+    },
+    "embeddedAvSpeechBoundProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "by",
+        "at",
+        "identity"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "verified-embedded-av",
+            "approved",
+            "rejected"
+          ]
+        },
+        "by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "identity": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/embeddedAvSpeechIdentity"
+            }
+          ],
+          "unevaluatedProperties": false
+        }
+      }
+    },
+    "recordedSpeechV2": {
+      "type": "object",
+      "description": "Exact MP4 container and selected video/audio tracks; server-measured source verification is distinct from audiovisual approval and makes no claim about filming origin.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/embeddedAvSpeechIdentity"
+        }
+      ],
+      "unevaluatedProperties": false,
+      "required": [
+        "schemaVersion",
+        "source",
+        "review"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 2
+        },
+        "source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/recordedSpeechPending"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/embeddedAvSpeechBoundProof"
+                },
+                {
+                  "properties": {
+                    "status": {
+                      "const": "verified-embedded-av"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "review": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/recordedSpeechPending"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/embeddedAvSpeechBoundProof"
+                },
+                {
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "approved",
+                        "rejected"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "properties": {
+    "recordedSpeech": {
+      "description": "Versioned exact speech identity. Runtime validation also binds source and review proofs to the identity, dealer, line and media bytes; verification never grants audiovisual approval.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/recordedSpeechV1"
+        },
+        {
+          "$ref": "#/$defs/recordedSpeechV2"
+        }
+      ]
     },
     "familyId": {
       "type": "string",

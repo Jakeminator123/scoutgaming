@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { addDealer, createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { BASE_DEALER_IDS } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { buildPresentationPackage } from '../packages/presentation/contracts/presentation-layers.mjs';
@@ -7,7 +9,7 @@ import { encodePresentationPackage, decodePresentationPackage } from '../package
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {validateRouletteIdleBinding,validateRouletteForegroundPolygons} from '../packages/presentation/contracts/roulette-idle-contract.mjs';
 import {
-  captureFrozenRegisteredDealers, validateFrozenRegisteredDealers,
+  captureFrozenRegisteredDealers, captureFrozenDealerPlayback, validateFrozenRegisteredDealers,
   resolveFrozenDealerIdle, assertFrozenMediaPreconditions,
 } from '../packages/presentation/server/frozen-dealer-idle.mjs';
 
@@ -315,3 +317,38 @@ test('frozen registered media retains its byte-bound optional timing receipt unc
   const bad=structuredClone(captured.registeredDealers);bad[0].idle.mediaTiming.size++;
   assert.throws(()=>validateFrozenRegisteredDealers(bad,{dealerIds:['linnea']}));
 });
+
+test('frozen embedded speech preserves source measurement and separate review while unverified sources stay excluded',()=>{
+  for(const sourceStatus of ['pending','verified-embedded-av'])for(const reviewStatus of ['pending','approved']){
+    if(sourceStatus==='pending'&&reviewStatus==='approved')continue;
+    const input=fixture(),speech={schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'linnea',lineId:'goodluck',takeId:'goodluck_1',language:'sv',
+      exactText:'Lycka till.',videoSha256:'c'.repeat(64),fps:24,frameCount:72,videoTrackId:1,audioTrackId:2,entryPose:'VILA',exitPose:'VILA',
+      source:{status:'pending'},review:{status:'pending'}};
+    const identity=recordedSpeechIdentity(speech),proof=status=>({status,by:'fixture-reviewer',at:'2026-10-26T00:00:00.000Z',identity:structuredClone(identity)});
+    if(sourceStatus!=='pending')speech.source=proof(sourceStatus);
+    if(reviewStatus!=='pending')speech.review=proof(reviewStatus);
+    const record=media('linnea',NEW_ID,speech.videoSha256);
+    Object.assign(record.classification,{eventId:'speak.goodluck',kind:'speech',situation:'goodluck',recordedSpeech:speech});
+    if(sourceStatus!=='pending')record.mediaTiming={schemaVersion:1,mediaId:record.id,sha256:record.sha256,size:record.size,
+      recordedSpeechIdentitySha256:createHash('sha256').update(JSON.stringify(identity)).digest('hex'),
+      video:{trackId:1,frameCount:72,fps:24,firstPtsUs:0,lastPtsUs:2958333,endUs:3000000},
+      audio:[{trackId:2,firstPtsUs:0,endUs:3000000}],endUs:3000000,audioTailUs:0};
+    input.mediaRows.push({...record,revision:'speech-1'});input.inventory.videos.push({...video(record),contentType:record.contentType});
+    const line=input.project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='speak.goodluck');
+    line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=NEW_ID;
+    const registered=captureFrozenRegisteredDealers(input),result=captureFrozenDealerPlayback({...input,registeredDealers:registered.registeredDealers});
+    const frozen=result.playback.media.find(row=>row.id===NEW_ID);
+    assert.ok(result.mediaPreconditions.some(row=>row.id===NEW_ID),'exclusion and capture both retain the exact CAS precondition');
+    if(sourceStatus==='pending'){
+      assert.equal(frozen,undefined);
+      assert.equal(result.playback.lines.find(row=>row.id===line.id).variants.find(row=>row.id===line.baselineVariantId).videoGenerationId,null);
+    }else{
+      assert.deepEqual(frozen.classification.recordedSpeech,speech);assert.deepEqual(frozen.mediaTiming,record.mediaTiming);
+      assert.equal(frozen.classification.recordedSpeech.review.status,reviewStatus);
+      assert.equal(Object.hasOwn(frozen.classification.recordedSpeech,'recording'),false);
+      const changed=structuredClone(input.mediaRows);changed.at(-1).classification.recordedSpeech.review={status:'pending'};changed.at(-1).revision='speech-2';
+      assert.throws(()=>assertFrozenMediaPreconditions(result.mediaPreconditions,changed),code('studio_conflict',409));
+    }
+  }
+});
+

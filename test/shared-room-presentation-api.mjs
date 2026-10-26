@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { EventEmitter } from 'node:events';
+import {createHash} from 'node:crypto';
 import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { createEmptyProject, addDealer } from '../packages/presentation/contracts/studio-model.mjs';
-import { recordedSpeechIdentity } from '../packages/presentation/contracts/recorded-speech.mjs';
+import { recordedSpeechIdentity, recordedSpeechForVideo } from '../packages/presentation/contracts/recorded-speech.mjs';
+import {recordedSpeechProjection} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { DRAGAN_KEVIN_PROFILE as profile } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 const first='10000000-0000-4000-8000-000000000001',second='10000000-0000-4000-8000-000000000002';
 const event={type:'deal',to:'box',box:3,handIndex:0,shoeDraw:4,faceDown:false,card:{r:'5',s:'♠',shoeDraw:4},clip:{action:'deal-centre'}};
@@ -20,7 +22,7 @@ function fixture({dealerId='nora',sourceEvent=event,options={}}={}){
   let reads=0,native=0,before=0,selects=0,failure;
   const base={env:{},db:{prepare(){native++;throw Error('must not read native journal');}},beforeActionPresentation(){before++;throw Error('must not change native action');},
     store:{load:async()=>{throw Error('must not read live Studio');}},registryLoader:async()=>{throw Error('must not read live registry');},
-    frozenDealerContext:{resolve:async()=>{reads++;return frozen;},publicVideo:(_f,id)=>{const row=frozen.inventory.videos.find(v=>v.id===id);return row?{id,sha256:row.sha256,fileName:row.fileName,src:'/api/presentation/registered-video/'+['north','room-a',7,dealerId,id].join('/'),...(row.classification.recordedSpeech?{recordedSpeech:row.classification.recordedSpeech}:{})}:null;}},
+    frozenDealerContext:{resolve:async()=>{reads++;return frozen;},publicVideo:(_f,id)=>{const row=frozen.inventory.videos.find(v=>v.id===id);return row?{id,sha256:row.sha256,fileName:row.fileName,src:'/api/presentation/registered-video/'+['north','room-a',7,dealerId,id].join('/'),...recordedSpeechProjection(row)}:null;}},
     withSharedCommittedReceipt:async({request,playerId,body,signal},selectFrozen)=>{
       assert.equal(request.method,'POST');assert.equal(playerId,'alice');signal.throwIfAborted();
       if(body.event.type!==capture.sourceEvent.type||body.event.type==='speak'&&body.event.line!==capture.sourceEvent.line)throw Object.assign(Error('stale'),{code:'shared_room_presentation_stale',statusCode:409});
@@ -75,6 +77,32 @@ test('committed speech keeps caption identity and denies unapproved or other-lan
     assert.equal(h.counts().native,0);assert.equal(h.counts().before,0);
     assert.equal((await h.request({event:{type:'speak',line:'invented'}})).status,409);
   }
+});
+
+test('shared embedded speech carries measured MP4 identity through its narrow public DTO to the player',async()=>{
+  for(const status of ['approved','pending','rejected']){
+    const h=fixture({sourceEvent:{type:'speak',line:'goodluck'}}),metadata={schemaVersion:2,sourceKind:'embedded-mp4-av',dealerId:'nora',
+      lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',videoSha256:h.video.sha256,
+      fps:24,frameCount:72,videoTrackId:1,audioTrackId:2,entryPose:'VILA',exitPose:'VILA',source:{status:'pending'},review:{status:'pending'}};
+    const identity=recordedSpeechIdentity(metadata),proof=state=>({status:state,by:'synthetic-reviewer',at:'2026-10-26T00:00:00.000Z',identity:structuredClone(identity)});
+    metadata.source=proof('verified-embedded-av');if(status!=='pending')metadata.review=proof(status);
+    h.video.classification.recordedSpeech=metadata;h.video.bytes=4096;
+    h.video.mediaTiming={schemaVersion:1,mediaId:first,sha256:h.video.sha256,size:h.video.bytes,
+      recordedSpeechIdentitySha256:createHash('sha256').update(JSON.stringify(identity)).digest('hex'),
+      video:{trackId:1,frameCount:72,fps:24,firstPtsUs:0,lastPtsUs:2958333,endUs:3000000},
+      audio:[{trackId:2,firstPtsUs:0,endUs:3000000}],endUs:3000000,audioTailUs:0};
+    const reply=await h.request();assert.equal(reply.status,200,JSON.stringify(reply.body));
+    if(status==='approved'){
+      assert.deepEqual(reply.body.video.mediaTiming,h.video.mediaTiming);assert.equal(reply.body.video.contentType,'video/mp4');assert.equal(reply.body.video.bytes,4096);
+      assert.deepEqual(recordedSpeechForVideo(reply.body.video,{dealerId:'nora',lineId:'goodluck',language:'sv',takeId:'goodluck_sv_1'}),metadata);
+      h.video.mediaTiming.audio[0].trackId=3;
+      const changed=await h.request();assert.equal(changed.status,200);assert.equal(changed.body.video,null);assert.equal(changed.body.standard,null);
+    }else{assert.equal(reply.body.video,null);assert.equal(reply.body.standard,null);}
+    assert.equal(h.counts().native,0);assert.equal(h.counts().before,0);
+  }
+  const legacy=fixture({sourceEvent:{type:'speak',line:'goodluck'}});legacy.video.classification.recordedSpeech=speech();
+  const old=await legacy.request();
+  for(const key of ['contentType','bytes','mediaTiming'])assert.equal(Object.hasOwn(old.body.video,key),false,'v1 public shape is unchanged');
 });
 
 test('a changed frozen context or unexpected provider failure produces only sanitized shared failure',async()=>{

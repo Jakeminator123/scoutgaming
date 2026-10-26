@@ -100,7 +100,9 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     const records = presentation.schemaVersion === 3 ? presentation.playback.media.filter(row => row.classification.dealerId === context.dealerId) : record ? [record] : [];
     const inventoryRecords = presentation.schemaVersion === 3 ? presentation.playback.media : records;
     const inventory = {families:[], videos:inventoryRecords.map(row => ({id:row.id, dealer:row.classification.dealerId, sha256:row.sha256, bytes:row.size,
-      available:true, integrity:'verified', eventId:row.classification.eventId, playbackType:'once', fileName:row.classification.label, classification:structuredClone(row.classification)}))};
+      available:true, integrity:'verified', eventId:row.classification.eventId, playbackType:'once', fileName:row.classification.label, classification:structuredClone(row.classification),
+      ...(row.classification.recordedSpeech?.schemaVersion===2?{contentType:row.contentType,
+        ...(row.mediaTiming?{mediaTiming:structuredClone(row.mediaTiming)}:{})}:{})}))};
     const idlePolicy = project ? registeredIdlePolicy(project,context.dealerId) : null;
     const idleInventory = idlePolicy ? registeredIdleInventory(inventory,{dealerId:context.dealerId,policy:idlePolicy}) : {videos:[],families:[]};
     for (const video of idleInventory.videos) {

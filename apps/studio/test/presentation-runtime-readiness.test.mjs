@@ -3,12 +3,14 @@ import {nativeRoomMaterialFixture,measuredFixtureRecord} from '../../../test/fix
 import {filmedPresentationFixture} from '../../../test/fixtures/filmed-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
-import { nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
+import { wrapNativePresentationRepository, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
+import { createNativePresentationMutationTransaction, nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
 import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
+import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
+import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
+import {defaultPresentationLane,createSeedProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry,defaultBlackjackAutoScale} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,validatePresentationPackage} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 import {encodePresentationPackage} from '../../../packages/presentation/server/presentation-package.mjs';
@@ -20,6 +22,37 @@ const dealers = ['vera', 'astrid', 'amira', 'mei'];
 const project = () => ({ dealers: [...dealers, 'nora'].map(id => ({ id })), lanes: [] });
 const blocked = error => error instanceof StudioStorageError && error.code === CODE && error.statusCode === 503 && error.message === CODE;
 const invalidPackage=error=>error.message==='studio_invalid_presentation'&&error.statusCode===422;
+
+test('embedded AV metadata negotiates v30 before registering or classifying, even while pending or invalid',async()=>{
+  for(const recordedSpeech of [
+    {schemaVersion:2,sourceKind:'embedded-mp4-av',review:{status:'pending'}},
+    {schemaVersion:2},
+    {schemaVersion:1,sourceKind:'embedded-mp4-av'},
+  ])for(const operation of ['register','classify']){
+    const metadata={dealerId:'astrid',recordedSpeech};
+    const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Math.min(Number(headers['X-Presentation-Capability-Version']),29)))});
+    const write=()=>operation==='register'?f.wrapped.registerMedia({classification:metadata}):f.wrapped.classifyMedia('id',{metadata});
+    await assert.rejects(write,blocked);
+    assert.equal(f.writes.length,0);
+    assert.equal(f.fetches.length,1);
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'30');
+  }
+});
+
+test('a v29 measurement context cannot gain embedded AV permission or issue a nested preflight',async()=>{
+  const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,
+    classification:{dealerId:'astrid',recordedSpeech:recordedSpeech()}});
+  const descriptor={metadata:record.classification,mediaTiming:record.mediaTiming};
+  const metadata={dealerId:'astrid',recordedSpeech:{schemaVersion:2,sourceKind:'embedded-mp4-av'}};
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no nested embedded AV permission'),{metadata}),blocked);
+    await assert.rejects(f.wrapped.registerMedia({classification:metadata}),blocked);
+    await assert.rejects(f.wrapped.classifyMedia('id',{metadata}),blocked);
+  },descriptor);
+  assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'29');
+});
 test('anchor presence gates active, archived and frozen geometry on v21 before any write',async()=>{
   for(const layout of ['mobile','desktop'])for(const anchors of [undefined,null,{}, {cards:{target:'scene',rect:{x:0,y:0,width:1,height:1}}}]){
     const lane={composition:{blackjackTables:[{[layout]:{anchors}}]}};
@@ -44,9 +77,9 @@ test('anchor presence gates active, archived and frozen geometry on v21 before a
 test('a declared VILA/REDO pose chain on a blackjack clip gates media writes on v22, not on the roulette v12 feature',async()=>{
   const chained={label:'Plats 1',dealerId:'dragan',eventId:'deal.player.left',kind:'action',role:'alternative',situation:'box0',notes:'',playback:'once',startPose:'VILA',endPose:'REDO'};
   const plain={...chained};delete plain.startPose;delete plain.endPose;
-  assert.deepEqual(extendedDealerMediaFeatures(chained),{recordedSpeech:false,mediaAlpha:false,rouletteMedia:false,clipPoses:true});
-  assert.deepEqual(extendedDealerMediaFeatures(plain),{recordedSpeech:false,mediaAlpha:false,rouletteMedia:false,clipPoses:false});
-  assert.deepEqual(extendedDealerMediaFeatures({eventId:'roulette.reference',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA'}),{recordedSpeech:false,mediaAlpha:false,rouletteMedia:true,clipPoses:false});
+  assert.deepEqual(extendedDealerMediaFeatures(chained),{recordedSpeech:false,recordedEmbeddedAv:false,mediaAlpha:false,rouletteMedia:false,clipPoses:true});
+  assert.deepEqual(extendedDealerMediaFeatures(plain),{recordedSpeech:false,recordedEmbeddedAv:false,mediaAlpha:false,rouletteMedia:false,clipPoses:false});
+  assert.deepEqual(extendedDealerMediaFeatures({eventId:'roulette.reference',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA'}),{recordedSpeech:false,recordedEmbeddedAv:false,mediaAlpha:false,rouletteMedia:true,clipPoses:false});
   for(const version of [21,22]){
     const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
     const work=()=>f.wrapped.registerMedia({id:'40000000-0000-4000-8000-000000000001',classification:chained});
@@ -112,6 +145,17 @@ function recordedSpeech() {
     videoSha256:'a'.repeat(64),audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
     entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
 }
+function embeddedRecordedSpeech({approved=true,verified=true}={}) {
+  const identity={sourceKind:'embedded-mp4-av',dealerId:'astrid',lineId:'goodluck',takeId:'goodluck_1',
+    language:'sv',exactText:'En inspelad testreplik.',videoSha256:'a'.repeat(64),fps:24,frameCount:72,
+    videoTrackId:1,audioTrackId:2,entryPose:'VILA',exitPose:'VILA'};
+  const proof=status=>({status,by:'fixture-reviewer',at:'2026-10-26T00:00:00.000Z',identity:structuredClone(identity)});
+  return {schemaVersion:2,...identity,source:verified?proof('verified-embedded-av'):{status:'pending'},review:approved?proof('approved'):{status:'pending'}};
+}
+function embeddedFrozenPackage() {
+  return frozenPackage(value=>bindFrozenMedia(value,measuredFixtureRecord(frozenMedia({eventId:'speak.goodluck',kind:'speech',
+    situation:'goodluck',recordedSpeech:embeddedRecordedSpeech()}),{frames:72,fps:24,audioEndUs:3_000_000})));
+}
 function rouletteMedia(action='breathing',n=3) {
   return frozenMedia({eventId:action==='breathing'?'roulette.idle':'roulette.wheel-start',kind:action==='breathing'?'idle':'action',situation:action,
     game:'roulette',action,startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}},'video/webm',n);
@@ -122,13 +166,15 @@ function frozenRoulette(start=false) {
     if(start)dealer.rouletteStart={clip:rouletteMedia('wheel-start',4),tableDesignId:'roulette-anna-v1',durationMs:2000,wheelImpulseMs:500,ballReleaseMs:1000};
   });
 }
-function fixture({ config = env, fetcher = async () => Response.json(capability) } = {}) {
+function fixture({ config = env, fetcher = async () => Response.json(capability), storedMedia = [] } = {}) {
   const writes = [], fetches = [];
+  const media=new Map(storedMedia.map(row=>[row.id,structuredClone(row)]));
   const repository = {
     marker: 'original',
     async saveDocument(...args) { assert.equal(this, repository); writes.push(['saveDocument', ...args]); return 'document-result'; },
     async registerMedia(...args) { assert.equal(this, repository); writes.push(['registerMedia', ...args]); return 'register-result'; },
     async saveMediaTiming(...args) { assert.equal(this, repository); writes.push(['saveMediaTiming',...args]); return 'timing-result'; },
+    async getMedia(id) { assert.equal(this,repository); return structuredClone(media.get(id)??null); },
     async classifyMedia(...args) { assert.equal(this, repository); writes.push(['classifyMedia', ...args]); return 'classify-result'; },
     transaction(work, options) { assert.equal(this, repository); assert.equal(options?.fixture, true); return work(repository); },
     readDocument: async () => 'read-result',
@@ -1101,7 +1147,7 @@ test('v29 gates measured registration and exact measurement descriptors before S
   const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
   for(const version of [28,29]){
     let inSql=false,begun=0;
-    const f=fixture({fetcher:async()=>{assert.equal(inSql,false);return Response.json(presentationCapabilitiesForVersion(version));}});
+    const f=fixture({storedMedia:[record],fetcher:async()=>{assert.equal(inSql,false);return Response.json(presentationCapabilitiesForVersion(version));}});
     f.repository.transaction=async work=>{begun++;inSql=true;try{return await work(f.repository);}finally{inSql=false;}};
     const descriptor={metadata:record.classification,mediaTiming:record.mediaTiming};
     const save=()=>f.wrapped.transaction(repo=>repo.saveMediaTiming(record.id,{sha256:record.sha256,mediaTiming:record.mediaTiming,expectedRevision:'media-1',actor:'tester'}),{presentationMutation:descriptor});
@@ -1116,7 +1162,7 @@ test('v29 gates measured registration and exact measurement descriptors before S
 
 test('measurement writer cannot acquire permission outside or across a different active descriptor',async()=>{
   const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
-  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+  const f=fixture({storedMedia:[record],fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
   const options={sha256:record.sha256,mediaTiming:record.mediaTiming,expectedRevision:'media-1',actor:'tester'};
   await assert.rejects(f.wrapped.saveMediaTiming(record.id,options),blocked);assert.equal(f.fetches.length,0);
   await f.wrapped.withMutationContext(()=>assert.rejects(f.wrapped.saveMediaTiming(record.id,options),blocked),{metadata:record.classification});
@@ -1175,7 +1221,7 @@ test('present but invalid measurement cannot downgrade readiness or authorize a 
   }
   const record=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:{dealerId:'astrid'}});
   const descriptor={metadata:record.classification,mediaTiming:structuredClone(record.mediaTiming)};
-  const f=fixture({fetcher:async()=>{
+  const f=fixture({storedMedia:[record],fetcher:async()=>{
     descriptor.mediaTiming.size++;
     return Response.json(presentationCapabilitiesForVersion(29));
   }});
@@ -1197,4 +1243,142 @@ test('a detached continuation cannot retain measurement permission after its ope
   },{metadata:record.classification,mediaTiming:record.mediaTiming});
   release();await assert.rejects(child,blocked);
   assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+});
+
+test('measurement checks the stored source format so a v29 descriptor cannot mint embedded AV proof',async()=>{
+  const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope:{environment:'test',workspaceId:'readiness-source-proof'}});
+  await repository.initializeDocument('project',{value:createSeedProject(),actor:'fixture'});
+  const record=frozenMedia({eventId:'speak.goodluck',kind:'speech',situation:'goodluck',recordedSpeech:embeddedRecordedSpeech({approved:false,verified:false})});
+  const registered=(await repository.registerMedia(record,{actor:'fixture'})).media;
+  const {mediaTiming}=measuredFixtureRecord(structuredClone(record),{frames:72,fps:24,audioEndUs:3_000_000});
+  const metadata={...record.classification};delete metadata.recordedSpeech;
+  const requests=[];let version=29;
+  const wrapped=wrapNativePresentationRepository(repository,{env,fetchImpl:async(_url,{headers})=>{
+    requests.push(headers['X-Presentation-Capability-Version']);return Response.json(presentationCapabilitiesForVersion(version));
+  }});
+  const options={sha256:record.sha256,expectedRevision:registered.revision,mediaTiming,actor:'fixture-inspector'};
+  const save=descriptor=>wrapped.withMutationContext(()=>wrapped.transaction(inner=>inner.saveMediaTiming(record.id,options),{presentationMutation:descriptor}),descriptor);
+  const before=pool.snapshot();
+  await assert.rejects(save({metadata,mediaTiming}),blocked);
+  assert.deepEqual(pool.snapshot(),before);assert.deepEqual(requests,['29']);
+  assert.equal((await repository.getMedia(record.id)).classification.recordedSpeech.source.status,'pending');
+  version=30;
+  const saved=await save({metadata:record.classification,mediaTiming});
+  assert.equal(saved.classification.recordedSpeech.source.status,'verified-embedded-av');
+  assert.equal(saved.classification.recordedSpeech.source.by,'fixture-inspector');assert.deepEqual(saved.classification.recordedSpeech.review,{status:'pending'});
+  assert.deepEqual(requests,['29','30'],'stored feature checks never fetch from the SQL context');
+});
+
+test('v29 measurement still permits stored v1 speech and ordinary MP4 while missing readers fail closed',async()=>{
+  for(const speech of [undefined,recordedSpeech()]){
+    const record=measuredFixtureRecord(frozenMedia(speech?{eventId:'speak.goodluck',kind:'speech',situation:'goodluck',recordedSpeech:speech}:{}),{frames:72,fps:24,audioEndUs:3_000_000});
+    const f=fixture({storedMedia:[record],fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+    const descriptor={metadata:record.classification,mediaTiming:record.mediaTiming},options={sha256:record.sha256,mediaTiming:record.mediaTiming};
+    assert.equal(await f.wrapped.withMutationContext(()=>f.wrapped.saveMediaTiming(record.id,options),descriptor),'timing-result');
+    assert.equal(f.writes.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'29');
+    delete f.repository.getMedia;
+    await assert.rejects(f.wrapped.withMutationContext(()=>f.wrapped.saveMediaTiming(record.id,options),descriptor),blocked);
+    assert.equal(f.writes.length,1);
+  }
+});
+
+test('measurement cannot outlive its context while the authoritative source read is pending',async()=>{
+  const record=measuredFixtureRecord(frozenMedia()),f=fixture({storedMedia:[record],fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+  let entered,release,child;const started=new Promise(resolve=>entered=resolve),later=new Promise(resolve=>release=resolve);
+  f.repository.getMedia=async()=>{entered();await later;return structuredClone(record);};
+  await f.wrapped.withMutationContext(async()=>{
+    child=f.wrapped.saveMediaTiming(record.id,{sha256:record.sha256,mediaTiming:record.mediaTiming});await started;
+  },{metadata:record.classification,mediaTiming:record.mediaTiming});
+  release();await assert.rejects(child,blocked);assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+});
+
+test('measurement options are detached before awaiting the stored source read',async()=>{
+  const record=measuredFixtureRecord(frozenMedia()),f=fixture({storedMedia:[record],fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+  const options={sha256:record.sha256,mediaTiming:structuredClone(record.mediaTiming),expectedRevision:'media-1',actor:'fixture'},before=structuredClone(options);
+  let entered,release;const started=new Promise(resolve=>entered=resolve),later=new Promise(resolve=>release=resolve);
+  f.repository.getMedia=async()=>{entered();await later;return structuredClone(record);};
+  const work=f.wrapped.withMutationContext(()=>f.wrapped.saveMediaTiming(record.id,options),{metadata:record.classification,mediaTiming:record.mediaTiming});
+  await started;options.mediaTiming.video.trackId=99;options.actor='changed';release();
+  assert.equal(await work,'timing-result');assert.deepEqual(f.writes[0],['saveMediaTiming',record.id,before]);assert.equal(f.fetches.length,1);
+});
+
+test('v30 permits pending embedded AV metadata without granting approval or measurement permission',async()=>{
+  const metadata={dealerId:'astrid',eventId:'speak.goodluck',kind:'speech',situation:'goodluck',
+    recordedSpeech:embeddedRecordedSpeech({approved:false,verified:false})},before=structuredClone(metadata);
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(30))});
+  await f.wrapped.withMutationContext(async()=>{
+    await f.wrapped.registerMedia({classification:metadata});
+    await f.wrapped.classifyMedia('id',{metadata});
+    const measured=measuredFixtureRecord({id:'20000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,classification:metadata});
+    await assert.rejects(f.wrapped.saveMediaTiming(measured.id,{sha256:measured.sha256,mediaTiming:measured.mediaTiming}),blocked);
+  },{metadata});
+  assert.deepEqual(metadata,before);
+  assert.deepEqual(f.writes[0][1].classification,before);assert.deepEqual(f.writes[1][2].metadata,before);
+  assert.equal(f.writes.length,2);assert.equal(f.fetches.length,1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'30');
+});
+
+test('frozen embedded AV requires v30 before SQL and preserves the exact published source and review',async()=>{
+  const value=embeddedFrozenPackage(),before=structuredClone(value);
+  assert.equal(presentationPackageRequiresV30(value),true);
+  assert.equal(presentationPackageRequiresV30(frozenPackage()),false);
+  const legacy=frozenPackage(value=>bindFrozenMedia(value,frozenMedia({eventId:'speak.goodluck',kind:'speech',
+    situation:'goodluck',recordedSpeech:recordedSpeech()})));
+  assert.equal(presentationPackageRequiresV30(legacy),false);
+  for(const version of [29,30]){
+    let begun=0,inSql=false;
+    const f=fixture({fetcher:async()=>{assert.equal(inSql,false);return Response.json(presentationCapabilitiesForVersion(version));}});
+    f.repository.transaction=async work=>{begun++;inSql=true;try{return await work(f.repository);}finally{inSql=false;}};
+    const publish=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),
+      {presentationMutation:{kind:'presentation-package',value}});
+    if(version===29)await assert.rejects(publish,blocked);
+    else{await publish();assert.deepEqual(f.writes[0][2].value,before);}
+    assert.equal(begun,version===30?1:0);assert.equal(f.writes.length,version===30?1:0);
+    assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'30');
+    assert.deepEqual(value,before);
+  }
+});
+
+test('native archive and lifecycle keep frozen embedded AV gated before both mutation locks',async()=>{
+  const value=embeddedFrozenPackage(),frozen={kind:'presentation-package',value};
+  for(const kind of ['material-trash','resource-lifecycle','dealer-archive'])for(const version of [29,30]){
+    let productLocks=0,studioLocks=0,inProduct=false,inStudio=false;
+    const f=fixture({fetcher:async()=>{assert.equal(inProduct,false);assert.equal(inStudio,false);
+      return Response.json(presentationCapabilitiesForVersion(version));}});
+    f.repository.transaction=async work=>{studioLocks++;inStudio=true;try{return await work(f.repository);}finally{inStudio=false;}};
+    const mutate=createNativePresentationMutationTransaction({repository:f.wrapped,
+      boDb:{async transaction(work){productLocks++;inProduct=true;try{
+        return await f.wrapped.transaction(work,{presentationMutation:frozen});
+      }finally{inProduct=false;}}}});
+    const write=()=>mutate(()=>f.wrapped.saveDocument('presentation-package',{value}),
+      {presentationMutation:[{kind,value:{}},frozen]});
+    if(version===29)await assert.rejects(write,blocked);else await write();
+    assert.equal(productLocks,version===30?1:0);assert.equal(studioLocks,version===30?1:0);
+    assert.equal(f.writes.length,version===30?1:0);assert.equal(f.fetches.length,1);
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'30');
+  }
+});
+
+test('a v29 frozen measurement context cannot acquire embedded AV after either SQL boundary',async()=>{
+  const measured=frozenPackage();measured.playback.media.forEach(row=>measuredFixtureRecord(row));
+  measured.registeredDealers[0].idle=structuredClone(measured.playback.media[0]);
+  const value=embeddedFrozenPackage(),f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(29))});
+  let begun=0;f.repository.transaction=async work=>{begun++;return work(f.repository);};
+  await f.wrapped.transaction(async repo=>{
+    await assert.rejects(repo.withMutationContext(()=>assert.fail('no frozen source widening'),{kind:'presentation-package',value}),blocked);
+    await assert.rejects(repo.saveDocument('presentation-package',{value}),blocked);
+  },{presentationMutation:{kind:'presentation-package',value:measured}});
+  assert.equal(begun,1);assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'29');
+});
+
+test('embedded AV preflight permissions are snapshotted and cannot be introduced during the remote await',async()=>{
+  const metadata={dealerId:'astrid',recordedSpeech:recordedSpeech()},descriptor={metadata};
+  const f=fixture({fetcher:async()=>{descriptor.metadata.recordedSpeech=embeddedRecordedSpeech({approved:false});
+    return Response.json(presentationCapabilitiesForVersion(17));}});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.registerMedia({classification:metadata}),blocked);
+    await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no edited descriptor'),descriptor),blocked);
+  },descriptor);
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
 });

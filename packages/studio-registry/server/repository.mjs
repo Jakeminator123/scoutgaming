@@ -3,6 +3,7 @@ import { runSharedPostgresTransaction, runPostgresTransactionOwner, assertShared
 import { createHash, randomUUID } from 'node:crypto';
 import { StudioStorageError } from '../../studio-access/studio-scope.mjs';
 import { normalizeMediaTiming, mediaTimingSpeechIdentity } from '../../presentation/contracts/media-timing.mjs';
+import { normalizeRecordedSpeech, recordedSpeechIdentity } from '../../presentation/contracts/recorded-speech.mjs';
 
 function requiredAdapter(name, value, functions) {
   if (!value || functions.some(key => typeof value[key] !== 'function')) {
@@ -320,7 +321,12 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       });
     },
     classifyMedia(id, { sha256, expectedRevision, metadata, actor } = {}) {
-      return operation(() => ({ id: validateMediaId(id), expectedRevision: validateRevision(expectedRevision), actor: validateActor(actor) }), async prepared => {
+      return operation(() => {
+        const checked = { id: validateMediaId(id), expectedRevision: validateRevision(expectedRevision), actor: validateActor(actor) };
+        try { return { ...checked, metadata: JSON.parse(canonicalStudioJson(metadata)) }; }
+        catch { fail('studio_invalid_media', 422); }
+      }, async prepared => {
+        const metadata = prepared.metadata;
         const previous = await loadMedia(prepared.id);
         if (!previous) fail('studio_media_missing', 404);
         if (previous.retainedBank) fail('studio_retained_media_immutable',410);
@@ -335,12 +341,21 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
           && project?.value.dealerTrash?.some(entry => entry.dealer.id === metadata?.dealerId);
         if (project && !retainedOwner && !project.value.dealers?.some(dealer => dealer.id === metadata?.dealerId)) fail('studio_dealer_inactive');
         const { mediaTiming, ...withoutTiming } = record;
-        let next = validateStudioMedia({ ...withoutTiming, classification: metadata });
         const beforeSpeech = record.classification.recordedSpeech;
-        const afterSpeech = next.classification.recordedSpeech;
-        if (mediaTiming && (beforeSpeech ? afterSpeech && mediaTimingSpeechIdentity(beforeSpeech) === mediaTimingSpeechIdentity(afterSpeech) : !afterSpeech)) {
-          next = validateStudioMedia({ ...next, mediaTiming });
+        let afterSpeech;
+        try { afterSpeech = metadata?.recordedSpeech === undefined ? undefined : normalizeRecordedSpeech(metadata.recordedSpeech); }
+        catch { fail('studio_invalid_media', 422); }
+        // Metadata may preserve the exact server proof, never mint or reattribute
+        // one. A changed identity must return to pending and be measured again.
+        if (afterSpeech?.schemaVersion === 2 && afterSpeech.source.status === 'verified-embedded-av'
+          && (beforeSpeech?.schemaVersion !== 2 || beforeSpeech.source.status !== 'verified-embedded-av'
+            || canonicalStudioJson(afterSpeech.source) !== canonicalStudioJson(beforeSpeech.source))) {
+          fail('studio_invalid_media', 422);
         }
+        const keepTiming = mediaTiming && (beforeSpeech ? afterSpeech && mediaTimingSpeechIdentity(beforeSpeech) === mediaTimingSpeechIdentity(afterSpeech) : !afterSpeech);
+        // A verified v2 record must keep its measurement during final validation,
+        // including harmless label/review updates to the same speech identity.
+        const next = validateStudioMedia({ ...withoutTiming, classification: metadata, ...(keepTiming ? { mediaTiming } : {}) });
         const revision = newRevision('media');
         const row = (await query(`/* studio:classify-media */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
           WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,
@@ -372,8 +387,14 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
         if (!isActiveDealerId(dealerId) || !project?.value.dealers?.some(dealer => dealer.id === dealerId)) fail('studio_dealer_inactive');
         const { revision: oldRevision, updatedAt, ...record } = previous;
         // Server contract checks exact size/hash and recomputes the speech
-        // identity digest; recording/review and all other fields are retained.
-        const next = validateStudioMedia({ ...record, mediaTiming: prepared.mediaTiming });
+        // identity digest. Embedded AV source verification is distinct from the
+        // human review; v1 recording attestations retain their existing behavior.
+        let next = validateStudioMedia({ ...record, mediaTiming: prepared.mediaTiming });
+        const speech = next.classification.recordedSpeech;
+        if (speech?.schemaVersion === 2) {
+          const source = { status: 'verified-embedded-av', by: prepared.actor, at: new Date().toISOString(), identity: recordedSpeechIdentity(speech) };
+          next = validateStudioMedia({ ...next, classification: { ...next.classification, recordedSpeech: { ...speech, source } } });
+        }
         const revision = newRevision('media');
         const row = (await query(`/* studio:save-media-timing */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
           WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,
