@@ -2,6 +2,10 @@
 
 Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hela programmet. [status.json](../status.json) är enda källa för status, beroenden och bevis; checklistorna nedan är krav, inte utförandekvitton. Ingen produktaktivitet blir klar av att denna fil finns.
 
+## Aktuell status 26 oktober
+
+J05 är verifierad på902 enligt det faktiska drift- och läsarkvittot nedan;55 % (11/20) är nu verifierat. Status.json är fortsatt enda statuskälla. Följande25-oktobersrevision är historik.
+
 ## Nulägesrevision 25 oktober
 
 Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. 45 % är oförändrat. Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
@@ -145,7 +149,9 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 
 ## J05 — Förenkla runtime och byggkedja
 
-**IN_PROGRESS, aktuell gräns 25 oktober:** #336 är mergad som `34060c4d0e3fd33c1e4040479646d7150b6d1294`; gateway, klientmontering, skyddad HTTP/WS och same-PG material-/authkontroll finns i main. Äldre delprov och deras SHA finns i status.json. Server-v3 och borttagna äldre produktvägar är senare leveranser. Upprepa inte bootstrap-arbetet; återstår samlad verifiering av aktuella konsumenter, start/readiness, drain/poollivstid och återställning. Faktisk schema-/flagg-/driftstatus återläses inför en körning; äldre “osatt/AV” är inte en aktuell observation.
+**VERIFIED 26 oktober på `902bae95ca47409390f0b77cf1c76bd8707245b9`, [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403):** samlad integrerad CI och Docker/Studio-build passerar; faktisk Renderdeploy och processomstart ger ny instans/runtime på samma SHA. Kompletta offentliga health/version-serier26+6 före och26+6 efter ger64/64 med rätt MIME/SHA och individuell gatewaykorrelation. Produktens ordinarie PostgreSQL-läsare för sparat spel, profil/saldo och historik återger identiska data före/efter. Oberoende `migration_acceptance` godkänner kriterier och slutbevis; `runtime_harness` matchar sex läsarkällor mot exakt902. [Fullt kvitto och metodgräns](../../docs/ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober).
+
+Före #394 startades game+Studio i den kombinerade Renderkedjan; nu byggs bara Dockerfile.game med en game-server och ingen Studio/Next. Faktiskt två Node-OS-processer före/efter902-omstart: container-entry och game-server. Vercels serveransvar behålls; ingen tids- eller prestandavinst påstås. Kriterier, vikter och beroenden är oförändrade. En ofullständig25/26-serie bevaras och räknas inte; en ny komplett serie godkändes. Historiska502:s rotorsak, autentiserad offentlig spelåteranslutning och HTTP-restore ingår inte i denna acceptans.
 
 - [x] Verifiera separat rumskanalport: serverauth/Origin/rumsisolering, publika fält, samtidiga hints, återläsning/version, timeout/buffer och cleanup med syntetiska sockets. Ingen listener/PGnotifiering/klientreplayacceptans.
 - [x] Verifiera sanerad skrivfri schedulerhälsa och dokumentera återanvändning av befintlig Renderinstans/start/readiness/drain-gräns.
@@ -153,7 +159,7 @@ Källor: packages/navigation/admin-workspace-routes.mjs:9, apps/studio/client/ad
 - [x] Sessions→rum/publicering-accessport i PR336/65118: verklig auth/scoped repository/Fetch/channel.prepare, exakt paket/config/materialkontroll och explicit partnerproveniens. SQL-minnesklient,11/11 access/40/40 samkörning/65/65 normalhook,0skip,oberoende review; ingen ny PG-/listener-/full Partneracceptans.
 - [x] Delsteg PR336/d008: montera access/K04-mottagare/scheduler i appkomposition med exklusiv dispatcher, skrivfri hälsa, schemaförestart och SQL/authdrain före poolclose. Flaggan är osatt;78/78 samkörning och84/84 normalhook överlappar. Ingen ny egen PG-/publik listeneracceptans.
 - [x] Koppla publik gateway/relay/Vercelrumsväg och rootklientens replay/presentation, isolerat verifierat i PR336/8504; detta är en delkontroll.
-- [ ] Verifiera den förenklade driftkedjan med isolerade paket/media, HTTP-omstart och sparad spelstatus. K04/K06:s godkända film-/talmaterial och produktionsmandat kvarstår som separata aktiveringsgrindar.
+- [x] Verifiera den förenklade driftkedjan med isolerade paket/media, HTTP-omstart och sparad spelstatus. K04/K06:s godkända film-/talmaterial och produktionsmandat kvarstår som separata aktiveringsgrindar.
 
 **Etapp:** E2. **Beroenden:** J03, J04.
 **Mål:** en begriplig produktkedja utan överflödiga UI-processer, API-proxyer eller alternativa starter.

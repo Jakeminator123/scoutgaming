@@ -236,15 +236,15 @@
       "stage": "E2",
       "title": "Förenkla runtime och byggkedja",
       "weight": 5,
-      "status": "IN_PROGRESS",
+      "status": "VERIFIED",
       "dependsOn": [
         "J03",
         "J04"
       ],
-      "branch": "codex/shared-room-transport",
-      "head": "83f5810d33c483868ac0ce2bab728efb813d51b4",
-      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/336",
-      "reviewer": "Oberoende backend/auth/replay/presentation- och mediafabriksreview av runtime_audit, room_routing och replay-adapter; root har samlat kod- och provbevis. Fixtureprov är inte full K04-media- eller produktacceptans.",
+      "branch": "main",
+      "head": "902bae95ca47409390f0b77cf1c76bd8707245b9",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/403",
+      "reviewer": "migration_acceptance: oberoende kriterie-, läsarskript-, data- och slutlig HTTP/korrelationsreview utan blockerare; runtime_harness: sex läsarfiler byte-/blobverifierade mot exakt 902bae95; root: faktisk deploy, omstart, läsprov och integration",
       "evidence": [
         "Aktuell transportleverans PR336/codex/shared-room-transport/head83f5810d33c483868ac0ce2bab728efb813d51b4. Root rapporterar exakt-head CI39753242313 completed/success. Main47756bdf1df372c7aa5047dc165a2d721614c4a2 är integrerad i featurebranchen; PR334/336 är inte produktmergade. Tidigare8504 är ersatt som aktuell J05-head.",
         "Levererat inom PR336: skyddad POST-command, readonly rumskanal, servervald rum/paket/config-bindning, same-PG G → S → R/P/A och låst session/proveniens före receipt/replay. WS återställer snapshot före presentation; osäker retry behåller commandId/bytes. Tvåfasigt mediaval omkontrollerar auth/config/material kring olåst arbete. Inga nativejournalwrites eller klientägda wallet-/spelregler.",
@@ -261,9 +261,14 @@
         "Molnprov2026-10-25 kväll: efter stoppade appskrivare återställdes en granskad PostgreSQL18.6-dump en gång till separat croupier_staging_restore.75tabeller/fyra sekvenser och1777unika fullständiga objektnycklar matchar; riktiga app-läsare ger identisk stabil data med strikt klient-TLS/skrivskydd. Originalets SQL-name-trunkering rättad genom separat läsande ommätning, inte datarättning. Ingen full HTTP-spelreplay efter restore; detaljer/kvitton i ENVIRONMENT-RESTORATION.md.",
         "Molnprov2026-10-25 kväll: andra omstarten efter spel fick ny deployment på samma28815e9c, men växlande health/version200 och RenderHTML502. Spelåterläsning underkänd efter1kontroll/0kommandon; orsak öppen. Första omstartens4/4 projektåterläsningar kvarstår som avgränsat delbevis. Egna Render/Vercel lämnade verifierat suspenderad/pausad.",
         "PR398 runtime81bc2475b9f3da726a5d8e4cfe72e6850103c63a: första deploy8/8 HTTP, rättad servicebranch och verklig suspend/resume på sammaSHA, därefter3/8 HTTP och5Render502. Samma fel med Connectionclose; inget rotorsaksbevis. Game-readbackFAIL förekommandon. Egna Render/Vercel stoppade/pausade21:21UTC. Exakta kvitton i ENVIRONMENT-RESTORATION kompletterande omstartsprov.",
-        "2026-10-26: granskad Render961c3556 gav9/16HTTP200 och7proxy502 utan matchande gatewaymottagning.694b9b17 gav5/8 efter90s och senare8/8; curl/Node/DNS6/6. Egna resurser stoppade. Rotorsak/stabil spelomstart inte kvitterad; se ENVIRONMENT-RESTORATION."
+        "2026-10-26: granskad Render961c3556 gav9/16HTTP200 och7proxy502 utan matchande gatewaymottagning.694b9b17 gav5/8 efter90s och senare8/8; curl/Node/DNS6/6. Egna resurser stoppade. Rotorsak/stabil spelomstart inte kvitterad; se ENVIRONMENT-RESTORATION.",
+        "J05 slutverifierad 2026-10-26 på integrerad main902bae95ca47409390f0b77cf1c76bd8707245b9, PR403. PR400/401/402 ingår med bevarad historik. Integrations-CI40309660807 och main-CI40311134134 är completed/success; root har läst resultaten och relevanta loggar: alla åtta grupper, Studio-build, isolerad PG/omstart/HTTPS, readiness och Docker. Positiva/negativa API-, WS-, auth- och medietransportkontrakt återanvänds från denna oförändrade produktkod; de är skilda från offentliga molnprov.",
+        "Faktisk isolerad Renderdeploy dep-dbfjqq5g1s2s7383f2m0 på902 blev live2026-10-26T11:47:34.695335Z. Verklig Restart service gav eventevt-dbfk2hgae00c738crqcg12:02:14.748776Z och ny instansn4ct5/runtimeb47e0c23-deeb-4c9e-923f-0caaa2debd11; föregående4r6h7/runtime4de9def7-20b2-4cab-aafc-3afc9a68cadb ersattes. Samma commit och deploy-ID före/efter; automatisk deploy av. Efter konservativ överlämningsmarginal passerar kompletta60s-serier26/26 och efter klientvila6/6 både före och efter omstart. Totalt64/64 accepterade offentliga health/version-svar, varje Rndr-Id korrelerat till received+finished200 på rätt runtime/listener2. Exakta tider och metod i docs/ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober.",
+        "Faktiska produktläsare på samma902 läste skrivskyddat croupier_staging med verifierad approll/TLS och REPEATABLE READ före12:01:03.010Z/efter12:04:57.932Z. En och samma aktiva syntetiska spelare har initialiserat sparat spel, två native-ledgerposter, presentation och färdig historikrunda. readPlayerProfile/publicPlayerProfile, createPlayerHistoryHandler/readPlayerResults och gameView kördes; samtliga data-/resultat-/källhashar är identiska. Affärsdata-SHA25613f71ae3b4f91815ad24c479d1d17a68d4263095004e4ce9c7f92a35946b5833. Fryst granskat läsprov1374f01056e80f26222bf424c551f41fa6abd91fa6b830ade7c7b17ccaac94f1. Inga konton, sessioner, spelkommandon, DDL eller media skapades/ändrades.",
+        "Kvittolucka bevarad: första efteromstartsserien har25av26 sparade rader; index1/version saknas och originalet kan inte återvinnas som klientkvitto. Inga observerade fel, men serien underkänns som komplett bevis och räknas inte i64/64. En separat fullständig26/26-serie12:08:47–12:09:47, följd av105.069s klientvila och6/6 svar12:11:33–12:11:43, har komplett stdout, fil och52+12 gatewaykorrelationer. Oberoende migration_acceptance kontrollerade alla64 accepterade klientkvitton och datajämförelsen utan blockerare.",
+        "Före PR394 startade den kombinerade Renderkedjan game+Studio; nu byggs endast Dockerfile.game och en game-server startas. Verklig /proc-inventering på båda902-instanserna: två Node-OS-processer (PID1container-entry och PID19game-server), inga Studio/Next-processer. Vercels befintliga server-/byggansvar kvarstår; ingen prestandavinst påstås. Egen staging verifierat suspended2026-10-26T12:12:53.924353Z efter prov enligt körplanen. Historiska502-kvitton bevaras utan påstådd rotorsakslösning. J05 bevisar produktläsaråterläsning efter HTTP-verifierad processomstart, inte autentiserad offentlig spelåteranslutning, HTTP-restore, full K06/K07 eller produktion. J05/J06:s kriterier, vikter och beroenden är oförändrade."
       ],
-      "blocker": "WS close/listen-rättningen finns i PR398. Proxy502 uppträder före observerad gatewaymottagning efter start; senare avgränsade HTTP-serier passerar. Stabil spelomstart/återanslutning och slutlig orsaksbedömning återstår."
+      "blocker": null
     },
     {
       "id": "J06",
@@ -443,7 +448,7 @@
         "Admin-molnprov2026-10-25 21:16UTC:30/30 via Vercel28815e9c/Render81bc2475b. Vanlig Admin-auth,ett syntetiskt rumsutkast,CAS/negativa writers/isolering verifierade. Readiness fortsatt ej redo för publicering med studio_room_game_material_unavailable; ingen publish-begäran utförd,andra rummet oförändrat. Kvitto room-config.c3faf732-2e4f-40c9-bc3b-9d14d0596fba; inte native-material eller delatbordacceptans.",
         "2026-10-26: native-kandidat ovanpå694b9b176 implementerar Admin→Blob-tidsmätning→Neon-CAS→fryst material/tal→v29-publicering→koordinatorbudget. Riktade tester och oberoende review passerar. Isolerad optional020 och approllens53 syntetiska mätposter/extended paket/draft samt negativ CAS/hash verifierade med full rollback. Ingen faktisk medie-/HTTP-samacceptans eller produktions-DDL."
       ],
-      "blocker": "Native materialresolver och bindande tidsbudget är implementerade och isolerade SQL-kontrakt verifierade. Gemensam v29-deploy, valt verkligt godkänt material, full fält-/scope-/aktiv-hand-acceptans och stabil HTTP-omstart återstår."
+      "blocker": "Native materialresolver och tidsbudget är integrerade i PR403. Render-omstart och produktläsarnas sparade tillstånd är verifierade i J05. Samma Vercel/Render-kandidat, valt verkligt godkänt material samt full fält-/scope-/aktiv-hand-acceptans och autentiserad spelåteranslutning återstår."
     },
     {
       "id": "K05",
@@ -497,7 +502,7 @@
         "Konsumentmatris2026-10-25 skiljer aktiva lab_sessions/bo/craig och operatörs-QA från lissabon_profiles-kandidat och lissabon_profile_sessions indirekta DELETE-konsument. Ingen produktions-DDL eller avveckling utifrån enbart namn/tom tabell.",
         "2026-10-26: PR401/eabc5a86 avvecklar endast gamla Lissabon-DELETE-konsumenter och tillfor explicit opt-in 011 med oforandrad historisk product-v1. 19/19 negativa migration/rollback/restoreprov pa PostgreSQL16.15 och18.6,37/37 riktade prov,47/47 ordinarie hook. Full CI40294842713 inklusive Docker och GitGuardian passerar pa exakt head. Rootreview utan blockerare; produktions-DDL ej utford."
       ],
-      "blocker": "Implementationen och isolerad migration/restore ar verifierade i PR401; forkunskaper J05/J08/K05 och senare godkand integration/drift kvarstar. Ingen live-tabell eller produktionsdata har raderats."
+      "blocker": "Implementation och isolerad migration/restore är verifierade i PR401 och integrerade genom PR403. J05 är verifierad; förkunskaper J08/K05 och återstående samlad acceptans kvarstår. Ingen live-tabell eller produktionsdata har raderats."
     },
     {
       "id": "K06",
@@ -529,7 +534,7 @@
         "Molnprov2026-10-25: 78 publicerings-/mediakontroller på samma kandidat28815e9c, syntetisk idle/bakgrund/bord via Admin och privat Blob till två operatörsrum. Full publicerad spelkonfiguration är blockerad av native materialresolver och exakt urvals-/timingkontrakt; syntetisk transport är inte filmacceptans.",
         "2026-10-26: native-kandidat ovanpå694b9b176 implementerar Admin→Blob-tidsmätning→Neon-CAS→fryst material/tal→v29-publicering→koordinatorbudget. Riktade tester och oberoende review passerar. Isolerad optional020 och approllens53 syntetiska mätposter/extended paket/draft samt negativ CAS/hash verifierade med full rollback. Ingen faktisk medie-/HTTP-samacceptans eller produktions-DDL."
       ],
-      "blocker": "Native materialresolver och bindande tidsbudget är implementerade och isolerade SQL-kontrakt verifierade. Gemensam v29-deploy, valt verkligt godkänt material, full fält-/scope-/aktiv-hand-acceptans och stabil HTTP-omstart återstår."
+      "blocker": "Native materialresolver och tidsbudget är integrerade i PR403. J05:s HTTP-verifierade processomstart och produktläsaråterläsning är klara; sammanhängande Admin/publicering/spel på samma Vercel/Render-kandidat, godkänt material, aktiv hand och autentiserad offentlig återanslutning återstår."
     },
     {
       "id": "K07",
@@ -554,7 +559,7 @@
         "Molnprov2026-10-25: 71 HTTP-kontroller/fyra blackjackkommandon, exakt saldo/historik, replay/CAS, två rum och återinloggning. En spelare och shared-flagga0; detta är inte delat bord eller samtidighetsacceptans.",
         "Molnprov2026-10-25 kväll: andra omstarten efter spel fick ny deployment på samma28815e9c, men växlande health/version200 och RenderHTML502. Spelåterläsning underkänd efter1kontroll/0kommandon; orsak öppen. Första omstartens4/4 projektåterläsningar kvarstår som avgränsat delbevis. Egna Render/Vercel lämnade verifierat suspenderad/pausad."
       ],
-      "blocker": "Obligatorisk registrering är klar via PR386. Enspelarrunda/replay och SQL-paritet passerar isolerat. Delat bord/samtidighet, K06-materialbindning samt stabil HTTP-omstart/återanslutning efter Render502 återstår på identifierad kandidat; ingen ny SQLite-QA."
+      "blocker": "Obligatorisk registrering är klar via PR386. Enspelarrunda/replay och SQL-paritet passerar isolerat, och J05:s avgränsade processomstart är verifierad. Delat bord/samtidighet, K06-materialbindning och autentiserad offentlig återanslutning kvarstår; ingen ny SQLite-QA."
     },
     {
       "id": "J10",
@@ -579,7 +584,7 @@
         "Molnprov2026-10-25 kväll: efter stoppade appskrivare återställdes en granskad PostgreSQL18.6-dump en gång till separat croupier_staging_restore.75tabeller/fyra sekvenser och1777unika fullständiga objektnycklar matchar; riktiga app-läsare ger identisk stabil data med strikt klient-TLS/skrivskydd. Originalets SQL-name-trunkering rättad genom separat läsande ommätning, inte datarättning. Ingen full HTTP-spelreplay efter restore; detaljer/kvitton i ENVIRONMENT-RESTORATION.md.",
         "Molnprov2026-10-25 kväll: andra omstarten efter spel fick ny deployment på samma28815e9c, men växlande health/version200 och RenderHTML502. Spelåterläsning underkänd efter1kontroll/0kommandon; orsak öppen. Första omstartens4/4 projektåterläsningar kvarstår som avgränsat delbevis. Egna Render/Vercel lämnade verifierat suspenderad/pausad."
       ],
-      "blocker": "SQL-restore och riktiga app-läsare passerar; full HTTP-spelreplay efter restore är inte utförd. Stabil HTTP-omstart och samlat kvitto med beroendena J06/J09/K06 återstår. Renklon/offline är avgränsade prov, inte alternativ leveransmodell."
+      "blocker": "SQL-restore och riktiga app-läsare passerar; J05:s avgränsade processomstart är verifierad. Full HTTP-spelreplay efter restore och samlat kvitto med J06/J09/K06 återstår. Renklon/offline är avgränsade prov, inte alternativ leveransmodell."
     },
     {
       "id": "O02",
@@ -606,7 +611,7 @@
         "Ny avstämning 2026-10-25 mot main 0e457589e84dcef3147ee54f01883ce5e459e356: Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Dokument-/kodgranskning med återanvända driftkvitton, inte egen ny spelacceptans. Aktivitetsstatus och vikter är oförändrade.",
         "Molnprov2026-10-25 kväll: efter stoppade appskrivare återställdes en granskad PostgreSQL18.6-dump en gång till separat croupier_staging_restore.75tabeller/fyra sekvenser och1777unika fullständiga objektnycklar matchar; riktiga app-läsare ger identisk stabil data med strikt klient-TLS/skrivskydd. Originalets SQL-name-trunkering rättad genom separat läsande ommätning, inte datarättning. Ingen full HTTP-spelreplay efter restore; detaljer/kvitton i ENVIRONMENT-RESTORATION.md."
       ],
-      "blocker": "Oberoende samprov efter K07/J10 på gemensamt granskad kandidat med verklig godkänd media. SQL-restore/app-läsare verifierade separat, men HTTP-spelreplay efter restore, stabil omstart, full spel-/media- och layoutacceptans återstår. Återanvänd redan verifierade delkvitton."
+      "blocker": "Oberoende samprov efter K07/J10 på gemensamt granskad kandidat med godkänd media återstår. Återanvänd J05:s processomstart och tidigare SQL-restore/app-läsare; autentiserad HTTP-spelreplay efter restore samt full spel-/media-/layoutacceptans är inte verifierade."
     },
     {
       "id": "O03",
