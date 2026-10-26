@@ -17,7 +17,8 @@ Overview uses `views/overview.jsx`, room appearance uses `views/rooms.jsx`,
 integration uses `views/integration.jsx`, and membership uses `views/team.jsx`.
 `views/shared.jsx` provides the mark and shared elements. Existing CSS remains
 scoped under `.kevin-bo`; that historical selector is not another product.
-The assets and source receipt are retained unchanged.
+The source receipt is retained. The unused static demonstration images and
+their `assetUrl` adapter have been retired; active views use the live projection.
 
 The live workspace keeps Swedish/English and light/dark preferences, scoped
 operator switching, unsaved-draft protection, room identity across navigation,
@@ -47,7 +48,7 @@ records provenance; it does not authorize another import or imply a live site.
 
 The unreachable client demonstration and its regeneration script/factory
 sources were retired together. There is no supported regeneration command in
-this directory. Live views, assets and the source receipt remain the maintained
+this directory. Live views and the source receipt remain the maintained
 inputs; server fixtures and historical URLs were not removed.
 
 ## Verification

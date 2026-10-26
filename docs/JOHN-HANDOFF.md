@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## Pensionerade demonstrationsbilder och ny PAOW-kontroll — 26 oktober
+
+Åtta statiska bilder i partnerportalens gamla `kevin-bo/assets` (2 255 392 byte), deras oanvända `assetUrl`-adapter och exklusiva testmockar tas bort. Konsumentgenomgången visar att ingen aktiv vy använder adaptern. Portalens data-, behörighets-, rums- och sessionsflöden behålls. Befintliga prov för dessa flöden passerar 50/50 utan skip på Node24.21.0/fyra arbetare. Den historiska källkvittensen bevaras; den är inte ett krav att återinföra demonstrationsbilderna.
+
+Jakob har uttryckligen bett om omkontroll av dagens tidigare PAOW-godkännande. Utgå därför inte från att tio bestämda tagningar är accepterade. Läsande registergranskning matchar 74/74 registrerade PAOW-talklipp mot exakt en post var i det versionsbundna källmanifestet, med SHA-256 och storlek. Svenska och engelska täcker alla tio obligatoriska talplatser, men flera platser har flera tagningar. Detta är en metadatajämförelse, inte en ny mätning av Blob-bytes eller visuell/läppsynkacceptans. Exakta UUID, hash, språk, tagningar och texter finns i privat granskningsunderlag under arbetskopians gitignorerade `arkiv/2026-10-26/migration-takeover/paow-speech-review.json` och `.md`. Inga medieposter eller godkännanden har skrivits.
+
+[PR409](https://github.com/Jakeminator123/scoutgaming/pull/409) är nu mergad som `3cd199a8e069144e611dbdc90bfe843bc4658183` efter grön CI inklusive dealer-regression och GitGuardian på head `3ad8d05a67b7c8e0701aede5415add00b5498a43`. Migrationsstatus är fortsatt 55 %; rensningen ersätter inte den återstående isolerade materialacceptansen.
+
+## Avvecklade frysta Astrid-svar — 26 oktober
+
+Jakob har förtydligat att gamla Astrid-/QA-förväntningar inte ska bevaras som hinder för målarkitekturen. Tar bort den separata golden-baslinjen: 161 JSON-filer i `test/fixtures/astrid-select-baseline`, `astrid-select-off.json`, det exklusiva baslinjetestet och verktyget som regenererade dessa svar. Detta är testdata och testverktyg, inte dealerfilmer, publicerade paket eller produktionshistorik.
+
+Det kvarvarande presentationsprovet jämför nu samma aktuella dealer med och utan en annan dealers gamla regler. Det låser inte den första dealerns svar till en historisk JSON-fil. Negativa prov för pensionerade/okända dealer-ID:n och separation av aktiva dealers/cache finns kvar. Den borttagna kontrollens enda registrering i fullkörningen tas också bort. Samkörning av dealerproven samt workflow-, CI- och precommitproven passerar 42/42 utan skip på Node24.21.0/fyra arbetare. Testinventeringen hittar 570 JS/TS-kandidater, noll föräldralösa tester och 11 explicita undantag; Python-körning ingår inte i det kvittot. Inga hänvisningar till den borttagna baslinjekedjan finns kvar i kod eller körkonfiguration. Aktivitetsprocenten ändras inte.
+
 ## Övertagande och releasegräns — 26 oktober
 
 Kevin-staging är källreferens på GitHub; Jakob vill fortsätta med tillgänglig kod och egna resurser utan beroende av Kevins GitLab eller körmiljö. Vår isolerade testmiljö nedan är en separat sak.
@@ -17,7 +31,7 @@ Läsande avstämning på main `8fcb920a930d7459273be3a495f8474137203abd`. **55 %
 **Release och acceptans:**
 
 1. PR407:s releaseordning är utförd av den andra körningen: Render-läsare först, därefter main/Vercel. Dess releasekvitto anger delat spel fortsatt avstängt. Nya J08-publiceringar kräver fortfarande verifierad readiness, exakt material och isolerad acceptans; LIVE/READY ensamt öppnar inte den grinden. Återgång behåller kompatibel läsare och fryst historik.
-2. Bind PAOW:s redan accepterade tio taloriginal till exakta UUID/hash, språk och tagningar. Detaljlistan har inte återfunnits i denna avstämning. Mät via befintliga Admin-tjänster; bevara originalbytes och tidigare giltig AV-acceptans. V2:s MP4-ljud kräver inte fabricerade V1-index-/kalibreringsbevis. Se [K05](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) och [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
+2. Välj och granska exakta PAOW-original för de tio talplatserna, med UUID/hash, språk och tagningar. Detaljlistan över det tidigare godkännandet har inte återfunnits, och Jakob har bett om omkontroll. Mät via befintliga Admin-tjänster; bevara originalbytes. V2:s MP4-ljud kräver inte fabricerade V1-index-/kalibreringsbevis. Se [K05](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) och [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
 3. Kör isolerat Admin → publicering → spel med rätt filmprofil, avsett idle/tal och separata bakgrunds-, dealer- och bordslager. Verifiera aktiv hand under ny publicering, nästa hand, multitable och återanslutning på samma kandidat. Flytta aktivitetsstatus först när dess befintliga kriterier är uppfyllda.
 
 K05-guidens gamla krav att implementera resolver/mätning och generellt producera ljud-/index-/kalibreringsunderlag är rättade. Inga produktionsdata, godkända original eller historik har raderats. Fortsatt avveckling ska följa faktiska konsumenter och behålla prov för behörighet, isolation, revisioner, samtidighet och spelregler.

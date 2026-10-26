@@ -4,7 +4,6 @@ import React from 'react';
 import { labUrl } from '../../lib/lab-url.mjs';
 import { studioHistory } from '../../lib/studio-history.mjs';
 import { initialPartnerRoomSelection, partnerRoomRequest, partnerRoomQuery } from '../../lib/partner-room-selection.mjs';
-import { assetUrl } from './assets.mjs';
 import { Mark } from './views/shared.jsx';
 import { PartnerLiveOverview } from './views/overview.jsx';
 import { PartnerRoomWorkspace } from './views/rooms.jsx';
@@ -51,7 +50,7 @@ function PartnerSession({initialSnapshot,apiBase,user,initialRoomId,initialRoomS
   copyRef.current=copy;
   if(!leaveGuard.current)leaveGuard.current=createPartnerLeaveGuard({isDirty:()=>dirtyRef.current||Boolean(runtimeRef.current?.dirty),confirmLeave:()=>window.confirm(copyRef.current.unsavedLeave)});
   const onAppearanceDirty=React.useCallback(dirty=>{dirtyRef.current=dirty;setAppearanceDirty(dirty);leaveGuard.current.reset();},[]);
-  const runtime=React.useMemo(()=>createPreviewRuntime(snapshot,{surface:'partner',user,notify,assetUrl,studioUrl:labUrl,refresh:()=>{},teamView:partnerTeamView(apiBase,TeamView)}),[snapshot,user,notify,apiBase]);
+  const runtime=React.useMemo(()=>createPreviewRuntime(snapshot,{surface:'partner',user,notify,studioUrl:labUrl,refresh:()=>{},teamView:partnerTeamView(apiBase,TeamView)}),[snapshot,user,notify,apiBase]);
   runtimeRef.current=runtime;
   const admin=snapshot.accessClass==='internal-admin';
   const navigation=partnerNavigation(language,snapshot.permissions);

@@ -14,7 +14,7 @@ const babel=require('next/dist/compiled/babel/core');
 const source=await readFile(new URL('./partner-operator-workspace.jsx',import.meta.url),'utf8');
 const scope={environment:'fixture',workspaceId:'croupier'};
 const fixture=readPartnerPreviewFixture(createPartnerPreviewContext({session:{role:'admin',user:'test',scope},scope,operatorId:'operator-demo-north',previewEnabled:true}),{now:()=>Date.UTC(2026,9,6)});
-const makeRuntime=(surface,snapshot=fixture,options={})=>createPreviewRuntime(snapshot,{surface,user:'test',notify:()=>{},refresh:()=>{},assetUrl:()=>undefined,studioUrl:path=>'/studio'+(path==='/'?'':path),...options});
+const makeRuntime=(surface,snapshot=fixture,options={})=>createPreviewRuntime(snapshot,{surface,user:'test',notify:()=>{},refresh:()=>{},studioUrl:path=>'/studio'+(path==='/'?'':path),...options});
 
 test('legacy destination aliases retain their surface boundaries',()=>{
   for(const [alias,view] of Object.entries({overview:'ops',transactions:'tx',users:'team',apikeys:'api',rooms:'bj'}))assert.equal(normalizeView(alias,'partner'),view,alias);
@@ -73,7 +73,6 @@ const actionsModule = { exports:{} }, actionsRequire = createRequire(actionsUrl)
 new Function('require','module','exports',actionsCode)(name=>name.endsWith('.css')?{}:actionsRequire(name),actionsModule,actionsModule.exports);
 new Function('require','module','exports', portalCode)(name => {
   if (name.endsWith('.css')) return {};
-  if (name === './assets.mjs') return { assetUrl: () => undefined };
   if (name === '../partner-session-actions') return actionsModule.exports;
   return (name.startsWith('.') ? portalRequire : require)(name);
 }, portalModule, portalModule.exports);
@@ -161,7 +160,6 @@ test('verified own-operator saved receipt updates the real package view without 
     if(name==='react')return hooks;
     if(name==='./partner-copy.mjs')return preferences.exports;
     if(name.endsWith('.css'))return {};
-    if(name==='./assets.mjs')return {assetUrl:()=>undefined};
     return (name.startsWith('.')?portalRequire:require)(name);
   },output,output.exports);
   const snapshot={...realSnapshot(),packageRevision:'7',operator:{...realSnapshot().operator,packageRevision:'7'},
@@ -185,7 +183,6 @@ test('real room editor keeps its element identity across menu and history view c
   const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},useEffect:callback=>callback()};
   new Function('require','module','exports',portalCode)(name=>{
     if(name==='react')return hooks;if(name.endsWith('.css'))return {};
-    if(name==='./assets.mjs')return {assetUrl:()=>undefined};
     if(name==='../partner-session-actions')return actionsModule.exports;
     return (name.startsWith('.')?portalRequire:require)(name);
   },output,output.exports);

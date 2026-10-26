@@ -37,7 +37,7 @@ export function operatorPackageRevision(snapshot) {
   return value ? value.trim() : '';
 }
 
-export function createPreviewRuntime(snapshot, { surface, user, notify, refresh, assetUrl, studioUrl, teamView }) {
+export function createPreviewRuntime(snapshot, { surface, user, notify, refresh, studioUrl, teamView }) {
   validatePreviewSnapshot(snapshot);
   if (snapshot.preview === true && snapshot.viewer.user !== user) throw Error('Administratörskontot har ändrats. Ladda om och logga in igen.');
   if (snapshot.preview === false && snapshot.viewer?.user && snapshot.viewer.user !== user) throw Error('Operatörskontot har ändrats. Ladda om och logga in igen.');
@@ -60,7 +60,7 @@ export function createPreviewRuntime(snapshot, { surface, user, notify, refresh,
   const navigation = groups.map(group => ({group, items:destinations.filter(item => item.group === group).map(item => [item.id,item.label])}));
   const unavailable = label => { notify(`${label}: inte anslutet. Ingen ändring har gjorts i spel eller kunddata.`); };
   const runtime = {
-    snapshot, surface, user, data, data2, assetUrl, studioUrl, refresh, notify, unavailable, navigation,
+    snapshot, surface, user, data, data2, studioUrl, refresh, notify, unavailable, navigation,
     studioNavigation:destinations.filter(item => item.group === STUDIO_GROUP).map(item => [item.id,item.label]),
     memory: {getItem:key=>store.get(key)??null,setItem:(key,value)=>store.set(key,value)},
     raw:{ workspace:{activity:[]},game:{manifest:{deal:[],idle:[],repliker:[],rost:{leverantor:'Inte anslutet',namn:'Inte anslutet'}}}, media:{media:[]},config:{} },
