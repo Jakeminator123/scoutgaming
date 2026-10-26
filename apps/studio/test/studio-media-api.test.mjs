@@ -1,3 +1,6 @@
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {runInNewContext} from 'node:vm';
 import test from 'node:test';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import assert from 'node:assert/strict';
@@ -9,6 +12,7 @@ import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../../package
 import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
 import { negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, PRESENTATION_CAPABILITY_VERSION_HEADER } from '../../../packages/presentation/capability-contract.mjs';
+import { createStudioUploadService } from '../lib/studio-upload-service.mjs';
 
 test('native classify blocks alpha and roulette on v11 before SQL, bytes or transaction admission',async()=>{
   for(const change of [{compositing:{mode:'alpha'}},{kind:'action',eventId:'roulette.wheel-start',situation:'wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL'}]){
@@ -63,6 +67,184 @@ async function fixture(options = {}) {
   });
   return {pool,repository,api,record};
 }
+
+const timingFor = record => ({schemaVersion:1,mediaId:record.id,sha256:record.sha256,size:record.size,
+  recordedSpeechIdentitySha256:null,video:{trackId:1,frameCount:2,fps:25,firstPtsUs:0,lastPtsUs:40000,endUs:80000},
+  audio:[],endUs:80000,audioTailUs:0});
+async function timingFixture(options={}) {
+  const f=await fixture(),source=await f.repository.getMedia(mediaId),stats={inspections:0,mutations:0,insideMutation:false,descriptors:[]};
+  let measured;
+  const repository=options.repository?.(f.repository)??f.repository;
+  const api=createStudioMediaApi({repository,config:options.config??config,
+    authorize:options.authorize??(async()=>({user:'Operator',role:'admin',scope})),
+    videoRegistry:async()=>({videos:await repository.listMedia()}),
+    inspectMediaTiming:async(record,inspectionOptions)=>{
+      stats.inspections++;
+      assert.equal(stats.insideMutation,false,'Blob decoding must precede mutation admission');
+      if(!options.concurrent)assert.equal(f.pool.connects,f.pool.releases,'no database transaction remains open during decoding');
+      assert.deepEqual(record,source);
+      assert.ok(inspectionOptions.signal instanceof AbortSignal);
+      return measured=options.inspect?await options.inspect(record,inspectionOptions,f):timingFor(record);
+    },
+    mutationTransaction:async(work,descriptor)=>{
+      stats.mutations++;
+      stats.descriptors.push(structuredClone(descriptor));
+      if(descriptor.presentationMutation.mediaTiming!==undefined)assert.deepEqual(descriptor.presentationMutation.mediaTiming,measured);
+      await options.beforeMutation?.(f);
+      stats.insideMutation=true;
+      try{return await work();}finally{stats.insideMutation=false;}
+    },
+  });
+  return {...f,api,source,stats,body:{id:source.id,sha256:source.sha256,expectedRevision:source.revision}};
+}
+
+test('native timing measures outside SQL and persists only server timing without approving the clip',async()=>{
+  const f=await timingFixture(),before=f.pool.snapshot();
+  const response=await f.api.handle(request('/api/videos/measure-timing','POST',f.body));
+  assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'private, no-store');
+  const saved=await f.repository.getMedia(mediaId),payload=await response.json();
+  assert.deepEqual(payload.media,saved);assert.deepEqual(saved.mediaTiming,timingFor(f.source));
+  assert.notEqual(saved.revision,f.source.revision);
+  const {revision,updatedAt,mediaTiming,...unchanged}=saved;
+  const {revision:oldRevision,updatedAt:oldUpdatedAt,...original}=f.source;
+  assert.deepEqual(unchanged,original,'measurement grants no classification or speech approval');
+  assert.equal(f.stats.inspections,1);assert.equal(f.stats.mutations,1);
+  assert.deepEqual(f.stats.descriptors[0].presentationMutation,{metadata:f.source.classification,mediaTiming:timingFor(f.source)});
+  assert.equal(f.pool.snapshot().audits.length,before.audits.length+1);
+  assert.equal(f.pool.snapshot().audits.at(-1).actor,'Operator');
+  assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body))).status,409);
+  assert.equal(f.stats.inspections,1,'stale revisions are rejected before downloading');
+});
+
+test('native timing rejects request forgery, cross-origin callers and stale sources before inspection',async()=>{
+  const f=await timingFixture(),before=f.pool.snapshot();
+  for(const extra of [{mediaTiming:timingFor(f.source)},{actor:'forged'},{metadata:f.source.classification}]) {
+    assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',{...f.body,...extra}))).status,400);
+  }
+  for(const headers of [{origin:'https://evil.invalid'},{'sec-fetch-site':'same-site'},{'sec-fetch-site':'cross-site'}]) {
+    assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body,headers))).status,403);
+  }
+  assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',{...f.body,sha256:'e'.repeat(64)}))).status,409);
+  assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',{...f.body,id:'00000000-0000-4000-8000-000000000099'}))).status,404);
+  assert.equal(f.stats.inspections,0);assert.equal(f.stats.mutations,0);assert.deepEqual(f.pool.snapshot(),before);
+  for(const session of [null,{user:'Reader',role:'reader',scope},{user:'Admin',role:'admin',scope:{...scope,workspaceId:'another'}}]) {
+    const denied=await timingFixture({authorize:async()=>session});
+    assert.equal((await denied.api.handle(request('/studio/api/videos/measure-timing','POST',denied.body))).status,403);
+    assert.equal(denied.stats.inspections,0);
+  }
+  const wrongRepository=await timingFixture({repository:base=>({...base,scope:{...scope,workspaceId:'another'}})});
+  assert.equal((await wrongRepository.api.handle(request('/studio/api/videos/measure-timing','POST',wrongRepository.body))).status,403);
+  assert.equal(wrongRepository.stats.inspections,0);
+});
+
+test('native timing refreshes the same actor and role after measurement and at mutation admission',async()=>{
+  for(const atAdmission of [false,true])for(const changed of [null,{user:'Other',role:'admin',scope},{user:'Operator',role:'superadmin',scope}]) {
+    let session={user:'Operator',role:'admin',scope};
+    const f=await timingFixture({authorize:async()=>session,
+      inspect:async record=>{if(!atAdmission)session=changed;return timingFor(record);},
+      beforeMutation:()=>{if(atAdmission)session=changed;}}),before=f.pool.snapshot();
+    assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body))).status,403);
+    assert.equal(f.stats.inspections,1);assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+
+test('native timing refuses ineligible media and compares all source fields again after decoding',async()=>{
+  for(const change of [row=>({...row,retainedBank:{}}),row=>({...row,deletion:{}}),
+    row=>({...row,classification:{...row.classification,archived:true}}),
+    row=>({...row,classification:{...row.classification,dealerId:'unregistered'}})]) {
+    const f=await timingFixture({repository:base=>({...base,getMedia:async id=>change(await base.getMedia(id))})}),before=f.pool.snapshot();
+    assert.ok([409,422].includes((await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body))).status));
+    assert.equal(f.stats.inspections,0);assert.deepEqual(f.pool.snapshot(),before);
+  }
+  for(const change of [row=>({...row,size:row.size+1}),row=>({...row,pathname:row.pathname+'.changed'}),
+    row=>({...row,sha256:'e'.repeat(64)}),row=>({...row,contentType:'video/webm'}),
+    row=>({...row,classification:{...row.classification,label:'changed while reading'}})]) {
+    let measured=false;
+    const f=await timingFixture({inspect:async row=>{measured=true;return timingFor(row);},
+      repository:base=>({...base,getMedia:async id=>{const row=await base.getMedia(id);return measured?change(row):row;}})}),before=f.pool.snapshot();
+    assert.ok([409,422].includes((await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body))).status));
+    assert.equal(f.stats.inspections,1);assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+
+test('native timing cancels without persistence and never exposes inspection errors',async()=>{
+  for(const afterInspection of [false,true]) {
+    const abort=new AbortController(),f=await timingFixture({inspect:async row=>{abort.abort();return timingFor(row);}}),before=f.pool.snapshot();
+    if(!afterInspection)abort.abort();
+    const input=request('/studio/api/videos/measure-timing','POST',f.body);
+    const response=await f.api.handle(new Request(input,{signal:abort.signal}));
+    assert.equal(response.status,408);assert.equal(f.stats.inspections,afterInspection?1:0);assert.deepEqual(f.pool.snapshot(),before);
+  }
+  const f=await timingFixture({inspect:async()=>{throw Error('private-provider-diagnostic');}}),before=f.pool.snapshot();
+  const response=await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body));
+  assert.equal(response.status,503);assert.equal((await response.text()).includes('private-provider'),false);assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('native timing has one CAS winner and audit failure rolls back its receipt',{timeout:5000},async()=>{
+  let arrivals=0,release;
+  const ready=new Promise(resolve=>{release=resolve;});
+  const f=await timingFixture({concurrent:true,inspect:async row=>{
+    if(++arrivals===2)release();
+    await ready;
+    return timingFor(row);
+  }}),before=f.pool.snapshot();
+  const responses=await Promise.all([1,2].map(()=>f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body))));
+  assert.deepEqual(responses.map(row=>row.status).sort(),[200,409]);
+  assert.equal(f.pool.snapshot().audits.length,before.audits.length+1);
+  assert.deepEqual((await f.repository.getMedia(mediaId)).mediaTiming,timingFor(f.source));
+  const fault=await timingFixture(),prior=fault.pool.snapshot();
+  fault.pool.failNext('audit',Error('private audit fault'));
+  const response=await fault.api.handle(request('/studio/api/videos/measure-timing','POST',fault.body));
+  assert.equal(response.status,503);assert.deepEqual(fault.pool.snapshot(),prior);
+});
+
+test('native timing rejects a measurement for different bytes or clip identity',async()=>{
+  for(const change of [{mediaId:'00000000-0000-4000-8000-000000000099'},{sha256:'e'.repeat(64)},{size:33}]) {
+    const f=await timingFixture({inspect:async row=>({...timingFor(row),...change})}),before=f.pool.snapshot();
+    const response=await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body));
+    assert.equal(response.status,422);assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+
+test('classification and archive preserve a byte-bound measurement without adding approval',async()=>{
+  const f=await timingFixture();
+  assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',f.body))).status,200);
+  let row=await f.repository.getMedia(mediaId);
+  assert.equal((await f.api.handle(request('/studio/api/videos/classify','POST',{id:mediaId,sha256,
+    previous:row.classification,metadata:{...row.classification,label:'Renamed measured clip'}}))).status,200);
+  row=await f.repository.getMedia(mediaId);
+  assert.deepEqual(row.mediaTiming,timingFor(f.source));
+  assert.equal(row.classification.recordedSpeech,undefined);
+  assert.equal((await f.api.handle(request('/studio/api/videos/archive','POST',{id:mediaId,sha256,
+    previous:row.classification,archived:true}))).status,200);
+  row=await f.repository.getMedia(mediaId);assert.equal(row.classification.archived,true);
+  assert.deepEqual(row.mediaTiming,timingFor(f.source));
+  const before=f.pool.snapshot();
+  assert.equal((await f.api.handle(request('/studio/api/videos/measure-timing','POST',{...f.body,expectedRevision:row.revision}))).status,409);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('timing receipts cannot be supplied through classify or ordinary upload requests',async()=>{
+  const f=await fixture(),timing=timingFor(f.record),before=f.pool.snapshot();
+  const response=await f.api.handle(request('/studio/api/videos/classify','POST',{id:mediaId,sha256,
+    previous:f.record.classification,metadata:f.record.classification,mediaTiming:timing}));
+  assert.equal(response.status,400);
+  assert.equal((await f.api.handle(request('/studio/api/videos/classify','POST',{id:mediaId,sha256,
+    previous:f.record.classification,metadata:{...f.record.classification,mediaTiming:timing}}))).status,422);
+  const uploads=createStudioUploadService({repository:f.repository,scope,ticketKey:Buffer.alloc(32,7),
+    env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token'},
+    clientToken:async()=>assert.fail('forged timing cannot request an upload token'),
+    privateMedia:async()=>assert.fail('forged timing cannot download bytes')});
+  const api=createStudioMediaApi({repository:f.repository,config,authorize:async()=>({user:'Operator',role:'admin',scope}),uploads,
+    mutationTransaction:async work=>work()});
+  for(const body of [{operation:'prepare',sha256,size:32,contentType:'video/mp4',classification:f.record.classification,mediaTiming:timing},
+    {operation:'commit',ticket:'forged',mediaTiming:timing}]) {
+    assert.equal((await api.handle(request('/studio/api/videos/upload','POST',body))).status,400);
+  }
+  assert.equal((await api.handle(request('/studio/api/videos/upload','POST',{operation:'prepare',sha256,size:32,
+    contentType:'video/mp4',classification:{...f.record.classification,mediaTiming:timing}}))).status,422);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
 test('native list/HEAD/preview authenticate current admin and resolve only exact UUID paths',async () => {
   const {api} = await fixture();
   assert.equal((await api.handle(request())).status,200);
@@ -279,4 +461,49 @@ test('archive readiness preserves current authorization, metadata CAS and active
     assert.equal(response.status,guard==='authorization'?403:409);
     assert.deepEqual(pool.snapshot(),before);
   }
+});
+
+
+function nextTimingRoute(api, native = true) {
+  const file = new URL('../app/api/videos/measure-timing/route.ts', import.meta.url);
+  const require = createRequire(import.meta.url);
+  const {transformSync} = require('next/dist/build/swc');
+  const {autoImplementMethods} = require('next/dist/server/route-modules/app-route/helpers/auto-implement-methods.js');
+  const {code} = transformSync(readFileSync(file, 'utf8'), {
+    filename: file.pathname, jsc: {parser: {syntax: 'typescript'}}, module: {type: 'commonjs'},
+  });
+  const module = {exports: {}};
+  runInNewContext(code, {module, exports: module.exports, Response,
+    require: name => {
+      if (name === '@/lib/studio-native-runtime.mjs') return {nativeStudioAdminEnabled: () => native};
+      if (name === '@/lib/studio-media-api.mjs') return {handleNativeStudioMedia: request => api.handle(request)};
+      throw new Error('Unexpected route dependency: ' + name);
+    },
+  }, {filename: file.pathname});
+  return autoImplementMethods(module.exports);
+}
+
+test('Next timing route reaches native measurement, preserves guards and persists CAS once', async () => {
+  const f = await timingFixture(), route = nextTimingRoute(f.api);
+  for (const headers of [{origin: 'https://foreign.invalid'}, {'sec-fetch-site': 'cross-site'}]) {
+    assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', f.body, headers))).status, 403);
+  }
+  assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', {...f.body, sha256: '0'.repeat(64)}))).status, 409);
+  assert.equal(f.stats.inspections, 0);
+  const response = await route.POST(request('/studio/api/videos/measure-timing', 'POST', f.body));
+  assert.equal(response.status, 200);
+  const {media} = await response.json();
+  assert.deepEqual(media.mediaTiming, timingFor(f.source));
+  assert.equal((await f.repository.getMedia(media.id)).revision, media.revision);
+  assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', f.body))).status, 409);
+  assert.equal(f.stats.inspections, 1);
+  const denied = await timingFixture({authorize: async () => null});
+  assert.equal((await nextTimingRoute(denied.api).POST(request('/studio/api/videos/measure-timing', 'POST', denied.body))).status, 403);
+  assert.equal(denied.stats.inspections, 0);
+});
+
+test('Next timing route refuses a non-native runtime without a fallback writer', async () => {
+  const route = nextTimingRoute({handle: () => assert.fail('no fallback writer')}, false);
+  assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', {}))).status, 503);
+  assert.equal((await route.GET(request('/studio/api/videos/measure-timing'))).status, 405);
 });

@@ -63,3 +63,21 @@ test('build verification rejects leaked local state then removes only those trac
     assert.deepEqual(await checkBuildTraces({directory:root}),{checked:1,removed:0});
   }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('layer and video routes trace the bounded media worker and its runtime dependencies',async()=>{
+  const {default:config}=await import('../next.config.mjs');
+  const {matchesGlob}=await import('node:path');
+  const {fileURLToPath}=await import('node:url');
+  const {access}=await import('node:fs/promises');
+  const required=['lib/layer-media-inspection-worker.mjs','lib/mp4-media-timing.mjs',
+    'node_modules/mediabunny/package.json','node_modules/mediabunny/dist/modules/src/index.js',
+    'node_modules/sharp/package.json'];
+  for(const prefix of ['', '/app'])for(const route of ['/api/layer-assets/**','/api/videos/**']){
+    const patterns=config.outputFileTracingIncludes[prefix+route];
+    assert.ok(Array.isArray(patterns));
+    for(const file of required){
+      await access(fileURLToPath(new URL('../'+file,import.meta.url)));
+      assert.ok(patterns.some(pattern=>matchesGlob(file,pattern.replace(/^\.\//,''))),route+' must include '+file);
+    }
+  }
+});

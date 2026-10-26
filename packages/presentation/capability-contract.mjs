@@ -50,16 +50,18 @@ const contracts=Object.freeze({...baselineContracts,14:categoryContract,15:roule
   27:Object.freeze({...clipPoseContract,schemaVersion:27,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1'}),
   // v28 accepts pose-graph rotation and rotation variants in saved/frozen idle policies.
   // Deploy the reader advertisement before enabling the corresponding Admin gate.
-  28:Object.freeze({...clipPoseContract,schemaVersion:28,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1'})});
+  28:Object.freeze({...clipPoseContract,schemaVersion:28,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1'}),
+  // v29 reads exact byte-bound media timelines and the bounded extended envelope.
+  29:Object.freeze({...clipPoseContract,schemaVersion:29,roomGameConfigs:'administration-drafts-v1',layerPlayback:'table-and-jitter-v1',blackjackAutoScale:'dealer-source-v1',blackjackCardView:'saved-layout-v1',blackjackGameUi:'responsive-controls-v1',idleRotation:'pose-graph-v1',mediaTiming:'byte-bound-timeline-v1',extendedPresentation:'bounded-envelope-v2'})});
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v28. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v29. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -90,6 +92,7 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '26') return 26;
   if (header === '27') return 27;
   if (header === '28') return 28;
+  if (header === '29') return 29;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

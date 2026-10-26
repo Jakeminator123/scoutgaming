@@ -3,6 +3,31 @@ import {useEffect,useRef,useSyncExternalStore} from 'react';
 import {createRoomGameConfigController,type RoomGameReceipt} from '../lib/room-game-config-client.mjs';
 import styles from './admin-publication-page.module.css';
 
+function publicationHelp(publication:RoomGameReceipt['publication']) {
+  if(publication.reason==='studio_room_game_draft_required')return 'Spara spelinställningarna som utkast för att kontrollera materialet för valt språk.';
+  if(publication.reason==='studio_room_game_material_unavailable')switch(publication.materialReason){
+    case 'native_material_measurement_missing':
+    case 'native_material_measurement_mismatch':
+      return 'Klippen saknar aktuella tidsmätningar. Öppna dealerns klipp och välj Mät speltid. Publicera sedan paketet igen och läs in aktuella uppgifter här. Mätningen ger inget nytt bild- eller talgodkännande.';
+    case 'native_material_speech_slot_missing':
+    case 'native_material_speech_unbound':
+      return 'Det saknas en korrekt kopplad och godkänd talreplik för valt språk. Kontrollera dealerns talmaterial och publicera paketet igen efter rättning.';
+    case 'native_material_bank_incomplete':
+    case 'native_material_idle_missing':
+      return 'Den publicerade klippbanken är ofullständig. Kontrollera att filmprofilens spelklipp och viloklipp finns med i paketet. Publicera sedan paketet igen.';
+    case 'native_material_profile_missing':
+    case 'native_material_contract_unsupported':
+      return 'Den valda filmprofilen saknar stöd för dessa spelinställningar. Profilens koppling till spelmotorn behöver rättas innan du kan publicera.';
+    case 'native_material_speech_timing_mismatch':
+      return 'Talets uppmätta bildrutor eller ljud stämmer inte med inspelningsunderlaget. Kontrollera inspelningen och dess koppling innan du publicerar paketet igen.';
+    case 'native_material_take_audio_truncated':
+      return 'Ett spelklipps ljud fortsätter efter bytet till nästa klipp. Klippet och dess övergång behöver rättas och granskas innan du publicerar paketet igen.';
+    case 'native_material_timing_limit':
+      return 'Klippen ger för långa uppspelningssekvenser för dessa spelinställningar. Klippens längd och övergångar behöver granskas innan du kan publicera.';
+  }
+  return 'Publicering kräver ett sparat utkast och exakt inspelat material för valt språk. Kontrollera rummets sammansättning.';
+}
+
 export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusyChange,onDirtyChange,onPublished}:{operatorId:string;roomId:string;roomName:string;disabled?:boolean;onBusyChange?:(busy:boolean)=>void;onDirtyChange?:(dirty:boolean)=>void;onPublished?:(receipt:RoomGameReceipt)=>void}) {
   const ref=useRef<ReturnType<typeof createRoomGameConfigController>|null>(null);
   if(!ref.current)ref.current=createRoomGameConfigController();
@@ -31,7 +56,7 @@ export function RoomGameConfig({operatorId,roomId,roomName,disabled=false,onBusy
     <p>Insatstid: 20 sekunder. Beslutstid: 15 sekunder. Beloppen är demoenheter.</p>
     {current&&state.error?<p role="alert">{state.error}</p>:null}
     {current&&state.message?<p role="status">{state.message}</p>:null}
-    {receipt&&!receipt.publication.ready?<p role="status">Publicering kräver ett sparat utkast och exakt inspelat material för valt språk. Kontrollera rummets sammansättning.</p>:null}
+    {receipt&&!receipt.publication.ready?<p role="status">{publicationHelp(receipt.publication)}</p>:null}
     <div className={styles.actions}>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off} onClick={()=>void act('refresh')}>Läs in aktuella uppgifter</button>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={off||!receipt||state.stale} onClick={()=>void act('save')}>Spara spelinställningar</button>

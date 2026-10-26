@@ -245,3 +245,19 @@ test('empty scoped bank supports Admin intake, captured revisions and verified p
  await assert.rejects(createNeonVideoRegistry({repository:f.repository,scope,env:{...f.env,BLOB_READ_WRITE_TOKEN:''},options:f.options}).load(),{code:'studio_media_storage_unavailable'});
  assert.deepEqual((await f.repository.readRuntimeCatalog()).value,createEmptyRuntimeMediaCatalog(),'uploads never rewrite the immutable bank');
 });
+
+test('captured registry preserves optional timing without rereading or rebuilding measured evidence',async t=>{
+  const {repository,registry,newMedia}=await fixture(t),{record}=await newMedia();
+  await repository.initializeDocument('administration',{value:{rooms:[]},revision:'admin-timing',actor:'tester'});
+  const snapshot=structuredClone(await repository.readPresentationSnapshot()),row=snapshot.mediaRows.find(row=>row.id===record.id);
+  row.mediaTiming={schemaVersion:1,mediaId:row.id,sha256:row.sha256,size:row.size,recordedSpeechIdentitySha256:null,
+    video:{trackId:1,frameCount:24,fps:24,firstPtsUs:0,lastPtsUs:958333,endUs:1000000},audio:[],endUs:1000000,audioTailUs:0};
+  const expected=structuredClone(row.mediaTiming),captured=await registry.loadCaptured(snapshot);
+  const projected=captured.videos.find(video=>video.id===row.id);
+  assert.deepEqual(projected.mediaTiming,expected);
+  projected.mediaTiming.video.endUs=9;
+  assert.deepEqual(row.mediaTiming,expected,'consumer mutation cannot change the captured receipt');
+  assert.equal(Object.hasOwn((await registry.load()).videos.find(video=>video.id===row.id),'mediaTiming'),false,'old live row remains unchanged');
+  row.mediaTiming.sha256='d'.repeat(64);
+  await assert.rejects(registry.loadCaptured(snapshot));
+});

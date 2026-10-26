@@ -13,7 +13,6 @@ function fixture() {
     CREATE TABLE blackjack_tables(player_id TEXT PRIMARY KEY,state TEXT);
     CREATE TABLE player_sessions(digest TEXT PRIMARY KEY,player_id TEXT,expires INTEGER);
     CREATE TABLE preview_sessions(digest TEXT PRIMARY KEY,player_id TEXT,expires INTEGER);
-    CREATE TABLE lissabon_profile_sessions(digest TEXT PRIMARY KEY,player_id TEXT,expires INTEGER);
     CREATE TABLE craig_player_links(craig_user_id TEXT PRIMARY KEY,player_id TEXT);
     CREATE TABLE bo_game_handoffs(craig_user_id TEXT);
     CREATE TABLE player_admin_events(player_id TEXT,actor TEXT,action TEXT,reason TEXT,previous_status TEXT,status TEXT,at TEXT);`);
@@ -29,14 +28,14 @@ test('password change revokes sessions but preserves player, wallet and round le
   try {
     const player=await f.administration.create({username:'player',password:f.password,actor:'operator'});
     f.sqlite.prepare('INSERT INTO blackjack_tables VALUES(?,?)').run(player.id,JSON.stringify({round:{id:'round-1',stake:20}}));
-    for(const table of ['player_sessions','preview_sessions','lissabon_profile_sessions']) f.sqlite.prepare(`INSERT INTO ${table} VALUES(?,?,?)`).run(randomBytes(32).toString('hex'),player.id,Date.now()+60000);
+    for(const table of ['player_sessions','preview_sessions']) f.sqlite.prepare(`INSERT INTO ${table} VALUES(?,?,?)`).run(randomBytes(32).toString('hex'),player.id,Date.now()+60000);
     const before=f.money(),old=f.sqlite.prepare('SELECT * FROM player_accounts').get(),changedPassword=randomBytes(24).toString('base64url');
     const result=await f.administration.setPassword({playerId:player.id,password:changedPassword,actor:'operator',reason:'Requested credential change'});
     assert.deepEqual(result,{id:player.id,changed:true});assert.deepEqual(f.money(),before);
     const account=f.sqlite.prepare('SELECT * FROM player_accounts').get();assert.notEqual(account.salt,old.salt);assert.notEqual(account.hash,old.hash);
     assert.equal(timingSafeEqual(scryptSync(changedPassword,account.salt,64),Buffer.from(account.hash,'hex')),true);
     assert.equal(timingSafeEqual(scryptSync(f.password,account.salt,64),Buffer.from(account.hash,'hex')),false);
-    for(const table of ['player_sessions','preview_sessions','lissabon_profile_sessions']) assert.equal(f.sqlite.prepare(`SELECT count(*) n FROM ${table}`).get().n,0);
+    for(const table of ['player_sessions','preview_sessions']) assert.equal(f.sqlite.prepare(`SELECT count(*) n FROM ${table}`).get().n,0);
     const fresh=createAccountCredentialResolver({playerDb:f.sqlite,playerAccounts:true});assert.equal((await fresh.authenticate('player',changedPassword)).kind,'player');assert.equal(await fresh.authenticate('player',f.password),null);
     const events=f.sqlite.prepare('SELECT action,previous_status,status FROM player_admin_events').all().map(row=>({...row}));assert.deepEqual(events,[{action:'create',previous_status:null,status:'active'},{action:'password',previous_status:'active',status:'active'}]);
   } finally {f.close();}
@@ -46,14 +45,14 @@ test('invalid, unknown, closed and failed-audit changes cannot partially replace
   const f=fixture();
   try {
     const player=await f.administration.create({username:'player',password:f.password,actor:'operator'});
-    for(const table of ['player_sessions','preview_sessions','lissabon_profile_sessions']) f.sqlite.prepare(`INSERT INTO ${table} VALUES(?,?,?)`).run(randomBytes(32).toString('hex'),player.id,Date.now()+60000);
-    const before=f.sqlite.prepare('SELECT * FROM player_accounts').all(),sessions=['player_sessions','preview_sessions','lissabon_profile_sessions'].map(table=>f.sqlite.prepare(`SELECT * FROM ${table}`).all());
+    for(const table of ['player_sessions','preview_sessions']) f.sqlite.prepare(`INSERT INTO ${table} VALUES(?,?,?)`).run(randomBytes(32).toString('hex'),player.id,Date.now()+60000);
+    const before=f.sqlite.prepare('SELECT * FROM player_accounts').all(),sessions=['player_sessions','preview_sessions'].map(table=>f.sqlite.prepare(`SELECT * FROM ${table}`).all());
     const body={playerId:player.id,password:randomBytes(24).toString('base64url'),actor:'operator',reason:'Reset requested'};
     await assert.rejects(f.administration.setPassword({...body,password:'x'}),{statusCode:400});
     await assert.rejects(f.administration.setPassword({...body,playerId:'missing'}),{statusCode:404});
     f.sqlite.prepare("UPDATE players SET status='closed'").run();await assert.rejects(f.administration.setPassword(body),{statusCode:409});
     f.sqlite.prepare("UPDATE players SET status='active'").run();f.failAudit=true;await assert.rejects(f.administration.setPassword(body),/audit unavailable/);
-    assert.deepEqual(f.sqlite.prepare('SELECT * FROM player_accounts').all(),before);assert.deepEqual(['player_sessions','preview_sessions','lissabon_profile_sessions'].map(table=>f.sqlite.prepare(`SELECT * FROM ${table}`).all()),sessions);
+    assert.deepEqual(f.sqlite.prepare('SELECT * FROM player_accounts').all(),before);assert.deepEqual(['player_sessions','preview_sessions'].map(table=>f.sqlite.prepare(`SELECT * FROM ${table}`).all()),sessions);
     assert.equal(f.sqlite.prepare("SELECT count(*) n FROM player_admin_events WHERE action='password'").get().n,0);
   } finally {f.close();}
 });

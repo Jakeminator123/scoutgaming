@@ -132,6 +132,7 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
       bindingScope: 'lab-only', source: entry.retainedBank ? 'emil' : 'upload', classification: entry.classification, addedAt: entry.addedAt,
       ...(entry.retainedBank ? {retainedBank:true} : {}),
       ...(entry.revision ? {revision:entry.revision} : {}),
+      ...(entry.mediaTiming ? {mediaTiming:structuredClone(entry.mediaTiming)} : {}),
       ...(entry.deletion ? {deletion:entry.deletion,available:false,integrity:'unavailable',previewUrl:null} : {}),
       storage: entry.storage ? 'private-blob' : 'disk',
     };

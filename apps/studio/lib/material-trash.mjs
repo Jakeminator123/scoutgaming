@@ -6,6 +6,7 @@ import { gameLaneConfiguration } from '../../../packages/presentation/contracts/
 import {isPresentationRoom} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
 import {retainBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
@@ -68,7 +69,8 @@ export async function materialTrashPlan({repository,operators,id,archived,expect
    roomIds.add(room.id);rooms.push({id:room.id,name:room.name,operatorId:operator.id});
   }
   let branding=structuredClone(pack.branding),retained=withoutPresentationLanes(presentation,[...removed]);
-  if(retained)branding=withPackagePresentation(branding,retained);
+   // Permit the saved v2 format; publication still checks runtime and SQL readiness.
+   if(retained)branding=withPackagePresentation(branding,retained,{allowExtended:pack.branding[PRESENTATION_PACKAGE_KEY]?.format===EXTENDED_PRESENTATION_FORMAT});
   else{delete branding[PRESENTATION_PACKAGE_KEY];delete branding.dealer;}
   if(removed.has(branding.lane))delete branding.lane;
   if(branding.roomOverrides)for(const room of selected)delete branding.roomOverrides[room.id];

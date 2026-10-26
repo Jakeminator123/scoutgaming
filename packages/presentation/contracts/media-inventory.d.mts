@@ -1,7 +1,11 @@
 import type { VideoMetadata } from './video-intake.mjs';
+import type { MediaTiming } from './media-timing.mjs';
 
 export interface VideoEntry {
   revision?: string;
+  contentType?: string;
+  retainedBank?: true;
+  mediaTiming?: MediaTiming;
   deletion?: {state:'pending'|'deleted';requestedAt:string;completedAt?:string};
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';

@@ -4,6 +4,9 @@ import { allowsPartnerResource } from '../packages/studio-access/server/partner-
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { StudioStorageError, canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 
+import { EXTENDED_PRESENTATION_STORAGE_CHECKSUM, validatePresentationBranding } from '../packages/presentation/server/presentation-storage.mjs';
+import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
+
 const north = { environment: 'qa', workspaceId: 'workspace-north' };
 const south = { environment: 'qa', workspaceId: 'workspace-south' };
 const actor = 'tenant-test';
@@ -66,6 +69,7 @@ function memorySql() {
     const [environment, workspace] = values;
     const scoped = name => tables[name].filter(row => row.environment_id === environment && row.workspace_id === workspace);
     const snapshot = () => { if (tx?.inTx && !tx.snapshot) tx.snapshot = structuredClone(tables); };
+    if (tag === 'extended-presentation-ready') return copy(sql.extendedStorage ?? []);
     if (tag === 'list-operators') return scoped('operators').sort((a, b) => a.slug.localeCompare(b.slug)).map(copy);
     if (tag === 'operator-by-slug') return scoped('operators').filter(row => row.slug === values[2]).map(copy);
     if (tag === 'operator-by-id') return scoped('operators').filter(row => row.operator_id === values[2]).map(copy);
@@ -580,4 +584,32 @@ test('all package publishers share the operator lock and CAS prevents lost table
   const before = structuredClone(sql.tables.operator_packages);
   await assert.rejects(store.publishPackage({ ...input, expectedRevision: null }), refusal('studio_conflict'));
   assert.deepEqual(sql.tables.operator_packages, before);
+});
+
+test('extended immutable packages read safely but publication requires exact optional020 proof',async()=>{
+  const sql=memorySql(),store=await open(north,sql);await seed(store);
+  const {input}=nativeRoomMaterialFixture({allSpeechSlots:true});
+  const branding=input.package.branding,request={operatorId:'operator-unibet',lanes:['mobile-phone'],games:['blackjack'],tables:['room-first'],branding,actor,expectedRevision:null};
+  const before=structuredClone(sql.tables);
+  await assert.rejects(store.assertExtendedPresentationReady(),refusal('studio_extended_presentation_storage_unavailable'));
+  await assert.rejects(store.publishPackage(request),refusal('studio_extended_presentation_storage_unavailable'));
+  assert.deepEqual(sql.tables,before);
+  sql.extendedStorage=[{checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:2}];
+  assert.equal(await store.assertExtendedPresentationReady(),true);
+  const saved=await store.publishPackage(request);assert.deepEqual(saved.branding,branding);
+  sql.extendedStorage=[];
+  assert.deepEqual((await store.getCurrentPackage(request.operatorId)).branding,branding,'reader requires no mutable readiness lookup');
+  const frozen=structuredClone(sql.tables);
+  for(const proof of [{checksum:'f'.repeat(64),structure_checksum:'a'.repeat(64),matching_checks:2},
+    {checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'bad',matching_checks:2},
+    {checksum:EXTENDED_PRESENTATION_STORAGE_CHECKSUM,structure_checksum:'a'.repeat(64),matching_checks:1}]) {
+    sql.extendedStorage=[proof];
+    await assert.rejects(store.publishPackage({...request,expectedRevision:1}),refusal('studio_extended_presentation_storage_unavailable'));
+    assert.deepEqual(sql.tables,frozen);
+  }
+  const writer=sql.clients.find(client=>client.calls.some(call=>call.text.includes('operator-store:publish-package')));
+  assert.ok(writer.calls.some(call=>call.text.includes('operator-store:extended-presentation-ready')),'proof uses publication connection');
+  assert.throws(()=>validatePresentationBranding({...branding,name:'x'.repeat(8000)}),refusal('studio_invalid_data'));
+  await assert.rejects(store.publishPackage({...request,expectedRevision:1,branding:{name:'x'.repeat(8000)}}),refusal('studio_invalid_data'));
+  assert.deepEqual(sql.tables,frozen);
 });

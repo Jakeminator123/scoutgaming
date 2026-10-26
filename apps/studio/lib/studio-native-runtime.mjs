@@ -7,7 +7,8 @@ import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../../
 import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
 import { layerMediaInspectionMessage } from '../../../packages/presentation/contracts/layer-upload-errors.mjs';
-import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
+import { inspectMediaTiming } from './layer-media-inspection.mjs';
+import { wrapNativePresentationRepository, presentationPackageRequiresV29, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
@@ -31,6 +32,7 @@ import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { createPresentationRoomApi, PRESENTATION_ROOM_MUTATION } from './presentation-room-api.mjs';
 import { createRoomGameConfigApi } from './room-game-config-api.mjs';
+import { resolveNativeRoomGameMaterial } from '../../../packages/presentation/server/native-room-game-material.mjs';
 import { createSharedTableProofReadout } from './shared-table-proof-readout.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
@@ -203,14 +205,15 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope,
       // Verify the negotiated format before reporting readiness. This metadata
       // never substitutes for the saved dealer registry or frozen media record.
-      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
+      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
         [game==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
     });
     for (const service of [lanePackages, rooms]) {
       for (const [key, prepare] of service.preparations ?? []) { if (preparations.has(key)) unavailable(); preparations.set(key, prepare); }
     }
-    // Room publication remains closed until an exact K04 media/timing resolver is bound.
-    for (const service of [createRoomGameConfigApi({repository,scope:config.scope}),createSharedTableProofReadout({repository,scope:config.scope})]) {
+    // Pure frozen-material resolution stays inside the captured SQL snapshot;
+    // byte inspection is a separate capability and runs before mutation admission.
+    for (const service of [createRoomGameConfigApi({repository,scope:config.scope,resolveMaterial:resolveNativeRoomGameMaterial}),createSharedTableProofReadout({repository,scope:config.scope})]) {
       for (const [key,handler] of service.handlers) { if(handlers.has(key))unavailable();handlers.set(key,handler); }
     }
     for (const [key, handler] of rooms.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
@@ -232,6 +235,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction, ...media,
+      inspectMediaTiming: (record,options={}) => inspectMediaTiming(record,{...options,env}),
       assistantDatabaseInventory: () => readAssistantDatabaseInventory(pool),
     };
     // Server-only capability: non-enumerable and copy-on-read. No endpoint

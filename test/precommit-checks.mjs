@@ -177,14 +177,32 @@ test('the hook inspects its own commit index while child checks remain isolated'
     const script = join(root, 'tools', 'precommit-checks.mjs');
     await writeFile(script, await readFile(new URL('../tools/precommit-checks.mjs', import.meta.url)));
     await writeFile(join(root, 'tools', 'documentation-paths.mjs'), await readFile(new URL('../tools/documentation-paths.mjs', import.meta.url)));
+    await mkdir(join(root,'test'));
+    await writeFile(join(root,'test','code.mjs'),'import "node:test";\n');
+    delete env.CROUPIER_PRECOMMIT_TEST_WORKERS;
     const plan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env, encoding: 'utf8' });
     assert.equal(plan.status, 0, plan.stderr);
     assert.equal(JSON.parse(plan.stdout).mode, 'focused');
+    const baseline=JSON.parse(plan.stdout).commands;
+    assert.ok(baseline.some(command=>command.includes('--test-concurrency=4')));
+    for(const workers of ['1','2','3','4']){
+      const limited=spawnSync(process.execPath,[script,'--plan'],{cwd:root,env:{...env,CROUPIER_PRECOMMIT_TEST_WORKERS:workers},encoding:'utf8'});
+      assert.equal(limited.status,0,limited.stderr);
+      assert.deepEqual(JSON.parse(limited.stdout).commands,baseline.map(command=>command.map(arg=>arg==='--test-concurrency=4'?`--test-concurrency=${workers}`:arg)),
+        'worker selection must not remove or replace any check');
+    }
+    for(const workers of ['0','5','-1','2.0','02',' 2','1\n','1\r','','unbounded']){
+      const invalid=spawnSync(process.execPath,[script,'--plan'],{cwd:root,env:{...env,CROUPIER_PRECOMMIT_TEST_WORKERS:workers},encoding:'utf8'});
+      assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/CROUPIER_PRECOMMIT_TEST_WORKERS/);
+    }
     for (const flags of [{ CI: 'true' }, { GITHUB_ACTIONS: 'true' }]) {
-      const ciPlan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env: { ...env, ...flags }, encoding: 'utf8' });
+      const ciPlan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env: { ...env, ...flags,CROUPIER_PRECOMMIT_TEST_WORKERS:'invalid' }, encoding: 'utf8' });
       assert.equal(ciPlan.status, 0, ciPlan.stderr);
       assert.equal(JSON.parse(ciPlan.stdout).mode, 'full');
+      assert.deepEqual(JSON.parse(ciPlan.stdout).commands,[['sh','.githooks/pre-commit-full']]);
     }
+    const full=spawnSync(process.execPath,[script,'--full','--plan'],{cwd:root,env:{...env,CROUPIER_PRECOMMIT_TEST_WORKERS:'1'},encoding:'utf8'});
+    assert.equal(full.status,0,full.stderr);assert.deepEqual(JSON.parse(full.stdout).commands,[['sh','.githooks/pre-commit-full']]);
     assert.equal(mode(readStagedChanges(root)), 'documentation', 'the default index remains unchanged');
   });
 });
@@ -212,6 +230,7 @@ test('focused selection follows changed and deleted sources without running unre
     assert.ok(plan.some(args => args.includes('--test-concurrency=4') && args.includes('apps/studio/test/room.test.mjs')));
     assert.ok(plan.every(args => !args.includes('.githooks/pre-commit-full')));
     assert.equal(runChecks(plan, {cwd: root}), 0);
+    for(const testWorkers of [0,5,-1,1.5,'2',null])assert.throws(()=>checkPlan('focused',{changes,root,testWorkers}),/integer from 1 to 4/);
     await rm(join(root, 'apps', 'studio', 'lib', 'room.mjs'));
     const deleted = checkPlan('focused', {changes: [change('apps/studio/lib/room.mjs', 'D')], root});
     assert.ok(deleted.some(args => args.includes('apps/studio/test/room.test.mjs')));

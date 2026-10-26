@@ -301,3 +301,17 @@ test('valid existing dealer labels retain their full model length and own displa
   assert.equal(captured.registeredDealers[0].label.length, 120);
   assert.equal(validateFrozenRegisteredDealers(captured.registeredDealers, { dealerIds: ['linnea'] })[0].label, 'J'.repeat(120));
 });
+
+test('frozen registered media retains its byte-bound optional timing receipt unchanged',()=>{
+  const input=fixture(),row=input.mediaRows[0];
+  row.mediaTiming={schemaVersion:1,mediaId:row.id,sha256:row.sha256,size:row.size,recordedSpeechIdentitySha256:null,
+    video:{trackId:1,frameCount:24,fps:24,firstPtsUs:0,lastPtsUs:958333,endUs:1000000},audio:[],endUs:1000000,audioTailUs:0};
+  const before=structuredClone(row.mediaTiming),captured=captureFrozenRegisteredDealers(input);
+  assert.deepEqual(resolve(captured.registeredDealers).mediaTiming,before);
+  const checked=validateFrozenRegisteredDealers(captured.registeredDealers,{dealerIds:['linnea']});
+  assert.deepEqual(resolve(checked).mediaTiming,before);
+  row.mediaTiming.endUs=8;
+  assert.deepEqual(resolve(captured.registeredDealers).mediaTiming,before,'capture detaches later live mutations');
+  const bad=structuredClone(captured.registeredDealers);bad[0].idle.mediaTiming.size++;
+  assert.throws(()=>validateFrozenRegisteredDealers(bad,{dealerIds:['linnea']}));
+});

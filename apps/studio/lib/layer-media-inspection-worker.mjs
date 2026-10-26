@@ -2,8 +2,9 @@ import { parentPort,workerData } from 'node:worker_threads';
 import { readSync } from 'node:fs';
 import sharp from 'sharp';
 import { Input,MP4,WEBM,CustomSource,EncodedPacketSink } from 'mediabunny';
+import { inspectMp4Timing } from './mp4-media-timing.mjs';
 
-const {fd,size,contentType,limits}=workerData;
+const {fd,size,contentType,limits,timing=false}=workerData;
 const invalid=()=>{throw Error('studio_invalid_media_format');};
 const limited=()=>{throw Error('studio_media_inspection_limit');};
 let reads=0,total=0;
@@ -49,6 +50,8 @@ function checkMp4Bounds() {
   if(!mdat)invalid();
 }
 async function inspectVideo() {
+  if(timing&&contentType!=='video/mp4')throw Error('studio_media_timing_unsupported');
+  const measured=timing?inspectMp4Timing(read,size):null;
   if(contentType==='video/mp4')checkMp4Bounds();
   const source=new CustomSource({getSize:()=>size,read:(start,end)=>read(start,end),maxCacheSize:1024*1024,prefetchProfile:'none'});
   const input=new Input({source,formats:[MP4,WEBM]});
@@ -63,6 +66,7 @@ async function inspectVideo() {
     const packets=new EncodedPacketSink(track),options={skipLiveWait:true};
     const first=await packets.getFirstPacket(options),last=await packets.getPacket(Infinity,options);
     for(const packet of [first,last])if(!packet||!packet.data.byteLength||!Number.isFinite(packet.timestamp)||!Number.isFinite(packet.duration)||packet.duration<0)invalid();
+    if(timing) return measured;
     return {...value,contentType};
   } finally {input.dispose();}
 }
@@ -70,5 +74,5 @@ try {
   const value=contentType.startsWith('image/')?await inspectImage():await inspectVideo();
   parentPort.postMessage({ok:true,value});
 } catch(error) {
-  parentPort.postMessage({ok:false,code:error?.message==='studio_media_inspection_limit'?error.message:'studio_invalid_media_format'});
+  parentPort.postMessage({ok:false,code:['studio_media_inspection_limit','studio_media_timing_unsupported'].includes(error?.message)?error.message:'studio_invalid_media_format'});
 }
