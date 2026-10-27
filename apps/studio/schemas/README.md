@@ -1,4 +1,4 @@
-# Scheman för labbet
+# Studios scheman
 
 Projekt-, video-, idle- och probescheman ägs av
 `../../packages/presentation/contracts/schemas/`. `lab-video-manifest.schema.json`

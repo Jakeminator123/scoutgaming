@@ -1,10 +1,10 @@
-# Tysta 2D-rörelser för labbet
+# Tysta 2D-rörelseprov
 
-Här finns 64 syntetiska spelexempel: 16 befintliga labbnoder × fyra rörelser.
+Här finns 64 syntetiska spelexempel: 16 händelsegrupper × fyra rörelser.
 Separat finns `social-reactions.json` med `social.ledsen`: neutral → lite ledsen →
 två händer framför ansiktet → neutral. Det är inte ett nytt motor-event eller en
 ny sparad projektvariant. Sociala exempel får bara visas mellan spelhändelser
-med labbets befintliga `idle.ready`, aldrig ersätta delning eller kortvändning.
+med befintlig `idle.ready`, aldrig ersätta delning eller kortvändning.
 Fyra dealers kan dela samma exempelrigg; den är inte fyra färdiga dealerfilmer.
 Inga nya spelmotor-events, repliker, ljudspår eller produktionsvideor skapas här.
 
@@ -32,7 +32,7 @@ egen kod, CSS, webbadresser eller fria DOM-selektorer. Vid avbrott tas spåren b
 Operativsystemets inställning för minskad rörelse respekteras.
 
 Du kan ändra poser, timing och namn i JSON, men detta är ännu ingen visuell
-keyframe-editor. Projektets event-/variant-/triggeretiketter redigeras i studion.
+keyframe-editor. Projektets händelse-, variant- och villkorsetiketter redigeras i Admin.
 När ett riktigt klipp binds med `videoGenerationId` visar videoläget den exakta
 filen; tyst rörelse, språkönskemål och neutral slutpose är **inte** bevis på
 tal, lipsync eller godkänd produktionsmedia. Rodnad är en skriven dealerreaktion,

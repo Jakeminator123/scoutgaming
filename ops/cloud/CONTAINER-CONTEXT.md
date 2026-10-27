@@ -1,29 +1,29 @@
 # Render v3: byggkontext och verifiering
 
-Den aktiva spelmotorn `croupier-v3` byggs från reporoten med `ops/cloud/Dockerfile.game`:
+Spelmotorn `croupier-v3` byggs från reporoten med `ops/cloud/Dockerfile.game`:
 
 ```sh
 docker build -f ops/cloud/Dockerfile.game .
 ```
 
-Imagen kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`. Studio/Admin och spelarens webbgränssnitt byggs på Vercel. Se [Render-guiden](RENDER-V3.md) för startkontrakt och [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten) för kompatibel kodåtergång.
+Imagen kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`. Admin, lobby och spelskal byggs på Vercel. Se [RENDER-V3](RENDER-V3.md) för tjänst och deploy och [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten) för kodåtergång.
 
-| Kopieras till v3-imagen | Roll |
+| Kopieras till imagen | Roll |
 | --- | --- |
-| `services/game/` | Spelserver, konton, auktoritativ ekonomi och spelregler |
-| `packages/` | Delade kontrakt, register, media- och publiceringstjänster |
-| `services/astrid-gpu-worker/gateway/` | Befintligt talrelä; detta startar eller bygger ingen GPU-worker |
-| `ops/cloud/`, `ops/neon-game/`, `ops/neon-studio/` | Start/gateway och befintliga schemakontrakt; inga migreringar appliceras av Dockerbygget |
+| `services/game/` | Spelmotorn: konton, saldo, kort, sko och spelregler |
+| `packages/` | Delade kontrakt, register-, medie- och publiceringstjänster |
+| `services/astrid-gpu-worker/gateway/` | Talreläet; bygger eller startar ingen GPU-worker |
+| `ops/cloud/`, `ops/neon-game/`, `ops/neon-studio/` | Start, gateway och schemakontrakt; bygget applicerar inga migreringar |
 | Tre uttryckliga `tools/`-moduler | Layout-, runtimekatalog- och Blob-indexadaptrar enligt Dockerfilen |
 
-Varken `apps/`, `media/` eller lokal Studio-bootstrapdata ingår. Spelserverns statiska importstängning kontrolleras av `ops/cloud/test/game-image.test.mjs`; Node-moduler och Linuxpaket installeras i imagen. Manifest och låsfiler kopieras före produktkoden, så en ren källändring kan återanvända beroendelagret.
+`apps/`, `media/` och lokal bootstrapdata ingår inte. `ops/cloud/test/game-image.test.mjs` kontrollerar spelserverns importer mot COPY-listan. Manifest och låsfiler kopieras före koden, så en ren källändring återanvänder beroendelagret. Produktionsberoenden installeras med `--omit=dev`; PGlite stannar utanför imagen.
 
-CI `Render v3 container check` bygger den aktiva imagen två gånger, med en tillfällig källändring i runnerns checkout. Den kräver cacheträff för låst installation och kör därefter nätverkslösa kontroller av beroenden, frånvaro av Studio/lokala medieregister samt v3-startkonfiguration. Fixturvärdena i denna nätverkslösa kontroll ansluter inte till Neon, Blob eller någon app. Inga imager publiceras eller driftsätts av kontrollen.
+Workflowet `Render v3 container check` bygger imagen två gånger med en tillfällig källändring, kräver cacheträff för den låsta installationen och kör nätverkslösa kontroller av beroenden, frånvaro av Studio och lokala medieregister samt startkonfigurationen. Fixturvärdena ansluter inte till Neon, Blob eller någon app, och ingen image publiceras.
 
-Den äldre `ops/cloud/Dockerfile` och den kombinerade Studio-/spelstarten är borttagna. Render startar alltid en spelprocess; ingen Next-byggkontroll, Studio-port eller intern Studio-hemlighet finns i denna start. Den gamla privata bootstrapmappen, P6-kampanjens SDK/router och den suspenderade QA-tjänstens särskilda stream-start/provider-preload är avvecklade ur produktkoden. Studio-sessionen kontrolleras fortfarande av spelserverns befintliga identitetstjänst genom signerad Vercel-ingress.
+Det finns bara en Dockerfile för spelmotorn och en spelprocess. Den kombinerade Studio- och spelstarten är borttagen. Studio-sessioner kontrolleras av spelserverns identitetstjänst genom signerad Vercel-ingress.
 
-Neon är registerkälla: scoped `runtime_media_catalogs` innehåller layout, Blob-index och presentationsmetadata; `speech_reply_records` innehåller svarsbibliotekets metadata. Exakta mediebytes hämtas från privat Blob. Saknad/felaktig katalog får inte ersättas av filer ur imagen. Historiska authoringfiler eller dealeridentiteter blir inte krav på nya installationer bara för att gamla tester använder dem.
+Neon är registret: scoped `runtime_media_catalogs` innehåller layout, Blob-index och presentationsmetadata, och `speech_reply_records` talreplikerna. Mediebytes hämtas från privat Blob. En saknad eller felaktig katalog ersätts aldrig av filer ur imagen.
 
-`.dockerignore` filtrerar bland annat Git, privata `arkiv/`, hemligheter, muterbara appdata och mediers source/staging/review ur byggkontexten. V3 använder dessutom en uttrycklig COPY-lista. Filtreringen raderar inga lokala filer och är inte ett skäl att behålla en ersatt runtimeväg. OpenClaw och GPU-workern har egna Dockerfiler/byggkontexter.
+`.dockerignore` filtrerar bort Git, privata `arkiv/`, hemligheter, appdata och mediers source, staging och review. Filtreringen raderar inga lokala filer. OpenClaw och GPU-workern har egna Dockerfiler.
 
-Verifiera faktiskt driftsatt SHA, health, kontraktsversion och det ändrade beteendet vid leverans. Ett lyckat containerbygge bevisar bara bygg-/startkontraktet; moln-, media- och återställningsacceptans redovisas separat i [molnplanen](../../docs/CLOUD-MIGRATION.md).
+Ett lyckat containerbygge bevisar bara bygg- och startkontraktet. Vid leverans kontrolleras driftsatt SHA, health och det ändrade beteendet enligt [driftkartan](../../docs/CLOUD-MIGRATION.md#kontrollera-en-deploy).

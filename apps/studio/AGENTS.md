@@ -20,8 +20,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Studio i repot
 
-Källroten är apps/studio (tidigare lab). Studio serverar produktens /admin,
-/partner och /lobby; /studio är teknisk basePath. Följ [START-HERE](../../START-HERE.md), [repots AGENTS](../../AGENTS.md),
-[aktuell överlämning](../../docs/NEXT-AGENT.md) och de kanoniska guiderna, inklusive
-[terminologin](docs/TERMINOLOGI.md). Neon är produktregistret och Blob äger
-mediebytes; starta inget parallellt lokalt produktregister. Spelmotorn ligger i `services/game`; delade kontrakt ligger i `packages/`.
+`apps/studio` serverar Admin (`/admin`), Partnerportalen (`/partner`) och
+lobbyn (`/lobby`); `/studio` är teknisk basePath, ingen egen produkt. Börja i
+[START-HERE](../../START-HERE.md), följ [repots AGENTS](../../AGENTS.md) och
+[överlämningen](../../docs/NEXT-AGENT.md) och använd orden i
+[TERMINOLOGI](docs/TERMINOLOGI.md). Utvecklarreferensen är [README](README.md).
