@@ -174,12 +174,13 @@ test('actual browser cold Enter/submit stays inert and hydrated forms use JSON P
 
 test('actual browser canonical login keeps host-only BO cookies with signed game and Lab handoffs', { skip: !browserModule }, async () => {
   const { chromium } = await import(pathToFileURL(browserModule).href);
-  const { DatabaseSync } = await import('node:sqlite');
+  const { createPgliteStore } = await import('../../../test/fixtures/pglite-pool.mjs');
   const { scryptSync } = await import('node:crypto');
-  const { craigIdentity } = await import('../../../services/game/craig-identity.mjs');
-  const { playerAuth } = await import('../../../services/game/player-auth.mjs');
-  const { backofficeGameAuth } = await import('../../../services/game/bo-game-auth.mjs');
-  const { backofficeLabAuth } = await import('../../../services/game/bo-lab-auth.mjs');
+  const { craigIdentity } = await import('../../../packages/studio-access/server/craig-identity.mjs');
+  const { installBoAuthEpoch } = await import('../../../packages/studio-access/server/bo-auth-epoch.mjs');
+  const { playerAuth } = await import('../../../services/game/storage/async-player-auth.mjs');
+  const { backofficeGameAuth } = await import('../../../services/game/storage/async-bo-game-auth.mjs');
+  const { backofficeLabAuth } = await import('../../../services/game/storage/async-bo-lab-auth.mjs');
   const { createStudioNativeAuth } = await import('../../../packages/studio-access/studio-native-auth.mjs');
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   const navigation = require('next/dist/client/components/redirect.js');
@@ -210,18 +211,15 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
   const browser = await chromium.launch({ headless:true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? {channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL} : {}) });
   try {
     for (const kind of ['game','lab']) for (const entry of ['/control/login','/admin/login']) {
-      const bo = new DatabaseSync(':memory:'), game = new DatabaseSync(':memory:');
+      // The engine's PostgreSQL schema on PGlite; boDb/db are wired as services/game/server.mjs wires them.
+      const database = await createPgliteStore(), boDb = database.boDb, game = database.db;
       const context = await browser.newContext();
       try {
-        bo.exec('CREATE TABLE users(id TEXT PRIMARY KEY,username TEXT,email TEXT,role TEXT,salt TEXT,hash TEXT); CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT); CREATE TABLE bo_auth_epochs(user_id TEXT PRIMARY KEY,epoch INTEGER);');
         const pass = 'Isolated-Studio-Login-Only', salt = 'fixture-salt';
-        bo.prepare('INSERT INTO users VALUES (?,?,?,?,?,?)').run('7','Operator','operator@example.invalid','superadmin',salt,scryptSync(pass,salt,64).toString('hex'));
-        bo.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret','a'.repeat(64));
-        bo.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run('7',2);
-        const adapter = db => ({prepare:sql => db.prepare(sql.replace(/ FOR UPDATE\b/g,'')),transaction:async work => {
-          db.exec('BEGIN IMMEDIATE'); try {const result=await work();db.exec('COMMIT');return result;} catch(error){db.exec('ROLLBACK');throw error;}
-        }});
-        const boDb = adapter(bo), identity = craigIdentity(bo), scope = {environment:'fixture',workspaceId:'croupier'};
+        await boDb.prepare('INSERT INTO users (id,username,email,role,salt,hash,created_at) VALUES (?,?,?,?,?,?,?)').run(7,'Operator','operator@example.invalid','superadmin',salt,scryptSync(pass,salt,64).toString('hex'),'fixture');
+        await boDb.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret','a'.repeat(64));
+        await boDb.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run(7,2);
+        const identity = craigIdentity(boDb), scope = {environment:'fixture',workspaceId:'croupier'};
         const authorize = createStudioNativeAuth({boDb,scope});
         const boSession = async req => {
           try {await authorize(new Request(publicOrigin + '/studio/api/auth/session',{headers:{cookie:req.headers.cookie || ''}}));}
@@ -229,12 +227,12 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
           const token = req.headers.cookie.match(/(?:^|;\s*)bo_jwt=([^;]+)/)?.[1];
           return JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));
         };
-        const authEpoch = id=>bo.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(id)?.epoch ?? 0;
-        const auth = playerAuth(game,()=>({id:'fixture-player'}),identity,{authEpoch});
+        const authEpoch = installBoAuthEpoch(boDb);
+        const auth = playerAuth(game,async()=>{await game.prepare('INSERT INTO players (id,name,created_at) VALUES (?,?,?)').run('fixture-player','fixture-player','fixture');return {id:'fixture-player'};},identity,{authEpoch});
         const gameHandoff = backofficeGameAuth({db:game,auth,identity,boSession,validLaunch:()=>false,publicUrl:publicOrigin,boUrl:publicOrigin,publicGamePath:'/blackjack'});
-        const labHandoff = backofficeLabAuth({db:bo,identity,boSession,authEpoch,
+        const labHandoff = backofficeLabAuth({db:boDb,identity,boSession,authEpoch,
           publicUrl:publicOrigin,boUrl:publicOrigin,labPublicUrl:publicOrigin,singleOrigin:true});
-        const actions = createStudioNativeAuthActions({boDb,gameDb:adapter(game),scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
+        const actions = createStudioNativeAuthActions({boDb,gameDb:game,scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
           rateLimit:()=>true,clientAddress:()=> 'isolated-browser',mail:{send:()=>assert.fail('no external mail')}});
         const seen = [], failures = [], callbacks = [];
         await context.route('**/*',async route => {
@@ -283,7 +281,7 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
             }
             const target = kind === 'game' ? '/blackjack' : '/studio/admin/drift';
             assert.equal(url.origin,publicOrigin);assert.equal(url.pathname,target);
-            if (kind === 'game') assert.equal(auth.user({headers:{cookie:rawHeaders.cookie || ''}}),'fixture-player');
+            if (kind === 'game') assert.equal(await auth.user({headers:{cookie:rawHeaders.cookie || ''}}),'fixture-player');
             else assert.equal((await authorize(new Request(url,{headers}))).role,'admin');
             return fulfill({contentType:'text/html',body:'<h1>Isolated handoff completed</h1>'});
           } catch(error) {failures.push(error);await route.fulfill({status:500,body:'Isolated fixture failed'});}
@@ -315,14 +313,14 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
         await page.goto(callbacks[0].url);
         assert.equal(callbacks.length,2);assert.equal(callbacks[1].status,kind === 'game' ? 400 : 410);
         assert.deepEqual(failures,[]);
-      } finally {await context.close();bo.close();game.close();}
+      } finally {await context.close();await database.close();}
     }
   } finally {await browser.close();}
 });
 
 test('actual browser expired Admin login restores the real room view through history and reload', { skip: !browserModule }, async () => {
   const { chromium } = await import(pathToFileURL(browserModule).href);
-  const { DatabaseSync } = await import('node:sqlite');
+  const { createPgliteStore } = await import('../../../test/fixtures/pglite-pool.mjs');
   const { scryptSync } = await import('node:crypto');
   const { mkdtemp, mkdir, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
@@ -391,32 +389,28 @@ test('actual browser expired Admin login restores the real room view through his
     await buildAdminBrowserFixture(root);
     browser = await chromium.launch({headless:true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? {channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL} : {})});
     for (const prefix of ['', '/studio']) {
-      const bo = new DatabaseSync(':memory:'), game = new DatabaseSync(':memory:');
+      // The engine's PostgreSQL schema on PGlite for credentials; Studio documents stay in-memory fixture rows.
+      const database = await createPgliteStore(), boDb = database.boDb;
       const context = await browser.newContext();
       try {
-        bo.exec('CREATE TABLE users(id TEXT PRIMARY KEY,username TEXT,email TEXT,role TEXT,salt TEXT,hash TEXT); CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT); CREATE TABLE bo_auth_epochs(user_id TEXT PRIMARY KEY,epoch INTEGER);');
-        game.exec('CREATE TABLE player_accounts(email TEXT,player_id TEXT,salt TEXT,hash TEXT);');
         const pass = 'Isolated-Admin-Login-Only', salt = 'fixture-salt', clock = {now:Date.now() - 8 * 86400_000};
-        bo.prepare('INSERT INTO users VALUES (?,?,?,?,?,?)').run('7','Operator','operator@example.invalid','superadmin',salt,scryptSync(pass,salt,64).toString('hex'));
-        bo.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret','a'.repeat(64));
-        bo.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run('7',2);
-        bo.exec('CREATE TABLE fixture_operators(id TEXT PRIMARY KEY,slug TEXT,name TEXT,status TEXT); CREATE TABLE fixture_studio(kind TEXT PRIMARY KEY,document TEXT);');
-        const insertOperator = bo.prepare('INSERT INTO fixture_operators VALUES (?,?,?,?)');
+        await boDb.prepare('INSERT INTO users (id,username,email,role,salt,hash,created_at) VALUES (?,?,?,?,?,?,?)').run(7,'Operator','operator@example.invalid','superadmin',salt,scryptSync(pass,salt,64).toString('hex'),'fixture');
+        await boDb.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret','a'.repeat(64));
+        await boDb.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run(7,2);
+        const operators = [], documents = new Map();
+        const insertOperator = {run:(id,slug,name,status)=>operators.push({id,slug,name,status})};
         insertOperator.run('fixture-first-operator','fixture-first-operator','C4 annat bolag','active');
         insertOperator.run(expectedContext.operator,expectedContext.operator,expectedLabels.operator,'active');
-        const insertDocument = bo.prepare('INSERT INTO fixture_studio VALUES (?,?)');
+        const insertDocument = {run:(kind,document)=>documents.set(kind,document)};
         for (const [kind,value] of Object.entries({project,administration,inventory:{videos:[],families:[]}})) insertDocument.run(kind,JSON.stringify(value));
-        const readDocument = kind => JSON.parse(bo.prepare('SELECT document FROM fixture_studio WHERE kind=?').get(kind).document);
-        const storedBefore = bo.prepare('SELECT * FROM fixture_studio ORDER BY kind').all();
-        const store = {listOperators:async()=>bo.prepare('SELECT * FROM fixture_operators ORDER BY rowid').all(),getCurrentPackage:async()=>null};
+        const readDocument = kind => JSON.parse(documents.get(kind));
+        const storedDocuments = () => [...documents].sort(([a],[b])=>a.localeCompare(b)), storedBefore = storedDocuments();
+        const store = {listOperators:async()=>operators.map(row=>({...row})),getCurrentPackage:async()=>null};
         const policy = {readSaved:async()=>({project:readDocument('project'),administration:readDocument('administration'),
           projectRevision:project.revision,administrationRevision:'fixture-administration-7'})};
-        const adapter = db => ({prepare:sql => db.prepare(sql.replace(/ FOR UPDATE\b/g,'')),transaction:async work => {
-          db.exec('BEGIN IMMEDIATE'); try {const result = await work();db.exec('COMMIT');return result;} catch(error) {db.exec('ROLLBACK');throw error;}
-        }});
-        const boDb = adapter(bo), scope = {environment:'fixture',workspaceId:'croupier'};
+        const scope = {environment:'fixture',workspaceId:'croupier'};
         const authorize = createStudioNativeAuth({boDb,scope,now:()=>clock.now});
-        const actions = createStudioNativeAuthActions({boDb,gameDb:adapter(game),scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
+        const actions = createStudioNativeAuthActions({boDb,gameDb:database.db,scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
           now:()=>clock.now,rateLimit:()=>true,clientAddress:()=> 'isolated-admin-browser',mail:{send:unexpected}});
         // Expire only a cookie signed by this in-memory fixture. No logout or
         // shared account/session mutation is involved in reaching the login page.
@@ -512,15 +506,15 @@ test('actual browser expired Admin login restores the real room view through his
           await page.reload();await assertRoomView(page);
           assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/partner/branding','/studio/api/project','/studio/api/videos']);
           assert.deepEqual(posts,['/studio/api/auth/login']);assert.ok(documentStatuses.slice(1).every(status=>status===200));
-          assert.deepEqual(bo.prepare('SELECT * FROM fixture_studio ORDER BY kind').all(),storedBefore,'room inspection does not mutate saved data');
+          assert.deepEqual(storedDocuments(),storedBefore,'room inspection does not mutate saved data');
           const cookies = await context.cookies(), cookie = cookies.find(item=>item.name==='bo_jwt');
           assert.ok(cookie);assert.notEqual(cookie.value,expiredToken);assert.equal(cookie.domain,'admin.fixture.invalid');
           assert.equal(cookie.secure,true);assert.equal(cookie.httpOnly,true);assert.equal(cookies.some(item=>item.domain==='studio.fixture.invalid'),false);
           assert.equal((await authorize(new Request(publicOrigin + target,{headers:{cookie:'bo_jwt=' + cookie.value}}))).role,'admin');
-          assert.equal(bo.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get('7').epoch,2);
+          assert.equal((await boDb.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(7)).epoch,2);
           assert.deepEqual(failures,[]);
         } catch(error) {throw failures[0] ?? error;}
-      } finally {await context.close();bo.close();game.close();}
+      } finally {await context.close();await database.close();}
     }
   } finally {await browser?.close();assert.equal(dirname(root),tmpdir());await rm(root,{recursive:true,force:true});}
 });

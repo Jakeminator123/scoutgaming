@@ -149,7 +149,7 @@ const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 // the real server component props; it does not claim full Partner UI acceptance.
 test('actual browser partner login returns to the authorized operator and room with a purpose-bound cookie', {skip:!browserModule}, async () => {
   const {chromium} = await import(pathToFileURL(browserModule).href);
-  const {DatabaseSync} = await import('node:sqlite');
+  const {createPgliteStore} = await import('../../../test/fixtures/pglite-pool.mjs');
   const {scryptSync} = await import('node:crypto');
   const {createServer} = await import('node:http');
   const {once} = await import('node:events');
@@ -166,17 +166,13 @@ test('actual browser partner login returns to the authorized operator and room w
   const browser = await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   try {
     for (const prefix of ['', '/studio']) {
-      const bo = new DatabaseSync(':memory:'), game = new DatabaseSync(':memory:');
+      // The engine's PostgreSQL schema (croupier_auth/croupier_game) on PGlite, as boDb/gameDb.
+      const database = await createPgliteStore();
       const context = await browser.newContext(), failures = [], posts = [], receipts = [];
       let server;
       try {
-        bo.exec('CREATE TABLE users(id TEXT PRIMARY KEY,username TEXT,email TEXT,role TEXT,salt TEXT,hash TEXT); CREATE TABLE bo_auth_epochs(user_id TEXT PRIMARY KEY,epoch INTEGER); CREATE TABLE lab_sessions(token_digest TEXT PRIMARY KEY,craig_user_id TEXT,role TEXT,source_stamp TEXT,auth_epoch INTEGER,expires INTEGER);');
-        game.exec('CREATE TABLE player_accounts(email TEXT,player_id TEXT,salt TEXT,hash TEXT);');
-        bo.prepare('INSERT INTO users VALUES (?,?,?,?,?,?)').run('42','north-staff','north@fixture.invalid','partner','fixture-salt',scryptSync(password,'fixture-salt',64).toString('hex'));
-        bo.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run('42',2);
-        const adapter = db => ({prepare:sql=>db.prepare(sql.replace(/ FOR UPDATE\b/g,'')),transaction:async work=>{
-          db.exec('BEGIN IMMEDIATE');try{const result=await work();db.exec('COMMIT');return result;}catch(error){db.exec('ROLLBACK');throw error;}
-        }});
+        await database.boDb.prepare('INSERT INTO users (id,username,email,role,salt,hash,created_at) VALUES (?,?,?,?,?,?,?)').run(42,'north-staff','north@fixture.invalid','partner','fixture-salt',scryptSync(password,'fixture-salt',64).toString('hex'),'fixture');
+        await database.boDb.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run(42,2);
         const scope={environment:'fixture',workspaceId:'croupier'};
         const north={id:'operator-north',slug:'north',name:'North fixture',status:'active',scope};
         const south={id:'operator-south',slug:'south',name:'South fixture',status:'active',scope};
@@ -192,7 +188,7 @@ test('actual browser partner login returns to the authorized operator and room w
             tables:[{id:'room-7',name:'North room',game:'blackjack',presentationId:'composition-2'}]};},
         };
         const authBase=prefix+'/api/partner';
-        const config={boDb:adapter(bo),gameDb:adapter(game),scope,store,allowedOrigins:[origin,'https://studio.fixture.invalid'],publicHosts:['partner.fixture.invalid','studio.fixture.invalid'],
+        const config={boDb:database.boDb,gameDb:database.db,scope,store,allowedOrigins:[origin,'https://studio.fixture.invalid'],publicHosts:['partner.fixture.invalid','studio.fixture.invalid'],
           apiBase:prefix+'/api/admin',authBase:prefix+'/api/auth',rateLimit:async()=>true,clientAddress:async()=> 'fixture-partner'};
         const LoginPage=loadLoginPage(authBase);
         const surfaceSource=new URL('../components/workspace-surface-page.tsx',import.meta.url);
@@ -288,7 +284,7 @@ test('actual browser partner login returns to the authorized operator and room w
         assert.deepEqual(posts,[{path:authBase+'/login',body:{user:'north-staff',pass:password}},{path:authBase+'/login',body:{user:'north-staff',pass:password}}]);
         assert.equal(failures.length,0,failures.map(String).join('\n'));
       }finally{
-        await context.close();if(server)await new Promise(resolve=>server.close(resolve));bo.close();game.close();
+        await context.close();if(server)await new Promise(resolve=>server.close(resolve));await database.close();
       }
     }
   }finally{await browser.close();}

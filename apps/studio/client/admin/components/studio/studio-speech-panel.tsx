@@ -6,7 +6,7 @@ import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs'
 import type {VideoInventory} from '../../lib/connected-studio.mjs'
 import {dealerSpeechReferenceCheck,isSpeechReferenceVideo,type DealerSpeechProfile} from '../../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'
-import {STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,studioRecordedSpeech,type StudioRecordedSpeech,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../../../../../packages/presentation/contracts/studio-speech.mjs'
+import {STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,studioRecordedSpeech,studioRecordedSpeechReviewRequest,type StudioRecordedSpeech,type StudioRecordedSpeechVerdict,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../../../../../packages/presentation/contracts/studio-speech.mjs'
 
 export interface StudioSpeechPanelProps {
   project:StudioProject
@@ -17,6 +17,8 @@ export interface StudioSpeechPanelProps {
   blocked?:boolean
   projectDirty?:boolean
   onEdit:(project:StudioProject)=>void
+  /** Present only where the caller replaces its inventory after a server review write. */
+  onInventory?:(inventory:VideoInventory)=>void
   onBusyChange?:(busy:boolean)=>void
   onDirtyChange?:(dirty:boolean)=>void
 }
@@ -40,6 +42,10 @@ const recordedReview:Record<StudioRecordedSpeech['review'],string>={
   unavailable:'Filen är otillgänglig; godkännandet kan inte verifieras',
   pending:'Granskning återstår',rejected:'Underkänd tagning',approved:'Godkännande matchar registrerad fil',
 }
+const reviewErrors:Record<string,string>={studio_speech_source_unverified:'Filens bild- och ljudspår är inte kontrollerade. Mät speltiden under filinställningarna först.',studio_speech_identity_changed:'Tagningen har ändrats sedan den visades. Läs om registret och granska den igen.',studio_speech_take_missing:'Tagningen finns inte längre i detta talfack. Läs om registret.',studio_conflict:'Filen har ändrats. Läs om registret och granska den igen.'}
+async function reviewTake(body:unknown):Promise<{inventory:VideoInventory}>{const response=await fetch('/studio/api/videos/speech-review',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(reviewErrors[result.code]??(response.status===401||response.status===403?'Du saknar behörighet eller behöver logga in igen.':'Bedömningen kunde inte sparas. Läs om registret innan du försöker igen.'));return result}
+const reviewTime=(at:string)=>{const date=new Date(at);return Number.isFinite(date.getTime())?date.toLocaleString('sv-SE'):at}
+
 function RecordedSpeechPreview({row,active}:{row:StudioRecordedSpeech;active:boolean}){
   const player=useRef<HTMLMediaElement|null>(null),[error,setError]=useState('')
   useEffect(()=>{if(!active)player.current?.pause();return()=>{player.current?.pause()}},[active])
@@ -49,7 +55,7 @@ function RecordedSpeechPreview({row,active}:{row:StudioRecordedSpeech;active:boo
 }
 
 export function StudioSpeechPanel(props:StudioSpeechPanelProps){
-  const {project,inventory,dealerId,game='blackjack',active=true,blocked=false,projectDirty=false,onEdit,onBusyChange,onDirtyChange}=props
+  const {project,inventory,dealerId,game='blackjack',active=true,blocked=false,projectDirty=false,onEdit,onInventory,onBusyChange,onDirtyChange}=props
   const dealer=project.dealers.find(row=>row.id===dealerId),saved=dealer?.speechProfile
   const [voiceDraft,setVoiceDraft]=useState(initialDealerVoiceDraft(dealer,saved?.voice))
   const [recordedId,setRecordedId]=useState('')
@@ -63,6 +69,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const [plan,setPlan]=useState<SpeechBuildPlan|null>(null),[results,setResults]=useState<SpeechBuildResult[]>([])
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
   const [awaitingProjectSave,setAwaitingProjectSave]=useState<string|null>(null)
+  const [reviewBusy,setReviewBusy]=useState(false),[reviewError,setReviewError]=useState(''),[reviewNotice,setReviewNotice]=useState('')
   const work=useRef<AbortController|null>(null),preview=useRef<HTMLVideoElement>(null),latest=useRef(props)
   latest.current=props
   useEffect(()=>{if(!active)preview.current?.pause()},[active])
@@ -71,6 +78,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   useEffect(()=>{return()=>{work.current?.abort();preview.current?.pause();latest.current.onBusyChange?.(false);latest.current.onDirtyChange?.(false)}},[])
   useEffect(()=>{return()=>{work.current?.abort();work.current=null;latest.current.onBusyChange?.(false)}},[dealerId])
   useEffect(()=>{setAwaitingProjectSave(null)},[dealerId])
+  useEffect(()=>{setReviewError('');setReviewNotice('')},[dealerId,recorded?.id])
   useEffect(()=>{if(lineId!==selectedLineId)setLineId(selectedLineId)},[game,lineId,selectedLineId])
   useEffect(()=>{if(awaitingProjectSave!==null&&project.revision!==awaitingProjectSave)setAwaitingProjectSave(null)},[project.revision,awaitingProjectSave])
   const videos=inventory.videos.filter(row=>isSpeechReferenceVideo(row,dealerId)),selected=videos.find(row=>row.id===videoId)
@@ -88,6 +96,9 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   useEffect(()=>{setFrameReviewed(false);const video=preview.current;if(video&&video.readyState>=1)video.currentTime=offsetMs/1000},[sourceKey,offsetMs])
   useEffect(()=>{setPlan(null);setResults([])},[game])
   useEffect(()=>{setPlan(null)},[project.revision,dealerId,savedKey,language,lineId,all,profileDirty,projectDirty,game])
+  async function review(verdict:StudioRecordedSpeechVerdict){if(!recorded?.speech||!onInventory||blocked||busy||reviewBusy)return;setReviewBusy(true);onBusyChange?.(true);setReviewError('');setReviewNotice('')
+    try{const result=await reviewTake(studioRecordedSpeechReviewRequest(recorded,dealerId,verdict));onInventory(result.inventory);if(latest.current.dealerId===dealerId)setReviewNotice(verdict==='approved'?'Talet är godkänt. Publicera paketet igen och därefter spelinställningarna för att använda tagningen.':verdict==='rejected'?'Tagningen är underkänd och spelas inte.':'Bedömningen är borttagen. Tagningen väntar på granskning.')}
+    catch(cause){if(latest.current.dealerId===dealerId)setReviewError((cause instanceof Error?cause.message:'Bedömningen kunde inte sparas.'))}finally{setReviewBusy(false);onBusyChange?.(false)}}
   function readyFrame(){const video=preview.current;if(video&&video.readyState>=2&&!video.seeking&&Math.abs(video.currentTime*1000-offsetMs)<60){setFrameReviewed(true);setReferenceError('')}}
   function saveProfile(){try{if(blocked||busy||!dealer)return;if(changedEnabledMotion)throw Error('Stäng av Begär AI-tal innan du sparar en ändrad rörelsereferens.');if(enabled&&(!referenceCheck.canEnable||referenceError))throw Error(referenceError||referenceCheck.message);if(videoId&&!referenceUnchanged&&(!selected||!frameReviewed||durationMs<1||offsetMs>=durationMs))throw Error('Granska vald position i dealerns egen referensvideo innan du lägger profilen i utkastet.');
     const reference=referenceUnchanged?saved!.reference:selected?{kind:referenceKind,videoId:selected.id,sha256:(selected as typeof selected&{sha256:string}).sha256,offsetMs}:null
@@ -113,6 +124,16 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
           {recorded.speech?.schemaVersion===2&&<p className="text-xs text-muted-foreground">Bild och ljud finns i samma MP4. {recorded.speech.source.status==='verified-embedded-av'?'Filens bild- och ljudspår är kontrollerade.':'Filkontroll återstår.'}</p>}
           <p className="text-xs text-muted-foreground">Registrerad text</p><p className="text-sm">{recorded.exactText||'Ingen exakt text registrerad. Genereringsmallar ersätter inte filmens tal.'}</p>
           <RecordedSpeechPreview key={recorded.id+':'+recorded.sha256} row={recorded} active={active}/>
+          {recorded.speech&&recorded.speech.review.status!=='pending'&&<p className="text-xs text-muted-foreground">{recorded.speech.review.status==='approved'?'Godkänt':'Underkänt'} av {recorded.speech.review.by} · {reviewTime(recorded.speech.review.at)}</p>}
+          {recorded.speech&&onInventory&&<fieldset disabled={blocked||busy||reviewBusy} className="space-y-2" aria-label="Bedöm tagningen">
+            <p className="text-xs text-muted-foreground">Spela tagningen med ljud innan du bedömer den. Godkännandet är ditt intyg om att du har sett och hört just denna fil. Det mäter inte läppsynk och publicerar inget. En underkänd tagning spelas inte.</p>
+            <div className="flex flex-wrap gap-2">
+              <button className="studio-button" type="button" disabled={!recorded.available||recorded.speech.review.status==='approved'||(recorded.speech.schemaVersion===2?recorded.speech.source.status!=='verified-embedded-av':recorded.speech.recording.status!=='verified-recording')} onClick={()=>void review('approved')}>Godkänn tal</button>
+              <button className="studio-button" type="button" disabled={recorded.speech.review.status==='rejected'} onClick={()=>void review('rejected')}>Underkänn</button>
+              {recorded.speech.review.status!=='pending'&&<button className="studio-button" type="button" onClick={()=>void review(null)}>Ta bort bedömning</button>}
+            </div>
+            {reviewBusy&&<p role="status" className="text-xs">Sparar bedömningen…</p>}{reviewNotice&&<p role="status" className="text-xs">{reviewNotice}</p>}{reviewError&&<p role="alert" className="text-xs text-red-400">{reviewError}</p>}
+          </fieldset>}
           <details className="text-xs"><summary>Detaljer · fil och granskning</summary><dl className="mt-2 space-y-1 break-all">
             <dt>Fil-ID</dt><dd>{recorded.id}</dd><dt>Video-/filhash</dt><dd>{recorded.sha256||'Saknas'}</dd>
             {recorded.speech&&<>

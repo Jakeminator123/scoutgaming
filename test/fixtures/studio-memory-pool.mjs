@@ -101,7 +101,8 @@ export function createStudioMemoryPool() {
               working.media.set(key(values), row); return result([row], 'INSERT');
             }
             case 'classify-media':
-            case 'save-media-timing': {
+            case 'save-media-timing':
+            case 'review-recorded-speech': {
               const previous = working.media.get(key(values));
               if (!previous || previous.revision !== values[5]) return result([], 'UPDATE');
               const row = { ...previous, revision: values[3], record: JSON.parse(values[4]), updated_at: at() };

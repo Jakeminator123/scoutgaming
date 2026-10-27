@@ -224,8 +224,9 @@ sina fack, visar förlopp per fil och ett kvitto. Därefter kan du **Sätta som
 standard i facket** när facket saknar standard, **Lägga som variant** för Till /
 Från skon eller **Öppna facket i kartan** och välja klippet där; dessa val hamnar
 i projektutkastet som du sparar med **Spara utkast**. Talklipp sparas som
-tagningar i talfacket; text, ljud och godkännande av talet granskas separat
-under Röst & tal. Filer med fel stannar i listan med sitt fel och försöks inte om
+tagningar i talfacket och väntar på granskning. Bedöm varje tagning under
+**Röst & tal → Inspelat tal** (se **Talgranskning** nedan). Filer med fel
+stannar i listan med sitt fel och försöks inte om
 automatiskt. Ett dealerbyte tömmer listan efter bekräftelse. Roulettefilmer
 laddas fortfarande upp direkt via respektive kort.
 
@@ -396,7 +397,7 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 **Standardfilm per talfack:** för en nyregistrerad dealer, öppna **Klipp → Tal-klipp & ljud**, välj exempelvis **Välkomsthälsning** eller **Blackjack** och välj dess **Standardklipp**. Endast den dealerns tillgängliga filmer för exakt replik visas. Spara inställningarna; övriga talfack behåller sina val. **Inget standardklipp** lossar valet utan att radera filen. Finns en äldre exakt standard visas den uttryckligen som reserv när det egna valet lossas. Bibliotekets status visar vad som valts i utkastet, inte att filmen är publicerad eller har godkänd läppsynk. Filmen ska ha munrörelser som följer dess eget tal. Granska ljud och bild tillsammans före publicering till rummet. Upprepa uppspelningen när återstart eller städning är det som ska verifieras; det finns inget fast antal uppspelningar som publiceringskrav.
 
-**Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Röst & tal** och är fortfarande begränsat till Astrid.
+**Talgranskning:** Öppna **Klippkarta → Röst & tal → Inspelat tal** för vald dealer och välj tagningen under **Inspelad fil**. Spela den med ljud och välj **Godkänn tal**, **Underkänn** eller **Ta bort bedömning**. Servern sparar ditt konto och tiden, bundet till filens exakta hash, text, språk och tagning; ändras något av dem gäller bedömningen inte längre. **Godkänn tal** kräver att speltiden är mätt så att filens bild- och ljudspår är kontrollerade. Godkännandet är ditt mänskliga intyg om att du har sett och hört filen. Det mäter inte läppsynk och publicerar inget. En underkänd tagning spelas inte. **Ta bort bedömning** återställer tagningen till att vänta på granskning. Publicera sedan paketet igen och därefter rummets **Publicera spelinställningar**; först då används de godkända tagningarna. Granskningen gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Röst & tal** och är fortfarande begränsat till Astrid.
 
 **Scenens storlek:** öppna **Studio → Sceneditor → Redigera gemensam mall**. Där delar alla klipp samma sparade skalning och placering för dealer, bord och bakgrund inom vald sammansättning. Mobil och desktop har egna formatinställningar. Detta är ännu inte en ärvd dealerstandard för alla sammansättningar, och mobil/desktop får inte automatiskt gemensam beskärning. I verktyget **Sammansättningar** finns **Hantera sammansättning → Ta bort sammansättning**; det tar bort utkastets profil. Media och redan publicerade paket behålls.
 

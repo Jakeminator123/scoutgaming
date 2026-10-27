@@ -1,4 +1,4 @@
-import { normalizeRecordedSpeech, recordedSpeechForVideo, recordedSpeechSourceVerified } from '../../../packages/presentation/contracts/recorded-speech.mjs';
+import { normalizeRecordedSpeech, recordedSpeechForVideo, recordedSpeechIdentity, recordedSpeechSourceVerified } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import { SPEECH_LINES } from '../../../packages/presentation/contracts/speech-lines.mjs';
 import { ASTRID_VOICE_PROFILE } from '../../../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from '../../../packages/presentation/contracts/dealer-speech-profile.mjs';
@@ -87,4 +87,9 @@ export function studioRecordedSpeech(project,inventory,dealerId,game='blackjack'
       contentType:video.contentType??'',sha256:video.sha256??'',speech,review};
   }).sort((a,b)=>a.lineLabel.localeCompare(b.lineLabel,'sv')||a.label.localeCompare(b.label,'sv')||a.id.localeCompare(b.id));
 }
-
+// Body for POST /studio/api/videos/speech-review. The client names only the
+// exact take identity it played; the server rechecks it and stamps who and when.
+export function studioRecordedSpeechReviewRequest(row,dealerId,verdict) {
+  if(!row?.speech||!['approved','rejected',null].includes(verdict)||typeof row.sha256!=='string'||!/^[a-f0-9]{64}$/.test(row.sha256))throw Error('studio_speech_review_invalid');
+  return {id:row.id,sha256:row.sha256,dealerId,lineId:row.speech.lineId,language:row.speech.language,expectedIdentity:recordedSpeechIdentity(row.speech),verdict};
+}

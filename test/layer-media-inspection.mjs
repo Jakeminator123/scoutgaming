@@ -163,9 +163,9 @@ test('verified embedded MP4 bytes bind the persisted source and client selection
   assert.equal(speech.source.status,'verified-embedded-av');assert.equal(speech.source.by,'Fixture inspector');
   assert.deepEqual(speech.source.identity,recordedSpeechIdentity(declared));assert.deepEqual(speech.review,{status:'pending'});
   assert.equal(recordedSpeechForVideo(measured,selection),null);
-  const metadata=structuredClone(measured.classification);
-  metadata.recordedSpeech.review={status:'approved',by:'Synthetic fixture reviewer',at:'2026-10-26T00:00:00.000Z',identity:recordedSpeechIdentity(speech)};
-  const reviewed=await repository.classifyMedia(measured.id,{sha256:f.sha256,expectedRevision:measured.revision,metadata,actor:'Synthetic fixture reviewer'});
+  const reviewed=await repository.reviewRecordedSpeech(measured.id,{sha256:f.sha256,expectedRevision:measured.revision,
+    expectedIdentity:recordedSpeechIdentity(speech),verdict:'approved',actor:'Synthetic fixture reviewer'});
+  assert.equal(reviewed.classification.recordedSpeech.review.by,'Synthetic fixture reviewer');
   const read=await repository.getMedia(reviewed.id),publicVideo={id:read.id,sha256:read.sha256,...recordedSpeechProjection(read)};
   assert.deepEqual(read.mediaTiming,mediaTiming);assert.deepEqual(read.classification.recordedSpeech.source,speech.source);
   assert.deepEqual(recordedSpeechForVideo(publicVideo,selection),read.classification.recordedSpeech);
