@@ -199,6 +199,15 @@ test('CI uses one Studio discovery registry and retains blocking product checks'
   const isolated = steps.find(step => /^Existing isolated Studio SQL/.test(step));
   assert.match(isolated, /tools\/studio-isolated-qa\.mjs/);
   assert.doesNotMatch(isolated, /continue-on-error: true/);
+  // The engine suite skips without PostgreSQL; CI runs it only through its harness.
+  assert.match(fullHook, /\|gameplay\|engine\) ;;/);
+  assert.match(fullHook, /^run_node_tests engine engine-http test\//m);
+  const engine = steps.find(step => /^Real engine over HTTP on isolated PostgreSQL/.test(step));
+  assert.match(engine, /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
+  assert.match(engine, /if: \$\{\{ !cancelled\(\) \}\}/);
+  assert.doesNotMatch(engine, /continue-on-error: true/);
+  const ratchet = yaml.indexOf('node tools/check-no-sqlite.mjs --tree HEAD');
+  assert.ok(yaml.indexOf('  changes:') < ratchet && ratchet < yaml.indexOf('  documentation:'), 'the SQLite ratchet runs on the full commit tree in the classifier job');
   const timings = steps.find(step => /^Save regression group timings/.test(step));
   assert.match(timings, /if: always\(\)/);
   assert.match(timings, /continue-on-error: true/);

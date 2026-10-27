@@ -36,6 +36,9 @@ jobs:
             tools/documentation-paths.mjs
             tools/precommit-checks.mjs
             tools/check-push-target.mjs
+            tools/check-no-sqlite.mjs
+            tools/no-sqlite-allowlist.json
+            test/check-no-sqlite.mjs
             migrering/status.mjs
             migrering/status.json
             migrering/STATUS.md
@@ -46,6 +49,11 @@ jobs:
       - name: Classify the complete PR merge diff
         id: scope
         run: node tools/ci-changes.mjs
+      # Ratchet: only allowlisted files may still use SQLite, and fixed files must leave the list.
+      - name: No new SQLite use (shrinking allowlist)
+        run: |
+          node --test test/check-no-sqlite.mjs
+          node tools/check-no-sqlite.mjs --tree HEAD
 
   documentation:
     needs: changes
@@ -207,6 +215,19 @@ jobs:
           node tools/regression-group.mjs database/shared-schema-upgrade 180 node tools/run-shared-table-qa.mjs --schema-upgrade "${postgres_source[@]}"
           node tools/regression-group.mjs database/lissabon-retirement 180 node tools/run-shared-table-qa.mjs --lissabon-retirement "${postgres_source[@]}"
           node tools/regression-group.mjs database/room-game-config 360 node tools/run-room-game-config-qa.mjs "${postgres_source[@]}"
+      - name: Real engine over HTTP on isolated PostgreSQL with TLS
+        if: ${{ !cancelled() }}
+        timeout-minutes: 12
+        run: |
+          # The engine suite in .githooks/pre-commit-full skips without this harness;
+          # here every file must run: verify-full TLS, SCRAM roles, one database per test.
+          if [ -x /usr/lib/postgresql/16/bin/initdb ] && [ -x /usr/lib/postgresql/16/bin/pg_ctl ]; then
+            postgres_source=(--postgres-bin /usr/lib/postgresql/16/bin)
+          else
+            postgres_source=(--download-postgres)
+          fi
+          echo "PostgreSQL source: ${postgres_source[*]}"
+          node tools/regression-group.mjs engine/http-postgres 660 node tools/run-engine-qa.mjs "${postgres_source[@]}"
       - name: Save regression group timings
         continue-on-error: true
         timeout-minutes: 2

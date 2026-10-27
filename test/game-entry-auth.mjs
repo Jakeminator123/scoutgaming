@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
 import {backofficeGameAuth as asyncFactory} from '../services/game/storage/async-bo-game-auth.mjs';
 import {playerAuth} from '../services/game/storage/async-player-auth.mjs';
 import {createStatementDb,duplicateKey} from './fixtures/statement-db.mjs';
@@ -136,93 +135,4 @@ test('player handoff only retains current document returns and approved game sel
   assert.equal(path('/game?game=poker&launch=a.b.c&returnTo=https://attacker.invalid&table=room-evening'),'/game?table=room-evening');
   const observed='/play/blackjack?labObserverOrigin='+encodeURIComponent('https://www.fixture.invalid')+'&labObserverChannel=12345678-1234-1234-1234-123456789abc';
   assert.equal(path(observed,{origin:'https://www.fixture.invalid'}),observed);
-});
-
-
-test('fresh native N1 login reaches its own profile through the actual isolated engine and logs out coherently',async()=>{
-  const {mkdtemp,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join,resolve}=await import('node:path');
-  const {spawn}=await import('node:child_process'),{once}=await import('node:events'),{createServer}=await import('node:net'),{request:httpRequest}=await import('node:http');
-  const {fileURLToPath}=await import('node:url');
-  const {createStudioNativeAuthActions}=await import('../apps/studio/lib/studio-native-auth-actions.mjs');
-  const {createStudioNativeAuth}=await import('../packages/studio-access/studio-native-auth.mjs');
-  const {playerAreaPage}=await import('../apps/web/lib/player-area.mjs');
-  const directory=await mkdtemp(join(tmpdir(),'n1-session-'));
-  const listener=createServer();listener.listen(0,'127.0.0.1');await once(listener,'listening');const port=listener.address().port;await new Promise(done=>listener.close(done));
-  const origin='https://www.fixture.invalid',password='Isolated-N1-Player-Test-Password';let child,users,players;
-  const request=(path,{method='GET',cookie='',body,originHeader=origin}={})=>new Promise((resolve,reject)=>{
-    const url=new URL(path,origin);
-    const req=httpRequest({hostname:'127.0.0.1',port,path:url.pathname+url.search,method,headers:{host:new URL(origin).host,cookie,origin:originHeader,'content-type':'application/json'}},res=>{
-      const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>{const headers=new Headers();for(let i=0;i<res.rawHeaders.length;i+=2)headers.append(res.rawHeaders[i],res.rawHeaders[i+1]);resolve(new Response(Buffer.concat(chunks),{status:res.statusCode,headers}));});
-    });req.on('error',reject);req.end(body===undefined?undefined:JSON.stringify(body));
-  });
-  try {
-    const env=Object.fromEntries(['PATH','Path','SystemRoot','SYSTEMROOT','TEMP','TMP'].filter(key=>process.env[key]).map(key=>[key,process.env[key]]));
-    Object.assign(env,{HOST:'127.0.0.1',PORT:String(port),NODE_ENV:'production',CROUPIER_DATA_DIR:directory,CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
-      CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:password,
-      DEMO_GUEST_ACCESS:'1',CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',PUBLIC_URL:origin,BO_URL:origin});
-    child=spawn(process.execPath,['--import',new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href,fileURLToPath(new URL('../services/game/server.mjs',import.meta.url))],
-      {cwd:fileURLToPath(new URL('../services/game/',import.meta.url)),env,windowsHide:true,stdio:['ignore','pipe','pipe']});
-    child.stderr.on('data',()=>{});
-    await new Promise((done,reject)=>{const timer=setTimeout(()=>reject(Error('Isolated N1 fixture timeout')),10000);child.once('error',()=>{clearTimeout(timer);reject(Error('Isolated N1 fixture failed'));});child.once('exit',()=>{clearTimeout(timer);reject(Error('Isolated N1 fixture exited'));});child.stdout.on('data',chunk=>{if(String(chunk).includes('croupier demo on')){clearTimeout(timer);done();}});});
-    users=new DatabaseSync(join(directory,'craig.db'));players=new DatabaseSync(join(directory,'croupier.db'));
-    // Native Studio schema; the standalone SQLite engine does not mount Lab.
-    users.exec('CREATE TABLE IF NOT EXISTS lab_sessions(craig_user_id TEXT); CREATE TABLE IF NOT EXISTS bo_lab_handoffs(craig_user_id TEXT)');
-    const adapter=sqlite=>({prepare:sql=>sqlite.prepare(sql.replace(/\s+FOR UPDATE\b/g,'')),async transaction(work){sqlite.exec('BEGIN IMMEDIATE');try{const result=await work();sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}});
-    const boDb=adapter(users),gameDb=adapter(players),scope={environment:'fixture',workspaceId:'croupier'};
-    const authorize=createStudioNativeAuth({boDb,scope});
-    const actions=createStudioNativeAuthActions({boDb,gameDb,scope,authorize,publicOrigin:origin,rateLimit:async()=>true,clientAddress:()=> 'fixture'});
-    const native=async(action,body,cookie='')=>actions.handle(new Request(origin+'/studio/api/auth/'+action,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',cookie},body:JSON.stringify(body)}));
-    const other=await request('/api/auth/player/register',{method:'POST',body:{username:'other-player',password}});assert.equal(other.status,200);
-    const foreign=other.headers.getSetCookie().find(value=>value.startsWith('player_session=')).split(';')[0];
-    const foreignPlayer=await (await request('/api/player',{method:'POST',cookie:foreign,body:{}})).json();
-    const loggedIn=await native('login',{user:'fixtureadmin',pass:password},foreign);assert.equal(loggedIn.status,200);
-    const boCookie=loggedIn.headers.getSetCookie().find(value=>value.startsWith('bo_jwt=')).split(';')[0];
-    assert.match(loggedIn.headers.getSetCookie().find(value=>value.startsWith('player_session=')),/Max-Age=0/);
-    const playersBeforeHandoff=players.prepare('SELECT count(*) n FROM players').get().n;
-    const freshSession=await(await request('/api/auth/session',{cookie:boCookie})).json();
-    assert.equal(freshSession.backofficeHandoff,true,'fresh N1 alone advertises verified handoff');assert.equal(freshSession.guest,false);
-    assert.equal(players.prepare('SELECT count(*) n FROM players').get().n,playersBeforeHandoff,'session decision does not create a disposable guest wallet');
-    for(const entry of ['/blackjack?table=room-evening','/play/roulette?table=room-evening']) {
-      const gameEntry=await request(entry,{cookie:boCookie});assert.equal(gameEntry.status,303);
-      assert.equal(gameEntry.headers.get('location'),'/api/auth/bo/start?next='+encodeURIComponent(entry));
-    }
-    const mixed=boCookie+'; '+foreign;
-    const session=await(await request('/api/auth/session',{cookie:mixed})).json();assert.equal(session.authenticated,false);assert.equal(session.backofficeHandoff,true);
-    const profilePage=cookie=>playerAreaPage(new Request(origin+'/play/profil',{headers:{cookie}}),{
-      CROUPIER_VERCEL_UI:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_UI_ORIGIN:origin,CROUPIER_BACKEND_ORIGIN:'https://engine.fixture.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'fixture-ingress-secret-'.repeat(3)
-    },'profil',{fetchImpl:(url,init)=>request(new URL(url).pathname,{method:init.method||'GET',cookie:init.headers.get('cookie'),...(init.body?{body:JSON.parse(init.body)}:{})})});
-    const page=await profilePage(mixed);
-    assert.equal(page.redirect,'/api/auth/bo/start?next=%2Fplay%2Fprofil');
-    const start=await request(page.redirect,{cookie:mixed}),state=start.headers.getSetCookie()[0].split(';')[0];assert.equal(start.status,303);
-    const approved=await request(start.headers.get('location'),{cookie:boCookie});assert.equal(approved.status,303);
-    const callback=await request(approved.headers.get('location'),{cookie:state+'; '+mixed});assert.equal(callback.status,303);assert.equal(callback.headers.get('location'),'/play/profil');
-    const own=callback.headers.getSetCookie().find(value=>value.startsWith('player_session=')).split(';')[0],cookie=boCookie+'; '+own;
-    const authenticated=await(await request('/api/auth/session',{cookie})).json();assert.equal(authenticated.authenticated,true);assert.equal(authenticated.backofficeHandoff,undefined);
-    const player=await(await request('/api/player',{method:'POST',cookie,body:{}})).json();assert.notEqual(player.id,foreignPlayer.id);assert.equal(player.name,'fixtureadmin');
-    assert.deepEqual(await(await request('/api/player',{method:'POST',cookie:foreign,body:{}})).json(),foreignPlayer,'other account balance and data remain unchanged');
-    const ownProfile=await profilePage(cookie);assert.equal(ownProfile.redirect,null);assert.equal(ownProfile.data.player.name,'fixtureadmin');assert.match(ownProfile.html,/fixtureadmin/);
-    const pendingCode=async bo=>{const start=await request('/api/auth/bo/start?next=/play/profil',{cookie:bo});const issued=await request(start.headers.get('location'),{cookie:bo});return {url:issued.headers.get('location'),state:start.headers.getSetCookie()[0].split(';')[0]};};
-    const pending=await pendingCode(boCookie);
-    const logout=await native('logout',{},cookie);assert.equal(logout.status,200);
-    assert.equal((await(await request('/api/auth/session',{cookie})).json()).authenticated,false,'revoked player cookie cannot be replayed');
-    assert.equal((await(await request('/api/auth/session',{cookie})).json()).backofficeHandoff,undefined,'revoked BO epoch cannot restart SSO');
-    const before=players.prepare('SELECT count(*) n FROM player_sessions').get().n;
-    assert.ok([400,401].includes((await request(pending.url,{cookie:pending.state+'; '+cookie})).status),'pending code cannot survive native logout');
-    const again=await native('login',{user:'fixtureadmin',pass:password}),newBo=again.headers.getSetCookie().find(value=>value.startsWith('bo_jwt=')).split(';')[0];
-    const pendingPlayerLogout=await pendingCode(newBo);
-    const playerLogout=await request('/api/auth/logout',{method:'POST',cookie:newBo,body:{}});assert.equal(playerLogout.status,200);
-    assert.ok(playerLogout.headers.getSetCookie().some(value=>value.startsWith('bo_game_state=; Path=/api/auth/bo/callback;')));
-    assert.ok(playerLogout.headers.getSetCookie().some(value=>value.startsWith('bo_jwt=;')));
-    assert.ok([400,401].includes((await request(pendingPlayerLogout.url,{cookie:pendingPlayerLogout.state+'; '+newBo})).status),'a delayed callback carrying both pre-logout cookies must be revoked server-side');
-    assert.equal(players.prepare('SELECT count(*) n FROM player_sessions').get().n,before,'logout callbacks cannot mint another session');
-    assert.equal((await(await request('/api/auth/session',{cookie:newBo})).json()).backofficeHandoff,undefined,'old BO cookie cannot advertise a new authenticated handoff');
-    const newStart=await request('/api/auth/bo/start?next=/play/profil',{cookie:newBo});assert.equal(newStart.status,303);
-    const newAuthorization=await request(newStart.headers.get('location'),{cookie:newBo});
-    assert.equal(newAuthorization.status,303);assert.match(newAuthorization.headers.get('location'),/^\/admin\/login\?returnTo=/,'old BO cookie must reauthenticate before a fresh code can be minted');
-    assert.equal(players.prepare('SELECT count(*) n FROM player_sessions').get().n,before);
-  } finally {
-    if(child&&child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
-    users?.close();players?.close();assert.ok(resolve(directory).startsWith(join(resolve(tmpdir()),'n1-session-')));
-    await rm(directory,{recursive:true,force:true});
-  }
 });
