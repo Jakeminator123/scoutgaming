@@ -2632,7 +2632,7 @@ konton och media är beständig arbetsdata och ingick inte i cacheborttagningen.
 Om hela Lab-runtime behöver byggas om används `npm --prefix apps/studio run build` med
 projektets kompatibla Node och aktuell workergräns. Detta startar ingen server.
 Kör inte dubbla tunga byggen i samma checkout och radera inte `.next` under
-pågående bygge, server eller regression. Följ sessionsvakt och agent-talk.
+pågående bygge, server eller regression. Följ sessionsvakten.
 
 ## Gemensam kontoåtkomst
 

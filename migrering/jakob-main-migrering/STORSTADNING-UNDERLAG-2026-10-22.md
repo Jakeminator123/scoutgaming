@@ -188,8 +188,8 @@ plattform hade den krävt att allt main redan har (Neon, Blob, auth, wallet med
 Alla uppdrag börjar med en läsande konsumentkarta (route, UI, tjänst, adapter,
 data, build, test, doc) och slutar med en raderingslista per fil, med
 `node tools/raderingsgrind.mjs <bas> --strict` som grind. Ingen DDL, deploy,
-flaggaktivering eller radering av andras grenar. Varje agent claimar sina filer
-via `node tools/agent-talk.mjs`.
+flaggaktivering eller radering av andras grenar. Varje agent arbetar i egen
+worktree med avgränsade filer.
 
 | Uppdrag | Filer och frågor | Leverans |
 | --- | --- | --- |

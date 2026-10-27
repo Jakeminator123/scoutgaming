@@ -8,7 +8,6 @@ const guides = new Set([
   "CLAUDE.md",
   "README.md",
   "START-HERE.md",
-  "agent-talk/README.md",
   "apps/studio/AGENTS.md",
   "apps/studio/README.md",
   "apps/studio/client/README.md",

@@ -21,7 +21,7 @@ test('documentation and indexing-only changes use quick checks', () => {
 
 test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
   const guides = [
-    'apps/web/README.md', 'agent-talk/README.md', 'apps/studio/AGENTS.md',
+    'apps/web/README.md', 'apps/studio/README.md', 'apps/studio/AGENTS.md',
     'apps/studio/docs/new-guide.md',
     'migrering/MASTERPLAN.md', 'migrering/STATUS.md', 'migrering/status.json',
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',

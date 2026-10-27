@@ -122,7 +122,7 @@ Jakob bekräftade efter leveransen: **”allt såg ganska bra ut gällande paow 
 2. Läs [masterplanen](https://github.com/Jakeminator123/scoutgaming/blob/main/migrering/MASTERPLAN.md) och [enda statuskällan](https://github.com/Jakeminator123/scoutgaming/blob/main/migrering/status.json). Status efter fortsatt granskning: **60 % = 12/20 verifierade aktiviteter**. J09 är verifierad som avvecklingsförberedelse; faktisk produktions-DDL ingår fortsatt i O03.
 3. Läs de senaste avsnitten i [JOHN-HANDOFF](https://github.com/Jakeminator123/scoutgaming/blob/main/docs/JOHN-HANDOFF.md), sedan relevanta delar av `docs/ENVIRONMENT-RESTORATION.md`, `docs/CLOUD-MIGRATION.md` och `docs/LOCAL-PRESENTATION-RUNTIME.md`. Sök i historiska avsnitt; äldre gapbeskrivningar är inte automatiskt aktuella.
 4. Kontrollera nya relevanta meddelanden i [samordning #312](https://github.com/Jakeminator123/scoutgaming/issues/312), aktuella PR:er och faktisk drift. Återuppta inte redan mergat arbete.
-5. Använd Node **24.21.0** genom Volta, högst fyra testarbetare. Kör `node tools/agent-talk.mjs status <eget-id>` innan nya filanspråk och före commit/push. Claima egna filer och `.git`; läs chef-status före integration/push.
+5. Använd Node **24.21.0** genom Volta, högst fyra testarbetare. Arbeta i egen worktree på en `jakob/claude-*`-branch med avgränsade filer; orkestratorn äger integration och merge.
 
 ## Senaste fortsättningen: Kevin-konvertering och nästa etapp
 

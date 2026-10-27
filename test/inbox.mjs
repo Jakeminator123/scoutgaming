@@ -14,11 +14,17 @@ function localFixture(t, host = 'test-laptop') {
   return { file: join(directory, 'local-device.json'), host, workspace: directory };
 }
 
-test('every person owns exactly one branch and "me" resolves through the current branch', () => {
-  const branches = Object.values(PEOPLE).map(person => person.branch);
-  assert.deepEqual([...branches].sort(), ['emil', 'john', 'kevin', 'main']);
+test('every person owns exactly one unique branch and "me" resolves through the current branch', () => {
+  // Structural: the registry stays consistent whoever is listed in inbox/people.json.
+  const people = Object.entries(PEOPLE);
+  assert.ok(people.length > 0);
+  for (const [id, person] of people) {
+    assert.match(id, /^[a-z][a-z0-9-]*$/);
+    assert.ok(typeof person.branch === 'string' && person.branch.length > 0, `${id} owns a branch`);
+    assert.equal(ownerOfBranch(person.branch), id);
+  }
+  assert.equal(new Set(people.map(([, person]) => person.branch)).size, people.length, 'branches are unique');
   assert.equal(ownerOfBranch('main'), 'jakob');
-  assert.equal(ownerOfBranch('kevin'), 'kevin');
   assert.throws(() => ownerOfBranch('feature-x'), /Ingen i inbox\/people.json äger grenen "feature-x"/);
   assert.deepEqual(recipients('me', 'john'), ['john']);
   assert.deepEqual(recipients('me,john', 'john'), ['john']);
@@ -26,10 +32,13 @@ test('every person owns exactly one branch and "me" resolves through the current
   assert.deepEqual(recipients('jakob', 'codex/example'), ['jakob']);
 });
 
-test('inbox targets the policy repository and knows the four people', () => {
+test('inbox targets the policy repository and every person has a name and a GitHub field', () => {
   assert.equal(REPO, 'Jakeminator123/scoutgaming');
-  assert.deepEqual(Object.keys(PEOPLE).sort(), ['emil', 'jakob', 'john', 'kevin']);
-  for (const person of Object.values(PEOPLE)) assert.equal(typeof person.name, 'string');
+  assert.ok(PEOPLE.jakob, 'the repository owner is registered');
+  for (const person of Object.values(PEOPLE)) {
+    assert.equal(typeof person.name, 'string');
+    assert.ok('github' in person);
+  }
 });
 
 test('arguments parse flags, values and positionals; a flag without a value fails', () => {

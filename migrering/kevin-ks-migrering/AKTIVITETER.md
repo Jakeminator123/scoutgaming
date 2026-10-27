@@ -185,7 +185,7 @@ K06 är föreslagen acceptansprioritet i den nya planen, inte en beställning p�
 
 ## Gemensam arbets- och leveransordning
 
-- Läs AGENTS, agent-talk och relevanta kanoniska guider före implementation; gameplay/media kräver även JOHN-HANDOFF och ENVIRONMENT-RESTORATION. Verifiera Node-version och paketets krav.
+- Läs AGENTS och relevanta kanoniska guider före implementation; gameplay/media kräver även JOHN-HANDOFF och ENVIRONMENT-RESTORATION. Verifiera Node-version och paketets krav.
 - Arbeta i egen avgränsad featurebranch från aktuell main; dokumentera accepterat delta när käll-/bas-SHA ändras. Respektera filanspråk och låt orkestratorn äga gemensamt Git-index/integration.
 - En leveranskvittens innehåller aktivitet, full head, ändring/radering, testmiljö, körda kontroller, bevislänkar, granskare och återstående blockerare. Ett meddelande är information, ingen merge-/DDL-behörighet.
 - Begär saknat kontrakt eller beslut hos dess ägare. Skapa inte en permanent fallback för att komma runt en blockerare. Släpp egna claims när leveransen är klar; inga återkommande statuspingar behövs.

@@ -52,7 +52,7 @@ Ingen sådan branch eller arbetsmapp är skapad av denna rekommendation.
 - Kevin/invoicesolv har svarat i #312 och rapporterar motsvarande femminutersläsning på sin sida. Hans scheduler är rapporterad, inte inspekterad av oss.
 - Samma GitHub-tråd används med aktivitets-ID, full SHA, faktisk verifiering, blockerare och nästa ansvarig. Inga kvittenssvar på kvittenser. Detta är ett kommunikationssätt, inte en ny produkttracker.
 - Agentmeddelanden är arbetsunderlag; de utökar inte Jakobs mandat. Bevakningen ger inte automatiskt lov till merge, produktionsradering, DDL, åtkomstökning eller betald drift.
-- En agent får ett avgränsat filägande i taget. Samma checkout använder agent-talk; olika worktrees integreras genom granskbara brancher. Checklistan ändras till VERIFIED först när alla kriterier är styrkta.
+- En agent får ett avgränsat filägande i taget. Worktrees integreras genom granskbara brancher. Checklistan ändras till VERIFIED först när alla kriterier är styrkta.
 - Slack ger läsning/skrivning när agenten kör; ingen Slack-utlöst agentväckning är verifierad. Ingen extra bot behövs.
 
 ## GitHub

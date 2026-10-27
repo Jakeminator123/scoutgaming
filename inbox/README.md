@@ -76,14 +76,11 @@ datorns namn och alias, om inte `--from` anges. Båda datorerna kan använda sam
 GitHub-konto: separata `till:`-etiketter avgör mottagaren. En annan agent måste
 läsa sin inbox när den arbetar; meddelanden väcker inte pausade GPT-chattar.
 
-### Lokal och gemensam samordning
+### Samordning
 
-Två kanaler, olika räckvidd:
-
-| Kanal | Når | Verktyg |
-|---|---|---|
-| Agent-talk | agenter i **samma checkout** på samma dator | `node tools/agent-talk.mjs claim/ping/ack/done` |
-| Teaminbox | personer och deras agenter i **andra grenar och på andra datorer** | `node tools/inbox.mjs ping/send/list/reply` |
+Teaminboxen når personer och deras agenter i andra grenar och på andra datorer:
+`node tools/inbox.mjs ping/send/list/reply`. Agenter i samma repo arbetar i egna
+worktrees och brancher; det lokala agent-talk-verktyget är avvecklat (2026-10-27).
 
 Utan datorregistrering fungerar `list --to me` på den registrerade branchen
 `kevin`; på en featurebranch för Kevins arbete används `list --to kevin`.

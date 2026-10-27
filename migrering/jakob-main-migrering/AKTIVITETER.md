@@ -22,7 +22,7 @@ Följ [masterplanens QA- och lagringsgräns](../MASTERPLAN.md#qa-sql-och-lagring
 
 ## Gemensamt uppdrag till underagenten
 
-- Läs [MASTERPLAN](../MASTERPLAN.md), aktuell status, AGENTS och [agent-talk](../../agent-talk/README.md). Orkestratorn ger startbesked efter beroendekontroll och avgränsar filägandet; startfilernas listor är undersökningspunkter, inte generella skrivanspråk.
+- Läs [MASTERPLAN](../MASTERPLAN.md), aktuell status och AGENTS. Orkestratorn ger startbesked efter beroendekontroll och avgränsar filägandet; startfilernas listor är undersökningspunkter, inte generella skrivanspråk.
 - Frys aktuell bas och arbets-head. Utgångspunkten är main `15988f32fd572c453d2189502acbe324c4566815`; Jakobs säkerhetsgren behålls. Kevin-källan är `kevin-merge-admin` på `5aa7ed10df63cfa9f0a1f68e2766db1895ebd8bc`. K01/O01 bestämmer urvalet; `kevin-staging` är endast historik.
 - Kontrollera Node/versionspin i berörda paket; använd högst fyra testarbetare där stödet finns. Claima konkreta filer före ändring. Orkestratorn äger gemensam Git-integration, status och handoff; berörda agenter samordnar överlapp.
 - Följ [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), [användarflöden](../../apps/studio/docs/README.md), [runtime](../../docs/LOCAL-PRESENTATION-RUNTIME.md), [handoff](../../docs/JOHN-HANDOFF.md) och [återställning](../../docs/ENVIRONMENT-RESTORATION.md). Läs de två sistnämnda före ändring av spel eller media.

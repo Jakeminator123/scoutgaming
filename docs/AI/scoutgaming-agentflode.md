@@ -1,12 +1,21 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Agent-talk och chef avvecklade — 27 oktober 2026
+
+`tools/agent-talk.mjs`, mappen `agent-talk/`, `tools/croupier-chef.mjs` och
+`/chef`-skillen är borttagna. Underagenter arbetar i egna worktrees på
+`jakob/claude-*`-brancher, committar med repots hookar och levererar PR:er som den
+orkestrerande sessionen mergar efter grön CI. Teaminboxen (`tools/inbox.mjs`)
+finns kvar. Äldre avsnitt nedan som nämner agent-talk, claims, pingkö eller
+chef-status är historik.
+
 ## Förenklade agentregler — 21 oktober 2026
 
 På Jakobs begäran har rotens AGENTS kortats och knutits till befintliga guider.
 Masterplanen och status.json är uttryckligen tillåtna; historiska inventeringar
 kräver inte att Control eller gamla implementationer bevaras. Data-, medie-,
 behörighets- och mergeägarskapsskydd kvarstår. Rena läsfrågor kräver inte egna
-inkorgs-/agent-talk-/molnsäkerhetsrundor; ändringsarbete och leverans behåller
+inkorgs-/molnsäkerhetsrundor; ändringsarbete och leverans behåller
 relevanta kontroller. Orkestratorn får tilldela egna commits i separat worktree.
 Cursor-reglerna följer samma gräns. Studios genererade Next-block är oförändrat
 med en beständig avgränsning till Next-relaterat arbete utanför blocket.
@@ -162,7 +171,7 @@ Projektets MCP-konfiguration använder nu aktuell checkout via ett tillfälligt
 Git-alias, utan personlig `cwd`. Start från rot, undermapp och en flyttad
 testcheckout med mellanslag verifierades med MCP initialize/tools-list.
 Tre läsverktyg och befintlig skyddad användarkoppling behålls; personliga
-aktiveringsval ändras inte. Se [Agent-talk](../../agent-talk/README.md).
+aktiveringsval ändras inte.
 
 ## Gemensamt Director-bibliotek — 17 oktober 2026
 
@@ -180,7 +189,7 @@ Vid överflöde sparas äldre pingar återställbart i checkoutens kanoniska
 arkivantal; `archived <id> [sida]` visar äldre obesvarade pingar. Mottagaren
 kvitterar dem med vanlig `ack`, utan automatisk väckning, återuppspelning
 eller frigöring av gamla claims. Skrivfel lämnar kön kvar; instruktioner
-och återhämtning finns i [Agent-talk](../../agent-talk/README.md).
+och återhämtning fanns i `agent-talk/README.md` (borttagen 2026-10-27).
 Olika checkouter har fortfarande separata tavlor.
 
 ## Strukturfas avslutad — 17 oktober 2026
@@ -300,9 +309,7 @@ full acceptans. Studio-tester upptäcks automatiskt och körs en gång i CI.
 Migrationsberedskap mot produktionsregistret krävs för server/schema/beroenden
 och alltid på main; tydliga klient- och teständringar i PR:er slipper den läsningen.
 Systemkartans CI-rapport är informativ och blockerar inte ändrad struktur.
-Agent-talk bevaras för samma checkout, men kontrolleras vid start, nya filanspråk
-och leverans i stället för var 30:e sekund. Samma branchnamn i olika arbetskopior
-delar inte tavla. Uttryckligen beslutad avveckling får ta bort sidor och deras
+Uttryckligen beslutad avveckling får ta bort sidor och deras
 förbrukade tester; kvarvarande behörigheter, data och beteenden ska verifieras.
 
 `node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
