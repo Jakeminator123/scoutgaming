@@ -80,12 +80,57 @@ export function studioRecordedSpeech(project,inventory,dealerId,game='blackjack'
         ?recordedSpeechForVideo(video,{dealerId,lineId:speech.lineId,language:speech.language})?'approved':video.available===false?'unavailable':'invalid-proof':'pending';
     }catch{review='invalid-proof';}
     const url=studioSpeechMediaUrl(video.previewUrl),audio=metadata.mediaType==='audio'||video.contentType?.startsWith('audio/');
+    // Imported takes without a receipt carry language and take only in the
+    // import note; that is display grouping, never a review identity.
+    const notes=typeof metadata.notes==='string'?metadata.notes:'',declaredLanguage=typeof declared?.language==='string'?declared.language:'';
+    const notedLanguage=declaredLanguage?'':notes.match(notedLanguagePattern)?.[1]??'',notedTake=notes.match(notedTakePattern)?.[1];
     return {id:video.id,label:project.clipLabels?.[video.id]??video.label,situation:metadata.situation,
       lineLabel:STUDIO_SPEECH_LINES.find(row=>row.id===metadata.situation)?.label??metadata.situation,
-      exactText:typeof declared?.exactText==='string'?declared.exactText:'',language:typeof declared?.language==='string'?declared.language:'',
+      exactText:typeof declared?.exactText==='string'?declared.exactText:'',language:declaredLanguage||notedLanguage,languageNoted:Boolean(notedLanguage),
+      take:takeNumber(declared?.takeId)??(notedTake?Number(notedTake):null)??takeNumber(metadata.label)??takeNumber(video.label),
       available:video.available===true&&video.integrity!=='unavailable'&&Boolean(url),url,audio:Boolean(audio),
       contentType:video.contentType??'',sha256:video.sha256??'',speech,review};
   }).sort((a,b)=>a.lineLabel.localeCompare(b.lineLabel,'sv')||a.label.localeCompare(b.label,'sv')||a.id.localeCompare(b.id));
+}
+const notedLanguagePattern=/(?:^|\s)Språk i (?:källan|filnamnet): ([a-z]{2,3})\./,notedTakePattern=/(?:^|\s)Tagning (\d{1,3}) enligt (?:källan|filnamnet)\./;
+function takeNumber(value){const match=typeof value==='string'?value.match(/(?:^|[_\-\s])(\d{1,3})(?:\.[a-z0-9]{2,4})?$/i):null;return match?Number(match[1]):null;}
+// The round's own lines in play order; equals NATIVE_ROOM_SPEECH_SLOTS as a set.
+const blackjackGameLineIds=Object.freeze(['placebets','goodluck','blackjack','dealerblackjack','dealerbust','double','insurance','lose','push','win']);
+export function studioRecordedSpeechGameLineIds(game='blackjack'){
+  if(!['blackjack','roulette'].includes(game))throw Error('studio_speech_game_invalid');
+  return game==='roulette'?[...neutralLineIds]:[...blackjackGameLineIds];
+}
+// One row per replikplats: the game's lines always (gaps stay visible), other
+// catalogue lines only when files exist. Svenska and English are always offered;
+// the highest take number is first. Unmappable files stay under `other`.
+export function studioRecordedSpeechGroups(rows,game='blackjack'){
+  const base=studioRecordedSpeechGameLineIds(game),order=[...base,...STUDIO_SPEECH_LINES.map(row=>row.id).filter(id=>!base.includes(id))];
+  const lines=order.map(id=>({id,label:labels[id],game:base.includes(id),languages:[{language:'sv',takes:[]},{language:'en',takes:[]}]})),other=[];
+  for(const row of rows){
+    const line=lines.find(item=>item.id===row.situation),language=row.language.split('-')[0];
+    if(!line||!language){other.push(row);continue;}
+    let group=line.languages.find(item=>item.language===language);
+    if(!group)line.languages.push(group={language,takes:[]});
+    group.takes.push(row);
+  }
+  const byLabel=(a,b)=>a.label.localeCompare(b.label,'sv')||a.id.localeCompare(b.id);
+  for(const line of lines)for(const group of line.languages)group.takes.sort((a,b)=>(b.take??-1)-(a.take??-1)||byLabel(a,b));
+  return {lines:lines.filter(line=>line.game||line.languages.some(group=>group.takes.length)),other:other.sort(byLabel)};
+}
+const speechTime=at=>{const date=new Date(at);return Number.isFinite(date.getTime())?date.toLocaleString('sv-SE'):at;};
+export function studioRecordedSpeechStatus(row,formatTime=speechTime){
+  const review=row.speech?.review;
+  if(row.review==='approved')return `Godkänd av ${review.by} · ${formatTime(review.at)}`;
+  if(row.review==='rejected')return review?.by?`Underkänd av ${review.by} · ${formatTime(review.at)}`:'Underkänd';
+  if(row.review==='pending')return 'Väntar på granskning';
+  if(row.review==='missing-proof')return 'Saknar talkvitto';
+  if(row.review==='unavailable')return 'Filen är otillgänglig';
+  return 'Talkvittot matchar inte filen';
+}
+// Generated speech (file build or realtime) needs a verified voice coupling:
+// today the Astrid build chain or a profile saved as enabled.
+export function studioGeneratedSpeechAvailable(project,dealerId){
+  return studioSpeechBuildCompatibility(project,dealerId).supported||project.dealers.find(row=>row.id===dealerId)?.speechProfile?.state==='enabled';
 }
 // Body for POST /studio/api/videos/speech-review. The client names only the
 // exact take identity it played; the server rechecks it and stamps who and when.
