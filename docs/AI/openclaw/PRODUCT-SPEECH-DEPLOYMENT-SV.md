@@ -101,51 +101,14 @@ Native-spelet i `web/` är den enda lokala klient som ska sätta
 sedan den allowlistade projektionen till Director-adaptern. Detta ändrar inte
 spelets befintliga talkö eller renderergrind.
 
-### Exakt lokal start när Render och token är klara
+### Driftsättning när Render och token är klara
 
-Helpern startar nu två verkliga, isolerade processer: native-servern från
-`web/server.mjs` och det redan byggda Next-programmet från `lab/`. Den startar
-inte längre den äldre Director-relayn på labbporten. Native får en egen
-tempdatabas och Next får en egen `LAB_STUDIO_DATA_DIR`. Helpern skapar dessutom
-en syntetisk Partner-nyckel och spelare med endast `launch` + `events` i
-tempdatabasen och ger dessa bara till Next-barnet. Därmed kan knappen **Anslut**
-på `/activity` öppna och observera samma isolerade nativebord utan en verklig
-spelare.
-
-När Gateway- och Director-revisionen är frisk och den separata speech-tokenen
-finns i de privata miljöerna:
-
-```powershell
-Test-Path apps/studio/.next/BUILD_ID
-node services/openclaw/lab/deploy/local-connection.mjs --check
-node services/openclaw/lab/deploy/local-connection.mjs --start --product-port 4196 --lab-port 4197
-```
-
-Första kommandot ska ge `True`. Helpern bygger inte om Next och rör därför inte
-den delade jämförelsens bygg-/runtimefiler. Om bygget saknas ska arbetet stoppas
-och samordnas innan `npm --prefix apps/studio run build`; bygg inte samtidigt som den
-delade 4192/4194-körningen granskas. `--check` skriver endast booleska statusfält,
-ursprung och rollstatus, aldrig hemlighetsvärden, och gör inget modellanrop. När
-speech-relayn är komplett väljs den före direkttransporten; kontrollen använder
-då inte en eventuell full Gateway-bearer ens för `/v1/models`.
-
-Öppna därefter `http://127.0.0.1:4197/activity` och välj **Anslut**. Next
-verifierar det syntetiska kontot mot `http://127.0.0.1:4196`, öppnar exakt det
-nativebordet och binder dess publika native-observation till den nya fliken.
-Kontrollera anslutningskvittot, spela bara med den syntetiska temp-spelaren och
-bekräfta att command-, playback- och chatthändelser visas i Next. Stoppa med
-Ctrl+C; båda processerna stoppas och helperns tempdatabaser tas bort.
-
-I relayläge är credentialgränsen nu tvingande även om rotens privata fil också
-råkar innehålla direkt-Gatewayuppgifter: nativebarnet får endast
-`OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` och talrollen;
-dess `OPENCLAW_BASE_URL` och `OPENCLAW_API_KEY` töms. Next-barnet får endast
-`LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` och de syntetiska Partneruppgifterna;
-produkt-token, Gateway-bearer och providerinställningar töms. Båda barnen är
-förhindrade att läsa `.env`/`.env.local` och nätgrinden tillåter bara deras två
-loopbackportar samt respektive explicit konfigurerat HTTPS-origin. En halv
-speech-relaykonfiguration vägras i stället för att falla tillbaka med blandade
-credentials.
+Den tidigare lokala helpern `services/openclaw/lab/deploy/local-connection.mjs`
+(isolerat native-/Next-par på SQLite-tempdatabaser) är pensionerad 27 oktober 2026;
+produkten har en väg (Vercel + Render + Neon + Blob). Talrollen provas i isolerad
+staging och med de lokala testerna nedan. Credentialgränsen gäller i driftsatta
+tjänster: produktservern får endast `OPENCLAW_PRODUCT_SPEECH_URL`,
+`OPENCLAW_PRODUCT_SPEECH_TOKEN` och talrollen, aldrig Gateway-bearer.
 
 En ändring i Git under `services/openclaw/` ändrar inte automatiskt den körande
 Gatewayen: dess `openclaw.json`, agentarbetsytor och sessioner ligger på Renders
@@ -215,7 +178,7 @@ tolka inte checklistan eller en grön Render-status som färdig end-to-end-QA.
 
 ```powershell
 node --test test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs
-node --test services/openclaw/lab/test/product-speech.test.mjs services/openclaw/lab/deploy/gateway-config.test.mjs services/openclaw/lab/deploy/runtime-bundle.test.mjs services/openclaw/lab/deploy/start-gateway.test.mjs services/openclaw/lab/deploy/local-connection.test.mjs
+node --test services/openclaw/lab/test/product-speech.test.mjs services/openclaw/lab/deploy/gateway-config.test.mjs services/openclaw/lab/deploy/runtime-bundle.test.mjs services/openclaw/lab/deploy/start-gateway.test.mjs
 ```
 
 Testerna använder fixturehemligheter, HTTP-stubbar, loopback och tempdata. De

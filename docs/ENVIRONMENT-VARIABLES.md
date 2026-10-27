@@ -285,9 +285,9 @@ för detta läge. Lokala katalogfiler och äldre indexinställningar hör endast
 till uttryckliga authoring-/importverktyg eller isolerade tester. Ingen
 envändring eller fysisk radering av bevarade lokala data följer av denna text.
 Vanlig `node apps/studio/start.mjs` öppnar publicerad `/lobby`; `--no-open` skriver
-adressen utan serverstart eller profilinläsning. Bara `--offline` startar en
-temporär fixture utan externa tjänster. `--skip-build` kräver `--offline`;
-de tidigare `--cloud-storage`, `--astrid-camera` och `--check` avvisas.
+adressen utan serverstart eller profilinläsning. Den SQLite-baserade fixturen
+(`--offline`, `--skip-build`) och de tidigare `--cloud-storage`, `--astrid-camera`
+och `--check` är pensionerade 27 oktober 2026 och avvisas.
 
 **Migration 012 och katalog-/svarsimport är klara enligt huvudagentens
 återläsningskvitto 16 oktober 18:38 UTC. Runtimebyte och driftacceptans väntar;**
@@ -398,11 +398,11 @@ bedömda separat från aktiva runtime-läsare.
 | `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
 | `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | services/game/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. `CROUPIER_LISSABON_PROFILES` är pensionerad: varken spelservern eller den lokala fixturstarten använder den. Befintligt datakatalogval och `CROUPIER_STREAM_LANE` består; molnstartens negativa skydd och registrets blocked-post behålls. |
 | `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_DEALER_SPEECH_PROFILES`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_PREVIEW`, `CROUPIER_GENERATED_SPEECH_STREAMING` | ops/cloud/config.mjs och services/game/server.mjs | Behåll; förekomst är inte aktivering/acceptans av ny läppsynk. |
-| `CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY` | services/game/server.mjs, ops/cloud/config.mjs, local-connection.mjs | Behåll befintlig Astrid-väg. |
+| `CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY` | services/game/server.mjs, ops/cloud/config.mjs | Behåll befintlig Astrid-väg. |
 | `CARTESIA_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY` | ops/cloud/config.mjs och explicit providerverktyg; Cartesia även Studio | Behåll kompletta Scoutgaming-par; återinför inte borttagna Vercel-kopior. |
 | `EMIL_CARTESIA_API_KEY`, `EMIL_ELEVENLABS_API_KEY`, `EMIL_GEMINI_API_KEY`, `EMIL_RUNPOD_API_KEY`, `EMIL_RUNPOD_ENDPOINT_ID` | Dynamiskt EMIL_-prefix i check-provider-profile.mjs; endast explicit fil/profil | Behåll separat, oförändrat; ingen normal runtimekoppling. |
 | `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`, `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD`, `CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD`, `CROUPIER_SPEECH_STREAM_TICKET_SECRET`, `CROUPIER_SPEECH_STREAM_WORKER_SECRET` | ops/cloud/config.mjs och speech-konfiguration | Behåll tak och separata hemligheter; inga jobb för inventeringen. |
-| `LAB_API_TOKEN`, `LAB_REMOTE_TOKEN`, `LAB_REMOTE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN`, `OPENCLAW_PRODUCT_SPEECH_URL` | settings.mjs och local-connection.mjs; ops/cloud/config.mjs läser endast produktens talpar | Behåll separata adresser/tokenroller; LAB_REMOTE-paret hör inte till Render-spelets start. |
+| `LAB_API_TOKEN`, `LAB_REMOTE_TOKEN`, `LAB_REMOTE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN`, `OPENCLAW_PRODUCT_SPEECH_URL` | settings.mjs; ops/cloud/config.mjs läser endast produktens talpar | Behåll separata adresser/tokenroller; LAB_REMOTE-paret hör inte till Render-spelets start. |
 | `LAB_DATA_DIR`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_DASHBOARD_ENABLED`, `OPENCLAW_HOSTPORT`, `OPENCLAW_SPEECH_AGENT`, `OPENCLAW_SPEECH_DEEP_MODEL`, `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_TIMEOUT_MS`, `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`, `OPENCLAW_TIMEOUT_MS` | Director settings/Blueprint och miljöregistrets tjänstekontrakt | Behåll tjänstprofilen; ingen ny agentaktivering. |
 | `CROUPIER_SPEECH_VISION`, `OPENCLAW_API_KEY`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_MODEL_API`, `OPENCLAW_MODEL_API_KEY`, `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_STATE_DIR` | Gateway/settings; modellnyckel/base URL även dealer-import-model.mjs | Behåll skilda Gateway-/modell-/produktroller. |
 | `CROUPIER_DEALER_IMPORT_AI`, `OPENAI_API_KEY`, `RUNWAY_API_KEY` | dealer-import-model.mjs och runway-client.mjs; OpenAI även villkorad kamerareserv | Behåll. Ingen generering genom inventeringen. |
@@ -1188,9 +1188,9 @@ Render-spelets villkorliga grupper:
   Den externa zoninstansen och dess historik är inte raderade eller verifierade
   av denna kodändring; eventuell rensning kräver separat O03-mandat.
   Spelkonton och saldon använder fortsatt en separat game/auth-Neon-databas.
-- Lokal provkörning: `node apps/studio/start.mjs --offline --no-open` startar endast
-  isolerade temporära testdata, utan externa lagringstjänster. Tidigare
-  `--cloud-storage` avvisas; den privata profilfilen bevaras. Render/Vercel
+- Lokal provkörning: den SQLite-baserade `--offline`-fixturen är pensionerad 27 oktober 2026;
+  isolerade prov körs i staging eller CI. Tidigare `--cloud-storage` avvisas;
+  den privata profilfilen bevaras. Render/Vercel
   använder sina egna serverinställningar och får inga automatiska lokala kopior.
 - Konto/data: `CROUPIER_PLAYER_ACCOUNTS` styr kontofunktionen. Migrerad
   produktion har separat game/auth-Neon och ingen CROOT/diskfallback.

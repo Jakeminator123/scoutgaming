@@ -11,10 +11,9 @@ import { registeredIdlePolicy, registeredIdleInventory } from '../../packages/pr
 import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { isAbsolute, join } from 'node:path';
+import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
-import { createLocalProjectReader } from '../../packages/studio-registry/server/local-project-reader.mjs';
 import {revalidatePrivateMedia} from '../../packages/studio-registry/server/private-media-revalidation.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from './storage/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
@@ -57,15 +56,13 @@ export function presentationInput(event, published) {
 }
 
 // The checkout holds no product register. Neon supplies the store in production;
-// the offline fixture names its temporary CROUPIER_DATA_DIR; otherwise project
-// reads fail explicitly instead of touching a default directory on disk.
-const fixtureDataDir = env => typeof env?.CROUPIER_DATA_DIR === 'string' && isAbsolute(env.CROUPIER_DATA_DIR) ? env.CROUPIER_DATA_DIR : null;
+// without one, project reads fail explicitly instead of touching a directory on disk.
 const unavailableStore = Object.freeze({ configurationSource: 'unavailable',
   load: async () => { throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 }); } });
 // The committed native receipt comes from the product table unless a caller (the
 // Studio rehearsal) supplies the `{ version, payload }` row of its own isolated table.
 export function createPresentationApi({ db, readNativeReceipt = playerId => db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId),
-  env = process.env, store = fixtureDataDir(env) ? createLocalProjectReader(join(fixtureDataDir(env), 'studio')) : unavailableStore,
+  env = process.env, store = unavailableStore,
   registryOptions = { env, repositoryRoot: root },
   select = selectPresentation, directorFetchFactory = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, withActiveRoomPresentation = null, qaPublicOrigin = null } = {}) {

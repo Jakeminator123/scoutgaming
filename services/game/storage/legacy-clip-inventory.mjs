@@ -3,7 +3,7 @@ import { validateContactTake, validateContinuation } from '../../../packages/pre
 import { resolveMediaAbsolutePath, repositoryRoot } from '../../../tools/media-layout.mjs';
 
 export const { loadLegacyClipInventory, legacyClipControls } = createLegacyClipInventory({
-  // Only the offline fixture's explicit temporary directory; no checkout default.
-  repositoryRoot, defaultDataDirectory: () => process.env.CROUPIER_DATA_DIR || null,
+  // Callers pass an explicit directory; no environment or checkout default.
+  repositoryRoot, defaultDataDirectory: () => null,
   resolveMediaAbsolutePath, validateContactTake, validateContinuation,
 });

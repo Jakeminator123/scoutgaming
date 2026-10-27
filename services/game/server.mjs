@@ -32,6 +32,7 @@ import { createNativeTableCommand } from './native-table.mjs';
 import { createNativeObservationPublisher } from './native-observation-publisher.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
 import { serveGenerationMedia } from './generation-media.mjs';
+import { publicRoutePaths, isRetiredGenerationRoute, isRetiredLocalDealerRoute } from './retired-public-routes.mjs';
 import { clipMapping } from './clip-mapping.mjs';
 import { installGracefulShutdown } from './graceful-shutdown.mjs';
 const persistenceFailure = error => Boolean(error?.severity)
@@ -1153,9 +1154,10 @@ const server = createServer(async (req, res) => {
   let decoded;
   try { decoded = decodeURIComponent(url.pathname); }
   catch { res.writeHead(400); res.end('bad request'); return; }
-  let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
-  const generationPath = '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
-  const retiredGenerationPath = /^\/bo[ .]*\/(?:gen[ .]*(?:\/|$)|generations[ .]*\.json[ .]*$)/i.test(generationPath);
+  const routePaths = publicRoutePaths(decoded, normalize);
+  let path = routePaths.path;
+  const generationPath = routePaths.route;
+  const retiredGenerationPath = isRetiredGenerationRoute(generationPath);
   if (retiredGenerationPath) {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
     // the ordinary BO gate above. Windows also ignores directory casing and
@@ -1170,7 +1172,7 @@ const server = createServer(async (req, res) => {
     if(response){res.writeHead(response.status,Object.fromEntries(response.headers));
       if(!response.body){res.end();return;}const source=Readable.fromWeb(response.body);res.once('close',()=>source.destroy());source.once('error',()=>res.destroy());source.pipe(res);return;}
   }
-  if (/^\/(?:dealer[ .]*(?:\/|$)|dealers[ .]*\/(?:astrid|vera|amira|mei)[ .]*(?:\/|$))/i.test(generationPath)) {
+  if (isRetiredLocalDealerRoute(generationPath)) {
     res.writeHead(410, {'Content-Type':'application/json','Cache-Control':'no-store'});
     res.end(JSON.stringify({error:'local_dealer_retired'})); return;
   }

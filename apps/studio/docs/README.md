@@ -34,8 +34,8 @@ redigerar vald gemensam mall. Enhetliga låsningar per lager i alla tre nivåer
 
 **Öppna produkten:** `node apps/studio/start.mjs` öppnar den publicerade lobbyn.
 Från Codex används `node apps/studio/start.mjs --no-open`, som bara skriver adressen.
-Kommandot skapar inga lokala register eller servrar. Endast uttryckligt
-`--offline` startar en tillfällig, isolerad testmiljö utan externa tjänster.
+Kommandot skapar inga lokala register eller servrar. Den tidigare `--offline`-fixturen
+är pensionerad 27 oktober 2026; isolerade prov körs i staging eller CI.
 
 Produktens register, inklusive katalog och svarsbibliotekets metadata, finns i
 Neon; filmer och ljud ligger i privat Blob. Lokala katalogfiler är underlag
@@ -551,8 +551,8 @@ och lobbyn. API:er och tillgångar finns under `/studio`.
 Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
-För isolerade tester finns arbetsytan på det temporära par som endast
-`node apps/studio/start.mjs --offline` startar, på den adress kommandot skriver ut.
+Isolerade tester körs i staging eller CI:s isolerade Postgres; det lokala
+offlineparet är pensionerat 27 oktober 2026.
 **Öppna spelet** fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till personalytan.
@@ -696,24 +696,11 @@ Greenscreen-dealern, bordet och bakgrunden kan spelas som separata lager.
 Bakgrundszoner har tagits bort ur arbetsflödet; tidigare sparade zondata bevaras.
 
 Start: `node apps/studio/start.mjs --no-open` skriver den publicerade produktens adress.
-`--product` är ett alias för samma läge. Använd
-`node apps/studio/start.mjs --offline --no-open` för ett isolerat prov utan externa
-tjänster. Testdata ligger temporärt och rensas när paret avslutas; äldre
-privata profiler och sparade lokala arbetsdata lämnas kvar.
-Fixturstartaren visar avsedd checkout och dess Git-HEAD som källversion. Egna
-arbetsfiler kan avvika; uppgiften intygar inte vilken källversion ett äldre bygge har.
-En redan svarande server återanvänds inte automatiskt: stoppa dess startprocess
-manuellt före en ny start från rätt checkout. Inga processer stängs av startaren.
-
-Lägg endast till `--skip-build` tillsammans med `--offline` för att använda befintliga byggfiler utan att förbereda
-förhandsvisningar, bygga eller installera beroenden. Nödvändiga filer för Lab,
-förhandsvisning och Admin/Lobby kontrolleras innan profiler läses eller projekt
-och servrar startas. Saknas någon fil stannar kommandot; bygg först rätt checkout
-med `npm --prefix apps/studio run build` när ett bygge är avsett. Bortstädade byggfiler
-är inte i sig ett källkodsfel. Kontrollen intygar filernas närvaro, inte att bygget
-motsvarar aktuell Git-HEAD. De tidigare anslutna lokallägena `--check`,
-`--cloud-storage` och `--astrid-camera` avvisas med hänvisning till den
-publicerade produkten eller explicit offline-fixtur.
+`--product` är ett alias för samma läge. Den SQLite-baserade offlinefixturen
+(`--offline`, `--skip-build`) och de tidigare anslutna lokallägena `--check`,
+`--cloud-storage` och `--astrid-camera` är pensionerade 27 oktober 2026 och avvisas med
+hänvisning till den publicerade produkten. Äldre privata profiler och sparade
+lokala arbetsdata lämnas kvar.
 
 Avancerade verktyg nås genom **Händelser** (`/admin/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
@@ -851,7 +838,7 @@ uttryckligen läggs till och aktiveras i den sparade policyn.
 Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
-Aktuell anslutning: [lokal anslutning](../../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md).
+Den lokala anslutningshelpern är [pensionerad](../../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md).
 
 Välj **Dealers & klipp → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
@@ -907,8 +894,8 @@ publika fakta OpenClaw får och vilka uppgifter som saknas.
 Den kan även skicka högst åtta observerade chattmeddelanden före aktuellt
 event (600 tecken vardera, 3 200 totalt) som märkt data för variantval.
 Director måste kvittera kontextkontrakt v2; äldre tjänst ger synlig
-standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
-`node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
+standardreserv tills den uppdaterats. Det tidigare lokala offlineprovet
+(`tools/start-local-comparison.mjs`) är pensionerat 27 oktober 2026.
 
 Diagnostiska transport- och uppspelningskvitton beskrivs i runtimeguiden. Den pensionerade sidans sessionslogg är inte längre en del av Admin-navigationen.
 
@@ -935,8 +922,8 @@ meddelanden/8 000 tecken och 30 dagars inaktivitet. Originalchattens **Minne**
 visar omfattning och kan glömma historiken. Det är konversationsminne, inte
 verifierat uppspelningsminne. Tillfälliga testdatabaser raderas vid teststopp.
 
-Anslutet prov med genererat tal kräver explicit `--generated-speech` i
-[starthelpern](../../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md); standardstart
+Den lokala anslutningshelpern med `--generated-speech` är
+[pensionerad](../../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md); standardstart
 förbrukar inga Cartesia-/RunPod-jobb. OpenAI-modellen är oförändrad. Genererade
 takepaket är hashbundna previews, **inte mänskligt godkänd läppsynk**.
 Modellvalet `recordedLine` visas tills vidare bara som text i den länkade labbchatten

@@ -280,8 +280,8 @@ Dokumentationsändring 16 oktober 2026: det nya runtimekontraktet samlar
 katalog och svarsbibliotekets metadata i scoped Neon, med mediebytes i Blob.
 Lokala katalogfiler används endast som uttryckliga authoring-/importkällor.
 Vanlig `apps/studio/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
-bara `--offline` startar isolerade temporära testdata. Äldre anslutna lokallägen
-avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
+den SQLite-baserade `--offline`-fixturen och äldre anslutna lokallägen är
+pensionerade 27 oktober 2026 och avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
 [miljövariabler](../ENVIRONMENT-VARIABLES.md) och
 [användarsteg](../../apps/studio/docs/README.md) är uppdaterade i sina befintliga filer.
 Huvudagentens kvitto 16 oktober 18:38 UTC bekräftar migration 012 och återläst

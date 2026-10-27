@@ -1,19 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createServer } from 'node:net';
-import { mkdtemp, mkdir, writeFile, symlink, rm, readdir, copyFile, lstat, realpath, unlink } from 'node:fs/promises';
-import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
-import { existsSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
+import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { openGenerationMedia, closeGenerationMedia } from '../services/game/generation-media.mjs';
-import { startLocalComparison } from '../tools/start-local-comparison.mjs';
+import { join, posix, win32 } from 'node:path';
+import { openGenerationMedia, closeGenerationMedia, serveGenerationMedia } from '../services/game/generation-media.mjs';
+import { publicRoutePaths, isRetiredGenerationRoute, isRetiredLocalDealerRoute } from '../services/game/retired-public-routes.mjs';
 
-async function freePort(host) {
-  const server = createServer(); await new Promise(resolve => server.listen(0, host, resolve));
-  const port = server.address().port; await new Promise(resolve => server.close(resolve)); return port;
-}
 // Synthetic catalogue entries: the retired BO catalogue file no longer ships with the server.
 const catalog = [{ id: 'c01866d1-7c93-43a4-9493-73f7c66d3725' }, { id: '15777d5f-4085-484e-a170-eb5c9a13d7b0' }];
 const [first, second] = catalog;
@@ -38,84 +32,67 @@ test('media resolver allows only catalogue names and refuses symlink escapes', a
   } finally { await rm(tmp, { recursive: true, force: true }); }
 });
 
-test('explicit media directory cannot re-enable retired BO or token package routes', async () => {
-  const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-http-'));
+test('served media honours GET, HEAD and byte ranges and refuses writes and bad ranges', async () => {
+  const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-serve-'));
   const directory = join(tmp, 'media'); await mkdir(directory);
   const bytes = '0123456789abcdefgh';
   await writeFile(join(directory, `${first.id}.mp4`), bytes);
-  await writeFile(join(tmp, 'outside.mp4'), 'never exposed');
-  await symlink(join(tmp, 'outside.mp4'), join(directory, `${second.id}.mp4`), 'file');
-  let fixture;
+  const server = createServer((req, res) => {
+    const media = openGenerationMedia({ directory, catalog, fileName: `${first.id}.mp4` });
+    if (!media) { res.writeHead(404); res.end(); return; }
+    serveGenerationMedia(req, res, media, { ETag: '"fixture"' });
+  });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const url = `http://127.0.0.1:${server.address().port}/media`;
   try {
-    await mkdir(join(tmp, 'services'), {recursive:true});
-    await symlink(fileURLToPath(new URL('../services/game/', import.meta.url)), join(tmp, 'services', 'game'), process.platform === 'win32' ? 'junction' : 'dir');
-    fixture = await startLocalComparison({ repoRoot: tmp, startLab: false, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1'), generationDirectory: directory });
-    const boPath = `/bo/gen/${first.id}.mp4`, apiPath = `/api/v1/generations/${first.id}/video`;
-    const get = (path, headers = {}, method = 'GET') => fetch(fixture.gameUrl + path, { method, headers, redirect: 'manual' });
-    for (const path of [boPath, `/bo%2fgen%2f${first.id}.mp4`, `/bo%5cgen%5c${first.id}.mp4`, '/bo/generations.json']) {
-      const response = await get(path);
-      assert.equal(response.status, 302);
-      assert.equal(response.headers.get('location'), '/admin/login');
+    const full = await fetch(url);
+    assert.equal(full.status, 200); assert.equal(await full.text(), bytes);
+    assert.equal(full.headers.get('content-type'), 'video/mp4'); assert.equal(full.headers.get('etag'), '"fixture"');
+    assert.equal(full.headers.get('x-content-type-options'), 'nosniff');
+    for (const [range, body] of [['bytes=2-5', '2345'], ['bytes=-3', 'fgh'], ['bytes=15-', 'fgh'], ['bytes=16-99', 'gh']]) {
+      const partial = await fetch(url, { headers: { range } });
+      assert.equal(partial.status, 206, range); assert.equal(await partial.text(), body, range);
+      assert.match(partial.headers.get('content-range'), new RegExp(`/${bytes.length}$`));
     }
-    const auth = { Authorization: `Bearer ${fixture.credentials.generations.token}` };
-    for (const path of [apiPath, `/api/v1/generations/${second.id}/video`, '/api/v1/generations']) {
-      const response = await get(path, auth);
-      assert.equal(response.status, 410);
-      assert.deepEqual(await response.json(), { error: 'legacy generation catalog retired' });
+    for (const range of ['bytes=18-', 'bytes=-0', 'bytes=5-2', 'items=0-1', 'bytes=-']) {
+      const refused = await fetch(url, { headers: { range } });
+      assert.equal(refused.status, 416, range); assert.equal(refused.headers.get('content-range'), `bytes */${bytes.length}`); await refused.arrayBuffer();
     }
-    assert.equal((await get('/api/v1/generations/mapping', auth)).status, 200);
-    assert.equal((await get(apiPath, auth, 'POST')).status, 405);
-    await fixture.stop(); fixture = null;
-    assert.equal(existsSync(join(directory, `${first.id}.mp4`)), true, 'fixture cleanup never deletes supplied archive');
-    assert.equal(readFileSync(join(directory, `${first.id}.mp4`), 'utf8'), bytes);
-  } finally { await fixture?.stop(); await rm(tmp, { recursive: true, force: true }); }
+    const head = await fetch(url, { method: 'HEAD' });
+    assert.equal(head.status, 200); assert.equal(head.headers.get('content-length'), String(bytes.length)); assert.equal(await head.text(), '');
+    const write = await fetch(url, { method: 'POST', body: 'x' });
+    assert.equal(write.status, 405); assert.equal(write.headers.get('allow'), 'GET, HEAD'); await write.arrayBuffer();
+  } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await rm(tmp, { recursive: true, force: true }); }
 });
 
-test('retired generation aliases cannot fall through to static files through Windows route aliases', async () => {
-  const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-case-'));
-  const web = join(tmp, 'services', 'game'), mediaRoot=join(tmp,'media'),directory=join(mediaRoot,'site/runtime/backoffice/gen');
+// Formerly proven through the SQLite comparison launcher over HTTP. The route
+// table is now checked directly with both Windows and POSIX path semantics, so
+// encoded slashes, casing and trailing dots/spaces cannot reach static files.
+const normalizers = [['win32', win32.normalize], ['posix', posix.normalize]];
+const route = (raw, normalize) => publicRoutePaths(decodeURIComponent(raw), normalize).route;
+
+test('retired BO generation aliases are classified before static files on Windows and POSIX', () => {
   const known = '11111111-2222-3333-4444-555555555555';
-  const unknown = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-  let fixture;
-  try {
-    await copyOpenClawRuntime(tmp);
-    // Detach only the temporary link created by the copy helper. Never write
-    // synthetic files through it or recursively remove its real repo target.
-    assert.equal((await lstat(mediaRoot)).isSymbolicLink(),true);
-    assert.equal(await realpath(mediaRoot),await realpath(fileURLToPath(new URL('../media/',import.meta.url))));
-    await unlink(mediaRoot);
-    await mkdir(directory,{recursive:true});
-    assert.equal((await lstat(mediaRoot)).isSymbolicLink(),false);
-    await writeFile(join(mediaRoot,'layout.json'),JSON.stringify({schemaVersion:1,roots:{'web/public/bo/gen':'media/site/runtime/backoffice/gen'},files:[]}));
-    await mkdir(join(web,'public/bo'),{recursive:true});
-    const source = new URL('../services/game/', import.meta.url);
-    for (const file of await readdir(source)) if (file.endsWith('.mjs')) await copyFile(new URL(file, source), join(web, file));
-    await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
-    await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));
-    // Shared browser contracts are copied once by copyOpenClawRuntime.
-    await copyFile(new URL('public/game-entry-contract.mjs', source), join(web, 'public/game-entry-contract.mjs'));
-    // An inactive catalog must import without optional Studio public modules.
-    await import(pathToFileURL(join(web, 'public-operator-rooms.mjs')).href);
-    await writeFile(join(web, 'public/bo/generations.json'), JSON.stringify([{ id: known }]));
-    await writeFile(join(directory, `${known}.mp4`), 'synthetic known media');
-    await writeFile(join(directory, `${unknown}.mp4`), 'synthetic uncatalogued media');
-    fixture = await startLocalComparison({ startLab: false, repoRoot: tmp, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1') });
-    const get = (path, cookie = '') => fetch(fixture.gameUrl + path, { headers: { Cookie: cookie }, redirect: 'manual' });
-    const unavailableRooms=await get('/api/operators/sg-test/rooms');
-    assert.equal(unavailableRooms.status,503);assert.deepEqual(await unavailableRooms.json(),{error:'operator_rooms_unavailable'});
-    assert.equal(unavailableRooms.headers.get('cache-control'),'no-store');assert.equal(unavailableRooms.headers.has('set-cookie'),false);
-    const prefixes = ['/BO/GEN/', '/Bo/gEn/', '/BO%2fGEN%2f', '/BO%5cGEN%5c',
-      '/bo./gen./', '/bo%20/gen%20/', '/BO.%20/Gen%20./'];
-    for (const prefix of prefixes) {
-      const denied = await get(`${prefix}${known}.mp4`);
-      assert.equal(denied.status, 302, `${prefix} requires BO auth even when default files exist`);
-      assert.equal(denied.headers.get('location'), '/admin/login');
-    }
-    const catalog = await get('/bo/generations.json');
-    assert.equal(catalog.status, 302); assert.equal(catalog.headers.get('location'), '/admin/login');
-    const retired = await fetch(fixture.gameUrl + `/api/v1/generations/${known}/video`, {
-      headers: { Authorization: `Bearer ${fixture.credentials.generations.token}` }, redirect: 'manual' });
-    assert.equal(retired.status, 410);
-    assert.deepEqual(await retired.json(), { error: 'legacy generation catalog retired' });
-  } finally { await fixture?.stop(); await rm(tmp, { recursive: true, force: true }); }
+  const prefixes = ['/bo/gen/', '/bo%2fgen%2f', '/bo%5cgen%5c', '/BO/GEN/', '/Bo/gEn/', '/BO%2fGEN%2f', '/BO%5cGEN%5c',
+    '/bo./gen./', '/bo%20/gen%20/', '/BO.%20/Gen%20./'];
+  for (const [platform, normalize] of normalizers) {
+    for (const prefix of prefixes) assert.ok(isRetiredGenerationRoute(route(`${prefix}${known}.mp4`, normalize)), `${platform} ${prefix}`);
+    for (const raw of ['/bo/generations.json', '/BO/Generations.JSON', '/bo%2fgenerations.json%20', '/bo/gen', '/bo/./gen/x.mp4'])
+      assert.ok(isRetiredGenerationRoute(route(raw, normalize)), `${platform} ${raw}`);
+    for (const raw of ['/bo/', '/bo/index.html', '/bogen/x.mp4', '/bo/generations.jsonx', '/bo/genx/x.mp4', '/game', '/api/v1/generations'])
+      assert.equal(isRetiredGenerationRoute(route(raw, normalize)), false, `${platform} ${raw}`);
+  }
+});
+
+test('retired local dealer assets stay retired under encoded, cased and dotted aliases', () => {
+  const retired = ['/dealer/streams/index.json', '/dealers/astrid/streams/index.json', '/dealers/amira/audio/en/bank.json',
+    '/dealers/mei/poster.jpg', '/Dealers/AsTrId/streams/index.json', '/dealers./vera./poster.jpg', '/%64ealers/%61strid/streams/index.json',
+    '/dealers%5castrid%5cposter.jpg', '/dealer'];
+  for (const [platform, normalize] of normalizers) {
+    for (const raw of retired) assert.ok(isRetiredLocalDealerRoute(route(raw, normalize)), `${platform} ${raw}`);
+    for (const raw of ['/dealers/linnea/poster.jpg', '/dealerships/x', '/game', '/'])
+      assert.equal(isRetiredLocalDealerRoute(route(raw, normalize)), false, `${platform} ${raw}`);
+    // Traversal prefixes are stripped before classification, never resolved above the root.
+    assert.equal(publicRoutePaths('../../dealers/astrid/x', normalize).route, '/dealers/astrid/x');
+  }
 });

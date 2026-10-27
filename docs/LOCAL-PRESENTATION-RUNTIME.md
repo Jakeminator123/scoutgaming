@@ -245,10 +245,9 @@ för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
 tidigare implementationen och ersätts av detta kontrakt.
 
 Vanlig `node apps/studio/start.mjs` öppnar den publicerade `/lobby`; `--no-open`
-skriver bara adressen och `--product` är ett uttryckligt alias. Endast
-`--offline` startar ett isolerat, temporärt serverpar utan externa tjänster.
-`--skip-build` hör till den fixturen. `--cloud-storage`, `--astrid-camera`
-och `--check` avvisas; de startar inte längre en ansluten lokal produkt.
+skriver bara adressen och `--product` är ett uttryckligt alias. Det SQLite-baserade
+offlineparet (`--offline`, `--skip-build`) är pensionerat 27 oktober 2026; det och
+`--cloud-storage`, `--astrid-camera` och `--check` avvisas och startar inga lokala servrar.
 Sparade lokala arbetsfiler bevaras som källor eller återhämtningsdata.
 
 ## Rörligt tal: verifieringsgränser, cache och källor — 18 oktober 2026
@@ -2403,8 +2402,8 @@ media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
 
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
-`node apps/studio/start.mjs` öppnar den publicerade produkten. OpenClaw-anslutning beskrivs i
-[anslutningsguiden](AI/openclaw/LOCAL-CONNECTION-SV.md).
+`node apps/studio/start.mjs` öppnar den publicerade produkten. Den lokala
+[anslutningshelpern](AI/openclaw/LOCAL-CONNECTION-SV.md) är pensionerad.
 De tidigare lokala adresserna nedan beskriver den äldre anslutna startaren,
 inte dagens standardstart. Den gamla Mobile Phone Lane använde Astrids porträttvideo i spelet:
 <http://127.0.0.1:4200/blackjack>.

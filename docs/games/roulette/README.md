@@ -75,7 +75,7 @@ Godkänt material ska gå via mediebank och Vercel Blob, inte Runways tillfälli
 
 Den tidigare isolerade fixturen `tools/roulette-ui-fixture.mjs` och den separata
 testytan `/roulette-test` är avvecklade (22 oktober 2026); provspel sker i ett
-publicerat rum via `/play/roulette` eller det isolerade `--offline`-fixturparet.
+publicerat rum via `/play/roulette` eller i isolerad staging (`--offline`-fixturparet är pensionerat 27 oktober 2026).
 
 [Signaler, materialinventering och klippkarta](KLIPPKARTA.md) beskriver de
 separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår

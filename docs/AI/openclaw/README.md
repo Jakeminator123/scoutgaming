@@ -33,7 +33,7 @@ versionen eller sakfrågan kräver det.
 - [Aktuell drift och migration](../../CLOUD-MIGRATION.md)
 - [Nyckelnamn och ansvar per tjänst](../../ENVIRONMENT-VARIABLES.md)
 - [Officiella källor och lokala konfigurationsfiler](OPENCLAW-DOCS.md)
-- [Verifierad lokal anslutning, isolerad start och kvarvarande produktblockerare](LOCAL-CONNECTION-SV.md)
+- [Pensionerad lokal anslutningshelper (avvecklingsnotis)](LOCAL-CONNECTION-SV.md)
 - [Separat produkt-speech-roll, säkerhetsgräns och exakt driftplan](PRODUCT-SPEECH-DEPLOYMENT-SV.md)
 - [Astrids kamera och mikrofon: implementation, testbevis och kvarvarande driftprov](../../LOCAL-PRESENTATION-RUNTIME.md)
 - [Designunderlag: valbar kamera och mikrofon för Astrid](ASTRID-CAMERA-VOICE-PLAN.md)
