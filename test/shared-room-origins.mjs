@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import { childSpecifications, validateCloudConfig } from '../ops/cloud/config.mjs';
 import { sharedRoomOrigins } from '../services/game/shared-room-origins.mjs';
 import { createSharedRoomService } from '../services/game/shared-room-service.mjs';
@@ -16,7 +17,7 @@ import { createSharedRoomPresentationBridge } from '../services/game/shared-room
 const publicOrigin = 'https://example.vercel.app', transport = 'https://example.onrender.com';
 const ingressEnv = () => ({
   NODE_ENV: 'production', PORT: '10000', CROUPIER_CLOUD_LAYOUT: 'single-origin',
-  CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: 'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+  CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'game'),
   CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'cloud-fixture',
   CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
   CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-shared-room-origin-fixture'),
