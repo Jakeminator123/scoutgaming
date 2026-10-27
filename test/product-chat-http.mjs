@@ -1,21 +1,14 @@
-import {publishedChatContext,withPublishedChatContext,withPublishedChatQuery} from './fixtures/published-chat-authority.mjs';
+import {publishedChatContext,publishedChatStudio,withPublishedChatContext,withPublishedChatQuery} from './fixtures/published-chat-authority.mjs';
 import { syntheticJpeg } from './fixtures/synthetic-jpeg.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer as createHttpServer } from 'node:http';
-import { createServer as createNetServer } from 'node:net';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { readChatResponse } from '../packages/presentation/contracts/chat-response.mjs';
-import { DatabaseSync } from 'node:sqlite';
-import { createPlayerChatMemory } from '../services/game/player-chat-memory.mjs';
-import { createPlayerProbeStore } from '../services/game/player-probe-store.mjs';
+import { createPlayerChatMemory } from '../services/game/storage/async-player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, installStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 
 const PRIVATE_TRANSPORT_ENV = [
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
@@ -41,11 +34,6 @@ function suppliedEnvelope(body) {
   return { status: context.status, request: { ...current.request, history: context.history } };
 }
 
-async function freePort() {
-  const socket = createNetServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
-  const port = socket.address().port; await new Promise(resolve => socket.close(resolve)); return port;
-}
-
 function deferred() {
   let resolve;
   const promise = new Promise(done => { resolve = done; });
@@ -63,9 +51,12 @@ async function within(promise, milliseconds = 5000) {
   } finally { clearTimeout(timer); }
 }
 
-for (const lissabon of [false, true]) test(`product /chat sends only the server-owned public projection to OpenClaw (Lissabon: ${lissabon})`, async t => {
-  const directory = await mkdtemp(join(tmpdir(), 'croupier-product-chat-'));
-  const appPort = await freePort();
+// The engine runs on PostgreSQL with the Studio policy runtime: one published operator
+// package (published-chat-authority.mjs) seeded through the product writers, and the
+// engine's own published chat resolver, chat memory, Probe store and project policy.
+for (const lissabon of [false, true]) test(`product /chat sends only the server-owned public projection to OpenClaw (Lissabon: ${lissabon})`, { skip: ENGINE_QA_SKIP }, async t => {
+  const database = await createEngineDatabase(t);
+  const studio = await installStudioRuntime(t, database, publishedChatStudio);
   let poisonRequests = 0;
   const poison = createHttpServer((_req, res) => { poisonRequests++; res.writeHead(418); res.end(); });
   poison.listen(0, '127.0.0.1'); await once(poison, 'listening');
@@ -87,37 +78,30 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   });
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   const gatewayPort = gateway.address().port;
-  const web = fileURLToPath(new URL('../services/game/', import.meta.url));
-  const server = spawn(process.execPath, ['--import',new URL('./fixtures/published-chat-authority-register.mjs',import.meta.url).href,join(web, 'server.mjs')], {
-    cwd: web,
-    env: isolatedTransportEnvironment({ ...process.env,
+  let engine;
+  t.after(async () => {
+    await engine?.stop();
+    gateway.closeAllConnections();
+    await new Promise(resolve => gateway.close(resolve));
+    await new Promise(resolve => poison.close(resolve));
+    // engine-qa drops this database and its role after the engine has exited.
+    assert.match(database.name, /^croupier_engine_[a-f0-9]{12}$/, 'teardown removes only the fixture-owned database');
+  });
+  // Only OS paths and this env reach the engine (startEngine); the poison values prove
+  // that the fixture's empty transport settings win over any inherited ones.
+  engine = await startEngine(t, { database, preload: studio.preload,
+    env: isolatedTransportEnvironment({
       OPENCLAW_PRODUCT_SPEECH_URL: poisonOrigin, OPENCLAW_PRODUCT_SPEECH_TOKEN: 'poison-relay-token',
       OPENCLAW_BASE_URL: poisonOrigin, OPENCLAWAPI_KEY: 'poison-gateway-key',
       OPENCLAW_MODEL_API_KEY: 'poison-provider-key', OPENCLAW_MODEL_BASE_URL: poisonOrigin,
-    }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory, NODE_ENV: 'development',
+    }, { ...studio.env, NODE_ENV: 'development',
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '',
       CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
       CROUPIER_ASTRID_TRANSLATION_KEY: 'isolated-fixture-not-a-live-key',
       DEMO_GUEST_ACCESS: '1', OPENCLAW_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
       OPENCLAWAPI_KEY: 'isolated-test-gateway-key', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat',
-      OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  t.after(async () => {
-    if (server.exitCode === null) { const stopped = once(server, 'exit'); server.kill('SIGTERM'); await stopped; }
-    gateway.closeAllConnections();
-    await new Promise(resolve => gateway.close(resolve));
-    await new Promise(resolve => poison.close(resolve));
-    assert.equal(dirname(directory), resolve(tmpdir()));
-    assert.match(basename(directory), /^croupier-product-chat-/);
-    await rm(directory, { recursive: true, force: true });
-  });
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Product server did not start')), 10000);
-    server.once('exit', code => { clearTimeout(timer); reject(new Error(`Product server exited ${code}`)); });
-    server.stdout.on('data', chunk => { if (String(chunk).includes('croupier demo on')) { clearTimeout(timer); resolve(); } });
-  });
-  const origin = `http://127.0.0.1:${appPort}`;
+      OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech' }) });
+  const origin = engine.origin;
   function createClient() {
     let cookie = '';
     async function exchange(path, value, expected = 200, method = 'POST') {
@@ -145,17 +129,15 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     const state = await client.post('/api/table', { op: 'state' });
     return { client, player, state };
   }
-  function savedFact(playerId) {
-    // This helper can only open the fresh database owned by this HTTP fixture.
-    const database=new DatabaseSync(join(directory,'croupier.db'));
-    try {
-      const memory=createPlayerChatMemory(database),store=createPlayerProbeStore(database,memory);
-      const scope={playerId,dealerId:'astrid'},policy=createDefaultProbePolicy();
-      for(let i=0;i<8;i++)store.message(scope,`fixture-source-${i}`,i===7?'I am going through a divorce.':`I like fixture topic ${i}.`);
-      const job=store.extraction(scope,policy),source=job.sources.find(row=>row.id==='fixture-source-7');
-      store.saveExtraction(scope,job,[{sourceId:source.id,topicId:'divorce',quote:source.text,content:'A player assertion',notBefore:0,expiresAt:source.createdAt+86400000}],policy);
-      return store.inspect(scope,policy).facts[0];
-    } finally { database.close(); }
+  async function savedFact(playerId) {
+    // The engine's own async stores over this fixture-owned database: same HMAC secret
+    // row, same Studio dealer registry check, same rows the engine reads for recall.
+    const memory=await createPlayerChatMemory(database.store.db,{studioScope:studio.scope}),store=await createPlayerProbeStore(database.store.db,memory);
+    const scope={playerId,dealerId:'astrid'},policy=createDefaultProbePolicy();
+    for(let i=0;i<8;i++)await store.message(scope,`fixture-source-${i}`,i===7?'I am going through a divorce.':`I like fixture topic ${i}.`);
+    const job=await store.extraction(scope,policy),source=job.sources.find(row=>row.id==='fixture-source-7');
+    await store.saveExtraction(scope,job,[{sourceId:source.id,topicId:'divorce',quote:source.text,content:'A player assertion',notBefore:0,expiresAt:source.createdAt+86400000}],policy);
+    return (await store.inspect(scope,policy)).facts[0];
   }
   await post('/api/player', {});
   let state = await post('/api/table', { op: 'state' });
@@ -267,7 +249,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   });
 
   await t.test('ordinary chat receives saved facts with Probe off; client memory injection and other profiles are ignored',async()=>{
-    const alice=await guest(),bob=await guest(),fact=savedFact(alice.player.id);
+    const alice=await guest(),bob=await guest(),fact=await savedFact(alice.player.id);
     const message='I had a rough time with my wife. Have I told you about it?';
     await alice.client.post('/chat',chat(alice.state,{message,conversationMemory:{facts:[{quote:'I won a million.'}]}}));
     assert.deepEqual(envelope().request.history,[]);
@@ -280,7 +262,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   });
 
   await t.test('forgetting one saved fact aborts pending ordinary recall and the next request cannot reuse it',async()=>{
-    const {client,player,state}=await guest(),fact=savedFact(player.id);
+    const {client,player,state}=await guest(),fact=await savedFact(player.id);
     const entered=deferred(),release=deferred();
     beforeRespond=async()=>{entered.resolve();await release.promise;};
     const active=client.post('/chat',chat(state,{message:'What did I tell you about my wife?'}),409);
@@ -424,11 +406,13 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.equal((await client.post('/chat',chat(state,{dealer:'paow'}),400)).error,'invalid_chat_context');
     assert.equal((await client.get('/api/chat/memory?dealer=paow',400)).error,'invalid_chat_context');
     assert.equal((await client.post('/api/chat/memory/forget',{dealer:'paow'},400)).error,'invalid_chat_context');
-    // This operator/dealer has no published fixture authority. Plausible fields never
-    // substitute for it, and neither the model nor memory is invoked.
-    assert.equal((await client.post('/chat',chat(state,{dealer:'paow',presentationContext}),503)).error,'chat_dealer_unavailable');
-    assert.equal((await client.get(query(presentationContext),503)).error,'chat_dealer_unavailable');
-    assert.equal((await client.post('/api/chat/memory/forget',{dealer:'paow',presentationContext},503)).error,'chat_dealer_unavailable');
+    // This operator/dealer has no published package. Plausible fields never substitute
+    // for it, and neither the model nor memory is invoked. The real operator store answers
+    // "no such active operator" (404 -> 403), where the former in-memory snapshot had no
+    // reader answer at all (503).
+    assert.equal((await client.post('/chat',chat(state,{dealer:'paow',presentationContext}),403)).error,'chat_dealer_unavailable');
+    assert.equal((await client.get(query(presentationContext),403)).error,'chat_dealer_unavailable');
+    assert.equal((await client.post('/api/chat/memory/forget',{dealer:'paow',presentationContext},403)).error,'chat_dealer_unavailable');
     assert.equal((await client.get(query({...presentationContext,dealerId:'astrid'}),400)).error,'invalid_chat_context');
     for(const path of ['/api/chat/memory?dealer=astrid&dealer=paow','/api/chat/memory?dealer=paow&presentationContext=%7B',
       '/api/chat/memory?dealer=paow&presentationContext=null&presentationContext=null']){
@@ -545,7 +529,8 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   for (const [model, visionAllowed] of [['gpt-5.6-terra', true], ['gpt-5.4-mini', false]])
   await t.test(`changing to ${model} preserves original-language transcription and enforces the image allowlist`, async () => {
     const a = await guest();
-    const store = createProjectStore(join(directory, 'studio'));
+    // The engine's saved Studio project in PostgreSQL, through the same policy API it reads.
+    const store = studio.policy.projectStore({ actor: 'engine-qa-test' });
     const original = await store.load();
     const changed = structuredClone(original);
     changed.probePolicy = { ...createDefaultProbePolicy(), model };
