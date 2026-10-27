@@ -1,68 +1,13 @@
-# Legacy/version-dependent Cursor indexing preferences; builds are unchanged.
+# Cursor indexing only: tracked files the AI may still open on request but
+# that should not fill the codebase index. Everything secret or generated is
+# already blocked in .cursorignore. Support for this file depends on the
+# Cursor version; do not use it as an access boundary.
 
-# Dependencies and generated cache (not source dist/public directories).
-node_modules/
-.next/
-.nuxt/
-.cache/
-.turbo/
-coverage/
-playwright-report/
-test-results/
-__pycache__/
-.venv/
-.lipsync-venv/
-vendor/
-*.tsbuildinfo
-*.log
-
-# Local secrets, state and logs.
-.git/
-.env
-.env.*
-!.env.example
-!.env.*.example
-.croupier-inbox/
-
-# Binary media/data: JSON manifests, calibration and source stay searchable.
-*.mp4
-*.mov
-*.webm
-*.mkv
-*.mp3
-*.wav
-*.ogg
-*.flac
-*.png
-*.jpg
-*.jpeg
-*.webp
-*.gif
-*.glb
-*.gltf
-*.blend
-*.fbx
-*.obj
-*.stl
-*.usdz
-*.bin
-*.h264
-*.webpseq
-*.zip
-*.7z
-*.sqlite
-*.sqlite3
-*.db
-
-# Legacy index-only intent; support depends on the Cursor version/indexer.
-# Do not rely on this file for Instant Grep or as a file-access boundary.
-# Cursor discovery uses .cursorignore/.gitignore; ordinary rg uses .ignore.
-# Codex, terminal and MCP access also follow their own permissions/instructions.
-# Secrets and private data stay in .cursorignore, not only here.
-/media/.migration/
-/media/**/source/
-/media/**/staging/
+# Large generated media registers and raw media source/staging material.
 /media/layout.json
 /media/blob-index.json
-/media/**/source/*.json
-/media/**/staging/*.md
+/media/**/source/
+/media/**/staging/
+
+# Dated history: kept for reference, never the current state.
+/docs/history/

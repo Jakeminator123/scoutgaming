@@ -1,10 +1,30 @@
-# Cursor discovery/access exclusions; files stay available to builds.
-# These are not filesystem permissions for Codex, terminal or MCP tools.
-/arkiv/
+# Cursor: files the editor's AI may not read or index.
+# Git, builds and deploys are unaffected by this file. Secrets and local state
+# are listed even though .gitignore also covers them, because this file is what
+# keeps Cursor's AI from opening them.
 
-# Dependencies and generated cache (not source dist/public directories).
+# Local secrets and private state.
+.env
+.env.*
+!.env.example
+!.env.*.example
+.vercel/
+.claude/
+.croupier-inbox/
+inbox-token.txt
+/arkiv/
+/media/.migration/
+/random-stuff-jakob/
+# Director/Gateway local state (the default data root is open-claw/lab).
+/open-claw/lab/data/
+/open-claw/lab/runtime/
+/open-claw/lab/media/*
+/services/openclaw/lab/data/
+
+# Dependencies and generated output.
 node_modules/
 .next/
+.next-probe/
 .nuxt/
 .cache/
 .turbo/
@@ -18,15 +38,7 @@ vendor/
 *.tsbuildinfo
 *.log
 
-# Local secrets, state and logs.
-.git/
-.env
-.env.*
-!.env.example
-!.env.*.example
-.croupier-inbox/
-
-# Binary media/data: JSON manifests, calibration and source stay searchable.
+# Tracked binary media, 3D files and archives.
 *.mp4
 *.mov
 *.webm
@@ -55,17 +67,3 @@ vendor/
 *.sqlite
 *.sqlite3
 *.db
-
-# Local migration journals stay hidden. Heavy tracked project text is not
-# listed here. .cursorindexingignore is legacy/version-dependent; do not
-# assume Instant Grep honors its index-only exclusions. See AGENTS.md.
-/media/.migration/
-
-# Canonical recovery archive; inspect only when needed.
-/arkiv/
-
-# Director/Gateway local state (the Director adapter defaults to open-claw/lab).
-/open-claw/lab/data/
-/open-claw/lab/runtime/
-/open-claw/lab/media/*
-/services/openclaw/lab/data/
