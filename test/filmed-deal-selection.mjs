@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
-import {DatabaseSync} from 'node:sqlite';
 import {createSeedProject,addDealer,defaultPresentationLane,normalizeProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {createNeonProjectStore} from '../apps/studio/lib/neon-project-store.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
@@ -114,11 +113,12 @@ test('the canonical committed event owns card, faceDown and target before profil
 });
 
 async function serverFixture(t,{frozen=false,shoe=false}={}){
-  const f=fixture(),db=new DatabaseSync(':memory:');
+  const f=fixture();
   if(shoe)bindShoe(f);
-  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
-  const published=[box(2),hole(3)];
-  db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('qa',7,JSON.stringify(published));
+  const published=[box(2),hole(3)],receipts=new Map([['qa',{version:7,payload:JSON.stringify(published)}]]);
+  // Per-player committed receipts, answered only for the query the presentation API issues.
+  const db={prepare:sql=>{assert.match(sql,/^SELECT version, payload FROM native_presentations WHERE player_id=\?$/);
+    return {get:async playerId=>receipts.has(playerId)?{...receipts.get(playerId)}:undefined};}};
   let fallbackCalls=0,resolveCalls=0;
   const context={operatorSlug:'swedish-games',roomId:'fixture-room',packageRevision:4,dealerId:'dragan'};
   const scope={environment:'test',workspaceId:'filmed-fixture'},repository=createStudioRepository({pool:createStudioMemoryPool(),scope});
@@ -143,11 +143,11 @@ async function serverFixture(t,{frozen=false,shoe=false}={}){
     select:async()=>{fallbackCalls++;throw Error('ordinary selector must not run for configured filmed actions');}});
   const server=createServer((req,res)=>{void handler(req,res,'/api/presentation/select',req.headers['x-fixture-player']??'qa');});
   server.listen(0,'127.0.0.1');await once(server,'listening');
-  t.after(()=>{server.closeAllConnections();server.close();db.close();});
+  t.after(()=>{server.closeAllConnections();server.close();});
   const post=(event,patch={},headers={})=>fetch(`http://127.0.0.1:${server.address().port}/api/presentation/select`,{
     method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify({dealerId:'dragan',version:7,mode:'off',event,shoeTransitions:true,
       ...(frozen?{presentationContext:context}:{}),...patch})});
-  const setPublished=events=>db.prepare('UPDATE native_presentations SET payload=? WHERE player_id=? AND version=?').run(JSON.stringify(events),'qa',7);
+  const setPublished=events=>{if(receipts.get('qa')?.version===7)receipts.set('qa',{version:7,payload:JSON.stringify(events)});};
   return {...f,published,post,setPublished,counts:()=>({fallbackCalls,resolveCalls})};
 }
 

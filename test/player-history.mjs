@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPlayerHistoryHandler } from '../services/game/player-history.mjs';
-import { readPlayerResults } from '../services/game/player-results.mjs';
+import { readPlayerResults } from '../services/game/storage/async-player-results.mjs';
 
 function memoryDb(rows) {
   return {
     prepare() {
       return {
-        all(playerId) {
+        async all(playerId) {
           return rows.filter(row => row.player_id === playerId).map(row => ({ ...row }));
         },
       };

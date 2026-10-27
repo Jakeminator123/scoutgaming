@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once, EventEmitter, getEventListeners } from 'node:events';
 import { Readable } from 'node:stream';
-import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { createPresentationApi as buildPresentationApi, presentationInput } from '../services/game/presentation-api.mjs';
 import { addDealer, createSeedProject as historicalProject } from '../packages/presentation/contracts/studio-model.mjs';
@@ -127,6 +126,11 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
 });
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
+// Per-player committed receipts, answered only for the query the presentation API issues.
+const nativeReceipts = rows => ({ prepare: sql => {
+  assert.match(sql, /^SELECT version, payload FROM native_presentations WHERE player_id=\?$/);
+  return { get: async playerId => rows.has(playerId) ? { ...rows.get(playerId) } : undefined };
+} });
 test('retired playback context cannot expose a player session or load presentation state', async () => {
   const handler = buildPresentationApi({ store:{ load:() => assert.fail('unknown route must not load state') },
     nativeP6PlaybackContext:() => assert.fail('retired constructor input cannot expose ownership') });
@@ -274,13 +278,11 @@ test('a browser can identify a deal but cannot change its card, hand or hidden s
 });
 
 test('native endpoint selects the same exact family, deduplicates requests and rejects another player or revision', async t => {
-  const db = new DatabaseSync(':memory:');
-  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
-  db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('qa', 2, JSON.stringify([source]));
+  const receipts = new Map([['qa', { version: 2, payload: JSON.stringify([source]) }]]), db = nativeReceipts(receipts);
   const handler = createPresentationApi({ db, env: {}, store: { load: async () => createSeedProject() } });
   const server = createServer(async (req, res) => { if (!await handler(req, res, new URL(req.url, 'http://local').pathname, req.headers['x-fixture-player'] ?? 'qa')) { res.writeHead(404); res.end(); } });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
-  t.after(() => { server.closeAllConnections(); server.close(); db.close(); });
+  t.after(() => { server.closeAllConnections(); server.close(); });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const choose = (patch = {}, headers = {}) => fetch(`${origin}/api/presentation/select`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers },
     body: JSON.stringify({ dealerId: 'astrid', version: 2, mode: 'off', event: { ...source, card: { r: 'K', s: '♥' } }, ...patch }) });
@@ -295,7 +297,7 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   assert.equal((await choose({}, { 'x-fixture-player': 'somebody-else' })).status, 409);
   const reveal = { type: 'reveal', to: 'dealer', shoeDraw: 9, card: { r: 'Q', s: '♠' } };
   assert.equal((await choose({ event: reveal })).status, 409);
-  db.prepare('UPDATE native_presentations SET payload=? WHERE player_id=?').run(JSON.stringify([source, reveal]), 'qa');
+  receipts.set('qa', { ...receipts.get('qa'), payload: JSON.stringify([source, reveal]) });
   assert.equal((await choose({ event: reveal, version: 1 })).status, 409);
   assert.equal((await choose({ event: reveal }, { 'x-fixture-player': 'somebody-else' })).status, 409);
   const flip = await (await choose({ event: { ...reveal, card: { r: 'A', s: '♥' } } })).json();
@@ -343,13 +345,11 @@ test('explicit test archive feeds the same exact product and library media', asy
   const inventory = await loadVideoRegistry({ env, repositoryRoot: directory, uploadDir: join(directory, 'studio', 'videos') });
   assert.equal(inventory.videos.find(video => video.id === entry.id)?.available, true);
 
-  const db = new DatabaseSync(':memory:');
-  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
-  db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('archive-qa', 2, JSON.stringify([source]));
+  const db = nativeReceipts(new Map([['archive-qa', { version: 2, payload: JSON.stringify([source]) }]]));
   const handler = createPresentationApi({ db, env, store: { load: async () => createSeedProject() } });
   const server = createServer(async (req, res) => { await handler(req, res, new URL(req.url, 'http://local').pathname, 'archive-qa'); });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
-  t.after(() => { server.closeAllConnections(); server.close(); db.close(); });
+  t.after(() => { server.closeAllConnections(); server.close(); });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const response = await fetch(`${origin}/api/presentation/select`, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ dealerId: 'astrid', version: 2, mode: 'off', event: source }) });
@@ -372,16 +372,14 @@ test('native player reads saved deal frequencies, caches retries and picks up an
   assert.ok(variant, 'The current Astrid manifest has a real first-box variant.');
   project.mediaPolicy = [{ familyId: family.id, variants: [{ videoId: variant.id, priority: 10, triggerIds: [], selection: { model: false, random: false, rules: false }, frequencyPercent: 100 }] }];
   let saved = await store.save(project, project.revision), calls = 0;
-  const db = new DatabaseSync(':memory:');
   const committed = { ...source, box: 0, clip: { action: 'deal-left' } };
-  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
-  db.prepare('INSERT INTO native_presentations VALUES (?,?,?)').run('frequency-qa', 2, JSON.stringify([committed]));
+  const db = nativeReceipts(new Map([['frequency-qa', { version: 2, payload: JSON.stringify([committed]) }]]));
   const handler = createPresentationApi({ db, env: {}, store, select: (body, options) => {
     calls++;
     return selectPresentation(body, { ...options, random: () => 0.1, fetchImpl: () => assert.fail('Deal frequency must not call a model') });
   } });
   const server = createServer(async (req, res) => { await handler(req, res, '/api/presentation/select', 'frequency-qa'); });
-  t.after(async () => { server.closeAllConnections(); server.close(); db.close(); await rm(directory, { recursive: true, force: true }); });
+  t.after(async () => { server.closeAllConnections(); server.close(); await rm(directory, { recursive: true, force: true }); });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const choose = async () => {
     const response = await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/select`, {

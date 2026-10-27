@@ -1,15 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
-import { readPlayerResults } from '../services/game/player-results.mjs';
+import { readPlayerResults } from '../services/game/storage/async-player-results.mjs';
 import { normalizeProductSpeechEnvelope } from '../packages/director/product-speech.mjs';
 import { projectOpenClawGameStatus } from '../services/game/openclaw-chat.mjs';
 
-test('profile results separate profits, losses, returned stakes, currencies and uncollected play', t => {
-  const db = new DatabaseSync(':memory:'); t.after(() => db.close());
-  db.exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, player_id TEXT, type TEXT, amount REAL, currency TEXT, meta TEXT)');
+// Transaction ledger fake: the query must keep its owner, game and money-type
+// predicates; the fake applies exactly those predicates to the stored rows.
+function ledgerDb() {
+  const transactions = [];
+  return {
+    transactions,
+    prepare(sql) {
+      const query = sql.replace(/\s+/g, ' ');
+      assert.match(query, /^SELECT id, type, amount, currency FROM transactions WHERE player_id=\? /);
+      assert.match(query, / AND meta='server blackjack' /);
+      assert.match(query, / AND type IN \('start','act','insurance','collect'\) /);
+      assert.match(query, / ORDER BY id$/);
+      const types = new Set(['start', 'act', 'insurance', 'collect']);
+      return { all: async playerId => transactions
+        .filter(row => row.player_id === playerId && row.meta === 'server blackjack' && types.has(row.type))
+        .sort((a, b) => a.id - b.id)
+        .map(({ id, type, amount, currency }) => ({ id, type, amount, currency })) };
+    },
+  };
+}
+
+test('profile results separate profits, losses, returned stakes, currencies and uncollected play', async () => {
+  const db = ledgerDb();
   const add = (type, amount, currency = 'USD', player = 'one', meta = 'server blackjack') =>
-    db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta) VALUES (?,?,?,?,?)').run(player,type,amount,currency,meta);
+    db.transactions.push({ id: db.transactions.length + 1, player_id: player, type, amount, currency, meta });
   add('open', 1000, 'USD', 'one', 'starting demo balance');
   add('start', -5); add('collect', 10); // net +5
   add('start', -10); // zero collection is deliberately absent; net -10
@@ -18,21 +37,21 @@ test('profile results separate profits, losses, returned stakes, currencies and 
   add('start', -7, 'EUR'); add('collect', 21, 'EUR');
   add('start', -2000, 'USD', 'other'); add('collect', 4000, 'USD', 'other');
   add('start', -20, 'USD'); add('act', -20); // current uncollected round
-  const result = readPlayerResults(db, 'one', { round: { phase: 'decisions' }, paid: false }, 'USD');
+  const result = await readPlayerResults(db, 'one', { round: { phase: 'decisions' }, paid: false }, 'USD');
   assert.deepEqual(result.currencies, [
     { currency:'USD', rounds:3, won:5, lost:10, net:-5, wagered:27.5, returned:22.5 },
     { currency:'EUR', rounds:1, won:14, lost:0, net:14, wagered:7, returned:21 },
   ]);
   assert.deepEqual(result.currentRound, { currency:'USD', wagered:40, phase:'decisions' });
   assert.deepEqual(result.lastRound, {roundId:'native-ledger-10',currency:'EUR',wagered:7,returned:21,net:14,outcome:'win'});
-  const collected = readPlayerResults(db, 'one', { round: { phase:'settled' }, paid:true }, 'USD');
+  const collected = await readPlayerResults(db, 'one', { round: { phase:'settled' }, paid:true }, 'USD');
   assert.equal(collected.currencies[0].lost, 50);
   assert.equal(collected.currencies[0].net, -45);
   assert.equal(collected.currentRound, null);
   assert.equal(collected.lastRound.net,-40);
   assert.equal(collected.lastRound.outcome,'loss');
-  assert.equal(readPlayerResults(db,'new',{},'SEK').lastRound,null);
-  assert.deepEqual(readPlayerResults(db, 'new', {}, 'SEK').currencies,
+  assert.equal((await readPlayerResults(db,'new',{},'SEK')).lastRound,null);
+  assert.deepEqual((await readPlayerResults(db, 'new', {}, 'SEK')).currencies,
     [{ currency:'SEK', rounds:0, won:0, lost:0, net:0, wagered:0, returned:0 }]);
 });
 

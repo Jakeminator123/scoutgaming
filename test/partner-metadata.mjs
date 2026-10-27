@@ -1,11 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildAssetsManifest} from '../services/game/partner-presentation.mjs';
-import {DatabaseSync} from 'node:sqlite';
 import {createHmac} from 'node:crypto';
 import {Readable} from 'node:stream';
-import {installPartnerApi as sqliteApi} from '../services/game/partner-api.mjs';
 import {installPartnerApi as asyncApi} from '../services/game/storage/async-partner-api.mjs';
+// Postgres-shaped api_keys rows; only the statements the partner API issues are answered.
+function apiKeysDb(){
+  const keys=[];
+  const statements={
+    'INSERT INTO api_keys (id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)':(id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at)=>{
+      if(keys.some(row=>row.id===id||row.key===key))throw Object.assign(Error('duplicate key value'),{code:'23505'});
+      keys.push({id,name,key,secret,scopes,wallet_url,ip_allow,created_by,created_at,last_used:null,revoked_at:null});return {changes:1};},
+    'SELECT * FROM api_keys WHERE key=? AND revoked_at IS NULL':key=>keys.filter(row=>row.key===key&&row.revoked_at===null),
+    'UPDATE api_keys SET last_used=? WHERE id=?':(at,id)=>{const hit=keys.filter(row=>row.id===id);for(const row of hit)row.last_used=at;return {changes:hit.length};},
+  };
+  return {keys,prepare(sql){const answer=statements[sql];if(!answer)throw Error('unexpected SQL: '+sql);
+    return {get:async(...args)=>structuredClone(answer(...args)[0]),all:async(...args)=>structuredClone(answer(...args)),run:async(...args)=>answer(...args)};}};
+}
 test('partner assets use injected exact metadata and preview existence without a local tree',async()=>{
   const calls=[],key='idle-1/speak/goodluck',documents={
     'dealers/astrid/streams/index.json':{codec:'avc1',width:1920,height:1080,clips:{[key]:{file:'speech.h264',fps:30,frameCount:60}}},
@@ -22,11 +33,9 @@ test('catalog errors propagate instead of producing an empty disk fallback',asyn
   await assert.rejects(buildAssetsManifest('missing-local-tree','astrid','',{readMetadata:async()=>{throw Object.assign(Error('catalog unavailable'),{statusCode:503});}}),{statusCode:503});
   assert.throws(()=>buildAssetsManifest('missing-local-tree','unknown'),/unknown dealer/);
 });
-for(const [name,factory,async] of [['SQLite',sqliteApi,false],['Postgres contract',asyncApi,true]])test(`${name} signed assets awaits catalog and redacts read failure`,async t=>{
-  const sqlite=new DatabaseSync(':memory:');t.after(()=>sqlite.close());
-  sqlite.exec('CREATE TABLE api_keys(id TEXT PRIMARY KEY,name TEXT,key TEXT UNIQUE,secret TEXT,scopes TEXT,wallet_url TEXT,ip_allow TEXT,created_by TEXT,created_at TEXT,last_used TEXT,revoked_at TEXT);');
-  const db=async?{prepare(sql){const statement=sqlite.prepare(sql);return Object.fromEntries(['get','all','run'].map(method=>[method,async(...args)=>statement[method](...args)]));}}:sqlite;
-  let failure=false,calls=0;const api=factory({db,boDb:db,root:'missing-local-tree',publicUrl:'https://game.invalid',nativeMode:true,readMetadata:async path=>{await new Promise(resolve=>setImmediate(resolve));calls++;if(failure)throw Error('private database diagnostic');return path.endsWith('/bank.json')?{goodluck:{text:'Saved in Neon'}}:null;}});
+test('Postgres contract signed assets awaits catalog and redacts read failure',async()=>{
+  const db=apiKeysDb();
+  let failure=false,calls=0;const api=asyncApi({db,boDb:db,root:'missing-local-tree',publicUrl:'https://game.invalid',nativeMode:true,readMetadata:async path=>{await new Promise(resolve=>setImmediate(resolve));calls++;if(failure)throw Error('private database diagnostic');return path.endsWith('/bank.json')?{goodluck:{text:'Saved in Neon'}}:null;}});
   const key=await api.keys.create({name:'catalog',scopes:['lobby']});
   const invoke=async(path='/api/v1/assets')=>{const body='{}',ts=String(Math.floor(Date.now()/1000)),req=Readable.from([body]);req.method='POST';req.headers={'x-api-key':key.key,'x-timestamp':ts,'x-signature':createHmac('sha256',key.secret).update(`${ts}.POST.${path}.${body}`).digest('hex')};const res={writeHead(status){this.status=status;},end(value){this.body=JSON.parse(value);}};await api.handle(req,res,path);return res;};
   const good=await invoke();assert.equal(good.status,200);assert.equal(good.body.speech[0].text,'Saved in Neon');assert.equal(calls,5);
