@@ -53,7 +53,7 @@ beskriver sina respektive leveransdatum.
 MERGE4 samordnar aktuell review/CI/merge, UI/UX2 Admin-flödet, HUVUDAGENT6
 backendens startkontrakt och POST-LIPSYNC5 talaktivering, stoppväg och budget.
 Nästa konkreta leverans och verklig driftstatus finns i
-[handoffen](../history/JOHN-HANDOFF-2026-10.md). Rollnamnen ger inget utökat ändrings- eller
+[överlämningen](../NEXT-AGENT.md). Rollnamnen ger inget utökat ändrings- eller
 kostnadsmandat. Produktbegrepp finns endast i
 [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md).
 
@@ -85,7 +85,7 @@ Lipsync-spåret skiljer nu uttryckligen vilotal, tal över exakt utdelningsfilm
 och full produktionsantagning. Cache-/prestandakrav, Emils ZIP, Blob/Neon och
 begränsningen för moving-svarens lagring dokumenteras i den befintliga
 [runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md#rörligt-tal-verifieringsgränser-cache-och-källor--18-oktober-2026).
-Aktuellt prov/leverans ligger endast i [handoffen](../history/JOHN-HANDOFF-2026-10.md#dragan-talstatus);
+Aktuell leverans står i [överlämningen](../NEXT-AGENT.md) och det daterade talprovet i [handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md#dragan-talstatus);
 privata videor och körkvitton är underlag, inte parallella produktregister.
 Mätinstrumenteringen ändrar inte modell, cachebeteende eller bildprotokoll.
 
@@ -104,7 +104,7 @@ engelska svarspolicy och separata historik bevaras; talets språk och dealerns
 svarsspråk är olika kontrakt. Detta ändrar inte serverkort, ekonomi, samtycke,
 profil-/rundkontroller eller lagring. Lokala stubtester provar språktext och
 bildtransport utan leverantörsanrop. Driftstatus och kvarstående prov finns i
-[handoffen](../history/JOHN-HANDOFF-2026-10.md).
+[överlämningen](../NEXT-AGENT.md).
 
 ## Riktad kommunikation och löpande städning — 19 oktober 2026
 
@@ -150,7 +150,7 @@ behålls; gamla manuella kommandon redovisas i verktygsguiden och handoffen.
 Game-koden ligger i services/game. AGENTS beskriver Studios appadaptrar och
 de redan utbrutna gemensamma paketen. Lokala datarötter, medieidentiteter och
 avsiktlig OpenClaw/game-bootstrap består. Ingen ny agentroll, behörighet eller
-automatisk process införs. Leveransstatus finns i [handoffen](../history/JOHN-HANDOFF-2026-10.md).
+automatisk process införs. Leveransstatus finns i [överlämningen](../NEXT-AGENT.md).
 
 ## Gateway-stoppsignal — 18 oktober 2026
 
@@ -158,7 +158,7 @@ Gateway-bootstrap börjar som container-PID 1 och execar befintlig tini efter
 irreversibel uid/gid-sänkning. Tini kör nu som uid/gid 1000 och behåller signalhantering samt reaping;
 mountkontroll, state, modellval och behörigheter behålls. Det isolerade
 containerprovet använder faktisk image/bootstrap/starter och syntetisk CLI
-utan nät. [Handoff](../history/JOHN-HANDOFF-2026-10.md) skiljer lokala tester, CI och drift;
+utan nät. [Handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md) skiljer lokala tester, CI och drift;
 [Render-guiden](openclaw/RENDER-START-SV.md) beskriver första övergången.
 Efter konkret exit127 i Render skiljer guiden dess kommandosträng utan
 omslutande citattecken från Docker-provets argv; faktisk driftverifiering
@@ -179,7 +179,7 @@ aktiveringsval ändras inte.
 Companion-logiken. Appar äger miljöfilläsning och väljer datakataloger;
 Director-tjänsten behåller HTTP, Gateway och signering. Inga providerroller,
 verktygsbehörigheter eller miljöprioriteter ändras. Lokalt verifieringskvitto
-och återstående integrationskontroller finns i [handoffen](../history/JOHN-HANDOFF-2026-10.md).
+och dåvarande återstående integrationskontroller finns i [handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md).
 
 ## Lokal pingkö — 17 oktober 2026
 
@@ -195,7 +195,7 @@ Olika checkouter har fortfarande separata tavlor.
 ## Strukturfas avslutad — 17 oktober 2026
 
 PR188 och PR190 är mergade och driftsatta; slutkvitto och parallella
-chattägare finns i [handoffen](../history/JOHN-HANDOFF-2026-10.md). Äldre uppgifter nedan
+chattägare finns i [handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md). Äldre uppgifter nedan
 om pågående integration beskriver sina dåvarande versioner.
 Fasens tillfälliga kördokument och utkast avvecklas. Befintliga guider
 uppdateras i stället för att skapa en ny tracker eller slutrapport.
@@ -218,7 +218,7 @@ dåvarande prov och skapar inga nya krav på ett visst antal spel.
 
 Aktuell status och återstående arbete finns överst i
 [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
-[JOHN-HANDOFF](../history/JOHN-HANDOFF-2026-10.md). Följ [AGENTS.md](../../AGENTS.md) för
+[NEXT-AGENT](../NEXT-AGENT.md). Följ [AGENTS.md](../../AGENTS.md) för
 mandat, ägarskap, verifiering och merge-/driftgränser. Daterade kvitton nedan
 beskriver sina dåvarande versioner och öppnar inte avslutade migrationssteg.
 
@@ -332,7 +332,7 @@ Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
 spelningar; detta är funktion, inte ny läppsynksacceptans. Dragan v4 väntar
 på uttryckligt tillstånd att också kopiera den privata spelarkoden till
 den tillfälliga sandlådan efter automatisk säkerhetsgransknings avslag.
-Se [aktuell handoff](../history/JOHN-HANDOFF-2026-10.md). Äldre daterade kvitton nedan är historik.
+Se [aktuell överlämning](../NEXT-AGENT.md). Äldre daterade kvitton nedan är historik.
 
 Uppföljning 13 oktober: PR #103 med publik Scoutguide och befintlig D-ID-agent
 är mergad (`b2dda8ab`), med grön main-CI och Vercel production READY.
@@ -667,7 +667,7 @@ Detta är den kanoniska översikten över AI-agenternas flöden. Uppdatera denna
 fil när ingång, modell, roll, behörighet, datakälla eller avatarväg ändras och
 lägg en kort daterad rad i ändringsloggen. Leveransstatus och acceptans ägs
 fortfarande av [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
-[handoffen](../history/JOHN-HANDOFF-2026-10.md); detta är ingen separat migrationslista.
+[överlämningen](../NEXT-AGENT.md); detta är ingen separat migrationslista.
 [Miljövariabler](../ENVIRONMENT-VARIABLES.md),
 [OpenClaws guider](openclaw/README.md) och
 [kunskapspaketet](../../services/openclaw/lab/deploy/runtime-bundle/README.md)

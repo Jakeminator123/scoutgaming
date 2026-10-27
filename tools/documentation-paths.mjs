@@ -28,12 +28,12 @@ const guides = new Set([
   "tools/media/README.md"
 ]);
 // Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, the cloud
-// runbooks directly in ops/cloud/, and dated history (Markdown and JSON receipts) under docs/history/
-// once the planned history move lands; scripts or other files placed there stay strict.
+// runbooks directly in ops/cloud/, and dated history (Markdown, JSON receipts and plain-text notes)
+// under docs/history/; scripts or other files placed there stay strict.
 const proseFolders = [
   /^(?:docs|apps\/studio\/docs|migrering)\/.+\.md$/,
   /^ops\/cloud\/[^/]+\.md$/,
-  /^docs\/history\/.+\.(?:md|json)$/,
+  /^docs\/history\/.+\.(?:md|json|txt)$/,
 ];
 
 export function isDocumentationPath(path) {

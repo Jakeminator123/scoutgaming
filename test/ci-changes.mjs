@@ -10,7 +10,7 @@ import { ciScope, ciSelection, documentationOnly, parseDiff, migrationReadinessR
 
 const change = (path, extra = {}) => ({ path, before: '100644', after: '100644', status: 'M', ...extra });
 test('only ordinary prose qualifies; runtime, config, mixed changes and file types run full CI', () => {
-  assert.equal(documentationOnly([change('docs/JOHN-HANDOFF.md'), change('apps/studio/docs/TERMINOLOGI.md')]), true);
+  assert.equal(documentationOnly([change('docs/history/JOHN-HANDOFF-2026-10.md'), change('apps/studio/docs/TERMINOLOGI.md')]), true);
   for (const path of ['.github/workflows/croupier.yml', 'docs/environment-variables.json',
     'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'services/game/public/docs/partner-api.md',
     'docs/../web/app.md', 'docs\\guide.md', '.githooks/pre-commit-full', 'apps/studio/app/page.tsx']) {
@@ -32,7 +32,7 @@ test('Moving image verification follows worker and its workflow changes, includi
   }
   // CI plumbing edits do not rebuild the GPU image; Actions validates the workflow_call.
   for (const path of ['.github/workflows/croupier.yml', 'tools/ci-changes.mjs', '.githooks/pre-commit-full',
-    'docs/JOHN-HANDOFF.md', 'apps/studio/components/editor.tsx', 'test/rooms.mjs']) {
+    'docs/NEXT-AGENT.md', 'apps/studio/components/editor.tsx', 'test/rooms.mjs']) {
     assert.equal(movingWorkerRequired([change(path)]), false, path);
   }
   assert.equal(movingWorkerRequired([]), true);
@@ -46,7 +46,8 @@ test('local and CI prose selection share reviewed guides and prose folders while
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
     'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/SAMARBETE-OCH-ATKOMST.md', 'migrering/new-runtime.md',
     'START-HERE.md', 'inbox/README.md', 'ops/cloud/README.md', 'ops/cloud/RENDER-V3.md',
-    'docs/history/2026-10-27-j08-staging-acceptance.md', 'docs/history/2026-10-27-receipt.json']) {
+    'docs/history/2026-10-27-j08-staging-acceptance.md', 'docs/history/2026-10-27-receipt.json',
+    'docs/history/2026-10-19-plain-language-note.txt']) {
     assert.equal(documentationOnly([change(path)]), true, path);
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'documentation', path);
@@ -244,8 +245,8 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     assert.equal(ciScope({cwd:shallow,env:prEnv()}),'documentation');
     rmSync(shallow,{recursive:true,force:true});
     git('checkout','-qb','migration-docs');
-    mkdirSync(join(root,'migrering','jakob-main-migrering'),{recursive:true});
-    for (const path of ['docs/JOHN-HANDOFF.md','docs/NEXT-AGENT.md','migrering/MASTERPLAN.md',
+    mkdirSync(join(root,'migrering','jakob-main-migrering'),{recursive:true}); mkdirSync(join(root,'docs','history'));
+    for (const path of ['docs/history/JOHN-HANDOFF-2026-10.md','docs/NEXT-AGENT.md','migrering/MASTERPLAN.md',
       'migrering/STATUS.md','migrering/jakob-main-migrering/AKTIVITETER.md']) put(path,'reviewed report\n');
     put('migrering/status.json','{}\n'); commit('six migration report files');
     git('checkout','main'); git('merge','--no-ff','migration-docs','-m','test report merge');

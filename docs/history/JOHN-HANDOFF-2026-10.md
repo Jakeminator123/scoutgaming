@@ -375,7 +375,7 @@ Nästa avgränsade leverans sätter gatewayens keep-alive och headertimeout till
 
 Den döda emissionen av `CROUPIER_LISSABON_PROFILES` och dess källsträngslås tas bort. Next-tracingprovet läser nu utvärderad konfiguration och omdirigeringar i stället för att kräva en viss citat-/arraynotation. Befintliga datakatalogval, aktiva auth-/isoleringsprov och molnets nekande av den pensionerade flaggan består. `ops/cloud/README.md` beskriver nu en spelprocess i Render v3 samt Vercel/Neon/privat Blob. Historisk exportkod är separat konsumentgranskad före eventuell avveckling; inga gamla data eller säkerhetskopior raderas.
 
-[K05:s implementationsmatris](../../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-native-materialbindning-för-delad-spelkonfiguration) är reviderad efter förnyad granskning: fryst inspelat tal saknar verifierat ljudslut. Ny serverägd mätning av oförändrade Blob-bytes och ett bevisat sekvensbudgetkontrakt måste föregå native-materialproducenten. Inga nya medieregister, återkonstruerade godkännanden eller påhittade tider införs. Detta är kvarvarande implementation, inte en begäran om enbart manuell visuell sign-off.
+[K05:s implementationsmatris](../../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-verifiera-den-implementerade-materialbindningen) är reviderad efter förnyad granskning: fryst inspelat tal saknar verifierat ljudslut. Ny serverägd mätning av oförändrade Blob-bytes och ett bevisat sekvensbudgetkontrakt måste föregå native-materialproducenten. Inga nya medieregister, återkonstruerade godkännanden eller påhittade tider införs. Detta är kvarvarande implementation, inte en begäran om enbart manuell visuell sign-off.
 
 
 ## Borttagen implicit lokal administratör — 25 oktober kväll

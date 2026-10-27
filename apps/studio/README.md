@@ -528,7 +528,7 @@ Ansluten chatt går via originalets autentiserade produktchatt och serverbundna
 konversationsminne. Spelfliken äger uppspelningen och Lab följer dess kvitton;
 originalförvalen återanvänder produktens mediespelarmoduler. Fristående event-
 och chattprov har separat provkontext. Detta innebär inte att full P6-acceptans
-eller mänsklig take-/läppsynkgranskning är klar; se [handoffen](../../docs/history/JOHN-HANDOFF-2026-10.md).
+eller mänsklig take-/läppsynkgranskning är klar; se [överlämningen](../../docs/NEXT-AGENT.md).
 
 ### Samstämmighet med Croupier
 

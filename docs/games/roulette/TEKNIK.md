@@ -117,7 +117,7 @@ och reducerad rörelse. Röd/svart ska kunna förstås utan enbart färg.
 Rundans utfall och saldo visas först från serverns bekräftade kvitto.
 
 Aktuell leverans, Nordic Bets exempelrum och den samordnade dealerfrågan finns
-i `docs/JOHN-HANDOFF.md`. Hårdkoda inte PAOW eller en annan dealer i gränssnittet.
+i [NEXT-AGENT](../../NEXT-AGENT.md) och historiken i [docs/history](../../history/README.md). Hårdkoda inte PAOW eller en annan dealer i gränssnittet.
 
 ## Anna: tal och rörlig läppsynk, 14 oktober 2026
 

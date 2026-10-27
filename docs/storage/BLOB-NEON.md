@@ -6,7 +6,7 @@ referensskydd är implementerade på arbetsbranchen; molnworkern förbereds sepa
 Det betyder inte att produktionsimport eller rörligt tal i spelet är aktiverat.
 Produkttermer ägs av [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), tekniska
 runtimekontrakt av [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md)
-och leveransstatus av [handoffen](../history/JOHN-HANDOFF-2026-10.md).
+och leveransstatus av [överlämningen](../NEXT-AGENT.md).
 Ingen ny parallell tracker skapas.
 
 ## Beslut och avgränsning
@@ -343,7 +343,7 @@ bankoriginal, profilrevision, publicerat paket och ett eget RunPod-jobb. Optiona
 migration 013 sparar dessa referenser och en beständig totalbudget; vanlig
 medieradering tar hänsyn till dem. Funktionen är avstängd tills schema, privat
 workerimage, bank och separat testmiljö har verifierats. Aktuell leveransstatus
-och återstående driftprov finns i [handoff](../history/JOHN-HANDOFF-2026-10.md).
+och återstående driftprov finns i [överlämningen](../NEXT-AGENT.md).
 
 Jakob har valt ett separat Dragan-testrum utan att återöppna pausade operatörer.
 Första liveprovet använder bankens explicita vilobild mellan kortsekvenser.

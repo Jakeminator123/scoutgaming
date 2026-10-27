@@ -42,7 +42,7 @@ Main har nu native materialresolver, serverägd tidsmätning och strikt `recorde
 
 V1:s ljud-/index-/kalibreringskrav gäller fortfarande dess befintliga format. De ska inte fabriceras för V2:s inbäddade MP4-ljud. V30-readiness krävs för V2, även dess pending-metadata. Det finns inget generellt krav att omgodkänna oförändrade original, men Jakobs uttryckliga begäran om PAOW-omkontroll gäller här. Saknad spårbarhet till exakt original måste lösas före publicering.
 
-De tidigare 78 transport-/intagskontrollerna och 30 draft/CAS-kontrollerna gäller sina historiska versioner och syntetiska underlag, inte nuvarande materialacceptans. Se [K06/K07-underlaget](../K06-K07/K06-K07-forberedelse.md) och [aktuell överlämning](../../../docs/history/JOHN-HANDOFF-2026-10.md). Utförandestatus kvarstår endast i `migrering/status.json`.
+De tidigare 78 transport-/intagskontrollerna och 30 draft/CAS-kontrollerna gäller sina historiska versioner och syntetiska underlag, inte nuvarande materialacceptans. Se [K06/K07-underlaget](../K06-K07/K06-K07-forberedelse.md) och [aktuell överlämning](../../../docs/NEXT-AGENT.md). Utförandestatus kvarstår endast i `migrering/status.json`.
 
 ## 1. Kort: så fungerar Kevins system
 

@@ -1,7 +1,7 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
 Kevin-planen avstämd 25 oktober 2026. Övriga delkvitton är daterade var för sig; detta är produktens övergripande migrationsöversikt.
-Aktuell överlämning och nästa leverans finns i [NEXT-AGENT](NEXT-AGENT.md); daterade kvitton i [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md).
+Aktuell överlämning och nästa leverans finns i [NEXT-AGENT](NEXT-AGENT.md); daterade kvitton i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
 
@@ -249,7 +249,7 @@ dygnstaket för GPU-reservationer 20 → 40 USD på Jakobs beslut och är
 tills den är applicerad. Appliceras med `node tools/check-migration-readiness.mjs
 --apply` (`CROUPIER_MIGRATION_CONFIRM=apply-pending`); därefter höjs själva
 policyraden med `journal.amendBudgetPolicy` och dess bekräftelse. Status för
-produktion står i `docs/JOHN-HANDOFF.md`.
+produktion står i [NEXT-AGENT](NEXT-AGENT.md).
 
 Migration 019 (`019-trial-budget-ceilings.sql`, 21 oktober 2026) vidgar på
 samma sätt grantens CHECK-gränser (moving_speech_bindings och

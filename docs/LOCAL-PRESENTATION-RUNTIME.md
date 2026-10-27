@@ -36,7 +36,7 @@ Om webbläsaren nekar ljudsatt tal innan spelaren har interagerat med sidan visa
 
 Materialproducent, publiceringsvalidator, launch och delad rumsåtkomst använder samma paketbundna val: rätt rums `roomOverrides` före tillämplig operatörsstandard och därefter mallens standard, alltid inom publicerad allowlist och operatörens rum. Saknat eller otillåtet material stoppar urvalet. Operatörens befintliga `dealer: null` rensar dess standard; ett ogiltigt uttryckligt rumsval ger ingen fallback. I ett rum med publicerad J08-konfiguration nekas avvikande `?dealer=` före klientstart. Rum utan publicerad spelkonfiguration behåller sitt tidigare tillåtna queryurval.
 
-Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell handoff](history/JOHN-HANDOFF-2026-10.md).
+Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell överlämning](NEXT-AGENT.md).
 
 ## PAOWs 24 viloklipp
 
@@ -242,7 +242,7 @@ svar importerade och återlästa. Katalogen innehåller 760 layoutposter,
 fullständigt hashverifierade. Samtliga 79 medieposter och tre dokument är
 oförändrade. Detta återger huvudagentens kontroll, inte ett nytt prov.
 Uppgifterna ovan är det daterade migrationskvittot, inte dagens deployversion. Följ
-[CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md)
+[CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [NEXT-AGENT](NEXT-AGENT.md)
 för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
 tidigare implementationen och ersätts av detta kontrakt.
 
@@ -540,7 +540,7 @@ exekverings-/callbackstandarder är oförändrade. Dessa kodgränser är lokalt
 provade men utgör inte ett nytt verifierat molntalprov.
 RunPods [uppstartsbeskrivning](https://docs.runpod.io/serverless/development/optimization)
 skiljer imagehämtning från modellstart. Tjänsternas olika roller och env-profiler
-beskrivs i [miljöguiden](ENVIRONMENT-VARIABLES.md#läsande-jämförelse-17-oktober-2026).
+beskrivs i [miljöguiden](ENVIRONMENT-VARIABLES.md#historisk-läsande-jämförelse-17-oktober-2026).
 
 `services/game/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
@@ -821,7 +821,7 @@ genom PR199/201/203 och migration013. Containerbygge och CPU-prov passerade
 release `57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
 Verklig tal-/läppsynksacceptans återstår efter det misslyckade molnprovet ovan.
 [Storage-guiden](storage/BLOB-NEON.md) skiljer importunderlag från applicerade
-registerändringar; [handoffen](history/JOHN-HANDOFF-2026-10.md) anger aktuell fortsättning.
+registerändringar; [överlämningen](NEXT-AGENT.md) anger aktuell fortsättning.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
@@ -2432,7 +2432,7 @@ Aktiv spelmotor är Render `croupier-v3`, verifierad 24 oktober 2026 mot
 rätt repo, main och avstängd automatisk deploy. Tidigare `croupier-v2`
 raderades 27 oktober 2026. Exakta resurs-ID:n och återgångsordning finns i
 [återställningsguiden](ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
-QA-gränser och runtimeacceptans i [handoffen](history/JOHN-HANDOFF-2026-10.md).
+QA-gränser och runtimeacceptans i [överlämningen](NEXT-AGENT.md).
 
 **Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
@@ -2446,7 +2446,7 @@ Workerns socket går via samma publika ingress. Ingresshemligheten lämnar inte
 Render, och en redan betald GPU-session stängs efter 60 sekunders tystnad.
 
 Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
-[handoffen](history/JOHN-HANDOFF-2026-10.md). QA:s AI-flaggor är OFF; journaler och
+[överlämningen](NEXT-AGENT.md). QA:s AI-flaggor är OFF; journaler och
 reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Tre produktytor och äldre runtimeadresser
@@ -2766,7 +2766,7 @@ Spelaren kräver `local` eller `layered`. Ingen automatisk videofallback införs
 Källkontrakt: `packages/presentation/contracts/game-selection.mjs`; definitioner och ID-validering finns i samma pakets `game-lanes.mjs` och `game-lane-id.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
-[JOHN-HANDOFF.md](history/JOHN-HANDOFF-2026-10.md).
+[NEXT-AGENT.md](NEXT-AGENT.md).
 
 
 ## Kamera och mikrofon

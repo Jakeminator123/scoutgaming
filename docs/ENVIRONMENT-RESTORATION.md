@@ -640,7 +640,7 @@ i fullhook/CI och Next-bygget; dess tidigare undertryckta alpha-kontraktsfel
 
 Produktionens gemensamma Neon-policy, dataimport och diskfria drift är verifierade.
 Den tidigare produktdisken och tolv ersatta Blobobjekt är avvecklade. Aktuella
-versioner, paritetskvitton och kvarvarande acceptans finns i [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md).
+versioner, paritetskvitton och kvarvarande acceptans finns i [NEXT-AGENT](NEXT-AGENT.md).
 QA:s separata data, SDK och journaler bevaras med AI/GPU OFF.
 
 Full extern produktdiskbackup finns i
@@ -888,4 +888,4 @@ visuell granskning. Upprepade spelningar krävs bara för beteenden som beror
 på upprepning; det finns inget generellt krav på två spelningar.
 Hash, waveform, första munrörelse och tester godkänner inte synk/kortkontakt.
 Uppdatera endast avsiktligt granskade baselineposter med per-line-resultat.
-Kända kvarvarande fel: [JOHN-HANDOFF.md](history/JOHN-HANDOFF-2026-10.md).
+Kända kvarvarande fel: [NEXT-AGENT.md](NEXT-AGENT.md).

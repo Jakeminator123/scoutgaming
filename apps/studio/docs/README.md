@@ -937,7 +937,7 @@ förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
-Aktuellt arbete och kvarvarande QA finns i [handoffen](../../../docs/history/JOHN-HANDOFF-2026-10.md). Nya sprintdokument är pausade.
+Aktuellt arbete och kvarvarande QA finns i [överlämningen](../../../docs/NEXT-AGENT.md). Nya sprintdokument är pausade.
 
 ## Material och granskningsregler
 

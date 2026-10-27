@@ -13,7 +13,7 @@ const mode = changes => verificationMode(changes, { env: {} });
 
 test('documentation and indexing-only changes use quick checks', () => {
   assert.equal(mode([
-    change('docs/JOHN-HANDOFF.md'), change('README.md'),
+    change('docs/history/JOHN-HANDOFF-2026-10.md'), change('README.md'),
     change('.ignore'), change('.cursorindexingignore'),
     change('docs/obsolete.md', 'D'),
   ]), 'documentation');
@@ -59,14 +59,14 @@ test('local code and deletions use focused checks; only CI or explicit full runs
     '.agents/skills/ping-croupier/SKILL.md', 'package.json',
     'docs/../web/player.md', 'docs\\guide.md',
   ]) {
-    assert.equal(mode([change('docs/JOHN-HANDOFF.md'), change(path, 'D')]), 'focused', path);
+    assert.equal(mode([change('docs/NEXT-AGENT.md'), change(path, 'D')]), 'focused', path);
   }
   assert.equal(mode([change('docs/README.md', 'T')]), 'focused', 'symlink/type changes');
   assert.deepEqual(checkPlan(mode([])), [['git', 'diff', '--cached', '--check']], 'empty index needs no full build');
 });
 
 test('CI and explicit --full cannot take the quick path', () => {
-  const changes = [change('docs/JOHN-HANDOFF.md')];
+  const changes = [change('docs/NEXT-AGENT.md')];
   for (const options of [{ env: { CI: 'true' } }, { env: { GITHUB_ACTIONS: 'true' } }, { forceFull: true, env: {} }]) {
     assert.equal(verificationMode(changes, options), 'full');
   }

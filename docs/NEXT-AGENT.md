@@ -1,6 +1,6 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 27 oktober 2026, kväll, efter PR #442–#445. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md).
+Uppdaterad 27 oktober 2026, kväll, efter PR #442–#445. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [history/JOHN-HANDOFF-2026-10.md](history/JOHN-HANDOFF-2026-10.md); övrig historik i [docs/history](history/README.md).
 
 ## Läget i en skärm
 

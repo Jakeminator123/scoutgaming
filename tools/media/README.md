@@ -29,7 +29,7 @@ mediematerial och den aktiva `dealerVersionPath`-adaptern behålls.
 ## Före användning
 
 - Läs [den tekniska referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md),
-  [handoffen](../../docs/history/JOHN-HANDOFF-2026-10.md) och
+  [överlämningen](../../docs/NEXT-AGENT.md) och
   [återställningsreglerna](../../docs/ENVIRONMENT-RESTORATION.md) för mediearbete.
   Spelformat och låsta lager beskrivs i [spelguiden](../../docs/games/README.md).
 - Shellrecepten kräver FFmpeg/FFprobe; `encode.sh`
