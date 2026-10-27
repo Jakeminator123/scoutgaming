@@ -293,12 +293,12 @@ Källsökningen verifierar inte externa jobb, driftdata eller deployade beroende
 
 ## J10 — Ren klon, start och återställning
 
-**Etapp:** E5. **Beroenden:** J06, J09, K06. K07 kan gå parallellt med egna resurser; båda möts i O02.
+**Etapp:** E5. **Beroenden:** J06, J09. K06:s implementerade publicerings-/launchkontrakt används och verifieras i J10:s representativa kedja; full fält-, material-/AV- och samtidighetsacceptans kvarstår i K06/K07/O02. K07 går parallellt med egna resurser; båda möts i O02. Förkunskapen reviderad27 oktober efter kod- och bevisgranskning, utan ändrade slutkrav eller vikter.
 **Mål:** kandidaten kan byggas, startas, återstartas och återställas från dokumenterade ingångar utan ignorerad lokal produktdata.
 
-- [ ] Använd ren klon av fryst kandidat med låsfiler och verifierad Node; kopiera inga lokala databaser, mediaregister, cache/junctions eller hemligheter från arbetscheckouten.
-- [ ] Tillför enbart dokumenterad isolerad konfiguration, godkända testresurser och explicit fixturedata. Inventera behov av ignorerad metadata snävt; skydda privata original och .ignore.
-- [ ] Kör installation/build/start, ett relevant Admin → publicering → lobby → launch-flöde, omstart och kompatibel rollback/restore. Registrera ägarskap och stäng egna temporära processer/flikar när provet är färdigt.
+- [x] Använd ren klon av fryst kandidat med låsfiler och verifierad Node; kopiera inga lokala databaser, mediaregister, cache/junctions eller hemligheter från arbetscheckouten.
+- [x] Tillför enbart dokumenterad isolerad konfiguration, godkända testresurser och explicit fixturedata. Inventera behov av ignorerad metadata snävt; skydda privata original och .ignore.
+- [x] Kör installation/build/start, ett relevant Admin → publicering → lobby → launch-flöde, omstart och kompatibel rollback/restore. Registrera ägarskap och stäng egna temporära processer/flikar när provet är färdigt.
 **Startfiler:** `ops/cloud/Dockerfile.game`, `ops/cloud/start.mjs`, Vercels befintliga tjänstkonfiguration och berörda package-/lockfiler, `tools/run-shared-table-qa.mjs` (isolerat fullbackup-/restoreprov med PostgreSQLs verktyg), [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md) och [miljöregistret](../../docs/ENVIRONMENT-VARIABLES.md).
 **Radera:** kvarvarande bevisat obehövliga byggrester, döda startinstruktioner och produktberoenden till lokala filer; rensa endast uppgiftsägda provresurser. För osäkra privata rester gäller avgränsad återhämtningsbedömning, ingen massrensning.
 **Klart/verifiera:** en annan granskare kan upprepa den dokumenterade kedjan från samma SHA; inga dolda lokala läsare eller automatiska produktfallbacks används. Exakta schema-/releasepar för återställning finns. O02 gör oberoende integrerat samprov och O03 verifierar faktisk drift.

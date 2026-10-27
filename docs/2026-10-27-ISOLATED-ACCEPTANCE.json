@@ -5,9 +5,9 @@
   "codeSha": "d53b349a7dc14060de8283a343681569a089805e",
   "cloud": "https://chatgpt.com/local/01a17c9f-b370-71f3-bb91-eadcc2a0e060",
   "progress": {
-    "verified": 12,
-    "percent": 60,
-    "changed": false,
+    "verified": 13,
+    "percent": 65,
+    "changed": true,
     "total": 20,
     "source": "migrering/status.json"
   },
@@ -17,7 +17,7 @@
     "independentReview": "no blockers",
     "commitOptionalSkipped": 1,
     "clientPassed": 43,
-    "fullCi": "pending"
+    "fullCi": "PR421 CI40480027938 and PR422 CI40482750709 success; documentation-only final PR recorded in status.json"
   },
   "j08": {
     "avApproved": false,
@@ -34,19 +34,20 @@
   },
   "j10": {
     "restoredHttpPassed": 16,
-    "ledgerRowContentHashVerified": false,
-    "dependenciesUnchanged": true,
+    "ledgerRowContentHashVerified": true,
+    "dependenciesUnchanged": false,
     "frozenPlayerId": "335c6ba0-dd24-4238-bd30-337f11eaa7ad",
     "gameVersion": 4,
     "balance": 995,
-    "fullActivityAccepted": false,
+    "fullActivityAccepted": true,
     "beforeAfterEqual": true,
     "stateSha256": "d30f16e22eeaa9e78e03624b484c5e8e4c3c9434a3112485cf3d59a71a1c62ce",
     "cleanAuthenticatedCloneBuildStart": "passed",
     "currency": "USD",
     "lastInputSha256": "af3f514bf69948cbb882efc0dea73ae7d20d260519275f056c28610f4313784b",
     "presentationSha256": "9c0f8073aec003ab3531899259b85bacc2b838d99deae08748de5627227cd48f",
-    "ledgerCount": 2
+    "ledgerCount": 2,
+    "ledgerHashScope": "Current source/restore parity from cloudVerification, not historical pre/post replay hash"
   },
   "returnedStaging": {
     "roomCount": 3,
@@ -359,6 +360,549 @@
       "ciConclusion": "success",
       "gitGuardianCheck": "success",
       "gitGuardianIncidentCoverage": "not independently read"
+    }
+  },
+  "originalHandoff": {
+    "progress": {
+      "verified": 12,
+      "percent": 60,
+      "changed": false,
+      "total": 20,
+      "source": "migrering/status.json"
+    },
+    "tests": {
+      "apiPassed": 54,
+      "commitPassed": 98,
+      "independentReview": "no blockers",
+      "commitOptionalSkipped": 1,
+      "clientPassed": 43,
+      "fullCi": "pending"
+    },
+    "j10": {
+      "restoredHttpPassed": 16,
+      "ledgerRowContentHashVerified": false,
+      "dependenciesUnchanged": true,
+      "frozenPlayerId": "335c6ba0-dd24-4238-bd30-337f11eaa7ad",
+      "gameVersion": 4,
+      "balance": 995,
+      "fullActivityAccepted": false,
+      "beforeAfterEqual": true,
+      "stateSha256": "d30f16e22eeaa9e78e03624b484c5e8e4c3c9434a3112485cf3d59a71a1c62ce",
+      "cleanAuthenticatedCloneBuildStart": "passed",
+      "currency": "USD",
+      "lastInputSha256": "af3f514bf69948cbb882efc0dea73ae7d20d260519275f056c28610f4313784b",
+      "presentationSha256": "9c0f8073aec003ab3531899259b85bacc2b838d99deae08748de5627227cd48f",
+      "ledgerCount": 2
+    },
+    "returnedStaging": {
+      "roomCount": 3,
+      "vercelReady": true,
+      "database": "croupier_staging",
+      "renderDeployment": "dep-dbg6ifafngtc738rj7hg",
+      "renderLiveBeforeStop": true,
+      "suspendedAt": "2026-10-27T09:12:10.031Z",
+      "vercelDeployment": "dpl_D6Vv7EK66NaLRD7o2HWpLo6cVaTN",
+      "operatorCount": 2,
+      "suspended": true,
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "mediaCount": 47,
+      "projectInventoryOperatorsRoomsLifecycleExact": true,
+      "httpPassed": 6,
+      "sourceParityCompletedAt": "2026-10-27T09:11:24.090Z"
+    }
+  },
+  "webviewVerification": {
+    "observedAt": "2026-10-27T10:37:01.820Z",
+    "owner": "root-j10-webview",
+    "scope": "Synthetic native single-player demo; no real funds, production writes or AV approval",
+    "frontend": {
+      "sha": "d53b349a7dc14060de8283a343681569a089805e",
+      "deployment": "dpl_D6Vv7EK66NaLRD7o2HWpLo6cVaTN",
+      "status": "READY"
+    },
+    "backend": {
+      "sha": "c9165d8519d05e0c360e53e2ac3d0a12d99537a7",
+      "deployment": "dep-dbg7qnd9fdbs73d1he80",
+      "statusBeforeStop": "live",
+      "liveAt": "2026-10-27T10:32:15.429019Z"
+    },
+    "productCodeUnchanged": [
+      "docs/2026-10-27-ISOLATED-ACCEPTANCE.json",
+      "docs/ENVIRONMENT-RESTORATION.md",
+      "docs/JOHN-HANDOFF.md",
+      "docs/NEXT-AGENT.md",
+      "migrering/STATUS.md",
+      "migrering/status.json"
+    ],
+    "publication": {
+      "method": "Actual Admin UI: Spelbolag & rum → Lägg till spel, saved PAOW scene → public lobby → Spela → ordinary player login",
+      "operator": "qa-k06k07-9dd2d3a4-a",
+      "roomId": "room-bf0fdd42-8231-b27b-c523-38199de8b798",
+      "presentationLaneId": "paow-isolated-review-20261026",
+      "packageBefore": 3,
+      "packageAfter": 4,
+      "projectRevision": "studio-bc641d5d-0304-4009-ac1f-51ba7a13ddf7",
+      "administrationRevision": "studio-2daade1d-f696-44ca-b651-4bd674fe4aa5",
+      "entries": [
+        {
+          "path": "/game?game=blackjack&dealer=paow&table=room-bf0fdd42-8231-b27b-c523-38199de8b798&operator=qa-k06k07-9dd2d3a4-a",
+          "operator": "qa-k06k07-9dd2d3a4-a",
+          "roomId": "room-bf0fdd42-8231-b27b-c523-38199de8b798",
+          "packageRevision": 4,
+          "dealer": "paow",
+          "lane": "room-lane-aea6414761bc19e064df5353"
+        },
+        {
+          "path": "/play/blackjack?dealer=paow&table=room-bf0fdd42-8231-b27b-c523-38199de8b798&operator=qa-k06k07-9dd2d3a4-a",
+          "operator": "qa-k06k07-9dd2d3a4-a",
+          "roomId": "room-bf0fdd42-8231-b27b-c523-38199de8b798",
+          "packageRevision": 4,
+          "dealer": "paow",
+          "lane": "room-lane-aea6414761bc19e064df5353"
+        }
+      ],
+      "calls": [
+        {
+          "path": "/__cloud/health",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/__cloud/version",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/auth/player/login",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/api/auth/session",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/player",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/api/history",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/api/operators/qa-k06k07-9dd2d3a4-a/rooms",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/game",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/play/blackjack",
+          "method": "GET",
+          "status": 308
+        },
+        {
+          "path": "/game",
+          "method": "GET",
+          "status": 200
+        }
+      ]
+    },
+    "gameplay": {
+      "playerId": "b7c8e3d6-2ce4-43c9-a132-7b226f023fbb",
+      "browserActions": [
+        "Choose 5 demo credits, box 4",
+        "DEAL NOW",
+        "Player 7 diamonds + 7 spades = 14; dealer shows 8 diamonds",
+        "STAND",
+        "Automatic settlement: stake5, return0, net-5",
+        "Reload: balance995, no active hand"
+      ],
+      "before": {
+        "balance": 1000,
+        "gameVersion": 0,
+        "ledgerRows": 1
+      },
+      "after": {
+        "balance": 995,
+        "gameVersion": 3,
+        "ledgerRows": 2
+      },
+      "history": {
+        "scope": "saved-demo-profile",
+        "accounting": "collected-rounds",
+        "currencies": [
+          {
+            "currency": "USD",
+            "rounds": 1,
+            "won": 0,
+            "lost": 5,
+            "net": -5,
+            "wagered": 5,
+            "returned": 0
+          }
+        ],
+        "lastRound": {
+          "currency": "USD",
+          "wagered": 5,
+          "returned": 0,
+          "net": -5,
+          "outcome": "loss"
+        },
+        "currentRound": null
+      },
+      "sql": "SELECT p.id,p.status,p.balance,p.currency,(SELECT (state::jsonb->>'version')::int FROM croupier_game.blackjack_tables WHERE player_id=p.id) AS game_version,(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM croupier_game.transactions t WHERE t.player_id=p.id) AS ledger FROM croupier_game.players p WHERE p.id IN ('b7c8e3d6-2ce4-43c9-a132-7b226f023fbb','335c6ba0-dd24-4238-bd30-337f11eaa7ad')",
+      "ledger": [
+        {
+          "id": 6,
+          "type": "open",
+          "amount": 1000,
+          "currency": "USD",
+          "meta": "starting demo balance",
+          "at": "2026-10-27T10:32:24.837Z",
+          "source_key": null,
+          "source_fingerprint": null
+        },
+        {
+          "id": 7,
+          "type": "start",
+          "amount": -5,
+          "currency": "USD",
+          "meta": "server blackjack",
+          "at": "2026-10-27T10:35:07.101Z",
+          "source_key": null,
+          "source_fingerprint": null
+        }
+      ],
+      "frozenRestorePlayerUnchanged": {
+        "id": "335c6ba0-dd24-4238-bd30-337f11eaa7ad",
+        "balance": 995,
+        "version": 4,
+        "ledgerRows": 2
+      },
+      "sqlObservedDate": "2026-10-27"
+    },
+    "cleanup": {
+      "at": "2026-10-27T11:21:58.833Z",
+      "origin": "https://croupier-k06-k07-staging.vercel.app",
+      "room": {
+        "gameLaneId": "room-lane-aea6414761bc19e064df5353",
+        "id": "room-bf0fdd42-8231-b27b-c523-38199de8b798",
+        "name": "SYNTETISK J10 webview 2026-10-27",
+        "operatorId": "qa-k06k07-9dd2d3a4-a",
+        "presentationLaneId": "paow-isolated-review-20261026",
+        "schemaVersion": 2,
+        "state": "archived",
+        "archivedAt": "2026-10-27T11:20:34.601Z",
+        "packageRevision": 5,
+        "published": false,
+        "canArchive": false,
+        "canRestore": true,
+        "restoreBlockers": []
+      },
+      "packageRevision": 5,
+      "oldRoomsUnchanged": true,
+      "otherOperatorUnchanged": true,
+      "projectUnchanged": true,
+      "projectSha256": "5b097bb342482cd5843e760cd458189fc5e3aa0734fc3eb6be107425760beafa",
+      "blocked": {
+        "attempted": true,
+        "status": 503,
+        "error": "Action unavailable",
+        "playerStatus": "active",
+        "retained": "synthetic evidence; no direct SQL bypass"
+      },
+      "calls": [
+        {
+          "path": "/studio/api/auth/login",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/studio/api/admin/resource-lifecycle",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/studio/api/project",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/studio/api/admin/resource-lifecycle",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/api/operators/qa-k06k07-9dd2d3a4-a/rooms",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/api/auth/player/login",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/game?game=blackjack&dealer=paow&table=room-bf0fdd42-8231-b27b-c523-38199de8b798&operator=qa-k06k07-9dd2d3a4-a",
+          "status": 404,
+          "location": null
+        },
+        {
+          "path": "/api/auth/logout",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/studio/api/auth/login",
+          "status": 200,
+          "location": null
+        },
+        {
+          "path": "/studio/api/auth/logout",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "render": {
+        "at": "2026-10-27T11:22:02.103Z",
+        "action": "suspend",
+        "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+        "database": "croupier_staging",
+        "exactOriginalDatabase": true,
+        "before": "not_suspended",
+        "after": "suspended",
+        "httpStatus": 202,
+        "productionMutated": false
+      },
+      "localProcessesCreated": 0,
+      "browser": "Player signed out before interruption; app later disabled local browser control. No new browser commands after interruption; obsolete staging tab no longer present in user ambient state, production tab preserved.",
+      "allPlayerSessionsRevoked": false,
+      "vercel": "Existing READY deployment retained; no frontend deployment/env changes in this run"
+    },
+    "dependencyRevision": {
+      "before": [
+        "J06",
+        "J09",
+        "K06"
+      ],
+      "after": [
+        "J06",
+        "J09"
+      ],
+      "reason": "J10 verifies reproducible source/build/start/restart/compatible restore and a representative positive publication/launch. K06 implementation is exercised; completion of all field, material/AV and concurrency acceptance is broader and remains K06/K07/O02. No activity weights or real acceptance criteria removed."
+    },
+    "limitations": [
+      "No AV approval: ten exact PAOW speech clips remain pending; UI warned that speech review/identity did not match.",
+      "Rotation-specific idle refresh gave422 before ordinary room publication succeeded; missing rotation is a code-supported hypothesis, not confirmed live cause.",
+      "Admin players/status returned503 Action unavailable. Synthetic account remains active with evidence ledger; no direct SQL workaround. Browser logout and final helper player/admin logouts200 verified; revocation of every previous helper session is not claimed.",
+      "Restore receipt is d53 native saved game on older compatible schema without optional020. Newly published PAOW package4 and optional020-dependent configuration were not restored.",
+      "Security incident coverage partial (429); source binding30689542 verified, monitoring active, historical scan too_large. No zero-incident claim."
+    ],
+    "privateArtifacts": {
+      "location": "Local private visualization directory for chat01a17942-eb9b-7312-a6dc-0811bd63afa7; credentials/raw snapshots excluded from Git and handoff ZIP",
+      "artifacts": [
+        {
+          "file": "j10-admin-published-20261027.png",
+          "bytes": 117927,
+          "sha256": "63b62a37d95ba3e13248eca94b9a9e28313ad719852cdd99505bc4abd31c21a8"
+        },
+        {
+          "file": "j10-lobby-20261027.png",
+          "bytes": 134608,
+          "sha256": "0939af91d1ede547607a51c5665fd23d047db230c5281f9e8f9a637968ba9500"
+        },
+        {
+          "file": "j10-hand-active-20261027.png",
+          "bytes": 56573,
+          "sha256": "693679aa9c1f175563514a51eca67c345e00125d3ca1c43ae7dec3d47d8ade07"
+        },
+        {
+          "file": "j10-hand-complete-20261027.png",
+          "bytes": 68737,
+          "sha256": "b78e6e368f3b879abb74423dd214e2097bf50b310c65d08f28fdd527edd0bfbd"
+        },
+        {
+          "file": "j10-reconnected-20261027.png",
+          "bytes": 65017,
+          "sha256": "40bbadd54ee2ba95186913b90f419bfe352b67c5b89c34ec39ed3defe10a5bc9"
+        },
+        {
+          "file": "j10-webview-readback-1793097421824.json",
+          "bytes": 13680,
+          "sha256": "30fb5d83d73d59de14f464ab91c097b5e91e99fd941ef47af579ea298ac0f357"
+        },
+        {
+          "file": "j10-webview-cleanup.json",
+          "bytes": 2096,
+          "sha256": "4563205f6e15d92d78b7dc89170905c2df449bba0e6b95d3c34f99902452a159"
+        },
+        {
+          "file": "j10-stage-suspend-20261027.json",
+          "bytes": 275,
+          "sha256": "c0c4e7929f246f49b24f5f0dd80d9d2447443ea2985379364a57670e7116a833"
+        }
+      ]
+    },
+    "reproduction": [
+      "Fresh authenticated clone at d53b349a7dc14060de8283a343681569a089805e; Node24.21.0, locked npm ci/build/start per ENVIRONMENT-RESTORATION. Reuse prior immutable clean-clone receipt; d53→c916 changes only listed documents.",
+      "Use existing isolated project red-violet-36066351 / br-plain-voice-b9yu49xi / croupier_staging with app role and documented ENVIRONMENT-VARIABLES. Obtain own service connections; no credential transfer.",
+      "Resume only srv-dbf61l0m7kps73ft7mk0; verify original source DB, health and exact frontend/backend SHAs before writes.",
+      "Normal Admin: create a distinct synthetic room from saved paow-isolated-review-20261026. Record CAS revisions and public room package; create a fresh demo player. Never bet with frozen restore player335c6ba0-dd24-4238-bd30-337f11eaa7ad.",
+      "Via lobby and normal login play one demo hand; compare returned publication identities, HTTP player/history and SQL ledger/state, then reload.",
+      "Compatible restore evidence and exact schema/SQL checks are in j10, cloudVerification.neon and ENVIRONMENT-RESTORATION. Do not silently rerestore or claim a newer package was restored.",
+      "Archive only own room with latest CAS revisions; verify old rooms/project/operatorB unchanged and own launch404; logout and suspend exact staging service. Preserve history and private originals."
+    ],
+    "cleanSource": {
+      "sha": "d53b349a7dc14060de8283a343681569a089805e",
+      "node": "v24.21.0",
+      "status": "passed",
+      "finishedAt": "2026-10-27T08:55:32.520Z",
+      "lockfilesUnchanged": true,
+      "isolation": "Authenticated independent GitHub clone; fresh isolated npm config/cache; no inherited product data or credentials",
+      "steps": [
+        {
+          "label": "01-github-clone",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "02-detach-frozen-sha",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "03-verify-sha",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "04-verify-remote",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "05-initial-tracked-clean",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "06-tracked-files",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "10-node-version",
+          "code": 0,
+          "package": "apps/studio"
+        },
+        {
+          "label": "20-npm-ci",
+          "code": 0,
+          "package": "apps/studio"
+        },
+        {
+          "label": "11-node-version",
+          "code": 0,
+          "package": "apps/studio/client"
+        },
+        {
+          "label": "21-npm-ci",
+          "code": 0,
+          "package": "apps/studio/client"
+        },
+        {
+          "label": "12-node-version",
+          "code": 0,
+          "package": "services/game"
+        },
+        {
+          "label": "22-npm-ci",
+          "code": 0,
+          "package": "services/game"
+        },
+        {
+          "label": "30-studio-normal-build-including-client",
+          "code": 0,
+          "package": "apps/studio"
+        },
+        {
+          "label": "40-documented-product-url-only",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "41-documented-offline-start-stop",
+          "code": 1,
+          "package": "clone root"
+        },
+        {
+          "label": "42-documented-offline-start-stop",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "50-final-tracked-clean",
+          "code": 0,
+          "package": "clone root"
+        },
+        {
+          "label": "51-final-sha",
+          "code": 0,
+          "package": "clone root"
+        }
+      ],
+      "commands": [
+        "git clone https://github.com/Jakeminator123/scoutgaming.git <fresh-directory>",
+        "git checkout --detach d53b349a7dc14060de8283a343681569a089805e",
+        "Node24.21.0; npm ci --include=dev --ignore-scripts --no-audit --no-fund in apps/studio, apps/studio/client, services/game",
+        "npm run build in apps/studio",
+        "node apps/studio/start.mjs --no-open",
+        "node apps/studio/start.mjs --offline --skip-build --no-open; fixture-owned stop afterward"
+      ],
+      "harnessCorrection": "Initial probe expected Studio / HTTP 200; actual committed app/page.tsx explicitly permanentRedirects to /admin. Retry asserts HTTP 308 and exact same-origin /admin. Initial logs and cleanup proof retained.",
+      "offline": {
+        "checks": [
+          {
+            "label": "empty-unpublished-game",
+            "status": 503,
+            "expectedStatus": 503,
+            "expectedContent": true
+          },
+          {
+            "label": "studio-root-admin-redirect",
+            "status": 308,
+            "expectedStatus": 308,
+            "expectedContent": true,
+            "location": "http://127.0.0.1:4192/admin"
+          }
+        ],
+        "dataRemoved": true,
+        "childrenStopped": true,
+        "activeSessionRows": 0,
+        "remainingFixtureDirectories": []
+      },
+      "receipts": [
+        {
+          "file": "j10-clean-clone-authenticated-receipt.json",
+          "sha256": "33d2bf3f4d5a0a5095f99d409d20f3226abfd328fd02e1b7a709b318aedcf45a"
+        },
+        {
+          "file": "j10-offline-receipt.json",
+          "sha256": "f157d5bf67a8c20359a054819c82dca1ce7d93dee7f804e16f57531efa788f04"
+        }
+      ]
+    },
+    "independentReview": {
+      "reviewer": "j10_review",
+      "result": "No blocking findings; independently matched raw readback/publication, cleanup/stop and all8 artifact hashes; viewed settlement screenshot. No new runtime replay by reviewer.",
+      "deliveryCondition": "New PR reference, status/doc checks and exact-head CI before merge"
     }
   }
 }
