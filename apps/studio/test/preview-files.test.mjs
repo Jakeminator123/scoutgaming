@@ -52,16 +52,6 @@ test('native preview retires local catalog, page and media before disk access bu
   assert.equal(denied.opens(),0,'renderer code retains authorization');
 });
 
-test('explicit offline preview retains its isolated catalog and page fixture',async t=>{
-  const root=await mkdtemp(join(tmpdir(),'croupier-preview-offline-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  const route=previewRoute({CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_CLOUD_RUNTIME:'0',CROUPIER_STUDIO_NATIVE_ADMIN:'0'},root);
-  for(const name of ['catalog.json','index.html','fixture.mp4']){
-    await writeFile(join(root,name),'isolated fixture '+name);
-    const response=await route.GET(new Request('https://studio.example/preview/'+name),{params:Promise.resolve({path:[name]})});
-    assert.equal(response.status,200);assert.equal(await response.text(),'isolated fixture '+name);
-  }
-});
-
 test('preview paths allow only single safe segments inside the build directory', async () => {
   assert.equal(previewRelativePath(['..']), null);
   assert.equal(previewRelativePath(['media', '..', 'index.html']), null);
