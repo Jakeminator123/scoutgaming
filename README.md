@@ -3,8 +3,8 @@
 Croupier is the working casino demo with server-owned game state and shared
 playback for registered dealers. Start with blackjack; roulette has its own
 server and presentation contracts. Start with [START-HERE.md](START-HERE.md). Current acceptance and next steps are
-recorded in [the current handoff](docs/NEXT-AGENT.md); dated receipts live in
-[JOHN-HANDOFF](docs/JOHN-HANDOFF.md). This development demo is not a
+recorded in [the current handoff](docs/NEXT-AGENT.md); dated handoffs and receipts live in
+[docs/history](docs/history/README.md). This development demo is not a
 certified RNG/RGS or a real-money system.
 
 Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/).
@@ -60,7 +60,7 @@ active entry points, operator access, compatibility redirects and working tools.
 | `media/` | Source/review/staging material and import manifests; deployed registry data comes from Neon and media bytes from Blob | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
 | `services/openclaw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](services/openclaw/README.md) |
 | `ops/`, `tools/` | Deployment, migration, import and repository utilities | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
-| `test/`, `apps/studio/test/` | Game/shared-service regression and Studio/API tests; component tests also live beside their source | [Verification](AGENTS.md#verification-during-editing) |
+| `test/`, `apps/studio/test/` | Game/shared-service regression and Studio/API tests; component tests also live beside their source | [Verification](AGENTS.md#verifiering-och-säkerhet) |
 
 [AI documentation](docs/AI/README.md) collects agent flows and OpenClaw guides.
 
@@ -129,7 +129,7 @@ and mirror are paused; reviewed upstream code is imported selectively.
 
 Use these documents in place instead of adding competing status reports:
 
-- [Current handoff and next steps](docs/NEXT-AGENT.md); dated history in [JOHN-HANDOFF](docs/JOHN-HANDOFF.md).
+- [Current handoff and next steps](docs/NEXT-AGENT.md); dated history in [docs/history](docs/history/README.md).
 - [Cloud migration and delivery](docs/CLOUD-MIGRATION.md).
 - [Data restoration and media rules](docs/ENVIRONMENT-RESTORATION.md).
 - [Environment variable registry](docs/ENVIRONMENT-VARIABLES.md).

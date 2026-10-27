@@ -14,7 +14,7 @@ vid implementationen; de är inte fristående handböcker.
 | Medier, uppspelning och kvarvarande acceptans | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
 | Klippstruktur, Neon/Blob-migration och gemensam talworker | [Kanonisk struktur och genomförandeplan](../storage/BLOB-NEON.md) |
 | Miljövariabler och ansvar | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
-| Aktuell leverans och nästa steg | [NEXT-AGENT](../NEXT-AGENT.md); historik och daterade kvitton i [JOHN-HANDOFF](../JOHN-HANDOFF.md) |
+| Aktuell leverans och nästa steg | [NEXT-AGENT](../NEXT-AGENT.md); historik och daterade kvitton i [docs/history](../history/README.md) |
 
 Admin, partnerportal och lobby hör till Vercels webb-/Studio-tjänster;
 Render-tjänsten `croupier-v3` kör spelmotorn. Neon är enda produktregistret

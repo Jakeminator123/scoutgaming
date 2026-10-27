@@ -498,7 +498,7 @@
       "packageRevision": 7
     },
     "fieldMatrix": {
-      "reference": "docs/JOHN-HANDOFF.md, avsnittet Samlat niofältskvitto utan ändrade slutkriterier",
+      "reference": "docs/history/JOHN-HANDOFF-2026-10.md, avsnittet Samlat niofältskvitto utan ändrade slutkriterier",
       "1 namn/företag/komposition/spel": "rum, operatör, dealer och paket i launch 200 och lobby A; främmande operatör 404",
       "2 insatsprofil": "sv/prive -> sv/high -> sv/casual sparat, återläst och publicerat. Gräns: bevisat som Admin-återläsning plus lagring (croupier_game.shared_table_configs/_heads har 38b14261 med casual 1/500/50). Ingen spelkonsument har bundit configVersion; konsumtionen flyttas till K06/K07 g1/g2.",
       "3 språk": "sv publicerat med tio godkända svenska tal; ogiltigt språk 422",

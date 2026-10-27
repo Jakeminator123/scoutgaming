@@ -1,10 +1,10 @@
 # Handoffhistorik — Scoutgaming
 
-Daterade avsnitt och kvitton, nyast först. Aktuell överlämning: [NEXT-AGENT](NEXT-AGENT.md); status bara i [STATUS.md](../migrering/STATUS.md).
+Daterade avsnitt och kvitton, nyast först. Aktuell överlämning: [NEXT-AGENT](../NEXT-AGENT.md); status bara i [STATUS.md](../../migrering/STATUS.md).
 
 ## 27 oktober kväll: J08 verifierad
 
-Vid detta kvitto var 14/20 aktiviteter verifierade. J08 är VERIFIED på kod `b08f2a866f77e6b9673cbb6624b7eea9013a0a70` med [sanitiserat kvitto](2026-10-27-J08-STAGING-ACCEPTANCE.json). [Statusfilen](../migrering/status.json) är enda statuskälla. Deploy-ID, revisioner, gränser och nästa steg i ordning finns i [NEXT-AGENT](NEXT-AGENT.md).
+Vid detta kvitto var 14/20 aktiviteter verifierade. J08 är VERIFIED på kod `b08f2a866f77e6b9673cbb6624b7eea9013a0a70` med [sanitiserat kvitto](../2026-10-27-J08-STAGING-ACCEPTANCE.json). [Statusfilen](../../migrering/status.json) är enda statuskälla. Deploy-ID, revisioner, gränser och nästa steg i ordning finns i [NEXT-AGENT](../NEXT-AGENT.md).
 
 Isolerad staging, operatör `qa-k06k07-9dd2d3a4-a`, rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e`:
 
@@ -39,13 +39,13 @@ Isolerad staging, operatör `qa-k06k07-9dd2d3a4-a`, rum `room-33b37ff3-ec79-ff2d
 
 ## J10 slutverifierad — 27 oktober 2026
 
-**Aktuell procentsats finns bara i [STATUS.md](../migrering/STATUS.md); vid detta kvitto var 13/20 aktiviteter verifierade (före J08).** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
+**Aktuell procentsats finns bara i [STATUS.md](../../migrering/STATUS.md); vid detta kvitto var 13/20 aktiviteter verifierade (före J08).** [Statusfilen](../../migrering/status.json) är enda statuskälla. [Samlat kvitto](../2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
 
 Ordinarie Admin publicerade nytt syntetiskt PAOW-rum, paket3→4. Lobby och autentiserad `/play/blackjack`→`/game` konsumerade samma rum/operatör/dealer/paket4. Ny spelare satsade5 demokrediter, stod på14 och avslutade handen: saldo995, version3, två ledgerrader och en historikrunda. Reload bevarade saldot. Frontend d53/backend c916 skiljer bara dokument; ingen ny produktkod eller schemaändring behövdes.
 
 J10:s förkunskaper är nu J06/J09: K06:s befintliga publicerings-/launchkontrakt provades, men full fält-, material-/AV- och samtidighetsacceptans stannar i K06/K07/O02. Restore gäller d53:s native-spel mot äldre kompatibelt schema utan optional020; ny PAOW-publicering eller020-konfiguration påstås inte vara återställd.
 
-Eget rum är återställbart arkiverat (paket5), borttaget från lobbyn och ger autentiserad404. Gamla rum, operatorB och projektdata är oförändrade. Render är suspended2026-10-27T11:22:02.103Z med exakt originaldatabas. Inga egna lokala provprocesser startades. Spelaren loggades ut i webviewn; slutliga API-utloggningar gav200. Provkontot/historiken bevaras: Admin-spärr gav503 vid överlämningen (orsak: kommandotransaktion utan Studio-scope; rättad i [PR424](https://github.com/Jakeminator123/scoutgaming/pull/424), se [NEXT-AGENT](NEXT-AGENT.md)), alla äldre hjälpsessioners återkallelse är inte verifierad. Inga produktionsskrivningar eller AV-attester; Johns Bet bevarad.
+Eget rum är återställbart arkiverat (paket5), borttaget från lobbyn och ger autentiserad404. Gamla rum, operatorB och projektdata är oförändrade. Render är suspended2026-10-27T11:22:02.103Z med exakt originaldatabas. Inga egna lokala provprocesser startades. Spelaren loggades ut i webviewn; slutliga API-utloggningar gav200. Provkontot/historiken bevaras: Admin-spärr gav503 vid överlämningen (orsak: kommandotransaktion utan Studio-scope; rättad i [PR424](https://github.com/Jakeminator123/scoutgaming/pull/424), se [NEXT-AGENT](../NEXT-AGENT.md)), alla äldre hjälpsessioners återkallelse är inte verifierad. Inga produktionsskrivningar eller AV-attester; Johns Bet bevarad.
 
 Följande avsnitt är daterade tidigare kvitton; aktuellt avslut ovan ersätter deras öppna J10-status.
 
@@ -54,17 +54,17 @@ Följande avsnitt är daterade tidigare kvitton; aktuellt avslut ovan ersätter 
 
 Cloud har läst slutöverlämningen på `df6c1b60ed5cbc70c9e54c2e5c761b120397d1ee` och mergat [PR421](https://github.com/Jakeminator123/scoutgaming/pull/421). Node24.21.0 finns på `/opt/codex/cua_node/bin/node`; 97/97 egna riktade prov passerar (54 API + 43 klient, 0 skip) efter ren npm ci i isolerad d53-snapshot. Låsfilen är oförändrad. De fem ändrade blobbarna och hela rekonstruerade Git-trädet matchar d53. PR421:s fulla CI40480027938 och GitGuardian-check passerade på exakt df6; merge32785414 har identiskt träd.
 
-Read-only Neon-SELECT med stagingens approll visar exakt lika fullständigt innehåll i den frysta spelarens båda ledgerrader mellan `croupier_staging` och `croupier_staging_restore`: SHA256 `f834fb6560b1ddad809f42e416b53b2a1dd2ea0ad679b321827a68e76ddb0214`. Detta kompletterar count-only-kvittot nedan med nutida source/restore-paritet för just spelaren; det är inte en historisk före/efterhash kring replay eller alla ledgerposter. Product-v1 och gemensamma Studio-versioners checksummor matchar. Source har dessutom optional020; restore saknar020. D53:s tidigare 16 HTTP-prov stöder kompatibel login/läsning/replay i det äldre schemat, ingen ny 020-beroende publicering. Exakta SQL-frågor och checksummor finns under `cloudVerification` i [samma kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json); lokalagents daterade originalfält bevaras.
+Read-only Neon-SELECT med stagingens approll visar exakt lika fullständigt innehåll i den frysta spelarens båda ledgerrader mellan `croupier_staging` och `croupier_staging_restore`: SHA256 `f834fb6560b1ddad809f42e416b53b2a1dd2ea0ad679b321827a68e76ddb0214`. Detta kompletterar count-only-kvittot nedan med nutida source/restore-paritet för just spelaren; det är inte en historisk före/efterhash kring replay eller alla ledgerposter. Product-v1 och gemensamma Studio-versioners checksummor matchar. Source har dessutom optional020; restore saknar020. D53:s tidigare 16 HTTP-prov stöder kompatibel login/läsning/replay i det äldre schemat, ingen ny 020-beroende publicering. Exakta SQL-frågor och checksummor finns under `cloudVerification` i [samma kvitto](../2026-10-27-ISOLATED-ACCEPTANCE.json); lokalagents daterade originalfält bevaras.
 
 GitHub/Render/Neon fungerar via anslutna verktyg. Den tillgängliga Vercel-kopplingen ser två team men inte det angivna stagingprojektet (404/403); `mcp__user_vercel` finns inte här. Terminalens initiala proxyfel är löst för tillåtna värdar genom verktygets stödda nätverksbehörighet; git fetch och npm ci fungerar utan ändrad proxy/policy. Stagingens Render-host nekas däremot av den gällande värdpolicyn (CONNECT403/http000). Officiell molnbrowserstart saknar nödvändig autentiseringskonfiguration även med fungerande nätverksbehörighet. Render-staging är fortsatt suspended, autoDeploy av och källrepo GitHub/main. `kevin-staging` finns på `3e76d79e264a8abd07bc7996bb3ec75cc925341e`; dess deploymentkoppling är inte fastställd och dess kod/resurser har inte ändrats.
 
-**Vid denna avstämning 12/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)) och J10 TODO kvarstod.** Positiv sammanhängande Admin → publicering → lobby → auktoriserad launch, reproducerbart samlat kvitto och hantering av oförändrat K06-beroende återstår. Ingen ny spelrunda, AV-attest, databasmutation, restore/DDL eller produktionsåtgärd har gjorts av Cloud.
+**Vid denna avstämning 12/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md)) och J10 TODO kvarstod.** Positiv sammanhängande Admin → publicering → lobby → auktoriserad launch, reproducerbart samlat kvitto och hantering av oförändrat K06-beroende återstår. Ingen ny spelrunda, AV-attest, databasmutation, restore/DDL eller produktionsåtgärd har gjorts av Cloud.
 
 ## Slutkvitto och Cloud-överlämning — 27 oktober
 
-Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status vid detta kvitto: 12/20 (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)).
+Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status vid detta kvitto: 12/20 (aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md)).
 
-Båda lokala agenternas arbete, exakt kandidat, deploy-ID, återgång och öppna bevis finns i [Cloud-överlämningen](NEXT-AGENT.md) och [sanitiserat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json). Dessa ersätter den äldre formuleringen nedan att faktisk omkörning återstår. Ny spelrunda med ny syntetisk spelare, full CI/PR, K06 och ljud/läppsynkacceptans återstår i Cloud.
+Båda lokala agenternas arbete, exakt kandidat, deploy-ID, återgång och öppna bevis finns i [Cloud-överlämningen](../NEXT-AGENT.md) och [sanitiserat kvitto](../2026-10-27-ISOLATED-ACCEPTANCE.json). Dessa ersätter den äldre formuleringen nedan att faktisk omkörning återstår. Ny spelrunda med ny syntetisk spelare, full CI/PR, K06 och ljud/läppsynkacceptans återstår i Cloud.
 
 
 ## Isolerad Admin-acceptans och rumsreadiness — 27 oktober
@@ -73,7 +73,7 @@ Vanlig syntetisk Admin kördes mot staging med Render `3106a1ccaff548ade14c85746
 
 Nästa ordinarie rumsförkontroll reproducerade `ready=false`, `studio_presentation_runtime_update_required`, capability 30. API och klient hade gamla versionslistor; utökat paketformat krävde dessutom exakt v29. Rättningen kontrollerar uttryckliga funktioner efter full kontraktsvalidering. v29 nekar fortsatt embedded AV, v30/v31 accepterar sina kumulativa kontrakt och optional020 kontrolleras separat. 54 API- och 43 klientprov passerar på Node24.21, högst två arbetare; oberoende deltareview utan kvarvarande blockerare. CI, fryst kandidat och faktisk omkörning redovisas separat, inte som genomförda här.
 
-AV-bank `ebe77511c9f0a1736231cdbab49c0b583e253d9be9d2c30b18df11f9da5a9071` innehåller tio byteidentiska svenska original med käll-/staging-ID och SHA. Jakob bekräftar tidigare visuell granskning men har ännu inte provat ljudet. Ingen ljud-/läppsynkattest skapas. Privat spelbar sida, ordinarie HTTP-journal och sanitiserat kvitto finns i chattens `visualizations/2026/10/26/01a17a07-9ae1-71f2-a1b8-d0bf37a9a416/` (`av-review-20261027/`, `j08-ordinary-paow-20261027-receipt.json`). **Vid denna avstämning 12/20 verifierade aktiviteter** (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)) tills hela aktivitetskriterier verifierats. Johns Bet och produktionen har inte ändrats av provet.
+AV-bank `ebe77511c9f0a1736231cdbab49c0b583e253d9be9d2c30b18df11f9da5a9071` innehåller tio byteidentiska svenska original med käll-/staging-ID och SHA. Jakob bekräftar tidigare visuell granskning men har ännu inte provat ljudet. Ingen ljud-/läppsynkattest skapas. Privat spelbar sida, ordinarie HTTP-journal och sanitiserat kvitto finns i chattens `visualizations/2026/10/26/01a17a07-9ae1-71f2-a1b8-d0bf37a9a416/` (`av-review-20261027/`, `j08-ordinary-paow-20261027-receipt.json`). **Vid denna avstämning 12/20 verifierade aktiviteter** (aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md)) tills hela aktivitetskriterier verifierats. Johns Bet och produktionen har inte ändrats av provet.
 
 ## Nåbar klipptäckning med fryst filmplanering — 26 oktober, nästa etapp
 
@@ -85,7 +85,7 @@ Befintliga Admin-klippdetaljer har det uttryckliga valet **Koppla för delat bor
 
 Lokal verifiering på Node24.21.0, högst fyra arbetare: integrerad producent/planerare/koordinator/publicering 94 godkända prov, ett separat obligatoriskt Chrome-prov lämnat till CI; klient/API/importgraf 242/242; kapabiliteter 29/29; readiness/API/livscykel 347 slutligt godkända genom riktad omkörning efter två rättningar; Admin/återbindning 29/29 samt övriga 33 oförändrat godkända Adminprov. Admin TypeScript passerar. Oberoende review hittade två rättade kompatibilitetsfel: v1:s historiska skofallback och återbindning av tom variant. Efterföljande readiness-/tidslinjegranskning har inga blockerare; numeriskt prov över 1 440 kombinationer höll den konservativa budgeten. Detta är kod- och syntetiska beteendeprov, inte AV-/molnacceptans.
 
-**Vid denna avstämning 12/20 verifierade aktiviteter; aktuell siffra bara i [STATUS.md](../migrering/STATUS.md).** J08 är närmaste självständiga aktivitetsacceptans men kräver fortfarande sammanhängande faktisk Admin-/publicerings-/versionsacceptans med godkänt material. Den tidigare PAOW-bankens pending review ändras inte. Johns Bet, produktionsmedia, produktionsflaggor och källfiler har inte ändrats i utvecklingsarbetet. Isolerad v31-stagingkontroll passerade med 14 kontroller och oförändrat medieinventarium; Render stoppades efter det daterade provet. Inga nya AV-godkännanden följer av kod, CI eller deployment. Privata testloggar finns i chattens `visualizations/2026/10/26/01a17a07-9ae1-71f2-a1b8-d0bf37a9a416/`.
+**Vid denna avstämning 12/20 verifierade aktiviteter; aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md).** J08 är närmaste självständiga aktivitetsacceptans men kräver fortfarande sammanhängande faktisk Admin-/publicerings-/versionsacceptans med godkänt material. Den tidigare PAOW-bankens pending review ändras inte. Johns Bet, produktionsmedia, produktionsflaggor och källfiler har inte ändrats i utvecklingsarbetet. Isolerad v31-stagingkontroll passerade med 14 kontroller och oförändrat medieinventarium; Render stoppades efter det daterade provet. Inga nya AV-godkännanden följer av kod, CI eller deployment. Privata testloggar finns i chattens `visualizations/2026/10/26/01a17a07-9ae1-71f2-a1b8-d0bf37a9a416/`.
 
 
 ## Kevin-anpassning och isolerad PAOW-repetition — 26 oktober kväll
@@ -96,7 +96,7 @@ Materialresolvern använder nu kanoniska `SPEECH_SLOT_IDS` direkt och slopar dub
 
 Befintlig staging återstartades och dess gamla branchkoppling rättades till `main`, autoDeploy fortsatt av. Render `dep-dbfrl8d9fdbs739tnp8g` är LIVE på fryst `f153d26d8d4546edd61dbd12fdf530dc31c0163b`; frontendens a22-version har identisk produktkod med denna f153-bas. Vanlig Admin-inloggning och projektläsning passerar. Därefter importerades 46 oförändrade PAOW-original genom native prepare/Blob/commit: 35 profilfilmer, JohnsBetv5:s idle och tio svenska taloriginal, totalt 58 265 985 byte. Samtliga 46 är servermätta; alla tio talval fungerar i den avsedda serverägda Studio-repetitionen med `review=pending`. Sparad projektrevision är `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Inga talgodkännanden eller bolags-/rumspubliceringar skrevs.
 
-Root öppnade repetitionen i browsern och såg PAOW samt märkningen separat testsaldo. Bakgrund/bord är stagingens syntetiska fixturlager; bilden är inte layoutacceptans för Johns Bet. Denna modell fick ingen ljudinmatning från verktyget, så talinnehåll och läppsynk är inte godkända. **Vid denna avstämning 12/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)).** Full J08/K04/K05/K06/K07-acceptans kräver återstående verkliga beteendekvitton.
+Root öppnade repetitionen i browsern och såg PAOW samt märkningen separat testsaldo. Bakgrund/bord är stagingens syntetiska fixturlager; bilden är inte layoutacceptans för Johns Bet. Denna modell fick ingen ljudinmatning från verktyget, så talinnehåll och läppsynk är inte godkända. **Vid denna avstämning 12/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md)).** Full J08/K04/K05/K06/K07-acceptans kräver återstående verkliga beteendekvitton.
 
 En separat minnesisolerad previewrunda passerade med tolv HTTP 200: insats 5 på box 0, stand och collect, version 0→3 och slutsaldo 10 000. Fyra committed utdelningar och en vändning gav exakt registrerat UUID/SHA via vanlig presentation/select. Detta är filmvalsbevis i preview, inte beständig spelacceptans eller AV-godkännande. Privat kvitto: `staging-preview-one-round-receipt.private.json`.
 
@@ -106,7 +106,7 @@ Privata manifest och original finns i originalcheckoutens `arkiv/2026-10-26/migr
 
 ## Migrationsrapportens verifieringsväg — 26 oktober
 
-[PR417](https://github.com/Jakeminator123/scoutgaming/pull/417) är mergad som `b7bff26469670afd2090987e50256fedbf6edec6` efter full [CI40375434645](https://github.com/Jakeminator123/scoutgaming/actions/runs/40375434645). Status vid detta kvitto var 12/20 (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)); detaljerade runtime-, medie- och återställningsgränser följer nedan.
+[PR417](https://github.com/Jakeminator123/scoutgaming/pull/417) är mergad som `b7bff26469670afd2090987e50256fedbf6edec6` efter full [CI40375434645](https://github.com/Jakeminator123/scoutgaming/actions/runs/40375434645). Status vid detta kvitto var 12/20 (aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md)); detaljerade runtime-, medie- och återställningsgränser följer nedan.
 
 Sex uttryckligen granskade migrationsrapportfiler använder nu samma dokumentklassificering lokalt och i CI. Okända filer, annan JSON, generatorns kod, filtypsbyten och blandade kodändringar går fortsatt genom full CI. `node migrering/status.mjs --check` validerar rapporten i dokumentjobbet och en gång i fullregressionens ordinarie contracts-grupp. Lokal hook kör samma kontroll när statusdata, generatorn eller den genererade läsvyn ändras. Därmed kontrolleras både statuskontrakt och synkronisering; tidigare full frontendregression kontrollerade inte detta.
 
@@ -114,7 +114,7 @@ Verifiering av denna ändring: 43/43 riktade urvals-, hook- och workflowprov pas
 
 ## Fortsatt verifiering och rättad förkunskapskedja — 26 oktober
 
-**Vid denna avstämning 12/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)).** J09:s avvecklingsförberedelse från [PR401](https://github.com/Jakeminator123/scoutgaming/pull/401), integrerad via PR403, är slutgranskad mot sitt befintliga krav: konsumentavveckling, opt-in-migration, isolerad avbrotts-/fullrestore och dokumenterad verkställighetsordning. Två oberoende granskningar och rootens kod-/provgranskning fann ingen teknisk koppling till J08/K05; dessa historiska förkunskaper är borttagna. J05/J07 består. Produktions-DDL, färsk mål-/externjobbsinventering, dränering och aktuellt återställningsunderlag ligger kvar inför O03. Inga live-tabeller har raderats.
+**Vid denna avstämning 12/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../../migrering/STATUS.md)).** J09:s avvecklingsförberedelse från [PR401](https://github.com/Jakeminator123/scoutgaming/pull/401), integrerad via PR403, är slutgranskad mot sitt befintliga krav: konsumentavveckling, opt-in-migration, isolerad avbrotts-/fullrestore och dokumenterad verkställighetsordning. Två oberoende granskningar och rootens kod-/provgranskning fann ingen teknisk koppling till J08/K05; dessa historiska förkunskaper är borttagna. J05/J07 består. Produktions-DDL, färsk mål-/externjobbsinventering, dränering och aktuellt återställningsunderlag ligger kvar inför O03. Inga live-tabeller har raderats.
 
 [PR415](https://github.com/Jakeminator123/scoutgaming/pull/415) är mergad som `76d7d7fd71325036e84fa7402da9b6e0510bbfd4`. Full [CI40370665493](https://github.com/Jakeminator123/scoutgaming/actions/runs/40370665493) på head `62189ab7238dc75772568365f05c4e8990591f01` passerade, inklusive verklig Chrome, PostgreSQL/omstart/HTTPS och produktionsledgerns readiness. Beteendeproven följer ordinarie regression; felaktigt shadersträngslås och oanvänt ofullständigt JSON-backupverktyg är avvecklade. Samma push-hjälpare hanterar nu en begränsad fetch-konfiguration utan force-push eller en andra leveransväg.
 
@@ -150,7 +150,7 @@ Leveranshjälparen rättas också efter ett faktiskt fel i en checkout med begr�
 
 ## Start för nästa agent — 26 oktober
 
-Jakob har beställt en överlämning även för annat Codex-konto och bekräftat efter slutleveransen att PAOW hos Johns Bet såg bra ut. [Nästa agents startpunkt](NEXT-AGENT.md) samlar aktuell bas, åtkomstidentiteter, genomförd städning, bevarad demogeometri, privata bevis och de återstående migrationsstegen. Vid det historiska kvittot var status 55 %; aktuell status och senare granskning står överst och i `migrering/status.json`. Användarens bekräftelse gäller utseendet, inte full spel- eller talacceptans. Vid denna överlämning återlästes remote main `cc52ed54…`, Vercel READY på samma SHA, Render v3:s version/health och paketversion 5 för båda bolagen. PR410 är nu stängd utan merge och är inte en väntande release.
+Jakob har beställt en överlämning även för annat Codex-konto och bekräftat efter slutleveransen att PAOW hos Johns Bet såg bra ut. [Nästa agents startpunkt](../NEXT-AGENT.md) samlar aktuell bas, åtkomstidentiteter, genomförd städning, bevarad demogeometri, privata bevis och de återstående migrationsstegen. Vid det historiska kvittot var status 55 %; aktuell status och senare granskning står överst och i `migrering/status.json`. Användarens bekräftelse gäller utseendet, inte full spel- eller talacceptans. Vid denna överlämning återlästes remote main `cc52ed54…`, Vercel READY på samma SHA, Render v3:s version/health och paketversion 5 för båda bolagen. PR410 är nu stängd utan merge och är inte en väntande release.
 
 ## Johns Bet och PAOW-skarven — 26 oktober
 
@@ -205,7 +205,7 @@ Läsande avstämning på main `8fcb920a930d7459273be3a495f8474137203abd`. **Vid 
 **Release och acceptans:**
 
 1. PR407:s releaseordning är utförd av den andra körningen: Render-läsare först, därefter main/Vercel. Dess releasekvitto anger delat spel fortsatt avstängt. Nya J08-publiceringar kräver fortfarande verifierad readiness, exakt material och isolerad acceptans; LIVE/READY ensamt öppnar inte den grinden. Återgång behåller kompatibel läsare och fryst historik.
-2. Välj och granska exakta PAOW-original för de tio talplatserna, med UUID/hash, språk och tagningar. Detaljlistan över det tidigare godkännandet har inte återfunnits, och Jakob har bett om omkontroll. Mät via befintliga Admin-tjänster; bevara originalbytes. V2:s MP4-ljud kräver inte fabricerade V1-index-/kalibreringsbevis. Se [K05](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) och [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
+2. Välj och granska exakta PAOW-original för de tio talplatserna, med UUID/hash, språk och tagningar. Detaljlistan över det tidigare godkännandet har inte återfunnits, och Jakob har bett om omkontroll. Mät via befintliga Admin-tjänster; bevara originalbytes. V2:s MP4-ljud kräver inte fabricerade V1-index-/kalibreringsbevis. Se [K05](../../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) och [runtimekontraktet](../LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
 3. Kör isolerat Admin → publicering → spel med rätt filmprofil, avsett idle/tal och separata bakgrunds-, dealer- och bordslager. Verifiera aktiv hand under ny publicering, nästa hand, multitable och återanslutning på samma kandidat. Flytta aktivitetsstatus först när dess befintliga kriterier är uppfyllda.
 
 K05-guidens gamla krav att implementera resolver/mätning och generellt producera ljud-/index-/kalibreringsunderlag är rättade. Inga produktionsdata, godkända original eller historik har raderats. Fortsatt avveckling ska följa faktiska konsumenter och behålla prov för behörighet, isolation, revisioner, samtidighet och spelregler.
@@ -262,7 +262,7 @@ Den isolerade databasen och privata Blob-namnrymden är separata från originale
 
 ### Samlat niofältskvitto utan ändrade slutkriterier
 
-[J08:s befintliga kriterier](../migrering/jakob-main-migrering/AKTIVITETER.md) kräver UI → scope/validering → writer → publicerad version → konsument, giltigt/ogiltigt prov och sammanhängande spara/återläsa/publicera. Befintliga beteendeprov återanvänds. Den verkliga material-/molnacceptansen enligt masterplanen återstår och kan inte ersättas av en syntetisk bank.
+[J08:s befintliga kriterier](../../migrering/jakob-main-migrering/AKTIVITETER.md) kräver UI → scope/validering → writer → publicerad version → konsument, giltigt/ogiltigt prov och sammanhängande spara/återläsa/publicera. Befintliga beteendeprov återanvänds. Den verkliga material-/molnacceptansen enligt masterplanen återstår och kan inte ersättas av en syntetisk bank.
 
 | Accepterat O01-fält | Befintlig kedja och återanvändbara beteendeprov | Kvarvarande kvitto |
 | --- | --- | --- |
@@ -278,7 +278,7 @@ Den isolerade databasen och privata Blob-namnrymden är separata från originale
 
 Slutkvittot ska ange exakt kandidat/CI/review och miljö-/deployidentiteter utan hemligheter. Spara ger utkast D och administrationRevision A1; separat återläsning bekräftar valen. Publicering konsumerar D och skapar paket P1 samt immutable config C atomiskt; separat produktläsning visar C/P1/material M. Utkastets ID och configversionen är olika kontrakt. Aktiv hand får korrekt använda C0/P0/M0 samtidigt som nästa fönsters head är C1/P1/M1. Driftfältet har egen revision; djuplänk och proof är läsvyer. Fullt spelutfall, offentlig återanslutning och omstart hör fortsatt till K06/K07.
 
-**Läge 27 oktober kväll (J08 VERIFIED, [kvitto](2026-10-27-J08-STAGING-ACCEPTANCE.json)):** Ingen spelkonsument har bundit configVersion `room-config-38b14261`. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. "Operatör B 404" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live. Fält 7 täcks av `moving-drift-admin.test.mjs` och `moving-drift-controls.test.mjs`; fält 9 av PR406.
+**Läge 27 oktober kväll (J08 VERIFIED, [kvitto](../2026-10-27-J08-STAGING-ACCEPTANCE.json)):** Ingen spelkonsument har bundit configVersion `room-config-38b14261`. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. "Operatör B 404" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live. Fält 7 täcks av `moving-drift-admin.test.mjs` och `moving-drift-controls.test.mjs`; fält 9 av PR406.
 
 ## Skobevis: runda och fryst spelversion — 26 oktober
 
@@ -304,7 +304,7 @@ Riktade beteendeprov omfattar felaktigt dealerurval före rättning, native spar
 
 Det då återstående J08-hindret var att ett aktivt fönsters äldre config kunde kombineras med det nyare paketets branding eller nekas efter dealerbyte. Detta är nu åtgärdat i den frysta kandidaten i avsnittet överst; där skiljs genomförda kodprov från återstående CI, samrelease och verkligt niofältskvitto. Full offentlig spelrunda, samtidighet och återanslutning hör fortsatt till K06/K07.
 
-PAOW:s tio redan godkända taloriginal behöver inget nytt generellt AV-godkännande för oförändrade bytes. De har inte omregistrerats, ommätts eller publicerats i molnet i denna kodleverans. Inget inspelningsursprung tillskrivs Jakob. Egna Render/Vercel-resurser är fortsatt stoppade; ingen DDL eller speltransaktion har utförts. [Kontrakt och versionsordning](LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
+PAOW:s tio redan godkända taloriginal behöver inget nytt generellt AV-godkännande för oförändrade bytes. De har inte omregistrerats, ommätts eller publicerats i molnet i denna kodleverans. Inget inspelningsursprung tillskrivs Jakob. Egna Render/Vercel-resurser är fortsatt stoppade; ingen DDL eller speltransaktion har utförts. [Kontrakt och versionsordning](../LOCAL-PRESENTATION-RUNTIME.md#inspelat-tal-med-bild-och-ljud-i-samma-mp4).
 
 ## J05 verifierad: 55 procent — 26 oktober
 
@@ -312,7 +312,7 @@ PAOW:s tio redan godkända taloriginal behöver inget nytt generellt AV-godkänn
 
 Befintlig isolerad Render körde exakt902 och startades verkligen om till en ny instans/runtime. De kompletta offentliga HTTPS-serierna före/efter samt efter klientvila ger **64/64** korrekta, individuellt korrelerade svar. Produktens riktiga profil-/saldo-, historik- och spelläsare återgav identiska data före/efter omstarten. En första efterserie med en saknad kvittorad är bevarad och exkluderad; en separat komplett serie godkändes. Oberoende `migration_acceptance` har kontrollerat slutbevisen, och `runtime_harness` matchade sex läsarfiler mot exakt GitHub902.
 
-[Fullständigt runtimekvitto](ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober) skiljer offentlig health/version från läsprov och återanvända positiva/negativa API/WS/auth/mediekontrakt. [Integrations-CI40309660807](https://github.com/Jakeminator123/scoutgaming/actions/runs/40309660807) och [main-CI40311134134](https://github.com/Jakeminator123/scoutgaming/actions/runs/40311134134) är gröna, inklusive åtta grupper, Studio, verklig isolerad PG/omstart/HTTPS, readiness och Docker.
+[Fullständigt runtimekvitto](../ENVIRONMENT-RESTORATION.md#j05-verifierad-runtime-och-sparat-spel--26-oktober) skiljer offentlig health/version från läsprov och återanvända positiva/negativa API/WS/auth/mediekontrakt. [Integrations-CI40309660807](https://github.com/Jakeminator123/scoutgaming/actions/runs/40309660807) och [main-CI40311134134](https://github.com/Jakeminator123/scoutgaming/actions/runs/40311134134) är gröna, inklusive åtta grupper, Studio, verklig isolerad PG/omstart/HTTPS, readiness och Docker.
 
 **Kvar:** gemensam Vercel/Render-acceptans av Admin → publicering → godkänt material/spel, aktiv hand, delat bord/samtidighet, autentiserad offentlig återanslutning och HTTP-spelreplay efter restore. Historiska Render502 är inte rotorsaksförklarade. Inga nya media, produktions-DDL, konton eller speltransaktioner skapades. Egen staging är verifierat suspenderad 12:12:53 UTC efter prov enligt körplanen; nästa start måste välja aktuell granskad commit uttryckligen.
 
@@ -342,7 +342,7 @@ PR399 är mergad som `940776136101fe18d30e4ee1091151335e558b83`. Rättad head `6
 
 Implementerad i `codex/native-material-binding` ovanpå `694b9b176`: Admin-mätning av privata Blob-bytes, Neon-CAS/audit, fryst native-materialresolver, v29-publiceringsgrind, optional020 och atomiska sekvens-/tidsbudgetkontroller i spelmotorn. Admin visar Mät speltid och konkreta råd om saknat material. Ingen lokal produktdatabas, historisk dealerimport eller nytt talgodkännande införs.
 
-Huvudcommit `a98a21e1` passerade ordinarie kontroll med 716 godkända prov, fyra skip och inga fel; frontendtypkontroll och oberoende kodreview passerar. Faktisk isolerad Neon-verifiering: 53 syntetiska mätposter, extended paket/draft, negativa CAS/hash och noll kvarvarande provrader. [Kontrakt](LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) och [molnkvitton](ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober) anger exakta gränser.
+Huvudcommit `a98a21e1` passerade ordinarie kontroll med 716 godkända prov, fyra skip och inga fel; frontendtypkontroll och oberoende kodreview passerar. Faktisk isolerad Neon-verifiering: 53 syntetiska mätposter, extended paket/draft, negativa CAS/hash och noll kvarvarande provrader. [Kontrakt](../LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) och [molnkvitton](../ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober) anger exakta gränser.
 
 CI-fixturernas manuella kopie-/källistor omfattar nu materialets beroenden och optional020. Samma efterföljande 18 integrationsfall gav fem starttimeouts lokalt med fyra arbetare, men 18/18 pass med två; inga gemensamma portar eller datalås hittades. Lokal focused-verifiering kan därför välja `CROUPIER_PRECOMMIT_TEST_WORKERS=1..4` (standard fyra). Alla kontroller och tidsgränser behålls; CI och full regression påverkas inte. Sjutton beteendeprov verifierar valet och avvisar ogiltiga värden. Detta är tillfälliga testfixturer, inte produktregister eller connected-local-drift.
 
@@ -352,7 +352,7 @@ Tidigare Render502 inträffade utan observerad gatewaymottagning; dåvarande8/8-
 
 ## J09: valfri Lissabon-avveckling — 26 oktober
 
-De två kvarvarande sessionsraderingarna och deras exklusiva fixturer är borttagna. `game-011-retire-lissabon` och dess offlineförberedare är en uttryckligen valfri, separat leverans från main `940776136101fe18d30e4ee1091151335e558b83`. Historiskt produktschema är oförändrat. Tomma tabeller, oförändrat schema/ägarskap, kända beroenden, fryst kompatibel release/rollback samt backup-/restorebevis krävs; ingen startupregistrering, `CASCADE`, automatisk tillämpning eller produktions-DDL införs. [Ordning, grindar och återställning](ENVIRONMENT-RESTORATION.md#valfri-förberedelse-för-lissabon-kontraktion-j09).
+De två kvarvarande sessionsraderingarna och deras exklusiva fixturer är borttagna. `game-011-retire-lissabon` och dess offlineförberedare är en uttryckligen valfri, separat leverans från main `940776136101fe18d30e4ee1091151335e558b83`. Historiskt produktschema är oförändrat. Tomma tabeller, oförändrat schema/ägarskap, kända beroenden, fryst kompatibel release/rollback samt backup-/restorebevis krävs; ingen startupregistrering, `CASCADE`, automatisk tillämpning eller produktions-DDL införs. [Ordning, grindar och återställning](../ENVIRONMENT-RESTORATION.md#valfri-förberedelse-för-lissabon-kontraktion-j09).
 
 Porteringen passerar 37/37 riktade offline-, lösenords- och CI-policyprov på Node24.21.0 med högst två arbetare; testinventeringen har noll föräldralösa tester. Samma SQL, förberedare, PG-test och runner är byte-identiska med tidigare isolerade prov på PostgreSQL16.15 och18.6: 19/19 per version, inklusive avbruten transaktion och full `pg_dump`/`pg_restore`. Det privata originalkvittot ligger kvar i arbetskopian `migration-continuation`, `arkiv/2026-10-26/j09/verification.json`; egna kluster och portar är stoppade/stängda. Den tidigare provbasen innehöll även valfria Studio020, som inte ingår här. Exakt-head Linux/SQL-CI och full regression återstår för denna separata PR; äldre deployade binärer och faktisk produktionskontraktion är inte verifierade. Root har läsgranskat SQL, verktyg och portering utan blockerare. J09-status ändras först efter CI.
 ## Render: avgränsad requestkorrelation — 26 oktober
@@ -371,11 +371,11 @@ CI `40234506315` är grön på föregående `81bc2475b`, inklusive alla åtta gr
 
 ## Gateway och kvarvarande materialkontrakt — 25 oktober sen kväll
 
-Nästa avgränsade leverans sätter gatewayens keep-alive och headertimeout till 120 sekunder enligt Render. En riktig HTTP-anslutning återanvänds efter 6,5 sekunders tomgång; samma prov underkänns med tidigare Node-standard. Riktat runtime-/ingress-/version-/shutdownprov: 57 godkända, tre Linux-only överhoppade på Windows. Detta rättar en belagd proxykonfigurationsrisk, men det nya molnprovet visar att Render502 kvarstår: efter korrekt omstart 3/8 lyckade svar och 5/8 Render502. Spelåterläsning stannade före kommandon; J05 är fortsatt öppet. [Fullständigt kvitto och städning](ENVIRONMENT-RESTORATION.md#kompletterande-omstartsprov--25-oktober-sen-kväll).
+Nästa avgränsade leverans sätter gatewayens keep-alive och headertimeout till 120 sekunder enligt Render. En riktig HTTP-anslutning återanvänds efter 6,5 sekunders tomgång; samma prov underkänns med tidigare Node-standard. Riktat runtime-/ingress-/version-/shutdownprov: 57 godkända, tre Linux-only överhoppade på Windows. Detta rättar en belagd proxykonfigurationsrisk, men det nya molnprovet visar att Render502 kvarstår: efter korrekt omstart 3/8 lyckade svar och 5/8 Render502. Spelåterläsning stannade före kommandon; J05 är fortsatt öppet. [Fullständigt kvitto och städning](../ENVIRONMENT-RESTORATION.md#kompletterande-omstartsprov--25-oktober-sen-kväll).
 
 Den döda emissionen av `CROUPIER_LISSABON_PROFILES` och dess källsträngslås tas bort. Next-tracingprovet läser nu utvärderad konfiguration och omdirigeringar i stället för att kräva en viss citat-/arraynotation. Befintliga datakatalogval, aktiva auth-/isoleringsprov och molnets nekande av den pensionerade flaggan består. `ops/cloud/README.md` beskriver nu en spelprocess i Render v3 samt Vercel/Neon/privat Blob. Historisk exportkod är separat konsumentgranskad före eventuell avveckling; inga gamla data eller säkerhetskopior raderas.
 
-[K05:s implementationsmatris](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-native-materialbindning-för-delad-spelkonfiguration) är reviderad efter förnyad granskning: fryst inspelat tal saknar verifierat ljudslut. Ny serverägd mätning av oförändrade Blob-bytes och ett bevisat sekvensbudgetkontrakt måste föregå native-materialproducenten. Inga nya medieregister, återkonstruerade godkännanden eller påhittade tider införs. Detta är kvarvarande implementation, inte en begäran om enbart manuell visuell sign-off.
+[K05:s implementationsmatris](../../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md#prioriterat-verifiera-den-implementerade-materialbindningen) är reviderad efter förnyad granskning: fryst inspelat tal saknar verifierat ljudslut. Ny serverägd mätning av oförändrade Blob-bytes och ett bevisat sekvensbudgetkontrakt måste föregå native-materialproducenten. Inga nya medieregister, återkonstruerade godkännanden eller påhittade tider införs. Detta är kvarvarande implementation, inte en begäran om enbart manuell visuell sign-off.
 
 
 ## Borttagen implicit lokal administratör — 25 oktober kväll
@@ -386,7 +386,7 @@ Verifiering: 13/13 i `test/cloud-admin-bootstrap.mjs`, `test/local-comparison-fi
 
 ## Isolerat molnsamprov och kvarvarande kodgap — 25 oktober kväll
 
-[#396](https://github.com/Jakeminator123/scoutgaming/pull/396) är mergad som `f098486f1017b468e3c83547d4babc04a2e1f23a`; full CI `40225145966` passerade. Kandidat `28815e9c` kördes i egna Vercel/Render-appar mot isolerad Neon/privat Blob: Admin19/19, writer/CAS14/14, riktig omstart+återläsning4/4, publicering/media78/78 samt blackjack71HTTP/fyra kommandon. [Exakta resurser, kvitton och begränsningar](ENVIRONMENT-RESTORATION.md#molnsamprov-25-oktober-kväll).
+[#396](https://github.com/Jakeminator123/scoutgaming/pull/396) är mergad som `f098486f1017b468e3c83547d4babc04a2e1f23a`; full CI `40225145966` passerade. Kandidat `28815e9c` kördes i egna Vercel/Render-appar mot isolerad Neon/privat Blob: Admin19/19, writer/CAS14/14, riktig omstart+återläsning4/4, publicering/media78/78 samt blackjack71HTTP/fyra kommandon. [Exakta resurser, kvitton och begränsningar](../ENVIRONMENT-RESTORATION.md#molnsamprov-25-oktober-kväll).
 
 **Vid denna tidigare kvällsavstämning: 45 % = nio aktiviteter; J06-kvittot gav därefter 50 %. Aktuell status efter J05 är 55 % (11/20), enligt avsnittet överst.** Delresultaten från denna avstämning finns i masterplanens historiska matris. Vid tillfället saknade native room-game-config en exakt materialresolver till K04/K05-urval/timing; den är senare integrerad genom PR403, medan full materialacceptans kvarstår. Delade bord var av. Ingen historisk dealerbank, lokal databas eller TSV-runtime återinfördes. Produktionsmotorn återlästes frisk på `ebb6b91f`, inte uppdaterad till provkandidaten.
 
@@ -425,7 +425,7 @@ installerat granskade schemafiler, minimala egna roller och tomma register via
 befintliga writers i `croupier_staging`, på PG18.6/0,25 CU/300 s. Appens egen
 anslutning nekas ledger-skrivning och DDL. Separat tom restoredatabas samt eget
 Vercel-projekt/privat Blob finns. Inga produktionsdata eller dealerbanker kopierades.
-[Exakta resurser, mandat, verifiering och kvarvarande app-/restoreprov](ENVIRONMENT-RESTORATION.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober).
+[Exakta resurser, mandat, verifiering och kvarvarande app-/restoreprov](../ENVIRONMENT-RESTORATION.md#godkänt-molnsteg-och-faktiskt-installationskvitto-25-oktober).
 Vid detta tidigare delsteg: 45 % (9/20); aktuell status högst upp är 55 % (11/20) efter J05, inte kod/arbetstid.
 
 ## Native-Admin följer unified-UI — 25 oktober 2026
@@ -487,7 +487,7 @@ Nya scopes kan starta med en explicit, exakt tom runtimekatalog. Den kräver ing
 
 **Levererat:** [PR #391](https://github.com/Jakeminator123/scoutgaming/pull/391) är mergad som `2faa327e69ae6bac2646009063f4b25c237898bf`. Full CI `40211795949` passerade på exakt head `9da680f7c91ce3f61e2f99495a3103ab3ab0e9ca`: alla åtta regressionsgrupper, isolerade SQL-/omstarts-/HTTPS-prov och faktisk Studio-ledger-readiness. Detta verifierar kodleveransen; kompatibel runtime-deploy och tom init återstår.
 
-**Inför installation:** deploya kompatibla läsare i Vercel och Render före tom init. Rollback måste också förstå sparat tomt format; återställ inte historiska kataloger för att få gammal kod att starta. [Installationsordning och resurskvitto](ENVIRONMENT-RESTORATION.md#konkret-fortsättning-ännu-inte-utförd) gäller fortsatt. Neon-endpointets autosuspend är nu separat observerad som idle; ingen app, roll, schema eller seed har installerats. Migrationsstatus är fortsatt 45 % (9/20).
+**Inför installation:** deploya kompatibla läsare i Vercel och Render före tom init. Rollback måste också förstå sparat tomt format; återställ inte historiska kataloger för att få gammal kod att starta. [Installationsordning och resurskvitto](../ENVIRONMENT-RESTORATION.md#konkret-fortsättning-ännu-inte-utförd) gäller fortsatt. Neon-endpointets autosuspend är nu separat observerad som idle; ingen app, roll, schema eller seed har installerats. Migrationsstatus är fortsatt 45 % (9/20).
 
 
 ## Render v3 och borttagna v2-lås — 25 oktober 2026
@@ -506,7 +506,7 @@ Jakob godkände uttryckligen Create med Vercels startvärden och omedelbar begr�
 
 Projektets standardcompute och användningskvot kunde inte ändras i den Vercel-hanterade organisationen; endpointbegränsningen lyckades. Skapa inga ytterligare computes från de gamla standardvärdena. Autosuspend är återläst och faktiskt observerad som idle 16:06:19 UTC; provideruppdatering 15:58:31 UTC. Äldre Render-QA är verifierat suspenderad/maintenance och har inte återöppnats.
 
-[Resurskvitto och konkret installationsordning](ENVIRONMENT-RESTORATION.md#verifierad-provisionering-25-oktober) beskriver separat databas/roller, mains schemaström, tom projektmodell, syntetiskt Admin-underlag, privat Blob, aktuell appdrift och återstående samprov. Databasskapandet är färdigt. Granskningen fann att äldre kod nekade tom runtimekatalog genom krav på historiska Emil-familjer; denna initlucka är nu rättad i kod enligt avsnittet ovan, utan legacyimport; kompatibel deploy och faktisk init återstår. Installations-/driftbeslut och full K06/K07-acceptans återstår. Detta ändrar inte migrationsstatus **45 % (9/20)**.
+[Resurskvitto och konkret installationsordning](../ENVIRONMENT-RESTORATION.md#verifierad-provisionering-25-oktober) beskriver separat databas/roller, mains schemaström, tom projektmodell, syntetiskt Admin-underlag, privat Blob, aktuell appdrift och återstående samprov. Databasskapandet är färdigt. Granskningen fann att äldre kod nekade tom runtimekatalog genom krav på historiska Emil-familjer; denna initlucka är nu rättad i kod enligt avsnittet ovan, utan legacyimport; kompatibel deploy och faktisk init återstår. Installations-/driftbeslut och full K06/K07-acceptans återstår. Detta ändrar inte migrationsstatus **45 % (9/20)**.
 
 Föregående leverans [PR #388](https://github.com/Jakeminator123/scoutgaming/pull/388) är mergad som `4abbf1985e183c145c5a7772fe02631c6ee9b274`: CI40208080904 grön på head `03b507a04af6d0644ec9f081e7ff51e56d3f6010`, verkligt migrationsreadinesssteg lyckat och Vercel `dpl_Ci4syM9c556TNiM593c8a9uWoYEq` READY på merge-SHA. Äldre kommentarer om att Neon ännu saknas beskriver läget före detta nya resurskvitto.
 
@@ -534,7 +534,7 @@ Fyra befintliga K07-sviter körs nu i obligatoriska `gameplay/shared-blackjack`:
 
 **Verifierat lokalt:**62/62 kontrakts-/HTTP-/CI-/hookprov,18/18 K07-prov,27 äldre kapabilitetssvar bytejämförda,571 testkandidater/0orphan, `git diff --check`. Node24.21.0, högst fyra arbetare. PR #386 hade grön CI, dealer-regression och GitGuardian på exakt `a1bd30587eae0734ae37243a87e578a8e7f13d15`, samt oberoende review utan blockerare. Renderkvittot finns ovan.
 
-**Nästa steg:** den granskade Admin-grinden är levererad enligt kvittot ovan. Runtime v28 och de negativa proven är klara som delsteg. Den tomma Neon-testmiljön är nu skapad; schema, isolerad appkedja och samprov återstår enligt [aktuell åtkomst- och resurskontroll](ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging--historiskt-beslut-22-oktober). Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
+**Nästa steg:** den granskade Admin-grinden är levererad enligt kvittot ovan. Runtime v28 och de negativa proven är klara som delsteg. Den tomma Neon-testmiljön är nu skapad; schema, isolerad appkedja och samprov återstår enligt [aktuell åtkomst- och resurskontroll](../ENVIRONMENT-RESTORATION.md#isolerad-k06k07-staging--historiskt-beslut-22-oktober). Före en återgång måste mottagande kod läsa redan sparade rotationspolicyer; en äldre läsare som avvisar formatet är ingen giltig återställning. Full K04/K05/K06/K07/J10/O02/O03-acceptans återstår; dokumentleverans eller dessa testpass höjer inte45%.
 
 ## Studio-scener, materialval och responsiva kontroller — 25 oktober 2026
 
@@ -550,7 +550,7 @@ Fyra befintliga K07-sviter körs nu i obligatoriska `gameplay/shared-blackjack`:
 
 **Publiceringsgräns:** [PR #384](https://github.com/Jakeminator123/scoutgaming/pull/384), merge `444caabb`, löste ett verkligt paket som var sju tecken för stort med en förlustfri Brotli-reservväg. Alla 38 media och två lager behölls. Full CI, 82 riktade prov, typkontroll och oberoende granskning passerade. Vercel `dpl_4omJApXcHTkTqwWh2DjsS6oEckBD` är READY på denna SHA; Render står på `1c842b5b`, vilket är rätt runtime för denna klient-/codecändring. Dragan publicerades därefter till version 14 med mobilens kortgrupp Y 32 %. Inget schema eller lagringsgräns ändrades.
 
-**Överlämning till annan dator:** utgå från `origin/main` i `Jakeminator123/scoutgaming`, inte en gammal lokal Croupier-kopia. Repoets Studio-paket använder Volta/Node `24.21.0`; installera respektive pakets låsta beroenden på den nya datorn. Registrerade projekt/media finns i Neon och Blob, inte i denna arbetskopias cache. Följ [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) för miljöåtkomst; kopiera inte personliga agentinställningar eller hemligheter mellan datorerna. Render-tjänsten är `croupier-v3`, Vercel-team/projekt `scoutgaming`. AGENT2:s PAOW-resultat följer nedan; dess lokala original-/bevismapp är återställningsunderlag, inte ett nytt produktregister.
+**Överlämning till annan dator:** utgå från `origin/main` i `Jakeminator123/scoutgaming`, inte en gammal lokal Croupier-kopia. Repoets Studio-paket använder Volta/Node `24.21.0`; installera respektive pakets låsta beroenden på den nya datorn. Registrerade projekt/media finns i Neon och Blob, inte i denna arbetskopias cache. Följ [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md) för miljöåtkomst; kopiera inte personliga agentinställningar eller hemligheter mellan datorerna. Render-tjänsten är `croupier-v3`, Vercel-team/projekt `scoutgaming`. AGENT2:s PAOW-resultat följer nedan; dess lokala original-/bevismapp är återställningsunderlag, inte ett nytt produktregister.
 
 ## PAOW: 24 valda viloklipp — 25 oktober 2026
 
@@ -615,7 +615,7 @@ Ett extra verkligt webviewprov av Dragan vid 320 × 568 visade att beslutsknappa
 **Avslut:** de fyra egna, verifierat mergade lokala funktionsbrancherna för gestväntan, publicerad mobilplacering, knapprad och första bild är borttagna. Tillfälliga testflikar 10/11 är stängda och viewportöverskrivningen återställd; West Bet lämnas på den delbara lobbylänken. Återanvänd arbetskopia, installerade beroenden, andras grenar och huvudcheckoutens osparade arbete bevaras. PR #352 är fortsatt utkast; Kevin-ägda #315/#323/#333 har inte mergats. Ny säkerhetsläsning på main 55462235: källbindning verifierad, incidenttäckning komplett för källan, 0 öppna/23 ignorerade, aktiv monitorering. Historisk skanning är fortfarande ofullständig (too_large), platsmetadata partiell.
 ## Kevin → main: reviderad plan, K05 och slutkriterier — 25 oktober 2026
 
-[Masterplanen](../migrering/MASTERPLAN.md) och [K05-mappningen](../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) uppdateras i [PR #379](https://github.com/Jakeminator123/scoutgaming/pull/379) inför Jakobs beställda integration och fortsatta selektiva migrering. Matrisen anger befintlig funktion, återstående lucka och acceptansgräns. [Motiv och slutkriterier](../migrering/MASTERPLAN.md#motivering-och-när-migreringen-är-klar) kvarstår. Denna PR ändrar bara dokumentation.
+[Masterplanen](MASTERPLAN-2026-10.md) och [K05-mappningen](../../migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md) uppdateras i [PR #379](https://github.com/Jakeminator123/scoutgaming/pull/379) inför Jakobs beställda integration och fortsatta selektiva migrering. Matrisen anger befintlig funktion, återstående lucka och acceptansgräns. [Motiv och slutkriterier](MASTERPLAN-2026-10.md#motivering-och-när-migreringen-är-klar) kvarstår. Denna PR ändrar bara dokumentation.
 
 **Aktuellt underlag:** main `0e457589e84dcef3147ee54f01883ce5e459e356` efter #378/#380–#385. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Kodgranskning bekräftar sparad-mall-publicering och borttagen ersatt writer. #333:s granskade innehåll finns redan på main; #315/#323 är äldre test-PR:ar. West Bet revision 2 med 24 exakta idleoriginal återanvänds utan omimport. Kvittot omfattar ingen PAOW-insats/full runda.
 
@@ -768,7 +768,7 @@ Verifierat lokalt med Node 24.19 (paketet kräver 24.x): syntaxkontroll och 7/7 
 
 **Säkerhet:** befintlig skyddad GitGuardian-koppling kunde inte läsa incidenter/platsmetadata. Källbindning och monitorering är inte verifierade i denna kontroll; ingen full historisk täckning påstås. GitGuardians commitkontroll för den fullverifierade committen ecf2c8fe är godkänd; det ersätter inte incidentsynlighet. Slutlig CI-status för PR:ns aktuella head redovisas i GitHub.
 
-Karta, rotorsak, bokmärken och kvarvarande målbild: [ADMIN-KARTA avsnitt 6–7](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr-359--rättad-css-och-samlad-navigation--23-oktober-2026).
+Karta, rotorsak, bokmärken och kvarvarande målbild: [ADMIN-KARTA avsnitt 6–7](jakob-main-migrering/ADMIN-KARTA-2026-10-22.md#6-pr-359--rättad-css-och-samlad-navigation--23-oktober-2026).
 
 ## Spelklientens legacy (storstädning, arbetare B) — 22 oktober 2026
 
@@ -827,7 +827,7 @@ befintliga klippkarta, tre separat valbara kompatibla lager och sparade val som
 når rätt operatör/rum och spelets presentation. Produktmodellen finns enbart i
 TERMINOLOGI. Kevin/Emils videor och övergångar anpassas till main; tvålagersmodellen
 ska inte införas. Bevara fungerande transport, ingen total omskrivning.
-[Masterplanen](../migrering/MASTERPLAN.md) och status.json är kanoniska:
+[Masterplanen](MASTERPLAN-2026-10.md) och status.json är kanoniska:
 9/20 hela aktiviteter VERIFIED (45%),55% kvar; ingen tids-/kod-/driftsprocent.
 Förenkling J05/J06/J09/J10 är inte färdig. Nya flerspelarutökningar och QA-seeds
 är pausade som aktiv prioritet. RunPod/lipsync ligger sist manuellt med Jakob/Kevin.
@@ -1376,7 +1376,7 @@ fungerar utan game008–010, eftersom publiceringen är stängd utan resolver. F
 `roomGameConfigs` saknade däremot kapabilitetsspärr: ett sparat utkast hade fått
 äldre Studio och spelserver att neka hela administrationsdokumentet (503) vid
 versionsglapp eller återställning. Rättat med v23 enligt befintligt mönster, se
-[runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md). Dessutom visar rumsväljaren bara
+[runtimeguiden](../LOCAL-PRESENTATION-RUNTIME.md). Dessutom visar rumsväljaren bara
 live-blackjackrum som API:t godtar, och spelinställningarna öppnas inte för andra
 rum (en andra oberoende granskning hittade kvarvarande rouletterum), länken till sammansättningen bär inte längre ett rum
 från en annan sammansättning, och ett skobevis med intakt men för lång auditkedja
@@ -1570,7 +1570,7 @@ Ingen ny fullbuild, SQL-körning eller fjärr-CI har gjorts för denna registerr
 
 ## Migreringsplan och ansvar — 22 oktober 2026
 
-[Masterplanen](../migrering/MASTERPLAN.md) och [status.json](../migrering/status.json)
+[Masterplanen](MASTERPLAN-2026-10.md) och [status.json](../../migrering/status.json)
 är kanoniska. **45% (9/20 hela aktiviteter) är VERIFIED; 55% återstår.**
 J01, J02, K01, O01, J03, J04, K02, K03 och J07 är verifierade.
 Detta är aktivitetsandel, inte tids-, kod- eller produktionsprocent.
@@ -2014,8 +2014,8 @@ klippkartan och mediebiblioteket visar den som läsbricka. Deklarationen är
 authoringmetadata; spelarens filmade sekvens använder fortfarande den verifierade
 profilen. Verifierat: 163 Studio-prov (importkatalog, intake, klient, komponenter),
 36 ops-prov, båda typkontrollerna, env-register och orphan-kontroll. Guide i
-[README](../apps/studio/docs/README.md) och teknik i
-[runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md#klippnamn-och-deklarerad-poskedja-19-oktober-2026).
+[README](../../apps/studio/docs/README.md) och teknik i
+[runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md#klippnamn-och-deklarerad-poskedja-19-oktober-2026).
 
 ## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
 
@@ -2102,8 +2102,8 @@ Sluträttningen klarade 39 fokuserade och fem browserbindningsprov; integratione
 med PR274/main `b3ff83d4` klarade 125 prov. PR275:s slut-CI/readiness passerade
 enligt MERGE4; den separata konfigurationsrättningen nedan har egen CI.
 Inga molnvariabler, produktionsdata, mediefiler eller GPU-jobb ändrades här.
-[Tekniskt kontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
-[serverkonfiguration](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+[Tekniskt kontrakt](../LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan) och
+[serverkonfiguration](../ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 
 ### Säker driftorsaksdiagnostik — HUVUDAGENT6
 
@@ -2117,7 +2117,7 @@ Diagnostiken fångar nu första fallande guardorsak/fas, ändliga ålders-/
 leaseklasser och matchningsbooler från samma nekande SQL-state/DB-klocka.
 Allowlistad metadata överlever felkloningen; loggning sker först efter
 kvitterad rollback. Läsvarvens ändliga fas/tidsklass skiljer långsam success
-från failure. [Kanoniskt loggkontrakt](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+från failure. [Kanoniskt loggkontrakt](../LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
 
 191 fokuserade observer-/executor-/controller-/diagnostik-/SQL-journal-/
 session-/runtime-/bankprov passerar med Node24.21.0 och fyra workers.
@@ -2262,7 +2262,7 @@ av denna rättning. MERGE4 bekräftade senare merge till main
 `087f4fd5f8b354371521d49c52d8ab210f9ee6b0`; publiceringen följs separat av MERGE4.
 POST-LIPSYNC5 äger senare liveaktivering/prov.
 Detta kvitto löser 503-hindret men ersätter inte deras executor-/providerkontroller.
-[Exakt behörighetsändring och återgång](ENVIRONMENT-VARIABLES.md#runtime-rollens-tabellbehörigheter--verifierat-19-oktober-2026).
+[Exakt behörighetsändring och återgång](../ENVIRONMENT-VARIABLES.md#runtime-rollens-tabellbehörigheter--verifierat-19-oktober-2026).
 Privata SQL-/browserkvitton och skärmbild finns utanför Git i HUVUDAGENT6:s
 visualiseringsmapp för chatten `01a15252-32a8-7c22-a0df-56b5e1aae7d3`.
 Filer: `drift-permissions-apply.json`, `admin-drift-before-after.json` och
@@ -2512,8 +2512,8 @@ H6:s 503→200-kvitto och MERGE4:s executor-publicering är tillskriven evidens.
 POST-LIPSYNC5 äger verkligt tal, exakta videoidentiteter och GPU-aktivering.
 Kvar utanför denna UI-etapp: övriga Admin-arbetsytor, PNG-idle, chattregeleditor,
 var åttonde utdelning per box och enhetliga lagerlås. Produktmodellen finns
-endast i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), användarstegen i
-[README](../apps/studio/docs/README.md). Privata demoer i
+endast i [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), användarstegen i
+[README](../../apps/studio/docs/README.md). Privata demoer i
 C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/ bevaras.
 
 <a id="post-lipsync5-produktionsprov"></a>
@@ -2654,8 +2654,8 @@ Fyra pending-repliker och publicerat bord med 0/13 godkända inspelade repliker
 Nästa produktprov behöver knyta den fysiska mikrofonen till rätt hörbar
 röst/visuell synk i samma aktiva fönster och därefter tal under utdelning,
 med färsk drift, finansiering och mänsklig närvaro.
-[Användarflöde](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
-[tekniska grindar](LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
+[Användarflöde](../../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal),
+[tekniska grindar](../LOCAL-PRESENTATION-RUNTIME.md#driftvaljare-kontrollplan).
 
 <a id="dragan-talstatus"></a>
 
@@ -2707,8 +2707,8 @@ senare två vilorepliker i produktion, kall modell följd av varm återanvändni
 T6 prövade ingen DEAL, insats eller saldoändring och fick inget nytt visuellt
 godkännande. Provresurserna är avvecklade och talflaggan är åter av.
 
-[Runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md) beskriver tekniken;
-[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är enda produktmodellen.
+[Runtimeguiden](../LOCAL-PRESENTATION-RUNTIME.md) beskriver tekniken;
+[TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md) är enda produktmodellen.
 [Historiskt detaljkvitto före förkortning](https://github.com/Jakeminator123/scoutgaming/blob/0ff9467d3230c30219126ee9b2c87b2724220529/docs/JOHN-HANDOFF.md#dragan-talstatus) och
 [privat backup](C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/final-documentation/lipsync3-detaljkvitto-0ff9467d-2026-10-18.md) bevarar hela föregående avsnitt:
 äldre prov, amendmenthistorik och exakta kvitton. De är historiskt underlag, inga extra aktiva guider.
@@ -2910,7 +2910,7 @@ separata arbeten; hela casinoprodukten är inte slutverifierad.
 
 `apps/studio/test/scout-navigation.test.mjs` härleder menygrupp och dold panel
 från aktuell navigation i stället för att kräva fyra grupper, deras gamla ID:n
-och tre dolda paneler. Detta följer arbetslägena i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
+och tre dolda paneler. Detta följer arbetslägena i [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md).
 Alla registrerade länkar provas mot aktivmarkering med och utan `/studio`;
 alias, N1-/partneravskiljning, utkastskydd och tangentbordsbeteende behåller sina prov.
 
@@ -2992,7 +2992,7 @@ OpenAI-SDK 7.12.1-träd. Minsta åtgärd för just det verktyget är att separat
 bevara/verifiera dess egna underlag, inte återföra dem som ordinarie
 byggberoenden. Browserprov kräver separat Playwright/Chrome. SQL-provet
 kräver Linux/WSL, OpenSSL och verifierade PostgreSQL-binärer. Se
-[återställningsguidens avgränsning](ENVIRONMENT-RESTORATION.md#renklonprov-och-separata-qa-förutsättningar).
+[återställningsguidens avgränsning](../ENVIRONMENT-RESTORATION.md#renklonprov-och-separata-qa-förutsättningar).
 
 **Inte provat:** full lokal regression, browser-/visuell produktacceptans,
 GPU-/taljobb, produktionsskrivningar eller molnändringar. Processmiljö,
@@ -3019,7 +3019,7 @@ Lipsync 3:s pågående integration och övrigt produktarbete har egna kvitton.
 Accepterad strukturrevision är **`2ba5bf03437b8f7da8a60d06335831abaf50f162`**,
 [PR237](https://github.com/Jakeminator123/scoutgaming/pull/237), ovanpå
 [PR236](https://github.com/Jakeminator123/scoutgaming/pull/236). Slutlig
-mappkarta och ansvar finns i [README](../README.md#source-and-folder-map).
+mappkarta och ansvar finns i [README](../../README.md#source-and-folder-map).
 Neon är produktregister och Blob mediekälla. Källkodens nya rötter ändrar
 inte sparade medieidentiteter, publika URL:er eller privata datarötter.
 
@@ -3127,7 +3127,7 @@ andra agenters worktrees och claims är inte del av rutinmässig städning.
 **HUVUDAGENT4, 18 oktober:** produktionens `croupier_game` på Neon-main
 är källan för aktuella bolag, rum och dealers. Den tidigare läsningen visade
 Dragan test och Nordic bet. Preview-grenen `preview-v2` raderades senare
-enligt det daterade kvittot i [miljöguiden](ENVIRONMENT-VARIABLES.md#aktuellt-miljöval-för-admin--verifierat-18-oktober-2026).
+enligt det daterade kvittot i [miljöguiden](../ENVIRONMENT-VARIABLES.md#aktuellt-miljöval-för-admin--verifierat-18-oktober-2026).
 Det andra Blob-lagret hör till Impactwin. Preview är ännu ingen verifierad
 skrivtestmiljö; ingen ny molnavläsning eller full Admin-UX-acceptans påstås här.
 Lipsync 3 äger tal-/workerarbetet och dess aktuella verifieringsstatus ovan.
@@ -3135,7 +3135,7 @@ Moving-kontrollen är levererad i PR246; renklonprovet är avslutat enligt HUVUD
 
 <a id="2-öppna-kontroller-och-kända-fel"></a>
 
-[CLOUD-MIGRATION](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar)
+[CLOUD-MIGRATION](../CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar)
 är den enda listan över öppna produktfunktioner och äldre observationer.
 Där finns operatörsledger/rapporter, konto/invite/reset, Admin-/lobbyluckor,
 OpenClaw-funktionsprov, medieradering, backup och pausad QA. De innebär
@@ -3152,10 +3152,10 @@ incidenter. Platsmetadata är delvis ofullständig och helhistorikskanningen
 har status too_large. Grön produkt-CI betyder inte full säkerhetstäckning;
 inga incidenter har ändrats av strukturavslutet.
 
-Begrepp: [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md).
-Teknisk verklighet: [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md).
-Konfiguration: [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
-Återställning: [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md).
+Begrepp: [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md).
+Teknisk verklighet: [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md).
+Konfiguration: [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md).
+Återställning: [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md).
 
 ## Bandbredd för publicerade presentationsmedia — 21 oktober 2026
 
@@ -3218,7 +3218,7 @@ klientbygge startas; Ctrl+C inväntar ett pågående eget bygge utan bred proces
 Befintlig isolerad fixture/server används. Siduppdatering är manuell så att
 osparade utkast inte kastas automatiskt. Inga nya paket, produktstarter,
 API-/auth-/lagringskontrakt eller migrationsstatusar införs. Instruktioner
-finns i [klientguiden](../apps/studio/client/README.md#bygg-om-klienten-när-du-sparar).
+finns i [klientguiden](../../apps/studio/client/README.md#bygg-om-klienten-när-du-sparar).
 
 Verifierat i en avgränsad källkopia från main `94077613`: 8/8 riktade prov
 utan skip på Node 24.21.0/Linux, samma Node-version som CI, med verkliga

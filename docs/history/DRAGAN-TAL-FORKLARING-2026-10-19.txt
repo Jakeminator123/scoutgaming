@@ -1,6 +1,6 @@
 DRAGANS RÖST OCH LÄPPSYNK I PRODUKTION – VAD SOM VAR FEL, VAD SOM GJORDES, VAD VI HAR NU
 Skrivet 21 oktober 2026 efter arbetspasset 19 oktober. Enkel förklaring först,
-detaljer längre ner. Tekniska källor: docs/JOHN-HANDOFF.md (avsnitten för
+detaljer längre ner. Tekniska källor: docs/history/JOHN-HANDOFF-2026-10.md (avsnitten för
 19 oktober), docs/LOCAL-PRESENTATION-RUNTIME.md, docs/CLOUD-MIGRATION.md.
 
 ====================================================================

@@ -24,7 +24,7 @@ produktplan eller instruktion att starta ännu en backoffice.
 
 Aktuell drift, QA och återstående AI/GPU-acceptans finns i
 [molnkartan](../../docs/CLOUD-MIGRATION.md) och
-[John-handoffen](../../docs/JOHN-HANDOFF.md). Denna katalog eller ett godkänt
+[överlämningen](../../docs/NEXT-AGENT.md). Denna katalog eller ett godkänt
 CPU-test bevisar inte vilken image en GPU-endpoint kör, pris, visuell läppsynk
 eller godkänd produktionsaktivering.
 

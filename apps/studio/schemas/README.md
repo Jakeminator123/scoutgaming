@@ -15,4 +15,4 @@ En schemagiltig fil är inte bevis för dealeridentitet, codec eller läppsynk.
 [Guidens material- och granskningsregler](../docs/README.md#material-och-granskningsregler)
 skiljer dessa format från produktens kanoniska mediemanifest och 2D-prov.
 Aktuellt tal- och uppspelningsansvar beskrivs i
-[presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[presentationsguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).

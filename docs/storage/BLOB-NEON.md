@@ -6,7 +6,7 @@ referensskydd är implementerade på arbetsbranchen; molnworkern förbereds sepa
 Det betyder inte att produktionsimport eller rörligt tal i spelet är aktiverat.
 Produkttermer ägs av [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), tekniska
 runtimekontrakt av [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md)
-och leveransstatus av [handoffen](../JOHN-HANDOFF.md).
+och leveransstatus av [överlämningen](../NEXT-AGENT.md).
 Ingen ny parallell tracker skapas.
 
 ## Beslut och avgränsning
@@ -343,7 +343,7 @@ bankoriginal, profilrevision, publicerat paket och ett eget RunPod-jobb. Optiona
 migration 013 sparar dessa referenser och en beständig totalbudget; vanlig
 medieradering tar hänsyn till dem. Funktionen är avstängd tills schema, privat
 workerimage, bank och separat testmiljö har verifierats. Aktuell leveransstatus
-och återstående driftprov finns i [handoff](../JOHN-HANDOFF.md).
+och återstående driftprov finns i [överlämningen](../NEXT-AGENT.md).
 
 Jakob har valt ett separat Dragan-testrum utan att återöppna pausade operatörer.
 Första liveprovet använder bankens explicita vilobild mellan kortsekvenser.
@@ -364,7 +364,7 @@ eller filmer. Förinspelade repliker spelar sin egen verifierade video och sitt
 inbäddade ljud och behöver inte genereras igen. Ett filnamn eller en uppladdning
 aktiverar inte detta flöde automatiskt.
 
-Lokal checkpoint: [setup och återkörning](../AI/lipsync-lokalt-2026-10-17.txt),
+Lokal checkpoint: [setup och återkörning](../history/lipsync-lokalt-2026-10-17.txt),
 tagg `lipsync-local-dragan-2026-10-17`. Sparad replik, modeller, bank och WSL-miljö
 är fortfarande privata arbetsdata. Provet är offline; 11,8 fps lokalt är inte
 realtidsacceptans. Tidigare varm A6000-mätning är inte ett kallstarts-/spelprov.
@@ -456,7 +456,7 @@ Arbetsordning utan ny tracker:
 
 ## Historiskt underlag och kvarvarande osäkerhet
 
-[Filinventeringen 16 oktober](BLOB-NEON-INVENTERING-2026-10-16.md) är ett daterat
+[Filinventeringen 16 oktober](../history/BLOB-NEON-INVENTERING-2026-10-16.md) är ett daterat
 belägg, inte dagens raderingslista. Den observerade 1710 Blob-objekt och 79
 produktionsklipp. Den beskrev även 12 äldre PAOW-svar med saknade mediafiler
 och avgränsade referensluckor; dessa hör inte till Dragan-uppdraget.

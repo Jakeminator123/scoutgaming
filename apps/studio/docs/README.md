@@ -85,7 +85,7 @@ mikrofonen förblir av tills du själv väljer att spela in.
 **Stoppa drift** begär Av. Vänta på färsk faktisk Av och verifierat stopp;
 att bara önskemålet ändras räcker inte. Röstprofilens aktivering är ett
 separat sparande och förutsätter rätt verifierat underlag.
-[Faktiskt provläge och kvarvarande begränsningar](../../../docs/JOHN-HANDOFF.md#post-lipsync5-produktionsprov)
+[Faktiskt provläge och kvarvarande begränsningar](../../../docs/history/JOHN-HANDOFF-2026-10.md#post-lipsync5-produktionsprov)
 anges i handoffen. Inspelade standardrepliker är en separat granskning
 från fri chatt; ett filnamn eller röstval godkänner inte deras synk.
 
@@ -937,7 +937,7 @@ förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
-Aktuellt arbete och kvarvarande QA finns i [handoffen](../../../docs/JOHN-HANDOFF.md). Nya sprintdokument är pausade.
+Aktuellt arbete och kvarvarande QA finns i [överlämningen](../../../docs/NEXT-AGENT.md). Nya sprintdokument är pausade.
 
 ## Material och granskningsregler
 

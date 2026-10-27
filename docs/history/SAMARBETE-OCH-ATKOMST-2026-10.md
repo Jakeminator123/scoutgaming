@@ -2,13 +2,13 @@
 
 ## Uppdatering 27 oktober 2026
 
-Agent-talk är borttaget och GitHub-tråden #312 används inte längre för samordning. Agenter arbetar i egna worktrees på `jakob/claude-*`-brancher och levererar PR:er mot `main` som den orkestrerande sessionen mergar efter grön CI; personfrågor går via [teaminboxen](../inbox/README.md). Hänvisningar till #312, femminutersbevakning och agent-talk i avsnitten nedan är historik.
+Agent-talk är borttaget och GitHub-tråden #312 används inte längre för samordning. Agenter arbetar i egna worktrees på `jakob/claude-*`-brancher och levererar PR:er mot `main` som den orkestrerande sessionen mergar efter grön CI; personfrågor går via [teaminboxen](../../inbox/README.md). Hänvisningar till #312, femminutersbevakning och agent-talk i avsnitten nedan är historik.
 
 ## Verifierat läge 22 oktober 2026
 
 Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
 [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311) innehåller planen;
-status.json är enda källa för migrationsprocent (läsvy: [STATUS.md](STATUS.md)); vid denna avstämning 9/20.
+status.json är enda källa för migrationsprocent (läsvy: [STATUS.md](../../migrering/STATUS.md)); vid denna avstämning 9/20.
 K01/J01 är redan VERIFIED; de tidigare angivna K01-rättningarna är avslutade.
 Nuvarande ansvar ersätter tabellen från 21 oktober.
 

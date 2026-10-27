@@ -4,7 +4,7 @@ This file preserves the dated import and synthetic-test record. Branches,
 provider access and pending-work observations below describe that time.
 Current source uses `main` in `Jakeminator123/github-work`; current deployment
 and acceptance are tracked in the [cloud map](../../../docs/CLOUD-MIGRATION.md)
-and [John handoff](../../../docs/JOHN-HANDOFF.md). Historical instructions do
+and [current handoff](../../../docs/NEXT-AGENT.md). Historical instructions do
 not authorize GitLab work or a new deployment.
 
 ## GHCR and RunPod access — 2026-09-29
@@ -150,7 +150,7 @@ whether to cache features, change block size or replace the audio encoder.
 This section records the standalone clone's handoff. The service is now vendored
 into Croupier and its server/shared-player integration is implemented. See
 [the runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) and
-[John handoff](../../../docs/JOHN-HANDOFF.md) for current validation and
+[current handoff](../../../docs/NEXT-AGENT.md) for current validation and
 outstanding deployment work. The scoped endpoint configuration at that time returned
 HTTP 200 to a read-only health request; no GPU job was submitted.
 

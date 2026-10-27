@@ -3,7 +3,7 @@
 Render tillhandahåller valfri `RENDER_INSTANCE_ID` för avgränsad instanskorrelation i gatewayens health/version-diagnostik. Den är leverantörshanterad och ska inte sättas manuellt eller innehålla autentiseringsuppgifter.
 
 Senaste leveransstatus finns i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md),
-och kvarvarande arbete/ägare i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+och kvarvarande arbete/ägare i [NEXT-AGENT.md](NEXT-AGENT.md).
 PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
@@ -182,7 +182,7 @@ Dragan-runtimeprofilens gamla endpoint togs också bort och flaggan sattes
 till 0. Nycklar, bank och övriga profiler kopierades inte mellan miljöer.
 Felen med gammal endpoint och nyckelbehörighet var verkliga, men den här
 kontrollen visar ingen felriktad Neon-anslutning i den faktiska talkedjan.
-Se aktuellt prov-/kostnadskvitto i [handoffen](JOHN-HANDOFF.md).
+Se det daterade prov-/kostnadskvittot i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md).
 
 **Stoppuppföljning 19:17 UTC:** även det senare köade provets endpoint
 `dgpazl8h3a64uj` och template är borttagna och tom workerlista verifierad.
@@ -276,7 +276,7 @@ Det sammanlagda taket omfattar
 Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
 sammanräkning före aktivering. Reservationer återbetalas inte automatiskt;
 osäkra providersvar blockerar återförsök. Faktisk fakturering och avveckling
-kontrolleras separat; aktuellt kvitto sammanfattas i JOHN-HANDOFF.
+kontrolleras separat; det daterade kvittot sammanfattas i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md).
 
 Den nya runtimekoden kräver scoped Neon som enda metadataregister, inklusive
 `runtime_media_catalogs` och `speech_reply_records` från migration 012.
@@ -299,7 +299,7 @@ och `--check` är pensionerade 27 oktober 2026 och avvisas.
 produkten kör ännu bridgeversion `3165ab6`. Detta är ett attribuerat kvitto,
 inte en ny liveavläsning. Aktuell leveransstatus
 finns endast i [CLOUD-MIGRATION](CLOUD-MIGRATION.md) och
-[JOHN-HANDOFF](JOHN-HANDOFF.md). Daterade filindex- och startkvitton nedan
+[NEXT-AGENT](NEXT-AGENT.md). Daterade filindex- och startkvitton nedan
 bevaras som historik; deras gamla krav ersätts av detta avsnitt.
 
 ## Daterad env-inventering, 15 oktober 2026 kväll
@@ -653,7 +653,7 @@ Aktuell källa: `Jakeminator123/scoutgaming` på `main`; gamla `github-work`
 vidarebefordras av GitHub till samma repo-ID `1380630440`.
 Vercelprojektet `scoutgaming` bygger `apps/web` och `lab` som
 Services från reporoten. Båda använder samma projektmiljö och `fra1`.
-Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
+Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [överlämning](NEXT-AGENT.md).
 
 Slutkontroll 12 oktober 2026, 13:56 UTC: kod `19c44902` har grön
 [GitHub-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38257724379).
@@ -959,7 +959,7 @@ Neon-budgetgränser för tal består.
 Kodavvecklingen ändrar inga molninställningar, privata manifest, journaler,
 förbrukade reservationer eller registrerade medier. Äldre provkvitton är historik;
 återöppning av den gamla miljön ingår inte i leveransen. Aktuell drift och öppna
-kontroller finns i [handoffen](JOHN-HANDOFF.md#2-öppna-kontroller-och-kända-fel) och
+kontroller finns i [handoffen](history/JOHN-HANDOFF-2026-10.md#2-öppna-kontroller-och-kända-fel) och
 [återställningsplanen](ENVIRONMENT-RESTORATION.md). Historiska installationsdetaljer
 finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-VARIABLES.md).
 
@@ -1019,7 +1019,7 @@ uttryckliga acceptansundantaget. Exakta tariffer förblir backlog.
 ### Tjänsteansvar
 
 Import/ALL0 och produktionsbyte är avslutade. Originalkvitton och återställningsregler
-finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RESTORATION.md).
+finns i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md) och [återställningsguiden](ENVIRONMENT-RESTORATION.md).
 Återanvänd inte historiska exportflaggor som normal driftkonfiguration.
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
@@ -1137,7 +1137,7 @@ ger fel, aldrig Astrids röst som reserv. Budget och återstartsregler är oför
 På Render-spelmotorn (`croupier-v3`; vid kvittot `croupier-v2`) finns tal-/GPU-konfigurationens `CARTESIA_API_KEY`,
 `RUNPOD_API_KEY` och `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Produktens tre
 aktiveringsflaggor är ON. Aktuell verifiering och kostnadsgränser finns i
-[handoffen](JOHN-HANDOFF.md); gamla deploy-ID:n och gamla budgetbelopp är inte
+[överlämningen](NEXT-AGENT.md); gamla deploy-ID:n och gamla budgetbelopp är inte
 instruktioner för att ersätta dagens konfiguration. Lokala nycklar kan höra
 till annat konto och ersätter inte driftens nycklar automatiskt.
 
@@ -1172,7 +1172,7 @@ till `20000`, med effektiv generisk timeout kvar på `8000`; ingen lokal
 server har startats. Senare privata speech-/cloud-storage-filer och processenv
 har fortfarande högre prioritet. Compose-mallen ändras inte av detta.
 Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
-berörda tjänsterna. [Flöde och prov](JOHN-HANDOFF.md).
+berörda tjänsterna. [Flöde och prov (historik)](history/JOHN-HANDOFF-2026-10.md).
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
 Render → `croupier-v3` → Environment, tillsammans med bootstrap-användaren.
@@ -1245,7 +1245,7 @@ Render-spelets villkorliga grupper:
   decimalformat och högst 20 USD, minst sessionsreserven. Även den går
   endast till Web. Redan förbrukade GPU-medel ska räknas av från dagens
   tillgängliga budget före aktivering; den beständiga sessionsliggaren
-  behåller reserver genom omstart. Se [aktuell handoff](JOHN-HANDOFF.md).
+  behåller reserver genom omstart. Se [aktuell överlämning](NEXT-AGENT.md).
   Ingen av dessa funktioner är
   nödvändig för de registrerade förinspelade klippen.
 - Partnerns referensverktyg har egna `BETTALOTTO_PARTNER_*`-inställningar.

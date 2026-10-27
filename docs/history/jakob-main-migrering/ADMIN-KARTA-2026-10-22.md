@@ -271,7 +271,7 @@ Motsvarande gamla /control- och /studio/control-bokmärken leder direkt till sam
 
 Den ursprungliga städningen av 7 oanvända lib-moduler, 2 komponenter och 6 oanropade API-routes ingår. Social-store städades separat i #354; dealer-import-plan har aktiv verktygsanropare och behålls. De senare editorborttagningarna avlägsnar deras exklusiva tester; behörighet, CAS, rumsisolering, osparade utkast och sparade förhandsvisningsrevisioner testas i de aktiva ytorna.
 
-Faktiska slutkontroller och produktionsgräns finns i [JOHN-HANDOFF](../../docs/JOHN-HANDOFF.md). Webview-provet använder byggda produktionsfiler och syntetiska, skrivskyddade serversvar. Det verifierade dialoglayout, flikbyten, scenval och skapande av scen i minnesutkast; det är inte produktionsacceptans. Ingen databas, media, drifttjänst eller produktion har ändrats. Ingen planaktivitet markeras klar.
+Faktiska slutkontroller och produktionsgräns finns i [JOHN-HANDOFF](../JOHN-HANDOFF-2026-10.md). Webview-provet använder byggda produktionsfiler och syntetiska, skrivskyddade serversvar. Det verifierade dialoglayout, flikbyten, scenval och skapande av scen i minnesutkast; det är inte produktionsacceptans. Ingen databas, media, drifttjänst eller produktion har ändrats. Ingen planaktivitet markeras klar.
 
 ## 7. Visuell målbild och återstående produktarbete
 

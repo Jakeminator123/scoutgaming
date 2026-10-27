@@ -1,37 +1,11 @@
-# Ordinary ripgrep discovery; Git/build inputs are unchanged.
-/arkiv/
-# Not a copy of .cursorignore. Heavy tracked media stays hidden from rg.
-# .cursorindexingignore alone keeps that text out of the Cursor index.
-# Retired private archive: never read or re-index.
-/random-stuff-jakob/jakob-docs/arkiv/
-/random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
+# Search only: ripgrep and the Grep tools in Claude Code and Cursor.
+# Git, builds and deploys are unaffected by this file.
+# ripgrep already skips everything in .gitignore (node_modules, .env*, .vercel,
+# local data, logs, build output), so this file lists only TRACKED files that
+# are noise for text search. Inventories and cleanup start from `git ls-files`,
+# which ignores this file and shows every tracked file.
 
-# Dependencies and generated cache (not source dist/public directories).
-node_modules/
-.next/
-.nuxt/
-.cache/
-.turbo/
-coverage/
-playwright-report/
-test-results/
-__pycache__/
-.venv/
-.lipsync-venv/
-vendor/
-*.tsbuildinfo
-*.log
-
-# Local secrets, state and logs.
-.git/
-.env
-.env.*
-!.env.example
-!.env.*.example
-.croupier-inbox/
-/media/.migration/
-
-# Binary media/data: JSON manifests, calibration and source stay searchable.
+# Tracked binary media, 3D files and archives.
 *.mp4
 *.mov
 *.webm
@@ -61,23 +35,6 @@ vendor/
 *.sqlite3
 *.db
 
-# Large source/staging metadata and generated layout stay available for explicit reads.
-/media/**/source/
-/media/**/staging/
+# Large generated media registers; open them explicitly when needed.
 /media/layout.json
 /media/blob-index.json
-
-# Canonical recovery archive; inspect only when needed.
-/arkiv/
-
-# Retired local roots: never stage if an old checkout still has them
-/lab/data/
-/apps/studio/data/
-/web/data/
-/services/game/data/
-
-# Director/Gateway local state (the Director adapter defaults to open-claw/lab).
-/open-claw/lab/data/
-/open-claw/lab/runtime/
-/open-claw/lab/media/*
-/services/openclaw/lab/data/
