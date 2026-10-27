@@ -1,103 +1,66 @@
-// Real Web server with disposable CRAIG data and three synthetic HTTPS hosts.
+// Real engine on PostgreSQL with disposable CRAIG data and three synthetic HTTPS hosts.
+import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, copyFile, symlink, mkdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { spawn } from 'node:child_process';
-import { createServer } from 'node:net';
 import { request as httpRequest } from 'node:http';
-import { once } from 'node:events';
-import { DatabaseSync } from 'node:sqlite';
-import { createHash, createHmac, scryptSync } from 'node:crypto';
-import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
-import { backofficeLabAuth } from '../services/game/bo-lab-auth.mjs';
-import { installBoAuthEpoch } from '../services/game/bo-auth-epoch.mjs';
-import { craigIdentity } from '../services/game/craig-identity.mjs';
+import { createHash, scryptSync } from 'node:crypto';
+import { backofficeLabAuth } from '../services/game/storage/async-bo-lab-auth.mjs';
+import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';
+import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
+import { ENGINE_QA_SKIP, backofficeCookie, createEngineDatabase, engineSigner, freePort, insertCraigUser, startEngine } from './fixtures/engine-qa.mjs';
 
-const dir = await mkdtemp(join(tmpdir(), 'bo-lab-auth-'));
-const web = new URL('../services/game/', import.meta.url), webDir = join(dir,'services','game');
-const socket = createServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
-const port = socket.address().port; await new Promise(resolve => socket.close(resolve));
-const game = 'https://game.example.test', bo = 'https://bo.example.test', lab = 'https://lab.example.test';
-const password = 'Isolated-Lab-QA-Only';
-let server, craig, authEpoch;
+test('BO/Lab auth: exact HTTPS hosts, admin+ only, partner rejection, single-use browser-bound code, revocation and bounded starts', { skip: ENGINE_QA_SKIP }, async t => {
+  const database = await createEngineDatabase(t), port = await freePort();
+  const game = 'https://game.example.test', bo = 'https://bo.example.test', lab = 'https://lab.example.test';
+  const password = 'Isolated-Lab-QA-Only';
 
-const request = async (url, { cookie = '', body, headers = {}, method = body ? 'POST' : 'GET' } = {}) => {
-  const target = new URL(url);
-  assert.ok([game, bo, lab].includes(target.origin));
-  return new Promise((resolve, reject) => {
-    const req = httpRequest(`http://127.0.0.1:${port}${target.pathname}${target.search}`, {
-      method, headers: { Host: target.host, Cookie: cookie,
-        ...(body ? { Origin: target.origin, 'Content-Type': 'application/json' } : {}), ...headers },
-    }, res => {
-      const chunks = []; res.on('data', chunk => chunks.push(chunk));
-      res.on('end', () => {
-        const h = new Headers();
-        for (let i = 0; i < res.rawHeaders.length; i += 2) h.append(res.rawHeaders[i], res.rawHeaders[i + 1]);
-        resolve(new Response(Buffer.concat(chunks), { status: res.statusCode, headers: h }));
+  const request = async (url, { cookie = '', body, headers = {}, method = body ? 'POST' : 'GET' } = {}) => {
+    const target = new URL(url);
+    assert.ok([game, bo, lab].includes(target.origin));
+    return new Promise((resolve, reject) => {
+      const req = httpRequest(`http://127.0.0.1:${port}${target.pathname}${target.search}`, {
+        method, headers: { Host: target.host, Cookie: cookie,
+          ...(body ? { Origin: target.origin, 'Content-Type': 'application/json' } : {}), ...headers },
+      }, res => {
+        const chunks = []; res.on('data', chunk => chunks.push(chunk));
+        res.on('end', () => {
+          const h = new Headers();
+          for (let i = 0; i < res.rawHeaders.length; i += 2) h.append(res.rawHeaders[i], res.rawHeaders[i + 1]);
+          resolve(new Response(Buffer.concat(chunks), { status: res.statusCode, headers: h }));
+        });
       });
+      req.on('error', reject); req.end(body ? JSON.stringify(body) : undefined);
     });
-    req.on('error', reject); req.end(body ? JSON.stringify(body) : undefined);
-  });
-};
-const location = response => response.headers.get('location');
-const cookies = response => response.headers.getSetCookie().map(value => value.split(';')[0]);
-const start = async (next = '/') => {
-  const result = await request(lab + '/api/auth/lab/start?next=' + encodeURIComponent(next));
-  assert.equal(result.status, 303);
-  assert.match(location(result), /^https:\/\/bo\.example\.test\/api\/bo\/lab-login\?state=[a-f0-9]{64}$/);
-  const stateCookie = cookies(result)[0];
-  assert.match(stateCookie, /^bo_lab_state=[a-f0-9]{64}$/);
-  return { authorize: location(result), stateCookie };
-};
-const authorize = async (boCookie, next = '/') => {
-  const flow = await start(next);
-  const result = await request(flow.authorize, { cookie: boCookie });
-  assert.equal(result.status, 303);
-  assert.match(location(result), /^https:\/\/lab\.example\.test\/api\/auth\/lab\/callback\?state=[a-f0-9]{64}&code=[a-f0-9]{64}$/);
-  return { ...flow, callback: location(result) };
-};
-const sign = claims => {
-  const secret = Buffer.from(craig.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get().v, 'hex');
-  const message = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url') + '.' +
-    Buffer.from(JSON.stringify(claims)).toString('base64url');
-  return message + '.' + createHmac('sha256', secret).update(message).digest('base64url');
-};
-const administratorCookie = () => {
-  const account = craig.prepare('SELECT id,username,salt,hash,role FROM users WHERE id=1').get();
-  const epoch = craig.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(account.id)?.epoch ?? 0;
-  const source_stamp = createHash('sha256').update(`${account.salt}:${account.hash}`).digest('hex');
-  return `bo_jwt=${sign({sub:account.username,role:account.role,aud:'backoffice',source_stamp,auth_epoch:epoch,exp:Date.now()/1000+3600})}`;
-};
+  };
+  const location = response => response.headers.get('location');
+  const cookies = response => response.headers.getSetCookie().map(value => value.split(';')[0]);
+  const start = async (next = '/') => {
+    const result = await request(lab + '/api/auth/lab/start?next=' + encodeURIComponent(next));
+    assert.equal(result.status, 303);
+    assert.match(location(result), /^https:\/\/bo\.example\.test\/api\/bo\/lab-login\?state=[a-f0-9]{64}$/);
+    const stateCookie = cookies(result)[0];
+    assert.match(stateCookie, /^bo_lab_state=[a-f0-9]{64}$/);
+    return { authorize: location(result), stateCookie };
+  };
+  const authorize = async (boCookie, next = '/') => {
+    const flow = await start(next);
+    const result = await request(flow.authorize, { cookie: boCookie });
+    assert.equal(result.status, 303);
+    assert.match(location(result), /^https:\/\/lab\.example\.test\/api\/auth\/lab\/callback\?state=[a-f0-9]{64}&code=[a-f0-9]{64}$/);
+    return { ...flow, callback: location(result) };
+  };
+  const administratorCookie = () => backofficeCookie(database, 1);
 
-try {
-  await mkdir(webDir,{recursive:true}); await copyOpenClawRuntime(dir);
-  for (const file of await readdir(web)) if (file.endsWith('.mjs')) await copyFile(new URL(file, web), join(webDir, file));
-  await symlink(new URL('public', web), join(webDir, 'public'), process.platform === 'win32' ? 'junction' : 'dir');
-  await mkdir(join(dir, 'data'));
-  craig = new DatabaseSync(join(dir, 'data/craig.db'));
-  craig.exec('CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,email TEXT,salt TEXT,hash TEXT,role TEXT NOT NULL,created_at TEXT NOT NULL)');
-  craig.prepare('INSERT INTO users VALUES (?,?,?,?,?,?,?)').run(1, 'lab-admin', 'admin@example.invalid', 'test-salt',
-    scryptSync(password, 'test-salt', 64).toString('hex'), 'reader', new Date().toISOString());
-  authEpoch = installBoAuthEpoch(craig);
+  await insertCraigUser(database, { id: 1, username: 'lab-admin', email: 'admin@example.invalid', salt: 'test-salt', password, role: 'reader' });
+  // The engine's async Lab handoff, CRAIG identity and auth epoch over the same database.
+  const craig = database.store.boDb, authEpoch = installBoAuthEpoch(craig);
   const config = { db: craig, identity: craigIdentity(craig), boSession: () => null,
     authEpoch, publicUrl: game, boUrl: bo, labPublicUrl: lab };
   for (const override of [
     { labPublicUrl: 'http://lab.example.test' }, { labPublicUrl: lab + '/path' },
     { labPublicUrl: lab + ':444' }, { boUrl: game },
   ]) assert.throws(() => backofficeLabAuth({ ...config, ...override }), /HTTPS origin|distinct HTTPS hosts/);
-  server = spawn(process.execPath, [join(webDir, 'server.mjs')], { cwd: webDir,
-    env: { PATH: process.env.PATH, HOST: '127.0.0.1', PORT: String(port), PUBLIC_URL: game,
-      BO_URL: bo, LAB_PUBLIC_URL: lab, CROUPIER_DATA_DIR: join(dir, 'data'), DEMO_GUEST_ACCESS: '1' },
-    stdio: ['ignore', 'pipe', 'pipe'] });
-  await new Promise((resolve, reject) => {
-    let startupError = '';
-    const timer = setTimeout(() => reject(Error('Server start timed out' + startupError)), 10000);
-    server.once('error', error => { clearTimeout(timer); reject(error); });
-    server.once('exit', code => { clearTimeout(timer); reject(Error(`Server exited ${code}: ${startupError}`)); });
-    server.stdout.on('data', chunk => { if (String(chunk).includes('croupier demo on')) { clearTimeout(timer); resolve(); } });
-    server.stderr.on('data', chunk => { startupError ||= String(chunk).match(/(?:Error|SyntaxError|TypeError)(?: \[[A-Z_]+\])?:[^\n]*/)?.[0] ?? ''; });
-  });
+  await startEngine(t, { database, port, env: { PUBLIC_URL: game, BO_URL: bo, LAB_PUBLIC_URL: lab, DEMO_GUEST_ACCESS: '1' } });
+  const sign = await engineSigner(database);
 
   const rouletteStateResponse = await request(game + '/api/roulette/table', {body:{op:'state'}});
   assert.equal(rouletteStateResponse.status,200);
@@ -136,14 +99,14 @@ try {
   assert.equal(loginRedirect.status, 303);
   assert.match(location(loginRedirect), /^\/admin\/login\?returnTo=%2Fapi%2Fbo%2Flab-login%3Fstate%3D[a-f0-9]{64}$/);
 
-  const readerRedirect = await request(anonymous.authorize, { cookie: administratorCookie() });
+  const readerRedirect = await request(anonymous.authorize, { cookie: await administratorCookie() });
   assert.match(location(readerRedirect), /^\/admin\/login/, 'reader cannot authorize a Lab handoff');
   const partner = sign({ sub: 'partner-player', partner: 'partner-key', exp: Date.now() / 1000 + 60 });
   const partnerRedirect = await request(anonymous.authorize, { cookie: `bo_jwt=${partner}` });
   assert.match(location(partnerRedirect), /^\/admin\/login/, 'Partner JWT is not a BO admin session');
 
-  craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
-  const adminCookie = administratorCookie();
+  await database.query("UPDATE croupier_auth.users SET role='admin' WHERE id=1");
+  const adminCookie = await administratorCookie();
   const flow = await authorize(adminCookie);
   assert.equal((await request(lab + new URL(flow.authorize).pathname + new URL(flow.authorize).search, { cookie: adminCookie })).status, 403);
   assert.equal((await request(bo + new URL(flow.callback).pathname + new URL(flow.callback).search, { cookie: flow.stateCookie })).status, 403);
@@ -166,7 +129,7 @@ try {
   const check = await request(lab + '/api/auth/lab/check', { cookie: labCookie });
   assert.equal(check.status, 200); assert.equal(await check.text(), '', 'success contains no PII');
   let directStatus;
-  backofficeLabAuth({ db: craig, identity: craigIdentity(craig), boSession: () => null, authEpoch,
+  await backofficeLabAuth({ db: craig, identity: craigIdentity(craig), boSession: () => null, authEpoch,
     publicUrl: game, boUrl: bo, labPublicUrl: lab })(
     { method: 'GET', url: '/api/auth/lab/check', headers: { host: new URL(lab).host,
       cookie: labCookie, 'x-forwarded-for': '127.0.0.1' }, socket: { remoteAddress: '203.0.113.5' } },
@@ -185,29 +148,29 @@ try {
   const sessionResponse = await request(sessionFlow.callback, { cookie: sessionFlow.stateCookie });
   assert.equal(sessionResponse.status, 303);
   const expiredSessionCookie = cookies(sessionResponse)[0];
-  craig.prepare('UPDATE lab_sessions SET expires=0 WHERE token_digest=?').run(
-    createHash('sha256').update(expiredSessionCookie.split('=')[1]).digest('hex'));
+  await database.query('UPDATE croupier_auth.lab_sessions SET expires=0 WHERE token_digest=$1', [
+    createHash('sha256').update(expiredSessionCookie.split('=')[1]).digest('hex')]);
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: expiredSessionCookie })).status, 401, 'Lab bearer expires server-side');
 
   const expiring = await authorize(adminCookie);
-  craig.prepare('UPDATE bo_lab_handoffs SET expires=0 WHERE state_digest=?').run(
-    createHash('sha256').update(expiring.stateCookie.split('=')[1]).digest('hex'));
+  await database.query('UPDATE croupier_auth.bo_lab_handoffs SET expires=0 WHERE state_digest=$1', [
+    createHash('sha256').update(expiring.stateCookie.split('=')[1]).digest('hex')]);
   assert.equal((await request(expiring.callback, { cookie: expiring.stateCookie })).status, 410, 'expired code cannot be used');
   const beforeRole = await authorize(adminCookie);
-  craig.prepare("UPDATE users SET role='staff' WHERE id=1").run();
+  await database.query("UPDATE croupier_auth.users SET role='staff' WHERE id=1");
   assert.equal((await request(beforeRole.callback, { cookie: beforeRole.stateCookie })).status, 401, 'role downgrade revokes pending code');
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'role downgrade revokes Lab session');
-  craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
+  await database.query("UPDATE croupier_auth.users SET role='admin' WHERE id=1");
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'old Lab session never revives');
   assert.match(location(await request((await start()).authorize, { cookie: adminCookie })), /^\/admin\/login/, 'old BO cookie never revives');
-  const freshAdmin = administratorCookie();
+  const freshAdmin = await administratorCookie();
   const beforePassword = await authorize(freshAdmin);
-  craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync('Changed-password', 'test-salt', 64).toString('hex'));
+  await database.query('UPDATE croupier_auth.users SET hash=$1 WHERE id=1', [scryptSync('Changed-password', 'test-salt', 64).toString('hex')]);
   assert.equal((await request(beforePassword.callback, { cookie: beforePassword.stateCookie })).status, 401, 'password change revokes pending code');
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'password change revokes Lab session');
-  craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync(password, 'test-salt', 64).toString('hex'));
+  await database.query('UPDATE croupier_auth.users SET hash=$1 WHERE id=1', [scryptSync(password, 'test-salt', 64).toString('hex')]);
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'old Lab session stays revoked after password restore');
-  craig.prepare('DELETE FROM users WHERE id=1').run();
+  await database.query('DELETE FROM croupier_auth.users WHERE id=1');
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'deleted CRAIG account cannot use Lab');
   let limited = false;
   for (let i = 0; i < 130; i++) {
@@ -216,17 +179,13 @@ try {
     assert.equal(response.status, 303);
   }
   assert.equal(limited, true, 'public start is globally rate limited');
-  assert.ok(craig.prepare('SELECT COUNT(*) AS n FROM bo_lab_handoffs').get().n <= 120);
-  craig.exec('DELETE FROM bo_lab_handoffs');
-  const insertPending = craig.prepare('INSERT INTO bo_lab_handoffs (state_digest,next_path,expires) VALUES (?,?,?)');
-  for (let i = 0; i < 500; i++) insertPending.run(String(i).padStart(64, '0'), '/', Date.now() + 300000);
+  assert.ok((await craig.prepare('SELECT COUNT(*) AS n FROM bo_lab_handoffs').get()).n <= 120);
+  await database.query('DELETE FROM croupier_auth.bo_lab_handoffs');
+  await database.query("INSERT INTO croupier_auth.bo_lab_handoffs (state_digest,next_path,expires) SELECT lpad(i::text,64,'0'),'/',$1 FROM generate_series(0,499) AS i", [Date.now() + 300000]);
   let cappedStatus;
-  backofficeLabAuth(config)(
+  await backofficeLabAuth(config)(
     { method: 'GET', url: '/api/auth/lab/start', headers: { host: new URL(lab).host }, socket: { remoteAddress: '127.0.0.1' } },
     { writeHead(status) { cappedStatus = status; }, end() {} });
   assert.equal(cappedStatus, 429, 'persistent outstanding state count is bounded across handler restarts');
-  console.log('BO/Lab auth passed: three exact HTTPS hosts, admin+ only, Partner rejection, browser state, single use, expiry, host-only Secure Lab cookie, loopback check, current CRAIG role/password/deletion, no guest bypass or PII.');
-} finally {
-  if (server && server.exitCode === null) { const stopped = once(server, 'exit'); server.kill(); await stopped; }
-  craig?.close(); await rm(dir, { recursive: true, force: true });
-}
+  t.diagnostic('BO/Lab auth passed: three exact HTTPS hosts, admin+ only, Partner rejection, browser state, single use, expiry, host-only Secure Lab cookie, loopback check, current CRAIG role/password/deletion, no guest bypass or PII.');
+});
