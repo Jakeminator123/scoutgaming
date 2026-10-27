@@ -96,6 +96,54 @@ export async function createEngineDatabase(t) {
   return { name, url: url.href, pool, store, password, engines, query: async (sql, values) => (await pool.query(sql, values)).rows };
 }
 
+/** The Studio policy runtime the engine needs for chat, Probe and published rooms
+ * (CROUPIER_STUDIO_NEON_POLICY=1): every reviewed croupier_studio migration through the
+ * product migrator, the saved project and administration documents through the Studio
+ * repository and, optionally, one operator with one published package through the
+ * operator store. Nothing is inserted beside those writers. Before any engine starts,
+ * the engine's own policy factory must accept the result. Returns the engine `env` and
+ * `preload` plus `policy`, the same saved-policy API the engine reads. */
+export async function installStudioRuntime(t, database, { project, administration, operator = null } = {}) {
+  const [{ planStudioMigrations, applyStudioMigrations, isStudioMigrationPlanReady }, { createStudioRepository },
+    { createOperatorStore }, { createRenderStudioPolicy }] = await Promise.all([
+    import('../../ops/neon-studio/migrations.mjs'), import('../../packages/studio-registry/server/document-repository.mjs'),
+    import('../../packages/operators/server/operator-store.mjs'), import('./engine-studio-policy.mjs')]);
+  const started = Date.now(), pool = database.pool, actor = 'engine-qa-seed';
+  const scope = Object.freeze({ environment: 'test', workspaceId: database.name.replace('croupier_engine_', 'engine-qa-') });
+  const before = await planStudioMigrations({ pool });
+  if (before.schemaPresent) throw Error('engine_qa_studio_schema_not_empty');
+  const { appliedNow } = await applyStudioMigrations({ pool, expectedTarget: before.target, confirm: true });
+  const plan = await planStudioMigrations({ pool });
+  if (!isStudioMigrationPlanReady(plan) || plan.optionalPending.length) throw Error(`engine_qa_studio_schema_not_ready:${JSON.stringify(plan.applied.map(row => row.version))}`);
+  const repository = createStudioRepository({ pool, scope });
+  const documents = [await repository.initializeDocument('project', { value: project, actor }),
+    await repository.initializeDocument('administration', { value: administration, actor })];
+  let published = null;
+  if (operator) {
+    const store = await createOperatorStore({ sql: pool, scope });
+    await store.createOperator({ actor, operatorId: operator.id, slug: operator.slug, name: operator.name });
+    published = await store.publishPackage({ actor, operatorId: operator.id, lanes: operator.lanes, games: operator.games,
+      tables: operator.tables, branding: operator.branding });
+    if (operator.revision !== undefined && published.revision !== operator.revision) throw Error(`engine_qa_package_revision:${published.revision}`);
+  }
+  const env = { CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: scope.environment, CROUPIER_STUDIO_WORKSPACE_ID: scope.workspaceId,
+    // Startup requirements of the Studio surfaces that come with the policy runtime
+    // (signed Studio commands, Lab session check). No test sends to these origins.
+    CROUPIER_VERCEL_INGRESS_SECRET: randomBytes(32).toString('hex'),
+    CROUPIER_PUBLIC_ORIGIN: 'https://engine-qa.invalid', LAB_PUBLIC_URL: 'https://lab.engine-qa.invalid' };
+  // The engine's own factory (configuration, schema readiness, saved policy) must accept
+  // the seed here, so a rejected seed fails with its own code instead of a boot timeout.
+  const runtime = await createRenderStudioPolicy({ storage: database.store,
+    env: { ...env, CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: database.url } });
+  const seeded = { scope, migrations: appliedNow, ledger: plan.applied.map(row => row.version),
+    documents: Object.fromEntries(documents.map(row => [row.kind, row.revision])),
+    dealers: project.dealers.map(row => row.id), rooms: administration.rooms?.map(row => row.id) ?? [],
+    operator: published ? { id: operator.id, slug: operator.slug, packageRevision: published.revision,
+      lanes: published.lanes, tables: published.tables, games: published.games } : null, ms: Date.now() - started };
+  t.diagnostic(`engine-qa studio ${database.name}: ${JSON.stringify(seeded)}`);
+  return { scope, env, preload: [new URL('./engine-studio-policy-register.mjs', import.meta.url).href], policy: runtime.policy, repository, seeded };
+}
+
 /** Starts services/game/server.mjs against `database` and waits for its readiness line.
  * Only OS paths, the fixed Postgres selection and `env` reach the child. */
 export async function startEngine(t, { database, env = {}, preload = [], port, timeoutMs = 30000 } = {}) {
