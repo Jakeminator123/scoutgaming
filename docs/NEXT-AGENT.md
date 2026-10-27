@@ -6,17 +6,19 @@
 
 - **Negativa prov på `c32be1fb`** (Vercel `dpl_9V3PF6upGVZ4z8ZzXSvsYC6phh4h`, Render `dep-dbgbloqfngtc7398pfng`, grind 32/32):
   - Varje sparat utkast gav nya revisioner.
-  - Fyra inaktuella revisioner gav 409, ogiltigt språk 422 och operatör B 404. `players/status` gav 200, vilket är #424-rättningen.
+  - Fyra inaktuella revisioner gav 409, ogiltigt språk 422 och operatör B 404. Operatör B provades som scope med samma Admin-session, inte separat inloggning, och fel roll provades inte live. `players/status` gav 200, vilket är #424-rättningen.
   - Publicering före AV-granskning nekades med 422 `native_material_speech_unbound`, och tillståndet ändrades inte.
   - Efter processbyte `dep-dbgbodnb9u1s73cr54j0` var allt identiskt.
-- **AV-granskning, endast staging:** Jakob godkände som `staging-admin` tio svenska PAOW-tal: åtta `_1` samt `blackjack_7` och `double_3`. Han underkände `blackjack_1` och `double_1`. Det är verklig mänsklig granskning, men den gäller bara stagingens registerposter.
+- **AV-granskning, endast staging:** Jakob godkände med stagingens Admin-konto elva svenska PAOW-tal: åtta `_1` samt `blackjack_7`, `double_3` och `blackjack_3`. Paketet frös `blackjack_7` för blackjack, så paketet har tio godkända tal, ett per replik. Han underkände `blackjack_1` och `double_1`. Det är verklig mänsklig granskning, men den gäller bara stagingens registerposter.
 - **Positiv kedja:**
   - Paketet gick från 5 till 6 till 7. Publiceringen av `room-config-38b14261-cf20-4e31-bc09-042ee40f1d28` (sv/casual, 20000/15000 ms) gav 200 och replay 409. Rummet syns bara hos operatör A.
   - Auktoriserad `/game` gav 200 på paket 7. Speak-händelserna valde godkända tagningar med exakt UUID, SHA och bytes.
   - Efter processbyte `dep-dbgdh7mi0phs7383mrrg` (b08f2a86, grind 32/32) serverades samma version, och en ny hand fick åter godkänt tal.
 - **Gränser:**
   - Processbytena var redeploys via Render MCP, inte dashboardens *Restart service*, och SHA:n kunde inte låsas (Render `dep-dbgcgt7lk1mc73bbq8o0`@15aa3192 och `dep-dbgckaou01pc73aondd0`@4838537d däremellan).
-  - Aktiv-hand-regeln, där pågående hand behåller C0/P0/M0 medan nästa fönster får C1/P1/M1, provades inte live. Den täcks av PR407:s prov och CI.
+  - Aktiv-hand-regeln, där pågående hand behåller C0/P0/M0 medan nästa fönster får C1/P1/M1, provades inte live. Den flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353).
+  - Ingen spelkonsument har bundit `room-config-38b14261`. Insatsprofil och tider (fält 2 och 4) är bevisade som Admin-återläsning plus lagring i `croupier_game.shared_table_configs`/`_heads`. Den enda konsumenten är delat bords koordinator, `shared_table_rooms` har 0 rader i staging, och nativebordets start bär ingen configreferens. Konsumtionen flyttas till K07 g1/g2 med flaggan, enligt scopebeslutet som Jakob ombeds bekräfta i PR #440.
+  - Fält 5:s bord, bakgrund och färg provades inte.
   - Replikerna win, push, blackjack, insurance och double utlöstes inte.
   - Ingen spelkonfiguration är publicerad i produktionen.
 
@@ -25,7 +27,7 @@
 | K04 | 16 kontroller: exakt material (46/46 UUID/SHA), återanslutning, två processbyten mitt i hand och negativa fall. Talet kommer från godkända tagningar med exakta bytes. | Visuellt godkända giv-, hål- och revealklipp (registret säger `unreviewed`/`lab-only`), återstående talrepliker, aktiv-hand-bytet live och produktionens tre lager. Operatör B:s kontext ger 409 i stället för 404. |
 | K05 | Produktion: tio `_1` och 43 svenska tagningar (16 uppladdade från Kevins `c7138759`) har recordedSpeech v2 `verified-embedded-av` och servermätt tid. De 36 kopplade giv- och idleklippen är mätta. Registret 17:08Z: 6 approved, 2 rejected (`blackjack_1`, `double_1`), övriga pending. | Jakobs AV-godkännande i produktionen, kopplade talfack, ompublicerat paket och publicerade spelinställningar för Johns Bet. |
 | K06 | Stagingkedjan Admin → publicering → spel efter processbyte med granskat tal. | Aktiv hand över publicering live, visuellt godkänt material, Johns Bet efter K05 och delat bord. |
-| K07 | 31 av 35 kontroller passerade, 3 blockerades och 1 kriterium ersattes. Idempotens, samtidiga kommandon, ledger lika med Neon (SHA `7459106d…`), utloggning och isolering passerar. | g1 (platsfrigivning, #426) och g2 (dueTicks) kräver `CROUPIER_SHARED_TABLE_ENABLED=1` i staging, och flera spelare vid samma delade bord saknas. |
+| K07 | K07 ensamt: 16 pass, 2 blockerade (g1/g2 503) och 1 ersatt kriterium (e1). Den gemensamma K04/K07-körningen hade 35 kontroller; K04:s del är 15 pass plus a4, som passerade senare, alltså 16. Idempotens, samtidiga kommandon, ledger lika med Neon (SHA `7459106d…`), utloggning och isolering passerar. | g1 (platsfrigivning, #426) och g2 (dueTicks) kräver `CROUPIER_SHARED_TABLE_ENABLED=1` i staging, och flera spelare vid samma delade bord saknas. |
 
 Dagens PR:er:
 

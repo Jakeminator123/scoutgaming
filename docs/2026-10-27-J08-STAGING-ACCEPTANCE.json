@@ -144,7 +144,7 @@
     "lane": "paow-isolated-review-20261026",
     "neighborRoomSameOperator": "room-cb4c4696-f671-c546-eb15-6fb67d09feea",
     "operatorBRoom": "room-930c39d1-beeb-535a-b79e-06b6aff127bd",
-    "adminAccount": "staging-admin (stagingens Admin-konto)"
+    "adminAccount": "stagingens Admin-konto (staging-admin)"
   },
   "j08": {
     "status": "verified",
@@ -299,7 +299,7 @@
     },
     "avReview": {
       "kind": "mänsklig ljud- och bildgranskning i Admin via Röst & tal -> Godkänn tal (PR433/PR436), endast staging",
-      "reviewer": "Jakob, inloggad som staging-admin",
+      "reviewer": "Jakob, inloggad med stagingens Admin-konto (staging-admin)",
       "approved": [
         "goodluck_1",
         "insurance_1",
@@ -310,7 +310,8 @@
         "dealerbust_1",
         "win_1",
         "push_1",
-        "lose_1"
+        "lose_1",
+        "blackjack_3"
       ],
       "rejected": [
         "double_1",
@@ -372,7 +373,8 @@
         }
       ],
       "projectRevision": "studio-bc641d5d-0304-4009-ac1f-51ba7a13ddf7 -> studio-c3d173ec-f930-4ec9-b5a1-8d0e3a3e9d4c",
-      "limit": "Gäller endast stagingens registerposter. Ingen AV-attest för produktionen följer av detta; produktionens granskning görs separat (K05)."
+      "limit": "Gäller endast stagingens registerposter. Ingen AV-attest för produktionen följer av detta; produktionens granskning görs separat (K05).",
+      "approvedNote": "Elva godkända. blackjack_3 godkändes 16:58:23.995Z; paketet frös blackjack_7 för blackjack, så paket 6/7 har tio godkända tal, ett per replik."
     },
     "positive": {
       "at": "2026-10-27T16:59:45.236Z",
@@ -498,15 +500,18 @@
     "fieldMatrix": {
       "reference": "docs/JOHN-HANDOFF.md, avsnittet Samlat niofältskvitto utan ändrade slutkriterier",
       "1 namn/företag/komposition/spel": "rum, operatör, dealer och paket i launch 200 och lobby A; främmande operatör 404",
-      "2 insatsprofil": "sv/prive -> sv/high -> sv/casual sparat, återläst och publicerat",
+      "2 insatsprofil": "sv/prive -> sv/high -> sv/casual sparat, återläst och publicerat. Gräns: bevisat som Admin-återläsning plus lagring (croupier_game.shared_table_configs/_heads har 38b14261 med casual 1/500/50). Ingen spelkonsument har bundit configVersion; konsumtionen flyttas till K06/K07 g1/g2.",
       "3 språk": "sv publicerat med tio godkända svenska tal; ogiltigt språk 422",
-      "4 insats-/handlingstid": "publicerad återläsning betMs 20000/actionMs 15000",
-      "5 bord/bakgrund/dealer/färg": "dealer paow och paketrevision 7 i launch; aktiv-hand-regeln C0/P0/M0 mot C1/P1/M1 inte provad live (se limits)",
+      "4 insats-/handlingstid": "publicerad återläsning betMs 20000/actionMs 15000, lagrad i shared_table_configs. Gräns: endast delat bords koordinator konsumerar värdena och shared_table_rooms har 0 rader i staging; konsumtionen flyttas till K06/K07 g1/g2.",
+      "5 bord/bakgrund/dealer/färg": "dealer paow och paketrevision 7 i launch. Bord, bakgrund och färg provades inte. Aktiv-hand-regeln C0/P0/M0 mot C1/P1/M1 provades inte live och flyttas till K06 (PR407, mergad 8fcb920a, head 857347de, CI40347468353).",
       "6 dealer/klipp/idle/tal": "tio godkända tal fryses i paket 6/7; speak-val ger exakt UUID/SHA/bytes",
-      "7 taldrift": "ingen GPU-start beställd; befintlig miljögrind återanvänds",
+      "7 taldrift": "ingen GPU-start beställd; befintlig miljögrind och driftrevision täcks av moving-drift-admin.test.mjs och moving-drift-controls.test.mjs, enligt handoffens matris",
       "8 djuplänk": "auktoriserad /game 200 med data-game-package-revision=7; främmande query 404 (K07 j2)",
       "9 skobevis/audit": "koddelen verifierad i PR406 (21/21, full CI); inget nytt molnprov"
-    }
+    },
+    "operatorBScope": "\"Operatör B 404\" avser operatör B:s scope med samma Admin-session, inte en separat inloggning. Fel roll provades inte live.",
+    "consumerLimit": "Ingen spelkonsument har bundit configVersion room-config-38b14261. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. \"Operatör B 404\" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live.",
+    "scopeDecision": "Spelets konsumtion av publicerade gränser och aktiv-hand-regeln flyttas till K06/K07; Jakob ombeds bekräfta beslutet i PR #440."
   },
   "k04": {
     "codeShas": [
@@ -959,7 +964,8 @@
   },
   "limits": [
     "Processbytena var redeploys via Render MCP trigger_deploy, inte dashboardens Restart service.",
-    "Aktiv-hand-regeln (pågående hand behåller C0/P0/M0 medan nästa fönster tar C1/P1/M1) provades inte live. Den täcks av PR407:s beteendeprov och CI40347468353 och provas live i K06/K07.",
+    "Aktiv-hand-regeln (pågående hand behåller C0/P0/M0 medan nästa fönster tar C1/P1/M1) provades inte live. Den flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353).",
+    "Ingen spelkonsument har bundit configVersion room-config-38b14261. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. \"Operatör B 404\" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live.",
     "Talreplikerna win, push, blackjack, insurance och double utlöstes inte i de två händerna (utfall lose och dealerbust).",
     "Ingen spelkonfiguration är publicerad i produktionen; J08-beviset gäller isolerad staging.",
     "Delat bord (K07 g1/g2) kräver CROUPIER_SHARED_TABLE_ENABLED=1 i staging.",
