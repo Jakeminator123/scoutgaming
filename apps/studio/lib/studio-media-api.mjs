@@ -102,6 +102,44 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         },{presentationMutation});
         return json({media:saved});
       }
+      if (baseOverride === undefined && path === `${base}/speech-review` && request.method === 'POST') {
+        if (request.headers.get('origin') !== new URL(request.url).origin
+          || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
+        const body = await readStudioDocumentJson(request);
+        if (Object.keys(body).sort().join(',') !== 'dealerId,expectedIdentity,id,language,lineId,sha256,verdict'
+          || typeof body.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(body.sha256) || !['approved','rejected',null].includes(body.verdict)
+          || ![body.dealerId,body.lineId,body.language].every(value=>typeof value==='string'&&value.length>0&&value.length<=100)) fail('studio_invalid_request',400);
+        validateMediaId(body.id);
+        if (typeof repository?.getMedia !== 'function' || typeof repository?.reviewRecordedSpeech !== 'function'
+          || typeof repository?.transaction !== 'function' || typeof videoRegistry !== 'function') fail('studio_media_registry_unavailable');
+        if (typeof mutationTransaction !== 'function') fail('studio_mutation_transaction_required');
+        if (canonicalStudioJson(validateStudioScope(repository.scope)) !== canonicalStudioJson(scope)) fail('studio_request_rejected',403);
+        // The take is addressed by its slot as well as its UUID, so a stale tab
+        // cannot review a file that has since moved to another dealer or line.
+        const take = async () => {
+          const record = await repository.getMedia(body.id);
+          if (!record) fail('studio_media_missing',404);
+          if (record.sha256 !== body.sha256) fail('studio_conflict',409);
+          const speech = record.classification.recordedSpeech;
+          if (!speech || record.classification.dealerId !== body.dealerId || speech.dealerId !== body.dealerId
+            || speech.lineId !== body.lineId || speech.language !== body.language) fail('studio_speech_take_missing',404);
+          return record;
+        };
+        const presentationMutation = {metadata:(await take()).classification};
+        await refresh();
+        const saved = await mutationTransaction(async () => {
+          await refresh();
+          return repository.transaction(async () => {
+            const current = await take();
+            await requireSavedVideoDealer(repository,current.classification.dealerId);
+            return repository.reviewRecordedSpeech(body.id,{sha256:body.sha256,expectedRevision:current.revision,
+              expectedIdentity:body.expectedIdentity,verdict:body.verdict,actor});
+          },{presentationMutation});
+        },{presentationMutation});
+        // A verdict records what a person saw and heard. It is not a lip-sync
+        // measurement and does not publish a package or room by itself.
+        return json({review:saved.classification.recordedSpeech.review,attestation:'human-av-review',inventory:await videoRegistry()});
+      }
       if (baseOverride === undefined && [`${base}/delete-check`,`${base}/delete`].includes(path) && request.method === 'POST') {
         if (request.headers.get('origin') !== new URL(request.url).origin || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
         const body=await readStudioDocumentJson(request);await refresh();
