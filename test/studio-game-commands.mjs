@@ -165,15 +165,17 @@ test('post-commit cleanup failures keep the accepted 200 and report only safe co
   const ok=await scopedApi(store,async({afterCommit})=>{
     late=afterCommit;
     afterCommit(()=>{throw Error('PRIVATE CANCEL FAILURE');},'players/status:cancel');
-    afterCommit(()=>{throw Object.assign(Error('player_memory_dealer_unavailable'),{statusCode:403});},'probe:cancel');
+    afterCommit(()=>{throw Object.assign(Error('player_memory_dealer_unavailable'),{statusCode:403,step:'probe',subject:'player-2'});},'apikeys:cancel');
+    afterCommit(()=>{throw Object.assign(Error('PRIVATE'),{statusCode:'403',step:'provider',subject:'x'.repeat(257)});},'bad:cancel');
     afterCommit(()=>{late(()=>{throw Error('late hook ran');},'late:hook');});
     return{ok:true};
   },{onSettleError:info=>settleErrors.push(info)})(scopedRequest());
   assert.equal(ok.status,200);assert.equal((await ok.text()).includes('PRIVATE'),false);assert.equal(log.at(-1),'COMMIT');
   assert.deepEqual(settleErrors,[
-    {action:'players/status',hook:'players/status:cancel',code:undefined,statusCode:undefined,playerId:'player-1'},
-    {action:'players/status',hook:'probe:cancel',code:'player_memory_dealer_unavailable',statusCode:403,playerId:'player-1'},
-    {action:'players/status',hook:'late:hook',code:'after_commit_closed',statusCode:undefined,playerId:'player-1'}]);
+    {action:'players/status',hook:'players/status:cancel',code:undefined,statusCode:undefined,step:undefined,playerId:'player-1'},
+    {action:'players/status',hook:'apikeys:cancel',code:'player_memory_dealer_unavailable',statusCode:403,step:'probe',playerId:'player-2'},
+    {action:'players/status',hook:'bad:cancel',code:undefined,statusCode:undefined,step:undefined,playerId:'player-1'},
+    {action:'players/status',hook:'late:hook',code:'after_commit_closed',statusCode:undefined,step:undefined,playerId:'player-1'}]);
   assert.equal(JSON.stringify(settleErrors).includes('PRIVATE'),false);
 });
 test('afterCommit rejects invalid or excessive registrations inside the transaction and never runs hooks after a rollback',async()=>{
@@ -190,4 +192,11 @@ test('afterCommit rejects invalid or excessive registrations inside the transact
     {onSettleError:()=>{ran++;}})(scopedRequest());
   assert.equal(failed.status,400);assert.equal(ran,0);
   assert.ok(rejected.log.includes('ROLLBACK'));assert.equal(rejected.log.includes('COMMIT'),false);
+});
+test('an unencodable command result rolls back the mutation and nonce before any hook runs',async()=>{
+  const {store,log}=await scopedStore();let ran=0;
+  const result=await scopedApi(store,async({afterCommit})=>{afterCommit(()=>{ran++;});return{ok:true,balance:1n};},{onSettleError:()=>{ran++;}})(scopedRequest());
+  assert.equal(result.status,503);assert.equal(ran,0);
+  assert.ok(log.includes('ROLLBACK'));assert.equal(log.includes('COMMIT'),false);
+  assert.throws(()=>scopedApi(store,async()=>({ok:true}),{onSettleError:'warn'}),{statusCode:503});
 });

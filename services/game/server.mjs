@@ -632,15 +632,20 @@ const operatorSpeechQa = createOperatorSpeechQa({
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
-const {createPlayerPasswordCommand}=(await import('../../packages/storage/server/player-administration.mjs'));
-// Every step runs even when another fails; only a safe code reaches the settle report.
+const createPlayerPasswordCommand=playerAdministration ? (await import('../../packages/storage/server/player-administration.mjs')).createPlayerPasswordCommand : null;
+// Every step runs even when another fails; the first failure is rethrown with
+// its step and player. Chunks of 4 bound the probe step's pooled transactions.
 const cancelPlayerRuntime=async (playerIds,reason)=>{
-  let failed=false;
-  for(const playerId of [playerIds].flat())for(const step of [()=>speechStreamService?.cancelPlayer(playerId),
-    ()=>cancelPlayerChats(activePlayerChats,playerId,reason),()=>probeRuntime.cancel({playerId,dealerId:'astrid'},reason)]){
-    try{await step();}catch{failed=true;}
-  }
-  if(failed)throw new Error('player_runtime_cancel_partial');
+  let first;
+  const cancelOne=async playerId=>{
+    for(const [step,run] of [['speech',()=>speechStreamService?.cancelPlayer(playerId)],
+      ['chat',()=>cancelPlayerChats(activePlayerChats,playerId,reason)],['probe',()=>probeRuntime.cancel({playerId,dealerId:'astrid'},reason)]]){
+      try{await run();}catch(error){first??=Object.assign(new Error(error?.message),{statusCode:error?.statusCode,step,subject:playerId});}
+    }
+  };
+  const ids=[playerIds].flat();
+  for(let index=0;index<ids.length;index+=4)await Promise.allSettled(ids.slice(index,index+4).map(cancelOne));
+  if(first)throw first;
 };
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   // The isolated K04 QA start forbids the ingress secret variable; a random
@@ -650,6 +655,7 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
   execute: async ({ action, body, actor, afterCommit }) => {
     // Runtime cancellation follows the committed account change and cannot undo it.
+    if (action === 'players/password' && !createPlayerPasswordCommand) throw Object.assign(new Error('Player administration unavailable'), { statusCode: 503 });
     if (action === 'players/password') return createPlayerPasswordCommand({ administration: playerAdministration,
       cancelRuntime: async playerId => { afterCommit(() => cancelPlayerRuntime(playerId, 'player_password_changed'), 'players/password:cancel'); } })({ body, actor });
     if (action === 'players/status') {

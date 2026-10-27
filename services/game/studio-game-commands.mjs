@@ -12,7 +12,7 @@ const settleWarning = report => console.warn(JSON.stringify({ event: 'studio_gam
 
 export function createStudioGameCommandApi({ scope, secret, publicOrigin, authorize, execute, boDb, now = Date.now, onSettleError = settleWarning } = {}) {
   scope = validateStudioScope(scope);
-  if (typeof secret !== 'string' || Buffer.byteLength(secret) < 32 || typeof authorize !== 'function' || typeof execute !== 'function' || !boDb?.transaction) fail(503);
+  if (typeof secret !== 'string' || Buffer.byteLength(secret) < 32 || typeof authorize !== 'function' || typeof execute !== 'function' || !boDb?.transaction || typeof onSettleError !== 'function') fail(503);
   return async request => {
     try {
       const url = new URL(request.url);
@@ -41,16 +41,21 @@ export function createStudioGameCommandApi({ scope, secret, publicOrigin, author
       // accepted command, and Studio-scoped work never waits inside this lock.
       const settled = [], subject = typeof command.body?.playerId === 'string' && command.body.playerId.length <= 256 ? command.body.playerId : undefined;
       let open = true;
-      const report = (hook, code, statusCode) => {
-        try { onSettleError({ action: command.action, hook, code, statusCode, playerId: subject }); } catch { /* Reporting cannot alter the response. */ }
+      const report = (hook, error, code) => {
+        const failedFor = typeof error?.subject === 'string' && error.subject.length <= 256 ? error.subject : subject;
+        try {
+          onSettleError({ action: command.action, hook, code: code ?? (/^[a-z0-9_]{1,64}$/.test(error?.message ?? '') ? error.message : undefined),
+            statusCode: Number.isInteger(error?.statusCode) ? error.statusCode : undefined,
+            step: ['speech', 'chat', 'probe'].includes(error?.step) ? error.step : undefined, playerId: failedFor });
+        } catch { /* Reporting cannot alter the response. */ }
       };
       const afterCommit = (work, hook) => {
         hook = typeof hook === 'string' && /^[a-z0-9_/:.-]{1,64}$/.test(hook) ? hook : undefined;
-        if (!open) return report(hook, 'after_commit_closed');
+        if (!open) return report(hook, undefined, 'after_commit_closed');
         if (typeof work !== 'function' || settled.length >= MAX_SETTLE_HOOKS) throw new TypeError('studio_game_command_after_commit_invalid');
         settled.push({ work, hook });
       };
-      const result = await boDb.transaction(async () => {
+      const accepted = await boDb.transaction(async () => {
         fresh();
         const current = await authorize(request);
         const acceptedAt=fresh();
@@ -65,15 +70,12 @@ export function createStudioGameCommandApi({ scope, secret, publicOrigin, author
         fresh();
         const result = await execute({ action: command.action, body: command.body, actor: session, scope, afterCommit });
         if (!result || result.error || result.ok === false) fail(result?.statusCode || 400);
-        return result;
+        // Serialized before commit: an unencodable result still rolls back the mutation and nonce.
+        return response(200, { ...result, ok: true, authority: 'render', scope });
       }).finally(() => { open = false; });
-      const accepted = response(200, { ...result, ok: true, authority: 'render', scope });
       // Sequential: each hook may open its own pooled transaction.
       for (const { work, hook } of settled) {
-        try { await work(); } catch (error) {
-          report(hook, /^[a-z0-9_]{1,64}$/.test(error?.message ?? '') ? error.message : undefined,
-            Number.isInteger(error?.statusCode) ? error.statusCode : undefined);
-        }
+        try { await work(); } catch (error) { report(hook, error); }
       }
       return accepted;
     } catch (error) {
