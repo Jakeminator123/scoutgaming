@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { prepareContainerUser } from '../container-entry.mjs';
+import { prepareContainerUser, startFailureReason } from '../container-entry.mjs';
 
 // Pure configuration fixtures: no database client, network or provider token is used.
 function fixtureGameDatabaseUrl(address, username = 'fixture-user') {
@@ -79,4 +79,20 @@ test('QA scratch is bounded to its own database and created after privilege drop
     calls.length=0;await assert.rejects(prepareContainerUser({...qaEnv,...change},{fs,proc}));assert.deepEqual(calls,[]);
   }
   await assert.rejects(prepareContainerUser(qaEnv,{fs:{...fs,realpath:async path=>path.endsWith('abc92154cb15')?'/other':path},proc}));
+});
+
+test('start failure reason is one bounded line with codes preferred and every URL masked', () => {
+  assert.equal(startFailureReason(Object.assign(new Error('listen EADDRINUSE 0.0.0.0:10000'), { code: 'EADDRINUSE' })), 'EADDRINUSE');
+  assert.equal(startFailureReason(Object.assign(new Error('password authentication failed for user "game"'), { code: '28P01' })), '28P01');
+  assert.equal(startFailureReason(new Error('Invalid or missing CROUPIER_PUBLIC_ORIGIN.')), 'Invalid or missing CROUPIER_PUBLIC_ORIGIN.');
+  assert.equal(startFailureReason(new Error('A cloud child exited before readiness.')), 'A cloud child exited before readiness.');
+  const leaked = startFailureReason(new Error('cannot reach postgresql://game:secret@game.neon.tech/game?sslmode=require\nor https://example.vercel.app/x'));
+  assert.equal(leaked, 'cannot reach [url] or [url]');
+  assert.doesNotMatch(leaked, /secret|neon\.tech|vercel/);
+  // An unsafe code (spaces/URL) never wins over the redacted message.
+  assert.equal(startFailureReason(Object.assign(new Error('bad https://x.test'), { code: 'see https://x.test' })), 'bad [url]');
+  const long = startFailureReason(new Error('x'.repeat(500) + ' https://secret.example.test'));
+  assert.equal(long.length, 200); assert.doesNotMatch(long, /secret|\[url/);
+  assert.doesNotMatch(startFailureReason(new Error('y'.repeat(195) + ' https://secret.example.test')), /secret/);
+  for (const value of [undefined, null, '', new Error('')]) assert.equal(startFailureReason(value), 'unknown');
 });
