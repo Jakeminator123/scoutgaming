@@ -5,6 +5,7 @@ import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ASTRID_VOICE_PROFILE } from '../../packages/presentation/contracts/astrid-voice-profile.mjs';
+import { dealerChatLanguage } from '../../packages/presentation/contracts/dealer-chat-persona.mjs';
 import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd } from './generated-speech-session.mjs';
 import { createSpeechJournalLease, requireSpeechJournal } from '../../packages/presentation/server/speech-journal-lease.mjs';
 import { acceptsWorkerBinding } from '../astrid-gpu-worker/gateway/worker-binding.mjs';
@@ -182,7 +183,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     wav.write('RIFF'); wav.writeUInt32LE(wav.length-8,4); wav.write('WAVEfmt ',8); wav.writeUInt32LE(16,16);
     wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22); wav.writeUInt32LE(24000,24); wav.writeUInt32LE(48000,28);
     wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34); wav.write('data',36); wav.writeUInt32LE(pcm.length,40); pcm.copy(wav,44); pcm.fill(0);
-    const request = {dealerId:record.input.dealerId,exactText:record.input.text,language:'en',
+    const request = {dealerId:record.input.dealerId,exactText:record.input.text,language:dealerChatLanguage(record.input.dealerId),
       profileRevision:record.runtime?.profileRevision ?? digest(JSON.stringify(ASTRID_VOICE_PROFILE)),
       audio:{bytes:wav,contentType:'audio/wav'},video:{bytes:video,contentType:'video/mp4'}};
     // Starts after the final media/control frame has been forwarded. Storage

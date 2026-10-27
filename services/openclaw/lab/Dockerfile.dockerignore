@@ -10,6 +10,7 @@
 !services/openclaw/lab/fixtures/scenarios.json
 !services/openclaw/lab/deploy/start-director.mjs
 !packages/presentation/contracts/dealer-identity.mjs
+!packages/presentation/contracts/dealer-chat-persona.mjs
 !packages/director/admin-error.mjs
 !packages/director/astrid-observation.mjs
 !packages/director/companion-personas.mjs
