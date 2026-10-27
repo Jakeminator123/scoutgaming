@@ -14,9 +14,12 @@ const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const SQLITE_PATTERN = ['node', 'sqlite'].join(':') + '|' + 'Database' + 'Sync';
 export const ALLOWLIST = 'tools/no-sqlite-allowlist.json';
 
-export function sqliteMentions({ cwd = repository, tree = null } = {}) {
+export function sqliteMentions({ cwd = repository, tree = null, paths = null } = {}) {
   // Without a tree: tracked files as edited in the working tree (build output stays out).
-  const args = ['grep', '-I', '-l', '-E', SQLITE_PATTERN, ...(tree ? [tree] : []), '--', '.'];
+  // With paths: only those pathspecs. A lazily fetched (blob:none) sparse clone would
+  // otherwise download every blob of the tree one by one; CI passes the merge diff plus the allowlist.
+  if (paths && !paths.length) return [];
+  const args = ['grep', '-I', '-l', '-E', SQLITE_PATTERN, ...(tree ? [tree] : []), '--', ...(paths ?? ['.'])];
   let output;
   try { output = execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024 }); }
   catch (error) { if (error.status === 1) return []; throw error; } // git grep: 1 means no match.
@@ -43,14 +46,19 @@ export function checkSqliteRatchet({ mentions, allowlist }) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
-  const tree = args.length === 2 && args[0] === '--tree' && /^[\w./^~-]+$/.test(args[1]) ? args[1] : args.length === 0 ? null : undefined;
-  if (tree === undefined) { console.error('Usage: node tools/check-no-sqlite.mjs [--tree HEAD]'); process.exitCode = 2; }
+  const ref = /^[\w./^~-]+$/;
+  const tree = (args.length === 2 || args.length === 4) && args[0] === '--tree' && ref.test(args[1]) ? args[1] : args.length === 0 ? null : undefined;
+  const since = args.length === 4 && tree && args[2] === '--changed-since' && ref.test(args[3]) ? args[3] : args.length === 4 ? undefined : null;
+  if (tree === undefined || since === undefined) { console.error('Usage: node tools/check-no-sqlite.mjs [--tree HEAD [--changed-since HEAD^1]]'); process.exitCode = 2; }
   else {
     const allowlist = JSON.parse(readFileSync(join(repository, ALLOWLIST), 'utf8'));
-    const mentions = sqliteMentions({ tree });
+    // --changed-since: grep only the files of that diff plus the allowlist, so a blob:none clone fetches a handful of blobs.
+    const changed = since ? execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMR', since, tree], { cwd: repository, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split(/\r?\n/).filter(Boolean) : null;
+    const paths = changed ? [...new Set([...changed, ...allowlist.map(entry => entry?.path).filter(path => typeof path === 'string')])].sort() : null;
+    const mentions = sqliteMentions({ tree, paths });
     const errors = checkSqliteRatchet({ mentions, allowlist });
     for (const error of errors) console.error(error);
     if (errors.length) process.exitCode = 1;
-    else console.log(`SQLite ratchet: ${mentions.length} allowlisted files (${tree ?? 'working tree'}); no new use.`);
+    else console.log(`SQLite ratchet: ${mentions.length} allowlisted files (${tree ?? 'working tree'}${since ? `, ${paths.length} pathspecs since ${since}` : ''}); no new use.`);
   }
 }

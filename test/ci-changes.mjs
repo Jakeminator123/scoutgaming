@@ -206,8 +206,8 @@ test('CI uses one Studio discovery registry and retains blocking product checks'
   assert.match(engine, /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
   assert.match(engine, /if: \$\{\{ !cancelled\(\) \}\}/);
   assert.doesNotMatch(engine, /continue-on-error: true/);
-  const ratchet = yaml.indexOf('node tools/check-no-sqlite.mjs --tree HEAD');
-  assert.ok(yaml.indexOf('  changes:') < ratchet && ratchet < yaml.indexOf('  documentation:'), 'the SQLite ratchet runs on the full commit tree in the classifier job');
+  const ratchet = yaml.indexOf('node tools/check-no-sqlite.mjs --tree HEAD --changed-since HEAD^1');
+  assert.ok(yaml.indexOf('  changes:') < ratchet && ratchet < yaml.indexOf('  documentation:'), 'the SQLite ratchet runs on the merge diff plus the allowlist in the classifier job');
   const timings = steps.find(step => /^Save regression group timings/.test(step));
   assert.match(timings, /if: always\(\)/);
   assert.match(timings, /continue-on-error: true/);

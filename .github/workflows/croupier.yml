@@ -53,7 +53,7 @@ jobs:
       - name: No new SQLite use (shrinking allowlist)
         run: |
           node --test test/check-no-sqlite.mjs
-          node tools/check-no-sqlite.mjs --tree HEAD
+          node tools/check-no-sqlite.mjs --tree HEAD --changed-since HEAD^1
 
   documentation:
     needs: changes
