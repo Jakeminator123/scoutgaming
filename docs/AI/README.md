@@ -1,90 +1,52 @@
 # AI och OpenClaw
 
-Gemensam ingång för AI-agenternas dokumentation. Varje guide har en enda
-innehållsplats. Kodsökvägar, promptpaket och maskinlästa kontrakt ligger kvar
-vid implementationen; de är inte fristående handböcker.
+Ingång till de AI-dokument som gäller i dag. Kod, promptpaket och maskinlästa
+kontrakt ligger vid implementationen; dokumenten här förklarar ansvar och
+gränser. Daterad samordning, prov och ändringslogg till och med 27 oktober 2026
+finns i [historiken](../history/AI-AGENTFLODE-2026-10.md).
 
 | Behov | Läs här |
 | --- | --- |
-| Publik D-ID-chatt, separat N1-Adminrobot, behörigheter, dealerimport och arkivering | [Agentflöde och ändringslogg](scoutgaming-agentflode.md) |
-| Director, Gateway, inloggning och lokala prov | [OpenClaw-guider](openclaw/README.md) |
-| Tjänsteansvar, datakällor och kvarvarande arbete | [Migrationsöversikten](../CLOUD-MIGRATION.md) |
-| Produktens ingångar, bolagsåtkomst, äldre länkar och användarsteg | [Användarguiden](../../apps/studio/docs/README.md) |
-| Gemensamma begrepp | [Terminologi](../../apps/studio/docs/TERMINOLOGI.md) |
-| Medier, uppspelning och kvarvarande acceptans | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
-| Klippstruktur, Neon/Blob-migration och gemensam talworker | [Kanonisk struktur och genomförandeplan](../storage/BLOB-NEON.md) |
-| Miljövariabler och ansvar | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
-| Aktuell leverans och nästa steg | [NEXT-AGENT](../NEXT-AGENT.md); historik och daterade kvitton i [docs/history](../history/README.md) |
+| Officiella OpenClaw-källor, versionslås och läsregel | [OpenClaw-index](openclaw/README.md) och [källindex](openclaw/OPENCLAW-DOCS.md) |
+| Spelarens tal: Director → Gateway → `croupier-speech` | [Produkttal](openclaw/PRODUCT-SPEECH-DEPLOYMENT-SV.md) |
+| Director, Gateway, nycklar och Render-drift | [Drift](openclaw/DEPLOYMENT.md) |
+| OpenClaws egen dashboard | [Dashboard](openclaw/DASHBOARD-SV.md) |
+| Astrids labbchatt, profil och minne | [Social chatt](openclaw/SOCIAL-CHAT.md) och [Companion](openclaw/COMPANION.md) |
+| Runtimepaketet som Gateway-rollerna får | [Runtime-bundle](../../services/openclaw/lab/deploy/runtime-bundle/README.md) |
+| Medier och uppspelning | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
+| Miljövariabler | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
+| Begrepp | [Ordlistan](../../apps/studio/docs/TERMINOLOGI.md) |
+| Läge och nästa steg | [NEXT-AGENT](../NEXT-AGENT.md) |
 
-Admin, partnerportal och lobby hör till Vercels webb-/Studio-tjänster;
-Render-tjänsten `croupier-v3` kör spelmotorn. Neon är enda produktregistret
-och privat Blob innehåller mediebyte. `lab/` och `services/openclaw/lab/` är aktiva
-kodsökvägar, inte lokala kopior av produkten. Isolerade fixtures och äldre
-authoringfiler är inte alternativa produktregister.
+## Vem anropar vad
 
-Dragan är ordinarie dealer. Astrids guider och exakta mediereferenser är
-legacyunderlag för bevarade tal-/OpenClaw-flöden, utan trelagersversion.
-Aktuell leverans och acceptans följs i [överlämningen](../NEXT-AGENT.md);
-daterade prov nedan ersätter inte den.
+| Flöde | Väg | Gräns |
+| --- | --- | --- |
+| Spelaren talar med dealern | spelmotorn (`croupier-v3`) → Director `croupier-lab-director` `/api/product/speech` → privat Gateway `croupier-lab-openclaw` → `croupier-speech` | Svaret är `recordedLine`, `generatedText` eller `silence`. Kort, sko, saldo och utfall ägs av spelmotorn. |
+| Adminroboten (`/studio/api/assistant`) | Vercel → modelladapter i `apps/studio/lib/assistant-*.mjs`; OpenClaw-läget går via Director | Kräver aktuell N1-session. Högst tre paginerade registerläsningar per svar; skrivning bara efter granskning och separat bekräftelse. Ingen fri SQL, shell, signerad URL eller nyckel. |
+| Scoutguiden (`/studio/api/public-assistant`) | Vercel → modell, svaret kan läsas upp av D-ID (`speak` med färdig text) | Fast publik sajtinformation. Ingen databas, inga interna verktyg. D-ID:s nyckel stannar på servern. |
+| Klippassistenten (`POST /api/dealers/import-proposal`) | Vercel → modell i `apps/studio/lib/dealer-import-model.mjs` | Föreslår klippfack efter klippkartan. Inga verktyg, inga bildrutor, kan inte spara; servern räknar `role` och validerar alternativen. |
+| OpenClaws dashboard | Director `/openclaw/` → Gatewayns Control UI → `croupier-operator` | Separat administrativ konversation; styr inte webbchatten. |
 
-## Daterad driftkontroll: 13 oktober 2026
+Gatewayn har fem roller, inte fem servrar: `croupier-director` (väljer
+kompatibel presentationsvariant), `croupier-chat` (förklarar konfiguration),
+`croupier-operator` (dashboarden), `croupier-social` (Astrids labbchatt) och
+`croupier-speech` (spelarens tal). Repots konfiguration har heartbeat `0m`,
+nekade verktyg och avstängd cron och webbläsare, så ingen roll arbetar i
+bakgrunden. Effektiv modell per roll ligger i Gatewayns beständiga
+`openclaw.json` och kan skilja sig från miljöns standard; läs den innan ett
+modellbyte.
 
-Läsning av Renders tjänste- och deploy-API i Jakobs bekräftade arbetsyta.
-Sju tjänster totalt; fyra hör till `Jakeminator123/scoutgaming`. Övriga tre
-hör till andra repon och är inte extra instanser av Scoutgamings Gateway.
-Alla fyra nedan var ej suspenderade och hade en `live`-deploy.
+## Regler
 
-| Tjänst | Instanser | Roll och plan | Live-commit |
-| --- | ---: | --- | --- |
-| croupier-v2 | 1 | Spelserver, 1c-2g | `579c47e3` |
-| croupier-lab-director | 1 | Publik autentiserad adapter, starter | `e57f28ef` |
-| croupier-lab-openclaw | 1 | Privat Gateway, standard | `e57f28ef` |
-| croupier-vercel-preview-qa | 1 | Separat QA, 1c-2g | `ee060804`, 5 oktober |
-
-Spelmotorn flyttades 24 oktober till `croupier-v3`; `croupier-v2` och
-`croupier-vercel-preview-qa` raderades 27 oktober 2026.
-
-Blueprinten [render.yaml](../../services/openclaw/lab/render.yaml) omfattar endast
-Director och Gateway, vilket stämmer med deras nuvarande tjänsteuppdelning.
-Fem agentroller i Gateway är fem rollkonfigurationer, inte fem servrar.
-Vercel, Neon, Cartesia och RunPod ingår inte i antalet Render-instanser.
-
-Director och Gateway har varsin beständig disk på 1 GB. Det fungerar för
-dagens enskilda instanser, men Render tillåter inte horisontell skalning av
-tjänster med disk och deras driftsättningar saknar zero-downtime-garantin.
-Se [Render: skalning](https://render.com/docs/scaling) och
-[beständiga diskar](https://render.com/docs/disks). Ökad last eller krav på
-redundans kräver separat plan för delat tillstånd, sessioner och återställning;
-att bara öka antalet agentroller löser inte detta.
-
-Bedömning: tjänstegränserna är rimliga och kodens versionslås ger
-reproducerbarhet. Detta är inte en belastningsmätning, versions-/sårbarhetsaudit
-eller bevis för hög tillgänglighet. QA:s äldre revision kan vara avsiktlig;
-dagens kod kan inte godkännas med enbart dess gamla prov. Inga tjänster,
-instanser, nycklar eller modellkonfigurationer ändrades vid denna kontroll.
-
-## Vilka guider beskriver vad?
-
-- **Drift och aktiv integration:** DEPLOYMENT, RENDER-START, DASHBOARD,
-  LOCAL-CONNECTION, PRODUCT-SPEECH och OPENCLAW-DOCS under `openclaw/`.
-  Äldre prov i dem är daterade belägg, inte dagens driftstatus.
-- **Astrids avgränsade prov:** SOCIAL-CHAT och COMPANION beskriver social
-  chatt och lokal profil/minne, inte hela produktens dealeruppspelning.
-  ASTRID-CAMERA-VOICE-PLAN är ursprungligt designunderlag för kamera/mikrofon;
-  implementationen finns bakom flaggor och separat driftacceptans återstår.
-- **Förslag:** [SLACK-ASTRID-SETUP-SV](openclaw/SLACK-ASTRID-SETUP-SV.md)
-  beskriver en ännu inte verifierat aktiverad Slack-anslutning. Det är ingen
-  instruktion att skapa en tjänst, token eller börja publicera meddelanden.
-
-Den gemensamma media-/spelarvägen omfattar registrerade dealers. Att några
-gamla provguider är Astrid-specifika gör inte hela systemet Astrid-specifikt.
-Namnet `services/openclaw/lab` är en driftsatt sökväg, inte bevis för att koden är död.
-
-## Underhåll
-
-Uppdatera en guide samtidigt som dess kontrakt ändras. Skilj aktivt beteende,
-daterat prov och framtida förslag åt. Radera eller ersätt en gammal guide när
-dess konsumenter har flyttats; ålder ensam räcker inte som borttagningsbevis.
-Guider och runtimepaketets källhänvisningar använder `docs/AI/openclaw/`.
-De elva gamla dokumentstubbarna är borttagna. Ändringsloggen finns i
-[agentflödet](scoutgaming-agentflode.md#ändringslogg).
+- Bara `docs.openclaw.ai` och `github.com/openclaw/openclaw` är auktoritativa
+  för OpenClaw. Imagen i `services/openclaw/lab/deploy/Dockerfile.gateway`
+  uppgraderas inte tyst, och ingen dokumentations-MCP installeras.
+- Att ett dokument flyttas eller ändras ger ingen agent nya kunskaper eller
+  behörigheter. Gateway-rollerna får bara det versionsmärkta runtimepaketet
+  vid containerstart; webbchatten får sitt sammanhang från serveradaptern.
+- Ändringar i `packages/director` eller `services/openclaw/lab` når drift först
+  när Director respektive Gateway har deployats om.
+- Astrid tas bort vid ren start. Hennes labbchatt och companion finns kvar i
+  koden tills dess. De ursprungliga kamera- och Slack-planerna för Astrid
+  ligger i [docs/history/AI](../history/AI/).

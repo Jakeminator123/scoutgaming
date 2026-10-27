@@ -220,5 +220,5 @@
     "idleVideo": null,
     "sharedBackgroundFormat": "same as roulette"
   },
-  "documentation": "../../../docs/LOCAL-PRESENTATION-RUNTIME.md#medieformat-för-roulette-och-blackjack"
+  "documentation": "../../../../docs/LOCAL-PRESENTATION-RUNTIME.md#medieformat-för-roulette-och-blackjack"
 }

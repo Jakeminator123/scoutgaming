@@ -1,8 +1,8 @@
-# Redigerbara labbregler
+# Projektets startregler
 
-`../../packages/presentation/contracts/policies/project.seed.json` är startprojektet: blackjack, fyra croupierer, 16 semantiska
-eventnoder och en standardlinje per croupier/event. Varje linje börjar med en
-ovillkorlig standardvariant och tre labbalternativ. Normalt får högst fyra alternativ finnas.
+`../../packages/presentation/contracts/policies/project.seed.json` är startprojektet: blackjack, fyra dealers, 16 semantiska
+händelsegrupper och en standardlinje per dealer och händelse. Varje linje börjar med en
+ovillkorlig standardvariant och tre alternativ. Normalt får högst fyra alternativ finnas.
 Givningsraderna `deal.player.left`, `deal.player.centre`, `deal.player.right` och
 `deal.dealer` tillåter 16 varianter inklusive standard, så varje filmad pose och
 kortplats kan ha en egen exakt videokoppling. Tal, vändning, idle, övergångar och
@@ -23,7 +23,7 @@ tillgänglig, inte avstängd. Standardvarianten får aldrig ha triggers.
 
 - `deterministic`: redan publicerade events och redan avgjord historik.
 - `social`: simulerad chattsignal, återkomst och godkänd språkpreferens.
-- `temperament`: croupierns simulerade framtoning, inte en slutsats om spelarens
+- `temperament`: dealerns simulerade framtoning, inte en slutsats om spelarens
   känslor, hälsa eller sårbarhet.
 
 OpenClaw får bara föreslå en av de tillåtna varianterna; standarden är fallback.
@@ -32,8 +32,8 @@ ingen RNG, ingen plånbok, inga dolda/framtida kort och ingen spelstyrning.
 
 `videoGenerationId` är en referens, inte en sökväg eller URL. Den knyter en
 variant till videoregistret men intygar inte kalibrering, textmatchning eller
-godkännande. Labbets animationsasset finns kvar som separat platshållare.
+godkännande. 2D-rörelseprovet finns kvar som separat platshållare.
 
 Struktur: `../../packages/presentation/contracts/schemas/studio.schema.json`. Full referens- och kontraktskontroll:
-`validateProject` i `../../packages/presentation/contracts/studio-model.mjs`. Redigering i webbgränssnittet ska
+`validateProject` i `../../packages/presentation/contracts/studio-model.mjs`. Redigering i Admin ska
 sparas uttryckligen; startprojektet är inte en realtidskoppling till produktion.

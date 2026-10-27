@@ -96,7 +96,8 @@
         "CROUPIER_MOVING_SPEECH_WORKER_ORIGIN",
         "ELEVENLABS_API_KEY",
         "NEXT_PUBLIC_LAB_BASE_PATH",
-        "CROUPIER_SHARED_TABLE_ENABLED"
+        "CROUPIER_SHARED_TABLE_ENABLED",
+        "GENERATIONS_READ_TOKENS"
       ],
       "managed": [
         "HOST",
@@ -380,9 +381,9 @@
         "packages/presentation/server/legacy-clip-inventory.mjs",
         "apps/studio/lib/studio-media-runtime.mjs"
       ],
-      "project": "croupier-lab-ui",
+      "project": "scoutgaming (Vercel service studio)",
       "gitBranch": "main",
-      "rootDirectory": "lab",
+      "rootDirectory": "apps/studio",
       "credentialPolicy": "Shared game/CRAIG credentials: admin has game/Studio/Backoffice access; player has game access. Native password changes use the signed Render authority and existing native/Neon flags; no new environment keys.",
       "required": [],
       "firstBoot": [],

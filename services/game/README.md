@@ -1,76 +1,35 @@
-# Spelserver och spelklient
+# Spelmotorn och spelklienten
 
-`services/game/` äger den auktoritativa Node-spelservern för blackjack och
-roulette: sessioner, historik, kort, shoe, saldo, utbetalningar och spelklient.
-Entrypunkten är [server.mjs](server.mjs); molntjänsten är Render `croupier-v3`.
-Vercels frontend finns i [apps/web](../../apps/web/README.md), talingressen i
-`apps/speech/` och Admin/Partner/Lobby i [apps/studio](../../apps/studio/README.md).
+`services/game/` är spelmotorn för blackjack och roulette: sessioner, historik, kort, sko, saldo, utbetalningar, delat bord och spelklienten. Entrypunkten är [server.mjs](server.mjs); i drift kör den på Render `croupier-v3` bakom gatewayn i [ops/cloud](../../ops/cloud/README.md). Spelskalet finns i [apps/web](../../apps/web/README.md), talingressen i `apps/speech/` och Admin, partnerportal och lobby i [apps/studio](../../apps/studio/README.md).
 
 | Del | Ansvar |
 | --- | --- |
-| [public/](public/README.md) | Spelklient, kortprojektion och appägda webbresurser. |
-| [storage/](storage/README.md) | Appägda PostgreSQL-pooler, läsarportar och publicerade presentationspaket. |
-| `games/roulette/` | Rouletteregler, serverkommandon, åtkomst och lagring. |
-| `generated-speech*`, `dealer-speech*`, `openclaw-chat.mjs` | Game-adaptrar för dealerchatt, tal och registrerade klipp. |
-| `player-*`, `native-table.mjs`, `shoe-game.mjs` | Spelaridentitet, historik och serverägt spel. |
+| [public/](public/README.md) | Spelklient, kortprojektion och appägda webbresurser |
+| [storage/](storage/README.md) | PostgreSQL-pooler, läsarportar och publicerade presentationspaket |
+| `games/roulette/` | Rouletteregler, kommandon, åtkomst och lagring |
+| `generated-speech*`, `dealer-speech*`, `moving-speech-*`, `openclaw-chat.mjs` | Dealerchatt, tal och registrerade klipp |
+| `player-*`, `native-table.mjs`, `shoe-game.mjs` | Spelaridentitet, historik och serverägt spel |
 
-## Gemensamma ägare och produktkontrakt
+## Delade paket
 
-Gemensam auth- och rollpolicy finns i `packages/studio-access`. Register,
-media- och dokumentkontrakt ägs av `packages/studio-registry`; transaktionskärnor
-av `packages/storage` och operatörsregler av `packages/operators`.
-Game behåller sina pooler, miljöval och läsarportar. Studio behåller sina
-HTTP-adaptrar, skrivlås och appkomposition.
+- `packages/studio-access`: auth- och rollpolicy.
+- `packages/studio-registry`: register-, medie- och dokumentkontrakt; `packages/storage`: transaktionskärnor; `packages/operators`: regler för bolag (operatörer).
+- `packages/presentation`: presentationskontrakt, uppspelning, urval och genererat tals serverkärnor.
+- `packages/navigation`: navigationskontrakt; `packages/shared`: bland annat kommandosignering och den rena sko-regeln.
+- `packages/director`: Director-kontrakt; game-adaptern `director-settings.mjs` väljer miljöfiler och datarot.
+- `services/astrid-gpu-worker/gateway/`: talreläets providerkällor, workerbindning och strömtransport.
 
-`packages/presentation` äger delade presentationskontrakt, uppspelning,
-urval och genererat tals serverkärnor. `packages/navigation` äger gemensamma
-navigationskontrakt och `packages/shared` bland annat kommandosignering och
-den rena shoe-regeln. Shuffle, kort, wallet och utbetalningar förblir gameägda.
+Spelmotorn behåller sina pooler, miljöval och läsarportar. Blandning, kort, plånbok och utbetalningar ägs alltid här. Publika vägar (`/admin`, `/partner`, `/lobby`, `/play/blackjack`, `/play/roulette`, `/studio`), protokollvärdet `owner:web` och medie-ID:n med proveniens `web/public/` är stabila kontrakt.
 
-`packages/director` äger Director-kontrakt och delade regler. Game-adaptern
-`director-settings.mjs` väljer samma miljöfiler och historiska datarot som
-före flytten. OpenClaw-tjänsten behåller HTTP, Gateway och signering.
-Dess lokala fler-tjänstbootstrap använder avsiktligt game-ägda
-`partner-api.mjs#installPartnerApi`; den kopplingen gör inte partner-API:t
-till ett neutralt bibliotek.
+## Drift och data
 
-Taladaptrarna återanvänder också den befintliga gemensamma gatewaykoden under
-`services/astrid-gpu-worker/gateway/` för providerkällor, workerbindning och
-strömtransport. Det är ett uttryckligt beroende; flytten skapar inget nytt
-bibliotek eller någon ny tjänst.
+- Neon äger spel-, konto-, Admin- och publiceringsdata; Blob äger mediebytes. Motorn startar bara med `CROUPIER_DATABASE=postgres`, `CROUPIER_STUDIO_NEON_POLICY=1` och `CROUPIER_MEDIA_STORAGE=blob` och har ingen SQLite- eller diskreserv; satt `CROUPIER_DATA_DIR` stoppar starten.
+- `CROUPIER_STREAM_LANE=lissabon-stream-lane` är ett anslutnings-ID. Lissabon-gästprofilerna är borttagna.
+- Miljövariabler: [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#render-croupier-v3-spelmotorn). Deploy och kontroller: [RENDER-V3](../../ops/cloud/RENDER-V3.md). Driftkarta och schemaordning: [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md). Backup och återgång: [ENVIRONMENT-RESTORATION](../../docs/ENVIRONMENT-RESTORATION.md). Tekniska format: [LOCAL-PRESENTATION-RUNTIME](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
-Publika `/admin`, `/partner`, `/lobby`, `/play/blackjack`, `/play/roulette`
-och `/studio`-kontrakt ändras inte av källflytten. Befintliga kompatibilitets-
-URL:er, protokollvärdet `owner:web`, medie-ID:n och proveniens med `web/public/`
-behålls. En fysisk källsökväg är inte en ny medieidentitet eller ett nytt rum.
-`lab-speech-bridge.mjs` är fortfarande en del av spelklientens talväg.
+## Köra och testa
 
-## Drift, start och data
-
-Vercel äger webb, Admin/Lobby/Partner/Studio och talingress. Render äger
-spelmotorn. Neon/PostgreSQL äger spel-, konto-, Studio- och publiceringsdata;
-Blob äger mediebytes. Produktionens `CROUPIER_DATABASE=postgres`,
-`CROUPIER_STUDIO_NEON_POLICY=1` och `CROUPIER_MEDIA_STORAGE=blob` innebär
-ingen fallback till lokala authoringfiler eller SQLite vid molnfel.
-
-Öppna produkten via [apps/studio/start.mjs](../../apps/studio/start.mjs),
-från Codex med `--no-open`. Det lokala `--offline`-fixturparet är pensionerat 27 oktober 2026.
-Följ [användarguiden](../../apps/studio/docs/README.md) och [AGENTS.md](../../AGENTS.md).
-`services/game/package.json` anger Node `>=22.16.0`; produktionscontainern
-använder Node 24. Installerade beroenden hör till `services/game/node_modules/`.
-Enda devDependency är `@electric-sql/pglite` (PostgreSQL i WASM) för lokala
-modultester via `test/fixtures/pglite-pool.mjs`, som installerar schemat från
-`ops/neon-game/`. Containern installerar med `--omit=dev` och
-`ops/cloud/test/game-image.test.mjs` håller den utanför runtime. PGlite har en
-session och bevisar inte låsning mellan anslutningar; det gör CI:s PostgreSQL.
-
-Motorn har ingen SQLite-väg: den startar bara med `CROUPIER_DATABASE=postgres`
-och vägrar starta om `CROUPIER_DATA_DIR` är satt. Källflytten flyttar
-inte privata data, originalmedia eller gamla dependencyinstallationer.
-De lokala Lissabon-gästprofilerna (`lissabon-profiles.mjs`, `/api/lissabon/profiles`,
-`CROUPIER_LISSABON_PROFILES`) togs bort 22 oktober 2026; lanevärdet
-`lissabon-stream-lane` i `CROUPIER_STREAM_LANE` är kvar som anslutnings-ID.
-
-Aktuell drift och schemaansvar finns i [CLOUD-MIGRATION.md](../../docs/CLOUD-MIGRATION.md).
-Återställningsgränser finns i [ENVIRONMENT-RESTORATION.md](../../docs/ENVIRONMENT-RESTORATION.md)
-och tekniska format i [LOCAL-PRESENTATION-RUNTIME.md](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+- `services/game/package.json` kräver Node `>=22.16.0`; containern kör Node 24. Installera med `npm ci` i `services/game`.
+- Enda devDependency är `@electric-sql/pglite` (PostgreSQL i WASM) för modultester via `test/fixtures/pglite-pool.mjs`, som installerar schemat från `ops/neon-game/`. PGlite har en session och bevisar inte låsning mellan anslutningar; det gör CI:s PostgreSQL. Containern installerar med `--omit=dev`.
+- Motorn över HTTP mot riktig PostgreSQL: `node tools/run-engine-qa.mjs --postgres-bin <bin>`; sviten `sh .githooks/pre-commit-full engine`.
+- Produkten öppnas via den publicerade lobbyn (`node apps/studio/start.mjs --no-open` skriver adressen). Det finns ingen lokal serverstart av produkten.
