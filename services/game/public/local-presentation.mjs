@@ -2,6 +2,9 @@ import { isActiveDealerId } from '../../../packages/presentation/contracts/deale
 import { recordedSpeechForVideo } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import { createLiveIdleController } from '../../../packages/presentation/runtime/live-idle.mjs';
 
+// Player-facing speech text. The browser's or provider's reason stays in the receipt.
+const SPEECH_FAILED = 'Talet kunde inte spelas.';
+
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets' }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
   const preview=Boolean(transport?.context);
@@ -72,6 +75,25 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     gestureOwner = null; onGestureWait(false);
   };
   const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; releaseGestureWait(active); active?.abort(); active = null; };
+  // Browsers refuse unmuted speech before the player's first interaction. Show
+  // one sound control instead of the browser's text. A real click resumes the
+  // waiting line inside the gesture while it is still current; otherwise it
+  // only unlocks. The session remembers that the player allowed sound.
+  let soundButton = null, soundRetry = null, soundUnlocked = false;
+  const removeSoundButton = () => { soundButton?.remove(); soundButton = null; };
+  const offerSound = (own, retry) => {
+    if (closed || packageChanged) return;
+    soundRetry = { own, retry };
+    if (soundButton) return;
+    const button = soundButton = document.createElement('button');
+    button.type = 'button'; button.className = 'local-presentation-recovery local-presentation-sound'; button.textContent = 'Slå på ljud';
+    button.onclick = event => {
+      if (event?.isTrusted === false || soundButton !== button) return;
+      soundUnlocked = true; removeSoundButton();
+      const pending = soundRetry; soundRetry = null; pending?.retry();
+    };
+    host.append(button);
+  };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
@@ -132,6 +154,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent, onProgress, timing = {} } = {}) {
     const own = new AbortController(); active = own;
     const ownSerial = serial, ownVersion = version();
+    const stillCurrent = () => active === own && !closed && !own.signal.aborted && serial === ownSerial && version() === ownVersion;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
     host.dataset.presentationMedia = video.id; host.dataset.presentationFile = video.fileName; host.dataset.presentationKind = kind;
@@ -149,20 +172,24 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
       onPrepared?.();
       onProgress?.({phase:'play'});
+      const audible = kind === 'speech' && !muted();
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
-        signal: own.signal, muted: kind !== 'speech' || muted(), hold, ...timing,
+        signal: own.signal, muted: !audible, hold, ...timing,
+        ...(audible ? { onSoundBlocked: resume => offerSound(own, () => stillCurrent() && resume()) } : {}),
         onGestureWait: waiting => {
-          if (active !== own || closed || own.signal.aborted || serial !== ownSerial || version() !== ownVersion) return;
+          if (!stillCurrent()) return;
           if (waiting && gestureOwner !== own) { gestureOwner = own; onGestureWait(true); }
           else if (!waiting) releaseGestureWait(own);
         },
         onFrame: onMediaFrame || onProgress ? time => { onProgress?.({phase:'frame',time}); onMediaFrame?.(time); } : undefined,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
-        onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
+        onReceipt: event => { host.dataset.presentationState = event.state;
+          if (audible && event.state === 'start') { soundUnlocked = true; removeSoundButton(); }
+          receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
       onProgress?.({phase:'complete'});
-    } finally { signal?.removeEventListener('abort', abort); releaseGestureWait(own); if (active === own) active = null; }
+    } finally { signal?.removeEventListener('abort', abort); releaseGestureWait(own); if (active === own) active = null; if (soundRetry?.own === own) soundRetry = null; }
   }
   function retainRule(result, requestVersion, sourceType) {
     const rule = result.idleRule;
@@ -180,7 +207,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   function requireReload(error) {
     if (error.code !== 'studio_presentation_idle_package_changed' && !(preview && error.code?.startsWith('studio_preview_'))) return false;
-    pendingRule = null; packageChanged = true; ++serial; stop(); idle?.close(); control.disabled = true; status.textContent = error.message + ' ';
+    pendingRule = null; packageChanged = true; ++serial; stop(); idle?.close(); control.disabled = true; soundRetry = null; removeSoundButton(); status.textContent = error.message + ' ';
     const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Ladda om';
     button.onclick = () => globalThis.location?.reload(); status.append(button);
     return true;
@@ -347,7 +374,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         .filter(([, value]) => value !== undefined && value !== null));
       await transition(result.transitions?.before, 'to-shoe');
       try { await play(result.video, timing); }
-      catch (error) { if (error.code === 'local_film_stalled' || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
+      catch (error) { if (['local_film_stalled', 'local_film_sound_blocked'].includes(error.code) || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }
       await transition(result.transitions?.after, 'from-shoe');
@@ -357,8 +384,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;
       if (requireReload(error)) return false;
-      status.textContent = kind === 'speech' ? `Tal: ${error.message}` : `${error.message} · 2D-reserv`;
-      receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message, renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+      // A line refused by the sound policy already shows the sound control.
+      const soundBlocked = kind === 'speech' && error.code === 'local_film_sound_blocked';
+      if (!soundBlocked) status.textContent = kind === 'speech' ? SPEECH_FAILED : `${error.message} · 2D-reserv`;
+      receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message,
+        ...(error.code ? { code: error.code } : {}), ...(soundBlocked ? { soundUnlocked } : {}), renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
         projectRevision: result?.projectRevision, configurationSource }); return false;
     }
   }
@@ -368,5 +398,5 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     get filmedMaterial() { return config.filmedMaterial?structuredClone(config.filmedMaterial):null; },
     prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
-    close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
+    close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
 }
