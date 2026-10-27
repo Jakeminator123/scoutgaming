@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
+import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
 const origin = 'https://studio.example';
 const path = action => `/studio/api/admin/${action}`;
@@ -136,6 +137,40 @@ test('storage validation and busy errors keep safe status messages and scope is 
   }]]) }).handle(new Request(origin + path('players')));
   assert.equal(response.status, 200);
   assert.equal((await api({ authorize: () => ({ ...session, scope: {} }) }).handle(new Request(origin + path('players')))).status, 422);
+});
+
+// Captures console.error for one async block and restores it.
+async function capturedErrors(work) {
+  const original = console.error, lines = []; console.error = (...args) => { lines.push(args); };
+  try { return { result: await work(), lines }; } finally { console.error = original; }
+}
+// Assembled at runtime so secret scanners never see a literal credential URI in the fixture.
+const secretMessage = 'connect failed ' + ['postgres:/', 'fixture-user:fixture-pass@db.example.neon.tech', 'fixture'].join('/') + ' for owner@example.invalid token=fixture-token';
+
+test('opaque 503/500 handler failures log one redacted line and expose only a fixed storage code', async () => {
+  const cases = [
+    [() => { const error = new StudioStorageError('studio_storage_unavailable', 503); error.detail = 'private provider detail'; throw error; }, 503, { error: 'Action unavailable', code: 'studio_storage_unavailable' }, 'StudioStorageError'],
+    [() => { throw new StudioStorageError('studio_storage_unavailable', 500); }, 500, { error: 'Request failed', code: 'studio_storage_unavailable' }, 'StudioStorageError'],
+    [() => { throw Object.assign(new Error(secretMessage, { cause: Object.assign(new Error(secretMessage), { code: 'ECONNREFUSED' }) }), { statusCode: 503, code: 'studio_storage_unavailable' }); }, 503, { error: 'Action unavailable' }, 'Error'],
+    [() => { throw new Error(secretMessage); }, 500, { error: 'Request failed' }, 'Error'],
+  ];
+  for (const [handler, status, body, name] of cases) {
+    const { result, lines } = await capturedErrors(async () => {
+      const response = await api({ handlers: new Map([['POST ' + path('room'), handler]]) }).handle(request('room', { body: '{"secret":"fixture-body"}', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', cookie: 'session=fixture-cookie' } }));
+      return [response.status, await response.json()];
+    });
+    assert.deepEqual(result, [status, body]); assert.equal(lines.length, 1); assert.equal(lines[0].length, 1);
+    const raw = lines[0][0], line = JSON.parse(raw);
+    assert.deepEqual(Object.keys(line), ['studioNativeError', 'code', 'name', 'message', 'route', 'method', 'stack', 'cause']);
+    assert.equal(line.studioNativeError, true); assert.equal(line.name, name); assert.equal(line.route, 'room'); assert.equal(line.method, 'POST');
+    assert.ok(line.stack.length > 0 && line.stack.length <= 8 && line.stack.every(frame => frame.startsWith('at ')));
+    for (const secret of ['fixture-pass', 'fixture-user', 'neon.tech', 'owner@example', 'fixture-token', 'fixture-body', 'fixture-cookie', 'private provider detail', 'Jakob']) assert.equal(raw.includes(secret), false, secret);
+    if (name === 'Error') assert.match(line.message, /^connect failed \[url\] for \[email\] token=\[redacted\]$/);
+  }
+  const { lines } = await capturedErrors(async () => {
+    for (const statusCode of [409, 422]) await api({ handlers: new Map([['POST ' + path('room'), () => { throw new StudioStorageError('studio_storage_unavailable', statusCode); }]]) }).handle(request());
+  });
+  assert.deepEqual(lines, []);
 });
 
 test('local writes are unavailable without an explicit mutation transaction', async () => {

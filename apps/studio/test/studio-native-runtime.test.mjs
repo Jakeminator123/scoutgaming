@@ -48,6 +48,60 @@ test('unsupported media format returns its fixed typed 415 without database deta
   assert.equal(JSON.stringify(body).includes('private-db-detail'),false);assert.equal(response.headers.get('cache-control'),'private, no-store');
 });
 
+// Captures console.error for one synchronous/async block and restores it.
+async function capturedErrors(work){
+  const original=console.error,lines=[];console.error=(...args)=>{lines.push(args);};
+  try{return {result:await work(),lines};}finally{console.error=original;}
+}
+// Assembled at runtime so secret scanners never see a literal credential URI in the fixture.
+const secretMessage='connect failed '+['postgres:/','fixture-user:fixture-pass@db.example.neon.tech','fixture?sslmode=require'].join('/')+' for owner@example.invalid token=fixture-token';
+
+test('opaque 503 logs one structured server line and exposes only a fixed storage code',async()=>{
+  const storage=new StudioStorageError('studio_storage_unavailable',503);storage.detail='private-db-detail';
+  const typed=await capturedErrors(async()=>{const response=nativeStudioErrorResponse(storage,{method:'POST',route:'/studio/api/admin/operator-package'});return {status:response.status,body:await response.json(),cache:response.headers.get('cache-control')};});
+  assert.deepEqual(typed.result,{status:503,body:{error:'studio_native_unavailable',code:'studio_storage_unavailable'},cache:'private, no-store'});
+  assert.equal(typed.lines.length,1);assert.equal(typed.lines[0].length,1);
+  const line=JSON.parse(typed.lines[0][0]);
+  assert.deepEqual(Object.keys(line),['studioNativeError','code','name','message','route','method','stack','cause']);
+  assert.equal(line.studioNativeError,true);assert.equal(line.code,'studio_storage_unavailable');assert.equal(line.name,'StudioStorageError');
+  assert.equal(line.route,'/studio/api/admin/operator-package');assert.equal(line.method,'POST');assert.equal(line.cause,null);
+  assert.ok(Array.isArray(line.stack)&&line.stack.length>0&&line.stack.length<=8&&line.stack.every(frame=>frame.startsWith('at ')));
+  assert.equal(typed.lines[0][0].includes('private-db-detail'),false);
+
+  const plain=Object.assign(new Error(secretMessage,{cause:Object.assign(new Error(secretMessage),{code:'ECONNREFUSED'})}),{code:'studio_storage_unavailable'});
+  const generic=await capturedErrors(async()=>{const response=nativeStudioErrorResponse(plain);return {status:response.status,body:await response.json()};});
+  assert.deepEqual(generic.result,{status:503,body:{error:'studio_native_unavailable'}});
+  assert.equal(generic.lines.length,1);const raw=generic.lines[0][0],logged=JSON.parse(raw);
+  assert.equal(logged.code,'studio_storage_unavailable');assert.equal(logged.route,null);assert.equal(logged.method,null);
+  assert.equal(logged.cause.code,'ECONNREFUSED');assert.ok(logged.cause.stack.length>0);
+  assert.match(logged.message,/^connect failed \[url\] for \[email\] token=\[redacted\]$/);
+  for(const secret of ['fixture-pass','fixture-user','neon.tech','owner@example','fixture-token','sslmode'])assert.equal(raw.includes(secret),false,secret);
+});
+
+test('mapped, readiness and deliberate feature-off responses stay byte-identical and silent',async()=>{
+  const cases=[[Object.assign(new Error('PRIVATE'),{statusCode:401}),401,{error:'studio_login_required'}],
+    [Object.assign(new Error('PRIVATE'),{statusCode:403}),403,{error:'studio_request_rejected'}],
+    [Object.assign(new Error('PRIVATE'),{statusCode:409,code:'studio_media_in_use'}),409,{error:'studio_media_in_use'}],
+    [new StudioStorageError('studio_conflict',409),409,{error:'studio_conflict',code:'studio_conflict'}],
+    [new StudioStorageError('studio_invalid_scope',422),422,{error:'studio_native_unavailable'}],
+    [new StudioStorageError('studio_presentation_runtime_update_required',503),503,null],
+    [{statusCode:503},503,{error:'studio_native_unavailable'}]];
+  const {result,lines}=await capturedErrors(()=>Promise.all(cases.map(async([error])=>{const response=nativeStudioErrorResponse(error);return [response.status,await response.json()];})));
+  cases.forEach(([,status,body],index)=>{assert.equal(result[index][0],status);if(body)assert.deepEqual(result[index][1],body);});
+  assert.equal(result[5][1].code,'studio_presentation_runtime_update_required');
+  assert.deepEqual(lines,[]);
+});
+
+test('request handler logs the failing method, pathname and redacted cause',async()=>{
+  const handlers=createNativeStudioRequestHandlers({configuration:()=>nativeStudioAdminConfiguration(env),
+    runtime:async()=>{throw Object.assign(new Error('studio_native_unavailable',{cause:new Error(secretMessage)}),{statusCode:503});}});
+  const {result,lines}=await capturedErrors(async()=>{const response=await handlers.handleNativeAdmin(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/studio/api/admin/operator-package'));return [response.status,await response.json()];});
+  assert.deepEqual(result,[503,{error:'studio_native_unavailable'}]);assert.equal(lines.length,1);
+  const line=JSON.parse(lines[0][0]);
+  assert.equal(line.route,'/studio/api/admin/operator-package');assert.equal(line.method,'GET');assert.equal(line.message,'studio_native_unavailable');
+  assert.match(line.cause.message,/^connect failed \[url\]/);assert.equal(lines[0][0].includes('fixture-token'),false);
+});
+
 const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
   CROUPIER_STUDIO_NEON_POLICY: '1',
   CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid', CROUPIER_LAB_BASE_PATH: '/studio',

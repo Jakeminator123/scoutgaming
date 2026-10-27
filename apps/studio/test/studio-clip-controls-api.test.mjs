@@ -23,7 +23,9 @@ test('missing current policy, media or explicit legacy safety receipt fails clos
   for (const options of [{gamePolicy:null},{legacyControls:null},{legacyControls:async () => {throw Object.assign(new Error('studio_legacy_review_required'),{statusCode:503});}},
     {gamePolicy:{readSaved:async () => {throw new Error('private database URL');}}}]) {
     const response = await fixture(options).handle(request());assert.equal(response.status,503);
-    assert.deepEqual(await response.json(),{error:'studio_native_unavailable'});
+    // A StudioStorageError may add its fixed code; provider text never reaches the body.
+    const body=await response.json();assert.equal(body.error,'studio_native_unavailable');
+    assert.ok(body.code===undefined||/^studio_[a-z0-9_]+$/.test(body.code));assert.equal(JSON.stringify(body).includes('private'),false);
   }
 });
 
