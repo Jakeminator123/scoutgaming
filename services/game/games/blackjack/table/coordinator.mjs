@@ -156,7 +156,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const created = newGame({ random });
     const r = { contract: TABLE_CONTRACT, roomId, version: 0, configVersion, windowId: random.uuid(), phase: 'bets',
       owners: Array(7).fill(null), seatGen: Array(7).fill(0), bets: emptyBets(), ready: [], history: {}, deadline: null,
-      roundId: null, roundPhase: null, insurance: {}, actionDeadline: null, plan: null, leaving: [], boxesAfterRound: {},
+      roundId: null, roundPhase: null, insurance: {}, actionDeadline: null, plan: null, leaving: [], boxesAfterRound: {}, unplayed: {},
       lastBets: {}, lastSettlement: {}, settledAt: null, presentationVer: 0, game: created.state };
     for (const e of created.events) await openShoe(tx, roomId, e.payload);
     return r;
@@ -168,16 +168,25 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     if (m?.active) await tx.members.put(r.roomId, { ...m, active: false, memberGen: m.memberGen + 1 });
   }
 
-  // :248-252; a new window binds the newest published configVersion (O01 2.7). boxesAfterRound
-  // also holds the boxes not bet on in the round (startRound), so they are released here; a
-  // player left without a box leaves like releaseSeats (`next` locks them).
+  // The boxes a player keeps into the next window. A box choice made during the round
+  // (boxesAfterRound, join) replaces the set; otherwise it is the boxes held minus those not bet
+  // on in the round (unplayed, startRound). A room stored before `unplayed` keeps every box.
+  const keptAfterRound = (r, p) => r.boxesAfterRound[p] ?? owned(r, p).filter(i => !(r.unplayed?.[p] ?? []).includes(i));
+  // The players resetRound takes the last box from, so their membership ends; `next` locks exactly
+  // these. Only an owner can lose a box: settle and releaseSeats (the tick paths) reset only once
+  // no owner is left, where this is empty, so a reset never writes outside a tick's lock plan.
+  const endingAtReset = r => sorted(r.owners).filter(p => !keptAfterRound(r, p).some(i => r.owners[i] === p));
+
+  // :248-252; a new window binds the newest published configVersion (O01 2.7). The boxes not
+  // kept (keptAfterRound) are released; a player left without a box leaves like releaseSeats.
   async function resetRound(tx, r) {
-    for (const [pid, keep] of Object.entries(r.boxesAfterRound)) {
-      const had = owned(r, pid);
-      for (const i of had) if (!keep.includes(i)) { r.owners[i] = null; r.seatGen[i]++; }
-      if (had.length && !owned(r, pid).length) await endMembership(tx, r, pid);
+    const ending = endingAtReset(r);
+    for (const p of sorted(r.owners)) {
+      const keep = keptAfterRound(r, p);
+      for (const i of owned(r, p)) if (!keep.includes(i)) { r.owners[i] = null; r.seatGen[i]++; }
     }
-    Object.assign(r, { boxesAfterRound: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
+    for (const p of ending) await endMembership(tx, r, p);
+    Object.assign(r, { boxesAfterRound: {}, unplayed: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
       deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null,
       windowId: random.uuid(), configVersion: await tx.config.latest(r.roomId) });
     const cfg = await tx.config.frozen(r.roomId, r.configVersion);
@@ -191,7 +200,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   async function releaseSeats(tx, r, pid) {
     for (const i of owned(r, pid)) { r.owners[i] = null; r.seatGen[i]++; r.bets[i] = { main: 0, pp: 0, tp: 0 }; }
     r.ready = r.ready.filter(x => x !== pid); delete r.history[pid];
-    r.leaving = r.leaving.filter(x => x !== pid); delete r.boxesAfterRound[pid];
+    r.leaving = r.leaving.filter(x => x !== pid); delete r.boxesAfterRound[pid]; delete r.unplayed?.[pid];
     if (r.phase === 'bets') await tx.wallet.release(pid, { reservationId: stakeReservation(r, pid) });
     await endMembership(tx, r, pid);
     if (r.phase === 'settled' && !r.owners.some(Boolean)) await resetRound(tx, r);
@@ -215,11 +224,12 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       return bettors.map(p => ledger[p]);
     } });
     for (const p of bettors) r.lastBets[p] = Object.fromEntries(owned(r, p).filter(i => r.bets[i].main).map(i => [i, { ...r.bets[i] }]));
-    // Kevin 24 Oct ('Table is full'): a box not bet on in this round is released when it ends
-    // (resetRound); boxes chosen during the round replace this list (join). Nothing leaves a live hand.
+    // Kevin 24 Oct ('Table is full'): the boxes not bet on in this round are released when it
+    // ends (resetRound), unless their holder chooses boxes during it (join). Nothing leaves a live hand.
+    r.unplayed = {};
     for (const p of sorted(r.owners)) {
-      const mine = owned(r, p), played = mine.filter(i => r.bets[i].main);
-      if (played.length < mine.length) r.boxesAfterRound[p] = played;
+      const idle = owned(r, p).filter(i => !r.bets[i].main);
+      if (idle.length) r.unplayed[p] = idle;
     }
     Object.assign(r, { phase: 'round', deadline: null, insurance: {}, history: {}, ready: [], settledAt: null });
     await present(tx, r, cfg, result);
@@ -274,8 +284,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const players = [actorId];
     if (r && input.op === 'ready') players.push(...r.owners.filter((p, i) => p && sum(r.bets[i]) > 0));
     if (r && input.op === 'insurance') players.push(...r.owners);
-    // next carries out pending exits and box releases, which can end a membership
-    if (r && input.op === 'next') players.push(...r.leaving, ...Object.keys(r.boxesAfterRound));
+    // next carries out pending exits and the box releases that end a membership (endingAtReset)
+    if (r && input.op === 'next') players.push(...r.leaving, ...endingAtReset(r));
     const rooms = input.op === 'pause' ? [input.roomId, ...await store.read.memberRooms(actorId)] : [input.roomId];
     return { global: false, rooms: sorted(rooms), players: sorted(players) };
   }
@@ -356,6 +366,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (sum(r.bets[i])) fail('CLEAR_FIRST', 'Clear your bets before changing boxes');
         r.owners[i] = null; r.seatGen[i]++;
       }
+      // A box given up here and claimed again later in the round is a choice, not an unplayed box.
+      if (r.unplayed?.[actorId]) r.unplayed[actorId] = r.unplayed[actorId].filter(i => r.owners[i] === actorId);
       if (later.length) r.boxesAfterRound[actorId] = [...seats].sort(); else delete r.boxesAfterRound[actorId];
       for (const i of seats) if (r.owners[i] !== actorId) { r.owners[i] = actorId; r.seatGen[i]++; }
       const memberGen = me?.active ? me.memberGen : (me?.memberGen ?? 0) + 1;
@@ -582,7 +594,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       };
       const r = await tx.rooms.read(desc.roomId);
       const members = await tx.members.list(desc.roomId), seen = {};
-      for (const m of members) seen[m.actorId] = await tx.presence.get(desc.roomId, m.actorId);
+      for (const m of members) if (r && watched(r, m)) seen[m.actorId] = await tx.presence.get(desc.roomId, m.actorId);
       const current = r && candidates(r, members, p => seen[p]).find(c => c.tickId === base);
       if (!current) return record('superseded');
       // Not yet due (an early call, or a retry whose blockedOn has not changed): nothing is
