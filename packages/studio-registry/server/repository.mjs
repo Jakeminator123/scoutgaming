@@ -352,6 +352,12 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
             || canonicalStudioJson(afterSpeech.source) !== canonicalStudioJson(beforeSpeech.source))) {
           fail('studio_invalid_media', 422);
         }
+        // The same rule binds the v2 human AV review: metadata may keep it or
+        // clear it, while reviewRecordedSpeech alone attributes a new verdict.
+        if (afterSpeech?.schemaVersion === 2 && afterSpeech.review.status !== 'pending'
+          && (beforeSpeech?.schemaVersion !== 2 || canonicalStudioJson(afterSpeech.review) !== canonicalStudioJson(beforeSpeech.review))) {
+          fail('studio_invalid_media', 422);
+        }
         const keepTiming = mediaTiming && (beforeSpeech ? afterSpeech && mediaTimingSpeechIdentity(beforeSpeech) === mediaTimingSpeechIdentity(afterSpeech) : !afterSpeech);
         // A verified v2 record must keep its measurement during final validation,
         // including harmless label/review updates to the same speech identity.
@@ -402,6 +408,46 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
         if (!row) fail('studio_conflict');
         // Existing immutable audit vocabulary; the revision identifies the
         // measured metadata row without requiring a schema migration.
+        await audit('classify_media', prepared.id, revision, prepared.actor);
+        return media(row);
+      });
+    },
+    // A human AV verdict for one exact take. It changes only review: bytes,
+    // hashes, source proof and measured timing stay as stored. verdict null
+    // returns the take to the pending state that new takes start in.
+    reviewRecordedSpeech(id, { sha256, expectedRevision, expectedIdentity, verdict, actor } = {}) {
+      return operation(() => {
+        const checked = { id: validateMediaId(id), expectedRevision: validateRevision(expectedRevision), actor: validateActor(actor) };
+        if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256) || !['approved', 'rejected', null].includes(verdict)) fail('studio_invalid_request', 400);
+        try { return { ...checked, sha256, verdict, expectedIdentity: JSON.parse(canonicalStudioJson(expectedIdentity)) }; }
+        catch { fail('studio_invalid_request', 400); }
+      }, async prepared => {
+        const previous = await loadMedia(prepared.id);
+        if (!previous) fail('studio_media_missing', 404);
+        if (previous.retainedBank) fail('studio_retained_media_immutable', 410);
+        if (previous.deletion) fail('studio_media_deletion_pending');
+        if (previous.classification.archived) fail('studio_media_archived');
+        if (previous.revision !== prepared.expectedRevision || previous.sha256 !== prepared.sha256) fail('studio_conflict');
+        const speech = previous.classification.recordedSpeech;
+        if (!speech) fail('studio_speech_take_missing', 404);
+        const project = await loadDocument('project'), dealerId = previous.classification.dealerId;
+        if (project?.value.dealerTrash?.some(entry => entry.dealer.id === dealerId)) fail('studio_dealer_archived');
+        if (!isActiveDealerId(dealerId) || !project?.value.dealers?.some(dealer => dealer.id === dealerId)) fail('studio_dealer_inactive');
+        const identity = recordedSpeechIdentity(speech);
+        if (canonicalStudioJson(identity) !== canonicalStudioJson(prepared.expectedIdentity)) fail('studio_speech_identity_changed');
+        const verified = speech.schemaVersion === 2 ? speech.source.status === 'verified-embedded-av' : speech.recording.status === 'verified-recording';
+        if (prepared.verdict === 'approved' && !verified) fail('studio_speech_source_unverified');
+        const review = prepared.verdict === null ? { status: 'pending' }
+          : { status: prepared.verdict, by: prepared.actor, at: new Date().toISOString(), identity };
+        const { revision: oldRevision, updatedAt, ...record } = previous;
+        const next = validateStudioMedia({ ...record, classification: { ...record.classification, recordedSpeech: { ...speech, review } } });
+        const revision = newRevision('media');
+        const row = (await query(`/* studio:review-recorded-speech */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
+          WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,
+        [prepared.id, revision, canonicalStudioJson(next), oldRevision])).rows[0];
+        if (!row) fail('studio_conflict');
+        // Existing immutable audit vocabulary (no DDL); the revision and actor
+        // identify this review write in the media row history.
         await audit('classify_media', prepared.id, revision, prepared.actor);
         return media(row);
       });
