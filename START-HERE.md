@@ -43,4 +43,4 @@ Beslut: Vercel + Render + Neon + Blob är den enda vägen. Ingen SQLite, inga lo
 
 ## Läge 27 oktober 2026
 
-65 % = 13/20 verifierade aktiviteter. Nästa mål är J08 (versionsbundet niofältskvitto i staging) → 70 %. Därefter K04, K05, K06, K07 (K05 kräver Jakobs AV-godkännande av PAOW:s tio talklipp), sedan O02 och O03. Parallell städning: SQLite bort helt, Astrid-legacy (hårdkodat `'astrid'` i probe/chat/avbokning), `/control`-rester och dokumentationen.
+70 % = 14/20 verifierade aktiviteter; J08 verifierades på kvällen i isolerad staging ([kvitto](docs/2026-10-27-J08-STAGING-ACCEPTANCE.json)). Nästa mål är K04, K05, K06 och K07, sedan O02 och O03. K05 kräver Jakobs AV-godkännande av PAOW:s tal i produktionen. Parallell städning: SQLite bort helt, Astrid-legacy (hårdkodat `'astrid'` i probe/chat/avbokning), `/control`-rester och dokumentationen.

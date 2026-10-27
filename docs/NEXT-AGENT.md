@@ -1,5 +1,60 @@
 # Överlämning: Scoutgaming-migreringen
 
+## 27 oktober kväll: J08 verifierad, 70 %
+
+**70 % = 14/20 aktiviteter.** J08 är VERIFIED i [statusfilen](../migrering/status.json). Verifierad kod är `b08f2a866f77e6b9673cbb6624b7eea9013a0a70`, och bevisen finns i det [sanitiserade kvittot](2026-10-27-J08-STAGING-ACCEPTANCE.json). Allt J08-bevis kommer från isolerad staging: `croupier-k06-k07-staging`, operatör `qa-k06k07-9dd2d3a4-a`, rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e`. Produktionens spelkonfiguration och Johns Bet är orörda. Avsnitten nedan är daterade; deras 65 %-uppgifter gäller före J08.
+
+- **Negativa prov på `c32be1fb`** (Vercel `dpl_9V3PF6upGVZ4z8ZzXSvsYC6phh4h`, Render `dep-dbgbloqfngtc7398pfng`, grind 32/32):
+  - Varje sparat utkast gav nya revisioner.
+  - Fyra inaktuella revisioner gav 409, ogiltigt språk 422 och operatör B 404. Operatör B provades som scope med samma Admin-session, inte separat inloggning, och fel roll provades inte live. `players/status` gav 200, vilket är #424-rättningen.
+  - Publicering före AV-granskning nekades med 422 `native_material_speech_unbound`, och tillståndet ändrades inte.
+  - Efter processbyte `dep-dbgbodnb9u1s73cr54j0` var allt identiskt.
+- **AV-granskning, endast staging:** Jakob godkände med stagingens Admin-konto elva svenska PAOW-tal: åtta `_1` samt `blackjack_7`, `double_3` och `blackjack_3`. Paketet frös `blackjack_7` för blackjack, så paketet har tio godkända tal, ett per replik. Han underkände `blackjack_1` och `double_1`. Det är verklig mänsklig granskning, men den gäller bara stagingens registerposter.
+- **Positiv kedja:**
+  - Paketet gick från 5 till 6 till 7. Publiceringen av `room-config-38b14261-cf20-4e31-bc09-042ee40f1d28` (sv/casual, 20000/15000 ms) gav 200 och replay 409. Rummet syns bara hos operatör A.
+  - Auktoriserad `/game` gav 200 på paket 7. Speak-händelserna valde godkända tagningar med exakt UUID, SHA och bytes.
+  - Efter processbyte `dep-dbgdh7mi0phs7383mrrg` (b08f2a86, grind 32/32) serverades samma version, och en ny hand fick åter godkänt tal.
+- **Gränser:**
+  - Processbytena var redeploys via Render MCP, inte dashboardens *Restart service*, och SHA:n kunde inte låsas (Render `dep-dbgcgt7lk1mc73bbq8o0`@15aa3192 och `dep-dbgckaou01pc73aondd0`@4838537d däremellan).
+  - Aktiv-hand-regeln, där pågående hand behåller C0/P0/M0 medan nästa fönster får C1/P1/M1, provades inte live. Den flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353).
+  - Ingen spelkonsument har bundit `room-config-38b14261`. Insatsprofil och tider (fält 2 och 4) är bevisade som Admin-återläsning plus lagring i `croupier_game.shared_table_configs`/`_heads`. Den enda konsumenten är delat bords koordinator, `shared_table_rooms` har 0 rader i staging, och nativebordets start bär ingen configreferens. Konsumtionen flyttas till K07 g1/g2 med flaggan, enligt scopebeslutet som Jakob ombeds bekräfta i PR #440.
+  - Fält 5:s bord, bakgrund och färg provades inte.
+  - Replikerna win, push, blackjack, insurance och double utlöstes inte.
+  - Ingen spelkonfiguration är publicerad i produktionen.
+
+| Aktivitet (status oförändrad) | Delbevis 27 oktober | Exakt kvar |
+| --- | --- | --- |
+| K04 | 16 kontroller: exakt material (46/46 UUID/SHA), återanslutning, två processbyten mitt i hand och negativa fall. Talet kommer från godkända tagningar med exakta bytes. | Visuellt godkända giv-, hål- och revealklipp (registret säger `unreviewed`/`lab-only`), återstående talrepliker, aktiv-hand-bytet live och produktionens tre lager. Operatör B:s kontext ger 409 i stället för 404. |
+| K05 | Produktion: tio `_1` och 43 svenska tagningar (16 uppladdade från Kevins `c7138759`) har recordedSpeech v2 `verified-embedded-av` och servermätt tid. De 36 kopplade giv- och idleklippen är mätta. Registret 17:08Z: 6 approved, 2 rejected (`blackjack_1`, `double_1`), övriga pending. | Jakobs AV-godkännande i produktionen, kopplade talfack, ompublicerat paket och publicerade spelinställningar för Johns Bet. |
+| K06 | Stagingkedjan Admin → publicering → spel efter processbyte med granskat tal. | Aktiv hand över publicering live, visuellt godkänt material, Johns Bet efter K05 och delat bord. |
+| K07 | K07 ensamt: 16 pass, 2 blockerade (g1/g2 503) och 1 ersatt kriterium (e1). Den gemensamma K04/K07-körningen hade 35 kontroller; K04:s del är 15 pass plus a4, som passerade senare, alltså 16. Idempotens, samtidiga kommandon, ledger lika med Neon (SHA `7459106d…`), utloggning och isolering passerar. | g1 (platsfrigivning, #426) och g2 (dueTicks) kräver `CROUPIER_SHARED_TABLE_ENABLED=1` i staging, och flera spelare vid samma delade bord saknas. |
+
+Dagens PR:er:
+
+- #424: `players/status` 503.
+- #425: START-HERE.
+- #426: K07-platser och `dueTicks`.
+- #427: Astrid-observatörer.
+- #428, #430, #431, #432 och #435: SQLite-stegen 1, 5, 4, 2/3a och 3b.
+- #429: överlämning.
+- #433: *Godkänn tal*.
+- #436: *Röst & tal*.
+- #437 är öppen (förvald tagning) och #434 är ett utkast (steg 6).
+
+**Nästa steg, i ordning:**
+
+1. **K05 i produktionen (Jakob):**
+   - Gå till Klippkarta → PAOW → *Röst & tal* → *Inspelat tal*. Godkänn en tagning per replik. `goodluck_1` och `win_1` är pending. Välj ersättare för blackjack och double; `blackjack_7` och `double_3`, som godkändes i staging, är pending i produktionen.
+   - Koppla talfacken med *Koppla till utkast* och spara.
+   - Publicera paketet igen. Publicera sedan Johns Bet-rummets spelinställningar.
+   - Ingen agent godkänner tal.
+2. **K06:** Publicera en ny config under en pågående hand och visa att handen behåller C0/P0/M0 medan nästa fönster får C1/P1/M1. Granska giv- och revealklippen visuellt och upprepa kedjan på Johns Bet efter K05.
+3. **K07:** Sätt `CROUPIER_SHARED_TABLE_ENABLED=1` på staging-Render (kräver Jakobs ja). Kör g1/g2 och prov med flera spelare vid samma bord.
+4. **K04** stängs med K05/K06-materialet. Därefter kommer **O02** med oberoende samprov på en fryst kandidat, och sedan **O03** med integration, drift och restore.
+5. **SQLite:** steg 3c och 7 återstår. Steg 6 (#434) är ett utkast som mergas efter 3b, som är mergat i #435.
+6. **Clean slate efter K05:** först när K05 är klar och enligt Jakobs ordning. Dagens stagingdata (rum 33b37ff3 med paket 7 och syntetiska spelare) är bevis och raderas inte före dess.
+7. Render-staging var LIVE på `b08f2a86` vid kvittots slut. Jakob avgör när tjänsten ska suspenderas.
+
 ## Claude tar över — 27 oktober 2026, kväll
 
 **65 % = 13/20 består.** Inga aktivitetsstatusar har ändrats; allt nedan är kod-, test- och dokumentleveranser via öppna PR:er som Jakob mergar efter grön full CI och oberoende granskning (Claude Codes säkerhetsläge tillåter ingen agentmerge). Ny lokal basmapp är en färsk klon i `C:\Users\jakob\dev\scoutgaming`; Codex-worktrees och originalcheckouten lämnas orörda. Jakobs beslut samma dag: **en enda produktväg** (Vercel + Render + Neon + Blob), SQLite lämnar main helt, bra Kevin-beteenden skrivs om i mains moduler, felaktiga tester/dokument rättas eller raderas, och `/admin` ska vara enkel.

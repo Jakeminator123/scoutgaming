@@ -1,0 +1,989 @@
+{
+  "kind": "j08-staging-acceptance/v1",
+  "date": "2026-10-27",
+  "branch": "jakob/claude-status-j08",
+  "codeSha": "b08f2a866f77e6b9673cbb6624b7eea9013a0a70",
+  "mainAtWriting": "e333790c (#435). b08f2a86..e333790c ändrar endast tester, CI, verktyg och ett dokument; ingen källa i services/game, apps/studio eller ops/cloud.",
+  "progress": {
+    "activity": "J08",
+    "verified": 14,
+    "total": 20,
+    "percent": 70,
+    "before": 65,
+    "changed": true,
+    "source": "migrering/status.json"
+  },
+  "sources": "Sammanfattat från orkestratorns lokala råkvitton (j08/receipt.json, j08/receipt-final.json, k04-k07/receipt.json, k05/bind-paow-takes.receipt.json, k05-staging/receipt.json). Råkvittona har Vercel-Id/Rndr-Id per anrop. Här finns inga kakor, lösenord, tokens, spelaranvändarnamn eller spelar-UUID.",
+  "environment": {
+    "origin": "https://croupier-k06-k07-staging.vercel.app",
+    "backend": "https://croupier-k06-k07-staging.onrender.com",
+    "vercel": {
+      "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+      "deployments": [
+        {
+          "id": "dpl_9V3PF6upGVZ4z8ZzXSvsYC6phh4h",
+          "sha": "c32be1fb8baa00783b382b09352760c60b84c2d4",
+          "readyState": "READY",
+          "used": "J08 negativa prov 14:58–15:04Z och K04/K07 15:50–16:04Z"
+        },
+        {
+          "id": "dpl_4eNkvPJUaB1ta6XGskx9GsSZ7ioE",
+          "sha": "b08f2a866f77e6b9673cbb6624b7eea9013a0a70",
+          "readyState": "READY",
+          "used": "J08 positiv publicering och K04 a4 16:59–17:07Z"
+        }
+      ]
+    },
+    "render": {
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "deploys": [
+        {
+          "id": "dep-dbgbloqfngtc7398pfng",
+          "sha": "c32be1fb8baa00783b382b09352760c60b84c2d4",
+          "trigger": "service_resumed (Jakob, dashboard)",
+          "liveAt": "2026-10-27T14:54:27.870398Z",
+          "runtimeId": "4b16d1b0-a934-4f6d-b4d4-3d72e681a53a",
+          "gate": {
+            "total": 32,
+            "passed": 32,
+            "idleMs": 95012,
+            "firstAt": "2026-10-27T14:55:14.831Z",
+            "lastAt": "2026-10-27T14:57:57.472Z",
+            "versionSha": [
+              "c32be1fb8baa00783b382b09352760c60b84c2d4"
+            ]
+          }
+        },
+        {
+          "id": "dep-dbgbodnb9u1s73cr54j0",
+          "sha": "c32be1fb8baa00783b382b09352760c60b84c2d4",
+          "trigger": "Render MCP trigger_deploy, clearCache=false",
+          "liveAt": "2026-10-27T14:59:42.978728Z",
+          "runtimeId": "618e75e4-de7b-4f12-9214-8653fa6bd7ef",
+          "gate": {
+            "total": 32,
+            "passed": 32,
+            "idleMs": 95014,
+            "firstAt": "2026-10-27T15:00:30.360Z",
+            "lastAt": "2026-10-27T15:03:13.103Z",
+            "versionSha": [
+              "c32be1fb8baa00783b382b09352760c60b84c2d4"
+            ]
+          },
+          "purpose": "processbyte mitt i J08:s negativa prov, samma SHA"
+        },
+        {
+          "id": "dep-dbgcgt7lk1mc73bbq8o0",
+          "sha": "15aa31920c255e2d145961cb34352115b84d429e",
+          "trigger": "Render MCP trigger_deploy (bygger branchens HEAD; main hade flyttat till #433)",
+          "liveAt": "2026-10-27T15:52:05.611Z",
+          "runtimeId": "403c181b-f39f-4c03-adc8-dc1dcae4fce8",
+          "gate": {
+            "total": 26,
+            "passed": 26,
+            "versionSha": [
+              "15aa31920c255e2d145961cb34352115b84d429e"
+            ]
+          },
+          "purpose": "processbyte 1 mitt i K04-hand (p1)"
+        },
+        {
+          "id": "dep-dbgckaou01pc73aondd0",
+          "sha": "4838537d1a5ab14106dc5df1dbcacce3144ab344",
+          "trigger": "Render MCP trigger_deploy",
+          "liveAt": "2026-10-27T15:59:24.001Z",
+          "runtimeId": "fac75fb3-69b9-4806-b230-63d70f086a1a",
+          "gate": {
+            "total": 26,
+            "passed": 26,
+            "versionSha": [
+              "4838537d1a5ab14106dc5df1dbcacce3144ab344"
+            ]
+          },
+          "purpose": "processbyte 2 mitt i K04-hand (p3); även backend vid J08:s positiva publicering"
+        },
+        {
+          "id": "dep-dbgdh7mi0phs7383mrrg",
+          "sha": "b08f2a866f77e6b9673cbb6624b7eea9013a0a70",
+          "trigger": "Render MCP trigger_deploy, clearCache=false",
+          "liveAt": "2026-10-27T17:02:21.135485Z",
+          "runtimeId": "0d88262a-db25-4959-9dc0-008f932b1787",
+          "gate": {
+            "total": 32,
+            "passed": 32,
+            "idleMs": 95010,
+            "firstAt": "2026-10-27T17:04:12.931Z",
+            "lastAt": "2026-10-27T17:06:55.651Z",
+            "versionSha": [
+              "b08f2a866f77e6b9673cbb6624b7eea9013a0a70"
+            ]
+          },
+          "purpose": "processbyte efter J08:s publicering; publicerad version återläst efteråt"
+        }
+      ],
+      "processReplacementKind": "Alla processbyten är redeploys via Render MCP, inte dashboardens Restart service. trigger_deploy kan inte låsa en SHA.",
+      "runtimeDiffs": {
+        "c32be1fb..15aa3192": "nativebord och sko oförändrade; presentation-api läser kvitton med samma SQL som standard efter refaktorering; offline-launchers borttagna (#430/#431)",
+        "15aa3192..4838537d": "endast tester, CI och devDependency (#432)",
+        "4838537d..b08f2a86": "Studio-klientens talpanel, Studio-dokument och studio-speech-kontraktet med test, sex filer (#436); ingen ändring i services/game eller ops/cloud"
+      },
+      "stateAtEndOfReceipt": "LIVE på b08f2a86, inte suspenderad av agenten; suspension är Jakobs beslut"
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "branch": "br-plain-voice-b9yu49xi",
+      "database": "croupier_staging",
+      "role": "croupier_staging_app",
+      "access": "endast SELECT, K07 ledgerparitet 16:03Z"
+    }
+  },
+  "subjects": {
+    "operatorA": "qa-k06k07-9dd2d3a4-a",
+    "operatorB": "qa-k06k07-9dd2d3a4-b",
+    "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "lane": "paow-isolated-review-20261026",
+    "neighborRoomSameOperator": "room-cb4c4696-f671-c546-eb15-6fb67d09feea",
+    "operatorBRoom": "room-930c39d1-beeb-535a-b79e-06b6aff127bd",
+    "adminAccount": "stagingens Admin-konto (staging-admin)"
+  },
+  "j08": {
+    "status": "verified",
+    "negative": {
+      "at": "2026-10-27T14:58:42.298Z",
+      "codeSha": "c32be1fb8baa00783b382b09352760c60b84c2d4",
+      "checks": [
+        {
+          "name": "unauthenticated_config_read_401",
+          "pass": true,
+          "http": 401
+        },
+        {
+          "name": "admin_login_200",
+          "pass": true,
+          "http": 200
+        },
+        {
+          "name": "target_room_live_operatorA",
+          "pass": true
+        },
+        {
+          "name": "target_config_read_200",
+          "pass": true
+        },
+        {
+          "name": "save_draft_200_new_admin_and_draft_revision",
+          "pass": true,
+          "http": 200
+        },
+        {
+          "name": "readback_matches_saved_draft",
+          "pass": true
+        },
+        {
+          "name": "neighbor_room_draft_published_unchanged",
+          "pass": true
+        },
+        {
+          "name": "stale_admin_revision_save_409",
+          "pass": true,
+          "http": 409,
+          "code": "Conflict"
+        },
+        {
+          "name": "stale_package_revision_save_409",
+          "pass": true,
+          "http": 409,
+          "code": "Conflict"
+        },
+        {
+          "name": "stale_draft_revision_publish_409",
+          "pass": true,
+          "http": 409,
+          "code": "Conflict"
+        },
+        {
+          "name": "stale_admin_revision_publish_409",
+          "pass": true,
+          "http": 409,
+          "code": "Conflict"
+        },
+        {
+          "name": "invalid_language_422",
+          "pass": true,
+          "http": 422,
+          "code": "Invalid data"
+        },
+        {
+          "name": "refusals_left_state_unchanged",
+          "pass": true
+        },
+        {
+          "name": "foreign_operator_read_404",
+          "pass": true,
+          "http": 404,
+          "code": "Not found"
+        },
+        {
+          "name": "foreign_operator_write_404",
+          "pass": true,
+          "http": 404,
+          "code": "Not found"
+        },
+        {
+          "name": "foreign_room_read_404",
+          "pass": true,
+          "http": 404
+        },
+        {
+          "name": "publish_refused_422_material_gate",
+          "pass": true,
+          "http": 422,
+          "code": "studio_room_game_material_unavailable"
+        },
+        {
+          "name": "refused_publish_left_state_unchanged",
+          "pass": true
+        },
+        {
+          "name": "operator_B_lobby_unchanged",
+          "pass": true
+        },
+        {
+          "name": "target_absent_from_operator_B_lobby",
+          "pass": true
+        },
+        {
+          "name": "players_status_not_503",
+          "pass": true,
+          "http": 200
+        }
+      ],
+      "revisions": {
+        "administration": "studio-44fb274b-619b-42ed-a443-c655ed7bf1f6 -> studio-8a15adfc-44c3-4d45-b555-cb7ee957a372",
+        "draft": "room-config-56de690e-2790-4d35-b50f-1e1269280b88 -> room-config-a5c91386-a1f2-4d6a-bd00-ce03c12fc38e",
+        "gameConfig": "sv/prive -> sv/high",
+        "packageRevision": 5
+      },
+      "publishBeforeAvReview": {
+        "http": 422,
+        "code": "studio_room_game_material_unavailable",
+        "materialReason": "native_material_speech_unbound",
+        "stateUnchanged": true
+      },
+      "playersStatus": {
+        "http": 200,
+        "note": "PR424-rättningen; tidigare 503. Render POST /api/studio-game/command 200"
+      },
+      "afterProcessReplacement": {
+        "at": "2026-10-27T15:03:36.877Z",
+        "checks": [
+          {
+            "name": "admin_login_200",
+            "pass": true
+          },
+          {
+            "name": "target_config_identical_after_restart",
+            "pass": true
+          },
+          {
+            "name": "neighbor_identical_after_restart",
+            "pass": true
+          },
+          {
+            "name": "lobby_A_identical_after_restart",
+            "pass": true
+          }
+        ]
+      },
+      "lostFirstRun": "Första negativa körningens begärandelogg gick förlorad (serialiseringsfel i harnessen efter players/status). Dess skrivningar: ett utkast sv/prive, nekade skrivningar, en 422-publicering och spärr av J10:s syntetiska spelare. Omkörningen är det registrerade beviset."
+    },
+    "avReview": {
+      "kind": "mänsklig ljud- och bildgranskning i Admin via Röst & tal -> Godkänn tal (PR433/PR436), endast staging",
+      "reviewer": "Jakob, inloggad med stagingens Admin-konto (staging-admin)",
+      "approved": [
+        "goodluck_1",
+        "insurance_1",
+        "double_3",
+        "placebets_1",
+        "blackjack_7",
+        "dealerblackjack_1",
+        "dealerbust_1",
+        "win_1",
+        "push_1",
+        "lose_1",
+        "blackjack_3"
+      ],
+      "rejected": [
+        "double_1",
+        "blackjack_1"
+      ],
+      "stagingImportForReplacements": [
+        {
+          "takeId": "blackjack_7",
+          "videoId": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3",
+          "sha256": "63752fce450f9e5409e3498c236e3a752a0250fbac6dc6e4a550717f4339d461",
+          "bytes": 284915,
+          "frameCount": 50,
+          "fps": 24,
+          "source": "verified-embedded-av",
+          "identityDigestMatches": true
+        },
+        {
+          "takeId": "blackjack_3",
+          "videoId": "17bf71dd-7510-4306-a6db-c48eff564a66",
+          "sha256": "29faed8811c71cf6b82edeb17e7638c2b36fa94bc4806a41189c30db27c925af",
+          "bytes": 301021,
+          "frameCount": 66,
+          "fps": 24,
+          "source": "verified-embedded-av",
+          "identityDigestMatches": true
+        },
+        {
+          "takeId": "double_3",
+          "videoId": "efd693bf-8134-4afb-ab7f-07c1e889331a",
+          "sha256": "a71600e5e4890cd7d82379f6f31da32e1398d45f4d378693bc898694f9b64ab7",
+          "bytes": 743335,
+          "frameCount": 75,
+          "fps": 24,
+          "source": "verified-embedded-av",
+          "identityDigestMatches": true
+        },
+        {
+          "takeId": "double_2",
+          "videoId": "6d5c411f-9ec2-444b-a1bf-62d4f087e100",
+          "sha256": "9b42c96bc3c62f72cc8f01c40c5fc043156b4846183ce8e8ecbd2a6df11bb085",
+          "bytes": 718863,
+          "frameCount": 66,
+          "fps": 24,
+          "source": "verified-embedded-av",
+          "identityDigestMatches": true
+        }
+      ],
+      "importSource": "bytes från produktionsregistret, lika med Kevins git-blob vid c713875923cd854b26f89c1db0d0f47064619c1d",
+      "slotRebind": [
+        {
+          "variant": "paow.speak.other.slot-blackjack",
+          "takeId": "blackjack_7",
+          "to": "ab57d7ca-71b3-4836-8550-5b1475d4d3c3"
+        },
+        {
+          "variant": "paow.speak.double.standard",
+          "takeId": "double_3",
+          "to": "efd693bf-8134-4afb-ab7f-07c1e889331a"
+        }
+      ],
+      "projectRevision": "studio-bc641d5d-0304-4009-ac1f-51ba7a13ddf7 -> studio-c3d173ec-f930-4ec9-b5a1-8d0e3a3e9d4c",
+      "limit": "Gäller endast stagingens registerposter. Ingen AV-attest för produktionen följer av detta; produktionens granskning görs separat (K05).",
+      "approvedNote": "Elva godkända. blackjack_3 godkändes 16:58:23.995Z; paketet frös blackjack_7 för blackjack, så paket 6/7 har tio godkända tal, ett per replik."
+    },
+    "positive": {
+      "at": "2026-10-27T16:59:45.236Z",
+      "frontendSha": "b08f2a866f77e6b9673cbb6624b7eea9013a0a70",
+      "backendSha": "4838537d1a5ab14106dc5df1dbcacce3144ab344",
+      "packageRevision": "5 -> 6 (operatörspaketet ompublicerat med tio godkända tal) -> 7 (rumspublicering)",
+      "draft": {
+        "revision": "room-config-a5b19ef2-c1a2-42f6-a5ba-dba8972d9bd6",
+        "administrationRevision": "studio-f63b44fd-fd96-4643-be66-e3216b81074e",
+        "gameConfig": "sv/casual"
+      },
+      "published": {
+        "configVersion": "room-config-38b14261-cf20-4e31-bc09-042ee40f1d28",
+        "packageRevision": 7,
+        "language": "sv",
+        "limitPreset": "casual",
+        "betMs": 20000,
+        "actionMs": 15000,
+        "administrationRevisionAfter": "studio-a2040fcd-a468-4e54-893e-7914ece80837"
+      },
+      "checks": [
+        {
+          "name": "package_republished_revision_plus_1",
+          "pass": true,
+          "http": 200
+        },
+        {
+          "name": "package_freezes_approved_speech_all_10_lines",
+          "pass": true
+        },
+        {
+          "name": "publication_ready_after_package",
+          "pass": true
+        },
+        {
+          "name": "save_draft_200",
+          "pass": true,
+          "http": 200
+        },
+        {
+          "name": "draft_readback_ready",
+          "pass": true
+        },
+        {
+          "name": "stale_publish_409",
+          "pass": true,
+          "http": 409,
+          "code": "Conflict"
+        },
+        {
+          "name": "publish_200",
+          "pass": true,
+          "http": 200
+        },
+        {
+          "name": "published_readback",
+          "pass": true
+        },
+        {
+          "name": "replayed_publish_409",
+          "pass": true,
+          "http": 409,
+          "code": "Conflict"
+        },
+        {
+          "name": "neighbor_not_published",
+          "pass": true
+        },
+        {
+          "name": "operatorB_read_404",
+          "pass": true,
+          "http": 404
+        },
+        {
+          "name": "operatorA_reads_B_room_404",
+          "pass": true,
+          "http": 404
+        },
+        {
+          "name": "lobby_A_shows_room_at_new_package",
+          "pass": true
+        },
+        {
+          "name": "lobby_B_unchanged_room_absent",
+          "pass": true
+        },
+        {
+          "name": "operatorB_package_unchanged",
+          "pass": true
+        }
+      ],
+      "launch": {
+        "http": 200,
+        "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+        "operator": "qa-k06k07-9dd2d3a4-a",
+        "dealer": "paow",
+        "packageRevision": 7,
+        "presentationProjectRevision": "studio-c3d173ec-f930-4ec9-b5a1-8d0e3a3e9d4c",
+        "presentationVideos": 46
+      }
+    },
+    "afterProcessReplacement": {
+      "at": "2026-10-27T17:07:05.922Z",
+      "codeSha": "b08f2a866f77e6b9673cbb6624b7eea9013a0a70",
+      "deploy": "dep-dbgdh7mi0phs7383mrrg",
+      "checks": [
+        {
+          "name": "published_version_still_served",
+          "pass": true
+        },
+        {
+          "name": "neighbor_still_unpublished",
+          "pass": true
+        },
+        {
+          "name": "lobby_A_identical_after_restart",
+          "pass": true
+        }
+      ],
+      "configVersion": "room-config-38b14261-cf20-4e31-bc09-042ee40f1d28",
+      "packageRevision": 7
+    },
+    "fieldMatrix": {
+      "reference": "docs/JOHN-HANDOFF.md, avsnittet Samlat niofältskvitto utan ändrade slutkriterier",
+      "1 namn/företag/komposition/spel": "rum, operatör, dealer och paket i launch 200 och lobby A; främmande operatör 404",
+      "2 insatsprofil": "sv/prive -> sv/high -> sv/casual sparat, återläst och publicerat. Gräns: bevisat som Admin-återläsning plus lagring (croupier_game.shared_table_configs/_heads har 38b14261 med casual 1/500/50). Ingen spelkonsument har bundit configVersion; konsumtionen flyttas till K06/K07 g1/g2.",
+      "3 språk": "sv publicerat med tio godkända svenska tal; ogiltigt språk 422",
+      "4 insats-/handlingstid": "publicerad återläsning betMs 20000/actionMs 15000, lagrad i shared_table_configs. Gräns: endast delat bords koordinator konsumerar värdena och shared_table_rooms har 0 rader i staging; konsumtionen flyttas till K06/K07 g1/g2.",
+      "5 bord/bakgrund/dealer/färg": "dealer paow och paketrevision 7 i launch. Bord, bakgrund och färg provades inte. Aktiv-hand-regeln C0/P0/M0 mot C1/P1/M1 provades inte live och flyttas till K06 (PR407, mergad 8fcb920a, head 857347de, CI40347468353).",
+      "6 dealer/klipp/idle/tal": "tio godkända tal fryses i paket 6/7; speak-val ger exakt UUID/SHA/bytes",
+      "7 taldrift": "ingen GPU-start beställd; befintlig miljögrind och driftrevision täcks av moving-drift-admin.test.mjs och moving-drift-controls.test.mjs, enligt handoffens matris",
+      "8 djuplänk": "auktoriserad /game 200 med data-game-package-revision=7; främmande query 404 (K07 j2)",
+      "9 skobevis/audit": "koddelen verifierad i PR406 (21/21, full CI); inget nytt molnprov"
+    },
+    "operatorBScope": "\"Operatör B 404\" avser operatör B:s scope med samma Admin-session, inte en separat inloggning. Fel roll provades inte live.",
+    "consumerLimit": "Ingen spelkonsument har bundit configVersion room-config-38b14261. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. \"Operatör B 404\" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live.",
+    "scopeDecision": "Spelets konsumtion av publicerade gränser och aktiv-hand-regeln flyttas till K06/K07; Jakob ombeds bekräfta beslutet i PR #440."
+  },
+  "k04": {
+    "codeShas": [
+      "c32be1fb8baa00783b382b09352760c60b84c2d4",
+      "15aa31920c255e2d145961cb34352115b84d429e",
+      "4838537d1a5ab14106dc5df1dbcacce3144ab344",
+      "b08f2a866f77e6b9673cbb6624b7eea9013a0a70"
+    ],
+    "checks": [
+      {
+        "id": "K04-a0",
+        "result": "pass",
+        "check": "game entry consumes room package 5; frozen inventory UUID/SHA equal Admin registry",
+        "evidence": "/play/blackjack 308 -> /game 200 paket 5; /api/presentation/config 200 operator-package-v3, 46/46 UUID/SHA = Admin-registret"
+      },
+      {
+        "id": "K04-a1",
+        "result": "pass",
+        "check": "deal selects reference exact registered UUID/SHA of frozen package 5",
+        "evidence": "4 deal-select 200: f1aefbda/b515a540 (1:i), 6134db90/4bc6994a (dealer:base), ec8534ad/d4d52b02 (1:base), 3ae61b24/3133d151 (hole:base)"
+      },
+      {
+        "id": "K04-a2",
+        "result": "pass",
+        "check": "selected media bytes served with registry SHA ETag",
+        "evidence": "HEAD 200, ETag sha256-<registersha>, längd = registerbytes"
+      },
+      {
+        "id": "K04-a3",
+        "result": "pass",
+        "check": "reveal/settle selects after restart bind to registered material of package 5",
+        "evidence": "reveal b07c94b6/93cd59b2 200 efter processbyte; settle 200"
+      },
+      {
+        "id": "K04-a4",
+        "result": "pass 17:00–17:07Z efter AV-granskning i staging",
+        "check": "speech (speak) selection uses AV-approved takes",
+        "evidence": "Första försöket i K04/K07-körningen blockerat: speak 200 video:null recorded_speech_unavailable. Omprov på paket 7: se speakEvidence."
+      },
+      {
+        "id": "K04-b1",
+        "result": "pass",
+        "check": "reconnect via new session shows same hand, version and material",
+        "evidence": "ny session: version 3, saldo 1002.5, samma vy-SHA och samma 4 UUID/SHA; nativeklienten har ingen SSE, återanslutning = tillståndshämtning + kvittoläsning"
+      },
+      {
+        "id": "K04-c1",
+        "result": "pass",
+        "check": "after process replacement, authenticated reconnection resumes same committed hand (version/balance/history/ledger)",
+        "evidence": "processbyte 1 (15aa3192): version 3, saldo 1002.5, vy-, historik- och Admin-ledger-SHA oförändrade; grind 26/26"
+      },
+      {
+        "id": "K04-c2",
+        "result": "pass",
+        "check": "same material selected after process replacement",
+        "evidence": "samma 4 UUID/SHA efter processbyte 1"
+      },
+      {
+        "id": "K04-c3",
+        "result": "pass",
+        "check": "runtime-identical process replacement (15aa3192 -> 4838537d, no runtime source change): same committed hand, balance, history, Admin ledger",
+        "evidence": "processbyte 2 (4838537d): version 1, saldo 995, historik och ledger oförändrade; grind 26/26"
+      },
+      {
+        "id": "K04-c4",
+        "result": "pass",
+        "check": "runtime-identical process replacement (15aa3192 -> 4838537d, no runtime source change): same material UUID/SHA",
+        "evidence": "samma 4 UUID/SHA efter processbyte 2"
+      },
+      {
+        "id": "K04-c5",
+        "result": "pass",
+        "check": "hand completes on replaced process; reveal binds registered material",
+        "evidence": "handen avslutas på ny process; reveal b07c94b6 och deal eba5e1ba i paket 5"
+      },
+      {
+        "id": "K04-d1",
+        "result": "pass",
+        "check": "stale version refused, state unchanged",
+        "evidence": "400 Table changed; reload to resume; tillstånd oförändrat"
+      },
+      {
+        "id": "K04-d2",
+        "result": "pass",
+        "check": "replayed request id returns stored response without new debit",
+        "evidence": "200, lagrad version 3, ingen ny debitering"
+      },
+      {
+        "id": "K04-d3",
+        "result": "pass",
+        "check": "different player cannot read or change the hand",
+        "evidence": "annan spelare: act 400, select 409 Stale presentation, replay 400"
+      },
+      {
+        "id": "K04-d4",
+        "result": "pass",
+        "check": "other operator context and anonymous cannot read the hand",
+        "evidence": "operatör B: select/config 409 studio_presentation_idle_package_changed; anonym 401"
+      },
+      {
+        "id": "K04-d5",
+        "result": "pass",
+        "check": "stale presentation version refused",
+        "evidence": "409 Stale presentation"
+      }
+    ],
+    "speakEvidence": {
+      "context": {
+        "operator": "qa-k06k07-9dd2d3a4-a",
+        "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+        "packageRevision": 7,
+        "dealer": "paow"
+      },
+      "beforeProcessReplacement": {
+        "player": "syntetisk spelare 1",
+        "balance": "1000 -> 995 (lose)",
+        "speak": [
+          {
+            "command": "start",
+            "line": "goodluck",
+            "http": 200,
+            "gameVersion": 1,
+            "videoId": "c16b8b1f-6553-4ea2-b202-740ac3dab876",
+            "sha256": "4fda0bdc198fcb3ae05eb1839be2bed8c212441b4df83262673fa948800837a6",
+            "takeId": "goodluck_1",
+            "language": "sv",
+            "review": "approved",
+            "mediaHead": {
+              "http": 200,
+              "bytes": 749710,
+              "contentType": "video/mp4"
+            },
+            "mediaGet": {
+              "http": 200,
+              "bytes": 749710,
+              "sha256": "4fda0bdc198fcb3ae05eb1839be2bed8c212441b4df83262673fa948800837a6"
+            },
+            "registryBytesAndShaMatch": true
+          },
+          {
+            "command": "act",
+            "line": "lose",
+            "http": 200,
+            "gameVersion": 2,
+            "videoId": "65bfca97-9e2a-402b-98b6-5c0759747cd8",
+            "sha256": "d2938bd12d408ccb180718b6136020997b29453da4740eaf9c4cbf9b403fcba7",
+            "takeId": "lose_1",
+            "language": "sv",
+            "review": "approved",
+            "mediaHead": {
+              "http": 200,
+              "bytes": 688831,
+              "contentType": "video/mp4"
+            },
+            "mediaGet": {
+              "http": 200,
+              "bytes": 688831,
+              "sha256": "d2938bd12d408ccb180718b6136020997b29453da4740eaf9c4cbf9b403fcba7"
+            },
+            "registryBytesAndShaMatch": true
+          },
+          {
+            "command": "collect",
+            "line": "placebets",
+            "http": 200,
+            "gameVersion": 3,
+            "videoId": "fa4a9ac5-e43e-44b7-ad78-ffb1a5cc8806",
+            "sha256": "9eebdf34cb9401aa3fe7032e0a30a8cf22c1e869ad3534fa946a3acdf95fdbef",
+            "takeId": "placebets_1",
+            "language": "sv",
+            "review": "approved",
+            "mediaHead": {
+              "http": 200,
+              "bytes": 1113561,
+              "contentType": "video/mp4"
+            },
+            "mediaGet": {
+              "http": 200,
+              "bytes": 1113561,
+              "sha256": "9eebdf34cb9401aa3fe7032e0a30a8cf22c1e869ad3534fa946a3acdf95fdbef"
+            },
+            "registryBytesAndShaMatch": true
+          }
+        ]
+      },
+      "afterProcessReplacement": {
+        "player": "syntetisk spelare 2",
+        "balance": "1000 -> 1005 (dealerbust)",
+        "speak": [
+          {
+            "command": "start",
+            "line": "goodluck",
+            "http": 200,
+            "gameVersion": 1,
+            "videoId": "c16b8b1f-6553-4ea2-b202-740ac3dab876",
+            "sha256": "4fda0bdc198fcb3ae05eb1839be2bed8c212441b4df83262673fa948800837a6",
+            "takeId": "goodluck_1",
+            "language": "sv",
+            "review": "approved",
+            "mediaHead": {
+              "http": 200,
+              "bytes": 749710,
+              "contentType": "video/mp4"
+            },
+            "mediaGet": {
+              "http": 200,
+              "bytes": 749710,
+              "sha256": "4fda0bdc198fcb3ae05eb1839be2bed8c212441b4df83262673fa948800837a6"
+            },
+            "registryBytesAndShaMatch": true
+          },
+          {
+            "command": "act",
+            "line": "dealerbust",
+            "http": 200,
+            "gameVersion": 2,
+            "videoId": "137a8e68-cb46-4c2f-abdd-22a6579c9167",
+            "sha256": "aa59b8d998dc3319c3fc529145586867e1b9716f6abc44dd02bd79be6191a1bd",
+            "takeId": "dealerbust_1",
+            "language": "sv",
+            "review": "approved",
+            "mediaHead": {
+              "http": 200,
+              "bytes": 1017512,
+              "contentType": "video/mp4"
+            },
+            "mediaGet": {
+              "http": 200,
+              "bytes": 1017512,
+              "sha256": "aa59b8d998dc3319c3fc529145586867e1b9716f6abc44dd02bd79be6191a1bd"
+            },
+            "registryBytesAndShaMatch": true
+          },
+          {
+            "command": "collect",
+            "line": "placebets",
+            "http": 200,
+            "gameVersion": 3,
+            "videoId": "fa4a9ac5-e43e-44b7-ad78-ffb1a5cc8806",
+            "sha256": "9eebdf34cb9401aa3fe7032e0a30a8cf22c1e869ad3534fa946a3acdf95fdbef",
+            "takeId": "placebets_1",
+            "language": "sv",
+            "review": "approved",
+            "mediaHead": {
+              "http": 200,
+              "bytes": 1113561,
+              "contentType": "video/mp4"
+            },
+            "mediaGet": {
+              "http": 200,
+              "bytes": 1113561,
+              "sha256": "9eebdf34cb9401aa3fe7032e0a30a8cf22c1e869ad3534fa946a3acdf95fdbef"
+            },
+            "registryBytesAndShaMatch": true
+          }
+        ]
+      }
+    },
+    "findings": [
+      "Operatör B:s kontext mot A:s rum ger 409 studio_presentation_idle_package_changed i stället för 404. Isoleringen håller, men klienten säger att paketet ändrats för ett främmande rum.",
+      "Valda PAOW giv-, hål- och revealklipp har reviewStatus=unreviewed, verdict=unrated och bindingScope=lab-only i registret. Bindningen är exakt, men materialet är inte visuellt godkänt."
+    ]
+  },
+  "k07": {
+    "codeShas": [
+      "c32be1fb8baa00783b382b09352760c60b84c2d4",
+      "15aa31920c255e2d145961cb34352115b84d429e",
+      "4838537d1a5ab14106dc5df1dbcacce3144ab344"
+    ],
+    "summary": {
+      "total": 35,
+      "pass": 31,
+      "blocked": 3,
+      "supersededCriterionError": 1,
+      "note": "Totalen gäller K04/K07-körningen. K04-a4 är en av de tre blockerade och passerade senare i J08:s positiva körning. K07-e1 jämförde alla p1:s collect-rader mot högst 1 och ersattes av K07-e1r per hand."
+    },
+    "checks": [
+      {
+        "id": "K07-e0",
+        "result": "pass",
+        "check": "same request id with different input refused",
+        "evidence": "400 Request ID reused with different input"
+      },
+      {
+        "id": "K07-e1r",
+        "result": "pass",
+        "check": "idempotent replay of stand and collect (re-evaluated per hand): same response, exactly one collect credit",
+        "evidence": "stand-replay 200 v4; collect-replay två gånger 200 v5/1012.5; exakt en collect-rad (+10) för handen"
+      },
+      {
+        "id": "K07-f1",
+        "result": "pass",
+        "check": "split on non-pair refused (400 \"Illegal action\"), state unchanged",
+        "evidence": "split på icke-par 400 Illegal action (3♦/2♠), oförändrat"
+      },
+      {
+        "id": "K07-f2",
+        "result": "pass",
+        "check": "double after hit refused (400 \"Illegal action\"), state unchanged",
+        "evidence": "dubbling efter hit 400 Illegal action, oförändrat"
+      },
+      {
+        "id": "K07-f3",
+        "result": "pass",
+        "check": "act after stand refused, state unchanged; act after collect refused",
+        "evidence": "act efter stand 400 två gånger; efter collect 400 No active round; ersatt id 400 Table changed"
+      },
+      {
+        "id": "K07-g1",
+        "result": "blocked",
+        "check": "seat release after round (PR426, shared coordinator) over HTTP",
+        "evidence": "POST /api/shared-room/{room}/command 503 shared_room_service_unavailable; delad koordinator av i staging"
+      },
+      {
+        "id": "K07-g2",
+        "result": "blocked",
+        "check": "silent room gets no due ticks (PR426 dueTicks) over HTTP",
+        "evidence": "samma orsak; nativebord per spelare har ingen tickloop"
+      },
+      {
+        "id": "K07-g3",
+        "result": "pass",
+        "check": "idle native tables do not advance (version/view unchanged over 90 s, and over the restart idle window)",
+        "evidence": "p1 v12 och p2 v10 oförändrade över 90 s och över processbyte 1"
+      },
+      {
+        "id": "K07-h1",
+        "result": "pass",
+        "check": "two players in two rooms simultaneously both commit independently",
+        "evidence": "två spelare i två rum, samtidiga starter 200/200"
+      },
+      {
+        "id": "K07-h2",
+        "result": "pass",
+        "check": "two concurrent different starts from same player: exactly one wins, single debit",
+        "evidence": "samtidiga starter: 200 + 400 Table changed; en debitering -5, v8 -> v9"
+      },
+      {
+        "id": "K07-h3",
+        "result": "pass",
+        "check": "concurrent hit vs stand at same version: one wins, other refused",
+        "evidence": "hit mot stand på samma version: 200 + 400 Table changed"
+      },
+      {
+        "id": "K07-h4",
+        "result": "pass",
+        "check": "same request id sent twice concurrently: identical response, applied once",
+        "evidence": "samma requestId två gånger samtidigt: 200/200 identiska v11, applicerat en gång"
+      },
+      {
+        "id": "K07-h5a",
+        "result": "pass",
+        "check": "HTTP Admin ledger sum equals HTTP player balance",
+        "evidence": "Admin-ledgersumma = spelarsaldo (1022.5 och 985)"
+      },
+      {
+        "id": "K07-h5b",
+        "result": "pass",
+        "check": "final ledger parity: HTTP Admin transactions view == read-only Neon SELECT (rows, amounts, timestamps), balances and table versions equal",
+        "evidence": "Admin /transactions 13 rader SHA 7459106d84b869dc72745eb6eb28ee4a5227d4cec10be0bac8979f92f4f372b8 = read-only Neon SELECT; saldon och bordsversioner lika"
+      },
+      {
+        "id": "K07-i1",
+        "result": "pass",
+        "check": "logout revokes session; re-login keeps balance, history and table",
+        "evidence": "logout 200; gammal kaka 401; login 200; saldo, historik-SHA och bord v10 oförändrade"
+      },
+      {
+        "id": "K07-j1",
+        "result": "pass",
+        "check": "operator B cannot see or act on operator A room (Admin + public lobby)",
+        "evidence": "operatör B: Admin-config för A-rummet 404, presentation-room rooms:[], B-lobbyn saknar A-rummet"
+      },
+      {
+        "id": "K07-j2",
+        "result": "pass",
+        "check": "operator B context cannot read A room material/hand (player API)",
+        "evidence": "operatör B-kontext 409 (se K04 findings); /game?operator=B&table=A-rummet 404"
+      },
+      {
+        "id": "K07-j3",
+        "result": "pass",
+        "check": "anonymous gets 401",
+        "evidence": "anonym 401 på Admin-config, transaktioner, historik, spelare, presentationsconfig, bord och select"
+      }
+    ]
+  },
+  "k05": {
+    "production": {
+      "origin": "https://www.scoutgaming.tech",
+      "role": "admin",
+      "routes": "ordinarie /studio/api/videos/classify, /measure-timing och /upload (prepare -> Blob PUT -> commit); ingen direkt SQL",
+      "renderProductionSha": "15aa31920c255e2d145961cb34352115b84d429e (croupier-v3, presentation v30/v31 enligt runbook)",
+      "window": "2026-10-27T17:05:14.689Z – 2026-10-27T17:08:22.974Z, plus enskilda prov win_2 och double_2 17:04:41–17:04:56Z",
+      "tenOriginalTakes": {
+        "bound": 10,
+        "source": "verified-embedded-av",
+        "note": "bundna och servermätta före 17:04Z enligt read-only SQL-läsning i runbooken; den körningens kvitto ingår inte i bind-kvittot"
+      },
+      "additionalSwedishTakes": {
+        "bound": 43,
+        "existingRows": 27,
+        "importedFromKevin": 16,
+        "boundInMainRun": 41,
+        "kevinSource": "c713875923cd854b26f89c1db0d0f47064619c1d",
+        "source": "verified-embedded-av",
+        "review": "pending",
+        "mainRunHttp": {
+          "classify200": 41,
+          "measureTiming200": 41,
+          "upload200": 30,
+          "blobPut": 15
+        }
+      },
+      "boundClipsMeasured": {
+        "count": 36,
+        "kind": "34 giv + flip + andas",
+        "note": "enligt read-only SQL-läsning i runbooken; endast mediaTiming, ingen metadata- eller godkännandeändring"
+      },
+      "reviewStateAt": "2026-10-27T17:08:22.974Z",
+      "tenOriginalReview": {
+        "placebets_1": "approved",
+        "goodluck_1": "pending",
+        "insurance_1": "approved",
+        "blackjack_1": "rejected",
+        "dealerblackjack_1": "approved",
+        "double_1": "rejected",
+        "dealerbust_1": "approved",
+        "win_1": "pending",
+        "push_1": "approved",
+        "lose_1": "approved"
+      },
+      "notBound": "28 tagningar (banter, greet, remark, table och twentyone saknar talplats i kontraktet; farewell och peek saknar produktionsrad)",
+      "limits": [
+        "Kvittot anger inte vem som satte approved/rejected i produktionen; ingen AV-attest skapas här.",
+        "Inga talfack är kopplade i produktionsprojektet och inget paket eller rum är ompublicerat; Johns Bet är oförändrad.",
+        "Servermätning och hash bevisar inte läppsynk."
+      ]
+    },
+    "staging": {
+      "at": "2026-10-27T16:39:11.223Z",
+      "imported": [
+        "blackjack_7",
+        "blackjack_3",
+        "double_3",
+        "double_2"
+      ],
+      "note": "se j08.avReview.stagingImportForReplacements"
+    }
+  },
+  "limits": [
+    "Processbytena var redeploys via Render MCP trigger_deploy, inte dashboardens Restart service.",
+    "Aktiv-hand-regeln (pågående hand behåller C0/P0/M0 medan nästa fönster tar C1/P1/M1) provades inte live. Den flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353).",
+    "Ingen spelkonsument har bundit configVersion room-config-38b14261. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. \"Operatör B 404\" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live.",
+    "Talreplikerna win, push, blackjack, insurance och double utlöstes inte i de två händerna (utfall lose och dealerbust).",
+    "Ingen spelkonfiguration är publicerad i produktionen; J08-beviset gäller isolerad staging.",
+    "Delat bord (K07 g1/g2) kräver CROUPIER_SHARED_TABLE_ENABLED=1 i staging.",
+    "AV-godkännandet gäller endast staging och tio registerposter. Det täcker inte giv- och revealklipp eller produktionen.",
+    "Frontend och backend körde olika SHA under delar av provet (Vercel c32be1fb/b08f2a86, Render c32be1fb/15aa3192/4838537d/b08f2a86); runtimeDiffs anger skillnaderna."
+  ],
+  "sideEffects": {
+    "staging": [
+      "Rum room-33b37ff3 är publicerat med room-config-38b14261, paket 7",
+      "Operatör A:s paket 5 -> 7; operatör B:s paket 1 oförändrat",
+      "Fyra PAOW-tagningar importerade och servermätta; två talfack ombundna; projektrevision studio-c3d173ec",
+      "Syntetiska spelare: tre K04/K07-spelare, en utforskningsspelare med öppen hand på v1 och två utloggade J08-spelare",
+      "J10:s syntetiska spelare spärrad via players/status"
+    ],
+    "production": [
+      "K05: recordedSpeech v2 och mediaTiming på svenska PAOW-tagningar via ordinarie Admin-routes; 16 tagningar uppladdade",
+      "Inga paket-, rums- eller spelkonfigurationsändringar; Johns Bet orörd"
+    ]
+  },
+  "secretsExported": false
+}
