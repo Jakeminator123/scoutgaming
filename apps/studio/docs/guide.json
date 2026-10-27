@@ -22,7 +22,7 @@
     }
   ],
   "boundaries": [
-    "Produktens begrepp och inriktning har en enda källa: apps/studio/docs/TERMINOLOGI.md. Den här guiden och det tekniska klippkontraktet beskriver befintliga arbetssteg och begränsningar.",
+    "Begreppen förklaras i ordlistan apps/studio/docs/TERMINOLOGI.md. Den här guiden och det tekniska klippkontraktet beskriver befintliga arbetssteg och begränsningar.",
     "En dealer är en registrerad person. En namngiven klippkategori grupperar filmer för samma dealer och väljer inte uppspelning. En gemensam sammansättningsmall kan användas av flera bolag och rum; vald rumskontext gör inte mallredigeringen rumsspecifik. Rummets tillåtna utseendeval redigeras separat i partnerns Spelrum med granskning och publicering.",
     "Arkivering av ett bolag kopplar loss dess rum med historiken bevarad. Återställning av bolaget öppnar eller återpublicerar inga rum. Ett separat återställt rum är väntande och måste öppnas uttryckligen när beroendena är giltiga.",
     "En presentation samlar dealer, bord, bakgrund, placering och tillåtna alternativ. Publicering fryser dessa i ett versionsbundet bolagspaket. Nivå 2 väljer inom paketets rättigheter och spelrummens kompatibilitet. Spelmotorn äger kort, regler, saldo och resultat.",
@@ -93,5 +93,5 @@
     }
   ],
   "storage": "Vercel visar alla tre nivåer och kör Studio/admin-API. Neon sparar revisionsstyrd produktpolicy, metadata och journaler; game-Neon äger spelarkonton och saldo. Privat Blob innehåller medier. Render driver spelmotorn och live-transporten; dess tidigare produktdisk är avvecklad. Director/Gateway har egna kvarvarande diskar och behöver separat backup. Anslutna N2-paketval sparas på servern. Endast den märkta demonstrationens lokala designprov försvinner vid omladdning eller operatörsbyte. Äldre zondata finns kvar i sin separata lagring. Sparad deal/replikpolicy läses inför nästa beslut; grundloopen kräver omladdning mellan händer. HTTP 409 kräver uttrycklig konflikthantering. Hemligheter stannar på serversidan.",
-  "authority": "Produktbegrepp och UX-inriktning styrs av apps/studio/docs/TERMINOLOGI.md. Aktuell kod och verifierad drift avgör vad som fungerar; docs/NEXT-AGENT.md anger leveransstatus och nästa steg. Tekniska format beskrivs i docs/LOCAL-PRESENTATION-RUNTIME.md och klipp-/eventbegrepp i packages/presentation/contracts/policies/studio-contract.json. apps/studio är källkod och /studio teknisk basePath. Äldre källproveniens skapar ingen separat produkt."
+  "authority": "Begreppen förklaras i ordlistan apps/studio/docs/TERMINOLOGI.md. Aktuell kod och verifierad drift avgör vad som fungerar; docs/NEXT-AGENT.md anger leveransstatus och nästa steg. Tekniska format beskrivs i docs/LOCAL-PRESENTATION-RUNTIME.md och klipp-/eventbegrepp i packages/presentation/contracts/policies/studio-contract.json. apps/studio är källkod och /studio teknisk basePath. Äldre källproveniens skapar ingen separat produkt."
 }

@@ -75,7 +75,7 @@ archives and conversation exports stay outside active agent reading paths.
 
 ## Runtime and shared terms
 
-[TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) is the single source for the product
+[TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) is the glossary for the product
 model, ownership and the terms bolag, spel, rum, bakgrund, dealer, bord and
 sammansättning. Do not derive another model from folder names or legacy lane
 fields. [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md)

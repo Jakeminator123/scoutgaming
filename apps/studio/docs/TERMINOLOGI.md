@@ -1,68 +1,59 @@
-# Scoutgaming: produkt och val
+# Scoutgaming: ordlista
 
-Enda styrande produkttexten, 22 oktober 2026. Detta är målbilden;
-genomfört stöd redovisas i [överlämningen](../../../docs/NEXT-AGENT.md)
-och [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+Vad orden betyder i produkten i dag. Det är en ordlista, inte en kravlista:
+den låser varken flöden eller framtida förenkling av Admin. Läget och nästa
+steg står i [överlämningen](../../../docs/NEXT-AGENT.md), arbetsstegen i
+[användarguiden](README.md) och tekniska format i
+[runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
-## Tre nivåer
+## Ytor
 
-- **Admin** `/admin`: personalen förvaltar material, bolag och tilldelningar.
-- **Operatör** `/partner`: spelbolaget förvaltar sina rum inom tilldelat utbud.
-- **Spelare** `/lobby` → spel: väljer rummets publicerade alternativ.
+- **Admin** (`/admin`): personalens arbetsyta för dealers, klipp, bolag, rum och drift.
+  `/studio` är bara den tekniska sökvägen till samma app, ingen egen produkt.
+- **Partnerportalen** (`/partner`): bolagets egen yta för sina rum.
+- **Lobby** (`/lobby`) och **spel** (`/blackjack`): spelarens väg.
 
-**Studio** är personalytornas visuella editor. `/studio` är teknisk basePath,
-inte en fjärde nivå eller ett extra register.
+## Det man skapar och publicerar
 
-## Ägarskap och spelarens val
+- **Dealer**: en person med sitt eget klippbibliotek.
+- **Bolag** (operatör, `operator` i koden): spelbolaget, till exempel Johns Bet.
+- **Rum**: bolagets ingång till ett spel, med eget ID.
+- **Mall** (heter i dag "Sammansättning" eller "Spelmall" i Admin och `lane` i
+  koden): samlar dealer, bord, bakgrund, placering och tillåtna val. Flera rum
+  kan använda samma mall. Att ett rum är valt gör inte en ändring i mallen
+  rumsspecifik.
+- **Paket**: bolagets publicerade mallar, frysta med ett revisionsnummer.
+  Spelet läser bara paketet, aldrig utkast.
+- **Spelinställningar** (`room game config`): rummets språk, insatsnivå och
+  tider. De publiceras per rum och binds till paketets revision.
+- **Publiceringsordning**: godkänn tal, publicera paketet, publicera rummets
+  spelinställningar.
 
-Ett **rum** är en bolagsägd ingång till ett spel med eget ID.
-Scenen byggs av **bakgrund → dealer → bord → spelets kort och kontroller**.
-Ny bakgrund skapar varken ny dealer eller nytt rum. Delade filer ger inte delad behörighet.
+## Scenen
 
-Alla tre lager ska kunna väljas i alla nivåer. Admin avgränsar operatörens
-utbud; operatören avgränsar rummets spelarval. Varje val kan låsas till ett
-giltigt förval. Avstängt val tar inte bort lagret. Bara kompatibla kombinationer
-erbjuds; inbakade lager i dealerfilm kan inte bytas separat. Saknas giltig
-kombination blockeras publicering/spelstart. Spelarbyten sker vid säker övergång
-och påverkar bara den spelarens presentation, aldrig kort, spelregler eller saldo.
+Bakgrund, dealer och bord är tre lager; spelets kort och knappar ligger
+överst. Ny bakgrund skapar varken ny dealer eller nytt rum. Ett lager som är
+inbakat i en dealerfilm kan inte bytas separat. Presentationen påverkar aldrig
+kort, regler eller saldo: dem äger spelmotorn.
 
-**UX-förslag:** en gemensam sceneditor med Bakgrund, Dealer, Bord och Tillåtna val.
-Rumsändringar sparas som utkast och granskas före publicering. Delade **mallar**
-redigeras separat med berörda rum synliga. Meny, rubrik och länk använder samma namn.
-Tekniska ID:n finns under Detaljer; namnbyte är ingen datamigrering.
-Admin får arbetslägena **Studio** (dealers, klipp, scener) och **Administration**
-(bolag, kunder, drift, ekonomi), med gemensamt designspråk och tydliga lägesnamn.
-Behåll klippkartan med spelval. Öppna rumseditorn från rummet; klipp och tal
-hör till dealerns bibliotek. Arbetsläge ändrar inte behörighet eller lagringsägare.
+## Klipp
 
-**Jakobs befintliga klippkarta och redigering är grunden.** Kevin och Emils
-exakta videor och uppspelningsflöde återanvänds; deras namngivning används där
-den passar. Deras klippkarta eller tvålagrade uppbyggnad ersätter inte denna
-struktur. Bakgrund, dealer och bord är tre valbara presentationslager som ska
-kunna spelas samordnat. Valen följer materialets verkliga kompatibilitet ovan.
-Admin ska göra det begripligt att bygga och redigera en dealers klippsekvenser,
-välja kompatibel bakgrund/bord och tilldela dem till operatörer och rum.
-Lobbydemot visar det publicerade flödet för spelbolag och spelare.
+- Klippkartan ordnar en dealers klipp som kategori, situation, standardklipp
+  och varianter. Tekniska poseversioner är inte varianter.
+- **Spelhandlingar**: utdelning till box 1–7, dealerns egna kort, dolt kort,
+  kortvändning samt till och från skon.
+- **Vila** (idle): en basloop och beteendeklipp, som blickar och nickningar,
+  som återgår till vila.
+- **Talade repliker**: allt där dealern talar. Situation, språk och exakt
+  text, ljud och bild hör ihop. En replik kan ha flera tagningar; den valda
+  tagningen är standard i talfacket.
+- Tur och resultat avgör när ett klipp körs; de är inga egna kategorier.
+- Automatik och OpenClaw får välja bland kompatibla beteenden och varianter,
+  men ändrar aldrig spelhandlingen eller utdelningspositionen.
 
-Klipp ordnas som **kategori → situation → standardklipp + varianter**.
-**Vila (idle)** har en basloop och separata beteendeklipp. **Redo** skiljer
-till/från skon; **Dela till spelare** skiljer box 1–7. Varje situation har
-eget standardklipp. Dealerns egna kort, dolt kort och kortvändning har sina
-respektive spelhandlingar. Mobil och widescreen ska ha tydliga förval för
-placering/kalibrering så att dealer, bord och utdelningspositioner stämmer.
-Tekniska poseversioner är inte beteendevarianter.
-Talade repliker behåller situation, språk och exakt text/ljud/bild tillsammans.
-Alla klipp där dealern talar hör till **Talade repliker**, även välkomstfraser,
-småprat och resultatfraser. Tysta blickar, nickningar och andra beteenden som
-återgår till vila är **beteendeklipp under Vila/Idle**. Kortutdelning,
-kortvändning och till/från skon förblir egna spelhandlingar.
-**Tur och resultat är körvillkor, inte egna klippkategorier.** Beteenden kan
-vara avstängda för automatiken, köras med intervall eller väljas vid en
-spelhändelse. Talfrasens situation och val av tagning hålls isär: en fras kan
-ha flera varianter utan att bli ett Idle-klipp. Frivilliga beteenden ska inte
-presenteras som obligatoriskt material som saknas. Automatik och OpenClaw kan
-välja kompatibla beteenden och varianter utifrån kategori, intervall,
-spelhändelse eller chatt/persona. De ändrar inte den serverägda spelhandlingen
-eller dess korrekta utdelningsposition. Operatörens dealer/persona använder
-samma klippkarta och behörighetsstyrda tilldelningar.
-[Användarguiden](README.md) beskriver arbetssteg, ingen separat produktmodell.
+## Vem väljer vad
+
+Admin bestämmer vilka mallar ett bolag får använda. Bolaget och spelaren kan
+få välja inom det när rummet tillåter det, och varje val kan låsas till ett
+förval. Det är en möjlighet, inget krav: ett bolag med ett rum och en mall
+behöver inga val alls.
