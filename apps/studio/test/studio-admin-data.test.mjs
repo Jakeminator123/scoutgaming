@@ -172,7 +172,7 @@ test('self change, invalid role and wrong server scope are denied before mutatio
 });
 
 test('players expose an exact boolean password capability without changing account data',async()=>{
-  const f=fixture();f.state.rows=[{id:'local',passwordChangeAllowed:true},{id:'sqlite-fixture',passwordChangeAllowed:1},{id:'craig-only',passwordChangeAllowed:false},{id:'ambiguous',passwordChangeAllowed:'true'}];
+  const f=fixture();f.state.rows=[{id:'local',passwordChangeAllowed:true},{id:'integer-flag',passwordChangeAllowed:1},{id:'craig-only',passwordChangeAllowed:false},{id:'ambiguous',passwordChangeAllowed:'true'}];
   const result=await f.call('GET','players');
   assert.deepEqual(result.players.map(row=>row.passwordChangeAllowed),[true,true,false,false]);
   assert.match(f.state.reads.at(-1),/EXISTS\(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id\)/);

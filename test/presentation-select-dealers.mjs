@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { DatabaseSync } from 'node:sqlite';
 import {fileURLToPath} from 'node:url';
 import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { createSeedProject, addDealer, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { loadVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
+import { nativeReceipts } from './fixtures/native-receipts.mjs';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
 test('another dealer legacy rules cannot change the selected dealer presentation', async () => {
@@ -27,8 +27,8 @@ test('another dealer legacy rules cannot change the selected dealer presentation
 });
 
 test('select accepts every active registered dealer and does not reuse another dealer cache', async t => {
-  const db = new DatabaseSync(':memory:');
-  db.exec('CREATE TABLE native_presentations (player_id TEXT, version INTEGER, payload TEXT)');
+  // No committed receipt exists for this player.
+  const db = nativeReceipts(new Map());
   const seen = [];
   const active = ['astrid', 'paow', 'dragan', 'marten'];
   const project = active.slice(1).reduce((current, dealerId) => addDealer(current, dealerId, dealerId), createSeedProject());
@@ -43,7 +43,7 @@ test('select accepts every active registered dealer and does not reuse another d
   });
   const server = createServer(async (req, res) => { await handler(req, res, '/api/presentation/select', 'dealer-qa'); });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
-  t.after(() => { server.closeAllConnections(); server.close(); db.close(); });
+  t.after(() => { server.closeAllConnections(); server.close(); });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const post = dealerId => fetch(`${origin}/api/presentation/select`, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ dealerId, version: 1, mode: 'off', event: { type: 'speak', line: 'win' } }) });
