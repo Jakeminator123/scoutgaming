@@ -28,6 +28,8 @@ import { createStudioDocumentApi } from '../apps/studio/lib/studio-document-api.
 import { createStudioGameAuthority, studioCommandSignature } from '../apps/studio/lib/studio-game-authority.mjs';
 import { createStudioGameCommandApi } from '../services/game/studio-game-commands.mjs';
 import { createPlayerAdministration } from '../packages/storage/server/player-administration.mjs';
+import { createPlayerChatMemory } from '../services/game/storage/async-player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 import { planStudioMigrations, loadStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { createSpeechJournal } from '../services/game/postgres-speech-journal.mjs';
 import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../services/game/generated-speech-session.mjs';
@@ -60,7 +62,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
   let currentVoiceIdentity = structuredClone(voiceIdentity);
   const voiceLines = async () => ({ dealers: [{ dealer: 'astrid', name: 'Astrid', lines: [{ key: 'goodluck', text: 'Synthetic review fixture',
     identity: structuredClone(currentVoiceIdentity), reviewable: true, productionApproved: false }] }] });
-  let runtime, cancellations = 0, server, studioOrigin, backendOrigin, cookies = {};
+  let runtime, cancellations = 0, settleErrors = [], server, studioOrigin, backendOrigin, cookies = {};
   let lastMail;
   const commandSecret = randomBytes(32).toString('hex'), mail = { send: async message => { lastMail = message; return { sent: true }; } };
   const transport = (url, options = {}) => new Promise((yes, no) => {
@@ -114,9 +116,18 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       // is accepted or marked reviewed by this synthetic verification callback.
       validateProjectBindings: value => { assert.ok(value.lines.every(line => line.variants.every(variant => variant.videoGenerationId === null))); } });
     const players = createPlayerAdministration({ db: store.db });
+    const probes = await createPlayerProbeStore(store.db, await createPlayerChatMemory(store.db, { studioScope: scope }));
     const command = createStudioGameCommandApi({ scope, secret: commandSecret, publicOrigin: studioOrigin, authorize, boDb: store.boDb,
-      execute: async ({ action, body, actor }) => {
-        if (action === 'players/status') { const player = await players.setStatus({ ...body, actor: actor.user }); if (player.changed && body.status !== 'active') cancellations++; return { ok: true, player }; }
+      onSettleError: report => { settleErrors.push(report); },
+      execute: async ({ action, body, actor, afterCommit }) => {
+        if (action === 'players/status') {
+          const player = await players.setStatus({ ...body, actor: actor.user });
+          // Mirrors the engine: real Studio-scoped probe cancellation after commit.
+          if (player.changed && body.status !== 'active') afterCommit(async () => {
+            await probes.activity({ playerId: player.id, dealerId: 'astrid' }); cancellations++;
+          }, 'players/status:cancel');
+          return { ok: true, player };
+        }
         if (action === 'apikeys/credit') {
           // Synthetic engine-owned wallet mutation proves nonce + domain atomicity.
           await store.db.prepare('UPDATE players SET balance=balance+? WHERE id=?').run(body.amount, body.playerId);
@@ -358,7 +369,8 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     });
     await check('signed Render status command calls cancellation and preserves authoritative balance', async () => {
       const result = await call('/studio/api/admin/players/status', { method: 'POST', body: { playerId: player.id, status: 'blocked', reason: 'isolated QA' } });
-      assert.equal(result.status, 200); assert.equal((await result.json()).authority, 'render'); assert.equal(cancellations, 1);
+      assert.equal(result.status, 200); assert.equal((await result.json()).authority, 'render');
+      assert.deepEqual(settleErrors, []); assert.equal(cancellations, 1);
       const stored = await runtime.store.db.prepare('SELECT status,balance,account_epoch FROM players WHERE id=?').get(player.id);
       assert.equal(stored.status, 'blocked'); assert.equal(stored.balance, 1000); assert.equal(stored.account_epoch, 1);
     });

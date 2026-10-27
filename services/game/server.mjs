@@ -618,29 +618,35 @@ const operatorSpeechQa = createOperatorSpeechQa({
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
-const playerPasswordCommand=playerAdministration ? (await import('../../packages/storage/server/player-administration.mjs')).createPlayerPasswordCommand({
-  administration:playerAdministration,
-  cancelRuntime:async playerId=>{
-    await speechStreamService?.cancelPlayer(playerId);
-    cancelPlayerChats(activePlayerChats,playerId,'player_password_changed');
-    await probeRuntime.cancel({playerId,dealerId:'astrid'},'player_password_changed');
-  },
-}) : null;
+const createPlayerPasswordCommand=playerAdministration ? (await import('../../packages/storage/server/player-administration.mjs')).createPlayerPasswordCommand : null;
+// Every step runs even when another fails; the first failure is rethrown with
+// its step and player. Chunks of 4 bound the probe step's pooled transactions.
+const cancelPlayerRuntime=async (playerIds,reason)=>{
+  let first;
+  const cancelOne=async playerId=>{
+    for(const [step,run] of [['speech',()=>speechStreamService?.cancelPlayer(playerId)],
+      ['chat',()=>cancelPlayerChats(activePlayerChats,playerId,reason)],['probe',()=>probeRuntime.cancel({playerId,dealerId:'astrid'},reason)]]){
+      try{await run();}catch(error){first??=Object.assign(new Error(error?.message),{statusCode:error?.statusCode,step,subject:playerId});}
+    }
+  };
+  const ids=[playerIds].flat();
+  for(let index=0;index<ids.length;index+=4)await Promise.allSettled(ids.slice(index,index+4).map(cancelOne));
+  if(first)throw first;
+};
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   // The isolated K04 QA start forbids the ingress secret variable; a random
   // per-process secret keeps the Studio command surface unusable there.
   scope: studioPolicyRuntime.scope, secret: sharedRoomQa ? randomBytes(32).toString('hex') : process.env.CROUPIER_VERCEL_INGRESS_SECRET,
   publicOrigin: process.env.CROUPIER_PUBLIC_ORIGIN,
   authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
-  execute: async ({ action, body, actor }) => {
-    if (action === 'players/password') return playerPasswordCommand({body,actor});
+  execute: async ({ action, body, actor, afterCommit }) => {
+    // Runtime cancellation follows the committed account change and cannot undo it.
+    if (action === 'players/password' && !createPlayerPasswordCommand) throw Object.assign(new Error('Player administration unavailable'), { statusCode: 503 });
+    if (action === 'players/password') return createPlayerPasswordCommand({ administration: playerAdministration,
+      cancelRuntime: async playerId => { afterCommit(() => cancelPlayerRuntime(playerId, 'player_password_changed'), 'players/password:cancel'); } })({ body, actor });
     if (action === 'players/status') {
       const changed = await playerAdministration.setStatus({ ...body, actor: actor.user });
-      if (changed.changed || changed.status !== 'active') {
-        speechStreamService?.cancelPlayer(changed.id);
-        cancelPlayerChats(activePlayerChats,changed.id,'player_account_changed');
-        await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
-      }
+      if (changed.changed || changed.status !== 'active') afterCommit(() => cancelPlayerRuntime(changed.id, 'player_account_changed'), 'players/status:cancel');
       return { ok: true, ...changed };
     }
     const method = { 'apikeys/revoke': 'revoke', 'apikeys/rotate': 'rotate', 'apikeys/launch': 'mintLaunch', 'apikeys/credit': 'credit' }[action];
@@ -650,11 +656,8 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
       const prefix = `partner:${body.id}`;
       const sessions = await db.prepare('SELECT DISTINCT player_id FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').all(prefix,`${prefix}:%`);
       await db.prepare('DELETE FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').run(prefix,`${prefix}:%`);
-      for (const { player_id: playerId } of sessions) {
-        speechStreamService?.cancelPlayer(playerId);
-        cancelPlayerChats(activePlayerChats,playerId,'partner_key_changed');
-        await probeRuntime.cancel({ playerId, dealerId: 'astrid' }, 'partner_key_changed');
-      }
+      // One hook for the whole batch: a partner may exceed the per-command hook cap.
+      if (sessions.length) afterCommit(() => cancelPlayerRuntime(sessions.map(row => row.player_id), 'partner_key_changed'), 'apikeys:cancel');
     }
     return { ok: true, ...result };
   },
