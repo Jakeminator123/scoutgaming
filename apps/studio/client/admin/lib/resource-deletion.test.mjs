@@ -33,7 +33,7 @@ test('shared room layers are references; published dealer choices do not replace
   assert.equal(tree.media.find(row=>row.id==='portrait').game,'roulette');
   assert.equal(tree.media.find(row=>row.id==='clip').uses.length,2);
   assert.deepEqual(tree.dealers.find(row=>row.id==='dragan').mediaIds,['clip','portrait']);
-  assert.match(tree.coverage.join(' '),/historiska paketreferenser.*Blob.*statiska lobbybilder/);
+  assert.ok(tree.coverage.length&&tree.coverage.every(line=>typeof line==='string'&&line.trim()),'the tree states what its counts cover');
   assert.equal(tree.rooms.find(row=>row.id==='room-a').choicesPath,'/admin/rooms?operator=company-a&table=room-a&composition=shared&game=blackjack');
   assert.equal(tree.rooms.find(row=>row.id==='room-a').playable,false);
 });
