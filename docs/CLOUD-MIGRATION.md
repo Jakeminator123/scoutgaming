@@ -19,8 +19,8 @@ Nästa värde ligger i exakt medie-/posebindning och full Admin → publicering 
 
 Öppna den publicerade produkten från [Admin](https://www.scoutgaming.tech/admin)
 eller [lobbyn](https://www.scoutgaming.tech/lobby). Följ de aktuella
-[användarstegen](../apps/studio/docs/README.md); produktens namn och ansvar finns
-endast i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Sparat bolag, rum,
+[användarstegen](../apps/studio/docs/README.md); produktens namn och ansvar förklaras
+i [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md). Sparat bolag, rum,
 sammansättning och spel följer länkarna. Rumsändringar använder befintlig scoped
 writer; scen-/dealermall och rum är skilda skrivmål.
 

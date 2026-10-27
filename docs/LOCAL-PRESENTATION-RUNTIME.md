@@ -1524,7 +1524,7 @@ rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
 
 ## Central Studio: teknisk inventering, 13 oktober 2026
 
-Produktmodellens enda källa är [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
+Begreppen förklaras i [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
 Det här dokumentet beskriver teknisk lagring, format, uppspelning och
 övergångsbegränsningar. Det föreskriver ingen meny eller produktmodell.
 Den äldre inventeringen nedan

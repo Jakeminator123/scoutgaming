@@ -27,7 +27,7 @@ och på basfilmens klippgräns; de skapar aldrig tal eller ändrar spelresultat.
 Filnamnsförslag är bara förslag: kontrollera att ett beteendeklipp är tyst och
 återgår till vila. Klipp med en inspelad mening behåller sitt exakta talfack.
 
-Produktmodell, ord och ny UX-inriktning har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
+Orden förklaras i ordlistan [`TERMINOLOGI.md`](TERMINOLOGI.md).
 Den här guiden beskriver befintliga arbetssteg. **Studio → Sceneditor**
 redigerar vald gemensam mall. Enhetliga låsningar per lager i alla tre nivåer
 är fortsatt målbild.
@@ -540,8 +540,8 @@ aktivt spelrum. Ett äldre paket utan sådant rum behöver kompletteras via Publ
 Marker och kort saknar ännu publicerade designval. De gamla lokala designproven
 visas bara i den märkta interna fixturen och försvinner vid omladdning.
 
-Begrepp och målbild finns i
-[den gemensamma produktmodellen](TERMINOLOGI.md#ägarskap-och-spelarens-val).
+Begrepp och vem som väljer vad finns i
+[ordlistan](TERMINOLOGI.md#vem-väljer-vad).
 Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
@@ -715,7 +715,7 @@ Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/admin/gu
 (i en offline-fixtur på `/guide` under den Studio-adress startaren skriver ut).
 Innehållet finns i [guide.json](guide.json); tekniska klipp- och eventbegrepp hämtas från
 [studio-contract.json](../../../packages/presentation/contracts/policies/studio-contract.json).
-Produktbegrepp och målbild styrs enbart av [TERMINOLOGI.md](TERMINOLOGI.md).
+Begreppen förklaras i ordlistan [TERMINOLOGI.md](TERMINOLOGI.md).
 
 Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../../../packages/presentation/contracts/schemas/video.schema.json).
