@@ -1,73 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes, scryptSync } from 'node:crypto';
-import { once } from 'node:events';
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
-import { createServer } from 'node:net';
-import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
-import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
+import { fileURLToPath } from 'node:url';
+import { ENGINE_QA_SKIP, createEngineDatabase, engineBootFailure, freePort, insertCraigUser, startEngine } from './fixtures/engine-qa.mjs';
 
 const game = 'https://game.example.test';
 const bo = 'https://bo.example.test';
 const lab = 'https://lab.example.test';
-const web = new URL('../services/game/', import.meta.url);
-const publicWeb = new URL('../services/game/public/', import.meta.url);
 const username = 'pilot-admin';
 const password = randomBytes(32).toString('base64url');
+// The engine serves this public directory; calibration must never write into it.
+const calibration = fileURLToPath(new URL('../services/game/public/calibration.css', import.meta.url));
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'croupier-cloud-bootstrap-'));
-  const webDir = join(root,'services','game');
-  const dataDir = join(root, 'data');
-  const calibration = join(webDir, 'public', 'calibration.css');
-  const children = [];
-  t.after(async () => {
-    for (const child of children) await stop(child);
-    assert.equal(dirname(resolve(root)), resolve(tmpdir()));
-    assert.ok(basename(root).startsWith('croupier-cloud-bootstrap-'));
-    await rm(root, { recursive: true, force: true });
-  });
-  await mkdir(join(webDir, 'public'), { recursive: true });
-  await mkdir(dataDir);
-  await writeFile(calibration, '/* fixture calibration */\n');
-  await copyOpenClawRuntime(root);
-  for (const file of await readdir(web)) {
-    if (file.endsWith('.mjs')) await copyFile(new URL(file, web), join(webDir, file));
-  }
-  for (const file of await readdir(publicWeb)) {
-    if (file.endsWith('.mjs')) await copyFile(new URL(file, publicWeb), join(webDir, 'public', file));
-  }
-  const portSocket = createServer();
-  portSocket.listen(0, '127.0.0.1');
-  await once(portSocket, 'listening');
-  const port = portSocket.address().port;
-  await new Promise(resolveClose => portSocket.close(resolveClose));
-  const env = { PATH: process.env.PATH ?? process.env.Path ?? '', NODE_ENV: 'production',
-    HOST: '127.0.0.1', PORT: String(port), PUBLIC_URL: game, BO_URL: bo, LAB_PUBLIC_URL: lab,
-    CROUPIER_DATA_DIR: dataDir, CROUPIER_CLOUD_RUNTIME: '1' };
-  return { root, webDir, dataDir, calibration, port, env, children };
-}
-
-async function stop(child) {
-  if (child.exitCode !== null || child.signalCode !== null) return;
-  const ended = once(child, 'exit').catch(() => {});
-  child.kill();
-  await Promise.race([ended, new Promise(resolveWait => setTimeout(resolveWait, 3000))]);
-  if (child.exitCode === null && child.signalCode === null) {
-    child.kill('SIGKILL');
-    await ended;
-  }
+  const database = await createEngineDatabase(t), port = await freePort();
+  const env = { NODE_ENV: 'production', PUBLIC_URL: game, BO_URL: bo, LAB_PUBLIC_URL: lab, CROUPIER_CLOUD_RUNTIME: '1' };
+  const users = async () => Number((await database.query('SELECT COUNT(*) AS n FROM croupier_auth.users'))[0].n);
+  return { database, port, env, users };
 }
 
 function rejectedBoot(f, overrides = {}) {
-  const result = spawnSync(process.execPath, [join(f.webDir, 'server.mjs')], {
-    cwd: f.webDir, env: { ...f.env, ...overrides }, encoding: 'utf8', timeout: 10000,
-    windowsHide: true,
-  });
+  const result = engineBootFailure({ database: f.database, port: f.port, env: { ...f.env, ...overrides }, timeoutMs: 20000 });
   assert.equal(result.error, undefined, 'bootstrap must fail before the server listens');
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Cloud operator bootstrap credentials are required/);
@@ -75,25 +30,7 @@ function rejectedBoot(f, overrides = {}) {
   assert.ok(!`${result.stdout}${result.stderr}`.includes(password), 'bootstrap secret reached child output');
 }
 
-async function start(f, overrides = {}) {
-  const child = spawn(process.execPath, [join(f.webDir, 'server.mjs')], {
-    cwd: f.webDir, env: { ...f.env, ...overrides }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
-  });
-  f.children.push(child);
-  let stdout = '', stderr = '';
-  await new Promise((resolveReady, rejectReady) => {
-    const timer = setTimeout(() => rejectReady(new Error('isolated Web fixture did not start')), 10000);
-    const fail = () => { clearTimeout(timer); rejectReady(new Error('isolated Web fixture exited before ready')); };
-    child.once('error', fail);
-    child.once('exit', fail);
-    child.stdout.on('data', chunk => {
-      stdout += chunk;
-      if (stdout.includes('croupier demo on')) { clearTimeout(timer); child.off('exit', fail); child.off('error', fail); resolveReady(); }
-    });
-    child.stderr.on('data', chunk => { stderr += chunk; });
-  });
-  return { child, output: () => stdout + stderr };
-}
+const start = (t, f, overrides = {}) => startEngine(t, { database: f.database, port: f.port, env: { ...f.env, ...overrides } });
 
 async function request(f, origin, path, body, cookie = '', method = 'POST') {
   const target = new URL(origin);
@@ -112,7 +49,7 @@ async function request(f, origin, path, body, cookie = '', method = 'POST') {
   });
 }
 
-test('empty cloud CRAIG fails closed for absent or weak bootstrap credentials', async t => {
+test('empty cloud CRAIG fails closed for absent or weak bootstrap credentials', { skip: ENGINE_QA_SKIP }, async t => {
   const f = await fixture(t);
   rejectedBoot(f);
   rejectedBoot(f, { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: username,
@@ -121,34 +58,27 @@ test('empty cloud CRAIG fails closed for absent or weak bootstrap credentials', 
     CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: password });
   rejectedBoot(f, { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'Pilot-Admin',
     CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: password });
-  const db = new DatabaseSync(join(f.dataDir, 'craig.db'));
-  try { assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 0); }
-  finally { db.close(); }
+  assert.equal(await f.users(), 0);
 });
 
-test('cloud creates one operator without logging the secret and preserves CRAIG on restart', async t => {
+test('cloud creates one operator without logging the secret and preserves CRAIG on restart', { skip: ENGINE_QA_SKIP }, async t => {
   const f = await fixture(t);
-  const first = await start(f, { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: username,
+  const first = await start(t, f, { CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: username,
     CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: password });
   assert.ok(!first.output().includes(password), 'bootstrap secret reached child output');
   assert.ok(!first.output().includes('password:'), 'cloud bootstrap logged a password');
-  await stop(first.child);
+  await first.stop();
 
-  const db = new DatabaseSync(join(f.dataDir, 'craig.db'));
-  try {
-    const account = db.prepare('SELECT username,salt,hash,role FROM users').get();
-    assert.equal(account.username, username);
-    assert.equal(account.role, 'superadmin');
-    assert.equal(account.hash, scryptSync(password, account.salt, 64).toString('hex'));
-    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 1);
-    db.prepare("UPDATE users SET role='admin' WHERE username=?").run(username);
-    const salt = 'isolated-reader-salt';
-    db.prepare('INSERT INTO users (username,salt,hash,role,created_at) VALUES (?,?,?,?,?)').run(
-      'pilot-reader', salt, scryptSync('Reader-Password-Only-In-This-Fixture', salt, 64).toString('hex'),
-      'reader', new Date().toISOString());
-  } finally { db.close(); }
+  const [account] = await f.database.query('SELECT username,salt,hash,role FROM croupier_auth.users');
+  assert.equal(account.username, username);
+  assert.equal(account.role, 'superadmin');
+  assert.equal(account.hash, scryptSync(password, account.salt, 64).toString('hex'));
+  assert.equal(await f.users(), 1);
+  await f.database.query("UPDATE croupier_auth.users SET role='admin' WHERE username=$1", [username]);
+  await insertCraigUser(f.database, { username: 'pilot-reader', salt: 'isolated-reader-salt',
+    password: 'Reader-Password-Only-In-This-Fixture', role: 'reader' });
 
-  const second = await start(f);
+  const second = await start(t, f);
   assert.ok(!second.output().includes(password), 'restart logged a bootstrap secret');
   const reader = await request(f, game, '/api/auth/login', {
     email: 'pilot-reader', password: 'Reader-Password-Only-In-This-Fixture',
@@ -156,62 +86,48 @@ test('cloud creates one operator without logging the secret and preserves CRAIG 
   assert.equal(reader.status, 200);
   const playerCookie = reader.headers['set-cookie']?.[0]?.split(';')[0];
   assert.match(playerCookie ?? '', /^player_session=/);
-  const before = await readFile(f.calibration, 'utf8');
-  const calibration = await request(f, game, '/calibration', {}, playerCookie);
-  assert.equal(calibration.status, 403);
-  assert.deepEqual(JSON.parse(calibration.body), { error: 'calibration_unavailable' });
-  assert.equal(await readFile(f.calibration, 'utf8'), before);
-  await stop(second.child);
+  const before = existsSync(calibration);
+  const refused = await request(f, game, '/calibration', {}, playerCookie);
+  assert.equal(refused.status, 403);
+  assert.deepEqual(JSON.parse(refused.body), { error: 'calibration_unavailable' });
+  assert.equal(existsSync(calibration), before, 'calibration never writes the served directory');
+  await second.stop();
 
-  const reloaded = new DatabaseSync(join(f.dataDir, 'craig.db'));
-  try {
-    assert.deepEqual(reloaded.prepare('SELECT username,role FROM users ORDER BY username').all().map(row => ({ ...row })), [
-      { username, role: 'admin' }, { username: 'pilot-reader', role: 'reader' },
-    ]);
-  } finally { reloaded.close(); }
+  assert.deepEqual(await f.database.query('SELECT username,role FROM croupier_auth.users ORDER BY username'), [
+    { username, role: 'admin' }, { username: 'pilot-reader', role: 'reader' },
+  ]);
 });
 
-test('local empty CRAIG creates no administrator or password log and preserves guest access', async t => {
+test('local empty CRAIG creates no administrator or password log and preserves guest access', { skip: ENGINE_QA_SKIP }, async t => {
   const f = await fixture(t);
-  const local = await start(f, { CROUPIER_CLOUD_RUNTIME: '', DEMO_GUEST_ACCESS: '1' });
+  const local = await start(t, f, { CROUPIER_CLOUD_RUNTIME: '', DEMO_GUEST_ACCESS: '1' });
   const session = await request(f, game, '/api/auth/session', undefined, '', 'GET');
   assert.equal(session.status, 200);
   const status = JSON.parse(session.body);
   assert.equal(status.guest, true);
   assert.equal(status.authenticated, false);
   assert.match(session.headers['set-cookie']?.[0] ?? '', /^preview_session=/);
-  await stop(local.child);
+  await local.stop();
   assert.doesNotMatch(local.output(), /backoffice login created|password:/i);
-  const db = new DatabaseSync(join(f.dataDir, 'craig.db'));
-  try { assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 0); }
-  finally { db.close(); }
+  assert.equal(await f.users(), 0);
 });
 
-test('local restarts preserve existing Kevin and other account roles and credentials', async t => {
+test('local restarts preserve existing Kevin and other account roles and credentials', { skip: ENGINE_QA_SKIP }, async t => {
   const f = await fixture(t), existingPassword = randomBytes(24).toString('base64url');
-  const db = new DatabaseSync(join(f.dataDir, 'craig.db'));
-  let previous;
-  try {
-    db.exec('CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT UNIQUE NOT NULL,email TEXT,salt TEXT,hash TEXT,role TEXT NOT NULL,created_at TEXT NOT NULL)');
-    for (const [id, name, role] of [[41, 'kevin', 'reader'], [42, 'existing-operator', 'admin']]) {
-      const salt = randomBytes(16).toString('hex');
-      db.prepare('INSERT INTO users VALUES (?,?,?,?,?,?,?)').run(id, name, null, salt,
-        scryptSync(existingPassword, salt, 64).toString('hex'), role, new Date().toISOString());
-    }
-    previous = db.prepare('SELECT * FROM users ORDER BY id').all();
-  } finally { db.close(); }
+  for (const [id, name, role] of [[41, 'kevin', 'reader'], [42, 'existing-operator', 'admin']]) {
+    await insertCraigUser(f.database, { id, username: name, password: existingPassword, role });
+  }
+  const accountsQuery = 'SELECT * FROM croupier_auth.users ORDER BY id';
+  const previous = await f.database.query(accountsQuery);
   for (let restart = 0; restart < 2; restart++) {
-    const local = await start(f, { CROUPIER_CLOUD_RUNTIME: '' });
-    await stop(local.child);
+    const local = await start(t, f, { CROUPIER_CLOUD_RUNTIME: '' });
+    await local.stop();
     assert.doesNotMatch(local.output(), /backoffice login created|password:/i);
     assert.ok(!local.output().includes(existingPassword), 'existing password reached child output');
-    const reloaded = new DatabaseSync(join(f.dataDir, 'craig.db'));
-    try {
-      const accounts = reloaded.prepare('SELECT * FROM users ORDER BY id').all();
-      assert.deepEqual(accounts.map(({id, username, role}) => ({id, username, role})),
-        previous.map(({id, username, role}) => ({id, username, role})));
-      assert.ok(accounts.every((row, i) => row.salt === previous[i].salt && row.hash === previous[i].hash
-        && row.email === previous[i].email && row.created_at === previous[i].created_at), 'existing account data changed');
-    } finally { reloaded.close(); }
+    const accounts = await f.database.query(accountsQuery);
+    assert.deepEqual(accounts.map(({id, username, role}) => ({id, username, role})),
+      previous.map(({id, username, role}) => ({id, username, role})));
+    assert.ok(accounts.every((row, i) => row.salt === previous[i].salt && row.hash === previous[i].hash
+      && row.email === previous[i].email && row.created_at === previous[i].created_at), 'existing account data changed');
   }
 });
