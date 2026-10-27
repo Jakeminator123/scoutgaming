@@ -140,3 +140,59 @@ test('joining again with the boxes held renames the member and keeps bets, reser
   assert.deepEqual((await t.room()).boxesAfterRound.kevin, [4, 5], 'the pending box change stays');
   assert.equal((await t.members()).find(m => m.actorId === 'kevin').name, 'Kevin');
 });
+
+// Selective conversion from Kevin's branch (kevin @ f664c54d), behaviour only, in main's coordinator.
+// 7ddb7de4d 'Table is full bugg': after a round the boxes not bet on in it are released; a box chosen during the round
+// stays. The wait-queue half (at most 3 boxes while a viewer waits) is not ported: main's snapshot never writes.
+test('after a round the boxes not bet on are released, a box chosen during the round stays (Kevin 24 Oct: table is full)', async () => {
+  const t = setup();
+  await t.join('guest', [0, 1, 2]); await t.join('john', [6]);
+  t.setShoe(['10', '9', '10', '7']);
+  await t.bet('guest', 1, 5);
+  t.time = (await t.snap()).deadline; await t.drain();       // john sits in but bets nothing: the deadline starts it
+  assert.deepEqual((await t.snap()).round.hands.map(h => h.box), [1]);
+  await t.join('kevin', [5]);                                  // sits down during the round
+  const settled = await t.standAll();
+  assert.deepEqual(settled.owners, ['guest', 'guest', 'guest', null, null, 'kevin', 'john'], 'nothing is taken from a round in play');
+  await t.send('guest', 'next', { roundId: settled.roundId });
+  const s = await t.snap('john');
+  assert.deepEqual(s.owners, [null, 'guest', null, null, null, 'kevin', null], 'only played boxes and the box taken mid-round stay');
+  for (const i of [0, 2, 6]) assert.equal(s.seatGen[i], settled.seatGen[i] + 1, `box ${i}: a stale claim is refused`);
+  assert.equal(s.me.active, false, 'john lost his last box, so his membership ends like a release');
+  assert.equal(s.me.memberGen, 2);
+  assert.deepEqual(s.players.map(p => p.id).sort(), ['guest', 'kevin']);
+  await t.join('john', [6]);
+  assert.deepEqual((await t.snap('john')).me.seats, [6], 'he can sit down again with the new generation');
+  await t.bet('guest', 1, 5);
+  assert.equal((await t.snap()).bets[1].main, 5, 'the player keeps betting on the box he played');
+});
+
+// fd6e7dd17 'tick skips quiet rooms': main's scheduler never loads and saves a room just to look at it (dueTicks is
+// read-only), but it still read every member and presence row of a room nobody sits at. A quiet room costs one read.
+test('dueTicks reads no members or presence of a room nobody sits at, and still runs the table that plays (Kevin 24 Oct: prod CPU)', async () => {
+  const store = createMemoryTableStore();
+  let time = 100000, n = 0;
+  const reads = [];
+  const counted = { ...store, read: Object.fromEntries(Object.entries(store.read).map(([k, f]) => [k, (...a) => { reads.push([k, ...a]); return f(...a); }])) };
+  const table = createTableCoordinator({ store: counted, clock: { now: () => time }, random: deterministicRandom('k07-quiet') });
+  for (const p of ['kevin', 'john', 'guest']) store.test.fund(p, 1000);
+  const send = (who, room, op, extra = {}) => table.command({ actorId: who }, { roomId: room, op, commandId: `q${++n}`, ...extra });
+  const join = async (who, room, seats) => { const s = await table.snapshot(room, who);
+    return send(who, room, 'join', { seats, seatGens: Object.fromEntries(seats.map(i => [i, s?.seatGen[i] ?? 0])), memberGen: s?.me.memberGen ?? 0 }); };
+  for (let i = 0; i < 20; i++) {                            // studio tables someone once sat at and left
+    const room = `quiet-${i}`;
+    await join('guest', room, [0]); await send('guest', room, 'leave', { memberGen: (await table.snapshot(room, 'guest')).me.memberGen });
+  }
+  await join('john', 'party', [4]); await send('john', 'party', 'leave', { memberGen: (await table.snapshot('party', 'john')).me.memberGen });
+  await join('kevin', 'party', [3]); await send('kevin', 'party', 'bet', { seat: 3, field: 'main', chip: 5, windowId: (await table.snapshot('party', 'kevin')).windowId });
+  const { deadline } = await table.snapshot('party', 'kevin');
+  reads.length = 0;
+  assert.deepEqual(await table.dueTicks(deadline - 1), []);
+  assert.deepEqual(reads.filter(([k]) => k === 'members').map(([, room]) => room), ['party'], 'members are read only where someone sits');
+  assert.deepEqual(reads.filter(([k]) => k === 'presence').map(([, room, p]) => [room, p]), [['party', 'kevin']], 'presence only of a seated member');
+  time = deadline;
+  const due = await table.dueTicks();
+  assert.deepEqual(due.map(d => [d.roomId, d.kind]), [['party', 'window.close']]);
+  assert.equal((await table.tick(due[0])).outcome, 'applied');
+  assert.equal((await table.snapshot('party', 'kevin')).phase, 'round', 'the seated table still starts its round');
+});

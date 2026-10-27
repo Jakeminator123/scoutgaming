@@ -162,9 +162,21 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     return r;
   }
 
-  // :248-252; a new window binds the newest published configVersion (O01 2.7).
+  // Releasing a player's last seat ends the membership (memberGen); the caller holds P(pid).
+  async function endMembership(tx, r, pid) {
+    const m = await tx.members.get(r.roomId, pid);
+    if (m?.active) await tx.members.put(r.roomId, { ...m, active: false, memberGen: m.memberGen + 1 });
+  }
+
+  // :248-252; a new window binds the newest published configVersion (O01 2.7). boxesAfterRound
+  // also holds the boxes not bet on in the round (startRound), so they are released here; a
+  // player left without a box leaves like releaseSeats (`next` locks them).
   async function resetRound(tx, r) {
-    for (const [pid, keep] of Object.entries(r.boxesAfterRound)) for (const i of owned(r, pid)) if (!keep.includes(i)) { r.owners[i] = null; r.seatGen[i]++; }
+    for (const [pid, keep] of Object.entries(r.boxesAfterRound)) {
+      const had = owned(r, pid);
+      for (const i of had) if (!keep.includes(i)) { r.owners[i] = null; r.seatGen[i]++; }
+      if (had.length && !owned(r, pid).length) await endMembership(tx, r, pid);
+    }
     Object.assign(r, { boxesAfterRound: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
       deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null,
       windowId: random.uuid(), configVersion: await tx.config.latest(r.roomId) });
@@ -181,8 +193,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     r.ready = r.ready.filter(x => x !== pid); delete r.history[pid];
     r.leaving = r.leaving.filter(x => x !== pid); delete r.boxesAfterRound[pid];
     if (r.phase === 'bets') await tx.wallet.release(pid, { reservationId: stakeReservation(r, pid) });
-    const m = await tx.members.get(r.roomId, pid);
-    if (m?.active) await tx.members.put(r.roomId, { ...m, active: false, memberGen: m.memberGen + 1 });
+    await endMembership(tx, r, pid);
     if (r.phase === 'settled' && !r.owners.some(Boolean)) await resetRound(tx, r);
     if (r.phase === 'bets' && !r.bets.some(b => b.main)) r.deadline = null;
   }
@@ -204,6 +215,12 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       return bettors.map(p => ledger[p]);
     } });
     for (const p of bettors) r.lastBets[p] = Object.fromEntries(owned(r, p).filter(i => r.bets[i].main).map(i => [i, { ...r.bets[i] }]));
+    // Kevin 24 Oct ('Table is full'): a box not bet on in this round is released when it ends
+    // (resetRound); boxes chosen during the round replace this list (join). Nothing leaves a live hand.
+    for (const p of sorted(r.owners)) {
+      const mine = owned(r, p), played = mine.filter(i => r.bets[i].main);
+      if (played.length < mine.length) r.boxesAfterRound[p] = played;
+    }
     Object.assign(r, { phase: 'round', deadline: null, insurance: {}, history: {}, ready: [], settledAt: null });
     await present(tx, r, cfg, result);
     return { roundId: r.roundId, ledger, startedSeq };
@@ -257,7 +274,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const players = [actorId];
     if (r && input.op === 'ready') players.push(...r.owners.filter((p, i) => p && sum(r.bets[i]) > 0));
     if (r && input.op === 'insurance') players.push(...r.owners);
-    if (r && input.op === 'next') players.push(...r.leaving);   // next carries out pending exits
+    // next carries out pending exits and box releases, which can end a membership
+    if (r && input.op === 'next') players.push(...r.leaving, ...Object.keys(r.boxesAfterRound));
     const rooms = input.op === 'pause' ? [input.roomId, ...await store.read.memberRooms(actorId)] : [input.roomId];
     return { global: false, rooms: sorted(rooms), players: sorted(players) };
   }
@@ -483,6 +501,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   }
 
   // ---- ticks ----------------------------------------------------------------------------
+  // A member whose absence is watched: active, seated and not already leaving.
+  const watched = (r, m) => m.active && owned(r, m.actorId).length > 0 && !r.leaving.includes(m.actorId);
   // The time-driven transitions of advance() (:260-292), each with its own identity (O01 2.3).
   function candidates(r, members, seenOf) {
     const out = [], add = (kind, anchor, scheduledAt, extra = {}) =>
@@ -494,7 +514,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     if (r.phase === 'round' && r.roundPhase === 'settled') add('round.settle', [r.roundId], r.plan.endAt);
     if (r.phase === 'settled') for (const p of r.leaving) add('seat.release', ['leave', r.roundId, p], r.settledAt, { playerId: p });
     for (const m of members) {
-      if (!m.active || !owned(r, m.actorId).length || r.leaving.includes(m.actorId)) continue;
+      if (!watched(r, m)) continue;
       const at = Math.max(seenOf(m.actorId) ?? -Infinity, m.joinedAt) + absentMs;
       add(r.phase === 'round' ? 'seat.absent' : 'seat.release', ['absent', m.actorId, m.memberGen], at, { playerId: m.actorId });
     }
@@ -517,8 +537,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   async function dueTicks(at = now()) {
     const due = [];
     for (const roomId of await store.read.rooms()) {
-      const r = await store.read.room(roomId), members = await store.read.members(roomId), seen = {};
-      for (const m of members) seen[m.actorId] = await store.read.presence(roomId, m.actorId);
+      // Kevin 24 Oct (prod CPU): a room nobody sits at has no member tick, so its members and
+      // presence are not read; presence only for the members an absence tick can concern.
+      const r = await store.read.room(roomId), seen = {};
+      const members = r.owners.some(Boolean) ? await store.read.members(roomId) : [];
+      for (const m of members) if (watched(r, m)) seen[m.actorId] = await store.read.presence(roomId, m.actorId);
       for (const c of candidates(r, members, p => seen[p])) {
         if (c.scheduledAt > at) continue;
         let n = 0, last = await store.read.tick(c.tickId);
