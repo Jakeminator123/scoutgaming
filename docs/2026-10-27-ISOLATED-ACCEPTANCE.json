@@ -1,0 +1,77 @@
+{
+  "kind": "isolated-acceptance-cloud-handoff/v1",
+  "date": "2026-10-27",
+  "branch": "codex/isolated-admin-acceptance-20261027",
+  "codeSha": "d53b349a7dc14060de8283a343681569a089805e",
+  "cloud": "https://chatgpt.com/local/01a17c9f-b370-71f3-bb91-eadcc2a0e060",
+  "progress": {
+    "verified": 12,
+    "percent": 60,
+    "changed": false,
+    "total": 20,
+    "source": "migrering/status.json"
+  },
+  "tests": {
+    "apiPassed": 54,
+    "commitPassed": 98,
+    "independentReview": "no blockers",
+    "commitOptionalSkipped": 1,
+    "clientPassed": 43,
+    "fullCi": "pending"
+  },
+  "j08": {
+    "avApproved": false,
+    "materialPackageVersion": 2,
+    "code": "studio_room_game_material_unavailable",
+    "newGameplay": false,
+    "publicationHttp": 422,
+    "roomPackageVersion": 3,
+    "pendingSpeech": 10,
+    "reason": "native_material_speech_unbound",
+    "avBankSha256": "ebe77511c9f0a1736231cdbab49c0b583e253d9be9d2c30b18df11f9da5a9071",
+    "roomId": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "status": "blocked_at_pending_av"
+  },
+  "j10": {
+    "restoredHttpPassed": 16,
+    "ledgerRowContentHashVerified": false,
+    "dependenciesUnchanged": true,
+    "frozenPlayerId": "335c6ba0-dd24-4238-bd30-337f11eaa7ad",
+    "gameVersion": 4,
+    "balance": 995,
+    "fullActivityAccepted": false,
+    "beforeAfterEqual": true,
+    "stateSha256": "d30f16e22eeaa9e78e03624b484c5e8e4c3c9434a3112485cf3d59a71a1c62ce",
+    "cleanAuthenticatedCloneBuildStart": "passed",
+    "currency": "USD",
+    "lastInputSha256": "af3f514bf69948cbb882efc0dea73ae7d20d260519275f056c28610f4313784b",
+    "presentationSha256": "9c0f8073aec003ab3531899259b85bacc2b838d99deae08748de5627227cd48f",
+    "ledgerCount": 2
+  },
+  "returnedStaging": {
+    "roomCount": 3,
+    "vercelReady": true,
+    "database": "croupier_staging",
+    "renderDeployment": "dep-dbg6ifafngtc738rj7hg",
+    "renderLiveBeforeStop": true,
+    "suspendedAt": "2026-10-27T09:12:10.031Z",
+    "vercelDeployment": "dpl_D6Vv7EK66NaLRD7o2HWpLo6cVaTN",
+    "operatorCount": 2,
+    "suspended": true,
+    "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+    "mediaCount": 47,
+    "projectInventoryOperatorsRoomsLifecycleExact": true,
+    "httpPassed": 6,
+    "sourceParityCompletedAt": "2026-10-27T09:11:24.090Z"
+  },
+  "secondAgent": {
+    "independentCleanCloneBuildAndRestoreReview": "passed",
+    "handoffIncluded": true,
+    "productionBrowser": "read only Johns Bet PAOW/Oak/Midnight video and panel",
+    "avApproval": false,
+    "productionBets": 0,
+    "heartbeatRemoved": true
+  },
+  "secretsExported": false,
+  "productionMutated": false
+}

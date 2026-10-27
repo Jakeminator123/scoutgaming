@@ -1,5 +1,28 @@
 # Överlämning: Scoutgaming-migreringen
 
+## Codex Cloud-fortsättning — 27 oktober 2026
+
+Detta avsnitt ersätter äldre lägesbeskrivningar nedan. Båda lokala agenternas arbete ingår. En enda Cloud-körning har startats: https://chatgpt.com/local/01a17c9f-b370-71f3-bb91-eadcc2a0e060 . Samordnande chatten har observerat genomförda shellkommandon i /workspace/scoutgaming med rätt GitHub-origin; körningen är inte beroende av Jakobs dator.
+
+Hämta senaste codex/isolated-admin-acceptance-20261027 inklusive denna dokumentcommit. Fryst testad kod och båda senaste stagingdeploys: d53b349a7dc14060de8283a343681569a089805e. Bas-main: 3106a1ccaff548ade14c85746a642bb97fe63a0f (PR420 mergad). Använd Node24.21.0; Cloud observerades först med24.19. Se [samlat sanitiserat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json).
+
+- **Status förblir 60 % = 12/20.** migrering/status.json är enda statuskälla. J08 är IN_PROGRESS och J10 fortfarande TODO i sparad statusfil; för in nya tekniska bevis enligt kriterierna. J10:s K06-beroende är inte borttaget eller uppfyllt.
+- Rumsreadiness rättad i API och klient efter full capability-validering. 54 API + 43 klientprov passerar. Commit-hook: 98 godkända, 1 valfri browserfixtureskip. Oberoende kodgranskning utan blockerare. Full CI/PR-integration återstår.
+- J08 ordinarie Admin på exakt d53: bindning/sparning, PAOW-materialpaket, rum och sv/casual-konfigurationsutkast passerar. Publicering ger korrekt 422 studio_room_game_material_unavailable, orsak native_material_speech_unbound: tio tal är pending. Materialpaket2, rumspaket3. Ingen AV-attest skapad.
+- Isolerat rum: room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e, operatör qa-k06k07-9dd2d3a4-a, PAOW-lane paow-isolated-review-20261026. Browser verifierade Admin-spärr, lobby och startad PAOW-video (readyState4, inget mediefel). Ingen insats gjord; opublicerade sv/casual-val är inte bevisade i spelruntime.
+- J10: separat autentiserad GitHub-klon, låst install/build/typer och offline-fixturstart passerar. Godkänt isolerat återställningsprov mot croupier_staging_restore: 16/16 HTTP-prov, verklig inloggning/återanslutning och exakt gammal collect-replay. Före/efter: spelversion4, saldo995 USD, ledgerantal2 samt identiska state/input/presentation-hashar. Ledgerns fullständiga radinnehåll är inte hashverifierat.
+- **Båda stagingapparna återställda till originaldatabasen croupier_staging.** Vercel dpl_D6Vv7EK66NaLRD7o2HWpLo6cVaTN READY, Render dep-dbg6ifafngtc738rj7hg LIVE på d53 före stopp. Sex HTTP-anrop och exakt projekt-/inventarie-/operatörs-/rums-/livscykelparitet passerade 09:11:24 UTC. Render srv-dbf61l0m7kps73ft7mk0 verifierat **suspended 09:12:10 UTC**. Återuppta endast isolerad staging när nya prov behövs; inga egna lokala provprocesser återstår.
+- Andra chatten verifierade ren klon/build och J10-pariteten oberoende. Dess läsande produktionsbrowserprov av Johns Bet visade PAOW/Oak/Midnight, spelande video och fungerande panel. Inga produktionsinsatser eller skrivningar. Det är inte AV-acceptans. Dess heartbeat är borttagen och egen stagingflik stängd.
+
+### Nästa arbete i Cloud
+
+1. Granska och leverera featurebranchen via PR, kör erforderlig CI, verifiera ägare/exakt head före eventuell merge. Ingen lokal fortsatt mutation pågår. Återanvänd staging; skapa inte en andra Cloud-task.
+2. Kör nästa faktiska spelprov med **ny syntetisk spelare**. Återställningsspelaren 335c6ba0-dd24-4238-bd30-337f11eaa7ad är fryst bevis; använd den inte för nya insatser. Verifiera aktiva händer, filmad materialkedja och kvarvarande K06/J08-kriterier.
+3. AV-bank ebe77511c9f0a1736231cdbab49c0b583e253d9be9d2c30b18df11f9da5a9071: Jakob har granskat visuellt tidigare men uttryckligen inte testat ljud. Tio klipp behöver faktisk bedömning av svensk text, fullständigt hörbart ljud, läppsynk och avklippning för exakt dessa bytes. Automatisk ljud-/hashkontroll ersätter inte detta godkännande.
+
+Lokala lösenord, cookies, privata API-/databasfiler och råa chattutskrifter har inte lagts i Git eller skickats till Cloud. Cloud måste verifiera egna anslutningar/behörigheter och rapportera konkret saknad åtkomst. Produktion och Johns Bet är orörda av detta isolerade prov.
+
+
 Datum: 26 oktober 2026. Beställd av Jakob för en ny agent, eventuellt på annat Codex-konto/dator. Detta är en startpunkt och ett daterat kvitto, **inte en ny migrationsplan eller statuskälla**.
 
 ## Uppdrag och användarens senaste beslut

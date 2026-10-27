@@ -1,5 +1,12 @@
 # Aktuell handoff — Scoutgaming
 
+## Slutkvitto och Cloud-överlämning — 27 oktober
+
+Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status förblir 60 %.
+
+Båda lokala agenternas arbete, exakt kandidat, deploy-ID, återgång och öppna bevis finns i [Cloud-överlämningen](NEXT-AGENT.md) och [sanitiserat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json). Dessa ersätter den äldre formuleringen nedan att faktisk omkörning återstår. Ny spelrunda med ny syntetisk spelare, full CI/PR, K06 och ljud/läppsynkacceptans återstår i Cloud.
+
+
 ## Isolerad Admin-acceptans och rumsreadiness — 27 oktober
 
 Vanlig syntetisk Admin kördes mot staging med Render `3106a1ccaff548ade14c85746a642bb97fe63a0f` (`dep-dbg5rbgm7kps73bggdh0`); frontendens publicerade browsermoduler matchade samma källträd. 14 HTTP-/identitetskontroller passerade. Native-bindning, projektets spara/återläsa, giltigt sv/casual-utkast och PAOW-paketpublicering passerade med HTTP 200. Paketrevision 2 behåller de tio talens `review=pending`. Alla 46 original/timingmetadata, befintliga rum, grannoperatörer och orelaterade projektfält bevarades. Detta är paketacceptans för repetition, inte publicerad native-spelkonfiguration eller AV-godkännande.
