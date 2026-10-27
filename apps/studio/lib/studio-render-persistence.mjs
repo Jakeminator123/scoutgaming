@@ -1,5 +1,4 @@
 import {studioRoots} from './studio-roots.mjs';
-import {comparisonStudio} from './comparison-studio.mjs';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { createPostgresStore, validateGameConnection } from '../../../packages/storage/server/postgres-store.mjs';
@@ -63,7 +62,6 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
 
 let persistence;
 export async function studioRenderPersistence() {
-  const comparison=comparisonStudio();if(comparison)return comparison;
   if (!renderStudioPolicyEnabled()) throw new StudioError('studio_read_storage_unavailable',503);
   persistence ??= createStudioRenderPersistence().catch(error => {persistence = undefined;throw error;});
   return persistence;

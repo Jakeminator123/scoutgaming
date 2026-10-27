@@ -8,10 +8,10 @@ import lockfile from 'proper-lockfile';
 import { StudioError } from '../../../packages/shared/studio-error.mjs';
 export { StudioError } from '../../../packages/shared/studio-error.mjs';
 
-// Fixture/test adapter only: the caller names an absolute directory (the offline
-// fixture's temporary folder). Neon is the product register; there is no default.
+// Test adapter only: the caller names an absolute temporary directory.
+// Neon is the product register; there is no default.
 export function createProjectStore(dataDir) {
-  if (typeof dataDir !== 'string' || !isAbsolute(dataDir)) throw new StudioError('Lokal projektlagring kräver en uttrycklig absolut katalog. Produkten läser Neon; node apps/studio/start.mjs --offline skapar en tillfällig.', 503);
+  if (typeof dataDir !== 'string' || !isAbsolute(dataDir)) throw new StudioError('Lokal projektlagring kräver en uttrycklig absolut katalog. Produkten läser Neon.', 503);
   const file = join(dataDir, 'project.json');
   const { load } = createLocalProjectReader(dataDir);
   return { load, async save(next, expectedRevision) {

@@ -6,9 +6,9 @@ alwaysApply: true
 # Local Croupier sessions
 
 Follow **Local servers and browser tabs** in the repository's `AGENTS.md`.
-Start with `node apps/studio/start.mjs`. The session guard in
-`services/openclaw/lab/deploy/local-session.mjs` covers the connected pair and the
-offline comparison. From Codex, pass `--no-open`, then inspect and reuse the
+Start with `node apps/studio/start.mjs`; it starts no local servers. The offline
+comparison, connected pair and their session guard are retired (2026-10-27).
+From Codex, pass `--no-open`, then inspect and reuse the
 connected browser's existing game/lab tabs. A matching URL needs reload, not a
 duplicate tab; replace an older URL in that same tab after preserving
 in-progress input. When the user requests shutdown, leave the servers stopped.

@@ -1,5 +1,3 @@
-import {comparisonStudio} from '@/lib/comparison-studio.mjs';
-import {readStudioDocumentJson} from '@/lib/studio-document-api.mjs';
 import { studioStore, connectionStatus } from '@/lib/studio-server.mjs';
 import { assertLocalRequest, jsonResponse, errorResponse } from '@/lib/http-guard.mjs';
 import { nativeStudioAdminEnabled } from '@/lib/studio-native-runtime.mjs';
@@ -15,8 +13,6 @@ export async function PUT(request: Request) {
   if (nativeStudioAdminEnabled()) return handleNativeStudioDocument(request);
   try {
     assertLocalRequest(request);
-    const comparison=comparisonStudio();
-    if(comparison){const body=await readStudioDocumentJson(request);return jsonResponse({project:await comparison.projectStore.save(body.project,body.expectedRevision)});}
     assertRenderStudioWritable();
   }
   catch (error) { return errorResponse(error); }

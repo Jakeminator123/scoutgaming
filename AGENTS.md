@@ -60,7 +60,7 @@ Committa bara egna filer. Uppdatera eget relevant handoffavsnitt med förändrin
 
 ## Lokala resurser och privat material
 
-`node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns URL. Endast explicit `--offline` startar den tillfälliga fixturen; `--skip-build` är fixturspecifikt. Återinför inte pensionerade connected-local-lägen. Kör en sådan fixturserverparning åt gången och låt den städa egna processer.
+`node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns URL och startar inga lokala servrar. Produkten har en väg (Vercel + Render + Neon + Blob): den SQLite-baserade fixturen (`--offline`, `--skip-build`, `tools/start-local-comparison.mjs`) och connected-local-lägena är pensionerade (Jakob 2026-10-27); återinför dem inte. Prova mot publicerad produkt eller isolerad staging, CI:s isolerade Postgres och `tools/admin-clips-fixture.mjs`. Kör en fixtur åt gången och låt den städa egna processer.
 
 Återanvänd matchande servrar/flikar, bevara utkast och registrera egna testresurser. Stäng bara säkert identifierade egna resurser efter prov; lämna begärd preview till användarens granskning. En stoppbegäran lämnar resurser stoppade. Massavsluta aldrig processer efter namn.
 Vid avslutat uppdrag, städa egna verifierat mergade lokala branch-/worktreerester inom uppdragets mandat. Kontrollera ägare, aktuell head och merge, aktivitet, osparade ändringar samt ignorerat återställningsmaterial först. Bevara aktiva eller osäkra resurser och andras parkerade arbete; använd återställbar arkivering för Codex-hanterade worktrees. En grön PR, gammal claim eller slutrapport är inte ensam bevis för att resursen kan tas bort.

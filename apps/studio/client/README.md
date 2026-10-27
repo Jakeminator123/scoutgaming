@@ -40,11 +40,11 @@ node apps/studio/tools/prepare-design-preview.mjs
 ### Bygg om klienten när du sparar
 
 Admin serverar det separata klientbygget från disk. Nexts vanliga omladdning
-bygger inte om de filerna. Starta den befintliga isolerade fixturen och vänta
-tills första bygget är klart:
+bygger inte om de filerna. Bygg Admin först (den tidigare `--offline`-fixturen är
+pensionerad 27 oktober 2026) och använd den isolerade Admin-fixturen:
 
 ```powershell
-node apps/studio/start.mjs --offline --no-open
+node tools/admin-clips-fixture.mjs --ffmpeg <installerad-ffmpeg.exe>
 ```
 
 Kör sedan i en andra terminal från reporoten:

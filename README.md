@@ -96,7 +96,7 @@ the player's real receipts; a separate preview needs an explicit action.
 Generated speech uses the registered dealer's profile and the speech gateway,
 not an independent Lab player. The retained full-file GPU path is Astrid-specific.
 
-## Open the product or an isolated fixture
+## Open the product
 
 To print the published lobby URL from Codex:
 
@@ -104,20 +104,14 @@ To print the published lobby URL from Codex:
 node apps/studio/start.mjs --no-open
 ```
 
-This starts no local servers or registry. Only an explicit offline start creates
-an isolated temporary server pair without external providers:
-
-```powershell
-node apps/studio/start.mjs --offline --no-open
-```
-
-The offline launcher enforces one fixture pair and removes its temporary data
-when stopped. The checkout holds no local product register: Neon is the
-register and Blob stores media bytes. The old `--cloud-storage`, `--astrid-camera` and
-`--check` modes are retired; `--skip-build` requires `--offline`.
+This starts no local servers or registry. The checkout holds no local product
+register: Neon is the register and Blob stores media bytes. The SQLite-backed
+offline fixture (`--offline`, `--skip-build`) and the old `--cloud-storage`,
+`--astrid-camera` and `--check` modes are retired; isolated trials run on
+staging or in CI's isolated Postgres.
 Check the package's Node engine and Volta pin before local scripts; `apps/studio/`
 requires Node 24.x and pins 24.21.0. See the [user guide](apps/studio/docs/README.md)
-for fixture options and the [Lab guide](apps/studio/README.md) for development setup.
+for start options and the [Lab guide](apps/studio/README.md) for development setup.
 
 `node_modules/` contains installed dependencies; `.next/` contains Next build
 output and cache. Both are normal local generated folders and excluded from

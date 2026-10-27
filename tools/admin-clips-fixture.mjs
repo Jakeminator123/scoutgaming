@@ -20,10 +20,8 @@ if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Invalid loopback 
 // Keep only OS locations before importing repository modules; no dotenv read.
 const keep=new Set(['PATH','SYSTEMROOT','WINDIR','TEMP','TMP','TMPDIR','COMSPEC','PATHEXT']);
 for(const key of Object.keys(process.env))if(!keep.has(key.toUpperCase()))delete process.env[key];
-process.env.CROUPIER_QA_ALLOWED_PORTS=String(port);
-const {installComparisonProcessGuard}=await import('./start-local-comparison.mjs');
-installComparisonProcessGuard();
-const {acquireLocalSession}=await import('../services/openclaw/lab/deploy/local-session.mjs');
+const {installQaProcessGuard}=await import('./qa-process-guard.mjs');
+installQaProcessGuard({ports:[port]});
 const {createEmptyProject,addDealer,addVariant,validateProject,defaultPresentationLane}=await import('../packages/presentation/contracts/studio-model.mjs');
 const {defaultCompositionSettings,defaultBlackjackTableGeometry}=await import('../packages/presentation/contracts/composition-settings.mjs');
 const {compositionRuntimeResponse}=await import('../services/game/composition-runtime.mjs');
@@ -35,17 +33,24 @@ const {serveDesignPreview}=await import('../apps/studio/lib/design-preview.mjs')
 const {parseByteRange}=await import('../apps/studio/lib/preview-files.mjs');
 const buildRoot=join(root,'apps/studio/design-preview-build');
 if(!fs.existsSync(join(buildRoot,'admin/app.js')))throw Error('Build Admin before starting the fixture');
-const session=await acquireLocalSession({repoRoot:root,labPort:port});
-let temporary,server,stopping=false;
+// Binding the loopback port first is the single-instance guard: a second
+// fixture on this port fails here, and the OS frees the port if we crash.
+// Requests answer 503 until the self-checks below have passed.
+let temporary,serve=null,stopping=false;
+const server=createServer((req,res)=>{
+  if(serve)return void serve(req,res);
+  res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end('{"error":"fixture_starting"}');
+});
+await new Promise((resolveReady,reject)=>{server.once('error',reject);server.listen(port,host,resolveReady);});
 async function stop(){
   if(stopping)return;stopping=true;
-  if(server){server.closeAllConnections();await new Promise(resolveClosed=>server.close(resolveClosed));}
+  server.closeAllConnections();await new Promise(resolveClosed=>server.close(resolveClosed));
   if(temporary){
     const target=resolve(temporary);
     if(dirname(target)!==resolve(tmpdir())||!basename(target).startsWith('croupier-admin-clips-'))throw Error('Invalid fixture cleanup target');
     await fsp.rm(target,{recursive:true,force:true});
   }
-  await session.release();console.log('Admin clips fixture stopped.');
+  console.log('Admin clips fixture stopped.');
 }
 process.once('SIGINT',()=>void stop().then(()=>process.exit(0)));
 process.once('SIGTERM',()=>void stop().then(()=>process.exit(0)));
@@ -195,13 +200,12 @@ try {
     await authorize(new Request(origin+'/studio/api/project',{headers:{cookie:renewed.headers.get('set-cookie').split(';')[0]}}));
   }finally{authNow=currentClock;}
   project=structuredClone(seed);revision=1;saves=0;conflicts=0;
-  server=createServer(async(req,res)=>{
+  serve=async(req,res)=>{
     try{
       const body=[];let total=0;for await(const part of req){total+=part.length;if(total>1024*1024)throw Object.assign(Error('large'),{statusCode:413});body.push(part);}
       const request=new Request(origin+req.url,{method:req.method,headers:req.headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(body)}:{})});
       const response=await handle(request);res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
     }catch(error){const status=error.statusCode??400;res.writeHead(status,{...headers,'content-type':'application/json'});res.end(JSON.stringify({error:status===401?'studio_login_required':'fixture_request_rejected'}));}
-  });
-  await new Promise((resolveReady,reject)=>{server.once('error',reject);server.listen(port,host,resolveReady);});
+  };
   console.log(JSON.stringify({ready:true,pid:process.pid,url:origin+'/__fixture/start',controls:origin+'/__fixture',selfChecks:['native-auth-denied','session-renewed-after-expiry','foreign-origin-denied','save-reload','revision-conflict','system-read-identity','model-writes-denied','outbound-network-blocked','env-files-blocked'],dealerId,rooms:rooms.length,clips:inventory.videos.map(row=>({id:row.id,label:row.label,sha256:row.sha256})),bindingVariants:project.lines.find(row=>row.eventId==='deal.player.left').variants.filter(row=>row.videoGenerationId).map(row=>({id:row.id,videoId:row.videoGenerationId}))}));
 }catch(error){await stop();throw error;}

@@ -31,7 +31,7 @@ fortfarande inloggning, rumsväljning och spelstarter.
 Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.
 `node apps/studio/start.mjs --no-open` skriver den publicerade produktens adress;
-endast `--offline` startar ett isolerat, tillfälligt serverpar.
+den startar inga lokala servrar (offlinefixturen är pensionerad 27 oktober 2026).
 Checkouten har inget lokalt produktregister; Neon är registret.
 [Väg- och strömkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
@@ -79,18 +79,13 @@ aktiva konsumenter före ändringar; bevarade ID:n och Astrids tal-/videoreferen
 kräver ingen ansluten lokal produktstart.
 
 ```powershell
-# Reproducerbart prov: tom temporär databas, befintliga filmer, inga externa tjänster.
-node apps/studio/start.mjs --offline --no-open
 # Skriv den publicerade produktens adress; startar inga lokala servrar.
 node apps/studio/start.mjs --no-open
 ```
 
-Offlineparet finns på `http://localhost:4194` (spel) och
-`http://127.0.0.1:4192` (Lab). Bygger Next före start; `--skip-build` får endast
-användas tillsammans med `--offline`. Det kontrollerar byggfilernas närvaro,
-inte att de motsvarar aktuell källversion. Ctrl+C stoppar paret och tar bort dess testdata.
-Sessionslåset `acquireLocalSession` i `services/openclaw/lab/deploy/local-session.mjs` hindrar ett andra produkt/labbpar.
-Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
+Det SQLite-baserade offlineparet (`--offline`, `--skip-build`, port 4192/4194) är pensionerat 27 oktober 2026
+och avvisas med ett tydligt meddelande. Isolerade prov körs i staging eller CI:s isolerade
+Postgres; Admin-UI:t kan provas med `node tools/admin-clips-fixture.mjs`.
 
 Ordinarie lokal produktstart och lägena `--check`, `--cloud-storage` samt
 `--astrid-camera` är avvecklade. Lokala arbetsfiler används inte som
@@ -446,25 +441,11 @@ produktens ännu återstående gemensamma OpenClaw-talägarskap.
 `/api/inputs/reference` är lokal status (GET) och explicit verify/launch/mapping
 (POST); alla destinationer och credentials bestäms på servern.
 
-## Isolerad lokal jämförelse
+## Isolerad lokal jämförelse (pensionerad)
 
-Kör från repots rot, med labbets beroenden installerade:
-
-```powershell
-npm --prefix apps/studio run build
-node tools/start-local-comparison.mjs
-```
-
-Öppna `http://127.0.0.1:4192/activity` (omdirigerar till Provspelning & logg, `/control/rehearsal`) och tryck **Anslut**. Spelet körs på
-`http://localhost:4194` med originalet på `/`. `/v2/` finns kvar som 307-omdirigering, inte som egen spelare. `/casino.html` svarar 308 till `/play`. `/bo`, `/bo/` och `/bo/index.html`
-svarar 308 till `/control/administration`. Olika hostnamn håller testets
-spelcookies skilda från labbet. Tillfälliga databaser och en
-syntetisk demospelare skapas; `.env`-filer och riktiga konton/saldon används
-inte. Modell-, mail- och andra externa nätanrop är avstängda. Detta prov
-visar den lokala kedjan, inte en riktig OpenClaw-dialog eller Bettalotto-deploy.
-
-Stäng med Ctrl+C: testprocesserna stoppas och deras egna temporära data tas
-bort. Bygg om efter kodändringar; verktyget använder labbets byggda version.
+`tools/start-local-comparison.mjs` och dess SQLite-baserade spel-/labbpar är pensionerade 27 oktober 2026.
+Kedjan provas i isolerad staging och CI:s isolerade Postgres; säkerhetsreglerna för
+pensionerade adresser har enhetstester i `test/generation-media.mjs`.
 `node --test --test-concurrency=4 test/admin-project-drafts-browser.mjs` ingår
 i CI och kör bundle-/API-provet. De interaktiva browserfallen för sparning,
 återläsning, revisionskonflikter och osparade utkast kräver
@@ -511,18 +492,9 @@ De 224 snapshot-generationerna finns redan i
 `C:/Users/jakem/CroupierAssets/bettalotto-generations`, labbets befintliga
 Windows-förval. Inventeringen 22 september kontrollerade ID och filstorlek
 224/224; den läste inte filmbytes och är inte visuell eller hashbunden acceptans.
-BO:s vanliga `web/public/bo/gen` saknades lokalt. För att prova samma befintliga
-arkiv i både labb och BO startas den isolerade jämförelsen uttryckligen så här:
-
-```powershell
-node tools/start-local-comparison.mjs --media-directory "C:/Users/jakem/CroupierAssets/bettalotto-generations"
-```
-
-Flaggan motsvarar `startLocalComparison({ generationDirectory })` och sätter
-`LAB_VIDEO_ARCHIVE` och `CROUPIER_GENERATIONS_DIR` bara i testprocesserna.
-Utan flaggan använder fixture:n en egen tom temporär generationsmapp.
-Det delade arkivet läses enbart och lämnas kvar när testet stängs. Inga kopior,
-nedladdningar eller env-filändringar görs. Detta mediearkiv är inte det
+BO:s vanliga `web/public/bo/gen` saknades lokalt. Den tidigare isolerade jämförelsen
+med `--media-directory` är pensionerad 27 oktober 2026 tillsammans med `tools/start-local-comparison.mjs`.
+Detta mediearkiv är inte det
 pensionerade personarkivet och behöver inte Git-/AI-indexeras; det är inte
 belagt att det är samma tidigare nämnda slaskmapp.
 

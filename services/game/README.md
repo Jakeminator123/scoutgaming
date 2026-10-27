@@ -54,9 +54,8 @@ Blob äger mediebytes. Produktionens `CROUPIER_DATABASE=postgres`,
 ingen fallback till lokala authoringfiler eller SQLite vid molnfel.
 
 Öppna produkten via [apps/studio/start.mjs](../../apps/studio/start.mjs),
-från Codex med `--no-open`. Endast `--offline --no-open` startar ett isolerat,
-tillfälligt fixturepar. Följ [användarguiden](../../apps/studio/docs/README.md)
-och [AGENTS.md](../../AGENTS.md) om en enda lokal fixtursession.
+från Codex med `--no-open`. Det lokala `--offline`-fixturparet är pensionerat 27 oktober 2026.
+Följ [användarguiden](../../apps/studio/docs/README.md) och [AGENTS.md](../../AGENTS.md).
 `services/game/package.json` anger Node `>=22.16.0`; produktionscontainern
 använder Node 24. Installerade beroenden hör till `services/game/node_modules/`.
 

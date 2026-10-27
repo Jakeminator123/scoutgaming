@@ -45,8 +45,8 @@ Aktiverat rörligt tal, bildkvalitet och budgetavstämning kräver sina egna bel
 Aktuellt prov och nästa konkreta rättning finns i
 [talhandoffen](JOHN-HANDOFF.md#post-lipsync5-produktionsprov).
 
-Normal lokal start visar produktens adress. `--offline` är det uttryckliga valet
-för tillfälliga syntetiska data, utan externa genereringsanrop. Äldre lokala
+Normal lokal start visar produktens adress. Den SQLite-baserade `--offline`-fixturen
+och de anslutna lokallägena är pensionerade 27 oktober 2026 (en produktväg). Äldre lokala
 register, engångsexporter eller testspelare ska aldrig återinföras som fallback
 för publicerad drift. Den avslutade registerflyttens oanropade
 `prepareLegacyStudioSnapshot` och dess enda test är pensionerade. Generella
@@ -104,7 +104,7 @@ Neon-/Blob-migreringen.
 Aktuell motor är `croupier-v3`, enligt gällande AGENTS och handoffens versionsbundna driftkvitton. [Driftreceptet](../ops/cloud/RENDER-V3.md) beskriver spelmotorn utan Studio-process (`ops/cloud/Dockerfile.game`, `CROUPIER_CLOUD_LAB_CHILD=0`); läs aktuella tjänst-ID:n i återställningsguiden inför driftåtgärd. Den tidigare uppgiften att v3 endast var ett planerat recept är förbrukad.
 
 Normal start `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns
-adress. Endast explicit `--offline` skapar en isolerad, tillfällig fixture.
+adress. Den tidigare `--offline`-fixturen är pensionerad 27 oktober 2026.
 Lokala arbetsfiler, katalogexporter och SQLite-backuper är authoring/historik,
 inte produktens runtimefallback. `apps/studio/lib` innehåller aktiva appkopplingar; gemensamma tjänster finns
 också i `packages/`. Se README:s aktuella ansvarskarta.

@@ -10,5 +10,5 @@ kedja. Den interna nivån `lab` behålls i Docker-/driftreferenser.
 - [Runtime och media](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 
 `node apps/studio/start.mjs --no-open` skriver den publicerade produktens adress.
-Endast `--offline --no-open` startar ett isolerat serverpar utan externa
-OpenClaw-/talanrop; se [startalternativen](../../apps/studio/docs/README.md).
+Det lokala `--offline`-serverparet och anslutningshelpern `lab/deploy/local-connection.mjs`
+är pensionerade 27 oktober 2026; se [startalternativen](../../apps/studio/docs/README.md).
