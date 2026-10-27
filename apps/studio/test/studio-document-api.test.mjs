@@ -100,7 +100,9 @@ test('missing document and driver failures do not expose DB details or manufactu
   assert.equal((await api.handle(request())).status, 503); assert.equal(pool.snapshot().documents.size, 0);
   pool.failNext('read-document', new Error('postgres://private:password@private.invalid'));
   const response = await api.handle(request()); assert.equal(response.status, 503);
-  assert.deepEqual(await response.json(), { error: 'studio_native_unavailable' });
+  const body = await response.json();
+  assert.deepEqual(body, { error: 'studio_native_unavailable', code: 'studio_storage_unavailable' });
+  assert.equal(JSON.stringify(body).includes('private'), false);
 });
 test('native project writes dispatch through the shared game-policy store validation before a repository commit',async () => {
   let dispatched = 0;
