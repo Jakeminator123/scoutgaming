@@ -193,6 +193,10 @@ Webbläsare nekar ljud innan spelaren har interagerat med sidan. När ljudsatt t
 
 Ljudlösa klipp, viloklipp och handlingsklipp påverkas inte. Ett spel utan klick är inget talbevis. Riktig iOS- och desktop-Safari är inte provad.
 
+### Saknat media och långsam uppkoppling
+
+Gäller sedan K04-rättningen (PR #451). På delat bord öppnas plats, marker, insats och **Redo** när presentationsadaptern är monterad och servern har bekräftat samma bindning före och efter monteringen; dealerns första filmruta är ingen grind längre. Tills den första verifierade rutan visas står *Dealern laddas…* på dealerns plats (*Dealern kunde inte visas.* om idlefilmen fallerar). Den verifierade bufferten begränsar en nedladdning med tystnad (15 s utan nya byte), aldrig med filens längd. Mottagna byte förnyar stegets framstegsvakt, och presentationens frysta totalbudget är fortfarande den absoluta gränsen. En ofullständig nedladdning som sista ägaren lämnar fortsätter i 5 s, så att en omstartad idle eller nästa steg återanvänder samma byte. Ett exakt klipp som svarar 404/410 eller `studio_presentation_idle_media_unavailable` avslutar sitt steg direkt utan standardfilm. Resten av samma presentationsversion visar sina committade kort utan film, och spelarens knappar öppnas vid serverns `turnAt`. Spelaren ser *Talet kunde inte spelas.* eller *Filmen kunde inte spelas.* i minst 6 s; kvittot behåller `reason`, `code`, `status`, `serverCode` och `unavailable`. Kontrollerna av SHA-256, UUID, paket och talidentitet är oförändrade.
+
 ### Kvitton
 
 Spelarens kvitto rapporterar urval, faktisk start, presenterad bildruta, slut, avbrott och reserv. MP4-slut kräver verkligt `ended` och presenterad bild; avbrott eller stopp ger aldrig ett falskt slutkvitto. Sena slutkvitton kan inte godkänna nästa klipp. Ett DOM-korts landningskvitto anger `calibratedContact: false` när ingen kontakt är kalibrerad; filmens slut är inget bevis för handkontakt. Transportanslutning är inte speldata, och ett valt klipp är inte ett spelat klipp.
