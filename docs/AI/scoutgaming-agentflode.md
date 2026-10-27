@@ -6,8 +6,8 @@
 `/chef`-skillen är borttagna. Underagenter arbetar i egna worktrees på
 `jakob/claude-*`-brancher, committar med repots hookar och levererar PR:er som den
 orkestrerande sessionen mergar efter grön CI. Teaminboxen (`tools/inbox.mjs`)
-finns kvar. Äldre avsnitt nedan som nämner agent-talk, claims, pingkö eller
-chef-status är historik.
+finns kvar. Äldre avsnitt nedan som nämner agent-talk, GitHub-tråden #312,
+femminutersbevakning, claims, pingkö eller chef-status är historik.
 
 ## Förenklade agentregler — 21 oktober 2026
 

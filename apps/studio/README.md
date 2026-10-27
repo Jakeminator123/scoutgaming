@@ -542,7 +542,7 @@ Labbets JSON-animation får inte ändra delningsriktning eller ta bort en
 kortvändning. En videoreferens kontrolleras mot registret men är fortfarande
 en **ogranskad labbpreview**, inte automatiskt rätt dealer/action/talrad.
 Nya produktionskopplingar och takes kräver separat acceptans;
-aktuella luckor finns i [handoffen](../../docs/JOHN-HANDOFF.md).
+aktuella luckor finns i [överlämningen](../../docs/NEXT-AGENT.md).
 
 ## Kontroller
 

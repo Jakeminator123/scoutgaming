@@ -20,7 +20,7 @@ Talservicen använder Node 22.23.1 och egen npm-lock/`.npmrc` med
 `install-links=true`; kör `npm ci --ignore-scripts` från dess katalog.
 Den kan installeras och startas utan frontendens `node_modules`.
 Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
-[senaste verifierade leverans](../../docs/JOHN-HANDOFF.md) för produktion och QA.
+[överlämningen](../../docs/NEXT-AGENT.md) för aktuell produktion och staging.
 
 Med `CROUPIER_VERCEL_UI=1` använder frontend de incheckade route-/ingress-
 kontrakten och paketerade produktgränssnitten. `/lab`, `/labb` och äldre

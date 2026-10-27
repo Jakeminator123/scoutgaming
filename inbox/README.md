@@ -80,7 +80,7 @@ läsa sin inbox när den arbetar; meddelanden väcker inte pausade GPT-chattar.
 
 Teaminboxen når personer och deras agenter i andra grenar och på andra datorer:
 `node tools/inbox.mjs ping/send/list/reply`. Agenter i samma repo arbetar i egna
-worktrees och brancher; det lokala agent-talk-verktyget är avvecklat (2026-10-27).
+worktrees och brancher och samordnar genom PR:er.
 
 Utan datorregistrering fungerar `list --to me` på den registrerade branchen
 `kevin`; på en featurebranch för Kevins arbete används `list --to kevin`.

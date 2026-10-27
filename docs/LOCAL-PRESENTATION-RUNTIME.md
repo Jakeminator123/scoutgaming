@@ -2428,7 +2428,7 @@ lagrar policy, metadata och journaler.
 
 Aktiv spelmotor är Render `croupier-v3`, verifierad 24 oktober 2026 mot
 rätt repo, main och avstängd automatisk deploy. Tidigare `croupier-v2`
-är suspenderad. Exakta resurs-ID:n och återgångsordning finns i
+raderades 27 oktober 2026. Exakta resurs-ID:n och återgångsordning finns i
 [återställningsguiden](ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
 QA-gränser och runtimeacceptans i [handoffen](JOHN-HANDOFF.md).
 

@@ -1,8 +1,10 @@
-# Aktuell handoff — Scoutgaming
+# Handoffhistorik — Scoutgaming
 
-## 27 oktober kväll: J08 verifierad, 70 %
+Daterade avsnitt och kvitton, nyast först. Aktuell överlämning: [NEXT-AGENT](NEXT-AGENT.md); status bara i [STATUS.md](../migrering/STATUS.md).
 
-**70 % = 14/20 aktiviteter.** J08 är VERIFIED på kod `b08f2a866f77e6b9673cbb6624b7eea9013a0a70` med [sanitiserat kvitto](2026-10-27-J08-STAGING-ACCEPTANCE.json). [Statusfilen](../migrering/status.json) är enda statuskälla. Deploy-ID, revisioner, gränser och nästa steg i ordning finns i [NEXT-AGENT](NEXT-AGENT.md).
+## 27 oktober kväll: J08 verifierad
+
+Vid detta kvitto var 14/20 aktiviteter verifierade. J08 är VERIFIED på kod `b08f2a866f77e6b9673cbb6624b7eea9013a0a70` med [sanitiserat kvitto](2026-10-27-J08-STAGING-ACCEPTANCE.json). [Statusfilen](../migrering/status.json) är enda statuskälla. Deploy-ID, revisioner, gränser och nästa steg i ordning finns i [NEXT-AGENT](NEXT-AGENT.md).
 
 Isolerad staging, operatör `qa-k06k07-9dd2d3a4-a`, rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e`:
 
@@ -32,7 +34,7 @@ Isolerad staging, operatör `qa-k06k07-9dd2d3a4-a`, rum `room-33b37ff3-ec79-ff2d
 - **K06:** aktiv hand över publicering live och visuellt godkända giv- och revealklipp.
 - **K07:** delat bord med flaggan.
 - **O02** och **O03**.
-- **SQLite:** steg 1–6 är mergade (#428, #430, #431, #432, #435, #439 och #434 → main `3b688d49`); motorn och `ops/cloud` kör enbart Postgres. Steg 7 (companion-/Studio-/backup-JSON-lager) ligger i PR #444; därefter steg 8–9.
+- **SQLite:** steg 1–6 är mergade (#428, #430, #431, #432, #435, #439 och #434 → main `3b688d49`); motorn och `ops/cloud` kör enbart Postgres. Steg 7 (companion-/Studio-/backup-JSON-lager) är mergat i #444; steg 8–9 återstår enligt SQLite-planen.
 - **Clean slate:** först efter K05.
 
 ## J10 slutverifierad — 27 oktober 2026
@@ -967,8 +969,8 @@ PR336 sätter `git.deploymentEnabled` till main=true och alla andra grenar
 false; Render croupier-v2 får autoDeploy åter på för main genom Jakobs egen
 CLI-körning (`render services update srv-datg3j6gekts73amgli0 --auto-deploy`),
 eftersom agentsessionen inte får göra produktionsändringar. (Historiskt: sedan
-24 oktober är `croupier-v3` produktion med manuell deploy; `croupier-v2` är
-suspenderad med autoDeploy av och raderas av Jakob.)
+24 oktober är `croupier-v3` produktion med manuell deploy; `croupier-v2`
+raderades 27 oktober 2026.)
 Övriga spärrar kvarstår: ingen produktion-DDL, env-/flaggaktivering, GPU eller
 betald drift utan separat beslut. Mediaimport av Kevins verifierade tagningar
 är beslutad av Jakob och körs genom Admins ordinarie uppladdning.

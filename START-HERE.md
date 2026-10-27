@@ -26,10 +26,10 @@ Beslut (Jakob 2026-10-27): Vercel + Render + Neon + Blob är den enda vägen, oc
 | Produktion | Neon | org "Vercel: scoutgaming" `org-green-butterfly-00780270`, projekt `croupier-production` `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`, databas `croupier_game` med scheman `public`, `croupier_auth`, `croupier_game`, `croupier_studio` |
 | Produktion | Blob | `croupier-media-private` `store_AqwvebTbBHarOjvG` |
 | Staging | Vercel | `croupier-k06-k07-staging` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, croupier-k06-k07-staging.vercel.app; deployas från `main` via API |
-| Staging | Render | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, `CROUPIER_SHARED_TABLE_ENABLED=0` |
+| Staging | Render | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, `CROUPIER_SHARED_TABLE_ENABLED=1` sedan 2026-10-27 |
 | Staging | Neon | projekt `croupier-k06-k07-staging` `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databas `croupier_staging` |
-| Staging | Blob | `store_7E06N1P4w9Mu1dZD` |
-| Pensionerat | Render | `croupier-v2` `srv-datg3j6gekts73amgli0` och `croupier-vercel-preview-qa` `srv-datj7l893c1s73ar3u50` är suspenderade med autoDeploy av och raderas av Jakob. `croupier-v2` är inte produktion någonstans. |
+| Staging | Blob | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD` (endast syntetiskt material) |
+| Raderat | Render | `croupier-v2` och `croupier-vercel-preview-qa` raderades 2026-10-27 (Jakobs beslut). Äldre dokument som nämner dem beskriver historik. |
 
 Kevin har läsrollen `kevin_migration_readonly` i produktionens Neon och sin GitHub-åtkomst (Jakobs beslut 2026-10-27). Hans brancher (`kevin*`, `codex/kevin-*`) rörs aldrig; bra beteenden skrivs om i mains moduler.
 
@@ -42,7 +42,7 @@ Allt som är grönt går direkt till produktion, i denna ordning:
 3. Render `croupier-v3` deployas manuellt (Render MCP) efter varje grön merge. Director och Gateway deployas om när deras kod ändras.
 4. Admin-publicering (paket och rumskonfiguration) sist, när koden är live.
 
-`CROUPIER_SHARED_TABLE_ENABLED=1` kraschade stagingmotorn vid start 2026-10-27 (tom frontend-origin i enkel-origin-layouten). Rättningen (PR #442, `jakob/claude-shared-room-origin`) är mergad i `main` (`cc415cd8`); sätt flaggan först när en motor-deploy med rättningen är live och Jakob har beslutat det. Varningen i [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md) gäller.
+`CROUPIER_SHARED_TABLE_ENABLED` (delat bord): stagingen kör `=1` sedan 2026-10-27, och delade bord startar i enkel-origin-layouten sedan PR #442 (`cc415cd8`). Produktionens `croupier-v3` har flaggan osatt; den sätts där bara som del av O03 efter Jakobs separata godkännande. Se [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
 
 ## Staging
 
@@ -51,7 +51,7 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 ## Vad agenter får göra
 
 - Ingen merge, DDL, produktionsskrivning eller betald drift utan Jakobs beslut. Underagenter mergar aldrig; den orkestrerande Claude-sessionen mergar efter grön CI enligt ägarreglerna i AGENTS.md.
-- Render MCP: deploy, loggar, metrik och skrivning av miljövariabler (merge), men ingen läsning av env-värden. `RENDER_API_KEY` i `.env.local` ger REST-läsning.
+- Render MCP: deploy, loggar, metrik och skrivning av miljövariabler, men ingen läsning av env-värden. En env-skrivning sammanfogar nycklar och startar en deploy automatiskt. `RENDER_API_KEY` i gitignorerad `.env.local` ger läsning via Renders REST-API.
 - Neon MCP: läsning är fri; destruktiva verktyg bara efter Jakobs ja.
 - Vercel: CLI-token på Jakobs dator; staging deployas via API.
 - Inloggningar och nycklar: lokalt i `.env.local`, aldrig i Git eller chatt. Läs `node tools/security-status.mjs` före push och merge.
@@ -67,13 +67,14 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 ## Leverera
 
 - Arbeta på en branch `jakob/*` (Claude-underagenter: `jakob/claude-*`) från färsk `origin/main` och committa med repots hookar. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot; öppna PR mot `main` i `Jakeminator123/scoutgaming`. Policy: `tools/repository-policy.json`. Ingen force-push, inga taggar, ingen radering av andras brancher.
-- Merge efter grön full CI av den orkestrerande sessionen eller Jakob, enligt ägarreglerna i [AGENTS.md](AGENTS.md). Agent-talk, GitHub-tråden #312, `/chef` och GitLab används inte längre.
+- Merge efter grön full CI av den orkestrerande sessionen eller Jakob, enligt ägarreglerna i [AGENTS.md](AGENTS.md). Den obligatoriska kontrollen heter `CI` och kräver att branchen är à jour med `main`: kör `gh pr update-branch` före merge. Samordning sker i PR:er och [teaminboxen](inbox/README.md).
 - Claude Code: underagenter arbetar i egna worktrees under `.claude/worktrees` (gitignorerat), granskar varandras PR:er och rapporterar kort med bevis. `.agents/skills`, `.codex` och `.cursor/commands` är Codex-/Cursor-arv och styr inte Claude.
 - Uppdatera [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md) vid överlämning. Markera en aktivitet VERIFIED i `migrering/status.json` först när kriterierna är bevisade.
 
 ## Läge
 
 - Migrationens status: [migrering/STATUS.md](migrering/STATUS.md), genererad från [status.json](migrering/status.json), som är enda statuskällan. Planen: [MASTERPLAN.md](migrering/MASTERPLAN.md).
-- Senaste överlämning och nästa steg: [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md). Historik och daterade kvitton: [docs/JOHN-HANDOFF.md](docs/JOHN-HANDOFF.md).
-- K05 blockeras av två saker: Studio-migrering 020 saknas i produktionen (Jakob applicerar med `node tools/check-migration-readiness.mjs --apply`), och produktionens paketpublicering svarar 503 "Action unavailable" tills 020 finns, eftersom paketet kräver v2-kuvertet. Därefter ompubliceras Johns Bet-paketet 5→6 och rummets spelinställningar.
+- Överlämning, återstående aktiviteter och vem som agerar: [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md). Historik och daterade kvitton: [docs/JOHN-HANDOFF.md](docs/JOHN-HANDOFF.md) och [docs/history/](docs/history/).
+- 27 oktober 2026, kväll: alla produktionstjänster (Vercel `scoutgaming`, Render `croupier-v3`, `croupier-lab-director` och `croupier-lab-openclaw`) kör `main` `cc415cd8`. Studio-migrering 020 är applicerad i produktionen. Johns Bet har paketrevision 9 och publicerad spelkonfiguration `room-config-133cfffc-fdad-47f2-9c85-51b08de4a325` i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`, med alla 15 PAOW-tagningar godkända och mätta. Jakob spelade i produktionen och godkände (”allt funkade, hon pratar”) på dator och i datorwebbläsarens mobilvy.
+- Känd defekt: spelaren kan se råtexten ”Tal: play() failed …” när webbläsaren blockerar autoplay; rättningen pågår på `jakob/claude-speech-autoplay`.
 - Övriga guider: drift och återställning i [ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md), [CLOUD-MIGRATION](docs/CLOUD-MIGRATION.md), [ENVIRONMENT-VARIABLES](docs/ENVIRONMENT-VARIABLES.md) och [RENDER-V3](ops/cloud/RENDER-V3.md); produktbegrepp i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och [Studio-guiden](apps/studio/docs/README.md); lagrings- och uppspelningskontrakt i [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md); AI-verktyg i [docs/AI](docs/AI/README.md).

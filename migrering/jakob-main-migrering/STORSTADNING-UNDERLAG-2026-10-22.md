@@ -105,7 +105,7 @@ missvisande plats/namn, BEHÅLL = aktiv, UTRED = underagent avgör med konsument
 
 ## Render `croupier-v2`: vad som faktiskt körs
 
-Historik 22 oktober: beskriver den gamla kombinerade imagen. Sedan 24 oktober kör produktionen `croupier-v3` enligt [RENDER-V3](../../ops/cloud/RENDER-V3.md); v2 är suspenderad och raderas av Jakob.
+Historik 22 oktober: beskriver den gamla kombinerade imagen. Sedan 24 oktober kör produktionen `croupier-v3` enligt [RENDER-V3](../../ops/cloud/RENDER-V3.md); v2 raderades 27 oktober 2026.
 
 Byggkontext är reporoten. Dockerfilen installerar `services/astrid-gpu-worker/gateway`,
 `services/game` och `apps/studio`, bygger Studio med basePath `/studio`, och

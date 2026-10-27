@@ -41,6 +41,9 @@ Alla fyra nedan var ej suspenderade och hade en `live`-deploy.
 | croupier-lab-openclaw | 1 | Privat Gateway, standard | `e57f28ef` |
 | croupier-vercel-preview-qa | 1 | Separat QA, 1c-2g | `ee060804`, 5 oktober |
 
+Spelmotorn flyttades 24 oktober till `croupier-v3`; `croupier-v2` och
+`croupier-vercel-preview-qa` raderades 27 oktober 2026.
+
 Blueprinten [render.yaml](../../services/openclaw/lab/render.yaml) omfattar endast
 Director och Gateway, vilket stämmer med deras nuvarande tjänsteuppdelning.
 Fem agentroller i Gateway är fem rollkonfigurationer, inte fem servrar.

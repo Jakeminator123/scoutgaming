@@ -21,18 +21,19 @@ aktuella spel-imagen; den borttagna kombinerade imagen är ingen stödd reservv�
 
 ## Delade Blackjackrum — avgränsad inkoppling
 
-Transportbranchen stödjer explicit `CROUPIER_SHARED_TABLE_ENABLED=1`. Flaggan
-är inte satt av leveransen. Endast Postgres, befintlig Studio-repository/scope
-och samma appägda gamePool tillåts, med explicit demowallet. Saknade schema008/009/010
-stoppar start; startup installerar inget. Ursprung och kanonisk Host följer befintliga
-`CROUPIER_VERCEL_FRONTEND_ORIGIN` och `CROUPIER_PUBLIC_ORIGIN`/`PUBLIC_URL`.
-Ingen Partner→operatör/rumrelation gissas. Gateway/Vercelrumsväg och klient är ännu
-inte inkopplade; flaggan ska inte aktiveras före separat verifierad mål/readiness.
-Ingen ny tjänst, molnvariabel, schemaapplicering eller driftsättning ingår.
-27 oktober 2026: `CROUPIER_SHARED_TABLE_ENABLED=1` stoppade stagingmotorns start (tom
-frontend-origin i single-origin-layouten); rättningen är PR #442, inte mergad. Aktivera
-inte flaggan före den. Rumsvägen är numera routad i `vercel.json` (`/shared-room/*`) och
-`platform-routing.mjs` (`/api/shared-room/*`); varningen ovan behålls tills rättningen är mergad.
+Transportbranchen stödjer explicit `CROUPIER_SHARED_TABLE_ENABLED=1`. Endast Postgres,
+befintlig Studio-repository/scope och samma appägda gamePool tillåts, med explicit
+demowallet. Saknade schema 008/009/010 stoppar start; startup installerar inget. Ursprung
+och kanonisk Host följer befintliga `CROUPIER_VERCEL_FRONTEND_ORIGIN` och
+`CROUPIER_PUBLIC_ORIGIN`/`PUBLIC_URL`; i enkel-origin-layouten godtas den publika originen
+(PR #442, `cc415cd8`). Ingen Partner→operatör/rumrelation gissas. Rumsvägen är routad i
+`vercel.json` (`/shared-room/*`) och `platform-routing.mjs` (`/api/shared-room/*`).
+
+**Varning:** produktionens `croupier-v3` har flaggan osatt. Den sätts där bara som del av
+O03, efter Jakobs separata godkännande och verifierad readiness, aldrig som bieffekt av ett
+prov. Stagingen (`croupier-k06-k07-staging`) kör redan `=1`: flaggan stoppade först
+stagingmotorns start 27 oktober 2026 (tom frontend-origin), och efter PR #442 startar
+delade bord där med flaggan på.
 
 ## Driftväljarens API
 
@@ -127,7 +128,7 @@ Det är den aktuella produkten, inte ett namnval mellan utvecklarnas miljöer.
 | Vercel Preview, samma projekt | Backend och publika adresser pekar på produktion. Preview saknar ingresshemlighet, native-Admin-flaggor, GAME-databasanslutning och Blob-token. En äldre READY-deployment bevisar varken aktuell kod eller fungerande Admin. Ingen verifierad skrivtestmiljö. |
 | Blob `croupier-media-private` / `store_AqwvebTbBHarOjvG` | Endast kopplat till Scoutgaming, metadata för Production/Preview. Kopplingen innehåller `CROUPIER_MEDIA_STORE_ID`; den skapar inte i sig en fungerande Preview-token. |
 | Blob `impactwin-media-preview` / `store_K1uXiAFLGqRdspnB` | Endast kopplat till det separata projektet Impactwin (Preview/Development). Ingen belagd krock med Scoutgaming. |
-| Render | `croupier-v2` var då produktionsbackend och behölls; sedan 24 oktober är `croupier-v3` produktion och v2 suspenderad med autoDeploy av, i väntan på radering av Jakob. Separata `game-engine` (`srv-db97dhg473hc73b1vni0`) raderades 18 oktober 2026 efter Jakobs uttryckliga val; DELETE och efterföljande GET 404 verifierades 14:01:17 UTC. Äldre `croupier-vercel-preview-qa` har tidigare dokumenterats i maintenance. |
+| Render | `croupier-v2` var då produktionsbackend och behölls; sedan 24 oktober är `croupier-v3` produktion, och v2 raderades 27 oktober 2026. Separata `game-engine` (`srv-db97dhg473hc73b1vni0`) raderades 18 oktober 2026 efter Jakobs uttryckliga val; DELETE och efterföljande GET 404 verifierades 14:01:17 UTC. Äldre `croupier-vercel-preview-qa` har tidigare dokumenterats i maintenance. |
 
 Koden i `apps/studio/lib/studio-native-runtime.mjs` använder den uttryckliga
 `CROUPIER_GAME_DATABASE_URL`. Marketplace-variablerna `CROUPIER_NEON_*`
