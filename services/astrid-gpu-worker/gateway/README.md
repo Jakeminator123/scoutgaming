@@ -10,7 +10,7 @@ The shared game player in `services/game/public` owns actual playback.
 standalone server below does not create a Render service or launch a paid GPU
 worker. See the
 [runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) and
-[John handoff](../../../docs/JOHN-HANDOFF.md) for current deployment and
+[John handoff](../../../docs/history/JOHN-HANDOFF-2026-10.md) for current deployment and
 GPU acceptance; the retired integration report is no longer a separate source.
 
 ## Standalone protocol checks

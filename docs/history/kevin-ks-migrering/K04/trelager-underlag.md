@@ -8,7 +8,7 @@ Svar på #312 6337998848. Jakobs modell gäller: mains Admin, Jakobs klippkarta 
 | M | `codex/kevin-k04-presentation` @ `eb6ab455` (K04) | reporoten |
 | J | `codex/shared-room-transport` @ `87765066`, bara `docs/JOHN-HANDOFF.md` för ordvalen | reporoten |
 
-Metod: kodläsning med radnummer. Granskad av e2e (27 stickprov, rader 22–24 tillagda efter granskningen). Radnummer gäller exakt de två heads ovan. Medieidentiteter och fack står redan i [K04-mappning.md](K04-mappning.md) och [K04-medie-fack.tsv](K04-medie-fack.tsv); de upprepas inte här.
+Metod: kodläsning med radnummer. Granskad av e2e (27 stickprov, rader 22–24 tillagda efter granskningen). Radnummer gäller exakt de två heads ovan. Medieidentiteter och fack står redan i [K04-mappning.md](../../../../migrering/kevin-ks-migrering/K04/K04-mappning.md) och [K04-medie-fack.tsv](../../../../migrering/kevin-ks-migrering/K04/K04-medie-fack.tsv); de upprepas inte här.
 
 ## 0. De två modellerna, som koden har dem
 

@@ -36,7 +36,7 @@ Om webbläsaren nekar ljudsatt tal innan spelaren har interagerat med sidan visa
 
 Materialproducent, publiceringsvalidator, launch och delad rumsåtkomst använder samma paketbundna val: rätt rums `roomOverrides` före tillämplig operatörsstandard och därefter mallens standard, alltid inom publicerad allowlist och operatörens rum. Saknat eller otillåtet material stoppar urvalet. Operatörens befintliga `dealer: null` rensar dess standard; ett ogiltigt uttryckligt rumsval ger ingen fallback. I ett rum med publicerad J08-konfiguration nekas avvikande `?dealer=` före klientstart. Rum utan publicerad spelkonfiguration behåller sitt tidigare tillåtna queryurval.
 
-Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell handoff](JOHN-HANDOFF.md).
+Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell handoff](history/JOHN-HANDOFF-2026-10.md).
 
 ## PAOWs 24 viloklipp
 
@@ -242,7 +242,7 @@ svar importerade och återlästa. Katalogen innehåller 760 layoutposter,
 fullständigt hashverifierade. Samtliga 79 medieposter och tre dokument är
 oförändrade. Detta återger huvudagentens kontroll, inte ett nytt prov.
 Uppgifterna ovan är det daterade migrationskvittot, inte dagens deployversion. Följ
-[CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [JOHN-HANDOFF](JOHN-HANDOFF.md)
+[CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md)
 för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
 tidigare implementationen och ersätts av detta kontrakt.
 
@@ -268,7 +268,7 @@ ett lyckat viloprov eller första munrörelse bevisar därför inte självutdeln
 Minsta rörelseprov ska använda ett utpekat utdelningsklipp, verkligt genererade
 ansiktsdata, rätt ljud och den gemensamma spelaren. Ett isolerat sådant prov
 verifierar inte automatiskt produktionsserverns antagning, kort eller saldo.
-Aktuella resultat och deras gränser finns i [handoffen](JOHN-HANDOFF.md#dragan-talstatus).
+Aktuella resultat och deras gränser finns i [handoffen](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus).
 
 Genererad OpenClaw-text får en gemensam radbrytningsnormalisering före
 förhandsvisning, TTS och hashning; inspelade repliker behåller originaltexten.
@@ -414,7 +414,7 @@ fullåterlästa manifestet bevarar T6:s två kompletta mediesvar, sanerade kvitt
 och 79 unika JPEG-bilder med 82 tidsreferenser. Bevarandet omfattar 94 unika
 objekt och skapade inga Neon-/Admin-klipp.
 Exakta sökvägar och bindningar finns
-i [handoffen](JOHN-HANDOFF.md#dragan-talstatus). Ett samlokaliserat filnamn
+i [handoffen](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus). Ett samlokaliserat filnamn
 bevisar inte härledning; det krävs SHA-bundet capture-/transkodningskvitto.
 Omkodade jämförelser är inte originalbytes. Visuellt godkännande gäller bara
 den exakta godkända filhashen, aldrig efterföljande cache-/replayresultat.
@@ -515,7 +515,7 @@ Två driftprov 17 oktober 2026, på PR203 `9e533e7b` och PR208 `a0876f71`,
 nådde RunPods jobbkö från riktig bordschatt. Inget fick en worker före
 uppstartstidsgränsen, även med A40 och A6000 tillåtna i andra provet.
 Jobben avbröts och tillfälliga endpoints/templates togs bort av guarden;
-se [handoffens kvitto](JOHN-HANDOFF.md#dragan-talstatus).
+se [handoffens kvitto](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus).
 Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
 runtime-behörighet, template och image före nytt prov. Den borttagna
 testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
@@ -821,7 +821,7 @@ genom PR199/201/203 och migration013. Containerbygge och CPU-prov passerade
 release `57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
 Verklig tal-/läppsynksacceptans återstår efter det misslyckade molnprovet ovan.
 [Storage-guiden](storage/BLOB-NEON.md) skiljer importunderlag från applicerade
-registerändringar; [handoffen](JOHN-HANDOFF.md) anger aktuell fortsättning.
+registerändringar; [handoffen](history/JOHN-HANDOFF-2026-10.md) anger aktuell fortsättning.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
@@ -941,7 +941,7 @@ Tidigare tillfälliga localhost-länkar till visaren används inte längre.
 Aktuellt tal använder den publicerade produktens Neon-/Blob-identiteter,
 serverägd spelkontext, ljudklocka och budgetjournal.
 [Användarflödet](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal)
-och [aktuell handoff](JOHN-HANDOFF.md#post-lipsync5-produktionsprov) anger
+och [aktuell handoff](history/JOHN-HANDOFF-2026-10.md#post-lipsync5-produktionsprov) anger
 start, stopp och vad som fortfarande behöver provas. Den daterade
 exportgranskningen skapar inga nya provantal eller aktiveringskrav.
 
@@ -2432,7 +2432,7 @@ Aktiv spelmotor är Render `croupier-v3`, verifierad 24 oktober 2026 mot
 rätt repo, main och avstängd automatisk deploy. Tidigare `croupier-v2`
 raderades 27 oktober 2026. Exakta resurs-ID:n och återgångsordning finns i
 [återställningsguiden](ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
-QA-gränser och runtimeacceptans i [handoffen](JOHN-HANDOFF.md).
+QA-gränser och runtimeacceptans i [handoffen](history/JOHN-HANDOFF-2026-10.md).
 
 **Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
@@ -2446,7 +2446,7 @@ Workerns socket går via samma publika ingress. Ingresshemligheten lämnar inte
 Render, och en redan betald GPU-session stängs efter 60 sekunders tystnad.
 
 Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
-[handoffen](JOHN-HANDOFF.md). QA:s AI-flaggor är OFF; journaler och
+[handoffen](history/JOHN-HANDOFF-2026-10.md). QA:s AI-flaggor är OFF; journaler och
 reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Tre produktytor och äldre runtimeadresser
@@ -2766,7 +2766,7 @@ Spelaren kräver `local` eller `layered`. Ingen automatisk videofallback införs
 Källkontrakt: `packages/presentation/contracts/game-selection.mjs`; definitioner och ID-validering finns i samma pakets `game-lanes.mjs` och `game-lane-id.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
-[JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+[JOHN-HANDOFF.md](history/JOHN-HANDOFF-2026-10.md).
 
 
 ## Kamera och mikrofon

@@ -4,7 +4,7 @@ Croupier is the working casino demo with server-owned game state and shared
 playback for registered dealers. Start with blackjack; roulette has its own
 server and presentation contracts. Start with [START-HERE.md](START-HERE.md). Current acceptance and next steps are
 recorded in [the current handoff](docs/NEXT-AGENT.md); dated receipts live in
-[JOHN-HANDOFF](docs/JOHN-HANDOFF.md). This development demo is not a
+[JOHN-HANDOFF](docs/history/JOHN-HANDOFF-2026-10.md). This development demo is not a
 certified RNG/RGS or a real-money system.
 
 Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/).
@@ -129,7 +129,7 @@ and mirror are paused; reviewed upstream code is imported selectively.
 
 Use these documents in place instead of adding competing status reports:
 
-- [Current handoff and next steps](docs/NEXT-AGENT.md); dated history in [JOHN-HANDOFF](docs/JOHN-HANDOFF.md).
+- [Current handoff and next steps](docs/NEXT-AGENT.md); dated history in [JOHN-HANDOFF](docs/history/JOHN-HANDOFF-2026-10.md).
 - [Cloud migration and delivery](docs/CLOUD-MIGRATION.md).
 - [Data restoration and media rules](docs/ENVIRONMENT-RESTORATION.md).
 - [Environment variable registry](docs/ENVIRONMENT-VARIABLES.md).

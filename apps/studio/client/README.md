@@ -82,4 +82,4 @@ Nytt UI-arbete hör hemma i `/admin` och `/lobby`. Återinför inte `/control`
 som produktmål för att en ursprunglig sökväg står i proveniensen. Outputen
 `apps/studio/design-preview-build` följer Studios källrot. De publika adresserna
 är oförändrade efter flytten från `packages/design-preview`. Aktuell acceptans finns i
-[handoffen](../../../docs/JOHN-HANDOFF.md).
+[handoffen](../../../docs/history/JOHN-HANDOFF-2026-10.md).

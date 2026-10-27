@@ -25,7 +25,7 @@ de befintliga tjänsternas Environment-vyer visar deras faktiska värden.
    produkt-token ska ge 400 innan modellkörning. Ett giltigt talprov kräver
    separat syntetisk provprofil, kostnadsram och uppspelningskvitto.
 
-Aktuell drift och öppna kontroller finns i [handoffen](../../JOHN-HANDOFF.md)
+Aktuell drift och öppna kontroller finns i [handoffen](../../history/JOHN-HANDOFF-2026-10.md)
 och [driften](DEPLOYMENT.md). Kvittot från 29 september är pensionerat.
 Gateway-modellens effektiva konfiguration ligger på beständig disk; ändrad
 `OPENCLAW_MODEL_ID` i env är inte ensam bevis på modellbyte. Nycklar och

@@ -1,7 +1,7 @@
 # Scoutgaming: produkt och val
 
 Enda styrande produkttexten, 22 oktober 2026. Detta är målbilden;
-genomfört stöd redovisas i [handoffen](../../../docs/JOHN-HANDOFF.md)
+genomfört stöd redovisas i [handoffen](../../../docs/history/JOHN-HANDOFF-2026-10.md)
 och [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 ## Tre nivåer

@@ -71,7 +71,7 @@ befintliga inspelningar skrivs inte över av servern.
 
 Nästa produktionssteg
 Bankfix PR242 är mergad; privat image är publicerad genom Actions39120838837.
-Se docs/JOHN-HANDOFF.md för pinnad image, budgetläge och återstående molnprov.
+Se docs/history/JOHN-HANDOFF-2026-10.md för pinnad image, budgetläge och återstående molnprov.
 Ingen ny RunPod-resurs eller talaktivering gjordes under dessa lokalprov.
 
 HISTORISKT PROV — 17 oktober 2026, cirka 02:42 svensk tid

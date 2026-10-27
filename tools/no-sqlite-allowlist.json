@@ -1,16 +1,16 @@
 [
   {
-    "path": "migrering/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md",
+    "path": "docs/history/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md",
     "removeBy": "O03 (archive)",
-    "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
+    "reason": "Historical migration evidence; not product code. Moved to docs/history; may be removed after O03."
+  },
+  {
+    "path": "docs/history/kevin-ks-migrering/K01/kodfakta-slack.md",
+    "removeBy": "O03 (archive)",
+    "reason": "Historical migration evidence; not product code. Moved to docs/history; may be removed after O03."
   },
   {
     "path": "migrering/kevin-ks-migrering/AKTIVITETER.md",
-    "removeBy": "O03 (archive)",
-    "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
-  },
-  {
-    "path": "migrering/kevin-ks-migrering/K01/kodfakta-slack.md",
     "removeBy": "O03 (archive)",
     "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
   },

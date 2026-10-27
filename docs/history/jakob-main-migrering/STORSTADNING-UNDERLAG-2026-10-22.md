@@ -1,7 +1,7 @@
 # Storstädning: nuläge, raderingskandidater och underagentuppdrag
 
 Skrivet 22 oktober 2026 på Jakobs beställning. Detta är underlag för J05/J06/J09/J10
-i [masterplanen](../MASTERPLAN.md), inte en ny statuskälla. Procent och VERIFIED
+i [masterplanen](../MASTERPLAN-2026-10.md), inte en ny statuskälla. Procent och VERIFIED
 ägs fortsatt av `migrering/status.json`. Allt nedan är läst från `main`
 (`7afae426`, lika med `origin/main`), GitHub-API och den lokala disken.
 
@@ -39,7 +39,7 @@ i [masterplanen](../MASTERPLAN.md), inte en ny statuskälla. Procent och VERIFIE
 ## Vad som återstår av migreringen
 
 Den tekniska Neon-/Blob-flytten är klar i produktion enligt
-[CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md). Det som återstår är
+[CLOUD-MIGRATION](../../CLOUD-MIGRATION.md). Det som återstår är
 masterplanens produkt- och städarbete: 9/20 VERIFIED (45 %). Jakobs
 "storstädning" är redan beställd som fyra aktiviteter, men saknar två beslut.
 
@@ -105,7 +105,7 @@ missvisande plats/namn, BEHÅLL = aktiv, UTRED = underagent avgör med konsument
 
 ## Render `croupier-v2`: vad som faktiskt körs
 
-Historik 22 oktober: beskriver den gamla kombinerade imagen. Sedan 24 oktober kör produktionen `croupier-v3` enligt [RENDER-V3](../../ops/cloud/RENDER-V3.md); v2 raderades 27 oktober 2026.
+Historik 22 oktober: beskriver den gamla kombinerade imagen. Sedan 24 oktober kör produktionen `croupier-v3` enligt [RENDER-V3](../../../ops/cloud/RENDER-V3.md); v2 raderades 27 oktober 2026.
 
 Byggkontext är reporoten. Dockerfilen installerar `services/astrid-gpu-worker/gateway`,
 `services/game` och `apps/studio`, bygger Studio med basePath `/studio`, och

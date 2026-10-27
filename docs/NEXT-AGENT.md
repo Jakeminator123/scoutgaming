@@ -1,6 +1,6 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 27 oktober 2026, kväll, efter PR #442–#445. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [JOHN-HANDOFF](JOHN-HANDOFF.md).
+Uppdaterad 27 oktober 2026, kväll, efter PR #442–#445. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md).
 
 ## Läget i en skärm
 
@@ -137,5 +137,5 @@ Aldrig: hemligheter i Git eller chatt, prov mot riktiga användares data eller J
 ## Separata spår efter migreringen
 
 - **Ren start (clean slate):** Jakobs beslut 27 oktober. När K05 är klar och som egen aktivitet med backup och Jakobs uttryckliga go: ta bort gamla Astrid-, Dragan- och testrum, alla operatörer utom Johns Bet (PAOW) och töm papperskorgen. Följ avvecklingsreglerna i [AGENTS.md](../AGENTS.md#data-media-och-avveckling) och [masterplanens raderingsavsnitt](../migrering/MASTERPLAN.md#radera-med-ett-konkret-slutdatum). Stagingens bevisdata (rum `33b37ff3`) står kvar till O03.
-- **Admin-förenkling (UX):** `/admin` ska vara enkel. Underlag: [Admin-kartan](../migrering/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md), [backloggen](../migrering/jakob-main-migrering/BACKLOGG-2026-10-23.md), [separat produktarbete](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar) och utkastet `ux-plan/FORENKLING.md` i scratchpaden (en publiceringsknapp per rum). Det finns inte i masterplanen; Jakob beslutar omfattningen.
+- **Admin-förenkling (UX):** `/admin` ska vara enkel. Underlag: [Admin-kartan](history/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md), [backloggen](history/jakob-main-migrering/BACKLOGG-2026-10-23.md), [separat produktarbete](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar) och utkastet `ux-plan/FORENKLING.md` i scratchpaden (en publiceringsknapp per rum). Det finns inte i masterplanen; Jakob beslutar omfattningen.
 - **Övrigt:** SQLite-steg 8–9 (planen ligger utanför Git; `tools/no-sqlite-allowlist.json` visar vad som återstår), Astrid-legacy (hårdkodat `'astrid'` i Admin-avbokning, utloggning, `/chat` och probe) och en inställning per dealer för proben (av, klipp efter N minuter eller AI-tal); Jakob har inte beslutat om den sista.

@@ -44,7 +44,7 @@ registrerad dealer måste organiseras. Radera inte kortkalibrering eller
 publicerade identiteter för att ett lane-namn pensioneras.
 
 För aktuella mediaformat och acceptans, använd [spelguiderna](../../docs/games/README.md)
-och [handoffen](../../docs/JOHN-HANDOFF.md). En lokal referensexport innebär
+och [handoffen](../../docs/history/JOHN-HANDOFF-2026-10.md). En lokal referensexport innebär
 ingen automatisk publicering eller verifierad läppsynk.
 
 `server/studio-project-bindings.mjs` validerar projektets befintliga bindningar

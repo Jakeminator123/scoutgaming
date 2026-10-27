@@ -1,6 +1,6 @@
 # Filinventering: Blob och Neon, 16 oktober 2026
 
-Historisk metod, avgränsningar och sammanfattning: [guideversionen för denna inventering](https://github.com/Jakeminator123/scoutgaming/blob/7f69f7df3f2ade70d946faa05d3887d36bb8dcae/docs/storage/BLOB-NEON.md). Aktuell målstruktur och migrationsplan: [BLOB-NEON](BLOB-NEON.md). Detta är ett daterat kvitto, inte en aktuell raderingslista.
+Historisk metod, avgränsningar och sammanfattning: [guideversionen för denna inventering](https://github.com/Jakeminator123/scoutgaming/blob/7f69f7df3f2ade70d946faa05d3887d36bb8dcae/docs/storage/BLOB-NEON.md). Aktuell målstruktur och migrationsplan: [BLOB-NEON](../storage/BLOB-NEON.md). Detta är ett daterat kvitto, inte en aktuell raderingslista.
 
 Full listning: 1710 befintliga objekt. Därutöver 24 refererade men saknade filer.
 

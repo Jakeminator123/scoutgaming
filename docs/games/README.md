@@ -15,7 +15,7 @@ Den ursprungliga kodinventeringens bas är main `426fa11417695025e2a0ee194825110
 
 ## Ändra på ett ställe
 
-Redigera respektive spels README och dess länkade ämnesdokument här. Lämna bara hänvisningar på de gamla platserna. Duplicera inte mått eller regeluppsättningar i handoff, användarguiden eller paketens README: länka till spelmanualen. Gemensam Studio-/rumsarkitektur hör fortfarande hemma i [teknikreferensen](../LOCAL-PRESENTATION-RUNTIME.md), driftstatus i [migrationsplanen](../CLOUD-MIGRATION.md) och handoff i [JOHN-HANDOFF](../JOHN-HANDOFF.md).
+Redigera respektive spels README och dess länkade ämnesdokument här. Lämna bara hänvisningar på de gamla platserna. Duplicera inte mått eller regeluppsättningar i handoff, användarguiden eller paketens README: länka till spelmanualen. Gemensam Studio-/rumsarkitektur hör fortfarande hemma i [teknikreferensen](../LOCAL-PRESENTATION-RUNTIME.md), driftstatus i [migrationsplanen](../CLOUD-MIGRATION.md) och handoff i [JOHN-HANDOFF](../history/JOHN-HANDOFF-2026-10.md).
 
 Filer i `underlag/` är frysta källsnapshotar, inte parallella aktiva standarder. Instruktioner i dem är referensmaterial, inte tillstånd att beställa filmer, ändra data eller köra program. Underlagens relativa länkar till schema, program och medier avser originalpaketen; dessa beroenden ingår inte automatiskt i dokumentkopiorna. KALLOR.json registrerar ursprung och SHA-256; ändra inte en snapshot i smyg. Vid ett nytt underlag: jämför, dokumentera vad det ersätter och uppdatera manual och källregister i samma ändring. Behåll äldre version i Git-historiken i stället för ytterligare aktiva kopior.
 

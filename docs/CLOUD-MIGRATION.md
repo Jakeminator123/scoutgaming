@@ -1,7 +1,7 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
 Kevin-planen avstämd 25 oktober 2026. Övriga delkvitton är daterade var för sig; detta är produktens övergripande migrationsöversikt.
-Aktuell överlämning och nästa leverans finns i [NEXT-AGENT](NEXT-AGENT.md); daterade kvitton i [JOHN-HANDOFF](JOHN-HANDOFF.md).
+Aktuell överlämning och nästa leverans finns i [NEXT-AGENT](NEXT-AGENT.md); daterade kvitton i [JOHN-HANDOFF](history/JOHN-HANDOFF-2026-10.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
 
@@ -9,9 +9,9 @@ Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska form
 
 [Masterplanen](../migrering/MASTERPLAN.md) och befintliga aktivitetsfiler är reviderade mot main `0e457589e84dcef3147ee54f01883ce5e459e356` efter #378/#380–#385. **Procentsatsen finns bara i [STATUS.md](../migrering/STATUS.md) och mäter helt verifierade aktiviteter, inte andelen importerad kod (vid denna avstämning 9/20).** PR #334/#336/#345/#348 är mergade. #333:s produktinnehåll är redan representerat på main; #315/#323 är äldre test-PR:ar och utgör ingen produktmergekö.
 
-Nästa värde ligger i exakt medie-/posebindning och full Admin → publicering → spel-acceptans. #386 har gjort de fyra befintliga K07-sviterna obligatoriska och annonserar idle-rotation i capability v28; Render `23debde7155346e30ee5a3f3dfbe54cd09ea2789`, hälsa och v28 är återlästa. #378/#381:s 24-klippspolicy är publicerad enligt #382: West Bet revision 2, 24/24 exakta media och avgränsad faktisk uppspelning; ingen PAOW-insats/full runda. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Admins specifika rotationsgrind kompletteras med 71/71 prov och oberoende review; leveranskvittot finns i handoffen. Kompatibel restore samt film-/tal- och samlad molnacceptans kvarstår. [Motivering och slutkriterier](../migrering/MASTERPLAN.md#motivering-och-när-migreringen-är-klar) skiljer färdig dokumentation från färdig migration; den tekniska Neon-/Blob-flyttens avslut nedan gäller fortfarande.
+Nästa värde ligger i exakt medie-/posebindning och full Admin → publicering → spel-acceptans. #386 har gjort de fyra befintliga K07-sviterna obligatoriska och annonserar idle-rotation i capability v28; Render `23debde7155346e30ee5a3f3dfbe54cd09ea2789`, hälsa och v28 är återlästa. #378/#381:s 24-klippspolicy är publicerad enligt #382: West Bet revision 2, 24/24 exakta media och avgränsad faktisk uppspelning; ingen PAOW-insats/full runda. Mergade #380/#383/#384/#385 återanvänds: Studio → Sceneditor (/admin/scenes) är enda placeringseditorn. publish-scene-layout publicerar geometri från kanonisk sparad mall med projekt-, paket- och registerrevisioner; materialutbud publiceras separat. Den separata bolagsgeometrin och update-scene-layout är borttagna och ska inte återskapas. PR385:s driftkvitto och handoffens kompletta Dragan-demohand är delacceptans; fysisk Safari och sju samtidiga händer är inte verifierade. Redundant Dragan-materialutkast är kastat, medan aktuella material, fem bordsprofiler och PAOW-data bevaras. Admins specifika rotationsgrind kompletteras med 71/71 prov och oberoende review; leveranskvittot finns i handoffen. Kompatibel restore samt film-/tal- och samlad molnacceptans kvarstår. [Motivering och slutkriterier](history/MASTERPLAN-2026-10.md#motivering-och-när-migreringen-är-klar) skiljer färdig dokumentation från färdig migration; den tekniska Neon-/Blob-flyttens avslut nedan gäller fortfarande.
 
-**Ingen återinförd lokal produktväg:** Neon använder PostgreSQL/SQL; återanvänd parameteriserade adapterfrågor och Admins behörighets-/revisionsstyrda writers. Originalklipp ligger i privat Vercel Blob, metadata i Neon. Inga nya SQLitefixtures, lokala filregister eller connected-local-starter ingår. Befintliga isolerade kod-/PG-prov är delbevis; molnacceptans kräver godkänd isolerad Neon/Blob-miljö och identifierade driftsversioner. Aktiva moduler med äldre namn och verifierad tillfällig Blob-cache får inte förväxlas med lokala produktregister. Se [utökad prioriteringsmatris](../migrering/MASTERPLAN.md#prioriterad-väg-till-910) och [QA-gränser](../migrering/MASTERPLAN.md#qa-sql-och-lagring-utan-återinförd-legacy).
+**Ingen återinförd lokal produktväg:** Neon använder PostgreSQL/SQL; återanvänd parameteriserade adapterfrågor och Admins behörighets-/revisionsstyrda writers. Originalklipp ligger i privat Vercel Blob, metadata i Neon. Inga nya SQLitefixtures, lokala filregister eller connected-local-starter ingår. Befintliga isolerade kod-/PG-prov är delbevis; molnacceptans kräver godkänd isolerad Neon/Blob-miljö och identifierade driftsversioner. Aktiva moduler med äldre namn och verifierad tillfällig Blob-cache får inte förväxlas med lokala produktregister. Se [utökad prioriteringsmatris](history/MASTERPLAN-2026-10.md#prioriterad-väg-till-910) och [QA-gränser](history/MASTERPLAN-2026-10.md#qa-sql-och-lagring-utan-återinförd-legacy).
 
 [Utförandestatus](../migrering/STATUS.md) genereras fortsatt från en enda status.json. Status/beroenden/vikter är oförändrade; detta dokumentarbete ger inga poäng. Det historiska `kevin-merge-admin@5aa7ed10...` förblir accepterad generell referens; senare källor kräver avgränsad deltareview. Den avslutade Neon-/Blob-flytten återöppnas inte.
 
@@ -30,7 +30,7 @@ PR274–283 är levererade. Rumsflödet och den verifierade legacy-/teststädnin
 Vercel och Render körde samma SHA vid MERGE4:s egen kontroll 19 oktober
 05:55:42 UTC; spelmotorns hälsa var ok. UI/UX2:s separata N1-läsning verifierade
 rätt rum/scen och rensat gammalt dealerbokmärke utan spel eller sparningar.
-[Handoffens slutkvitto](JOHN-HANDOFF.md#merge4-verifierad-legacy-städning-och-main-flöde--19-oktober-2026)
+[Handoffens slutkvitto](history/JOHN-HANDOFF-2026-10.md#merge4-verifierad-legacy-städning-och-main-flöde--19-oktober-2026)
 skiljer dessa bevis från senare driftprov. Läs faktisk deployment och
 `/__cloud/version` inför återställning eller nytt prov.
 
@@ -43,7 +43,7 @@ fortsatt merge. Terminaljobbets callbackväntan och bankens HTTP-åtkomst hanter
 separat; inga nya budget-/kapacitetsgränser införs av UI-/städleveransen.
 Aktiverat rörligt tal, bildkvalitet och budgetavstämning kräver sina egna belägg.
 Aktuellt prov och nästa konkreta rättning finns i
-[talhandoffen](JOHN-HANDOFF.md#post-lipsync5-produktionsprov).
+[talhandoffen](history/JOHN-HANDOFF-2026-10.md#post-lipsync5-produktionsprov).
 
 Normal lokal start visar produktens adress. Den SQLite-baserade `--offline`-fixturen
 och de anslutna lokallägena är pensionerade 27 oktober 2026 (en produktväg). Äldre lokala
@@ -64,7 +64,7 @@ Accepterad strukturrevision är `2ba5bf03437b8f7da8a60d06335831abaf50f162`:
 main-CI 39112728886 SUCCESS, Vercel READY och Render LIVE med rätt SHA den
 18 oktober. Inga ytterligare rotflyttar återstår i strukturplanen.
 
-[Handoffens slutkvitto](JOHN-HANDOFF.md#strukturens-slutkvitto) skiljer CI,
+[Handoffens slutkvitto](history/JOHN-HANDOFF-2026-10.md#strukturens-slutkvitto) skiljer CI,
 frontend, game och Gateway/Director åt. Senare PR238:s workerdiagnostik och
 PR240:s budgetkontroll är levererade på apprevision
 `209d62f436786f9dae69c7ee6f1b256253ab6805`, med grön main-CI, verifierad
@@ -73,7 +73,7 @@ acceptans. Den äldre bankhämtningens chunked-brist rättades i PR242; senare
 prov nådde GPU/TTS. PR250:s buffertfix slutförde ett tekniskt vilotalprov med
 54/54 rutor. Det är inte slutgodkänd läppsynk under utdelning. Aktuellt
 rörelseprov, prestanda, bevaring, kostnadsmandat och avveckling finns endast i
-[talhandoffen](JOHN-HANDOFF.md#dragan-talstatus). Publicerad modellcache och
+[talhandoffen](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus). Publicerad modellcache och
 varm serverantagning är levererade i PR255–257; isolerat RTX4090-prov har
 verifierat återanvändning samt avbrott och omladdning. PR262 är verifierat
 på både www och croupier-v2; migration 015 applicerades och återlästes
@@ -190,7 +190,7 @@ Avstämningen 18 oktober 18:32 UTC fann dessutom 56 äldre generiska
 levande lease. De är olöst historisk observationsskuld, inte frikända eller
 återbetalda jobb. Ingen rensning ingick i det aktuella moving-provets
 journalamendment. Exakt avgränsning och kvitto finns i
-[talhandoffen](JOHN-HANDOFF.md#dragan-talstatus); fyndet är inte i sig ett
+[talhandoffen](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus); fyndet är inte i sig ett
 belagt fel i den genomförda register-/lagringsflytten.
 
 ## Separat produktarbete och öppna driftansvar
@@ -202,8 +202,8 @@ belagt fel i den genomförda register-/lagringsflytten.
 | Konto och integration | Partnerreset, riktig 2FA, scoped API-nycklar/rotation, wallet-/webhookprov och säker onboarding/brandimport. Livebord, dealer-/limitbyten, schemaläggning, spelaransvar och rapport/statistik/revshare hör till senare produktleveranser. Marker/chips (L4) är inte klara. |
 | Riktig invite/reset | Resendtransport till sandbox är verifierad; verklig mottagaraktivering, inkorg och resetkedja saknar komplett kvitto. John-adressen studsade och var spärrad hos provider; bekräfta adress och providerstatus före nytt utskick. Jakob äger de tidigare verkliga utskicken. |
 | OpenClaw/Adminrobot | N1-engångslänk, ny profil, negativa roller, session efter sajtutloggning och driftsatt modellkonfiguration kräver avgränsade funktionsprov. Fem roller bevisar inte fem servrar eller inaktiv trafik. Mät före pensionering. |
-| Nytt tal/läppsynk | Exakt tidigare film med självutdelning är visuellt godkänd; nya cache-/replayfiler är inte det. Publicerad modellcache klarade isolerat kallt/varmt RTX4090-prov, avbrott och omladdning. Varm serverantagning och PR262:s tekniska kapacitet är levererade; 015 är applicerad och denna leverans gör den obligatorisk. T6 verifierade två kompletta vilorepliker på samma A40-worker, cachemiss följd av cacheträff, utan DEAL/insats. Talflaggan är åter av och provresurserna avvecklade; 24 timmars varm drift är inte aktiverad eller verifierad. Automatisk beständig lagring av moving-resultat och riktig mikrofon-/bild-E2E återstår. Fem privata Blob-manifest är fullåterlästa och bevarar källreferenser, isolerade resultat samt T3/T4/T6 utan nya Admin-klipp. Tekniska reservationer och kvarhållna reserver är inte faktisk debitering; T6:s slutkostnad är ännu obekräftad. [Handoff](JOHN-HANDOFF.md#dragan-talstatus) äger exakta versioner, filgodkännanden och daterade drift-/kostnads-/avvecklingskvitton. |
-| Riktad test- och instruktionstädning | PR243 och PR246 är mergade: gemensamt dokumenturval, rätt klient-/migrationsurval, riktad agentstatus och Moving-workerns CPU/image-kontroll i obligatorisk CI. Efterfixen ersätter chattestets källutskärning med importerad logik och beteendeprov samt förtydligar Next-/verktygs-env och daterad dokumentstatus. Efterfixen är levererad i PR252. Separat direktklon av main `2e9b53388636effa42bea27f451845280375b9ef` passerade låsta installationer, byggen/typkontroller, fokuserade tester, verklig offline-start, Director och isolerad SQL/omstart/HTTPS utan gamla projektfiler. Organisationsavslutet är verifierat; [renklonkvittot](JOHN-HANDOFF.md#huvudagent5-renklon-och-organisationsavslut--18-oktober-2026) redovisar isoleringsgränser och separata privata QA-krav. Begränsad browser-importupptäckt och äldre timeout-/lagringsuppgifter är separata underhållsobservationer, inte belagda orsaker till workerfelet. Auth, ägare, session, revision, mediahashar, avbrott och serverägda spelregler består. |
+| Nytt tal/läppsynk | Exakt tidigare film med självutdelning är visuellt godkänd; nya cache-/replayfiler är inte det. Publicerad modellcache klarade isolerat kallt/varmt RTX4090-prov, avbrott och omladdning. Varm serverantagning och PR262:s tekniska kapacitet är levererade; 015 är applicerad och denna leverans gör den obligatorisk. T6 verifierade två kompletta vilorepliker på samma A40-worker, cachemiss följd av cacheträff, utan DEAL/insats. Talflaggan är åter av och provresurserna avvecklade; 24 timmars varm drift är inte aktiverad eller verifierad. Automatisk beständig lagring av moving-resultat och riktig mikrofon-/bild-E2E återstår. Fem privata Blob-manifest är fullåterlästa och bevarar källreferenser, isolerade resultat samt T3/T4/T6 utan nya Admin-klipp. Tekniska reservationer och kvarhållna reserver är inte faktisk debitering; T6:s slutkostnad är ännu obekräftad. [Handoff](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus) äger exakta versioner, filgodkännanden och daterade drift-/kostnads-/avvecklingskvitton. |
+| Riktad test- och instruktionstädning | PR243 och PR246 är mergade: gemensamt dokumenturval, rätt klient-/migrationsurval, riktad agentstatus och Moving-workerns CPU/image-kontroll i obligatorisk CI. Efterfixen ersätter chattestets källutskärning med importerad logik och beteendeprov samt förtydligar Next-/verktygs-env och daterad dokumentstatus. Efterfixen är levererad i PR252. Separat direktklon av main `2e9b53388636effa42bea27f451845280375b9ef` passerade låsta installationer, byggen/typkontroller, fokuserade tester, verklig offline-start, Director och isolerad SQL/omstart/HTTPS utan gamla projektfiler. Organisationsavslutet är verifierat; [renklonkvittot](history/JOHN-HANDOFF-2026-10.md#huvudagent5-renklon-och-organisationsavslut--18-oktober-2026) redovisar isoleringsgränser och separata privata QA-krav. Begränsad browser-importupptäckt och äldre timeout-/lagringsuppgifter är separata underhållsobservationer, inte belagda orsaker till workerfelet. Auth, ägare, session, revision, mediahashar, avbrott och serverägda spelregler består. |
 | Radering och äldre mediereferenser | B18: permanent klippradering med beroendespärr/journal; B19: nya talklipp från grundbild. De planerade 009/010-numren är historiska förslag, inte tillstånd att ändra dagens ledger. Gamla bankindexreferenser, saknade `speech-media`-filer och äldre `runtime/hands`-byggare behöver separat konsument-/källbedömning. |
 | Plattform | A22b/`packages/platform` väntar på Jakobs beslut i [ärende #52](https://github.com/Jakeminator123/scoutgaming/issues/52). Ingen katalogflytt eller full frikoppling är beställd genom detta statuspass. |
 | Backup och QA | Extern fullbackup/återläsning av Director/Gateway återstår. QA:s tidigare probeparitetsluckor (17→15, 19→18) och EACCES-åtkomstgräns är historiska, inte förklarade av antagen TTL. Ursprunglig Preview-ingresshemlighet är inte återställd. Se återställningsguiden. |
@@ -213,7 +213,7 @@ De återaktiverar ingen dealer. Blob/Neon-inventeringen fann även 30 registrera
 klipp utan explicit aktuell prodreferens och 602 objekt utan referens i lästa
 källor; detta bevisar inte raderingsbarhet. Metod och gränser finns i
 [lagringsavstämningen](storage/BLOB-NEON.md) och
-[inventeringen](storage/BLOB-NEON-INVENTERING-2026-10-16.md).
+[inventeringen](history/BLOB-NEON-INVENTERING-2026-10-16.md).
 
 ## Admin checkpoints C1C9
 
