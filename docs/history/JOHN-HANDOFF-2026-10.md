@@ -342,7 +342,7 @@ PR399 är mergad som `940776136101fe18d30e4ee1091151335e558b83`. Rättad head `6
 
 Implementerad i `codex/native-material-binding` ovanpå `694b9b176`: Admin-mätning av privata Blob-bytes, Neon-CAS/audit, fryst native-materialresolver, v29-publiceringsgrind, optional020 och atomiska sekvens-/tidsbudgetkontroller i spelmotorn. Admin visar Mät speltid och konkreta råd om saknat material. Ingen lokal produktdatabas, historisk dealerimport eller nytt talgodkännande införs.
 
-Huvudcommit `a98a21e1` passerade ordinarie kontroll med 716 godkända prov, fyra skip och inga fel; frontendtypkontroll och oberoende kodreview passerar. Faktisk isolerad Neon-verifiering: 53 syntetiska mätposter, extended paket/draft, negativa CAS/hash och noll kvarvarande provrader. [Kontrakt](../LOCAL-PRESENTATION-RUNTIME.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) och [molnkvitton](../ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober) anger exakta gränser.
+Huvudcommit `a98a21e1` passerade ordinarie kontroll med 716 godkända prov, fyra skip och inga fel; frontendtypkontroll och oberoende kodreview passerar. Faktisk isolerad Neon-verifiering: 53 syntetiska mätposter, extended paket/draft, negativa CAS/hash och noll kvarvarande provrader. [Kontrakt](LOCAL-PRESENTATION-RUNTIME-2026-10.md#native-material-och-uppmätt-tidsbudget--26-oktober-2026) och [molnkvitton](../ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober) anger exakta gränser.
 
 CI-fixturernas manuella kopie-/källistor omfattar nu materialets beroenden och optional020. Samma efterföljande 18 integrationsfall gav fem starttimeouts lokalt med fyra arbetare, men 18/18 pass med två; inga gemensamma portar eller datalås hittades. Lokal focused-verifiering kan därför välja `CROUPIER_PRECOMMIT_TEST_WORKERS=1..4` (standard fyra). Alla kontroller och tidsgränser behålls; CI och full regression påverkas inte. Sjutton beteendeprov verifierar valet och avvisar ogiltiga värden. Detta är tillfälliga testfixturer, inte produktregister eller connected-local-drift.
 
@@ -2015,7 +2015,7 @@ authoringmetadata; spelarens filmade sekvens använder fortfarande den verifiera
 profilen. Verifierat: 163 Studio-prov (importkatalog, intake, klient, komponenter),
 36 ops-prov, båda typkontrollerna, env-register och orphan-kontroll. Guide i
 [README](../../apps/studio/docs/README.md) och teknik i
-[runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md#klippnamn-och-deklarerad-poskedja-19-oktober-2026).
+[runtime-referensen](LOCAL-PRESENTATION-RUNTIME-2026-10.md#klippnamn-och-deklarerad-poskedja-19-oktober-2026).
 
 ## MERGE4: verifierad legacy-städning och main-flöde — 19 oktober 2026
 

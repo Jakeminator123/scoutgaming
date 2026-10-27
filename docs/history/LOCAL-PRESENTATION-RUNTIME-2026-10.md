@@ -1,4 +1,6 @@
-# Scoutgaming: nivåer, begrepp och presentationsruntime
+# Scoutgaming: nivåer, begrepp och presentationsruntime (historik, oktober 2026)
+
+> Historik. Detta är runtimeguiden som den såg ut 27 oktober 2026, före städningen. Daterade beslut, kvitton och experimentberättelser (Astrid, Dragan, Kevin, roulette) står kvar här oförändrade, med länkar omskrivna för den nya platsen. Aktuellt kontrakt: [LOCAL-PRESENTATION-RUNTIME.md](../LOCAL-PRESENTATION-RUNTIME.md). Aktuellt läge: [NEXT-AGENT.md](../NEXT-AGENT.md).
 
 ## Native material och uppmätt tidsbudget — 26 oktober 2026
 
@@ -10,7 +12,7 @@ Den rena native-producenten utgår från fryst publicerad presentation, vald dea
 
 Nya mätkvitton och utökat presentationskuvert kräver runtimekontrakt v29. Gamla paket behåller tidigare representation och läsning. Det uttryckligen valda croupier-lanes-v2-kuvertet tillåter högst 30 KiB komprimerad data och 32 KiB branding, med högst 256 KiB uppackat innehåll. Vanlig branding är fortsatt högst 8000 byte. Writer kräver optional020:s exakta ledgerchecksumma och båda validerade CHECKs på samma transaktionsanslutning. Readiness flyttar inte provideranrop in under SQL-lås och höjer inte generella startkrav.
 
-Ordning: kompatibla läsare och v29 → separat godkänd optional020 i avsedd databas → Admin-mätning → ny paketpublicering → spelkonfigurationspublicering. Optional020 har provats endast i isolerade croupier_staging; produktion är inte migrerad av denna leverans. Se [prov och begränsningar](ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober).
+Ordning: kompatibla läsare och v29 → separat godkänd optional020 i avsedd databas → Admin-mätning → ny paketpublicering → spelkonfigurationspublicering. Optional020 har provats endast i isolerade croupier_staging; produktion är inte migrerad av denna leverans. Se [prov och begränsningar](../ENVIRONMENT-RESTORATION.md#materialkontrakt-och-renderkorrelation--26-oktober).
 
 ### Nåbar filmklipptäckning och fryst tidslinje
 
@@ -38,7 +40,7 @@ Om webbläsaren nekar ljudsatt tal innan spelaren har interagerat med sidan visa
 
 Materialproducent, publiceringsvalidator, launch och delad rumsåtkomst använder samma paketbundna val: rätt rums `roomOverrides` före tillämplig operatörsstandard och därefter mallens standard, alltid inom publicerad allowlist och operatörens rum. Saknat eller otillåtet material stoppar urvalet. Operatörens befintliga `dealer: null` rensar dess standard; ett ogiltigt uttryckligt rumsval ger ingen fallback. I ett rum med publicerad J08-konfiguration nekas avvikande `?dealer=` före klientstart. Rum utan publicerad spelkonfiguration behåller sitt tidigare tillåtna queryurval.
 
-Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell överlämning](NEXT-AGENT.md).
+Detta beskriver kontraktsstödet. Kandidatens prov använder syntetiskt material och verklig MP4-inspektion; ingen ny acceptans av PAOW-original, molnpublicering eller full K06-spelrunda följer av ändringen. Se [aktuell överlämning](../NEXT-AGENT.md).
 
 ## PAOWs 24 viloklipp
 
@@ -142,7 +144,7 @@ noll aktiva workers/öppna sessioner och ingen kvarstående intern åtgärd.
 Okänt providerutfall behåller reservationen tills det kan avstämmas.
 
 API:t är avstängt utan server-opt-in/profilkonfiguration enligt
-[ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
+[ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftvaljarens-api).
 `moving-drift-executor.mjs` kopplar endast Av/Sparläge till en befintlig,
 verifierad min0/max1-endpoint. Konstruktion gör inga provideranrop; serverns
 uttryckliga opt-in startar avstämningen. Samma katalog och databasscope används
@@ -161,7 +163,7 @@ submission_started före attach-COMMIT med samma fence; vanlig voice/output
 gör inte det. Astrids ursprungliga journal saknar denna optional moving-hook.
 
 Intern nekansdiagnostik definieras av
-[serverkontraktet](../services/game/moving-drift-diagnostics.mjs).
+[serverkontraktet](../../services/game/moving-drift-diagnostics.mjs).
 `moving_drift_guard_rejected` innehåller första fallande guardorsak och fas,
 önskat läge/drain, observerad status/skälkod, ändliga ålders-/leaseklasser
 samt booleska bindnings-/fence-/katalogmatchningar. Underlaget fångas från
@@ -209,7 +211,7 @@ kanoniska källa. Registrerade idle-regler får appens befintliga
 `prepareDecision` uttryckligen, utan ändrad urvalslogik.
 
 Kanoniskt målkontrakt för klippens fack, pose, namn, kontrollerad Kevin-import,
-Neon/Blob och gemensam talworker: [storage-guiden](storage/BLOB-NEON.md).
+Neon/Blob och gemensam talworker: [storage-guiden](../storage/BLOB-NEON.md).
 Den uppdaterades 17 oktober som en plan; den aktiverar inte funktioner.
 Befintliga implementationer och daterade prov nedan behåller sina avgränsningar.
 
@@ -244,7 +246,7 @@ svar importerade och återlästa. Katalogen innehåller 760 layoutposter,
 fullständigt hashverifierade. Samtliga 79 medieposter och tre dokument är
 oförändrade. Detta återger huvudagentens kontroll, inte ett nytt prov.
 Uppgifterna ovan är det daterade migrationskvittot, inte dagens deployversion. Följ
-[CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [NEXT-AGENT](NEXT-AGENT.md)
+[CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och [NEXT-AGENT](../NEXT-AGENT.md)
 för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
 tidigare implementationen och ersätts av detta kontrakt.
 
@@ -270,7 +272,7 @@ ett lyckat viloprov eller första munrörelse bevisar därför inte självutdeln
 Minsta rörelseprov ska använda ett utpekat utdelningsklipp, verkligt genererade
 ansiktsdata, rätt ljud och den gemensamma spelaren. Ett isolerat sådant prov
 verifierar inte automatiskt produktionsserverns antagning, kort eller saldo.
-Aktuella resultat och deras gränser finns i [handoffen](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus).
+Aktuella resultat och deras gränser finns i [handoffen](JOHN-HANDOFF-2026-10.md#dragan-talstatus).
 
 Genererad OpenClaw-text får en gemensam radbrytningsnormalisering före
 förhandsvisning, TTS och hashning; inspelade repliker behåller originaltexten.
@@ -416,7 +418,7 @@ fullåterlästa manifestet bevarar T6:s två kompletta mediesvar, sanerade kvitt
 och 79 unika JPEG-bilder med 82 tidsreferenser. Bevarandet omfattar 94 unika
 objekt och skapade inga Neon-/Admin-klipp.
 Exakta sökvägar och bindningar finns
-i [handoffen](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus). Ett samlokaliserat filnamn
+i [handoffen](JOHN-HANDOFF-2026-10.md#dragan-talstatus). Ett samlokaliserat filnamn
 bevisar inte härledning; det krävs SHA-bundet capture-/transkodningskvitto.
 Omkodade jämförelser är inte originalbytes. Visuellt godkännande gäller bara
 den exakta godkända filhashen, aldrig efterföljande cache-/replayresultat.
@@ -517,7 +519,7 @@ Två driftprov 17 oktober 2026, på PR203 `9e533e7b` och PR208 `a0876f71`,
 nådde RunPods jobbkö från riktig bordschatt. Inget fick en worker före
 uppstartstidsgränsen, även med A40 och A6000 tillåtna i andra provet.
 Jobben avbröts och tillfälliga endpoints/templates togs bort av guarden;
-se [handoffens kvitto](history/JOHN-HANDOFF-2026-10.md#dragan-talstatus).
+se [handoffens kvitto](JOHN-HANDOFF-2026-10.md#dragan-talstatus).
 Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
 runtime-behörighet, template och image före nytt prov. Den borttagna
 testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
@@ -542,7 +544,7 @@ exekverings-/callbackstandarder är oförändrade. Dessa kodgränser är lokalt
 provade men utgör inte ett nytt verifierat molntalprov.
 RunPods [uppstartsbeskrivning](https://docs.runpod.io/serverless/development/optimization)
 skiljer imagehämtning från modellstart. Tjänsternas olika roller och env-profiler
-beskrivs i [miljöguiden](ENVIRONMENT-VARIABLES.md#historisk-läsande-jämförelse-17-oktober-2026).
+beskrivs i [miljöguiden](../ENVIRONMENT-VARIABLES.md#historisk-läsande-jämförelse-17-oktober-2026).
 
 `services/game/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
@@ -822,8 +824,8 @@ genom PR199/201/203 och migration013. Containerbygge och CPU-prov passerade
 `56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34` och
 release `57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
 Verklig tal-/läppsynksacceptans återstår efter det misslyckade molnprovet ovan.
-[Storage-guiden](storage/BLOB-NEON.md) skiljer importunderlag från applicerade
-registerändringar; [överlämningen](NEXT-AGENT.md) anger aktuell fortsättning.
+[Storage-guiden](../storage/BLOB-NEON.md) skiljer importunderlag från applicerade
+registerändringar; [överlämningen](../NEXT-AGENT.md) anger aktuell fortsättning.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
@@ -942,8 +944,8 @@ Tidigare tillfälliga localhost-länkar till visaren används inte längre.
 
 Aktuellt tal använder den publicerade produktens Neon-/Blob-identiteter,
 serverägd spelkontext, ljudklocka och budgetjournal.
-[Användarflödet](../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal)
-och [aktuell handoff](history/JOHN-HANDOFF-2026-10.md#post-lipsync5-produktionsprov) anger
+[Användarflödet](../../apps/studio/docs/README.md#dragan-prova-publicerad-chatt-och-tal)
+och [aktuell handoff](JOHN-HANDOFF-2026-10.md#post-lipsync5-produktionsprov) anger
 start, stopp och vad som fortfarande behöver provas. Den daterade
 exportgranskningen skapar inga nya provantal eller aktiveringskrav.
 
@@ -1149,7 +1151,7 @@ avbrottshantering och faktisk GPU-verifiering. Källåtkomst är inte ett teknis
 krav för att anropa den befintliga endpointen; den behövs för full granskning,
 reproducerbar byggning och eget underhåll. Cartesia-inloggning är ingen
 ersättning för worker-/avatarverifieringen. Annas separata integrationssteg
-och testplan finns i [roulettereferensen](games/roulette/TEKNIK.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026).
+och testplan finns i [roulettereferensen](games/roulette/TEKNIK-2026-10.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026).
 Kör sedan två på varandra
 följande talprov i den riktiga rehearsalspelaren för båda dealers, inklusive
 giv/omplanering mitt i talet, avbrott och reservväg. Kontrollera röst, läppar,
@@ -1286,7 +1288,7 @@ läser inte privata nyckelfiler automatiskt.
 
 ## Aktiva ytor och kompatibilitetsgräns
 
-Roulettens [klippkarta och signaler](games/roulette/KLIPPKARTA.md) skiljer
+Roulettens [klippkarta och signaler](games/roulette/KLIPPKARTA-2026-10.md) skiljer
 registrerade filer, lokal VILA-preview och kommande spelkoppling. Samma
 dealeridentitet kan användas i båda spelen; rörelse-/talbankerna är separata.
 Bakgrunder delas. Bord har oföränderligt `game: blackjack|roulette` i
@@ -1310,7 +1312,7 @@ Detaljerade äldre adresser och daterade verifieringar nedan beskriver dessa
 implementationer, inte en uppmaning att bygga nya gränssnitt där.
 
 Den kanoniska adress- och slugglistan finns i
-[användarguiden](../apps/studio/docs/README.md). Produktionskontrollen 14 oktober 2026
+[användarguiden](../../apps/studio/docs/README.md). Produktionskontrollen 14 oktober 2026
 skiljer dokumentomdirigeringar från efterföljande inloggning: `/control` går
 till `/admin`, `/studio` via `/control/clips` till `/admin/dealer-studio` och
 utloggad intern åtkomst till `/studio/login?returnTo=...`. N1 når även
@@ -1449,7 +1451,7 @@ efter rådgivningen. Filnamnsregler stöder bland annat pos1–7 → box0–6,
 pos6b som alternativ, till/från skon, skilda utdelnings-/vändningsklipp och
 exakta talfack. Okända eller motstridiga namn lämnas för manuellt val.
 AI-läget är separat och uttryckligen opt-in, utan verktyg eller skrivmandat;
-se [miljövariabler](ENVIRONMENT-VARIABLES.md#dealerimportens-begränsade-rådgivare-13-oktober-2026).
+se [miljövariabler](../ENVIRONMENT-VARIABLES.md#dealerimportens-begränsade-rådgivare-13-oktober-2026).
 `intent: mapping` använder `gpt-5.6-sol` med `high` för placeringsförslag;
 utelämnad intent är mapping för bakåtkompatibilitet. `intent: chat` använder
 `gpt-5.6-luna` med `medium` och returnerar enbart text, aldrig nya placeringar.
@@ -1526,7 +1528,7 @@ rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
 
 ## Central Studio: teknisk inventering, 13 oktober 2026
 
-Begreppen förklaras i [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
+Begreppen förklaras i [TERMINOLOGI.md](../../apps/studio/docs/TERMINOLOGI.md).
 Det här dokumentet beskriver teknisk lagring, format, uppspelning och
 övergångsbegränsningar. Det föreskriver ingen meny eller produktmodell.
 Den äldre inventeringen nedan
@@ -1717,8 +1719,8 @@ eller gröna enhetstester är inte i sig visuell medieacceptans.
 
 Produktions- och acceptanskraven för de 37 utfallsfilmerna ägs av den
 gemensamma spelmanualen, samordnad med MERGE i [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56):
-[37 utfallsfilmer](games/roulette/UTFALLSFILMER.md)
-och [klipp och format](games/KLIPP-OCH-FORMAT.md).
+[37 utfallsfilmer](games/roulette/UTFALLSFILMER-2026-10.md)
+och [klipp och format](../games/KLIPP-OCH-FORMAT.md).
 Manualerna finns på main efter dokumentations-PR:ns merge till `ba7601dd`.
 Avsnittet nedan beskriver den mottagna prototypen och nuvarande UI-registrering;
 det skapar inget parallellt filmkontrakt eller automatisk mediaagent.
@@ -1866,7 +1868,7 @@ filmen; filmen är inte aktiverad i spelrummet. Den sammanförda JSON-filen är 
 beställning att generera fler animationer.
 
 Den bifogade `roulette_specifikation.json` är sammanförd som källunderlag i
-[media-specification.json](../services/game/games/roulette/media-specification.json).
+[media-specification.json](../../services/game/games/roulette/media-specification.json).
 Originalets beställningsstatus och önskemål är bevarade under
 `receivedSpecification`; aktuella filfakta finns under `verification` och
 Jakobs nuvarande riktning under `currentDecision`. Dokumentets äldre förslag
@@ -2307,7 +2309,7 @@ inte som reserv för Studios molnuppspelning.
 
 Aktuell fysisk struktur, kopplingen dealer → video → variant och avstämningen
 mot samtliga sex databaser på Neons aktiva main-branch finns i
-[Blob och Neon](storage/BLOB-NEON.md). Kontrollen 16 oktober 2026 omfattar
+[Blob och Neon](../storage/BLOB-NEON.md). Kontrollen 16 oktober 2026 omfattar
 1 710 objekt och 79 produktionsklipp: alla registerfiler finns; 12 äldre
 replikposter för `paow`/`paow-v2` pekade däremot på 24 saknade mediafiler vid det kvittot.
 Den fullständiga filförteckningen skiljer bibliotek, aktuella referenser,
@@ -2334,7 +2336,7 @@ eller generell manuell godkännandegrind gäller; se `AGENTS.md`.
 
 Det här avsnittet beskriver de bevarade `/control`-länkarna och de frysta
 paketens fältnamn. Det är inte meny- eller begreppskontraktet för `/admin`;
-se [produktmodellen](../apps/studio/docs/TERMINOLOGI.md).
+se [produktmodellen](../../apps/studio/docs/TERMINOLOGI.md).
 
 Nya `/admin/clips` återanvänder Studio-komponenterna och native-API:t.
 En gemensam sammansättningsmall kan användas av flera bolag och rum; dealer-,
@@ -2407,7 +2409,7 @@ media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
 `node apps/studio/start.mjs` öppnar den publicerade produkten. Den lokala
-[anslutningshelpern](AI/openclaw/LOCAL-CONNECTION-SV.md) är pensionerad.
+[anslutningshelpern](../AI/openclaw/LOCAL-CONNECTION-SV.md) är pensionerad.
 De tidigare lokala adresserna nedan beskriver den äldre anslutna startaren,
 inte dagens standardstart. Den gamla Mobile Phone Lane använde Astrids porträttvideo i spelet:
 <http://127.0.0.1:4200/blackjack>.
@@ -2419,10 +2421,10 @@ operatör på [/partner](https://www.scoutgaming.tech/partner), spelkatalog på
 [/game](https://www.scoutgaming.tech/game) (`?game=blackjack|roulette&operator=…&table=…`).
 Det separata autentiserade launchkontraktet `/play/{game}` behålls. Kända äldre
 `/control`-dokument omdirigeras enligt
-[Admin-routningen](../packages/navigation/admin-workspace-routes.mjs);
+[Admin-routningen](../../packages/navigation/admin-workspace-routes.mjs);
 Control är ingen separat aktiv arbetsyta.
 
-[Vercelkonfigurationen](../vercel.json) anger tre Services i projektet
+[Vercelkonfigurationen](../../vercel.json) anger tre Services i projektet
 `scoutgaming`: `web` från `apps/web`, `studio` från `apps/studio` och `speech`
 från `apps/speech`. `/admin`, `/partner`, `/lobby` och `/studio` går till
 Studio-servicen; `/studio` är teknisk basePath. Spelwebben och övriga
@@ -2433,8 +2435,8 @@ lagrar policy, metadata och journaler.
 Aktiv spelmotor är Render `croupier-v3`, verifierad 24 oktober 2026 mot
 rätt repo, main och avstängd automatisk deploy. Tidigare `croupier-v2`
 raderades 27 oktober 2026. Exakta resurs-ID:n och återgångsordning finns i
-[återställningsguiden](ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
-QA-gränser och runtimeacceptans i [överlämningen](NEXT-AGENT.md).
+[återställningsguiden](../ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
+QA-gränser och runtimeacceptans i [överlämningen](../NEXT-AGENT.md).
 
 **Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
@@ -2448,12 +2450,12 @@ Workerns socket går via samma publika ingress. Ingresshemligheten lämnar inte
 Render, och en redan betald GPU-session stängs efter 60 sekunders tystnad.
 
 Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
-[överlämningen](NEXT-AGENT.md). QA:s AI-flaggor är OFF; journaler och
+[överlämningen](../NEXT-AGENT.md). QA:s AI-flaggor är OFF; journaler och
 reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Tre produktytor och äldre runtimeadresser
 
-Produktmodell och aktuella namn finns i [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
+Produktmodell och aktuella namn finns i [TERMINOLOGI.md](../../apps/studio/docs/TERMINOLOGI.md).
 Tabellen här anger fungerande tekniska ingångar under övergången.
 
 | Nivå | Adress | Ansvar och faktisk status |
@@ -2768,7 +2770,7 @@ Spelaren kräver `local` eller `layered`. Ingen automatisk videofallback införs
 Källkontrakt: `packages/presentation/contracts/game-selection.mjs`; definitioner och ID-validering finns i samma pakets `game-lanes.mjs` och `game-lane-id.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
-[NEXT-AGENT.md](NEXT-AGENT.md).
+[NEXT-AGENT.md](../NEXT-AGENT.md).
 
 
 ## Kamera och mikrofon
@@ -2802,4 +2804,3 @@ Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
 `media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `packages/presentation/runtime/`.
 Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
 Transportanslutning är inte speldata, valt klipp är inte spelat klipp.
-
