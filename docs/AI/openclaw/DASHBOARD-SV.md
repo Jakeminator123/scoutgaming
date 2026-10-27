@@ -1,104 +1,61 @@
 # OpenClaws egen dashboard
 
-> Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
-> är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
+OpenClaws **Control UI** för agentchatt, verktyg, sessioner och inställningar.
+Den är en riktig adminyta, inte Scoutgamings Admin och inte en sandlåda för
+spelare. Adress: Directors publika URL plus `/openclaw/`
+(<https://croupier-lab-director.onrender.com/openclaw/>). Den privata
+`croupier-lab-openclaw` har ingen egen publik dashboardadress.
 
-## Öppna via din nivå 1-inloggning
+## Logga in
 
-På /admin/ai/models (även /control/openclaw under övergången) finns
-**Öppna OpenClaws egen dashboard**. Efter driftsättning av Gateway, Director
-och Vercel skapar knappen en ny engångslänk med OpenClaws officiella
-owner-bootstrap. Du behöver inte skriva Gateway-lösenord eller köra
-kommandot i Render Shell. Länken gäller högst tio minuter och kan bara
-lösas in av en webbläsaridentitet. Dela den inte.
+På `/admin/ai/models` finns **Öppna OpenClaws egen dashboard**. Knappen kräver
+aktuell N1-inloggning och skapar en engångslänk med OpenClaws officiella
+owner-bootstrap: giltig högst tio minuter, kan bara lösas in av en
+webbläsaridentitet. Dela den inte. Tekniskt används Gatewayns privata helper
+på port 18790 med den fasta operationen `dashboard --json`; CLI:ns lösenords-
+och tokenfält returneras aldrig till sajten.
 
-OpenClaw skapar därefter sin egen beständiga webbläsarsession. Utloggning
-från Scoutgaming avslutar inte den sessionen; återkalla en förlorad
-webbläsaridentitet i OpenClaws Devices. Modellsidan och Adminroboten
-fortsätter kontrollera aktuell N1-inloggning för sina egna åtgärder.
+OpenClaw skapar sedan en egen beständig webbläsarsession. Utloggning från
+Scoutgaming avslutar den inte; återkalla en förlorad webbläsaridentitet under
+OpenClaws **Devices**.
 
-Tekniskt används den befintliga privata helpern på 18790 och samma
-servercredential; endast den fasta dashboard --json-operationen har
-lagts till. CLI:s legacy-password/token-fält returneras aldrig till sajten.
-Installationen kräver redeploy av båda Render-tjänsterna plus Vercel.
-Nedanstående manuella väg finns kvar för äldre deployment/återställning.
-
-
-Detta är OpenClaws **Control UI** för agentchatt, tools, sessions och inställningar,
-inte labbets katalogeditor och inte IDE-agenternas GitLab-inbox.
-
-Dashboarden driftsattes och inloggningsvyn verifierades **2026-09-20**:
-[Öppna OpenClaw](https://croupier-lab-director.onrender.com/openclaw/).
-Båda Render-tjänsterna verifierades då på dashboard-koden från `7ec4e17`.
-Jakobs webbläsare har därefter godkänts med hans uttryckliga medgivande och
-den inloggade dashboarden verifierats. Ett riktigt chattsvar/modellanrop
-återstår att prova; inget lösenord har lästs ur `secret.txt`.
-
-## Vanlig användning — installationen är redan gjord
-
-Öppna [dashboarden](https://croupier-lab-director.onrender.com/openclaw/)
-och ange Gateway-lösenordet om det efterfrågas. Från Render: välj
-**croupier-lab-director**, öppna tjänstens webbadress och lägg till `/openclaw/`.
-Den privata `croupier-lab-openclaw` har ingen separat publik dashboardadress.
-Du behöver normalt varken terminal eller nya inställningar vid nästa besök.
-
-## Engångsinstallation eller ändrad deployment — inte vid varje inloggning
-
-1. Publicera och driftsätt dashboard-ändringen på **båda** labbtjänsterna.
-   Behåll Gateway som Private Service; skapa ingen ny tjänst.
-2. Kopiera Director-tjänstens publika HTTPS-adress. På den privata
-   `croupier-lab-openclaw`, lägg i Environment till
-   `OPENCLAW_DASHBOARD_ORIGIN=https://<din-director-adress>.onrender.com`.
-   Ange bara ursprunget: inget `/openclaw`, snedstreck på slutet eller jokertecken.
-3. Blueprinten sätter `OPENCLAW_DASHBOARD_ENABLED=true` på Director. Den använder
-   då Renders egen `RENDER_EXTERNAL_URL`. Vid egen domän sätter du samma explicita
-   `OPENCLAW_DASHBOARD_ORIGIN` på **båda** tjänsterna. Spara och driftsätt ändringarna.
-4. Öppna `https://<din-director-adress>.onrender.com/openclaw/`.
-   I **Gateway secret** anger du värdet i `OPENCLAW_API_KEY` — inte OpenAI-nyckeln.
-   Inget extra konto, separat inloggningssystem eller MFA har lagts framför UI:t.
-
-Gatewayens eget lösenordsskydd gäller ända fram till OpenClaw. Director skickar
-**inte** in sin sparade Gateway-hemlighet åt en webbläsare. Modellnyckeln
-`OPENCLAW_MODEL_API_KEY` stannar hos Gateway och ska aldrig klistras in i UI:t.
-Använd en lång, unik Gateway-hemlighet; den ger administratörsåtkomst.
-
-En ny webbläsare behöver normalt ett **engångsgodkännande**. När UI:t visar
-pairing required, öppna Render → privata OpenClaw-tjänsten → Shell:
+Reservväg: ange Gateway-hemligheten (`OPENCLAW_API_KEY`, inte modellnyckeln)
+i **Gateway secret**. En ny webbläsare behöver ett engångsgodkännande. Visar
+UI:t *pairing required*, öppna Render → `croupier-lab-openclaw` → Shell,
+kontrollera att begäran är din egen och godkänn just dess ID:
 
 ```sh
 OPENCLAW_GATEWAY_PASSWORD="$OPENCLAW_API_KEY" node /app/openclaw.mjs devices list
 OPENCLAW_GATEWAY_PASSWORD="$OPENCLAW_API_KEY" node /app/openclaw.mjs devices approve <requestId>
 ```
 
-Kontrollera att begäran gäller din egen webbläsare innan du godkänner just dess
-ID. Koppla sedan upp UI:t igen. Ny profil eller rensad webbläsardata kan kräva
-ett nytt godkännande. Detta är OpenClaws inbyggda skydd, inte en extra loginprodukt.
+Director skickar aldrig in sin sparade Gateway-hemlighet åt en webbläsare,
+och `OPENCLAW_MODEL_API_KEY` stannar i Gatewayn.
 
-## Vad går att ändra?
+## Deploymentens inställningar
 
-Inställningar sparas på Gatewayens disk och skrivs inte över vid varje start.
-`croupier-operator` är den separata agenten för arbete i admin-dashboarden.
-Tools börjar avstängda även där; du kan uttryckligen konfigurera dem i UI:t.
-`croupier-director` och `croupier-chat` är labbets två begränsade runtime-agenter:
-låt deras nekade tools vara kvar. Spelartext ska aldrig skickas till adminagenten.
+- Director har `OPENCLAW_DASHBOARD_ENABLED=true` och använder Renders
+  `RENDER_EXTERNAL_URL`.
+- Gatewayn har `OPENCLAW_DASHBOARD_ORIGIN=https://<director-adress>` (bara
+  ursprunget: inget `/openclaw`, avslutande snedstreck eller jokertecken). Vid
+  egen domän sätts samma värde på båda tjänsterna.
+- Nätväg, inloggningsläge och tillåtet ursprung styrs av deploymenten och
+  återställs vid omstart; ändra dem i Render och repot, inte i UI:t. Director
+  kontrollerar sitt tillåtna ursprung oavsett UI-konfiguration.
 
-Nätväg, inloggningsläge och tillåtet ursprung styrs fortfarande av deploymenten.
-Ändra dessa via Render/repo, inte UI:t.
-Denna policy återställs vid omstart; den är inte ett löpande skrivlås i OpenClaw.
-Director fortsätter kontrollera sitt tillåtna ursprung även om en admin ändrar UI-config.
-Vid första uppgraderingen säkerhetskopieras
-och migreras bara den exakt igenkända gamla labbkonfigurationen. En egen ändrad
-konfiguration behålls; se tekniska guiden för gränser och validering.
+## Vad som går att ändra
 
-UI:t är en riktig adminyta, inte en sandlåda för spelare. Aktivera bara verktyg
-och anslutningar du avser ge agenten. Ingen koppling till RNG, spelregler,
-spelar-databas eller IDE-inbox skapas av dashboarden.
+Inställningar sparas på Gatewayns disk och skrivs inte över vid start.
+`croupier-operator` är agenten för dashboardarbete; dess verktyg börjar
+avstängda och aktiveras bara uttryckligen. Låt de nekade verktygen hos
+`croupier-director`, `croupier-chat`, `croupier-social` och `croupier-speech`
+vara kvar, och skicka aldrig spelartext till operatörsagenten. Dashboarden
+skapar ingen koppling till slump, spelregler, spelardatabas eller teaminbox.
 
-Grundfunktionerna chatt, sessions, tools och config använder native WebSocket.
-Avancerade tillägg kan behöva egna adresser: MCP OAuth-callback, Board och egna
-pluginrutter utanför `/openclaw` exponeras inte automatiskt av den här ingången.
-Att lägga till ett sådant tillägg kräver en separat integrationskontroll.
+Chatt, sessioner, verktyg och konfiguration använder native WebSocket.
+Tillägg med egna adresser (MCP OAuth-callback, Board, pluginrutter utanför
+`/openclaw`) exponeras inte och kräver en separat integrationskontroll.
 
-Källor: [Control UI i vår låsta version](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/web/control-ui.md),
-[anslutning och pairing](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/web/control-ui/connect-and-pair.md).
+Källor: Control UI och anslutning/pairing i den taggade versionen, till
+exempel [v2026.9.5](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/web/control-ui.md)
+och [connect-and-pair](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/web/control-ui/connect-and-pair.md).

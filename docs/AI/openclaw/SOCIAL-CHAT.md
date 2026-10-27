@@ -1,29 +1,20 @@
-# Social Astrid – separat labbchatt
+# Astrids sociala labbchatt
 
-> Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
-> är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
+Status: labbfunktion i Admins Eventstudio, bara för Astrid. Den tas bort med
+Astrid vid ren start.
 
-Tillägg 2026-09-21: [labbprofil och companion-adapter](COMPANION.md) ger
-namnval, avgränsat beständigt minne, en begränsad nyckelfri webbsökning och
-skämtpoem. Det använder en ny autentiserad route. Det ursprungliga
-`/api/studio/social-chat`-kontraktet nedan är fortsatt stateless/verktygslöst.
+Chatten är inte operatörschatten, teaminboxen eller spelarens tal i spelet.
+Modellen svarar som en fiktiv Astrid och kan föreslå triggern
+`social.ledsen`, som väljer Astrids uttryck; det är ingen bedömning av
+spelarens tillstånd. Namn, minne och webbsökning ovanpå chatten beskrivs i
+[companion](COMPANION.md).
 
-Detta är **inte operatörschatten**, IDE-inboxen eller produktionens spelarchatt.
-Modellen tolkar vad som skrivs och svarar som en fiktiv Astrid. `social.ledsen`
-väljer Astrids uttryck; det är inte en diagnos eller ett påstående om spelarens
-psykiska tillstånd. Ingen lokal ordlista låtsas vara OpenClaw.
+## Kontrakt
 
-Endast `{ dealerId: "astrid", eventId: "idle.ready" }` är tillåtet.
-`idle.wait` finns inte i nuvarande katalog. Deal och andra scener avvisas före
-modellkontakten. Inga nya motor-events, mediefiler eller produktregler skapas.
-
-## Anslutning och kontrakt
-
-`POST /api/studio/social-chat` på Director använder samma `LAB_API_TOKEN` som
-övriga labb-API:er. Inga nya nycklar eller extra miljövariabler behövs.
-Lokalt finns samma implementation som `socialChat(body, settings, fetchImpl)`
-i `packages/director/social.mjs` (från reporoten), för explicit direkt-Gateway-anslutning.
+`POST /api/studio/social-chat` på Director, med `LAB_API_TOKEN`. Endast scenen
+`{ dealerId: "astrid", eventId: "idle.ready" }` tillåts; andra scener avvisas
+före modellkontakt. Implementationen är `socialChat(body, settings, fetchImpl)`
+i `packages/director/social.mjs`.
 
 ```json
 {
@@ -49,55 +40,33 @@ i `packages/director/social.mjs` (från reporoten), för explicit direkt-Gateway
 ```
 
 Svar: `{ requestId, policyRevision, reply, triggerId, confidence,
-provider: "responded" }`. `triggerId` är `social.ledsen` eller `null`.
-Modellens `confidence` 0–1 är en bedömning, inte en kalibrerad sannolikhet.
+provider: "responded" }`, där `triggerId` är `social.ledsen` eller `null` och
+`confidence` (0–1) är modellens bedömning, ingen kalibrerad sannolikhet.
 
-`choose_social_response` är ett strikt **JSON-handlingskontrakt**. Det är
-inte en installerad native tool eller MCP-funktion. Modellen anropas på riktigt
-via `openclaw/croupier-social`, med `tool_choice: none`, 512 outputtokens och
-30 sekunders timeout. Endast kontrollerat JSON kan bli ett svar. Vid timeout,
-saknad konfiguration eller ogiltigt modellsvar returneras fel, inte en låtsad
-framgång eller en lokal reservreplik.
+- Modellen anropas via `openclaw/croupier-social` med `tool_choice: none`,
+  512 ut-token och 30 sekunders timeout. `choose_social_response` är ett
+  JSON-handlingskontrakt, inget verktyg. Timeout, saknad konfiguration eller
+  ogiltigt svar ger fel, aldrig en låtsad reservreplik.
+- Vid giltig trigger och `fixed` används exakt den sparade `fixedText`;
+  annars skriver modellen svaret. Repliker är högst 500 tecken, normaliserade
+  (trim, CRLF/CR → LF, övriga kontrolltecken avvisas).
+- Validatorer: `validateSocialPolicy`, `normalizeSocialInput`,
+  `validateSocialReply`. Okända fält avvisas. Meddelande högst 1 000 tecken;
+  historik högst 12 user/assistant-poster och 8 000 tecken; id 8–100 tecken
+  (bokstäver, siffror, `-`, `_`); tröskel 0–1; cooldown 0–300 000 ms.
 
-Vid giltig trigger + `fixed` äger policyn repliken: servern använder exakt den
-sparade, normaliserade `fixedText`. `free` och otriggerade svar skrivs av modellen.
-Text normaliseras med trim och CRLF/CR → LF; LF tillåts som radbrytning men övriga
-C0/C1-kontrolltecken avvisas. Repliker är högst 500 tecken. Den lokala adaptern
-ska validera svaret igen före animation/TTS och spela just denna text.
+## Ansvar
 
-Delade rena validatorer: `validateSocialPolicy`, `normalizeSocialInput` och
-`validateSocialReply`. Okända fält avvisas. Meddelande max 1 000 tecken; history
-max 12 user/assistant-poster och totalt 8 000 tecken. Ingen system-/tool-roll
-kan skickas in som historik. Request/conversation-ID: 8–100 bokstäver, siffror,
-bindestreck eller understreck. Policyrevision max 100 tecken, tröskel 0–1,
-cooldown heltal 0–300 000 ms. Directive max 1 000 tecken.
+- Director: autentisering, validering, högst två samtidiga anrop och tydliga
+  modellfel.
+- Studio: policylagring, deduplicering, revisionskontroll före och efter
+  modell och tal, cooldown, ljud och animation. Ett socialt prov startar bara
+  när Astrid väntar; handlingsprov spärras medan det pågår.
+- Gateway: egen `croupier-social`-arbetsyta utan verktyg, skills, minnessökning
+  eller heartbeat, och en färsk session per anrop. Gatewayn kan ändå logga
+  anrop enligt sin konfiguration. Starten lägger additivt till en saknad roll
+  och gör konflikter uttryckliga i stället för att skriva över.
 
-## Vad äger vilken del?
-
-- Director: autentisering, input-/outputvalidering, två samtidiga sociala
-  anrop, faktisk OpenClaw-kontakt och tydliga modellfel.
-- Lokal studio: policylagring, request-dedupe, kontroll av policyrevision före
-  och efter modell/TTS, cooldown, ljud och animation. Director lagrar inte
-  policyn och kan inte bevisa att klientens scen eller cooldown är aktuell.
-- Gateway: separat `croupier-social`-arbetsyta, modell och anropssession.
-  Varje anrop får en färsk sessionsnyckel även om requestId upprepas. Endast
-  explicit inskickad bounded history förs vidare till nästa anrop; detta bygger
-  ingen långvarig spelarprofil. Gateway kan fortfarande spara anropslogg/session
-  enligt sin vanliga konfiguration; detta är inget löfte om loggfri drift.
-
-## Befintlig persistent Gateway
-
-Nästa start lägger additivt till en saknad `croupier-social`, återanvänder den
-befintliga chattmodellens referens och sparar `openclaw.json.pre-social-migration.bak`.
-Övriga agenter, modellinställningar och handtexter bevaras. Socialrollen har inga
-verktyg, skills, aktiv minnessökning eller heartbeat. En befintlig socialroll med
-egna namn/modell bevaras; delad arbetsyta/state eller aktiverade verktyg/minne
-blir en uttrycklig konflikt, inte en tyst överskrivning.
-
-Runtimepaket `2026-09-20.2` injicerar rollens lilla kontrakt via managed AGENTS
-och kompletterar operatörens begreppsindex. Inga nya operatorverktyg ges.
-
-Tester: `node --test services/openclaw/lab/test/social.test.mjs` och deployment-testerna.
-Mockade tester verifierar kontrakt, transport, fel och rollisolering – inte en
-levande modells svenska, semantiska träffsäkerhet eller motstånd mot varje
-prompt-injektion. Efter deploy behövs ett verkligt, litet positivt/negativt prov.
+Tester: `node --test services/openclaw/lab/test/social.test.mjs` och
+deploymenttesterna. De provar kontrakt, transport, fel och rollisolering med
+mockar, inte modellens svenska eller motstånd mot varje promptinjektion.

@@ -1,12 +1,15 @@
-# Operatörernas persistensregler
+# Bolagens persistensregler
 
-`server/operator-store.mjs` äger scoped operatörer, roller, medlemskap,
-publicerade paket, CAS, historik och atomisk audit. SQL/pool eller den befintliga
-transaktionsporten tillförs av appen. Sista administratören och operatörslåset
-använder samma SQL och låsordning som tidigare.
+Bolag heter `operator` i koden.
 
-`server/operator-lifecycle.mjs` behåller lifecycle-codec och dess exakta
-komprimerade data. `contracts/branding.mjs` innehåller de rena brandingreglerna.
-Scope/felklass, dokumentserialisering, kontoroller och lanevalidering importeras
-från sina kanoniska paket. Paketet importerar inga appar, pooldrivers eller SDK:er.
-Sessioner, HTTP, schemainstallation och presentationens providerarbete är appägda.
+`server/operator-store.mjs` äger bolag, roller, medlemskap, publicerade paket,
+CAS, historik och atomisk audit. SQL-pool eller transaktionsport tillförs av appen.
+Sista administratören och bolagslåset använder samma SQL och låsordning.
+`server/public-rooms.mjs` bygger ett bolags spelbara rum ur det publicerade paketet,
+och `server/operator-lifecycle.mjs` äger livscykelns codec och komprimerade data.
+
+`contracts/branding.mjs` innehåller de rena brandingreglerna och
+`contracts/demo-operators.mjs` de syntetiska demobolagen för prov. Scope, felklass,
+dokumentserialisering, kontoroller och mallvalidering importeras från sina
+kanoniska paket. Paketet importerar inga appar, pooldrivers eller SDK:er;
+sessioner, HTTP, schemainstallation och providerarbete är appägda.
