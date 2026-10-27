@@ -62,13 +62,25 @@ export async function createEngineDatabase(t) {
   if (!cluster) throw Error('engine_qa_not_configured');
   const name = 'croupier_engine_' + randomBytes(6).toString('hex'), password = randomBytes(24).toString('hex');
   const admin = adminPool(), engines = new Set();
-  let pool;
-  // Engines on this database stop first, whatever order node:test runs its after hooks in.
+  let pool, tearingDown = false;
+  // An idle pg client whose backend ends emits 'error' on its pool; with no listener that
+  // becomes the test's failure. Once teardown starts, termination (57P01) is expected.
+  const poolError = error => { if (!tearingDown) t.diagnostic(`engine-qa idle client error: ${error.code ?? ''} ${error.message}`); };
+  admin.on('error', poolError);
+  // Order, whatever order node:test runs its after hooks in: every engine has exited,
+  // then the test's own pool (and the store over it) has closed every socket, and only
+  // then the database and role are dropped. pg's pool.end() resolves before its clients'
+  // sockets close, so the server's own view decides when no backend is left.
   const drop = async () => {
+    tearingDown = true;
     await Promise.allSettled([...engines].map(stop => stop()));
     await pool?.end().catch(() => {});
-    try { await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`); await admin.query(`DROP ROLE IF EXISTS ${name}`); }
-    finally { await admin.end(); }
+    try {
+      const deadline = Date.now() + 10000;
+      while ((await admin.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=$1', [name])).rows[0].n > 0 && Date.now() < deadline)
+        await new Promise(done => setTimeout(done, 50));
+      await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`); await admin.query(`DROP ROLE IF EXISTS ${name}`);
+    } finally { await admin.end(); }
   };
   t.after(drop);
   const started = Date.now();
@@ -77,6 +89,7 @@ export async function createEngineDatabase(t) {
   const url = new URL(`postgresql://${name}:${password}@${cluster.host}:${cluster.port}/${name}`);
   url.searchParams.set('sslmode', 'verify-full'); url.searchParams.set('sslrootcert', cluster.caFile);
   pool = new Pool({ connectionString: url.href, max: 4, connectionTimeoutMillis: 5000, query_timeout: 15000 });
+  pool.on('error', poolError);
   await installGameSchema(pool);
   t.diagnostic(`engine-qa database ${name}: product-v1 + ${GAME_MIGRATIONS.length} migrations over verify-full TLS in ${Date.now() - started}ms`);
   const store = createPostgresStore({ pool });
@@ -93,18 +106,20 @@ export async function startEngine(t, { database, env = {}, preload = [], port, t
     env: { ...osEnvironment(), HOST: '127.0.0.1', PORT: String(port), ...env,
       CROUPIER_DATABASE: 'postgres', CROUPIER_GAME_DATABASE_URL: database.url },
   });
-  let stdout = '', stderr = '', stopping = false;
+  let stdout = '', stderr = '', stopping = false, stopped;
   child.stdout.on('data', chunk => { stdout += chunk; });
   child.stderr.on('data', chunk => { stderr += chunk; });
   // Diagnostics never carry the database password; the engine never prints it either.
   const tail = () => stderr.replaceAll(database.password, '[redacted]').slice(-2000);
-  const stop = async () => {
+  // One shared stop per process (test restart, after hook and database teardown all await
+  // it): SIGTERM, wait for 'exit', SIGKILL after 5s if graceful shutdown hangs.
+  const stop = () => stopped ??= (async () => {
     stopping = true;
     if (child.exitCode !== null || child.signalCode !== null) return;
     const exited = once(child, 'exit'); child.kill('SIGTERM');
     const force = setTimeout(() => child.kill('SIGKILL'), 5000);
     try { await exited; } finally { clearTimeout(force); }
-  };
+  })();
   database.engines.add(stop);
   t.after(stop);
   await new Promise((ready, reject) => {
