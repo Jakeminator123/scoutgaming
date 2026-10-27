@@ -6,6 +6,10 @@
 
 Äldre procentsatser och öppna J10-punkter nedan är historiska avstämningar. Återstående aktiviteter är K04/J08/K05/K06/K07/O02/O03; de gäller främst samlad acceptans och drift, inte import av hela Kevin-branchen.
 
+## Beslut 27 oktober: en väg utan SQLite
+
+Jakob beslutade att main ska ha **en enda produktväg**: Vercel + Render + Neon + Blob. SQLite lämnar main helt, inte bara som produktfallback utan även som fixtur och testlager; lokala produktregister och dubblerade QA-ytor avvecklas. Detta är ett uttryckligt slutkrav för en ren main som O02/O03:s granskning ska bekräfta; vikter, aktiviteter och beroenden ändras inte. Genomförandet sker i nio avgränsade PR:er utan schemaändring (tester → fixturavveckling → Provspel utan SQLite → Postgres-only motor och `ops/cloud` → OpenClaw-lager → dokument); [PR428](https://github.com/Jakeminator123/scoutgaming/pull/428) är steg 1. Steg 2 (PGlite som dev-beroende för lokala Postgres-prov) kräver Jakobs beslut; tills motorn är Postgres-only får ingen förlita sig på det lokala SQLite-läget. Kevins goda beteenden skrivs fortsatt om i mains moduler med ett fallande test som bevisar gapet först; felaktiga tester och dokument rättas eller raderas.
+
 
 ## Fortsättning och rättad förkunskapskedja — 26 oktober
 

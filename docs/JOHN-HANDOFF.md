@@ -8,7 +8,7 @@ Ordinarie Admin publicerade nytt syntetiskt PAOW-rum, paket3→4. Lobby och aute
 
 J10:s förkunskaper är nu J06/J09: K06:s befintliga publicerings-/launchkontrakt provades, men full fält-, material-/AV- och samtidighetsacceptans stannar i K06/K07/O02. Restore gäller d53:s native-spel mot äldre kompatibelt schema utan optional020; ny PAOW-publicering eller020-konfiguration påstås inte vara återställd.
 
-Eget rum är återställbart arkiverat (paket5), borttaget från lobbyn och ger autentiserad404. Gamla rum, operatorB och projektdata är oförändrade. Render är suspended2026-10-27T11:22:02.103Z med exakt originaldatabas. Inga egna lokala provprocesser startades. Spelaren loggades ut i webviewn; slutliga API-utloggningar gav200. Provkontot/historiken bevaras: Admin-spärr gav503, alla äldre hjälpsessioners återkallelse är inte verifierad. Inga produktionsskrivningar eller AV-attester; Johns Bet bevarad.
+Eget rum är återställbart arkiverat (paket5), borttaget från lobbyn och ger autentiserad404. Gamla rum, operatorB och projektdata är oförändrade. Render är suspended2026-10-27T11:22:02.103Z med exakt originaldatabas. Inga egna lokala provprocesser startades. Spelaren loggades ut i webviewn; slutliga API-utloggningar gav200. Provkontot/historiken bevaras: Admin-spärr gav503 vid överlämningen (orsak: kommandotransaktion utan Studio-scope; rättad i [PR424](https://github.com/Jakeminator123/scoutgaming/pull/424), se [NEXT-AGENT](NEXT-AGENT.md)), alla äldre hjälpsessioners återkallelse är inte verifierad. Inga produktionsskrivningar eller AV-attester; Johns Bet bevarad.
 
 Följande avsnitt är daterade tidigare kvitton; aktuellt avslut ovan ersätter deras öppna J10-status.
 

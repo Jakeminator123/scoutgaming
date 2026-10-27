@@ -1,5 +1,26 @@
 # Överlämning: Scoutgaming-migreringen
 
+## Claude tar över — 27 oktober 2026, kväll
+
+**65 % = 13/20 består.** Inga aktivitetsstatusar har ändrats; allt nedan är kod-, test- och dokumentleveranser via öppna PR:er som Jakob mergar efter grön full CI och oberoende granskning (Claude Codes säkerhetsläge tillåter ingen agentmerge). Ny lokal basmapp är en färsk klon i `C:\Users\jakob\dev\scoutgaming`; Codex-worktrees och originalcheckouten lämnas orörda. Jakobs beslut samma dag: **en enda produktväg** (Vercel + Render + Neon + Blob), SQLite lämnar main helt, bra Kevin-beteenden skrivs om i mains moduler, felaktiga tester/dokument rättas eller raderas, och `/admin` ska vara enkel.
+
+| PR | Innehåll | Verifiering |
+| --- | --- | --- |
+| [#424](https://github.com/Jakeminator123/scoutgaming/pull/424) | Stagingens `POST /studio/api/admin/players/status` 503: det signerade Render-kommandots transaktion saknade Studio-scope, så probe-avbokningens scopade minnesskrivning kastade `Studio transaction scope mismatch`. Runtime-städning körs nu efter COMMIT via `afterCommit`-hooks med säkra felkoder; kommandot tar inget scope-lås. | Regressionstest 503→200 med riktig Postgres-adapter på fake pool; cutover-harnessen gör den riktiga scopade avbokningen i CI. Full CI grön; två granskningsrundor. |
+| [#425](https://github.com/Jakeminator123/scoutgaming/pull/425) | `START-HERE.md` (saknades trots att alla överlämningar pekade dit) och `CLAUDE.md`-pekare. | Dokumentation; full CI grön. |
+| [#426](https://github.com/Jakeminator123/scoutgaming/pull/426) | K07, selektiv Kevin-konvertering (`kevin` f664c54d): rutor ingen satsat på frigörs efter rundan (nytt rumsfält `unplayed`, `boxesAfterRound` betyder åter bara val under rundan), `next` låser bara spelare som förlorar sista rutan, `dueTicks`/`tick` läser inte medlemmar/presence för tomma rum. Inte porterat: väntekö (kräver nytt `wait`-kommando i kontraktet) och 60 s frånvaro (120 s behålls, 90 s mellan rundor rekommenderas). | Gap bevisat med fallande test först; `pre-commit-full gameplay` 572/572; full CI grön; två granskningsrundor. |
+| [#427](https://github.com/Jakeminator123/scoutgaming/pull/427) | Astrid-legacy: `nativeOptions.publish` körde Astrid-probens avbokning efter varje bordskommando för alla dealers och sväljde fel så att `publishNativeRound` kunde hoppas över. Ny modul `services/game/native-observation-publisher.mjs`: varje observatör isolerad, probe bara när `command.dealer === 'astrid'`, säkra eventkoder med steg/status/kod. | 13 tester inkl. riktig `createPostgresNativeTableCommand` på delad fake pool (`test/fixtures/native-table-fake-pool.mjs`); full CI grön. |
+| [#428](https://github.com/Jakeminator123/scoutgaming/pull/428) | SQLite bort, steg 1 av 9: databasfria tester utan SQLite (inline-fakes, async-moduler). Medveten täckningsändring: de synkrona SQLite-modulerna som `server.mjs` fortfarande laddar utanför Postgres raderas i steg 6. | 0 föräldralösa tester; full CI grön. |
+
+**Kvarstående fel och uppföljning**
+- Hårdkodat `'astrid'` finns kvar i Admin-avbokningar, utloggning (`server.mjs` ~640–753), `/chat` och probe-rutter; kartan över Astrid-legacy mot PAOW/v3-vägen finns i #312-arbetet och ska in i Astrid-städningens nästa PR. Utloggningens probe-avbokning kostar en scopad transaktion och ger 403 om `astrid` inte är registrerad (sväljs).
+- SQLite-planen (9 PR:er, inga schemaändringar): steg 2 kräver Jakobs ja till PGlite som dev-beroende; steg 4 pensionerar `apps/studio/start.mjs --offline` och `local-connection.mjs` (ändrar `AGENTS.md`); steg 5 skriver om Admins Provspel (`studio-preview.mjs`, enda SQLite-användningen på Render); steg 6 gör motorn och `ops/cloud` Postgres-only. Planen ligger utanför Git hos Jakob/Claude; lägg in den i `migrering/` när steg 2 beslutats.
+- Snapshot exponerar inte `unplayed`, så klienten kan inte varna "satsa eller förlora rutan"; kontraktsändring.
+- Dokumentationen är fortsatt spretig (`JOHN-HANDOFF.md` 3 186 rader, dubbletter mot denna fil, 25 md-filer nämner SQLite); `test/ci-changes.mjs:235` hårdkodar dokumentvägar.
+- Vercel-lagret `impactwin-media-preview` är ett avslutat sidoprojekt (ingen kodreferens) och kan raderas av Jakob. Kevin ska aldrig få produktionens Neon; en egen Neon-branch i stagingprojektet är rätt väg.
+
+**Nästa steg mot 70 %:** J08:s niofältskvitto i isolerad staging (`croupier-k06-k07-staging`, Render `srv-dbf61l0m7kps73ft7mk0` återupptas bara under provet) med kandidaten efter #424: spara → återläs → publicera → produktläsning → auktoriserad launch → aktiv hand behåller C0/P0/M0 medan nästa fönster tar C1/P1/M1 → negativa fall. Därefter `status.json[J08]` VERIFIED med PR, oberoende granskare och kvitto-JSON. K05 kräver Jakobs AV-bedömning av PAOW:s tio klipp; ingen fabricerad acceptans.
+
 ## J10 slutverifierad — 27 oktober 2026
 
 **65 % = 13/20 aktiviteter.** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
