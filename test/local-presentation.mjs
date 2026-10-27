@@ -698,6 +698,66 @@ test('denied speech recovery reports failure without muting or replaying silentl
   assert.deepEqual(receipts, ['start', 'presented', 'error']);
 });
 
+// Chrome's own rejection text; it must never reach the player.
+const AUTOPLAY_REFUSAL = "play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD";
+test('unmuted speech refused before any gesture waits for the owner sound control without a stall or a film button', async t => {
+  const {page,buttons,host}=filmFixture(t),owner=new AbortController(),receipts=[],offers=[];
+  t.mock.timers.enable({apis:['setTimeout']});
+  const video=page.createElement('video');video.duration=20;let gesture=false;
+  video.play=()=>{
+    video.playCalls++;
+    if(!gesture)return Promise.reject(new DOMException(AUTOPLAY_REFUSAL,'NotAllowedError'));
+    video.paused=false;return Promise.resolve();
+  };
+  const result=playLocalFilm({host,video,src:'blob:speech',muted:false,signal:owner.signal,onSoundBlocked:resume=>offers.push(resume),onReceipt:row=>receipts.push(row.state)});
+  void result.catch(()=>{});t.after(()=>owner.abort());
+  await Promise.resolve();await Promise.resolve();
+  assert.equal(offers.length,1);assert.equal(buttons.length,0,'the presentation owns the sound control, not the film');
+  assert.equal(video.muted,false,'speech is never silently muted');assert.notEqual(video.removed,true);
+  t.mock.timers.tick(19999);
+  assert.notEqual(video.removed,true,'waiting for the click is not a stalled film');assert.deepEqual(receipts,[]);
+  gesture=true;assert.equal(offers[0](),true);gesture=false;
+  assert.equal(video.playCalls,2,'play is called synchronously inside the click');
+  assert.equal(offers[0](),false,'one click resumes the line once');assert.equal(video.playCalls,2);
+  video.emit('playing');video.frame();video.ended=true;video.emit('ended');
+  assert.deepEqual(await result,{completed:true});
+  assert.deepEqual(receipts,['start','presented','end']);assert.equal(video.muted,false);
+});
+
+test('an unanswered sound wait ends after the line length; refusal, cancellation and stale clicks stay closed', async t => {
+  const {page,host,buttons}=filmFixture(t);
+  t.mock.timers.enable({apis:['setTimeout']});
+  for(const ending of ['length','metadata','fallback','refused','abort','no-owner']){
+    const owner=new AbortController(),video=page.createElement('video'),offers=[],receipts=[];
+    if(ending==='length')video.duration=3;
+    video.play=()=>{video.playCalls++;return Promise.reject(new DOMException(AUTOPLAY_REFUSAL,'NotAllowedError'));};
+    const result=playLocalFilm({host,video,src:'blob:speech',muted:false,signal:owner.signal,onReceipt:row=>receipts.push(row),
+      ...(ending==='no-owner'?{}:{onSoundBlocked:resume=>offers.push(resume)})});
+    void result.catch(()=>{});t.after(()=>owner.abort());
+    await Promise.resolve();await Promise.resolve();
+    if(ending==='no-owner'){
+      await assert.rejects(result,{name:'NotAllowedError'},'other owners keep the immediate failure');
+      assert.equal(video.removed,true);continue;
+    }
+    assert.equal(offers.length,1,ending);
+    if(ending==='abort'){owner.abort();await assert.rejects(result,{name:'AbortError'});}
+    else if(ending==='refused'){
+      assert.equal(offers[0](),true);
+      await assert.rejects(result,{name:'NotAllowedError'},'a refusal despite the click is a failure, not a new wait');
+      assert.equal(offers.length,1);
+    } else {
+      if(ending==='metadata'){t.mock.timers.tick(1000);video.duration=2;video.emit('loadedmetadata');t.mock.timers.tick(1999);}
+      else t.mock.timers.tick(ending==='length'?2999:7999);
+      assert.notEqual(video.removed,true,ending);t.mock.timers.tick(1);
+      await assert.rejects(result,{code:'local_film_sound_blocked'});
+      assert.equal(receipts.at(-1).state,'error');assert.equal(receipts.at(-1).code,'local_film_sound_blocked');
+    }
+    assert.equal(video.removed,true,ending);
+    const plays=video.playCalls;assert.equal(offers[0](),false);assert.equal(video.playCalls,plays,'a stale click cannot start the closed line');
+  }
+  assert.equal(buttons.length,0);
+});
+
 test('cancelled pending recovery cannot affect a replacement and all film listeners are released', async t => {
   const { media, host, page, view } = filmFixture(t), owner = new AbortController(), receipts = [];
   const first = playLocalFilm({ host, src: '/old', signal: owner.signal, muted: false, onReceipt: row => receipts.push(row.state) });
@@ -720,10 +780,10 @@ test('cancelled pending recovery cannot affect a replacement and all film listen
   assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets'} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
-  const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
+  const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() { value.removed = true; }, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   const visibilityHandlers = new Set();
   globalThis.document = { hidden: false, createElement: element,
     addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
@@ -732,7 +792,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, ...(openclaw ? { openclaw } : {}), ...(filmedMaterial ? {filmedMaterial} : {}), projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: standardVideo ?? selected, transitions, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0, busy = 0, tableVersion = 2;
-  const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
+  const player = customPlayer ?? { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
@@ -1006,8 +1066,9 @@ test('blocked recorded speech remains a visible review error and cannot masquera
   globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?Response.json({video:null,standard:null,
     decision:{requestId:'blocked-speech',sourceEvent:{type:'speak',line:'win'},media:{reason:'recorded_speech_unavailable'}}}):original(url,options);
   f.controller.state({speech:true});assert.equal(await f.controller.present({type:'speak',line:'win'}),false);
-  assert.match(f.status.textContent,/Tal:.*granskning eller identitet/);assert.doesNotMatch(f.status.textContent,/2D-reserv/);
-  const error=f.receipts.at(-1);assert.equal(error.renderer,'none');assert.notEqual(error.state,'skipped');assert.equal(error.requestId,'blocked-speech');
+  // The player sees a fixed Swedish line; the review reason stays in the receipt.
+  assert.equal(f.status.textContent,'Talet kunde inte spelas.');assert.doesNotMatch(f.status.textContent,/2D-reserv/);
+  const error=f.receipts.at(-1);assert.match(error.reason,/granskning eller identitet/);assert.equal(error.renderer,'none');assert.notEqual(error.state,'skipped');assert.equal(error.requestId,'blocked-speech');
   const warning=f.status.textContent;f.controller.state({speech:false});f.jobs.at(-1).options.onReceipt({state:'presented'});
   assert.equal(f.status.textContent,warning,'idle must not silently clear an actual review failure');
 });
@@ -1016,8 +1077,101 @@ test('a speech playback failure keeps its error and correlation without claiming
   const f=await controllerFixture(t);f.controller.state({speech:true});
   const playing=f.controller.present({type:'speak',line:'win'});await new Promise(resolve=>setImmediate(resolve));
   f.jobs[0].reject(new Error('Audio/video unavailable'));assert.equal(await playing,false);
-  assert.equal(f.status.textContent,'Tal: Audio/video unavailable');
-  const failed=f.receipts.at(-1);assert.equal(failed.renderer,'none');assert.notEqual(failed.state,'skipped');assert.equal(failed.requestId,'selection-fixture');
+  // Browser and provider text never reaches the player; the receipt keeps it.
+  assert.equal(f.status.textContent,'Talet kunde inte spelas.');
+  const failed=f.receipts.at(-1);assert.equal(failed.reason,'Audio/video unavailable');assert.equal(failed.renderer,'none');assert.notEqual(failed.state,'skipped');assert.equal(failed.requestId,'selection-fixture');
+});
+
+// The real film player behind the presentation; a browser that refuses
+// unmuted play until the player's first real click (sticky activation).
+async function soundFixture(t) {
+  const originalWindow=globalThis.window,videos=[];let gesture=false,activated=false;
+  globalThis.window=new EventTarget();t.after(()=>{globalThis.window=originalWindow;});
+  const player={playLocalClip(take,options){
+    const video=new Video();video.duration=4;videos.push(video);
+    video.play=()=>{
+      video.playCalls++;
+      if(!video.muted&&!gesture&&!activated)return Promise.reject(new DOMException(AUTOPLAY_REFUSAL,'NotAllowedError'));
+      video.paused=false;return Promise.resolve();
+    };
+    return playLocalFilm({host:{append(){}},src:take.media.src,video,...options});
+  }};
+  const f=await controllerFixture(t,{player});
+  const tick=()=>new Promise(resolve=>setImmediate(resolve));
+  return {...f,tick,
+    speech:()=>videos.filter(video=>video.muted===false),
+    soundButtons:()=>f.elements.filter(el=>String(el.className).split(' ').includes('local-presentation-sound')),
+    click(button,event={isTrusted:true}){gesture=true;activated=true;try{button.onclick(event);}finally{gesture=false;}},
+    finish(video){video.emit('playing');video.frame();video.ended=true;video.emit('ended');},
+    visibleText:()=>f.elements.map(el=>String(el.textContent??'')).join(' ')};
+}
+
+test('speech refused by the autoplay policy shows Slå på ljud; a real click replays the same line and later speech plays normally', async t => {
+  const f=await soundFixture(t);
+  f.controller.state({speech:true});
+  const playing=f.controller.present({type:'speak',line:'goodluck'});await f.tick();await f.tick();
+  const [button]=f.soundButtons(),[line]=f.speech();
+  assert.ok(button);assert.equal(button.textContent,'Slå på ljud');assert.equal(button.type,'button');
+  assert.match(button.className,/\blocal-presentation-recovery\b/);
+  assert.equal(f.status.textContent,'');assert.doesNotMatch(f.visibleText(),/play\(\)|interact|goo\.gl/);
+  assert.equal(line.playCalls,1);assert.notEqual(line.removed,true,'the line waits for the click');
+  button.onclick({isTrusted:false});
+  assert.notEqual(button.removed,true,'a scripted click is not the player');assert.equal(line.playCalls,1);
+  f.click(button);
+  assert.equal(line.playCalls,2,'the same line is resumed synchronously inside the click');assert.equal(button.removed,true);
+  f.finish(line);
+  assert.equal(await playing,true);
+  assert.deepEqual(f.receipts.filter(row=>row.event==='speech'&&row.mediaSha256).map(row=>row.state),['start','presented','end']);
+  f.controller.state({speech:false});await f.tick();
+  f.controller.state({speech:true});
+  const later=f.controller.present({type:'speak',line:'win'});await f.tick();await f.tick();
+  const next=f.speech().at(-1);assert.notEqual(next,line);assert.equal(next.playCalls,1);
+  f.finish(next);
+  assert.equal(await later,true);
+  assert.equal(f.soundButtons().length,1,'unlocked sound needs no second control');assert.equal(f.status.textContent,'');
+});
+
+for(const moved of ['action','version'])test(`a sound click after the line stopped being current (${moved}) only unlocks and later speech plays normally`, async t => {
+  const f=await soundFixture(t);
+  f.controller.state({speech:true});
+  const playing=f.controller.present({type:'speak',line:'goodluck'});await f.tick();await f.tick();
+  const [button]=f.soundButtons(),[line]=f.speech();
+  if(moved==='action'){
+    f.controller.state({action:true});
+    assert.equal(await playing,false,'the hand moves on without waiting for the click');
+    assert.equal(line.removed,true);
+  } else {
+    // The table moved on while the old line still holds its place.
+    f.setVersion(3);assert.notEqual(line.removed,true);
+  }
+  assert.equal(f.status.textContent,'');assert.notEqual(button.removed,true);
+  f.click(button);
+  assert.equal(line.playCalls,1,'a stale click cannot start the old line');assert.equal(button.removed,true);
+  if(moved==='version'){f.controller.state({action:true});assert.equal(await playing,false);}
+  f.controller.state({action:false,speech:true});
+  const later=f.controller.present({type:'speak',line:'win'});await f.tick();await f.tick();
+  const next=f.speech().at(-1);assert.notEqual(next,line);assert.equal(next.playCalls,1);assert.equal(f.soundButtons().length,1);
+  f.finish(next);assert.equal(await later,true);
+});
+
+test('a line whose sound wait ran out is quiet; the control stays and a later click only unlocks', async t => {
+  const f=await controllerFixture(t);f.controller.state({speech:true});
+  const playing=f.controller.present({type:'speak',line:'win'});await new Promise(resolve=>setImmediate(resolve));
+  const job=f.jobs[0];let resumed=0;
+  assert.equal(job.options.muted,false);assert.equal(typeof job.options.onSoundBlocked,'function');
+  job.options.onSoundBlocked(()=>{resumed++;return true;});
+  const button=f.elements.find(el=>String(el.className).includes('local-presentation-sound'));
+  assert.equal(button.textContent,'Slå på ljud');
+  job.reject(Object.assign(new Error('Speech sound needs a user gesture'),{code:'local_film_sound_blocked',cause:new DOMException(AUTOPLAY_REFUSAL,'NotAllowedError')}));
+  assert.equal(await playing,false);
+  assert.equal(f.status.textContent,'','the sound control replaces any text');
+  const failed=f.receipts.at(-1);assert.equal(failed.state,'failed');assert.equal(failed.code,'local_film_sound_blocked');assert.equal(failed.soundUnlocked,false);
+  assert.notEqual(button.removed,true);
+  button.onclick({isTrusted:true});assert.equal(resumed,0,'the finished line cannot be resumed');assert.equal(button.removed,true);
+  f.controller.state({speech:false});f.controller.state({action:true});
+  void f.controller.present(source);await new Promise(resolve=>setImmediate(resolve));
+  const deal=f.jobs.at(-1);assert.notEqual(deal,job);
+  assert.equal(deal.options.muted,true);assert.equal(deal.options.onSoundBlocked,undefined,'only audible speech can wait for sound');
 });
 
 test('a shared media download cancelled by the old owner does not poison the new owner', async t => {
@@ -1535,7 +1689,8 @@ test('cancelled clip preparation cannot select a track or start media', async t 
 test('new unreviewed speech metadata never reaches the live media player', async t => {
   const f=await controllerFixture(t,{selectedVideo:{id:'unreviewed',sha256:'a'.repeat(64),recordedSpeech:{review:{status:'pending'}}}});
   assert.equal(await f.controller.present({type:'speak',line:'goodluck'}),false);
-  assert.equal(f.jobs.length,0);assert.match(f.status.textContent,/granskning eller identitet/);
+  assert.equal(f.jobs.length,0);assert.equal(f.status.textContent,'Talet kunde inte spelas.');
+  assert.match(f.receipts.at(-1).reason,/granskning eller identitet/);
 });
 
 
