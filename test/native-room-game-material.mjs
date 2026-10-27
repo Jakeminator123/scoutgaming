@@ -5,6 +5,10 @@ import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/n
 import { assertNativeRoomSequenceBudget, NATIVE_ROOM_PRESENTATION_CONTRACT } from '../packages/presentation/contracts/native-room-game-budget.mjs';
 import { recordedSpeechIdentity } from '../packages/presentation/contracts/recorded-speech.mjs';
 import { presentationEvents } from '../services/game/partner-presentation.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
+import { canonicalStudioJson, validateStudioMedia } from '../packages/studio-registry/server/document-contract.mjs';
+import { addDealer, createEmptyProject } from '../packages/presentation/contracts/studio-model.mjs';
+import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { nativeRoomMaterialFixture, nativeRoomMaterialChoicesFixture, measuredFixtureRecord, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
 
 const resolve = f => resolveNativeRoomGameMaterial(f.input,{version:2});
@@ -277,4 +281,37 @@ test('v1 retains the historical embedded-entry fallback for a mismatched explici
   assert.match(legacy.revision,/^native-film-v1-/);assert.equal(legacy.media.length,f.records.length);
   assert.equal(Object.hasOwn(legacy,'film'),false);
   assert.throws(()=>resolve(f),denied('native_material_transition_pose_missing'));
+});
+
+test('Admin speech review of the ten bound PAOW takes satisfies the native speech precondition after the package recaptures it',async()=>{
+  const f=nativeRoomMaterialFixture({dealerId:'paow',speechSchemaVersion:2});
+  const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope:{environment:'test',workspaceId:'paow-speech-review'}});
+  await repository.initializeDocument('project',{value:addDealer(createEmptyProject(),'paow','PAOW'),actor:'Fixture'});
+  const speechRows=f.records.filter(row=>row.classification.kind==='speech');
+  assert.equal(speechRows.length,10);
+  // Start from the state imports leave: verified only by the server inspector,
+  // with the human AV review still pending.
+  const measured=[];
+  for(const row of speechRows){
+    const {mediaTiming,...input}=structuredClone(row);
+    Object.assign(input.classification.recordedSpeech,{source:{status:'pending'},review:{status:'pending'}});
+    const registered=(await repository.registerMedia(input,{actor:'Uploader'})).media;
+    measured.push(await repository.saveMediaTiming(row.id,{sha256:row.sha256,expectedRevision:registered.revision,mediaTiming,actor:'Inspector'}));
+  }
+  const freeze=stored=>{for(const {revision,updatedAt,...record} of stored)Object.assign(f.records.find(row=>row.id===record.id),structuredClone(record));f.recapture();};
+  freeze(measured);
+  assert.throws(()=>resolve(f),denied('native_material_speech_unbound'));
+  const approved=[];
+  for(const record of measured)approved.push(await repository.reviewRecordedSpeech(record.id,{sha256:record.sha256,expectedRevision:record.revision,
+    expectedIdentity:recordedSpeechIdentity(record.classification.recordedSpeech),verdict:'approved',actor:'Jakob'}));
+  assert.throws(()=>resolve(f),denied('native_material_speech_unbound'),'the previously frozen package keeps its pending takes');
+  freeze(approved);
+  const result=resolve(f);
+  assert.equal(result.dealerId,'paow');
+  for(const record of approved){
+    assert.ok(result.media.some(row=>row.id===record.id&&row.sha256===record.sha256));
+    const {revision,updatedAt,...stored}=record,frozen=f.records.find(row=>row.id===record.id);
+    // room-game-config publication additionally requires the registered row to equal the frozen copy.
+    assert.equal(canonicalStudioJson(validateStudioMedia(stored)),canonicalStudioJson(validateStudioMedia(frozen)));
+  }
 });

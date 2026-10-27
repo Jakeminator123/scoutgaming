@@ -38,7 +38,7 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
   for(const value of ['https://provider.invalid/file','//outside.invalid','/api/voice/private','/studio/api/videos/id?token=secret','javascript:alert(1)','/studio/api/speech-build?media='+'a'.repeat(32)+'&kind=video&token=secret'])assert.equal(studioSpeechMediaUrl(value),null);
 });
 
-async function panelHarness(){
+async function panelHarness(respond){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../../packages/presentation/contracts/studio-speech.mjs'),profile=await import('../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs');
   const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../../../components/dealer-voice-picker.tsx',import.meta.url),'utf8');
@@ -47,7 +47,7 @@ async function panelHarness(){
   const source=readFileSync(new URL('../components/studio/studio-speech-panel.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),slots=[],effects=[];
   let cursor=0,queue=[],calls=[];const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useRef(initial){const index=cursor++;return slots[index]??={current:initial}},useEffect(effect,deps){const index=cursor++,previous=effects[index];if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))queue.push({index,effect,deps})}};
-  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
+  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});if(respond)return respond(url,init);return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
   const props={project:{schemaVersion:1,revision:'r1',dealers:[{id:'astrid',label:'Astrid'}]},inventory:{videos:[]},dealerId:'astrid',blocked:false,projectDirty:true,onEdit:next=>{props.project=next},onDirtyChange:dirty=>{props.profileDirty=dirty}};
   const render=()=>{cursor=0;return module.exports.StudioSpeechPanel(props)},flush=()=>{const pending=queue;queue=[];for(const item of pending){effects[item.index]?.cleanup?.();effects[item.index]={deps:item.deps,cleanup:item.effect()}}};
   const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):node.type===DealerVoicePicker?nodes(DealerVoicePicker(node.props),predicate):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
@@ -316,3 +316,37 @@ test('audio-only and unavailable records remain files, never an inferred talvide
   const row=studioRecordedSpeech({}, {videos:[audio]},'dragan')[0];assert.equal(row.audio,true);assert.equal(row.review,'missing-proof');assert.equal(row.exactText,'');assert.equal(row.available,true);
 });
 
+test('recorded take review posts only the exact played identity and shows the trusted reviewer from the registry',async()=>{
+  const pending=embeddedRecordingFixture('embedded-take','pending'),approved=embeddedRecordingFixture('embedded-take','approved');
+  let reply={ok:true,status:200,body:{review:approved.classification.recordedSpeech.review,attestation:'human-av-review',inventory:{videos:[approved]}}};
+  const h=await panelHarness(async()=>({ok:reply.ok,status:reply.status,json:async()=>reply.body})),inventories=[];
+  h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[pending]};
+  h.render();h.flush();let tree=h.render();
+  assert.equal(h.button(tree,'Godkänn tal'),undefined,'a surface that cannot refresh its inventory offers no review write');
+  h.props.onInventory=inventory=>{inventories.push(inventory);h.props.inventory=inventory;};
+  tree=h.render();h.flush();tree=h.render();
+  const fieldset=()=>h.nodes(h.render(),node=>node.type==='fieldset'&&node.props['aria-label']==='Bedöm tagningen')[0];
+  assert.equal(fieldset().props.disabled,false);assert.equal(h.button(tree,'Godkänn tal').props.disabled,false);
+  assert.equal(h.button(tree,'Underkänn').props.disabled,false);assert.equal(h.button(tree,'Ta bort bedömning'),undefined);
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&String(node.props.children).includes('Det mäter inte läppsynk')).length,'the UI states that approval is a human attestation');
+  h.button(tree,'Godkänn tal').props.onClick();
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(h.calls.length,1);assert.equal(h.calls[0].url,'/studio/api/videos/speech-review');assert.equal(h.calls[0].init.method,'POST');
+  const speech=pending.classification.recordedSpeech;
+  assert.deepEqual(JSON.parse(h.calls[0].init.body),{id:'embedded-take',sha256:pending.sha256,dealerId:'dragan',lineId:'goodluck',language:'en',
+    expectedIdentity:recordedSpeechIdentity(speech),verdict:'approved'});
+  assert.deepEqual(inventories,[{videos:[approved]}]);
+  tree=h.render();
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&JSON.stringify(node.props.children).includes('Godkänt')&&JSON.stringify(node.props.children).includes('Reviewer')).length);
+  assert.equal(h.button(tree,'Godkänn tal').props.disabled,true);assert.ok(h.button(tree,'Ta bort bedömning'));
+  reply={ok:false,status:409,body:{error:'studio_speech_identity_changed',code:'studio_speech_identity_changed'}};
+  h.button(tree,'Ta bort bedömning').props.onClick();
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(JSON.parse(h.calls[1].init.body).verdict,null);assert.equal(inventories.length,1,'a refused write keeps the inventory');
+  assert.ok(h.nodes(h.render(),node=>node.type==='p'&&node.props.role==='alert'&&String(node.props.children).includes('Tagningen har ändrats')).length);
+  h.props.blocked=true;assert.equal(fieldset().props.disabled,true);
+  const unverified=embeddedRecordingFixture('embedded-take','pending');unverified.classification.recordedSpeech.source={status:'pending'};delete unverified.mediaTiming;
+  h.props.blocked=false;h.props.inventory={videos:[unverified]};tree=h.render();
+  assert.equal(h.button(tree,'Godkänn tal').props.disabled,true,'approval needs the server-verified file check');
+  assert.equal(h.button(tree,'Underkänn').props.disabled,false);
+});
