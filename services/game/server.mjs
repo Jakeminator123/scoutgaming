@@ -29,6 +29,7 @@ import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-spee
 import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
+import { createNativeObservationPublisher } from './native-observation-publisher.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
 import { serveGenerationMedia } from './generation-media.mjs';
 import { clipMapping } from './clip-mapping.mjs';
@@ -305,24 +306,9 @@ const playerHistory = createPlayerHistoryHandler({
 const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency, '/api/history': ({ id }) => playerHistory(id) };
 
 // Server-owned demo table; SQLite transaction commits wallet and shoe together.
-const nativeOptions = { db, getPlayer, logTx,
-  publish: async observation => {
-    movingSpeechService?.observeCommitted(observation);
-    try {
-    const scope = {playerId:observation.playerId,dealerId:'astrid'};
-    (await probeRuntime.cancel(scope));
-    if (observation.command.op === 'collect' && observation.previousView.round?.phase === 'settled') {
-      const hands = observation.command.dealer === 'astrid' ? observation.previousView.round.hands.filter(hand=>hand.stake>0).map((hand,handIndex)=>({
-        handIndex,box:hand.box,cards:hand.cards.map(({r,s})=>({r,s})),split:hand.splitFrom !== null && hand.splitFrom !== undefined,
-        outcome:hand.busted || !(hand.result>0) ? 'lose' : hand.result>hand.stake ? 'win' : 'push',
-      })) : [];
-      await probeRuntime.completedRound(scope,{roundId:`collected-${observation.view.shoe.id}-${observation.view.version}`,sequence:(await readPlayerResults(db,observation.playerId,{},(await getPlayer(observation.playerId)).currency)).currencies.reduce((sum,row)=>sum+row.rounds,0),hands});
-    }
-    if (observation.session?.partnerKeyId) (await (await partner()).publishNativeRound(observation));
-    } catch { console.warn('[partner-events] Native command committed; observation could not be published.'); }
-  },
-  onPublishError: () => console.warn('[partner-events] Native command committed; observation could not be published.'),
-};
+// Post-commit observers are isolated so the Astrid-only probe cannot withhold partner rounds.
+const nativeOptions = { db, getPlayer, logTx, ...createNativeObservationPublisher({ probeRuntime, partner, readPlayerResults, getPlayer, db,
+  movingSpeech: () => movingSpeechService }) };
 API['/api/table'] = postgres ? createPostgresNativeTableCommand({ ...nativeOptions, pool: storage.gamePool }) : createNativeTableCommand(nativeOptions);
 const rouletteCommand = postgres ? createPostgresRouletteCommand({ pool:storage.gamePool }) : createSqliteRouletteCommand({ db });
 API['/api/roulette/table'] = async ({id,playerId,context,...request}) => {
