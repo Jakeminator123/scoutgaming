@@ -1029,13 +1029,15 @@ test('stale idle frames cannot clear a warning across ownership changes or closu
 });
 
 test('a recovered idle frame preserves a newer action error on the shared status surface', async t => {
-  const { controller, jobs, status } = await controllerFixture(t);
+  const { controller, jobs, status, receipts } = await controllerFixture(t);
   controller.start(); jobs[0].reject(new Error('idle unavailable'));
   await new Promise(resolve => setImmediate(resolve));
   controller.state({ action: true });
   const action = controller.present(source); await new Promise(resolve => setImmediate(resolve));
   jobs[2].reject(new Error('Action clip unavailable')); assert.equal(await action, false);
-  const warning = 'Action clip unavailable · 2D-reserv'; assert.equal(status.textContent, warning);
+  // A fixed Swedish line for the player; the film's own reason stays in the receipt.
+  const warning = 'Filmen kunde inte spelas.'; assert.equal(status.textContent, warning);
+  const failed = receipts.findLast(row => row.state === 'fallback'); assert.equal(failed.reason, 'Action clip unavailable'); assert.equal(failed.renderer, '2d');
   controller.state({ action: false });
   jobs[3].options.onReceipt({ state: 'presented' }); assert.equal(status.textContent, warning);
 });
@@ -1080,6 +1082,64 @@ test('a speech playback failure keeps its error and correlation without claiming
   // Browser and provider text never reaches the player; the receipt keeps it.
   assert.equal(f.status.textContent,'Talet kunde inte spelas.');
   const failed=f.receipts.at(-1);assert.equal(failed.reason,'Audio/video unavailable');assert.equal(failed.renderer,'none');assert.notEqual(failed.state,'skipped');assert.equal(failed.requestId,'selection-fixture');
+});
+
+// K04-i-d on staging (27 Oct 2026): the dealer's goodluck clip answered 404, the
+// next step erased the line at once and the player saw no text at all.
+const missingFile = (status = 404) => Object.assign(new Error('Local film unavailable'), { code: 'local_film_unavailable', status,
+  retryable: false, serverCode: 'studio_presentation_idle_media_unavailable' });
+const settle = () => new Promise(resolve => setImmediate(resolve));
+for (const kind of ['deal', 'speech']) test(`a missing ${kind} file ends its step at once with a fixed readable line and no fallback film`, async t => {
+  const f = await controllerFixture(t, { standardVideo: { id: 'other-standard', fileName: 'other.mp4', sha256: 'a'.repeat(64) } });
+  f.controller.state(kind === 'speech' ? { speech: true } : { action: true });
+  let unavailable = 0;
+  const result = f.controller.present(kind === 'speech' ? { type: 'speak', line: 'goodluck' } : source, { onUnavailable: () => unavailable++ });
+  await settle(); const started = f.jobs.length; assert.equal(started, 1);
+  f.jobs[0].reject(missingFile()); assert.equal(await result, false);
+  assert.equal(f.jobs.length, started, 'no standard film is tried for a file the server does not have');
+  assert.equal(unavailable, 1, 'the shared table is told to end the film of this presentation');
+  assert.equal(f.status.textContent, kind === 'speech' ? 'Talet kunde inte spelas.' : 'Filmen kunde inte spelas.');
+  const failed = f.receipts.at(-1);
+  assert.equal(failed.reason, 'Local film unavailable'); assert.equal(failed.code, 'local_film_unavailable'); assert.equal(failed.status, 404);
+  assert.equal(failed.serverCode, 'studio_presentation_idle_media_unavailable'); assert.equal(failed.unavailable, true);
+  assert.equal(failed.state, kind === 'speech' ? 'failed' : 'fallback'); assert.equal(failed.renderer, kind === 'speech' ? 'none' : '2d');
+});
+
+test('a retryable film failure still plays the standard film and does not end the shared presentation', async t => {
+  const standard = { id: 'other-standard', fileName: 'other.mp4', sha256: 'a'.repeat(64) };
+  const f = await controllerFixture(t, { standardVideo: standard });
+  f.controller.state({ action: true }); let unavailable = 0;
+  const result = f.controller.present(source, { onUnavailable: () => unavailable++ });
+  await settle(); f.jobs[0].reject(Object.assign(new Error('Local film unavailable'), { code: 'local_film_unavailable', status: 503, retryable: true }));
+  await settle(); assert.equal(f.jobs.length, 2); assert.equal(f.jobs[1].take.media.sha256, standard.sha256);
+  f.jobs[1].resolve(); assert.equal(await result, true); assert.equal(unavailable, 0);
+});
+
+test('a failed step keeps its readable line while the next steps start, and a later step clears it', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: 1000 });
+  const f = await controllerFixture(t); f.controller.state({ action: true });
+  const first = f.controller.present(source); await settle(); f.jobs.at(-1).reject(missingFile()); assert.equal(await first, false);
+  assert.equal(f.status.textContent, 'Filmen kunde inte spelas.');
+  const next = f.controller.present({ ...source, shoeDraw: 8 }); await settle();
+  assert.equal(f.status.textContent, 'Filmen kunde inte spelas.', 'the next step does not erase the line at once');
+  f.jobs.at(-1).resolve(); assert.equal(await next, true);
+  t.mock.timers.tick(6000);
+  const later = f.controller.present({ ...source, shoeDraw: 9 }); await settle();
+  assert.equal(f.status.textContent, '', 'a step after the hold starts with a clean line');
+  f.jobs.at(-1).resolve(); assert.equal(await later, true);
+});
+
+test('verified download bytes reach the shared step progress through the performance player', async t => {
+  const f = await controllerFixture(t); f.controller.state({ action: true }); const progress = [];
+  const result = f.controller.present(source, { onProgress: value => progress.push(value) }); await settle();
+  const job = f.jobs.at(-1); job.options.onDownloadProgress({ received: 512, total: 2048 }); job.options.onDownloadProgress({ received: 2048, total: 2048 });
+  job.resolve(); assert.equal(await result, true);
+  assert.deepEqual(progress.filter(row => row.phase === 'download'), [{ clip: 1, phase: 'download', received: 512 }, { clip: 1, phase: 'download', received: 2048 }]);
+  const {PerformancePlayer} = await import('../services/game/public/performance-player.mjs');
+  let acquired; const listener = () => {};
+  const player = Object.assign(Object.create(PerformancePlayer.prototype), { localBuffer: { acquire: async (_media, _signal, options) => { acquired = options; throw new DOMException('stop', 'AbortError'); } } });
+  await assert.rejects(player.playLocalClip({ media: { src: '/clip', sha256: 'b'.repeat(64) } }, { onDownloadProgress: listener }), { name: 'AbortError' });
+  assert.equal(acquired.onProgress, listener, 'the verified buffer reports bytes to the playing step');
 });
 
 // The real film player behind the presentation; a browser that refuses
@@ -1373,7 +1433,8 @@ test('a stale committed card does not claim a package change, while an exact pac
   const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7}}),fetchConfig=globalThis.fetch;
   let code=null,requests=0;
   globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?(requests++,Response.json({error:'Stale presentation',...(code?{code}: {})},{status:409})):fetchConfig(url,options);
-  assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/2D-reserv/);assert.doesNotMatch(f.status.textContent,/paketet har ändrats/);
+  assert.equal(await f.controller.present(source),false);assert.equal(f.status.textContent,'Filmen kunde inte spelas.');assert.doesNotMatch(f.status.textContent,/paketet har ändrats/);
+  assert.equal(f.receipts.at(-1).reason,'Inget verifierat klipp för instruktionen');
   code='studio_presentation_idle_package_changed';assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/Ladda om spelet/);
   assert.equal(await f.controller.present(source),false);assert.equal(requests,2);
 });
