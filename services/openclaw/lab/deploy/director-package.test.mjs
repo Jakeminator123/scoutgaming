@@ -38,7 +38,7 @@ test('Director root build context admits runtime sources but excludes local keys
   assert.equal(included('services/openclaw/lab/src/server.mjs'), true);
   assert.equal(included('packages/director/engine.mjs'), true);
   assert.equal(included('packages/director/node/companion-store.mjs'), true);
-  for (const privatePath of ['packages/director/.env', 'packages/director/node/companion.sqlite', 'packages/director/node_modules/extra/index.mjs']) assert.equal(included(privatePath), false, privatePath);
+  for (const privatePath of ['packages/director/.env', 'packages/director/node/companion.sqlite', 'packages/director/node/companion.json', 'packages/director/node_modules/extra/index.mjs']) assert.equal(included(privatePath), false, privatePath);
   assert.equal(included('packages/presentation/contracts/dealer-identity.mjs'), true);
 });
 

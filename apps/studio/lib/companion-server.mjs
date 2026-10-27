@@ -1,6 +1,4 @@
 import { createHmac, randomBytes } from 'node:crypto';
-import { resolve } from 'node:path';
-import { createCompanionService } from '../../../packages/director/companion.mjs';
 import { remoteRequest } from '../../../packages/presentation/server/director-transport.mjs';
 import { StudioError } from './project-store.mjs';
 import { labUrl } from './lab-url.mjs';
@@ -19,15 +17,10 @@ export function labCompanionIdentity(request, settings) {
   return { identity, cookie: token ? null : `${COOKIE}=${fresh}; Path=${cookiePath}; HttpOnly; SameSite=Strict; Max-Age=2592000${new URL(request.url).protocol === 'https:' ? '; Secure' : ''}` };
 }
 
-const directServices = new Map();
+// Names and memory live only in the Render Director's store. The connected-local
+// mode that opened that store inside the Studio process is retired (AGENTS.md).
 export async function companionRequest(body, settings, fetchImpl = fetch) {
   if (settings.companionEnabled === false) throw new StudioError('Namn och minne är avstängt.', 503);
-  if (settings.remoteUrl) return remoteRequest('/api/studio/companion', body, settings, fetchImpl, 90000);
-  const directory = resolve(settings.dataDir, 'companion');
-  let service = directServices.get(directory);
-  if (!service) {
-    service = createCompanionService({ directory, settings, fetchImpl });
-    directServices.set(directory, service);
-  }
-  return service.handle(body);
+  if (!settings.remoteUrl) throw new StudioError('Namn och minne kräver den anslutna Render-Directorn.', 503);
+  return remoteRequest('/api/studio/companion', body, settings, fetchImpl, 90000);
 }
