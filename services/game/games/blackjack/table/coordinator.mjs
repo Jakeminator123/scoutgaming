@@ -172,20 +172,25 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // (boxesAfterRound, join) replaces the set; otherwise it is the boxes held minus those not bet
   // on in the round (unplayed, startRound). A room stored before `unplayed` keeps every box.
   const keptAfterRound = (r, p) => r.boxesAfterRound[p] ?? owned(r, p).filter(i => !(r.unplayed?.[p] ?? []).includes(i));
-  // The players resetRound takes the last box from, so their membership ends; `next` locks exactly
-  // these. Only an owner can lose a box: settle and releaseSeats (the tick paths) reset only once
-  // no owner is left, where this is empty, so a reset never writes outside a tick's lock plan.
+  // The lock plan of `next`: the players resetRound will take the last box from (same predicate
+  // as its release loop). Only an owner can lose a box: settle and releaseSeats (the tick paths)
+  // reset only once no owner is left, where this is empty, so a tick writes no other member.
   const endingAtReset = r => sorted(r.owners).filter(p => !keptAfterRound(r, p).some(i => r.owners[i] === p));
 
   // :248-252; a new window binds the newest published configVersion (O01 2.7). The boxes not
-  // kept (keptAfterRound) are released; a player left without a box leaves like releaseSeats.
-  async function resetRound(tx, r) {
-    const ending = endingAtReset(r);
+  // kept (keptAfterRound) are released, each player's release audited with its cause; one left
+  // without a box leaves like releaseSeats. Should this ever differ from endingAtReset, the
+  // membership write falls outside the lock plan and the unit rolls back (LockSetExceeded).
+  async function resetRound(tx, r, parent = null) {
     for (const p of sorted(r.owners)) {
-      const keep = keptAfterRound(r, p);
-      for (const i of owned(r, p)) if (!keep.includes(i)) { r.owners[i] = null; r.seatGen[i]++; }
+      const keep = keptAfterRound(r, p), boxes = owned(r, p).filter(i => !keep.includes(i));
+      if (!boxes.length) continue;
+      for (const i of boxes) { r.owners[i] = null; r.seatGen[i]++; }
+      const memberEnded = !owned(r, p).length;
+      if (memberEnded) await endMembership(tx, r, p);
+      await audit(tx, r.roomId, r.roundId, 'seat.release',
+        { playerId: p, boxes, reason: Object.hasOwn(r.boxesAfterRound, p) ? 'boxes changed' : 'unplayed', memberEnded }, parent);
     }
-    for (const p of ending) await endMembership(tx, r, p);
     Object.assign(r, { boxesAfterRound: {}, unplayed: {}, phase: 'bets', roundPhase: null, plan: null, bets: emptyBets(), ready: [], history: {},
       deadline: null, insurance: {}, leaving: [], actionDeadline: null, settledAt: null,
       windowId: random.uuid(), configVersion: await tx.config.latest(r.roomId) });
@@ -366,8 +371,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (sum(r.bets[i])) fail('CLEAR_FIRST', 'Clear your bets before changing boxes');
         r.owners[i] = null; r.seatGen[i]++;
       }
-      // A box given up here and claimed again later in the round is a choice, not an unplayed box.
-      if (r.unplayed?.[actorId]) r.unplayed[actorId] = r.unplayed[actorId].filter(i => r.owners[i] === actorId);
+      // A join that changes the box set is a choice made during the round: every box it lists stays
+      // (also when it drops an in-play box). Re-sending the same boxes, e.g. a rename, is no choice.
+      // A box given up is no longer unplayed either, so claiming it again later keeps it.
+      const resent = seats.length === own.length && seats.every(i => own.includes(i));
+      if (r.unplayed?.[actorId]) r.unplayed[actorId] = r.unplayed[actorId].filter(i => r.owners[i] === actorId && (resent || !seats.includes(i)));
       if (later.length) r.boxesAfterRound[actorId] = [...seats].sort(); else delete r.boxesAfterRound[actorId];
       for (const i of seats) if (r.owners[i] !== actorId) { r.owners[i] = actorId; r.seatGen[i]++; }
       const memberGen = me?.active ? me.memberGen : (me?.memberGen ?? 0) + 1;
@@ -482,7 +490,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         // A pending exit (leave or seat.absent) is carried out here, before the reset clears
         // `leaving`; the leavers are in the lock plan. Its seat.release tick is then superseded.
         for (const p of [...r.leaving]) await releaseSeats(tx, r, p);
-        if (r.phase === 'settled') await resetRound(tx, r);
+        if (r.phase === 'settled') await resetRound(tx, r, parent);
       }
     }
     r.version++;
@@ -593,8 +601,9 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         await tx.ticks.put(row); return row;
       };
       const r = await tx.rooms.read(desc.roomId);
-      const members = await tx.members.list(desc.roomId), seen = {};
-      for (const m of members) if (r && watched(r, m)) seen[m.actorId] = await tx.presence.get(desc.roomId, m.actorId);
+      // As in dueTicks: a room without owners (or none at all) has no member tick to read for.
+      const members = r?.owners.some(Boolean) ? await tx.members.list(desc.roomId) : [], seen = {};
+      for (const m of members) if (watched(r, m)) seen[m.actorId] = await tx.presence.get(desc.roomId, m.actorId);
       const current = r && candidates(r, members, p => seen[p]).find(c => c.tickId === base);
       if (!current) return record('superseded');
       // Not yet due (an early call, or a retry whose blockedOn has not changed): nothing is

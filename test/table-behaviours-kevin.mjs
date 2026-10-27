@@ -158,6 +158,12 @@ test('after a round the boxes not bet on are released, a box chosen during the r
   await t.send('guest', 'next', { roundId: settled.roundId });
   const s = await t.snap('john');
   assert.deepEqual(s.owners, [null, 'guest', null, null, null, 'kevin', null], 'only played boxes and the box taken mid-round stay');
+  const next = t.store.test.audit().findLast(e => e.type === 'player.next');
+  assert.deepEqual(releaseAudit(t), [
+    { playerId: 'guest', boxes: [0, 2], reason: 'unplayed', memberEnded: false, parent: next.seq, roundId: settled.roundId },
+    { playerId: 'john', boxes: [6], reason: 'unplayed', memberEnded: true, parent: next.seq, roundId: settled.roundId }],
+    'one audit row per player released at the reset, caused by next');
+  assert.equal((await t.store.audit.verifyChain()).ok, true);
   for (const i of [0, 2, 6]) assert.equal(s.seatGen[i], settled.seatGen[i] + 1, `box ${i}: a stale claim is refused`);
   assert.equal(s.me.active, false, 'john lost his last box, so his membership ends like a release');
   assert.equal(s.me.memberGen, 2);
@@ -167,6 +173,9 @@ test('after a round the boxes not bet on are released, a box chosen during the r
   await t.bet('guest', 1, 5);
   assert.equal((await t.snap()).bets[1].main, 5, 'the player keeps betting on the box he played');
 });
+
+const releaseAudit = t => t.store.test.audit().filter(e => e.type === 'seat.release')
+  .map(e => ({ ...JSON.parse(e.payload), parent: e.parent, roundId: e.round_id }));
 
 // Starts a round in which kevin bets on box 3 only; seated players without a bet hold their boxes through it.
 async function roundWithBystanders(t) {
@@ -201,6 +210,40 @@ test('an unbet box given up mid-round and claimed again in the same round stays:
   const settled = await t.standAll();
   await t.send('kevin', 'next', { roundId: settled.roundId });
   assert.deepEqual((await t.snap()).me.seats, [3, 4]);
+});
+
+test('a mid-round join that changes the box set keeps every box it lists, also when it drops an in-play box', async () => {
+  const play = async (...joins) => {
+    const t = setup();
+    await t.join('kevin', [3, 4]);
+    await roundWithBystanders(t);
+    for (const seats of joins) await t.join('kevin', seats);
+    const settled = await t.standAll();
+    await t.send('kevin', 'next', { roundId: settled.roundId });
+    return { seats: (await t.snap()).me.seats, released: releaseAudit(t).map(({ boxes, reason, memberEnded }) => ({ boxes, reason, memberEnded })) };
+  };
+  assert.deepEqual(await play([3, 4, 5]), { seats: [3, 4, 5], released: [] }, 'adding box 5 re-lists unbet box 4: kept');
+  assert.deepEqual(await play([4], [3, 4]), { seats: [3, 4], released: [] }, 'box 4 chosen while dropping in-play box 3: kept');
+  assert.deepEqual(await play([4, 5]), { seats: [4, 5], released: [{ boxes: [3], reason: 'boxes changed', memberEnded: false }] });
+  assert.deepEqual(await play([3, 4]), { seats: [3], released: [{ boxes: [4], reason: 'unplayed', memberEnded: false }] },
+    'the same boxes again is no choice');
+});
+
+test('a room stored before `unplayed` existed finishes its round keeping every box, through join, release and reset', async () => {
+  const t = setup();
+  await t.join('kevin', [3, 4]); await t.join('john', [6]); await t.join('guest', [0]);
+  await roundWithBystanders(t);
+  t.store.test.mutateRoom('party', r => { delete r.unplayed; });
+  assert.equal(Object.hasOwn(await t.room(), 'unplayed'), false);
+  await t.join('john', [6], { name: 'John' });                  // join in the legacy round
+  await t.send('guest', 'leave', { memberGen: (await t.snap('guest')).me.memberGen });
+  const settled = await t.standAll();                           // its drain runs guest's leave release (releaseSeats)
+  assert.equal((await t.snap('guest')).me.active, false);
+  await t.send('kevin', 'next', { roundId: settled.roundId });  // resetRound
+  const s = await t.snap();
+  assert.equal(s.phase, 'bets'); assert.deepEqual(s.owners, [null, null, null, 'kevin', 'kevin', null, 'john'], 'every box kept');
+  assert.deepEqual(releaseAudit(t), []);
+  assert.deepEqual((await t.room()).unplayed, {}, 'the next window starts with the new shape');
 });
 
 test('a seat holder who bet nothing and leaves mid-round is released; next still opens the window', async () => {
