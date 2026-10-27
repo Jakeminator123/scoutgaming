@@ -2,7 +2,7 @@
 
 Genererad från [status.json](status.json). Uppdaterad 2026-10-27.
 
-**Verifierad migrering: 60% (12/20 aktiviteter).**
+**Verifierad migrering: 65% (13/20 aktiviteter).**
 
 Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad arbetstid. Planfiler ger inga migrationspoäng.
 
@@ -12,11 +12,11 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | E2 En produktväg | 100% | 40% | Godkänd |
 | E3 Kevinmodul med mains lagring | 75% | 60% | Ej godkänd |
 | E4 Adminstyrning och datamigrering | 25% | 80% | Ej godkänd |
-| E5 Verifierad leverans | 0% | 100% | Ej godkänd |
+| E5 Verifierad leverans | 25% | 100% | Ej godkänd |
 
 | Ansvar | Verifierat inom ansvaret |
 | --- | ---: |
-| jakob | 80% |
+| jakob | 90% |
 | kevin | 43% |
 | orkestrator | 33% |
 
@@ -39,7 +39,7 @@ Detta mäter godkända leveranser. Det är inte en uppskattning av förbrukad ar
 | J09 | Förbered avveckling av oanvända databaskontrakt | jakob | VERIFIED |
 | K06 | Verifiera Admin till spel efter omstart | kevin | IN_PROGRESS |
 | K07 | Verifiera spelbeteenden och samtidighet | kevin | TODO |
-| J10 | Ren klon, start och återställning | jakob | TODO |
+| J10 | Ren klon, start och återställning | jakob | VERIFIED |
 | O02 | Oberoende integrerad granskning | orkestrator | TODO |
 | O03 | Godkänd integration och verifierad drift | orkestrator | TODO |
 

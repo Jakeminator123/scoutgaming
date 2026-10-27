@@ -586,16 +586,15 @@
       "stage": "E5",
       "title": "Ren klon, start och återställning",
       "weight": 5,
-      "status": "TODO",
+      "status": "VERIFIED",
       "dependsOn": [
         "J06",
-        "J09",
-        "K06"
+        "J09"
       ],
-      "branch": null,
-      "head": null,
-      "pr": null,
-      "reviewer": null,
+      "branch": "codex/j10-webview-acceptance-20261027",
+      "head": "ef4e64d787834458d0526bb896c42abaa46b4451",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/423",
+      "reviewer": "Root och oberoende j10_review; tidigare Cloud ledger/schema-granskning PR422",
       "evidence": [
         "Revision 2026-10-25: nytt J10-prov är inte utfört; ny tids-/miljöplan ska utgå från aktuell main och bevarade daterade schema-/restorebevis, inte det äldre paket-A- eller server-v2-läget.",
         "Förnyad revision 2026-10-25: normal Studio-start använder publika produkten; offline är endast uttrycklig jämförelsefixture. Äldre K06/K07-resurs- och schemaförslag dateras i återställningsdokumentet. Samprov kräver identifierade Vercel/Render-versioner, Neon-scope, Blob-namnrymd och kompatibelt sparat format.",
@@ -603,9 +602,11 @@
         "Molnprov2026-10-25 kväll: efter stoppade appskrivare återställdes en granskad PostgreSQL18.6-dump en gång till separat croupier_staging_restore.75tabeller/fyra sekvenser och1777unika fullständiga objektnycklar matchar; riktiga app-läsare ger identisk stabil data med strikt klient-TLS/skrivskydd. Originalets SQL-name-trunkering rättad genom separat läsande ommätning, inte datarättning. Ingen full HTTP-spelreplay efter restore; detaljer/kvitton i ENVIRONMENT-RESTORATION.md.",
         "Molnprov2026-10-25 kväll: andra omstarten efter spel fick ny deployment på samma28815e9c, men växlande health/version200 och RenderHTML502. Spelåterläsning underkänd efter1kontroll/0kommandon; orsak öppen. Första omstartens4/4 projektåterläsningar kvarstår som avgränsat delbevis. Egna Render/Vercel lämnade verifierat suspenderad/pausad.",
         "Isolerad offentlig återanslutning2026-10-26 på Vercel/Render d890486: egen syntetisk spelare via ordinarie inloggning/handoff, en avslutad demo-hand,25 före-kontroller och9 efter-kontroller. Render Restart service17:48:04.872UTC;26health/version200 matchar52logghändelser i nya runtimea851f9a1-d7a1-4e60-8cd2-a99dce901fce. Samma spelare/saldo1000USD/version3/historikrunda/ledger3 och exakt SQL-hashparitet efter replay. Root har återkontrollerat kvitton. Shared0; ingen SQL-restore eller full material-/delatbordacceptans.",
-        "Cloud 2026-10-27: sanitiserat slutkvitto på df6c1b60/d53 och PR421 läst. Egen Node24.21 API54/54 + klient43/43 efter ren npm ci, 0 skip och oförändrad låsfil, komplett rekonstruerat Git-träd matchar d53. Read-only Neon med croupier_staging_app verifierar den frysta spelarens samtliga två ledgerrader/nio kolumner source↔restore: SHA256 f834fb6560b1ddad809f42e416b53b2a1dd2ea0ad679b321827a68e76ddb0214. Nutida radparitet, inte historisk före/efterhash runt replay. Product-v1 och gemensamma Studio-checksummor matchar; optional020 finns endast i source. Tidigare d53 HTTP16 verifierar kompatibel login/läsning/replay utan020, ingen ny 020-publicering. Exakta frågor/schema i docs/2026-10-27-ISOLATED-ACCEPTANCE.json#cloudVerification. Positiv sammanhängande Admin/publicering/lobby/launch och reproducerbart samlat kvitto återstår; K06-beroende/status/vikt oförändrade. PR421 mergad som32785414 efter full CI40480027938 på exakt df6. Terminalens nätverk fungerar för tillåtna värdar med stödd perkommandobehörighet; staging-HTTP nekas fortfarande av värdpolicyn."
+        "Cloud 2026-10-27: sanitiserat slutkvitto på df6c1b60/d53 och PR421 läst. Egen Node24.21 API54/54 + klient43/43 efter ren npm ci, 0 skip och oförändrad låsfil, komplett rekonstruerat Git-träd matchar d53. Read-only Neon med croupier_staging_app verifierar den frysta spelarens samtliga två ledgerrader/nio kolumner source↔restore: SHA256 f834fb6560b1ddad809f42e416b53b2a1dd2ea0ad679b321827a68e76ddb0214. Nutida radparitet, inte historisk före/efterhash runt replay. Product-v1 och gemensamma Studio-checksummor matchar; optional020 finns endast i source. Tidigare d53 HTTP16 verifierar kompatibel login/läsning/replay utan020, ingen ny 020-publicering. Exakta frågor/schema i docs/2026-10-27-ISOLATED-ACCEPTANCE.json#cloudVerification. Positiv sammanhängande Admin/publicering/lobby/launch och reproducerbart samlat kvitto återstår; K06-beroende/status/vikt oförändrade. PR421 mergad som32785414 efter full CI40480027938 på exakt df6. Terminalens nätverk fungerar för tillåtna värdar med stödd perkommandobehörighet; staging-HTTP nekas fortfarande av värdpolicyn.",
+        "Slutverifiering2026-10-27: se docs/2026-10-27-ISOLATED-ACCEPTANCE.json#webviewVerification. Ren d53-klon/install/build/start och16/16HTTP-restore återanvänds; exakt kompatibelt schema/release och full aktuell ledgerparitet finns i cloudVerification. d53→c916 ändrar bara dokument. Ny riktig webviewhand med egen syntetisk spelare b7c8e3d6-2ce4-43c9-a132-7b226f023fbb: ordinarie Admin publicerar PAOW-rum bf0fdd42 paket3→4; lobby/auktoriserad launch verifierar paket4, hand5USDdemo avslutad, saldo995/version3/ledger2/historik1, reload bevarar saldo. Eget rum arkiverat paket5, public launch404; gamla rum/operatorB/projekt oförändrade. Render suspenderad11:22:02UTC med originaldb. Inga egna lokala processer. Testkonto bevarat som bevis efter players/status503; logout200, alla gamla sessionsåterkallelser ej påstådda. Inga produktionsskrivningar/AV-attester.",
+        "Uttrycklig beroenderevision: J06/J09 kvarstår. K06:s implementerade publicerings-/launchväg verifieras här, men dess bredare fält/material/AV/samtidighetsacceptans behålls i K06/K07/O02. Inga vikter/slutkrav eller tester sänks. Ny PAOW-publicering eller optional020-konfiguration påstås inte vara återställd i äldre restore."
       ],
-      "blocker": "Ren klon/build/start och d53 HTTP-replay efter separat SQL-restore har daterade kvitton. Cloud verifierar nu full ledger-radparitet för fryst spelare mellan source/restore och exakt installerat schema/releasepar (restore utan optional020). Positiv relevant Admin → publicering → lobby → auktoriserad launch på kandidaten, reproducerbart samlat J06/J09/K06-kvitto och uttrycklig hantering av K06-beroendet återstår. Cloud saknar åtkomst till staging-Vercel; staging-HTTP nekas av värdpolicyn och browserautentisering saknas. Terminalens git/npm fungerar med stödd nätverksbehörighet; ingen ny restore eller spelinsats har körts."
+      "blocker": null
     },
     {
       "id": "O02",

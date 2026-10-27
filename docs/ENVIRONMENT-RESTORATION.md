@@ -1,5 +1,18 @@
 # Återställning och skydd av data
 
+## J10 slutverifierad — 27 oktober 2026
+
+**65 % = 13/20 aktiviteter.** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
+
+Ordinarie Admin publicerade nytt syntetiskt PAOW-rum, paket3→4. Lobby och autentiserad `/play/blackjack`→`/game` konsumerade samma rum/operatör/dealer/paket4. Ny spelare satsade5 demokrediter, stod på14 och avslutade handen: saldo995, version3, två ledgerrader och en historikrunda. Reload bevarade saldot. Frontend d53/backend c916 skiljer bara dokument; ingen ny produktkod eller schemaändring behövdes.
+
+J10:s förkunskaper är nu J06/J09: K06:s befintliga publicerings-/launchkontrakt provades, men full fält-, material-/AV- och samtidighetsacceptans stannar i K06/K07/O02. Restore gäller d53:s native-spel mot äldre kompatibelt schema utan optional020; ny PAOW-publicering eller020-konfiguration påstås inte vara återställd.
+
+Eget rum är återställbart arkiverat (paket5), borttaget från lobbyn och ger autentiserad404. Gamla rum, operatorB och projektdata är oförändrade. Render är suspended2026-10-27T11:22:02.103Z med exakt originaldatabas. Inga egna lokala provprocesser startades. Spelaren loggades ut i webviewn; slutliga API-utloggningar gav200. Provkontot/historiken bevaras: Admin-spärr gav503, alla äldre hjälpsessioners återkallelse är inte verifierad. Inga produktionsskrivningar eller AV-attester; Johns Bet bevarad.
+
+Följande avsnitt är daterade tidigare kvitton; aktuellt avslut ovan ersätter deras öppna J10-status.
+
+
 ## Slutkvitto och Cloud-överlämning — 27 oktober
 
 Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status förblir 60 %.
