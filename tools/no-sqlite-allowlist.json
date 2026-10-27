@@ -25,39 +25,9 @@
     "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
   },
   {
-    "path": "ops/cloud/config.mjs",
-    "removeBy": "PR-6",
-    "reason": "Cloud config still accepts the SQLite backend for local mode; PR-6 makes PostgreSQL the only backend."
-  },
-  {
-    "path": "ops/cloud/storage-export.mjs",
-    "removeBy": "PR-6",
-    "reason": "SQLite 'export' maintenance mode; PR-6 keeps only 'studio-export'."
-  },
-  {
-    "path": "ops/cloud/test/runtime.test.mjs",
-    "removeBy": "PR-6",
-    "reason": "SQLite bootstrap preflight test; rewritten to the PostgreSQL branch in PR-6."
-  },
-  {
-    "path": "ops/cloud/test/storage-export.test.mjs",
-    "removeBy": "PR-6",
-    "reason": "Tests the SQLite 'export' mode removed in PR-6."
-  },
-  {
     "path": "packages/director/node/companion-store.mjs",
     "removeBy": "PR-7b",
     "reason": "OpenClaw Director companion store; replaced by a JSON store."
-  },
-  {
-    "path": "services/game/player-chat-memory.mjs",
-    "removeBy": "PR-6",
-    "reason": "Synchronous SQLite twin of the async store; deleted with the other twins."
-  },
-  {
-    "path": "services/game/server.mjs",
-    "removeBy": "PR-6",
-    "reason": "Engine SQLite backend (local default); PR-6 makes the engine PostgreSQL-only."
   },
   {
     "path": "services/openclaw/lab/deploy/companion-search-server.mjs",
@@ -67,16 +37,11 @@
   {
     "path": "test/backup-render-state.mjs",
     "removeBy": "PR-7c",
-    "reason": "Backup tool product-profile tests; removed with that profile."
-  },
-  {
-    "path": "test/roulette-room-storage.mjs",
-    "removeBy": "PR-6",
-    "reason": "SQLite roulette command test; deleted after parity with test/roulette-postgres.mjs."
+    "reason": "Director/Gateway companion SQLite fixtures for the backup tool; the product profile left in PR-6."
   },
   {
     "path": "tools/backup-render-state.mjs",
     "removeBy": "PR-7c",
-    "reason": "Backup tool SQLite product profile."
+    "reason": "Backup tool Director/Gateway SQLite profiles (companion.sqlite, companion-search.sqlite); the product profile left in PR-6."
   }
 ]

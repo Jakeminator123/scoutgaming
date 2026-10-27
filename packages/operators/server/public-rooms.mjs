@@ -55,7 +55,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
   async function read(slug) {
     if (!isOperatorSlug(slug)) return null;
     if (!store || !policy) unavailable();
-    // SQLite/offline hosts have no Studio storage runtime. Keep their public
+    // Engines started without the Studio policy have no Studio storage runtime. Keep their public
     // unavailable response independent of modules from that optional runtime.
     const [{ createGameEntrySelector }, { listPackageRooms }, { readPackagePresentation }, { resolvePlayerSelection }, { validatePublicOperatorRooms }] = await Promise.all([
       import('../../presentation/server/game-entry-selector.mjs'), import('../../presentation/server/package-rooms.mjs'), import('../../presentation/server/presentation-package.mjs'),

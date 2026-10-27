@@ -13,30 +13,6 @@ function ledger(round) {
   return JSON.stringify({ game:'roulette', roomId:round.event.roomId, roundId:round.id,
     number:round.event.outcome.number, wagered:round.wagered, returned:round.returned });
 }
-export function createSqliteRouletteCommand({ db, draw }) {
-  db.exec('CREATE TABLE IF NOT EXISTS roulette_tables (player_id TEXT NOT NULL REFERENCES players(id), operator_id TEXT NOT NULL, room_id TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(player_id,operator_id,room_id))');
-  return ({ id, ...request }, {room = ROOM} = {}) => {
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      const player = db.prepare('SELECT id,name,currency,balance FROM players WHERE id=?').get(id);
-      const before = playerBalance(player);
-      const saved = db.prepare('SELECT state FROM roulette_tables WHERE player_id=? AND operator_id=? AND room_id=?').get(id,room.operatorId,room.id);
-      const state = saved ? JSON.parse(saved.state) : newRoom();
-      const result = roomCommand(state,request,before,{ draw, currency:player.currency, room });
-      let balance = before;
-      if (result.changed) {
-        balance = result.round.balanceAfter;
-        db.prepare('INSERT INTO roulette_tables (player_id,operator_id,room_id,state) VALUES (?,?,?,?) ON CONFLICT(player_id,operator_id,room_id) DO UPDATE SET state=excluded.state').run(id,room.operatorId,room.id,JSON.stringify(state));
-        db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance,id);
-        const insert = db.prepare('INSERT INTO transactions (player_id,type,amount,currency,meta,at) VALUES (?,?,?,?,?,?)');
-        insert.run(id,'roulette_bet',-result.round.wagered,player.currency,ledger(result.round),result.round.event.occurredAt);
-        if (result.round.returned) insert.run(id,'roulette_payout',result.round.returned,player.currency,ledger(result.round),result.round.event.occurredAt);
-      }
-      db.exec('COMMIT');
-      return response(result,player,balance,request.requestId);
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
-  };
-}
 export function createPostgresRouletteCommand({ pool, draw }) {
   return async ({ id, ...request }, {room = ROOM, recheck = async()=>{}} = {}) => {
     const client = await pool.connect();

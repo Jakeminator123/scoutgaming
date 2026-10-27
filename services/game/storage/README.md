@@ -1,13 +1,13 @@
 # PostgreSQL och publicerad produktdata
 
-`storage/` är aktiv lagrings- och publiceringskod. `services/game/server.mjs` väljer
-den när `CROUPIER_DATABASE=postgres`; SQLite-implementationerna för lokal drift
-ligger huvudsakligen direkt under `services/game/`. Mappen är inte ett äldre BO-demo.
+`storage/` är aktiv lagrings- och publiceringskod. `services/game/server.mjs` kräver
+`CROUPIER_DATABASE=postgres` och laddar modulerna här statiskt; de synkrona
+SQLite-tvillingarna togs bort 27 oktober 2026. Mappen är inte ett äldre BO-demo.
 
 | Modulgrupp | Ansvar |
 | --- | --- |
 | `postgres-store.mjs` | Appägd `pg`-pool och schemaläsning; SQL-/transaktionskärnan finns i `packages/storage/server`. |
-| `async-*` | PostgreSQL-versioner av spelar-/BO-autentisering, partner-API, historik, chattminne och probe. |
+| `async-*` | Spelar-/BO-autentisering, partner-API, historik, chattminne och probe. |
 | `studio-contract.mjs`, `studio-repository.mjs`, `studio-runtime.mjs` | Appkomposition för dokument/registret och Render-start; sparad spelpolicy finns i `packages/presentation/server/saved-game-policy.mjs`. |
 | `operator-package-reader.mjs`, `player-administration.mjs` | Appägda läsare och spelaradministration; operatörsstore, lifecycle och branding finns i `packages/operators`. |
 | `presentation-package.mjs`, `frozen-*`, `published-layer-assets.mjs` | Publicerade paket, låsta dealer-/presentationsreferenser och åtkomst till publicerade lager. |

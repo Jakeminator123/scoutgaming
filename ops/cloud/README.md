@@ -98,9 +98,12 @@ establish speech/chat acceptance or start a paid worker.
 
 ## Historical export boundary
 
-`storage-export.mjs` still implements the explicitly selected historical
-maintenance/export modes. It runs without the game child and is not the normal
-Neon/Blob startup or rollback path. Its removal requires a separate review of
+`storage-export.mjs` now implements only the explicitly selected PostgreSQL
+`studio-export` freeze (health only, no capture). The SQLite snapshot mode
+`export` was removed with the engine's SQLite path; old SQLite archives are read
+as described in [ENVIRONMENT-RESTORATION](../../docs/ENVIRONMENT-RESTORATION.md).
+It runs without the game child and is not the normal Neon/Blob startup or
+rollback path. Removing `studio-export` still requires a separate review of
 the retained recovery procedure. Do not enable historical export flags or
 reopen a suspended QA service to follow an old pilot recipe.
 

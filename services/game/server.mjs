@@ -10,7 +10,16 @@ import { isAdministratorRole } from '../../packages/studio-access/server/account
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
-import { playerPostOriginOk } from './player-auth.mjs';
+import { playerAuth, playerPostOriginOk } from './storage/async-player-auth.mjs';
+import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
+import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
+import { backofficeGameAuth } from './storage/async-bo-game-auth.mjs';
+import { backofficeLabAuth } from './storage/async-bo-lab-auth.mjs';
+import { readPlayerResults } from './storage/async-player-results.mjs';
+import { createPlayerChatMemory } from './storage/async-player-chat-memory.mjs';
+import { createPlayerProbeStore } from './storage/async-player-probe-store.mjs';
+import { installPartnerApi } from './storage/async-partner-api.mjs';
+import { createPostgresStore } from './storage/postgres-store.mjs';
 import { createPostgresNativeTableCommand } from './postgres-native-table.mjs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -28,7 +37,6 @@ import { createDealerSpeechReferenceService } from './dealer-speech-reference.mj
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
-import { createNativeTableCommand } from './native-table.mjs';
 import { createNativeObservationPublisher } from './native-observation-publisher.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
 import { serveGenerationMedia } from './generation-media.mjs';
@@ -37,22 +45,21 @@ import { clipMapping } from './clip-mapping.mjs';
 import { installGracefulShutdown } from './graceful-shutdown.mjs';
 const persistenceFailure = error => Boolean(error?.severity)
   || /^[0-9A-Z]{5}$/.test(error?.code || '')
-  || ['ERR_SQLITE_ERROR','ECONNRESET','ECONNREFUSED','ETIMEDOUT','ENOTFOUND','EAI_AGAIN','EPIPE'].includes(error?.code)
+  || ['ECONNRESET','ECONNREFUSED','ETIMEDOUT','ENOTFOUND','EAI_AGAIN','EPIPE'].includes(error?.code)
   || /(?:connection (?:terminated|timeout)|timeout exceeded when trying to connect)/i.test(error?.message || '');
 const publicFailure = (error, statusCode = 400) => persistenceFailure(error)
   ? { error: 'Service temporarily unavailable', statusCode: 503 }
   : { error: String(error?.message || error), statusCode };
 import { readFileSync as readSync } from 'node:fs';
-import { statSync, createReadStream, existsSync, mkdirSync, realpathSync, closeSync } from 'node:fs';
+import { statSync, createReadStream, existsSync, realpathSync, closeSync } from 'node:fs';
 import { join, normalize, extname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { presentationPublicSource } from '../../packages/presentation/public-modules.mjs';
-import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
+import { createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
 
 // Only the separate local QA launcher can register this in-process capability.
@@ -72,19 +79,19 @@ const publicAssetPath = (...parts) => {
 const publicBlobMedia = localMediaEnabled && process.env.CROUPIER_MEDIA_BLOB_INDEX
   ? (await import(pathToFileURL(join(mediaRepository, 'services/game/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
-const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
-if (!['sqlite', 'postgres'].includes(databaseBackend)) throw new Error('Invalid CROUPIER_DATABASE.');
-const postgres = databaseBackend === 'postgres';
+// One product path: PostgreSQL only, named explicitly so a missing variable never
+// selects a backend. The retired SQLite directory must not linger in an environment.
+if (process.env.CROUPIER_DATABASE !== 'postgres') throw Error(process.env.CROUPIER_DATABASE === 'sqlite' ? 'sqlite_backend_removed' : 'postgres_required');
+if (process.env.CROUPIER_DATA_DIR !== undefined) throw Error('croupier_data_dir_retired');
 const sharedRoomFlag = process.env.CROUPIER_SHARED_TABLE_ENABLED;
 if (sharedRoomFlag !== undefined && !['0','1'].includes(sharedRoomFlag)) throw Error('shared_room_flag_invalid');
 const sharedRoomsEnabled = sharedRoomFlag === '1';
 let sharedRoomService = null;
 let sharedRoomCommand = null;
-const { createPostgresStore } = postgres ? await import('./storage/postgres-store.mjs') : {};
-if (!postgres && process.env.CROUPIER_GAME_DATABASE_URL) throw new Error('Game database mode must be explicit.');
-const storage = sharedRoomQa?.storage ?? (postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
-  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null);
-if (storage) await storage.db.assertInstalled();
+// createPostgresStore validates the game/zones URLs; the owned QA launcher supplies its own pool.
+const storage = sharedRoomQa?.storage ?? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
+  zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL });
+await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
 const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
@@ -158,21 +165,8 @@ const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette
   readCurrentContext:(await import('../../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
 }) : null;
 
-const domain = name => {
-  if (postgres && name === 'craig-identity') return import('../../packages/studio-access/server/craig-identity.mjs');
-  if (postgres && name === 'bo-auth-epoch') return import('../../packages/studio-access/server/bo-auth-epoch.mjs');
-  return import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
-};
-const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
-  { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
-  ['craig-identity', 'bo-auth-epoch', 'player-auth', 'bo-game-auth', 'bo-lab-auth', 'player-results',
-    'player-chat-memory', 'player-probe-store', 'partner-api'].map(domain));
 // ---------- player database (demo money only) ----------
-// An explicit directory lets local QA exercise the real player/server without
-// opening the operator's databases. Production keeps its existing default.
-const dataDir = postgres ? null : resolve(process.env.CROUPIER_DATA_DIR ?? join(fileURLToPath(new URL('../../web/', import.meta.url)), 'data'));
-if (dataDir) mkdirSync(dataDir, { recursive: true });
-const db = storage?.db ?? new DatabaseSync(join(dataDir, 'croupier.db'));
+const db = storage.db;
 const playerChatMemory = (await createPlayerChatMemory(db, {studioScope:studioPolicyRuntime?.scope}));
 let presentationApi;
 const activePlayerChats = new Map();
@@ -182,10 +176,9 @@ const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
 async function loadProbeRuntime() {
   if(!activeProbeRuntime){
-    const [{createProbeRuntime},{createLocalProjectReader},{readSettings}]=await Promise.all([
-      domain('probe-runtime'),import('../../packages/studio-registry/server/local-project-reader.mjs'),import('./director-settings.mjs')]);
-    const projectStore = studioPolicyRuntime?.policy.projectStore()
-      ?? (!postgres && dataDir ? createLocalProjectReader(join(dataDir, 'studio')) : null);
+    const [{createProbeRuntime},{readSettings}]=await Promise.all([
+      import('./storage/async-probe-runtime.mjs'),import('./director-settings.mjs')]);
+    const projectStore = studioPolicyRuntime?.policy.projectStore() ?? null;
     if (!projectStore) throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 });
     activeProbeRuntime ??= await createProbeRuntime({store:probeStore,memory:playerChatMemory,
       projectStore,
@@ -203,66 +196,13 @@ const probeRuntime={
     return loadProbeRuntime().then(runtime=>runtime[method](...args));
   }])),
 };
-if (!postgres) db.exec(`
-  CREATE TABLE IF NOT EXISTS players (
-    id TEXT PRIMARY KEY, name TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'USD',
-    balance REAL NOT NULL DEFAULT 1000, created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT NOT NULL, type TEXT NOT NULL,
-    amount REAL NOT NULL, currency TEXT NOT NULL, meta TEXT, at TEXT NOT NULL
-  );
-`);
-if (!postgres) (await import('./player-profile.mjs')).ensureSqliteProfileColumns(db);
 const RATES = { USD: 1, EUR: 0.92, SEK: 10.6 }; // fixed demo rates per USD
 const logTx = (pid, type, amount, currency, meta = '') =>
   db.prepare('INSERT INTO transactions (player_id, type, amount, currency, meta, at) VALUES (?,?,?,?,?,?)')
     .run(pid, type, amount, currency, meta, new Date().toISOString());
-const getPlayer = id => db.prepare(`SELECT id, name, currency, balance${postgres ? ', status' : ''} FROM players WHERE id = ?`).get(id);
+const getPlayer = id => db.prepare('SELECT id, name, currency, balance, status FROM players WHERE id = ?').get(id);
 
-function sqliteApiPlayer({ id, name }) {
-  let p = id ? getPlayer(id) : undefined;
-  if (!p) {
-    p = { id: randomUUID(), name: (typeof name === 'string' && name.trim().slice(0, 40)) || 'Player', currency: 'USD', balance: 1000 };
-    db.prepare('INSERT INTO players (id, name, currency, balance, created_at) VALUES (?,?,?,?,?)')
-      .run(p.id, p.name, p.currency, p.balance, new Date().toISOString());
-    logTx(p.id, 'open', p.balance, p.currency, 'starting demo balance');
-  }
-  return p;
-}
-function sqliteApiDeposit({ id, amount }) {
-  const p = getPlayer(id);
-  if (!p) return { error: 'no such player' };
-  const amt = Number(amount);
-  if (!Number.isFinite(amt) || amt < 1 || amt > 100_000_000) return { error: 'amount must be 1-100000000' };
-  const balance = Math.round((p.balance + amt) * 100) / 100;
-  db.prepare('UPDATE players SET balance = ? WHERE id = ?').run(balance, id);
-  logTx(id, 'deposit', amt, p.currency, 'demo test card');
-  return { balance, currency: p.currency };
-}
-function sqliteApiBalance({ id, balance, reason }) {
-  if (db.prepare('SELECT 1 FROM blackjack_tables WHERE player_id=?').get(id)
-      || db.prepare('SELECT 1 FROM roulette_tables WHERE player_id=?').get(id)) return { error: 'Table balances are server-managed' };
-  const p = getPlayer(id);
-  if (!p) return { error: 'no such player' };
-  const b = Number(balance);
-  if (!Number.isFinite(b) || b < 0 || b > 1_000_000_000) return { error: 'bad balance' };
-  db.prepare('UPDATE players SET balance = ? WHERE id = ?').run(b, id);
-  logTx(id, 'sync', Math.round((b - p.balance) * 100) / 100, p.currency, String(reason ?? '').slice(0, 80));
-  return { balance: b };
-}
-function sqliteApiCurrency({ id, currency }) {
-  const saved = db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
-  if (saved) { const g = JSON.parse(saved.state); if (g.round && !g.paid) return { error: 'Finish the current round before changing currency' }; }
-  const p = getPlayer(id);
-  if (!p) return { error: 'no such player' };
-  if (!RATES[currency]) return { error: 'currency must be USD, EUR or SEK' };
-  const balance = Math.round((p.balance / RATES[p.currency]) * RATES[currency] * 100) / 100;
-  db.prepare('UPDATE players SET balance = ?, currency = ? WHERE id = ?').run(balance, currency, id);
-  logTx(id, 'fx', balance, currency, `converted from ${p.currency}`);
-  return { balance, currency };
-}
-const apiPlayer = postgres ? async ({ id, name }) => db.transaction(async () => {
+const apiPlayer = async ({ id, name }) => db.transaction(async () => {
   const existing = id ? await getPlayer(id) : null;
   if (existing) return existing;
   const player = { id: randomUUID(), name: (typeof name === 'string' && name.trim().slice(0, 40)) || 'Player', currency: 'USD', balance: 1000 };
@@ -270,7 +210,7 @@ const apiPlayer = postgres ? async ({ id, name }) => db.transaction(async () => 
     .run(player.id, player.name, player.currency, player.balance, new Date().toISOString());
   await logTx(player.id, 'open', player.balance, player.currency, 'starting demo balance');
   return player;
-}) : sqliteApiPlayer;
+});
 async function postgresWallet(id, work) {
   return db.transaction(async () => {
     const player = await db.prepare('SELECT id, name, currency, balance, status FROM players WHERE id=? FOR UPDATE').get(id);
@@ -279,16 +219,16 @@ async function postgresWallet(id, work) {
     return work(player);
   });
 }
-const apiDeposit = postgres ? async ({ id, amount }) => postgresWallet(id, async player => {
+const apiDeposit = async ({ id, amount }) => postgresWallet(id, async player => {
   const value = Number(amount);
   if (!Number.isFinite(value) || value < 1 || value > 100_000_000) return { error: 'amount must be 1-100000000' };
   const balance = Math.round((player.balance + value) * 100) / 100;
   await db.prepare('UPDATE players SET balance=? WHERE id=?').run(balance, id);
   await logTx(id, 'deposit', value, player.currency, 'demo test card');
   return { balance, currency: player.currency };
-}) : sqliteApiDeposit;
-const apiBalance = postgres ? async () => ({ error: 'Table balances are server-managed' }) : sqliteApiBalance;
-const apiCurrency = postgres ? async ({ id, currency }) => postgresWallet(id, async player => {
+});
+const apiBalance = async () => ({ error: 'Table balances are server-managed' });
+const apiCurrency = async ({ id, currency }) => postgresWallet(id, async player => {
   if (!RATES[currency]) return { error: 'currency must be USD, EUR or SEK' };
   const saved = await db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(id);
   if (saved) { const game = JSON.parse(saved.state); if (game.round && !game.paid) return { error: 'Finish the current round before changing currency' }; }
@@ -296,7 +236,7 @@ const apiCurrency = postgres ? async ({ id, currency }) => postgresWallet(id, as
   await db.prepare('UPDATE players SET balance=?,currency=? WHERE id=?').run(balance, currency, id);
   await logTx(id, 'fx', balance, currency, `converted from ${player.currency}`);
   return { balance, currency };
-}) : sqliteApiCurrency;
+});
 const playerHistory = createPlayerHistoryHandler({
   db, getPlayer, readPlayerResults,
   readGame: async playerId => {
@@ -306,12 +246,12 @@ const playerHistory = createPlayerHistoryHandler({
 });
 const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency, '/api/history': ({ id }) => playerHistory(id) };
 
-// Server-owned demo table; SQLite transaction commits wallet and shoe together.
+// Server-owned demo table; one PostgreSQL transaction commits wallet and shoe together.
 // Post-commit observers are isolated so the Astrid-only probe cannot withhold partner rounds.
 const nativeOptions = { db, getPlayer, logTx, ...createNativeObservationPublisher({ probeRuntime, partner, readPlayerResults, getPlayer, db,
   movingSpeech: () => movingSpeechService }) };
-API['/api/table'] = postgres ? createPostgresNativeTableCommand({ ...nativeOptions, pool: storage.gamePool }) : createNativeTableCommand(nativeOptions);
-const rouletteCommand = postgres ? createPostgresRouletteCommand({ pool:storage.gamePool }) : createSqliteRouletteCommand({ db });
+API['/api/table'] = createPostgresNativeTableCommand({ ...nativeOptions, pool: storage.gamePool });
+const rouletteCommand = createPostgresRouletteCommand({ pool:storage.gamePool });
 API['/api/roulette/table'] = async ({id,playerId,context,...request}) => {
   if (request.op === 'spin' && playerId !== id) throw Object.assign(Error('session_changed'),{statusCode:401});
   if (request.op === 'spin' && typeof request.currency !== 'string') throw Object.assign(Error('currency_changed'),{statusCode:400});
@@ -331,45 +271,13 @@ function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCom
 
 // ---------- native Studio identity and retained BO handoff/session ----------
 // ---------- BO auth: JWT + craig (the auth DB) ----------
-// Backoffice users live in CRAIG - their own SQLite DB (data/craig.db),
-// separate from the players DB. Auth is a stateless HS256 JWT in an HttpOnly
+// Backoffice users live in CRAIG - the croupier_auth schema, separate from
+// the players schema. Auth is a stateless HS256 JWT in an HttpOnly
 // cookie, checked against a monotonic CRAIG auth epoch after every role or
 // password change. Current logins survive server restarts.
-const boDb = storage?.boDb ?? new DatabaseSync(join(dataDir, 'craig.db'));
-const playerAdministration = postgres
-  ? (await import('../../packages/storage/server/player-administration.mjs')).createPlayerAdministration({ db, boDb }) : null;
-if (!postgres) boDb.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
-    email TEXT, salt TEXT, hash TEXT, role TEXT NOT NULL DEFAULT 'reader',
-    created_at TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS tokens (
-    token TEXT PRIMARY KEY, username TEXT NOT NULL, kind TEXT NOT NULL,
-    exp INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
-`);
-if (!postgres) try { boDb.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch { /* exists */ }
-// pre-invite schema had NOT NULL salt/hash - invited users have neither until
-// they choose a password, so rebuild the table once if the old constraint is there
-if (!postgres) {
-  const saltCol = (await boDb.prepare('PRAGMA table_info(users)').all()).find(c => c.name === 'salt');
-  if (saltCol?.notnull) {
-    boDb.exec(`BEGIN;
-      CREATE TABLE users_new (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
-        email TEXT, salt TEXT, hash TEXT, role TEXT NOT NULL DEFAULT 'reader',
-        created_at TEXT NOT NULL
-      );
-      INSERT INTO users_new (id, username, email, salt, hash, role, created_at)
-        SELECT id, username, email, salt, hash, role, created_at FROM users;
-      DROP TABLE users;
-      ALTER TABLE users_new RENAME TO users;
-    COMMIT;`);
-    console.log('[bo] craig: users table migrated for invite flow');
-  }
-}
+const boDb = storage.boDb;
+const { createPlayerAdministration, createPlayerPasswordCommand } = await import('../../packages/storage/server/player-administration.mjs');
+const playerAdministration = createPlayerAdministration({ db, boDb });
 const ROLE_RANK = { admin: 3, superadmin: 3 };
 const boAuthEpoch = (await installBoAuthEpoch(boDb));
 async function boSecret() {
@@ -439,7 +347,7 @@ async function backofficeGameLogout(req) {
   };
   // PostgreSQL's existing transaction lock is shared with native Studio and
   // BO session issuance, including across the Vercel and Render processes.
-  if(postgres)await boDb.transaction(revoke);else await revoke();
+  await boDb.transaction(revoke);
 }
 async function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
@@ -573,14 +481,13 @@ const gameOrigin=sharedRoomQa?.publicOrigin??process.env.PUBLIC_URL??'https://be
 const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '');
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
-const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
+const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp));};
 const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:gamePath,boUrl:BO_URL}));
 const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
   labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const playerSession = async req => (await auth.session(req));
-if (!postgres) db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
 async function previewPlayer(req,res) {
   const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   const digest=t=>createHash('sha256').update(t).digest('hex');
@@ -619,7 +526,6 @@ const operatorSpeechQa = createOperatorSpeechQa({
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
-const createPlayerPasswordCommand=playerAdministration ? (await import('../../packages/storage/server/player-administration.mjs')).createPlayerPasswordCommand : null;
 // Every step runs even when another fails; the first failure is rethrown with
 // its step and player. Chunks of 4 bound the probe step's pooled transactions.
 const cancelPlayerRuntime=async (playerIds,reason)=>{
@@ -699,7 +605,7 @@ const server = createServer(async (req, res) => {
     if(response.body&&req.method!=='HEAD')Readable.fromWeb(response.body).on('error',()=>res.destroy()).pipe(res);else res.end();
     return;
   }
-  if (pathname === '/api/presentation/capabilities' && req.headers['x-presentation-capability-version'] === '9' && postgres) {
+  if (pathname === '/api/presentation/capabilities' && req.headers['x-presentation-capability-version'] === '9') {
     const ready = (await storage.gamePool.query("SELECT to_regclass('croupier_game.roulette_tables') AS ready")).rows[0]?.ready;
     if (!ready) { res.writeHead(503,{'Cache-Control':'no-store'}); res.end(); return; }
   }
@@ -1270,7 +1176,7 @@ const server = createServer(async (req, res) => {
 });
 let gameUpgradeDispatcher = null;
 if (sharedRoomsEnabled) {
-  if (!postgres || !studioPolicyRuntime || !storage?.gamePool) throw Error('shared_room_postgres_registry_required');
+  if (!studioPolicyRuntime || !storage.gamePool) throw Error('shared_room_postgres_registry_required');
   const [{createSharedRoomService},{createGameUpgradeDispatcher},{createSharedCommandAuth},{createSharedRoomCommand}] = await Promise.all([
     import('./shared-room-service.mjs'), import('./game-upgrade-dispatcher.mjs'),
     import('./storage/shared-command-auth.mjs'), import('./shared-room-command.mjs'),
@@ -1383,7 +1289,7 @@ const gameShutdown = installGracefulShutdown({ server, closeRuntime: async ({ si
   const outcomes = await Promise.allSettled([sharedRoomService?.close(), speechStreamService?.close({ signal }), ...probeCancellations]);
   if (outcomes.some(outcome => outcome.status === 'rejected')) throw new Error('runtime_shutdown_failed');
 }, closeStorage: async () => {
-  try { if (storage) await storage.close(); }
+  try { await storage.close(); }
   catch { throw new Error('storage_shutdown_failed'); }
 } });
 export const sharedRoomQaRuntime = sharedRoomQa ? Object.freeze({

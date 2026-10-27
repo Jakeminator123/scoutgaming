@@ -64,8 +64,8 @@ modultester via `test/fixtures/pglite-pool.mjs`, som installerar schemat från
 `ops/cloud/test/game-image.test.mjs` håller den utanför runtime. PGlite har en
 session och bevisar inte låsning mellan anslutningar; det gör CI:s PostgreSQL.
 
-Den historiska standardroten för lokal SQLite är fortfarande Git-ignorerade
-`web/data/`, eller den uttryckliga `CROUPIER_DATA_DIR`. Källflytten flyttar
+Motorn har ingen SQLite-väg: den startar bara med `CROUPIER_DATABASE=postgres`
+och vägrar starta om `CROUPIER_DATA_DIR` är satt. Källflytten flyttar
 inte privata data, originalmedia eller gamla dependencyinstallationer.
 De lokala Lissabon-gästprofilerna (`lissabon-profiles.mjs`, `/api/lissabon/profiles`,
 `CROUPIER_LISSABON_PROFILES`) togs bort 22 oktober 2026; lanevärdet

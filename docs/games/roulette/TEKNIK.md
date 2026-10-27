@@ -59,7 +59,7 @@ Lobbyn följer aktuell publicering och öppnar
 
 `room.mjs` validerar satsningar och räknar av dem. `rules.mjs` är den gemensamma
 satsningskatalogen som också skickas till webbläsaren. `storage.mjs` låser
-spelarens plånbok och sparar saldo, bokföring och rundkvitto i samma SQLite-/
+spelarens plånbok och sparar saldo, bokföring och rundkvitto i samma
 PostgreSQL-transaktion. `access.mjs` kontrollerar bolag, speltyp, publicerat
 rum och dealer; PostgreSQL kontrollerar publiceringen igen före commit.
 Utfallet lämnar transaktionen först efter lyckad commit.
@@ -261,7 +261,7 @@ som återförsök av en redan avgjord runda. Certifiering och riktiga pengar ing
 Använd Node 24 för hela repo-/Studio-flödet. Kör från reporoten:
 
 ```sh
-node --test --test-concurrency=4 test/roulette.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
+node --test --test-concurrency=4 test/roulette.mjs test/roulette-room.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
 ```
 
 Tester för generator och testyta kontrollerar
@@ -270,7 +270,7 @@ kontrakt, felaktiga indata och fel i slumpkällan. Statistiska stickprov är int
 bevis för en rättvis eller certifierad generator. HTTP-testerna använder en
 isolerad loopback-server utan databas och kontrollerar också Origin, tomma
 anrop, belastningsgräns, felsvar och exakta proxyvägar. Rumstesterna täcker
-satsningar, utbetalningar, idempotens, session/origin, publicering och SQLite.
+satsningar, utbetalningar, idempotens, session/origin och publicering.
 `test/roulette-postgres.mjs` kräver den isolerade PostgreSQL-fixturen för
 databastesterna; upptäckta eller hoppade tester är inte körd PG-verifiering.
 CI:s `tools/studio-isolated-qa.mjs` kör dessa med riktig isolerad databas,

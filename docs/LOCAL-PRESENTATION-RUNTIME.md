@@ -286,7 +286,7 @@ läppsynk kräver fortfarande ett inspelat/observerat prov. Kvittot innehåller
 varken repliktext, transportticket eller ett visuellt godkännande.
 
 `test/moving-speech-deal-integration.mjs` driver verklig blackjack-commit och
-beständig presentation i ett eget SQLite-minne vidare till talets WebSocket.
+beständig presentation i en minnesfixtur för PostgreSQL-tabellen vidare till talets WebSocket.
 `test/microphone-openclaw-integration.mjs` kopplar mikrofonkontroll, WAV,
 transkriptions-API, Director, NDJSON, röstadapter och moving-runtime i loopback.
 De skyddar kort-/saldobehörighet, isolering, originalspråk och avbrott men
