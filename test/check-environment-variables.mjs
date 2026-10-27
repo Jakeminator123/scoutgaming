@@ -11,7 +11,9 @@ test('active media sources belong to their deployed service inventories', () => 
   for (const file of ['services/game/blob-media.mjs', 'services/game/storage/video-registry.mjs', 'services/game/storage/legacy-clip-inventory.mjs', 'services/game/storage/studio-media-runtime.mjs']) assert.ok(game.sources.includes(file), file);
   assert.ok(game.conditional.includes('NEXT_PUBLIC_LAB_BASE_PATH'));
   assert.ok(studio.sources.includes('apps/studio/lib/legacy-clip-inventory.mjs'));
-  for (const name of ['LAB_PUBLIC_URL', 'CROUPIER_DATA_DIR']) assert.ok(studio.conditional.includes(name), name);
+  assert.ok(studio.conditional.includes('LAB_PUBLIC_URL'));
+  // Studio no longer reads a fixture data directory; only the game image still validates it.
+  assert.equal(studio.conditional.includes('CROUPIER_DATA_DIR'), false);
 });
 
 test('detects newly read deployment variable names', () => {
