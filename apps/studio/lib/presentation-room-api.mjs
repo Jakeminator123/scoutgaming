@@ -19,7 +19,7 @@ import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCaptur
   isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { validatePresentationCapabilities } from '../../../packages/presentation/capability-contract.mjs';
-import { presentationPackageRequiresV29, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
+import { presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
 import {assertPresentationRoomMaterials} from '../../../packages/presentation/contracts/presentation-material-game.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
@@ -165,11 +165,19 @@ function assertReplayBinding(saved, room) {
   return frozen;
 }
 function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
-  if (!capabilities || ![2, 3, 4, 9, 14, 15, 29].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion < 9
+  // The complete capability representation is validated before this feature
+  // check. Later contracts retain room support without matching an old list.
+  if (capabilities?.rooms !== 'operator-owned-v2' || game === 'roulette' && capabilities.rouletteRooms !== 'european-single-zero-v1'
     ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.rouletteIdle!=='explicit-game-idle-v1'
     ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1') return false;
-  if(presentation&&presentationPackageRequiresV29(presentation)&&capabilities.schemaVersion!==29)return false;
-  return capabilities.schemaVersion >= (presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2);
+  if (presentation?.schemaVersion >= 2 && (capabilities.registeredDealerMode !== 'saved-registry-idle-v1'
+    || capabilities.frozenDealerIdle !== 'operator-package-v2')) return false;
+  if (presentation?.schemaVersion === 3 && capabilities.frozenDealerEvents !== 'operator-package-v3') return false;
+  if (presentation && presentationPackageRequiresV29(presentation)
+    && (capabilities.mediaTiming !== 'byte-bound-timeline-v1' || capabilities.extendedPresentation !== 'bounded-envelope-v2')) return false;
+  if (presentation && presentationPackageRequiresV30(presentation)
+    && capabilities.recordedEmbeddedAv !== 'embedded-mp4-av-v2') return false;
+  return true;
 }
 export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {
   scope = validateStudioScope(scope);
@@ -236,7 +244,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const runtime=await capabilities(publicationPresentation,roomGame(body));
     if (!runtimeAccepts(runtime, publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
-    const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation, allowExtended:runtime.schemaVersion===29, ...captured });
+    const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation,
+      allowExtended:runtime.extendedPresentation==='bounded-envelope-v2', ...captured });
     preparedValues.add(value); return value;
   }
   preparations.set('POST /studio/api/admin/presentation-room', prepare);

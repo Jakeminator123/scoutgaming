@@ -1004,29 +1004,55 @@ test('an empty project and immutable bank publish only a newly registered synthe
 });
 
 
-test('new measured filmed room publishes only with v29 and optional020 while retaining every frozen record',async()=>{
-  for(const version of [4,29])for(const installed of [false,true]){
+test('measured and embedded AV rooms accept cumulative capabilities and require their own feature plus optional020',async()=>{
+  for(const speechSchemaVersion of [1,2])for(const version of [4,29,30,31])for(const installed of [false,true]){
+    const supported = version >= (speechSchemaVersion === 2 ? 30 : 29);
     const f=await fixture({empty:true,runtimeCapabilities:async()=>presentationCapabilitiesForVersion(version)});
     if(installed)f.pool.allowExtendedStorage();
-    const source=nativeRoomMaterialFixture({allSpeechSlots:true,capture:false});
+    const source=nativeRoomMaterialFixture({allSpeechSlots:true,capture:false,speechSchemaVersion});
     const old=await f.repository.readDocument('project');
     await f.repository.saveDocument('project',{value:source.project,expectedRevision:old.revision,actor:session.user});
     source.records.forEach(row=>{const {revision,updatedAt,...record}=row;f.pool.setMedia(record);});
     const lane=source.project.lanes[0].id,ready=await f.prepare('north',lane);
-    assert.equal(ready.ready,version===29);
-    if(version!==29)assert.equal(ready.reason,'studio_presentation_runtime_update_required');
+    assert.equal(ready.ready,supported,`speech v${speechSchemaVersion}, capability v${version}`);
+    assert.equal(ready.capabilities.schemaVersion,version);
+    if(!supported)assert.equal(ready.reason,'studio_presentation_runtime_update_required');
     const body={operatorId:'north',presentationLaneId:lane,name:'Measured fixture room',idempotencyKey:key,
       expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision};
     const before=f.pool.snapshot();
-    if(version!==29||!installed){
-      await assert.rejects(f.create(body),e=>e.code===(version!==29?'studio_presentation_runtime_update_required':'studio_extended_presentation_storage_unavailable'));
+    if(!supported||!installed){
+      await assert.rejects(f.create(body),e=>e.code===(!supported?'studio_presentation_runtime_update_required':'studio_extended_presentation_storage_unavailable'));
       assert.deepEqual(f.pool.snapshot(),before,'no room/package/audit survives a denied publication');
     }else{
       const saved=await f.create(body),branding=JSON.parse(f.pool.snapshot().packages[0].branding),presentation=readPackagePresentation({branding,lanes:[lane]});
       assert.equal(saved.packageRevision,1);assert.equal(branding._scoutPresentation.format,'croupier-lanes-v2');
       assert.equal(presentation.playback.media.length,53);assert.equal(presentation.playback.media.every(row=>Boolean(row.mediaTiming)),true);
+      for(const media of presentation.playback.media){
+        const original=source.records.find(row=>row.id===media.id);
+        assert.equal(media.sha256,original.sha256);assert.equal(media.size,original.size);
+        assert.deepEqual(media.classification,original.classification);assert.deepEqual(media.mediaTiming,original.mediaTiming);
+      }
       assert.equal((await f.create(body)).duplicate,true);
       assert.equal(f.pool.snapshot().packages.length,1);
     }
+  }
+});
+
+test('room preflight and creation reject malformed current capabilities without writes or exposing the payload',async()=>{
+  const current=presentationCapabilitiesForVersion(31);let advertised=current;
+  const f=await fixture({runtimeCapabilities:async()=>advertised}),body=await f.payload();
+  assert.equal((await f.prepare()).ready,true);
+  const before=f.pool.snapshot(),api=createStudioAdminApi({authorize:async()=>session,allowedOrigins:[origin],
+    publicHosts:['studio.example.invalid'],handlers:f.roomApi.handlers,preparations:f.roomApi.preparations});
+  const missing=field=>Object.fromEntries(Object.entries(current).filter(([key])=>key!==field));
+  for(const value of [null,{schemaVersion:31},missing('rooms'),missing('mediaTiming'),missing('recordedEmbeddedAv'),
+    missing('nativeFilmedPlanning'),{...current,nativeFilmedPlanning:'unverified'},
+    {...current,schemaVersion:30},{...current,schemaVersion:32},{...current,unexpected:'private-capability-detail'}]){
+    advertised=value;
+    await assert.rejects(f.prepare(),e=>e.code==='presentation_capability_invalid'&&e.statusCode===503);
+    await assert.rejects(f.create(body),e=>e.code==='presentation_capability_invalid'&&e.statusCode===503);
+    const response=await api.handle(new Request(origin+'/studio/api/admin/presentation-room?operatorId=north&presentationLaneId=vip-presentation'));
+    assert.equal(response.status,503);assert.deepEqual(Object.keys(await response.json()),['error']);
+    assert.deepEqual(f.pool.snapshot(),before);
   }
 });

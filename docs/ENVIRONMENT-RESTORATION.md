@@ -1,5 +1,12 @@
 # Återställning och skydd av data
 
+## Slutkvitto och Cloud-överlämning — 27 oktober
+
+Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status förblir 60 %.
+
+Båda lokala agenternas arbete, exakt kandidat, deploy-ID, återgång och öppna bevis finns i [Cloud-överlämningen](NEXT-AGENT.md) och [sanitiserat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json). Dessa ersätter den äldre formuleringen nedan att faktisk omkörning återstår. Ny spelrunda med ny syntetisk spelare, full CI/PR, K06 och ljud/läppsynkacceptans återstår i Cloud.
+
+
 ## J05: verifierad runtime och sparat spel — 26 oktober
 
 **J05 är verifierad på `902bae95ca47409390f0b77cf1c76bd8707245b9` från [PR403](https://github.com/Jakeminator123/scoutgaming/pull/403).** Det slutför det befintliga kravet på förenklad drift, verklig omstart och återläst sparat spel. Autentiserad offentlig spelåteranslutning, full HTTP-restore, godkänd film/tal och delat bord ligger kvar i K04/K06/K07/J10/O02. Historiska 502-observationer nedan bevaras; provet fastställer inte deras rotorsak.
