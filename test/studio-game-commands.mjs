@@ -4,6 +4,9 @@ import { randomBytes } from 'node:crypto';
 import { createPlayerPasswordCommand } from '../packages/storage/server/player-administration.mjs';
 import { createStudioGameCommandApi } from '../services/game/studio-game-commands.mjs';
 import { studioCommandSignature } from '../apps/studio/lib/studio-game-authority.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
+import { createPlayerChatMemory } from '../services/game/storage/async-player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 
 const scope = { environment: 'fixture', workspaceId: 'croupier' }, secret = 's'.repeat(40);
 const publicOrigin = 'https://public.example.invalid', at = 1_800_000_000_000;
@@ -111,4 +114,58 @@ test('signed player password command waits for cancellation and cannot replay af
   failed.session={user:'operator',role:'admin',scope};
   const rejection=await failed.api(failed.request(changes));assert.equal(rejection.status,503);
   assert.equal((await rejection.text()).includes('PRIVATE'),false);assert.equal(failed.state.nonces.size,0);
+});
+
+async function scopedStore(){
+  const log=[];
+  const respond=(sql,values=[])=>{
+    const text=sql.replace(/\s+/g,' ').trim();log.push(text);
+    if(/^COMMIT/i.test(text))return{command:'COMMIT',rows:[],rowCount:0};
+    if(/^INSERT INTO \S*meta /.test(text))return{command:'INSERT',rows:[],rowCount:1};
+    if(/croupier_studio\.documents/.test(text))return{command:'SELECT',rows:[{value:{dealers:[{id:'astrid'}],dealerTrash:[]}}],rowCount:1};
+    if(/SELECT value FROM .*player_chat_memory_meta/.test(text))return{command:'SELECT',rows:[{value:'a'.repeat(64)}],rowCount:1};
+    if(/SELECT \* FROM .*player_chat_memory_profiles/.test(text))return{command:'SELECT',rows:[{player_ref:values[0],dealer_id:values[1],history:'[]',revision:'r1',touched:at}],rowCount:1};
+    return{command:'SELECT',rows:[],rowCount:0};
+  };
+  const pool={async connect(){return{async query(sql,values){return respond(sql,values);},release(){}};},async query(sql,values){return respond(sql,values);}};
+  const store=createPostgresStore({pool});
+  const memory=await createPlayerChatMemory(store.db,{studioScope:scope});
+  const probes=await createPlayerProbeStore(store.db,memory);
+  log.length=0;// Startup statements are irrelevant to the command transaction.
+  return{store,probes,log};
+}
+function scopedApi(store,execute,options={}){
+  return createStudioGameCommandApi({scope,secret,publicOrigin,boDb:store.boDb,now:()=>at,
+    authorize:async()=>({user:'operator',role:'superadmin',scope}),execute,...options});
+}
+const scopedRequest=(action='players/status')=>{
+  const raw=JSON.stringify({action,body:{id:'player-1'},actor:{user:'operator',role:'superadmin'},scope,commandId:'d6339fa6-f202-47bb-9308-3f81440d1394'});
+  return new Request(`${publicOrigin}/api/studio-game/command`,{method:'POST',headers:{origin:publicOrigin,'content-type':'application/json',
+    'x-croupier-studio-timestamp':String(at),'x-croupier-studio-signature':studioCommandSignature(secret,String(at),raw)},body:raw});
+};
+test('scoped player-memory work inside a Render command shares the Studio-scoped command transaction',async()=>{
+  const {store,probes,log}=await scopedStore();
+  const result=await scopedApi(store,async()=>{await probes.activity({playerId:'player-1',dealerId:'astrid'});return{ok:true};})(scopedRequest());
+  assert.equal(result.status,200);
+  const begin=log.findIndex(sql=>sql.startsWith('BEGIN'));
+  assert.equal(log[begin+1],'SELECT pg_advisory_xact_lock($1::integer, $2::integer)');
+  assert.equal(log.filter(sql=>sql.startsWith('BEGIN')).length,1);assert.equal(log.at(-1),'COMMIT');
+});
+test('post-commit runtime cleanup runs after COMMIT and cannot fail or roll back an accepted command',async()=>{
+  const {store,probes,log}=await scopedStore(),settleErrors=[];let committedAt;
+  const ok=await scopedApi(store,async({afterCommit})=>{
+    afterCommit(async()=>{committedAt=log.lastIndexOf('COMMIT');await probes.activity({playerId:'player-1',dealerId:'astrid'});});
+    afterCommit(()=>{throw Error('PRIVATE CANCEL FAILURE');});
+    return{ok:true};
+  },{onSettleError:info=>settleErrors.push(info)})(scopedRequest());
+  assert.equal(ok.status,200);assert.equal((await ok.text()).includes('PRIVATE'),false);
+  assert.equal(committedAt,log.findIndex(sql=>sql==='COMMIT'));assert.ok(committedAt>0);
+  assert.ok(log.findIndex((sql,index)=>index>committedAt&&sql.startsWith('BEGIN'))>committedAt);
+  assert.deepEqual(settleErrors,[{action:'players/status'}]);
+
+  const rejected=await scopedStore();let ran=0;
+  const failed=await scopedApi(rejected.store,async({afterCommit})=>{afterCommit(()=>{ran++;});throw Object.assign(Error('invalid'),{statusCode:400});},
+    {onSettleError:()=>{ran++;}})(scopedRequest());
+  assert.equal(failed.status,400);assert.equal(ran,0);
+  assert.ok(rejected.log.includes('ROLLBACK'));assert.equal(rejected.log.includes('COMMIT'),false);
 });

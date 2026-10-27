@@ -7,7 +7,9 @@ const actions = new Set(['players/status', 'players/password', 'apikeys/revoke',
 const fail = (statusCode = 403) => { throw Object.assign(new Error('studio_game_command_rejected'), { statusCode }); };
 const response = (status, body) => Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 
-export function createStudioGameCommandApi({ scope, secret, publicOrigin, authorize, execute, boDb, now = Date.now } = {}) {
+const settleWarning = ({ action }) => console.warn(JSON.stringify({ event: 'studio_game_command_settle_failed', action }));
+
+export function createStudioGameCommandApi({ scope, secret, publicOrigin, authorize, execute, boDb, now = Date.now, onSettleError = settleWarning } = {}) {
   scope = validateStudioScope(scope);
   if (typeof secret !== 'string' || Buffer.byteLength(secret) < 32 || typeof authorize !== 'function' || typeof execute !== 'function' || !boDb?.transaction) fail(503);
   return async request => {
@@ -34,7 +36,10 @@ export function createStudioGameCommandApi({ scope, secret, publicOrigin, author
       fresh();
       if (!policy || !meetsStudioAdminActionRole(session.role, command.action) || session.user !== command.actor?.user || session.role !== command.actor?.role
         || canonicalStudioJson(validateStudioScope(session.scope)) !== canonicalStudioJson(scope)) fail();
-      return await boDb.transaction(async () => {
+      // Runtime cleanup runs after commit, so it cannot roll back or fail an
+      // accepted command. Scoped player memory nests in the game -> Studio locks.
+      const settled = [];
+      const result = await boDb.transaction(async () => {
         fresh();
         const current = await authorize(request);
         const acceptedAt=fresh();
@@ -47,10 +52,15 @@ export function createStudioGameCommandApi({ scope, secret, publicOrigin, author
         if (!inserted.changes) fail(409);
         await boDb.prepare("DELETE FROM meta WHERE k LIKE 'studio-command:%' AND v::bigint<?").run(fresh() - 60000);
         fresh();
-        const result = await execute({ action: command.action, body: command.body, actor: session, scope });
+        const result = await execute({ action: command.action, body: command.body, actor: session, scope, afterCommit: work => { settled.push(work); } });
         if (!result || result.error || result.ok === false) fail(result?.statusCode || 400);
-        return response(200, { ...result, ok: true, authority: 'render', scope });
-      });
+        return result;
+      }, { studioScope: scope });
+      const accepted = response(200, { ...result, ok: true, authority: 'render', scope });
+      for (const work of settled) {
+        try { await work(); } catch { try { onSettleError({ action: command.action }); } catch { /* Reporting cannot alter the response. */ } }
+      }
+      return accepted;
     } catch (error) {
       const status = [400,401,403,404,409,413,422,423].includes(error?.statusCode) ? error.statusCode : 503;
       return response(status, { error: 'studio_game_command_rejected' });

@@ -28,6 +28,8 @@ import { createStudioDocumentApi } from '../apps/studio/lib/studio-document-api.
 import { createStudioGameAuthority, studioCommandSignature } from '../apps/studio/lib/studio-game-authority.mjs';
 import { createStudioGameCommandApi } from '../services/game/studio-game-commands.mjs';
 import { createPlayerAdministration } from '../packages/storage/server/player-administration.mjs';
+import { createPlayerChatMemory } from '../services/game/storage/async-player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 import { planStudioMigrations, loadStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { createSpeechJournal } from '../services/game/postgres-speech-journal.mjs';
 import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../services/game/generated-speech-session.mjs';
@@ -115,8 +117,16 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       validateProjectBindings: value => { assert.ok(value.lines.every(line => line.variants.every(variant => variant.videoGenerationId === null))); } });
     const players = createPlayerAdministration({ db: store.db });
     const command = createStudioGameCommandApi({ scope, secret: commandSecret, publicOrigin: studioOrigin, authorize, boDb: store.boDb,
-      execute: async ({ action, body, actor }) => {
-        if (action === 'players/status') { const player = await players.setStatus({ ...body, actor: actor.user }); if (player.changed && body.status !== 'active') cancellations++; return { ok: true, player }; }
+      execute: async ({ action, body, actor, afterCommit }) => {
+        if (action === 'players/status') {
+          const player = await players.setStatus({ ...body, actor: actor.user });
+          // Mirrors the engine: real Studio-scoped probe cancellation after commit.
+          if (player.changed && body.status !== 'active') afterCommit(async () => {
+            const probes = await createPlayerProbeStore(store.db, await createPlayerChatMemory(store.db, { studioScope: scope }));
+            await probes.activity({ playerId: player.id, dealerId: 'astrid' }); cancellations++;
+          });
+          return { ok: true, player };
+        }
         if (action === 'apikeys/credit') {
           // Synthetic engine-owned wallet mutation proves nonce + domain atomicity.
           await store.db.prepare('UPDATE players SET balance=balance+? WHERE id=?').run(body.amount, body.playerId);

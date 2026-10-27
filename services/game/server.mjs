@@ -632,29 +632,25 @@ const operatorSpeechQa = createOperatorSpeechQa({
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
-const playerPasswordCommand=playerAdministration ? (await import('../../packages/storage/server/player-administration.mjs')).createPlayerPasswordCommand({
-  administration:playerAdministration,
-  cancelRuntime:async playerId=>{
-    await speechStreamService?.cancelPlayer(playerId);
-    cancelPlayerChats(activePlayerChats,playerId,'player_password_changed');
-    await probeRuntime.cancel({playerId,dealerId:'astrid'},'player_password_changed');
-  },
-}) : null;
+const {createPlayerPasswordCommand}=(await import('../../packages/storage/server/player-administration.mjs'));
+const cancelPlayerRuntime=async (playerId,reason)=>{
+  await speechStreamService?.cancelPlayer(playerId);
+  cancelPlayerChats(activePlayerChats,playerId,reason);
+  await probeRuntime.cancel({playerId,dealerId:'astrid'},reason);
+};
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   // The isolated K04 QA start forbids the ingress secret variable; a random
   // per-process secret keeps the Studio command surface unusable there.
   scope: studioPolicyRuntime.scope, secret: sharedRoomQa ? randomBytes(32).toString('hex') : process.env.CROUPIER_VERCEL_INGRESS_SECRET,
   publicOrigin: process.env.CROUPIER_PUBLIC_ORIGIN,
   authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
-  execute: async ({ action, body, actor }) => {
-    if (action === 'players/password') return playerPasswordCommand({body,actor});
+  execute: async ({ action, body, actor, afterCommit }) => {
+    // Runtime cancellation follows the committed account change and cannot undo it.
+    if (action === 'players/password') return createPlayerPasswordCommand({ administration: playerAdministration,
+      cancelRuntime: async playerId => { afterCommit(() => cancelPlayerRuntime(playerId, 'player_password_changed')); } })({ body, actor });
     if (action === 'players/status') {
       const changed = await playerAdministration.setStatus({ ...body, actor: actor.user });
-      if (changed.changed || changed.status !== 'active') {
-        speechStreamService?.cancelPlayer(changed.id);
-        cancelPlayerChats(activePlayerChats,changed.id,'player_account_changed');
-        await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
-      }
+      if (changed.changed || changed.status !== 'active') afterCommit(() => cancelPlayerRuntime(changed.id, 'player_account_changed'));
       return { ok: true, ...changed };
     }
     const method = { 'apikeys/revoke': 'revoke', 'apikeys/rotate': 'rotate', 'apikeys/launch': 'mintLaunch', 'apikeys/credit': 'credit' }[action];
@@ -664,11 +660,7 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
       const prefix = `partner:${body.id}`;
       const sessions = await db.prepare('SELECT DISTINCT player_id FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').all(prefix,`${prefix}:%`);
       await db.prepare('DELETE FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').run(prefix,`${prefix}:%`);
-      for (const { player_id: playerId } of sessions) {
-        speechStreamService?.cancelPlayer(playerId);
-        cancelPlayerChats(activePlayerChats,playerId,'partner_key_changed');
-        await probeRuntime.cancel({ playerId, dealerId: 'astrid' }, 'partner_key_changed');
-      }
+      for (const { player_id: playerId } of sessions) afterCommit(() => cancelPlayerRuntime(playerId, 'partner_key_changed'));
     }
     return { ok: true, ...result };
   },
