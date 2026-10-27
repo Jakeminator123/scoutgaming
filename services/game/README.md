@@ -58,6 +58,11 @@ från Codex med `--no-open`. Det lokala `--offline`-fixturparet är pensionerat 
 Följ [användarguiden](../../apps/studio/docs/README.md) och [AGENTS.md](../../AGENTS.md).
 `services/game/package.json` anger Node `>=22.16.0`; produktionscontainern
 använder Node 24. Installerade beroenden hör till `services/game/node_modules/`.
+Enda devDependency är `@electric-sql/pglite` (PostgreSQL i WASM) för lokala
+modultester via `test/fixtures/pglite-pool.mjs`, som installerar schemat från
+`ops/neon-game/`. Containern installerar med `--omit=dev` och
+`ops/cloud/test/game-image.test.mjs` håller den utanför runtime. PGlite har en
+session och bevisar inte låsning mellan anslutningar; det gör CI:s PostgreSQL.
 
 Den historiska standardroten för lokal SQLite är fortfarande Git-ignorerade
 `web/data/`, eller den uttryckliga `CROUPIER_DATA_DIR`. Källflytten flyttar
