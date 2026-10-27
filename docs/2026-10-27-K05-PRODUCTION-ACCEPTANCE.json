@@ -1,0 +1,625 @@
+{
+  "kind": "k05-production-acceptance/v1",
+  "date": "2026-10-27",
+  "branch": "jakob/claude-handover-receipts",
+  "productionSha": "cc415cd8ab7f88c0371018286f112587a8e359e2",
+  "mainAtWriting": "f923db40 (#448). Runtimeändringen cc415cd8..f923db40 är #446 (tal som webbläsaren spärrar visar Slå på ljud i stället för rå text, apps/web och services/game/public); inte provad i dessa körningar. Övriga commits är dokumentation och CI.",
+  "status": {
+    "activity": "K05",
+    "result": "IN_PROGRESS",
+    "reason": "Produktionsbindningen och Jakobs godkännande är bevisade här. Kvar: K05:s manifestmatris med bytes-SHA för alla 15 tagningar, ett negativt fall (ogranskad eller okänd tagning kan inte väljas) och oberoende granskning, se remaining. Orkestratorn ändrar status.json efter granskningen."
+  },
+  "sources": "Sammanfattat från k05/bind-paow-takes.receipt.json (22 körningar av bindningsskriptet mot produktionens Admin-API, 17:04–19:40Z), k05/jakob-production-review.json och k06-k07-k04/receipt-prod-readonly.json i orkestratorns lokala arbetsmapp, inte i Git. Admin-inloggningen loggas bara som POST /studio/api/auth/login 200; inga kakor, lösenord, tokens eller Blob-skrivnycklar finns här.",
+  "environment": {
+    "origin": "https://www.scoutgaming.tech",
+    "vercel": {
+      "team": "team_Scxorb9qtZHjNae1YEQnFCaT",
+      "project": "prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD",
+      "sha": "cc415cd8ab7f88c0371018286f112587a8e359e2"
+    },
+    "render": {
+      "service": "croupier-v3 srv-dbd6nfon74is73aiblf0",
+      "sha": "cc415cd8ab7f88c0371018286f112587a8e359e2",
+      "note": "Director och Gateway kör samma SHA enligt START-HERE; deploy-id loggades inte i råkvittona."
+    },
+    "neon": {
+      "project": "wandering-hill-60561912",
+      "branch": "br-flat-fog-b161a6r8",
+      "database": "croupier_game",
+      "studioMigration020": "applicerad i produktionen 27 oktober (Jakob); krävdes för rumspubliceringen"
+    },
+    "blob": "croupier-media-private store_AqwvebTbBHarOjvG"
+  },
+  "subjects": {
+    "operator": "johns-bet",
+    "room": "room-76640ca1-b619-7948-596e-3d102202b7d0",
+    "roomName": "PAOW Blackjack",
+    "lane": "paow-studio-blackjack-e9a6193d-6bf3-4774-b505-538d6507bf3d",
+    "dealer": "paow",
+    "kevinSourceCommit": "c713875923cd854b26f89c1db0d0f47064619c1d",
+    "adminAccount": "produktionens Admin-konto (rollen admin)"
+  },
+  "binding": {
+    "summary": "Körning 4 (--apply --all-sv --import-missing, 17:05–17:08Z): 226 anrop (POST 113×200, GET 98×200, Blob PUT 15×ok). 53 svenska tagningar: 26 befintliga bundna, 15 importerade och bundna, 12 redan bundna (6 approved, 4 pending, 2 rejected). Blob-PUT-sökvägen innehåller bytes-SHA-256 för de importerade.",
+    "runs": [
+      {
+        "run": "bind --apply --all-sv --import-missing",
+        "startedAt": "2026-10-27T17:05:14.689Z",
+        "finishedAt": "2026-10-27T17:08:22.974Z",
+        "flags": [
+          "--apply",
+          "--all-sv",
+          "--import-missing"
+        ],
+        "httpStatus": {
+          "200": 211,
+          "ok": 15
+        },
+        "result": "done",
+        "message": null
+      },
+      {
+        "run": "publish-package (inloggning nekad)",
+        "startedAt": "2026-10-27T17:46:33.417Z",
+        "finishedAt": "2026-10-27T17:46:33.803Z",
+        "flags": [
+          "--apply",
+          "--publish-package",
+          "--operator"
+        ],
+        "httpStatus": {
+          "401": 1
+        },
+        "result": "error",
+        "message": "login failed: HTTP 401 Authentication required"
+      },
+      {
+        "run": "publish-package",
+        "startedAt": "2026-10-27T17:48:50.808Z",
+        "finishedAt": "2026-10-27T17:48:55.822Z",
+        "flags": [
+          "--apply",
+          "--publish-package",
+          "--operator"
+        ],
+        "httpStatus": {
+          "200": 4,
+          "503": 1
+        },
+        "result": "failed",
+        "message": "POST operator-package HTTP 503 Action unavailable — runtime/registry unavailable"
+      },
+      {
+        "run": "publish-room",
+        "startedAt": "2026-10-27T17:48:55.965Z",
+        "finishedAt": "2026-10-27T17:48:57.133Z",
+        "flags": [
+          "--apply",
+          "--publish-room",
+          "--operator"
+        ],
+        "httpStatus": {
+          "200": 3
+        },
+        "result": "blocked",
+        "message": "publication not ready: studio_room_game_material_unavailable materialReason=native_material_measurement_missing"
+      },
+      {
+        "run": "publish-package",
+        "startedAt": "2026-10-27T19:17:47.261Z",
+        "finishedAt": "2026-10-27T19:18:03.530Z",
+        "flags": [
+          "--apply",
+          "--publish-package",
+          "--operator"
+        ],
+        "httpStatus": {
+          "200": 6
+        },
+        "result": "done",
+        "message": "package published at revision 6"
+      },
+      {
+        "run": "publish-room",
+        "startedAt": "2026-10-27T19:18:03.817Z",
+        "finishedAt": "2026-10-27T19:18:05.351Z",
+        "flags": [
+          "--apply",
+          "--publish-room",
+          "--operator",
+          "--room"
+        ],
+        "httpStatus": {
+          "200": 3
+        },
+        "result": "blocked",
+        "message": "publication not ready: studio_room_game_material_unavailable materialReason=native_material_speech_unbound"
+      },
+      {
+        "run": "publish-package",
+        "startedAt": "2026-10-27T19:30:04.296Z",
+        "finishedAt": "2026-10-27T19:30:18.093Z",
+        "flags": [
+          "--apply",
+          "--publish-package",
+          "--operator"
+        ],
+        "httpStatus": {
+          "200": 6
+        },
+        "result": "done",
+        "message": "package published at revision 7"
+      },
+      {
+        "run": "publish-room",
+        "startedAt": "2026-10-27T19:30:18.469Z",
+        "finishedAt": "2026-10-27T19:30:19.769Z",
+        "flags": [
+          "--apply",
+          "--publish-room",
+          "--operator",
+          "--room"
+        ],
+        "httpStatus": {
+          "200": 3
+        },
+        "result": "blocked",
+        "message": "publication not ready: studio_room_game_material_unavailable materialReason=native_material_measurement_missing"
+      },
+      {
+        "run": "measure-only",
+        "startedAt": "2026-10-27T19:40:13.584Z",
+        "finishedAt": "2026-10-27T19:40:19.564Z",
+        "flags": [
+          "--apply",
+          "--measure-only"
+        ],
+        "httpStatus": {
+          "200": 7
+        },
+        "result": "done",
+        "message": null
+      },
+      {
+        "run": "publish-package",
+        "startedAt": "2026-10-27T19:40:19.672Z",
+        "finishedAt": "2026-10-27T19:40:24.589Z",
+        "flags": [
+          "--apply",
+          "--publish-package",
+          "--operator"
+        ],
+        "httpStatus": {
+          "200": 6
+        },
+        "result": "done",
+        "message": "package published at revision 8"
+      },
+      {
+        "run": "publish-room",
+        "startedAt": "2026-10-27T19:40:24.692Z",
+        "finishedAt": "2026-10-27T19:40:29.527Z",
+        "flags": [
+          "--apply",
+          "--publish-room",
+          "--operator",
+          "--room"
+        ],
+        "httpStatus": {
+          "200": 8
+        },
+        "result": "done",
+        "message": "room game configuration published (room-config-133cfffc-fdad-47f2-9c85-51b08de4a325)"
+      }
+    ],
+    "measureOnly": {
+      "at": "2026-10-27T19:40:13.584Z",
+      "clips": 38,
+      "newlyMeasured": [
+        "35a459dc-a9a7-4327-a558-ab924af82d8a idle 35a459dc (idle.ready)",
+        "4ad024ec-3758-49d5-b01a-1d34babc6429 idle 4ad024ec (idle.ready)"
+      ],
+      "note": "De två idle-klippen saknade servermätning (native_material_measurement_missing i körning 18); efter mätningen gick rumspubliceringen igenom."
+    }
+  },
+  "publication": {
+    "package": {
+      "at": "2026-10-27T19:40:19.672Z",
+      "before": 7,
+      "after": 8,
+      "freezeInputs": {
+        "projectRevision": "studio-ad6a48c6-f616-4ff3-9937-4eb103bb14a6",
+        "mediaCount": 319,
+        "sha256": "febeeab2d8b5f91603acc75b366ee7dfb9a4bcb236ef9bf81821db3c395979ab"
+      },
+      "frozen": {
+        "media": 53,
+        "paowMeasured": 53,
+        "paowSpeechTakes": 15,
+        "paowSpeechReview": {
+          "approved": 15
+        }
+      },
+      "message": "package published at revision 8"
+    },
+    "room": {
+      "at": "2026-10-27T19:40:24.692Z",
+      "sharedTableProbe": {
+        "status": 200,
+        "code": null
+      },
+      "saveDraft": {
+        "status": 200,
+        "draftRevision": "room-config-3ccc9149-de76-4f2a-962e-3f07e85c5ed5",
+        "administrationRevision": "studio-668870e5-02fb-48e5-9c1b-6f74f0902d7f"
+      },
+      "publish": {
+        "status": 200,
+        "expectedPackageRevision": 8,
+        "expectedDraftRevision": "room-config-3ccc9149-de76-4f2a-962e-3f07e85c5ed5"
+      },
+      "after": {
+        "administrationRevision": "studio-6193de66-f6ad-4201-a53c-918c6b917aa7",
+        "packageRevision": 9,
+        "draft": null,
+        "published": {
+          "configVersion": "room-config-133cfffc-fdad-47f2-9c85-51b08de4a325",
+          "packageRevision": 9,
+          "gameConfig": {
+            "language": "sv",
+            "limitPreset": "prive"
+          },
+          "betMs": 20000,
+          "actionMs": 15000
+        },
+        "publication": {
+          "ready": false,
+          "reason": "studio_room_game_draft_required"
+        }
+      },
+      "message": "room game configuration published (room-config-133cfffc-fdad-47f2-9c85-51b08de4a325)",
+      "note": "Rumspubliceringen höjer paketrevisionen 8 → 9; paket 8 (publish-package) och revision 9 (publish-room) är samma körpar 19:40Z."
+    }
+  },
+  "takes": {
+    "count": 15,
+    "note": "De 15 tagningar som paketfrysningen räknade som approved (paowSpeechReview {approved:15}). blobSha256 finns bara för importerade tagningar (från Blob-PUT-sökvägen); för de befintliga bundna står bytes-SHA inte i råkvittot. recordedSpeechIdentitySha256 är Studio-registrets identitetshash för tagningen, inte en bytes-SHA. reviewAtBind är läget 17:08Z; granskningen gjordes därefter och paket 7 (19:30Z) var första med alla 15 approved.",
+    "items": [
+      {
+        "takeId": "blackjack_7",
+        "lineId": "blackjack",
+        "mediaId": "ccb1915d-2a48-44d4-a44f-9022e54a6d02",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "f98eedfc3aa54dc0075b0bc375008b6f6f429c4cc9666b020169630c4e2d8d60",
+        "frameCount": 50,
+        "endUs": 2083334,
+        "studioRevisionAtBind": "studio-32b5ccf3-d0b5-4c68-b85e-910085be6ea8",
+        "exactText": "Snyggt, blackjack!",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "bust_7",
+        "lineId": "bust",
+        "mediaId": "eb0cbdfa-74c1-4326-97ec-efd81ce0ca3d",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "bb5ccc684f95113f8288fe56e9ba7f92e86109462ee857099a0e35ad1f1c3f4b",
+        "frameCount": 66,
+        "endUs": 2750000,
+        "studioRevisionAtBind": "studio-6c03ff93-5878-4b00-9ae7-9cd06de3a2b4",
+        "exactText": "Över. Bättre lycka nästa gång.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "chatter1_3",
+        "lineId": "chatter1",
+        "mediaId": "d6efc86e-eeba-4c13-82f0-fad1bd6be158",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "222353b513a6240e3a93bd919126280f1a1200d759fa8ead144b231a8dcda5cd",
+        "frameCount": 94,
+        "endUs": 3916667,
+        "studioRevisionAtBind": "studio-feb9d4f3-23cc-4aae-ac22-07da9a5dd95d",
+        "exactText": "Jag har delat ut många händer vid det här bordet. Inga två blir likadana.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "chatter2_3",
+        "lineId": "chatter2",
+        "mediaId": "261df5ca-4749-4184-aaea-ffd9d27d3f7c",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "594b1e22462e412eea3b6479f0cfdb5b1a98cc14f401356e6402ba02a4a043b9",
+        "frameCount": 71,
+        "endUs": 2958334,
+        "studioRevisionAtBind": "studio-c8a870d3-6e50-493b-8bf1-c1a509d4148e",
+        "exactText": "När du är redo. Beslutet är ditt.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "dealerblackjack_3",
+        "lineId": "dealerblackjack",
+        "mediaId": "d3c819c8-39cb-445e-9d17-c1b9bee9c821",
+        "action": "import+bind",
+        "importedFromTemplate": "7bcb3ef1-1d92-49ab-b9ff-8c833ce244d2",
+        "blobSha256": "97a09834ac586b0cbe28a289195dd7ddbe1d8591511a1fc138935e25fb589d66",
+        "recordedSpeechIdentitySha256": "4cd725975fc6a719443d2ddfab5705ef451352ac81377dbc287f6fcd6b783a92",
+        "frameCount": 100,
+        "endUs": 4166667,
+        "studioRevisionAtBind": "studio-37e5e34b-c3d3-45c9-a30f-82af8cf47bcc",
+        "exactText": "Tyvärr blev det blackjack för mig. Rundan går till huset.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "dealerbust_3",
+        "lineId": "dealerbust",
+        "mediaId": "26d612aa-274e-4f6c-b605-ccdee57d3dc1",
+        "action": "import+bind",
+        "importedFromTemplate": "17a70f07-557d-4519-b62e-b59ce8359c22",
+        "blobSha256": "089a6f05216b2c7af05d760878cf784f406b2eefcad37c8cbf2162b00db2fd05",
+        "recordedSpeechIdentitySha256": "9a33e1be996a49b93834978b0037ebbeda94a8bb00810d0e1499e41f0798d2a5",
+        "frameCount": 150,
+        "endUs": 6250000,
+        "studioRevisionAtBind": "studio-8035ebc1-73b6-4b15-8bde-05bb4cfd7913",
+        "exactText": "Och det blev över tjugoett för dealern. Vinnare runt hela bordet.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "double_3",
+        "lineId": "double",
+        "mediaId": "83779d16-73d4-45e4-a1a1-ea2eb9af7462",
+        "action": "import+bind",
+        "importedFromTemplate": "ac69a4da-834f-48e7-a84a-79d179ea0847",
+        "blobSha256": "a71600e5e4890cd7d82379f6f31da32e1398d45f4d378693bc898694f9b64ab7",
+        "recordedSpeechIdentitySha256": "c78e5cf7c0034735c932088d8fb7fcd1b980f2d8236a407ac698a7c54263e997",
+        "frameCount": 75,
+        "endUs": 3125000,
+        "studioRevisionAtBind": "studio-1d2258e2-4abb-4926-8760-21e02cd6119a",
+        "exactText": "Dubblat. Ett kort avgör.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "goodluck_3",
+        "lineId": "goodluck",
+        "mediaId": "e7bd209c-a8ce-4641-ad12-86518cb0c0a7",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "731a242e97c98e9a025f5b683f1c68eb5274555a9d651baa33621c1bdb8e6bee",
+        "frameCount": 102,
+        "endUs": 4250000,
+        "studioRevisionAtBind": "studio-e7a3e776-ed8d-467b-89a0-449fb717c0b4",
+        "exactText": "Det var alla insatser. Nu ser vi vad skon har åt oss.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "greeting_1",
+        "lineId": "greeting",
+        "mediaId": "11c3ab86-34f2-43b8-9e36-949d83811783",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "4fb768f4471acab24419221a6134fd534ee0db4c3b22b667d605abeea635c967",
+        "frameCount": 133,
+        "endUs": 5541667,
+        "studioRevisionAtBind": "studio-b5d78de7-487f-48b1-a624-c051e330920c",
+        "exactText": "God kväll och välkommen till bordet. Jag heter Paow. Sätt dig var du vill.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "insurance_3",
+        "lineId": "insurance",
+        "mediaId": "11558b1f-544a-4c50-97e1-732d88155172",
+        "action": "import+bind",
+        "importedFromTemplate": "1c465a75-d08b-4c67-b168-651129d13dd7",
+        "blobSha256": "c3a6589f1c3eb8a6c66118ba6101fd2d50d33fbd040f48121d6505d11ea1ba3b",
+        "recordedSpeechIdentitySha256": "a218eb48b3dff0a08c3fb5c27c3e537b6346dfa71577f686606024b233b37a2e",
+        "frameCount": 96,
+        "endUs": 4000000,
+        "studioRevisionAtBind": "studio-fc6c5036-bd8d-42ba-988b-3fe83d4a9e10",
+        "exactText": "Ess upp, så försäkring erbjuds. Helt ditt beslut.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "lose_3",
+        "lineId": "lose",
+        "mediaId": "45abd95e-ce69-49fa-b06d-1523d3afcd09",
+        "action": "import+bind",
+        "importedFromTemplate": "040cca68-1b29-4b19-bc4c-61195bdf7a7b",
+        "blobSha256": "fcafce27ddd92c2fc70b1bb61294808695d779ea7f24862420b86606ef767d19",
+        "recordedSpeechIdentitySha256": "01d6b45efc2b23943f5ab97b1197e6630ef100378ad3ca812c859e0b04731abd",
+        "frameCount": 75,
+        "endUs": 3125000,
+        "studioRevisionAtBind": "studio-ce27132a-158c-4d5d-8c77-b1c8dc724acc",
+        "exactText": "Nära, men huset tar den här rundan.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "placebets_3",
+        "lineId": "placebets",
+        "mediaId": "1dfb8ec0-fe15-41a4-95d4-c138584d0b03",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "72e5453647aca6076799b3e887391f249b1e647166338250caa96723abdb2963",
+        "frameCount": 119,
+        "endUs": 4958334,
+        "studioRevisionAtBind": "studio-c558ccc3-f4dc-4182-975d-8057fef34aa4",
+        "exactText": "Bordet är öppet. Ta den tid du behöver och lägg dina insatser.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "push_3",
+        "lineId": "push",
+        "mediaId": "3ca9f2c0-2b75-44a8-8c6e-5f8e10ffc575",
+        "action": "import+bind",
+        "importedFromTemplate": "764b66b0-0652-41d9-8bd0-5cedb0aa7ad7",
+        "blobSha256": "33bb2772726e5196a540a44faf91b62a5074eaa2537891994d6acc10db26cda7",
+        "recordedSpeechIdentitySha256": "b893c5a5086c162c4042aaaf4df05bfa5160738ade5db42fdf4c3664353cd6b6",
+        "frameCount": 90,
+        "endUs": 3750000,
+        "studioRevisionAtBind": "studio-a87e7611-3c19-4dc1-af63-e6c7fa76aa52",
+        "exactText": "Lika, din insats kommer tillbaka.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "sidebet_3",
+        "lineId": "sidebet",
+        "mediaId": "0b9b76d4-5e93-441c-a5d2-6d8b906ad9ad",
+        "action": "import+bind",
+        "importedFromTemplate": "73b0334e-b0bd-4d25-a515-4ce040176405",
+        "blobSha256": "d2730a6802515ac68c45ca1545517b89c7e16395bf356b5d7af0d66d63fae9ea",
+        "recordedSpeechIdentitySha256": "e2181bac8089a230851c44e5455a703500f61af0c6eaea82816f6078fd32c080",
+        "frameCount": 94,
+        "endUs": 3916667,
+        "studioRevisionAtBind": "studio-737723d5-2669-4086-a2d4-95bde8ab14af",
+        "exactText": "Och sidoinsatsen sitter, betalt innan vi ens har börjat.",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      },
+      {
+        "takeId": "win_3",
+        "lineId": "win",
+        "mediaId": "c2a6c254-995f-4631-8606-a0a6abaa2989",
+        "action": "bind existing",
+        "importedFromTemplate": null,
+        "blobSha256": null,
+        "recordedSpeechIdentitySha256": "5ea8815917eeeacc2b46b8b54465c28c34cc41fc6f0c53f5afb5515601995bef",
+        "frameCount": 58,
+        "endUs": 2416667,
+        "studioRevisionAtBind": "studio-3bf06662-34ae-4b52-8540-1860f6133f51",
+        "exactText": "Grattis, vinnare!",
+        "reviewAtBind": "pending",
+        "reviewInPackage": "approved"
+      }
+    ]
+  },
+  "productionReadOnly": {
+    "at": "2026-10-27T20:48:07.607Z",
+    "rules": "GET/HEAD only, anonymous, no cookies, redirect:manual",
+    "requests": [
+      {
+        "name": "public lobby",
+        "method": "GET",
+        "path": "/api/operators/johns-bet/rooms",
+        "status": 200,
+        "location": null
+      },
+      {
+        "name": "play entry",
+        "method": "GET",
+        "path": "/play/blackjack?operator=johns-bet&table=room-76640ca1-b619-7948-596e-3d102202b7d0",
+        "status": 308,
+        "location": "https://www.scoutgaming.tech/game?game=blackjack&table=room-76640ca1-b619-7948-596e-3d102202b7d0&operator=johns-bet"
+      },
+      {
+        "name": "game entry (anonymous)",
+        "method": "GET",
+        "path": "/game?game=blackjack&table=room-76640ca1-b619-7948-596e-3d102202b7d0&operator=johns-bet",
+        "status": 303,
+        "location": "/player-login?game=blackjack&table=room-76640ca1-b619-7948-596e-3d102202b7d0&operator=johns-bet"
+      },
+      {
+        "name": "background layer",
+        "method": "GET",
+        "path": "/api/presentation/layers/johns-bet/6daa1434-674c-4a43-bcc7-0a4e93fae62a",
+        "status": 401,
+        "location": null
+      },
+      {
+        "name": "background room-layer",
+        "method": "GET",
+        "path": "/api/presentation/room-layers/johns-bet/room-76640ca1-b619-7948-596e-3d102202b7d0/9/6daa1434-674c-4a43-bcc7-0a4e93fae62a",
+        "status": 401,
+        "location": null
+      },
+      {
+        "name": "table layer",
+        "method": "GET",
+        "path": "/api/presentation/layers/johns-bet/f00be01d-fe7c-4a43-85b9-952e378f7331",
+        "status": 401,
+        "location": null
+      },
+      {
+        "name": "table room-layer",
+        "method": "GET",
+        "path": "/api/presentation/room-layers/johns-bet/room-76640ca1-b619-7948-596e-3d102202b7d0/9/f00be01d-fe7c-4a43-85b9-952e378f7331",
+        "status": 401,
+        "location": null
+      },
+      {
+        "name": "dealer idle (registered)",
+        "method": "GET",
+        "path": "/api/presentation/registered-idle/johns-bet/room-76640ca1-b619-7948-596e-3d102202b7d0/9/paow",
+        "status": 401,
+        "location": null
+      },
+      {
+        "name": "dealer idle (room)",
+        "method": "GET",
+        "path": "/api/presentation/room-idle/johns-bet/room-76640ca1-b619-7948-596e-3d102202b7d0/9/paow",
+        "status": 401,
+        "location": null
+      }
+    ],
+    "lobby": {
+      "status": 200,
+      "packageRevision": 9,
+      "room": "room-76640ca1-b619-7948-596e-3d102202b7d0",
+      "presentation": {
+        "id": "paow-studio-blackjack-e9a6193d-6bf3-4774-b505-538d6507bf3d",
+        "label": "PAOW Studio · Blackjack"
+      },
+      "dealer": "paow",
+      "table": "f00be01d-fe7c-4a43-85b9-952e378f7331",
+      "background": "6daa1434-674c-4a43-bcc7-0a4e93fae62a"
+    },
+    "note": "Anonym läsning: lobbyn visar paket 9; spelstart kräver inloggning (303 till /player-login) och lagren svarar 401 utan session, som avsett. De tre lagren i produktionen är alltså inte bytesverifierade här."
+  },
+  "jakobReview": {
+    "recordedAt": "2026-10-27T19:46:35Z",
+    "target": "https://www.scoutgaming.tech",
+    "room": "room-76640ca1-b619-7948-596e-3d102202b7d0",
+    "roomConfig": "room-config-133cfffc-fdad-47f2-9c85-51b08de4a325",
+    "packageRevision": 9,
+    "productionCommit": "cc415cd8ab7f88c0371018286f112587a8e359e2",
+    "verdict": "approved",
+    "jakobVerdict": "Men allt funkade!! Hon pratar faktist!",
+    "mobileVerdict": "Funkar i mobilvy i alla fall på datorn (desktop browser mobile emulation), Jakob 2026-10-27",
+    "boundary": "Physical phone not confirmed; mobile verdict is the desktop browser mobile view.",
+    "observedDefect": "Status line showed raw browser autoplay text 'Tal: play() failed because the user didn't interact with the document first.' before first interaction; fixed in #446 after this review (branch jakob/claude-speech-autoplay)."
+  },
+  "remaining": [
+    "K05:s manifestmatris källa-SHA → bytes-SHA → Neon-ID → Blob → paket/händelse → acceptans för alla 15 tagningar; bytes-SHA saknas i råkvittot för de 8 befintliga bundna tagningarna (läses read-only från Neon eller GET /studio/api/videos).",
+    "Negativt fall: en ogranskad eller okänd tagning kan inte väljas i produktionen (eller i staging med samma kod).",
+    "Inloggad läsning av produktionens tre lager med bytes-SHA (anonymt svarar de 401).",
+    "Fysisk telefon; Jakobs mobilomdöme gäller datorwebbläsarens mobilvy.",
+    "Oberoende granskning av kvittot; därefter uppdaterar orkestratorn status.json."
+  ],
+  "sideEffects": {
+    "production": [
+      "15 PAOW-tagningar importerade till Blob och bundna; 26 befintliga bundna; två idle-klipp servermätta",
+      "Operatörspaket johns-bet publicerat revision 6, 7 och 8; rumskonfiguration room-config-133cfffc publicerad med paketrevision 9"
+    ],
+    "sqlWrites": "inga direkta; alla skrivningar via Admin-API"
+  },
+  "secretsExported": false
+}
