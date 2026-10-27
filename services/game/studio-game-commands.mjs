@@ -7,7 +7,8 @@ const actions = new Set(['players/status', 'players/password', 'apikeys/revoke',
 const fail = (statusCode = 403) => { throw Object.assign(new Error('studio_game_command_rejected'), { statusCode }); };
 const response = (status, body) => Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 
-const settleWarning = ({ action }) => console.warn(JSON.stringify({ event: 'studio_game_command_settle_failed', action }));
+const MAX_SETTLE_HOOKS = 256;
+const settleWarning = report => console.warn(JSON.stringify({ event: 'studio_game_command_settle_failed', ...report }));
 
 export function createStudioGameCommandApi({ scope, secret, publicOrigin, authorize, execute, boDb, now = Date.now, onSettleError = settleWarning } = {}) {
   scope = validateStudioScope(scope);
@@ -37,8 +38,18 @@ export function createStudioGameCommandApi({ scope, secret, publicOrigin, author
       if (!policy || !meetsStudioAdminActionRole(session.role, command.action) || session.user !== command.actor?.user || session.role !== command.actor?.role
         || canonicalStudioJson(validateStudioScope(session.scope)) !== canonicalStudioJson(scope)) fail();
       // Runtime cleanup runs after commit, so it cannot roll back or fail an
-      // accepted command. Scoped player memory nests in the game -> Studio locks.
-      const settled = [];
+      // accepted command, and Studio-scoped work never waits inside this lock.
+      const settled = [], subject = typeof command.body?.playerId === 'string' && command.body.playerId.length <= 256 ? command.body.playerId : undefined;
+      let open = true;
+      const report = (hook, code, statusCode) => {
+        try { onSettleError({ action: command.action, hook, code, statusCode, playerId: subject }); } catch { /* Reporting cannot alter the response. */ }
+      };
+      const afterCommit = (work, hook) => {
+        hook = typeof hook === 'string' && /^[a-z0-9_/:.-]{1,64}$/.test(hook) ? hook : undefined;
+        if (!open) return report(hook, 'after_commit_closed');
+        if (typeof work !== 'function' || settled.length >= MAX_SETTLE_HOOKS) throw new TypeError('studio_game_command_after_commit_invalid');
+        settled.push({ work, hook });
+      };
       const result = await boDb.transaction(async () => {
         fresh();
         const current = await authorize(request);
@@ -52,13 +63,17 @@ export function createStudioGameCommandApi({ scope, secret, publicOrigin, author
         if (!inserted.changes) fail(409);
         await boDb.prepare("DELETE FROM meta WHERE k LIKE 'studio-command:%' AND v::bigint<?").run(fresh() - 60000);
         fresh();
-        const result = await execute({ action: command.action, body: command.body, actor: session, scope, afterCommit: work => { settled.push(work); } });
+        const result = await execute({ action: command.action, body: command.body, actor: session, scope, afterCommit });
         if (!result || result.error || result.ok === false) fail(result?.statusCode || 400);
         return result;
-      }, { studioScope: scope });
+      }).finally(() => { open = false; });
       const accepted = response(200, { ...result, ok: true, authority: 'render', scope });
-      for (const work of settled) {
-        try { await work(); } catch { try { onSettleError({ action: command.action }); } catch { /* Reporting cannot alter the response. */ } }
+      // Sequential: each hook may open its own pooled transaction.
+      for (const { work, hook } of settled) {
+        try { await work(); } catch (error) {
+          report(hook, /^[a-z0-9_]{1,64}$/.test(error?.message ?? '') ? error.message : undefined,
+            Number.isInteger(error?.statusCode) ? error.statusCode : undefined);
+        }
       }
       return accepted;
     } catch (error) {

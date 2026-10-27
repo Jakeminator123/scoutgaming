@@ -139,31 +139,53 @@ function scopedApi(store,execute,options={}){
     authorize:async()=>({user:'operator',role:'superadmin',scope}),execute,...options});
 }
 const scopedRequest=(action='players/status')=>{
-  const raw=JSON.stringify({action,body:{id:'player-1'},actor:{user:'operator',role:'superadmin'},scope,commandId:'d6339fa6-f202-47bb-9308-3f81440d1394'});
+  const raw=JSON.stringify({action,body:{playerId:'player-1'},actor:{user:'operator',role:'superadmin'},scope,commandId:'d6339fa6-f202-47bb-9308-3f81440d1394'});
   return new Request(`${publicOrigin}/api/studio-game/command`,{method:'POST',headers:{origin:publicOrigin,'content-type':'application/json',
     'x-croupier-studio-timestamp':String(at),'x-croupier-studio-signature':studioCommandSignature(secret,String(at),raw)},body:raw});
 };
-test('scoped player-memory work inside a Render command shares the Studio-scoped command transaction',async()=>{
-  const {store,probes,log}=await scopedStore();
-  const result=await scopedApi(store,async()=>{await probes.activity({playerId:'player-1',dealerId:'astrid'});return{ok:true};})(scopedRequest());
-  assert.equal(result.status,200);
-  const begin=log.findIndex(sql=>sql.startsWith('BEGIN'));
-  assert.equal(log[begin+1],'SELECT pg_advisory_xact_lock($1::integer, $2::integer)');
-  assert.equal(log.filter(sql=>sql.startsWith('BEGIN')).length,1);assert.equal(log.at(-1),'COMMIT');
-});
-test('post-commit runtime cleanup runs after COMMIT and cannot fail or roll back an accepted command',async()=>{
+const scopeLock='SELECT pg_advisory_xact_lock($1::integer, $2::integer)';
+test('command transaction takes no Studio scope lock; scoped cleanup runs in its own transaction after COMMIT',async()=>{
   const {store,probes,log}=await scopedStore(),settleErrors=[];let committedAt;
-  const ok=await scopedApi(store,async({afterCommit})=>{
-    afterCommit(async()=>{committedAt=log.lastIndexOf('COMMIT');await probes.activity({playerId:'player-1',dealerId:'astrid'});});
-    afterCommit(()=>{throw Error('PRIVATE CANCEL FAILURE');});
+  const result=await scopedApi(store,async({afterCommit})=>{
+    afterCommit(async()=>{committedAt=log.lastIndexOf('COMMIT');await probes.activity({playerId:'player-1',dealerId:'astrid'});},'players/status:cancel');
     return{ok:true};
   },{onSettleError:info=>settleErrors.push(info)})(scopedRequest());
-  assert.equal(ok.status,200);assert.equal((await ok.text()).includes('PRIVATE'),false);
-  assert.equal(committedAt,log.findIndex(sql=>sql==='COMMIT'));assert.ok(committedAt>0);
-  assert.ok(log.findIndex((sql,index)=>index>committedAt&&sql.startsWith('BEGIN'))>committedAt);
-  assert.deepEqual(settleErrors,[{action:'players/status'}]);
-
-  const rejected=await scopedStore();let ran=0;
+  assert.equal(result.status,200);assert.deepEqual(settleErrors,[]);
+  assert.ok(committedAt>0);assert.equal(committedAt,log.indexOf('COMMIT'));
+  assert.equal(log.slice(0,committedAt).includes(scopeLock),false);
+  assert.ok(log.slice(committedAt).includes(scopeLock));
+});
+test('scoped player-memory work attempted inline in execute is rejected and rolled back; cleanup belongs in afterCommit',async()=>{
+  const {store,probes,log}=await scopedStore();
+  const result=await scopedApi(store,async()=>{await probes.activity({playerId:'player-1',dealerId:'astrid'});return{ok:true};})(scopedRequest());
+  assert.equal(result.status,503);assert.ok(log.includes('ROLLBACK'));assert.equal(log.includes('COMMIT'),false);
+});
+test('post-commit cleanup failures keep the accepted 200 and report only safe codes',async()=>{
+  const {store,log}=await scopedStore(),settleErrors=[];let late;
+  const ok=await scopedApi(store,async({afterCommit})=>{
+    late=afterCommit;
+    afterCommit(()=>{throw Error('PRIVATE CANCEL FAILURE');},'players/status:cancel');
+    afterCommit(()=>{throw Object.assign(Error('player_memory_dealer_unavailable'),{statusCode:403});},'probe:cancel');
+    afterCommit(()=>{late(()=>{throw Error('late hook ran');},'late:hook');});
+    return{ok:true};
+  },{onSettleError:info=>settleErrors.push(info)})(scopedRequest());
+  assert.equal(ok.status,200);assert.equal((await ok.text()).includes('PRIVATE'),false);assert.equal(log.at(-1),'COMMIT');
+  assert.deepEqual(settleErrors,[
+    {action:'players/status',hook:'players/status:cancel',code:undefined,statusCode:undefined,playerId:'player-1'},
+    {action:'players/status',hook:'probe:cancel',code:'player_memory_dealer_unavailable',statusCode:403,playerId:'player-1'},
+    {action:'players/status',hook:'late:hook',code:'after_commit_closed',statusCode:undefined,playerId:'player-1'}]);
+  assert.equal(JSON.stringify(settleErrors).includes('PRIVATE'),false);
+});
+test('afterCommit rejects invalid or excessive registrations inside the transaction and never runs hooks after a rollback',async()=>{
+  for(const register of [afterCommit=>afterCommit('not a function'),afterCommit=>{for(let index=0;index<=256;index++)afterCommit(()=>{});}]){
+    const {store,log}=await scopedStore();let reported=0;
+    const result=await scopedApi(store,async({afterCommit})=>{register(afterCommit);return{ok:true};},{onSettleError:()=>{reported++;}})(scopedRequest());
+    assert.equal(result.status,503);assert.ok(log.includes('ROLLBACK'));assert.equal(log.includes('COMMIT'),false);assert.equal(reported,0);
+  }
+  const {store,log}=await scopedStore();let ran=0;
+  const capped=await scopedApi(store,async({afterCommit})=>{for(let index=0;index<256;index++)afterCommit(()=>{ran++;});return{ok:true};})(scopedRequest());
+  assert.equal(capped.status,200);assert.equal(ran,256);assert.equal(log.at(-1),'COMMIT');
+  const rejected=await scopedStore();ran=0;
   const failed=await scopedApi(rejected.store,async({afterCommit})=>{afterCommit(()=>{ran++;});throw Object.assign(Error('invalid'),{statusCode:400});},
     {onSettleError:()=>{ran++;}})(scopedRequest());
   assert.equal(failed.status,400);assert.equal(ran,0);

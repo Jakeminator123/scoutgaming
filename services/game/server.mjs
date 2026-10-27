@@ -633,10 +633,14 @@ const operatorSpeechQa = createOperatorSpeechQa({
   }),
 });
 const {createPlayerPasswordCommand}=(await import('../../packages/storage/server/player-administration.mjs'));
-const cancelPlayerRuntime=async (playerId,reason)=>{
-  await speechStreamService?.cancelPlayer(playerId);
-  cancelPlayerChats(activePlayerChats,playerId,reason);
-  await probeRuntime.cancel({playerId,dealerId:'astrid'},reason);
+// Every step runs even when another fails; only a safe code reaches the settle report.
+const cancelPlayerRuntime=async (playerIds,reason)=>{
+  let failed=false;
+  for(const playerId of [playerIds].flat())for(const step of [()=>speechStreamService?.cancelPlayer(playerId),
+    ()=>cancelPlayerChats(activePlayerChats,playerId,reason),()=>probeRuntime.cancel({playerId,dealerId:'astrid'},reason)]){
+    try{await step();}catch{failed=true;}
+  }
+  if(failed)throw new Error('player_runtime_cancel_partial');
 };
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   // The isolated K04 QA start forbids the ingress secret variable; a random
@@ -647,10 +651,10 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
   execute: async ({ action, body, actor, afterCommit }) => {
     // Runtime cancellation follows the committed account change and cannot undo it.
     if (action === 'players/password') return createPlayerPasswordCommand({ administration: playerAdministration,
-      cancelRuntime: async playerId => { afterCommit(() => cancelPlayerRuntime(playerId, 'player_password_changed')); } })({ body, actor });
+      cancelRuntime: async playerId => { afterCommit(() => cancelPlayerRuntime(playerId, 'player_password_changed'), 'players/password:cancel'); } })({ body, actor });
     if (action === 'players/status') {
       const changed = await playerAdministration.setStatus({ ...body, actor: actor.user });
-      if (changed.changed || changed.status !== 'active') afterCommit(() => cancelPlayerRuntime(changed.id, 'player_account_changed'));
+      if (changed.changed || changed.status !== 'active') afterCommit(() => cancelPlayerRuntime(changed.id, 'player_account_changed'), 'players/status:cancel');
       return { ok: true, ...changed };
     }
     const method = { 'apikeys/revoke': 'revoke', 'apikeys/rotate': 'rotate', 'apikeys/launch': 'mintLaunch', 'apikeys/credit': 'credit' }[action];
@@ -660,7 +664,8 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
       const prefix = `partner:${body.id}`;
       const sessions = await db.prepare('SELECT DISTINCT player_id FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').all(prefix,`${prefix}:%`);
       await db.prepare('DELETE FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').run(prefix,`${prefix}:%`);
-      for (const { player_id: playerId } of sessions) afterCommit(() => cancelPlayerRuntime(playerId, 'partner_key_changed'));
+      // One hook for the whole batch: a partner may exceed the per-command hook cap.
+      if (sessions.length) afterCommit(() => cancelPlayerRuntime(sessions.map(row => row.player_id), 'partner_key_changed'), 'apikeys:cancel');
     }
     return { ok: true, ...result };
   },
