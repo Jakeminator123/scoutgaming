@@ -3,6 +3,7 @@ import { MOVING_TRIAL_BUDGET } from './moving-speech-budget.mjs';
 import { handleSharedRoomHttp } from './shared-room-http.mjs';
 import { withSharedRoomEntry } from './shared-room-entry.mjs';
 import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
+import { sharedRoomOrigins } from './shared-room-origins.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from '../../packages/navigation/player-handoff.mjs';
@@ -479,6 +480,8 @@ const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
 const gameOrigin=sharedRoomQa?.publicOrigin??process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '');
+// Single-origin ingress has no separate frontend origin; shared rooms then accept the canonical public origin.
+const roomOrigins=sharedRoomOrigins({qaOrigin:sharedRoomQa?.publicOrigin,frontendOrigin});
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
 const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp));};
@@ -788,7 +791,7 @@ const server = createServer(async (req, res) => {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext, qaPublicOrigin:sharedRoomQa?.publicOrigin,
         ...(sharedRoomsEnabled?(await import('./shared-room-presentation-http.mjs')).createSharedRoomPresentationBridge({
-          service:()=>sharedRoomService,origin:frontendOrigin,engineOrigin:sharedRoomQa?.publicOrigin??process.env.CROUPIER_PUBLIC_ORIGIN??gameOrigin}):{}),
+          service:()=>sharedRoomService,origin:roomOrigins.origin,engineOrigin:roomOrigins.engineOrigin}):{}),
         beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),
         ...(studioPolicyRuntime ? { store: studioPolicyRuntime.policy.projectStore(), registryLoader: studioMediaRuntime.videoRegistry,
           videoResponse: studioMediaRuntime.videoResponse } : {}) });
@@ -1188,12 +1191,12 @@ if (sharedRoomsEnabled) {
     privateMedia:sharedRoomQa?.privateMedia??((record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,signal:request.signal,
       trustedProxyOrigin:cloudRuntime&&frontendOrigin&&new URL(request.url).origin===gameOrigin
         &&[new URL(gameOrigin).host,new URL(frontendOrigin).host].includes(request.headers.get('host'))?frontendOrigin:null}))),
-    engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL,
-    origin:frontendOrigin,
+    engineOrigin:roomOrigins.engineOrigin,
+    origin:roomOrigins.origin,
     onError:()=>console.warn(JSON.stringify({event:'shared_room_runtime_unavailable'})),
   });
-  sharedRoomCommand = createSharedRoomCommand({service:sharedRoomService,origin:frontendOrigin,
-    engineOrigin:sharedRoomQa?.publicOrigin ?? process.env.CROUPIER_PUBLIC_ORIGIN ?? process.env.PUBLIC_URL});
+  sharedRoomCommand = createSharedRoomCommand({service:sharedRoomService,origin:roomOrigins.origin,
+    engineOrigin:roomOrigins.engineOrigin});
   gameUpgradeDispatcher = createGameUpgradeDispatcher(server);
   gameUpgradeDispatcher.port('room').on('upgrade',sharedRoomService.handleUpgrade);
   // Receiver and game schema readiness precede listener admission. Startup never installs SQL.
