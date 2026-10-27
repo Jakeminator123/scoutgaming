@@ -182,7 +182,7 @@ Huvudregel: exakt dealer + take:frame + ljud + planversion. Två deklarerade ekv
 
 - Kedjan förblir global. Porten får `verifyChain(fromSeq, toSeq)` över hela seq-serien; en rumsvy är inget kontinuitetsbevis. Per-rum-kedjor föreslås inte.
 - Alla append går via en gemensam atomisk A-writer i Postgres (head-läsning och insert under A).
-- Inga `player.*` för state, replay eller avvisade kommandon. Behållna typer: `engine.<op>`, `round.started`, `wallet.settlement` (med ledger-id), `player.<op>`, `shoe.opened`/`shoe.closed`, `presentation.plan` (status "scheduled; not a playback acknowledgement"), `table.tick`.
+- Inga `player.*` för state, replay eller avvisade kommandon. Behållna typer: `engine.<op>`, `round.started`, `wallet.settlement` (med ledger-id), `player.<op>`, `shoe.opened`/`shoe.closed`, `presentation.plan` (status "scheduled; not a playback acknowledgement"), `table.tick`. Senare tillägg i main genom samma A-writer: `presentation.window` (K04) och `seat.release` (K07, [PR426](https://github.com/Jakeminator123/scoutgaming/pull/426): en rad per spelare vars rutor frigörs vid reset, med `boxes`, `reason` `unplayed`/`boxes changed`, `memberEnded`, förälder `player.next`).
 - `presentation.speech_choice` **behålls tills vidare i spelkedjan** genom samma A-writer, med room/round/parent. Flytt till separat tal-/säkerhetslogg är ett eget designval, inte en nödvändig lösning; `safetyAudit` kan inte ersätta den (1.3). Konsumenten `integration-index.mjs:26` påverkas inte.
 
 ### 2.12 Negativa prov före acceptans (K03/J07)
