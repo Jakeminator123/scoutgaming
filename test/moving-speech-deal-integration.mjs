@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
 import {createServer} from 'node:http';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {setTimeout as pause} from 'node:timers/promises';
-import {createNativeTableCommand} from '../services/game/native-table.mjs';
+import {createPostgresNativeTableCommand} from '../services/game/postgres-native-table.mjs';
+import {fakeNativeTablePool} from './fixtures/native-table-fake-pool.mjs';
 import {command as shoeCommand,newGame} from '../services/game/shoe-game.mjs';
 import {createMovingSpeechRuntime} from '../services/game/moving-speech-runtime.mjs';
 import {createMovingSpeechSourceSet} from '../services/game/moving-speech-bank.mjs';
@@ -23,22 +23,22 @@ async function until(check){
   assert.fail('isolated native-deal integration did not settle');
 }
 
-// Real in-memory wallet/shoe/receipt transaction and real HTTP/WebSocket relay.
+// The production wallet/shoe/receipt command on a transactional in-memory pool and
+// a real HTTP/WebSocket relay.
 // Voice, provider session and media metadata are synthetic; this does not
 // attest registered media bytes, actual GPU output, browser decode or lip sync.
 async function fixture(t,{stallAfterFirstChunk=false}={}){
-  const db=new DatabaseSync(':memory:');
-  db.exec(`CREATE TABLE players (id TEXT PRIMARY KEY,currency TEXT,balance REAL);
-    CREATE TABLE blackjack_tables (player_id TEXT PRIMARY KEY,state TEXT NOT NULL);
-    CREATE TABLE transactions (player_id TEXT,type TEXT,amount REAL);`);
-  const getPlayer=id=>db.prepare('SELECT * FROM players WHERE id=?').get(id);
+  const players={},tables={};
   for(const id of ['player-one','player-two']){
-    db.prepare('INSERT INTO players VALUES (?,?,?)').run(id,'EUR',1000);
+    players[id]={id,name:id,currency:'EUR',balance:'1000',status:'active'};
     const game=newGame();shoeCommand(game,{op:'state'},1000);
     const draws=[['8','♠'],['6','♥'],['9','♣'],['K','♦'],['5','♠']].map(([r,s])=>({r,s}));
     game.shoe.cards.splice(-draws.length,draws.length,...draws.reverse());
-    db.prepare('INSERT INTO blackjack_tables VALUES (?,?)').run(id,JSON.stringify(game));
+    tables[id]=JSON.stringify(game);
   }
+  // Committed rows only: the pool replaces store.state when a command commits.
+  const {pool,store}=fakeNativeTablePool({state:{players,tables}});
+  const getPlayer=id=>({...store.state.players[id],balance:Number(store.state.players[id].balance)});
   const original=Buffer.from('synthetic rest bytes'),pcm=Buffer.alloc(384000,1);
   const clips=profile.takes.map((take,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,
     sha256:take.sha256,bytes:100+i,fps:24,frameCount:take.frames,width:1080,height:1920}));
@@ -61,11 +61,11 @@ async function fixture(t,{stallAfterFirstChunk=false}={}){
   });
   t.after(async()=>{
     for(const socket of sockets)socket.terminate();
-    await runtime?.close();await new Promise(resolve=>server.close(resolve));db.close();
+    await runtime?.close();await new Promise(resolve=>server.close(resolve));
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const address=`ws://127.0.0.1:${server.address().port}/moving-speech-stream`;
-  const receipt=playerId=>db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId);
+  const receipt=playerId=>{const row=store.state.presentations[playerId];return row&&{version:row.version,payload:row.payload};};
   runtime=createMovingSpeechRuntime({server,origin,ticketSecret:'isolated-fixture-only'.repeat(3),bank,releaseSha256:h,
     readPresentation:async playerId=>receipt(playerId),
     readEvidence:async()=>({projectRevision:1,mediaReferences:videos.map(v=>({id:v.id,sha256:v.sha256})),frozenContext}),
@@ -95,11 +95,9 @@ async function fixture(t,{stallAfterFirstChunk=false}={}){
         }};
     }}});
   const grant={movingSpeech:{context,sessionRevision:'browser-one',ownerHash:hash('owner-one')}};
-  const native=createNativeTableCommand({db,getPlayer,
-    logTx:(id,type,amount)=>db.prepare('INSERT INTO transactions VALUES (?,?,?)').run(id,type,amount),
+  const native=createPostgresNativeTableCommand({pool,
     publish:observation=>{
-      // Prove both the receipt and wallet are visible after the transaction.
-      db.exec('BEGIN IMMEDIATE');db.exec('ROLLBACK');
+      // Prove both the receipt and wallet are committed before observation.
       assert.equal(receipt(observation.playerId).version,observation.view.version);
       assert.equal(getPlayer(observation.playerId).balance,observation.balance);
       counters.commits++;runtime.observeCommitted(observation);
@@ -121,14 +119,14 @@ async function fixture(t,{stallAfterFirstChunk=false}={}){
     });
     return {socket,messages,closed};
   }
-  return {db,native,open,openingRequest,grant,prepare,connect,receipt,getPlayer,runtime,counters,failures,
+  return {store,native,open,openingRequest,grant,prepare,connect,receipt,getPlayer,runtime,counters,failures,
     get admission(){return admission;}};
 }
 
 test('native committed opening supplies exact persisted draws to moving WS once; playback cannot change wallet or cards',async t=>{
-  const f=await fixture(t),opening=f.open(),saved=f.receipt('player-one');
+  const f=await fixture(t),opening=await f.open(),saved=f.receipt('player-one');
   assert.equal(opening.balance,995);assert.deepEqual(JSON.parse(saved.payload),opening.presentation);
-  assert.deepEqual(f.open(),opening);assert.equal(f.counters.commits,1);
+  assert.deepEqual(await f.open(),opening);assert.equal(f.counters.commits,1);
   const descriptor=await f.prepare(opening);
   await validateMovingSpeechStream(descriptor,{dealerId:'dragan',requestId:'speech-one',exactText:'Hej under utdelningen.'});
   const client=f.connect(descriptor);await until(()=>client.messages.some(m=>m.t==='done'));
@@ -143,20 +141,20 @@ test('native committed opening supplies exact persisted draws to moving WS once;
     assert.deepEqual(row,source);
   }
   assert.equal(hash(JSON.stringify(ready.sequence)),descriptor.sequenceSha256);
-  assert.deepEqual(f.open(),opening);assert.equal(f.counters.commits,1);
+  assert.deepEqual(await f.open(),opening);assert.equal(f.counters.commits,1);
   assert.throws(()=>f.runtime.normalPresentation('player-one',opening.version),/reserved/);
   await assert.rejects(f.prepare(opening,{requestId:'duplicate-speech'}),/not_available/);
   client.socket.send(JSON.stringify({t:'played',id:ready.plan.start.id}));assert.equal(await client.closed,1000);
   await until(()=>f.counters.cancels===1);
   assert.equal(f.getPlayer('player-one').balance,995);
-  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,1);
+  assert.equal(f.store.state.transactions.length,1);
   assert.deepEqual(f.receipt('player-one'),saved);
   await assert.rejects(f.prepare(opening,{requestId:'already-played'}),/not_available/);
   assert.equal(f.counters.admits,1);assert.equal(f.counters.tts,1);assert.deepEqual(f.failures,[]);
 });
 
 test('committed native scope rejects another room, browser or player before provider admission and speech',async t=>{
-  const f=await fixture(t),opening=f.open();
+  const f=await fixture(t),opening=await f.open();
   for(const overrides of [{context:{...context,roomId:'room-two'}},{sessionRevision:'browser-two'},{playerId:'player-two'}]){
     await assert.rejects(f.prepare(opening,overrides),/not_available/);
   }
@@ -167,9 +165,9 @@ test('committed native scope rejects another room, browser or player before prov
 });
 
 test('later real native command cancels a stalled moving stream without another frame or debit',async t=>{
-  const f=await fixture(t,{stallAfterFirstChunk:true}),opening=f.open();
+  const f=await fixture(t,{stallAfterFirstChunk:true}),opening=await f.open();
   const client=f.connect(await f.prepare(opening));await until(()=>f.counters.chunks===1);
-  const later=f.native({id:'player-one',dealer:'dragan',op:'act',action:'stand',version:opening.version,requestId:'stand-one'},f.grant);
+  const later=await f.native({id:'player-one',dealer:'dragan',op:'act',action:'stand',version:opening.version,requestId:'stand-one'},f.grant);
   assert.equal(later.version,opening.version+1);assert.equal(f.receipt('player-one').version,later.version);
   await until(()=>f.counters.cancels===1);await client.closed;
   assert.equal(f.admission.signal.aborted,true);assert.equal(f.counters.chunks,1);
@@ -177,5 +175,5 @@ test('later real native command cancels a stalled moving stream without another 
   await assert.rejects(f.prepare(opening,{requestId:'old-opening'}),/not_available/);
   assert.equal(f.counters.admits,1);assert.equal(f.counters.tts,1);
   assert.equal(f.getPlayer('player-one').balance,995);
-  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,1);
+  assert.equal(f.store.state.transactions.length,1);
 });
