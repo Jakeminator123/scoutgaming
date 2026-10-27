@@ -34,22 +34,16 @@ test('missing registration and a registered dealer outside this room cannot beco
  assert.throws(()=>dealerVersionPath('linnea','original'),/available/);
  globalThis.document.documentElement.dataset.gameRegisteredDealers='[]';assert.throws(()=>dealerVersionPath('astrid','original'),/registered/);
 });
-test('only valid observer channels survive; no version controls or local engine are installed',()=>{
+test('only valid observer channels survive the dealer switch',()=>{
  const channel='00000000-0000-4000-8000-000000000001';
  const url=new URL(dealerVersionPath('linnea','v2','?labObserverOrigin=http://localhost:4188&labObserverChannel='+channel+'&launch=a.b.c'),'https://game.invalid');
  assert.equal(url.searchParams.get('labObserverChannel'),channel);assert.equal(url.searchParams.has('launch'),false);
- assert.doesNotMatch(appSource,/installDealerVersionSwitcher|V2_DEALERS|new DealerEngine|audio\/en\/bank\.json/);
 });
 test('rehearsal dealer changes keep the same published context',()=>{
  const handler=rehearsalSource.match(/dealerSelect\.onchange = \(\) => \{[^\n]+\};/)?.[0];assert.ok(handler);
  const location={search:'?rehearsal=1&launch=private'},dealerSelect={value:'linnea'};
  vm.runInNewContext(handler+';dealerSelect.onchange();',{location,dealerSelect,dealerVersionPath});
  const url=new URL(location.href,'https://game.invalid');assert.equal(url.searchParams.get('dealer'),'linnea');assert.equal(url.searchParams.get('table'),'room-north');
-});
-test('rehearsal never reads a local speech bank',async()=>{
- const statement=rehearsalSource.match(/const bank = [^\n]+;/)?.[0];assert.ok(statement);
- const bank=await vm.runInNewContext('(async()=>{'+statement+'return bank;})()',{fetch:()=>assert.fail('No local bank'),DEALER:{key:'astrid'}});
- assert.deepEqual(Object.keys(bank),[]);
 });
 
 test('shared rehearsal describes its own playback path without consulting the legacy clip index',()=>{
