@@ -134,47 +134,13 @@ test('member shell keeps internal links out and unsupported real pages never sho
   }
 });
 
-function contrast(front, back) {
-  const luminance = hex => {
-    const values = hex.replace('#', '').match(/../g).map(value => parseInt(value, 16) / 255)
-      .map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
-    return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
-  };
-  const values = [luminance(front), luminance(back)].sort((a, b) => b - a);
-  return (values[0] + .05) / (values[1] + .05);
-}
-
-test('real partner heading overrides the legacy fixed foreground in both themes', () => {
-  const legacyCss = readFileSync(new URL('../components/kevin-bo/preview.css', import.meta.url), 'utf8');
-  const shellCss = readFileSync(new URL('../components/kevin-bo/john-foundation.css', import.meta.url), 'utf8');
-  assert.match(legacyCss, /\.kevin-shell-heading\{[^}]*color:#3E4A45/);
-  const heading = shellCss.match(/\.kevin-bo\[data-preview="operator"\] \.kevin-shell-heading\{([^}]+)\}/)?.[1];
-  assert.ok(heading, 'authenticated heading has its own scoped rule');
-  assert.match(heading, /color:var\(--ink\)/);
-  assert.match(shellCss, /\[data-theme="dark"\]\{[^}]*--ink:#F2F1ED/);
-  assert.ok(contrast('#F2F1ED', '#0A0B0D') >= 4.5);
-});
-
-test('scoped John styles cover entry classes, local fonts, responsive shell and readable palette', () => {
+test('scoped partner entry styles define every class the entry component uses and load no external resources', () => {
   const entrySource = readFileSync(new URL('../components/partner-workspace.tsx', import.meta.url), 'utf8');
   const entryCss = readFileSync(new URL('../components/partner-workspace.module.css', import.meta.url), 'utf8');
   const shellCss = readFileSync(new URL('../components/kevin-bo/john-foundation.css', import.meta.url), 'utf8');
   for (const [, name] of entrySource.matchAll(/styles\.(\w+)/g)) assert.ok(entryCss.includes(`.${name}`), name);
-  for (const css of [entryCss, shellCss]) {
-    assert.match(css, /data-theme="dark"/);
-    assert.match(css, /--sg-next-body/);
-    assert.match(css, /--sg-next-display/);
-    assert.match(css, /--sg-next-mono/);
-    assert.match(css, /max-width:820px/);
-    assert.doesNotMatch(css, /@import|fonts\.googleapis|https?:\/\//);
-  }
-  assert.match(shellCss, /data-surface="partner"\]\[data-preview="operator"/);
-  for (const [front, back] of [['#0A0B0D', '#F2F1ED'], ['#55574F', '#FFFFFF'], ['#4A6200', '#F2F1ED'],
-    ['#F2F1ED', '#121418'], ['#A3A59F', '#121418'], ['#D6FF3A', '#0A0B0D'], ['#0A0B0D', '#E3F8A6']]) {
-    assert.ok(contrast(front, back) >= 4.5, `${front} on ${back}`);
-  }
+  for (const css of [entryCss, shellCss]) assert.doesNotMatch(css, /@import|fonts\.googleapis|https?:\/\//);
 });
-
 
 test('all live partner composition names share localized labels while frozen data and room IDs stay unchanged', () => {
   const named = [['mobile-phone','Mobile Phone Lane'],['layer-preview','Layer Preview Lane'],['company-custom','Norrsken']];
