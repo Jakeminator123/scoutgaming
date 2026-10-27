@@ -1,0 +1,588 @@
+{
+  "kind": "k06-staging-acceptance/v1",
+  "date": "2026-10-27",
+  "branch": "jakob/claude-status-k06-k04",
+  "codeShas": {
+    "publicationAndHandStart": "e7a4e251caab7a5bfa3ddc8dc440d8057a893863",
+    "afterProcessReplacement": "3b688d490c405783d94ff83a99651e8b7824b319",
+    "frozenCandidate": null
+  },
+  "mainAtWriting": "92a4e2b7 (#444). 3b688d49..92a4e2b7 är PR-7 (SQLite bort ur OpenClaw-companion, Studio och backupverktyg) och #443 (Studio-loggning av 503/500); inte provat i denna körning.",
+  "status": {
+    "activity": "K06",
+    "result": "IN_PROGRESS",
+    "reason": "migrering/status.mjs: VERIFIED kräver att alla beroenden är VERIFIED, och K05 är IN_PROGRESS. Dessutom återstår delar av K06:s egna kriterier, se remaining."
+  },
+  "sources": "Sammanfattat från stagingagentens råkvitton k06-k07-k04/receipt-k06n.json, receipt-gates.json, receipt-neon.json och k06/receipt.json (O02-format). Råkvittona har Vercel-Id/Rndr-Id per anrop. Här finns inga kakor, lösenord, tokens, spelaranvändarnamn eller spelar-UUID.",
+  "environment": {
+    "origin": "https://croupier-k06-k07-staging.vercel.app",
+    "backend": "https://croupier-k06-k07-staging.onrender.com",
+    "vercel": {
+      "project": "prj_7dgyvW5zakx1qJ8YaH5pueVTVi14",
+      "deployment": "dpl_7MgB8cgc7LPhTkQbFk4De57SPEjQ",
+      "createdAt": "2026-10-27T18:05:58Z",
+      "sha": "inte loggad i råkvittot; skapad 3 min efter mergen av e7a4e251 (#440)"
+    },
+    "render": {
+      "serviceId": "srv-dbf61l0m7kps73ft7mk0",
+      "deploys": [
+        {
+          "id": "dep-dbgefaui0phs73853bug",
+          "sha": "e7a4e251caab7a5bfa3ddc8dc440d8057a893863",
+          "result": "update_failed (Cloud container could not start); b08f2a86 stod kvar",
+          "note": "CROUPIER_SHARED_TABLE_ENABLED=1 i single-origin-läge: tom frontendOrigin kastar i createSharedRoomService. Rättning PR #442. Hör till K07."
+        },
+        {
+          "id": "dep-dbgekjkipgvc73b4tfkg",
+          "sha": "e7a4e251caab7a5bfa3ddc8dc440d8057a893863",
+          "liveAt": "2026-10-27T18:16:52Z",
+          "sharedTableFlag": 0,
+          "gate": {
+            "passed": 32,
+            "total": 32,
+            "versionSha": [
+              "e7a4e251caab7a5bfa3ddc8dc440d8057a893863"
+            ]
+          },
+          "used": "K04 g 18:15–18:20Z, K06 publicering och handstart 18:22Z, K04 h 18:30–18:32Z"
+        },
+        {
+          "id": "dep-dbgescifngtc738r39ig",
+          "sha": "3b688d490c405783d94ff83a99651e8b7824b319",
+          "liveAt": "2026-10-27T18:33:36Z",
+          "sharedTableFlag": 0,
+          "trigger": "redeploy utlöst av orkestratorn (PR #434), inte dashboardens Restart service",
+          "gate": {
+            "passed": 32,
+            "total": 32,
+            "versionSha": [
+              "3b688d490c405783d94ff83a99651e8b7824b319"
+            ]
+          },
+          "purpose": "K06:s processbyte mitt i P1:s öppna hand"
+        }
+      ],
+      "runtimeDiffs": {
+        "e7a4e251..3b688d49": "PR #434 (SQLite bort, steg 6): 24 filer i services/game, ops/cloud och packages; SQLite-grenar och legacy-moduler borttagna, bland annat ur native-table.mjs och server.mjs. Postgres-vägen som staging kör är avsedd att vara oförändrad, men bytet är inte runtime-identiskt."
+      },
+      "stateAtEndOfReceipt": "enligt stagingagenten; suspension är Jakobs beslut"
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "branch": "br-plain-voice-b9yu49xi",
+      "database": "croupier_staging",
+      "access": "endast SELECT (Neon MCP) 18:38Z"
+    }
+  },
+  "subjects": {
+    "operatorA": "qa-k06k07-9dd2d3a4-a",
+    "room": "room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e",
+    "dealer": "paow",
+    "adminAccount": "stagingens Admin-konto (staging-admin)",
+    "players": "syntetiska; användarnamn och UUID utelämnas"
+  },
+  "run": {
+    "startedAt": "2026-10-27T18:22:36.446Z",
+    "finishedAt": "2026-10-27T18:37:00.025Z",
+    "requests": 71,
+    "httpStatus": {
+      "200": 71
+    }
+  },
+  "configs": {
+    "C0": {
+      "configVersion": "room-config-38b14261-cf20-4e31-bc09-042ee40f1d28",
+      "packageRevision": 7,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "casual"
+      },
+      "neonLimits": {
+        "min": 1,
+        "max": 500,
+        "sideMax": 50
+      },
+      "isHead": false
+    },
+    "C1": {
+      "configVersion": "room-config-b0d8fba4-f844-4e4c-9c59-0f65a768e03f",
+      "packageRevision": 8,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "prive"
+      },
+      "betMs": 20000,
+      "actionMs": 15000,
+      "neonLimits": {
+        "min": 5,
+        "max": 2000,
+        "sideMax": 200
+      },
+      "isHead": true
+    },
+    "sharedTableRooms": 0,
+    "materialInventorySha256": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1 (lika för paket 7 och 8: publiceringen ändrade bara limits)"
+  },
+  "checks": [
+    {
+      "id": "K06-0",
+      "name": "room published at C0/P0 before the hand",
+      "result": "pass",
+      "at": "2026-10-27T18:22:37.595Z",
+      "C0": "room-config-38b14261-cf20-4e31-bc09-042ee40f1d28",
+      "P0": 7,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "casual"
+      }
+    },
+    {
+      "id": "K06-1",
+      "name": "P1 hand started under package P0; deal material M0 resolves to registry UUID/SHA",
+      "result": "pass",
+      "at": "2026-10-27T18:22:40.205Z",
+      "config0": {
+        "status": 200,
+        "projectRevision": "studio-c3d173ec-f930-4ec9-b5a1-8d0e3a3e9d4c",
+        "videos": 46,
+        "inventorySha256": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1"
+      },
+      "deal0": [
+        [
+          "deal",
+          2,
+          200,
+          "f1aefbda-efea-48ee-bd7e-e90ecbf558a5",
+          "b515a54011ea"
+        ],
+        [
+          "deal",
+          3,
+          200,
+          "6134db90-9c50-438b-9c36-5a363781232b",
+          "4bc6994a706f"
+        ],
+        [
+          "deal",
+          4,
+          200,
+          "ec8534ad-3417-48af-8be7-05c162fe018c",
+          "d4d52b025d28"
+        ],
+        [
+          "deal",
+          5,
+          200,
+          "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+          "3133d1511cfc"
+        ]
+      ],
+      "view0": {
+        "version": 1,
+        "balance": 995,
+        "view": "de04165662b8ccac641de9d9d2a4bc2ced1db71042114d5cdef94be5465d8d4e"
+      }
+    },
+    {
+      "id": "K06-2",
+      "name": "Admin save-draft + publish gives new config C1 and package P1",
+      "result": "pass",
+      "at": "2026-10-27T18:22:42.732Z",
+      "save": 200,
+      "publish": [
+        200,
+        null
+      ],
+      "C0": "room-config-38b14261-cf20-4e31-bc09-042ee40f1d28",
+      "C1": "room-config-b0d8fba4-f844-4e4c-9c59-0f65a768e03f",
+      "P0": 7,
+      "P1": 8,
+      "gameConfig": {
+        "language": "sv",
+        "limitPreset": "prive"
+      },
+      "limits": null
+    },
+    {
+      "id": "K06-3a",
+      "name": "P1 table state unchanged by publication (version/balance/view)",
+      "result": "pass",
+      "at": "2026-10-27T18:22:43.992Z",
+      "after": {
+        "version": 1,
+        "balance": 995,
+        "view": "de04165662b8ccac641de9d9d2a4bc2ced1db71042114d5cdef94be5465d8d4e"
+      },
+      "before": {
+        "version": 1,
+        "balance": 995,
+        "view": "de04165662b8ccac641de9d9d2a4bc2ced1db71042114d5cdef94be5465d8d4e"
+      }
+    },
+    {
+      "id": "K06-3b",
+      "name": "P1 in-progress presentation context P0 still resolves the same deal material M0 after publication",
+      "result": "pass",
+      "at": "2026-10-27T18:22:43.994Z",
+      "reselect": [
+        [
+          200,
+          null,
+          "f1aefbda-efea-48ee-bd7e-e90ecbf558a5",
+          "b515a54011ea"
+        ],
+        [
+          200,
+          null,
+          "6134db90-9c50-438b-9c36-5a363781232b",
+          "4bc6994a706f"
+        ],
+        [
+          200,
+          null,
+          "ec8534ad-3417-48af-8be7-05c162fe018c",
+          "d4d52b025d28"
+        ],
+        [
+          200,
+          null,
+          "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+          "3133d1511cfc"
+        ]
+      ]
+    },
+    {
+      "id": "K06-3c",
+      "name": "P1 presentation config for P0 still served after publication",
+      "result": "pass",
+      "at": "2026-10-27T18:22:43.995Z",
+      "status": 200,
+      "code": null,
+      "inventorySha256": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1",
+      "before": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1"
+    },
+    {
+      "id": "K06-3d",
+      "name": "new player/new window gets package P1 and material M1 from the P1 inventory",
+      "result": "pass",
+      "at": "2026-10-27T18:22:47.122Z",
+      "config1": {
+        "status": 200,
+        "projectRevision": "studio-c3d173ec-f930-4ec9-b5a1-8d0e3a3e9d4c",
+        "videos": 46,
+        "inventorySha256": "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1"
+      },
+      "deal1": [
+        [
+          "deal",
+          2,
+          200,
+          "f1aefbda-efea-48ee-bd7e-e90ecbf558a5",
+          "b515a54011ea"
+        ],
+        [
+          "deal",
+          3,
+          200,
+          "6134db90-9c50-438b-9c36-5a363781232b",
+          "4bc6994a706f"
+        ],
+        [
+          "deal",
+          4,
+          200,
+          "ec8534ad-3417-48af-8be7-05c162fe018c",
+          "d4d52b025d28"
+        ],
+        [
+          "deal",
+          5,
+          200,
+          "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+          "3133d1511cfc"
+        ]
+      ],
+      "inventoryEqualToP0": true,
+      "p2Finish": [
+        [
+          "reveal",
+          null,
+          200,
+          "b07c94b6-74bd-420f-baf5-f3f9da7b9d9a"
+        ],
+        [
+          "speak",
+          "lose",
+          200,
+          "65bfca97-9e2a-402b-98b6-5c0759747cd8"
+        ],
+        [
+          "speak",
+          "placebets",
+          200,
+          "fa4a9ac5-e43e-44b7-ad78-ffb1a5cc8806"
+        ]
+      ]
+    },
+    {
+      "id": "K06-3e",
+      "name": "native table carries no config reference (C0/C1 cannot be read from /api/table)",
+      "result": "pass",
+      "at": "2026-10-27T18:22:47.124Z",
+      "note": "native /api/table response has no configVersion; only package revision (presentation context) and material identify the hand"
+    },
+    {
+      "id": "K06-4a",
+      "name": "after replacement P1 hand identical (version/balance/view) with the same cookie",
+      "result": "pass",
+      "at": "2026-10-27T18:36:55.625Z",
+      "status": 200,
+      "version": 1,
+      "balance": 995
+    },
+    {
+      "id": "K06-4b",
+      "name": "after replacement P0 context still resolves M0",
+      "result": "pass",
+      "at": "2026-10-27T18:36:55.627Z",
+      "reselect": [
+        [
+          200,
+          null,
+          "f1aefbda-efea-48ee-bd7e-e90ecbf558a5",
+          "b515a54011ea"
+        ],
+        [
+          200,
+          null,
+          "6134db90-9c50-438b-9c36-5a363781232b",
+          "4bc6994a706f"
+        ],
+        [
+          200,
+          null,
+          "ec8534ad-3417-48af-8be7-05c162fe018c",
+          "d4d52b025d28"
+        ],
+        [
+          200,
+          null,
+          "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+          "3133d1511cfc"
+        ]
+      ],
+      "config": [
+        200,
+        "8e67e3bf31b3bc75d0a2a84d39b78764265a515bc78fc81251b2690a98a88ab1"
+      ]
+    },
+    {
+      "id": "K06-5",
+      "name": "read-back after replacement: Admin still C1/P1; new window still P1",
+      "result": "pass",
+      "at": "2026-10-27T18:36:55.629Z",
+      "C1": "room-config-b0d8fba4-f844-4e4c-9c59-0f65a768e03f",
+      "packageRevision": 8
+    },
+    {
+      "id": "K06-3f",
+      "name": "P1 finishes the in-progress hand under P0 (reveal/speak selects 200 with package-P0 context)",
+      "result": "pass",
+      "at": "2026-10-27T18:36:57.184Z",
+      "rows": [
+        [
+          "reveal",
+          null,
+          5,
+          200,
+          null,
+          "b07c94b6-74bd-420f-baf5-f3f9da7b9d9a",
+          "93cd59b29853"
+        ],
+        [
+          "deal",
+          null,
+          6,
+          200,
+          null,
+          "848f6e50-3e0d-465b-a8e4-e44eb2720b55",
+          "013ed9d0065b"
+        ],
+        [
+          "deal",
+          null,
+          7,
+          200,
+          null,
+          "08e939c6-60d2-4fa4-81f7-a4723ae21071",
+          "32cdb81f4ea3"
+        ],
+        [
+          "speak",
+          "dealerbust",
+          null,
+          200,
+          null,
+          "137a8e68-cb46-4c2f-abdd-22a6579c9167",
+          "aa59b8d998dc"
+        ],
+        [
+          "speak",
+          "placebets",
+          null,
+          200,
+          null,
+          "fa4a9ac5-e43e-44b7-ad78-ffb1a5cc8806",
+          "9eebdf34cb94"
+        ]
+      ],
+      "balance": 1005
+    },
+    {
+      "id": "K06-3g",
+      "name": "P1 next window runs under P1/M1",
+      "result": "pass",
+      "at": "2026-10-27T18:37:00.022Z",
+      "deal": [
+        [
+          8,
+          200,
+          "f1aefbda-efea-48ee-bd7e-e90ecbf558a5",
+          "b515a54011ea"
+        ],
+        [
+          9,
+          200,
+          "6134db90-9c50-438b-9c36-5a363781232b",
+          "4bc6994a706f"
+        ],
+        [
+          10,
+          200,
+          "ec8534ad-3417-48af-8be7-05c162fe018c",
+          "d4d52b025d28"
+        ],
+        [
+          11,
+          200,
+          "3ae61b24-dae8-4d64-96ec-a6e3b966607d",
+          "3133d1511cfc"
+        ]
+      ],
+      "finish": [
+        [
+          "reveal",
+          null,
+          200
+        ],
+        [
+          "deal",
+          null,
+          200
+        ],
+        [
+          "speak",
+          "lose",
+          200
+        ],
+        [
+          "speak",
+          "placebets",
+          200
+        ]
+      ]
+    }
+  ],
+  "o02ContractChecksNotRun": [
+    {
+      "id": "wrong-role",
+      "result": null,
+      "note": "not run by this agent"
+    },
+    {
+      "id": "bad-media-id",
+      "result": null,
+      "note": "not run by this agent"
+    },
+    {
+      "id": "interrupted-presentation",
+      "result": null,
+      "note": "not run by this agent"
+    }
+  ],
+  "twoConsecutiveGames": {
+    "pass": true,
+    "candidate": null,
+    "games": [
+      {
+        "player": "syntetisk P1",
+        "package": 7,
+        "startedOn": "e7a4e251caab7a5bfa3ddc8dc440d8057a893863",
+        "finishedOn": "3b688d490c405783d94ff83a99651e8b7824b319",
+        "result": "pass (K06-1..3f)"
+      },
+      {
+        "player": "syntetisk P1",
+        "package": 8,
+        "on": "3b688d490c405783d94ff83a99651e8b7824b319",
+        "result": "pass (K06-3g)"
+      }
+    ],
+    "note": "Not both on one frozen candidate: the first game spans the e7a4e251→3b688d49 replacement."
+  },
+  "fieldTable": [
+    {
+      "field": "limitPreset (insatsgränser)",
+      "writer": "Admin save-draft + publish (ordinarie)",
+      "storedRevision": "C0 casual 1–500/50 → C1 prive 5–2000/200 (Neon, C1 head)",
+      "publishedPackage": "7 → 8",
+      "runtimeValue": "ny session visar PRIVÉ $5–$2000 i spelhuvudet (K04 h-skärmbild 18:30–18:32Z, före processbytet)",
+      "afterRestart": "Admin återläser C1/paket 8 (K06-5); spelvärdet efter bytet observerades inte separat",
+      "activeHand": "nativebordet bär ingen configVersion (K06-3e); fasthållning C0→C1 för limits bevisas i delat bord = K07"
+    },
+    {
+      "field": "betMs/actionMs (timers)",
+      "writer": "samma publicering",
+      "storedRevision": "20000/15000 i C0 och C1",
+      "publishedPackage": "7 → 8",
+      "runtimeValue": "oförändrat värde; ingen effekt kunde särskiljas",
+      "afterRestart": "C1 återläst",
+      "activeHand": "K07 (delat bord)"
+    },
+    {
+      "field": "paket/material (dealer, tal, giv)",
+      "writer": "operatörspaket via publicering",
+      "storedRevision": "paket 7 → 8",
+      "publishedPackage": "7 → 8",
+      "runtimeValue": "pågående hand behåller paket 7 (K06-3b/3c/3f); ny session får paket 8 (K06-3d)",
+      "afterRestart": "paket 7-kontexten löser samma material efter bytet (K06-4b); nästa fönster paket 8 (K06-3g)",
+      "activeHand": "paketpekaren bevisad; materialidentiteten kan inte särskiljas eftersom M1 = M0"
+    },
+    {
+      "field": "language",
+      "writer": "samma publicering",
+      "storedRevision": "sv i C0 och C1",
+      "publishedPackage": "7 → 8",
+      "runtimeValue": "svenska approved-tal valda (dealerbust, placebets, lose)",
+      "afterRestart": "samma",
+      "activeHand": "oförändrat värde; ingen effekt kunde särskiljas"
+    }
+  ],
+  "remaining": [
+    "K05 är inte VERIFIED (Jakobs AV-godkännande i produktionen), så status.mjs tillåter inte K06 VERIFIED.",
+    "Fasthållning av C0 för limits/timers under en aktiv hand (C0→C1) kan inte visas på nativebordet, som saknar configVersion. Det är ett delat-bord-prov som tillhör K07 (shared_table_rooms = 0 i kväll; flaggan 1 stoppade starten, rättning PR #442).",
+    "Materialfasthållning M0/M1 är inte diskriminerande: publiceringen ändrade bara limits, så paket 7 och 8 har identiskt inventarie. Ett prov där publiceringen byter material behövs för att visa M0 kvar i pågående hand.",
+    "O02-kontraktsposterna wrong-role, bad-media-id och interrupted-presentation kördes inte (result null).",
+    "Processbytet var en redeploy med kodändring (e7a4e251→3b688d49, PR #434), inte Restart service på samma SHA; twoConsecutiveGames har ingen fryst kandidat.",
+    "Giv-, hål- och revealklippen är reviewStatus unreviewed; visuellt godkännande saknas. Produktionens Johns Bet är inte publicerad (efter K05)."
+  ],
+  "sideEffects": {
+    "staging": [
+      "Rum room-33b37ff3 ompublicerat C0 → C1 (sv/prive), paket 7 → 8 för operatör A",
+      "Två nya syntetiska spelare (P1, P2), demo-USD"
+    ],
+    "production": "orörd; Johns Bet orörd",
+    "sqlWrites": "inga"
+  },
+  "secretsExported": false
+}
