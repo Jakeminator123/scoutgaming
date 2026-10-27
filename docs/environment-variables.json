@@ -380,9 +380,9 @@
         "packages/presentation/server/legacy-clip-inventory.mjs",
         "apps/studio/lib/studio-media-runtime.mjs"
       ],
-      "project": "croupier-lab-ui",
+      "project": "scoutgaming (Vercel service studio)",
       "gitBranch": "main",
-      "rootDirectory": "lab",
+      "rootDirectory": "apps/studio",
       "credentialPolicy": "Shared game/CRAIG credentials: admin has game/Studio/Backoffice access; player has game access. Native password changes use the signed Render authority and existing native/Neon flags; no new environment keys.",
       "required": [],
       "firstBoot": [],
