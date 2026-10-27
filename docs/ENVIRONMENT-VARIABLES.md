@@ -90,6 +90,7 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 | `CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY` | villkorlig | Spelarens mikrofon och översättning; kameraflaggan kräver nyckeln |
 | `CROUPIER_VERCEL_FRONTEND_ORIGIN` | valfri | Extra betrott webbläsarursprung; tom i produktionen, då godtas den publika originen |
 | `CROUPIER_ZONES_DATABASE_URL` | valfri | Skydd: nekar samma databas som game/auth, även via pooler-alias. Öppnar inga zonvägar |
+| `GENERATIONS_READ_TOKENS` | valfri, sätts inte i Render | Kommaseparerade sha256-hexdigester (inte tokenvärden) av godkända bearer-token för den läsande `/api/v1/generations`-ytan i `services/game/generations-api.mjs`; bara `/mapping` svarar, övriga vägar ger 410. `services/game/server.mjs` läser processmiljön och annars `CROUPIER_ENV_FILE` eller `/etc/croupier/agent.env`. Osatt eller tomt ger 401 på allt. `ops/cloud/config.mjs` för inte vidare nyckeln till spelprocessen och mappningen är av i molnet, så i Render `croupier-v3` svarar ytan alltid 401. Rotation: lägg till eller ta bort en digest och starta om |
 | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER`, `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` | första start | Skapar första administratören i en tom kontodatabas; tas bort efteråt. Ändrar aldrig ett befintligt lösenord |
 | `PORT`, `HOST`, `RENDER_EXTERNAL_URL`, `RENDER_SERVICE_ID`, `RENDER_GIT_COMMIT`, `RENDER_INSTANCE_ID`, `CROUPIER_CLOUD_RUNTIME` | värdhanterad | Render och starten sätter dem; `RENDER_GIT_COMMIT` blir SHA i `/__cloud/version` |
 | `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`, `CROUPIER_LISSABON_PROFILES` | nekas | `1` stoppar starten |
@@ -99,12 +100,6 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 | `CROUPIER_CLOUD_DATA_ROOT`, `LAB_VIDEO_ARCHIVE`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_STORAGE_MAINTENANCE`, `CROUPIER_STORAGE_EXPORT_SECRET`, `NEXT_PUBLIC_LAB_BASE_PATH` | sätts inte | Läses bara av vakter, den historiska `studio-export` eller tester |
 
 `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN`, `CROUPIER_LAB_BASE_PATH` och `BETTALOTTO_PARTNER_*` läses inte av spelmotorns start.
-
-Spelmotorns nycklar utanför molnstarten (registerpost `render-game`, kategori `conditional`):
-
-| Namn | Krav | Syfte |
-| --- | --- | --- |
-| `GENERATIONS_READ_TOKENS` | valfri, sätts inte i Render | Kommaseparerade sha256-hexdigester (inte tokenvärden) av godkända bearer-token för den läsande `/api/v1/generations`-ytan i `services/game/generations-api.mjs`; bara `/mapping` svarar, övriga vägar ger 410. `services/game/server.mjs` läser processmiljön och annars `CROUPIER_ENV_FILE` eller `/etc/croupier/agent.env`. Osatt eller tomt ger 401 på allt. `ops/cloud/config.mjs` för inte vidare nyckeln till spelprocessen och mappningen är av i molnet, så i Render `croupier-v3` svarar ytan alltid 401. Rotation: lägg till eller ta bort en digest och starta om |
 
 ## Delade Blackjackrum — avgränsad inkoppling
 
