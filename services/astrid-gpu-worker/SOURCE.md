@@ -1,5 +1,7 @@
 # Source provenance
 
+Status: live, retires at the clean slate together with Astrid (see [README.md](README.md)).
+
 Imported from Emil's standalone repository:
 https://gitlab.com/EmaCodeHero/astrid-gpu-worker
 
@@ -7,16 +9,6 @@ https://gitlab.com/EmaCodeHero/astrid-gpu-worker
 - Local streaming implementation: `cbde18a`.
 - Read-only endpoint inspection follow-up: `cf0a9f7`.
 
-This directory keeps the worker with Croupier's approved GitHub source repository.
-The imported GitLab CI and obsolete deployment instructions have been removed;
-the upstream URL and source SHA above remain the import receipt. Current work
-uses `main` in `Jakeminator123/scoutgaming`, with no GitLab publication.
-The root GitHub workflow runs the service tests. Build the GPU image with this
-directory as Docker's build context. The manual build and private GHCR publish
-workflows are linked from [README.md](README.md). No GPU image is published
-automatically, and publishing an image does not change the deployed endpoint.
+The source of truth is `main` in `Jakeminator123/scoutgaming`; nothing is published to GitLab, and the imported GitLab CI was removed. The upstream URL and SHA above are the import receipt. Build the GPU image with this directory as Docker's build context; the manual build and private GHCR publish workflows are linked from [README.md](README.md). Publishing an image does not change the deployed endpoint.
 
-The reference gateway player is retained for standalone worker verification.
-Croupier's production integration uses the shared player in `web/public` and
-keeps its turn ownership, pose gates and cancellation. Actual deployment and
-GPU visual/timing acceptance are separate from these synthetic checks.
+The reference gateway player is kept for standalone worker verification. Croupier's production integration uses the shared player in `services/game/public`.

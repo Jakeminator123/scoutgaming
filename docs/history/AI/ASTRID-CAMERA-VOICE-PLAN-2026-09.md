@@ -1,13 +1,13 @@
 # Astrid: valbar kamera och mikrofon
 
-> Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
-> är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
+> Historik. Flyttad från `docs/AI/openclaw/` 27 oktober 2026: Astrid tas bort vid
+> ren start och planen är inte aktuell. Kodsökvägar som `src/` och `deploy/`
+> utgår från `services/openclaw/lab/`. Aktuella AI-dokument: [docs/AI](../../AI/README.md).
 
 28 september 2026. Detta dokument är designunderlaget. Funktionen är nu
 implementerad bakom uttryckliga flaggor, Av som standard. Lokal implementation,
 utförda tester och kvarvarande driftprov finns i
-[implementationsrapporten](../../LOCAL-PRESENTATION-RUNTIME.md).
+[implementationsrapporten](../LOCAL-PRESENTATION-RUNTIME-2026-10.md#kamera-och-mikrofon).
 Ingen verklig kamera har aktiverats. Beskrivningen nedan visar utgångsläget.
 Utgångspunkt är Lissabon och `presentation=local`, enbart Astrid.
 

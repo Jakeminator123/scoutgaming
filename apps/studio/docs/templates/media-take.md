@@ -1,4 +1,4 @@
-# Takepaket · fyll i före överlämning
+# Tagningspaket · fyll i före överlämning
 
 Detta är en leverans-/reviewmall, inte ett körbart manifest. Inga hemligheter,
 privata chattar eller signerade nedladdningslänkar. Utelämna inte saknade fält
@@ -18,8 +18,8 @@ tyst: skriv **saknas** eller **ej relevant**.
 - Uppspelningskvitton, två plays i följd och avbrottsprov:
 - Visuell granskare, datum, exakt granskade bytes och resultat per punkt:
 - Kvarvarande luckor, status (ogranskad / review / avvisad / accepterad):
-- Kevin: eventuell produktbindning och aktiveringsrevision:
+- Paket- och publiceringsrevision där tagningen används:
 
 Ändrat ljud eller video ogiltigförklarar tidigare visuellt godkännande för
-taken. Spela aldrig ny text till en gammal inspelad mun. En lokal upload och
-triggerkoppling är inte ett godkännande eller en aktivering i BO/live.
+tagningen. Spela aldrig ny text till en gammal inspelad mun. En uppladdning och
+en villkorskoppling är inte ett godkännande eller en publicering.

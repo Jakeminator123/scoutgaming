@@ -2,11 +2,11 @@
 
 Server-owned AI-dealer blackjack. The game engine (shoe, rules, outcomes, payouts) runs on our server. The AI dealer only presents the game. Partners integrate through this API.
 
-Base URL: `https://bettalotto.se` (production). All endpoints are `POST` with a JSON body.
+The engine implements this API in `services/game/storage/async-partner-api.mjs` (Render `croupier-v3`). The base URL is the engine's `PUBLIC_URL`; the code default is `https://bettalotto.se`. All endpoints are `POST` with a JSON body unless stated otherwise.
 
 ## 1. Authentication (every request)
 
-Each partner gets an API key and a secret from the Scout backoffice. Every request carries three headers:
+Each partner gets an API key and a secret from Admin (**API & integrationer**). Every request carries three headers:
 
 | Header | Value |
 |---|---|
@@ -40,7 +40,7 @@ Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404. Key scopes: `lau
 Returns `{ ok, key, scopes, serverTime }`. Use to verify signing.
 
 ### POST /api/v1/lobby (scope: lobby)
-Lists tables, dealers, limits and rules.
+Lists tables, dealers, limits and rules. In the cloud runtime this legacy list answers **410** `{ "error": "legacy_lobby_retired", "url": "/lobby" }`; published rooms are listed in `/lobby`.
 ```json
 { "tables": [{ "id": "astrid-blackjack", "game": "blackjack", "dealer": "astrid", "decks": 8, "cutAfter": 312, "boxes": 7, "minBet": 5, "maxBet": 2000, "sideBets": ["perfectPairs","21+3"], "blackjackPays": "3:2", "dealerStandsSoft17": true, "aiDealer": true }] }
 ```
@@ -59,7 +59,7 @@ One authenticated player can currently place bets on several boxes in the same r
 
 
 ### Getting a test session without writing code
-In the Scout backoffice, **API Keys → MINT TEST TOKEN** creates a test player for your key and gives you: a ready launch URL (valid 6 h), an **ADD DEMO FUNDS** button (internal-wallet keys only), and the exact signed `curl` for `/api/v1/launch` including the signed string, so you can verify your own HMAC implementation byte for byte.
+In Admin, **API & integrationer** can create and rotate a key, mint a test launch for it and add demo funds (internal-wallet keys only).
 
 ### POST /api/v1/table (scope: play)
 Drive the table server-side without the UI (for your own front end, bots, or QA). Same engine as the UI.
@@ -154,60 +154,6 @@ Without a wallet URL the key uses our internal demo wallet (starts at 0; use for
 
 Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com
 
-## 6. Prompts for ChatGPT / Claude
+## 6. Retired generations endpoints
 
-Paste one of these together with this page ("Copy for LLM" at the top copies the whole page as Markdown).
-
-**Build a headless client (your own UI with our dealer)**
-```
-You are building a web client for the Croupier Partner API v1 (documentation pasted below). POST /api/v1/assets currently returns empty streams, deals and speech. Scene URLs under /dealer/ and /dealers/{astrid,vera,amira,mei}/ answer HTTP 410 local_dealer_retired. On each presentation event from /api/v1/table or the SSE stream, place a DOM card at camera.boxCentres[box]. Do not fetch the retired scene URLs. Vanilla TypeScript, no framework. Documentation:
-```
-
-**Build an API client**
-```
-You are integrating the Croupier Partner API v1 (documentation pasted below). Write a small TypeScript module that: (1) signs requests with HMAC-SHA256 exactly as specified, (2) exposes ping(), lobby(), launch(playerId, currency, language), table(playerId, cmd) with automatic requestId generation and safe replay, history(filter). Use fetch, no dependencies. Include a 10-line usage example. Documentation:
-```
-
-**Implement the seamless wallet**
-```
-You are the operator side of the Croupier Partner API v1 (documentation pasted below). Implement the seamless wallet endpoint we must expose: verify the HMAC signature, handle type = balance | bet | win, enforce idempotency on transactionId, reject a bet with a non-200 status when funds are insufficient, and return { balance }. Target: Node.js + Express + Postgres. Include the SQL schema and tests for double-delivery of the same transactionId. Documentation:
-```
-
-**Reconcile rounds**
-```
-Using the /api/v1/history endpoint from the Croupier Partner API v1 (documentation pasted below), write a nightly reconciliation job that pulls every round for the last 24 hours, sums stake and delta per playerId and currency, compares with our wallet ledger, and prints mismatches. Documentation:
-```
-
-**Explain it to a non-developer**
-```
-Explain the Croupier Partner API v1 (documentation pasted below) to a product manager in under 200 words: what the operator must build, what Croupier owns, how money flows, and what is logged for regulators. Documentation:
-```
-
-## Generations (read-only)
-
-The Higgsfield videos reviewed on the backoffice Generations page. Separate bearer token, read only: no writes, no deletes, no filesystem paths.
-
-```
-GET /api/v1/generations
-GET /api/v1/generations/:id/video      # MP4, supports Range: bytes=
-Authorization: Bearer <generations read token>
-```
-
-List fields: `id`, `prompt`, `model`, `duration`, `aspect`, `verdict` (`want` / `no` / null), `verdictReason`, `landedAt`, `size`, `sha256`, `downloadUrl` (null when the file is not on the server).
-
-```bash
-TOKEN=...
-curl -s -H "Authorization: Bearer $TOKEN" https://bettalotto.se/api/v1/generations | jq '.items[] | select(.verdict=="want") | {id,model,prompt}'
-curl -H "Authorization: Bearer $TOKEN" -o clip.mp4 https://bettalotto.se/api/v1/generations/<id>/video
-curl -H "Authorization: Bearer $TOKEN" -H "Range: bytes=0-1048575" -o first-mb.mp4 https://bettalotto.se/api/v1/generations/<id>/video
-```
-
-Tokens: `GENERATIONS_READ_TOKENS` in `/etc/croupier/agent.env` holds the sha256 digests of accepted tokens, comma separated. Add or remove a digest and restart the service to rotate.
-
-### Mapping: catalogue, not playback
-
-`GET /api/v1/generations/mapping` (same bearer token) is a metadata snapshot. `actualPlayback` is false. It does not list clips the published game plays. Engine streams and staged performance takes from the retired indexed bank are empty. Astrid's paused green takes and the separate green-speech manifests can still appear, plus backoffice picks, the never-again list and want / don't want verdicts. `revision` is the running git commit.
-
-```bash
-curl -s -H "Authorization: Bearer $TOKEN" https://bettalotto.se/api/v1/generations/mapping | jq '.dealers.astrid.greenTakes'
-```
+`GET /api/v1/generations` and `/api/v1/generations/:id/video` belong to the retired generation catalogue and answer **410** after bearer authentication. `GET /api/v1/generations/mapping` answers **404** in the cloud runtime. The published game plays only the registered presentation package.

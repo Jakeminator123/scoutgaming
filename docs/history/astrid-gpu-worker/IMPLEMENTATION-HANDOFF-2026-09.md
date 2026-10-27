@@ -1,10 +1,12 @@
+> Historik: importen av Astrids GPU-worker och strömningskedjan, september 2026. Aktuell guide: [services/astrid-gpu-worker](../../../services/astrid-gpu-worker/README.md).
+
 # Streaming implementation — 2026-09-28
 
 This file preserves the dated import and synthetic-test record. Branches,
 provider access and pending-work observations below describe that time.
 Current source uses `main` in `Jakeminator123/github-work`; current deployment
-and acceptance are tracked in the [cloud map](../../../docs/CLOUD-MIGRATION.md)
-and [current handoff](../../../docs/NEXT-AGENT.md). Historical instructions do
+and acceptance are tracked in the [cloud map](../../CLOUD-MIGRATION.md)
+and [current handoff](../../NEXT-AGENT.md). Historical instructions do
 not authorize GitLab work or a new deployment.
 
 ## GHCR and RunPod access — 2026-09-29
@@ -27,7 +29,7 @@ and current cost, worker and rollback settings are inspected.
 
 ## Worker review — 2026-09-29
 
-[Upstream inventory and latency review](UPSTREAM-AND-LATENCY.md) records the
+[Upstream inventory and latency review](UPSTREAM-AND-LATENCY-2026-09.md) records the
 documented Emil import, the unavailable live GitHub comparison, the private
 repository recommendation and the remaining GPU-dependent acceptance work.
 The first valid PCM now starts FFmpeg while the first inference context fills.
@@ -58,8 +60,8 @@ A manual, SHA-tagged GHCR publish workflow is prepared for the corrected
 `ghcr.io/jakeminator123/astrid-gpu-worker` package. Its first run failed at
 push as recorded above; the corrected target has **not** been run.
 The existing RunPod endpoint and Emil's GitLab repository remain untouched.
-The current [cloud migration checklist](../../../docs/CLOUD-MIGRATION.md)
-and [runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) own deployment
+The current [cloud migration checklist](../../CLOUD-MIGRATION.md)
+and [runtime guide](../../LOCAL-PRESENTATION-RUNTIME.md) own deployment
 and cold/warm two-play acceptance; the earlier standalone GPU plan was retired.
 
 Local verification for this follow-up: cloud/WebSocket and generated-speech
@@ -149,8 +151,8 @@ whether to cache features, change block size or replace the audio encoder.
 
 This section records the standalone clone's handoff. The service is now vendored
 into Croupier and its server/shared-player integration is implemented. See
-[the runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) and
-[current handoff](../../../docs/NEXT-AGENT.md) for current validation and
+[the runtime guide](../../LOCAL-PRESENTATION-RUNTIME.md) and
+[current handoff](../../NEXT-AGENT.md) for current validation and
 outstanding deployment work. The scoped endpoint configuration at that time returned
 HTTP 200 to a read-only health request; no GPU job was submitted.
 
