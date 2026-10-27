@@ -35,14 +35,14 @@ Råkvitton, skript och skärmbilder bakom kvittona finns bara lokalt hos orkestr
 
 ### K04 — Spelklient och presentation från händelser (IN_PROGRESS)
 
-- **Bevisat:** isolerad staging 27 oktober på `e7a4e251` ([K04-kvittot](2026-10-27-K04-STAGING-ACCEPTANCE.json)): händelsestyrd presentation, exakt materialbindning (46/46 UUID/SHA), återanslutning via API, två processbyten mitt i hand, negativa fall och alla tio talrepliker med godkända stagingtagningar. Kväll på `cc415cd8`, delat bord i headless Chromium ([K04-webbläsarkvittot](2026-10-27-K04-BROWSER-ACCEPTANCE.json)): omladdning mitt i hand på dator och mobil, beslut till resultat och nästa fönster, tangentbord och tap, okänt media-ID, avbrutet tal och Fast 3G. Jakobs produktionsspel ovan är underlag.
+- **Bevisat:** isolerad staging 27 oktober på `e7a4e251` ([K04-kvittot](2026-10-27-K04-STAGING-ACCEPTANCE.json)): händelsestyrd presentation, exakt materialbindning (46/46 UUID/SHA), återanslutning via API, två processbyten mitt i hand, negativa fall och alla tio talrepliker med godkända stagingtagningar. Kväll på `cc415cd8`, delat bord i headless Chromium ([K04-webbläsarkvittot](2026-10-27-K04-BROWSER-ACCEPTANCE.json)): omladdning mitt i hand på dator och mobil, beslut till resultat och nästa fönster, tangentbord och tap, okänt media-ID, avbrutet tal och Fast 3G. Jakobs produktionsspel ovan är underlag. 28 oktober på `13aa5a01` efter #451 ([omprovskvittot](2026-10-28-K04-BROWSER-RERUN-ACCEPTANCE.json)): saknat dealerklipp (fast text och fyra kort inom 0,1 s, hit/stand vid `turnAt`, ingen dealfilm i den handen), 400 kbit/s och Fast 3G till resultat och nästa fönster utan omladdningstext, samt webbläsarens autoplay-spärr på delat bord (startar ljudlöst; ett klick på ljudknappen släpper ljudet).
 - **Saknas:**
-  - Två fallerade prov: ett dealerklipp med 404 lämnar spelaren utan kort, knappar och feltext i minst 6,5 s, och på 400 kbit/s blir bordet aldrig spelbart. Rättningen pågår på `jakob/claude-k04-client-fixes`; båda proven körs om efter merge.
-  - Jakobs visuella godkännande av giv-, hål- och revealklippen (registret säger `unreviewed`/`lab-only`) och av skärmbilderna.
-  - Webbläsarens autoplay-spärr (proven körde med den avstängd) och fysisk telefon.
+  - Två klientfel från omproven (fil och rad i kvittots `findings`): ett giv- eller revealklipp som blir klart efter sin plats på bordsklockan visas som *Filmen kunde inte spelas.*, även utan strypning (F1), och på 400 kbit/s avbryts inte ett pågående klipp när steget har passerat, så spelaren ser varken kort eller hit/stand under beslutsfönstret (F2). Proven körs om efter rättning.
+  - Jakobs visuella godkännande av PAOW:s 35 giv-, hål- och revealklipp (lista med produktions- och staging-ID i kvittots `remaining`) och av skärmbilderna. Admin har ingen godkännandeknapp för dessa klipp; registret sätter `unreviewed`/`lab-only` som konstant. Klippen granskas under Studio → Klippkarta (`/admin/clips`).
+  - *Slå på ljud* i en riktig webbläsare (bara enspelarbordet, inte nåbart i stagingen med flaggan på) och fysisk telefon.
   - Produktionens tre lager med inloggad spelare i ett kvitto.
 - **Vem:** agent rättar och kör om proven i staging; Jakob gör den visuella bedömningen.
-- **Kvitto:** komplettera K04-webbläsarkvittot eller lägg ett nytt daterat kvitto.
+- **Kvitto:** lägg ett nytt daterat kvitto efter omproven.
 
 ### K05 — Exakt mediakoppling till Neon och Blob (IN_PROGRESS)
 
