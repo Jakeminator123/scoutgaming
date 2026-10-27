@@ -140,3 +140,184 @@ test('joining again with the boxes held renames the member and keeps bets, reser
   assert.deepEqual((await t.room()).boxesAfterRound.kevin, [4, 5], 'the pending box change stays');
   assert.equal((await t.members()).find(m => m.actorId === 'kevin').name, 'Kevin');
 });
+
+// Selective conversion from Kevin's branch (kevin @ f664c54d), behaviour only, in main's coordinator.
+// 7ddb7de4d 'Table is full bugg': after a round the boxes not bet on in it are released; a box chosen during the round
+// stays (a new claim, or a changed box set while a hand is live). Re-sending the same boxes, e.g. a rename, is no
+// choice. The wait-queue half (at most 3 boxes while a viewer waits) is not ported: main's snapshot never writes.
+test('after a round the boxes not bet on are released, a box chosen during the round stays (Kevin 24 Oct: table is full)', async () => {
+  const t = setup();
+  await t.join('guest', [0, 1, 2]); await t.join('john', [6]);
+  t.setShoe(['10', '9', '10', '7']);
+  await t.bet('guest', 1, 5);
+  t.time = (await t.snap()).deadline; await t.drain();       // john sits in but bets nothing: the deadline starts it
+  assert.deepEqual((await t.snap()).round.hands.map(h => h.box), [1]);
+  await t.join('kevin', [5]);                                  // sits down during the round
+  const settled = await t.standAll();
+  assert.deepEqual(settled.owners, ['guest', 'guest', 'guest', null, null, 'kevin', 'john'], 'nothing is taken from a round in play');
+  await t.send('guest', 'next', { roundId: settled.roundId });
+  const s = await t.snap('john');
+  assert.deepEqual(s.owners, [null, 'guest', null, null, null, 'kevin', null], 'only played boxes and the box taken mid-round stay');
+  const next = t.store.test.audit().findLast(e => e.type === 'player.next');
+  assert.deepEqual(releaseAudit(t), [
+    { playerId: 'guest', boxes: [0, 2], reason: 'unplayed', memberEnded: false, parent: next.seq, roundId: settled.roundId },
+    { playerId: 'john', boxes: [6], reason: 'unplayed', memberEnded: true, parent: next.seq, roundId: settled.roundId }],
+    'one audit row per player released at the reset, caused by next');
+  assert.equal((await t.store.audit.verifyChain()).ok, true);
+  for (const i of [0, 2, 6]) assert.equal(s.seatGen[i], settled.seatGen[i] + 1, `box ${i}: a stale claim is refused`);
+  assert.equal(s.me.active, false, 'john lost his last box, so his membership ends like a release');
+  assert.equal(s.me.memberGen, 2);
+  assert.deepEqual(s.players.map(p => p.id).sort(), ['guest', 'kevin']);
+  await t.join('john', [6]);
+  assert.deepEqual((await t.snap('john')).me.seats, [6], 'he can sit down again with the new generation');
+  await t.bet('guest', 1, 5);
+  assert.equal((await t.snap()).bets[1].main, 5, 'the player keeps betting on the box he played');
+});
+
+const releaseAudit = t => t.store.test.audit().filter(e => e.type === 'seat.release')
+  .map(e => ({ ...JSON.parse(e.payload), parent: e.parent, roundId: e.round_id }));
+
+// Starts a round in which kevin bets on box 3 only; seated players without a bet hold their boxes through it.
+async function roundWithBystanders(t) {
+  t.setShoe(['10', '9', '10', '7', '9', '8']);
+  await t.bet('kevin', 3, 5);
+  t.time = (await t.snap()).deadline; await t.drain();         // a seated non-bettor is online, so the deadline starts it
+  assert.equal((await t.snap()).phase, 'round');
+}
+
+test('joining again with the same boxes, mid-round or once it is settled, does not keep a box that was not bet on', async () => {
+  const t = setup();
+  await t.join('kevin', [3, 4]); await t.join('john', [5, 6], { name: 'John' });
+  await roundWithBystanders(t);
+  await t.join('john', [5, 6], { name: 'Johnny' });            // rename mid-round
+  await t.join('kevin', [3, 4]);                                // a bettor re-sends his boxes mid-round
+  const settled = await t.standAll();
+  await t.join('john', [5, 6], { name: 'J' });                 // and again in the settled phase
+  await t.send('kevin', 'next', { roundId: settled.roundId });
+  const s = await t.snap('john');
+  assert.deepEqual(s.owners, [null, null, null, 'kevin', null, null, null], 'only the played box stays');
+  assert.equal(s.me.active, false); assert.equal(s.me.memberGen, 2);
+  assert.equal((await t.members()).find(m => m.actorId === 'john').name, 'J', 'the renames themselves were applied');
+});
+
+test('an unbet box given up mid-round and claimed again in the same round stays: that is a choice made during it', async () => {
+  const t = setup();
+  await t.join('kevin', [3, 4]);
+  await roundWithBystanders(t);
+  await t.join('kevin', [3]);
+  assert.equal((await t.snap()).owners[4], null, 'given up at once');
+  await t.join('kevin', [3, 4]);
+  const settled = await t.standAll();
+  await t.send('kevin', 'next', { roundId: settled.roundId });
+  assert.deepEqual((await t.snap()).me.seats, [3, 4]);
+});
+
+test('a mid-round join that changes the box set keeps every box it lists, also when it drops an in-play box', async () => {
+  const play = async (...joins) => {
+    const t = setup();
+    await t.join('kevin', [3, 4]);
+    await roundWithBystanders(t);
+    for (const seats of joins) await t.join('kevin', seats);
+    const settled = await t.standAll();
+    await t.send('kevin', 'next', { roundId: settled.roundId });
+    return { seats: (await t.snap()).me.seats, released: releaseAudit(t).map(({ boxes, reason, memberEnded }) => ({ boxes, reason, memberEnded })) };
+  };
+  assert.deepEqual(await play([3, 4, 5]), { seats: [3, 4, 5], released: [] }, 'adding box 5 re-lists unbet box 4: kept');
+  assert.deepEqual(await play([4], [3, 4]), { seats: [3, 4], released: [] }, 'box 4 chosen while dropping in-play box 3: kept');
+  assert.deepEqual(await play([4, 5]), { seats: [4, 5], released: [{ boxes: [3], reason: 'boxes changed', memberEnded: false }] });
+  assert.deepEqual(await play([3, 4]), { seats: [3], released: [{ boxes: [4], reason: 'unplayed', memberEnded: false }] },
+    'the same boxes again is no choice');
+});
+
+test('a room stored before `unplayed` existed finishes its round keeping every box, through join, release and reset', async () => {
+  const t = setup();
+  await t.join('kevin', [3, 4]); await t.join('john', [6]); await t.join('guest', [0]);
+  await roundWithBystanders(t);
+  t.store.test.mutateRoom('party', r => { delete r.unplayed; });
+  assert.equal(Object.hasOwn(await t.room(), 'unplayed'), false);
+  await t.join('john', [6], { name: 'John' });                  // join in the legacy round
+  await t.send('guest', 'leave', { memberGen: (await t.snap('guest')).me.memberGen });
+  const settled = await t.standAll();                           // its drain runs guest's leave release (releaseSeats)
+  assert.equal((await t.snap('guest')).me.active, false);
+  await t.send('kevin', 'next', { roundId: settled.roundId });  // resetRound
+  const s = await t.snap();
+  assert.equal(s.phase, 'bets'); assert.deepEqual(s.owners, [null, null, null, 'kevin', 'kevin', null, 'john'], 'every box kept');
+  assert.deepEqual(releaseAudit(t), []);
+  assert.deepEqual((await t.room()).unplayed, {}, 'the next window starts with the new shape');
+});
+
+test('a seat holder who bet nothing and leaves mid-round is released; next still opens the window', async () => {
+  const t = setup();
+  await t.join('kevin', [3]); await t.join('john', [6]);
+  await roundWithBystanders(t);
+  await t.send('john', 'leave', { memberGen: (await t.snap('john')).me.memberGen });
+  assert.ok((await t.snap()).players.find(p => p.id === 'john').leaving);
+  const settled = await t.standAll();
+  await t.send('kevin', 'next', { roundId: settled.roundId });
+  const s = await t.snap('john');
+  assert.equal(s.phase, 'bets'); assert.notEqual(s.windowId, settled.windowId);
+  assert.deepEqual(s.owners, [null, null, null, 'kevin', null, null, null]);
+  assert.equal(s.me.active, false); assert.equal(s.me.memberGen, 2, 'ended once, not twice');
+});
+
+test('the last owner released by a tick after a round with an unbet box resets the table without locking anyone else', async () => {
+  const t = setup();
+  await t.join('kevin', [3, 4]); await t.join('john', [6]);
+  await roundWithBystanders(t);
+  await t.send('john', 'leave', { memberGen: (await t.snap('john')).me.memberGen });
+  const settled = await t.standAll();                           // its drain also runs john's leave release
+  assert.equal(settled.phase, 'settled'); assert.deepEqual(settled.owners, [null, null, null, 'kevin', 'kevin', null, null]);
+  t.time = (await t.store.read.presence('party', 'kevin')) + 120000; await t.drain();   // kevin absent: seat.release
+  const s = await t.snap();
+  assert.equal(s.phase, 'bets', 'the release of the last owner reset the table'); assert.notEqual(s.windowId, settled.windowId);
+  assert.deepEqual(s.owners, Array(7).fill(null));
+  for (const p of ['kevin', 'john']) assert.deepEqual([(await t.snap(p)).me.active, (await t.snap(p)).me.memberGen], [false, 2], p);
+  const releases = t.store.test.ticks().filter(x => x.kind === 'seat.release');
+  assert.deepEqual(releases.map(x => x.outcome), ['applied', 'applied']);
+  assert.equal(t.store.test.stats.lockRetries, 0, 'no tick needed a lock outside its plan');
+});
+
+test('next locks only the players who lose their last box, never one who keeps a box', async () => {
+  const t = setup();
+  await t.join('guest', [0, 1, 2]); await t.join('kevin', [3]); await t.join('john', [6]);
+  await t.bet('guest', 1, 5);
+  await roundWithBystanders(t);
+  const settled = await t.standAll();
+  const plans = [], runLocked = t.store.runLocked;
+  t.store.runLocked = (plan, work) => { plans.push(plan); return runLocked(plan, work); };
+  await t.send('kevin', 'next', { roundId: settled.roundId });
+  assert.deepEqual(plans.map(p => p.players), [['john', 'kevin']], 'guest keeps box 1, so only john (and the actor) is locked');
+  const s = await t.snap('guest');
+  assert.deepEqual(s.owners, [null, 'guest', null, 'kevin', null, null, null]);
+  assert.equal(s.me.active, true); assert.equal((await t.snap('john')).me.active, false);
+});
+
+// fd6e7dd17 'tick skips quiet rooms': main's scheduler never loads and saves a room just to look at it (dueTicks is
+// read-only), but it still read every member and presence row of a room nobody sits at. A quiet room costs one read.
+test('dueTicks reads no members or presence of a room nobody sits at, and still runs the table that plays (Kevin 24 Oct: prod CPU)', async () => {
+  const store = createMemoryTableStore();
+  let time = 100000, n = 0;
+  const reads = [];
+  const counted = { ...store, read: Object.fromEntries(Object.entries(store.read).map(([k, f]) => [k, (...a) => { reads.push([k, ...a]); return f(...a); }])) };
+  const table = createTableCoordinator({ store: counted, clock: { now: () => time }, random: deterministicRandom('k07-quiet') });
+  for (const p of ['kevin', 'john', 'guest']) store.test.fund(p, 1000);
+  const send = (who, room, op, extra = {}) => table.command({ actorId: who }, { roomId: room, op, commandId: `q${++n}`, ...extra });
+  const join = async (who, room, seats) => { const s = await table.snapshot(room, who);
+    return send(who, room, 'join', { seats, seatGens: Object.fromEntries(seats.map(i => [i, s?.seatGen[i] ?? 0])), memberGen: s?.me.memberGen ?? 0 }); };
+  for (let i = 0; i < 20; i++) {                            // studio tables someone once sat at and left
+    const room = `quiet-${i}`;
+    await join('guest', room, [0]); await send('guest', room, 'leave', { memberGen: (await table.snapshot(room, 'guest')).me.memberGen });
+  }
+  await join('john', 'party', [4]); await send('john', 'party', 'leave', { memberGen: (await table.snapshot('party', 'john')).me.memberGen });
+  await join('kevin', 'party', [3]); await send('kevin', 'party', 'bet', { seat: 3, field: 'main', chip: 5, windowId: (await table.snapshot('party', 'kevin')).windowId });
+  const { deadline } = await table.snapshot('party', 'kevin');
+  reads.length = 0;
+  assert.deepEqual(await table.dueTicks(deadline - 1), []);
+  assert.deepEqual(reads.filter(([k]) => k === 'members').map(([, room]) => room), ['party'], 'members are read only where someone sits');
+  assert.deepEqual(reads.filter(([k]) => k === 'presence').map(([, room, p]) => [room, p]), [['party', 'kevin']], 'presence only of a seated member');
+  time = deadline;
+  const due = await table.dueTicks();
+  assert.deepEqual(due.map(d => [d.roomId, d.kind]), [['party', 'window.close']]);
+  assert.equal((await table.tick(due[0])).outcome, 'applied');
+  assert.equal((await table.snapshot('party', 'kevin')).phase, 'round', 'the seated table still starts its round');
+});
