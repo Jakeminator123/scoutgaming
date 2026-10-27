@@ -20,10 +20,11 @@ test('shared rooms use the published card display and the same default in every 
   if(mode==='table'||mode==='raised')board[format].cardView=mode;
   const width=compact?390:960,height=compact?844:540,rect={x:0,y:0,width,height};
   const plane=mode==='fallback'?null:mode==='film'?{x:0,y:0,scale:.4}:{rect,tableGeometry:board,tableLayout:format};
-  const host={getBoundingClientRect:()=>({left:0,top:0,width,height})};
+  const host={getBoundingClientRect:()=>({left:0,top:0,width,height}),append(){}};
   let projected;
   const presentation=await mountSharedRoomPresentation({
-   document:{getElementById:id=>id==='scene'||id==='table2d'?host:null},
+   // The dealer-loading placeholder is the only element the mount creates.
+   document:{getElementById:id=>id==='scene'||id==='table2d'?host:null,createElement:()=>({setAttribute(){},remove(){}})},
    window:{matchMedia:()=>({matches:compact}),addEventListener(){},removeEventListener(){},fetch(){assert.fail('layout must not request data');}},
    selection:{roomId:'card-view-room',presentation:'local',dealer:'test-dealer',localDealer:'test-dealer',registeredDealers:[{id:'test-dealer',label:'Test'}]},
    onReady(){},onError(error){assert.fail(error);},

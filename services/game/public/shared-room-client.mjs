@@ -10,7 +10,9 @@ const invalid = () => { throw new TypeError('shared_room_invalid_state'); };
 // Freeze the complete upper bound before any renderer can mutate the frame.
 // playLocalFilm permits 120s plus 8s startup. Each film also gets two 30s
 // inactivity-bounded phases: configuration/composition preparation, then the
-// verified buffer and startup. Buffer acquisition precedes the film deadline.
+// verified buffer and startup. Buffer acquisition precedes the film deadline;
+// arriving bytes renew its inactivity lease, so on a slow connection this frozen
+// total, not one file's download time, is the absolute bound.
 // Shared selection returns either three filmed parts (before/main/after) or
 // main+fallback. Speech conservatively permits that same two-attempt fallback.
 // The wire contract already limits the event array to 128; legacy has no times.

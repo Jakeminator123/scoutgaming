@@ -2,8 +2,15 @@ import { isActiveDealerId } from '../../../packages/presentation/contracts/deale
 import { recordedSpeechForVideo } from '../../../packages/presentation/contracts/recorded-speech.mjs';
 import { createLiveIdleController } from '../../../packages/presentation/runtime/live-idle.mjs';
 
-// Player-facing speech text. The browser's or provider's reason stays in the receipt.
+// Player-facing speech and action-film texts. The browser's, server's or
+// provider's reason (and HTTP status/code) stays in the receipt.
 const SPEECH_FAILED = 'Talet kunde inte spelas.';
+const FILM_FAILED = 'Filmen kunde inte spelas.';
+// A failed step's text stays readable while the following steps start.
+const FAILURE_NOTICE_MS = 6000;
+// The exact file is missing (404/410) or declared unavailable by the server:
+// this step ends at once, without a fallback film or another attempt.
+const unavailableMedia = error => error?.code === 'local_film_unavailable' && error.retryable === false;
 
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets' }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
@@ -45,6 +52,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const configurationSource = config.configurationSource || 'lab/project.json';
   receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource, ...(roomModes ? { modeSource: 'composition' } : {}) });
   const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status'); host.append(status);
+  let failureUntil = 0;
+  const showFailure = text => { status.textContent = text; failureUntil = Date.now() + FAILURE_NOTICE_MS; };
   const control = document.createElement('select'); control.setAttribute('aria-label', 'Klippval');
   for (const [value, text] of [['off','Standard'],['rules','Regler'],['random','Slump'],['active','OpenClaw'],['shadow','OpenClaw · skugga']]) {
     if(preview&&['active','shadow'].includes(value))continue;
@@ -175,6 +184,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const audible = kind === 'speech' && !muted();
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
         signal: own.signal, muted: !audible, hold, ...timing,
+        // Arriving bytes are progress: a slow download is never cut by a whole-file limit.
+        ...(onProgress ? { onDownloadProgress: value => onProgress({ phase: 'download', received: value?.received }) } : {}),
         ...(audible ? { onSoundBlocked: resume => offerSound(own, () => stillCurrent() && resume()) } : {}),
         onGestureWait: waiting => {
           if (!stillCurrent()) return;
@@ -290,13 +301,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     offerPendingRule();
     if (action || speech) onBusy(); else resumeIdle();
   }
-  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, startOffset, handoverAt, playbackRate, clockTime } = {}) {
+  // onUnavailable(): this step's exact media is missing or declared unavailable
+  // (not a retryable playback failure); the shared table ends its film at once.
+  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, onUnavailable, startOffset, handoverAt, playbackRate, clockTime } = {}) {
     if (packageChanged) return false;
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
     const requestVersion = version();
     ++serial; stop(); onBusy();
-    status.textContent = '';
+    if (Date.now() >= failureUntil) status.textContent = '';
     const token = serial;
     let progressClip = 0;
     const progress = () => {
@@ -374,7 +387,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         .filter(([, value]) => value !== undefined && value !== null));
       await transition(result.transitions?.before, 'to-shoe');
       try { await play(result.video, timing); }
-      catch (error) { if (['local_film_stalled', 'local_film_sound_blocked'].includes(error.code) || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
+      catch (error) { if (['local_film_stalled', 'local_film_sound_blocked', 'local_film_download_stalled'].includes(error.code) || unavailableMedia(error) || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }
       await transition(result.transitions?.after, 'from-shoe');
@@ -386,10 +399,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (requireReload(error)) return false;
       // A line refused by the sound policy already shows the sound control.
       const soundBlocked = kind === 'speech' && error.code === 'local_film_sound_blocked';
-      if (!soundBlocked) status.textContent = kind === 'speech' ? SPEECH_FAILED : `${error.message} · 2D-reserv`;
+      if (!soundBlocked) showFailure(kind === 'speech' ? SPEECH_FAILED : FILM_FAILED);
+      const missing = unavailableMedia(error);
       receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message,
-        ...(error.code ? { code: error.code } : {}), ...(soundBlocked ? { soundUnlocked } : {}), renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
-        projectRevision: result?.projectRevision, configurationSource }); return false;
+        ...(error.code ? { code: error.code } : {}), ...(Number.isInteger(error.status) ? { status: error.status } : {}), ...(error.serverCode ? { serverCode: error.serverCode } : {}),
+        ...(missing ? { unavailable: true } : {}), ...(soundBlocked ? { soundUnlocked } : {}), renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+        projectRevision: result?.projectRevision, configurationSource });
+      if (missing) { try { onUnavailable?.(); } catch {} }
+      return false;
     }
   }
   control.onchange = () => { pendingRule = null; ++behaviourRequest; settlementContinuation=null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
