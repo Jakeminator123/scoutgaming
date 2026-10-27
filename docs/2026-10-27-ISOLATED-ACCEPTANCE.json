@@ -75,7 +75,7 @@
   "secretsExported": false,
   "productionMutated": false,
   "cloudVerification": {
-    "observedAt": "2026-10-27T09:26:27Z",
+    "observedAt": "2026-10-27T09:40:12Z",
     "codeSha": "d53b349a7dc14060de8283a343681569a089805e",
     "documentHead": "df6c1b60ed5cbc70c9e54c2e5c761b120397d1ee",
     "runtime": {
@@ -91,7 +91,18 @@
       "command": "/opt/codex/cua_node/bin/node apps/studio/test/presentation-room-api.test.mjs",
       "source": "isolated git archive of parent 3106a1cc plus five hash-verified GitHub blobs",
       "candidateTree": "b9897ad92eb5d456c7dcd9c2d918478ad36421f1",
-      "clientTests": "not started: React missing; network proxy unavailable"
+      "clientTests": "43/43 passed after clean npm ci; zero skipped",
+      "clientPassed": 43,
+      "totalPassed": 97,
+      "installedApiRerun": {
+        "passed": 54,
+        "failed": 0,
+        "skipped": 0
+      },
+      "install": "PATH=/opt/codex/cua_node/bin:$PATH npm ci --ignore-scripts --cache /workspace/work/npm-cache-d53 --no-audit --no-fund",
+      "clientCommand": "/opt/codex/cua_node/bin/node apps/studio/test/presentation-room-create.test.mjs",
+      "lockfileUnchanged": true,
+      "lockfileGitBlob": "3b2829fc23386d03c29c3c1354607f631b264814"
     },
     "neon": {
       "project": "red-violet-36066351",
@@ -310,8 +321,11 @@
       "github": "authenticated as Jakeminator123; PR421",
       "render": "workspace tea-d19jsa63jp1c73ch0sc0; staging suspended; return deploy dep-dbg6ifafngtc738rj7hg verified d53",
       "vercel": "Both accessible teams listed; named staging project absent from their project lists, project reads404 and deployment list403. No mcp__user_vercel tool is available.",
-      "terminal": "Inherited proxy connection to port8080 refused; no bypass attempted",
-      "browser": "Official cloud-agent-browser-runtime ensure fails: BROWSER_CONFIG_AUTH_TOKEN is required; show also reports launcher context unavailable"
+      "terminal": "Resolved for allowed hosts with supported exec_command sandbox_permissions=with_additional_permissions and additional_permissions.network.enabled=true. Inherited proxy and enforced host policy preserved; GitHub200, git fetch and npm ci succeeded.",
+      "browser": "Official cloud-agent-browser-runtime ensure still requires BROWSER_CONFIG_AUTH_TOKEN with network permission; no browser token is configured. The launcher also reports unsupported context.",
+      "initialTerminalFailure": "Inherited proxy connection to port8080 refused; no bypass attempted",
+      "stagingHttp": "The staging Render hostname is outside the enforced allowed-host policy: CONNECT tunnel failed403/http000 even with supported network permission. No bypass attempted.",
+      "vercelCli": "No VERCEL_TOKEN configured; no local credentials copied."
     },
     "kevinReference": {
       "branch": "kevin-staging",
@@ -335,6 +349,16 @@
       "ddl": 0,
       "restores": 0,
       "production": 0
+    },
+    "pr421": {
+      "merged": true,
+      "reviewedHead": "df6c1b60ed5cbc70c9e54c2e5c761b120397d1ee",
+      "mergeSha": "327854141227e37d4a313d2ca5c7638f737ac319",
+      "treeIdentical": true,
+      "ci": "https://github.com/Jakeminator123/scoutgaming/actions/runs/40480027938",
+      "ciConclusion": "success",
+      "gitGuardianCheck": "success",
+      "gitGuardianIncidentCoverage": "not independently read"
     }
   }
 }
