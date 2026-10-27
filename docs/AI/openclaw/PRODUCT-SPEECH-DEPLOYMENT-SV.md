@@ -183,3 +183,6 @@ node --test services/openclaw/lab/test/product-speech.test.mjs services/openclaw
 
 Testerna använder fixturehemligheter, HTTP-stubbar, loopback och tempdata. De
 gör inga modell- eller molnanrop och ändrar ingen riktig spelare eller Gateway.
+`test/product-chat-http.mjs` startar motorn mot Postgres med Studio-policyruntime
+och hoppar över med skäl utan motorharnessen; full körning:
+`node tools/run-engine-qa.mjs --postgres-bin /absolut/bin test/product-chat-http.mjs`.
