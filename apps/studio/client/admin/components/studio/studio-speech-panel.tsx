@@ -7,7 +7,7 @@ import type {StudioProject} from '../../../../../../packages/presentation/contra
 import {bindClip,clipSlots,clipsForSlot,currentClipId,type ClipSlot,type VideoInventory} from '../../lib/connected-studio.mjs'
 import {speechSlotVideoFits} from '../../../../../../packages/presentation/contracts/speech-slot-bindings.mjs'
 import {dealerSpeechReferenceCheck,isSpeechReferenceVideo,type DealerSpeechProfile} from '../../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'
-import {STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,studioRecordedSpeech,studioRecordedSpeechGroups,studioRecordedSpeechStatus,studioGeneratedSpeechAvailable,studioRecordedSpeechReviewRequest,type StudioRecordedSpeech,type StudioRecordedSpeechLine,type StudioRecordedSpeechVerdict,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../../../../../packages/presentation/contracts/studio-speech.mjs'
+import {STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,studioRecordedSpeech,studioRecordedSpeechGroups,studioRecordedSpeechStatus,studioRecordedSpeechPreferredTake,studioGeneratedSpeechAvailable,studioRecordedSpeechReviewRequest,type StudioRecordedSpeech,type StudioRecordedSpeechLine,type StudioRecordedSpeechVerdict,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../../../../../packages/presentation/contracts/studio-speech.mjs'
 
 export interface StudioSpeechPanelProps {
   project:StudioProject
@@ -68,14 +68,16 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const openLineId=pickable.includes(lineChoice)?lineChoice:pickable[0]??'',openLine=groups.lines.find(row=>row.id===openLineId)
   const openLanguage=openLine?.languages.find(group=>group.language===languageChoice&&group.takes.length)??openLine?.languages.find(group=>group.takes.length)
   const takes=openLineId===OTHER_FILES?groups.other:openLanguage?.takes??[]
-  const recorded=takes.find(row=>row.id===recordedId)??takes[0]
-  const [standardNotice,setStandardNotice]=useState(''),[standardError,setStandardError]=useState('')
   // Talfack standards go through the clip map's own bindClip path into the draft.
   let speechSlots:ClipSlot[]=[]
   try{speechSlots=game==='blackjack'?clipSlots(project,inventory,dealerId,game).filter(slot=>slot.sourceType==='speak'&&!slot.family):[]}catch{speechSlots=[]}
   const slotFor=(lineId:string)=>speechSlots.find(slot=>slot.situation===lineId)
   const standardOf=(lineId:string)=>{const slot=slotFor(lineId);if(!slot)return null;try{return currentClipId(project,dealerId,slot,undefined,inventory)}catch{return ''}}
   const standardLabel=(id:string)=>recordings.find(row=>row.id===id)?.label??inventory.videos.find(row=>row.id===id)?.label??id
+  // A shown take stays selected (see the pin effect); only a new line/language or
+  // a vanished take re-runs this: standard, approved, receipt awaiting review, highest number.
+  const recorded=takes.find(row=>row.id===recordedId)??studioRecordedSpeechPreferredTake(takes,openLineId===OTHER_FILES?null:standardOf(openLineId))
+  const [standardNotice,setStandardNotice]=useState(''),[standardError,setStandardError]=useState('')
   function standardBlocker(row:StudioRecordedSpeech){
     const slot=slotFor(row.situation),video=inventory.videos.find(item=>item.id===row.id)
     if(!slot)return 'Talfacket finns inte i projektet.'
@@ -103,6 +105,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   useEffect(()=>{return()=>{work.current?.abort();work.current=null;latest.current.onBusyChange?.(false)}},[dealerId])
   useEffect(()=>{setAwaitingProjectSave(null)},[dealerId])
   useEffect(()=>{setReviewError('');setReviewNotice('');setStandardError('');setStandardNotice('')},[dealerId,recorded?.id])
+  useEffect(()=>{if(recorded&&recorded.id!==recordedId)setRecordedId(recorded.id)},[recorded?.id,recordedId])
   useEffect(()=>{if(lineId!==selectedLineId)setLineId(selectedLineId)},[game,lineId,selectedLineId])
   useEffect(()=>{if(awaitingProjectSave!==null&&project.revision!==awaitingProjectSave)setAwaitingProjectSave(null)},[project.revision,awaitingProjectSave])
   const videos=inventory.videos.filter(row=>isSpeechReferenceVideo(row,dealerId)),selected=videos.find(row=>row.id===videoId)
@@ -173,7 +176,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
     <div><span className="text-xs uppercase tracking-wide text-muted-foreground">Tal · {dealer.label}</span><h2 className="mt-1 text-lg font-semibold">Röst &amp; tal</h2></div>
     <section className="mt-4 space-y-3" aria-label="Inspelat tal">
       <h3 className="font-semibold">Inspelat tal</h3>
-      {recordings.length?<><p className="text-sm">{recordings.length} filer · {recordings.filter(row=>row.available&&row.review==='approved').length} godkända. Välj replik, språk och tagning; högsta tagningsnumret står först och är förvalt.</p>
+      {recordings.length?<><p className="text-sm">{recordings.length} filer · {recordings.filter(row=>row.available&&row.review==='approved').length} godkända. Välj replik, språk och tagning. Högsta tagningsnumret står först; förvald är standardtagningen i talfacket, annars den godkända eller granskningsbara tagningen.</p>
         <ul className="divide-y divide-border rounded-lg border border-border" aria-label="Repliker">
           {groups.lines.map(line=><li key={line.id}>
             <button type="button" className={lineButton} aria-expanded={line.id===openLineId} disabled={!pickable.includes(line.id)} onClick={()=>{setLineChoice(line.id);setRecordedId('')}}><span className="font-medium">{line.label}</span><span className="text-xs text-muted-foreground">{lineSummary(line)}</span></button>
