@@ -57,6 +57,14 @@ test('publishing sends the displayed revision as CAS and maps failures without d
   assert.equal(invalid.needsRefresh,false);assert.match(invalid.error,/Kontrollera lagerfiler/);
   const runtime=await publishOperatorPackage({...input,fetchImpl:async()=>Response.json({code:'studio_presentation_runtime_update_required'},{status:503})});
   assert.match(runtime.error,/Spelmotorn behöver uppdateras/);
+  const storage=await publishOperatorPackage({...input,fetchImpl:async()=>Response.json({error:'studio_native_unavailable',code:'studio_storage_unavailable'},{status:503})});
+  assert.equal(storage.error,'Publiceringen gick inte igenom: studio_storage_unavailable');
+  const admin=await publishOperatorPackage({...input,fetchImpl:async()=>Response.json({error:'Action unavailable',code:'studio_storage_unavailable'},{status:503})});
+  assert.equal(admin.error,'Publiceringen gick inte igenom: studio_storage_unavailable');
+  const opaque=await publishOperatorPackage({...input,fetchImpl:async()=>Response.json({error:'studio_native_unavailable'},{status:503})});
+  assert.equal(opaque.error,'Publiceringen gick inte igenom.');
+  const unsafe=await publishOperatorPackage({...input,fetchImpl:async()=>Response.json({code:'<script>'},{status:503})});
+  assert.equal(unsafe.error,'Publiceringen gick inte igenom.');
   const foreign=await publishOperatorPackage({...input,fetchImpl:async()=>Response.json({ok:true,operatorId:'south',packageRevision:5,lanes:['mobile-phone','evening']})});
   assert.deepEqual(foreign,{ok:false,needsRefresh:true,error:PACKAGE_RECEIPT_MISMATCH});
   const network=await publishOperatorPackage({...input,fetchImpl:async()=>{throw new Error('offline');}});
