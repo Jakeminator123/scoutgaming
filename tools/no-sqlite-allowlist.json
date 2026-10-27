@@ -70,11 +70,6 @@
     "reason": "Backup tool product-profile tests; removed with that profile."
   },
   {
-    "path": "test/product-chat-http.mjs",
-    "removeBy": "PR-3c",
-    "reason": "Chat over HTTP needs the Studio policy runtime (project store, published package) in the engine harness."
-  },
-  {
     "path": "test/roulette-room-storage.mjs",
     "removeBy": "PR-6",
     "reason": "SQLite roulette command test; deleted after parity with test/roulette-postgres.mjs."
