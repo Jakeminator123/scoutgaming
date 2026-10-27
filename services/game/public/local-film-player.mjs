@@ -6,12 +6,12 @@ import {FILMED_CATCH_UP_S, FILMED_SEEK_END_MARGIN_S} from '../../../packages/pre
 // phase before its first frame (:234); handoverAt hands over on the last frames instead of 'ended' (:192);
 // playbackRate is the chain's fitted rate (:223-227); clockTime() is the table clock in take seconds, to catch
 // up after buffering and to end a step whose time is over (:180-185). Card motion still follows mediaTime.
-export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onGestureWait = () => {}, onFrame, renderFrame, hold = () => {},
+export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onGestureWait = () => {}, onSoundBlocked = null, onFrame, renderFrame, hold = () => {},
   startOffset = 0, handoverAt = null, playbackRate = null, clockTime = null }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
-    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, recovery, gestureWaiting = false;
+    let frame, started = false, presented = false, terminal = false, resuming = false, watchdog, handedOver = false, recovery, gestureWaiting = false, soundWaiting = false, soundWindow;
     const gestureWait = waiting => { if (gestureWaiting !== waiting) { gestureWaiting = waiting; onGestureWait(waiting); } };
     const clearRecovery = () => { recovery?.remove(); recovery = null; gestureWait(false); };
     const seekable = seconds => Number.isFinite(video.duration) && video.duration > 0 ? Math.min(seconds, Math.max(0, video.duration - FILMED_SEEK_END_MARGIN_S)) : seconds;
@@ -27,7 +27,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     const emit = (state, error) => onReceipt({ state, evidence: state === 'presented' ? 'video-frame' : 'media-lifecycle',
       ...(handedOver ? { handover: true } : {}), ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
     const clean = () => {
-      clearRecovery();
+      clearRecovery(); clearTimeout(soundWindow); soundWaiting = false;
       clearTimeout(watchdog); clearTimeout(deadline); signal?.removeEventListener('abort', abort);
       for (const remove of listeners) remove();
       if (frame != null) video.cancelVideoFrameCallback(frame);
@@ -50,10 +50,36 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       emit(error ? signal?.aborted ? 'interrupted' : 'error' : 'end', error); clean();
       error ? reject(error) : resolve({ completed: true });
     };
-    const arm = () => { clearTimeout(watchdog); if (!gestureWaiting) watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
+    const arm = () => { clearTimeout(watchdog); if (!gestureWaiting && !soundWaiting) watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
     const abort = () => finish(new DOMException('Presentation cancelled', 'AbortError'));
+    // Unmuted speech refused by the autoplay policy before any interaction.
+    // The owner offers the player's sound control and may resume this exact
+    // line inside a real click. Nothing has started: suspend only the progress
+    // watchdog; owner cancellation and the absolute deadline still apply. The
+    // line keeps its place for at most its own length (8 s until metadata is
+    // known), as if it had played, so the game never waits for the click.
+    const waitForSound = cause => {
+      clearTimeout(watchdog); soundWaiting = true;
+      const length = () => Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null;
+      const keepPlace = () => {
+        clearTimeout(soundWindow);
+        soundWindow = setTimeout(() => finish(Object.assign(playbackError('Speech sound needs a user gesture', 'local_film_sound_blocked'), { cause })), (length() ?? 8) * 1000);
+      };
+      keepPlace();
+      if (length() === null) listen(video, 'loadedmetadata', () => { if (soundWaiting) keepPlace(); });
+      try { onSoundBlocked(resumeSound); } catch (error) { finish(error); }
+    };
+    const resumeSound = () => {
+      if (terminal || signal?.aborted || !soundWaiting || document.hidden) return false;
+      soundWaiting = false; clearTimeout(soundWindow); arm();
+      // This call must stay synchronous inside the click handler for iOS. A
+      // refusal despite the player's gesture is a real failure, not a new wait.
+      try { video.play().catch(finish); } catch (error) { finish(error); }
+      return true;
+    };
     const startFailed = error => {
       if (terminal || signal?.aborted) return;
+      if (error?.name === 'NotAllowedError' && !muted && onSoundBlocked && !started && !presented && !soundWaiting) { waitForSound(error); return; }
       if (error?.name !== 'NotAllowedError' || !muted || started || presented) { finish(error); return; }
       // Retain this verified video's lease while waiting for a real gesture.
       // No playback has started: suspend only its progress watchdog, never
