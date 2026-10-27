@@ -13,6 +13,8 @@ import { createPostgresStore, validateGameConnection } from '../../../packages/s
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
+import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
+import { logStudioServerFailure } from './studio-error-log.mjs';
 import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';
 import { createMovingDriftAdminApi } from './moving-drift-admin.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
@@ -50,7 +52,8 @@ import { performance } from 'node:perf_hooks';
 
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
-const unavailable = () => { throw Object.assign(new Error('studio_native_unavailable'), { statusCode: 503 }); };
+// The cause stays server-side for the 503 log; responses never serialize it.
+const unavailable = cause => { throw Object.assign(cause === undefined ? new Error('studio_native_unavailable') : new Error('studio_native_unavailable', { cause }), { statusCode: 503 }); };
 const denied = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 // SQL is bundled source, not persistent user state. Explicit tracing preserves
 // it outside the Lab project; no webpack asset URL is passed to Node fs.
@@ -244,9 +247,9 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     // serializes this key, and a caller cannot mutate another handler's copy.
     Object.defineProperty(native,'speechReceiptKey',{get:()=>Buffer.from(speechReceiptKey)});
     return Object.freeze(native);
-  } catch {
+  } catch (cause) {
     try { await pool.end(); } catch { /* Preserve safe initialization failure. */ }
-    unavailable();
+    unavailable(cause);
   }
 }
 
@@ -264,10 +267,15 @@ export async function studioNativeRuntime() {
   runtimePromise ??= createStudioNativeRuntime(config).catch(error => { runtimePromise = undefined; throw error; });
   return runtimePromise;
 }
-export function nativeStudioErrorResponse(error) {
+// context is trusted caller metadata ({method, route: pathname}); bare
+// {statusCode:503} objects are deliberate "feature off" answers and stay quiet.
+export function nativeStudioErrorResponse(error, context) {
   const status = [400,401,403,404,405,408,409,413,415,422,423,503].includes(error?.statusCode) ? error.statusCode : 503;
   const inspectionMessage=layerMediaInspectionMessage(error?.code);
   const readiness = status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED;
+  if (status === 503 && !readiness && error instanceof Error) logStudioServerFailure(error, context);
+  // Storage codes are fixed product identifiers (see StudioStorageError), never provider text.
+  const storageCode = status === 503 && error instanceof StudioStorageError && typeof error.code === 'string' && error.code ? error.code : null;
   const lifecycleCodes=new Set(['studio_dealer_background_required','studio_conflict','studio_dealer_not_registered','studio_dealer_base_protected','studio_dealer_missing','studio_dealer_in_use','studio_dealer_published',
     'studio_dealer_delete_pending','studio_dealer_speech_enabled','studio_dealer_restore_conflict','studio_dealer_archived','studio_dealer_lifecycle_required',
     'studio_media_delete_coverage_incomplete','studio_media_upload_grant_active','studio_media_owned_elsewhere','studio_media_delete_failed','studio_media_already_deleted','studio_media_deletion_pending','studio_media_archive_required','studio_media_published','studio_retained_media_immutable',
@@ -275,7 +283,7 @@ export function nativeStudioErrorResponse(error) {
   const body = inspectionMessage ? {error:inspectionMessage,code:error.code}
     : status===415&&error?.code===STUDIO_MEDIA_TYPE_UNSUPPORTED ? {error:STUDIO_MEDIA_TYPE_MESSAGE,code:STUDIO_MEDIA_TYPE_UNSUPPORTED} : lifecycleCodes.has(error?.code) ? {error:error.code,code:error.code} : readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
     code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }
-    : { error: status === 409 && error?.code === 'studio_media_in_use' ? 'studio_media_in_use' : status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable' };
+    : { error: status === 409 && error?.code === 'studio_media_in_use' ? 'studio_media_in_use' : status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable', ...(storageCode ? { code: storageCode } : {}) };
   return Response.json(body,
     { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 }
@@ -298,7 +306,10 @@ export function createNativeStudioRequestHandlers({ configuration = nativeStudio
     try {
       const config = configuration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
       response = await work(request, config, measure);
-    } catch (error) { response = nativeStudioErrorResponse(error); }
+    } catch (error) {
+      let route = null; try { route = new URL(request.url).pathname; } catch { /* Log without a route. */ }
+      response = nativeStudioErrorResponse(error, { method: request?.method, route });
+    }
     const headers = new Headers(response.headers);
     // Constant phase names and finite nonnegative milliseconds only. Preserve
     // response body, status, cookies and cache/security headers without reading it.

@@ -45,7 +45,9 @@ export function packagePublishError(status, payload) {
   if (status === 413) return 'Publiceringspaketet är för stort. Inget publicerades; dina sparade val finns kvar.';
   if (status === 422) return 'Kontrollera lagerfiler, vald grundloop och tillåtna val. Spara sammansättningen och försök igen.';
   if (status === 409) return 'Paketet kunde inte uppdateras. Uppgifterna kan ha ändrats, eller så påverkar urvalet ett befintligt spelrum. Läs in bolagets publicerade paket och behåll sammansättningar som används av spelrum.';
-  return 'Publiceringen gick inte igenom.';
+  // A fixed server code (never provider text) lets support find the failing layer.
+  const code = typeof payload?.code === 'string' && /^[a-z][a-z0-9_]{0,100}$/.test(payload.code) ? payload.code : '';
+  return code ? 'Publiceringen gick inte igenom: ' + code : 'Publiceringen gick inte igenom.';
 }
 
 // The receipt must name this company, exactly these lanes and the next revision.

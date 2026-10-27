@@ -44,8 +44,10 @@ låter nästa person välja namn. Namnbyte återanvänder inte någon annans his
 - Ett namn är ett valt smeknamn, inte autentisering. Två webbläsare som väljer
   Jakob delar inte minne. Browser-`playerId`, godtyckliga profilnycklar och
   inskickad klienthistorik kan inte välja en annan profils minne.
-- Director sparar endast denna funktion i `LAB_DATA_DIR/companion.sqlite`
-  på sin befintliga Render-disk (lokal direkt-Gateway: `dataDir/companion/`).
+- Director sparar endast denna funktion i `LAB_DATA_DIR/companion.json`
+  på sin befintliga Render-disk; Studio når den bara via den anslutna Directorn
+  (det lokala direktläget är pensionerat). Filen ersätts atomiskt (temporär fil
+  + rename) och en skadad fil stoppar funktionen i stället för att nollställa kvoten.
   De senaste 12 user/assistant-inläggen, maximalt 8 000 tecken, förs till modellen.
   Profilen gallras vid användning efter 30 dagar utan namnändring/chatt.
   Det är avgränsad samtalshistorik, inte obegränsat långtidsminne eller embeddings.
@@ -86,7 +88,7 @@ omkörning eller reservleverantör. Director gör högst två vanliga modellkont
 för att välja sökning och sammanfatta resultatet. Skämtpoem söker inte på webben.
 
 Budgeten reserverar **0,50 SEK per försök, högst tio försök per rullande timme**,
-globalt på Gateway. `OPENCLAW_STATE_DIR/companion-search.sqlite` lagrar reservationer
+globalt på Gateway. `OPENCLAW_STATE_DIR/companion-search.json` (atomiskt ersatt) lagrar reservationer
 och idempotenta kvitton; även misslyckade/avbrutna försök räknas, och omstart
 nollställer inte taket. Director har därutöver ett transporttak på 20 försök/timme.
 Varken pris, modell, verktygsantal eller budget kan ändras av chattdata.

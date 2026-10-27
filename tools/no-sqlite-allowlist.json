@@ -23,25 +23,5 @@
     "path": "migrering/kevin-ks-migrering/K01/tools/verify-audit-chain.mjs",
     "removeBy": "O03 (archive)",
     "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
-  },
-  {
-    "path": "packages/director/node/companion-store.mjs",
-    "removeBy": "PR-7b",
-    "reason": "OpenClaw Director companion store; replaced by a JSON store."
-  },
-  {
-    "path": "services/openclaw/lab/deploy/companion-search-server.mjs",
-    "removeBy": "PR-7b",
-    "reason": "OpenClaw Gateway search quota/idempotency store; replaced by a JSON store."
-  },
-  {
-    "path": "test/backup-render-state.mjs",
-    "removeBy": "PR-7c",
-    "reason": "Director/Gateway companion SQLite fixtures for the backup tool; the product profile left in PR-6."
-  },
-  {
-    "path": "tools/backup-render-state.mjs",
-    "removeBy": "PR-7c",
-    "reason": "Backup tool Director/Gateway SQLite profiles (companion.sqlite, companion-search.sqlite); the product profile left in PR-6."
   }
 ]

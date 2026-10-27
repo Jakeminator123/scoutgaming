@@ -5,6 +5,8 @@ import { validateStudioScope } from '../../../packages/studio-registry/server/do
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 
 import { publicMovingDriftError } from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
+import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
+import { logStudioServerFailure } from './studio-error-log.mjs';
 
 const MAX_BODY = 64 * 1024;
 const administrationMutations = new Set(['voiceline-review','tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
@@ -178,7 +180,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
       }
-      return json({ error: publicErrors.get(status) }, status);
+      if (status !== 503 && status !== 500) return json({ error: publicErrors.get(status) }, status);
+      logStudioServerFailure(error, { method: request.method, route: action });
+      // Storage codes are fixed product identifiers (see StudioStorageError), never provider text.
+      const code = error instanceof StudioStorageError && typeof error.code === 'string' && error.code ? error.code : null;
+      return json({ error: publicErrors.get(status), ...(code ? { code } : {}) }, status);
     }
   }
   return Object.freeze({ handle, availableActions });

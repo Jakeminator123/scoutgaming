@@ -2,10 +2,11 @@
 // Private Render disk export. Run during a quiesced maintenance window.
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { chmod, lstat, mkdir, open, readdir, readFile, rename, rm, stat } from 'node:fs/promises';
+import { lstat, mkdir, open, readdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DatabaseSync, backup as sqliteBackup } from 'node:sqlite';
+import { parseCompanionState, COMPANION_STORE_FILE } from '../packages/director/node/companion-store.mjs';
+import { parseSearchState, SEARCH_STORE_FILE } from '../services/openclaw/lab/deploy/companion-search-server.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SCHEMA = 'croupier-render-state-v1';
@@ -15,8 +16,11 @@ const PROFILES = {
   director: [],
   gateway: ['openclaw.json'],
 };
-const SQLITE = /\.(?:db|sqlite|sqlite3)$/i;
-const SIDECAR = /\.(?:db|sqlite|sqlite3)-(?:wal|shm|journal)$/i;
+// The companion stores are atomically replaced JSON files. A hash only proves the
+// copy; the owning module's parser proves the copy is a complete, usable store.
+// Every other file, including retired companion.sqlite files and their journals
+// left on a disk, is opaque: stopped writers make its exact bytes the state.
+const STORES = { director: { [COMPANION_STORE_FILE]: parseCompanionState }, gateway: { [SEARCH_STORE_FILE]: parseSearchState } };
 
 function fail(code) { const error = new Error(code); error.code = code; throw error; }
 function within(parent, target) {
@@ -45,7 +49,7 @@ async function plain(path, directory = false) {
   if (directory ? !item.isDirectory() : !item.isFile()) fail('invalid_file_type');
   return item;
 }
-async function filesUnder(root, { source = false } = {}) {
+async function filesUnder(root) {
   await plain(root, true);
   const files = [];
   async function visit(folder, prefix = '') {
@@ -53,12 +57,6 @@ async function filesUnder(root, { source = false } = {}) {
       const name = prefix ? `${prefix}/${entry.name}` : entry.name;
       parts(name);
       if (entry.isSymbolicLink() || (!entry.isDirectory() && !entry.isFile())) fail('unsafe_source_entry');
-      if (SIDECAR.test(name)) {
-        const database = join(folder, entry.name.replace(/-(?:wal|shm|journal)$/i, ''));
-        const databaseState = await lstat(database).catch(() => null);
-        if (!source || entry.isDirectory() || !databaseState?.isFile() || databaseState.isSymbolicLink()) fail('sqlite_sidecar_present');
-        continue; // sqliteBackup includes committed WAL pages in the database copy.
-      }
       const full = join(folder, entry.name);
       await plain(full, entry.isDirectory());
       if (entry.isDirectory()) await visit(full, name);
@@ -112,35 +110,10 @@ async function copyPlain(source, target) {
   if (JSON.stringify(before) !== JSON.stringify(after) || JSON.stringify(before) !== JSON.stringify(copied)) fail('source_changed');
   return copied;
 }
-function checkSqlite(path) {
-  let db;
-  try {
-    db = new DatabaseSync(path, { readOnly: true });
-    if (db.prepare('PRAGMA integrity_check').get()?.integrity_check !== 'ok') fail('sqlite_integrity_failed');
-    // integrity_check validates SQLite pages, but deliberately omits declared
-    // foreign-key relationships. A hash-correct orphan is not a valid restore.
-    if (db.prepare('PRAGMA foreign_key_check').get()) fail('sqlite_integrity_failed');
-  } catch { fail('sqlite_integrity_failed'); }
-  finally { db?.close(); }
-}
-async function copySqlite(source, target) {
-  await plain(source);
-  let db;
-  try {
-    db = new DatabaseSync(source, { readOnly: true });
-    await sqliteBackup(db, target);
-  } catch { fail('sqlite_backup_failed'); }
-  finally { db?.close(); }
-  // A WAL-mode source can make the standalone copy use WAL too. Fold its
-  // pages into the main snapshot file so the manifest has one file per DB.
-  const snapshot = new DatabaseSync(target);
-  try { snapshot.exec('PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;'); }
-  finally { snapshot.close(); }
-  await chmod(target, 0o600);
-  checkSqlite(target);
-  const handle = await open(target, 'r+');
-  try { await handle.sync(); } finally { await handle.close(); }
-  return hashFile(target);
+async function checkStore(profile, name, path) {
+  const parse = Object.hasOwn(STORES[profile], name) ? STORES[profile][name] : null;
+  if (!parse) return;
+  try { parse(await readFile(path, 'utf8')); } catch { fail('store_integrity_failed'); }
 }
 async function writeManifest(path, manifest) {
   const file = await open(path, 'wx', 0o600);
@@ -155,7 +128,7 @@ async function removeOwnStage(stage, parent, prefix) {
 function checkProfile(profile, names) {
   if (!Object.hasOwn(PROFILES, profile)) fail('invalid_profile');
   if (!names.length || PROFILES[profile].some(name => !names.includes(name)) ||
-    (profile === 'director' && !names.some(name => name === 'catalog.json' || name === 'companion.sqlite' || name.startsWith('history/')))) fail('required_state_missing');
+    (profile === 'director' && !names.some(name => name === 'catalog.json' || name === COMPANION_STORE_FILE || name.startsWith('history/')))) fail('required_state_missing');
 }
 function separate(a, b) {
   if (within(a, b) || within(b, a)) fail('paths_overlap');
@@ -184,7 +157,7 @@ export async function verifyRenderBackup(snapshot) {
     const file = join(root, ...parts(item.path));
     const actual = await hashFile(file);
     if (actual.sha256 !== item.sha256 || actual.bytes !== item.bytes) fail('backup_hash_mismatch');
-    if (SQLITE.test(item.path)) checkSqlite(file);
+    await checkStore(manifest.profile, item.path, file);
   }
   return manifest;
 }
@@ -195,7 +168,7 @@ export async function backupRenderState({ profile, source, destination, quiesced
   const root = resolve(source), target = resolve(destination), parent = dirname(target);
   await plain(root, true); await plain(parent, true); separate(root, target);
   if (!(await missing(target))) fail('destination_exists');
-  const names = await filesUnder(root, { source: true });
+  const names = await filesUnder(root);
   checkProfile(profile, names);
   if (names.includes('manifest.json') || names.some(name => name.split('/').some(part => part.startsWith('.croupier-restore-partial-')))) fail('reserved_source_entry');
   const prefix = `.${basename(target)}.partial-`;
@@ -207,14 +180,11 @@ export async function backupRenderState({ profile, source, destination, quiesced
     for (const name of names) {
       const targetFile = join(stage, ...parts(name));
       await mkdir(dirname(targetFile), { recursive: true, mode: 0o700 });
-      const result = SQLITE.test(name)
-        ? await copySqlite(join(root, ...parts(name)), targetFile)
-        : await copyPlain(join(root, ...parts(name)), targetFile);
-      files.push({ path: name, ...result });
+      files.push({ path: name, ...await copyPlain(join(root, ...parts(name)), targetFile) });
     }
-    if (JSON.stringify(await filesUnder(root, { source: true })) !== JSON.stringify(names)) fail('source_changed');
-    // Non-SQLite files are checked twice; SQLite uses its transactional backup API.
-    for (const item of files.filter(item => !SQLITE.test(item.path))) {
+    if (JSON.stringify(await filesUnder(root)) !== JSON.stringify(names)) fail('source_changed');
+    // Every file is exact bytes: hashed around its copy and once more after all copies.
+    for (const item of files) {
       if (JSON.stringify(await hashFile(join(root, ...parts(item.path)))) !==
         JSON.stringify({ sha256: item.sha256, bytes: item.bytes })) fail('source_changed');
     }
