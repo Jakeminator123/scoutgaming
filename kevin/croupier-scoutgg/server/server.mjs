@@ -705,8 +705,15 @@ async function handleHttp(req, res) {
   if (!process.env.RORLIG_PUBLIC_URL && req.headers["x-forwarded-proto"] === "https" && /^[a-z0-9.-]+(:\d+)?$/i.test(req.headers.host ?? "")) publicOrigin = `https://${req.headers.host}`;
   if (p.startsWith("/api/")) { api(req, res, p.slice(5)).catch(() => json(res, 500, { error: "Request could not be completed" })); return; }
   // Kevin 23 Oct: "retract the desktop only phone until i say so": the desktop table only with DESKTOP_LAYOUT=1 in the env
-  // (desk-mode.js), else every visitor gets the phone layout, ?layout=desk too
-  if (p === "/layout-flag.js") { res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${process.env.DESKTOP_LAYOUT === "1"};`); return; }
+  // (desk-mode.js), else every visitor gets the phone layout, ?layout=desk too.
+  // Emil 27 Oct: on staging only the Table Studio tables built with "Desktop table" (07 · Desktop view) get it, every other
+  // page keeps the phone layout. The page asking is the Referer (same-origin policy: the full URL), its ?table= the table.
+  // DESKTOP_LAYOUT=tables does the same on any host, 0 turns it off on staging too.
+  if (p === "/layout-flag.js") {
+    const flag = process.env.DESKTOP_LAYOUT, perTable = flag === "tables" || flag !== "0" && flag !== "1" && /^staging\./i.test(req.headers.host ?? "");
+    let desk = flag === "1";
+    if (!desk && perTable) { try { desk = studioTables.get(new URL(req.headers.referer ?? "").searchParams.get("table") ?? "")?.layout === "desk"; } catch {} }
+    res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.DESKTOP_LAYOUT=${desk};`); return; }
   // Kevin 24 Oct: "Runpod is down can you add we currently doing maintance work notification in prod": a banner on the
   // table and the lobby while MAINTENANCE_NOTICE=1 in the env, text from MAINTENANCE_TEXT (maintenance-notice.js)
   if (p === "/notice.js") { const text = process.env.MAINTENANCE_NOTICE === "1" ? (process.env.MAINTENANCE_TEXT?.trim() || MAINTENANCE_DEFAULT).slice(0, 300) : ""; res.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" }); res.end(`globalThis.MAINTENANCE_NOTICE=${JSON.stringify(text)};`); return; }
