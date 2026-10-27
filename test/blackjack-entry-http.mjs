@@ -1,41 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { once } from 'node:events';
-import { spawn } from 'node:child_process';
-import { createServer } from 'node:http';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { build } from '../apps/web/tools/player-ui-build.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, freePort, startEngine } from './fixtures/engine-qa.mjs';
 
-test('real entry serves login and preserves account/table identity across a server restart with empty fixture databases', async () => {
+test('real entry serves login and preserves account/table identity across a server restart with an empty fixture database', { skip: ENGINE_QA_SKIP }, async t => {
   const directory=await mkdtemp(join(tmpdir(),'blackjack-entry-'));
-  const portServer=createServer();
-  await new Promise(resolve=>portServer.listen(0,'127.0.0.1',resolve));
-  const port=portServer.address().port;
-  await new Promise(resolve=>portServer.close(resolve));
+  const database=await createEngineDatabase(t);
+  const port=await freePort();
   const origin=`http://127.0.0.1:${port}`;
-  let child;
-  const stop=async()=>{if(child && child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}child=null;};
+  let engine;
+  const stop=async()=>{await engine?.stop();engine=null;};
   const start=async()=>{
-    const env=Object.fromEntries(['PATH','Path','SystemRoot','SYSTEMROOT','TEMP','TMP'].filter(key=>process.env[key]).map(key=>[key,process.env[key]]));
-    Object.assign(env,{HOST:'127.0.0.1',PORT:String(port),NODE_ENV:'production',CROUPIER_DATA_DIR:join(directory,'players'),
-      CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
-      CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'Synthetic-Operator-Test-Password',
-      DEMO_GUEST_ACCESS:'',CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',
-      CROUPIER_STREAM_LANE:'lissabon-stream-lane',PUBLIC_URL:'https://game.example.invalid'});
-    child=spawn(process.execPath,['--import',new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href,fileURLToPath(new URL('../services/game/server.mjs',import.meta.url))],{
-      cwd:fileURLToPath(new URL('../services/game/',import.meta.url)),env,windowsHide:true,stdio:['ignore','pipe','pipe'],
-    });
-    // Startup may contain credentials in older environments; never surface it.
-    child.stderr.on('data',()=>{});
-    await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>reject(Error('Isolated product fixture did not start')),10000);
-      child.once('error',error=>{clearTimeout(timer);reject(error);});
-      child.once('exit',()=>{clearTimeout(timer);reject(Error('Isolated product fixture exited'));});
-      child.stdout.on('data',data=>{if(String(data).includes('croupier demo on')){clearTimeout(timer);resolve();}});
-    });
+    engine=await startEngine(t,{database,port,preload:[new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href],
+      env:{NODE_ENV:'production',CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
+        CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'Synthetic-Operator-Test-Password',
+        DEMO_GUEST_ACCESS:'',CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',
+        CROUPIER_STREAM_LANE:'lissabon-stream-lane',PUBLIC_URL:'https://game.example.invalid'}});
   };
   let cookie='';
   const post=async(path,body)=>{

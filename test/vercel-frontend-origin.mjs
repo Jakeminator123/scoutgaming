@@ -1,62 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { scryptSync } from 'node:crypto';
-import { once } from 'node:events';
-import { copyFile, mkdir, mkdtemp, readdir, rm, symlink } from 'node:fs/promises';
 import { request as httpRequest } from 'node:http';
-import { createServer } from 'node:net';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
-import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, freePort, insertCraigUser, startEngine } from './fixtures/engine-qa.mjs';
 
 const game='https://game.example.test';
 const frontend='https://preview.example.vercel.app';
 const password='Synthetic-Proxy-Test-Password';
 
 async function fixture(t) {
-  const root=await mkdtemp(join(tmpdir(),'croupier-vercel-origin-'));
-  const webDir=join(root,'services','game'),dataDir=join(root,'data');
-  let child;
-  t.after(async()=>{
-    if(child && child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
-    await rm(root,{recursive:true,force:true});
-  });
-  await mkdir(webDir,{recursive:true});
-  await mkdir(dataDir);
-  await copyOpenClawRuntime(root);
-  const source=new URL('../services/game/',import.meta.url);
-  for(const file of await readdir(source))if(file.endsWith('.mjs'))await copyFile(new URL(file,source),join(webDir,file));
-  await symlink(new URL('public',source),join(webDir,'public'),process.platform==='win32'?'junction':'dir');
-  const craig=new DatabaseSync(join(dataDir,'craig.db'));
-  try{
-    craig.exec('CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT UNIQUE,email TEXT,salt TEXT,hash TEXT,role TEXT,created_at TEXT)');
-    const salt='isolated-proxy-salt';
-    craig.prepare('INSERT INTO users VALUES (?,?,?,?,?,?,?)').run(1,'pilot-reader','reader@example.invalid',salt,
-      scryptSync(password,salt,64).toString('hex'),'reader',new Date().toISOString());
-  }finally{craig.close();}
-  const socket=createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');
-  const port=socket.address().port;await new Promise(resolve=>socket.close(resolve));
+  const database=await createEngineDatabase(t),port=await freePort();
+  await insertCraigUser(database,{id:1,username:'pilot-reader',email:'reader@example.invalid',salt:'isolated-proxy-salt',password,role:'reader'});
+  let engine;
   async function start(extra={}){
-    child=spawn(process.execPath,[join(webDir,'server.mjs')],{cwd:webDir,windowsHide:true,
-      env:{PATH:process.env.PATH??process.env.Path??'',NODE_ENV:'production',HOST:'127.0.0.1',PORT:String(port),
-        PUBLIC_URL:game,BO_URL:game,LAB_PUBLIC_URL:game,CROUPIER_CLOUD_LAYOUT:'single-origin',
-        CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_DATA_DIR:dataDir,...extra},stdio:['ignore','pipe','pipe']});
-    await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>reject(Error('isolated Web fixture did not start')),10000);
-      const fail=()=>{clearTimeout(timer);reject(Error('isolated Web fixture exited before ready'));};
-      child.once('error',fail);child.once('exit',fail);
-      child.stdout.on('data',chunk=>{
-        if(String(chunk).includes('croupier demo on')){
-          clearTimeout(timer);child.off('error',fail);child.off('exit',fail);resolve();
-        }
-      });
-    });
+    engine=await startEngine(t,{database,port,env:{NODE_ENV:'production',
+      PUBLIC_URL:game,BO_URL:game,LAB_PUBLIC_URL:game,CROUPIER_CLOUD_LAYOUT:'single-origin',
+      CROUPIER_CLOUD_RUNTIME:'1',...extra}});
   }
   async function stop(){
-    if(child && child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
-    child=undefined;
+    await engine?.stop();
+    engine=undefined;
   }
   function request(path,{method='GET',host=new URL(game).host,origin,site,cookie='',body}={}){
     return new Promise((resolve,reject)=>{
@@ -72,7 +34,7 @@ async function fixture(t) {
   return {start,stop,request};
 }
 
-test('opt-in Vercel Origin permits player POSTs with the observed Preview Host and keeps cookies host-only',async t=>{
+test('opt-in Vercel Origin permits player POSTs with the observed Preview Host and keeps cookies host-only',{skip:ENGINE_QA_SKIP},async t=>{
   const f=await fixture(t);
   const login={email:'pilot-reader',password};
   const post=(path,body,options={})=>f.request(path,{method:'POST',body,origin:frontend,site:'same-origin',...options});
