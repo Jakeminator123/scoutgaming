@@ -1,5 +1,5 @@
 # Dokumentet har flyttat
 
-Den bevarade formatlåsningen från 7 oktober 2026 finns i [docs/games/blackjack/FORMATLASNING.md](../../../docs/games/blackjack/FORMATLASNING.md).
+Formatlåsningen från 7 oktober 2026 gällde ett enskilt dealerpaket och är historik: [docs/history/games/blackjack/FORMATLASNING.md](../../../docs/history/games/blackjack/FORMATLASNING.md).
 
-Börja med [blackjackmanualen](../../../docs/games/blackjack/README.md) för aktuell kod, nya underlag och skillnader mellan visningsprofiler. Denna fil är bara en hänvisning; redigera innehållet på den nya platsen.
+Aktuella mått och format står i [blackjackguiden](../../../docs/games/blackjack/README.md) och [dealerbanken](../../../docs/games/blackjack/DEALERBANK.md).

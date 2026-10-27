@@ -23,7 +23,7 @@ VAD WEBBEXPORTEN INNEHÅLLER
 index.html / viewer.js / viewer.css: fristående provspelare.
 player.js: tillstånd VILA/REDO, två videoelement, klippkö, förladdning och visuella kvitton.
 compositor.js: WebGL-komposition, greenscreen, lager och statiska masker. CPU-reserv för lokal granskning när WebGL inte finns.
-bridge.js: explicit adapter för presentation[]-typen som lästes i web/partner-presentation.mjs.
+bridge.js: explicit adapter för presentation[]-typen från services/game/partner-presentation.mjs.
 manifest.json: vald variant, klipplista, källmetadata, lager och layouttransformer.
 media/: endast vald webbvariant och valda bildlager.
 klippinfo.source.json och SHA256SUMS.txt: spårbarhet.
