@@ -54,7 +54,7 @@ export function featurePatterns(policy) {
     const parts = typeof pattern === 'string' ? pattern.split('*') : [];
     return parts.length !== 2 || !parts[0].endsWith('/');
   });
-  if (invalid) throw new Error('repository policy featureBranches must list patterns such as jakob/*, codex/* and cursor/*.');
+  if (invalid) throw new Error('repository policy featureBranches must list patterns such as jakob/*.');
   return patterns;
 }
 

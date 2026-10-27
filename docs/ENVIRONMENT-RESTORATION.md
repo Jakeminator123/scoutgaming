@@ -103,7 +103,7 @@ Render återlästes suspenderad efter varje avslutat prov. Vercel förblev pausa
 Produktens leveranskälla är `Jakeminator123/scoutgaming` på `main`.
 Den lokala arbetskopian kan ligga på en arbetsbranch; kontrollera root,
 branch/HEAD och egna ändringar före synkning eller återställning.
-Aktuell överlämning finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md), och senaste
+Aktuell överlämning finns i [NEXT-AGENT.md](NEXT-AGENT.md), och senaste
 verifierade driftsättning/acceptans överst i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 De daterade versionsreferenserna nedan är historiska återgångsunderlag,
 inte uppgift om vilken SHA produktionen kör just nu.

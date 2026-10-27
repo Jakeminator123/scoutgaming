@@ -13,7 +13,7 @@ const feature = (name, local = sha('c'), remote = sha('d')) => `refs/heads/${nam
 test('only the approved GitHub branch can be pushed', () => {
   assert.equal(policy.repository, 'Jakeminator123/scoutgaming');
   assert.equal(policy.branch, 'main');
-  assert.deepEqual(policy.featureBranches, ['jakob/*', 'codex/*', 'cursor/*']);
+  assert.deepEqual(policy.featureBranches, ['jakob/*']);
   assert.doesNotThrow(() => validatePush(url, update, policy, () => true));
   assert.throws(() => validatePush(url, update, policy, () => false), /force push/);
   assert.doesNotThrow(() => validatePush(url, update.replace(sha('b'), sha('0')), policy, () => false));
@@ -23,21 +23,21 @@ test('only the approved GitHub branch can be pushed', () => {
   assert.throws(() => validatePush('git@github.com:someone/else.git', update, policy), /approved GitHub/);
 });
 test('feature branches can be created and fast-forwarded', () => {
-  for (const name of ['jakob/repo-ordning', 'codex/example', 'cursor/a03-agent-rules-delivery-ff96', 'jakob/a/b']) {
+  for (const name of ['jakob/repo-ordning', 'jakob/claude-example', 'jakob/a03-agent-rules-delivery-ff96', 'jakob/a/b']) {
     assert.doesNotThrow(() => validatePush(url, feature(name, sha('c'), sha('0')), policy, () => { throw new Error('new branch'); }));
     assert.doesNotThrow(() => validatePush(url, feature(name), policy, () => true));
     assert.throws(() => validatePush(url, feature(name), policy, () => false), /force push/);
   }
   const https = `https://github.com/${policy.repository}`;
-  assert.doesNotThrow(() => validatePush(https, feature('cursor/example', sha('c'), sha('0')), policy, () => true));
-  assert.doesNotThrow(() => validatePush(`https://github.com/${policy.repository}.git`, `${update}\n${feature('codex/example')}`, policy, () => true));
+  assert.doesNotThrow(() => validatePush(https, feature('jakob/example', sha('c'), sha('0')), policy, () => true));
+  assert.doesNotThrow(() => validatePush(`https://github.com/${policy.repository}.git`, `${update}\n${feature('jakob/claude-example')}`, policy, () => true));
 });
 test('push rejects deletion, tags, other branches and other repositories', () => {
-  assert.throws(() => validatePush(url, feature('cursor/example', sha('0'), sha('d')), policy), /deletion/);
+  assert.throws(() => validatePush(url, feature('jakob/example', sha('0'), sha('d')), policy), /deletion/);
   assert.throws(() => validatePush(url, feature('main', sha('0')), policy), /deletion/);
   assert.throws(() => validatePush(url, `refs/tags/Jakobs-v1 ${sha('c')} refs/tags/Jakobs-v1 ${sha('0')}`, policy), /Tag/);
   assert.throws(() => validatePush(url, `refs/tags/Jakobs-v1 ${sha('c')} refs/tags/Jakobs-v1 ${sha('d')}`, policy), /Tag/);
-  for (const name of ['kevin', 'john', 'emil', 'jakob-export', 'jakob', 'cursor', 'cursor/', 'cursor/../main', 'cursor/name.lock']) {
+  for (const name of ['kevin', 'john', 'emil', 'jakob-export', 'jakob', 'codex/example', 'cursor/a03-example', 'jakob/', 'jakob/../main', 'jakob/name.lock']) {
     assert.throws(() => validatePush(url, feature(name, sha('c'), sha('0')), policy), /feature branches/);
   }
   assert.throws(() => validatePush(url, `refs/notes/commits ${sha('c')} refs/notes/commits ${sha('0')}`, policy), /feature branches/);
@@ -69,16 +69,16 @@ test('push rejects deletion, tags, other branches and other repositories', () =>
 test('delivery plans a feature branch and an explicit main emergency path', () => {
   assert.deepEqual(parseDeliveryArgs(['--check']), { check: true, adminMain: false });
   assert.throws(() => parseDeliveryArgs(['--force']), /Usage/);
-  const plan = planGithubDelivery({ branch: 'cursor/a03-example', policy });
-  assert.equal(plan.ref, 'refs/heads/cursor/a03-example');
+  const plan = planGithubDelivery({ branch: 'jakob/claude-a03-example', policy });
+  assert.equal(plan.ref, 'refs/heads/jakob/claude-a03-example');
   assert.equal(plan.emergency, false);
-  assert.equal(plan.pullRequest, 'gh pr create --repo Jakeminator123/scoutgaming --base main --head cursor/a03-example');
+  assert.equal(plan.pullRequest, 'gh pr create --repo Jakeminator123/scoutgaming --base main --head jakob/claude-a03-example');
   assert.equal(planGithubDelivery({ branch: 'main', adminMain: true, policy }).emergency, true);
   assert.equal(planGithubDelivery({ branch: 'main', adminMain: true, policy }).pullRequest, null);
   assert.throws(() => planGithubDelivery({ branch: 'main', policy }), /admin emergency/);
   assert.throws(() => planGithubDelivery({ branch: 'kevin', policy }), /not a delivery branch/);
-  assert.throws(() => planGithubDelivery({ branch: 'cursor/a03-example', adminMain: true, policy }), /only pushes main/);
-  assert.throws(() => planGithubDelivery({ branch: 'cursor/example', policy: { ...policy, featureBranches: [] } }), /featureBranches/);
+  assert.throws(() => planGithubDelivery({ branch: 'jakob/claude-a03-example', adminMain: true, policy }), /only pushes main/);
+  assert.throws(() => planGithubDelivery({ branch: 'jakob/example', policy: { ...policy, featureBranches: [] } }), /featureBranches/);
 });
 
 function fakeGit(responses) {
@@ -97,15 +97,15 @@ function fakeGit(responses) {
 test('delivery helper pushes the feature branch and only prints the pull-request command', () => {
   const local = sha('c');
   const { calls, git } = fakeGit({
-    'branch --show-current': 'cursor/a03-example',
+    'branch --show-current': 'jakob/claude-a03-example',
     'remote get-url --push --all origin': 'https://github.com/Jakeminator123/scoutgaming',
     'rev-parse HEAD': local,
-    'ls-remote --heads https://github.com/Jakeminator123/scoutgaming refs/heads/cursor/a03-example': '',
-    [`push origin ${local}:refs/heads/cursor/a03-example`]: '',
-    'fetch --no-tags https://github.com/Jakeminator123/scoutgaming refs/heads/cursor/a03-example:refs/remotes/origin/cursor/a03-example': '',
-    'rev-parse refs/remotes/origin/cursor/a03-example': local,
+    'ls-remote --heads https://github.com/Jakeminator123/scoutgaming refs/heads/jakob/claude-a03-example': '',
+    [`push origin ${local}:refs/heads/jakob/claude-a03-example`]: '',
+    'fetch --no-tags https://github.com/Jakeminator123/scoutgaming refs/heads/jakob/claude-a03-example:refs/remotes/origin/jakob/claude-a03-example': '',
+    'rev-parse refs/remotes/origin/jakob/claude-a03-example': local,
     'config --get-all remote.origin.fetch': '+refs/heads/*:refs/remotes/origin/*',
-    [`branch --set-upstream-to=origin/cursor/a03-example cursor/a03-example`]: '',
+    [`branch --set-upstream-to=origin/jakob/claude-a03-example jakob/claude-a03-example`]: '',
   });
   let remoteReads = 0;
   const wrapped = (...args) => {
@@ -120,22 +120,22 @@ test('delivery helper pushes the feature branch and only prints the pull-request
   assert.equal(plan.pullRequest.includes('gh pr create'), true);
   assert.equal(calls.some(call => call.startsWith('push ')), true);
   assert.equal(logs.some(line => line.startsWith('Pull request command (not created by this tool): gh pr create ')), true);
-  assert.equal(logs.join('\n').includes('gh pr create --repo Jakeminator123/scoutgaming --base main --head cursor/a03-example'), true);
+  assert.equal(logs.join('\n').includes('gh pr create --repo Jakeminator123/scoutgaming --base main --head jakob/claude-a03-example'), true);
   assert.equal(calls.some(call => call.split(' ')[0] === 'gh'), false);
 });
 test('delivery check does not push, and main requires the admin flag', () => {
   const local = sha('e');
   const checked = fakeGit({
-    'branch --show-current': 'codex/example',
+    'branch --show-current': 'jakob/claude-example',
     'remote get-url --push --all origin': 'git@github.com:Jakeminator123/scoutgaming.git',
     'rev-parse HEAD': local,
-    'ls-remote --heads git@github.com:Jakeminator123/scoutgaming.git refs/heads/codex/example': `${sha('d')}\trefs/heads/codex/example`,
+    'ls-remote --heads git@github.com:Jakeminator123/scoutgaming.git refs/heads/jakob/claude-example': `${sha('d')}\trefs/heads/jakob/claude-example`,
     [`merge-base --is-ancestor ${sha('d')} ${local}`]: '',
   });
   const logs = [];
   deliver({ args: ['--check'], policy, git: checked.git, log: line => logs.push(line) });
   assert.equal(checked.calls.some(call => call.startsWith('push ')), false);
-  assert.match(logs.at(-1), /gh pr create --repo Jakeminator123\/scoutgaming --base main --head codex\/example/);
+  assert.match(logs.at(-1), /gh pr create --repo Jakeminator123\/scoutgaming --base main --head jakob\/claude-example/);
 
   const blocked = fakeGit({ 'branch --show-current': 'main' });
   assert.throws(() => deliver({ args: [], policy, git: blocked.git, log() {} }), /admin emergency/);
@@ -175,7 +175,7 @@ test('delivery check does not push, and main requires the admin flag', () => {
   assert.throws(() => deliver({ args: [], policy, git: diverged.git, log() {} }), /No force push/);
   assert.equal(diverged.calls.some(call => call.startsWith('push ')), false);
   const wrong = fakeGit({
-    'branch --show-current': 'cursor/example',
+    'branch --show-current': 'jakob/example',
     'remote get-url --push --all origin': 'https://github.com/someone/else.git',
   });
   assert.throws(() => deliver({ args: ['--check'], policy, git: wrong.git, log() {} }), /approved GitHub/);
@@ -201,7 +201,7 @@ test('delivery with a narrow fetch mapping creates only its own tracking branch 
   git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','--allow-empty','-m','Initial fixture');
   git('remote','add','origin',approved);
   git('config','remote.origin.fetch','+refs/heads/main:refs/remotes/origin/main');
-  git('switch','-c','codex/narrow-fetch');
+  git('switch','-c','jakob/narrow-fetch');
   const local = git('rev-parse','HEAD'), logs = [], calls = [];
   const deliveryGit = (...args) => {
     calls.push(args);
@@ -213,12 +213,12 @@ test('delivery with a narrow fetch mapping creates only its own tracking branch 
   };
   for (let attempt=0; attempt<2; attempt++) deliver({ policy, git:deliveryGit, log:line=>logs.push(line) });
   assert.equal(git('rev-parse','@{upstream}'),local);
-  assert.equal(run(remote,['rev-parse','refs/heads/codex/narrow-fetch']),local);
-  assert.equal(git('config','branch.codex/narrow-fetch.remote'),'origin');
-  assert.equal(git('config','branch.codex/narrow-fetch.merge'),'refs/heads/codex/narrow-fetch');
+  assert.equal(run(remote,['rev-parse','refs/heads/jakob/narrow-fetch']),local);
+  assert.equal(git('config','branch.jakob/narrow-fetch.remote'),'origin');
+  assert.equal(git('config','branch.jakob/narrow-fetch.merge'),'refs/heads/jakob/narrow-fetch');
   assert.deepEqual(git('config','--get-all','remote.origin.fetch').split(/\r?\n/),[
     '+refs/heads/main:refs/remotes/origin/main',
-    '+refs/heads/codex/narrow-fetch:refs/remotes/origin/codex/narrow-fetch',
+    '+refs/heads/jakob/narrow-fetch:refs/remotes/origin/jakob/narrow-fetch',
   ]);
   assert.equal(calls.filter(args=>args[0]==='remote'&&args[1]==='set-branches').length,1);
   assert.equal(logs.filter(line=>line===`GitHub verified: ${local}`).length,2);
@@ -230,7 +230,7 @@ test('delivery never configures upstream or reports success when remote verifica
     const calls=[], logs=[], local=sha('c'); let reads=0;
     const git=(...args)=>{
       calls.push(args);
-      if(args[0]==='branch'&&args[1]==='--show-current')return 'codex/verification';
+      if(args[0]==='branch'&&args[1]==='--show-current')return 'jakob/verification';
       if(args[0]==='remote'&&args[1]==='get-url')return 'https://github.com/Jakeminator123/scoutgaming.git';
       if(args[0]==='rev-parse')return args[1]==='HEAD'?local:sha('d');
       if(args[0]==='ls-remote')return ++reads===1?'':stage==='after-push'?sha('d'):local;

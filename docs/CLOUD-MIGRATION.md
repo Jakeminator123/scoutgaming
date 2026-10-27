@@ -1,7 +1,7 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
 Kevin-planen avstämd 25 oktober 2026. Övriga delkvitton är daterade var för sig; detta är produktens övergripande migrationsöversikt.
-Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
+Aktuell överlämning och nästa leverans finns i [NEXT-AGENT](NEXT-AGENT.md); daterade kvitton i [JOHN-HANDOFF](JOHN-HANDOFF.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
 

@@ -69,7 +69,7 @@ node tools/inbox.mjs list --to me
 `me` betyder den lokalt registrerade datorn. Utan registrering krävs en exakt
 branchträff i `people.json`. På en featurebranch utan datorregistrering, välj
 den kända ägaren uttryckligen, till exempel `list --to jakob` för Jakobs arbete.
-Fråga vem som äger arbetet om det är okänt; `codex/*` eller `cursor/*` anger
+Fråga vem som äger arbetet om det är okänt; ett branchprefix som `jakob/*` anger
 inte en person. `--to jakob` är fortfarande Jakobs gemensamma
 personinbox och läses separat med `list --to jakob`. Avsändaren visas med
 datorns namn och alias, om inte `--from` anges. Båda datorerna kan använda samma
