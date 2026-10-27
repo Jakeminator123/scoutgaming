@@ -1,15 +1,5 @@
 [
   {
-    "path": "apps/studio/test/partner-login.test.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "apps/studio/test/studio-login-form.test.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
     "path": "migrering/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md",
     "removeBy": "O03 (archive)",
     "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
@@ -50,11 +40,6 @@
     "reason": "SQLite bootstrap preflight test; rewritten to the PostgreSQL branch in PR-6."
   },
   {
-    "path": "ops/cloud/test/single-origin.test.mjs",
-    "removeBy": "PR-3a (#432) or PR-6",
-    "reason": "Uses the synchronous Lab handoff on SQLite; ports to async-bo-lab-auth."
-  },
-  {
     "path": "ops/cloud/test/storage-export.test.mjs",
     "removeBy": "PR-6",
     "reason": "Tests the SQLite 'export' mode removed in PR-6."
@@ -80,59 +65,9 @@
     "reason": "OpenClaw Gateway search quota/idempotency store; replaced by a JSON store."
   },
   {
-    "path": "test/account-credentials.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
     "path": "test/backup-render-state.mjs",
     "removeBy": "PR-7c",
     "reason": "Backup tool product-profile tests; removed with that profile."
-  },
-  {
-    "path": "test/craig-login.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/native-partner-events.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/partner-launch-route.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/player-auth-limiter.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/player-auth.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/player-chat-memory.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/player-password.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/player-probe.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
-  },
-  {
-    "path": "test/player-signup.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
   },
   {
     "path": "test/product-chat-http.mjs",
@@ -143,11 +78,6 @@
     "path": "test/roulette-room-storage.mjs",
     "removeBy": "PR-6",
     "reason": "SQLite roulette command test; deleted after parity with test/roulette-postgres.mjs."
-  },
-  {
-    "path": "test/studio-partner-epoch.mjs",
-    "removeBy": "PR-3a (#432)",
-    "reason": "Module test still on a SQLite stand-in; ported to the async stores on PGlite in step 3a."
   },
   {
     "path": "tools/backup-render-state.mjs",
