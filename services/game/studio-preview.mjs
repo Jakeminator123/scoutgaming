@@ -1,8 +1,7 @@
-import {DatabaseSync} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
 import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
-import {createNativeTableCommand} from './native-table.mjs';
+import {createPreviewTable} from './preview-table.mjs';
 import {createPresentationApi} from './presentation-api.mjs';
 import {isActiveDealerId, registeredDealerIds} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {gamePresentationForDealer, gameChoicesForLane} from '../../packages/presentation/contracts/game-selection.mjs';
@@ -37,12 +36,13 @@ async function readBody(request) {
 function fields(body,allowed) {if(Object.keys(body).some(key=>!allowed.includes(key)))fail('studio_preview_invalid_request');}
 
 // This is a separate transport and never accepts a product player database,
-// partner publisher, player cookie or live project reader after capture.
+// partner publisher, player cookie or live project reader after capture. Each
+// session owns an in-memory table (no SQL), released on deletion, expiry or close.
 export function createStudioPreview({authorize,scope,repository,registryLoader,privateMedia,bankVideoResponse,readHtml,
-  origin,now=Date.now,ttlMs=20*60*1000,maxSessions=16,maxSessionsPerAdmin=3,dbFactory=()=>new DatabaseSync(':memory:')}={}) {
+  origin,now=Date.now,ttlMs=20*60*1000,maxSessions=16,maxSessionsPerAdmin=3,tableFactory=createPreviewTable}={}) {
   scope=validateStudioScope(scope);
   if(!same(repository?.scope,scope)||typeof repository?.readPresentationSnapshot!=='function'
-    ||[authorize,registryLoader,privateMedia,bankVideoResponse,readHtml,now,dbFactory].some(f=>typeof f!=='function')
+    ||[authorize,registryLoader,privateMedia,bankVideoResponse,readHtml,now,tableFactory].some(f=>typeof f!=='function')
     ||!Number.isSafeInteger(ttlMs)||ttlMs<1000||ttlMs>60*60*1000
     ||!Number.isSafeInteger(maxSessions)||maxSessions<1||maxSessions>64
     ||!Number.isSafeInteger(maxSessionsPerAdmin)||maxSessionsPerAdmin<1||maxSessionsPerAdmin>maxSessions)throw Error('Invalid Studio preview configuration');
@@ -51,7 +51,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
     ||!(checkedOrigin.protocol==='https:'||checkedOrigin.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(checkedOrigin.hostname)))throw Error('Invalid Studio preview origin');
   const sessions=new Map(),pending=new Map();let closed=false;
   const metadata=s=>({sessionId:s.id,presentationLaneId:s.lane.id,projectRevision:s.project.revision,expiresAt:new Date(s.expires).toISOString()});
-  function dispose(s){if(s.closed)return;s.closed=true;clearTimeout(s.timer);sessions.delete(s.id);if(!s.active)s.db.close();}
+  function dispose(s){if(s.closed)return;s.closed=true;clearTimeout(s.timer);sessions.delete(s.id);if(!s.active)s.table.close();}
   function expire(){for(const s of sessions.values())if(s.expires<=now())dispose(s);}
   function available(s,dealerId){const row=s.dealerAvailability.find(row=>row.id===dealerId);if(!row)fail('studio_preview_dealer_not_found',404);if(!row.playable)fail(row.reason,422);return row;}
   function live(s){if(closed||s.closed||s.expires<=now()){dispose(s);fail('studio_preview_expired',410);}}
@@ -92,7 +92,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
     const owner=actor.user;
     if(sessions.size+[...pending.values()].reduce((a,b)=>a+b,0)>=maxSessions
       ||[...sessions.values()].filter(s=>s.owner===owner).length+(pending.get(owner)??0)>=maxSessionsPerAdmin)fail('studio_preview_limit',429);
-    pending.set(owner,(pending.get(owner)??0)+1);let db;
+    pending.set(owner,(pending.get(owner)??0)+1);let table;
     try {
       const snapshot=freeze(structuredClone(await repository.readPresentationSnapshot()));
       if(!same(snapshot.scope,scope)||snapshot.projectDocument?.kind!=='project'||snapshot.administrationDocument?.kind!=='administration')fail('studio_preview_snapshot_unavailable',503);
@@ -118,17 +118,16 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       if(!dealerAvailability.find(row=>row.id===lane.layers.dealer.default)?.playable)fail('studio_preview_idle_required',422);
       const current=await authorize(request);if(current.role!=='admin'||current.user!==owner||!same(current.scope,scope))fail('studio_preview_forbidden',403);
       if(closed)fail('studio_preview_unavailable',503);
-      db=dbFactory();db.exec('CREATE TABLE players (id TEXT PRIMARY KEY,name TEXT,currency TEXT,balance REAL); CREATE TABLE transactions (player_id TEXT,type TEXT,amount REAL,currency TEXT,note TEXT);');
       const id=randomUUID(),playerId=`studio-preview:${id}`,expires=now()+ttlMs;
-      db.prepare('INSERT INTO players VALUES (?,?,?,?)').run(playerId,'Studio provspel','EUR',10000);
-      const sessionDb=db;
-      const getPlayer=()=>sessionDb.prepare('SELECT * FROM players WHERE id=?').get(playerId);
-      const command=createNativeTableCommand({db,getPlayer,logTx:(...values)=>sessionDb.prepare('INSERT INTO transactions VALUES (?,?,?,?,?)').run(...values)});
-      const s={id,owner,project,lane,inventory,records,snapshot,assets,dealerAvailability,expires,db,getPlayer,command,active:0,closed:false};
-      s.api=createPresentationApi({db,env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),recordedSpeechPreview:true});
-      s.timer=setTimeout(()=>dispose(s),ttlMs);s.timer.unref?.();sessions.set(id,s);db=null;
+      table=tableFactory({players:[{id:playerId,name:'Studio provspel',currency:'EUR',balance:10000}]});
+      const sessionTable=table;
+      const getPlayer=()=>sessionTable.player(playerId);
+      const s={id,owner,project,lane,inventory,records,snapshot,assets,dealerAvailability,expires,table,getPlayer,command:sessionTable.command,active:0,closed:false};
+      // The presentation API reads this session's committed receipt, never a product table.
+      s.api=createPresentationApi({readNativeReceipt:player=>sessionTable.receipt(player),env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),recordedSpeechPreview:true});
+      s.timer=setTimeout(()=>dispose(s),ttlMs);s.timer.unref?.();sessions.set(id,s);table=null;
       return json(201,{...metadata(s),entryUrl:`/studio-preview/${id}`});
-    }finally{pending.set(owner,pending.get(owner)-1);if(!pending.get(owner))pending.delete(owner);if(db)db.close();}
+    }finally{pending.set(owner,pending.get(owner)-1);if(!pending.get(owner))pending.delete(owner);if(table)table.close();}
   }
   async function media(s,kind,id,request) {
     if(!['GET','HEAD'].includes(request.method))fail('studio_preview_method_not_allowed',405);
@@ -210,7 +209,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       fail('studio_preview_route_not_found',404);
     }catch(error){const status=[400,401,403,404,405,409,410,413,415,422,429,503].includes(error.statusCode)?error.statusCode:503;
       const code=/^studio_[a-z0-9_]{1,100}$/.test(error.code??'')?error.code:'studio_preview_unavailable';return json(status,{error:code});
-    }finally{if(acquired){s.active--;if(s.closed&&!s.active)s.db.close();}}
+    }finally{if(acquired){s.active--;if(s.closed&&!s.active)s.table.close();}}
   }
   return Object.freeze({handle,close(){closed=true;for(const s of sessions.values())dispose(s);}});
 }

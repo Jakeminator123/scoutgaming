@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {DatabaseSync} from 'node:sqlite';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {createStudioPreview} from '../services/game/studio-preview.mjs';
+import {createPreviewTable} from '../services/game/preview-table.mjs';
+import {createStatementDb} from './fixtures/statement-db.mjs';
 import {createStudioNativeAuth} from '../packages/studio-access/studio-native-auth.mjs';
 import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
@@ -26,7 +27,7 @@ function fixture(t,options={}){
   lane.layers.table={...lane.layers.table,default:layerId,allowed:[layerId]};
   const snapshot={scope,projectDocument:{kind:'project',revision:project.revision,value:project},administrationDocument:{kind:'administration',revision:'admin.1',value:{}},mediaRows:[row]};
   const inventory={videos:[{id:row.id,sha256:row.sha256,bytes:row.size,available:true,source:'upload',dealer:'linnea',fileName:'idle.mp4',classification:structuredClone(row.classification)}],families:[]};
-  const state={actor:'admin-one',role:'admin',revoked:false,time:2000000,reads:0,registryReads:0,legacyReads:0,dbs:[],media:[],bank:[],mediaHash:null,authCalls:0};
+  const state={actor:'admin-one',role:'admin',revoked:false,time:2000000,reads:0,registryReads:0,legacyReads:0,tables:[],media:[],bank:[],mediaHash:null,authCalls:0};
   const request=(path,method='GET',body,extra={})=>new Request(origin+path,{method,headers:{cookie:'lab_session=fixture',...(!['GET','HEAD'].includes(method)?{origin,'content-type':'application/json'}:{}),...extra},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const api=createStudioPreview({scope,origin,now:()=>state.time,ttlMs:2000,maxSessions:4,maxSessionsPerAdmin:2,
     repository:{scope,readPresentationSnapshot:async()=>{state.reads++;return snapshot;}},
@@ -35,7 +36,7 @@ function fixture(t,options={}){
     privateMedia:async(record,req)=>{state.media.push({record:structuredClone(record),method:req.method,range:req.headers.get('range')});return new Response(req.method==='HEAD'?null:'abcdefgh',{status:req.headers.has('range')?206:200,headers:{ETag:`"sha256-${state.mediaHash??record.sha256}"`,'Content-Type':record.contentType}});},
     bankVideoResponse:async(id,req)=>{state.bank.push(id);return new Response(req.method==='HEAD'?null:'bank',{headers:{ETag:`"sha256-${state.mediaHash??'c'.repeat(64)}"`}});},
     readHtml:async()=>'<html lang="sv"><body>Preview</body></html>',
-    dbFactory:()=>{const db=new DatabaseSync(':memory:');state.dbs.push(db);return db;},...options});
+    tableFactory:seed=>{const table=createPreviewTable(seed);state.tables.push(table);return table;},...options});
   t.after(()=>api.close());
   const create=async(extra={})=>{const response=await api.handle(request('/api/studio-preview','POST',{presentationLaneId:lane.id,expectedProjectRevision:project.revision,...extra}));return{response,body:await response.json()};};
   return{api,state,project,snapshot,inventory,row,layer,request,create};
@@ -213,14 +214,14 @@ test('stale revisions, unplayable defaults, mismatched media and unknown lanes a
   assert.equal((await f.create({presentationLaneId:'unknown'})).response.status,404);
   f.inventory.videos[0].sha256='b'.repeat(64);assert.equal((await f.create()).response.status,409);
   f.inventory.videos[0].sha256=f.row.sha256;f.project.lanes[0].layers.dealer.default='unfinished';f.project.lanes[0].layers.dealer.allowed.push('unfinished');f.project.lanes[0].dealers.push('unfinished');
-  const missing=await f.create();assert.equal(missing.response.status,422);assert.equal(missing.body.error,'studio_preview_idle_required');assert.equal(f.state.dbs.length,0);
+  const missing=await f.create();assert.equal(missing.response.status,422);assert.equal(missing.body.error,'studio_preview_idle_required');assert.equal(f.state.tables.length,0);
 });
 
-test('TTL, deletion, per-admin capacity and shutdown close every isolated database',async t=>{
+test('TTL, deletion, per-admin capacity and shutdown close every isolated table',async t=>{
   const f=fixture(t),a=await start(f),b=await start(f);assert.equal((await f.create()).response.status,429);
-  assert.equal((await f.api.handle(f.request('/api/studio-preview/'+a.sessionId,'DELETE'))).status,200);assert.throws(()=>f.state.dbs[0].prepare('SELECT 1'));
-  await start(f);f.state.time+=3000;assert.equal((await f.api.handle(f.request('/api/studio-preview/'+b.sessionId+'/session'))).status,410);assert.throws(()=>f.state.dbs[1].prepare('SELECT 1'));
-  f.api.close();for(const db of f.state.dbs)assert.throws(()=>db.prepare('SELECT 1'));assert.equal((await f.create()).response.status,503);
+  assert.equal((await f.api.handle(f.request('/api/studio-preview/'+a.sessionId,'DELETE'))).status,200);assert.throws(()=>f.state.tables[0].transactions(),/Preview table closed/);
+  await start(f);f.state.time+=3000;assert.equal((await f.api.handle(f.request('/api/studio-preview/'+b.sessionId+'/session'))).status,410);assert.throws(()=>f.state.tables[1].transactions(),/Preview table closed/);
+  f.api.close();for(const table of f.state.tables)assert.throws(()=>table.transactions(),/Preview table closed/);assert.equal((await f.create()).response.status,503);
 });
 
 test('preview presentation uses isolated committed cards and explicitly rejects external services',async t=>{
@@ -238,33 +239,35 @@ test('preview presentation uses isolated committed cards and explicitly rejects 
 });
 
 test('real native Studio auth rechecks password stamp and rejects partner-only cookies without product identity',async t=>{
-  const db=new DatabaseSync(':memory:');t.after(()=>db.close());db.exec('CREATE TABLE users(id TEXT,username TEXT,email TEXT,salt TEXT,hash TEXT,role TEXT); CREATE TABLE bo_auth_epochs(user_id TEXT,epoch INTEGER); CREATE TABLE meta(k TEXT,v TEXT); CREATE TABLE lab_sessions(token_digest TEXT,expires INTEGER,craig_user_id TEXT,role TEXT,source_stamp TEXT,auth_epoch INTEGER);');
-  const salt='s',hash='c'.repeat(128),secret='a'.repeat(64);db.prepare('INSERT INTO users VALUES (?,?,?,?,?,?)').run('u','native-admin','admin@example.invalid',salt,hash,'admin');db.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret',secret);
+  const salt='s',hash='c'.repeat(128),secret='a'.repeat(64),tables={users:[{id:'u',username:'native-admin',email:'admin@example.invalid',salt,hash,role:'admin'}]};
+  const account='SELECT u.id,u.username,u.salt,u.hash,u.role,e.epoch\n  FROM users u LEFT JOIN bo_auth_epochs e ON e.user_id=u.id WHERE lower(u.username)=? OR lower(u.email)=?';
+  const db=createStatementDb({tables,statements:{"SELECT v FROM meta WHERE k='jwt_secret'":()=>[{v:secret}],
+    [account]:key=>tables.users.filter(u=>u.username.toLowerCase()===key||u.email.toLowerCase()===key).map(({email,...u})=>({...u,epoch:null}))}});
   const stamp=createHash('sha256').update(salt+':'+hash).digest('hex'),parts=[{alg:'HS256',typ:'JWT'},{aud:'backoffice',sub:'native-admin',role:'admin',source_stamp:stamp,auth_epoch:0,exp:9999999999}].map(v=>Buffer.from(JSON.stringify(v)).toString('base64url'));
   const token=parts.join('.')+'.'+createHmac('sha256',Buffer.from(secret,'hex')).update(parts.join('.')).digest('base64url');
   const f=fixture(t,{authorize:createStudioNativeAuth({boDb:db,scope})});
   const call=(path,method='GET',body,cookie='bo_jwt='+token)=>f.api.handle(f.request(path,method,body,{cookie}));
   const response=await call('/api/studio-preview','POST',{presentationLaneId:f.project.lanes[0].id,expectedProjectRevision:f.project.revision});assert.equal(response.status,201);const s=await response.json(),path='/api/studio-preview/'+s.sessionId+'/videos/'+videoId;
   assert.equal((await call(path,'GET',undefined,'partner_session=only')).status,401);
-  db.prepare('UPDATE users SET hash=?').run('d'.repeat(128));assert.equal((await call(path)).status,401);assert.equal(f.state.media.length,0);
+  tables.users[0].hash='d'.repeat(128);assert.equal((await call(path)).status,401);assert.equal(f.state.media.length,0);
 });
 
-test('pending captures count toward admin and global limits before database allocation',async t=>{
+test('pending captures count toward admin and global limits before table allocation',async t=>{
   let release;const barrier=new Promise(resolve=>{release=resolve;});let entered;const waiting=new Promise(resolve=>{entered=resolve;});
   const f=fixture(t,{maxSessions:1,maxSessionsPerAdmin:1,onRegistryLoad:async()=>{entered();await barrier;}});
-  const first=f.create();await waiting;const second=await f.create();assert.equal(second.response.status,429);assert.equal(f.state.dbs.length,0);
+  const first=f.create();await waiting;const second=await f.create();assert.equal(second.response.status,429);assert.equal(f.state.tables.length,0);
   release();assert.equal((await first).response.status,201);f.state.actor='another-admin';assert.equal((await f.create()).response.status,429);
 });
 
 test('scope mismatch and revocation during capture cannot allocate or leak a preview',async t=>{
-  const f=fixture(t);f.snapshot.scope={...scope,workspaceId:'other'};assert.equal((await f.create()).response.status,503);assert.equal(f.state.dbs.length,0);
-  const g=fixture(t,{onRegistryLoad:async()=>{g.state.revoked=true;}});assert.equal((await g.create()).response.status,401);assert.equal(g.state.dbs.length,0);
+  const f=fixture(t);f.snapshot.scope={...scope,workspaceId:'other'};assert.equal((await f.create()).response.status,503);assert.equal(f.state.tables.length,0);
+  const g=fixture(t,{onRegistryLoad:async()=>{g.state.revoked=true;}});assert.equal((await g.create()).response.status,401);assert.equal(g.state.tables.length,0);
 });
 
-test('a media request expiring while verification runs returns no bytes and frees the database',async t=>{
+test('a media request expiring while verification runs returns no bytes and frees the table',async t=>{
   let responseBody;const f=fixture(t,{privateMedia:async record=>{f.state.time+=3000;responseBody=new ReadableStream({start(controller){controller.enqueue(new Uint8Array([1]));}});return new Response(responseBody,{headers:{ETag:`"sha256-${record.sha256}"`}});}});
   const s=await start(f),response=await f.api.handle(f.request('/api/studio-preview/'+s.sessionId+'/videos/'+videoId));assert.equal(response.status,410);
-  assert.equal((await response.json()).error,'studio_preview_expired');assert.throws(()=>f.state.dbs[0].prepare('SELECT 1'));
+  assert.equal((await response.json()).error,'studio_preview_expired');assert.throws(()=>f.state.tables[0].transactions(),/Preview table closed/);
 });
 
 
