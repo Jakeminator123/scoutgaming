@@ -1,5 +1,9 @@
 # Samarbete och åtkomst
 
+## Uppdatering 27 oktober 2026
+
+Agent-talk är borttaget och GitHub-tråden #312 används inte längre för samordning. Agenter arbetar i egna worktrees på `jakob/claude-*`-brancher och levererar PR:er mot `main` som den orkestrerande sessionen mergar efter grön CI; personfrågor går via [teaminboxen](../inbox/README.md). Hänvisningar till #312, femminutersbevakning och agent-talk i avsnitten nedan är historik.
+
 ## Verifierat läge 22 oktober 2026
 
 Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312).

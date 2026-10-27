@@ -10,7 +10,7 @@ Live-dealer blackjack för spelbolag: Admin publicerar dealer, material och rum,
 | Startsida och spelskal `/game`, `/play/{game}` | `apps/web` | Vercel, samma projekt (`vercel.json` styr tjänsterna) |
 | Tal | `apps/speech` | Vercel |
 | Spelmotor: regler, sko, kort, saldo, `/api/table`, `/api/studio-game/command` | `services/game` | Render `croupier-v3` |
-| Produktens talkedja i drift | `services/openclaw` (Director och Gateway) | Render `croupier-lab-director`, `croupier-lab-openclaw` |
+| Produktens talkedja i drift | `packages/director` (Director-biblioteket) och `services/openclaw/lab` (Director-tjänsten; Gateway-image och deploy i `deploy/`) | Render `croupier-lab-director`, `croupier-lab-openclaw` |
 | Produktregister och konton | Neon Postgres, scheman `croupier_game`, `croupier_auth`, `croupier_studio` (SQL i `ops/neon-game`, `ops/neon-studio`) | Neon |
 | Media | Vercel Blob | Blob |
 | Delade tjänster | `packages/*` (presentation, storage, studio-registry, operators, navigation …) | Byggs in i båda apparna |
@@ -42,7 +42,7 @@ Allt som är grönt går direkt till produktion, i denna ordning:
 3. Render `croupier-v3` deployas manuellt (Render MCP) efter varje grön merge. Director och Gateway deployas om när deras kod ändras.
 4. Admin-publicering (paket och rumskonfiguration) sist, när koden är live.
 
-`CROUPIER_SHARED_TABLE_ENABLED=1` kraschade stagingmotorn vid start 2026-10-27 (tom frontend-origin i enkel-origin-layouten). Rättningen är PR #442 (`jakob/claude-shared-room-origin`); sätt inte flaggan förrän den är mergad. Varningen i [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md) gäller.
+`CROUPIER_SHARED_TABLE_ENABLED=1` kraschade stagingmotorn vid start 2026-10-27 (tom frontend-origin i enkel-origin-layouten). Rättningen (PR #442, `jakob/claude-shared-room-origin`) är mergad i `main` (`cc415cd8`); sätt flaggan först när en motor-deploy med rättningen är live och Jakob har beslutat det. Varningen i [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md) gäller.
 
 ## Staging
 
@@ -51,7 +51,7 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 ## Vad agenter får göra
 
 - Ingen merge, DDL, produktionsskrivning eller betald drift utan Jakobs beslut. Underagenter mergar aldrig; den orkestrerande Claude-sessionen mergar efter grön CI enligt ägarreglerna i AGENTS.md.
-- Render MCP: deploy, loggar, metrik och skrivning av miljövariabler (merge), men ingen läsning av env-värden och ingen SSH. `RENDER_API_KEY` i `.env.local` ger REST-läsning.
+- Render MCP: deploy, loggar, metrik och skrivning av miljövariabler (merge), men ingen läsning av env-värden. `RENDER_API_KEY` i `.env.local` ger REST-läsning.
 - Neon MCP: läsning är fri; destruktiva verktyg bara efter Jakobs ja.
 - Vercel: CLI-token på Jakobs dator; staging deployas via API.
 - Inloggningar och nycklar: lokalt i `.env.local`, aldrig i Git eller chatt. Läs `node tools/security-status.mjs` före push och merge.

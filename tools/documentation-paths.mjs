@@ -1,5 +1,6 @@
-// Reviewed documentation paths shared by local checks and CI. Runtime Markdown is not documentation.
-// Migration report data is validated separately; other JSON and future guides stay strict.
+// Reviewed documentation paths shared by local checks and CI. Markdown outside the listed guides and
+// prose folders (runtime bundles, package docs, new folder READMEs) stays strict, as does JSON other
+// than the migration report, which is validated separately.
 const migrationReports = new Set([
   "migrering/status.json",
 ]);
@@ -26,12 +27,13 @@ const guides = new Set([
   "services/openclaw/lab/README.md",
   "tools/media/README.md"
 ]);
-// Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, the
-// cloud runbooks directly in ops/cloud/, and dated receipts moved to docs/history/.
+// Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, the cloud
+// runbooks directly in ops/cloud/, and dated history (Markdown and JSON receipts) under docs/history/
+// once the planned history move lands; scripts or other files placed there stay strict.
 const proseFolders = [
   /^(?:docs|apps\/studio\/docs|migrering)\/.+\.md$/,
   /^ops\/cloud\/[^/]+\.md$/,
-  /^docs\/history\/.+$/,
+  /^docs\/history\/.+\.(?:md|json)$/,
 ];
 
 export function isDocumentationPath(path) {

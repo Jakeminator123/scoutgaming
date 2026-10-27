@@ -5,9 +5,9 @@ Ingången är [START-HERE.md](START-HERE.md): produktväg, identiteter, publicer
 ## Produkt och källor
 
 - Detta repo är arbetsprodukten. Neon är produktregistret och Blob lagrar mediebytes; skapa inte parallella lokala produktregister. Spelmotorn ligger i `services/game` och kör på Render `croupier-v3`; Vercel-team/projekt är `scoutgaming`. `apps/studio` är källkod och `/studio` teknisk basePath, inte ytterligare en produkt. Aktiva adaptrar i `apps/studio/lib` och delade tjänster i `packages/` är inte förbrukade på grund av sina namn.
-- Den interna arbetsytan är `/admin`; `/lobby` är spelkatalogen och `/play/{game}` det autentiserade launchkontraktet. `/control`, `/bo` och `/lab` är pensionerade och finns bara som redirects; bygg inga nya kopior av Admin-flöden.
+- Den interna arbetsytan är `/admin`; `/lobby` är spelkatalogen och `/play/{game}` det autentiserade launchkontraktet. `/control` och `/lab` är pensionerade och svarar bara med redirect till `/admin`; `/bo` är borta. Bygg inga nya kopior av Admin-flöden.
 - Produktbegrepp: [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md). Användarsteg: [Studio-guiden](apps/studio/docs/README.md). Kontrakt och medieformat: [runtimeguiden](docs/LOCAL-PRESENTATION-RUNTIME.md). Aktuell överlämning: [NEXT-AGENT](docs/NEXT-AGENT.md); [JOHN-HANDOFF](docs/JOHN-HANDOFF.md) är historik. `migrering/status.json` är enda statuskällan; skapa inga konkurrerande trackers och återöppna inte genomförd Neon-/Blob-migrering utan ett konkret runtimefel.
-- Uppdatera befintliga sakdokument; en uttryckligt beställd plan eller rapport är tillåten. OpenClaw-arbete börjar i [dess guide](docs/AI/openclaw/README.md).
+- Uppdatera befintliga sakdokument; en uttryckligt beställd plan eller rapport är tillåten. OpenClaw-arbete börjar i [dess guide](docs/AI/openclaw/README.md): bara `docs.openclaw.ai` och `github.com/openclaw/openclaw` är auktoritativa ([källindex](docs/AI/openclaw/OPENCLAW-DOCS.md)), den pinnade imagen i `services/openclaw/lab/deploy/Dockerfile.gateway` uppgraderas inte tyst, och ingen dokumentations-MCP installeras.
 
 ## Arbetsflöde med Claude Code
 
@@ -23,6 +23,7 @@ Ingången är [START-HERE.md](START-HERE.md): produktväg, identiteter, publicer
 - Ersätt/radera tester för pensionerad funktion och rena källsträngs-, CSS-, markup- eller menyantalslås. Behåll prov för behörighet, rum/operatör-isolering, sparning, samtidighet och spelregler. Dölj inte verkliga fel genom att ta bort testet. Inget generellt krav på visuell sign-off, ett visst antal spel eller omspelning av orelaterade dealers gäller.
 - Före push och merge: `node tools/security-status.mjs` (GitGuardian-status på remote main). Visa endast säkra statusfält och fil/rad, aldrig hemligheter eller scannerutdrag. Installera inget, ge ingen åtkomst och ändra inga incidenter som bieffekt av kontrollen.
 - Kod som kräver nytt Studio-schema får inte mergas innan erforderlig Neon-readiness passerar. Behåll uppdelningen mellan klient-/teständringar och schema-/server-/beroendeändringar. Ordningen är tolerant kod → godkänd migrering → kravhöjning.
+- Miljövariabler: varje tillägg, borttagning eller ändring av en variabel i kod, `.env*`, Render eller Vercel uppdaterar [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md) och `docs/environment-variables.json` i samma leverans (tjänst, krav, var värdet sätts; aldrig värden). Kör `node tools/check-environment-variables.mjs` före commit; en ändring direkt i leverantörspanelen jämförs mot förteckningen och antecknas.
 
 ## Leverans och merge
 

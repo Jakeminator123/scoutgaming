@@ -28,7 +28,7 @@ Labbets bygge förbereder och serverar den från `design-preview-build/`. Behör
 data, mediaregister och anslutningar finns kvar i denna tjänst.
 Lobbykatalogens rena laddare finns i `packages/player-catalog`; appen äger
 fortfarande inloggning, rumsväljning och spelstarter.
-Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
+Render-tjänsten `croupier-v3` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.
 `node apps/studio/start.mjs --no-open` skriver den publicerade produktens adress;
 den startar inga lokala servrar (offlinefixturen är pensionerad 27 oktober 2026).
@@ -99,7 +99,7 @@ En separat projektsnapshot behövs inte för den isolerade fixturen.
 
 Node 24.x enligt `package.json` och installerade beroenden krävs för lokal
 start. Molndrift är
-Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
+Vercel-projektet `scoutgaming` och Render `croupier-v3`, se
 [docs/CLOUD-MIGRATION.md](../../docs/CLOUD-MIGRATION.md).
 [ops/cloud/README.md](../../ops/cloud/README.md) är en äldre Docker-pilot, inte startkommandot.
 

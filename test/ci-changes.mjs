@@ -38,7 +38,7 @@ test('Moving image verification follows worker and its workflow changes, includi
   assert.equal(movingWorkerRequired([]), true);
 });
 
-test('local and CI prose selection share reviewed guides while runtime Markdown stays strict', async () => {
+test('local and CI prose selection share reviewed guides and prose folders while other Markdown and JSON stay strict', async () => {
   const { verificationMode, focusedTests } = await import('../tools/precommit-checks.mjs');
   for (const path of ['apps/web/README.md', 'apps/studio/AGENTS.md', 'apps/studio/docs/new-guide.md',
     'packages/presentation/docs/INTEGRATION.md', 'ops/cloud/CONTAINER-CONTEXT.md',
@@ -53,7 +53,8 @@ test('local and CI prose selection share reviewed guides while runtime Markdown 
   }
   for (const path of ['packages/presentation/docs/runtime.md', 'services/game/public/docs/partner-api.md',
     'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md',
-    'migrering/status.mjs', 'migrering/config.json', 'ops/cloud/config.mjs', 'ops/cloud/deploy/README.md', 'inbox/people.json']) {
+    'migrering/status.mjs', 'migrering/config.json', 'ops/cloud/config.mjs', 'ops/cloud/deploy/README.md', 'inbox/people.json',
+    'docs/history/run.mjs', 'docs/history/receipt.sh']) {
     assert.equal(documentationOnly([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'focused', path);
   }

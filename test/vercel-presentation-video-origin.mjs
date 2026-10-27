@@ -14,7 +14,7 @@ import { getVideoResponse } from '../services/game/storage/video-registry.mjs';
 import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 
-const renderOrigin = 'https://croupier-v2.onrender.com';
+const renderOrigin = 'https://croupier-v3.onrender.com';
 const frontendOrigin = 'https://github-work-vercel-entry.vercel.app';
 const bytes = Buffer.from('synthetic-video-range-fixture');
 const targetPath = 'deal/deal_pos1/deal_pos1.mp4';
@@ -56,7 +56,7 @@ class CaptureResponse extends Writable {
   header(name) { return Object.entries(this.headers).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1]; }
 }
 
-async function videoRequest(api, { host = 'croupier-v2.onrender.com', origin, range, fetchSite = 'same-origin', method = 'GET', ifNoneMatch, playerId='fixture-player' } = {}) {
+async function videoRequest(api, { host = 'croupier-v3.onrender.com', origin, range, fetchSite = 'same-origin', method = 'GET', ifNoneMatch, playerId='fixture-player' } = {}) {
   const headers = { host, ...(origin ? { origin } : {}), ...(range ? { range } : {}),
     ...(fetchSite ? { 'sec-fetch-site': fetchSite } : {}), ...(ifNoneMatch ? {'if-none-match':ifNoneMatch} : {}) };
   const response = new CaptureResponse();

@@ -39,7 +39,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
   }
   for (const path of [
     'tools/media/encode.sh', 'apps/studio/client/build.mjs',
-    'migrering/status.mjs', 'migrering/config.json', 'inbox/people.json', 'ops/cloud/deploy/README.md',
+    'migrering/status.mjs', 'migrering/config.json', 'inbox/people.json', 'ops/cloud/deploy/README.md', 'docs/history/run.mjs',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
     'services/astrid-gpu-worker/gateway/auth.mjs', 'services/game/storage/package.json',
     'tools/media/runtime-bundle/README.md', 'services/game/public/lab/README.md',

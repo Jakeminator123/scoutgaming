@@ -32,7 +32,7 @@ test('every person owns exactly one unique branch and "me" resolves through the 
   assert.deepEqual(recipients('jakob', 'codex/example'), ['jakob']);
 });
 
-test('inbox targets the policy repository and every person has a name and a GitHub field', () => {
+test('inbox targets the policy repository and every person has a name and a github field (null until the login is known)', () => {
   assert.equal(REPO, 'Jakeminator123/scoutgaming');
   assert.ok(PEOPLE.jakob, 'the repository owner is registered');
   for (const person of Object.values(PEOPLE)) {
