@@ -59,7 +59,10 @@ export function presentationInput(event, published) {
 // without one, project reads fail explicitly instead of touching a directory on disk.
 const unavailableStore = Object.freeze({ configurationSource: 'unavailable',
   load: async () => { throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 }); } });
-export function createPresentationApi({ db, env = process.env, store = unavailableStore,
+// The committed native receipt comes from the product table unless a caller (the
+// Studio rehearsal) supplies the `{ version, payload }` row of its own isolated table.
+export function createPresentationApi({ db, readNativeReceipt = playerId => db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId),
+  env = process.env, store = unavailableStore,
   registryOptions = { env, repositoryRoot: root },
   select = selectPresentation, directorFetchFactory = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   recordedSpeechPreview = false, beforeActionPresentation = () => {}, withSharedCommittedReceipt = null, withActiveRoomPresentation = null, qaPublicOrigin = null } = {}) {
@@ -229,7 +232,7 @@ export function createPresentationApi({ db, env = process.env, store = unavailab
       if (body.presentationContext !== undefined) {
         if (!frozenDealerContext || body.presentationContext.dealerId !== body.dealerId) fail('Invalid presentation context');
         const frozen = await frozenDealerContext.resolve(body.presentationContext);
-        const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
+        const receipt = await readNativeReceipt(playerId);
         if (committedTypes.has(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
         if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
         const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
@@ -293,7 +296,7 @@ export function createPresentationApi({ db, env = process.env, store = unavailab
       const [loaded, inventory] = await Promise.all([store.load(), registryLoader()]);
       const project = normalizeProject(loaded, { allowIncompatibleAnimations: true, preserveMissingLanes: true });
       if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('Invalid presentation request');
-      const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
+      const receipt = await readNativeReceipt(playerId);
       if (committedTypes.has(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
