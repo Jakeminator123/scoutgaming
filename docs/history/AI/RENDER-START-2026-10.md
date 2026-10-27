@@ -1,8 +1,8 @@
 # Förvalta befintliga OpenClaw-tjänster på Render
 
-> Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
-> är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
+> Historik. Flyttad från `docs/AI/openclaw/` 27 oktober 2026; aktuell drift står i
+> [DEPLOYMENT](../../AI/openclaw/DEPLOYMENT.md). Övergången till tini med uid 1000
+> nedan är genomförd (18 oktober 2026).
 
 Använd `Jakeminator123/scoutgaming`, branch `main`.
 Director och privat Gateway är redan skapade och kopplade till denna källa.
@@ -26,7 +26,7 @@ de befintliga tjänsternas Environment-vyer visar deras faktiska värden.
    separat syntetisk provprofil, kostnadsram och uppspelningskvitto.
 
 Aktuell drift och öppna kontroller finns i [överlämningen](../../NEXT-AGENT.md)
-och [driften](DEPLOYMENT.md). Kvittot från 29 september är pensionerat.
+och [driften](../../AI/openclaw/DEPLOYMENT.md). Kvittot från 29 september är pensionerat.
 Gateway-modellens effektiva konfiguration ligger på beständig disk; ändrad
 `OPENCLAW_MODEL_ID` i env är inte ensam bevis på modellbyte. Nycklar och
 diskdata följer inte med en Git-push eller en Vercel-deploy.

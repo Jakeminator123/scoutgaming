@@ -1,8 +1,8 @@
 # Astrid i Slack — inkopplingsguide
 
-> Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
-> är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
+> Historik. Flyttad från `docs/AI/openclaw/` 27 oktober 2026: Astrid tas bort vid
+> ren start och planen är inte aktuell. Kodsökvägar som `src/` och `deploy/`
+> utgår från `services/openclaw/lab/`. Aktuella AI-dokument: [docs/AI](../../AI/README.md).
 
 Status 2026-09-29: möjligt, men ännu inte installerat eller aktiverat här.
 Spelets stabilisering går först. OpenClaw-image är låst till 2026.9.5;

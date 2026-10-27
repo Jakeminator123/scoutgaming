@@ -1,4 +1,9 @@
-# Så samarbetar chattar, agenter och modeller i Scoutgaming
+# Historik: AI-agenternas flöde och ändringslogg, september–oktober 2026
+
+> Flyttad från `docs/AI/scoutgaming-agentflode.md` 27 oktober 2026. Daterad
+> samordning, prov och kvitton, inte aktuellt läge. Aktuella AI-dokument:
+> [docs/AI/README.md](../AI/README.md); aktuell överlämning:
+> [NEXT-AGENT](../NEXT-AGENT.md).
 
 ## Agent-talk och chef avvecklade — 27 oktober 2026
 
@@ -42,7 +47,7 @@ per körning och är tyst utan nytt handlingsbart besked. Kevin rapporterar
 motsvarande automatisk läsning på sin sida. Inga kvittensloopar eller breda
 inkorgsskanningar. Bevakning och agentmeddelanden ger inget utökat mandat.
 
-[Samarbetsguiden](../history/SAMARBETE-OCH-ATKOMST-2026-10.md) skiljer SQL-roll,
+[Samarbetsguiden](SAMARBETE-OCH-ATKOMST-2026-10.md) skiljer SQL-roll,
 GitHub-nyckel, Vercel-medlemskap och faktisk agentinloggning. Status.json
 uppdateras till VERIFIED bara med fulla leveransbevis. Planen är nu uttryckligen erkänd i rotens AGENTS; tekniska kontrakt och
 produktstatus stannar i befintliga kanoniska guider. Tidigare roller nedan
@@ -84,8 +89,8 @@ innan väntan, och ett mål markeras färdigt först när hela resultatet är ve
 Lipsync-spåret skiljer nu uttryckligen vilotal, tal över exakt utdelningsfilm
 och full produktionsantagning. Cache-/prestandakrav, Emils ZIP, Blob/Neon och
 begränsningen för moving-svarens lagring dokumenteras i den befintliga
-[runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md#rörligt-tal-verifieringsgränser-cache-och-källor--18-oktober-2026).
-Aktuell leverans står i [överlämningen](../NEXT-AGENT.md) och det daterade talprovet i [handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md#dragan-talstatus);
+[runtime-referensen](LOCAL-PRESENTATION-RUNTIME-2026-10.md#rörligt-tal-verifieringsgränser-cache-och-källor--18-oktober-2026).
+Aktuell leverans står i [överlämningen](../NEXT-AGENT.md) och det daterade talprovet i [handoffhistoriken](JOHN-HANDOFF-2026-10.md#dragan-talstatus);
 privata videor och körkvitton är underlag, inte parallella produktregister.
 Mätinstrumenteringen ändrar inte modell, cachebeteende eller bildprotokoll.
 
@@ -158,8 +163,8 @@ Gateway-bootstrap börjar som container-PID 1 och execar befintlig tini efter
 irreversibel uid/gid-sänkning. Tini kör nu som uid/gid 1000 och behåller signalhantering samt reaping;
 mountkontroll, state, modellval och behörigheter behålls. Det isolerade
 containerprovet använder faktisk image/bootstrap/starter och syntetisk CLI
-utan nät. [Handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md) skiljer lokala tester, CI och drift;
-[Render-guiden](openclaw/RENDER-START-SV.md) beskriver första övergången.
+utan nät. [Handoffhistoriken](JOHN-HANDOFF-2026-10.md) skiljer lokala tester, CI och drift;
+[Render-guiden](../AI/openclaw/DEPLOYMENT.md) beskriver första övergången.
 Efter konkret exit127 i Render skiljer guiden dess kommandosträng utan
 omslutande citattecken från Docker-provets argv; faktisk driftverifiering
 är kvitterad av mergagent: korrigerad övergång samt normal omstart
@@ -179,7 +184,7 @@ aktiveringsval ändras inte.
 Companion-logiken. Appar äger miljöfilläsning och väljer datakataloger;
 Director-tjänsten behåller HTTP, Gateway och signering. Inga providerroller,
 verktygsbehörigheter eller miljöprioriteter ändras. Lokalt verifieringskvitto
-och dåvarande återstående integrationskontroller finns i [handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md).
+och dåvarande återstående integrationskontroller finns i [handoffhistoriken](JOHN-HANDOFF-2026-10.md).
 
 ## Lokal pingkö — 17 oktober 2026
 
@@ -195,7 +200,7 @@ Olika checkouter har fortfarande separata tavlor.
 ## Strukturfas avslutad — 17 oktober 2026
 
 PR188 och PR190 är mergade och driftsatta; slutkvitto och parallella
-chattägare finns i [handoffhistoriken](../history/JOHN-HANDOFF-2026-10.md). Äldre uppgifter nedan
+chattägare finns i [handoffhistoriken](JOHN-HANDOFF-2026-10.md). Äldre uppgifter nedan
 om pågående integration beskriver sina dåvarande versioner.
 Fasens tillfälliga kördokument och utkast avvecklas. Befintliga guider
 uppdateras i stället för att skapa en ny tracker eller slutrapport.
@@ -248,7 +253,7 @@ Partner → Lobby, rum/bolagsstandard genom meny/reload/historik, negativa
 rumslänkar och återställt Avbryt-fokus. Roller ändras inte, inga
 produktionsskrivningar eller spelrundor gjordes. Vid detta kvitto återstod ny
 produktionslogin, full skrivacceptans, faktisk 200-procentszoom och godkännande
-för PR91:s export av privat spelarkod. Kvitton i [handoffen](../history/JOHN-HANDOFF-2026-10.md) skiljer
+för PR91:s export av privat spelarkod. Kvitton i [handoffen](JOHN-HANDOFF-2026-10.md) skiljer
 lokal fullhook (3 852 pass/9 skip/0 fel), CI och produktionsprov;
 överlappande underagentprov summeras inte.
 
@@ -669,7 +674,7 @@ lägg en kort daterad rad i ändringsloggen. Leveransstatus och acceptans ägs
 fortfarande av [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
 [överlämningen](../NEXT-AGENT.md); detta är ingen separat migrationslista.
 [Miljövariabler](../ENVIRONMENT-VARIABLES.md),
-[OpenClaws guider](openclaw/README.md) och
+[OpenClaws guider](../AI/openclaw/README.md) och
 [kunskapspaketet](../../services/openclaw/lab/deploy/runtime-bundle/README.md)
 behåller sina tekniska kontrakt.
 
@@ -779,3 +784,16 @@ Guiderna är nu samlade under docs/AI/openclaw; deras gamla innehållskopior
 och kompatibilitetshänvisningar är borttagna. Ingen
 Gatewayroll har avvecklats: låg användning är ännu inte verifierad och
 rollen croupier-operator används separat i dashboarden.
+
+## Bilaga: daterad Render-kontroll 13 oktober 2026 (från docs/AI/README.md)
+
+Läsning av Renders tjänste- och deploy-API: sju tjänster i arbetsytan, fyra
+från `Jakeminator123/scoutgaming`, alla live. `croupier-v2` (spelserver,
+`579c47e3`), `croupier-lab-director` och `croupier-lab-openclaw` (båda
+`e57f28ef`) samt `croupier-vercel-preview-qa` (`ee060804`). Spelmotorn
+flyttades 24 oktober till `croupier-v3`; `croupier-v2` och
+`croupier-vercel-preview-qa` raderades 27 oktober. Director och Gateway har
+varsin beständig disk på 1 GB, vilket utesluter horisontell skalning och
+zero-downtime-deploy på Render ([skalning](https://render.com/docs/scaling),
+[diskar](https://render.com/docs/disks)). Kontrollen var ingen
+belastningsmätning eller sårbarhetsaudit.
