@@ -13,15 +13,5 @@
     "path": "migrering/kevin-ks-migrering/AKTIVITETER.md",
     "removeBy": "O03 (archive)",
     "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
-  },
-  {
-    "path": "migrering/kevin-ks-migrering/K01/test-400-deterministic.patch",
-    "removeBy": "O03 (archive)",
-    "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
-  },
-  {
-    "path": "migrering/kevin-ks-migrering/K01/tools/verify-audit-chain.mjs",
-    "removeBy": "O03 (archive)",
-    "reason": "Historical migration evidence; not product code. Moves to arkiv with K01 after O03."
   }
 ]
