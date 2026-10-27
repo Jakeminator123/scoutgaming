@@ -16,6 +16,7 @@ import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
+import { nativeReceipts } from './fixtures/native-receipts.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -126,11 +127,6 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
 });
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
-// Per-player committed receipts, answered only for the query the presentation API issues.
-const nativeReceipts = rows => ({ prepare: sql => {
-  assert.match(sql, /^SELECT version, payload FROM native_presentations WHERE player_id=\?$/);
-  return { get: async playerId => rows.has(playerId) ? { ...rows.get(playerId) } : undefined };
-} });
 test('retired playback context cannot expose a player session or load presentation state', async () => {
   const handler = buildPresentationApi({ store:{ load:() => assert.fail('unknown route must not load state') },
     nativeP6PlaybackContext:() => assert.fail('retired constructor input cannot expose ownership') });

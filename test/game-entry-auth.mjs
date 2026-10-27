@@ -3,48 +3,42 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {backofficeGameAuth as asyncFactory} from '../services/game/storage/async-bo-game-auth.mjs';
 import {playerAuth} from '../services/game/storage/async-player-auth.mjs';
+import {createStatementDb,duplicateKey} from './fixtures/statement-db.mjs';
 const game='https://game.example.invalid',bo='https://bo.example.invalid';
 const stampA='a'.repeat(64),stampB='b'.repeat(64);
 // Postgres-shaped handoff, player, session and link rows. Only the statements the
 // async BO handoff and player auth issue are answered; row locks require a
 // transaction, and a failed transaction restores every table.
 function handoffDb() {
-  let tables={bo_game_handoffs:[],players:[],player_sessions:[],craig_player_links:[]},inTransaction=false;
-  const duplicate=()=>{throw Object.assign(Error('duplicate key value'),{code:'23505'});};
-  const remove=(name,keep)=>{const before=tables[name].length;const removed=tables[name].filter(row=>!keep(row));tables[name]=tables[name].filter(keep);return {changes:before-tables[name].length,removed};};
+  const tables={bo_game_handoffs:[],players:[],player_sessions:[],craig_player_links:[]};
+  const remove=(name,keep)=>{const removed=tables[name].filter(row=>!keep(row));tables[name]=tables[name].filter(keep);return removed;};
+  const forUpdate='SELECT status FROM players WHERE id=? FOR UPDATE';
   const statements={
-    'DELETE FROM bo_game_handoffs WHERE expires<=?':now=>remove('bo_game_handoffs',row=>!(row.expires<=now)),
+    'DELETE FROM bo_game_handoffs WHERE expires<=?':now=>({changes:remove('bo_game_handoffs',row=>!(row.expires<=now)).length}),
     'INSERT INTO bo_game_handoffs (state_digest,next_path,expires) VALUES (?,?,?)':(state_digest,next_path,expires)=>{
-      if(tables.bo_game_handoffs.some(row=>row.state_digest===state_digest))duplicate();
+      if(tables.bo_game_handoffs.some(row=>row.state_digest===state_digest))duplicateKey();
       tables.bo_game_handoffs.push({state_digest,next_path,expires,code_digest:null,craig_user_id:null,username:null,source_stamp:null,session_until:null});return {changes:1};},
     'SELECT * FROM bo_game_handoffs WHERE state_digest=? AND expires>? AND code_digest IS NULL':(state,now)=>tables.bo_game_handoffs.filter(row=>row.state_digest===state&&row.expires>now&&row.code_digest===null),
     'UPDATE bo_game_handoffs SET code_digest=?,craig_user_id=?,username=?,source_stamp=?,session_until=?,expires=? WHERE state_digest=?':(code_digest,craig_user_id,username,source_stamp,session_until,expires,state)=>{
-      if(tables.bo_game_handoffs.some(row=>row.code_digest===code_digest&&row.state_digest!==state))duplicate();
+      if(tables.bo_game_handoffs.some(row=>row.code_digest===code_digest&&row.state_digest!==state))duplicateKey();
       const hit=tables.bo_game_handoffs.filter(row=>row.state_digest===state);
       for(const row of hit)Object.assign(row,{code_digest,craig_user_id,username,source_stamp,session_until,expires});return {changes:hit.length};},
-    'DELETE FROM bo_game_handoffs WHERE state_digest=? AND code_digest=? AND expires>? RETURNING *':(state,code,now)=>remove('bo_game_handoffs',row=>!(row.state_digest===state&&row.code_digest===code&&row.expires>now)).removed,
+    'DELETE FROM bo_game_handoffs WHERE state_digest=? AND code_digest=? AND expires>? RETURNING *':(state,code,now)=>remove('bo_game_handoffs',row=>!(row.state_digest===state&&row.code_digest===code&&row.expires>now)),
     'SELECT player_id,source_stamp,display_name,expires FROM player_sessions WHERE digest=? AND expires>?':(digest,now)=>tables.player_sessions
       .filter(row=>row.digest===digest&&row.expires>now).map(({player_id,source_stamp,display_name,expires})=>({player_id,source_stamp,display_name,expires})),
     'SELECT status FROM players WHERE id=?':id=>tables.players.filter(row=>row.id===id).map(({status})=>({status})),
-    'SELECT status FROM players WHERE id=? FOR UPDATE':id=>{assert.equal(inTransaction,true,'player row locks are taken inside a transaction');
-      return tables.players.filter(row=>row.id===id).map(({status})=>({status}));},
+    [forUpdate]:id=>tables.players.filter(row=>row.id===id).map(({status})=>({status})),
     'SELECT craig_user_id FROM craig_player_links WHERE player_id=?':id=>tables.craig_player_links.filter(row=>row.player_id===id).map(({craig_user_id})=>({craig_user_id})),
     'SELECT player_id FROM craig_player_links WHERE craig_user_id=?':id=>tables.craig_player_links.filter(row=>row.craig_user_id===id).map(({player_id})=>({player_id})),
     'INSERT INTO craig_player_links VALUES (?,?)':(craig_user_id,player_id)=>{
-      if(tables.craig_player_links.some(row=>row.craig_user_id===craig_user_id||row.player_id===player_id))duplicate();
+      if(tables.craig_player_links.some(row=>row.craig_user_id===craig_user_id||row.player_id===player_id))duplicateKey();
       tables.craig_player_links.push({craig_user_id,player_id});return {changes:1};},
-    'DELETE FROM player_sessions WHERE expires<=?':now=>remove('player_sessions',row=>!(row.expires<=now)),
+    'DELETE FROM player_sessions WHERE expires<=?':now=>({changes:remove('player_sessions',row=>!(row.expires<=now)).length}),
     'INSERT INTO player_sessions (digest,player_id,expires,source_stamp,display_name) VALUES (?,?,?,?,?)':(digest,player_id,expires,source_stamp,display_name)=>{
-      if(tables.player_sessions.some(row=>row.digest===digest))duplicate();
+      if(tables.player_sessions.some(row=>row.digest===digest))duplicateKey();
       tables.player_sessions.push({digest,player_id,expires,source_stamp,display_name});return {changes:1};},
   };
-  return {
-    get tables(){return tables;},
-    prepare(sql){const answer=statements[sql];if(!answer)throw Error('unexpected SQL: '+sql);
-      return {get:async(...args)=>structuredClone([answer(...args)].flat()[0]),all:async(...args)=>structuredClone(answer(...args)),run:async(...args)=>{const {changes}=answer(...args);return {changes};}};},
-    async transaction(work){assert.equal(inTransaction,false,'transactions are not nested');const snapshot=structuredClone(tables);inTransaction=true;
-      try{return await work();}catch(error){tables=snapshot;throw error;}finally{inTransaction=false;}},
-  };
+  return createStatementDb({tables,statements,transactional:[forUpdate]});
 }
 test('PostgreSQL contract BO handoff canonicalizes next/callback without passing launch or foreign redirect data',async () => {
   const db = handoffDb();

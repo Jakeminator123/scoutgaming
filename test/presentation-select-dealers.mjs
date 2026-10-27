@@ -7,6 +7,7 @@ import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { createSeedProject, addDealer, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { loadVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
+import { nativeReceipts } from './fixtures/native-receipts.mjs';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
 test('another dealer legacy rules cannot change the selected dealer presentation', async () => {
@@ -26,11 +27,8 @@ test('another dealer legacy rules cannot change the selected dealer presentation
 });
 
 test('select accepts every active registered dealer and does not reuse another dealer cache', async t => {
-  // No committed receipt exists for this player; only the presentation API's own query is answered.
-  const db = { prepare: sql => {
-    assert.match(sql, /^SELECT version, payload FROM native_presentations WHERE player_id=\?$/);
-    return { get: async () => undefined };
-  } };
+  // No committed receipt exists for this player.
+  const db = nativeReceipts(new Map());
   const seen = [];
   const active = ['astrid', 'paow', 'dragan', 'marten'];
   const project = active.slice(1).reduce((current, dealerId) => addDealer(current, dealerId, dealerId), createSeedProject());

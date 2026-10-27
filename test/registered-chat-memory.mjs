@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPlayerChatMemory as createAsyncMemory} from '../services/game/storage/async-player-chat-memory.mjs';
+import {createStatementDb,duplicateKey} from './fixtures/statement-db.mjs';
 
 const scope={playerId:'server-owned-player',dealerId:'paow'};
 const reply={kind:'generatedText',exactText:'Hej från PAOW.'};
@@ -9,8 +10,7 @@ const reply={kind:'generatedText',exactText:'Hej från PAOW.'};
 // failed transaction restores every table. The production SQL dialect adapter is
 // independently covered by storage tests.
 function memoryDb() {
-  let tables={meta:new Map(),profiles:[],requests:[]},inTransaction=false;
-  const duplicate=()=>{throw Object.assign(Error('duplicate key value'),{code:'23505'});};
+  const tables={meta:new Map(),profiles:[],requests:[]};
   const owned=(row,playerRef,dealerId)=>row.player_ref===playerRef&&row.dealer_id===dealerId;
   const profile=(playerRef,dealerId)=>tables.profiles.filter(row=>owned(row,playerRef,dealerId));
   const update=(rows,change)=>{for(const row of rows)Object.assign(row,change);return {changes:rows.length};};
@@ -33,7 +33,7 @@ function memoryDb() {
     "SELECT 1 FROM player_chat_memory_requests WHERE player_ref=? AND dealer_id=? AND state='pending'":(playerRef,dealerId)=>tables.requests.filter(row=>owned(row,playerRef,dealerId)&&row.state==='pending').map(()=>({'?column?':1})),
     'SELECT COUNT(*) AS count FROM player_chat_memory_requests WHERE player_ref=? AND dealer_id=? AND started>?':(playerRef,dealerId,at)=>[{count:tables.requests.filter(row=>owned(row,playerRef,dealerId)&&row.started>at).length}],
     'INSERT INTO player_chat_memory_requests VALUES (?,?,?,?,?,?,?, ?,NULL,NULL)':(player_ref,dealer_id,request_ref,fingerprint,reservation,profile_revision,state,started)=>{
-      if(tables.requests.some(row=>owned(row,player_ref,dealer_id)&&row.request_ref===request_ref))duplicate();
+      if(tables.requests.some(row=>owned(row,player_ref,dealer_id)&&row.request_ref===request_ref))duplicateKey();
       tables.requests.push({player_ref,dealer_id,request_ref,fingerprint,reservation,profile_revision,state,started,result_fingerprint:null,committed_revision:null});return {changes:1};},
     'UPDATE player_chat_memory_profiles SET touched=? WHERE player_ref=? AND dealer_id=?':(touched,playerRef,dealerId)=>update(profile(playerRef,dealerId),{touched}),
     "UPDATE player_chat_memory_requests SET state=? WHERE player_ref=? AND dealer_id=? AND request_ref=? AND reservation=? AND state='pending'":(state,playerRef,dealerId,requestRef,reservation)=>
@@ -43,15 +43,8 @@ function memoryDb() {
     "UPDATE player_chat_memory_requests SET state='completed', result_fingerprint=?, committed_revision=? WHERE player_ref=? AND dealer_id=? AND request_ref=? AND reservation=?":(result_fingerprint,committed_revision,playerRef,dealerId,requestRef,reservation)=>
       update(tables.requests.filter(row=>owned(row,playerRef,dealerId)&&row.request_ref===requestRef&&row.reservation===reservation),{state:'completed',result_fingerprint,committed_revision}),
   };
-  return {
-    get tables(){return tables;},
-    prepare(sql){const answer=statements[sql];if(!answer)throw Error('unexpected SQL: '+sql);
-      assert.equal(inTransaction,true,'memory statements run inside a transaction');
-      return {get:async(...args)=>structuredClone(answer(...args)[0]),all:async(...args)=>structuredClone(answer(...args)),run:async(...args)=>answer(...args)};},
-    async transaction(work){assert.equal(inTransaction,false,'transactions are not nested');
-      const snapshot=structuredClone(tables);inTransaction=true;
-      try{return await work();}catch(error){tables=snapshot;throw error;}finally{inTransaction=false;}},
-  };
+  // Every memory statement runs inside its own transaction; nesting is rejected.
+  return createStatementDb({tables,statements,transactional:true});
 }
 async function fixture(options={}) {
   const adapter=memoryDb();
