@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {recordedSpeechIdentity} from '../../../../../packages/presentation/contracts/recorded-speech.mjs';
 import {SPEECH_LINES} from '../../../../../packages/presentation/contracts/speech-lines.mjs';
-import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl,studioRecordedSpeech} from '../../../../../packages/presentation/contracts/studio-speech.mjs';
+import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl,studioRecordedSpeech,studioRecordedSpeechGroups,studioRecordedSpeechGameLineIds,studioRecordedSpeechStatus,studioGeneratedSpeechAvailable} from '../../../../../packages/presentation/contracts/studio-speech.mjs';
+import {NATIVE_ROOM_SPEECH_SLOTS} from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
+import {addDealer,createEmptyProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {speechSlotStandard} from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {initialDealerVoiceDraft,dealerVoiceDraft,dealerVoicePreset} from '../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs';
 
 test('confirmed original voice defaults preserve saved choices and refuse ambiguous or approximate names',()=>{
@@ -40,14 +43,14 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
 
 async function panelHarness(respond){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../../packages/presentation/contracts/studio-speech.mjs'),profile=await import('../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../../packages/presentation/contracts/studio-speech.mjs'),profile=await import('../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../../../../packages/presentation/contracts/dealer-voice-catalog.mjs'),connected=await import('./connected-studio.mjs'),slotBindings=await import('../../../../../packages/presentation/contracts/speech-slot-bindings.mjs');
   const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../../../components/dealer-voice-picker.tsx',import.meta.url),'utf8');
   runInNewContext(transformSync(pickerSource,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog.mjs')?voices:require(name)});
   const {DealerVoicePicker}=pickerModule.exports;
   const source=readFileSync(new URL('../components/studio/studio-speech-panel.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),slots=[],effects=[];
   let cursor=0,queue=[],calls=[];const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useRef(initial){const index=cursor++;return slots[index]??={current:initial}},useEffect(effect,deps){const index=cursor++,previous=effects[index];if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))queue.push({index,effect,deps})}};
-  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});if(respond)return respond(url,init);return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
+  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:name.includes('connected-studio.mjs')?connected:name.includes('speech-slot-bindings.mjs')?slotBindings:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});if(respond)return respond(url,init);return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
   const props={project:{schemaVersion:1,revision:'r1',dealers:[{id:'astrid',label:'Astrid'}]},inventory:{videos:[]},dealerId:'astrid',blocked:false,projectDirty:true,onEdit:next=>{props.project=next},onDirtyChange:dirty=>{props.profileDirty=dirty}};
   const render=()=>{cursor=0;return module.exports.StudioSpeechPanel(props)},flush=()=>{const pending=queue;queue=[];for(const item of pending){effects[item.index]?.cleanup?.();effects[item.index]={deps:item.deps,cleanup:item.effect()}}};
   const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):node.type===DealerVoicePicker?nodes(DealerVoicePicker(node.props),predicate):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
@@ -76,7 +79,7 @@ for(const game of ['blackjack','roulette'])test(`${game} body dealer defaults to
   assert.equal(h.field(tree,'Röst').props.value,'paow','the explicit pairing needs no extra voice menu');
   assert.equal(h.props.profileDirty,false,'an untouched voice proposal must not block navigation');
   assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false,'the proposal can still be deliberately staged');
-  assert.equal(h.button(tree,'Förbered').props.disabled,true,'the suggestion is not a saved profile');
+  assert.equal(h.button(tree,'Förbered'),undefined,'without a verified voice profile generation is a note, not a form');
   assert.equal(h.props.project.dealers[0].speechProfile,undefined,'opening does not mutate the saved project');
   assert.equal(h.field(tree,'Voice-ID').props.value,'WZVEBKUreb9jAKojf0QF');assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_v3');
   assert.equal(h.field(tree,'Stabilitet').props.value,'0.5');assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
@@ -108,7 +111,7 @@ for(const [label,target] of [['Röst',{value:'paow'}],['Röstspråk',{value:'en'
   const initial=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
   assert.equal(h.props.profileDirty,false);assert.equal(h.field(tree,'Röst').props.value,'dragge');
   h.field(tree,label).props.onChange({target});tree=h.render();h.flush();tree=h.render();
-  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'Förbered').props.disabled,true);
+  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'Förbered'),undefined);
   assert.deepEqual(h.props.project,initial);assert.equal(h.calls.length,0,'a form edit cannot start provider work or save a profile');
 });
 
@@ -174,7 +177,7 @@ for(const change of ['offset','source','bytes'])test(`enabled motion ${change} e
   tree=h.render();h.flush();tree=reviewReference(h);
   assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
   h.button(tree,'Lägg talprofil').props.onClick();assert.deepEqual(h.props.project,before);
-  assert.equal(h.button(tree,'Förbered').props.disabled,true);
+  assert.equal(h.button(tree,'Förbered'),undefined,'only the verified build chain offers generation');
   h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
   assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
   h.button(tree,'Lägg talprofil').props.onClick();
@@ -283,11 +286,14 @@ test('embedded original inventory uses measured source proof and keeps pending o
   assert.equal(rows.unavailable.review,'unavailable');assert.equal(rows.missing.review,'invalid-proof');assert.equal(rows.changed.review,'invalid-proof');
   assert.deepEqual(inventory,before);
 });
+const shownTake=tree=>nodesOf(tree,node=>typeof node.props?.row?.id==='string')[0]?.props.row.id;
+const nodesOf=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodesOf(child,predicate)):[...(predicate(node)?[node]:[]),...nodesOf(node.props?.children,predicate)];
 test('panel separates recorded original text from generation language and opens with no provider call or dirty form',async()=>{
-  const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[recordingFixture()]};
+  const h=await panelHarness();h.props.projectDirty=false;h.props.inventory={videos:[recordingFixture('take-1','astrid')]};
   const original=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
   const summaries=h.nodes(tree,node=>node.type==='summary').map(node=>node.props.children);assert.ok(summaries.includes('Ny generering · textmallar'));assert.ok(summaries.includes('Realtidstal · röst och referens'));assert.ok(!summaries.includes('Talbibliotek · inspelade repliker'));
-  assert.equal(h.field(tree,'Inspelad fil').props.value,'take-1');
+  assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open).length,0,'generated speech starts collapsed');
+  assert.equal(shownTake(tree),'take-1');
   assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
   h.field(tree,'Språk').props.onChange({target:{value:'sv'}});tree=h.render();h.flush();
   assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
@@ -302,7 +308,7 @@ test('embedded panel renders source evidence separately without changing approva
     h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[row]};
     const inventoryBefore=structuredClone(h.props.inventory),projectBefore=structuredClone(h.props.project);
     h.render();h.flush();const tree=h.render();h.flush();
-    assert.equal(h.field(tree,'Inspelad fil').props.value,'embedded-take');
+    assert.equal(shownTake(tree),'embedded-take');
     assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
     const evidence=JSON.stringify(h.nodes(tree,node=>node.type==='dd').map(node=>node.props.children));
     assert.equal(evidence.includes('Reviewer'),verified,'pending source cannot display an invented attester');
@@ -337,7 +343,7 @@ test('recorded take review posts only the exact played identity and shows the tr
     expectedIdentity:recordedSpeechIdentity(speech),verdict:'approved'});
   assert.deepEqual(inventories,[{videos:[approved]}]);
   tree=h.render();
-  assert.ok(h.nodes(tree,node=>node.type==='p'&&JSON.stringify(node.props.children).includes('Godkänt')&&JSON.stringify(node.props.children).includes('Reviewer')).length);
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&String(node.props.children).startsWith('Godkänd av Reviewer · ')).length);
   assert.equal(h.button(tree,'Godkänn tal').props.disabled,true);assert.ok(h.button(tree,'Ta bort bedömning'));
   reply={ok:false,status:409,body:{error:'studio_speech_identity_changed',code:'studio_speech_identity_changed'}};
   h.button(tree,'Ta bort bedömning').props.onClick();
@@ -349,4 +355,123 @@ test('recorded take review posts only the exact played identity and shows the tr
   h.props.blocked=false;h.props.inventory={videos:[unverified]};tree=h.render();
   assert.equal(h.button(tree,'Godkänn tal').props.disabled,true,'approval needs the server-verified file check');
   assert.equal(h.button(tree,'Underkänn').props.disabled,false);
+});
+// Shape of PAOW's imported takes in production: no receipt; language and take
+// only in the import note, the same label once per language.
+function importedTake(situation,take,language,extra={}) {
+  const id=`${situation}-${take}-${language}`;
+  return {id,label:`${situation}_${take}`,dealer:'paow',available:true,integrity:'verified',previewUrl:'/studio/api/videos/'+id,contentType:'video/mp4',sha256:createHash('sha256').update(id).digest('hex'),
+    classification:{dealerId:'paow',kind:'speech',role:'alternative',label:`${situation}_${take}`,eventId:'speak.other',situation,playback:'once',
+      notes:`Importförslag från kevin-paow-c7138759 · innehållet är inte visuellt godkänt. Språk i källan: ${language}. Tagning ${take} enligt källan.`},...extra};
+}
+function paowInventory() {
+  const videos=[];
+  for(const [line,count] of [['goodluck',3],['placebets',3],['bust',7],['win',3],['greeting',1]])for(let take=1;take<=count;take++)for(const language of ['en','sv'])videos.push(importedTake(line,take,language));
+  const unknown=importedTake('mystery',1,'sv'),silent=importedTake('push',2,'sv');silent.classification.notes='';silent.label=silent.classification.label='push take';
+  videos.push(unknown,silent);
+  return {videos};
+}
+test('recorded lines follow the game order, split SV/EN, put the highest take first and keep unmappable files',()=>{
+  assert.deepEqual(new Set(studioRecordedSpeechGameLineIds()),new Set(NATIVE_ROOM_SPEECH_SLOTS));
+  assert.deepEqual(studioRecordedSpeechGameLineIds().slice(0,2),['placebets','goodluck']);
+  assert.deepEqual(studioRecordedSpeechGameLineIds('roulette'),studioSpeechLineIds('roulette'));
+  const rows=studioRecordedSpeech({},paowInventory(),'paow'),groups=studioRecordedSpeechGroups(rows);
+  assert.equal(rows.length,36);
+  const imported=rows.find(row=>row.id==='goodluck-2-sv');assert.equal(imported.language,'sv');assert.equal(imported.languageNoted,true);assert.equal(imported.take,2);assert.equal(imported.review,'missing-proof');
+  assert.deepEqual(groups.lines.map(line=>line.id),['placebets','goodluck','blackjack','dealerblackjack','dealerbust','double','insurance','lose','push','win','greeting','bust'],
+    'all game lines stay visible; extra catalogue lines only with files');
+  const goodluck=groups.lines.find(line=>line.id==='goodluck');
+  assert.deepEqual(goodluck.languages.map(group=>group.language),['sv','en']);
+  assert.deepEqual(goodluck.languages[0].takes.map(row=>row.id),['goodluck-3-sv','goodluck-2-sv','goodluck-1-sv']);
+  assert.deepEqual(goodluck.languages[1].takes.map(row=>row.id),['goodluck-3-en','goodluck-2-en','goodluck-1-en']);
+  assert.deepEqual(groups.lines.find(line=>line.id==='bust').languages[0].takes.map(row=>row.take),[7,6,5,4,3,2,1]);
+  assert.deepEqual(groups.lines.find(line=>line.id==='lose').languages.map(group=>group.takes.length),[0,0]);
+  assert.deepEqual(groups.other.map(row=>row.id).sort(),['mystery-1-sv','push-2-sv'],'unknown line or language stays visible');
+  const receipt=studioRecordedSpeech({},{videos:[recordingFixture()]},'dragan')[0];
+  assert.equal(receipt.language,'en');assert.equal(receipt.languageNoted,false);assert.equal(receipt.take,1);
+});
+test('recorded take status names reviewer and time, rejection, pending review or a missing receipt',()=>{
+  const plain=importedTake('goodluck',1,'sv');plain.dealer='dragan';plain.classification.dealerId='dragan';
+  const time=at=>'T'+at.slice(0,10),rows=Object.fromEntries(studioRecordedSpeech({},{videos:[recordingFixture('approved'),recordingFixture('rejected','dragan','rejected'),recordingFixture('pending','dragan','pending'),plain]},'dragan').map(row=>[row.id,row]));
+  assert.equal(studioRecordedSpeechStatus(rows.approved,time),'Godkänd av Reviewer · T2026-10-15');
+  assert.equal(studioRecordedSpeechStatus(rows.rejected,time),'Underkänd av Reviewer · T2026-10-15');
+  assert.equal(studioRecordedSpeechStatus(rows.pending,time),'Väntar på granskning');
+  assert.equal(studioRecordedSpeechStatus(rows['goodluck-1-sv'],time),'Saknar talkvitto');
+});
+test('recorded dealer without a voice profile sees one line list, distinct takes and collapsed generated speech',async()=>{
+  const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'PAOW'}]};h.props.inventory=paowInventory();
+  const flat=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(flat).join(''):node?.props?flat(node.props.children):'';
+  h.render();h.flush();let tree=h.render();h.flush();tree=h.render();
+  assert.equal(studioGeneratedSpeechAvailable(h.props.project,'paow'),false);
+  const lines=()=>h.nodes(tree,node=>node.type==='button'&&node.props['aria-expanded']!==undefined);
+  assert.deepEqual(lines().map(node=>flat(node.props.children[0])),['Lägg insatser','Lycka till','Blackjack','Dealerns blackjack','Dealern över 21','Dubbling','Försäkring','Förlust','Lika','Vinst','Välkommen','Över 21','Övriga filer · 2']);
+  assert.deepEqual(lines().map(node=>node.props.disabled===true),[false,false,true,true,true,true,true,true,true,false,false,false,false],'lines without files stay visible but cannot open');
+  assert.equal(lines()[0].props['aria-expanded'],true);assert.equal(flat(lines()[0].props.children[1]),'SV 3 · EN 3');
+  const tabs=()=>h.nodes(tree,node=>node.props?.role==='tab');
+  assert.deepEqual(tabs().map(node=>[flat(node),node.props['aria-selected']]),[['Svenska · 3',true],['English · 3',false]]);
+  const takes=()=>h.nodes(h.nodes(tree,node=>node.props?.['aria-label']==='Tagningar')[0],node=>node.type==='button');
+  assert.deepEqual(takes().map(node=>flat(node.props.children[0])),['Tagning 3 placebets_3','Tagning 2 placebets_2','Tagning 1 placebets_1']);
+  assert.equal(takes()[0].props['aria-pressed'],true,'highest take is preselected');assert.equal(shownTake(tree),'placebets-3-sv');
+  assert.deepEqual(takes().map(node=>flat(node.props.children[1])),['Saknar talkvitto','Saknar talkvitto','Saknar talkvitto']);
+  tabs()[1].props.onClick();tree=h.render();
+  assert.equal(shownTake(tree),'placebets-3-en');assert.equal(tabs()[1].props['aria-selected'],true);
+  takes()[2].props.onClick();tree=h.render();assert.equal(shownTake(tree),'placebets-1-en');
+  lines()[1].props.onClick();tree=h.render();
+  assert.equal(shownTake(tree),'goodluck-3-en','the chosen language follows to the next line, highest take again');
+  lines()[12].props.onClick();tree=h.render();
+  const options=h.nodes(h.field(tree,'Fil'),node=>node.type==='option').map(flat);
+  assert.equal(options.length,2);assert.equal(new Set(options).size,2);
+  assert.ok(options.some(text=>text.startsWith('push take · Lika · språk okänt')));assert.ok(options.some(text=>text.startsWith('mystery_1 · mystery · SV')));
+  assert.equal(h.button(tree,'Godkänn tal'),undefined,'a take without a receipt offers no approval');
+  const summaries=h.nodes(tree,node=>node.type==='summary').map(node=>node.props.children);
+  assert.ok(!summaries.includes('Ny generering · textmallar'));assert.equal(h.button(tree,'Förbered'),undefined);
+  assert.ok(summaries.includes('Förbered röstprofil för realtidstal'));assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open).length,0);
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&flat(node).startsWith('PAOW har ingen verifierad röstprofil')).length);
+  assert.equal(h.calls.length,0);assert.equal(h.props.profileDirty,false);
+});
+// Talfack binding from Inspelat tal reuses bindClip; speak.other still needs a receipt.
+function slotTake(index,situation,take,language,receipt=false) {
+  const id=`30000000-0000-4000-8000-${String(index).padStart(12,'0')}`,sha256=createHash('sha256').update(id).digest('hex');
+  const eventId=['goodluck','insurance','double'].includes(situation)?'speak.'+situation:'speak.other';
+  const recordedSpeech=receipt?{schemaVersion:1,dealerId:'paow',lineId:situation,takeId:`${situation}_${take}`,language,exactText:'Lägg era insatser, tack.',
+    videoSha256:sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,entryPose:'VILA',exitPose:'VILA',
+    calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}}:undefined;
+  return {id,sha256,bytes:32,dealer:'paow',available:true,integrity:'verified',contentType:'video/mp4',label:`${situation}_${take}`,previewUrl:'/studio/api/videos/'+id,
+    classification:{dealerId:'paow',eventId,situation,kind:'speech',role:'alternative',label:`${situation}_${take}`,playback:'once',
+      notes:`Importförslag från kevin-paow-c7138759 · innehållet är inte visuellt godkänt. Språk i källan: ${language}. Tagning ${take} enligt källan.`,...(receipt?{recordedSpeech}:{})}};
+}
+test('Sätt som standard i talfacket stages the selected take through the clip-map binding and shows each line standard',async()=>{
+  const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='paow';
+  h.props.project={...addDealer(createEmptyProject(),'paow','PAOW'),revision:'r1'};
+  const takes=[slotTake(1,'placebets',1,'sv'),slotTake(2,'placebets',2,'sv',true),...[1,2,3].map(take=>slotTake(10+take,'goodluck',take,'sv')),...[1,2,3].map(take=>slotTake(20+take,'goodluck',take,'en'))];
+  h.props.inventory={families:[],videos:takes};
+  const flat=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(flat).join(''):node?.props?flat(node.props.children):'';
+  const lines=tree=>h.nodes(tree,node=>node.type==='button'&&node.props['aria-expanded']!==undefined);
+  const takeButtons=tree=>h.nodes(h.nodes(tree,node=>node.props?.['aria-label']==='Tagningar')[0],node=>node.type==='button');
+  const action=tree=>h.button(tree,'Sätt som standard i talfacket');
+  h.render();h.flush();let tree=h.render();h.flush();tree=h.render();
+  assert.equal(flat(lines(tree)[0].props.children[1]),'SV 2 · Ingen standard');assert.equal(flat(lines(tree)[1].props.children[1]),'SV 3 · EN 3 · Ingen standard');
+  assert.equal(shownTake(tree),takes[1].id,'the highest placebets take is the one with a receipt');
+  assert.equal(action(tree).props.disabled,false);
+  const before=structuredClone(h.props.project);action(tree).props.onClick();tree=h.render();
+  assert.equal(speechSlotStandard(h.props.project,'paow','speak.other','placebets').videoGenerationId,takes[1].id);
+  assert.equal(speechSlotStandard(before,'paow','speak.other','placebets'),null,'the previous draft object is not mutated');
+  assert.equal(action(tree).props.disabled,true,'the current standard cannot be set again');
+  assert.equal(flat(lines(tree)[0].props.children[1]),'SV 2 · Standard: placebets_2');
+  assert.ok(flat(takeButtons(tree)[0]).endsWith('Väntar på granskning · Standard'));
+  assert.ok(h.nodes(tree,node=>node.props?.role==='status'&&flat(node).startsWith('Tagningen är standard i talfacket i utkastet')).length);
+  takeButtons(tree)[1].props.onClick();tree=h.render();
+  assert.equal(shownTake(tree),takes[0].id);assert.equal(action(tree).props.disabled,true,'speak.other without a receipt is refused, not loosened');
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&flat(node).includes('kräver ett talkvitto')).length);
+  lines(tree)[1].props.onClick();tree=h.render();
+  assert.equal(shownTake(tree),takes[4].id,'goodluck opens on SV take 3');
+  action(tree).props.onClick();tree=h.render();
+  assert.equal(speechSlotStandard(h.props.project,'paow','speak.goodluck','goodluck').videoGenerationId,takes[4].id);
+  takeButtons(tree)[1].props.onClick();tree=h.render();assert.equal(action(tree).props.disabled,false);
+  action(tree).props.onClick();tree=h.render();
+  assert.equal(speechSlotStandard(h.props.project,'paow','speak.goodluck','goodluck').videoGenerationId,takes[3].id,'a different take replaces the standard');
+  assert.equal(speechSlotStandard(h.props.project,'paow','speak.other','placebets').videoGenerationId,takes[1].id,'other talfack keep their standard');
+  assert.equal(flat(lines(tree)[1].props.children[1]),'SV 3 · EN 3 · Standard: goodluck_2');
+  takeButtons(tree)[0].props.onClick();tree=h.render();h.props.blocked=true;tree=h.render();assert.equal(action(tree).props.disabled,true);
+  assert.equal(h.calls.length,0,'staging a standard makes no request; Spara utkast persists it');
 });

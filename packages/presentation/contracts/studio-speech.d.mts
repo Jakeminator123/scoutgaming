@@ -13,7 +13,13 @@ export type SpeechBuildPlan={token:string;dealerId:string;revision:string;templa
 export type SpeechBuildResult={lineId:string;exactText:string;language:SpeechLanguage;state:'succeeded'|'failed';packageId?:string;audioUrl?:string;videoUrl?:string;audioSha256?:string;videoSha256?:string;textSha256?:string;frameCount?:number;fps?:number;audioDelayMs?:number;calibrationRevision?:string;reviewStatus?:'pending';error?:string};
 export type SpeechBuildResponse={state:'prepared'|'succeeded'|'failed';plan?:SpeechBuildPlan;results?:SpeechBuildResult[];error?:string};
 
-export interface StudioRecordedSpeech {id:string;label:string;situation:string;lineLabel:string;exactText:string;language:string;available:boolean;url:string|null;audio:boolean;contentType:string;sha256:string;speech:import('../../../packages/presentation/contracts/recorded-speech.mjs').RecordedSpeech|null;review:'missing-proof'|'invalid-proof'|'pending'|'rejected'|'approved'|'unavailable'}
+export interface StudioRecordedSpeech {id:string;label:string;situation:string;lineLabel:string;exactText:string;language:string;languageNoted:boolean;take:number|null;available:boolean;url:string|null;audio:boolean;contentType:string;sha256:string;speech:import('../../../packages/presentation/contracts/recorded-speech.mjs').RecordedSpeech|null;review:'missing-proof'|'invalid-proof'|'pending'|'rejected'|'approved'|'unavailable'}
 export function studioRecordedSpeech(project:Pick<StudioProject,'clipLabels'>,inventory:{videos:{id:string;label:string;available:boolean;integrity:string;previewUrl:string;contentType?:string;sha256?:string;classification?:import('../../../packages/presentation/contracts/video-intake.mjs').VideoMetadata}[]},dealerId:string,game?:'blackjack'|'roulette'):StudioRecordedSpeech[];
+export function studioRecordedSpeechGameLineIds(game?:'blackjack'|'roulette'):string[];
+export type StudioRecordedSpeechLanguage={language:string;takes:StudioRecordedSpeech[]};
+export type StudioRecordedSpeechLine={id:string;label:string;game:boolean;languages:StudioRecordedSpeechLanguage[]};
+export function studioRecordedSpeechGroups(rows:StudioRecordedSpeech[],game?:'blackjack'|'roulette'):{lines:StudioRecordedSpeechLine[];other:StudioRecordedSpeech[]};
+export function studioRecordedSpeechStatus(row:StudioRecordedSpeech,formatTime?:(at:string)=>string):string;
+export function studioGeneratedSpeechAvailable(project:Pick<StudioProject,'dealers'>,dealerId:string):boolean;
 export type StudioRecordedSpeechVerdict='approved'|'rejected'|null;
 export function studioRecordedSpeechReviewRequest(row:StudioRecordedSpeech,dealerId:string,verdict:StudioRecordedSpeechVerdict):{id:string;sha256:string;dealerId:string;lineId:string;language:string;expectedIdentity:Record<string,unknown>;verdict:StudioRecordedSpeechVerdict};
