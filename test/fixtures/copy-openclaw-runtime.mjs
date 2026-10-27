@@ -47,6 +47,7 @@ export async function copyOpenClawRuntime(root) {
     'packages/director/social.mjs',
     'packages/director/speech-routing.mjs',
     'packages/director/studio-admin-contract.mjs',
+    'packages/presentation/contracts/dealer-chat-persona.mjs',
     'packages/director/node/companion-store.mjs',
     'packages/director/node/settings-reader.mjs',
 

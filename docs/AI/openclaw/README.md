@@ -43,3 +43,19 @@ versionen eller sakfrågan kräver det.
 - [Separat social labbchatt för Astrid](SOCIAL-CHAT.md)
 - [Namn, sparat labbminne, budgetbegränsad webbsökning och skämtläge](COMPANION.md)
 - [Runtimekunskap: roller, versionshash, bevarade agentfiler](../../../services/openclaw/lab/deploy/runtime-bundle/README.md)
+
+## Dealerpersona i spelchatten
+
+Spelets textsvar (`POST /chat` → Director `/api/product/speech`) får persona och
+svarsspråk från registret
+[dealer-chat-persona.mjs](../../../packages/presentation/contracts/dealer-chat-persona.mjs):
+dealer-id → `displayName`, `language` (`sv`/`en`), kort `persona` och
+`replyStyle` (högst 2 meningar/220 tecken, styrs via prompten). `product-speech.mjs`
+lägger persona, språkregel ("Svara alltid på svenska") och gemensam gräns (inga
+spelråd, oddslöften eller uppmaningar att spela) *efter* adapterns ordinarie
+spel-, integritets- och JSON-regler. Paow och Dragan svarar på svenska; Astrid
+behåller sin oförändrade engelska standardregel. Oregistrerade dealers får den
+generiska prompten. Svarsbiblioteket sparar dealerns registrerade språk (annars `en`).
+Ny dealer: lägg en post i registret och ett fall i
+`services/openclaw/lab/test/dealer-chat-persona.test.mjs`. Prompten byggs i
+Director, så ändringen når spelet först när Director-tjänsten är omdeployad.

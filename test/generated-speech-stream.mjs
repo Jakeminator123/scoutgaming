@@ -292,10 +292,26 @@ test('only a completed exact audio/video pair enters reply library; save never g
   f.relayOptions.onMedia(identity,Buffer.from('first MP4 fragment'));f.relayOptions.onComplete(identity,{frames:0,aborted:true});assert.equal(saved.length,0);
   f.relayOptions.onMedia(identity,Buffer.from('last MP4 fragment'));f.relayOptions.onComplete(identity,{frames:12});
   await new Promise(resolve=>setImmediate(resolve));assert.equal(saved.length,1);assert.equal(saved[0].exactText,f.input().text);
+  assert.equal(saved[0].language,'en');
   assert.equal(saved[0].audio.bytes.toString('ascii',0,4),'RIFF');assert.equal(saved[0].audio.bytes.length,44+48);
   assert.equal(saved[0].video.bytes.toString(),'first MP4 fragmentlast MP4 fragment');
   f.relayOptions.onComplete(identity,{frames:12});assert.equal(saved.length,1);
   releaseSave();await new Promise(resolve=>setImmediate(resolve));assert.equal(statuses[0].state,'saved');
+});
+for(const [dealerId,language] of [['paow','sv'],['dragan','sv'],['nova','en']])
+test(`reply library stores the ${dealerId} chat persona language`,async t=>{
+  const saved=[];
+  const runtime={profileRevision:'a'.repeat(64),imageSha256:'b'.repeat(64),compositing:null,avatar:{dealerId},assertFresh:async()=>{},
+    source:async function*({beforeCostly}){await beforeCostly();yield new Uint8Array(48);}};
+  const f=await fixture(t,{replyLibrary:{async save(value){saved.push(value);}},dealerRuntime:{prepare:async()=>runtime},sessionManager:{supportsAvatars:true,
+    async ensure({beforeCostly}){await beforeCostly();return {ready:true,workerId:dealerId+'-worker',binding:{dealerId,profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,protocolVersion:3}};},close(){}}});
+  const descriptor=await f.service.prepare({...f.input(),dealerId,text:'Lugnt, korten har ingen brådska.'});
+  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
+  await f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
+  f.relayOptions.onMedia(identity,Buffer.from('MP4 fragment'));f.relayOptions.onComplete(identity,{frames:12});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(saved.length,1);assert.equal(saved[0].dealerId,dealerId);assert.equal(saved[0].language,language);
+  assert.equal(saved[0].profileRevision,runtime.profileRevision);
 });
 test('cancelled or incomplete streams cannot be archived as completed replies',async t=>{
   const saved=[];const f=await fixture(t,{replyLibrary:{async save(value){saved.push(value);}}});
