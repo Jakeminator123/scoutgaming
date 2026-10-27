@@ -132,7 +132,8 @@ test('presentation restores reconnect cards without old replay; new events use e
 class Element extends EventTarget {
   constructor(tag='div'){super();this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attributes={};const styles=new Map();this.style={setProperty:(key,value)=>styles.set(key,String(value)),getPropertyValue:key=>styles.get(key)??'',removeProperty:key=>styles.delete(key)};this.hidden=false;this.disabled=false;this.className='';this._text='';this.classes=new Set();this.classList={toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
   set textContent(value){this._text=String(value);this.children=[];}get textContent(){return this._text+this.children.map(child=>child.textContent).join('');}
-  setAttribute(name,value){this.attributes[name]=String(value);}append(...children){this.children.push(...children);}prepend(...children){this.children.unshift(...children);}replaceChildren(...children){this._text='';this.children=children;}click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
+  setAttribute(name,value){this.attributes[name]=String(value);}append(...children){for(const child of children)if(child instanceof Element)child.parentNode=this;this.children.push(...children);}prepend(...children){this.children.unshift(...children);}replaceChildren(...children){this._text='';this.children=children;}click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
+  remove(){this.removed=true;if(this.parentNode)this.parentNode.children=this.parentNode.children.filter(child=>child!==this);this.parentNode=null;}
 }
 function documentFixture(){
   const ids=['scene','seats','chips','balance','total-bet','last-win','banner','deal-now','insurance','ins-yes','ins-no','actions','actions-top','undo-btn','clear-btn','double-btn','max-btn','all-sides','add-funds','pitboss','presentation-loading','caption','limits','chat','table-pick'];
@@ -156,18 +157,21 @@ async function bindingHarness(t,{fetchImpl=async url=>bindingResponse(url),creat
     restore:(value,signal=new AbortController().signal)=>socketOptions.restoreSnapshot(value,{signal})};
 }
 
-test('new shared client ignores a newer HTML dealer and opens controls only after the active binding is checked after the first frame',async t=>{
+// K04 at 400 kbit/s: the idle clip alone outlasted the 30 s render/startup limits.
+// The binding is still read twice around the mount; the dealer's first frame is not a gate.
+test('new shared client ignores a newer HTML dealer and opens controls once the active binding is confirmed after mounting, before any dealer frame',async t=>{
   const {document}=documentFixture();Object.assign(document.documentElement.dataset,{gameDealer:'nora',gameLocalDealer:'nora',gamePackageRevision:'9'});
-  const firstFrame=deferred(),confirmed=deferred(),requests=[];let loaded;
+  const mounted=deferred(),confirmed=deferred(),requests=[];let loaded;
   const active=presentationBinding(seated(3),{dealer:'astrid',packageRevision:1,branding:{color:'#123456'}});
   const h=await bindingHarness(t,{document,fetchImpl:async(url,init)=>{requests.push({url,init});return requests.length===1?Response.json(active):confirmed.promise;},
-    createPresentation:async options=>{loaded=options;void firstFrame.promise.then(()=>options.onReady('astrid'));return{restoreSnapshot(){},present(){},close(){}};}});
+    createPresentation:async options=>{loaded=options;await mounted.promise;return{restoreSnapshot(){},present(){},close(){}};}});
   assert.equal(h.mounts.length,0,'media is not selected before the server snapshot');
   const restoring=h.restore(seated(3));await turn();
   assert.equal(loaded.selection.packageRevision,1);assert.equal(loaded.selection.dealer,'astrid');assert.equal(requests.length,1);
   await h.controller.dispatch('refill');assert.equal(h.writes.length,0);assert.equal(h.controller.state.connected,false);
-  firstFrame.resolve();await turn();assert.equal(requests.length,2);assert.equal(h.controller.state.connected,false);
-  assert.equal(document.documentElement.dataset.presentationStartup,'pending');
+  mounted.resolve();await turn();await turn();
+  assert.equal(requests.length,2,'the server checks the binding again as soon as the adapter is mounted, without a dealer frame');
+  assert.equal(h.controller.state.connected,false);assert.equal(document.documentElement.dataset.presentationStartup,'pending');
   for(const {url,init}of requests){
     assert.equal(url,'/api/presentation/shared-room/room-a/binding?configVersion=cfg-1&windowId=window-1');
     assert.equal(init.method,'GET');assert.equal(init.body,undefined);assert.equal(init.credentials,'same-origin');assert.equal(init.mode,'same-origin');
@@ -176,6 +180,22 @@ test('new shared client ignores a newer HTML dealer and opens controls only afte
   confirmed.resolve(Response.json(active));await restoring;
   assert.equal(h.controller.state.connected,true);assert.equal(document.documentElement.dataset.presentationStartup,'ready');
   await h.controller.dispatch('refill');assert.deepEqual(h.writes,[{op:'refill'}]);
+  // The dealer's first verified frame arrives later and changes no authority.
+  loaded.onReady('astrid');assert.equal(h.controller.state.connected,true);
+});
+
+test('a frame of another dealer fails the restore before the binding is confirmed and only closes the media afterwards',async t=>{
+  const confirmed=deferred();let reads=0,closes=0,options;
+  const h=await bindingHarness(t,{fetchImpl:async url=>++reads===1?bindingResponse(url):confirmed.promise,
+    createPresentation:async value=>{options=value;return{restoreSnapshot(){},present(){},close(){closes++;}};}});
+  const restoring=h.restore(seated(1));await turn();await turn();
+  options.onReady('nora');confirmed.resolve(bindingResponse('/binding?configVersion=cfg-1&windowId=window-1'));
+  await assert.rejects(restoring,/shared_room_presentation_dealer_mismatch/);assert.equal(closes,1);assert.equal(h.controller.state.connected,false);
+  const errors=[];
+  const fresh=await bindingHarness(t,{createPresentation:async value=>{options=value;return{restoreSnapshot(){},present(){},close(){errors.push('closed');}};}});
+  await fresh.restore(seated(2));assert.equal(fresh.controller.state.connected,true);
+  options.onReady('nora');assert.deepEqual(errors,['closed'],'media that showed another dealer is closed');
+  assert.match(fresh.nodes.get('caption').textContent,/inte tillgänglig/);assert.equal(fresh.controller.state.connected,true,'server-owned controls are unchanged');
 });
 
 test('an existing client retains the active N2 presentation and remounts once for the next window package',async t=>{
@@ -203,13 +223,13 @@ test('an unopened room binds its published head and reuses unchanged media when 
 
 test('a stale or revoked binding after slow media loading closes that media and never enables commands',async t=>{
   for(const status of [403,409,'changed'])await t.test(String(status),async t=>{
-    let reads=0,ready,closes=0;
+    let reads=0,closes=0;const loaded=deferred();
     const active=presentationBinding(seated(1));
     const h=await bindingHarness(t,{fetchImpl:async()=>++reads===1?Response.json(active):status==='changed'
       ?Response.json({...active,selection:{...active.selection,branding:{color:'#ffffff'}}}):new Response(null,{status}),
-      createPresentation:async options=>{ready=options.onReady;return{restoreSnapshot(){},present(){},close(){closes++;}};}});
+      createPresentation:async()=>{await loaded.promise;return{restoreSnapshot(){},present(){},close(){closes++;}};}});
     const restoring=h.restore(seated(1));await turn();assert.equal(reads,1);assert.equal(h.controller.state.connected,false);
-    ready('astrid');await assert.rejects(restoring,/shared_room_presentation_binding_(unavailable|changed)/);
+    loaded.resolve();await assert.rejects(restoring,/shared_room_presentation_binding_(unavailable|changed)/);
     assert.equal(reads,2);assert.equal(closes,1);assert.equal(h.controller.state.connected,false);
     await h.controller.dispatch('refill');assert.equal(h.writes.length,0);h.close();assert.equal(closes,1);
   });
@@ -326,12 +346,13 @@ test('pause keeps stand and declining insurance usable while blocking bets and r
 
 test('pagehide aborts pending media initialization and blocks late startup work',async()=>{
   const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
-  let signal,ready,closes=0,restorer;
-  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),createCommands:()=>({state:'idle',stop(){}}),
+  let signal,ready,closes=0,restorer,reads=0;const confirmed=deferred();
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>++reads===1?bindingResponse(url):confirmed.promise,createCommands:()=>({state:'idle',stop(){}}),
     createPresentation:async options=>{signal=options.signal;ready=options.onReady;return{restoreSnapshot(){},close(){closes++;}};},
     createSocket:options=>{restorer=options.restoreSnapshot;return{start(){},stop(){}};},createView:()=>({bind(){},render(){},close(){}})});
-  const restoring=restorer(snapshot(),{signal:new AbortController().signal});await turn();
-  assert.equal(app.controller.state.connected,false);window.dispatchEvent(new Event('pagehide'));assert.equal(signal.aborted,true);
+  const restoring=restorer(snapshot(),{signal:new AbortController().signal});await turn();await turn();
+  assert.equal(reads,2);assert.equal(app.controller.state.connected,false);window.dispatchEvent(new Event('pagehide'));assert.equal(signal.aborted,true);
+  confirmed.resolve(bindingResponse('/binding?configVersion=cfg-1&windowId=window-1'));
   await assert.rejects(restoring,{name:'AbortError'});ready('astrid');assert.equal(closes,1);assert.notEqual(document.documentElement.dataset.presentationStartup,'ready');
 });
 
@@ -702,3 +723,117 @@ test('late live shoe entry reanchors the local chain while an expired complete c
   await expired.start();assert.equal(expired.seen.length,0);assert.deepEqual(expired.shown,[3]);
 });
 
+
+// K04-i-d on staging (27 Oct 2026, cc415cd8): the dealer's goodluck clip answered 404 while the
+// server round was already in decisions; the table showed no text, no cards and no buttons.
+const missingGoodluckPlan=at=>({roomId,ver:1,talkId:'plan-missing',auditSeq:1,status:'ready',kind:'plan',windowId:'window-1',configVersion:'cfg-1',language:'sv',
+  startAt:at,endAt:at+12000,lines:[],events:[{type:'speak',line:'goodluck'},{type:'deal',to:'box',box:0,shoeDraw:1,faceDown:false},
+    {type:'deal',to:'dealer',box:null,shoeDraw:2,faceDown:false},{type:'deal',to:'box',box:0,shoeDraw:3,faceDown:false},
+    {type:'deal',to:'dealer',box:null,shoeDraw:4,faceDown:true},{type:'turn',box:0,handIndex:0}]});
+test('a missing goodluck file ends that step and the film of its plan at once: cards now, the buttons at the server turn time',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const seen=[],shown=[],states=[],renders=[],errors=[],sockets=[];
+  const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push(draw),reveal(){},begin(){},frame(){},finish(){}};
+  // The goodluck file is gone (404); every deal clip would still be downloading.
+  const media={state:value=>states.push(value),prepareSequence(){},close(){},
+    async present(event,options){seen.push(event.type);if(event.type==='speak'){options.onUnavailable();return false;}return new Promise(()=>{});}};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now});
+  const commands={state:'idle',send:async()=>({status:'ok',result:{op:'act',version:3}}),stop(){}};
+  const controller=createSharedRoomController({roomId,commands,view:{bind(){},render:value=>renders.push(value),close(){}},presentation:ports,now:Date.now});
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(value){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,...value})}));}}
+  const client=createSharedRoomClient({roomId,browserOrigin:'https://game.invalid',WebSocket:Socket,callbackTimeoutMs:30000,
+    restoreSnapshot:controller.restoreSnapshot,present:controller.present,onError:error=>errors.push(error)});
+  t.after(()=>{client.stop();controller.stop();});client.start();
+  sockets[0].message({snapshot:seated(1,{serverNow:Date.now()}),presentation:null});await flushRender();
+  const plan=missingGoodluckPlan(Date.now()),round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
+  sockets[0].message({snapshot:seated(2,{phase:'round',roundId:'round-1',presentationVer:1,serverNow:Date.now(),round,
+    plan:{id:'plan-missing',startAt:plan.startAt,endAt:plan.endAt,turnAt:plan.endAt},actionDeadline:plan.endAt+15000}),presentation:plan});
+  await flushRender();await flushRender();
+  assert.deepEqual(seen,['speak'],'no deal film is loaded after the missing file');
+  assert.deepEqual(shown,[1,2,3,4],'every committed card is shown at once');
+  assert.equal(states.at(-1).action,false,'the presentation is over and the dealer returns to idle');
+  assert.equal(renders.at(-1).busy,false);assert.deepEqual(renders.at(-1).can.act,[],'the server has not opened the turn yet');
+  t.mock.timers.tick(11999);await flushRender();assert.deepEqual(renders.at(-1).can.act,[]);
+  t.mock.timers.tick(2);await flushRender();
+  assert.deepEqual(renders.at(-1).can.act,['hit','stand'],'the buttons appear at the server turn time');
+  t.mock.timers.tick(30000);await flushRender();assert.deepEqual(errors,[]);assert.equal(client.status().state,'running');
+});
+
+test('after a missing file the remaining filmed steps of that plan neither wait for their clock nor load film',async t=>{
+  const h=timedPorts(t,{events:[{type:'speak',line:'goodluck'},filmedBox(6,1),filmedBox(0,2),{type:'reveal',to:'dealer',shoeDraw:3}],
+    present:(event,options)=>{if(event.type!=='speak')return true;options.onUnavailable();return false;}});
+  await h.start();
+  assert.deepEqual(h.seen.map(row=>row.event.type),['speak']);assert.deepEqual(h.shown,[1,2]);
+  assert.deepEqual(h.revealed,[1000],'no step waited for its time on the table clock');
+});
+
+test('a late unavailable callback from a finished clip cannot skip the steps that follow',async t=>{
+  let late;
+  const h=timedPorts(t,{events:[{type:'speak',line:'goodluck'},{type:'speak',line:'insurance'},{type:'speak',line:'win'}],
+    present:(event,options)=>{if(event.line==='goodluck')late=options.onUnavailable;else if(event.line==='insurance')late();return true;}});
+  await h.start();
+  assert.deepEqual(h.seen.map(row=>row.event.line),['goodluck','insurance','win']);
+});
+
+// K04-i-e on staging (27 Oct 2026): at 400 kbit/s a 1.1-1.7 MB deal clip needs 22-34 s before its first frame.
+test('a slow clip download that keeps receiving bytes holds its step past thirty seconds without a renderer timeout',async t=>{
+  const plan=await sevenSeatPlan();plan.presentation.events=[plan.presentation.events.find(event=>event.type==='deal')];plan.presentation.lines=[];
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context;const done=deferred();
+  const h=timedPresentation(t,async(_event,options)=>{context=options;options.onProgress({clip:1,phase:'prepare'});options.onProgress({clip:1,phase:'play'});await done.promise;return true;});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();h.sockets[0].message(plan);await flushRender();
+  for(let second=10;second<=60;second+=10){t.mock.timers.tick(10000);context.onProgress({clip:1,phase:'download',received:second*50000});await flushRender();assert.deepEqual(h.errors,[]);}
+  context.onProgress({clip:1,phase:'frame',time:0});done.resolve();await flushRender();
+  assert.equal(h.client.status().state,'running');assert.deepEqual(h.errors,[]);assert.equal(context.signal.aborted,false);
+});
+
+test('a download whose byte count stops moving still fails closed after thirty seconds',async t=>{
+  const plan=await sevenSeatPlan();plan.presentation.events=[plan.presentation.events.find(event=>event.type==='deal')];plan.presentation.lines=[];
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});let context;
+  const h=timedPresentation(t,async(_event,options)=>{context=options;options.onProgress({clip:1,phase:'prepare'});options.onProgress({clip:1,phase:'play'});return new Promise(()=>{});});
+  h.sockets[0].message({snapshot:snapshot(),presentation:null});await flushRender();h.sockets[0].message(plan);await flushRender();
+  context.onProgress({clip:1,phase:'download',received:4096});
+  for(let i=0;i<5;i++){t.mock.timers.tick(5000);context.onProgress({clip:1,phase:'download',received:4096});await flushRender();assert.deepEqual(h.errors,[]);}
+  t.mock.timers.tick(5000);await flushRender();
+  assert.deepEqual(h.errors,[{code:'shared_room_renderer_timeout'}]);assert.equal(context.signal.aborted,true);
+});
+
+// K04-i-e on staging (27 Oct 2026, 400 kbit/s, 400 ms RTT): the 912 KB idle clip outlasted the 30 s
+// render callback, ending in "Bordet kunde inte uppdateras" with seat, chips, bet and ready disabled.
+test('a dealer film that shows no frame for a minute never blocks seat, chips, bet or ready',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const {document}=documentFixture(),window=new EventTarget();window.location={origin:'https://game.invalid'};
+  const sockets=[],renders=[];let mediaOptions;
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}}
+  const app=await mountSharedRoomApp({document,window,fetchImpl:async url=>bindingResponse(url),
+    createSocket:options=>createSharedRoomClient({...options,WebSocket:Socket}),
+    createCommands:()=>({state:'idle',send:async()=>({status:'ok',result:{op:'ready',version:2}}),stop(){}}),
+    createView:()=>({bind(){},render:value=>renders.push(value),close(){}}),
+    createPresentation:async options=>{mediaOptions=options;return{restoreSnapshot(){},present(){},close(){}};}});
+  t.after(app.close);
+  const bets=[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)];
+  sockets[0].dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,snapshot:seated(1,{bets,serverNow:Date.now()}),presentation:null})}));
+  for(let i=0;i<4;i++)await flushRender();
+  for(let second=5;second<=60;second+=5){t.mock.timers.tick(5000);await flushRender();}
+  const last=renders.at(-1);
+  assert.equal(app.controller.state.connected,true);assert.equal(last.connected,true);assert.equal(last.busy,false,'chips are enabled');
+  for(const op of ['join','bet','ready'])assert.equal(last.can[op],true,op);
+  assert.equal(document.documentElement.dataset.presentationStartup,'ready');
+  assert.equal(renders.some(row=>/kunde inte uppdateras/.test(row.notice)),false);assert.equal(sockets[0].readyState,1,'the table socket stays open');
+  mediaOptions.onReady('astrid');assert.equal(app.controller.state.connected,true,'the late first dealer frame changes no authority');
+});
+
+test('the dealer place reads Dealern laddas… until the first verified frame, and a failed film says so',async t=>{
+  const {document,nodes}=documentFixture(),window=new EventTarget();window.matchMedia=()=>({matches:false});window.fetch=async()=>Response.json({});
+  let media,ready=0;
+  const selection={presentation:'local',dealer:'astrid',localDealer:'astrid',operator:'north',roomId,packageRevision:1,registeredDealers:[{id:'astrid',label:'Astrid'}]};
+  const port=await mountSharedRoomPresentation({document,window,selection,onReady:id=>{assert.equal(id,'astrid');ready++;},onError(){},createComposition:()=>null,
+    loadAdapters:async()=>[{PerformancePlayer:class{dispose(){}}},{createLocalPresentation:async value=>{media=value;return{state(){},start(){},close(){}};}},
+      {createLocalCardOverlay:()=>({restore(){},sync(){},clear(){},close(){}})}]});
+  t.after(()=>port.close());
+  const placeholder=()=>nodes.get('scene').children.find(node=>node.className==='shared-room-dealer-placeholder');
+  assert.equal(placeholder().textContent,'Dealern laddas…');assert.equal(placeholder().attributes.role,'status');assert.equal(ready,0);
+  media.onError(new Error('Film playback stalled'));assert.equal(placeholder().textContent,'Dealern kunde inte visas.');
+  media.onIdle();assert.equal(placeholder(),undefined);assert.equal(ready,1);
+  media.onError(new Error('later'));assert.equal(placeholder(),undefined,'a later idle error does not bring the placeholder back');
+});
