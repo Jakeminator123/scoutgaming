@@ -10,6 +10,7 @@ COPY --chown=node:node services/openclaw/lab/config/catalog.json ./config/catalo
 COPY --chown=node:node services/openclaw/lab/fixtures/scenarios.json ./fixtures/scenarios.json
 COPY --chown=node:node services/openclaw/lab/deploy/start-director.mjs ./deploy/start-director.mjs
 COPY --chown=node:node packages/presentation/contracts/dealer-identity.mjs /app/packages/presentation/contracts/dealer-identity.mjs
+COPY --chown=node:node packages/presentation/contracts/dealer-chat-persona.mjs /app/packages/presentation/contracts/dealer-chat-persona.mjs
 COPY --chown=node:node packages/director/admin-error.mjs /app/packages/director/admin-error.mjs
 COPY --chown=node:node packages/director/astrid-observation.mjs /app/packages/director/astrid-observation.mjs
 COPY --chown=node:node packages/director/companion-personas.mjs /app/packages/director/companion-personas.mjs

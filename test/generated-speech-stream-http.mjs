@@ -1,15 +1,10 @@
-import {withPublishedChatContext} from './fixtures/published-chat-authority.mjs';
+import {publishedChatStudio,withPublishedChatContext} from './fixtures/published-chat-authority.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { createServer as createNetServer } from 'node:net';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
+import { ENGINE_QA_SKIP, createEngineDatabase, installStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 const WebSocket = createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const secret = 'isolated-http-worker-and-ticket-secret-32chars';
 function messages(ws) {
@@ -17,12 +12,14 @@ function messages(ws) {
   ws.on('message', (data, binary) => { const value = binary ? data : JSON.parse(data.toString()); if (waiters.length) waiters.shift()(value); else values.push(value); });
   return () => values.length ? Promise.resolve(values.shift()) : new Promise(resolve => waiters.push(resolve));
 }
-async function freePort() { const net = createNetServer(); net.listen(0, '127.0.0.1'); await once(net, 'listening'); const port = net.address().port; await new Promise(resolve => net.close(resolve)); return port; }
 
-test('real product HTTP result survives into authenticated stream; memory forget cancels GPU', { timeout: 25000 }, async t => {
-  const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-http-'));
-  const port = await freePort(), origin = `http://127.0.0.1:${port}`;
-  let child, sockets = [], output = '', errors = '';
+// The engine runs on PostgreSQL with the Studio policy runtime, so the stream service
+// claims, settles and cancels each request in the Studio speech journal
+// (croupier_studio.speech_requests under its stream-session lease), not in a directory.
+test('real product HTTP result survives into authenticated stream; memory forget cancels GPU', { skip: ENGINE_QA_SKIP, timeout: 60000 }, async t => {
+  const database = await createEngineDatabase(t);
+  const studio = await installStudioRuntime(t, database, publishedChatStudio);
+  let engine, sockets = [];
   const llm = createServer(async (req, res) => {
     let raw = ''; for await (const c of req) raw += c;
     const body = JSON.parse(raw), base = JSON.parse(body.messages[1].content);
@@ -35,34 +32,26 @@ test('real product HTTP result survives into authenticated stream; memory forget
   llm.listen(0, '127.0.0.1'); await once(llm, 'listening');
   t.after(async () => {
     sockets.forEach(ws => ws.terminate());
-    if (child && child.exitCode === null) { const stopped = once(child, 'exit'); child.kill('SIGTERM'); await stopped; }
+    await engine?.stop();
     llm.closeAllConnections(); await new Promise(resolve => llm.close(resolve));
-    assert.equal(dirname(directory), resolve(tmpdir())); assert.match(basename(directory), /^croupier-stream-http-/); await rm(directory, { recursive: true, force: true });
+    // engine-qa drops this database and its role after the engine has exited.
+    assert.match(database.name, /^croupier_engine_[a-f0-9]{12}$/, 'teardown removes only the fixture-owned database');
   });
-  const env = { ...process.env };
-  for (const key of Object.keys(env)) if (/^(OPENCLAW|LAB_REMOTE|CROUPIER_GENERATED_SPEECH|CROUPIER_SPEECH_|RUNPOD|CARTESIA)/.test(key)) env[key] = '';
-  // Empty values override private file configuration even when the parent shell
-  // has never loaded it. The network preload also rejects every external host.
+  // Only OS paths and this env reach the engine (startEngine). Empty values still
+  // override private file configuration, and the network preload rejects every
+  // external host.
+  const env = {};
   for (const key of ['OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
     'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL', 'OPENCLAW_MODEL_ID', 'OPENCLAW_MODEL_API',
     'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID',
     'RUNPOD_API_KEY', 'RUNPOD_ENDPOINT_ID', 'ELEVENLABS_API_KEY', 'ELEVENLABS_OC_API']) env[key] = '';
-  Object.assign(env, { HOST: '127.0.0.1', PORT: String(port), NODE_ENV: 'development', CROUPIER_DATA_DIR: join(directory, 'db'),
-    DEMO_GUEST_ACCESS: '1', CROUPIER_STREAM_LANE: '',
-    CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH_DIR: join(directory, 'speech'),
+  Object.assign(env, studio.env, { NODE_ENV: 'development', DEMO_GUEST_ACCESS: '1', CROUPIER_STREAM_LANE: '',
+    CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1',
     CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: `ticket-${secret}`, CARTESIA_API_KEY: 'isolated-test-key',
     OPENCLAW_BASE_URL: `http://127.0.0.1:${llm.address().port}`, OPENCLAWAPI_KEY: 'fixture-key', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat' });
-  child = spawn(process.execPath, ['--import',new URL('./fixtures/published-chat-authority-register.mjs',import.meta.url).href,'--import', new URL('./fixtures/generated-speech-stream-fetch.mjs', import.meta.url).href, fileURLToPath(new URL('../services/game/server.mjs', import.meta.url))], {
-    cwd: fileURLToPath(new URL('../services/game/', import.meta.url)), env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  child.stdout.on('data', b => { output += b; }); child.stderr.on('data', b => { errors += b; });
-  await new Promise((resolve, reject) => {
-    // 30 s: server.mjs now imports the operator package reader and player surface at
-    // boot; under the full pre-commit hook the 10 s budget tripped on 8 Oct.
-    const timer = setTimeout(() => reject(Error('Product fixture did not start')), 30000);
-    child.once('exit', code => { clearTimeout(timer); reject(Error(`Product fixture exited ${code}: ${errors}`)); });
-    child.stdout.on('data', b => { if (String(b).includes('croupier demo on')) { clearTimeout(timer); resolve(); } });
-  });
+  engine = await startEngine(t, { database, env,
+    preload: [...studio.preload, new URL('./fixtures/generated-speech-stream-fetch.mjs', import.meta.url).href] });
+  const origin = engine.origin;
   let cookie = '';
   const post = async (path, value, expected = 200) => {
     if(['/chat','/api/chat/memory/forget'].includes(path))value=withPublishedChatContext(value);
@@ -85,7 +74,7 @@ test('real product HTTP result survives into authenticated stream; memory forget
   const chat = capability => ({ requestId: crypto.randomUUID(), message: 'A test question.', history: [], dealer: 'astrid', sessionRevision: crypto.randomUUID(), roundRevision: String(state.version), ...(capability ? { acceptsSpeechStream: true } : {}) });
   const legacy = await post('/chat', chat(false)); assert.equal(legacy.speechStream, undefined);
   const result = await post('/chat', chat(true));
-  assert.equal(result.visualMode, 'generated-lipsync-stream-preview'); assert.equal(starts, 0); assert.equal(output.includes('FIXTURE_TTS_STARTED'), false);
+  assert.equal(result.visualMode, 'generated-lipsync-stream-preview'); assert.equal(starts, 0); assert.equal(engine.output().includes('FIXTURE_TTS_STARTED'), false);
   const d = result.speechStream;
   assert.equal(JSON.parse(Buffer.from(d.ticket.split('.')[0], 'base64url')).exp, d.expiresAt);
   const ws = new WebSocket(origin.replace('http:', 'ws:') + d.url, ['astrid-v2', `ticket.${d.ticket}`], { origin, headers: { Cookie: cookie } }); sockets.push(ws);

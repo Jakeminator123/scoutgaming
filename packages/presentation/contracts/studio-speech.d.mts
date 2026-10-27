@@ -19,6 +19,7 @@ export function studioRecordedSpeechGameLineIds(game?:'blackjack'|'roulette'):st
 export type StudioRecordedSpeechLanguage={language:string;takes:StudioRecordedSpeech[]};
 export type StudioRecordedSpeechLine={id:string;label:string;game:boolean;languages:StudioRecordedSpeechLanguage[]};
 export function studioRecordedSpeechGroups(rows:StudioRecordedSpeech[],game?:'blackjack'|'roulette'):{lines:StudioRecordedSpeechLine[];other:StudioRecordedSpeech[]};
+export function studioRecordedSpeechPreferredTake(takes:StudioRecordedSpeech[],standardId?:string|null):StudioRecordedSpeech|undefined;
 export function studioRecordedSpeechStatus(row:StudioRecordedSpeech,formatTime?:(at:string)=>string):string;
 export function studioGeneratedSpeechAvailable(project:Pick<StudioProject,'dealers'>,dealerId:string):boolean;
 export type StudioRecordedSpeechVerdict='approved'|'rejected'|null;

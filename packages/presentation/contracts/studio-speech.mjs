@@ -117,6 +117,13 @@ export function studioRecordedSpeechGroups(rows,game='blackjack'){
   for(const line of lines)for(const group of line.languages)group.takes.sort((a,b)=>(b.take??-1)-(a.take??-1)||byLabel(a,b));
   return {lines:lines.filter(line=>line.game||line.languages.some(group=>group.takes.length)),other:other.sort(byLabel)};
 }
+// Open a line on the take worth acting on, not merely the newest file: the
+// talfack standard, else approved, else a receipt awaiting review, else the
+// highest number. Takes arrive highest-first, so find() keeps that tie-break.
+export function studioRecordedSpeechPreferredTake(takes,standardId=null){
+  return takes.find(row=>standardId&&row.id===standardId)??takes.find(row=>row.available&&row.review==='approved')
+    ??takes.find(row=>row.speech&&row.review==='pending')??takes[0];
+}
 const speechTime=at=>{const date=new Date(at);return Number.isFinite(date.getTime())?date.toLocaleString('sv-SE'):at;};
 export function studioRecordedSpeechStatus(row,formatTime=speechTime){
   const review=row.speech?.review;
