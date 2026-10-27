@@ -1,158 +1,66 @@
-# Render `croupier-v3`: spelmotor utan Studio
+# Render `croupier-v3`: spelmotorn
 
-Aktiv spelmotor är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`; Admin/Studio ligger på Vercel. Ingen Next-/Studio-process eller produktdisk ingår i v3.
+Spelmotorn är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den kör `services/game/server.mjs` bakom gatewayn i `ops/cloud` och äger kort, sko, saldo, utbetalningar och delat bord. Admin, lobby och spelskal ligger på Vercel. Ingen Studio-process och ingen disk ingår. Daterade deploykvitton finns i [historiken](../../docs/history/RENDER-V3-2026-10.md) och [NEXT-AGENT](../../docs/NEXT-AGENT.md).
 
-**Produktionsläge 27 oktober 2026, kväll:** `croupier-v3`, Director och Gateway kör main `cc415cd8` (#442), deployade manuellt efter grön CI. Deploypolicy: merge efter grön CI → Vercel auto-deployar main → `croupier-v3` triggas manuellt (Render MCP) efter varje grön merge; Director `croupier-lab-director` (`srv-danhlpjtqb8s73bv530g`) och Gateway `croupier-lab-openclaw` (`srv-danhiv3tqb8s73burkq0`) deployas om när deras kod ändras. `croupier-v2` (`srv-datg3j6gekts73amgli0`) och `croupier-vercel-preview-qa` raderades 27 oktober 2026.
-
-**Historisk kontroll 25 oktober 2026:** rätt repo/main, `ops/cloud/Dockerfile.game`, Frankfurt, 1c-2g, en instans och Auto-deploy av. PAOW-chatten har samordnat deployment `dep-dbf3og7avr4c73cn9bf0` på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`, inklusive #391–#395, och rapporterat faktisk version, health 200/ok samt capability v28/200 med `idleRotation: pose-graph-v1`. Root har separat återläst tjänstekonfigurationen, faktisk health 200/ok och version 200 med samma fulla SHA. Äldre `croupier-v2` är suspenderad och används inte som återgång. Detta driftkvitto bevisar inte slutlig media-/restoreacceptans.
-
-## Syfte
-
-Kodavvecklingen är levererad i #392/#394 och konfigurationsförenklingen i #395,
-main `547c433b9fe229974cfc262fef2c01ba4e63424f`, med full CI och faktiska
-Docker/cache/Linux-prov. Inga nya Render-variabler eller SQL-migreringar krävs
-av dessa PR:ar. Behåll nuvarande ingress, scope och aktiva talinställningar.
-Nytt samordnat deploykvitto finns ovan. Vid rollback efter publicerad PAOW-profil
-måste även återgångskoden förstå #393:s profil, utöver tom katalog och v28.
-
-- Befintliga publika kontrakt för allt Vercel skickar till Render:
-  ingresshemlighet, WebSocket-upgrade, moving-callback, `/__cloud/health`,
-  `/__cloud/version`, delat-rum-socket.
-- Mindre image och snabbare bygge: `ops/cloud/Dockerfile.game` installerar
-  bara `services/game` och `services/astrid-gpu-worker/gateway` och kopierar
-  en uttrycklig fillista (ingen `apps/`, ingen `next build`).
-- `start.mjs` startar alltid en spelprocess (internt `web`, på 127.0.0.1:4173).
-  Kombinerad Dockerfile, Next-byggkontroll och Studio-upstream är borttagna.
-  Ingen `CROUPIER_CLOUD_LAB_CHILD` behövs i imagen eller CI; osatt, tomt
-  eller `0` ger enprocessläge, medan `1` avvisas som pensionerat.
-  Vercels sessionskontroll använder fortfarande Webs identitetstjänst.
-
-## Tjänst i Render
+## Tjänsten
 
 | Fält | Värde |
 | --- | --- |
-| Typ, region, plan | Web Service, Docker, Frankfurt, `1c-2g`. |
-| Repo/branch | `Jakeminator123/scoutgaming`, `main`; deploya uttryckligt granskad SHA. |
-| Docker context | `.` (reporoten) |
-| Dockerfile path | `ops/cloud/Dockerfile.game` |
-| Health check path | `/__cloud/health` |
+| Typ, region, plan | Web Service, Docker, Frankfurt, `1c-2g`, en instans |
+| Repo och branch | `Jakeminator123/scoutgaming`, `main` |
+| Docker context och Dockerfile | `.` (reporoten), `ops/cloud/Dockerfile.game` |
+| Health check | `/__cloud/health` |
 | Port | 10000 (`PORT` sätts av Render) |
-| Disk | Ingen. |
-| Auto-deploy | Av; leverans är uttrycklig och versionsbunden. |
+| Disk | Ingen |
+| Auto-deploy | Av; deploy sker manuellt efter grön merge |
 
-Build-filter (om Render ska bygga bara vid relevanta ändringar):
-`ops/cloud/**`, `ops/neon-game/**`, `ops/neon-studio/**`, `packages/**`,
-`services/game/**`, `services/astrid-gpu-worker/gateway/**`,
-`tools/media-layout.mjs`, `tools/runtime-media-catalog.mjs`,
-`tools/media-blob-index-reader.mjs`, `.dockerignore`.
-`ops/cloud/test/game-image.test.mjs` håller listan ärlig mot spelserverns
-statiska importstängning.
+Imagen installerar bara `services/game` och `services/astrid-gpu-worker/gateway` och kopierar en uttrycklig fillista, se [CONTAINER-CONTEXT](CONTAINER-CONTEXT.md). Build-filter om Render bara ska bygga vid relevanta ändringar: `ops/cloud/**`, `ops/neon-game/**`, `ops/neon-studio/**`, `packages/**`, `services/game/**`, `services/astrid-gpu-worker/gateway/**`, `tools/media-layout.mjs`, `tools/runtime-media-catalog.mjs`, `tools/media-blob-index-reader.mjs`, `.dockerignore`. `ops/cloud/test/game-image.test.mjs` håller listan i takt med spelserverns importer.
 
-## Miljövariabler för v3 (namn, aldrig värden)
+Staging har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Jakob startar och stoppar den.
 
-Utgå från det aktuella v3-kontraktet och [miljöguiden](../../docs/ENVIRONMENT-VARIABLES.md). En separat verifieringsmiljö behöver egna scope, konton och nycklar; kopiera inte produktionshemligheter. Imagen sätter
-`NODE_ENV=production`; Render sätter
-`PORT`, `RENDER_EXTERNAL_URL`, `RENDER_SERVICE_ID`, `RENDER_GIT_COMMIT`.
+## Miljövariabler
 
-Krävs för start (`config.mjs`):
+Hela tabellen står i [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#render-croupier-v3-spelmotorn). Minsta uppsättningen för start:
 
-- `CROUPIER_CLOUD_LAUNCH=pilot`
-- `CROUPIER_CLOUD_LAYOUT=single-origin`
-- `CROUPIER_DATABASE=postgres`, `CROUPIER_GAME_DATABASE_URL` (Neon, `sslmode=require`)
+- `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_STREAM_LANE=lissabon-stream-lane` (`NODE_ENV=production` sätts av imagen)
+- `CROUPIER_DATABASE=postgres`, `CROUPIER_GAME_DATABASE_URL` (Neon med TLS)
 - `CROUPIER_STUDIO_NEON_POLICY=1`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`
 - `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN`
-- `CROUPIER_STREAM_LANE=lissabon-stream-lane`
+- Ingress från Vercel: `CROUPIER_VERCEL_TRANSPORT_ORIGIN=https://croupier-v3.onrender.com`, `CROUPIER_PUBLIC_ORIGIN` och `PUBLIC_URL` (båda `https://www.scoutgaming.tech`), `CROUPIER_VERCEL_INGRESS_SECRET`
 
-`OPENCLAW_PRODUCT_SPEECH_URL` och `OPENCLAW_PRODUCT_SPEECH_TOKEN` är ett
-valfritt par när genererat tal, kamera och moving är av. Aktiv AI-media kräver
-fortfarande ett verkligt relä. Utan relä är spelchatten okonfigurerad och
-avvisar anrop; detta är inte verifierad chatt eller talacceptans. Ett halvt
-par avvisas alltid. Inspelad spelmedia kräver ingen separat AI-tjänst.
+Utan `PUBLIC_URL` härleds originen från `RENDER_EXTERNAL_URL` och starten stoppar med `Invalid or missing CROUPIER_PUBLIC_ORIGIN`. `BO_URL`, `LAB_PUBLIC_URL` och `CROUPIER_GAME_ORIGIN` härleds och sätts inte. `CROUPIER_SHARED_TABLE_ENABLED` är osatt i produktionen till O03 ([regeln](../../docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling)); `CROUPIER_CLOUD_LAB_CHILD` är borttagen och `1` stoppar starten.
 
-Vercel-ingress (krävs för att Vercel ska nå v3):
+Render MCP kan skriva env men inte läsa värden; en skrivning sammanfogar nycklar och startar en deploy direkt. Läs värden via REST med `RENDER_API_KEY` från gitignorerad `.env.local` och skriv aldrig ut dem.
 
-- `CROUPIER_VERCEL_TRANSPORT_ORIGIN` = **v3:s egen** adress, `https://croupier-v3.onrender.com`
-  (gatewayn jämför med `Host` och, vid rörligt tal, med `RENDER_EXTERNAL_URL`).
-- `CROUPIER_PUBLIC_ORIGIN` = `https://www.scoutgaming.tech` (samma som Vercel).
-- `PUBLIC_URL` = `https://www.scoutgaming.tech`: spelets publika origin.
-  `config.mjs` kräver att den är lika med `CROUPIER_PUBLIC_ORIGIN`; utan den härleds
-  origin från `RENDER_EXTERNAL_URL` och starten stoppar med
-  `Invalid or missing CROUPIER_PUBLIC_ORIGIN` (verifierat 22 oktober på första v3-deployen).
-- `CROUPIER_VERCEL_INGRESS_SECRET` = samma hemlighet som Vercel-projektet.
+## Deploy
 
-Tal (endast de funktioner som faktiskt ska vara aktiverade):
+1. Merga efter grön CI. Kontrollera att schemat som koden kräver redan är applicerat (`node tools/check-migration-readiness.mjs`).
+2. Starta deployen manuellt för exakt den SHA som mergats: Render MCP `trigger_deploy` för `srv-dbd6nfon74is73aiblf0`, eller panelen.
+3. Kontrollera:
+   - loggen visar `Cloud pilot listening after local access checks`;
+   - `GET https://croupier-v3.onrender.com/__cloud/health` ger `ok`;
+   - `GET /__cloud/version` ger `{schemaVersion:1, provider:"render", commitSha}` med rätt SHA;
+   - `/studio` ger 307 till `https://www.scoutgaming.tech/studio` (bokmärkesredirect, ingen Studio på Render);
+   - det ändrade flödet fungerar från www.
+4. Director (`srv-danhlpjtqb8s73bv530g`) och Gateway (`srv-danhiv3tqb8s73burkq0`) deployas om bara när `packages/director` eller `services/openclaw/lab` ändras.
 
-- `CROUPIER_GENERATED_SPEECH`, `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_STREAMING`
-- `CARTESIA_API_KEY`, `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`
-- `CROUPIER_SPEECH_STREAM_WORKER_SECRET`, `CROUPIER_SPEECH_STREAM_TICKET_SECRET`
-- `CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD`, `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD`, `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`
-- `CROUPIER_DEALER_SPEECH_PROFILES`, `ELEVENLABS_API_KEY`
-- Rörligt tal: `CROUPIER_MOVING_SPEECH_ENABLED`, `CROUPIER_MOVING_SPEECH_BANK_RECORD`,
-  `CROUPIER_MOVING_SPEECH_ENDPOINT_ID`, `CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY`,
-  `CROUPIER_MOVING_SPEECH_IMAGE`, `CROUPIER_MOVING_SPEECH_RELEASE_SHA256`,
-  `CROUPIER_MOVING_SPEECH_TICKET_SECRET`, `CROUPIER_STUDIO_MOVING_DRIFT_API`,
-  `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` och
-  `CROUPIER_MOVING_SPEECH_WORKER_ORIGIN` = **v3:s egen** adress (måste vara lika
-  med `RENDER_EXTERNAL_URL` och transportorigin).
+Vercel och Render får ha olika SHA när bara frontend ändrats, men kompatibiliteten ska vara kontrollerad. Grön CI eller "live" i Render är inget kvitto på att rätt kod kör.
 
-Valfria enligt aktiv funktion: `CROUPIER_PRESENTATION_DIRECTOR_URL`,
-`CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `OPENCLAW_TIMEOUT_MS`,
-`OPENCLAW_SPEECH_TIMEOUT_MS`, `CROUPIER_PLAYER_ACCOUNTS`,
-`CROUPIER_VERCEL_FRONTEND_ORIGIN`, `CROUPIER_SHARED_TABLE_ENABLED`,
-`CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY`.
-`CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD` behövs inte: konton finns redan i Neon.
-`CROUPIER_ZONES_DATABASE_URL` är valfritt isoleringsskydd om en äldre zonadress finns: samma databas som game/auth nekas, även genom pooler-alias. Den skapar ingen zon-/Studio-konsument och behövs inte för start.
+## Återgång
 
-Sätt **inte** på v3 (hör till äldre kombinerad start, lokala produktdata eller avstängda sidofunktioner):
+Gå tillbaka till en granskad tidigare SHA enligt [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten). Återgångskoden måste förstå installerat schema, frysta paket och sparade format, till exempel sparad idle-rotation. `croupier-v2` och `croupier-vercel-preview-qa` är raderade; det finns ingen äldre motor eller kombinerad image att gå tillbaka till.
 
-- `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, `BETTALOTTO_PARTNER_BASE_URL`:
-  härleds från spelets origin (`PUBLIC_URL`) i single-origin och behöver inte sättas.
-- `CROUPIER_LAB_BASE_PATH`, `NEXT_PUBLIC_LAB_BASE_PATH`, `LAB_REMOTE_URL`,
-  `LAB_REMOTE_TOKEN`, `BETTALOTTO_PARTNER_KEY_ID`,
-  `BETTALOTTO_PARTNER_SECRET`, `BETTALOTTO_PARTNER_PLAYER_ID` (nådde bara Lab-barnet).
-- `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_DATA_DIR`, `LAB_STUDIO_DATA_DIR`,
-  `CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR`,
-  `CROUPIER_GENERATED_SPEECH_DIR`, `LAB_VIDEO_ARCHIVE`, `CROUPIER_MEDIA_BLOB_INDEX`,
-  `CROUPIER_STORAGE_MAINTENANCE`, `CROUPIER_STORAGE_EXPORT_SECRET`, `CROUPIER_P6_*`,
-  `CROUPIER_PUBLIC_GAME_PATH` (härleds).
-- Blockerade: `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`,
-  `CROUPIER_LISSABON_PROFILES`, `NODE_OPTIONS`, `NODE_PATH`.
+## Trafik
 
-Kontroll innan trafik: `render logs` ska visa
-`Cloud pilot listening after local access checks`; `GET https://croupier-v3.onrender.com/__cloud/health`
-ger `ok`, `/__cloud/version` ger `{schemaVersion:1, provider:"render", commitSha}`
-och `/studio` ger 307 till `https://www.scoutgaming.tech/studio` (bokmärkesredirect,
-ingen Studio på Render).
-
-## Leverans och återställning
-
-1. Frys granskad kod-SHA och kontrollera att installerat Neon-schema, frysta paket och redan sparade medieformat är kompatibla.
-2. Använd ordinarie PR/CI och nödvändig migrationsreadiness. Manuell v3-deploy ska peka på den granskade versionen; grön CI är inte ett deploykvitto.
-3. Återläs faktisk `/__cloud/version`, `/__cloud/health` och berörda capability-/produktflöden. Vercel och Render får ha olika SHA när bara frontend ändrats, men deras kompatibilitet måste verifieras.
-4. Vid kodåtergång: använd en granskad kompatibel v3-version enligt [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten). Återöppna inte v2 eller återställ gamla env-/lokalregister som genväg. En läsare som inte kan läsa sparad rotation är ingen giltig återgång.
-
-## Ansvar för trafik
-
-| Trafik | Aktiv mottagare |
+| Trafik | Mottagare |
 | --- | --- |
-| Health/version och signerad ingress från Vercel | v3-gateway och `services/game` |
-| Auktoritativa spel-/konto-/publiceringskontrakt och rumssocket | Spelmotorn och befintliga delade tjänster |
-| Talströmmar och worker-callbacks | Befintligt relä/gateway enligt aktiverade funktioner |
-| Admin/Studio-sidor och API:er | Vercels Studio-tjänst; ingen Next-process på Render |
-| Direkt äldre Studio-dokumentlänk till Render | Befintlig omdirigering till Vercel; otillåten intern Studio-upstream nekas |
+| Health, version och signerad ingress från Vercel | Gatewayn och `services/game` |
+| Spel-, konto- och publiceringskontrakt, rumssocket för delat bord | Spelmotorn |
+| Talströmmar och worker-callbacks | Talreläet i gatewayn, när funktionerna är på |
+| Admin och Studio-API:er | Vercels `studio`-tjänst |
+| Gamla Studio-dokumentlänkar till Render | Redirect till Vercel |
 
-Route- och behörighetskontroller ska följa dessa aktiva tjänster. En gammal sida, testsnapshot eller kombinerad image är inget bevarandekrav när dess ersättare är verifierad.
+## Prov i repot
 
-## Verifiering i repo
-
-- `node --test --test-concurrency=4 ops/cloud/test/*.test.mjs`: enprocess-start,
-  signerad ingress och verklig Web-session, media-/sockettransport samt
-  avstängning. Linux-signalprov körs i Linux-CI. `game-image.test.mjs`
-  verifierar COPY-listan och paketupplösningen.
-- Workflowet `Render v3 container check` (`.github/workflows/product-container-check.yml`),
-  jobb `game-image`: bygger `Dockerfile.game`, kör nätverkslös paketupplösning och
-  `start.mjs --check` utan Lab-bygge. Ingen image publiceras. Det är ett separat
-  workflow, inte en del av ordinarie `croupier.yml`: det körs bara på PR:er mot main som
-  rör workflowfilen, `.dockerignore`, `Dockerfile.game` eller spel-/gatewaypaketens
-  `package.json`/`package-lock.json` (sökvägsfilter) samt via manuell `workflow_dispatch`.
-  Push till main kör det aldrig; vid en frysning krävs en dispatch.
+- `node --test --test-concurrency=4 ops/cloud/test/*.test.mjs`: start med en spelprocess, signerad ingress och riktig Web-session, media- och sockettransport, avstängning. Linux-signalprov körs i CI. `game-image.test.mjs` kontrollerar COPY-listan.
+- Workflowet `Render v3 container check` (`.github/workflows/product-container-check.yml`, jobb `game-image`) bygger `Dockerfile.game`, kör nätverkslös paketupplösning och `start.mjs --check`. Det körs på PR:er som rör workflowfilen, `.dockerignore`, `Dockerfile.game` eller spel- och gatewaypaketens `package.json`/låsfil, och via `workflow_dispatch`; inte vid push till `main`. Ingen image publiceras.
