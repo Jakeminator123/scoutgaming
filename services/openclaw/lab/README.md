@@ -1,25 +1,19 @@
-# Croupiers Director och privata OpenClaw Gateway
+# Director och privat OpenClaw Gateway
 
-Denna mapp är aktiv server- och driftkod i `Jakeminator123/scoutgaming`.
-Källroten är `services/openclaw/lab` för Render och Docker. Studio för mediearbete
-ligger i repots separata [apps/studio/](../../../apps/studio/docs/README.md).
+Aktiv server- och driftkod. `services/openclaw/lab` är källroten för Render och
+Docker: Director kör som `croupier-lab-director` (publik) och Gatewayn som
+`croupier-lab-openclaw` (privat tjänst). `render.yaml` beskriver bara dessa
+två tjänster, inte hela Render-arbetsytan.
 
-All mänsklig AI-/OpenClaw-dokumentation börjar i
-[docs/AI/README.md](../../../docs/AI/README.md).
+Dokumentationen börjar i [docs/AI](../../../docs/AI/README.md);
 [OpenClaw-indexet](../../../docs/AI/openclaw/README.md) leder till drift,
-dashboard, lokal anslutning, socialt prov och officiella källor.
+dashboard, produkttal och officiella källor.
 
-`render.yaml` beskriver två tjänster: publik Director och privat Gateway.
-Det är inte en förteckning över hela Render-arbetsytan. Aktuell daterad
-tjänste- och instanskontroll finns i AI-indexet.
-
-Produktservern använder en separat speech-token till Director, som i sin tur
-använder Gateway-autentisering. I denna kedja ligger modellnyckeln hos Gateway.
-Webbchattens direkta serveradapter är ett separat flöde; se
-[AI-översikten](../../../docs/AI/scoutgaming-agentflode.md). Hemligheter skickas
-inte till webbläsaren.
+Spelmotorn når Director med en separat speech-token, och Director når Gatewayn
+med Gateway-autentiseringen; modellnyckeln finns bara i Gatewayn. Admins
+webbchatt har en egen serveradapter på Vercel. Inga hemligheter skickas till
+webbläsaren.
 
 `src/`, `config/`, `schemas/`, `deploy/` och testerna är implementationskällor.
-`deploy/runtime-bundle/` är versionsstyrd promptkontext, inte en kopia av
-användardokumentationen. De få filerna i `docs/` är kompatibla hänvisningar
-till den samlade dokumentationen.
+`deploy/runtime-bundle/` är versionsstyrd promptkontext för Gateway-rollerna,
+inte en kopia av användardokumentationen.
