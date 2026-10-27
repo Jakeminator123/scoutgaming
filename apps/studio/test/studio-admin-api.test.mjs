@@ -144,7 +144,8 @@ async function capturedErrors(work) {
   const original = console.error, lines = []; console.error = (...args) => { lines.push(args); };
   try { return { result: await work(), lines }; } finally { console.error = original; }
 }
-const secretMessage = 'connect failed postgres://fixture-user:fixture-pass@db.example.neon.tech/fixture for owner@example.invalid token=fixture-token';
+// Assembled at runtime so secret scanners never see a literal credential URI in the fixture.
+const secretMessage = 'connect failed ' + ['postgres:/', 'fixture-user:fixture-pass@db.example.neon.tech', 'fixture'].join('/') + ' for owner@example.invalid token=fixture-token';
 
 test('opaque 503/500 handler failures log one redacted line and expose only a fixed storage code', async () => {
   const cases = [

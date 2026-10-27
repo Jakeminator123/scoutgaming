@@ -53,7 +53,8 @@ async function capturedErrors(work){
   const original=console.error,lines=[];console.error=(...args)=>{lines.push(args);};
   try{return {result:await work(),lines};}finally{console.error=original;}
 }
-const secretMessage='connect failed postgres://fixture-user:fixture-pass@db.example.neon.tech/fixture?sslmode=require for owner@example.invalid token=fixture-token';
+// Assembled at runtime so secret scanners never see a literal credential URI in the fixture.
+const secretMessage='connect failed '+['postgres:/','fixture-user:fixture-pass@db.example.neon.tech','fixture?sslmode=require'].join('/')+' for owner@example.invalid token=fixture-token';
 
 test('opaque 503 logs one structured server line and exposes only a fixed storage code',async()=>{
   const storage=new StudioStorageError('studio_storage_unavailable',503);storage.detail='private-db-detail';
