@@ -85,7 +85,7 @@ worktrees och brancher och samordnar genom PR:er.
 Utan datorregistrering fungerar `list --to me` på den registrerade branchen
 `kevin`; på en featurebranch för Kevins arbete används `list --to kevin`.
 Kort fråga till någon annan: `node tools/inbox.mjs ping --to john --message "…"`.
-I Cursor finns `/ping <namn> <text>`. Agenter svarar i tråden, stänger bara egna ärenden
+Agenter svarar i tråden, stänger bara egna ärenden
 och behandlar ett svar som information, inte som godkännande att ändra repots logik.
 
 ## Regler

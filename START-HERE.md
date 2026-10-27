@@ -68,7 +68,7 @@ Staging är en tillfällig provbänk fram till O03 och raderas därefter. Jakob 
 
 - Arbeta på en branch `jakob/*` (Claude-underagenter: `jakob/claude-*`) från färsk `origin/main` och committa med repots hookar. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot; öppna PR mot `main` i `Jakeminator123/scoutgaming`. Policy: `tools/repository-policy.json`. Ingen force-push, inga taggar, ingen radering av andras brancher.
 - Merge efter grön full CI av den orkestrerande sessionen eller Jakob, enligt ägarreglerna i [AGENTS.md](AGENTS.md). Den obligatoriska kontrollen heter `CI` och kräver att branchen är à jour med `main`: kör `gh pr update-branch` före merge. Samordning sker i PR:er och [teaminboxen](inbox/README.md).
-- Claude Code: underagenter arbetar i egna worktrees under `.claude/worktrees` (gitignorerat), granskar varandras PR:er och rapporterar kort med bevis. `.agents/skills`, `.codex` och `.cursor/commands` är Codex-/Cursor-arv och styr inte Claude.
+- Claude Code: underagenter arbetar i egna worktrees under `.claude/worktrees` (gitignorerat), granskar varandras PR:er och rapporterar kort med bevis. Codex- och Cursor-agentkonfigurationen (`.codex`, `.agents`, Cursor-kommandon och -skills) är borttagen; Cursor används som editor med `.cursor/rules/scoutgaming.mdc`, som bara hänvisar hit.
 - Uppdatera [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md) vid överlämning. Markera en aktivitet VERIFIED i `migrering/status.json` först när kriterierna är bevisade.
 
 ## Läge
