@@ -9,8 +9,9 @@ import { DatabaseSync, backup as sqliteBackup } from 'node:sqlite';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SCHEMA = 'croupier-render-state-v1';
+// The product profile (players/croupier.db, craig.db) left with the engine's SQLite path;
+// game data is restored from Neon. Older product snapshots: ENVIRONMENT-RESTORATION.md.
 const PROFILES = {
-  product: ['players/croupier.db', 'players/craig.db'],
   director: [],
   gateway: ['openclaw.json'],
 };

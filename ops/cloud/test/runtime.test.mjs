@@ -2,12 +2,11 @@ import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { Agent, createServer, request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
-import { DatabaseSync } from 'node:sqlite';
 import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from '../config.mjs';
 import { createCloudGateway, proxyHeaders, upstreamForHost, upstreamForRequest } from '../gateway.mjs';
 import { startChildren, terminateChild, observeChildStdout, closeGateway } from '../process-group.mjs';
@@ -181,6 +180,8 @@ test('configuration rejects local or ambiguous exposure and conflicting storage'
     { CROUPIER_GENERATIONS_DIR: join(tmpdir(), 'generations') },
     { CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'speech') },
     { CROUPIER_CLOUD_DATA_ROOT: '.' },
+    { CROUPIER_DATA_DIR: join(tmpdir(), 'players') },
+    { CROUPIER_DATABASE: undefined },
   ]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change }));
   }
@@ -320,27 +321,36 @@ test('disk preflight accepts its actual directory despite Windows path casing', 
 });
 
 test('read-only bootstrap preflight requires credentials until CRAIG has an account', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'croupier-cloud-bootstrap-check-'));
-  try {
-    const env = { ...fixture(), CROUPIER_CLOUD_DATA_ROOT: directory };
-    // Isolated read-only SQLite migration preflight, never a cloud-start config.
-    const config = {database:'sqlite',dataRoot:directory,paths:{players:join(directory,'players')}};
-    const dbPath = join(config.paths.players, 'craig.db');
-    await assert.rejects(inspectCloudBootstrap(config), /CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/);
-    await assert.rejects(stat(dbPath), { code: 'ENOENT' });
-    assert.equal(await inspectCloudBootstrap(validateCloudConfig({ ...env,
-      CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'cloudadmin',
-      CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'fixture-private-passphrase-2026',
-    })), undefined);
-    await mkdir(config.paths.players);
-    const db = new DatabaseSync(dbPath);
-    try {
-      db.exec('CREATE TABLE users (username TEXT NOT NULL)');
-      await assert.rejects(inspectCloudBootstrap(config), /CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/);
-      db.prepare('INSERT INTO users (username) VALUES (?)').run('cloudadmin');
-      assert.equal(await inspectCloudBootstrap(config), undefined);
-    } finally { db.close(); }
-  } finally { await rm(directory, { recursive: true, force: true }); }
+  // A fake PostgreSQL store: the preflight only checks the installed schema and counts CRAIG users.
+  const calls = [];
+  let users = 0, installed = true;
+  const openStore = options => {
+    calls.push(['open', options]);
+    return {
+      db: { assertInstalled: async () => { calls.push(['assert']); if (!installed) throw Error('schema_missing'); } },
+      boDb: { prepare: sql => ({ get: async () => { calls.push(['query', sql]); return { n: users }; } }) },
+      close: async () => { calls.push(['close']); },
+    };
+  };
+  const steps = () => calls.map(([name]) => name);
+  const config = validateCloudConfig(fixture());
+  await assert.rejects(inspectCloudBootstrap(config, { openStore }), /CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/);
+  assert.deepEqual(steps(), ['open', 'assert', 'query', 'close']);
+  assert.deepEqual(calls[0][1], { connectionString: config.gameDatabaseUrl, zonesConnectionString: config.zonesDatabaseUrl });
+  assert.match(calls[2][1], /^SELECT COUNT\(\*\) AS n FROM users$/);
+  users = 1; calls.length = 0;
+  assert.equal(await inspectCloudBootstrap(config, { openStore }), undefined);
+  assert.deepEqual(steps(), ['open', 'assert', 'query', 'close']);
+  installed = false; calls.length = 0;
+  await assert.rejects(inspectCloudBootstrap(config, { openStore }), /schema_missing/);
+  assert.deepEqual(steps(), ['open', 'assert', 'close']);
+  // Explicit credentials let the Web child create the first account; the preflight opens nothing.
+  calls.length = 0;
+  assert.equal(await inspectCloudBootstrap(validateCloudConfig({ ...fixture(),
+    CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER: 'cloudadmin',
+    CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: 'fixture-private-passphrase-2026',
+  }), { openStore }), undefined);
+  assert.deepEqual(calls, []);
 });
 
 test('game Host cannot reach BO routes except the exact public config GET', () => {

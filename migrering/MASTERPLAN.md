@@ -2,9 +2,9 @@
 
 ## J10 och aktuell prioritet — 27 oktober
 
-**65 % = 13/20 verifierade aktiviteter; 35 % återstår.** J10 förenar ren fryst klon/build/start, kompatibel HTTP-restore med SQL/ledger-paritet och ny faktisk Admin → publicering → lobby → autentiserad webviewhand. Se [samlat kvitto](../docs/2026-10-27-ISOLATED-ACCEPTANCE.json) och [överlämningen](../docs/NEXT-AGENT.md). J10 kräver J06/J09. Full K06-acceptans var ett för brett beroende: dess befintliga publicerings-/launchkontrakt har provats i J10, medan fält-/material-/AV-/samtidighetskraven behålls i K06/K07/O02. Vikter och J10:s verkliga slutkrav är oförändrade. Inga tester eller produktkontroller har raderats.
+**70 % = 14/20 verifierade aktiviteter; 30 % återstår.** J08 är verifierad 27 oktober kväll i isolerad staging: Admin sparar, återläser och publicerar en versionerad spelkonfiguration med AV-granskat tal, och den överlever processbyte. Gränserna finns i [J08-kvittot](../docs/2026-10-27-J08-STAGING-ACCEPTANCE.json). J10 förenar ren fryst klon/build/start, kompatibel HTTP-restore med SQL/ledger-paritet och ny faktisk Admin → publicering → lobby → autentiserad webviewhand. Se [samlat kvitto](../docs/2026-10-27-ISOLATED-ACCEPTANCE.json) och [överlämningen](../docs/NEXT-AGENT.md). J10 kräver J06/J09. Full K06-acceptans var ett för brett beroende: dess befintliga publicerings-/launchkontrakt har provats i J10, medan fält-/material-/AV-/samtidighetskraven behålls i K06/K07/O02. Vikter och J10:s verkliga slutkrav är oförändrade. Inga tester eller produktkontroller har raderats.
 
-Äldre procentsatser och öppna J10-punkter nedan är historiska avstämningar. Återstående aktiviteter är K04/J08/K05/K06/K07/O02/O03; de gäller främst samlad acceptans och drift, inte import av hela Kevin-branchen.
+Äldre procentsatser och öppna J10-punkter nedan är historiska avstämningar. Återstående aktiviteter är K04/K05/K06/K07/O02/O03; de gäller främst samlad acceptans och drift, inte import av hela Kevin-branchen.
 
 ## Beslut 27 oktober: en väg utan SQLite
 

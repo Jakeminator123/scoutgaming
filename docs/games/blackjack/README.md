@@ -24,8 +24,7 @@ Sidoinsatser: Perfect Pairs ger 25:1 perfekt, 12:1 samma färg, 6:1 blandad fär
 | --- | --- |
 | Spelregler, händer, split och sidoinsatser | [services/game/public/blackjack.mjs](../../../services/game/public/blackjack.mjs) |
 | Beständig sko, versionskontroll, senaste request-kvitto | [services/game/shoe-game.mjs](../../../services/game/shoe-game.mjs) |
-| SQLite-transaktion: sko, saldo och presentationskvitto | [services/game/native-table.mjs](../../../services/game/native-table.mjs) |
-| PostgreSQL: samma ansvar med låst spelarrad | [services/game/postgres-native-table.mjs](../../../services/game/postgres-native-table.mjs) |
+| PostgreSQL-transaktion: sko, saldo och presentationskvitto med låst spelarrad | [services/game/postgres-native-table.mjs](../../../services/game/postgres-native-table.mjs) |
 | Autentisering och POST /api/table | [services/game/server.mjs](../../../services/game/server.mjs) |
 | Spelhändelser till presentation | [services/game/partner-presentation.mjs](../../../services/game/partner-presentation.mjs) |
 | Fryst rum, speltyp och operatör | [packages/presentation/contracts/presentation-room.mjs](../../../packages/presentation/contracts/presentation-room.mjs) |

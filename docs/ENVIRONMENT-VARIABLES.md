@@ -831,8 +831,9 @@ Migration `006-player-profile.sql` kördes där 8 oktober 16:48 (två nya nullba
 
 Render: `CROUPIER_DATABASE=postgres` kräver `CROUPIER_GAME_DATABASE_URL` till
 en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
-verifierad import. `sqlite` är kompatibilitetsstandard; en game-URL utan
-postgres-flagga är fel. Zon-URL får aldrig vara reserv för konton/spel.
+verifierad import. `postgres` krävs i alla lägen: utan värdet startar varken
+motorn (`postgres_required`; `sqlite` ger `sqlite_backend_removed`) eller
+molnkonfigurationen, och satt `CROUPIER_DATA_DIR` stoppar starten. Zon-URL får aldrig vara reserv för konton/spel.
 
 Ett isolerat native-QA-prov får använda
 `CROUPIER_CLOUD_DATA_ROOT=/var/data/native-studio-qa/<12 hextecken>`.
@@ -964,8 +965,8 @@ registrerings-/mediemodulerna under `packages/`. Studio på Vercel använder sin
 `apps/studio/lib/`-adaptrar, däribland cloud-media-store, video-registry och
 legacy-clip-inventory. Dessa moduler ingår inte i Render-spelets image.
 Studio läser fortfarande `LAB_PUBLIC_URL` som betrodd proxy-origin.
-`CROUPIER_DATA_DIR` förekommer i äldre lokala verktyg men är ingen
-inventeringsreserv i gemensam Neon-drift. Detta kräver ingen
+`CROUPIER_DATA_DIR` är avvecklad med motorns SQLite-väg; motorn och
+molnkonfigurationen vägrar starta om den är satt. Detta kräver ingen
 ny tjänsteinställning eller ändring av hemliga värden.
 
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
@@ -988,7 +989,8 @@ felaktig katalog/källa ger 503, utan lokal metadata- eller bytesfallback.
 normaliseras inte till en aktiv reservkälla.
 
 `CROUPIER_STORAGE_MAINTENANCE` och `CROUPIER_STORAGE_EXPORT_SECRET` gäller
-historiska exportlägen. De ska vara borttagna i migrerad produktion;
+historiska exportlägen; bara `studio-export` finns kvar, SQLite-läget `export`
+är borttaget. De ska vara borttagna i migrerad produktion;
 återaktivera inte gamla disk-/exportsättare från en äldre konfigurationsbeskrivning.
 
 Native talgranskning använder samma Neon-katalog och exakta registrerade
@@ -1259,8 +1261,8 @@ kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.
 
 Studio och game kopplar egna Blob-adaptrar till den gemensamma medialäsaren
 i `packages/studio-registry/server/media-runtime.mjs`. Apparna behåller
-sina tidigare roots och lokala filpolicyer. `CROUPIER_DATA_DIR` har samma
-legacy-standardkatalogregel; `NEXT_PUBLIC_LAB_BASE_PATH` behåller den
+sina tidigare roots och lokala filpolicyer. `CROUPIER_DATA_DIR` är avvecklad
+och vägras av motorn; `NEXT_PUBLIC_LAB_BASE_PATH` behåller den
 befintliga preview-URL-regeln för tom basväg respektive `/studio`.
 `CROUPIER_VERCEL_FRONTEND_ORIGIN` fortsätter styra det exakta betrodda
 proxyursprunget. Källinventariet följer de nya kompositionerna; flytten inför
@@ -1280,6 +1282,6 @@ i Neon-läget. Ingen ny miljövariabel, processdelad global eller automatisk pro
 Policybootstrapens miljögrind ägs av
 `packages/presentation/server/studio-policy-runtime.mjs`. Game och Studio tillför
 samma migrationskontroll och varsin befintlig medialäsare; schema/readSaved-ordningen
-och det avstängda SQLite/offline-läget är oförändrade. Svarsbankens gemensamma kärna
+är oförändrade; SQLite/offline-läget är borttaget. Svarsbankens gemensamma kärna
 får appens befintliga Blob-metoder och samma env/blobClient/cacheDir. Ingen ny
 miljövariabel, cache eller automatisk provideranslutning införs.

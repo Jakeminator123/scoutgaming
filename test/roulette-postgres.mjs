@@ -95,6 +95,13 @@ export async function runRoulettePostgresChecks({pool,restart}={}) {
   assert.equal((await run(request)).round.id,responses[0].round.id);
   assert.equal((await run(request)).balance,380);
   checks.push('roulette: persisted receipts and wallet survive a PostgreSQL restart');
+  // Ported from the retired SQLite storage test: a later currency change never relabels settled rounds.
+  await pool.query("UPDATE croupier_game.players SET currency='EUR' WHERE id=$1",[id]);
+  const settled=(await run({id,op:'state'})).rounds;
+  assert.ok(settled.length>0&&settled.every(round=>round.currency==='USD'));
+  const firstBet=(await pool.query("SELECT meta FROM croupier_game.transactions WHERE player_id=$1 AND type='roulette_bet' ORDER BY id LIMIT 1",[id])).rows[0];
+  assert.equal(JSON.parse(firstBet.meta).roundId,responses[0].round.id);
+  checks.push('roulette: a currency change keeps settled rounds and their ledger in the original currency');
   await pool.query("UPDATE croupier_game.players SET status='blocked' WHERE id=$1",[id]);
   await assert.rejects(run(next),/player_unavailable/);
   checks.push('roulette: blocked players cannot read or play a room');

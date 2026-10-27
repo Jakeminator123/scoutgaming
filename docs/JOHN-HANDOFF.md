@@ -1,5 +1,40 @@
 # Aktuell handoff — Scoutgaming
 
+## 27 oktober kväll: J08 verifierad, 70 %
+
+**70 % = 14/20 aktiviteter.** J08 är VERIFIED på kod `b08f2a866f77e6b9673cbb6624b7eea9013a0a70` med [sanitiserat kvitto](2026-10-27-J08-STAGING-ACCEPTANCE.json). [Statusfilen](../migrering/status.json) är enda statuskälla. Deploy-ID, revisioner, gränser och nästa steg i ordning finns i [NEXT-AGENT](NEXT-AGENT.md).
+
+Isolerad staging, operatör `qa-k06k07-9dd2d3a4-a`, rum `room-33b37ff3-ec79-ff2d-5567-b14a9d3efe5e`:
+
+- **Negativa prov på `c32be1fb`:** sparade utkast gav nya revisioner. Fyra inaktuella revisioner gav 409, ogiltigt språk 422 och operatör B 404. `players/status` gav 200 (#424). Publicering före AV-granskning gav 422.
+- **AV-granskning i staging:** Jakob godkände med stagingens Admin-konto elva svenska PAOW-tal (åtta `_1` samt `blackjack_7`, `double_3` och `blackjack_3`; paketet frös `blackjack_7`) och underkände `blackjack_1` och `double_1`. Det gäller bara staging.
+- **Publicering:** paketet gick från 5 till 6 till 7. `room-config-38b14261-cf20-4e31-bc09-042ee40f1d28` publicerades med 200 och replay gav 409. Rummet syns bara hos operatör A, och `/game` gav 200 på paket 7. Tal valdes från godkända tagningar med exakta bytes. Samma version serverades efter processbyte `dep-dbgdh7mi0phs7383mrrg`@b08f2a86.
+
+**Gränser:**
+
+- Processbytena var redeploys via Render MCP, inte *Restart service*.
+- Aktiv-hand-regeln C0/P0/M0 mot C1/P1/M1 provades inte live; den flyttas till K06 (PR407, mergad 8fcb920a, CI40347468353).
+- Ingen spelkonsument har bundit `room-config-38b14261`: fält 2 och 4 är Admin-återläsning plus lagring, och konsumtionen flyttas till K07 g1/g2 (se matrisnoten under *Samlat niofältskvitto*). Fält 5:s bord, bakgrund och färg provades inte.
+- Operatör B provades som scope med samma Admin-session; fel roll provades inte live.
+- Replikerna win, push, blackjack, insurance och double utlöstes inte.
+- Ingen produktionspublicering är gjord, och Johns Bet är orörd.
+
+**Delbevis med oförändrad status:**
+
+- **K04:** 16 kontroller passerar: material, återanslutning, två processbyten mitt i hand, negativa fall och godkänt tal.
+- **K05:** i produktionen har tio `_1` och 43 svenska tagningar recordedSpeech v2 och servermätt tid. 16 av tagningarna laddades upp från Kevins `c7138759`, och 36 giv- och idleklipp är mätta. Registret visar 6 approved, 2 rejected och resten pending.
+- **K06:** stagingkedjan går från Admin via publicering till spel efter processbyte.
+- **K07:** 16 pass, 2 blockerade (g1/g2 503) och 1 ersatt kriterium; K04 har 16 pass inklusive a4. g1/g2 kräver `CROUPIER_SHARED_TABLE_ENABLED=1` i staging.
+
+**Kvar:**
+
+- **K05:** Jakob godkänner tal i produktionen, kopplar talfacken, publicerar paketet och publicerar Johns Bet-rummet.
+- **K06:** aktiv hand över publicering live och visuellt godkända giv- och revealklipp.
+- **K07:** delat bord med flaggan.
+- **O02** och **O03**.
+- **SQLite:** steg 3c, 6 (#434, utkast) och 7.
+- **Clean slate:** först efter K05.
+
 ## J10 slutverifierad — 27 oktober 2026
 
 **65 % = 13/20 aktiviteter.** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
@@ -240,6 +275,8 @@ Den isolerade databasen och privata Blob-namnrymden är separata från originale
 | 9. Skobevis/audit | N1/valt rum → befintlig verifierad auditkedja → rum/sko/runda/fryst config. PR406: 21/21 och full grön CI. | Koddelen är integrerad och verifierad; ingen ny molnsko eller auditwriter krävs. |
 
 Slutkvittot ska ange exakt kandidat/CI/review och miljö-/deployidentiteter utan hemligheter. Spara ger utkast D och administrationRevision A1; separat återläsning bekräftar valen. Publicering konsumerar D och skapar paket P1 samt immutable config C atomiskt; separat produktläsning visar C/P1/material M. Utkastets ID och configversionen är olika kontrakt. Aktiv hand får korrekt använda C0/P0/M0 samtidigt som nästa fönsters head är C1/P1/M1. Driftfältet har egen revision; djuplänk och proof är läsvyer. Fullt spelutfall, offentlig återanslutning och omstart hör fortsatt till K06/K07.
+
+**Läge 27 oktober kväll (J08 VERIFIED, [kvitto](2026-10-27-J08-STAGING-ACCEPTANCE.json)):** Ingen spelkonsument har bundit configVersion `room-config-38b14261`. De enda konsumenterna av limitPreset/limits/betMs/actionMs är delat bords koordinator (services/game/games/blackjack/table/postgres-store.mjs:283, coordinator.mjs:17,133,433). croupier_game.shared_table_rooms har 0 rader i staging, och nativebordets /api/table start bär ingen rums- eller configreferens. Fält 2 och 4 är därför bevisade som Admin-återläsning plus lagring: croupier_game.shared_table_configs och _heads innehåller 38b14261 med casual 1/500/50, sv och 20000/15000. Spelets konsumtion av de publicerade gränserna flyttas till K06/K07 (fönsterprovet g1/g2 med CROUPIER_SHARED_TABLE_ENABLED=1) enligt det scopebeslut Jakob ombeds bekräfta i PR #440. Aktiv-hand-regeln flyttas till K06 med stöd av PR407 (mergad 8fcb920a, head 857347de, CI40347468353). Fält 5:s bord, bakgrund och färg provades inte. "Operatör B 404" avser operatör B:s scope med samma Admin-session, inte en separat inloggning; fel roll provades inte live. Fält 7 täcks av `moving-drift-admin.test.mjs` och `moving-drift-controls.test.mjs`; fält 9 av PR406.
 
 ## Skobevis: runda och fryst spelversion — 26 oktober
 

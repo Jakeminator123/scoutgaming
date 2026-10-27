@@ -295,7 +295,8 @@ rehearsal-spelningar. Godkänd stillbild ersätter inte den kontrollen.
   `--background-video <background.mp4>` och valfria
   `--scene-settings <composition.json>`. Filerna ska vara förhandsverifierade;
   verktyget mäter hash/storlek men verifierar inte alfa eller visuell kvalitet.
-  Det kör produktens riktiga roulettekod med SQLite i minnet på 127.0.0.2.
+  Det körde produktens riktiga roulettekod med SQLite i minnet på 127.0.0.2;
+  verktyget och motorns SQLite-väg är borttagna.
   Descriptorerna är fixturer: provet går inte genom verklig import/publicering.
 - Anna har visats bakom produktens roulettebord tillsammans med befintlig
   gardin-MP4. Bakgrunden har SHA256
