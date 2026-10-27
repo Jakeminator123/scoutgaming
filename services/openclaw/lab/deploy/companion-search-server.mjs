@@ -1,7 +1,6 @@
 import { createServer } from 'node:http';
 import { timingSafeEqual, createHash } from 'node:crypto';
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
+import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Reviewed 2026-09-21: $0.01/search + 8000 input tokens at $0.40/M,
@@ -34,10 +33,49 @@ async function limitedJson(response) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-export function createSearchService({ directory, key, enabled = true, now = Date.now, fetchImpl = fetch }) {
+export const SEARCH_STORE_FILE = 'companion-search.json';
+const SCHEMA = 'croupier-companion-search-v1';
+// Throws on anything but a complete store; the backup tool uses the same check.
+export function parseSearchState(text) {
+  const state = JSON.parse(text);
+  if (state?.schema !== SCHEMA || !Array.isArray(state.searches) || Object.keys(state).length !== 2) throw new Error('invalid_search_store');
+  return state;
+}
+
+// Reservations and receipts for the money budget. This helper is the only writer
+// of the file; each step reads, changes and atomically replaces it synchronously,
+// so a crash leaves the old or the new complete file and a restart keeps the quota.
+function searchStore(directory) {
   mkdirSync(directory, { recursive: true, mode: 0o700 });
-  const db = new DatabaseSync(join(directory, 'companion-search.sqlite'));
-  db.exec('PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS searches (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, at INTEGER NOT NULL, result TEXT);');
+  const path = join(directory, SEARCH_STORE_FILE), temporary = `${path}.tmp`;
+  let closed = false;
+  function read() {
+    let text;
+    try { text = readFileSync(path, 'utf8'); }
+    catch (error) { if (error.code === 'ENOENT') return { schema: SCHEMA, searches: [] }; throw error; }
+    return parseSearchState(text); // Never start over on damage: that would reset the budget.
+  }
+  function write(state) {
+    const file = openSync(temporary, 'w', 0o600);
+    try { writeFileSync(file, JSON.stringify(state)); fsyncSync(file); } finally { closeSync(file); }
+    renameSync(temporary, path);
+    if (process.platform !== 'win32') { const folder = openSync(directory, 'r'); try { fsyncSync(folder); } finally { closeSync(folder); } }
+  }
+  return {
+    // A throwing step writes nothing; unchanged state is not rewritten.
+    transaction(work) {
+      if (closed) throw new Error('search_store_closed');
+      const state = read(), before = JSON.stringify(state);
+      const value = work(state);
+      if (JSON.stringify(state) !== before) write(state);
+      return value;
+    },
+    close() { closed = true; },
+  };
+}
+
+export function createSearchService({ directory, key, enabled = true, now = Date.now, fetchImpl = fetch }) {
+  const store = searchStore(directory);
   const pending = new Map();
   async function search(body) {
     if (!valid(body)) return result('invalid_query');
@@ -45,16 +83,15 @@ export function createSearchService({ directory, key, enabled = true, now = Date
     if (!key) return result('not_configured');
     if (now() >= Date.parse(SEARCH_POLICY.pricingValidUntil)) return result('pricing_review_required');
     const fingerprint = createHash('sha256').update(body.query).digest('hex');
-    db.exec('BEGIN IMMEDIATE'); let cached;
-    try {
-      db.prepare('DELETE FROM searches WHERE at < ?').run(now() - 86400000);
-      const old = db.prepare('SELECT * FROM searches WHERE id=?').get(body.id);
-      if (old) cached = old.fingerprint !== fingerprint ? result('request_conflict')
-        : old.result ? JSON.parse(old.result) : pending.get(body.id) || result('interrupted', { costSek: 0.5 });
-      else if (db.prepare('SELECT COUNT(*) AS n FROM searches WHERE at > ?').get(now() - 3600000).n >= SEARCH_POLICY.maxPerHour) cached = result('hourly_limit');
-      else db.prepare('INSERT INTO searches VALUES (?,?,?,NULL)').run(body.id, fingerprint, now());
-      db.exec('COMMIT');
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
+    const cached = store.transaction(state => {
+      state.searches = state.searches.filter(row => row.at >= now() - 86400000);
+      const old = state.searches.find(row => row.id === body.id);
+      if (old) return old.fingerprint !== fingerprint ? result('request_conflict')
+        : old.result || pending.get(body.id) || result('interrupted', { costSek: 0.5 });
+      if (state.searches.filter(row => row.at > now() - 3600000).length >= SEARCH_POLICY.maxPerHour) return result('hourly_limit');
+      state.searches.push({ id: body.id, fingerprint, at: now(), result: null });
+      return null;
+    });
     if (cached) return cached;
     const work = async () => {
       let answer = result('unavailable', { costSek: 0.5 });
@@ -84,12 +121,12 @@ export function createSearchService({ directory, key, enabled = true, now = Date
           if (calls.length === 1 && sources.length) answer = result('searched', { results: sources, summary, costSek: 0.5 });
         }
       } catch { /* Never retry: timeouts may still incur provider charges. */ }
-      db.prepare('UPDATE searches SET result=? WHERE id=?').run(JSON.stringify(answer), body.id);
+      store.transaction(state => { const row = state.searches.find(item => item.id === body.id); if (row) row.result = answer; });
       return answer;
     };
     const promise = work().finally(() => pending.delete(body.id)); pending.set(body.id, promise); return promise;
   }
-  return { search, close: () => db.close() };
+  return { search, close: store.close };
 }
 
 export function createSearchServer({ token, dashboardHandoff, ...options }) {
@@ -120,7 +157,7 @@ export function createSearchServer({ token, dashboardHandoff, ...options }) {
     finally { active--; }
   });
   server.requestTimeout = 30000; server.headersTimeout = 5000;
-  // SIGTERM and the Gateway exit can both close this server. Release SQLite once.
+  // SIGTERM and the Gateway exit can both close this server. Close the store once.
   server.once('close', service.close);
   return server;
 }

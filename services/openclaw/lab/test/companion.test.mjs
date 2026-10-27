@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createCompanionStore } from '../../../../packages/director/node/companion-store.mjs';
+import { createCompanionStore, parseCompanionState, COMPANION_STORE_FILE } from '../../../../packages/director/node/companion-store.mjs';
 import { createCompanionService, roastFor, companionName } from '../../../../packages/director/companion.mjs';
 import { searchPublicWeb } from '../../../../packages/director/companion-search.mjs';
 import { socialChat } from '../../../../packages/director/social.mjs';
@@ -168,4 +168,23 @@ test('remote companion endpoint authenticates before reading/writing memory', as
   assert.equal(ok.status, 200); assert.equal((await ok.json()).name, null);
   const forged = await fetch(url, { ...options, headers: { ...options.headers, Authorization: 'Bearer fixture-lab-token' }, body: JSON.stringify({ identity, operation: 'profile', playerId: 'Emil' }) });
   assert.equal(forged.status, 400);
+});
+
+test('memory is one complete JSON file; damage fails closed instead of resetting quota or history', async t => {
+  const directory = await fixture(t); let calls = 0;
+  const service = createCompanionService({ directory, settings, model: async value => { calls++; return reply(value); } });
+  cleanups.get(t).push(() => service.close());
+  await service.handle({ identity, operation: 'name', name: 'Kevin' });
+  const response = await service.handle(request({ web: false }));
+  const path = join(directory, COMPANION_STORE_FILE), saved = parseCompanionState(await readFile(path, 'utf8'));
+  assert.deepEqual(saved.profiles.map(row => [row.id, row.name, row.history.length]), [[identity, 'Kevin', 2]]);
+  assert.deepEqual(saved.requests.map(row => [row.identity, row.id, row.result]), [[identity, 'request-001', response]]);
+  for (const damaged of ['{"schema":"croupier-companion-v1"', JSON.stringify({ ...saved, searches: {} })]) {
+    await writeFile(path, damaged);
+    await assert.rejects(service.handle({ identity, operation: 'profile' }), { code: 'companion_store_corrupt' });
+    await assert.rejects(service.handle(request({ input: input('request-002'), web: false })), { code: 'companion_store_corrupt' });
+  }
+  assert.equal(calls, 1);
+  const store = createCompanionStore(directory); store.close();
+  assert.throws(() => store.profile(identity), { code: 'companion_store_closed' });
 });

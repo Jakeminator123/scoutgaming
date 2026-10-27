@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { labCompanionIdentity } from '../lib/companion-server.mjs';
+import { companionRequest, labCompanionIdentity } from '../lib/companion-server.mjs';
 import { createSocialService, socialEndpoint } from '../lib/social-server.mjs';
 import { createMemorySocialStore } from '../lib/social-store.mjs';
 
@@ -45,4 +45,14 @@ test('companion poem uses the existing exact-text social TTS path once', async (
   assert.equal(result.companion.comedy, true); assert.equal(result.audio.text, result.reply);
   await service.chat(body, 'a'.repeat(64)); assert.equal(calls, 1); assert.equal(voices, 1);
   await assert.rejects(service.chat(body), /Ogiltigt namn/);
+});
+
+test('without the remote Director, names and memory fail closed and never open local state', async () => {
+  const local = { remoteToken: 'fixture-remote-token', companionEnabled: true, dataDir: '/must/not/be/opened' };
+  for (const operation of ['profile', 'forget']) {
+    await assert.rejects(companionRequest({ identity: 'a'.repeat(64), operation }, local, () => assert.fail('no Director was configured')),
+      error => error.statusCode === 503 && /Render-Directorn/.test(error.message));
+  }
+  await assert.rejects(companionRequest({ identity: 'a'.repeat(64), operation: 'profile' }, { ...settings, companionEnabled: false }, () => assert.fail('disabled')),
+    error => error.statusCode === 503 && /avstängt/.test(error.message));
 });

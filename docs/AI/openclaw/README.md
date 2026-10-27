@@ -11,8 +11,8 @@ fortfarande HTTP, Gateway-RPC, signering, katalog-I/O och sin miljöfilläsare.
 `apps/studio/lib/director-settings.mjs` och `services/game/director-settings.mjs` äger respektive
 apps filval och datarot, med en gemensam Node-läsare i
 `packages/director/node/settings-reader.mjs`. Filordning, alias och den
-befintliga Director-dataroten är oförändrade. Companion-SQLite ligger också
-i bibliotekets `node/`-adapter;
+befintliga Director-dataroten är oförändrade. Companion-lagret (`companion.json`)
+ligger också i bibliotekets `node/`-adapter;
 anroparen väljer datakatalogen. Flytten skapar ingen ny lagringsyta.
 
 `llms.txt` är en länklista, inte en tjänst som kör eller indexerar något.

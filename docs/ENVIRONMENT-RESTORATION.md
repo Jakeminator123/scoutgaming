@@ -765,8 +765,8 @@ efter diskfri P8-slutkontroll; backupen får aldrig startas som en andra aktiv d
 | Tjänst | Datarot | Bevara tillsammans |
 | --- | --- | --- |
 | Historisk produktdisk/extern backup | Tidigare `/var/data` | Hela frysta diskarkivet, inklusive äldre SQLite/BO/Studio och journaler; ingen blind restore över den aktiva Neon-källan |
-| Director | `/data/catalog` | `catalog.json`, `history/`, använt `companion.sqlite` |
-| Gateway | `/data/openclaw` | `openclaw.json`, agentfiler/sessioner, `companion-search.sqlite` |
+| Director | `/data/catalog` | `catalog.json`, `history/`, använt `companion.json` (namn/minne/sökkvot) |
+| Gateway | `/data/openclaw` | `openclaw.json`, agentfiler/sessioner, `companion-search.json` (sökreservationer/kvitton) |
 
 Game/auth-Neon är konto-/speldatabasen sedan 2 oktober; zonmetadata har sin
 egen databas. SQLite-filerna på disken är bevarade historiska källor.
@@ -781,12 +781,19 @@ SQLite-väg 27 oktober 2026. Historiska SQLite-arkiv och product-snapshots läse
 med verktygen vid Git-SHA `89343a655a6a44dbe2553a83f02294312070dc01` (sista main
 före borttagningen) eller med valfri `sqlite3`, i ett isolerat mål; de återställs
 aldrig över Neon. Använd inte gamla produktdiskkommandon mot den nya driften.
+Director/Gateway sparar sedan PR-7b companion-tillståndet i atomiskt ersatta
+JSON-filer (`companion.json`, `companion-search.json`). Tidigare
+`companion.sqlite`/`companion-search.sqlite` migreras inte (labbtillstånd med
+30 dagars/1 timmes livslängd); de blir oanvända kvar på disken och följer med
+som opaka bytes tills de tas bort. Äldre snapshots med dem läses med verktyget
+vid Git-SHA `3b688d490c405783d94ff83a99651e8b7824b319` eller `sqlite3`.
 För de aktiva Director-/Gatewaydiskarna krävs stoppade/frysta skrivare och en
 separat privat destination utanför Git och dataroten. `--quiesced yes` är en
 operatörsförsäkran, inte mätt writerdränering. Maintenance Mode räcker inte.
 
-Verktyget vägrar länkar/specialfiler, exporterar SQLite inklusive committad WAL,
-kontrollerar integritet/främmande nycklar och verifierar filhashar. Exportera
+Verktyget vägrar länkar/specialfiler, kopierar varje fil som exakta bytes med
+hash före, under och efter kopian, och kontrollerar att `companion.json`/
+`companion-search.json` är kompletta lager enligt ägarmodulens parser. Exportera
 hela snapshoten privat utanför Render och verifiera kopian där; `/tmp` är flyktig.
 Samordna snapshots eftersom separata DB-kontroller inte bevisar gemensam konsistens.
 Restore kräver stoppade skrivare, verifierat snapshot, rätt profil och tom monterad
@@ -795,8 +802,9 @@ aktuell paritet. Äldre SQLite får inte aktiveras efter nya Neon-skrivningar ut
 samordnad datatillbakaföring; inga parallella writers eller automatiska fallbacks.
 
 Director återställs till `/data/catalog`, Gateway till `/data/openclaw`.
-Verifiera inloggning, saldo/shoe, BO-roller, Studio-projekt och historik efter
-start och ytterligare omstart. Blanda inte äldre CRAIG med nyare speldata.
+Verifiera katalogrevision/historik, companion-profil (namn/minne) och att ett
+sparat sökkvitto återanvänds utan ny sökning, efter start och ytterligare omstart.
+Konton, saldo/shoe och BO-roller återställs från Neon, aldrig från dessa diskar.
 Efter avbruten restore: håll tjänsten stoppad och granska dataroten.
 Produktens externa fullbackup är verifierad enligt ovan. Externa fullbackuper
 av de aktiva Director-/Gatewaydiskarna är ett separat kvarvarande ansvar.

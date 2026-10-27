@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSearchService, createSearchServer, openAiSearchKey, SEARCH_POLICY } from './companion-search-server.mjs';
+import { createSearchService, createSearchServer, openAiSearchKey, parseSearchState, SEARCH_POLICY, SEARCH_STORE_FILE } from './companion-search-server.mjs';
 const id = n => n.toString(16).padStart(64, '0');
 const response = () => Response.json({ output: [
   { type: 'web_search_call', status: 'completed' },
@@ -74,7 +74,7 @@ test('OpenClaw queries are restricted to the actual official docs and reject loo
   assert.equal(result.status, 'searched'); assert.deepEqual(result.results.map(r => r.url), ['https://docs.openclaw.ai/']);
 });
 
-test('repeated server shutdown closes its SQLite service only once', { timeout: 3000 }, async t => {
+test('repeated server shutdown closes its search store only once', { timeout: 3000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'companion-search-shutdown-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const server = createSearchServer({ directory, token: 'fixture-gateway', enabled: false });
@@ -83,4 +83,22 @@ test('repeated server shutdown closes its SQLite service only once', { timeout: 
   // SIGTERM closes the helper first; the Gateway child's exit closes it again.
   const second = await new Promise(resolve => server.close(resolve));
   assert.equal(second?.code, 'ERR_SERVER_NOT_RUNNING');
+});
+
+test('budget state is one complete JSON file; damage fails closed instead of resetting the budget', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'companion-search-store-')); let calls = 0;
+  const options = { directory, key: 'fixture', now: () => Date.parse('2026-09-21'), fetchImpl: async () => { calls++; return response(); } };
+  let service = createSearchService(options);
+  t.after(async () => { service.close(); await rm(directory, { recursive: true, force: true }); });
+  const first = await service.search({ id: id(20), query: 'Public query' });
+  const path = join(directory, SEARCH_STORE_FILE), saved = parseSearchState(await readFile(path, 'utf8'));
+  assert.deepEqual(saved.searches.map(row => [row.id, row.result]), [[id(20), first]]);
+  service.close();
+  await assert.rejects(service.search({ id: id(21), query: 'Public query' }), { message: 'search_store_closed' });
+  await writeFile(path, '{"schema":"croupier-companion-search-v1"');
+  service = createSearchService(options);
+  await assert.rejects(service.search({ id: id(22), query: 'Public query' }), SyntaxError);
+  await writeFile(path, JSON.stringify({ schema: 'croupier-companion-search-v1', searches: {} }));
+  await assert.rejects(service.search({ id: id(22), query: 'Public query' }), { message: 'invalid_search_store' });
+  assert.equal(calls, 1);
 });

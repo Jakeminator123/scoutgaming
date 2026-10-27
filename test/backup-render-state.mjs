@@ -7,8 +7,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { DatabaseSync } from 'node:sqlite';
 import { backupRenderState, restoreRenderState, verifyRenderBackup } from '../tools/backup-render-state.mjs';
+import { createCompanionStore, COMPANION_STORE_FILE } from '../packages/director/node/companion-store.mjs';
+import { createSearchService, SEARCH_STORE_FILE } from '../services/openclaw/lab/deploy/companion-search-server.mjs';
 
 const runFile = promisify(execFile);
 const cliPath = fileURLToPath(new URL('../tools/backup-render-state.mjs', import.meta.url));
@@ -18,27 +19,52 @@ async function cli(...args) {
   return JSON.parse(stdout);
 }
 
-// The product profile (players/croupier.db, craig.db) left with the engine's SQLite path;
-// generic safety checks use the Director volume, which still holds companion.sqlite.
+const identity = 'a'.repeat(64), searchId = 'b'.repeat(64);
+const LEGACY = Buffer.from('retired companion.sqlite fixture bytes');
+// The provider refuses, so the durable receipt is the reserved 0.50 SEK 'unavailable'.
+const searchOptions = (directory, fetchImpl = async () => new Response('', { status: 500 })) =>
+  ({ directory, key: 'fixture-model-key', now: () => Date.parse('2026-09-21T04:00:00Z'), fetchImpl });
+
+// The product profile (players/croupier.db, craig.db) left with the engine's SQLite path.
+// Director and Gateway state is written by the real companion stores.
 async function fixture(t, profile = 'director') {
   const base = await mkdtemp(join(tmpdir(), 'croupier-render-backup-test-'));
   t.after(() => rm(base, { recursive: true, force: true }));
   const source = join(base, 'source'), snapshot = join(base, 'snapshot'), target = join(base, 'target');
   await mkdir(source); await mkdir(target);
   if (profile === 'director') {
-    const db = new DatabaseSync(join(source, 'companion.sqlite'));
-    db.exec('CREATE TABLE memories (name TEXT)'); db.prepare('INSERT INTO memories VALUES (?)').run('fixture'); db.close();
+    const store = createCompanionStore(source);
+    store.rename(identity, 'Jakob'); store.close();
     await writeFile(join(source, 'catalog.json'), '{"fixture":true}\n');
     await mkdir(join(source, 'history'));
     await writeFile(join(source, 'history', 'one.json'), '{"revision":1}\n');
+    // A retired SQLite store left on the disk is preserved as opaque bytes.
+    await writeFile(join(source, 'companion.sqlite'), LEGACY);
   } else {
     await writeFile(join(source, 'openclaw.json'), '{"fixture":true}\n');
     await mkdir(join(source, 'agents', 'croupier-chat', 'sessions'), { recursive: true });
     await writeFile(join(source, 'agents', 'croupier-chat', 'sessions', `${randomUUID()}.jsonl`), '{"fixture":true}\n');
-    const db = new DatabaseSync(join(source, 'companion-search.sqlite'));
-    db.exec('CREATE TABLE receipts (id INTEGER)'); db.prepare('INSERT INTO receipts VALUES (1)').run(); db.close();
+    const service = createSearchService(searchOptions(source));
+    try { assert.equal((await service.search({ id: searchId, query: 'Public query' })).status, 'unavailable'); }
+    finally { service.close(); }
   }
   return { base, source, snapshot, target };
+}
+
+// Reopening proves the restored bytes are a working store, not only a matching hash.
+async function assertStoreReopens(profile, directory) {
+  if (profile === 'director') {
+    const store = createCompanionStore(directory);
+    try { assert.equal(store.profile(identity).name, 'Jakob'); } finally { store.close(); }
+    assert.deepEqual(await readFile(join(directory, 'companion.sqlite')), LEGACY);
+    return;
+  }
+  const service = createSearchService(searchOptions(directory, () => assert.fail('a restored receipt must not spend again')));
+  try {
+    const receipt = await service.search({ id: searchId, query: 'Public query' });
+    assert.deepEqual([receipt.status, receipt.reason, receipt.costSek], ['unavailable', 'provider_http_500', 0.5]);
+    assert.equal((await service.search({ id: searchId, query: 'Changed query' })).status, 'request_conflict');
+  } finally { service.close(); }
 }
 
 for (const profile of ['director', 'gateway']) {
@@ -48,6 +74,7 @@ for (const profile of ['director', 'gateway']) {
     assert.ok(result.files >= 2);
     const manifest = await verifyRenderBackup(f.snapshot);
     assert.equal(manifest.profile, profile);
+    assert.ok(manifest.files.some(item => item.path === (profile === 'director' ? COMPANION_STORE_FILE : SEARCH_STORE_FILE)));
     assert.deepEqual((await restoreRenderState({ profile, snapshot: f.snapshot, destination: f.target, quiesced: true })).files, manifest.files.length);
     for (const item of manifest.files) assert.deepEqual(
       await readFile(join(f.target, ...item.path.split('/'))),
@@ -56,18 +83,14 @@ for (const profile of ['director', 'gateway']) {
   });
 }
 
-test('a committed WAL transaction is captured as a complete SQLite database', async t => {
+test('an interrupted atomic write leaves the committed store in the snapshot', async t => {
   const f = await fixture(t);
-  const path = join(f.source, 'companion.sqlite');
-  const writer = new DatabaseSync(path);
-  try {
-    writer.exec('PRAGMA journal_mode=WAL');
-    writer.prepare('INSERT INTO memories VALUES (?)').run('committed-wal-fixture');
-    await backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true });
-    const copy = new DatabaseSync(join(f.snapshot, 'companion.sqlite'), { readOnly: true });
-    try { assert.equal(copy.prepare('SELECT COUNT(*) AS n FROM memories').get().n, 2); }
-    finally { copy.close(); }
-  } finally { writer.close(); }
+  // A crash between writing the temporary file and the rename leaves this behind.
+  const partial = Buffer.from('{"schema":"croupier-companion-v1","profiles":[');
+  await writeFile(join(f.source, `${COMPANION_STORE_FILE}.tmp`), partial);
+  await backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true });
+  await assertStoreReopens('director', f.snapshot);
+  assert.deepEqual(await readFile(join(f.snapshot, `${COMPANION_STORE_FILE}.tmp`)), partial);
 });
 
 test('tampering, extra entries and a nonempty restore root are rejected', async t => {
@@ -83,9 +106,10 @@ test('tampering, extra entries and a nonempty restore root are rejected', async 
 });
 
 test('wrong or retired profile, missing required state and unacknowledged live state are rejected', async t => {
-  const f = await fixture(t);
+  const f = await fixture(t), gateway = await fixture(t, 'gateway');
   await assert.rejects(backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot }), { code: 'quiesced_required' });
   await assert.rejects(backupRenderState({ profile: 'gateway', source: f.source, destination: f.snapshot, quiesced: true }), { code: 'required_state_missing' });
+  await assert.rejects(backupRenderState({ profile: 'director', source: gateway.source, destination: gateway.snapshot, quiesced: true }), { code: 'required_state_missing' });
   await assert.rejects(backupRenderState({ profile: 'product', source: f.source, destination: f.snapshot, quiesced: true }), { code: 'invalid_profile' });
   await backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true });
   await assert.rejects(restoreRenderState({ profile: 'gateway', snapshot: f.snapshot, destination: f.target, quiesced: true }), { code: 'profile_mismatch' });
@@ -105,13 +129,15 @@ test('symlinks are refused without copying outside data', async t => {
   await assert.rejects(readdir(f.snapshot), { code: 'ENOENT' });
 });
 
-test('corrupt SQLite and reserved source names never publish a snapshot', async t => {
-  const f = await fixture(t);
-  await writeFile(join(f.source, 'companion.sqlite'), 'not sqlite');
-  await assert.rejects(backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true }), { code: 'sqlite_backup_failed' });
-  await assert.rejects(readdir(f.snapshot), { code: 'ENOENT' });
-  await writeFile(join(f.source, 'manifest.json'), 'reserved');
-  await assert.rejects(backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true }), { code: 'reserved_source_entry' });
+test('corrupt stores and reserved source names never publish a snapshot', async t => {
+  for (const profile of ['director', 'gateway']) {
+    const f = await fixture(t, profile);
+    await writeFile(join(f.source, profile === 'director' ? COMPANION_STORE_FILE : SEARCH_STORE_FILE), 'not json');
+    await assert.rejects(backupRenderState({ profile, source: f.source, destination: f.snapshot, quiesced: true }), { code: 'store_integrity_failed' });
+    await assert.rejects(readdir(f.snapshot), { code: 'ENOENT' });
+    await writeFile(join(f.source, 'manifest.json'), 'reserved');
+    await assert.rejects(backupRenderState({ profile, source: f.source, destination: f.snapshot, quiesced: true }), { code: 'reserved_source_entry' });
+  }
 });
 
 test('manifest traversal is rejected before restoring any file', async t => {
@@ -125,33 +151,27 @@ test('manifest traversal is rejected before restoring any file', async t => {
   assert.deepEqual(await readdir(f.target), []);
 });
 
-test('declared SQLite foreign-key damage is rejected even when page integrity and hashes pass', async t => {
+test('a structurally damaged store is rejected even when JSON parsing and hashes pass', async t => {
   const f = await fixture(t, 'director');
   await backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true });
-  const path = join(f.snapshot, 'companion.sqlite');
-  const db = new DatabaseSync(path);
-  try {
-    db.exec(`PRAGMA foreign_keys=OFF;
-      CREATE TABLE parent (id INTEGER PRIMARY KEY);
-      CREATE TABLE child (parent_id INTEGER REFERENCES parent(id));
-      INSERT INTO child VALUES (999);`);
-    assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
-    assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 1);
-  } finally { db.close(); }
-  // A valid hash is not evidence of a usable relational database.
+  const path = join(f.snapshot, COMPANION_STORE_FILE);
+  const damaged = JSON.parse(await readFile(path, 'utf8'));
+  damaged.requests = {};
+  await writeFile(path, JSON.stringify(damaged));
+  // A valid hash is not evidence of a usable store.
   const manifestPath = join(f.snapshot, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const bytes = await readFile(path);
-  Object.assign(manifest.files.find(item => item.path === 'companion.sqlite'), {
+  Object.assign(manifest.files.find(item => item.path === COMPANION_STORE_FILE), {
     bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'),
   });
   await writeFile(manifestPath, JSON.stringify(manifest));
-  await assert.rejects(verifyRenderBackup(f.snapshot), { code: 'sqlite_integrity_failed' });
-  await assert.rejects(restoreRenderState({ profile: 'director', snapshot: f.snapshot, destination: f.target, quiesced: true }), { code: 'sqlite_integrity_failed' });
+  await assert.rejects(verifyRenderBackup(f.snapshot), { code: 'store_integrity_failed' });
+  await assert.rejects(restoreRenderState({ profile: 'director', snapshot: f.snapshot, destination: f.target, quiesced: true }), { code: 'store_integrity_failed' });
   assert.deepEqual(await readdir(f.target), []);
-  await cp(path, join(f.source, 'companion.sqlite'));
+  await cp(path, join(f.source, COMPANION_STORE_FILE));
   const rejected = join(f.base, 'rejected-snapshot');
-  await assert.rejects(backupRenderState({ profile: 'director', source: f.source, destination: rejected, quiesced: true }), { code: 'sqlite_integrity_failed' });
+  await assert.rejects(backupRenderState({ profile: 'director', source: f.source, destination: rejected, quiesced: true }), { code: 'store_integrity_failed' });
   await assert.rejects(readdir(rejected), { code: 'ENOENT' });
   assert.equal((await readdir(f.base)).some(name => name.startsWith('.rejected-snapshot.partial-')), false);
 });
@@ -184,14 +204,7 @@ for (const profile of ['director', 'gateway']) {
     for (const item of manifest.files) assert.deepEqual(await readFile(join(f.target, ...item.path.split('/'))), await readFile(join(received, ...item.path.split('/'))));
     assert.equal((await readdir(f.target)).some(name => name.startsWith('.croupier-restore-')), false);
 
-    for (let reopen = 0; reopen < 2; reopen++) {
-      const db = new DatabaseSync(join(f.target, profile === 'director' ? 'companion.sqlite' : 'companion-search.sqlite'), { readOnly: true });
-      try {
-        const row = profile === 'director' ? db.prepare('SELECT name FROM memories').get() : db.prepare('SELECT id FROM receipts').get();
-        assert.equal(profile === 'director' ? row.name : row.id, profile === 'director' ? 'fixture' : 1);
-        assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
-      } finally { db.close(); }
-    }
+    for (let reopen = 0; reopen < 2; reopen++) await assertStoreReopens(profile, f.target);
     const beforeRejectedRestore = await readdir(f.target);
     await assert.rejects(cli('restore', '--profile', profile, '--snapshot', received, '--destination', f.target, '--quiesced', 'yes'), error => error.code === 1 && error.stderr.includes('destination_not_empty'));
     assert.deepEqual(await readdir(f.target), beforeRejectedRestore);
