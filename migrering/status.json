@@ -433,7 +433,7 @@
       ],
       "branch": "jakob/claude-status-j08",
       "head": "b08f2a866f77e6b9673cbb6624b7eea9013a0a70",
-      "pr": "https://github.com/Jakeminator123/scoutgaming/pulls?q=is%3Apr+head%3Ajakob%2Fclaude-status-j08",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/440",
       "reviewer": "Root (Claude-orkestratorn) läste 2026-10-27 råkvittona för negativa och positiva körningar, 32/32-grindarna och Render-loggkorrelationen. Jakob gjorde den mänskliga AV-granskningen av tio tal i staging som staging-admin. Oberoende granskning av statusändringen och kvittot görs i denna PR före merge.",
       "evidence": [
         "Aktuell PR334/codex/admin-room-config-j08/head24e9f0264bc244e2ddabdac0cc12b1537ab164bd har grön exakt-head CI39757805089 enligt mergeagenten. Tidigare d7d139/9b43 är historiska delunderlag, inte aktuell PR-head. PR334 är inte produktmergad och main47756bdf1df372c7aa5047dc165a2d721614c4a2 är oförändrad.",
