@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Cloud: egen kod- och restoreåterläsning — 27 oktober
+
+Cloud har läst slutöverlämningen på `df6c1b60ed5cbc70c9e54c2e5c761b120397d1ee` och öppnat [PR421](https://github.com/Jakeminator123/scoutgaming/pull/421). Node24.21.0 finns på `/opt/codex/cua_node/bin/node`; 54/54 API-prov passerar, 0 skip. De fem ändrade blobbarna och hela rekonstruerade Git-trädet matchar d53. Klientproven kunde inte starta utan React; terminalens proxy svarar inte. Det är inte egen97/97-verifiering.
+
+Read-only Neon-SELECT med stagingens approll visar exakt lika fullständigt innehåll i den frysta spelarens båda ledgerrader mellan `croupier_staging` och `croupier_staging_restore`: SHA256 `f834fb6560b1ddad809f42e416b53b2a1dd2ea0ad679b321827a68e76ddb0214`. Detta kompletterar count-only-kvittot nedan med nutida source/restore-paritet för just spelaren; det är inte en historisk före/efterhash kring replay eller alla ledgerposter. Product-v1 och gemensamma Studio-versioners checksummor matchar. Source har dessutom optional020; restore saknar020. D53:s tidigare16HTTP stöder kompatibel login/läsning/replay i det äldre schemat, ingen ny020-beroende publicering. Exakta SQL-frågor och checksummor finns under `cloudVerification` i [samma kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json); lokalagents daterade originalfält bevaras.
+
+GitHub/Render/Neon fungerar via anslutna verktyg. Den tillgängliga Vercel-kopplingen ser två team men inte det angivna stagingprojektet (404/403); `mcp__user_vercel` finns inte här. Officiell molnbrowserstart saknar nödvändig autentiseringskonfiguration. Render-staging är fortsatt suspended, autoDeploy av och källrepo GitHub/main. `kevin-staging` finns på `3e76d79e264a8abd07bc7996bb3ec75cc925341e`; dess deploymentkoppling är inte fastställd och dess kod/resurser har inte ändrats.
+
+**60 % och J10 TODO kvarstår.** Positiv sammanhängande Admin → publicering → lobby → auktoriserad launch, reproducerbart samlat kvitto och hantering av oförändrat K06-beroende återstår. Ingen ny spelrunda, AV-attest, databasmutation, restore/DDL eller produktionsåtgärd har gjorts av Cloud.
+
 ## Slutkvitto och Cloud-överlämning — 27 oktober
 
 Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status förblir 60 %.

@@ -73,5 +73,268 @@
     "heartbeatRemoved": true
   },
   "secretsExported": false,
-  "productionMutated": false
+  "productionMutated": false,
+  "cloudVerification": {
+    "observedAt": "2026-10-27T09:26:27Z",
+    "codeSha": "d53b349a7dc14060de8283a343681569a089805e",
+    "documentHead": "df6c1b60ed5cbc70c9e54c2e5c761b120397d1ee",
+    "runtime": {
+      "workspace": "/workspace/scoutgaming",
+      "origin": "https://github.com/Jakeminator123/scoutgaming.git",
+      "node": "24.21.0",
+      "nodePath": "/opt/codex/cua_node/bin/node"
+    },
+    "apiTests": {
+      "passed": 54,
+      "failed": 0,
+      "skipped": 0,
+      "command": "/opt/codex/cua_node/bin/node apps/studio/test/presentation-room-api.test.mjs",
+      "source": "isolated git archive of parent 3106a1cc plus five hash-verified GitHub blobs",
+      "candidateTree": "b9897ad92eb5d456c7dcd9c2d918478ad36421f1",
+      "clientTests": "not started: React missing; network proxy unavailable"
+    },
+    "neon": {
+      "project": "red-violet-36066351",
+      "branch": "br-plain-voice-b9yu49xi",
+      "role": "croupier_staging_app",
+      "readOnlySelects": true,
+      "ledger": {
+        "playerId": "335c6ba0-dd24-4238-bd30-337f11eaa7ad",
+        "databases": [
+          "croupier_staging",
+          "croupier_staging_restore"
+        ],
+        "rowsInEach": 2,
+        "columns": "all nine columns via to_jsonb(t), ordered by id",
+        "sha256": "f834fb6560b1ddad809f42e416b53b2a1dd2ea0ad679b321827a68e76ddb0214",
+        "equal": true,
+        "scope": "current cross-database parity for this frozen player; not a historical before/after hash around replay or all database ledgers",
+        "sql": "SELECT current_database() AS database, current_user AS role, count(*) AS ledger_count, encode(sha256(convert_to(COALESCE(jsonb_agg(to_jsonb(t) ORDER BY t.id),'[]'::jsonb)::text,'UTF8')),'hex') AS full_ledger_sha256 FROM croupier_game.transactions t WHERE player_id='335c6ba0-dd24-4238-bd30-337f11eaa7ad'"
+      },
+      "schemaReadback": {
+        "sql": "SELECT current_database() AS database, 'game' AS schema_kind,version,checksum FROM croupier_game.storage_migrations UNION ALL SELECT current_database(),'studio',version,checksum FROM croupier_studio.storage_migrations ORDER BY schema_kind,version",
+        "source": [
+          {
+            "database": "croupier_staging",
+            "schema_kind": "game",
+            "version": "product-v1",
+            "checksum": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "001",
+            "checksum": "009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "002",
+            "checksum": "efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "003",
+            "checksum": "0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "004",
+            "checksum": "03babc94026c87f69a9f2731dd2d59b9a7cfedb9250cbf617feb762465ceb383"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "005",
+            "checksum": "ed31705d07d9bd5700a60789efa5989a8ba3c0e95125887477ce67e5999fa4ef"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "006",
+            "checksum": "a8775d0329262194340fd6365da4b1d316459d894e6fd3b93106ecde7199b474"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "007",
+            "checksum": "4f93746eee72041c6e97181e314a0e2f86f38c2813958421c7cc48f6351e7d4b"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "008",
+            "checksum": "cdd401ef5586a88744103d45af114e533a487a24ffd1a13612d530df83109ce6"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "011",
+            "checksum": "d17fdec087cf5ac71ec2964c38ea740a964228f1cb66b382223383fabf4397dc"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "012",
+            "checksum": "5618ae06bcae43c77778f2d7bc777e86d2fabafa2f26c5f139d90d06dc72d291"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "013",
+            "checksum": "c6f716c1f718bb87b9d17630c1f2e5bf3a332e287cc422c813253ad54af4e953"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "014",
+            "checksum": "877cea097953684031804c3dd1caee2da32a4940820aefe259de91835a5256a2"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "015",
+            "checksum": "4796cd20915a20705683b07a43cfd86d4d73572490391858edb1e9d0874b1335"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "017",
+            "checksum": "116e00730d93dd0605e73f162f0e7d7487fb6b2fdd2e98be87b360cb2561532b"
+          },
+          {
+            "database": "croupier_staging",
+            "schema_kind": "studio",
+            "version": "020",
+            "checksum": "e9ca551f9b909d2fa80d242af2244ac76df83fa78858992668c8656d5890b1ef"
+          }
+        ],
+        "restore": [
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "game",
+            "version": "product-v1",
+            "checksum": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "001",
+            "checksum": "009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "002",
+            "checksum": "efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "003",
+            "checksum": "0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "004",
+            "checksum": "03babc94026c87f69a9f2731dd2d59b9a7cfedb9250cbf617feb762465ceb383"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "005",
+            "checksum": "ed31705d07d9bd5700a60789efa5989a8ba3c0e95125887477ce67e5999fa4ef"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "006",
+            "checksum": "a8775d0329262194340fd6365da4b1d316459d894e6fd3b93106ecde7199b474"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "007",
+            "checksum": "4f93746eee72041c6e97181e314a0e2f86f38c2813958421c7cc48f6351e7d4b"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "008",
+            "checksum": "cdd401ef5586a88744103d45af114e533a487a24ffd1a13612d530df83109ce6"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "011",
+            "checksum": "d17fdec087cf5ac71ec2964c38ea740a964228f1cb66b382223383fabf4397dc"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "012",
+            "checksum": "5618ae06bcae43c77778f2d7bc777e86d2fabafa2f26c5f139d90d06dc72d291"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "013",
+            "checksum": "c6f716c1f718bb87b9d17630c1f2e5bf3a332e287cc422c813253ad54af4e953"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "014",
+            "checksum": "877cea097953684031804c3dd1caee2da32a4940820aefe259de91835a5256a2"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "015",
+            "checksum": "4796cd20915a20705683b07a43cfd86d4d73572490391858edb1e9d0874b1335"
+          },
+          {
+            "database": "croupier_staging_restore",
+            "schema_kind": "studio",
+            "version": "017",
+            "checksum": "116e00730d93dd0605e73f162f0e7d7487fb6b2fdd2e98be87b360cb2561532b"
+          }
+        ],
+        "interpretation": "Shared product-v1 and Studio base checksums match. Only source has optional020. Existing d53 HTTP receipt verifies login/read/replay against restore without020; no new020-dependent publication is claimed."
+      }
+    },
+    "connections": {
+      "github": "authenticated as Jakeminator123; PR421",
+      "render": "workspace tea-d19jsa63jp1c73ch0sc0; staging suspended; return deploy dep-dbg6ifafngtc738rj7hg verified d53",
+      "vercel": "Both accessible teams listed; named staging project absent from their project lists, project reads404 and deployment list403. No mcp__user_vercel tool is available.",
+      "terminal": "Inherited proxy connection to port8080 refused; no bypass attempted",
+      "browser": "Official cloud-agent-browser-runtime ensure fails: BROWSER_CONFIG_AUTH_TOKEN is required; show also reports launcher context unavailable"
+    },
+    "kevinReference": {
+      "branch": "kevin-staging",
+      "head": "3e76d79e264a8abd07bc7996bb3ec75cc925341e",
+      "deploymentBinding": "not established; distinct from isolated QA resource named in handoff"
+    },
+    "acceptance": {
+      "newGameplay": false,
+      "avApproved": false,
+      "j10Verified": false,
+      "progressChanged": false,
+      "remaining": [
+        "Positive relevant Admin-publication-lobby-authorized-launch chain on candidate",
+        "Reproducible clone/build/start and replay references",
+        "Explicit handling of unchanged K06 dependency"
+      ]
+    },
+    "mutations": {
+      "databaseWrites": 0,
+      "gameCommands": 0,
+      "ddl": 0,
+      "restores": 0,
+      "production": 0
+    }
+  }
 }
