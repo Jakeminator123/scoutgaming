@@ -19,6 +19,8 @@ html[data-presentation="local"] #pitboss { display: none; }
 #scene[data-local-card-overlay="true"] .hand-total { opacity: 0; }
 .local-presentation-status { pointer-events: none; position: absolute; left: 12px; bottom: 45%; z-index: 30; color: #ffe8ab; background: #101618dd; border-radius: 8px; font: 12px Inter, sans-serif; padding: 6px 10px; max-width: calc(100% - 24px); }
 .local-presentation-status:empty { display: none; }
+/* Shared table: the dealer's place while her first verified frame is still loading. */
+.shared-room-dealer-placeholder { pointer-events: none; position: absolute; left: 50%; top: 28%; transform: translate(-50%, -50%); z-index: 3; margin: 0; color: #f2f1ed; background: #101618cc; border-radius: 8px; font: 14px Inter, sans-serif; padding: 8px 14px; max-width: calc(100% - 24px); text-align: center; }
 .local-presentation-recovery { position: fixed; left: 50%; bottom: max(32px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1001; padding: 14px 24px; border: 1px solid #d6ff3a; border-radius: 24px; background: #d6ff3a; color: #101618; font: 600 16px system-ui, sans-serif; cursor: pointer; }
 .local-presentation-recovery:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 /* Speech refused by the browser's sound policy: beside the status line, never over the game's buttons. */

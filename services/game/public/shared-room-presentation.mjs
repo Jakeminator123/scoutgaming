@@ -30,6 +30,7 @@ function roomColor(document,color){
 // Speech has no published length, so a chain that follows speech anchors where it begins; the plan's
 // leading chain keeps the clock. Nothing here selects media or cards: every step is still the server's.
 const MAX_STEP_WAIT_MS = 5000;
+const DEALER_LOADING = 'Dealern laddas…', DEALER_UNAVAILABLE = 'Dealern kunde inte visas.';
 export function createSharedRoomPresentationPorts({ media, cards, composition = null, clock = Date.now, onError = () => {}, onPresentation = () => {}, mediaStallTimeoutMs = 30000, filmedProfile = null, dealerId = null }) {
   if (!Number.isSafeInteger(mediaStallTimeoutMs) || mediaStallTimeoutMs < 1 || mediaStallTimeoutMs > 30000) throw new TypeError('shared_room_invalid_media_timeout');
   let state, previousSignal, restoredThrough = 0, offset = 0, closed = false, abortMedia, cancelCurrentClip;
@@ -76,12 +77,17 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
         return step?{...event,filmedTake:{profileId:timeline.profileId,takeKey:step.takeKey,sha256:step.sha256}}:event;}));
       media.state({action:true,speech:false});
       void Promise.resolve(media.observeEvents?.([...presentation.events],{signal})).catch(()=>onError('shared_room_media_unavailable'));
-      let completedSequence=false,shiftMs=0,inRun=false;
+      // unavailable: a step's exact media was missing (404/410) or declared
+      // unavailable. That step has already ended; the rest of this presentation
+      // shows its committed cards at once instead of loading more film, so the
+      // table reaches the player's turn on the server's clock, not the media's.
+      let completedSequence=false,shiftMs=0,inRun=false,unavailable=false;
       const elapsed=()=>clock()+offset-presentation.startAt;
       try {
         for(const [index,event] of presentation.events.entries()){
           signal?.throwIfAborted();if(closed)return;
           if(event.type==='idle'||event.type==='turn'||event.type==='settle')continue;
+          if(unavailable){if(event.type==='deal')cards.show(event.shoeDraw);else if(event.type==='reveal')cards.reveal(state.round);continue;}
           const step=timeline?.eventIndex.get(index)??null;let timing={};
           if(step){
             const placed=fitted?step.fit:step;
@@ -101,7 +107,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
             timing={startOffset:step.beforeMs?0:phase.seekS,handoverAt:step.handoverMs/1000,...(fitted?{playbackRate:phase.rate}:{}),clockTime:()=>Math.max(0,(elapsed()-startMs)*phase.rate/1000)};
           } else inRun=false;
           for(const layerEvent of ['backgroundEvent','tableEvent'])composition?.[layerEvent]?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
-          let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1;
+          let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1,lastReceived=0;
           const clip=new AbortController();
           const relay=()=>clip.abort(signal.reason);
           signal?.addEventListener('abort',relay,{once:true});
@@ -114,9 +120,12 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           const cancel=()=>{clearTimeout(timer);const reason=new DOMException('Presentation closed','AbortError');rejectStall(reason);clip.abort(reason);};
           const progress=value=>{
             if(clip.signal.aborted||closed||!accepting||!Number.isInteger(value?.clip)||value.clip<1||value.clip>4)return;
-            if(value.phase==='prepare'&&value.clip===progressClip+1){progressClip=value.clip;progressPhase='prepare';lastProgressFrame=-1;arm();}
+            if(value.phase==='prepare'&&value.clip===progressClip+1){progressClip=value.clip;progressPhase='prepare';lastProgressFrame=-1;lastReceived=0;arm();}
             else if(value.clip===progressClip){
               if(value.phase==='play'&&progressPhase==='prepare'){progressPhase='play';arm();}
+              // New verified-buffer bytes renew the lease: a slow download is
+              // bounded by silence and the frozen total, never by its length.
+              else if(value.phase==='download'&&progressPhase==='play'&&Number.isSafeInteger(value.received)&&value.received>lastReceived){lastReceived=value.received;arm();}
               else if(value.phase==='frame'&&progressPhase==='play'&&Number.isFinite(value.time)&&value.time>=0&&value.time>lastProgressFrame){lastProgressFrame=value.time;arm();}
               else if(value.phase==='complete'&&progressPhase==='play'){progressPhase='complete';arm();}
             }
@@ -124,6 +133,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           cancelCurrentClip=cancel;arm();
           try {
             completed=await Promise.race([stalled,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
+              onUnavailable:()=>{if(!clip.signal.aborted&&!closed&&accepting)unavailable=true;},
               onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
                 if(video?.id!==selectedId){selectedId=video?.id;lastFrame=-1;}
                 if(event.type==='deal'||event.type==='reveal')token=cards.begin(video,source);},
@@ -162,6 +172,12 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   const [{PerformancePlayer},{createLocalPresentation},{createLocalCardOverlay}]=await loadAdapters();
   signal?.throwIfAborted();
   const composition=createComposition(document,selection.composition);
+  // The table never waits for the dealer's film (K04 at 400 kbit/s). Until the
+  // first verified dealer frame, the dealer's place says so instead of staying blank.
+  const placeholder=document.createElement('p');placeholder.className='shared-room-dealer-placeholder';
+  placeholder.setAttribute('role','status');placeholder.setAttribute('aria-live','polite');placeholder.textContent=DEALER_LOADING;host.append(placeholder);
+  let dealerShown=false;
+  const dealerFrame=()=>{if(!dealerShown){dealerShown=true;placeholder.remove();}onReady(dealer.id);};
   let player;
   let media,cards,version=0,muted=true,lastLayout,currentPresentation,currentConnection,restoreColor=()=>{};
   const sound=document.getElementById('sound-btn');
@@ -184,7 +200,8 @@ export async function mountSharedRoomPresentation({ document, window, selection,
         signal:combineAbortSignals([signal,currentConnection,options.signal,AbortSignal.timeout(10000)])});
     };
     media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,
-      muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:()=>onReady(dealer.id),onBusy:()=>{},onError:()=>onError('shared_room_media_unavailable')});
+      muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:dealerFrame,onBusy:()=>{},
+      onError:()=>{if(!dealerShown)placeholder.textContent=DEALER_UNAVAILABLE;onError('shared_room_media_unavailable');}});
     signal?.throwIfAborted();
     cards=createLocalCardOverlay(host,{dealerLabel:dealer.label,filmedProfile});
     // Apply only this server binding's N2 values. Shared tables never read a
@@ -193,7 +210,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     if(chosen.applyBackground)composition?.setBackground(chosen.backgroundValue);
     if(chosen.tableValue)composition?.setTable(chosen.tableValue);
     restoreColor=roomColor(document,chosen.tableColor);
-  } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();restoreColor();throw error;}
+  } catch(error){media?.close();cards?.close();player?.dispose();composition?.close();restoreColor();placeholder.remove();throw error;}
   const ports=createSharedRoomPresentationPorts({media,cards,composition,onError,onPresentation:value=>{currentPresentation=value;},filmedProfile,dealerId:dealer.id});
   function layout(value=lastLayout){
     if(!value)return;lastLayout=value;
@@ -218,7 +235,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
   const unGeometry=composition?.onGeometryChange(layout);
   const resize=()=>layout();window.addEventListener('resize',resize);sound?.addEventListener('click',onSound);paintSound();
   let closed=false;
-  const close=()=>{if(closed)return;closed=true;window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();restoreColor();};
+  const close=()=>{if(closed)return;closed=true;window.removeEventListener('resize',resize);sound?.removeEventListener('click',onSound);unGeometry?.();ports.close();player.dispose();restoreColor();placeholder.remove();};
   try{signal?.throwIfAborted();media.start();}catch(error){close();throw error;}
   return Object.freeze({
     restoreSnapshot(snapshot,options){currentConnection=options?.signal;version=snapshot.presentationVer;if(currentPresentation?.ver!==version)currentPresentation=null;return ports.restoreSnapshot(snapshot,options);},

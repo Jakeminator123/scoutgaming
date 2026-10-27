@@ -35,14 +35,13 @@ function checkedBinding(value,snapshot,roomId){
   return {owner:'web',roomId,configVersion:value.configVersion,windowId:value.windowId,presentationContext:{...context},selection};
 }
 const canonical=value=>JSON.stringify(value,(_key,item)=>object(item)?Object.fromEntries(Object.keys(item).sort().map(key=>[key,item[key]])):item);
-function untilAborted(work,signal){
-  signal.throwIfAborted();let abort;
-  return Promise.race([work,new Promise((_,reject)=>{abort=()=>reject(signal.reason);signal.addEventListener('abort',abort,{once:true});})])
-    .finally(()=>signal.removeEventListener('abort',abort));
-}
-
-// A snapshot is the only input to this lazy owner. Media and controls become
-// usable together, after the server confirms the same binding after loading.
+// A snapshot is the only input to this lazy owner. Controls become usable once
+// the presentation adapter is mounted and the server confirms the same binding
+// again after loading it. The dealer's film is not part of that gate: on a slow
+// connection the idle clip alone took longer than the 30 s render callback and
+// startup limits (K04, 400 kbit/s), so it loads afterwards and the dealer
+// appears with its first verified frame. Every film keeps its exact hash,
+// package and identity checks; a media error never grants or revokes controls.
 function boundPresentation({document,window,roomId,signal,fetchImpl,createPresentation,transport,startupFor,onError}){
   let current=null,job=null,generation=0,closed=false;
   const pending=new Set();
@@ -79,21 +78,22 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
           await current.port.restoreSnapshot(snapshot,{signal:connection});check();return;
         }
         dispose(current);current=null;
-        let ready,failed;
-        const firstFrame=new Promise((resolve,reject)=>{ready=resolve;failed=reject;});
-        void firstFrame.catch(()=>{});
-        candidate={key,lifetime:new AbortController(),port:null,closed:false,authorized:false,startup:startupFor(binding.selection.dealer)};
+        candidate={key,lifetime:new AbortController(),port:null,closed:false,authorized:false,mismatch:null,startup:startupFor(binding.selection.dealer)};
         pending.add(candidate);
         const owned=candidate,mountSignal=combineAbortSignals([signal,owned.lifetime.signal]);
+        const mismatch=()=>{if(owned.mismatch)throw owned.mismatch;};
         abortMount=()=>dispose(owned);active.addEventListener('abort',abortMount,{once:true});
         const port=await createPresentation({document,window,selection:structuredClone(binding.selection),signal:mountSignal,transport,
-          onReady:dealer=>{if(owned.closed||mountSignal.aborted)return;if(dealer!==binding.selection.dealer)failed(new Error('shared_room_presentation_dealer_mismatch'));else ready();},
-          onError:()=>{if(owned.closed)return;if(!owned.authorized)failed(new Error('shared_room_media_unavailable'));onError();}});
+          // A frame of any other dealer is refused: before the binding is
+          // confirmed it fails this restore, afterwards it closes the media.
+          onReady:dealer=>{if(owned.closed||mountSignal.aborted||dealer===binding.selection.dealer)return;
+            owned.mismatch??=new Error('shared_room_presentation_dealer_mismatch');
+            if(owned.authorized){dispose(owned);onError();}},
+          onError:()=>{if(!owned.closed)onError();}});
         if(owned.closed){port.close();check();throw abortError();}
-        owned.port=port;check();
-        await untilAborted(firstFrame,active);check();
-        await port.restoreSnapshot(snapshot,{signal:connection});check();
-        const confirmed=await read(snapshot,active);check();
+        owned.port=port;check();mismatch();
+        await port.restoreSnapshot(snapshot,{signal:connection});check();mismatch();
+        const confirmed=await read(snapshot,active);check();mismatch();
         if(canonical(confirmed)!==canonical(binding))throw new Error('shared_room_presentation_binding_changed');
         current=owned;pending.delete(owned);owned.authorized=true;
         active.removeEventListener('abort',abortMount);abortMount=null;

@@ -18,24 +18,28 @@ export class PerformancePlayer {
     this.resize=()=>{if(!this.held)return;const fit=uniformRegistration(this.held.camera,{width:innerWidth,height:innerHeight});Object.assign(this.held.layer.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});};
     window.addEventListener('resize',this.resize);
   }
-  async playLocalClip(take, { signal, ...options } = {}) {
+  // onDownloadProgress({received,total}) reports verified-buffer bytes while the
+  // exact file loads, also when a prepared lookahead already started it.
+  async playLocalClip(take, { signal, onDownloadProgress, ...options } = {}) {
     signal?.throwIfAborted();
     const started = performance.now(), slot = this.localPrepared;
     this.localPrepared = null;
-    let lease, video;
+    let lease, video, unobserve = () => {};
     const prepared = slot?.key === take.media.sha256;
     const abortPrepared = () => slot?.cancel();
     if (prepared) signal?.addEventListener('abort', abortPrepared, { once: true });
     try {
-      if (prepared) { lease = await slot.job; video = slot.video; }
-      else { slot?.cancel(); lease = await (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, signal); }
+      const buffer = this.localBuffer ??= createVerifiedVideoBuffer();
+      if (prepared) { unobserve = buffer.observe?.(take.media.sha256, onDownloadProgress) ?? unobserve; lease = await slot.job; video = slot.video; }
+      else { slot?.cancel(); lease = await buffer.acquire(take.media, signal, { onProgress: onDownloadProgress }); }
+      unobserve();
       signal?.throwIfAborted();
       const mediaReadyMs = performance.now() - started;
       return await playLocalFilm({ host: this.host, src: lease.src, video, signal, ...options,
         onReceipt: event => options.onReceipt?.({ ...event, elapsedMs: Math.round(performance.now() - started),
           mediaReadyMs: Math.round(mediaReadyMs), preloadHit: !!prepared, cacheHit: lease.cached }) });
     } finally {
-      signal?.removeEventListener('abort', abortPrepared);
+      unobserve(); signal?.removeEventListener('abort', abortPrepared);
       if (prepared) slot.cancel(); else lease?.release();
     }
   }
