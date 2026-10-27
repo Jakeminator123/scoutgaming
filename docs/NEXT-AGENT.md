@@ -1,6 +1,6 @@
 # Överlämning: Scoutgaming
 
-Uppdaterad 27 oktober 2026, kväll, efter PR #442–#445. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [history/JOHN-HANDOFF-2026-10.md](history/JOHN-HANDOFF-2026-10.md); övrig historik i [docs/history](history/README.md).
+Uppdaterad 27 oktober 2026, kväll, efter PR #442–#448. Skriven för en agent (Codex, Cursor eller Claude) som börjar kallt från `origin/main`. Läs först [START-HERE.md](../START-HERE.md) och [AGENTS.md](../AGENTS.md); Jakobs aktuella instruktioner går före allt här. Äldre överlämningar: [history/NEXT-AGENT-2026-10.md](history/NEXT-AGENT-2026-10.md) och [history/JOHN-HANDOFF-2026-10.md](history/JOHN-HANDOFF-2026-10.md); kvällens revision av styrfiler och CI: [history/AUDIT-2026-10-27.md](history/AUDIT-2026-10-27.md); övrig historik i [docs/history](history/README.md).
 
 ## Läget i en skärm
 
@@ -8,9 +8,9 @@ Uppdaterad 27 oktober 2026, kväll, efter PR #442–#445. Skriven för en agent 
 - **Produktion:** Vercel `scoutgaming` och Render `croupier-v3`, `croupier-lab-director` och `croupier-lab-openclaw` kör alla `main` `cc415cd8`. Render `croupier-v2` och `croupier-vercel-preview-qa` är raderade.
 - **Schema:** spelmigreringarna 008–010 och Studio-migrering 020 är applicerade i produktionen.
 - **Johns Bet (PAOW):** paketrevision 9 och spelkonfigurationen `room-config-133cfffc-fdad-47f2-9c85-51b08de4a325` är publicerade i rummet `room-76640ca1-b619-7948-596e-3d102202b7d0`, med alla 15 PAOW-tagningar godkända och servermätta. Jakob spelade i produktionen och godkände (”allt funkade, hon pratar”) på dator och i datorwebbläsarens mobilvy, inte på fysisk telefon.
-- **Känd defekt:** före första interaktionen visar statusraden råtexten ”Tal: play() failed because the user didn't interact with the document first.” Rättningen pågår på `jakob/claude-speech-autoplay`.
-- **Staging:** Render-stagingen kör `cc415cd8` med `CROUPIER_SHARED_TABLE_ENABLED=1`. K07-körningen på delat bord gav 19/19 kontroller på `cc415cd8`, med processbyte på samma SHA. Kvittot finns i orkestratorns scratchpad, inte i Git (se K07).
-- **Mergat i kväll:** #442 (delade bord startar i enkel-origin-layouten), #443 (Studio-admin loggar orsaken bakom 503/500), #444 (SQLite steg 7; steg 8–9 återstår enligt SQLite-planen) och #445 (K06/K04-kvitton, båda kvar IN_PROGRESS).
+- **Autoplay:** före första interaktionen visade statusraden råtexten ”Tal: play() failed …”. Rättningen är mergad i #446 (”Slå på ljud” i stället för rå text) men inte bekräftad i produktionen i något kvitto.
+- **Staging:** Render-stagingen kör `cc415cd8` med `CROUPIER_SHARED_TABLE_ENABLED=1`. K07-körningen på delat bord gav 19/19 kontroller på `cc415cd8`, med processbyte på samma SHA ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json)).
+- **Mergat i kväll:** #442 (delade bord startar i enkel-origin-layouten), #443 (Studio-admin loggar orsaken bakom 503/500), #444 (SQLite steg 7; steg 8–9 återstår enligt SQLite-planen), #445 (K06/K04-kvitton, båda kvar IN_PROGRESS), #446 (autoplay) samt #447–#448 (styrfiler, CI och städning).
 
 ## Identiteter
 
@@ -31,50 +31,49 @@ Andra tjänster i samma Render-workspace (`sajtmaskin-dash`, `openclaw-sajtagent
 
 Orkestratorn sätter VERIFIED i `status.json` först när kriterierna i [Kevins AKTIVITETER](../migrering/kevin-ks-migrering/AKTIVITETER.md) respektive [masterplanen](../migrering/MASTERPLAN.md#o02--oberoende-samprov) är bevisade, med full SHA, PR, oberoende granskare och kvitto. `node migrering/status.mjs --check` kräver att beroendena redan är VERIFIED. Kvitton skrivs sanerade som `docs/<datum>-<aktivitet>-…-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter, aldrig med kakor, sessioner eller nycklar.
 
-Orkestratorns råunderlag ligger utanför Git, bara på Jakobs dator: `C:\Users\jakob\TEMP\claude\c--Users-jakob-dev-scoutgaming\6b4379a0-76c7-4a27-a0f1-dd764e9bd40b\scratchpad\` (mapparna `k05`, `k07-shared`, `o02` och `ux-plan`). Katalogen är tillfällig; det som ska bevaras flyttas till sanerade kvitton i `docs/`.
+Råkvitton, skript och skärmbilder bakom kvittona finns bara lokalt hos orkestratorn. Det som gäller är de sanerade kvittona i `docs/` och planerna i `docs/plans/`.
 
 ### K04 — Spelklient och presentation från händelser (IN_PROGRESS)
 
-- **Bevisat:** isolerad staging 27 oktober: händelsestyrd presentation, exakt materialbindning (46/46 UUID/SHA), återanslutning via API, två processbyten mitt i hand, negativa fall och alla tio talrepliker med godkända stagingtagningar; headless Chromium på dator (1920×1080) och emulerad mobil (390×844). Jakobs produktionsspel ovan är underlag.
+- **Bevisat:** isolerad staging 27 oktober på `e7a4e251` ([K04-kvittot](2026-10-27-K04-STAGING-ACCEPTANCE.json)): händelsestyrd presentation, exakt materialbindning (46/46 UUID/SHA), återanslutning via API, två processbyten mitt i hand, negativa fall och alla tio talrepliker med godkända stagingtagningar. Kväll på `cc415cd8`, delat bord i headless Chromium ([K04-webbläsarkvittot](2026-10-27-K04-BROWSER-ACCEPTANCE.json)): omladdning mitt i hand på dator och mobil, beslut till resultat och nästa fönster, tangentbord och tap, okänt media-ID, avbrutet tal och Fast 3G. Jakobs produktionsspel ovan är underlag.
 - **Saknas:**
+  - Två fallerade prov: ett dealerklipp med 404 lämnar spelaren utan kort, knappar och feltext i minst 6,5 s, och på 400 kbit/s blir bordet aldrig spelbart. Rättningen pågår på `jakob/claude-k04-client-fixes`; båda proven körs om efter merge.
   - Jakobs visuella godkännande av giv-, hål- och revealklippen (registret säger `unreviewed`/`lab-only`) och av skärmbilderna.
-  - Omladdning mitt i hand i webbläsaren på dator och mobil; beslut och collect på dator.
-  - Tap, tangentbord, läsbara fel och beteendet vid saknat media, avbrutet tal (autoplay-defekten) och långsam laddning.
-  - Produktionens tre lager i ett kvitto.
-- **Vem:** agent kör webbläsarproven i staging och rättar autoplay; Jakob gör den visuella bedömningen.
-- **Kvitto:** komplettera [K04-kvittot](2026-10-27-K04-STAGING-ACCEPTANCE.json) eller lägg ett nytt daterat kvitto.
+  - Webbläsarens autoplay-spärr (proven körde med den avstängd) och fysisk telefon.
+  - Produktionens tre lager med inloggad spelare i ett kvitto.
+- **Vem:** agent rättar och kör om proven i staging; Jakob gör den visuella bedömningen.
+- **Kvitto:** komplettera K04-webbläsarkvittot eller lägg ett nytt daterat kvitto.
 
 ### K05 — Exakt mediakoppling till Neon och Blob (IN_PROGRESS)
 
-- **Bevisat:** produktionen 27 oktober kväll (se Läget): 15 PAOW-tagningar godkända och servermätta, paketrevision 9 och spelkonfiguration publicerade, Jakobs spel och godkännande. Blockeraren i `status.json` beskriver läget före detta och ändras bara med kvitto.
+- **Bevisat:** produktionen 27 oktober kväll ([K05-kvittot](2026-10-27-K05-PRODUCTION-ACCEPTANCE.json)): `cc415cd8`, Studio-migrering 020, paketrevision 9 och `room-config-133cfffc…`, de 15 godkända och servermätta tagningarnas media-ID och identitetshash, och Jakobs godkännande med tid och gräns (mobilvy, inte telefon). Blockeraren i `status.json` beskriver läget före detta och ändras bara efter granskning.
 - **Saknas:**
-  - Ett sanerat produktionskvitto i Git med deploy-SHA `cc415cd8`, Studio-ledgerns 020, paketrevision 9, `room-config-133cfffc…` och de 15 tagningarnas media-ID, SHA-256 och granskningsstatus.
-  - Jakobs godkännande med tid och gräns (mobilvy, inte telefon).
-  - K05:s manifestmatris `käll-SHA → hash → Neon-ID → Blob → paket/händelse → acceptans` och ett negativt fall: en ogranskad eller okänd tagning kan inte väljas.
-- **Vem:** agent sammanställer kvittot med läsningar (Neon read-only, Admin-API GET) och råunderlaget i `k05` (`jakob-production-review.json`, `bind-paow-takes.receipt.json`, `runbook.md`). Jakob har redan godkänt; orkestratorn uppdaterar status efter oberoende granskning.
-- **Kvitto:** `docs/2026-10-27-K05-PRODUCTION-ACCEPTANCE.json`.
+  - K05:s manifestmatris `käll-SHA → bytes-SHA → Neon-ID → Blob → paket/händelse → acceptans`; bytes-SHA saknas för de 8 tagningar som bands utan import.
+  - Ett negativt fall: en ogranskad eller okänd tagning kan inte väljas.
+  - Inloggad läsning av produktionens tre lager (anonymt svarar de 401).
+- **Vem:** agent kompletterar med läsningar (Neon read-only, Admin-API GET); en annan agent granskar; orkestratorn uppdaterar status.
+- **Kvitto:** komplettera K05-kvittot.
 
 ### K06 — Admin till spel efter omstart (IN_PROGRESS; kräver K05 VERIFIED)
 
-- **Bevisat:** staging 27 oktober: Admin → publicering C0→C1 → aktiv hand behöll paket 7 över publicering och processbyte, nästa fönster fick paket 8 (13/13, [K06-kvittot](2026-10-27-K06-STAGING-ACCEPTANCE.json)). Delat bord på `cc415cd8`: aktiv runda behöll C1 när C2 publicerades, och nästa fönster band C2 (K07-kvittot, kontrollerna K06-S1–S3).
+- **Bevisat:** staging 27 oktober: Admin → publicering C0→C1 → aktiv hand behöll paket 7 över publicering och processbyte, nästa fönster fick paket 8 (13/13, [K06-kvittot](2026-10-27-K06-STAGING-ACCEPTANCE.json)). Delat bord på `cc415cd8`: aktiv runda behöll C1 när C2 publicerades, nästa fönster band C2, och processbytet skedde på samma SHA ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json), K06-S1–S3 och K07-e2).
 - **Saknas:**
   - En publicering som byter material så att M0 och M1 kan särskiljas.
   - Wrong-role, bad-media-id och interrupted-presentation.
   - Visuellt godkända giv- och revealklipp.
   - Johns Bet-kedjan i produktionen, dokumenterad efter K05.
-  - Processbytet på samma SHA i K07-körningen kan återanvändas när det kvittot är committat.
 - **Vem:** agent i staging; Jakob för det visuella.
 - **Kvitto:** komplettera K06-kvittot eller lägg ett nytt daterat kvitto.
 
 ### K07 — Spelbeteenden och samtidighet (TODO; kräver K04 och K06 VERIFIED)
 
-- **Bevisat:** dagtid 27 oktober: enspelarbeteenden, idempotens, samtidiga kommandon, ledgerparitet mot Neon, utloggning och isolering ([J08-kvittot](2026-10-27-J08-STAGING-ACCEPTANCE.json), avsnitt `k07`). Kväll, flaggan på i staging: 19/19 på `cc415cd8`, bland annat två spelare vid samma delade bord, g1 platsfrigivning (#426), g2 inga ticks i tysta rum, återanslutning efter processbyte på samma SHA, isolering och ledgerparitet mot read-only Neon.
+- **Bevisat:** dagtid 27 oktober: enspelarbeteenden, idempotens, samtidiga kommandon, ledgerparitet mot Neon, utloggning och isolering ([J08-kvittot](2026-10-27-J08-STAGING-ACCEPTANCE.json), avsnitt `k07`). Kväll, flaggan på i staging: 19/19 på `cc415cd8` ([K07-kvittot](2026-10-27-K07-STAGING-ACCEPTANCE.json)), bland annat två spelare vid samma delade bord, g1 platsfrigivning (#426), g2 inga ticks i tysta rum, återanslutning efter processbyte på samma SHA, isolering och ledgerparitet mot read-only Neon.
 - **Saknas:**
-  - Kvittot i Git och en oberoende granskning.
+  - En oberoende granskning av kvittot.
   - Jämförelsen main mot kandidat som K07-kriterierna kräver, eller ett uttryckligt scopebeslut av Jakob.
   - K04 och K06 VERIFIED.
-- **Vem:** agent committar kvittot; en annan agent granskar; orkestratorn uppdaterar status.
-- **Kvitto:** `docs/2026-10-27-K07-STAGING-ACCEPTANCE.json`, sanerat från `k07-shared/receipt.json`.
+- **Vem:** en agent som inte körde provet granskar; orkestratorn uppdaterar status.
+- **Kvitto:** K07-kvittot ovan.
 
 ### O02 — Oberoende samprov (TODO; kräver K07 och J10)
 
@@ -87,7 +86,7 @@ Orkestratorns råunderlag ligger utanför Git, bara på Jakobs dator: `C:\Users\
   - HTTP-spelreplay efter restore.
   - SQLite-steg 8–9 klara, eftersom en ren main är ett slutkrav.
 - **Vem:** en agent som inte har implementerat kandidaten; orkestratorn fryser kandidaten; Jakob för AV.
-- **Kvitto:** `docs/<datum>-O02-ACCEPTANCE.json`. Planutkastet `o02/O02-PLAN.md` skrevs mot `e7a4e251`; läs om läget innan det används.
+- **Kvitto:** `docs/<datum>-O02-ACCEPTANCE.json`. Plan: [O02-PLAN](plans/O02-PLAN.md), skriven mot `e7a4e251`; läs om läget innan den används. Kvittoskriptet [tools/o02-receipt.mjs](../tools/o02-receipt.mjs) är read-only (GET mot staging, `BEGIN READ ONLY` mot Neon).
 
 ### O03 — Integration och verifierad drift (TODO; kräver O02)
 
@@ -137,5 +136,5 @@ Aldrig: hemligheter i Git eller chatt, prov mot riktiga användares data eller J
 ## Separata spår efter migreringen
 
 - **Ren start (clean slate):** Jakobs beslut 27 oktober. När K05 är klar och som egen aktivitet med backup och Jakobs uttryckliga go: ta bort gamla Astrid-, Dragan- och testrum, alla operatörer utom Johns Bet (PAOW) och töm papperskorgen. Följ avvecklingsreglerna i [AGENTS.md](../AGENTS.md#data-media-och-avveckling) och [masterplanens raderingsavsnitt](../migrering/MASTERPLAN.md#radera-med-ett-konkret-slutdatum). Stagingens bevisdata (rum `33b37ff3`) står kvar till O03. I repot ingår att radera Astrids gamla experimentmapp `media/dealers/astrid/staging/` (442 spårade filer, cirka 6 MB, ingen kod läser dem) och samtidigt bygga om `media/layout.json` och `media/blob-index.json`, som listar mappens filer, med de befintliga medieverktygen.
-- **Admin-förenkling (UX):** `/admin` ska vara enkel. Underlag: [Admin-kartan](history/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md), [backloggen](history/jakob-main-migrering/BACKLOGG-2026-10-23.md), [separat produktarbete](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar) och utkastet `ux-plan/FORENKLING.md` i scratchpaden (en publiceringsknapp per rum). Det finns inte i masterplanen; Jakob beslutar omfattningen.
+- **Admin-förenkling (UX):** `/admin` ska vara enkel. Underlag: [Admin-kartan](history/jakob-main-migrering/ADMIN-KARTA-2026-10-22.md), [backloggen](history/jakob-main-migrering/BACKLOGG-2026-10-23.md), [separat produktarbete](CLOUD-MIGRATION.md#separat-produktarbete-och-öppna-driftansvar) och utkastet [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) (en publiceringsknapp per rum). Det finns inte i masterplanen; Jakob beslutar omfattningen.
 - **Övrigt:** SQLite-steg 8–9 (planen ligger utanför Git; `tools/no-sqlite-allowlist.json` visar vad som återstår), Astrid-legacy (hårdkodat `'astrid'` i Admin-avbokning, utloggning, `/chat` och probe) och en inställning per dealer för proben (av, klipp efter N minuter eller AI-tal); Jakob har inte beslutat om den sista.

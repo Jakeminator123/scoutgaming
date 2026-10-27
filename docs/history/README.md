@@ -8,6 +8,7 @@ Aktuellt läge: [START-HERE](../../START-HERE.md), [NEXT-AGENT](../NEXT-AGENT.md
 | --- | --- |
 | [JOHN-HANDOFF-2026-10.md](JOHN-HANDOFF-2026-10.md) | Den tidigare handoffen: daterade leveranskvitton 14–27 oktober, nyast först |
 | [NEXT-AGENT-2026-10.md](NEXT-AGENT-2026-10.md) | Äldre överlämningar som tidigare låg i NEXT-AGENT |
+| [AUDIT-2026-10-27.md](AUDIT-2026-10-27.md) | Revisionen av styrfiler, CI och dokumentation 27 oktober; många punkter genomförda i #447 och #448 |
 | [MASTERPLAN-2026-10.md](MASTERPLAN-2026-10.md) | Den fullständiga masterplanen med avstämningar 21–27 oktober; den gällande korta planen är [migrering/MASTERPLAN.md](../../migrering/MASTERPLAN.md) |
 | [SAMARBETE-OCH-ATKOMST-2026-10.md](SAMARBETE-OCH-ATKOMST-2026-10.md) | Roller och åtkomst under Kevin-samarbetet |
 | [jakob-main-migrering/](jakob-main-migrering/) | Admin-karta, backlogg, OpenClaw-karta och städunderlag 22–23 oktober |
