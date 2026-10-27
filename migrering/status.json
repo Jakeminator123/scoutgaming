@@ -592,8 +592,8 @@
         "J09"
       ],
       "branch": "codex/j10-webview-acceptance-20261027",
-      "head": "d53b349a7dc14060de8283a343681569a089805e",
-      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/421",
+      "head": "ef4e64d787834458d0526bb896c42abaa46b4451",
+      "pr": "https://github.com/Jakeminator123/scoutgaming/pull/423",
       "reviewer": "Root och oberoende j10_review; tidigare Cloud ledger/schema-granskning PR422",
       "evidence": [
         "Revision 2026-10-25: nytt J10-prov är inte utfört; ny tids-/miljöplan ska utgå från aktuell main och bevarade daterade schema-/restorebevis, inte det äldre paket-A- eller server-v2-läget.",
