@@ -548,7 +548,7 @@ Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
 **Teknisk fördelning:** Vercels Studio-tjänst serverar Admin, partnerportalen
 och lobbyn. API:er och tillgångar finns under `/studio`.
-Render-tjänsten `croupier-v2` äger
+Render-tjänsten `croupier-v3` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
 Isolerade tester körs i staging eller CI:s isolerade Postgres; det lokala

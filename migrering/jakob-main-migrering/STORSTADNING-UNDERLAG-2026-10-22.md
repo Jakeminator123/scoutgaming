@@ -12,7 +12,7 @@ i [masterplanen](../MASTERPLAN.md), inte en ny statuskälla. Procent och VERIFIE
   med parametrar i URL:en.
 - Inga lokala SQLite-filer, ingen lokal backoffice, inga dubblerade ytor och
   inget från Kevin-legacy i produktvägen. Neon är register, Blob är media.
-- Render `croupier-v2` ska bara köra spelmotorn. OpenClaw Director/Gateway är
+- Render-spelmotorn (`croupier-v2` vid denna inventering; sedan 24 oktober `croupier-v3`) ska bara köra spelmotorn. OpenClaw Director/Gateway är
   egna Render-tjänster.
 - Kevins kvarvarande aktiviteter (K04–K07) behöver hans grenar som
   portningskälla tills O03 är verifierad. Stäng skrivvägen till `main`,
@@ -104,6 +104,8 @@ missvisande plats/namn, BEHÅLL = aktiv, UTRED = underagent avgör med konsument
 | Rotens `.env.local`, `.env.emil`, `.env.dragan-*.local`, `inbox-token.txt` | Hemligheter utanför Git men i arbetsytan. | Kopiera privat före ren klon; de följer inte med. |
 
 ## Render `croupier-v2`: vad som faktiskt körs
+
+Historik 22 oktober: beskriver den gamla kombinerade imagen. Sedan 24 oktober kör produktionen `croupier-v3` enligt [RENDER-V3](../../ops/cloud/RENDER-V3.md); v2 är suspenderad och raderas av Jakob.
 
 Byggkontext är reporoten. Dockerfilen installerar `services/astrid-gpu-worker/gateway`,
 `services/game` och `apps/studio`, bygger Studio med basePath `/studio`, och

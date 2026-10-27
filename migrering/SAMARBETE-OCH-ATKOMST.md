@@ -4,7 +4,7 @@
 
 Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
 [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311) innehåller planen;
-status.json är enda källa för migrationsprocent: 45% (9/20), 55% återstår.
+status.json är enda källa för migrationsprocent (läsvy: [STATUS.md](STATUS.md)); vid denna avstämning 9/20.
 K01/J01 är redan VERIFIED; de tidigare angivna K01-rättningarna är avslutade.
 Nuvarande ansvar ersätter tabellen från 21 oktober.
 
@@ -71,6 +71,8 @@ Ingen sådan branch eller arbetsmapp är skapad av denna rekommendation.
 - Kevin provar konsolerna. SQL-åtkomst från hans agent är kvitterad i #312; faktisk Blob-/konsolåtkomst återstår. Ingen bredare Vercel-roll eller generell Blob-token har delats.
 
 ## Separat SQL-läsroll
+
+**Jakobs beslut 27 oktober 2026:** rollen `kevin_migration_readonly` behålls i produktionens Neon och Kevin behåller sin GitHub-åtkomst (`invoicesolv`); hans brancher rörs inte. Ingen återkallelse planeras.
 
 Jakob beställde rollen direkt 21 oktober. Rollen kevin_migration_readonly är skapad via SQL enligt [Neons åtkomstguide](https://neon.com/docs/manage/database-access), utan neon_superuser eller andra ärvda roller.
 

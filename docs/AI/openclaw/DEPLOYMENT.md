@@ -28,7 +28,7 @@ eller GPU-prov och inte godkänd läppsynk.
   `croupier-lab-openclaw:18789` och disk `/data/catalog`.
 - `croupier-lab-openclaw`: privat Gateway med `OPENCLAW_API_KEY`, annan
   `OPENCLAW_MODEL_API_KEY` och beständig state på `/data/openclaw`.
-- `croupier-v2`: produktservern har speech-URL/token och separata
+- `croupier-v3` (spelmotorn; `croupier-v2` är suspenderad): produktservern har speech-URL/token och separata
   Director-/Lab-rådpar. Den validerar session, kort, saldo och modellbeslut.
 - Vercels frontend följer origin-/ingresskontraktet i variabelregistret.
   `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet. Ingen av ovanstående

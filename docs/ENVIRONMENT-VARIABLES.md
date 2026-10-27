@@ -29,6 +29,10 @@ stoppar start; startup installerar inget. Ursprung och kanonisk Host följer bef
 Ingen Partner→operatör/rumrelation gissas. Gateway/Vercelrumsväg och klient är ännu
 inte inkopplade; flaggan ska inte aktiveras före separat verifierad mål/readiness.
 Ingen ny tjänst, molnvariabel, schemaapplicering eller driftsättning ingår.
+27 oktober 2026: `CROUPIER_SHARED_TABLE_ENABLED=1` stoppade stagingmotorns start (tom
+frontend-origin i single-origin-layouten); rättningen är PR #442, inte mergad. Aktivera
+inte flaggan före den. Rumsvägen är numera routad i `vercel.json` (`/shared-room/*`) och
+`platform-routing.mjs` (`/api/shared-room/*`); varningen ovan behålls tills rättningen är mergad.
 
 ## Driftväljarens API
 
@@ -119,11 +123,11 @@ Det är den aktuella produkten, inte ett namnval mellan utvecklarnas miljöer.
 | Resurs | Färsk kontroll och betydelse |
 | --- | --- |
 | Neon `preview-v2` / `br-rapid-wave-b1b6978c` | Raderad 18 oktober 2026, verifierat 14:02:22 UTC efter Jakobs uttryckliga val, tillsammans med endpoint `ep-lucky-bird-b1fyapdh`. Produktionsprojektets `main` behölls. Det äldre projektet `croupier-preview-neon` med arkiverad `main` behölls också; det är en annan resurs. |
-| Vercel Production, projekt `scoutgaming` | Backend `croupier-v2.onrender.com`, native Admin på, uttrycklig GAME-databasanslutning och scope samt Blob-token finns. Sensitive värden är inte utlämnade av connectorn och deras fullständiga likhet är inte nyverifierad. |
+| Vercel Production, projekt `scoutgaming` | Backend `croupier-v2.onrender.com` (18 oktober; sedan 24 oktober `croupier-v3.onrender.com`), native Admin på, uttrycklig GAME-databasanslutning och scope samt Blob-token finns. Sensitive värden är inte utlämnade av connectorn och deras fullständiga likhet är inte nyverifierad. |
 | Vercel Preview, samma projekt | Backend och publika adresser pekar på produktion. Preview saknar ingresshemlighet, native-Admin-flaggor, GAME-databasanslutning och Blob-token. En äldre READY-deployment bevisar varken aktuell kod eller fungerande Admin. Ingen verifierad skrivtestmiljö. |
 | Blob `croupier-media-private` / `store_AqwvebTbBHarOjvG` | Endast kopplat till Scoutgaming, metadata för Production/Preview. Kopplingen innehåller `CROUPIER_MEDIA_STORE_ID`; den skapar inte i sig en fungerande Preview-token. |
 | Blob `impactwin-media-preview` / `store_K1uXiAFLGqRdspnB` | Endast kopplat till det separata projektet Impactwin (Preview/Development). Ingen belagd krock med Scoutgaming. |
-| Render | `croupier-v2` är produktionsbackend och behölls. Separata `game-engine` (`srv-db97dhg473hc73b1vni0`) raderades 18 oktober 2026 efter Jakobs uttryckliga val; DELETE och efterföljande GET 404 verifierades 14:01:17 UTC. Äldre `croupier-vercel-preview-qa` har tidigare dokumenterats i maintenance. |
+| Render | `croupier-v2` var då produktionsbackend och behölls; sedan 24 oktober är `croupier-v3` produktion och v2 suspenderad med autoDeploy av, i väntan på radering av Jakob. Separata `game-engine` (`srv-db97dhg473hc73b1vni0`) raderades 18 oktober 2026 efter Jakobs uttryckliga val; DELETE och efterföljande GET 404 verifierades 14:01:17 UTC. Äldre `croupier-vercel-preview-qa` har tidigare dokumenterats i maintenance. |
 
 Koden i `apps/studio/lib/studio-native-runtime.mjs` använder den uttryckliga
 `CROUPIER_GAME_DATABASE_URL`. Marketplace-variablerna `CROUPIER_NEON_*`
@@ -210,7 +214,7 @@ inte en verifierad dublett av `croupier-v2`.
 | Tjänst | Ansvar |
 | --- | --- |
 | Vercel `scoutgaming` | Webb, Admin och proxy till spelmotorn. Äldre generated-speech-/streaming-/cloud-speech-flaggor är 0. Moving-nycklar ligger inte här. |
-| Render `croupier-v2` | Spelmotor samt samordning av chattsvar, röst, RunPod-session, budget och uppspelning. |
+| Render `croupier-v3` (vid denna inventering `croupier-v2`) | Spelmotor samt samordning av chattsvar, röst, RunPod-session, budget och uppspelning. |
 | Render `croupier-lab-director` | Produktens taladapter via `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`, vidare till privat Gateway. |
 | Render `croupier-lab-openclaw` | OpenClaw-roller som skapar text och beslut. Producerar inte GPU-video. |
 | RunPod | Kör Pythonmotorn för läppsynk med vald avatarbank. |
@@ -1062,7 +1066,7 @@ Detta är en verifierad engångssynk, ingen automatisk molnsynk vid filändring.
   `ELEVENLABS_OC_API` och `ELEVENLABS_VIDEO_KEY` är borttagna ur de tre
   lokala env-filerna; Lab har ingen ElevenLabs-nyckel. Ingen leverantörsnyckel
   återkallades och ingen alternativ röst valdes.
-- Render `croupier-v2` har den verifierade `ELEVENLABS_API_KEY`. Läsning
+- Render-spelmotorn (då `croupier-v2`, nu `croupier-v3`) har den verifierade `ELEVENLABS_API_KEY`. Läsning
   efter skrivning bekräftade värdet och att andra Render-värden var orörda.
   Lokal Cartesia synkades till den fungerande Render-nyckeln; båda tidigare
   värdena nådde Victoria, men molnets fungerande konto ersattes inte.
@@ -1077,7 +1081,8 @@ Detta är en verifierad engångssynk, ingen automatisk molnsynk vid filändring.
   ljudet vidare till workern.
 
 Kontokontroll 12 oktober 2026: nuvarande ElevenLabs-runtime-nyckel i lokal
-Web och Render tillhör Kevin (Pro). Det är fortfarande originalklonernas
+Web och Render tillhör Kevin (Pro) — att bekräfta av Jakob 2026-10-27; stämmer det
+beror K05:s PAOW-tal på Kevins konto. Det är fortfarande originalklonernas
 workspace, inte ett verifierat Jakob-konto. Kontot byts först när egen nyckel
 och tillgång till PAOW/Dragge är verifierade; nyckelnamn får inte användas som
 bevis på ägare. Instant-kloner delas inom samma workspace enligt
@@ -1118,7 +1123,7 @@ TTS-/GPU-jobb kördes.
 ### Talnycklar och sparade modeller
 
 Nya dealerprofiler kräver `CROUPIER_DEALER_SPEECH_PROFILES=1` på Render
-`croupier-v2`, tillsammans med befintlig streaming och Neon-journal. Flaggan är
+`croupier-v3`, tillsammans med befintlig streaming och Neon-journal. Flaggan är
 av tills en workerimage som stöder profilbunden avatar och protokoll 3 har verifierats.
 `ELEVENLABS_API_KEY` behövs där för ElevenLabs-profiler; Cartesia-profiler använder
 `CARTESIA_API_KEY`. Molnstartaren vidarebefordrar nyckeln enbart till Web-processen,
@@ -1128,7 +1133,7 @@ Röst-ID, modell och referens sparas per dealer i Studio; runtime kontrollerar
 röstbehörighet med ett läsande API-anrop innan GPU-jobbet. Saknad röst eller nyckel
 ger fel, aldrig Astrids röst som reserv. Budget och återstartsregler är oförändrade.
 
-På Render `croupier-v2` finns tal-/GPU-konfigurationens `CARTESIA_API_KEY`,
+På Render-spelmotorn (`croupier-v3`; vid kvittot `croupier-v2`) finns tal-/GPU-konfigurationens `CARTESIA_API_KEY`,
 `RUNPOD_API_KEY` och `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Produktens tre
 aktiveringsflaggor är ON. Aktuell verifiering och kostnadsgränser finns i
 [handoffen](JOHN-HANDOFF.md); gamla deploy-ID:n och gamla budgetbelopp är inte
@@ -1153,7 +1158,7 @@ kan Astrids vanliga modell begära en enda fördjupning; tekniska fel eller
 ogiltiga svar utlöser inte fler modellanrop. Båda anropen går genom samma
 verktygslösa OpenClaw-roll. Slutligt svar ger högst en talvideo.
 
-Sätt `OPENCLAW_SPEECH_TIMEOUT_MS=20000` på **både croupier-v2 och Director**
+Sätt `OPENCLAW_SPEECH_TIMEOUT_MS=20000` på **både spelmotorn (croupier-v3) och Director**
 före aktivering. Spelets molnstart skickar den enbart till Web; den är en
 sammanlagd chattdeadline, inte en ny 20-sekundersfrist per modell.
 `OPENCLAW_TIMEOUT_MS=8000` kan ligga kvar för övriga Director-råd.
@@ -1169,7 +1174,7 @@ Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
 berörda tjänsterna. [Flöde och prov](JOHN-HANDOFF.md).
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
-Render → `croupier-v2` → Environment, tillsammans med bootstrap-användaren.
+Render → `croupier-v3` → Environment, tillsammans med bootstrap-användaren.
 Den används bara för att skapa första administratören i en tom CRAIG-databas.
 En ändring av variabeln ändrar inte lösenordet för ett befintligt konto.
 

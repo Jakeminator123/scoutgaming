@@ -39,25 +39,38 @@ Dagens PR:er:
 - #429: överlämning.
 - #433: *Godkänn tal*.
 - #436: *Röst & tal*.
-- #437 är öppen (förvald tagning) och #434 är ett utkast (steg 6).
+- #437 (förvald tagning) är mergad som `f1fef7c9`, #438 (dealerpersona i chatten) som `341a8344`, #439 (SQLite steg 3c) som `9cf7b8c2` och #434 (SQLite steg 6) som `3b688d49`, som är main i kväll.
+
+**Kvällens fakta (27 oktober, efter #434):**
+
+- main = `3b688d49`. Vercel (`scoutgaming`) auto-deployar main; Render `croupier-v3` (`srv-dbd6nfon74is73aiblf0`) deployades manuellt 18:33 UTC på `3b688d49` efter grön CI. Director `croupier-lab-director` kör `341a8344`.
+- Deploypolicy (Jakob): main är enda produktvägen och allt grönt går direkt till produktion: merge efter grön CI → Vercel auto-deployar → `croupier-v3` triggas manuellt (Render MCP) efter varje grön merge; Director/Gateway deployas om när deras kod ändras. Schemamigrering före kravhöjning; Admin-publicering sist.
+- Spelmigreringarna 008–010 är applicerade i produktionen (15 `shared_*`-tabeller och tre kolumner återlästa). Spel-ledgern registrerar avsiktligt fortfarande bara `product-v1` och `sqlite-import-v1`. J07-beviset i `migrering/status.json` (”enbart levererade, inte applicerade i produktion”) är historiskt och ändras inte där.
+- Studio-migrering 020 saknas i produktionen; Jakob applicerar med `node tools/check-migration-readiness.mjs --apply`. Det är orsaken till paketpubliceringens 503 *Action unavailable* i produktionen (paketet behöver v2-kuvertet).
+- `CROUPIER_SHARED_TABLE_ENABLED=1` stoppade stagingmotorns start (tom frontend-origin i single-origin-layouten). Rättningen är PR #442 (`jakob/claude-shared-room-origin`), inte mergad; behåll varningen i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling). Staging står på `=0`.
+- Render-staging `srv-dbf61l0m7kps73ft7mk0` är LIVE på `3b688d49`; Jakob startar och stoppar den. Stagingen är en tillfällig provbänk till O03 och raderas därefter.
+- Renders gräns för byggminuter är höjd. `RENDER_API_KEY` finns i gitignorerad `.env.local` lokalt och ger REST-läsning; Render MCP deployar, läser loggar/metrics och skriver env, men läser inga env-värden.
+- Legacy-tjänsterna `croupier-v2` (`srv-datg3j6gekts73amgli0`) och `croupier-vercel-preview-qa` (`srv-datj7l893c1s73ar3u50`) är suspenderade med autoDeploy av och raderas av Jakob. `croupier-v2` är inte produktion någonstans.
+- Kevin (Jakobs beslut 27 oktober): behåller läsrollen `kevin_migration_readonly` i produktionens Neon och sin GitHub-åtkomst (`invoicesolv`); hans brancher (`kevin*`, `codex/kevin-*`) rörs inte.
 
 **Nästa steg, i ordning:**
 
 1. **K05 i produktionen (Jakob):**
+   - **Blockerare (27 oktober kväll):** Studio-migrering 020 saknas i produktionen; Jakob applicerar den med `node tools/check-migration-readiness.mjs --apply`. Utan 020 svarar paketpubliceringen i produktionen 503 *Action unavailable* (paketet behöver v2-kuvertet). Därefter: ompublicera Johns Bet-paketet (5 → 6) och publicera rumskonfigurationen. PR #443 loggar orsaken bakom Studios 503/500 i admin-API:t.
    - Gå till Klippkarta → PAOW → *Röst & tal* → *Inspelat tal*. Godkänn en tagning per replik. `goodluck_1` och `win_1` är pending. Välj ersättare för blackjack och double; `blackjack_7` och `double_3`, som godkändes i staging, är pending i produktionen.
    - Koppla talfacken med *Koppla till utkast* och spara.
    - Publicera paketet igen. Publicera sedan Johns Bet-rummets spelinställningar.
    - Ingen agent godkänner tal.
 2. **K06:** Publicera en ny config under en pågående hand och visa att handen behåller C0/P0/M0 medan nästa fönster får C1/P1/M1. Granska giv- och revealklippen visuellt och upprepa kedjan på Johns Bet efter K05.
-3. **K07:** Sätt `CROUPIER_SHARED_TABLE_ENABLED=1` på staging-Render (kräver Jakobs ja). Kör g1/g2 och prov med flera spelare vid samma bord.
+3. **K07:** Sätt `CROUPIER_SHARED_TABLE_ENABLED=1` på staging-Render (kräver Jakobs ja) först när PR #442 är mergad: 27 oktober stoppade `=1` stagingmotorns start (tom frontend-origin i single-origin-layouten). Kör sedan g1/g2 och prov med flera spelare vid samma bord.
 4. **K04** stängs med K05/K06-materialet. Därefter kommer **O02** med oberoende samprov på en fryst kandidat, och sedan **O03** med integration, drift och restore.
-5. **SQLite:** steg 3c och 7 återstår. Steg 6 (#434) är ett utkast som mergas efter 3b, som är mergat i #435.
+5. **SQLite:** steg 1–6 är mergade (#428, #430, #431, #432, #435, #439 och #434 → main `3b688d49`); motorn och `ops/cloud` kör enbart Postgres. Steg 7 (companion-/Studio-/backup-JSON-lager) ligger i PR #444; därefter steg 8–9.
 6. **Clean slate efter K05:** först när K05 är klar och enligt Jakobs ordning. Dagens stagingdata (rum 33b37ff3 med paket 7 och syntetiska spelare) är bevis och raderas inte före dess.
-7. Render-staging var LIVE på `b08f2a86` vid kvittots slut. Jakob avgör när tjänsten ska suspenderas.
+7. Render-staging (`srv-dbf61l0m7kps73ft7mk0`) är LIVE på `3b688d49` med `CROUPIER_SHARED_TABLE_ENABLED=0`; Jakob startar och stoppar den. Stagingen är en tillfällig provbänk till O03 och raderas därefter.
 
 ## Claude tar över — 27 oktober 2026, kväll
 
-**65 % = 13/20 består.** Inga aktivitetsstatusar har ändrats; allt nedan är kod-, test- och dokumentleveranser via öppna PR:er som Jakob mergar efter grön full CI och oberoende granskning (Claude Codes säkerhetsläge tillåter ingen agentmerge). Ny lokal basmapp är en färsk klon i `C:\Users\jakob\dev\scoutgaming`; Codex-worktrees och originalcheckouten lämnas orörda. Jakobs beslut samma dag: **en enda produktväg** (Vercel + Render + Neon + Blob), SQLite lämnar main helt, bra Kevin-beteenden skrivs om i mains moduler, felaktiga tester/dokument rättas eller raderas, och `/admin` ska vara enkel.
+**Vid denna avstämning 13/20 verifierade aktiviteter (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)).** Inga aktivitetsstatusar ändrades; allt nedan är kod-, test- och dokumentleveranser via öppna PR:er som Jakob mergar efter grön full CI och oberoende granskning (Claude Codes säkerhetsläge tillät då ingen agentmerge; sedan 27 oktober kväll mergar den orkestrerande Claude-sessionen efter grön CI). Ny lokal basmapp är en färsk klon i `C:\Users\jakob\dev\scoutgaming`; Codex-worktrees och originalcheckouten lämnas orörda. Jakobs beslut samma dag: **en enda produktväg** (Vercel + Render + Neon + Blob), SQLite lämnar main helt, bra Kevin-beteenden skrivs om i mains moduler, felaktiga tester/dokument rättas eller raderas, och `/admin` ska vara enkel.
 
 | PR | Innehåll | Verifiering |
 | --- | --- | --- |
@@ -69,16 +82,16 @@ Dagens PR:er:
 
 **Kvarstående fel och uppföljning**
 - Hårdkodat `'astrid'` finns kvar i Admin-avbokningar, utloggning (`server.mjs` ~640–753), `/chat` och probe-rutter; kartan över Astrid-legacy mot PAOW/v3-vägen finns i #312-arbetet och ska in i Astrid-städningens nästa PR. Utloggningens probe-avbokning kostar en scopad transaktion och ger 403 om `astrid` inte är registrerad (sväljs).
-- SQLite-planen (9 PR:er, inga schemaändringar): steg 2 kräver Jakobs ja till PGlite som dev-beroende; steg 4 pensionerar `apps/studio/start.mjs --offline` och `local-connection.mjs` (ändrar `AGENTS.md`); steg 5 skriver om Admins Provspel (`studio-preview.mjs`, enda SQLite-användningen på Render); steg 6 gör motorn och `ops/cloud` Postgres-only. Planen ligger utanför Git hos Jakob/Claude; lägg in den i `migrering/` när steg 2 beslutats.
+- SQLite-planen (9 PR:er, inga schemaändringar; uppdatering 27 oktober kväll: Jakob sa ja till PGlite, mergat i #432, steg 1–6 är mergade och steg 7 ligger i PR #444): steg 2 kräver Jakobs ja till PGlite som dev-beroende; steg 4 pensionerar `apps/studio/start.mjs --offline` och `local-connection.mjs` (ändrar `AGENTS.md`); steg 5 skriver om Admins Provspel (`studio-preview.mjs`, enda SQLite-användningen på Render); steg 6 gör motorn och `ops/cloud` Postgres-only. Planen ligger utanför Git hos Jakob/Claude; lägg in den i `migrering/` när steg 2 beslutats.
 - Snapshot exponerar inte `unplayed`, så klienten kan inte varna "satsa eller förlora rutan"; kontraktsändring.
 - Dokumentationen är fortsatt spretig (`JOHN-HANDOFF.md` 3 186 rader, dubbletter mot denna fil, 25 md-filer nämner SQLite); `test/ci-changes.mjs:235` hårdkodar dokumentvägar.
-- Vercel-lagret `impactwin-media-preview` är ett avslutat sidoprojekt (ingen kodreferens) och kan raderas av Jakob. Kevin ska aldrig få produktionens Neon; en egen Neon-branch i stagingprojektet är rätt väg.
+- Vercel-lagret `impactwin-media-preview` är ett avslutat sidoprojekt (ingen kodreferens) och kan raderas av Jakob. Kevin behåller enligt Jakobs beslut 27 oktober läsrollen `kevin_migration_readonly` i produktionens Neon (se [SAMARBETE-OCH-ATKOMST](../migrering/SAMARBETE-OCH-ATKOMST.md#separat-sql-läsroll)) och sin GitHub-åtkomst; ingen skrivåtkomst till produktionen, och för skrivprov är en egen Neon-branch i stagingprojektet rätt väg.
 
-**Nästa steg mot 70 %:** J08:s niofältskvitto i isolerad staging (`croupier-k06-k07-staging`, Render `srv-dbf61l0m7kps73ft7mk0` återupptas bara under provet) med kandidaten efter #424: spara → återläs → publicera → produktläsning → auktoriserad launch → aktiv hand behåller C0/P0/M0 medan nästa fönster tar C1/P1/M1 → negativa fall. Därefter `status.json[J08]` VERIFIED med PR, oberoende granskare och kvitto-JSON. K05 kräver Jakobs AV-bedömning av PAOW:s tio klipp; ingen fabricerad acceptans.
+**Nästa steg mot 70 % (utfört senare samma kväll; J08 är VERIFIED, se överst):** J08:s niofältskvitto i isolerad staging (`croupier-k06-k07-staging`, Render `srv-dbf61l0m7kps73ft7mk0` återupptas bara under provet) med kandidaten efter #424: spara → återläs → publicera → produktläsning → auktoriserad launch → aktiv hand behåller C0/P0/M0 medan nästa fönster tar C1/P1/M1 → negativa fall. Därefter `status.json[J08]` VERIFIED med PR, oberoende granskare och kvitto-JSON. K05 kräver Jakobs AV-bedömning av PAOW:s tio klipp; ingen fabricerad acceptans.
 
 ## J10 slutverifierad — 27 oktober 2026
 
-**65 % = 13/20 aktiviteter.** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
+**Aktuell procentsats finns bara i [STATUS.md](../migrering/STATUS.md); vid detta kvitto var 13/20 aktiviteter verifierade (före J08).** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
 
 Ordinarie Admin publicerade nytt syntetiskt PAOW-rum, paket3→4. Lobby och autentiserad `/play/blackjack`→`/game` konsumerade samma rum/operatör/dealer/paket4. Ny spelare satsade5 demokrediter, stod på14 och avslutade handen: saldo995, version3, två ledgerrader och en historikrunda. Reload bevarade saldot. Frontend d53/backend c916 skiljer bara dokument; ingen ny produktkod eller schemaändring behövdes.
 
@@ -90,7 +103,7 @@ Eget rum är återställbart arkiverat (paket5), borttaget från lobbyn och ger 
 
 Läs `START-HERE.md`, aktuell `AGENTS.md`, `migrering/MASTERPLAN.md` och `migrering/status.json` från aktuell GitHub-main. Arbeta från egen featurebranch; bevara andra checkouts/utkast. Inga nya chattar eller molnresurser behövs. Samordna i #312 och använd egna GitHub/Vercel/Render/Neon-anslutningar. Codex-specifika verktyg kan ersättas med respektive tjänsts CLI/API; ägarskap, exakta versioner och beviskrav består.
 
-| Kvar, 7 aktiviteter à 5 % | Nästa verifierbara resultat |
+| Kvar 26 oktober, 7 aktiviteter à 5 % (J08 är sedan VERIFIED; aktuell lista i [STATUS.md](../migrering/STATUS.md)) | Nästa verifierbara resultat |
 | --- | --- |
 | K04 | Händelsedriven presentation och återanslutning med korrekt material under aktiv hand |
 | J08 | Versionerade Admin-val publiceras och syns i rätt rum, inklusive konflikter/omstart |
@@ -100,7 +113,7 @@ Läs `START-HERE.md`, aktuell `AGENTS.md`, `migrering/MASTERPLAN.md` och `migrer
 | O02 | Oberoende integrerat samprov på samma frysta kandidat |
 | O03 | Godkänd integration och verifierad faktisk drift med återställningsunderlag |
 
-Börja med aktuella kriterier, återanvänd redan mergad Kevin-konvertering och kör oberoende fel-/samtidighetsprov medan AV väntar. Nästa konkreta fel att utreda är stagingens `POST /studio/api/admin/players/status`503; det är inte bevisat ett behörighetsfel. Rätta inte genom direkt SQL eller sänkta authskydd. Den separata rotationsuppdateringens422 behöver exakt felkod innan slutsats; vanlig rumspublicering fungerar.
+Börja med aktuella kriterier, återanvänd redan mergad Kevin-konvertering och kör oberoende fel-/samtidighetsprov medan AV väntar. Nästa konkreta fel att utreda var stagingens `POST /studio/api/admin/players/status`503 (rättat i #424: kommandotransaktion utan Studio-scope); det var inte ett behörighetsfel. Rätta inte genom direkt SQL eller sänkta authskydd. Den separata rotationsuppdateringens422 behöver exakt felkod innan slutsats; vanlig rumspublicering fungerar.
 
 AV-bank `ebe77511c9f0a1736231cdbab49c0b583e253d9be9d2c30b18df11f9da5a9071` har tio pending-tal. Ingen ljud-/läppsynkacceptans har fabricerats. Bevara godkända bytes, Johns Bet och fryst restore-spelare. Om nya prov kräver staging: återanvänd befintliga tjänster och stoppa egna provresurser efteråt.
 
@@ -119,7 +132,7 @@ Jakob bekräftade efter leveransen: **”allt såg ganska bra ut gällande paow 
 ## Läsordning och första steg
 
 1. Läs aktuell `AGENTS.md`, kontrollera checkout, branch, HEAD och lokala ändringar. Återanvänd befintligt arbete; ingen bred reset, clean, stash eller omladdning av originalcheckouten.
-2. Läs [masterplanen](https://github.com/Jakeminator123/scoutgaming/blob/main/migrering/MASTERPLAN.md) och [enda statuskällan](https://github.com/Jakeminator123/scoutgaming/blob/main/migrering/status.json). Status efter fortsatt granskning: **60 % = 12/20 verifierade aktiviteter**. J09 är verifierad som avvecklingsförberedelse; faktisk produktions-DDL ingår fortsatt i O03.
+2. Läs [masterplanen](https://github.com/Jakeminator123/scoutgaming/blob/main/migrering/MASTERPLAN.md) och [enda statuskällan](https://github.com/Jakeminator123/scoutgaming/blob/main/migrering/status.json). Status vid denna avstämning: **12/20 verifierade aktiviteter** (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)). J09 är verifierad som avvecklingsförberedelse; faktisk produktions-DDL ingår fortsatt i O03.
 3. Läs de senaste avsnitten i [JOHN-HANDOFF](https://github.com/Jakeminator123/scoutgaming/blob/main/docs/JOHN-HANDOFF.md), sedan relevanta delar av `docs/ENVIRONMENT-RESTORATION.md`, `docs/CLOUD-MIGRATION.md` och `docs/LOCAL-PRESENTATION-RUNTIME.md`. Sök i historiska avsnitt; äldre gapbeskrivningar är inte automatiskt aktuella.
 4. Kontrollera nya relevanta meddelanden i [samordning #312](https://github.com/Jakeminator123/scoutgaming/issues/312), aktuella PR:er och faktisk drift. Återuppta inte redan mergat arbete.
 5. Använd Node **24.21.0** genom Volta, högst fyra testarbetare. Arbeta i egen worktree på en `jakob/claude-*`-branch med avgränsade filer; orkestratorn äger integration och merge.
@@ -128,7 +141,7 @@ Jakob bekräftade efter leveransen: **”allt såg ganska bra ut gällande paow 
 
 Läs det översta kvällsavsnittet i [JOHN-HANDOFF](JOHN-HANDOFF.md). Jakob vill att nyare Kevin-underlag och verkligt produktbeteende väger tyngre än historiska lås. Två duplicerade material-/timinglås är borttagna och 62/62 relevanta beteendeprov passerar. Nästa etapp implementerar nåbar varianttäckning, fryst v2-filmplanering, v31-readiness och explicit Admin-bindning på `codex/reachable-filmed-coverage-20261026`. Läs översta handoffen och faktisk PR-/CI-/driftstatus innan arbete återupptas; koden ger inte AV-acceptans eller nya migrationsprocent.
 
-Isolerad staging innehåller nu 46 exakt bundna, servermätta PAOW-original och en separat sparad PAOW-scen. Tio talval passerar i riktig pending-repetition; inget nytt AV-godkännande eller publicerat rum finns. Projektrevision `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Staging använder fortfarande syntetiska bakgrunds-/bordslager. Full spel-, AV- och layoutacceptans återstår; aktuell status är fortfarande 60 %. Root har beställt sömlös fortsättning i en ny chatt med privat överlämning, inte en ny migrationsplan.
+Isolerad staging innehåller nu 46 exakt bundna, servermätta PAOW-original och en separat sparad PAOW-scen. Tio talval passerar i riktig pending-repetition; inget nytt AV-godkännande eller publicerat rum finns. Projektrevision `studio-989f1e1b-7430-44b6-8ae2-1eeab40c468a`. Staging använder fortfarande syntetiska bakgrunds-/bordslager. Full spel-, AV- och layoutacceptans återstår; status vid denna avstämning var 12/20 (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)). Root har beställt sömlös fortsättning i en ny chatt med privat överlämning, inte en ny migrationsplan.
 
 ## Levererat och kvarvarande arbete
 

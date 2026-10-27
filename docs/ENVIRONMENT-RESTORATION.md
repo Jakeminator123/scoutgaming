@@ -2,7 +2,7 @@
 
 ## J10 slutverifierad — 27 oktober 2026
 
-**65 % = 13/20 aktiviteter.** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
+**Aktuell procentsats finns bara i [STATUS.md](../migrering/STATUS.md); vid detta kvitto var 13/20 aktiviteter verifierade (före J08).** [Statusfilen](../migrering/status.json) är enda statuskälla. [Samlat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json), särskilt `webviewVerification`, förenar tidigare ren klon/build/start, HTTP-restore16/16 och Cloud-granskad ledger/schema-paritet med en faktisk ny webviewrunda. Versionsrättningen är mergad i PR421; Cloud-kvittot i PR422.
 
 Ordinarie Admin publicerade nytt syntetiskt PAOW-rum, paket3→4. Lobby och autentiserad `/play/blackjack`→`/game` konsumerade samma rum/operatör/dealer/paket4. Ny spelare satsade5 demokrediter, stod på14 och avslutade handen: saldo995, version3, två ledgerrader och en historikrunda. Reload bevarade saldot. Frontend d53/backend c916 skiljer bara dokument; ingen ny produktkod eller schemaändring behövdes.
 
@@ -15,7 +15,7 @@ Följande avsnitt är daterade tidigare kvitton; aktuellt avslut ovan ersätter 
 
 ## Slutkvitto och Cloud-överlämning — 27 oktober
 
-Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status förblir 60 %.
+Den rättade kandidaten d53b349a7dc14060de8283a343681569a089805e är faktiskt omkörd i isolerad staging. Ordinarie Admin skapar PAOW-rum och konfigurationsutkast; native-publicering stannar korrekt vid tio pending-tal (native_material_speech_unbound). Ren autentiserad klon/install/build/start och isolerad HTTP-restore (16/16) passerar. State/input/presentation och ledgerantal bevaras; fullständigt ledger-radinnehåll är inte hashverifierat. Båda providerinställningarna är tillbaka på croupier_staging, exakt source-paritet passerade 09:11:24 UTC och Render är verifierat suspended 09:12:10 UTC. Ingen produktionsskrivning eller AV-attest. Status vid detta kvitto: 12/20 (aktuell siffra bara i [STATUS.md](../migrering/STATUS.md)).
 
 Båda lokala agenternas arbete, exakt kandidat, deploy-ID, återgång och öppna bevis finns i [Cloud-överlämningen](NEXT-AGENT.md) och [sanitiserat kvitto](2026-10-27-ISOLATED-ACCEPTANCE.json). Dessa ersätter den äldre formuleringen nedan att faktisk omkörning återstår. Ny spelrunda med ny syntetisk spelare, full CI/PR, K06 och ljud/läppsynkacceptans återstår i Cloud.
 
@@ -170,7 +170,7 @@ Alla appskrivare stoppades före backup: Render återlästes `suspended` 20:24:3
 | Granskad restore | Genomförd en gång till `croupier_staging_restore`; inga restorefel | Målet är nu befolkat, inte en tom reserv. Kör inte om initiering/restore blint |
 | SQL-paritet | 1 777 unika fullständiga objektnycklar/poster matchar exakt; tabeller, sekvenser och källmetadata oförändrade | Identisk SHA256 `8b708fbe48636e60024d98332d09d0840fa23391f1a6e2ebba03be7fa08a4d5a` |
 | Riktiga applikationsläsare | Samma stabila avkodade data via Studio-repository, operatörs-/paketläsare samt spelmotorns schemakontroll | Ett dealerklipp, två lager, två bolag, två paket, två rum; inga spelkonfigurationsutkast, frysta konfigurationer eller huvuden |
-| Åtkomst under läsprovet | App-roll, skrivskyddade sessioner, verifierad TLS1.3/CA/serveridentitet; ledger-skrivning saknar behörighet | Ingen ny HTTP-applikation kopplades till restoredatabasen; full spelreplay efter restore är inte utförd |
+| Åtkomst under läsprovet | App-roll, skrivskyddade sessioner, verifierad TLS1.3/CA/serveridentitet; ledger-skrivning saknar behörighet | Vid detta prov (25 oktober) kopplades ingen ny HTTP-applikation till restoredatabasen och ingen spelreplay efter restore utfördes. d53-kvittot 27 oktober (överst) har 16/16 HTTP-restore med login, läsning och replay mot 25-oktoberdumpen, men inte mot aktuellt schema med 020 och J08 |
 
 Originalets sista hashjämförelse underkändes på ett **mätfel**: SQL-UNION ärvde PostgreSQL-typen `name`, vilket trunkerade långa objektetiketter till 63 byte och gav instabil ordning. Originalfilerna hade samma radmultiset. En separat skrivskyddad ommätning med `text`, full C-sortering och verifierat unika nycklar passerade. OriginalSQL, misslyckat kvitto och dump bevarades; ingen andra restore eller datarättning utfördes.
 
@@ -186,7 +186,7 @@ Vercelproduktion är `scoutgaming`, projekt
 `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` i team
 `team_Scxorb9qtZHjNae1YEQnFCaT`. Reporoten bygger webb, Studio och taltransport;
 www/apex tillhör detta projekt. Aktiv spelmotor är Render `croupier-v3`, tjänst
-`srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den bygger `ops/cloud/Dockerfile.game` från main med automatisk deploy avstängd. Verifierat 24 oktober 2026 mot tjänst, requestlogg och versionendpoint. Tidigare `croupier-v2` (`srv-datg3j6gekts73amgli0`) är suspenderad; starta den inte som återställningsgenväg.
+`srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den bygger `ops/cloud/Dockerfile.game` från main med automatisk deploy avstängd. Verifierat 24 oktober 2026 mot tjänst, requestlogg och versionendpoint. Tidigare `croupier-v2` (`srv-datg3j6gekts73amgli0`) är suspenderad med autoDeploy av och raderas av Jakob; starta den inte som återställningsgenväg.
 
 1. Frys aktuell main-SHA, faktisk Vercel-/Render-version och avsedd återgångs-SHA.
    Läs både deploymentstatus och Renders `/__cloud/version` samt `/__cloud/health`.
@@ -281,8 +281,8 @@ ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga credentials i Gi
 Ett första offline-inithashprov nekade korrekt eftersom jämförelsen saknade
 projektets granskade revisionsfält. Fältet rättades före någon init; ursprunglig
 hash matchade därefter. Schemakällor och valideringskrav ändrades inte.
-Godkänd installation är inte godkänd slutacceptans: migrationsstatus är fortsatt
-45 % (9/20 aktiviteter).
+Godkänd installation är inte godkänd slutacceptans: vid detta steg var 9/20
+aktiviteter verifierade; aktuell siffra finns bara i [STATUS.md](../migrering/STATUS.md).
 
 Basbackupens SHA256 är `697101923dcb72b10305fe51df4fb9dfe70649488bd28a05e69d15a92ef5bb39`.
 Offlineinventeringen visar verkliga ägare och endast approllen som mottagare av
@@ -305,7 +305,7 @@ Schemakontrollens bas var main `4abbf1985e183c145c5a7772fe02631c6ee9b274`; det p
 
 Befintlig offlineförberedelse kördes med `prepare-shared-schema.mjs --database croupier_staging --role croupier_staging_migrator`. Alla fyra låsta källhashar matchade det granskade underlaget. Genererad SQL har SHA-256 `fdd27174ac3d9d1cb5316abbc54f6926e3fab48ef71c9e00c87402d50be0d8ed` och ligger privat som `shared-schema-review.sql/json`. Efter det utökade godkännandet installerades exakt detta 008→009→010-underlag med mål-/ägarvakter och återlästa objekt; ingen ny apply behövs.
 
-Inget nytt parallellt produktregister eller körsystem behövs. Den uttryckliga tomma katalogen och befintliga Admin-/publiceringskontrakt är kodprovade från `createEmptyProject()` med en ny syntetisk dealer, tom administration och syntetisk uppladdning. Den faktiska Neon-installationen och appbehörigheten är nu också verifierade. Vid detta installationskvitto återstod appdrift, Admin→spel, Blob-transport och verklig restore; kvällens utförda delprov redovisas ovan. provider-/transaktionsfixturer bevisar inte dessa eller visuell uppspelning. Officiell status är fortsatt 45 % (9/20); se [masterplanen](../migrering/MASTERPLAN.md#prioriterad-väg-till-910). Privata kvitton ligger i uppgiftens ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga anslutningshemligheter ingår.
+Inget nytt parallellt produktregister eller körsystem behövs. Den uttryckliga tomma katalogen och befintliga Admin-/publiceringskontrakt är kodprovade från `createEmptyProject()` med en ny syntetisk dealer, tom administration och syntetisk uppladdning. Den faktiska Neon-installationen och appbehörigheten är nu också verifierade. Vid detta installationskvitto återstod appdrift, Admin→spel, Blob-transport och verklig restore; kvällens utförda delprov redovisas ovan. provider-/transaktionsfixturer bevisar inte dessa eller visuell uppspelning. Officiell status vid detta kvitto var 9/20; aktuell siffra finns bara i [STATUS.md](../migrering/STATUS.md), se även [masterplanen](../migrering/MASTERPLAN.md#prioriterad-väg-till-910). Privata kvitton ligger i uppgiftens ignorerade `arkiv/2026-10-25/migration-cloud-acceptance/`; inga anslutningshemligheter ingår.
 
 Historisk plan från 22 oktober: målidentitet, inställningar och tomma syntetiska data skulle verifieras före anslutning till separat `croupier_staging` med dedikerad migrationsägare. Tabellen nedan dokumenterar då planerade Gitblobbar; den är **inte en instruktion att applicera gamla schemafiler på dagens miljö**. Vid återupptaget arbete måste aktuellt schema, rätt ordning och redan tillämpade versioner jämföras med den frysta kandidaten. Ingen anslutningssträng skrivs i Git eller chatten.
 
@@ -454,6 +454,8 @@ isolerade Linux-runnern med `node tools/run-shared-table-qa.mjs
 återställningsdatabasen, fullbackupen och städningen; inga molncredentials används.
 
 ## Förberedd schemaåtgärd 008 → 009 → 010 — inte godkänd för körning
+
+**Uppdatering 27 oktober 2026:** 008 → 009 → 010 är applicerade i produktionen (Neon `wandering-hill-60561912`, gren `br-flat-fog-b161a6r8`, databas `croupier_game`): 15 `shared_*`-tabeller och de tre 008-kolumnerna (`wallet_gen`, `source_key`, `source_fingerprint`) är återlästa samma dag. Spel-ledgern (`croupier_game.storage_migrations`) registrerar avsiktligt fortfarande bara `product-v1` och `sqlite-import-v1`; 008–010 syns i katalogen, inte i ledgern. Texten nedan är granskningsunderlaget från 22 oktober och beskriver läget före appliceringen.
 
 Detta är ett granskningsunderlag för den befintliga speldatabasen. Det ger inget
 mandat för produktions-DDL, merge, deploy eller aktivering och skapar ingen betald
@@ -666,7 +668,10 @@ i Git ska inte återställas för att få detta prov grönt.
 [Renklonkvittot 18 oktober](JOHN-HANDOFF.md#huvudagent5-renklon-och-organisationsavslut--18-oktober-2026)
 verifierade då bygg- och offline-startflödena utan gamla projektfiler. Offline-
 fixturen (`--offline`, `--skip-build`) är pensionerad 27 oktober 2026; ett renklonprov bygger
-Studio och kör testsviterna. Guards och byggspår ersätter inte en OS-sandbox.
+Studio och kör testsviterna. Även steget `node apps/studio/start.mjs --offline --skip-build --no-open`
+i d53-kvittot ([`cleanSource.commands`](2026-10-27-ISOLATED-ACCEPTANCE.json)) är historiskt och går
+inte att köra om på main (`apps/studio/start.mjs` avvisar flaggorna sedan #431); aktuellt kommando
+är `node apps/studio/start.mjs --no-open`, och isolerade prov körs i staging eller CI. Guards och byggspår ersätter inte en OS-sandbox.
 
 En `--single-branch`-klon hämtar normalt endast main. Lägg till den egna
 branchen med `git remote set-branches --add origin <featurebranch>` före
@@ -822,8 +827,8 @@ ingen automatisk återgång.
 ## Disponibel lokal byggcache
 
 `apps/studio/.next/cache`, `apps/web/.next` och deras
-`tsconfig.tsbuildinfo` är återbyggbara. Rensa endast när sessionsvakten saknar
-aktiv session och inga berörda Next-/byggprocesser kör. `apps/studio/tsconfig.json`
+`tsconfig.tsbuildinfo` är återbyggbara. Rensa endast när inga berörda Next-/byggprocesser kör (den lokala
+sessionsvakten är pensionerad 27 oktober 2026 tillsammans med `--offline`). `apps/studio/tsconfig.json`
 utesluter privat `data/` från appens typkontroll. Labbets övriga `.next`
 innehåller en runtime som det befintliga integrationstestet faktiskt använder;
 behåll den eller kör `npm --prefix apps/studio run build` före full regression.

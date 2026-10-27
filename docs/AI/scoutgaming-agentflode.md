@@ -461,7 +461,7 @@ ANVÄNDARE / WEBBLÄSARE
 |            (endast när OpenClaw-/shadow-läge används)
 |
 +-- SPELAREN talar med dealern
-|     Spelserver på Render: croupier-v2
+|     Spelserver på Render: croupier-v3
 |       -> Director /api/product/speech
 |       -> Gateway / croupier-speech
 |          -> svarstext, exakt inspelad replik eller tystnad

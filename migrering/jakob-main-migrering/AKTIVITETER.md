@@ -4,11 +4,11 @@ Tio leveransaktiviteter à 5 procentenheter, sammanlagt 50 procentenheter av hel
 
 ## Aktuell status 26 oktober
 
-J05 är verifierad på902 enligt det faktiska drift- och läsarkvittot nedan. J09:s levererade avvecklingsförberedelse är nu också slutgranskad;60 % (12/20) är verifierat. Status.json är fortsatt enda statuskälla. Följande25-oktobersrevision är historik.
+J05 är verifierad på902 enligt det faktiska drift- och läsarkvittot nedan. J09:s levererade avvecklingsförberedelse är nu också slutgranskad; vid denna avstämning 12/20 verifierade (aktuell siffra bara i [STATUS.md](../STATUS.md)). Status.json är fortsatt enda statuskälla. Följande25-oktobersrevision är historik.
 
 ## Nulägesrevision 25 oktober
 
-Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. 45 % är oförändrat. Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
+Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanen](../MASTERPLAN.md) skiljer redan mergad kod från återstående acceptans. Procentsatsen var oförändrad vid denna revision (aktuell siffra bara i [STATUS.md](../STATUS.md)). Daterade delkvitton nedan bevaras som historik; de beskriver inte alltid dagens runtime.
 
 - J05: #336:s gateway/klient/rumsväg är mergad. Senare #355/#356/#354 levererade server-v3 samt borttagning av äldre klient/lokal produktstate. Samlad start/readiness/drain/restore-acceptans är fortfarande ett eget krav.
 - J06: gamla paket A-noteringen är historisk. De fyra portade K07-filerna ingår i obligatorisk regression genom #386. Fortsatt testurval och full J06/J05-acceptans bedöms separat.
