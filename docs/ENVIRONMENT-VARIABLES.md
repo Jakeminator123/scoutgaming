@@ -19,6 +19,12 @@ bygger/startar en andra process. Privata data, molnkonfiguration och budgetar
 ändras inte av denna kodleverans. Återgång kräver en kompatibel version av den
 aktuella spel-imagen; den borttagna kombinerade imagen är ingen stödd reservväg.
 
+Spelmotorns nycklar utanför molnstarten (registerpost `render-game`, kategori `conditional`):
+
+| Namn | Krav | Syfte |
+| --- | --- | --- |
+| `GENERATIONS_READ_TOKENS` | valfri, sätts inte i Render | Kommaseparerade sha256-hexdigester (inte tokenvärden) av godkända bearer-token för den läsande `/api/v1/generations`-ytan i `services/game/generations-api.mjs`; bara `/mapping` svarar, övriga vägar ger 410. `services/game/server.mjs` läser processmiljön och annars `CROUPIER_ENV_FILE` eller `/etc/croupier/agent.env`. Osatt eller tomt ger 401 på allt. `ops/cloud/config.mjs` för inte vidare nyckeln till spelprocessen och mappningen är av i molnet, så i Render `croupier-v3` svarar ytan alltid 401. Rotation: lägg till eller ta bort en digest och starta om |
+
 ## Delade Blackjackrum — avgränsad inkoppling
 
 Transportbranchen stödjer explicit `CROUPIER_SHARED_TABLE_ENABLED=1`. Endast Postgres,
