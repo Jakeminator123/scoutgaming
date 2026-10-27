@@ -664,10 +664,9 @@ NODE_PATH och paketverktygens konfigurationsfiler. Privata data som saknas
 i Git ska inte återställas för att få detta prov grönt.
 
 [Renklonkvittot 18 oktober](JOHN-HANDOFF.md#huvudagent5-renklon-och-organisationsavslut--18-oktober-2026)
-verifierar de aktuella bygg- och offline-startflödena utan gamla projektfiler.
-Bygg Studio först; `--offline --skip-build --no-open` får sedan använda
-just det nybyggda resultatet. Sessionslås och temporära processer/data ska
-kontrolleras efter stopp. Guards och byggspår ersätter inte en OS-sandbox.
+verifierade då bygg- och offline-startflödena utan gamla projektfiler. Offline-
+fixturen (`--offline`, `--skip-build`) är pensionerad 27 oktober 2026; ett renklonprov bygger
+Studio och kör testsviterna. Guards och byggspår ersätter inte en OS-sandbox.
 
 En `--single-branch`-klon hämtar normalt endast main. Lägg till den egna
 branchen med `git remote set-branches --add origin <featurebranch>` före
@@ -682,21 +681,18 @@ att branchen redan finns på GitHub; ingen force-push behövs.
 | PostgreSQL-prov | `node tools/studio-isolated-qa.mjs --download-postgres` kräver icke-root Linux/WSL, APT/dpkg och OpenSSL; alternativt `--postgres-bin /absolut/bin`. Verktyget skapar och tar bort sitt eget kluster. Vid HTTP-spegelns checksummefel: använd betrodd HTTPS-källa via separat `APT_CONFIG`, behåll signatur-/hashkontrollerna. |
 | Valfria browserprov | Installera Playwright/Chrome separat och ange den dokumenterade fixturemodulen ovan. Dessa behövs inte för ordinarie bygge eller HTTP-fixtur. |
 | Pensionerad native-P6-kampanj | Aktiveringsverktyg, privat SDK-bootstrap, router och klientkoppling är avvecklade. Återställ inte dessa för produktstart eller ny molnacceptans. Eventuella äldre privata manifest, journaler och kostnadskvitton är historiskt återställningsunderlag, inte aktiva appberoenden; denna kodleverans raderar inga sådana data. |
-| Publicerad produkt och tal/mediaarbete | Neon, Blob, auth/provider-inställningar samt relevanta råmedia/banker behövs för sina respektive funktioner enligt miljö-/runtimeguiderna. Offline-fixturen ersätter dem med syntetisk konfiguration och verifierar inte skarp tjänst eller medieacceptans. |
+| Publicerad produkt och tal/mediaarbete | Neon, Blob, auth/provider-inställningar samt relevanta råmedia/banker behövs för sina respektive funktioner enligt miljö-/runtimeguiderna. Isolerade prov (staging/CI) ersätter dem med syntetisk konfiguration och verifierar inte skarp tjänst eller medieacceptans. |
 
 ## Lokal miljö
 
 `node apps/studio/start.mjs --no-open` visar den publicerade lobbyns adress.
 Det startar inga lokala produktservrar och läser inget lokalt produktregister.
-För isolerad provkörning används uttryckligen `--offline --no-open` enligt
-[Studioguiden](../apps/studio/docs/README.md). Bara fixturen använder ett lokalt
-serverpar och sessionsvakten i `services/openclaw/lab/deploy/local-session.mjs`.
-Kör ett sådant par åt gången; dess stoppväg rensar egna processer och testdata.
+Det lokala `--offline`-serverparet och dess sessionsvakt är pensionerade 27 oktober 2026
+(se [Studioguiden](../apps/studio/docs/README.md)); isolerade prov körs i staging eller CI.
 Återanvänd relevanta browserflikar, bevara utkast/spel och lämna stoppade servrar
 stoppade tills Jakob ber om start.
 Checkouten har inget lokalt produktregister: Neon är registret och Blob
-mediebyte. Fixturen skriver bara i sin tillfälliga mapp, och sessionsvakten
-ligger i OS-tempkatalogen. `tools/backup-lab-state.mjs` och
+mediebyte. `tools/backup-lab-state.mjs` och
 `tools/migrate-lab-state.mjs` togs bort 22 oktober 2026; äldre privata kopior
 ligger kvar utanför Git.
 Anslutningsverktygens standardordning är rotens `.env`, äldre `lab/.env.*`,

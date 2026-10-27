@@ -4,9 +4,15 @@
 > `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
+> **Pensionerad 27 oktober 2026.** Den lokala anslutningshelpern
+> `services/openclaw/lab/deploy/local-connection.mjs`, dess sessionsvakt
+> `local-session.mjs` och det isolerade native-/Next-paret på SQLite-tempdatabaser
+> är borttagna; produkten har en väg (Vercel + Render + Neon + Blob). Isolerade
+> prov körs i staging eller CI. Äldre start-, kontroll- och provinstruktioner
+> finns i Git-historiken före borttagningen. Kontraktsavsnitten nedan gäller fortsatt.
+
 Guiden gäller `Jakeminator123/scoutgaming`, branch
-`main`, i den aktuella Croupier-arbetskopian. `github-work` vidarebefordrar dit.
-Helpern läser privata lokala miljöfiler och ansluter via Render Director.
+`main`. `github-work` vidarebefordrar dit.
 Se [miljökartan](../../ENVIRONMENT-VARIABLES.md) för filernas placering och
 [runtime-referensen](../../LOCAL-PRESENTATION-RUNTIME.md) för spelaren.
 
@@ -21,26 +27,6 @@ Produkten använder `OPENCLAW_PRODUCT_SPEECH_URL` och separat speech-token.
 Lokalt Lab använder `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN`. En direkt publik
 Gateway-URL behövs inte för denna väg. `OPENCLAW_API_KEY` hör till privat
 Gateway-autentisering; `OPENCLAW_MODEL_API_KEY` används av Gateway mot modellen.
-
-## Ett lokalt serverpar
-
-Högst ett produkt-/labbpar får köras åt gången. Lab-startaren, denna
-helper och offline-jämförelsens startare delar sessionsspärr även för olika
-portval. Kontrollera befintlig körning före start och respektera användarens
-stoppbeslut. Codex använder `--no-open` där startaren stöder det och
-återanvänder befintliga spel-/labbflikar. Se
-[aktuell Backoffice/Lab-start](../../../apps/studio/README.md). Projekt, historik och
-lokala profiler finns i `lab/data`; den gamla Lissabon-katalogen är borttagen.
-
-Standardadresser för den isolerade helpern efter uttrycklig start:
-
-- Spel: <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
-- Lab: <http://127.0.0.1:4201/activity>.
-
-En ny isolerad start skapar testdatabas och spelsession. Den använder inte
-produktionsdatabasen. Ett fullt modell-/tal-/GPU-prov kräver egen
-kostnadsram och uppspelningsgranskning; statuskontrollen ovan gör inga
-sådana anrop.
 
 ## Version och officiellt kontrakt
 
@@ -64,101 +50,6 @@ Den aktuella dokumentationswebben har i huvudsak samma kontrakt men kan ligga
 före deploymenten. Använd alltid taggen `v2026.9.5` för ändringar i den här
 Gatewayen. Senaste officiella release var 2026.9.6 vid kontrollen; ingen
 uppgradering ingår här.
-
-## Isolerad start
-
-Först en läsande kontroll, utan modellkörning:
-
-```powershell
-node services/openclaw/lab/deploy/local-connection.mjs --check
-```
-
-När den tidigare körningen är stoppad, starta produkt och labb på sina
-separata loopbackportar:
-
-```powershell
-node services/openclaw/lab/deploy/local-connection.mjs --start --product-port 4200 --lab-port 4201
-```
-
-Helpern läser de befintliga privata värdena server-side från rotens `.env` och
-`lab/.env.local`. Ange aldrig nycklar på kommandoraden. Den skriver inte en ny
-env-fil och lägger inte hemligheter i URL:er, webbläsaren eller exempeldata.
-
-Varje körning får en ny katalog under operativsystemets tempområde:
-
-- produktservern får en separat `croupier.db`, `craig.db` och tom
-  generationskatalog;
-- labbreläet får en separat `LAB_DATA_DIR`;
-- båda binder bara `127.0.0.1`;
-- direkt Gateway-nyckel finns bara i produktbarnets miljö när speech-relä saknas;
-- produktens presentationsadapter och Lab får samma befintliga Director-token
-  via separata servervariabler; spelets taladapter behåller sin separata token.
-  Web får `CROUPIER_PRESENTATION_DIRECTOR_URL/TOKEN` och samma projektkatalog
-  genom `CROUPIER_PRESENTATION_STUDIO_DIR`. Inga av dessa värden går till browsern;
-- modellnyckel/providerinställningar är tomma i båda barnen eftersom modellen
-  redan ägs av den privata Gatewayen;
-- en egen nätvakt tillåter bara de två loopbackportarna och respektive
-  konfigurerade upstream-origin;
-- Ctrl+C stoppar bara de två skapade barnen och tar bort just den skapade
-  tempkatalogen.
-
-Om en direkt Gateway-URL eller separat Director speech-adapter senare läggs till
-medan agentmålet är något annat än det exakta `croupier-speech` vägrar helpern
-starta den anslutna produkten. En adapterhemlighet vidarebefordras endast till
-produktbarnets taladapter; presentationsadaptern använder Directors befintliga
-behörighet. Detta skapar ingen ny scoped token eller ändrar modellkonfiguration.
-
-Port 4192 och 4194 avvisas uttryckligen. `tools/start-local-comparison.mjs`
-använder samma sessionsspärr; offline-jämförelsen behåller sin fulla externa
-nätspärr, blockerade env-filer och tomma providerinställningar.
-
-### Valfritt genererat tal och läppsynk i den isolerade körningen
-
-Detta är en explicit preview, inte ett godkännande av läppsynkens visuella
-kvalitet. Standardstarten ovan aktiverar inte Cartesia eller RunPod, även om
-nycklar finns i privata filer eller i den anropande processens miljö.
-
-```powershell
-node services/openclaw/lab/deploy/local-connection.mjs --check --generated-speech
-node services/openclaw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4200 --lab-port 4201
-```
-
-För opt-in behövs befintlig `CARTESIA_API_KEY`, `RUNPOD_API_KEY` och en separat
-`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det äldre `RUNPOD_ENDPOINT_ID` används
-aldrig som reserv. Saknas något vägrar starten innan barnprocesserna skapas.
-`--check` visar enbart närvaro och konfigurationsstatus; inget tal eller GPU-jobb
-skapas av kontrollen.
-
-Helpern läser i ordning `.env`, `lab/.env.local` och
-`lab/.env.generated-speech.local`; explicita processvärden har högst prioritet.
-Den sista filen kan därför innehålla enbart det nya scoped-endpoint-ID:t.
-Nycklar behöver inte kopieras dit eller anges på kommandoraden.
-
-Endast opt-in-körningen får server-side talnycklarna och de ytterligare
-nätmålen `https://api.cartesia.ai` och `https://api.runpod.ai`. Produkt och
-labb får varsin tom cache under körningens `speech/product` respektive
-`speech/lab`, flaggan `CROUPIER_GENERATED_SPEECH=1` och explicit
-`CROUPIER_GENERATED_SPEECH_PREVIEW=1`. Cacherna försvinner med testkörningen.
-OpenClaws modellnyckel vidarebefordras fortfarande inte, och gränsen mellan
-produktens speech-token och labbets Director-token behålls. Generering som
-uttryckligen begärs i chatten kan förbruka Cartesia-/RunPod-krediter.
-
-Med dagens privata konfiguration använder labbet Director och produktservern
-det separata speech-reläet. `--check` är ändå auktoritativt för en ny körning:
-en nåbar tjänst utan rätt roll eller credential är inte en fungerande chatt.
-
-Under **Uppspelning → Anslut** (`/control/activity`) öppnas Astrid med lokal presentation. Spela och
-chatta direkt i spelfliken. Lab visar **En spelare · Web** och dess kvitton.
-Det lokala läget monterar ingen extra Lab-spelare eller bordschatt. Video väntar
-på renderad primär-idle; deal får alltid företräde. Vanliga native-eventrepliker
-spelas fortfarande från exakt replikfamilj. **Fristående chattprov** och
-operatörschatten är inte kopplade till den autentiserade spelaren.
-
-Produktservern behåller kort och spelaridentitet som auktoritet. Konversations-
-minnet binds till autentiserad spelare och dealer, högst 30 meddelanden och
-8 000 tecken, med 30 dagars inaktivitetsgräns. **Minne** i originalchatten kan
-glömma den historiken; pågående svar avbryts. Den temporära QA-databasen raderas
-vid Ctrl+C, så dess spelarminne överlever inte en ny helperkörning.
 
 ## Talrollen och transportgränsen
 
@@ -189,12 +80,8 @@ och den pågående jämförelsen har lämnats orörda.
 ## Tester
 
 ```powershell
-node --test services/openclaw/lab/deploy/local-connection.test.mjs
 node --test services/openclaw/lab/test/product-speech.test.mjs
 ```
 
-Testerna använder endast fixture-hemligheter, lokala HTTP-stubbar, lediga
-loopbackportar och nya tempdatabaser. De verifierar credentialseparation,
-redigerad statusrapport, tomma providerinställningar, blockerade env-filer och
-externa nätmål, avvisade 4192/4194, start/stopp och säker rensning. De gör inga
-modell- eller molnanrop.
+Testerna använder endast fixture-hemligheter, lokala HTTP-stubbar och loopback.
+De gör inga modell- eller molnanrop.
