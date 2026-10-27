@@ -978,6 +978,8 @@ samma effektiva adress; nativeflaggan ensam byter ingen speladress.
 `CROUPIER_VERCEL_TRANSPORT_ORIGIN` anger
 exakt Render-origin och `CROUPIER_VERCEL_INGRESS_SECRET` matchar UI-projekten.
 Host/forwarded headers utan privat ingressbevis nekas.
+`CROUPIER_VERCEL_FRONTEND_ORIGIN` lämnas tom i denna layout; delade bord
+(`CROUPIER_SHARED_TABLE_ENABLED=1`) godtar då den publika originen som webbläsar-origin.
 
 Gemensam privat media: layout och Blob-index kommer från samma scoped,
 revisionsverifierade Neon-katalog. Publika assets kräver public-allowlist;

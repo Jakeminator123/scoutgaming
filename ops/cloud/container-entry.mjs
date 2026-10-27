@@ -57,11 +57,22 @@ export async function prepareContainerUser(env = process.env, { fs = { chown, ch
   }
 }
 
+// One bounded line for the platform log. A safe error code wins (system errors,
+// SQLSTATE, application codes); otherwise the message, which the launcher keeps
+// to variable names and fixed text. Any URL is masked before truncation, so no
+// connection string, origin or credential-bearing address is printed.
+export function startFailureReason(error) {
+  const code = typeof error?.code === 'string' && /^[A-Za-z0-9_]{1,64}$/.test(error.code) ? error.code : '';
+  const text = code || String(error?.message ?? error ?? '') || 'unknown';
+  return text.replace(/[a-z][a-z0-9+.-]*:\/\/\S*/gi, '[url]').replace(/\s+/g, ' ').trim().slice(0, 200) || 'unknown';
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   prepareContainerUser().then(async () => {
     const { main } = await import('./start.mjs');
     process.exitCode = await main(['--start']);
-  }).catch(() => {
+  }).catch(error => {
+    console.error(`Cloud container start failure: ${startFailureReason(error)}`);
     console.error('Cloud container could not start. Check mount, build, required configuration and access checks.');
     process.exitCode = 1;
   });
