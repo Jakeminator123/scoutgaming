@@ -774,9 +774,13 @@ Git och Blob-upload säkerhetskopierar inte Studio-index, konton eller saldo.
 Produktens fullständiga externa backup är verifierad och behålls efter P8:
 `C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
 
-`tools/backup-render-state.mjs` har profilerna `product`, `director`, `gateway`.
-Product-profilen gäller den pensionerade diskvägen; den säkerhetskopierar inte
-aktuell Neon/Blob. Använd inte gamla produktdiskkommandon mot den nya driften.
+`tools/backup-render-state.mjs` har profilerna `director` och `gateway`.
+Product-profilen (`players/croupier.db`, `craig.db`) och lagringsexportens
+SQLite-läge `export` (`croupier-sqlite-snapshot-v1`) togs bort med motorns
+SQLite-väg 27 oktober 2026. Historiska SQLite-arkiv och product-snapshots läses
+med verktygen vid Git-SHA `89343a655a6a44dbe2553a83f02294312070dc01` (sista main
+före borttagningen) eller med valfri `sqlite3`, i ett isolerat mål; de återställs
+aldrig över Neon. Använd inte gamla produktdiskkommandon mot den nya driften.
 För de aktiva Director-/Gatewaydiskarna krävs stoppade/frysta skrivare och en
 separat privat destination utanför Git och dataroten. `--quiesced yes` är en
 operatörsförsäkran, inte mätt writerdränering. Maintenance Mode räcker inte.
@@ -845,7 +849,8 @@ med explicit granskade roller, ägare och ACL enligt förfarandet ovan. Den äld
 JSON-exportören är avvecklad: dess fasta tabellista saknade Studio, senare
 speltabeller och databasobjekt. Inga befintliga backuper raderas; historiska
 JSON-filer kräver sin versionsmatchade läsare från Git och ett isolerat mål.
-SQLite-importverktyget togs bort efter genomförd flytt.
+SQLite-importverktyget togs bort efter genomförd flytt, och motorn saknar
+SQLite-väg sedan 27 oktober 2026 (läsverktyg: Git-SHA `89343a65`, se ovan).
 Bevara orörda SQLite-backuper utanför Git. Efter första nya Neon-skrivning
 kräver återgång senaste data/ledger; starta aldrig blindt en äldre SQLite-kopia.
 

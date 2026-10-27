@@ -1,7 +1,6 @@
 import { access, lstat, realpath } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { isIP } from 'node:net';
-import { DatabaseSync } from 'node:sqlite';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readVercelIngressConfig } from './vercel-ingress.mjs';
@@ -133,11 +132,11 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
       || !['require', 'verify-ca', 'verify-full'].includes(database.searchParams.get('sslmode'))
       || zonesDatabaseUrl.length > 8192 || /[\r\n\t]/.test(zonesDatabaseUrl)) fail('CROUPIER_ZONES_DATABASE_URL');
   }
-  const database = env.CROUPIER_DATABASE || 'sqlite';
-  if (!['sqlite', 'postgres'].includes(database)) fail('CROUPIER_DATABASE');
+  // One product path in every mode, maintenance included: PostgreSQL, named explicitly.
+  const database = env.CROUPIER_DATABASE;
+  if (database !== 'postgres') fail('CROUPIER_DATABASE');
   const gameDatabaseUrl = env.CROUPIER_GAME_DATABASE_URL || '';
-  if (database === 'postgres') validateGameConnection(gameDatabaseUrl, zonesDatabaseUrl);
-  else if (gameDatabaseUrl) fail('CROUPIER_DATABASE/CROUPIER_GAME_DATABASE_URL');
+  validateGameConnection(gameDatabaseUrl, zonesDatabaseUrl);
   const layout = env.CROUPIER_CLOUD_LAYOUT || 'separate-hosts';
   if (!['separate-hosts', 'single-origin'].includes(layout)) fail('CROUPIER_CLOUD_LAYOUT');
   const singleOrigin = layout === 'single-origin';
@@ -160,7 +159,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   // process uses the one scoped Neon catalog and private Blob, even with a mount.
   let studioPolicy = null;
   if (!storageExport) {
-    if (database !== 'postgres' || env.CROUPIER_STUDIO_NEON_POLICY !== '1') fail('CROUPIER_DATABASE/CROUPIER_STUDIO_NEON_POLICY');
+    if (env.CROUPIER_STUDIO_NEON_POLICY !== '1') fail('CROUPIER_DATABASE/CROUPIER_STUDIO_NEON_POLICY');
     try { studioPolicy = studioGamePolicyConfiguration(env); } catch { fail('CROUPIER_STUDIO_NEON_POLICY/scope'); }
     if (!studioPolicy || mediaStorage !== 'blob' || !blobToken) fail('CROUPIER_MEDIA_STORAGE/BLOB_READ_WRITE_TOKEN');
   }
@@ -168,7 +167,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (movingFlag !== undefined && !['', '0', '1'].includes(movingFlag)) fail('CROUPIER_MOVING_SPEECH_ENABLED');
   let movingSpeech = null;
   if (movingFlag === '1') {
-    if (storageExport || database !== 'postgres' || !studioPolicy || mediaStorage !== 'blob' || !blobToken || !dealerSpeechProfiles)
+    if (storageExport || !studioPolicy || mediaStorage !== 'blob' || !blobToken || !dealerSpeechProfiles)
       fail('CROUPIER_MOVING_SPEECH_ENABLED requires Neon, private Blob and registered speech profiles');
     const prefix = 'CROUPIER_MOVING_SPEECH_';
     const workerOrigin = httpsOrigin(env[prefix + 'WORKER_ORIGIN'], prefix + 'WORKER_ORIGIN');
@@ -206,16 +205,15 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.CROUPIER_STREAM_LANE !== 'lissabon-stream-lane') fail('CROUPIER_STREAM_LANE');
   const publicPort = port(env.PORT);
   const disk = env.CROUPIER_CLOUD_DATA_ROOT;
-  const diskRequired = database === 'sqlite' || Boolean(storageExport);
+  const diskRequired = Boolean(storageExport);
   if (disk === undefined && diskRequired) fail('CROUPIER_CLOUD_DATA_ROOT');
   if (disk !== undefined && (typeof disk !== 'string' || !isAbsolute(disk))) fail('CROUPIER_CLOUD_DATA_ROOT');
   const dataRoot = disk === undefined ? null : resolve(disk);
   if (dataRoot && (dataRoot === parse(dataRoot).root || !outside(resolve(repository), dataRoot))) fail('CROUPIER_CLOUD_DATA_ROOT');
   if (!dataRoot && (mediaStorage !== 'blob' || env.CROUPIER_STUDIO_NEON_POLICY !== '1')) fail('CROUPIER_CLOUD_DATA_ROOT');
-  const paths = dataRoot && (database === 'sqlite' || storageExport) ? { players: join(dataRoot, 'players') } : {};
-  if (env.CROUPIER_DATA_DIR !== undefined
-    && (!paths.players || resolve(env.CROUPIER_DATA_DIR) !== paths.players)) fail('CROUPIER_DATA_DIR');
-  for (const name of ['LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
+  // No child owns a disk path any more; the retired SQLite directory is refused like the other disk keys.
+  const paths = {};
+  for (const name of ['CROUPIER_DATA_DIR','LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
     if (env[name] !== undefined) fail(name);
   }
   let videoArchive;
@@ -261,31 +259,17 @@ export async function inspectCloudDisk(config) {
 
 // A read-only preflight prevents --check from approving a blank CRAIG volume
 // that the Web child would reject on startup. It never creates a database.
-export async function inspectCloudBootstrap(config) {
+// The store factory is injectable so the empty-CRAIG refusal is testable without a server.
+export async function inspectCloudBootstrap(config, { openStore = createPostgresStore } = {}) {
   // This maintenance process starts no game child and cannot bootstrap
   // or query PostgreSQL. Disk/build preflight remains in start.mjs.
   if (config.storageExport?.mode === 'studio-export') return;
   if (config.bootstrapAdmin) return;
-  if (config.database === 'postgres') {
-    const storage = createPostgresStore({ connectionString: config.gameDatabaseUrl, zonesConnectionString: config.zonesDatabaseUrl });
-    try {
-      await storage.db.assertInstalled();
-      if (!(await storage.boDb.prepare('SELECT COUNT(*) AS n FROM users').get()).n) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
-    } finally { await storage.close(); }
-    return;
-  }
-  const dbPath = join(config.paths.players, 'craig.db');
-  const info = await lstat(dbPath).catch(() => null);
-  if (!info?.isFile() || info.isSymbolicLink()
-    || !samePath(await realpath(dbPath).catch(() => ''), dbPath)) {
-    fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
-  }
-  let db;
+  const storage = openStore({ connectionString: config.gameDatabaseUrl, zonesConnectionString: config.zonesDatabaseUrl });
   try {
-    db = new DatabaseSync(dbPath, { readOnly: true });
-    if (!db.prepare('SELECT COUNT(*) AS n FROM users').get().n) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
-  } catch { fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD'); }
-  finally { db?.close(); }
+    await storage.db.assertInstalled();
+    if (!(await storage.boDb.prepare('SELECT COUNT(*) AS n FROM users').get()).n) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
+  } finally { await storage.close(); }
 }
 
 export function childSpecifications(config, env = process.env) {
@@ -322,7 +306,6 @@ export function childSpecifications(config, env = process.env) {
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: config.bootstrapAdmin.password,
         } : {}),
         DEMO_GUEST_ACCESS: '', CROUPIER_LISSABON_PROFILES: '',
-        ...(config.database === 'sqlite' ? { CROUPIER_DATA_DIR: config.paths.players } : {}),
         CROUPIER_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_CLOUD_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_GENERATED_SPEECH_STREAMING: config.streaming ? '1' : '',

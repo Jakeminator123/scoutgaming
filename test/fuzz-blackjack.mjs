@@ -828,7 +828,7 @@ function exerciseRejects() {
   const id = () => rid('bad');
   // Rejects start from an existing shoe. On a brand-new game, command()
   // shuffles before request validation and then throws; the table transaction
-  // rolls that object back (web/native-table.mjs).
+  // rolls that object back (services/game/postgres-native-table.mjs).
   const samples = [
     [{ op: 'start', version: version(), requestId: id(), bets: seats([{ box: 0, main: 5 }, { box: 1, main: -5 }]) }, /Invalid stake/],
     [{ op: 'start', version: version(), requestId: id(), bets: seats([{ box: 0, main: 2001 }]) }, /Invalid stake/],

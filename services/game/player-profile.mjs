@@ -7,8 +7,8 @@ const WITHOUT_COLUMNS = 'SELECT name, currency, balance FROM players WHERE id=?'
 export function missingProfileColumn(error) {
   if (!error || error.code === '42703') return error?.code === '42703';
   const message = String(error.message || '');
-  return /no such column: (?:display_name|locale)\b/i.test(message)
-    || /column ["']?(?:display_name|locale)["']? (?:of relation ["']?players["']? )?does not exist/i.test(message);
+  // Neon before 006-player-profile.sql: SQLSTATE 42703 or its message.
+  return /column ["']?(?:display_name|locale)["']? (?:of relation ["']?players["']? )?does not exist/i.test(message);
 }
 
 export function parsePlayerProfileBody(value) {
@@ -66,18 +66,6 @@ export async function readPlayerProfile(db, playerId) {
   }
 }
 
-async function sqliteTransaction(db, work) {
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    const value = await work();
-    db.exec('COMMIT');
-    return value;
-  } catch (error) {
-    try { db.exec('ROLLBACK'); } catch { /* Keep the original failure. */ }
-    throw error;
-  }
-}
-
 export async function writePlayerProfile(db, playerId, profile) {
   const current = await readPlayerProfile(db, playerId);
   if (!current) return {statusCode: 401, body: {error: 'Sign in required'}};
@@ -88,24 +76,13 @@ export async function writePlayerProfile(db, playerId, profile) {
     return readPlayerProfile(db, playerId);
   };
   try {
-    const next = typeof db.transaction === 'function' ? await db.transaction(apply) : await sqliteTransaction(db, apply);
+    const next = await db.transaction(apply);
     if (!next?.editable) return {statusCode: 503, body: {error: 'profile_unavailable'}};
     return {statusCode: 200, body: publicPlayerProfile(next)};
   } catch (error) {
     if (missingProfileColumn(error)) return {statusCode: 503, body: {error: 'profile_unavailable'}};
     throw error;
   }
-}
-
-// Local SQLite only. Production Neon waits for 006-player-profile.sql.
-export function ensureSqliteProfileColumns(db) {
-  if (!db || db.backend === 'postgres' || typeof db.prepare !== 'function' || typeof db.exec !== 'function') return;
-  let columns;
-  try { columns = db.prepare('PRAGMA table_info(players)').all(); } catch { return; }
-  if (!Array.isArray(columns)) return;
-  const names = new Set(columns.map(column => column.name));
-  if (!names.has('display_name')) db.exec('ALTER TABLE players ADD COLUMN display_name TEXT');
-  if (!names.has('locale')) db.exec('ALTER TABLE players ADD COLUMN locale TEXT');
 }
 
 function send(res, status, body) {

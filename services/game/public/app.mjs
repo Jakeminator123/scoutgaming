@@ -482,7 +482,7 @@ const CHIPS = [1, 5, 10, 25, 50, 100, 500, 1000];
 const LIMITS = { min: 5, max: 2000 };
 let balance = 1000;
 
-// ---------- player account: server-persisted demo money (SQLite) ----------
+// ---------- player account: server-persisted demo money (PostgreSQL) ----------
 let player = null;
 async function api(path, payload) {
   const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
