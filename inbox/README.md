@@ -69,21 +69,18 @@ node tools/inbox.mjs list --to me
 `me` betyder den lokalt registrerade datorn. Utan registrering krävs en exakt
 branchträff i `people.json`. På en featurebranch utan datorregistrering, välj
 den kända ägaren uttryckligen, till exempel `list --to jakob` för Jakobs arbete.
-Fråga vem som äger arbetet om det är okänt; `codex/*` eller `cursor/*` anger
+Fråga vem som äger arbetet om det är okänt; ett branchprefix som `jakob/*` anger
 inte en person. `--to jakob` är fortfarande Jakobs gemensamma
 personinbox och läses separat med `list --to jakob`. Avsändaren visas med
 datorns namn och alias, om inte `--from` anges. Båda datorerna kan använda samma
 GitHub-konto: separata `till:`-etiketter avgör mottagaren. En annan agent måste
 läsa sin inbox när den arbetar; meddelanden väcker inte pausade GPT-chattar.
 
-### Lokal och gemensam samordning
+### Samordning
 
-Två kanaler, olika räckvidd:
-
-| Kanal | Når | Verktyg |
-|---|---|---|
-| Agent-talk | agenter i **samma checkout** på samma dator | `node tools/agent-talk.mjs claim/ping/ack/done` |
-| Teaminbox | personer och deras agenter i **andra grenar och på andra datorer** | `node tools/inbox.mjs ping/send/list/reply` |
+Teaminboxen når personer och deras agenter i andra grenar och på andra datorer:
+`node tools/inbox.mjs ping/send/list/reply`. Agenter i samma repo arbetar i egna
+worktrees och brancher och samordnar genom PR:er.
 
 Utan datorregistrering fungerar `list --to me` på den registrerade branchen
 `kevin`; på en featurebranch för Kevins arbete används `list --to kevin`.

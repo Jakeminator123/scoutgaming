@@ -1,0 +1,8 @@
+---
+description: "Scoutgaming: en ingång och ett regelverk"
+alwaysApply: true
+---
+
+Följ `AGENTS.md` och `START-HERE.md` i repots rot. START-HERE ger produktväg,
+identiteter, publiceringsordning, hur man testar och levererar samt var läget
+finns; AGENTS ger reglerna. Jakobs aktuella instruktioner går före.

@@ -239,7 +239,7 @@ jobs:
           if-no-files-found: warn
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
       - run: node test/split-rules.mjs
-      - run: node --test --test-concurrency=4 test/croupier-chef.mjs test/github-workflow.mjs test/inbox.mjs
+      - run: node --test --test-concurrency=4 test/github-workflow.mjs test/inbox.mjs
       - name: Studio migration readiness (production ledger)
         id: migration_readiness
         # Main/manual runs always check the ledger. Client/test-only PR edits

@@ -31,7 +31,7 @@ export async function readAssistantContext(runtime,request,{services=assistantSe
   const openclaw=await read('openclaw',()=>services.openclaw(request));
   const architecture={
     site:'Vercel kör denna chatt och behörighetskontrollerna.',
-    engine:'Render croupier-v2 äger spelet. Game/auth och Studio använder Neon PostgreSQL.',
+    engine:'Render croupier-v3 äger spelet. Game/auth och Studio använder Neon PostgreSQL.',
     openclaw:'Director på Render förmedlar förfrågningar till separat OpenClaw Gateway. Dealer-/socialchatt styrs av sina egna roller.',
     permissions:'Adminroboten kan läsa sparade register och utföra granskade ändringar via ordinarie serverfunktioner. Modellen får inga databaslösenord, shell eller molnkontotoken.',
     monitoring:'Status läses när du öppnar eller frågar. Ingen bakgrundsövervakning är aktiverad.',

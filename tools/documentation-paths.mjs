@@ -1,24 +1,20 @@
-// Reviewed documentation paths shared by local checks and CI. Runtime Markdown is not documentation.
-// Migration report data is validated separately; other JSON and future guides stay strict.
+// Reviewed documentation paths shared by local checks and CI. Markdown outside the listed guides and
+// prose folders (runtime bundles, package docs, new folder READMEs) stays strict, as does JSON other
+// than the migration report, which is validated separately.
 const migrationReports = new Set([
-  "migrering/MASTERPLAN.md",
-  "migrering/STATUS.md",
   "migrering/status.json",
-  "migrering/jakob-main-migrering/AKTIVITETER.md",
-  "migrering/kevin-ks-migrering/AKTIVITETER.md",
-  "migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md",
 ]);
 const guides = new Set([
   "AGENTS.md",
   "CLAUDE.md",
   "README.md",
-  "agent-talk/README.md",
+  "START-HERE.md",
   "apps/studio/AGENTS.md",
   "apps/studio/README.md",
   "apps/studio/client/README.md",
   "apps/studio/docs/README.md",
   "apps/web/README.md",
-  "ops/cloud/CONTAINER-CONTEXT.md",
+  "inbox/README.md",
   "packages/presentation/README.md",
   "packages/presentation/docs/INTEGRATION.md",
   "services/astrid-gpu-worker/README.md",
@@ -31,9 +27,17 @@ const guides = new Set([
   "services/openclaw/lab/README.md",
   "tools/media/README.md"
 ]);
+// Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, the cloud
+// runbooks directly in ops/cloud/, and dated history (Markdown and JSON receipts) under docs/history/
+// once the planned history move lands; scripts or other files placed there stay strict.
+const proseFolders = [
+  /^(?:docs|apps\/studio\/docs|migrering)\/.+\.md$/,
+  /^ops\/cloud\/[^/]+\.md$/,
+  /^docs\/history\/.+\.(?:md|json)$/,
+];
 
 export function isDocumentationPath(path) {
   return typeof path === 'string' && !path.includes('\\')
     && !path.split('/').some(part => ['', '.', '..'].includes(part))
-    && (guides.has(path) || migrationReports.has(path) || /^(?:docs|apps\/studio\/docs)\/.+\.md$/.test(path));
+    && (guides.has(path) || migrationReports.has(path) || proseFolders.some(pattern => pattern.test(path)));
 }

@@ -2,7 +2,7 @@
 
 `services/game/` äger den auktoritativa Node-spelservern för blackjack och
 roulette: sessioner, historik, kort, shoe, saldo, utbetalningar och spelklient.
-Entrypunkten är [server.mjs](server.mjs); molntjänsten är Render `croupier-v2`.
+Entrypunkten är [server.mjs](server.mjs); molntjänsten är Render `croupier-v3`.
 Vercels frontend finns i [apps/web](../../apps/web/README.md), talingressen i
 `apps/speech/` och Admin/Partner/Lobby i [apps/studio](../../apps/studio/README.md).
 

@@ -54,13 +54,15 @@ export function migrationReadinessRequired(changes) {
 }
 
 export function movingWorkerRequired(changes) {
-  // Include deletions/renames (the diff uses --no-renames) and the gate itself.
-  // Uncertain input stays strict; ordinary unrelated PRs avoid an image build.
+  // Include deletions (the diff uses --no-renames) and the worker's own workflow.
+  // Edits to croupier.yml or this classifier no longer rebuild the image: Actions
+  // validates the workflow_call hand-off when it parses the workflow (unknown inputs,
+  // secrets or bad YAML fail before any job starts); a wrong value mapping only
+  // surfaces on the next worker build. Uncertain input stays strict.
   return !changes.length || changes.some(({path}) =>
     !path || path.includes('\\') || path.split('/').some(part => ['', '.', '..'].includes(part))
     || path.startsWith('services/moving-gpu-worker/')
-    || ['.github/workflows/moving-gpu-build.yml', '.github/workflows/croupier.yml',
-      'tools/ci-changes.mjs'].includes(path));
+    || path === '.github/workflows/moving-gpu-build.yml');
 }
 
 export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {

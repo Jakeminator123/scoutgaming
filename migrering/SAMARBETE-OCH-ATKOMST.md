@@ -1,10 +1,14 @@
 # Samarbete och åtkomst
 
+## Uppdatering 27 oktober 2026
+
+Agent-talk är borttaget och GitHub-tråden #312 används inte längre för samordning. Agenter arbetar i egna worktrees på `jakob/claude-*`-brancher och levererar PR:er mot `main` som den orkestrerande sessionen mergar efter grön CI; personfrågor går via [teaminboxen](../inbox/README.md). Hänvisningar till #312, femminutersbevakning och agent-talk i avsnitten nedan är historik.
+
 ## Verifierat läge 22 oktober 2026
 
 Gemensam samordning sker i [GitHub-tråd #312](https://github.com/Jakeminator123/scoutgaming/issues/312).
 [PR #311](https://github.com/Jakeminator123/scoutgaming/pull/311) innehåller planen;
-status.json är enda källa för migrationsprocent: 45% (9/20), 55% återstår.
+status.json är enda källa för migrationsprocent (läsvy: [STATUS.md](STATUS.md)); vid denna avstämning 9/20.
 K01/J01 är redan VERIFIED; de tidigare angivna K01-rättningarna är avslutade.
 Nuvarande ansvar ersätter tabellen från 21 oktober.
 
@@ -52,7 +56,7 @@ Ingen sådan branch eller arbetsmapp är skapad av denna rekommendation.
 - Kevin/invoicesolv har svarat i #312 och rapporterar motsvarande femminutersläsning på sin sida. Hans scheduler är rapporterad, inte inspekterad av oss.
 - Samma GitHub-tråd används med aktivitets-ID, full SHA, faktisk verifiering, blockerare och nästa ansvarig. Inga kvittenssvar på kvittenser. Detta är ett kommunikationssätt, inte en ny produkttracker.
 - Agentmeddelanden är arbetsunderlag; de utökar inte Jakobs mandat. Bevakningen ger inte automatiskt lov till merge, produktionsradering, DDL, åtkomstökning eller betald drift.
-- En agent får ett avgränsat filägande i taget. Samma checkout använder agent-talk; olika worktrees integreras genom granskbara brancher. Checklistan ändras till VERIFIED först när alla kriterier är styrkta.
+- En agent får ett avgränsat filägande i taget. Worktrees integreras genom granskbara brancher. Checklistan ändras till VERIFIED först när alla kriterier är styrkta.
 - Slack ger läsning/skrivning när agenten kör; ingen Slack-utlöst agentväckning är verifierad. Ingen extra bot behövs.
 
 ## GitHub
@@ -71,6 +75,8 @@ Ingen sådan branch eller arbetsmapp är skapad av denna rekommendation.
 - Kevin provar konsolerna. SQL-åtkomst från hans agent är kvitterad i #312; faktisk Blob-/konsolåtkomst återstår. Ingen bredare Vercel-roll eller generell Blob-token har delats.
 
 ## Separat SQL-läsroll
+
+**Jakobs beslut 27 oktober 2026:** rollen `kevin_migration_readonly` behålls i produktionens Neon och Kevin behåller sin GitHub-åtkomst (`invoicesolv`); hans brancher rörs inte. Ingen återkallelse planeras.
 
 Jakob beställde rollen direkt 21 oktober. Rollen kevin_migration_readonly är skapad via SQL enligt [Neons åtkomstguide](https://neon.com/docs/manage/database-access), utan neon_superuser eller andra ärvda roller.
 

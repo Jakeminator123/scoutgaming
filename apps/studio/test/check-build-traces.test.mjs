@@ -22,7 +22,7 @@ test('managed worktree parent does not erase application traces; private project
   }finally{await rm(temporary,{recursive:true,force:true});}
 });
 test('traced private credentials, local identities and QA state are forbidden on both path styles',()=>{
-  for(const path of ['/app/.env','C:\\app\\lab\\.env.local','/app/lab/data/platform-private/production-neon.json','/app/apps/studio/data/platform-private/production-neon.json','C:\\app\\apps\\studio\\.env.local','/app/web/data/craig.db','/app/services/game/data/qa.json','C:\\app\\services\\game\\data\\qa.json','/app/open-claw/lab/data/state.db','/app/services/openclaw/lab/data/state.db','C:\\app\\services\\openclaw\\lab\\runtime\\state.db','/app/agent-talk/state.json','/app/random/private-notes.md','C:\\app\\random\\notes.txt']) assert.equal(privateBuildSource(path),true);
+  for(const path of ['/app/.env','C:\\app\\lab\\.env.local','/app/lab/data/platform-private/production-neon.json','/app/apps/studio/data/platform-private/production-neon.json','C:\\app\\apps\\studio\\.env.local','/app/web/data/craig.db','/app/services/game/data/qa.json','C:\\app\\services\\game\\data\\qa.json','/app/open-claw/lab/data/state.db','/app/services/openclaw/lab/data/state.db','C:\\app\\services\\openclaw\\lab\\runtime\\state.db','/app/random/private-notes.md','C:\\app\\random\\notes.txt']) assert.equal(privateBuildSource(path),true);
   for(const path of ['/app/ops/neon-game/product-schema.sql','/app/media/blob-index.json','/app/services/openclaw/lab/deploy/runtime-bundle/roles/croupier-speech.md']) assert.equal(privateBuildSource(path),false);
 });
 

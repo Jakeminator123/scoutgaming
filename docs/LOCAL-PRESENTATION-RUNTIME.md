@@ -442,7 +442,7 @@ tal. Radera inte den gemensamma taltransporten för att en sökväg heter Astrid
 
 Produktionsinställningarna kontrollerades 16 oktober: Vercels native Admin
 och Neon-policy är aktiva i `production/croupier`, medier använder privat
-Blob och spelbackend är `croupier-v2.onrender.com`. Spelmotorn kör på Render;
+Blob och spelbackend var `croupier-v2.onrender.com` (sedan 24 oktober `croupier-v3.onrender.com`). Spelmotorn kör på Render;
 Vercel är webb-/Admin-ingången. Det aktuella molnspåret behöver inte läsa
 originalfilmer från Jakobs dator. Neon-registret ignorerar de gamla lokala
 upload-/klassificeringsfilerna. Videobytes hämtas från Blob och kontrolleras
@@ -2430,7 +2430,7 @@ lagrar policy, metadata och journaler.
 
 Aktiv spelmotor är Render `croupier-v3`, verifierad 24 oktober 2026 mot
 rätt repo, main och avstängd automatisk deploy. Tidigare `croupier-v2`
-är suspenderad. Exakta resurs-ID:n och återgångsordning finns i
+raderades 27 oktober 2026. Exakta resurs-ID:n och återgångsordning finns i
 [återställningsguiden](ENVIRONMENT-RESTORATION.md), och faktisk deploy-SHA,
 QA-gränser och runtimeacceptans i [handoffen](JOHN-HANDOFF.md).
 
@@ -2590,7 +2590,7 @@ starttidsgräns och en diagnostiklucka, inte bevis på den aktuella felorsaken.
 För insyn och omdeploy: anslut det officiella [Render MCP](https://render.com/docs/mcp-server)
 med OAuth enligt avsnittet Codex Desktop and CLI och välj rätt Render-workspace.
 Det ger verktyg för deployhistorik, enskilda deploykvitton, filtrerade loggar och
-ny deploy. Bekräfta att vald tjänst är croupier-v2. Dela inga API-nycklar i chatten.
+ny deploy. Bekräfta att vald tjänst är croupier-v3. Dela inga API-nycklar i chatten.
 En deploy-hook ensam ger inte samma logg- och historikåtkomst.
 
 Nästa felsökningsunderlag är det misslyckade och lyckade deploy-ID:t, deras SHA
@@ -2634,7 +2634,7 @@ konton och media är beständig arbetsdata och ingick inte i cacheborttagningen.
 Om hela Lab-runtime behöver byggas om används `npm --prefix apps/studio run build` med
 projektets kompatibla Node och aktuell workergräns. Detta startar ingen server.
 Kör inte dubbla tunga byggen i samma checkout och radera inte `.next` under
-pågående bygge, server eller regression. Följ sessionsvakt och agent-talk.
+pågående bygge, server eller regression. Följ sessionsvakten.
 
 ## Gemensam kontoåtkomst
 

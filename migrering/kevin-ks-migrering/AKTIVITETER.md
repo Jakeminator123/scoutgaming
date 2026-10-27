@@ -9,7 +9,7 @@
 
 ## Nulägesrevision 25 oktober
 
-Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanens nuläge och prioriteringar](../MASTERPLAN.md#slutsats-och-verifierat-nuläge) går före äldre nästa-steg-noteringar. 45 % är oförändrad acceptansstatus; en mergad del-PR ger inte automatiskt VERIFIED.
+Först granskad main: `34c6c22f60ac75f335f647c83af06e7d0514476b`; uppdaterad till `51165e9a5e2625caab1b5a8d12f1e528c99b66bc` efter #378. [Masterplanens nuläge och prioriteringar](../MASTERPLAN.md#slutsats-och-verifierat-nuläge) går före äldre nästa-steg-noteringar. Acceptansstatusen var oförändrad vid denna revision (aktuell siffra bara i [STATUS.md](../STATUS.md)); en mergad del-PR ger inte automatiskt VERIFIED.
 
 - K02/K03/J07 är redan verifierade och portade. Main har starkare serverägd replay, auth och transaktionsgräns än Kevins gamla app.
 - PR #333:s 26 filer finns på main (19 identiska, sju granskade vidareutvecklingar). #348 tog in de två kompletterande fel-/replayproven. Ingen unik produktlucka identifierad i denna PR; ingen helmerge beställs.
@@ -185,7 +185,7 @@ K06 är föreslagen acceptansprioritet i den nya planen, inte en beställning p�
 
 ## Gemensam arbets- och leveransordning
 
-- Läs AGENTS, agent-talk och relevanta kanoniska guider före implementation; gameplay/media kräver även JOHN-HANDOFF och ENVIRONMENT-RESTORATION. Verifiera Node-version och paketets krav.
+- Läs AGENTS och relevanta kanoniska guider före implementation; gameplay/media kräver även JOHN-HANDOFF och ENVIRONMENT-RESTORATION. Verifiera Node-version och paketets krav.
 - Arbeta i egen avgränsad featurebranch från aktuell main; dokumentera accepterat delta när käll-/bas-SHA ändras. Respektera filanspråk och låt orkestratorn äga gemensamt Git-index/integration.
 - En leveranskvittens innehåller aktivitet, full head, ändring/radering, testmiljö, körda kontroller, bevislänkar, granskare och återstående blockerare. Ett meddelande är information, ingen merge-/DDL-behörighet.
 - Begär saknat kontrakt eller beslut hos dess ägare. Skapa inte en permanent fallback för att komma runt en blockerare. Släpp egna claims när leveransen är klar; inga återkommande statuspingar behövs.

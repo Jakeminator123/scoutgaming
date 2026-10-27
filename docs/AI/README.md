@@ -14,17 +14,17 @@ vid implementationen; de är inte fristående handböcker.
 | Medier, uppspelning och kvarvarande acceptans | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
 | Klippstruktur, Neon/Blob-migration och gemensam talworker | [Kanonisk struktur och genomförandeplan](../storage/BLOB-NEON.md) |
 | Miljövariabler och ansvar | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
-| Aktuell leverans och verifiering | [Handoff](../JOHN-HANDOFF.md) |
+| Aktuell leverans och nästa steg | [NEXT-AGENT](../NEXT-AGENT.md); historik och daterade kvitton i [JOHN-HANDOFF](../JOHN-HANDOFF.md) |
 
 Admin, partnerportal och lobby hör till Vercels webb-/Studio-tjänster;
-Render-tjänsten `croupier-v2` kör spelmotorn. Neon är enda produktregistret
+Render-tjänsten `croupier-v3` kör spelmotorn. Neon är enda produktregistret
 och privat Blob innehåller mediebyte. `lab/` och `services/openclaw/lab/` är aktiva
 kodsökvägar, inte lokala kopior av produkten. Isolerade fixtures och äldre
 authoringfiler är inte alternativa produktregister.
 
 Dragan är ordinarie dealer. Astrids guider och exakta mediereferenser är
 legacyunderlag för bevarade tal-/OpenClaw-flöden, utan trelagersversion.
-Aktuell leverans och acceptans följs i [handoffen](../JOHN-HANDOFF.md);
+Aktuell leverans och acceptans följs i [överlämningen](../NEXT-AGENT.md);
 daterade prov nedan ersätter inte den.
 
 ## Daterad driftkontroll: 13 oktober 2026
@@ -40,6 +40,9 @@ Alla fyra nedan var ej suspenderade och hade en `live`-deploy.
 | croupier-lab-director | 1 | Publik autentiserad adapter, starter | `e57f28ef` |
 | croupier-lab-openclaw | 1 | Privat Gateway, standard | `e57f28ef` |
 | croupier-vercel-preview-qa | 1 | Separat QA, 1c-2g | `ee060804`, 5 oktober |
+
+Spelmotorn flyttades 24 oktober till `croupier-v3`; `croupier-v2` och
+`croupier-vercel-preview-qa` raderades 27 oktober 2026.
 
 Blueprinten [render.yaml](../../services/openclaw/lab/render.yaml) omfattar endast
 Director och Gateway, vilket stämmer med deras nuvarande tjänsteuppdelning.

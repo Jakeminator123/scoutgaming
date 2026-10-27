@@ -2,13 +2,14 @@
 
 Croupier is the working casino demo with server-owned game state and shared
 playback for registered dealers. Start with blackjack; roulette has its own
-server and presentation contracts. Current acceptance and unfinished work are
-recorded in [the handoff](docs/JOHN-HANDOFF.md). This development demo is not a
+server and presentation contracts. Start with [START-HERE.md](START-HERE.md). Current acceptance and next steps are
+recorded in [the current handoff](docs/NEXT-AGENT.md); dated receipts live in
+[JOHN-HANDOFF](docs/JOHN-HANDOFF.md). This development demo is not a
 certified RNG/RGS or a real-money system.
 
 Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/).
 The single Vercel project **scoutgaming**, on team **scoutgaming**, builds the
-frontend and Studio Services. Render service **croupier-v2** owns the game
+frontend and Studio Services. Render service **croupier-v3** owns the game
 engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 
 ## Product entry points
@@ -128,14 +129,14 @@ and mirror are paused; reviewed upstream code is imported selectively.
 
 Use these documents in place instead of adding competing status reports:
 
-- [Handoff and open acceptance](docs/JOHN-HANDOFF.md).
+- [Current handoff and next steps](docs/NEXT-AGENT.md); dated history in [JOHN-HANDOFF](docs/JOHN-HANDOFF.md).
 - [Cloud migration and delivery](docs/CLOUD-MIGRATION.md).
 - [Data restoration and media rules](docs/ENVIRONMENT-RESTORATION.md).
 - [Environment variable registry](docs/ENVIRONMENT-VARIABLES.md).
 - [Presentation runtime](docs/LOCAL-PRESENTATION-RUNTIME.md).
 - [Game manuals](docs/games/README.md) and the [user guide](apps/studio/docs/README.md).
 
-Deliver from `jakob/*`, `codex/*` or `cursor/*` with one pull request to `main`.
+Deliver from a `jakob/*` branch with one pull request to `main`.
 `tools/repository-policy.json` and the pre-push hook enforce the allowed targets;
 `node tools/push-github-work.mjs` pushes the feature branch. Direct `main` push
 requires the explicit emergency option. Never force-push or push to Kevin's branch.

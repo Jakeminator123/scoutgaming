@@ -29,8 +29,6 @@ vendor/
 !.env.example
 !.env.*.example
 .croupier-inbox/
-/agent-talk/state.json
-/agent-talk/write.lock
 /media/.migration/
 
 # Binary media/data: JSON manifests, calibration and source stay searchable.

@@ -23,34 +23,38 @@ test('only ordinary prose qualifies; runtime, config, mixed changes and file typ
   assert.equal(documentationOnly([change('docs/removed.md', {status:'D',after:'000000'})]), true);
 });
 
-test('Moving image verification follows worker and gate changes, including deletion and uncertain paths', () => {
+test('Moving image verification follows worker and its workflow changes, including deletion and uncertain paths', () => {
   for (const path of ['services/moving-gpu-worker/serverless.py', 'services/moving-gpu-worker/Dockerfile',
-    'services/moving-gpu-worker/tests/test_bank_http.py', '.github/workflows/moving-gpu-build.yml',
-    '.github/workflows/croupier.yml', 'tools/ci-changes.mjs', '../unknown']) {
+    'services/moving-gpu-worker/tests/test_bank_http.py', '.github/workflows/moving-gpu-build.yml', '../unknown']) {
     for (const extra of [{}, {status:'D',after:'000000'}]) {
       assert.equal(movingWorkerRequired([change(path, extra)]), true, path);
     }
   }
-  for (const path of ['docs/JOHN-HANDOFF.md', 'apps/studio/components/editor.tsx', 'test/rooms.mjs']) {
+  // CI plumbing edits do not rebuild the GPU image; Actions validates the workflow_call.
+  for (const path of ['.github/workflows/croupier.yml', 'tools/ci-changes.mjs', '.githooks/pre-commit-full',
+    'docs/JOHN-HANDOFF.md', 'apps/studio/components/editor.tsx', 'test/rooms.mjs']) {
     assert.equal(movingWorkerRequired([change(path)]), false, path);
   }
   assert.equal(movingWorkerRequired([]), true);
 });
 
-test('local and CI prose selection share reviewed guides while runtime Markdown stays strict', async () => {
+test('local and CI prose selection share reviewed guides and prose folders while other Markdown and JSON stay strict', async () => {
   const { verificationMode, focusedTests } = await import('../tools/precommit-checks.mjs');
-  for (const path of ['agent-talk/README.md', 'apps/studio/AGENTS.md', 'apps/studio/docs/new-guide.md',
+  for (const path of ['apps/web/README.md', 'apps/studio/AGENTS.md', 'apps/studio/docs/new-guide.md',
     'packages/presentation/docs/INTEGRATION.md', 'ops/cloud/CONTAINER-CONTEXT.md',
     'migrering/MASTERPLAN.md', 'migrering/STATUS.md', 'migrering/status.json',
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
-    'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md']) {
+    'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/SAMARBETE-OCH-ATKOMST.md', 'migrering/new-runtime.md',
+    'START-HERE.md', 'inbox/README.md', 'ops/cloud/README.md', 'ops/cloud/RENDER-V3.md',
+    'docs/history/2026-10-27-j08-staging-acceptance.md', 'docs/history/2026-10-27-receipt.json']) {
     assert.equal(documentationOnly([change(path)]), true, path);
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'documentation', path);
   }
   for (const path of ['packages/presentation/docs/runtime.md', 'services/game/public/docs/partner-api.md',
     'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md',
-    'migrering/status.mjs', 'migrering/config.json', 'migrering/new-runtime.md']) {
+    'migrering/status.mjs', 'migrering/config.json', 'ops/cloud/config.mjs', 'ops/cloud/deploy/README.md', 'inbox/people.json',
+    'docs/history/run.mjs', 'docs/history/receipt.sh']) {
     assert.equal(documentationOnly([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'focused', path);
   }

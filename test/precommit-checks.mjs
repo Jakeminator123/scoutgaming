@@ -21,14 +21,15 @@ test('documentation and indexing-only changes use quick checks', () => {
 
 test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
   const guides = [
-    'apps/web/README.md', 'agent-talk/README.md', 'apps/studio/AGENTS.md',
+    'apps/web/README.md', 'apps/studio/README.md', 'apps/studio/AGENTS.md',
     'apps/studio/docs/new-guide.md',
     'migrering/MASTERPLAN.md', 'migrering/STATUS.md', 'migrering/status.json',
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
-    'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md',
+    'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/new-runtime.md',
     'packages/presentation/README.md', 'apps/studio/client/README.md',
     'packages/presentation/docs/INTEGRATION.md',
-    'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+    'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md', 'ops/cloud/README.md',
+    'START-HERE.md', 'inbox/README.md', 'docs/history/2026-10-27-receipt.json',
     'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
     'services/astrid-gpu-worker/gateway/README.md',
     'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
@@ -38,7 +39,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
   }
   for (const path of [
     'tools/media/encode.sh', 'apps/studio/client/build.mjs',
-    'migrering/status.mjs', 'migrering/config.json', 'migrering/new-runtime.md',
+    'migrering/status.mjs', 'migrering/config.json', 'inbox/people.json', 'ops/cloud/deploy/README.md', 'docs/history/run.mjs',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
     'services/astrid-gpu-worker/gateway/auth.mjs', 'services/game/storage/package.json',
     'tools/media/runtime-bundle/README.md', 'services/game/public/lab/README.md',

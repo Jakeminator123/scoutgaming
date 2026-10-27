@@ -10,4 +10,3 @@ annars ägaren av den aktuella grenen. Registrering beskrivs i `inbox/README.md`
 
 Kör `node tools/inbox.mjs ping --to <namn> --message "<text>"` och visa länken.
 Utan argument: kör `node tools/inbox.mjs list --to me` och sammanfatta öppna ärenden.
-Agenter i samma checkout når du i stället med `node tools/agent-talk.mjs ping`.

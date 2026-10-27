@@ -78,8 +78,8 @@ behöver granskas utifrån sin faktiska källa, funktion och behörighet.
 
 Labbets runtime använder det dokumenterade **HTTP-API:t**, inte MCP.
 En IDE-agents dokumentationsläsning ska inte ge den åtkomst till spelar- eller
-operatörssamtal. Den tidigare GitLab-inboxen är pausad. Lokal agentsamordning
-sker via `agent-talk`, utan koppling till OpenClaw-runtime.
+operatörssamtal. Den tidigare GitLab-inboxen är pausad. Agentsamordning sker
+via Git-brancher och teaminboxen, utan koppling till OpenClaw-runtime.
 
 ## Installation är inte samma sak som vår Render-konfiguration
 

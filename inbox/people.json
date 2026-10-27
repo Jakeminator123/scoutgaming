@@ -1,6 +1,6 @@
 {
   "jakob": { "name": "Jakob", "github": "Jakeminator123", "branch": "main", "role": "repo-ägare, nivå 1" },
   "john": { "name": "John", "github": "Johncleochile", "branch": "john", "role": "chef, design" },
-  "kevin": { "name": "Kevin", "github": null, "branch": "kevin", "role": "nivå 2, partnerportal", "note": "GitHub-inbjudan via e-post väntar" },
+  "kevin": { "name": "Kevin", "github": "invoicesolv", "branch": "kevin", "role": "nivå 2, partnerportal", "note": "GitHub-kollaboratör (write) och läsrollen kevin_migration_readonly i produktionens Neon behålls enligt Jakobs beslut 2026-10-27" },
   "emil": { "name": "Emil", "github": "EmaCodeHero", "branch": "emil", "role": "utvecklare", "note": "GitHub-inbjudan väntar" }
 }

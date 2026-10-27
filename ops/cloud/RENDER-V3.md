@@ -2,7 +2,9 @@
 
 Aktiv spelmotor är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i workspace `tea-d19jsa63jp1c73ch0sc0`. Den kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`; Admin/Studio ligger på Vercel. Ingen Next-/Studio-process eller produktdisk ingår i v3.
 
-**Färsk kontroll 25 oktober 2026:** rätt repo/main, `ops/cloud/Dockerfile.game`, Frankfurt, 1c-2g, en instans och Auto-deploy av. PAOW-chatten har samordnat deployment `dep-dbf3og7avr4c73cn9bf0` på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`, inklusive #391–#395, och rapporterat faktisk version, health 200/ok samt capability v28/200 med `idleRotation: pose-graph-v1`. Root har separat återläst tjänstekonfigurationen, faktisk health 200/ok och version 200 med samma fulla SHA. Äldre `croupier-v2` är suspenderad och används inte som återgång. Detta driftkvitto bevisar inte slutlig media-/restoreacceptans.
+**Produktionsläge 27 oktober 2026, kväll:** `croupier-v3`, Director och Gateway kör main `cc415cd8` (#442), deployade manuellt efter grön CI. Deploypolicy: merge efter grön CI → Vercel auto-deployar main → `croupier-v3` triggas manuellt (Render MCP) efter varje grön merge; Director `croupier-lab-director` (`srv-danhlpjtqb8s73bv530g`) och Gateway `croupier-lab-openclaw` (`srv-danhiv3tqb8s73burkq0`) deployas om när deras kod ändras. `croupier-v2` (`srv-datg3j6gekts73amgli0`) och `croupier-vercel-preview-qa` raderades 27 oktober 2026.
+
+**Historisk kontroll 25 oktober 2026:** rätt repo/main, `ops/cloud/Dockerfile.game`, Frankfurt, 1c-2g, en instans och Auto-deploy av. PAOW-chatten har samordnat deployment `dep-dbf3og7avr4c73cn9bf0` på `ebb6b91fec6423434be3cd6f3200bc779614b0c9`, inklusive #391–#395, och rapporterat faktisk version, health 200/ok samt capability v28/200 med `idleRotation: pose-graph-v1`. Root har separat återläst tjänstekonfigurationen, faktisk health 200/ok och version 200 med samma fulla SHA. Äldre `croupier-v2` är suspenderad och används inte som återgång. Detta driftkvitto bevisar inte slutlig media-/restoreacceptans.
 
 ## Syfte
 
@@ -147,6 +149,10 @@ Route- och behörighetskontroller ska följa dessa aktiva tjänster. En gammal s
   signerad ingress och verklig Web-session, media-/sockettransport samt
   avstängning. Linux-signalprov körs i Linux-CI. `game-image.test.mjs`
   verifierar COPY-listan och paketupplösningen.
-- CI `Render v3 container check`, jobb `game-image`: bygger
-  `Dockerfile.game`, kör nätverkslös paketupplösning och `start.mjs --check`
-  utan Lab-bygge. Ingen image publiceras.
+- Workflowet `Render v3 container check` (`.github/workflows/product-container-check.yml`),
+  jobb `game-image`: bygger `Dockerfile.game`, kör nätverkslös paketupplösning och
+  `start.mjs --check` utan Lab-bygge. Ingen image publiceras. Det är ett separat
+  workflow, inte en del av ordinarie `croupier.yml`: det körs bara på PR:er mot main som
+  rör workflowfilen, `.dockerignore`, `Dockerfile.game` eller spel-/gatewaypaketens
+  `package.json`/`package-lock.json` (sökvägsfilter) samt via manuell `workflow_dispatch`.
+  Push till main kör det aldrig; vid en frysning krävs en dispatch.

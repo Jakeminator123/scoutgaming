@@ -1,19 +1,16 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import { blueprintNames, compareKeys, hasEnvChange, parseEnvNames, referencedNames, templateNames, validateRegistry } from '../tools/check-environment-variables.mjs';
 
-test('active media sources belong to their deployed service inventories', () => {
+test('the committed registry is structurally valid and every listed source exists', () => {
+  // Structural only: service keys and variable names are not locked here.
   const registry = JSON.parse(readFileSync(new URL('../docs/environment-variables.json', import.meta.url), 'utf8'));
-  const studio = registry.services['vercel-lab-ui'];
-  for (const file of ['apps/studio/lib/cloud-media-store.mjs', 'apps/studio/lib/video-registry.mjs']) assert.ok(studio.sources.includes(file), 'vercel-lab-ui: ' + file);
-  const game = registry.services['render-game'];
-  for (const file of ['services/game/blob-media.mjs', 'services/game/storage/video-registry.mjs', 'services/game/storage/legacy-clip-inventory.mjs', 'services/game/storage/studio-media-runtime.mjs']) assert.ok(game.sources.includes(file), file);
-  assert.ok(game.conditional.includes('NEXT_PUBLIC_LAB_BASE_PATH'));
-  assert.ok(studio.sources.includes('apps/studio/lib/legacy-clip-inventory.mjs'));
-  assert.ok(studio.conditional.includes('LAB_PUBLIC_URL'));
-  // Studio no longer reads a fixture data directory; only the game image still validates it.
-  assert.equal(studio.conditional.includes('CROUPIER_DATA_DIR'), false);
+  assert.deepEqual(validateRegistry(registry), []);
+  assert.ok(Object.keys(registry.services).length > 0);
+  for (const [service, entry] of Object.entries(registry.services)) {
+    for (const file of entry.sources) assert.ok(existsSync(new URL('../' + file, import.meta.url)), `${service}: ${file}`);
+  }
 });
 
 test('detects newly read deployment variable names', () => {

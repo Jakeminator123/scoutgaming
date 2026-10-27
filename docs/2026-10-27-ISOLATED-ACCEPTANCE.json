@@ -867,6 +867,7 @@
         "node apps/studio/start.mjs --offline --skip-build --no-open; fixture-owned stop afterward"
       ],
       "harnessCorrection": "Initial probe expected Studio / HTTP 200; actual committed app/page.tsx explicitly permanentRedirects to /admin. Retry asserts HTTP 308 and exact same-origin /admin. Initial logs and cleanup proof retained.",
+      "historicalNote": "2026-10-27 evening: the --offline/--skip-build start.mjs flags were retired on main in #431 (apps/studio/start.mjs rejects them), so the documented-offline-start-stop step and the offline checks below reproduce only at d53b349a. Current product command is node apps/studio/start.mjs --no-open; isolated tests run in staging or CI.",
       "offline": {
         "checks": [
           {

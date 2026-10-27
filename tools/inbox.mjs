@@ -11,7 +11,7 @@
 //   node tools/inbox.mjs reply <nummer> --body-file svar.md | --message "Svar"
 //   node tools/inbox.mjs done <nummer>
 //   node tools/inbox.mjs labels
-// Agents in the same checkout coordinate with tools/agent-talk.mjs; this tool reaches other machines and branches.
+// Reaches people and their agents in other branches and on other machines through GitHub Issues.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { hostname } from 'node:os';
