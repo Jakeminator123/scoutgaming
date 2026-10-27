@@ -75,7 +75,7 @@ test('a late roulette preflight cannot restore the previous company or unlock a 
 });
 
 test('roulette preflight accepts exact supported capabilities and rejects malformed or blackjack-only readiness',async()=>{
-  for(const version of [9,14,15]){
+  for(const version of [9,14,15,16,29,30,31]){
     const h=fixture(),pending=h.client.read(context,{game:'roulette'});
     h.reply(0,prepared(context,{capabilities:presentationCapabilitiesForVersion(version)}));
     assert.equal((await pending).capabilities.schemaVersion,version);
@@ -86,6 +86,32 @@ test('roulette preflight accepts exact supported capabilities and rejects malfor
   }
   const h=fixture();await assert.rejects(h.client.read(context,{game:'poker'}),/Svaret kunde inte verifieras/);
   assert.equal(h.requests.length,0);
+});
+
+test('current measured and embedded AV capabilities reach ordinary room creation and preserve the receipt',async()=>{
+  for(const version of [29,30,31]){
+    const f=fixture(),capabilities=presentationCapabilitiesForVersion(version);
+    await f.ready(context,{capabilities});
+    assert.equal(f.controller.getSnapshot().preflight.capabilities.schemaVersion,version);
+    const attempt=await f.start('Uppmätt bord',context,{capabilities});
+    assert.equal(attempt.post.options.method,'POST');
+    f.reply(attempt.index,created(attempt.payload));await attempt.pending;
+    assert.equal(f.controller.getSnapshot().receipt.room.id,id);
+    assert.equal(f.controller.getSnapshot().receipt.packageRevision,1);
+  }
+});
+
+test('ready responses still require the exact capability representation including all v31 fields',async()=>{
+  const current=presentationCapabilitiesForVersion(31);
+  const missing=field=>Object.fromEntries(Object.entries(current).filter(([key])=>key!==field));
+  for(const capabilities of [null,presentationCapabilitiesForVersion(1),{schemaVersion:31},missing('rooms'),
+    missing('mediaTiming'),missing('recordedEmbeddedAv'),missing('nativeFilmedPlanning'),
+    {...current,nativeFilmedPlanning:'unverified'},{...current,schemaVersion:30},{...current,schemaVersion:32},
+    {...current,unexpected:true}]){
+    const f=fixture(),pending=f.client.read(context);
+    f.reply(0,prepared(context,{capabilities}));await assert.rejects(pending,/Svaret kunde inte verifieras/);
+    assert.equal(f.requests.length,1,'invalid readiness cannot trigger a create');
+  }
 });
 
 function fixture() {

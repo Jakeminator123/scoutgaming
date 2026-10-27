@@ -53,8 +53,8 @@ function preflight(value, context, game) {
     || !['baked', 'image', 'video', 'variable'].includes(environment.kind) || typeof environment.fixed !== 'boolean'
     || !roomName(environment.label, 120) || value.ready && !environment.fixed
     || environment.kind === 'variable' && environment.fixed)) invalid();
-  if (value.ready && (value.reason !== null || ![2, 3, 4, 9, 14, 15].includes(capabilities?.schemaVersion)
-    || game === 'roulette' && capabilities.schemaVersion < 9)) invalid();
+  if (value.ready && (value.reason !== null || capabilities?.rooms !== 'operator-owned-v2'
+    || game === 'roulette' && capabilities.rouletteRooms !== 'european-single-zero-v1')) invalid();
   const seen = new Set();
   const rooms = value.rooms.map(room => {
     if (!sameKeys(room, ['id', 'name', 'playUrl']) || !laneId(room.id) || !roomName(room.name) || seen.has(room.id)) invalid();
