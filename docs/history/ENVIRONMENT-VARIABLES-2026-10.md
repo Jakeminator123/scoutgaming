@@ -2,8 +2,8 @@
 
 Render tillhandahåller valfri `RENDER_INSTANCE_ID` för avgränsad instanskorrelation i gatewayens health/version-diagnostik. Den är leverantörshanterad och ska inte sättas manuellt eller innehålla autentiseringsuppgifter.
 
-Senaste leveransstatus finns i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md),
-och kvarvarande arbete/ägare i [NEXT-AGENT.md](NEXT-AGENT.md).
+Senaste leveransstatus finns i [CLOUD-MIGRATION.md](../CLOUD-MIGRATION.md),
+och kvarvarande arbete/ägare i [NEXT-AGENT.md](../NEXT-AGENT.md).
 PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
@@ -182,7 +182,7 @@ Dragan-runtimeprofilens gamla endpoint togs också bort och flaggan sattes
 till 0. Nycklar, bank och övriga profiler kopierades inte mellan miljöer.
 Felen med gammal endpoint och nyckelbehörighet var verkliga, men den här
 kontrollen visar ingen felriktad Neon-anslutning i den faktiska talkedjan.
-Se det daterade prov-/kostnadskvittot i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md).
+Se det daterade prov-/kostnadskvittot i [handoffhistoriken](JOHN-HANDOFF-2026-10.md).
 
 **Stoppuppföljning 19:17 UTC:** även det senare köade provets endpoint
 `dgpazl8h3a64uj` och template är borttagna och tom workerlista verifierad.
@@ -276,7 +276,7 @@ Det sammanlagda taket omfattar
 Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
 sammanräkning före aktivering. Reservationer återbetalas inte automatiskt;
 osäkra providersvar blockerar återförsök. Faktisk fakturering och avveckling
-kontrolleras separat; det daterade kvittot sammanfattas i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md).
+kontrolleras separat; det daterade kvittot sammanfattas i [handoffhistoriken](JOHN-HANDOFF-2026-10.md).
 
 Den nya runtimekoden kräver scoped Neon som enda metadataregister, inklusive
 `runtime_media_catalogs` och `speech_reply_records` från migration 012.
@@ -298,18 +298,18 @@ och `--check` är pensionerade 27 oktober 2026 och avvisas.
 återläsningskvitto 16 oktober 18:38 UTC. Runtimebyte och driftacceptans väntar;**
 produkten kör ännu bridgeversion `3165ab6`. Detta är ett attribuerat kvitto,
 inte en ny liveavläsning. Aktuell leveransstatus
-finns endast i [CLOUD-MIGRATION](CLOUD-MIGRATION.md) och
-[NEXT-AGENT](NEXT-AGENT.md). Daterade filindex- och startkvitton nedan
+finns endast i [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
+[NEXT-AGENT](../NEXT-AGENT.md). Daterade filindex- och startkvitton nedan
 bevaras som historik; deras gamla krav ersätts av detta avsnitt.
 
 ## Daterad env-inventering, 15 oktober 2026 kväll
 
-[environment-variables.json](environment-variables.json) är det maskinkontrollerade
+[environment-variables.json](../environment-variables.json) är det maskinkontrollerade
 namn-/tjänstekontraktet. Denna översikt ersätter morgonens upprepade statuslistor.
 Inga hemlighetsvärden återges och inga miljövärden i molnet eller Emil-profiler
 ändras. Äldre QA:s publika ingång stängdes genom underhållsläge, se nedan.
 Det valda arbetsflödet är grön PR → main → test på ordinarie produktionsadress;
-[CLOUD-MIGRATION.md](CLOUD-MIGRATION.md) beskriver leveransvägen.
+[CLOUD-MIGRATION.md](../CLOUD-MIGRATION.md) beskriver leveransvägen.
 
 | Profil/miljö | Verifierat antal | Loader, prioritet och bygge/runtime |
 | --- | --- | --- |
@@ -414,7 +414,7 @@ bedömda separat från aktiva runtime-läsare.
 | `CROUPIER_STUDIO_MAIL_FROM`, `RESEND_API_KEY` | studio-native-mail.mjs | Behåll; isolerad start stänger av skarpa utskick. |
 | `CROUPIER_CLOUD_LAUNCH`, `CROUPIER_CLOUD_LAYOUT`, `HOST`, `NODE_ENV`, `PORT` | ops/cloud/config.mjs, Director/plattform; NODE_ENV även bygge | Behåll. PORT är värdhanterad där plattformen sätter den. |
 | `CROUPIER_CLOUD_DATA_ROOT` | Färskt verifierad endast på äldre QA med 1 GiB-disk; ops/cloud/config.mjs | Behåll QA:s återställningsunderlag. Återinför inte i produktion och radera inte den äldre disken. |
-| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; krävs inte längre i Dockerfile eller CI (Render `croupier-v3`, se [RENDER-V3](../ops/cloud/RENDER-V3.md)) | Pensionerad aktivering: osatt, tomt eller `0` ger alltid en spelprocess; `1` och andra värden nekas. Ingen lokal Studio-process eller Next-byggkontroll finns kvar. Signerade Studio-API-anrop till Render svarar 421; dokumentbokmärken omdirigeras fortsatt till Vercel. Inga molninställningar ändras av kodavvecklingen. |
+| `CROUPIER_CLOUD_LAB_CHILD` | ops/cloud/config.mjs; krävs inte längre i Dockerfile eller CI (Render `croupier-v3`, se [RENDER-V3](../../ops/cloud/RENDER-V3.md)) | Pensionerad aktivering: osatt, tomt eller `0` ger alltid en spelprocess; `1` och andra värden nekas. Ingen lokal Studio-process eller Next-byggkontroll finns kvar. Signerade Studio-API-anrop till Render svarar 421; dokumentbokmärken omdirigeras fortsatt till Vercel. Inga molninställningar ändras av kodavvecklingen. |
 | `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_URL` | ops/cloud/config.mjs | Behåll separat presentationsanslutning. |
 | `CROUPIER_QA_LOGIN_PASSWORD`, `CROUPIER_QA_LOGIN_USERNAME` | Privata autentiserade verifieringsverktyg; ingen aktiv produktläsare hittad | Behåll verifieringsunderlag. |
 | `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY`, `GITGUARDIAN_API_TOKEN` | Ingen aktiv produktläsare verifierad. DID-träffen är kommentar; ElevenLabs-video har ett negativt vidarebefordringstest. Extern användning oklar | Behåll tills exakt verktygsägare/konsument är klarlagd. |
@@ -637,7 +637,7 @@ En nyckel som klistrats in i chatten ska ersättas före fortsatt användning.
 ## Förteckning och tidigare verifieringskvitton
 
 Detta är den läsbara nyckelnamnsförteckningen. Den maskinläsbara listan finns i
-[`environment-variables.json`](environment-variables.json) och används av CI.
+[`environment-variables.json`](../environment-variables.json) och används av CI.
 Guiden och JSON-registret är aktiva referenser; ingen av dem laddas som processmiljö.
 De innehåller inga hemliga värden. Ignorerade `.env`/`.env.local` och tjänsternas
 miljöinställningar är separata och ska inte raderas vid dokumentstädning.
@@ -653,7 +653,7 @@ Aktuell källa: `Jakeminator123/scoutgaming` på `main`; gamla `github-work`
 vidarebefordras av GitHub till samma repo-ID `1380630440`.
 Vercelprojektet `scoutgaming` bygger `apps/web` och `lab` som
 Services från reporoten. Båda använder samma projektmiljö och `fra1`.
-Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [överlämning](NEXT-AGENT.md).
+Aktuell drift och QA: [molnkarta](../CLOUD-MIGRATION.md), [överlämning](../NEXT-AGENT.md).
 
 Slutkontroll 12 oktober 2026, 13:56 UTC: kod `19c44902` har grön
 [GitHub-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38257724379).
@@ -681,7 +681,7 @@ aktiva. Render körde utan produktdisk och utan `CROUPIER_CLOUD_DATA_ROOT`;
 ersatte gamla diskvägar. Tre tal-/streamflaggor var ON i produktion, OFF i QA.
 QA:s disk, SDK, journaler och reservationer bevaras. Inga nya envnamn införs.
 
-Director/Gateway-konfiguration: se [OpenClaws källindex](AI/openclaw/README.md).
+Director/Gateway-konfiguration: se [OpenClaws källindex](../AI/openclaw/README.md).
 
 Studio-flikens modellinställningar använder den inloggade administratörens
 vanliga Studio-session. `OPENCLAW_API_KEY` är det rättade namnet för Gateway-
@@ -803,7 +803,7 @@ inte återinföras från äldre kopior. Kompatibel inläsning finns ännu kvar i
 äldre generated-speech-/cloud-storage-prioritet gäller endast verktyg som
 uttryckligen använder den loadern, inte `apps/studio/start.mjs`.
 Återställningskopior hör till rotens kanoniska `arkiv/<datum>/<ursprunglig-sökväg>`
-enligt [AGENTS.md](../AGENTS.md), och väljs aldrig automatiskt som env-källa.
+enligt [AGENTS.md](../../AGENTS.md), och väljs aldrig automatiskt som env-källa.
 Äldre kopiors existens, innehåll eller flytt verifieras inte genom denna
 dokumenträttning; aktuell återställning kräver jämförelse mot avsedd profil.
 
@@ -959,8 +959,8 @@ Neon-budgetgränser för tal består.
 Kodavvecklingen ändrar inga molninställningar, privata manifest, journaler,
 förbrukade reservationer eller registrerade medier. Äldre provkvitton är historik;
 återöppning av den gamla miljön ingår inte i leveransen. Aktuell drift och öppna
-kontroller finns i [handoffen](history/JOHN-HANDOFF-2026-10.md#2-öppna-kontroller-och-kända-fel) och
-[återställningsplanen](ENVIRONMENT-RESTORATION.md). Historiska installationsdetaljer
+kontroller finns i [handoffen](JOHN-HANDOFF-2026-10.md#2-öppna-kontroller-och-kända-fel) och
+[återställningsplanen](../ENVIRONMENT-RESTORATION.md). Historiska installationsdetaljer
 finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-VARIABLES.md).
 
 ### Origins och privata medier
@@ -1019,7 +1019,7 @@ uttryckliga acceptansundantaget. Exakta tariffer förblir backlog.
 ### Tjänsteansvar
 
 Import/ALL0 och produktionsbyte är avslutade. Originalkvitton och återställningsregler
-finns i [handoffhistoriken](history/JOHN-HANDOFF-2026-10.md) och [återställningsguiden](ENVIRONMENT-RESTORATION.md).
+finns i [handoffhistoriken](JOHN-HANDOFF-2026-10.md) och [återställningsguiden](../ENVIRONMENT-RESTORATION.md).
 Återanvänd inte historiska exportflaggor som normal driftkonfiguration.
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
@@ -1048,7 +1048,7 @@ De tidigare QA-fronterna hette `croupier-native-qa-abc92154cb15` och
 visar endast `scoutgaming` i teamet `scoutgaming`; äldre namn nedan är historik. Det äldre `croupier-player-preview-qa`
 raderades 8 oktober 18:40 på Jakobs beslut, efter att Neon- och Blob-resurserna
 flyttats till teamet `scoutgaming`; raden `vercel-zones-qa` i registret är historik.
-Se [driftskartan](CLOUD-MIGRATION.md).
+Se [driftskartan](../CLOUD-MIGRATION.md).
 
 Lab läser bara `CROUPIER_ZONES_DATABASE_URL` för zoner. Generella DATABASE_URL/
 POSTGRES_URL är inte reserv för detta. Vercel-konfiguration kopieras inte
@@ -1137,7 +1137,7 @@ ger fel, aldrig Astrids röst som reserv. Budget och återstartsregler är oför
 På Render-spelmotorn (`croupier-v3`; vid kvittot `croupier-v2`) finns tal-/GPU-konfigurationens `CARTESIA_API_KEY`,
 `RUNPOD_API_KEY` och `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Produktens tre
 aktiveringsflaggor är ON. Aktuell verifiering och kostnadsgränser finns i
-[överlämningen](NEXT-AGENT.md); gamla deploy-ID:n och gamla budgetbelopp är inte
+[överlämningen](../NEXT-AGENT.md); gamla deploy-ID:n och gamla budgetbelopp är inte
 instruktioner för att ersätta dagens konfiguration. Lokala nycklar kan höra
 till annat konto och ersätter inte driftens nycklar automatiskt.
 
@@ -1172,7 +1172,7 @@ till `20000`, med effektiv generisk timeout kvar på `8000`; ingen lokal
 server har startats. Senare privata speech-/cloud-storage-filer och processenv
 har fortfarande högre prioritet. Compose-mallen ändras inte av detta.
 Aktivera först efter verifierad modell- och bildåtkomst samt ny kod i båda
-berörda tjänsterna. [Flöde och prov (historik)](history/JOHN-HANDOFF-2026-10.md).
+berörda tjänsterna. [Flöde och prov (historik)](JOHN-HANDOFF-2026-10.md).
 
 `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` ska sparas som serverhemlighet i
 Render → `croupier-v3` → Environment, tillsammans med bootstrap-användaren.
@@ -1245,7 +1245,7 @@ Render-spelets villkorliga grupper:
   decimalformat och högst 20 USD, minst sessionsreserven. Även den går
   endast till Web. Redan förbrukade GPU-medel ska räknas av från dagens
   tillgängliga budget före aktivering; den beständiga sessionsliggaren
-  behåller reserver genom omstart. Se [aktuell överlämning](NEXT-AGENT.md).
+  behåller reserver genom omstart. Se [aktuell överlämning](../NEXT-AGENT.md).
   Ingen av dessa funktioner är
   nödvändig för de registrerade förinspelade klippen.
 - Partnerns referensverktyg har egna `BETTALOTTO_PARTNER_*`-inställningar.

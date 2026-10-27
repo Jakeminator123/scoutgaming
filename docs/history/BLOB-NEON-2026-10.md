@@ -364,7 +364,7 @@ eller filmer. Förinspelade repliker spelar sin egen verifierade video och sitt
 inbäddade ljud och behöver inte genereras igen. Ett filnamn eller en uppladdning
 aktiverar inte detta flöde automatiskt.
 
-Lokal checkpoint: [setup och återkörning](../history/lipsync-lokalt-2026-10-17.txt),
+Lokal checkpoint: [setup och återkörning](lipsync-lokalt-2026-10-17.txt),
 tagg `lipsync-local-dragan-2026-10-17`. Sparad replik, modeller, bank och WSL-miljö
 är fortfarande privata arbetsdata. Provet är offline; 11,8 fps lokalt är inte
 realtidsacceptans. Tidigare varm A6000-mätning är inte ett kallstarts-/spelprov.
@@ -456,7 +456,7 @@ Arbetsordning utan ny tracker:
 
 ## Historiskt underlag och kvarvarande osäkerhet
 
-[Filinventeringen 16 oktober](../history/BLOB-NEON-INVENTERING-2026-10-16.md) är ett daterat
+[Filinventeringen 16 oktober](BLOB-NEON-INVENTERING-2026-10-16.md) är ett daterat
 belägg, inte dagens raderingslista. Den observerade 1710 Blob-objekt och 79
 produktionsklipp. Den beskrev även 12 äldre PAOW-svar med saknade mediafiler
 och avgränsade referensluckor; dessa hör inte till Dragan-uppdraget.
