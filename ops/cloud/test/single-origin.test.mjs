@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
 import { validateCloudConfig, childSpecifications } from '../config.mjs';
 import { upstreamForRequest } from '../gateway.mjs';
-import { backofficeLabAuth } from '../../../services/game/bo-lab-auth.mjs';
+import { backofficeLabAuth } from '../../../services/game/storage/async-bo-lab-auth.mjs';
+import { createPgliteStore } from '../../../test/fixtures/pglite-pool.mjs';
 
 const origin = 'https://croupier-fixture.onrender.com';
 const env = {
@@ -43,8 +43,9 @@ test('one-origin router isolates the mounted Lab and rejects spoofing or interna
 });
 
 test('same-origin BO/Lab handoff still checks admin role, browser state, one-use code and live identity', async () => {
-  const db = new DatabaseSync(':memory:');
-  db.exec("CREATE TABLE users (id TEXT PRIMARY KEY, role TEXT); INSERT INTO users VALUES ('1','admin')");
+  // The engine's croupier_auth schema (product-schema.sql) on PGlite, as server.mjs passes boDb.
+  const store = await createPgliteStore(), db = store.boDb;
+  await db.prepare("INSERT INTO users (id,username,role,created_at) VALUES (1,'fixture-admin','admin','fixture')").run();
   let claims = null;
   const handle = backofficeLabAuth({ db, singleOrigin: true, publicUrl: origin, boUrl: origin, labPublicUrl: origin,
     boSession: () => claims, identity: { stamp: () => 'fixture-stamp', find: () => ({ id: '1', stamp: 'fixture-stamp' }) }, authEpoch: () => 1 });
@@ -67,7 +68,7 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
     assert.equal(missingCookie.status, 410);
     assert.match(missingCookie.body, /Starta en ny labbinloggning/);
     assert.match(missingCookie.body, /api\/auth\/lab\/start\?next=%2Fstudio/);
-    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM lab_sessions').get().n, 0);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lab_sessions').get()).n, 0);
     const callback = await call(grant.headers.Location, stateCookie);
     assert.equal(callback.status, 303);
     assert.equal(callback.headers.Location, '/studio/openclaw');
@@ -76,15 +77,15 @@ test('same-origin BO/Lab handoff still checks admin role, browser state, one-use
     assert.equal((await call(grant.headers.Location, stateCookie)).status, 410);
     assert.equal((await call(auth)).status, 410);
     const expired = await call('/api/auth/lab/start?next=/studio');
-    db.exec('UPDATE bo_lab_handoffs SET expires=0');
+    await db.exec('UPDATE bo_lab_handoffs SET expires=0');
     assert.equal((await call(expired.headers.Location)).status, 410);
     assert.equal((await call('/api/bo/lab-login?state=invalid')).status, 400);
-    db.exec("UPDATE users SET role='reader'");
+    await db.exec("UPDATE users SET role='reader'");
     assert.equal((await call('/api/auth/lab/check', session)).status, 401);
     const fallback = await call('/api/auth/lab/start?next=/api/bo/users');
-    assert.equal(db.prepare('SELECT next_path FROM bo_lab_handoffs ORDER BY rowid DESC LIMIT 1').get().next_path, '/studio');
+    assert.equal((await db.prepare('SELECT next_path FROM bo_lab_handoffs ORDER BY expires DESC LIMIT 1').get()).next_path, '/studio');
     assert.equal(fallback.status, 303);
-  } finally { db.close(); }
+  } finally { await store.close(); }
 });
 
 test('one-origin game-only mode keeps the Web routes and closes the mounted Lab entirely', () => {

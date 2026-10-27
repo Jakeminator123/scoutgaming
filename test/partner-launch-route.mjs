@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { DatabaseSync } from 'node:sqlite';
 import { Readable } from 'node:stream';
 import { createHmac } from 'node:crypto';
-import { installPartnerApi } from '../services/game/partner-api.mjs';
+import { installPartnerApi } from '../services/game/storage/async-partner-api.mjs';
 import { normalizeDisplayName } from '../packages/studio-access/display-name.mjs';
+import { createPgliteStore } from './fixtures/pglite-pool.mjs';
 
 test('Partner display names normalize as bounded untrusted presentation data', () => {
   assert.equal(normalizeDisplayName(undefined), 'spelaren');
@@ -18,14 +18,13 @@ test('Partner display names normalize as bounded untrusted presentation data', (
 });
 
 test('BO and signed Partner launch default to original Astrid, without review motion', async t => {
-  const db = new DatabaseSync(':memory:'), boDb = new DatabaseSync(':memory:');
-  t.after(() => { db.close(); boDb.close(); });
-  db.exec('CREATE TABLE players (id TEXT PRIMARY KEY, name TEXT, currency TEXT, balance REAL, created_at TEXT)');
+  const store = await createPgliteStore(), { db, boDb } = store;
+  t.after(() => store.close());
   const partner = installPartnerApi({ db, boDb, publicUrl: 'https://example.invalid',
     getPlayer: id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
     jwtSign: () => 'isolated-test-token', logTx: () => {}, root: '' });
-  const key = partner.keys.create({ name: 'route-test', scopes: ['launch'] }, null);
-  const minted = partner.keys.mintLaunch(key.id, { playerId: 'qa' });
+  const key = await partner.keys.create({ name: 'route-test', scopes: ['launch'] }, null);
+  const minted = await partner.keys.mintLaunch(key.id, { playerId: 'qa' });
   const body = JSON.stringify({ playerId: 'qa' });
   const ts = String(Math.floor(Date.now() / 1000)), path = '/api/v1/launch';
   const req = Readable.from([body]);
@@ -47,14 +46,13 @@ test('BO and signed Partner launch default to original Astrid, without review mo
 });
 
 test('renaming a Partner player preserves playerRef and never creates a synthetic key:id name', async t => {
-  const db = new DatabaseSync(':memory:'), boDb = new DatabaseSync(':memory:');
-  t.after(() => { db.close(); boDb.close(); });
-  db.exec('CREATE TABLE players (id TEXT PRIMARY KEY, name TEXT, currency TEXT, balance REAL, created_at TEXT)');
+  const store = await createPgliteStore(), { db, boDb } = store;
+  t.after(() => store.close());
   const claims = [];
   const partner = installPartnerApi({ db, boDb, publicUrl: 'https://example.invalid',
     getPlayer: id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
     jwtSign: value => { claims.push(value); return `isolated-token-${claims.length}`; }, logTx: () => {}, root: '' });
-  const key = partner.keys.create({ name: 'operator-private-name', scopes: ['launch'] }, null);
+  const key = await partner.keys.create({ name: 'operator-private-name', scopes: ['launch'] }, null);
   async function launch(payload) {
     const body = JSON.stringify(payload), path = '/api/v1/launch', ts = String(Math.floor(Date.now() / 1000));
     const req = Readable.from([body]); req.method = 'POST'; req.headers = { 'x-api-key': key.key, 'x-timestamp': ts,
@@ -70,7 +68,7 @@ test('renaming a Partner player preserves playerRef and never creates a syntheti
   assert.deepEqual(claims.map(value => value.displayName), ['Jäkob Test', 'Jakob Ny', 'spelaren']);
   assert.equal(new Set(claims.map(value => value.sub)).size, 1);
   assert.ok(claims.every(value => !JSON.stringify(value).includes('stable-technical-id')));
-  const stored = db.prepare('SELECT id,name FROM players').all();
+  const stored = await db.prepare('SELECT id,name FROM players').all();
   assert.equal(stored.length, 1); assert.equal(stored[0].id, first.body.playerRef); assert.equal(stored[0].name, 'spelaren');
   assert.ok(!JSON.stringify(stored).includes('operator-private-name'));
   assert.ok(!JSON.stringify(stored).includes('stable-technical-id'));

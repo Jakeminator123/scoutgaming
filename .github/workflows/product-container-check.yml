@@ -53,6 +53,7 @@ jobs:
             assert.equal(fs.existsSync("/app/apps"),false,"the game image must not carry Studio or web code");
             assert.equal(fs.existsSync("/app/media"),false,"local media bytes and registries must not enter the game image");
             assert.equal(fs.existsSync("/app/lab/data"),false,"legacy Studio bootstrap data must not enter the game image");
+            assert.equal(fs.existsSync("/app/services/game/node_modules/@electric-sql/pglite"),false,"test-only PGlite (devDependency) must not enter the game image");
           '
           # Read-only preflight with fixture-only values: no database, disk or Lab build is read.
           docker run --rm --network none \

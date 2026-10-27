@@ -70,3 +70,15 @@ test('Dockerfile.game includes the game launcher and excludes Studio dependencie
   assert.ok(copied.every(source => !source.startsWith('/') && !source.includes('..')));
   assert.match(dockerfile, /CMD \["node", "ops\/cloud\/container-entry\.mjs"\]/);
 });
+
+test('test-only database engines stay out of the game image', () => {
+  // PGlite runs local PostgreSQL module tests; production uses Neon through pg.
+  const manifest = JSON.parse(readFileSync(resolve(root, 'services/game/package.json'), 'utf8'));
+  assert.equal(manifest.dependencies['@electric-sql/pglite'], undefined);
+  const pglite = manifest.devDependencies?.['@electric-sql/pglite'];
+  if (pglite !== undefined) assert.match(pglite, /^\d+\.\d+\.\d+$/, 'test engine version is pinned exactly');
+  assert.match(dockerfile, /npm --prefix services\/game ci --omit=dev/);
+  const { files, bare } = closure();
+  assert.deepEqual(bare.filter(({ specifier }) => specifier.startsWith('@electric-sql/')), []);
+  assert.deepEqual(files.filter(path => path.startsWith('test/')), [], 'runtime never imports test fixtures');
+});
