@@ -153,3 +153,22 @@ test('real loopback HTTP/ws admission reaches the channel, rejects forged hosts/
   const wsVersion=createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json',import.meta.url))('ws/package.json').version;
   t.diagnostic('ws '+wsVersion+'; loopbackport '+port+' closed, zero owned sockets, subsequent connect ECONNREFUSED');
 });
+
+// B2: a server restart (SIGTERM -> service close -> upgrade close) reaches a real browser
+// socket as 1012, so the client reconnects instead of stopping (1000) or seeing 1006.
+test('service shutdown closes an open real socket with 1012 before the transport is released',
+  {skip:!realWs&&'Existing gateway ws dependency is unavailable',timeout:5000},async()=>{
+  const server=createServer((_req,res)=>{res.writeHead(404);res.end();});
+  const auth={actorId:'actor-a',sessionId:'session-a',operatorId:'operator-a',roomId:'room-a',packageRevision:1,expiresAt:Date.now()+60000};
+  const channel=createSharedRoomChannel({origin,authorize:async()=>auth,revalidate:async()=>auth,
+    readSnapshot:async()=>({contract:'blackjack-table/1',roomId:'room-a',version:1,presentationVer:0,configVersion:'config-a',windowId:'window-a',me:{id:'actor-a'}}),readPresentation:async()=>null});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;
+  const adapter=createSharedRoomUpgrade({engineOrigin:`http://127.0.0.1:${port}`,origin,channel,WebSocketServer:realWs.WebSocketServer});
+  server.on('upgrade',(request,socket,head)=>{void Promise.resolve(adapter.handleUpgrade(request,socket,head)).then(handled=>{if(!handled)socket.destroy();});});
+  const client=new realWs.WebSocket(`ws://127.0.0.1:${port}/shared-room/room-a`,{origin});
+  try {
+    const message=once(client,'message');await once(client,'open');await message;
+    const closed=once(client,'close');await adapter.close();
+    const [code,reason]=await closed;assert.equal(code,1012);assert.equal(reason.toString(),'shared_room_restart');
+  } finally { client.terminate();if(server.listening)await new Promise(resolve=>server.close(resolve)); }
+});
