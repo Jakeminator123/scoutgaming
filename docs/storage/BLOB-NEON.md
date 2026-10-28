@@ -97,7 +97,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 - Workern ligger i `services/moving-gpu-worker/` (versionslåst motor, modellhashar, bank- och sessionsvalidering). `moving-gpu-build.yml` bygger och provar imagen utan nät och GPU; `moving-gpu-publish.yml` publicerar.
 - `services/game/moving-speech-transport.mjs` kräver en GHCR-image med SHA-256-digest och workerintyg för release, dealer, bank, session och accepterat RunPod-jobb innan första PCM skickas.
 - Varje session binds till exakta bankoriginal, profilrevision, publicerat paket och eget jobb (Studio-migrering 013), med beständig budget.
-- Funktionen är av (`CROUPIER_MOVING_SPEECH_ENABLED`, se [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftvaljarens-api)). Varje betalt prov kräver Jakobs budgetbeslut, och bara Jakob godkänner läppsynk.
+- Funktionen är av (`CROUPIER_MOVING_SPEECH_ENABLED`, se [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftväljarens-api)). Varje betalt prov kräver Jakobs budgetbeslut, och bara Jakob godkänner läppsynk.
 - Bildruteplanen räknar hela ljudsamplingar: `floor((pcmBytes / 2 + 18000) / 1000)` rutor vid 24 fps, med 220 ms inledande och 530 ms avslutande tystnad. Vila använder alltid källruta 0.
 
 ## Var koden finns

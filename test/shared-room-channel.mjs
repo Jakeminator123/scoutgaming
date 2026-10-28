@@ -295,3 +295,39 @@ test('a player with an open socket and no commands keeps the seat past 121 s; af
   assert.equal(touches.length,last);assert.ok(applied.includes('seat.release'),applied.join());
   assert.deepEqual((await table.snapshot('room-a','player-a')).me.seats,[]);
 });
+
+// F11: during a Render overlap another engine instance commits; no hint reaches this channel.
+// The runtime's pass reports the committed room versions (observeRoom) instead.
+test('F11: room observations reread only sockets that are behind, never during a pending read, and retry an unchanged one once per observeRetryMs',async t=>{
+  let version=1,presentationVer=1,receiverVer=1,at=Date.now(),reads=0,gate=null;
+  const h=setup(t,{now:()=>at,observeRetryMs:1000,consistencyTimeoutMs:1000,
+    readSnapshot:async room=>{reads++;await gate;return snapshot(room,room==='room-a'?version:1,room==='room-a'?presentationVer:1);},
+    readPresentation:async room=>presentation(room,room==='room-a'?receiverVer:1)});
+  const a=await h.attach(),other=await h.attach('room-b');
+  await until(()=>a.frames.length===1&&other.frames.length===1);
+  let base=reads;
+  h.channel.observeRoom('room-a',{version:1,presentationVer:1});h.channel.observeRoom('room-c',{version:5,presentationVer:5});
+  await turn();assert.equal(reads,base,'up to date, or a room without sockets: no read');
+  for(const bad of [['room-a',{version:-1,presentationVer:1}],['room a',{version:1,presentationVer:1}],['room-a',{version:1}]])
+    assert.throws(()=>h.channel.observeRoom(...bad),{statusCode:400});
+  version=2;h.channel.observeRoom('room-a',{version:2,presentationVer:1});
+  await until(()=>a.frames.length===2);assert.equal(a.frames[1].snapshot.version,2);
+  assert.equal(reads,base+1);assert.equal(other.frames.length,1,'another room is not read');
+  // A read already pending (own hint) is not restarted by an observation of the same commit.
+  let release;gate=new Promise(resolve=>{release=resolve;});
+  version=3;h.channel.emitCommitted('room-a');await until(()=>reads===base+2);
+  h.channel.observeRoom('room-a',{version:3,presentationVer:1});release();gate=null;
+  await until(()=>a.frames.length===3);await turn();await turn();assert.equal(reads,base+2);
+  // The room's presentation is ahead of the receiver (its row commits a moment later on the other instance).
+  version=4;presentationVer=2;base=reads;
+  h.channel.observeRoom('room-a',{version:4,presentationVer:2});
+  await until(()=>reads===base+3);await turn();assert.equal(a.frames.length,3,'never a mixed-version frame');
+  h.channel.observeRoom('room-a',{version:4,presentationVer:2});await turn();assert.equal(reads,base+3,'same observation inside observeRetryMs');
+  at+=1000;h.channel.observeRoom('room-a',{version:4,presentationVer:2});await until(()=>reads===base+6);
+  receiverVer=2;at+=1000;h.channel.observeRoom('room-a',{version:4,presentationVer:2});
+  await until(()=>a.frames.length===4);assert.equal(a.frames[3].presentation.ver,2);assert.equal(a.frames[3].snapshot.version,4);
+  await delay(1100);assert.deepEqual(a.closed,[],'the consistent frame cleared the consistency timer');
+  assert.throws(()=>createSharedRoomChannel({origin,authorize(){},revalidate(){},readSnapshot(){},readPresentation(){},observeRetryMs:30001}),{statusCode:503});
+  h.channel.close();assert.deepEqual(a.closed,[{code:1012,reason:'shared_room_restart'}]);
+  h.channel.observeRoom('room-a',{version:9,presentationVer:9});await turn();assert.equal(a.frames.length,4);
+});

@@ -51,7 +51,7 @@ const byRoom = ([a], [b]) => a < b ? -1 : a > b ? 1 : 0;
 export function createPostgresTableRuntime({
   pool, walletMode, clock = { now: Date.now }, random = secureRandom(), sink,
   intervalMs = 250, onError = error => process.emitWarning(error),
-  lockTimeoutMs, statementTimeoutMs, authorizeCommand, onTickCommitted,
+  lockTimeoutMs, statementTimeoutMs, authorizeCommand, onTickCommitted, onRoomObserved,
   roomBackoffMaxMs = 30000, roomBlockAfter = 3, contentionReportMs = 10000,
 } = {}, {
   createStore = createPostgresTableStore, createCoordinator = createTableCoordinator,
@@ -64,7 +64,8 @@ export function createPostgresTableRuntime({
     throw new TypeError('Invalid room fault policy');
   if (typeof clock?.now !== 'function' || typeof onError !== 'function'
     || (sink !== undefined && typeof sink !== 'function')
-    || (onTickCommitted !== undefined && typeof onTickCommitted !== 'function')) throw new TypeError('Invalid runtime ports');
+    || (onTickCommitted !== undefined && typeof onTickCommitted !== 'function')
+    || (onRoomObserved !== undefined && typeof onRoomObserved !== 'function')) throw new TypeError('Invalid runtime ports');
   const checkedClock = { now() {
     const at = clock.now();
     if (!Number.isSafeInteger(at) || at < 0) throw new TypeError('Invalid shared table clock');
@@ -129,7 +130,17 @@ export function createPostgresTableRuntime({
       return true;
     };
     const tickFault = (roomId, error) => isolate(roomId, error, roomFaults, failedRooms);
-    const due = await coordinator.dueTicks(at, { onRoomError(roomId, error) { if (!tickFault(roomId, error)) throw error; } });
+    // F11: every pass already reads each room's committed state. Its versions go to the
+    // observer, so a commit made by another engine instance (Render runs the old and the new
+    // one side by side for minutes during a deploy or restart) reaches this instance's
+    // sockets without a hint, a second query or a poll. Observation never alters the pass.
+    // They are handed over after this pass's own ticks and delivery, so a presentation this
+    // instance committed is already at the receiver and its own hints have run first.
+    const observed = new Map();
+    const due = await coordinator.dueTicks(at, { onRoomError(roomId, error) { if (!tickFault(roomId, error)) throw error; },
+      ...(onRoomObserved ? { observeRoom(roomId, versions) {
+        observed.set(roomId, Object.freeze({ roomId, version: versions.version, presentationVer: versions.presentationVer }));
+      } } : {}) });
     // One snapshot, one attempt per descriptor. A failed transaction remains due;
     // only the coordinator can record a domain-level blocked receipt. A resting
     // room, or one that failed or met contention in this pass, waits until later.
@@ -162,6 +173,9 @@ export function createPostgresTableRuntime({
         for (const item of outbox.failed) if (!isolate(item.row?.roomId, item.error, outboxFaults, failedDelivery)) errors.push(item.error);
         delivered = true;
       } catch (error) { errors.push(error); }
+    }
+    for (const value of observed.values()) {
+      try { Promise.resolve(onRoomObserved(value)).catch(() => {}); } catch { /* A hint observer cannot fail a pass or a room. */ }
     }
     // Bookkeeping also runs when the same pass has a system fault.
     for (const [roomId, error] of failedRooms) {

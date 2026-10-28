@@ -12,7 +12,7 @@ test('all dealers must share a sole published background before it becomes the r
   assert.deepEqual(value, { kind: 'image', fixed: true, label: 'Salongen',
     image: '/api/presentation/layers/nordic-bet/' + a.id });
   for (const dealers of [[dealer([a, b])], [dealer(), dealer([b])], [dealer(), dealer([a], 'video')]]) {
-    assert.deepEqual(roomEnvironment({ dealers }, 'north'), { kind: 'variable', fixed: false, label: 'Flera publicerade miljöval' });
+    assert.deepEqual(roomEnvironment({ dealers }, 'north'), { kind: 'variable', fixed: false, label: 'Flera miljöer' });
   }
 });
 
@@ -33,4 +33,23 @@ test('a missing or selectable default cannot be advertised as a fixed environmen
   assert.deepEqual(roomEnvironment({ dealers: [disabled] }, 'north'), {
     kind: 'variable', fixed: false, label: 'Bakgrund saknas för minst en dealer',
   });
+});
+
+test("several choices show the room default dealer's published default background, the one the game starts with", () => {
+  const room = (dealers, dealerDefault = 'nora') => ({ dealerDefault, dealers });
+  const named = (id, source) => ({ id, ...source });
+  const choices = named('nora', dealer([a, b])); choices.background.default = b.id;
+  assert.deepEqual(roomEnvironment(room([choices]), 'nordic bet'), { kind: 'variable', fixed: false, label: 'Flera miljöer',
+    image: '/api/presentation/layers/nordic%20bet/' + b.id });
+  // Different sole backgrounds per dealer: the room default dealer decides.
+  assert.equal(roomEnvironment(room([named('nora', dealer([a])), named('elin', dealer([b]))], 'elin'), 'north').image,
+    '/api/presentation/layers/north/' + b.id);
+  // No published photograph to start with: the card keeps its design illustration.
+  const baked = { id: 'elin', independentLayers: false, background: { enabled: false, default: null, allowed: [], mode: 'baked' } };
+  const noDefault = named('nora', dealer([a, b])); noDefault.background.default = null;
+  const foreign = named('nora', dealer([a, b])); foreign.background.default = '33333333-3333-3333-3333-333333333333';
+  for (const value of [room([named('nora', dealer([a, b], 'video'))]), room([baked, named('nora', dealer([a]))], 'elin'),
+    room([noDefault]), room([foreign]), room([named('nora', dealer([a, b]))], 'missing'), { dealers: [dealer([a, b])] }]) {
+    assert.deepEqual(roomEnvironment(value, 'north'), { kind: 'variable', fixed: false, label: 'Flera miljöer' });
+  }
 });

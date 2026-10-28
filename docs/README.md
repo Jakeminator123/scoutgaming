@@ -37,6 +37,9 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
 | [plans/O02-PLAN](plans/O02-PLAN.md) och [O02-RESTORE-REPLAY](plans/O02-RESTORE-REPLAY.md) | Frysning, restore och replay inför O02 (refereras av `tools/o02-*.mjs`) | Orkestreraren | Tills O02 är klar, sedan raderas de |
+| [plans/NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md) | Nyckel → bolag: `api_keys.operator_id`, migrering 012, motorns kontroll, prov och PR-sekvens | Orkestreraren och den som bygger bindningen | Tills bindningen är verifierad i drift, sedan raderas det |
+| [plans/PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md) | Paow: verifierat läge för röst, bank och RunPod, proven 28 oktober, varför inget aktiveras före O03, aktiviteten "dealer-generisk talkedja, Paow först" | Orkestreraren och den som bygger talkedjan | Tills aktiviteten är verifierad, sedan raderas det |
+| [plans/TALKEDJA](plans/TALKEDJA.md) | Genomförandeplan för den dealer-generiska talkedjan, Paow först: hinder med fil och rad, PR-sekvens T1–T8, Jakobs beslut, vad som raderas | Orkestreraren och den som bygger talkedjan | Per PR i sekvensen, raderas när kedjan är verifierad |
 | [plans/REN-START](plans/REN-START.md) | Ren start: ordning, backup och go-punkter för att radera Astrid, testrum och operatörer | Orkestreraren och Jakob | Tills ren start är utförd |
 | [plans/ADMIN-KARTA](plans/ADMIN-KARTA.md), [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md), [ADMIN-MALBILD-PROTOTYP.html](plans/ADMIN-MALBILD-PROTOTYP.html) | Kablagekarta, målbild och klickbar skiss för Admin | Admin-arkitekten | Av Admin-arkitekten |
 
@@ -46,9 +49,7 @@ Daterade bevis, skrivna en gång och lästa av status och `tools/o02-receipt.mjs
 
 | Mönster | Innehåll |
 | --- | --- |
-| `<datum>-<aktivitet>-…-ACCEPTANCE.json` | Sanerade acceptanskvitton med versions-, deploy- och databasidentiteter (J08, K04–K07, isolerat prov) |
-| `<datum>-…-REVIEW.md` | Granskningar av kvittona (K04/K05, K06/K07, K07) |
+| `<datum>-<aktivitet>-…-ACCEPTANCE.json` | Sanerade acceptanskvitton med versions-, deploy- och databasidentiteter (J08, K04–K07, O02, isolerat prov, O03-releasen) |
+| `<datum>-…-REVIEW.md` | Granskningar av kvittona (K04 F3–F5, K04/K05, K06/K07, K07, O02, O03) |
 
-## Historik
-
-[history/](history/README.md) innehåller bara de sju filer som NEXT-AGENT och migrering/ fortfarande länkar till. Inget nytt läggs där; mappen raderas när länkarna är borta.
+Det finns ingen historikmapp. docs/history raderades 28 oktober 2026; äldre text läses ur Git.

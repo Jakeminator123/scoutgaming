@@ -43,7 +43,7 @@ test('roulette rooms preserve their game and launch endpoint alongside blackjack
   assert.equal(playUrlFor(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'anna' })), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=anna');
 });
 
-test('room artwork comes from a single published background, never an editable default or admin image', () => {
+test('room artwork comes from the published background the game starts with, never a draft or admin image', () => {
   const source = publication('alpha', 'nora', 'Nora Studio');
   const background = { id: '11111111-1111-1111-1111-111111111111', label: 'Salongen' };
   Object.assign(source.rooms[0].dealers[0], { presentation: 'layered', independentLayers: true,
@@ -52,11 +52,24 @@ test('room artwork comes from a single published background, never an editable d
   assert.equal(first.environmentFixed, true);
   assert.equal(first.environmentLabel, 'Salongen');
   assert.equal(first.image, '/api/presentation/layers/alpha/' + background.id);
-  source.rooms[0].dealers[0].background.allowed.push({ id: '22222222-2222-2222-2222-222222222222', label: 'Lounge' });
+  const lounge = { id: '22222222-2222-2222-2222-222222222222', label: 'Lounge' };
+  source.rooms[0].dealers[0].background.allowed.push(lounge);
   const multiple = parseLobbyCatalog(payload([source])).rooms[0];
   assert.equal(multiple.environmentFixed, false);
   assert.equal(multiple.environmentKind, 'variable');
-  assert.equal(multiple.image, undefined);
+  assert.equal(multiple.environmentLabel, 'Flera miljöer');
+  assert.equal(multiple.image, '/api/presentation/layers/alpha/' + background.id, "several choices show the default dealer's default");
+  source.rooms[0].dealers[0].background.default = lounge.id;
+  assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, '/api/presentation/layers/alpha/' + lounge.id);
+  // A second, baked dealer that is not the room default leaves the card on the default background.
+  source.rooms[0].dealers.push({ ...publication('alpha', 'elin', 'Elin').rooms[0].dealers[0] });
+  assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, '/api/presentation/layers/alpha/' + lounge.id);
+  // Without a published default background the card keeps the design illustration.
+  source.rooms[0].dealerDefault = 'elin';
+  const baked = parseLobbyCatalog(payload([source])).rooms[0];
+  assert.equal(baked.image, undefined); assert.equal(baked.environmentLabel, 'Flera miljöer');
+  source.rooms[0].dealerDefault = 'nora'; source.rooms[0].dealers[0].background.default = null;
+  assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, undefined);
 });
 
 test('a changed tenant or room revokes stale downstream selections and cross-room launch links', () => {
