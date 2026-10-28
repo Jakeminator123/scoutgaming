@@ -140,6 +140,18 @@ test('the exported context link keeps ambiguous scope and excludes credentials',
   assert.equal(url.searchParams.has('token'),false);
 });
 
+// A nav address already names its company or room; the selector is not repeated in the query.
+test('the exported context link never repeats the selector a nav address names',()=>{
+  const h=harness();
+  assert.equal(h.connected.adminContextHref('/admin/companies/north?flik=team',new URLSearchParams('operator=north&dealer=elin')),'/admin/companies/north?flik=team&dealer=elin');
+  assert.equal(h.connected.adminContextHref('/admin/companies/north',new URLSearchParams('operator=north&operator=other')),'/admin/companies/north');
+  assert.equal(h.connected.adminContextHref('/admin/rooms',new URLSearchParams('table=room-7&operator=north')),'/admin/rooms/room-7?operator=north');
+  assert.equal(h.connected.adminContextHref('/admin/rooms/room-7?flik=spel',new URLSearchParams('room=room-7&table=room-7')),'/admin/rooms/room-7?flik=spel');
+  // On the company list the company is a filter: one operator, the Spelbord tab, no nav.
+  const list=new URL(h.connected.adminContextHref('/admin/companies',new URLSearchParams('operator=north')),'https://test.invalid');
+  assert.equal(list.pathname,'/admin/companies');assert.equal(list.searchParams.get('tab'),'spelbord');assert.deepEqual(list.searchParams.getAll('operator'),['north']);
+});
+
 // The hub tab row copies only the shared Studio context (components/ui/hub.tsx Tabs), never a credential.
 test('system tab links exclude credentials from the address',()=>{
   const h=harness({search:'?flik=spelare&token=secret'});

@@ -27,12 +27,15 @@ export function studioNavigationContextFromQuery(query) {
 // The context is applied before the address is canonicalized, so a retired tab path
 // with a dealer becomes that dealer's nav (/admin/dealers/<id>?flik=…) in one step
 // instead of the dealer list with ?dealer=, which would need a second redirect.
+// The company list is a canonical page: a selected company filters its Spelbord tab
+// (/admin/companies?tab=spelbord&operator=<id>) and does not open the company's nav.
 export function studioNavigationHref(path, context = {}) {
   if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//') || /[\\\r\n]/.test(path)) {
     throw new TypeError('Studio navigation requires a local path.');
   }
   const url = new URL(path, 'https://studio.invalid');
   context = {...context, operatorId: context.operatorSlug ?? context.operatorId};
+  if (url.pathname === '/admin/companies' && !url.searchParams.has('tab') && typeof context.operatorId === 'string' && context.operatorId) url.searchParams.set('tab', 'spelbord');
   for (const [key, parameter] of Object.entries(CONTEXT_PARAMETERS)) {
     const value = context[key];
     if (typeof value === 'string' && value) url.searchParams.set(parameter, value);

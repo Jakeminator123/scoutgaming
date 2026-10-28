@@ -17,7 +17,7 @@ const sources:[string,string,string][]=[
   ['Scenmallar','GET /admin/_data/catalog + /studio/api/videos; PUT /studio/api/project; A:operator-package publish-scene-layout','doc.project lanes[]; operator_packages'],
   ['Bakgrunder och bordsgrafik','POST /studio/api/layer-assets/upload; A:material-trash','doc.project layerAssets[], layerAssetTrash[]; Blob backgrounds/, tables/'],
   ['Bolag och spelbord','GET /admin/_data/catalog; A:resource-lifecycle; GET /studio/api/admin/workspace/companies','operators, operator_roles, operator_memberships, operator_packages; doc.administration rooms[]'],
-  ['Bolag › Spelbord › Papperskorg (även Alla spelbord)','GET /admin/_data/catalog (rooms[].state = archived); GET /api/admin/resource-lifecycle; A:room-lifecycle {archived:false}','doc.administration rooms[].state, archivedAt; spelbordet återställs pausat'],
+  ['Papperskorg för spelbord: egen flik bredvid Alla spelbord, och under Bolag › Spelbord','GET /admin/_data/catalog (rooms[].state = archived); GET /api/admin/resource-lifecycle; A:room-lifecycle {archived:false}','doc.administration rooms[].state, archivedAt; spelbordet återställs pausat'],
   ['Bolag › Tilldelning','A:operator-package {operatorId, lanes, expectedPackageRevision}','operator_packages (ny revision), fryst presentation'],
   ['Bolag › Team','A:operator-create, A:operator-membership, A:operator-role','operators, operator_roles, operator_memberships, croupier_auth.users (inbjudan)'],
   ['Bolag › Journal','GET /studio/api/partner/journal','operator_audit_events, operator_branding_drafts'],

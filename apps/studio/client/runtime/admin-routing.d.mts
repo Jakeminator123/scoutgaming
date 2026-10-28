@@ -7,4 +7,3 @@ export function parseAdminPath(pathname: string): { page: AdminPage; id: string 
 export function hasAdminContext(search: string): boolean;
 export function isStudioAdminRoute(path: string, search?: string): boolean;
 export function withAdminContext(href: string, currentSearch: string): string;
-export function adminToolName(path: string): string | null;

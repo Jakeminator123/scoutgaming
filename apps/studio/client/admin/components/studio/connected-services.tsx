@@ -11,12 +11,17 @@ import { ConnectedEconomy } from './connected-economy';
 /** An accounts panel shows, and reads, only players (nivå 3) or only staff users (nivå 1). */
 export type AccountsSection='players'|'users';
 
+// A nav address names its company or room in the path; the query never repeats that selector.
+const navSelectors:[RegExp,string[]][]=[[/^(?:\/studio)?\/admin\/companies\/[^/]+$/,['operator']],[/^(?:\/studio)?\/admin\/rooms\/[^/]+$/,['table','room']]];
+
 // Keep the shared Studio context and explicit ambiguous room/operator selectors
 // for the destination to validate. Only the path and query are returned.
 export function adminContextHref(target:string,query:URLSearchParams) {
   const url=new URL(studioNavigationHref(target,studioNavigationContextFromQuery(query)),'https://studio.invalid');
-  for(const key of ['operator','table','room'])if(query.has(key)){
-    url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);
+  const named=navSelectors.find(([path])=>path.test(url.pathname))?.[1]??[];
+  for(const key of ['operator','table','room']){
+    if(named.includes(key))url.searchParams.delete(key);
+    else if(query.has(key)){url.searchParams.delete(key);for(const value of query.getAll(key))url.searchParams.append(key,value);}
   }
   return url.pathname+url.search;
 }

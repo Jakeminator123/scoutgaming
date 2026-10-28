@@ -72,6 +72,14 @@ test('dealer navigation never substitutes another dealer identity', () => {
   for(const tab of studioNavigationTabs({dealerId:'dealer & two'})){assert.equal(pathOf(tab.href),'/admin/dealers',tab.id);assert.equal(query(tab.href).get('dealer'),'dealer & two',tab.id);}
 });
 
+test('a selected company filters the company list and does not open the company nav', () => {
+  assert.equal(studioNavigationHref('/admin/companies', { operatorId: 'north' }), '/admin/companies?tab=spelbord&operator=north');
+  assert.equal(studioNavigationHref('/admin/companies?tab=papperskorg', { operatorId: 'north' }), '/admin/companies?tab=papperskorg&operator=north');
+  assert.equal(studioNavigationHref('/admin/companies'), '/admin/companies');
+  // Retired bookmarks keep their one-step redirect to the company's nav.
+  assert.equal(studioNavigationHref('/control/lanes?tab=companies', { operatorId: 'north' }), '/admin/companies/north');
+});
+
 test('rendered navigation preserves repeated and mixed room scope for destination validation', () => {
   const queryText='dealer=paow&operator=north&operator=south&table=one&table=two&room=three&room=four&token=private';
   const Navigation=loadNavigation(queryText);
