@@ -222,7 +222,7 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   assert.match(steps.find(step => step.startsWith('Existing isolated Studio SQL')), /tools\/studio-isolated-qa\.mjs/);
   assert.match(steps.find(step => step.startsWith('Real engine over HTTP')), /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
   assert.equal(legs.filter(leg => leg.flags.includes('browser')).length, 1, 'one leg runs every browser test');
-  assert.match(steps.find(step => step.startsWith('Real browser acceptance')), /git grep -l -e CROUPIER_BROWSER_FIXTURE_MODULE/);
+  assert.match(steps.find(step => step.startsWith('Real browser acceptance')), /git grep -l -F -e process\.env\.CROUPIER_BROWSER_FIXTURE_MODULE /, 'discovery matches files that read the variable, not files that mention it');
   assert.equal(legs.filter(leg => leg.flags.includes('build')).length, 1, 'the real Studio build runs once');
   assert.equal(yaml.match(/continue-on-error: true/g)?.length, 1, 'only the timing receipt below may fail softly');
   // The SQLite ban exempts documentation, so a documentation-only PR cannot violate it; the full regression runs it.

@@ -219,7 +219,7 @@ jobs:
           # Every test file that reads the browser fixture runs here, so a new
           # browser test can never be skipped in CI by default. In the suites
           # above the variable is unset and these cases skip.
-          mapfile -t files < <(git grep -l -e CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/*.mjs' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
+          mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/*.mjs' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
           test "${#files[@]}" -gt 0
           printf 'Browser test file: %s\n' "${files[@]}"
           CROUPIER_BROWSER_FIXTURE_MODULE="$driver/node_modules/playwright-core/index.mjs" \
