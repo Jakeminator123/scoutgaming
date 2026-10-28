@@ -12,9 +12,10 @@
 // so the page never flashes the other layout. desk.css draws it from the custom properties set here.
 (function () {
   var html = document.documentElement, KEYED = ['dragge', 'paow', 'astrid2'];
-  // the rooms widened for the desktop table so far (dealers.js ROOMS .wide); the others show their own plate in the
-  // frame over a blurred copy of it until they get one
-  var WIDE = { darkhall: '/media/dealers/rooms-wide/darkhall.jpg?v=20261016' };
+  // the rooms widened for the desktop table (dealers.js ROOMS .wide); a room without one shows its own plate in the frame
+  // over a blurred copy of it. Emil 28 Oct: all four (metodik bredda-rum-gemini.py: Dark Hall's wide table, each room's wall)
+  var WIDE = { darkhall: '/media/dealers/rooms-wide/darkhall.jpg?v=20261016', azure: '/media/dealers/rooms-wide/azure.jpg?v=20261028',
+    golden: '/media/dealers/rooms-wide/golden.jpg?v=20261028', mahogany: '/media/dealers/rooms-wide/mahogany.jpg?v=20261028' };
   function setRoom(id, wide) {
     var url = wide || WIDE[id];
     html.classList.toggle('room-wide', !!url);
