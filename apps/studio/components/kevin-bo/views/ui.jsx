@@ -69,3 +69,23 @@ export function fmtDateTime(ms, language) {
   if (!Number.isFinite(ms)) return '—';
   return new Date(ms).toLocaleString(locale(language), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 }
+
+// Åtgärdsmeny (⋯) per rad: varje åtgärd kan kräva bekräftelse med konsekvenser
+// innan den körs. Menyn gör inget själv; åtgärdens onSelect gör anropet.
+export function ActionMenu({ label, items, id, disabled = false }) {
+  const [open, setOpen] = React.useState(false);
+  const [pending, setPending] = React.useState(null);
+  const choose = item => { setOpen(false); if (item.disabled) return; if (item.confirm) setPending(item); else item.onSelect(); };
+  return <span className="menu">
+    <button type="button" id={id} className="btn small" aria-haspopup="menu" aria-expanded={open ? 'true' : 'false'} aria-label={label} disabled={disabled || !items.length} onClick={() => setOpen(value => !value)}>⋯</button>
+    {open ? <div className="menu-list" role="menu" aria-label={label}>{items.map(item =>
+      <button key={item.id} type="button" role="menuitem" className={item.tone ?? ''} disabled={Boolean(item.disabled)} title={typeof item.disabled === 'string' ? item.disabled : undefined} onClick={() => choose(item)}>{item.label}</button>)}</div> : null}
+    {pending ? <div className="dialog-backdrop" role="presentation" onClick={() => setPending(null)}>
+      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby={`${id}-confirm`} onClick={event => event.stopPropagation()}>
+        <h2 id={`${id}-confirm`}>{pending.confirm.title}</h2>
+        {pending.confirm.impact?.length ? <ul>{pending.confirm.impact.map(line => <li key={line}>{line}</li>)}</ul> : null}
+        <div className="actions"><button type="button" className="btn" onClick={() => setPending(null)}>{pending.confirm.cancel ?? 'Avbryt'}</button><button type="button" className={`btn ${pending.tone === 'danger' ? 'danger' : 'primary'}`} onClick={() => { const item = pending; setPending(null); item.onSelect(); }}>{pending.confirm.button}</button></div>
+      </div>
+    </div> : null}
+  </span>;
+}

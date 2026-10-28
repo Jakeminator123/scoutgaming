@@ -13,9 +13,8 @@ import { isPresentationRoomLaneCompatible } from '../../../packages/presentation
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { readPartnerReports, readPublishedRoomSettings } from './partner-game-readout.mjs';
+import { partnerRoleWord } from '../components/kevin-bo/partner-copy.mjs';
 
-// Rollens ord i Partnerportalen (TERMINOLOGI: administratör, redaktör, läsare).
-export const PARTNER_ROLE_WORDS = Object.freeze({ 'partner-admin': 'administratör', 'partner-editor': 'redaktör', 'partner-viewer': 'läsare' });
 export const INTERNAL_ROLE = Object.freeze({ id: 'internal-admin', label: 'Scoutgamings personal' });
 
 function fail(statusCode = 403) {
@@ -147,7 +146,7 @@ function snapshotBase(session, now) {
 function roleOf(session, context) {
   if (session.accessClass === 'internal-admin') return { ...INTERNAL_ROLE };
   const id = typeof context.role?.id === 'string' ? context.role.id : String(context.membership?.roleId ?? '');
-  return { id, label: PARTNER_ROLE_WORDS[id] ?? (typeof context.role?.label === 'string' && context.role.label ? context.role.label : id) };
+  return { id, label: partnerRoleWord(id, typeof context.role?.label === 'string' ? context.role.label : '') };
 }
 // Tilldelningen ur det frysta paketet: spel, dealers, scenmallar och det material
 // mallarna tillåter. Insatsprofiler finns inte i paketet; de läses från rummens
